@@ -93,10 +93,11 @@ typedef enum {
   SSD1306_64,   // U8X8_SSD1306_128X64_NONAME_HW_I2C
   SSD1305,      // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
   SSD1305_64,   // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
-  SSD1306_SPI,  // U8X8_SSD1306_128X32_NONAME_HW_SPI
+  SSD1306_SPI,     // U8X8_SSD1306_128X32_NONAME_HW_SPI
   SSD1306_SPI64=7, // U8X8_SSD1306_128X64_NONAME_HW_SPI
   SSD1309_SPI64=8, // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
-  SSD1327_SPI128=9 // U8X8_SSD1327_WS_128X128_4W_SW_SPI
+  SSD1327_SPI128=9,// U8X8_SSD1327_WS_128X128_4W_SW_SPI
+  SSD1309_64=10 // U8X8_SSD1309_128X64_NONAME2_HW_I2C
 } DisplayType;
 
 
@@ -212,6 +213,20 @@ class FourLineDisplayUsermod : public Usermod {
     // https://github.com/olikraus/u8g2/wiki/u8x8setupcpp
     // or check the gallery:
     // https://github.com/olikraus/u8g2/wiki/gallery
+
+    // is this display using SPI?
+    bool displayIsSPI(DisplayType disp) {
+      switch(disp) {
+        case SSD1306_SPI:   // falls thru
+        case SSD1306_SPI64: // falls thru
+        case SSD1309_SPI64: // falls thru
+        case SSD1327_SPI128:
+          return true;  // yes its SPI
+          break; // makes compiler happy
+        default: 
+          return false; // no anything else is I2C
+      }
+    }
 
     // some displays need this to properly apply contrast
     void setVcomh(bool highContrast) {
@@ -418,7 +433,8 @@ class FourLineDisplayUsermod : public Usermod {
     void setup() {
       if (!enabled) return;   // typeOK = true will be set after successful setup
 
-      bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type > 7);
+      bool isHW  = false;
+      bool isSPI = displayIsSPI(type);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
         if (ioPin[0] < 0 || ioPin[1] < 0) {
@@ -528,6 +544,10 @@ class FourLineDisplayUsermod : public Usermod {
         case SSD1306_64:
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
           else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+          break;
+        case  SSD1309_64:
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1309_128X64_NONAME2_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+          else       u8x8 = (U8X8 *) new U8X8_SSD1309_128X64_NONAME2_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           break;
         case SSD1305:
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
@@ -1259,13 +1279,14 @@ class FourLineDisplayUsermod : public Usermod {
       oappend(SET_F("addOption(dd,'SSD1306',1);"));
       oappend(SET_F("addOption(dd,'SH1106',2);"));
       oappend(SET_F("addOption(dd,'SSD1306 128x64',3);"));
+      oappend(SET_F("addOption(dd,'SSD1309 128x64',10);"));
       oappend(SET_F("addOption(dd,'SSD1305',4);"));
       oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
       oappend(SET_F("addOption(dd,'SSD1309 SPI 128x64',8);"));
       oappend(SET_F("addOption(dd,'SSD1327 SPI 128x128',9);"));
-      bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type > 7);
+      bool isSPI = displayIsSPI(type);
       // WLEDMM add defaults
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','I2C/SPI CLK');"));
       oappend(SET_F("dRO('4LineDisplay:pin[]',0);")); // disable read only pins
@@ -1328,7 +1349,7 @@ class FourLineDisplayUsermod : public Usermod {
     void addToConfig(JsonObject& root) {
       // determine if we are using global HW pins (data & clock)
       int8_t hw_dta, hw_clk;
-      if ((type == SSD1306_SPI || type == SSD1306_SPI64) || (type > 7)) {
+      if (displayIsSPI(type)) {
         hw_clk = spi_sclk;
         hw_dta = spi_mosi;
       } else {
@@ -1394,7 +1415,7 @@ class FourLineDisplayUsermod : public Usermod {
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
       showSeconds   = top[FPSTR(_showSeconds)] | showSeconds;
       contrastFix   = top[FPSTR(_contrastFix)] | contrastFix;
-      if (newType == SSD1306_SPI || newType == SSD1306_SPI64 || newType > 7)
+      if (displayIsSPI(newType))
         ioFrequency = min(20000, max(500, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
       else
         ioFrequency = min(3400, max(100, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
@@ -1424,7 +1445,7 @@ class FourLineDisplayUsermod : public Usermod {
             USER_PRINTLN(F("Display terminated."));
           }
           PinOwner po = PinOwner::UM_FourLineDisplay;
-          bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type > 7);
+          bool isSPI = displayIsSPI(type);
           if (isSPI) {
             pinManager.deallocateMultiplePins((const uint8_t *)(&oldPin[2]), 3, po);
             bool isHW = (oldPin[0]==spi_sclk && oldPin[1]==spi_mosi);

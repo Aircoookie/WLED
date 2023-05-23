@@ -151,7 +151,7 @@ button {
 }
 
 .segt TD {
-	padding: 2px !important;
+	padding: 2px 0 !important;
 	text-align: center;
 	/*text-transform: uppercase;*/
 }
@@ -174,7 +174,10 @@ button {
 }
 
 .slider-icon {
-	transform: translate(3px,3px);
+	/*transform: translate(3px,3px);*/
+	position: absolute;
+	left: 8px;
+	bottom: 5px;
 }
 
 .e-icon {
@@ -314,14 +317,14 @@ button {
 	overflow: auto;
 	height: 100%;
 	overscroll-behavior: none;
-}
-
-#Effects {
+	padding: 0 4px;
 	-webkit-overflow-scrolling: touch;
 }
 
-#segutil, #segutil2, #segcont, #putil, #pcont, #pql {
-	width: 280px;
+#segutil, #segutil2, #segcont, #putil, #pcont, #pql, #fx, #palw,
+.fnd {
+	max-width: 280px;
+	font-size: 19px;
 }
 
 #putil, #segutil, #segutil2 {
@@ -333,7 +336,8 @@ button {
 	padding-top: 12px;
 }
 
-#pql, #segcont, #pcont {
+#fx, #pql, #segcont, #pcont, #sliders, #picker, #qcs-w, #hexw, #pall, #ledmap,
+.slider, .filter, .option, .segname, .pname, .fnd {
 	margin: 0 auto;
 }
 
@@ -380,8 +384,7 @@ button {
 }
 
 #sliders {
-	width: 300px;
-	margin: 0 auto;
+	position: -webkit-sticky;
 	position: sticky;
 	bottom: 0;
 }
@@ -393,32 +396,44 @@ button {
 
 .slider {
 	max-width: 300px;
-	min-width: 260px;
-	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
+	/* margin: 5px auto; add 5px; if you want some vertical space but looks ugly */
 	border-radius: 24px;
 	position: relative;
 	padding-bottom: 2px;
+}
+
+/* Slider wrapper div */
+.sliderwrap {
+	height: 30px;
+	width: 230px;
+	max-width: 230px;
+	position: relative;
+	z-index: 0;
 }
 
 #sliders .slider, #info .slider {
 	background-color: var(--c-2);
 }
 
+#sliders .sliderwrap, .sbs .sliderwrap {
+	left: 16px; /* offset for icon */
+}
+
 .filter, .option {
 	background-color: var(--c-4);
 	border-radius: 26px;
 	height: 26px;
-	margin: 0 auto; /* add 4-8px if you want space at the bottom */
+	max-width: 300px;
+	/* margin: 0 auto 4px; add 4-8px if you want space at the bottom */
 	padding: 4px 2px;
 	position: relative;
-	z-index: 1;
 	opacity: 1;
 	transition: opacity 0.5s linear, height 0.5s, transform 0.5s;
-	transform: scaleY(1);
 }
 
-.option {
-	z-index: unset;
+.filter {
+	z-index: 1;
+	overflow: hidden;
 }
 
 /* Tooltip text */
@@ -530,6 +545,7 @@ button {
 }
 
 .close {
+	position: -webkit-sticky;
 	position: sticky;
 	top: 0;
 	float: right;
@@ -575,8 +591,14 @@ button {
 	width: 200px;
 }
 
-#info table, #nodes table {
+#info table {
 	table-layout: fixed;
+	width: 100%;
+}
+
+/*WLEDMM nodes table auto*/
+#nodes table {
+	table-layout: auto;
 	width: 100%;
 }
 
@@ -590,20 +612,21 @@ button {
 #info table .btn, #nodes table .btn {
 	margin: 0;
 }
-#info div, #nodes div {
+#info div {
 	max-width: 490px;
 	margin: 0 auto;
 }
 
+/*WLEDMM nodes div width must be bigger*/
+#nodes div {
+	max-width: 980px;
+	margin: 0 auto;
+}
+
 #info #imgw {
-	/*display: inline-block;*/
 	margin: 8px auto;
 }
-/*
-#kv, #kn {
-	display: inline-block;
-}
-*/
+
 #lv {
 	max-width: 600px;
 	display: inline-block;
@@ -668,6 +691,7 @@ img {
 	transition: visibility 0.25s ease, opacity 0.25s ease;
 	opacity: 0;
 	visibility: hidden;
+	left: 8px;
 }
 
 output.sliderbubbleshow {
@@ -725,41 +749,24 @@ input[type=range]::-moz-range-thumb {
 	border: 2px solid var(--c-1);
 }
 
-/* Slider wrapper div */
-.sliderwrap {
-	height: 30px;
-	width: 230px;
-	position: relative;
-	z-index: 0;
-}
-
 #Colors .sliderwrap {
-	width: 260px;
 	margin: 4px 0 0;
 }
 
-/* #Colors {
-	padding-top: 18px;
-}
- */
 /* Dynamically hide brightness slider label */
 .hd {
 	display: var(--bhd);
 }
 
 #briwrap {
+	min-width: 267px;
 	float: right;
 	margin-top: var(--bmt);
 }
 
-#picker, #qcs-w, #hexw, #pall, #ledmap {
-	margin: 0 auto;
-	width: 260px;
-	/*background-color: unset;*/
-}
-
 #picker {
-	margin-top: -10px !important;
+	margin-top: 8px !important;
+	max-width: 260px;
 }
 
 /* buttons */
@@ -994,14 +1001,12 @@ textarea {
 
 .segname, .pname {
 	white-space: nowrap;
-	/*cursor: pointer;*/
 	text-align: center;
 	overflow: clip;
 	text-overflow: ellipsis;
 	line-height: 24px;
 	padding: 8px 24px;
 	max-width: 170px;
-	margin: 0 auto;
 	position: relative;
 }
 
@@ -1012,7 +1017,7 @@ textarea {
 
 /* segment power wrapper */
 .sbs {
-	padding: 4px 0 4px 8px;
+	padding: 1px 0 1px 20px;
 	display: var(--sgp);
 }
 
@@ -1208,10 +1213,7 @@ TD .checkmark, TD .radiomark {
 	border: 0px solid var(--c-f);
 	text-align: left;
 	transition: background-color 0.5s;
-  	/*filter: brightness(1);*/
-	font-size: 19px;
 	border-radius: 21px;
-	/*min-width: 264px;*/
 }
 
 .seg {
@@ -1254,10 +1256,8 @@ TD .checkmark, TD .radiomark {
 /* list wrapper */
 .list {
 	position: relative;
-	width: 280px;
 	transition: background-color 0.5s;
-    margin: auto auto 20px;
-	font-size: 19px;
+    margin: auto auto 10px;
 	line-height: 24px;
 }
 
@@ -1267,6 +1267,7 @@ TD .checkmark, TD .radiomark {
     cursor: pointer;
 	background-color: var(--c-2);
 	overflow: hidden;
+	position: -webkit-sticky;
 	position: sticky;
 	border-radius: 21px;
 	margin: 13px auto 0;
@@ -1303,6 +1304,7 @@ TD .checkmark, TD .radiomark {
 .lstI.selected {
 	top: 0;
 	bottom: 0;
+	border: 1px solid var(--c-4);
 }
 
 .lstI.sticky,
@@ -1358,8 +1360,6 @@ TD .checkmark, TD .radiomark {
 
 /* find/search element */
 .fnd {
-	width: 280px;
-	margin: 0 auto;
 	position: relative;
 }
 
@@ -1391,7 +1391,6 @@ TD .checkmark, TD .radiomark {
 .presin {
 	padding: 8px;
 	position: relative;
-	width: 264px;
 }
 
 .btn-s,
@@ -1469,6 +1468,16 @@ TD .checkmark, TD .radiomark {
 	}
 }
 
+@media all and (max-width: 1023px) {
+	.top button {
+		width: 8%;
+		padding: 10px 0 8px 0;
+	}
+	#buttonPcm {
+		display: none;
+	}
+}
+
 @media all and (max-width: 335px) {
 	.sliderbubble {
     	display: none;
@@ -1487,38 +1496,84 @@ TD .checkmark, TD .radiomark {
 	}
 }
 
-@media all and (max-width: 540px) {
-	.top button {
-		width: 16.6%;
-		padding: 8px 0 4px 0;
-	}
-}
-
-@media all and (min-width: 541px) and (max-width: 719px) {
-	.top button {
-		width: 14.2%;
-		padding: 8px 0 4px 0;
-	}
-}
-
-@media all and (max-width: 719px) {
-	.hd {
-		display: none !important;
-	}
-	#briwrap {
-		margin-top: 0px !important;
-		float: none;
-	}
-}
-
-@media all and (max-width: 798px) {
+@media all and (max-width: 420px) {
 	#buttonNodes {
 		display: none;
 	}
 }
 
-@media all and (max-width: 1024px) {
-	#buttonPcm {
+@media all and (max-width: 639px) {
+	.top button {
+		width: 16.6%;
+		padding: 8px 0 4px 0;
+	}
+	#briwrap {
+		margin: 0 auto !important;
+		float: none;
+		display: inline-block;
+	}
+	.hd {
+		display: none !important;
+	}
+}
+
+@media all and (min-width: 420px) and (max-width: 639px) {
+	.top button {
+		width: 14.28%;
+		padding: 8px 0 4px 0;
+	}
+}
+
+@media all and (min-width: 640px) and (max-width: 767px) {
+	#buttonNodes {
 		display: none;
+	}
+}
+
+/* small screen & tablet "PC mode" support */
+@media all and (min-width: 1024px) and (max-width: 1249px) {
+	#segutil, #segutil2, #segcont, #putil, #pcont, #pql, #fx, #palw, #psFind, #sliders {
+		width: 100%;
+		max-width: 280px;
+		font-size: 18px;
+	}
+	#picker {
+		width: 230px;
+	}
+	#putil .btn-s {
+		width: 114px;
+	}
+	#sliders .sliderbubble {
+		display: none;
+	}
+	.sliderwrap {
+		width: calc(100% - 28px);
+	}
+	#sliders .sliderwrap {
+		left: 12px;
+	}
+	.segname {
+		padding: 8px 16px;
+		max-width: 140px;
+	}
+	.segname, .pname {
+		max-width: 134px;
+	}
+	.segt TD {
+		padding: 0 !important;
+	}
+	input[type="number"], input[type=text], select, textarea {
+		font-size: 18px;
+	}
+	input[type="number"] {
+		width: 32px;
+	}
+	.lstIcontent {
+		padding-left: 8px;
+	}
+	.revchkl {
+		max-width: 183px;
+		text-overflow: ellipsis;
+		overflow-x: clip;
 	}
 }

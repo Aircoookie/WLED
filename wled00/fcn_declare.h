@@ -372,15 +372,15 @@ void clearEEPROM();
   float floor_t(float x);
   float fmod_t(float num, float denom);
 #else
-  #include <math.h>
-  #define sin_t sin
-  #define cos_t cos
-  #define tan_t tan
-  #define asin_t asin
-  #define acos_t acos
-  #define atan_t atan
-  #define fmod_t fmod
-  #define floor_t floor
+  #include <math.h>   // WLEDMM use "float" variants
+  #define sin_t sinf
+  #define cos_t cosf
+  #define tan_t tanf
+  #define asin_t asinf
+  #define acos_t acosf
+  #define atan_t atanf
+  #define fmod_t fmodf
+  #define floor_t floorf
 #endif
 
 //wled_serial.cpp

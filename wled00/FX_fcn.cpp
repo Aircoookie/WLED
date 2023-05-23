@@ -26,6 +26,9 @@
 #include "wled.h"
 #include "FX.h"
 #include "palettes.h"
+#ifdef ARDUINO_ARCH_ESP32
+#include <esp_timer.h>     // WLEDMM to get esp_timer_get_time() 
+#endif
 
 /*
   Custom per-LED mapping has moved!
@@ -86,11 +89,11 @@ Segment::Segment(const Segment &orig) {
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
-  if (leds && !Segment::_globalLeds) leds = nullptr;
+  if (ledsrgb && !Segment::_globalLeds) ledsrgb = nullptr; //WLEDMM ledsrgb not freed as still used by orig!
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+  if (orig.ledsrgb && !Segment::_globalLeds) { ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length()); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
   jMap = nullptr; //WLEDMM jMap
 }
 
@@ -102,7 +105,7 @@ Segment::Segment(Segment &&orig) noexcept {
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
-  orig.leds = nullptr;
+  orig.ledsrgb = nullptr; //WLEDMM: do not free as moved to here
   orig.jMap = nullptr; //WLEDMM jMap
 }
 
@@ -113,7 +116,7 @@ Segment& Segment::operator= (const Segment &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: nullify below!
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -122,12 +125,12 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
-    if (!Segment::_globalLeds) leds = nullptr;
+    if (!Segment::_globalLeds) ledsrgb = nullptr;
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+    if (orig.ledsrgb && !Segment::_globalLeds) { ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length()); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
     jMap = nullptr; //WLEDMM jMap
   }
   return *this;
@@ -140,13 +143,13 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
     if (_t) delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: no need to nullify ledsrgb as it gets new value in memcpy
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;
     orig._t   = nullptr;
-    orig.leds = nullptr;
+    orig.ledsrgb = nullptr;  //WLEDMM: do not free as moved to here
     orig.jMap = nullptr; //WLEDMM jMap
   }
   return *this;
@@ -187,7 +190,7 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) {
-    if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
+    if (ledsrgb && !Segment::_globalLeds) { free(ledsrgb); ledsrgb = nullptr; }
     if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
@@ -199,17 +202,17 @@ void Segment::setUpLeds() {
   // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
   if (Segment::_globalLeds)
     #ifndef WLED_DISABLE_2D
-    leds = &Segment::_globalLeds[start + startY*Segment::maxWidth];
+    ledsrgb = &Segment::_globalLeds[start + startY*Segment::maxWidth];
     #else
     leds = &Segment::_globalLeds[start];
     #endif
-  else if (!leds) {
-    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-    if (psramFound())
-      leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());
-    else
-    #endif
-      leds = (CRGB*)malloc(sizeof(CRGB)*length());
+  else if ((ledsrgb == nullptr) && (length() > 0)) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
+    //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+    //if (psramFound())
+    //  ledsrgb = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
+    //else
+    //#endif
+      ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length());
   }
 }
 
@@ -232,6 +235,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
     case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
     case FX_MODE_RAILWAY    : pal =  3; break; // prim + sec
+    case FX_MODE_2DSOAP     : pal = 11; break; // rainbow colors
   }
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
@@ -588,7 +592,7 @@ class JMapC {
       if (jVectorMap.size() > 0) {
         USER_PRINTLN("delete jVectorMap");
         for (size_t i=0; i<jVectorMap.size(); i++)
-          delete jVectorMap[i].array; 
+          delete[] jVectorMap[i].array; 
         jVectorMap.clear();
       }
     }
@@ -643,7 +647,7 @@ class JMapC {
 
         //https://arduinojson.org/v6/how-to/deserialize-a-very-large-document/
         jMapFile.find("[");
-        do {
+        do { //for each element in the array
           DeserializationError err = deserializeJson(docChunk, jMapFile);
           // serializeJson(docChunk, Serial); USER_PRINTLN();
           // USER_PRINTF("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
@@ -685,6 +689,8 @@ class JMapC {
           }
 
         } while (jMapFile.findUntil(",", "]"));
+
+        jMapFile.close();
 
         maxWidth++; maxHeight++;
         scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
@@ -885,11 +891,11 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
   }
 #endif
 
-  if (leds) leds[i] = col;
+  if (ledsrgb) ledsrgb[i] = col;
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
-  if (!_bri_t && !transitional) return;
+  if (!_bri_t && !transitional && fadeTransition) return; // if _bri_t == 0 && segment is not transitionig && transitions are enabled then save a few CPU cycles
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -1011,7 +1017,7 @@ uint32_t Segment::getPixelColor(int i)
   }
 #endif
 
-  if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
+  if (ledsrgb) return RGBW32(ledsrgb[i].r, ledsrgb[i].g, ledsrgb[i].b, 0);
 
   if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();
@@ -1097,11 +1103,11 @@ void Segment::refreshLightCapabilities() {
  * Fills segment with color
  */
 void Segment::fill(uint32_t c) {
-  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
-  const uint16_t rows = virtualHeight(); // will be 1 for 1D
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (is2D()) setPixelColorXY(x, y, c);
-    else        setPixelColor(x, c);
+  const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();             // WLEDMM use fast int types
+  const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
+  for(uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
+    if (is2D()) setPixelColorXY((uint16_t)x, (uint16_t)y, c);
+    else        setPixelColor((uint16_t)x, c);
   }
 }
 
@@ -1111,8 +1117,22 @@ void Segment::blendPixelColor(int n, uint32_t color, uint8_t blend) {
 }
 
 // Adds the specified color with the existing pixel color perserving color balance.
-void Segment::addPixelColor(int n, uint32_t color) {
-  setPixelColor(n, color_add(getPixelColor(n), color));
+void Segment::addPixelColor(int n, uint32_t color, bool fast) {
+  uint32_t col = getPixelColor(n);
+  uint8_t r = R(col);
+  uint8_t g = G(col);
+  uint8_t b = B(col);
+  uint8_t w = W(col);
+  if (fast) {
+    r = qadd8(r, R(color));
+    g = qadd8(g, G(color));
+    b = qadd8(b, B(color));
+    w = qadd8(w, W(color));
+    col = RGBW32(r,g,b,w);
+  } else {
+    col = color_add(col, color);
+  }
+  setPixelColor(n, col);
 }
 
 void Segment::fadePixelColor(uint16_t n, uint8_t fade) {
@@ -1124,8 +1144,8 @@ void Segment::fadePixelColor(uint16_t n, uint8_t fade) {
  * fade out function, higher rate = quicker fade
  */
 void Segment::fade_out(uint8_t rate) {
-  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
-  const uint16_t rows = virtualHeight(); // will be 1 for 1D
+  const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();           // WLEDMM use fast int types
+  const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
 
   rate = (255-rate) >> 1;
   float mappedRate = float(rate) +1.1;
@@ -1136,7 +1156,7 @@ void Segment::fade_out(uint8_t rate) {
   int g2 = G(color);
   int b2 = B(color);
 
-  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+  for (uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
     color = is2D() ? getPixelColorXY(x, y) : getPixelColor(x);
     int w1 = W(color);
     int r1 = R(color);
@@ -1154,19 +1174,19 @@ void Segment::fade_out(uint8_t rate) {
     gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
     bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
 
-    if (is2D()) setPixelColorXY(x, y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
-    else        setPixelColor(x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+    if (is2D()) setPixelColorXY((uint16_t)x, (uint16_t)y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+    else        setPixelColor((uint16_t)x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
   }
 }
 
 // fades all pixels to black using nscale8()
 void Segment::fadeToBlackBy(uint8_t fadeBy) {
-  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
-  const uint16_t rows = virtualHeight(); // will be 1 for 1D
+  const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();      // WLEDMM use fast int types
+  const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
 
-  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (is2D()) setPixelColorXY(x, y, CRGB(getPixelColorXY(x,y)).nscale8(255-fadeBy));
-    else        setPixelColor(x, CRGB(getPixelColor(x)).nscale8(255-fadeBy));
+  for (uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
+    if (is2D()) setPixelColorXY((uint16_t)x, (uint16_t)y, CRGB(getPixelColorXY(x,y)).nscale8(255-fadeBy));
+    else        setPixelColor((uint16_t)x, CRGB(getPixelColor(x)).nscale8(255-fadeBy));
   }
 }
 
@@ -1178,17 +1198,18 @@ void Segment::blur(uint8_t blur_amount)
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     // compatibility with 2D
-    const uint16_t cols = virtualWidth();
-    const uint16_t rows = virtualHeight();
-    for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount); // blur all rows
-    for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
+    const uint_fast16_t cols = virtualWidth();                 // WLEDMM use fast int types
+    const uint_fast16_t rows = virtualHeight();
+    for (uint_fast16_t i = 0; i < rows; i++) blurRow(i, blur_amount); // blur all rows
+    for (uint_fast16_t k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
     return;
   }
 #endif
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for(uint16_t i = 0; i < virtualLength(); i++)
+  uint_fast16_t vlength = virtualLength();
+  for(uint_fast16_t i = 0; i < vlength; i++)
   {
     CRGB cur = CRGB(getPixelColor(i));
     CRGB part = cur;
@@ -1200,9 +1221,9 @@ void Segment::blur(uint8_t blur_amount)
       uint8_t r = R(c);
       uint8_t g = G(c);
       uint8_t b = B(c);
-      setPixelColor(i-1, qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
+      setPixelColor((uint16_t)(i-1), qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
     }
-    setPixelColor(i,cur.red, cur.green, cur.blue);
+    setPixelColor((uint16_t)i,cur.red, cur.green, cur.blue);
     carryover = part;
   }
 }
@@ -1337,12 +1358,17 @@ void WS2812FX::enumerateLedmaps() {
 
       #ifndef ESP8266
       if (requestJSONBufferLock(21)) {
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        //WLEDMM: upstream code loops over all ledmap files, read them all, every byte (!!!!) and only get the name of the file!!!
+        File f;
+        f = WLED_FS.open(fileName, "r");
+        if (f) {
+          f.find("\"n\":");
+          const char *name = f.readStringUntil('\n').c_str();
+          USER_PRINTF("enumerateLedmaps %s %s\n", fileName, name);
+
           size_t len = 0;
-          if (!doc["n"].isNull()) {
-            // name field exists
-            const char *name = doc["n"].as<const char*>();
-            if (name != nullptr) len = strlen(name);
+          if (name != nullptr) {
+            len = strlen(name);
             if (len > 0 && len < 33) {
               ledmapNames[i-1] = new char[len+1];
               if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
@@ -1356,6 +1382,7 @@ void WS2812FX::enumerateLedmaps() {
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
           }
         }
+        f.close();
         releaseJSONBufferLock();
       }
       #endif
@@ -1443,13 +1470,14 @@ void WS2812FX::finalizeInit(void)
   }
   if (useLedsArray) {
     size_t arrSize = sizeof(CRGB) * getLengthTotal();
-    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-    if (psramFound())
-      Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
-    else
-    #endif
-      Segment::_globalLeds = (CRGB*) malloc(arrSize);
-    memset(Segment::_globalLeds, 0, arrSize);
+    // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards (see setUpLeds())
+    //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+    //if (psramFound())
+    //  Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
+    //else
+    //#endif
+      if (arrSize > 0) Segment::_globalLeds = (CRGB*) malloc(arrSize); // WLEDMM avoid malloc(0)
+    if (Segment::_globalLeds != nullptr) memset(Segment::_globalLeds, 0, arrSize); // WLEDMM avoid dereferencing nullptr
   }
 
   //segments are created in makeAutoSegments();
@@ -1460,7 +1488,7 @@ void WS2812FX::finalizeInit(void)
 }
 
 void WS2812FX::service() {
-  uint32_t nowUp = millis(); // Be aware, millis() rolls over every 49 days
+  unsigned long nowUp = millis(); // Be aware, millis() rolls over every 49 days // WLEDMM avoid losing precision
   now = nowUp + timebase;
   if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
@@ -1478,7 +1506,7 @@ void WS2812FX::service() {
     {
       if (seg.grouping == 0) seg.grouping = 1; //sanity check
       doShow = true;
-      uint16_t delay = FRAMETIME;
+      uint16_t frameDelay = FRAMETIME;    // WLEDMM avoid name clash with "delay" function
 
       if (!seg.freeze) { //only run effect function if not frozen
         _virtualSegmentLength = seg.virtualLength();
@@ -1493,14 +1521,14 @@ void WS2812FX::service() {
         // effect blending (execute previous effect)
         // actual code may be a bit more involved as effects have runtime data including allocated memory
         //if (seg.transitional && seg._modeP) (*_mode[seg._modeP])(progress());
-        delay = (*_mode[seg.currentMode(seg.mode)])();
+        frameDelay = (*_mode[seg.currentMode(seg.mode)])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
-        if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
+        if (seg.transitional && frameDelay > FRAMETIME) frameDelay = FRAMETIME; // force faster updates during transition
 
         seg.handleTransition();
       }
 
-      seg.next_time = nowUp + delay;
+      seg.next_time = nowUp + frameDelay;
     }
     _segment_index++;
   }
@@ -1630,6 +1658,16 @@ void WS2812FX::show(void) {
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
   _lastShow = now;
+#ifdef ARDUINO_ARCH_ESP32                      // WLEDMM more accurate FPS measurement for ESP32
+  uint64_t now500 = esp_timer_get_time() / 2;  // native timer; micros /2 -> millis * 500
+  int64_t diff500 = now500 - _lastShow500;
+  if ((diff500 > 300) && (diff500 < 800000)) { // exclude stupid values (timer rollover, major hickups)
+    float fpcCurr500 = 500000.0f / float(diff500);
+    if (fpcCurr500 > 2)
+      _cumulativeFps500 = (3 * _cumulativeFps500 + (500.0 * fpcCurr500)) / 4;  // average for some smoothing
+  }
+  _lastShow500 = now500;
+#endif
 }
 
 /**
@@ -1646,12 +1684,17 @@ bool WS2812FX::isUpdating() {
  */
 uint16_t WS2812FX::getFps() {
   if (millis() - _lastShow > 2000) return 0;
+#ifdef ARDUINO_ARCH_ESP32
+  return ((_cumulativeFps500 + 250) / 500);  // +250 for proper rounding
+#else
   return _cumulativeFps +1;
+#endif
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
-  if (fps > 0 && fps <= 120) _targetFps = fps;
+  if (fps > 0 && fps <= 251) _targetFps = fps;  // WLEDMM allow higher framerates
   _frametime = 1000 / _targetFps;
+  if (_frametime < 1) _frametime = 1;           // WLEDMM better safe than sorry
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
@@ -1745,7 +1788,7 @@ uint16_t WS2812FX::getLengthTotal(void) {
 
 uint16_t WS2812FX::getLengthPhysical(void) {
   uint16_t len = 0;
-  for (size_t b = 0; b < busses.getNumBusses(); b++) {
+  for (unsigned b = 0; b < busses.getNumBusses(); b++) {   //  WLEDMM use native (fast) types
     Bus *bus = busses.getBus(b);
     if (bus->getType() >= TYPE_NET_DDP_RGB) continue; //exclude non-physical network busses
     len += bus->getLength();
@@ -1757,7 +1800,7 @@ uint16_t WS2812FX::getLengthPhysical(void) {
 //returns if there is an RGBW bus (supports RGB and White, not only white)
 //not influenced by auto-white mode, also true if white slider does not affect output white channel
 bool WS2812FX::hasRGBWBus(void) {
-  for (size_t b = 0; b < busses.getNumBusses(); b++) {
+  for (unsigned b = 0; b < busses.getNumBusses(); b++) {    //  WLEDMM use native (fast) types
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
     if (bus->hasRGB() && bus->hasWhite()) return true;
@@ -1767,7 +1810,7 @@ bool WS2812FX::hasRGBWBus(void) {
 
 bool WS2812FX::hasCCTBus(void) {
   if (cctFromRgb && !correctWB) return false;
-  for (size_t b = 0; b < busses.getNumBusses(); b++) {
+  for (unsigned b = 0; b < busses.getNumBusses(); b++) {    //  WLEDMM use native (fast) types
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
     switch (bus->getType()) {
@@ -1963,10 +2006,10 @@ uint8_t WS2812FX::setPixelSegment(uint8_t n) {
 void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col) {
   if (i2 >= i)
   {
-    for (uint16_t x = i; x <= i2; x++) setPixelColor(x, col);
+    for (uint_fast16_t x = i; x <= i2; x++) setPixelColor((uint16_t)x, col);    //  WLEDMM use fast int types
   } else
   {
-    for (uint16_t x = i2; x <= i; x++) setPixelColor(x, col);
+    for (uint_fast16_t x = i2; x <= i; x++) setPixelColor((uint16_t)x, col);
   }
 }
 
@@ -2060,11 +2103,9 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
-    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this
-    if (!isMatrix && !n && customMappingTable != nullptr) {
+    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this !!!!
+    if (!isMatrix && !n) {
       customMappingSize = 0;
-      delete[] customMappingTable;
-      customMappingTable = nullptr;
       loadedLedmap = 0; //WLEDMM
     }
     return false;
@@ -2072,7 +2113,11 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!requestJSONBufferLock(7)) return false;
 
-  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+  //WLEDMM: change upstream code: do not load complete ledmaps in json as this blows up memory, use file read instead
+  //read the file
+  File f;
+  f = WLED_FS.open(fileName, "r");
+  if (!f) {
     releaseJSONBufferLock();
     return false; //if file does not exist just exit
   }
@@ -2080,31 +2125,46 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
   USER_PRINTLN(fileName);
 
-  // erase old custom ledmap
-  if (customMappingTable != nullptr) {
-    customMappingSize = 0;
-    delete[] customMappingTable;
-    customMappingTable = nullptr;
-    loadedLedmap = 0;
+  //WLEDMM: read width and height (mandatory in file!!)
+  f.find("\"width\":");
+  uint16_t maxWidth = f.readStringUntil('\n').toInt();
+
+  f.find("\"height\":");
+  uint16_t maxHeight = f.readStringUntil('\n').toInt();
+
+  USER_PRINTF("deserializeMap %d x %d\n", maxWidth, maxHeight);
+  if (maxWidth * maxHeight <= 0) {
+    releaseJSONBufferLock();
+    return false;
   }
 
-  JsonArray map = doc[F("map")];
-  if (!map.isNull() && map.size()) {  // not an empty map
+  //WLEDMM: support ledmap file properties width and height
+  Segment::maxWidth = maxWidth;
+  Segment::maxHeight = maxHeight;
+  resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
 
-    //WLEDMM: support ledmap file properties width and height
-    if (doc[F("width")]>0 && doc[F("height")]>0) {
-      Segment::maxWidth = doc[F("width")];;
-      Segment::maxHeight = doc[F("height")];;
-      resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
-    }
+  //WLEDMM recreate customMappingTable if more space needed
+  if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
+    USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
+    if (customMappingTable != nullptr) delete[] customMappingTable;
+    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+      if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+  }
 
-    customMappingSize  = map.size();
-    customMappingTable = new uint16_t[customMappingSize];
+  if (customMappingTable != nullptr) {
+    customMappingSize  = maxWidth * maxHeight;
 
-    for (uint16_t i=0; i<customMappingSize; i++) 
-      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+    //WLEDMM: find the map values
+    f.find("\"map\":[");
+    uint16_t i=0;
+    do { //for each element in the array
+      int mapi = f.readStringUntil(',').toInt();
+      // USER_PRINTF(", %d", mapi);
+      customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);
+    } while (f.available());
 
     loadedLedmap = n;
+    f.close();
 
     #ifdef WLED_DEBUG
       DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
@@ -2114,6 +2174,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       }
       DEBUG_PRINTLN();
     #endif
+  } else { // memory allocation error
+    DEBUG_PRINTLN(F("Deserializemap: Ledmap alloc error."));
   }
 
   releaseJSONBufferLock();
@@ -2133,5 +2195,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
 "Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
-"Candy2","Audio Responsive Ratio ☾","Audio Responsive Hue ☾","Audio Responsive Ramp","* Random Cycle"
+"Candy2","Audio Responsive Ratio ☾","Audio Responsive Hue ☾","Audio Responsive Ramp ☾","* Random Cycle"
 ])=====";

@@ -205,8 +205,8 @@
 #ifdef USERMOD_GAMES
 #include "../usermods/usermod_v2_games/usermod_v2_games.h"
 #endif
-#ifdef USERMOD_FASTLED
-#include "../usermods/usermod_v2_fastled/usermod_v2_fastled.h"
+#ifdef USERMOD_ANIMARTRIX
+#include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
 #endif
 
 void registerUsermods()
@@ -238,7 +238,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_BH1750
-  usermods.add(new Usermod_BH1750());
+  usermods.add(new Usermod_BH1750("BH1750", false));
   #endif
 
   #ifdef USERMOD_BME280
@@ -374,7 +374,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_SHT
-  usermods.add(new ShtUsermod());
+  usermods.add(new ShtUsermod("SHT-Sensor", false));
   #endif
 
   //WLEDMM ARTIFX
@@ -394,7 +394,7 @@ void registerUsermods()
   #ifdef USERMOD_GAMES
   usermods.add(new GamesUsermod());
   #endif
-  #ifdef USERMOD_FASTLED
-  usermods.add(new FastledUsermod("Fastled", true));
+  #ifdef USERMOD_ANIMARTRIX
+  usermods.add(new AnimartrixUsermod("Animartrix", true));
   #endif
 }

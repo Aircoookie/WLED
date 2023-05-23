@@ -211,6 +211,8 @@ void WLED::loop()
   //LED settings have been saved, re-init busses
   //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate!
   if (doInitBusses) {
+    unsigned long waitStart = millis();                                             // WLEDMM: to avoid crash,
+    while (strip.isUpdating() && (millis() - waitStart < 250)) {yield(); delay(5);} // wait a bit until busses are idle (max 250ms)
     doInitBusses = false;
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
@@ -751,13 +753,9 @@ void WLED::initAP(bool resetAP)
   USER_PRINT(F("Opening access point "));  // WLEDMM
   USER_PRINTLN(apSSID);                    // WLEDMM
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
-  if (!WiFi.softAP(apSSID, apPass, apChannel, apHide)) {   // WLEDMM softAp() will return true in case of success and false in case of failure.
-    USER_PRINTLN(F("Access point creation failed."));
-    apActive = false;
-    return;
-  }
-  #ifdef WLEDMM_WIFI_POWERON_HACK
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);  // reduce TX power - required for C3 mini v1.0.0 (wemos), see https://www.wemos.cc/en/latest/c3/c3_mini_1_0_0.html#about-wifi
+  WiFi.softAP(apSSID, apPass, apChannel, apHide);
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
   #endif
 
   if (!apActive) // start captive portal if AP active
@@ -842,6 +840,24 @@ bool WLED::initEthernet()
     return false;
   }
 
+   /*
+  For LAN8720 the most correct way is to perform clean reset each time before init
+  applying LOW to power or nRST pin for at least 100 us (please refer to datasheet, page 59)
+  ESP_IDF > V4 implements it (150 us, lan87xx_reset_hw(esp_eth_phy_t *phy) function in 
+  /components/esp_eth/src/esp_eth_phy_lan87xx.c, line 280)
+  but ESP_IDF < V4 does not. Lets do it:
+  [not always needed, might be relevant in some EMI situations at startup and for hot resets]
+  */
+  #if ESP_IDF_VERSION_MAJOR==3
+  if(es.eth_power>0 && es.eth_type==ETH_PHY_LAN8720) {
+    pinMode(es.eth_power, OUTPUT);
+    digitalWrite(es.eth_power, 0);
+    delayMicroseconds(150);
+    digitalWrite(es.eth_power, 1);
+    delayMicroseconds(10);
+  }
+  #endif
+
   if (!ETH.begin(
                 (uint8_t) es.eth_address,
                 (int)     es.eth_power,
@@ -920,12 +936,10 @@ void WLED::initConnection()
 #endif
 
   WiFi.begin(clientSSID, clientPass);
-
 #ifdef ARDUINO_ARCH_ESP32
-#ifdef WLEDMM_WIFI_POWERON_HACK
-  // WLEDMM - if your board has issues connecting to WiFi, try this
-  WiFi.setTxPower(WIFI_POWER_5dBm);  // required for ESP32-C3FH4-RGB
-#endif
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  #endif
   WiFi.setSleep(!noWifiSleep);
   WiFi.setHostname(hostname);
 #else

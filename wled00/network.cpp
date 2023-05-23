@@ -27,22 +27,22 @@ const ethernet_settings ethernetBoards[] = {
   // These pins do not appear to work from my testing:
   //   IO35, IO36, IO39
   {
-    1,                 // eth_address,
-    16,                // eth_power,
-    23,                // eth_mdc,
-    18,                // eth_mdio,
-    ETH_PHY_LAN8720,   // eth_type,
-    ETH_CLOCK_GPIO0_IN // eth_clk_mode
+    1,                    // eth_address,
+    16,                   // eth_power,
+    23,                   // eth_mdc,
+    18,                   // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO0_IN    // eth_clk_mode
   },
 
   // ESP32-POE
   {
-     0,                  // eth_address,
-    12,                  // eth_power,
-    23,                  // eth_mdc,
-    18,                  // eth_mdio,
-    ETH_PHY_LAN8720,     // eth_type,
-    ETH_CLOCK_GPIO17_OUT // eth_clk_mode
+     0,                   // eth_address,
+    12,                   // eth_power,
+    23,                   // eth_mdc,
+    18,                   // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT  // eth_clk_mode
   },
 
    // WESP32
@@ -88,11 +88,11 @@ const ethernet_settings ethernetBoards[] = {
   // ESP32-ETHERNET-KIT-VE
   {
     0,                    // eth_address,
-    5,                   // eth_power,
+    5,                    // eth_power,
     23,                   // eth_mdc,
     18,                   // eth_mdio,
-    ETH_PHY_IP101,     // eth_type,
-    ETH_CLOCK_GPIO0_IN  // eth_clk_mode
+    ETH_PHY_IP101,        // eth_type,
+    ETH_CLOCK_GPIO0_IN    // eth_clk_mode
   },
 
   // QuinLed-Dig-Octa Brainboard-32-8L and LilyGO-T-ETH-POE
@@ -104,6 +104,26 @@ const ethernet_settings ethernetBoards[] = {
     ETH_PHY_LAN8720,      // eth_type,
     ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
   },
+
+  // ABC! WLED Controller V43 + Ethernet Shield & compatible
+  {
+    1,                    // eth_address, 
+    5,                    // eth_power, 
+    23,                   // eth_mdc, 
+    33,                   // eth_mdio, 
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
+  },
+
+  // Serg74-ESP32 Ethernet Shield
+  {
+    1,                    // eth_address,
+    5,                    // eth_power,
+    23,                   // eth_mdc,
+    18,                   // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT  // eth_clk_mode
+  }
 };
 #endif
 

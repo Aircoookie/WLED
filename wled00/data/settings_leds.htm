@@ -126,19 +126,19 @@
 			let len = parseInt(d.getElementsByName("LC"+n)[0].value);
 			len += parseInt(d.getElementsByName("SL"+n)[0].value); // skipped LEDs are allocated too
 			if (t < 32) {
+				if (t==26 || t==29) len *= 2; // 16 bit LEDs
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
-					if (t > 29) return len*20; //RGBW
+					if (t > 28) return len*20; //RGBW
 					return len*15;
 				} else if (maxM >= 10000) //ESP32 RMT uses double buffer?
 				{
-					if (t > 29) return len*8; //RGBW
+					if (t > 28) return len*8; //RGBW
 					return len*6;
 				}
-				if (t > 29) return len*4; //RGBW
+				if (t > 28) return len*4; //RGBW
 				return len*3;
 			}
 			if (t > 31 && t < 48) return 5;
-			if (t == 44 || t == 45) return len*4; //RGBW
 			return len*3;
 		}
 
@@ -147,6 +147,7 @@
 			let isRGBW = false, gRGBW = false, memu = 0;
 
 			gId('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
+			gId('fpswarning').style.display = (d.Sf.FR.value > 69) ? 'block':'none'; // WLEDMM
 
 			if (d.Sf.LA.value == 255) laprev = 12;
 			else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
@@ -185,15 +186,16 @@
 						if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
 					}
 					gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-					gRGBW |= isRGBW = ((t > 17 && t < 22) || t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+					gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 					gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
-					gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
-					if (!(t == 30 || t == 31)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
+					gId("dig"+n+"w").style.display = (t > 28 && t < 32) ? "inline":"none";  // show swap channels dropdown
+					if (!(t > 28 && t < 32)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
 					gId("dig"+n+"c").style.display = (t >= 40 && t < 48) ? "none":"inline";  // hide count for analog
 					gId("dig"+n+"r").style.display = (t >= 80 && t < 96) ? "none":"inline";  // hide reversed for virtual
 					gId("dig"+n+"s").style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
 					gId("dig"+n+"f").style.display = ((t >= 16 && t < 32) || (t >= 50 && t < 64)) ? "inline":"none";  // hide refresh
 					gId("dig"+n+"a").style.display = (isRGBW && t != 40) ? "inline":"none";  // auto calculate white
+					gId("dig"+n+"l").style.display = (t > 48 && t < 64) ? "inline":"none";  // bus clock speed
 					gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
 					gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
 				}
@@ -331,6 +333,8 @@ ${i+1}:
 <option value="31">TM1814</option>\
 <option value="24">400kHz</option>\
 <option value="25">TM1829</option>\
+<option value="26">UCS8903</option>\
+<option value="29">UCS8904 RGBW</option>\
 <option value="50">WS2801</option>\
 <option value="51">APA102</option>\
 <option value="52">LPD8806</option>\
@@ -359,6 +363,7 @@ ${i+1}:
 <option value="5">GBR</option>
 </select></div>
 <div id="dig${i}w" style="display:none">Swap: <select name="WO${i}"><option value="0">None</option><option value="1">W & B</option><option value="2">W & G</option><option value="3">W & R</option></select></div>
+<div id="dig${i}l" style="display:none">Clock: <select name="SP${i}"><option value="0">Slowest</option><option value="1">Slow</option><option value="2">Normal</option><option value="3">Fast</option><option value="4">Fastest</option></select></div>
 <div>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div><br>
@@ -690,7 +695,12 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 			<option value="2">Linear (never wrap)</option>
 			<option value="3">None (not recommended)</option>
 		</select><br>
-		Target refresh rate: <input type="number" class="s" min="1" max="120" name="FR" required> FPS
+		Target refresh rate: <input type="number" class="s" min="1" max="250" name="FR" oninput="UI()" required> FPS
+		<div id="fpswarning" style="color:GoldenRod; display: none;">
+			&#9888; WLED may become unstable above 70 fps.<br>
+			To protect your setup,
+			please make sure to backup WLED configuration and presets before raising target FPS above 70!<br>
+		</div>
 		<hr class="sml">
 		<div id="cfg">Config template: <input type="file" name="data2" accept=".json"><button type="button" class="sml" onclick="loadCfg(d.Sf.data2)">Apply</button><br></div>
 		<hr>

@@ -1,5 +1,5 @@
 #ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
+#warning "This user mod expects MQTT to be enabled."
 #endif
 
 #pragma once
@@ -14,7 +14,7 @@
 class ShtUsermod : public Usermod
 {
   private:
-    bool enabled = false; // Is usermod enabled or not
+    //bool enabled = false; // Is usermod enabled or not //WLEDMM use public attribute of class UserMod
     bool firstRunDone = false; // Remembers if the first config load run had been done
     bool pinAllocDone = true; // Remembers if we have allocated pins
     bool initDone = false; // Remembers if the mod has been completely initialised
@@ -22,7 +22,7 @@ class ShtUsermod : public Usermod
     bool haMqttDiscoveryDone = false; // Remembers if we already published the HA discovery topics
 
     // SHT vars
-    SHT *shtTempHumidSensor; // Instance of SHT lib
+    SHT *shtTempHumidSensor = nullptr; // Instance of SHT lib
     byte shtType = 0; // SHT sensor type to be used. Default: SHT30
     byte unitOfTemp = 0; // Temperature unit to be used. Default: Celsius (0 = Celsius, 1 = Fahrenheit)
     bool shtInitDone = false; // Remembers if SHT sensor has been initialised
@@ -37,16 +37,17 @@ class ShtUsermod : public Usermod
     void initShtTempHumiditySensor();
     void cleanupShtTempHumiditySensor();
     void cleanup();
-    bool isShtReady();
+    inline bool isShtReady() { return shtInitDone; } // Checks if the SHT sensor has been initialised.
 
     void publishTemperatureAndHumidityViaMqtt();
     void publishHomeAssistantAutodiscovery();
     void appendDeviceToMqttDiscoveryMessage(JsonDocument& root);
 
   public:
+    ShtUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
     // Strings to reduce flash memory usage (used more than twice)
-    static const char _name[];
-    static const char _enabled[];
+    //static const char _name[]; //WLEDMM use public attribute of class UserMod
+    //static const char _enabled[]; //WLEDMM not needed
     static const char _shtType[];
     static const char _unitOfTemp[];
     static const char _haMqttDiscovery[];
@@ -71,8 +72,8 @@ class ShtUsermod : public Usermod
 };
 
 // Strings to reduce flash memory usage (used more than twice)
-const char ShtUsermod::_name[]            PROGMEM = "SHT-Sensor";
-const char ShtUsermod::_enabled[]         PROGMEM = "Enabled";
+//const char ShtUsermod::_name[]            PROGMEM = "SHT-Sensor"; //WLEDMM use public attribute of class UserMod
+//const char ShtUsermod::_enabled[]         PROGMEM = "Enabled"; //WLEDMM not needed
 const char ShtUsermod::_shtType[]         PROGMEM = "SHT-Type";
 const char ShtUsermod::_unitOfTemp[]      PROGMEM = "Unit";
 const char ShtUsermod::_haMqttDiscovery[] PROGMEM = "Add-To-HA-MQTT-Discovery";
@@ -93,10 +94,13 @@ void ShtUsermod::initShtTempHumiditySensor()
     case USERMOD_SHT_TYPE_SHT35: shtTempHumidSensor = (SHT *) new SHT35(); break;
     case USERMOD_SHT_TYPE_SHT85: shtTempHumidSensor = (SHT *) new SHT85(); break;
   }
-
+#if 0
   shtTempHumidSensor->begin(shtI2cAddress, i2c_sda, i2c_scl);
+#else
+  shtTempHumidSensor->begin((uint8_t)shtI2cAddress); // WLEDMM this connects to an existing Wire (I2C) object, instead starting a new driver
+#endif
   if (shtTempHumidSensor->readStatus() == 0xFFFF) {
-    DEBUG_PRINTF("[%s] SHT init failed!\n", _name);
+    USER_PRINTF("[%s] SHT init failed, Sensor not found!\n", _name);
     cleanup();
     return;
   }
@@ -113,8 +117,11 @@ void ShtUsermod::initShtTempHumiditySensor()
  */
 void ShtUsermod::cleanupShtTempHumiditySensor()
 {
-  if (isShtReady()) shtTempHumidSensor->reset();
-  delete shtTempHumidSensor;
+  if (isShtReady()) {
+    shtTempHumidSensor->reset();
+    delete shtTempHumidSensor;
+    shtTempHumidSensor = nullptr;
+  }
   shtInitDone = false;
 }
 
@@ -131,22 +138,15 @@ void ShtUsermod::cleanup()
   cleanupShtTempHumiditySensor();
 
   if (pinAllocDone) {
+#if 0  // WLEDMM not needed
     PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
     pinManager.deallocateMultiplePins(pins, 2, PinOwner::HW_I2C);
+#endif
     pinAllocDone = false;
   }
 
   enabled = false;
-}
-
-/**
- * Checks if the SHT sensor has been initialised.
-  *
- * @return bool
- */
-bool ShtUsermod::isShtReady()
-{
-  return shtInitDone;
+  shtInitDone = false; // WLEDMM bugfix
 }
 
 /**
@@ -158,6 +158,7 @@ bool ShtUsermod::isShtReady()
  * @return void
  */
 void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
+#ifdef WLED_ENABLE_MQTT
   if (!WLED_MQTT_CONNECTED) return;
   char buf[128];
 
@@ -165,6 +166,7 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
   mqtt->publish(buf, 0, false, String(getTemperature()).c_str());
   snprintf_P(buf, 127, PSTR("%s/humidity"), mqttDeviceTopic);
   mqtt->publish(buf, 0, false, String(getHumidity()).c_str());
+#endif
 }
 
 /**
@@ -177,6 +179,7 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
  * @return void
  */
 void ShtUsermod::publishHomeAssistantAutodiscovery() {
+#ifdef WLED_ENABLE_MQTT
   if (!WLED_MQTT_CONNECTED) return;
 
   char json_str[1024], buf[128];
@@ -214,6 +217,7 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
   mqtt->publish(buf, 0, true, json_str, payload_size);
 
   haMqttDiscoveryDone = true;
+#endif
 }
 
 /**
@@ -221,6 +225,7 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
  *
  * @return void
  */
+#ifdef WLED_ENABLE_MQTT
 void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
   JsonObject device = root.createNestedObject(F("dev"));
   device[F("ids")] = escapedMac.c_str();
@@ -229,6 +234,7 @@ void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
   device[F("mdl")] = ESP.getChipModel();
   device[F("mf")] = F("espressif");
 }
+#endif
 
 /**
  * Setup the mod.
@@ -246,19 +252,35 @@ void ShtUsermod::setup()
   if (enabled) {
     PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
     // GPIOs can be set to -1 and allocateMultiplePins() will return true, so check they're gt zero
+#if 0  // WLEDMM done by pinManager.joinWire()
     if (i2c_sda < 0 || i2c_scl < 0 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
+#else
+    if (i2c_sda < 0 || i2c_scl < 0) {
+#endif
       DEBUG_PRINTF("[%s] SHT pin allocation failed!\n", _name);
       cleanup();
       return;
     }
-    pinAllocDone = true;
+    // WLEDMM join hardware I2C
+    if (pinManager.joinWire()) {  // WLEDMM - this allocates global I2C pins, then starts Wire - if not started previously
+      pinAllocDone = true;
 
-    initShtTempHumiditySensor();
+      initShtTempHumiditySensor();
 
-    initDone = true;
+      initDone = true;
+    } else {
+      DEBUG_PRINTF("[%s] SHT I2C pin allocation failed!\n", _name);
+      return;
+    }
   }
 
   firstRunDone = true;
+
+  if (enabled && initDone && pinAllocDone && isShtReady()) {
+    USER_PRINTF(PSTR("[%s] SHT sensor ready.\n"), _name);
+  } else {
+    USER_PRINTF(PSTR("[%s] SHT sensor not ready.\n"), _name);
+  }
 }
 
 /**
@@ -276,7 +298,9 @@ void ShtUsermod::setup()
  */
 void ShtUsermod::loop()
 {
-  if (!enabled || !initDone || strip.isUpdating()) return;
+  unsigned long last_runtime = 0; // WLEDMM ensure that strip.isUpdating() will not block longer that 1000ms
+  if (!enabled || !initDone || !pinAllocDone || (strip.isUpdating() && (millis()-last_runtime < 1000))) return; // WLEDMM be nice, but not too nice
+  last_runtime = millis();
 
   if (isShtReady()) {
     if (millis() - shtLastTimeUpdated > 30000 && !shtDataRequested) {
@@ -315,7 +339,9 @@ void ShtUsermod::loop()
  * @return void
  */
 void ShtUsermod::onMqttConnect(bool sessionPresent) {
+#ifdef WLED_ENABLE_MQTT
   if (haMqttDiscovery && !haMqttDiscoveryDone) publishHomeAssistantAutodiscovery();
+#endif
 }
 
 /**
@@ -357,7 +383,7 @@ void ShtUsermod::addToConfig(JsonObject &root)
 {
   JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
 
-  top[FPSTR(_enabled)] = enabled;
+  top[F("enabled")] = enabled;
   top[FPSTR(_shtType)] = shtType;
   top[FPSTR(_unitOfTemp)] = unitOfTemp;
   top[FPSTR(_haMqttDiscovery)] = haMqttDiscovery;
@@ -388,7 +414,7 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
   byte oldUnitOfTemp = unitOfTemp;
   bool oldHaMqttDiscovery = haMqttDiscovery;
 
-  getJsonValue(top[FPSTR(_enabled)], enabled);
+  getJsonValue(top[F("enabled")], enabled);
   getJsonValue(top[FPSTR(_shtType)], shtType);
   getJsonValue(top[FPSTR(_unitOfTemp)], unitOfTemp);
   getJsonValue(top[FPSTR(_haMqttDiscovery)], haMqttDiscovery);
@@ -463,7 +489,19 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
   jsonHumidity.add(F(" RH"));
 
   jsonTemp.add(getTemperature());
-  jsonTemp.add(unitOfTemp ? "°F" : "°C");
+  jsonTemp.add(getUnitString());
+
+  // sensor object
+  JsonObject sensor = root[F("sensor")];
+  if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+
+  jsonTemp = sensor.createNestedArray(F("temp"));
+  jsonTemp.add(getTemperature());
+  jsonTemp.add(getUnitString());
+
+  jsonHumidity = sensor.createNestedArray(F("humidity"));
+  jsonHumidity.add(getHumidity());
+  jsonHumidity.add(F(" RH"));
 }
 
 /**
