@@ -447,7 +447,7 @@ static const char _data_FX_mode_SM4[] PROGMEM = "💡SM4 ☾";
 static const char _data_FX_mode_SM3[] PROGMEM = "💡SM3 ☾";
 static const char _data_FX_mode_SM2[] PROGMEM = "💡SM2 ☾";
 static const char _data_FX_mode_SM1[] PROGMEM = "💡SM1 ☾";
-static const char _data_FX_mode_Big_Caleido[] PROGMEM = "💡Big_Caleido ☾";
+static const char _data_FX_mode_Big_Caleido[] PROGMEM = "💡Big_Caleido (Direct leds) ☾";
 static const char _data_FX_mode_RGB_Blobs5[] PROGMEM = "💡RGB_Blobs5 ☾";
 static const char _data_FX_mode_RGB_Blobs4[] PROGMEM = "💡RGB_Blobs4 ☾";
 static const char _data_FX_mode_RGB_Blobs3[] PROGMEM = "💡RGB_Blobs3 ☾";
@@ -630,8 +630,13 @@ uint16_t mode_SM1() {
 	return FRAMETIME;
 }
 uint16_t mode_Big_Caleido() { 
+	if (SEGENV.call == 0) {
+		SEGMENT.setUpLeds();  //lossless getPixelColor()
+    	SEGMENT.fill(BLACK);
+		anim.setBuffer(SEGMENT.leds);
+	}
 	anim.Big_Caleido();
-	anim.output();
+//	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs5() { 
