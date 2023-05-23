@@ -668,7 +668,7 @@ static const char _data_FX_mode_Waves[] PROGMEM = "💡Waves ☾";
 static const char _data_FX_mode_Chasing_Spirals[] PROGMEM = "💡Chasing_Spirals ☾";
 static const char _data_FX_mode_Rotating_Blob[] PROGMEM = "💡Rotating_Blob ☾";
 
-ANIMartRIX art(SEGMENT.virtualWidth, SEGMENT.virtualHeight, SEGMENT.leds, false);
+ANIMartRIX art;
 
 uint16_t mode_Module_Experiment10() { 
 	art.Module_Experiment10();
@@ -887,8 +887,12 @@ class AnimartrixUsermod : public Usermod {
     AnimartrixUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
 
     void setup() {
-      strip.addEffect(255, &mode_PolarBasics, _data_FX_mode_PolarBasics);
-      strip.addEffect(255, &mode_CircularBlobs, _data_FX_mode_CircularBlobs);
+
+      bool serpentine = false; 
+      art.init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), SEGMENT.leds, serpentine);
+
+      // strip.addEffect(255, &mode_PolarBasics, _data_FX_mode_PolarBasics);
+      // strip.addEffect(255, &mode_CircularBlobs, _data_FX_mode_CircularBlobs);
       strip.addEffect(255, &mode_Module_Experiment10, _data_FX_mode_Module_Experiment10);
       strip.addEffect(255, &mode_Module_Experiment9, _data_FX_mode_Module_Experiment9);
       strip.addEffect(255, &mode_Module_Experiment8, _data_FX_mode_Module_Experiment8);
@@ -911,7 +915,7 @@ class AnimartrixUsermod : public Usermod {
       strip.addEffect(255, &mode_SM10, _data_FX_mode_SM10);
       strip.addEffect(255, &mode_SM9, _data_FX_mode_SM9);
       strip.addEffect(255, &mode_SM8, _data_FX_mode_SM8);
-      strip.addEffect(255, &mode_SM7, _data_FX_mode_SM7);
+      // strip.addEffect(255, &mode_SM7, _data_FX_mode_SM7);
       strip.addEffect(255, &mode_SM6, _data_FX_mode_SM6);
       strip.addEffect(255, &mode_SM5, _data_FX_mode_SM5);
       strip.addEffect(255, &mode_SM4, _data_FX_mode_SM4);
