@@ -636,6 +636,7 @@ uint16_t mode_Big_Caleido() {
 		anim.setBuffer(SEGMENT.leds);
 	}
 	anim.Big_Caleido();
+	SEGMENT.fadeToBlackBy(0);
 //	anim.output();
 	return FRAMETIME;
 }
