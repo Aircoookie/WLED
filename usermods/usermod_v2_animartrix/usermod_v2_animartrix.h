@@ -1,6 +1,7 @@
 #pragma once
 
 #include "wled.h"
+#include <ANIMartRIX.h>
 
 #warning WLEDMM usermod: CC BY-NC 3.0 licensed effects by Stefan Petrick, include this usermod only if you accept the terms!
 //========================================================================================================================
@@ -614,6 +615,270 @@ uint16_t mode_CircularBlobs(void) {
 }
 static const char _data_FX_mode_CircularBlobs[] PROGMEM = "💡CircularBlobs ☾@AngleDist,AngleMult;;!;2;sx=51,ix=51,c1=0,c2=0,c3=0";
 
+static const char _data_FX_mode_Module_Experiment10[] PROGMEM = "💡Module_Experiment10 ☾";
+static const char _data_FX_mode_Module_Experiment9[] PROGMEM = "💡Module_Experiment9 ☾";
+static const char _data_FX_mode_Module_Experiment8[] PROGMEM = "💡Module_Experiment8 ☾";
+static const char _data_FX_mode_Module_Experiment7[] PROGMEM = "💡Module_Experiment7 ☾";
+static const char _data_FX_mode_Module_Experiment6[] PROGMEM = "💡Module_Experiment6 ☾";
+static const char _data_FX_mode_Module_Experiment5[] PROGMEM = "💡Module_Experiment5 ☾";
+static const char _data_FX_mode_Module_Experiment4[] PROGMEM = "💡Module_Experiment4 ☾";
+static const char _data_FX_mode_Zoom2[] PROGMEM = "💡Zoom2 ☾";
+static const char _data_FX_mode_Module_Experiment3[] PROGMEM = "💡Module_Experiment3 ☾";
+static const char _data_FX_mode_Module_Experiment2[] PROGMEM = "💡Module_Experiment2 ☾";
+static const char _data_FX_mode_Module_Experiment1[] PROGMEM = "💡Module_Experiment1 ☾";
+static const char _data_FX_mode_Parametric_Water[] PROGMEM = "💡Parametric_Water ☾";
+static const char _data_FX_mode_Water[] PROGMEM = "💡Water ☾";
+static const char _data_FX_mode_Complex_Kaleido_6[] PROGMEM = "💡Complex_Kaleido_6 ☾";
+static const char _data_FX_mode_Complex_Kaleido_5[] PROGMEM = "💡Complex_Kaleido_5 ☾";
+static const char _data_FX_mode_Complex_Kaleido_4[] PROGMEM = "💡Complex_Kaleido_4 ☾";
+static const char _data_FX_mode_Complex_Kaleido_3[] PROGMEM = "💡Complex_Kaleido_3 ☾";
+static const char _data_FX_mode_Complex_Kaleido_2[] PROGMEM = "💡Complex_Kaleido_2 ☾";
+static const char _data_FX_mode_Complex_Kaleido[] PROGMEM = "💡Complex_Kaleido ☾";
+static const char _data_FX_mode_SM10[] PROGMEM = "💡SM10 ☾";
+static const char _data_FX_mode_SM9[] PROGMEM = "💡SM9 ☾";
+static const char _data_FX_mode_SM8[] PROGMEM = "💡SM8 ☾";
+static const char _data_FX_mode_SM7[] PROGMEM = "💡SM7 ☾";
+static const char _data_FX_mode_SM6[] PROGMEM = "💡SM6 ☾";
+static const char _data_FX_mode_SM5[] PROGMEM = "💡SM5 ☾";
+static const char _data_FX_mode_SM4[] PROGMEM = "💡SM4 ☾";
+static const char _data_FX_mode_SM3[] PROGMEM = "💡SM3 ☾";
+static const char _data_FX_mode_SM2[] PROGMEM = "💡SM2 ☾";
+static const char _data_FX_mode_SM1[] PROGMEM = "💡SM1 ☾";
+static const char _data_FX_mode_Big_Caleido[] PROGMEM = "💡Big_Caleido ☾";
+static const char _data_FX_mode_RGB_Blobs5[] PROGMEM = "💡RGB_Blobs5 ☾";
+static const char _data_FX_mode_RGB_Blobs4[] PROGMEM = "💡RGB_Blobs4 ☾";
+static const char _data_FX_mode_RGB_Blobs3[] PROGMEM = "💡RGB_Blobs3 ☾";
+static const char _data_FX_mode_RGB_Blobs2[] PROGMEM = "💡RGB_Blobs2 ☾";
+static const char _data_FX_mode_RGB_Blobs[] PROGMEM = "💡RGB_Blobs ☾";
+static const char _data_FX_mode_Polar_Waves[] PROGMEM = "💡Polar_Waves ☾";
+static const char _data_FX_mode_Slow_Fade[] PROGMEM = "💡Slow_Fade ☾";
+static const char _data_FX_mode_Zoom[] PROGMEM = "💡Zoom ☾";
+static const char _data_FX_mode_Hot_Blob[] PROGMEM = "💡Hot_Blob ☾";
+static const char _data_FX_mode_Spiralus2[] PROGMEM = "💡Spiralus2 ☾";
+static const char _data_FX_mode_Spiralus[] PROGMEM = "💡Spiralus ☾";
+static const char _data_FX_mode_Yves[] PROGMEM = "💡Yves ☾";
+static const char _data_FX_mode_Scaledemo1[] PROGMEM = "💡Scaledemo1 ☾";
+static const char _data_FX_mode_Lava1[] PROGMEM = "💡Lava1 ☾";
+static const char _data_FX_mode_Caleido3[] PROGMEM = "💡Caleido3 ☾";
+static const char _data_FX_mode_Caleido2[] PROGMEM = "💡Caleido2 ☾";
+static const char _data_FX_mode_Caleido1[] PROGMEM = "💡Caleido1 ☾";
+static const char _data_FX_mode_Distance_Experiment[] PROGMEM = "💡Distance_Experiment ☾";
+static const char _data_FX_mode_Center_Field[] PROGMEM = "💡Center_Field ☾";
+static const char _data_FX_mode_Waves[] PROGMEM = "💡Waves ☾";
+static const char _data_FX_mode_Chasing_Spirals[] PROGMEM = "💡Chasing_Spirals ☾";
+static const char _data_FX_mode_Rotating_Blob[] PROGMEM = "💡Rotating_Blob ☾";
+
+ANIMartRIX art(SEGMENT.virtualWidth, SEGMENT.virtualHeight, SEGMENT.leds, false);
+
+uint16_t mode_Module_Experiment10() { 
+	art.Module_Experiment10();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment9() { 
+	art.Module_Experiment9();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment8() { 
+	art.Module_Experiment8();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment7() { 
+	art.Module_Experiment7();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment6() { 
+	art.Module_Experiment6();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment5() { 
+	art.Module_Experiment5();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment4() { 
+	art.Module_Experiment4();
+	return FRAMETIME;
+}
+uint16_t mode_Zoom2() { 
+	art.Zoom2();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment3() { 
+	art.Module_Experiment3();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment2() { 
+	art.Module_Experiment2();
+	return FRAMETIME;
+}
+uint16_t mode_Module_Experiment1() { 
+	art.Module_Experiment1();
+	return FRAMETIME;
+}
+uint16_t mode_Parametric_Water() { 
+	art.Parametric_Water();
+	return FRAMETIME;
+}
+uint16_t mode_Water() { 
+	art.Water();
+	return FRAMETIME;
+}
+uint16_t mode_Complex_Kaleido_6() { 
+	art.Complex_Kaleido_6();
+	return FRAMETIME;
+}
+uint16_t mode_Complex_Kaleido_5() { 
+	art.Complex_Kaleido_5();
+	return FRAMETIME;
+}
+uint16_t mode_Complex_Kaleido_4() { 
+	art.Complex_Kaleido_4();
+	return FRAMETIME;
+}
+uint16_t mode_Complex_Kaleido_3() { 
+	art.Complex_Kaleido_3();
+	return FRAMETIME;
+}
+uint16_t mode_Complex_Kaleido_2() { 
+	art.Complex_Kaleido_2();
+	return FRAMETIME;
+}
+uint16_t mode_Complex_Kaleido() { 
+	art.Complex_Kaleido();
+	return FRAMETIME;
+}
+uint16_t mode_SM10() { 
+	art.SM10();
+	return FRAMETIME;
+}
+uint16_t mode_SM9() { 
+	art.SM9();
+	return FRAMETIME;
+}
+uint16_t mode_SM8() { 
+	art.SM8();
+	return FRAMETIME;
+}
+// uint16_t mode_SM7() { 
+// 	art.SM7();
+// 	return FRAMETIME;
+// }
+uint16_t mode_SM6() { 
+	art.SM6();
+	return FRAMETIME;
+}
+uint16_t mode_SM5() { 
+	art.SM5();
+	return FRAMETIME;
+}
+uint16_t mode_SM4() { 
+	art.SM4();
+	return FRAMETIME;
+}
+uint16_t mode_SM3() { 
+	art.SM3();
+	return FRAMETIME;
+}
+uint16_t mode_SM2() { 
+	art.SM2();
+	return FRAMETIME;
+}
+uint16_t mode_SM1() { 
+	art.SM1();
+	return FRAMETIME;
+}
+uint16_t mode_Big_Caleido() { 
+	art.Big_Caleido();
+	return FRAMETIME;
+}
+uint16_t mode_RGB_Blobs5() { 
+	art.RGB_Blobs5();
+	return FRAMETIME;
+}
+uint16_t mode_RGB_Blobs4() { 
+	art.RGB_Blobs4();
+	return FRAMETIME;
+}
+uint16_t mode_RGB_Blobs3() { 
+	art.RGB_Blobs3();
+	return FRAMETIME;
+}
+uint16_t mode_RGB_Blobs2() { 
+	art.RGB_Blobs2();
+	return FRAMETIME;
+}
+uint16_t mode_RGB_Blobs() { 
+	art.RGB_Blobs();
+	return FRAMETIME;
+}
+uint16_t mode_Polar_Waves() { 
+	art.Polar_Waves();
+	return FRAMETIME;
+}
+uint16_t mode_Slow_Fade() { 
+	art.Slow_Fade();
+	return FRAMETIME;
+}
+uint16_t mode_Zoom() { 
+	art.Zoom();
+	return FRAMETIME;
+}
+uint16_t mode_Hot_Blob() { 
+	art.Hot_Blob();
+	return FRAMETIME;
+}
+uint16_t mode_Spiralus2() { 
+	art.Spiralus2();
+	return FRAMETIME;
+}
+uint16_t mode_Spiralus() { 
+	art.Spiralus();
+	return FRAMETIME;
+}
+uint16_t mode_Yves() { 
+	art.Yves();
+	return FRAMETIME;
+}
+uint16_t mode_Scaledemo1() { 
+	art.Scaledemo1();
+	return FRAMETIME;
+}
+uint16_t mode_Lava1() { 
+	art.Lava1();
+	return FRAMETIME;
+}
+uint16_t mode_Caleido3() { 
+	art.Caleido3();
+	return FRAMETIME;
+}
+uint16_t mode_Caleido2() { 
+	art.Caleido2();
+	return FRAMETIME;
+}
+uint16_t mode_Caleido1() { 
+	art.Caleido1();
+	return FRAMETIME;
+}
+uint16_t mode_Distance_Experiment() { 
+	art.Distance_Experiment();
+	return FRAMETIME;
+}
+uint16_t mode_Center_Field() { 
+	art.Center_Field();
+	return FRAMETIME;
+}
+uint16_t mode_Waves() { 
+	art.Waves();
+	return FRAMETIME;
+}
+uint16_t mode_Chasing_Spirals() { 
+	art.Chasing_Spirals();
+	return FRAMETIME;
+}
+uint16_t mode_Rotating_Blob() { 
+	art.Rotating_Blob();
+	return FRAMETIME;
+}
+
 
 class AnimartrixUsermod : public Usermod {
 
@@ -624,6 +889,58 @@ class AnimartrixUsermod : public Usermod {
     void setup() {
       strip.addEffect(255, &mode_PolarBasics, _data_FX_mode_PolarBasics);
       strip.addEffect(255, &mode_CircularBlobs, _data_FX_mode_CircularBlobs);
+      strip.addEffect(255, &mode_Module_Experiment10, _data_FX_mode_Module_Experiment10);
+      strip.addEffect(255, &mode_Module_Experiment9, _data_FX_mode_Module_Experiment9);
+      strip.addEffect(255, &mode_Module_Experiment8, _data_FX_mode_Module_Experiment8);
+      strip.addEffect(255, &mode_Module_Experiment7, _data_FX_mode_Module_Experiment7);
+      strip.addEffect(255, &mode_Module_Experiment6, _data_FX_mode_Module_Experiment6);
+      strip.addEffect(255, &mode_Module_Experiment5, _data_FX_mode_Module_Experiment5);
+      strip.addEffect(255, &mode_Module_Experiment4, _data_FX_mode_Module_Experiment4);
+      strip.addEffect(255, &mode_Zoom2, _data_FX_mode_Zoom2);
+      strip.addEffect(255, &mode_Module_Experiment3, _data_FX_mode_Module_Experiment3);
+      strip.addEffect(255, &mode_Module_Experiment2, _data_FX_mode_Module_Experiment2);
+      strip.addEffect(255, &mode_Module_Experiment1, _data_FX_mode_Module_Experiment1);
+      strip.addEffect(255, &mode_Parametric_Water, _data_FX_mode_Parametric_Water);
+      strip.addEffect(255, &mode_Water, _data_FX_mode_Water);
+      strip.addEffect(255, &mode_Complex_Kaleido_6, _data_FX_mode_Complex_Kaleido_6);
+      strip.addEffect(255, &mode_Complex_Kaleido_5, _data_FX_mode_Complex_Kaleido_5);
+      strip.addEffect(255, &mode_Complex_Kaleido_4, _data_FX_mode_Complex_Kaleido_4);
+      strip.addEffect(255, &mode_Complex_Kaleido_3, _data_FX_mode_Complex_Kaleido_3);
+      strip.addEffect(255, &mode_Complex_Kaleido_2, _data_FX_mode_Complex_Kaleido_2);
+      strip.addEffect(255, &mode_Complex_Kaleido, _data_FX_mode_Complex_Kaleido);
+      strip.addEffect(255, &mode_SM10, _data_FX_mode_SM10);
+      strip.addEffect(255, &mode_SM9, _data_FX_mode_SM9);
+      strip.addEffect(255, &mode_SM8, _data_FX_mode_SM8);
+      strip.addEffect(255, &mode_SM7, _data_FX_mode_SM7);
+      strip.addEffect(255, &mode_SM6, _data_FX_mode_SM6);
+      strip.addEffect(255, &mode_SM5, _data_FX_mode_SM5);
+      strip.addEffect(255, &mode_SM4, _data_FX_mode_SM4);
+      strip.addEffect(255, &mode_SM3, _data_FX_mode_SM3);
+      strip.addEffect(255, &mode_SM2, _data_FX_mode_SM2);
+      strip.addEffect(255, &mode_SM1, _data_FX_mode_SM1);
+      strip.addEffect(255, &mode_Big_Caleido, _data_FX_mode_Big_Caleido);
+      strip.addEffect(255, &mode_RGB_Blobs5, _data_FX_mode_RGB_Blobs5);
+      strip.addEffect(255, &mode_RGB_Blobs4, _data_FX_mode_RGB_Blobs4);
+      strip.addEffect(255, &mode_RGB_Blobs3, _data_FX_mode_RGB_Blobs3);
+      strip.addEffect(255, &mode_RGB_Blobs2, _data_FX_mode_RGB_Blobs2);
+      strip.addEffect(255, &mode_RGB_Blobs, _data_FX_mode_RGB_Blobs);
+      strip.addEffect(255, &mode_Polar_Waves, _data_FX_mode_Polar_Waves);
+      strip.addEffect(255, &mode_Slow_Fade, _data_FX_mode_Slow_Fade);
+      strip.addEffect(255, &mode_Zoom, _data_FX_mode_Zoom);
+      strip.addEffect(255, &mode_Hot_Blob, _data_FX_mode_Hot_Blob);
+      strip.addEffect(255, &mode_Spiralus2, _data_FX_mode_Spiralus2);
+      strip.addEffect(255, &mode_Spiralus, _data_FX_mode_Spiralus);
+      strip.addEffect(255, &mode_Yves, _data_FX_mode_Yves);
+      strip.addEffect(255, &mode_Scaledemo1, _data_FX_mode_Scaledemo1);
+      strip.addEffect(255, &mode_Lava1, _data_FX_mode_Lava1);
+      strip.addEffect(255, &mode_Caleido3, _data_FX_mode_Caleido3);
+      strip.addEffect(255, &mode_Caleido2, _data_FX_mode_Caleido2);
+      strip.addEffect(255, &mode_Caleido1, _data_FX_mode_Caleido1);
+      strip.addEffect(255, &mode_Distance_Experiment, _data_FX_mode_Distance_Experiment);
+      strip.addEffect(255, &mode_Center_Field, _data_FX_mode_Center_Field);
+      strip.addEffect(255, &mode_Waves, _data_FX_mode_Waves);
+      strip.addEffect(255, &mode_Chasing_Spirals, _data_FX_mode_Chasing_Spirals);
+      strip.addEffect(255, &mode_Rotating_Blob, _data_FX_mode_Rotating_Blob);
 
       initDone = true;
     }
