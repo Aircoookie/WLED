@@ -23,7 +23,7 @@ void loop() {
   //WLEDMM show loops per second
   loopCounter++;
   if (millis() - lastMillis >= 10000) {
-    USER_PRINTF("%lu / %lu = %lu lps\n",loopCounter, millis()/1000, 1000 * loopCounter / millis());
+    USER_PRINTF("%lu lps\n",loopCounter/10);
     lastMillis = millis();
     loopCounter = 0;
   }
