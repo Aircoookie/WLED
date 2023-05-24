@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2305210
+#define VERSION 2305240
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -737,19 +737,8 @@ WLED_GLOBAL int8_t spi_sclk  _INIT(-1);
 WLED_GLOBAL int8_t spi_sclk  _INIT(HW_PIN_CLOCKSPI);
 #endif
 
-#if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM_JSON) || defined(WLED_USE_PSRAM))
-// put the main JSON "doc" into PSRAM
-#ifndef WLED_DEFINE_GLOBAL_VARS
-extern PSRAMDynamicJsonDocument doc;
-#else
-PSRAMDynamicJsonDocument doc(JSON_BUFFER_SIZE); // call constructor - fingers crossed that PSRAM is already initialized at this point ...
-#endif
-
-#else // standard: use global (.bss) RAM
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
-#endif
-
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
