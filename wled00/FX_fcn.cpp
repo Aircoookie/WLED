@@ -83,40 +83,55 @@ uint16_t Segment::maxHeight = 1;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
-  //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
-  memcpy((void*)this, (void*)&orig, sizeof(Segment));
+  USER_PRINTLN(F("-- Copy segment constructor --"));
+  memcpy((void*)this, (void*)&orig, sizeof(Segment)); //WLEDMM copy to this
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
-  if (ledsrgb && !Segment::_globalLeds) ledsrgb = nullptr; //WLEDMM ledsrgb not freed as still used by orig!
+  if (ledsrgb && !Segment::_globalLeds) ledsrgb = nullptr; //WLEDMM constructor so there was nothing. ledsrgb not freed as still used by orig!
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.ledsrgb && !Segment::_globalLeds) { ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length()); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
+  if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
   jMap = nullptr; //WLEDMM jMap
+}
+
+//WLEDMM: recreate ledsrgb if more space needed (will not free ledsrgb!)
+void Segment::allocLeds() {
+  if (!ledsrgb || sizeof(CRGB)*length() > ledsrgbSize) {
+    USER_PRINTF("allocLeds %d from %d\n", sizeof(CRGB)*length(), ledsrgb?ledsrgbSize:0);
+    ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length());
+    ledsrgbSize = ledsrgb?sizeof(CRGB)*length():0;
+  }
+  else {
+    USER_PRINTF("reuse Leds %d from %d\n", sizeof(CRGB)*length(), ledsrgb?ledsrgbSize:0);
+  }
 }
 
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
-  //DEBUG_PRINTLN(F("-- Move segment constructor --"));
+  USER_PRINTLN(F("-- Move segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
-  orig.ledsrgb = nullptr; //WLEDMM: do not free as moved to here
+  orig.ledsrgb = nullptr; //WLEDMM: do not free as moved to here (constructor so there where no leds)
   orig.jMap = nullptr; //WLEDMM jMap
 }
 
 // copy assignment
 Segment& Segment::operator= (const Segment &orig) {
-  //DEBUG_PRINTLN(F("-- Copying segment --"));
+  USER_PRINTLN(F("-- Copying segment --"));
   if (this != &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
-    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: nullify below!
+    // WLEDMM reuse leds instead of removing themn
+    // if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: nullify below!
+    CRGB* oldLeds = ledsrgb;
+    uint16_t oldLedsSize = ledsrgbSize;
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -125,12 +140,12 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
-    if (!Segment::_globalLeds) ledsrgb = nullptr;
+    if (!Segment::_globalLeds) {ledsrgb = oldLeds; ledsrgbSize = oldLedsSize;};// WLEDMM reuse leds instead of ledsrgb = nullptr;
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.ledsrgb && !Segment::_globalLeds) { ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length()); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
+    if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
     jMap = nullptr; //WLEDMM jMap
   }
   return *this;
@@ -138,12 +153,12 @@ Segment& Segment::operator= (const Segment &orig) {
 
 // move assignment
 Segment& Segment::operator= (Segment &&orig) noexcept {
-  //DEBUG_PRINTLN(F("-- Moving segment --"));
+  USER_PRINTLN(F("-- Moving segment --"));
   if (this != &orig) {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
     if (_t) delete _t;
-    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: no need to nullify ledsrgb as it gets new value in memcpy
+    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: not needed anymore as we will use leds from copy. no need to nullify ledsrgb as it gets new value in memcpy
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
@@ -190,7 +205,8 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) {
-    if (ledsrgb && !Segment::_globalLeds) { free(ledsrgb); ledsrgb = nullptr; }
+    //WLEDMM no need to free leds as we will reuse them
+    // if (ledsrgb && !Segment::_globalLeds) { free(ledsrgb); ledsrgb = nullptr; }
     if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
@@ -212,7 +228,7 @@ void Segment::setUpLeds() {
     //  ledsrgb = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
     //else
     //#endif
-      ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length());
+    allocLeds(); //WLEDMM
   }
 }
 
@@ -1851,6 +1867,7 @@ void WS2812FX::restartRuntime() {
 }
 
 void WS2812FX::resetSegments(bool boundsOnly) { //WLEDMM add boundsonly
+  USER_PRINTF("resetSegments %d %dx%d\n", boundsOnly, Segment::maxWidth, Segment::maxHeight);
   if (!boundsOnly) {
     _segments.clear(); // destructs all Segment as part of clearing
     #ifndef WLED_DISABLE_2D
@@ -1862,6 +1879,7 @@ void WS2812FX::resetSegments(bool boundsOnly) { //WLEDMM add boundsonly
     _mainSegment = 0;
   } else { //WLEDMM boundsonly
     for (segment &seg : _segments) {
+      bool recreateLeds = false;
       #ifndef WLED_DISABLE_2D
       seg.start = 0;
       seg.stop = Segment::maxWidth;
@@ -1871,9 +1889,9 @@ void WS2812FX::resetSegments(bool boundsOnly) { //WLEDMM add boundsonly
       seg.start = 0;
       seg.stop = _length;
       #endif
+      seg.allocLeds();
     }
   }
-
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {

@@ -415,7 +415,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
-      char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed
+      // char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed WLEDMM to do bus
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
