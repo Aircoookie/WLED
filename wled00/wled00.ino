@@ -12,10 +12,21 @@
  */
 #include "wled.h"
 
+unsigned long lastMillis = 0; //WLEDMM
+unsigned long loopCounter = 0; //WLEDMM
+
 void setup() {
   WLED::instance().setup();
 }
 
 void loop() {
+  //WLEDMM show loops per second
+  loopCounter++;
+  if (millis() - lastMillis >= 10000) {
+    USER_PRINTF("%lu / %lu = %lu lps\n",loopCounter, millis()/1000, 1000 * loopCounter / millis());
+    lastMillis = millis();
+    loopCounter = 0;
+  }
+
   WLED::instance().loop();
 }
