@@ -1,6 +1,9 @@
 # Multi Relay
 
 This usermod-v2 modification allows the connection of multiple relays, each with individual delay and on/off mode.
+Usermod supports PCF8574 I2C port expander to reduce GPIO use.
+PCF8574 supports 8 outputs and each output corresponds to a relay in WLED (relay 0 = port 0, etc). I you are using more than 8 relays with multiple PCF8574 make sure their addresses are set conscutively (e.g. 0x20 and 0x21). You can set address of first expander in settings.
+(**NOTE:** Will require Wire library and global I2C pins defined.)
 
 ## HTTP API
 All responses are returned in JSON format. 
@@ -81,13 +84,15 @@ void registerUsermods()
 Usermod can be configured via the Usermods settings page.
 
 * `enabled` - enable/disable usermod
+* `use-PCF8574` - use PCF8574 port expander instead of GPIO pins
+* `first-PCF8574` - I2C address of first expander (WARNING: enter *decimal* value)
+* `broadcast`- time in seconds between MQTT relay-state broadcasts
+* `HA-discovery`- enable Home Assistant auto discovery
 * `pin` - ESP GPIO pin the relay is connected to (can be configured at compile time `-D MULTI_RELAY_PINS=xx,xx,...`)
 * `delay-s` - delay in seconds after on/off command is received
 * `active-high` - assign high/low activation of relay (can be used to reverse relay states)
 * `external` - if enabled, WLED does not control relay, it can only be triggered by an external command (MQTT, HTTP, JSON or button)
 * `button` - button (from LED Settings) that controls this relay
-* `broadcast`- time in seconds between MQTT relay-state broadcasts
-* `HA-discovery`- enable Home Assistant auto discovery
 
 If there is no MultiRelay section, just save current configuration and re-open Usermods settings page. 
 
@@ -100,3 +105,6 @@ Have fun - @blazoncek
 2021-11
 * Added information about dynamic configuration options
 * Added button support.
+
+2023-05
+* Added support for PCF8574 I2C port expander (multiple)
