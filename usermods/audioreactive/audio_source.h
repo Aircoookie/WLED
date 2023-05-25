@@ -106,6 +106,9 @@
 #endif
 
 
+// max number of samples for a single i2s_read --> size of global buffer.
+#define I2S_SAMPLES_MAX 512  // same as samplesFFT
+
 /* Interface class
    AudioSource serves as base class for all microphone types
    This enables accessing all microphones with one single interface
@@ -162,6 +165,7 @@ class AudioSource {
     bool _initialized;              // Gets set to true if initialization is successful
     bool _i2sMaster;                // when false, ESP32 will be in I2S SLAVE mode (for devices that only operate in MASTER mode). Only workds in newer IDF >= 4.4.x
     float _sampleScale;             // pre-scaling factor for I2S samples
+    I2S_datatype newSampleBuffer[I2S_SAMPLES_MAX+4] = { 0 }; // global buffer for i2s_read
 };
 
 /* Basic I2S microphone source
@@ -345,17 +349,20 @@ class I2SSource : public AudioSource {
       if (_initialized) {
         esp_err_t err;
         size_t bytes_read = 0;        /* Counter variable to check if we actually got enough data */
-        I2S_datatype newSamples[num_samples]; /* Intermediary sample storage */
 
-        err = i2s_read(I2S_NUM_0, (void *)newSamples, sizeof(newSamples), &bytes_read, portMAX_DELAY);
+        memset(buffer, 0, sizeof(float) * num_samples);  // clear output buffer
+        I2S_datatype *newSamples = newSampleBuffer; // use global input buffer
+        if (num_samples > I2S_SAMPLES_MAX) num_samples = I2S_SAMPLES_MAX; // protect the buffer from overflow
+
+        err = i2s_read(I2S_NUM_0, (void *)newSamples, num_samples * sizeof(I2S_datatype), &bytes_read, portMAX_DELAY);
         if (err != ESP_OK) {
           DEBUGSR_PRINTF("Failed to get samples: %d\n", err);
           return;
         }
 
         // For correct operation, we need to read exactly sizeof(samples) bytes from i2s
-        if (bytes_read != sizeof(newSamples)) {
-          DEBUGSR_PRINTF("Failed to get enough samples: wanted: %d read: %d\n", sizeof(newSamples), bytes_read);
+        if (bytes_read != (num_samples * sizeof(I2S_datatype))) {
+          DEBUGSR_PRINTF("Failed to get enough samples: wanted: %d read: %d\n", num_samples * sizeof(I2S_datatype), bytes_read);
           return;
         }
 
