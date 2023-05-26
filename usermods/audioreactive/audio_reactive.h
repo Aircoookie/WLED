@@ -294,6 +294,7 @@ static float windowWeighingFactors[samplesFFT] = {0.0f};
 //#define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt                               - WLEDMM slower on ESP32
 #endif
 #define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 10-50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
+#define sqrt_internal sqrtf          // see https://github.com/kosme/arduinoFFT/pull/83
 #else
   // around 50% slower on -S2
 // lib_deps += https://github.com/blazoncek/arduinoFFT.git
