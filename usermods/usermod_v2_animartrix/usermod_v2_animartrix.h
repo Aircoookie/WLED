@@ -36,7 +36,7 @@ static const char _data_FX_mode_SM4[] PROGMEM = "💡SM4 ☾@;;1";
 static const char _data_FX_mode_SM3[] PROGMEM = "💡SM3 ☾@;;1";
 static const char _data_FX_mode_SM2[] PROGMEM = "💡SM2 ☾@;;1";
 static const char _data_FX_mode_SM1[] PROGMEM = "💡SM1 ☾@;;1";
-static const char _data_FX_mode_Big_Caleido[] PROGMEM = "💡Big_Caleido (Direct leds) ☾@;;1";
+static const char _data_FX_mode_Big_Caleido[] PROGMEM = "💡Big_Caleido ☾@;;1";
 static const char _data_FX_mode_RGB_Blobs5[] PROGMEM = "💡RGB_Blobs5 ☾@;;1";
 static const char _data_FX_mode_RGB_Blobs4[] PROGMEM = "💡RGB_Blobs4 ☾@;;1";
 static const char _data_FX_mode_RGB_Blobs3[] PROGMEM = "💡RGB_Blobs3 ☾@;;1";
@@ -63,172 +63,200 @@ static const char _data_FX_mode_Rotating_Blob[] PROGMEM = "💡Rotating_Blob ☾
 
 class ANIMartRIXMod:public ANIMartRIX {
 	public:
+	void initEffect() {
+	  if (SEGENV.call == 0) {
+    	bool serpentine = false;
+	    init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), SEGMENT.leds, serpentine);
+		SEGMENT.setUpLeds();
+		SEGMENT.fill(BLACK);
+	  }
+	}
 	void output() {
-		for(int x = 0; x < num_x; x++) {
-			for(int y = 0; y < num_y; y++) {
-				SEGMENT.setPixelColorXY(x,y, buffer[xy(x,y)]);
-			}
-		}
+		SEGMENT.fadeToBlackBy(0);
 	}
 
 	// Add any extra custom effects not part of the ANIMartRIX libary here
 };
 ANIMartRIXMod anim;
 
-uint16_t mode_Module_Experiment10() { 
+uint16_t mode_Module_Experiment10() {
+	anim.initEffect(); 
 	anim.Module_Experiment10();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment9() { 
+	anim.initEffect(); 
 	anim.Module_Experiment9();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment8() { 
+	anim.initEffect(); 
 	anim.Module_Experiment8();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment7() { 
+	anim.initEffect(); 
 	anim.Module_Experiment7();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment6() { 
+	anim.initEffect(); 
 	anim.Module_Experiment6();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment5() { 
+	anim.initEffect(); 
 	anim.Module_Experiment5();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment4() { 
+	anim.initEffect(); 
 	anim.Module_Experiment4();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Zoom2() { 
+	anim.initEffect(); 
 	anim.Zoom2();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment3() { 
+	anim.initEffect(); 
 	anim.Module_Experiment3();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment2() { 
+	anim.initEffect(); 
 	anim.Module_Experiment2();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment1() { 
+	anim.initEffect(); 
 	anim.Module_Experiment1();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Parametric_Water() { 
+	anim.initEffect(); 
 	anim.Parametric_Water();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Water() { 
+	anim.initEffect(); 
 	anim.Water();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_6() { 
+	anim.initEffect(); 
 	anim.Complex_Kaleido_6();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_5() { 
+	anim.initEffect(); 
 	anim.Complex_Kaleido_5();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_4() { 
+	anim.initEffect(); 
 	anim.Complex_Kaleido_4();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_3() { 
+	anim.initEffect(); 
 	anim.Complex_Kaleido_3();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_2() { 
+	anim.initEffect(); 
 	anim.Complex_Kaleido_2();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido() { 
+	anim.initEffect(); 
 	anim.Complex_Kaleido();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM10() { 
+	anim.initEffect(); 
 	anim.SM10();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM9() { 
+	anim.initEffect(); 
 	anim.SM9();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM8() { 
+	anim.initEffect(); 
 	anim.SM8();
 	anim.output();
 	return FRAMETIME;
 }
 // uint16_t mode_SM7() { 
-// 	art.SM7();
-//	art.output();
+//	anim.initEffect(); 
+// 	anim.SM7();
+//	anim.output();
 //	return FRAMETIME;
 // }
 uint16_t mode_SM6() { 
+	anim.initEffect(); 
 	anim.SM6();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM5() { 
+	anim.initEffect(); 
 	anim.SM5();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM4() { 
+	anim.initEffect(); 
 	anim.SM4();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM3() { 
+	anim.initEffect(); 
 	anim.SM3();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM2() { 
+	anim.initEffect(); 
 	anim.SM2();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM1() { 
+	anim.initEffect(); 
 	anim.SM1();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Big_Caleido() { 
-	if (SEGENV.call == 0) {
-		SEGMENT.setUpLeds();  //lossless getPixelColor()
-    	SEGMENT.fill(BLACK);
-		anim.setBuffer(SEGMENT.leds);
-	}
+	anim.initEffect(); 	
 	anim.Big_Caleido();
-	SEGMENT.fadeToBlackBy(0);
-//	anim.output();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs5() { 
@@ -237,106 +265,127 @@ uint16_t mode_RGB_Blobs5() {
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs4() { 
+	anim.initEffect(); 
 	anim.RGB_Blobs4();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs3() { 
+	anim.initEffect(); 
 	anim.RGB_Blobs3();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs2() { 
+	anim.initEffect(); 
 	anim.RGB_Blobs2();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs() { 
+	anim.initEffect(); 
 	anim.RGB_Blobs();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Polar_Waves() { 
+	anim.initEffect(); 
 	anim.Polar_Waves();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Slow_Fade() { 
+	anim.initEffect(); 
 	anim.Slow_Fade();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Zoom() { 
+	anim.initEffect(); 
 	anim.Zoom();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Hot_Blob() { 
+	anim.initEffect(); 
 	anim.Hot_Blob();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Spiralus2() { 
+	anim.initEffect(); 
 	anim.Spiralus2();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Spiralus() { 
+	anim.initEffect(); 
 	anim.Spiralus();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Yves() { 
+	anim.initEffect(); 
 	anim.Yves();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Scaledemo1() { 
+	anim.initEffect(); 
 	anim.Scaledemo1();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Lava1() { 
+	anim.initEffect(); 
 	anim.Lava1();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Caleido3() { 
+	anim.initEffect(); 
 	anim.Caleido3();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Caleido2() { 
+	anim.initEffect(); 
 	anim.Caleido2();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Caleido1() { 
+	anim.initEffect(); 
 	anim.Caleido1();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Distance_Experiment() { 
+	anim.initEffect(); 
 	anim.Distance_Experiment();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Center_Field() { 
+	anim.initEffect(); 
 	anim.Center_Field();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Waves() { 
+	anim.initEffect(); 
 	anim.Waves();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Chasing_Spirals() { 
+	anim.initEffect(); 
 	anim.Chasing_Spirals();
 	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Rotating_Blob() { 
+	anim.initEffect(); 
 	anim.Rotating_Blob();
 	anim.output();
 	return FRAMETIME;
@@ -348,12 +397,9 @@ class AnimartrixUsermod : public Usermod {
   public:
 
     AnimartrixUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
-	CRGB buffer[256];
+	
 
     void setup() {
-
-      bool serpentine = false;
-      anim.init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), buffer, serpentine);
 
       strip.addEffect(255, &mode_Module_Experiment10, _data_FX_mode_Module_Experiment10);
       strip.addEffect(255, &mode_Module_Experiment9, _data_FX_mode_Module_Experiment9);
