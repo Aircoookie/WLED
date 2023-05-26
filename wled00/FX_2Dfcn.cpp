@@ -199,11 +199,7 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR_YN Segment::XY(uint16_t x, uint16_t y) { //WLEDMM: IRAM_ATTR conditionaly, use fast types
-  uint_fast16_t width  = virtualWidth();   // segment width in logical pixels
-  uint_fast16_t height = virtualHeight();  // segment height in logical pixels
-  return (x%width) + (y%height) * width;
-}
+// WLEDMM Segment::XY()is declared inline, see FX.h
 
 void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM: IRAM_ATTR conditionaly
 {

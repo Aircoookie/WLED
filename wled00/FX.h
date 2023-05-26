@@ -523,9 +523,9 @@ typedef struct Segment {
     inline bool     hasRGB(void)         const { return _isRGB; }
     inline bool     hasWhite(void)       const { return _hasW; }
     inline bool     isCCT(void)          const { return _isCCT; }
-    inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
-    inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
-    inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
+    inline uint16_t width(void)          const { return stop - start; }           // segment width in physical pixels (length if 1D)
+    inline uint16_t height(void)         const { return max(1, stopY - startY); } // segment height (if 2D) in physical pixels // WLEDMM make sure its always > 0
+    inline uint16_t length(void)         const { return width() * height(); }     // segment length (count) in physical pixels
     inline uint16_t groupLength(void)    const { return grouping + spacing; }
     inline uint8_t  getLightCapabilities(void) const { return _capabilities; }
 
@@ -591,13 +591,29 @@ typedef struct Segment {
     uint32_t color_wheel(uint8_t pos);
 
     // 2D matrix
-    uint16_t virtualWidth(void)  const;
-    uint16_t virtualHeight(void) const;
+    inline uint16_t virtualWidth() const {  // WLEDMM use fast types, and make function inline
+      uint_fast16_t groupLen = groupLength();
+      uint_fast16_t vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
+      if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+      return vWidth;
+    }
+    inline uint16_t virtualHeight() const {  // WLEDMM use fast types, and make function inline
+      uint_fast16_t groupLen = groupLength();
+      uint_fast16_t vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
+      if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+      return vHeight;
+    }
+
     uint16_t nrOfVStrips(void) const;
     void createjMap(); //WLEDMM jMap
     void deletejMap(); //WLEDMM jMap
+  
   #ifndef WLED_DISABLE_2D
-    uint16_t __attribute__((pure)) XY(uint16_t x, uint16_t y); // support function to get relative index within segment (for leds[]) // WLEDMM attribute pure
+    inline uint16_t XY(uint_fast16_t x, uint_fast16_t y) { // support function to get relative index within segment (for leds[]) // WLEDMM inline for speed
+      uint_fast16_t width  = virtualWidth();   // segment width in logical pixels
+      uint_fast16_t height = virtualHeight();  // segment height in logical pixels
+      return (x%width) + (y%height) * width;
+    }
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
     void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
     void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); } // automatically inline

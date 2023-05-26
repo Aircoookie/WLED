@@ -537,19 +537,10 @@ void Segment::setPalette(uint8_t pal) {
 }
 
 // 2D matrix
-uint16_t Segment::virtualWidth() const {  // WLEDMM use fast types
-  uint_fast16_t groupLen = groupLength();
-  uint_fast16_t vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
-  if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
-  return vWidth;
-}
 
-uint16_t Segment::virtualHeight() const {  // WLEDMM use fast types
-  uint_fast16_t groupLen = groupLength();
-  uint_fast16_t vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
-  if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
-  return vHeight;
-}
+//
+// WLEDMM Segment::virtualWidth() and Segment::virtualHeight() are declared inline, see FX.h
+//
 
 uint16_t Segment::nrOfVStrips() const {
   uint16_t vLen = 1;
