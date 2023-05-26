@@ -65,10 +65,10 @@ class ANIMartRIXMod:public ANIMartRIX {
 	public:
 	void initEffect() {
 	  if (SEGENV.call == 0) {
-    	bool serpentine = false;
-	    init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), SEGMENT.leds, serpentine);
+		bool serpentine = false;
 		SEGMENT.setUpLeds();
 		SEGMENT.fill(BLACK);
+		init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), SEGMENT.leds, serpentine);
 	  }
 	}
 	void output() {
