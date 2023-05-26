@@ -1491,7 +1491,12 @@ void WS2812FX::finalizeInit(void)
 void WS2812FX::service() {
   unsigned long nowUp = millis(); // Be aware, millis() rolls over every 49 days // WLEDMM avoid losing precision
   now = nowUp + timebase;
-  if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_FASTPATH)
+    if ((_frametime > 2) && (_frametime < 32) && (nowUp - _lastShow) < (_frametime/2)) return;  // WLEDMM experimental - stabilizes frametimes but increases CPU load
+    else if (nowUp - _lastShow < MIN_SHOW_DELAY) return;                                        // WLEDMM fallback
+  #else
+    if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
+  #endif
   bool doShow = false;
 
   _isServicing = true;
@@ -1503,7 +1508,7 @@ void WS2812FX::service() {
     if (!seg.isActive()) continue;
 
     // last condition ensures all solid segments are updated at the same time
-    if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
+    if(nowUp >= seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))  // WLEDMM ">=" instead of ">"
     {
       if (seg.grouping == 0) seg.grouping = 1; //sanity check
       doShow = true;
@@ -1652,13 +1657,19 @@ void WS2812FX::show(void) {
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
+  unsigned long b4show = millis(); // WLEDMM the time before calling "show"
   busses.show();
   unsigned long now = millis();
   unsigned long diff = now - _lastShow;
   uint16_t fpsCurr = 200;
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_FASTPATH)
+  _lastShow = b4show;  // WLEDMM this is more accurate, however it also icreases CPU load - strip.service will run more frequently
+  #else
   _lastShow = now;
+  #endif
+
 #ifdef ARDUINO_ARCH_ESP32                      // WLEDMM more accurate FPS measurement for ESP32
   uint64_t now500 = esp_timer_get_time() / 2;  // native timer; micros /2 -> millis * 500
   int64_t diff500 = now500 - _lastShow500;
