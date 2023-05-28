@@ -152,16 +152,13 @@ int getSignalQuality(int rssi)
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
-  #ifdef WLED_USE_ETHERNET
-  char hostname[25];
-  #endif
-
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
       DEBUG_PRINTLN(F("ETH Started"));
       break;
     case SYSTEM_EVENT_ETH_CONNECTED:
+      {
       DEBUG_PRINTLN(F("ETH Connected"));
       if (!apActive) {
         WiFi.disconnect(true);
@@ -172,10 +169,12 @@ void WiFiEvent(WiFiEvent_t event)
         ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
       }
       // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
+      char hostname[64];
       prepareHostname(hostname);
       ETH.setHostname(hostname);
       showWelcomePage = false;
       break;
+      }
     case SYSTEM_EVENT_ETH_DISCONNECTED:
       DEBUG_PRINTLN(F("ETH Disconnected"));
       // This doesn't really affect ethernet per se,
