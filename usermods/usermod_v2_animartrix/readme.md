@@ -1,10 +1,12 @@
-# Usermods API v2 example usermod
+# ANIMartRIX
 
-In this usermod file you can find the documentation on how to take advantage of the new version 2 usermods!
+Addes the effects from ANIMartRIX to WLED
 
 ## Installation 
 
-Copy `usermod_v2_animartrix.h` to the wled00 directory.  
-Uncomment the corresponding lines in `usermods_list.cpp` and compile!  
-_(You shouldn't need to actually install this, it does nothing useful)_
+Please add the following to your platform.ini 
+
+lib_dep  https://github.com/netmindz/animartrix.git#d7c1896166f13fec2917c305222a77e3b504d060
+build_flags  -D USERMOD_ANIMARTRIX
+
 
