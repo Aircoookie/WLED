@@ -199,12 +199,12 @@ void Segment::setUpLeds() {
     #else
     leds = &Segment::_globalLeds[start];
     #endif
-  else if (!leds) {
-    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-    if (psramFound())
-      leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());
-    else
-    #endif
+  else if (leds == nullptr && length() > 0) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
+    //#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+    //if (psramFound())
+    //  leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());   // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
+    //else
+    //#endif
       leds = (CRGB*)malloc(sizeof(CRGB)*length());
   }
 }
@@ -1069,11 +1069,12 @@ void WS2812FX::finalizeInit(void)
   }
   if (useLedsArray) {
     size_t arrSize = sizeof(CRGB) * getLengthTotal();
-    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-    if (psramFound())
-      Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
-    else
-    #endif
+    // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards (see setUpLeds())
+    //#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+    //if (psramFound())
+    //  Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
+    //else
+    //#endif
       Segment::_globalLeds = (CRGB*) malloc(arrSize);
     memset(Segment::_globalLeds, 0, arrSize);
   }

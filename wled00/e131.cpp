@@ -25,7 +25,7 @@ void handleDDPPacket(e131_packet_t* p) {
     }
   }
 
-  uint8_t ddpChannelsPerLed = (p->dataType == DDP_TYPE_RGBW32) ? 4 : 3; // data type 0x1A is RGBW (type 3, 8 bit/channel)
+  uint8_t ddpChannelsPerLed = (p->dataType & 0b00111000 == 0b011) ? 4 : 3; // data type 0x1B (formerly 0x1A) is RGBW (type 3, 8 bit/channel)
 
   uint32_t start =  htonl(p->channelOffset) / ddpChannelsPerLed;
   start += DMXAddress / ddpChannelsPerLed;

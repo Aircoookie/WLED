@@ -53,6 +53,7 @@ void onMqttConnect(bool sessionPresent)
 
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+  static char *payloadStr;
 
   DEBUG_PRINT(F("MQTT msg: "));
   DEBUG_PRINTLN(topic);
@@ -62,11 +63,22 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     DEBUG_PRINTLN(F("no payload -> leave"));
     return;
   }
-  //make a copy of the payload to 0-terminate it
-  char* payloadStr = new char[len+1];
-  if (payloadStr == nullptr) return; //no mem
-  strncpy(payloadStr, payload, len);
-  payloadStr[len] = '\0';
+
+  if (index == 0) {                       // start (1st partial packet or the only packet)
+    if (payloadStr) delete[] payloadStr;  // fail-safe: release buffer
+    payloadStr = new char[total+1];       // allocate new buffer
+  }
+  if (payloadStr == nullptr) return;      // buffer not allocated
+
+  // copy (partial) packet to buffer and 0-terminate it if it is last packet
+  char* buff = payloadStr + index;
+  memcpy(buff, payload, len);
+  if (index + len >= total) { // at end
+    payloadStr[total] = '\0'; // terminate c style string
+  } else {
+    DEBUG_PRINTLN(F("Partial packet received."));
+    return; // process next packet
+  }
   DEBUG_PRINTLN(payloadStr);
 
   size_t topicPrefixLen = strlen(mqttDeviceTopic);
@@ -80,6 +92,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
       usermods.onMqttMessage(topic, payloadStr);
       delete[] payloadStr;
+      payloadStr = nullptr;
       return;
     }
   }
@@ -87,16 +100,20 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   //Prefix is stripped from the topic at this point
 
   if (strcmp_P(topic, PSTR("/col")) == 0) {
-    colorFromDecOrHexString(col, (char*)payloadStr);
+    colorFromDecOrHexString(col, payloadStr);
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
-    if (!requestJSONBufferLock(15)) { delete[] payloadStr; return; }
-    if (payload[0] == '{') { //JSON API
+    if (!requestJSONBufferLock(15)) {
+      delete[] payloadStr;
+      payloadStr = nullptr;
+      return;
+    }
+    if (payloadStr[0] == '{') { //JSON API
       deserializeJson(doc, payloadStr);
       deserializeState(doc.as<JsonObject>());
     } else { //HTTP API
       String apireq = "win"; apireq += '&'; // reduce flash string usage
-      apireq += (char*)payloadStr;
+      apireq += payloadStr;
       handleSet(nullptr, apireq);
     }
     releaseJSONBufferLock();
@@ -108,6 +125,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     parseMQTTBriPayload(payloadStr);
   }
   delete[] payloadStr;
+  payloadStr = nullptr;
 }
 
 
