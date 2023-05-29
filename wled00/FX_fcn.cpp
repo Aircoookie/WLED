@@ -1364,7 +1364,8 @@ void WS2812FX::enumerateLedmaps() {
         f = WLED_FS.open(fileName, "r");
         if (f) {
           f.find("\"n\":");
-          const char *name = f.readStringUntil('\n').c_str();
+          char name[33];
+          f.readBytesUntil('\n', name, sizeof(name));
           USER_PRINTF("enumerateLedmaps %s %s\n", fileName, name);
 
           size_t len = 0;
@@ -2139,10 +2140,13 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   //WLEDMM: read width and height (mandatory in file!!)
   f.find("\"width\":");
-  uint16_t maxWidth = f.readStringUntil('\n').toInt();
+  f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
+  uint16_t maxWidth = atoi(fileName);
+
 
   f.find("\"height\":");
-  uint16_t maxHeight = f.readStringUntil('\n').toInt();
+  f.readBytesUntil('\n', fileName, sizeof(fileName));
+  uint16_t maxHeight = atoi(fileName);
 
   USER_PRINTF("deserializeMap %d x %d\n", maxWidth, maxHeight);
   if (maxWidth * maxHeight <= 0) {
