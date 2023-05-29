@@ -771,6 +771,7 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
+      getActiveSegsLightCapabilities(bool selectedOnly = false),
       setPixelSegment(uint8_t n);
 
     inline uint8_t getBrightness(void) { return _brightness; }
