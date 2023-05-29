@@ -1082,8 +1082,8 @@ function ddpAll() {
 		ins.push(output);
 		start+=node.count;
 	}
-	console.log("ins", ins);
-	callNode("4.3.2.1", "cfg", {"hw":{"led":{"ins":ins}}});
+	console.log("ins", lastinfo.ip,JSON.stringify({"hw":{"led":{"ins":ins}}}));
+	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}});
 }
 
 function populateNodes(i,n)
@@ -1103,7 +1103,7 @@ function populateNodes(i,n)
 		//WLEDMM add this node to nodes
 		let thisNode = {};
 		thisNode.name = i.name;
-		thisNode.ip = locip; //not working for ap node yet...
+		thisNode.ip = i.ip;
 		n.nodes.push(thisNode);
 
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
@@ -1274,7 +1274,7 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 
 	gId(`seg${s}len`).innerHTML = out;
 
-	// console.log("drawSegmentView","updateLen");
+	console.log("drawSegmentView","updateLen");
 	if (draw && isM) drawSegmentView(); //WLEDMM draw new segmentview if something changes in a segment
 }
 
@@ -1491,7 +1491,7 @@ function drawSegmentView() {
 			}
 			post();
 		}, function(parms,error) { //error handling
-			// console.log("drawledmap error fetching " + fileName +": ", error);
+			console.log("drawledmap error fetching " + fileName +": ", error);
 			// downloadGHFile("LM", fileName, true, false); WLEDMM: remove as this has too much impact
 			post();
 		});
@@ -1670,8 +1670,8 @@ function makeWS() {
 		var s = json.state ? json.state : json;
 		displayRover(i, s);
 		readState(s);
-		// console.log("drawSegmentView","websocket", json);
-		// if (isM) drawSegmentView();
+		console.log("drawSegmentView","websocket", json);
+		if (isM) drawSegmentView();
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
@@ -1983,7 +1983,7 @@ function requestJson(command=null)
 		//WLEDMM init, gfx default on upon web page load
 		if (isM) {
 			// console.log("drawSegmentView","requestjson");
-			drawSegmentView();
+			// drawSegmentView();
 			toggleLiveview();
 		}
 
@@ -3358,7 +3358,7 @@ function togglePcMode(fromB = false)
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode)?'100%':'400%';
 	//WLEDMM resize segmentview
-	// console.log("drawSegmentView","togglePCMode");
+	console.log("drawSegmentView","togglePCMode");
 	if (isM) drawSegmentView();
 }
 

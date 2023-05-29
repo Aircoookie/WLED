@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2305170
+#define VERSION 2305241
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -151,6 +151,10 @@ struct PSRAM_Allocator {
   void* allocate(size_t size) {
     if (psramFound()) return ps_malloc(size); // use PSRAM if it exists
     else              return malloc(size);    // fallback
+  }
+  void* reallocate(void* ptr, size_t new_size) {
+    if (psramFound()) return ps_realloc(ptr, new_size); // use PSRAM if it exists
+    else              return realloc(ptr, new_size);    // fallback
   }
   void deallocate(void* pointer) {
     free(pointer);

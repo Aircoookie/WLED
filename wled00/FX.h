@@ -383,7 +383,8 @@ typedef struct Segment {
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
     byte* data;     // effect data pointer
-    CRGB* leds;     // local leds[] array (may be a pointer to global)
+    CRGB* ledsrgb;     // local leds[] array (may be a pointer to global) //WLEDMM rename to ledsrgb to search on them (temp?)
+    uint16_t ledsrgbSize; //WLEDMM
     static CRGB *_globalLeds;             // global leds[] array
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
     void *jMap = nullptr; //WLEDMM jMap
@@ -468,7 +469,8 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
-      leds(nullptr),
+      ledsrgb(nullptr),
+      ledsrgbSize(0), //WLEDMM
       _capabilities(0),
       _dataLen(0),
       _t(nullptr)
@@ -486,13 +488,13 @@ typedef struct Segment {
 
     ~Segment() {
       //#ifdef WLED_DEBUG
-      //Serial.print(F("Destroying segment:"));
-      //if (name) Serial.printf(" %s (%p)", name, name);
-      //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
-      //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
-      //Serial.println();
+      Serial.print(F("Destroying segment:"));
+      if (name) Serial.printf(" %s (%p)", name, name);
+      if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      if (ledsrgb) Serial.printf(" [%u]", length()*sizeof(CRGB));
+      Serial.println();
       //#endif
-      if (!Segment::_globalLeds && leds) free(leds);
+      if (!Segment::_globalLeds && ledsrgb) free(ledsrgb);
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();
@@ -502,7 +504,7 @@ typedef struct Segment {
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
 #ifdef WLED_DEBUG
-    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && leds?sizeof(CRGB)*length():0); }
+    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && ledsrgb?sizeof(CRGB)*length():0); }
 #endif
 
     inline bool     getOption(uint8_t n) const { return ((options >> n) & 0x01); }
@@ -520,6 +522,8 @@ typedef struct Segment {
 
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+
+    void    allocLeds(); //WLEDMM
 
     void    set(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed

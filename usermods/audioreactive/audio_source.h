@@ -106,6 +106,9 @@
 #endif
 
 
+// max number of samples for a single i2s_read --> size of global buffer.
+#define I2S_SAMPLES_MAX 512  // same as samplesFFT
+
 /* Interface class
    AudioSource serves as base class for all microphone types
    This enables accessing all microphones with one single interface
@@ -162,6 +165,7 @@ class AudioSource {
     bool _initialized;              // Gets set to true if initialization is successful
     bool _i2sMaster;                // when false, ESP32 will be in I2S SLAVE mode (for devices that only operate in MASTER mode). Only workds in newer IDF >= 4.4.x
     float _sampleScale;             // pre-scaling factor for I2S samples
+    I2S_datatype newSampleBuffer[I2S_SAMPLES_MAX+4] = { 0 }; // global buffer for i2s_read
 };
 
 /* Basic I2S microphone source
@@ -345,17 +349,20 @@ class I2SSource : public AudioSource {
       if (_initialized) {
         esp_err_t err;
         size_t bytes_read = 0;        /* Counter variable to check if we actually got enough data */
-        I2S_datatype newSamples[num_samples]; /* Intermediary sample storage */
 
-        err = i2s_read(I2S_NUM_0, (void *)newSamples, sizeof(newSamples), &bytes_read, portMAX_DELAY);
+        memset(buffer, 0, sizeof(float) * num_samples);  // clear output buffer
+        I2S_datatype *newSamples = newSampleBuffer; // use global input buffer
+        if (num_samples > I2S_SAMPLES_MAX) num_samples = I2S_SAMPLES_MAX; // protect the buffer from overflow
+
+        err = i2s_read(I2S_NUM_0, (void *)newSamples, num_samples * sizeof(I2S_datatype), &bytes_read, portMAX_DELAY);
         if (err != ESP_OK) {
           DEBUGSR_PRINTF("Failed to get samples: %d\n", err);
           return;
         }
 
         // For correct operation, we need to read exactly sizeof(samples) bytes from i2s
-        if (bytes_read != sizeof(newSamples)) {
-          DEBUGSR_PRINTF("Failed to get enough samples: wanted: %d read: %d\n", sizeof(newSamples), bytes_read);
+        if (bytes_read != (num_samples * sizeof(I2S_datatype))) {
+          DEBUGSR_PRINTF("Failed to get enough samples: wanted: %d read: %d\n", num_samples * sizeof(I2S_datatype), bytes_read);
           return;
         }
 
@@ -520,27 +527,74 @@ class ES8388Source : public I2SSource {
 
     void _es8388InitAdc() {
       // https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf Section 10.1
+      // http://www.everest-semi.com/pdf/ES8388%20DS.pdf Better spec sheet, more clear. 
       // https://docs.google.com/spreadsheets/d/1CN3MvhkcPVESuxKyx1xRYqfUit5hOdsG45St9BCUm-g/edit#gid=0 generally
       // Sets ADC to around what AudioReactive expects, and loops line-in to line-out/headphone for monitoring.
+      // Registries are decimal, settings are binary as that's how everything is listed in the docs
+      // ...which makes it easier to reference the docs.
+      //
       _es8388I2cBegin(); 
-      _es8388I2cWrite(0x08,0x00);       // I2S to slave
-      _es8388I2cWrite(0x02,0xf3);       // Power down DEM and STM
-      _es8388I2cWrite(0x2b,0x80);       // Set same LRCK
-      _es8388I2cWrite(0x00,0x05);       // Set chip to Play & Record Mode
-      _es8388I2cWrite(0x0d,0x02);       // Set MCLK/LRCK ratio to 256
-      _es8388I2cWrite(0x01,0x40);       // Power up analog and lbias
-      _es8388I2cWrite(0x03,0x00);       // Power up ADC, Analog Input, and Mic Bias
-      _es8388I2cWrite(0x0a,0x50);       // Use Lin2/Rin2 for ADC input ("line-in")
-      _es8388I2cWrite(0x09,0x00);       // Select Analog Input PGA Gain for ADC to 0dB (L+R)
-      _es8388I2cWrite(0x10,0b01000000); // Set ADC digital volume attenuation to -32dB (left)
-      _es8388I2cWrite(0x11,0b01000000); // Set ADC digital volume attenuation to -32dB (right)
-      _es8388I2cWrite(0x04,0x0c);       // Turn on LOUT2 and ROUT2 power
-      _es8388I2cWrite(0x02,0b01000000); // Power up DEM and STM and undocumented bit for "turn on line-out amp"
-      _es8388I2cWrite(0x26,0x09);       // Mixer - route LIN2/RIN2 to output
-      _es8388I2cWrite(0x27,0b01010000); // Mixer - route LIN to left mixer, 0dB gain
-      _es8388I2cWrite(0x2a,0b01010000); // Mixer - route RIN to right mixer, 0dB gain
-      _es8388I2cWrite(0x30,0b00011110); // LOUT2VOL - 0 = -45dB, 0b00011110 = +0dB
-      _es8388I2cWrite(0x31,0b00011110); // ROUT2VOL - 0 = -45dB, 0b00011110 = +0dB
+      _es8388I2cWrite( 8,0b00000000); // I2S to slave
+      _es8388I2cWrite( 2,0b11110011); // Power down DEM and STM
+      _es8388I2cWrite(43,0b10000000); // Set same LRCK
+      _es8388I2cWrite( 0,0b00000101); // Set chip to Play & Record Mode
+      _es8388I2cWrite(13,0b00000010); // Set MCLK/LRCK ratio to 256
+      _es8388I2cWrite( 1,0b01000000); // Power up analog and lbias
+      _es8388I2cWrite( 3,0b00000000); // Power up ADC, Analog Input, and Mic Bias
+      _es8388I2cWrite( 4,0b11111100); // Power down DAC, Turn on LOUT1 and ROUT1 and LOUT2 and ROUT2 power
+      _es8388I2cWrite( 2,0b01000000); // Power up DEM and STM and undocumented bit for "turn on line-out amp"
+
+      // #define use_es8388_mic
+
+    #ifdef use_es8388_mic
+      // The mics *and* line-in are BOTH connected to LIN2/RIN2 on the AudioKit
+      // so there's no way to completely eliminate the mics. It's also hella noisy. 
+      // Line-in works OK on the AudioKit, generally speaking, as the mics really need
+      // amplification to be noticable in a quiet room. If you're in a very loud room, 
+      // the mics on the AudioKit WILL pick up sound even in line-in mode. 
+      // TL;DR: Don't use the AudioKit for anything, use the LyraT. 
+      //
+      // The LyraT does a reasonable job with mic input as configured below.
+
+      // Pick one of these. If you have to use the mics, use a LyraT over an AudioKit if you can:
+      _es8388I2cWrite(10,0b00000000); // Use Lin1/Rin1 for ADC input (mic on LyraT)
+      //_es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input (mic *and* line-in on AudioKit)
+      
+      _es8388I2cWrite( 9,0b10001000); // Select Analog Input PGA Gain for ADC to +24dB (L+R)
+      _es8388I2cWrite(16,0b00000000); // Set ADC digital volume attenuation to 0dB (left)
+      _es8388I2cWrite(17,0b00000000); // Set ADC digital volume attenuation to 0dB (right)
+      _es8388I2cWrite(38,0b00011011); // Mixer - route LIN1/RIN1 to output after mic gain
+
+      _es8388I2cWrite(39,0b01000000); // Mixer - route LIN to mixL, +6dB gain
+      _es8388I2cWrite(42,0b01000000); // Mixer - route RIN to mixR, +6dB gain
+      _es8388I2cWrite(46,0b00100001); // LOUT1VOL - 0b00100001 = +4.5dB
+      _es8388I2cWrite(47,0b00100001); // ROUT1VOL - 0b00100001 = +4.5dB
+      _es8388I2cWrite(48,0b00100001); // LOUT2VOL - 0b00100001 = +4.5dB
+      _es8388I2cWrite(49,0b00100001); // ROUT2VOL - 0b00100001 = +4.5dB
+
+      // Music ALC - the mics like Auto Level Control
+      // You can also use this for line-in, but it's not really needed.
+      //
+      _es8388I2cWrite(18,0b11111000); // ALC: stereo, max gain +35.5dB, min gain -12dB 
+      _es8388I2cWrite(19,0b00110000); // ALC: target -1.5dB, 0ms hold time
+      _es8388I2cWrite(20,0b10100110); // ALC: gain ramp up = 420ms/93ms, gain ramp down = check manual for calc
+      _es8388I2cWrite(21,0b00000110); // ALC: use "ALC" mode, no zero-cross, window 96 samples
+      _es8388I2cWrite(22,0b01011001); // ALC: noise gate threshold, PGA gain constant, noise gate enabled 
+    #else
+      _es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input ("line-in")
+      _es8388I2cWrite( 9,0b00000000); // Select Analog Input PGA Gain for ADC to 0dB (L+R)
+      _es8388I2cWrite(16,0b01000000); // Set ADC digital volume attenuation to -32dB (left)
+      _es8388I2cWrite(17,0b01000000); // Set ADC digital volume attenuation to -32dB (right)
+      _es8388I2cWrite(38,0b00001001); // Mixer - route LIN2/RIN2 to output
+
+      _es8388I2cWrite(39,0b01010000); // Mixer - route LIN to mixL, 0dB gain
+      _es8388I2cWrite(42,0b01010000); // Mixer - route RIN to mixR, 0dB gain
+      _es8388I2cWrite(46,0b00011011); // LOUT1VOL - 0b00011110 = +0dB, 0b00011011 = LyraT balance fix
+      _es8388I2cWrite(47,0b00011110); // ROUT1VOL - 0b00011110 = +0dB
+      _es8388I2cWrite(48,0b00011110); // LOUT2VOL - 0b00011110 = +0dB
+      _es8388I2cWrite(49,0b00011110); // ROUT2VOL - 0b00011110 = +0dB
+    #endif
+
     }
 
   public:
@@ -550,6 +604,10 @@ class ES8388Source : public I2SSource {
     };
 
     void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+
+      // BUG: "use global I2C pins" are valid as -1, and -1 is seen as invalid here.
+      // Workaround: Set I2C pins here, which will also set them globally.
+      // Bug also exists in ES7243.
 
       // check that pins are valid
       if ((sdaPin < 0) || (sclPin < 0)) {
