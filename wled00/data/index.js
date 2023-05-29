@@ -702,11 +702,12 @@ function populateSegments(s)
 		let sg = gId(`seg${i}`);
 		let exp = sg ? (sg.classList.contains('expanded') || (i===0 && cfg.comp.segexp)) : false;
 
-		let cG = "var(--c-f)";
+		// segment set icon color
+		let cG = "var(--c-b)";
 		switch (inst.set) {
 			case 1: cG = "var(--c-r)"; break;
-			case 2: cG = "var(--c-g)";  break;
-			case 3: cG = "var(--c-b)";   break;
+			case 2: cG = "var(--c-g)"; break;
+			case 3: cG = "var(--c-l)"; break;
 		}
 
 		let segp = `<div id="segp${i}" class="sbs">`+
@@ -720,10 +721,11 @@ function populateSegments(s)
 		let stoX = inst.stop;
 		let staY = inst.startY;
 		let stoY = inst.stopY;
+		let isMSeg = isM && staX<mw*mh; // 2D matrix segment
 		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark"></span></label>`;
 		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark"></span></label>`;
 		let rvYck = "", miYck ="";
-		if (isM && staX<mw*mh) {
+		if (isMSeg) {
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
 		}
@@ -761,16 +763,16 @@ function populateSegments(s)
 					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
 					`<table class="infot segt">`+
 					`<tr>`+
-						`<td>${isM&&staX<mw*mh?'Start X':'Start LED'}</td>`+
-						`<td>${isM&&staX<mw*mh?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>`+
-						`<td>${isM&&staX<mw*mh?'':'Offset'}</td>`+
+						`<td>${isMSeg?'Start X':'Start LED'}</td>`+
+						`<td>${isMSeg?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>`+
+						`<td>${isMSeg?'':'Offset'}</td>`+
 					`</tr>`+
 					`<tr>`+
-						`<td><input class="segn" id="seg${i}s" type="number" min="0" max="${(isM&&staX<mw*mh?mw:ledCount)-1}" value="${staX}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
-						`<td><input class="segn" id="seg${i}e" type="number" min="0" max="${(isM&&staX<mw*mh?mw:ledCount)}" value="${stoX-(cfg.comp.seglen?staX:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
-						`<td style="text-align:revert;">${isM&&staX<mw*mh?miXck+'<br>'+rvXck:''}<input class="segn ${isM&&staX<mw*mh?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>`+
+						`<td><input class="segn" id="seg${i}s" type="number" min="0" max="${(isMSeg?mw:ledCount)-1}" value="${staX}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
+						`<td><input class="segn" id="seg${i}e" type="number" min="0" max="${(isMSeg?mw:ledCount)}" value="${stoX-(cfg.comp.seglen?staX:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
+						`<td ${isMSeg?'style="text-align:revert;"':''}>${isMSeg?miXck+'<br>'+rvXck:''}<input class="segn ${isMSeg?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>`+
 					`</tr>`+
-					(isM && staX<mw*mh ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
+					(isMSeg ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
 					'<tr>'+
 						'<td><input class="segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+staY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
 						'<td><input class="segn" id="seg'+i+'eY" type="number" min="0" max="'+mh+'" value="'+(stoY-(cfg.comp.seglen?staY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
@@ -784,15 +786,15 @@ function populateSegments(s)
 					`<tr>`+
 						`<td><input class="segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
 						`<td><input class="segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
-						`<td style="text-align:revert;"><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>`+
+						`<td><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>`+
 					`</tr>`+
 					`</table>`+
 					`<div class="h bp" id="seg${i}len"></div>`+
-					(!(isM&&staX<mw*mh) ? rvXck : '') +
-					(isM&&staX<mw*mh&&stoY-staY>1&&stoX-staX>1 ? map2D : '') +
+					(!isMSeg ? rvXck : '') +
+					(isMSeg&&stoY-staY>1&&stoX-staX>1 ? map2D : '') +
 					(s.AudioReactive && s.AudioReactive.on ? "" : sndSim) +
 					`<label class="check revchkl" id="seg${i}lbtm">`+
-						(isM&&staX<mw*mh?'Transpose':'Mirror effect') + (isM&&staX<mw*mh ?
+						(isMSeg?'Transpose':'Mirror effect') + (isMSeg ?
 						'<input type="checkbox" id="seg'+i+'tp" onchange="setTp('+i+')" '+(inst.tp?"checked":"")+'>':
 						'<input type="checkbox" id="seg'+i+'mi" onchange="setMi('+i+')" '+(inst.mi?"checked":"")+'>') +
 						`<span class="checkmark"></span>`+
@@ -820,7 +822,7 @@ function populateSegments(s)
 		gId(`segd${lSeg}`).classList.add("hide");
 		gId(`segp0`).classList.add("hide");
 	}
-	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
+	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).classList.remove("hide");
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 
 	if (Array.isArray(li.maps) && li.maps.length>1) {

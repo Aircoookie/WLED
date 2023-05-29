@@ -191,12 +191,8 @@ button {
 .g-icon {
 	font-style: normal;
 	position: absolute;
-	top: 6px;
-	right: 8px;
-}
-
-#segutil .g-icon {
 	top: 8px;
+	right: 8px;
 }
 
 /* pop-up container */
@@ -207,7 +203,7 @@ button {
 	right: 0;
 }
 
-/* pop-up content */
+/* pop-up content (segment sets) */
 .pop-c {
 	position: absolute;
 	background-color: var(--c-2);
@@ -216,8 +212,9 @@ button {
 	z-index: 1;
 	top: 3px;
 	right: 35px;
-	padding: 4px 8px 1px;
+	padding: 3px 8px 1px;
 	font-size: 24px;
+	line-height: 24px;
 }
 .pop-c span {
 	padding: 2px 6px;
@@ -823,6 +820,7 @@ input[type=range]::-moz-range-thumb {
 .btn-xs, .btn-pl-del, .btn-pl-add {
 	width: 42px !important;
 	height: 42px !important;
+	text-overflow: clip;
 }
 .btn-xs {
 	margin: 2px 0 0 0;

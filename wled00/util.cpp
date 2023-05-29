@@ -390,9 +390,12 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
 // Begin simulateSound (to enable audio enhanced effects to display something)
 ///////////////////////////////////////////////////////////////////////////////
 // Currently 4 types defined, to be fine tuned and new types added
+// (only 2 used as stored in 1 bit in segment options, consider switching to a single global simulation type)
 typedef enum UM_SoundSimulations {
   UMS_BeatSin = 0,
   UMS_WeWillRockYou
+  //UMS_10_13,
+  //UMS_14_3
 } um_soundSimulations_t;
 
 um_data_t* simulateSound(uint8_t simulationId)
@@ -477,6 +480,16 @@ um_data_t* simulateSound(uint8_t simulationId)
           fftResult[i] = 0;
       }
       break;
+  /*case UMS_10_3:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
+        volumeSmth = fftResult[8];
+      break;
+    case UMS_14_3:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
+      volumeSmth = fftResult[8];
+      break;*/
   }
 
   samplePeak    = random8() > 250;
