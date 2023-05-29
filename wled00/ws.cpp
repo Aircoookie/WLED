@@ -9,7 +9,7 @@ uint16_t wsLiveClientId = 0;
 unsigned long wsLastLiveTime = 0;
 //uint8_t* wsFrameBuffer = nullptr;
 
-#define WS_LIVE_INTERVAL 40
+#define WS_LIVE_INTERVAL 160
 
 void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
@@ -200,7 +200,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
 
 void handleWs()
 {
-  if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
+  if (millis() - wsLastLiveTime > MAX((strip.getLengthTotal()/20), WS_LIVE_INTERVAL)) //WLEDMM dynamic nr of peek frames per second
   {
     #ifdef ESP8266
     ws.cleanupClients(3);
