@@ -9,11 +9,7 @@ static volatile uint16_t wsLiveClientId = 0;        // WLEDMM added "static"
 static volatile unsigned long wsLastLiveTime = 0;   // WLEDMM
 //uint8_t* wsFrameBuffer = nullptr;
 
-#ifdef WLEDMM_FASTPATH
-#define WS_LIVE_INTERVAL 80   // WLEDMM reduced update interval, to have more time for LEDs
-#else
-#define WS_LIVE_INTERVAL 40
-#endif
+#define WS_LIVE_INTERVAL 160
 
 void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
@@ -180,11 +176,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
 #ifdef ESP8266
   constexpr size_t MAX_LIVE_LEDS_WS = 256U;
 #else
- #if !defined(WLEDMM_FASTPATH)
   constexpr size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
- #else
-  constexpr size_t MAX_LIVE_LEDS_WS = 2048U;  //WLEDMM use 2048 as max matrix size - reduce "effect hickups" due to long transmissions
- #endif
 #endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   size_t pos = (strip.isMatrix ? 4 : 2);
@@ -244,7 +236,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
 
 void handleWs()
 {
-  if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
+  if (millis() - wsLastLiveTime > MAX((strip.getLengthTotal()/20), WS_LIVE_INTERVAL)) //WLEDMM dynamic nr of peek frames per second
   {
     #ifdef ESP8266
     ws.cleanupClients(3);
