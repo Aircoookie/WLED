@@ -189,6 +189,9 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_ANIMARTRIX
+#include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
+#endif
 
 void registerUsermods()
 {
@@ -356,5 +359,9 @@ void registerUsermods()
 
   #ifdef USERMOD_SHT
   usermods.add(new ShtUsermod());
+  #endif
+
+  #ifdef USERMOD_ANIMARTRIX
+  usermods.add(new AnimartrixUsermod("Animartrix", false));
   #endif
 }
