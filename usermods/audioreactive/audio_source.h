@@ -410,13 +410,6 @@ class I2SSource : public AudioSource {
 */
 class ES7243 : public I2SSource {
   private:
-    // I2C initialization functions for ES7243
-    void _es7243I2cBegin() {
-      bool i2c_initialized = Wire.begin(pin_ES7243_SDA, pin_ES7243_SCL, 100000U);
-      if (i2c_initialized == false) {
-        ERRORSR_PRINTLN(F("AR: ES7243 failed to initialize I2C bus driver."));
-      }
-    }
 
     void _es7243I2cWrite(uint8_t reg, uint8_t val) {
 #ifndef ES7243_ADDR
@@ -434,7 +427,6 @@ class ES7243 : public I2SSource {
     }
 
     void _es7243InitAdc() {
-      _es7243I2cBegin();
       _es7243I2cWrite(0x00, 0x01);
       _es7243I2cWrite(0x06, 0x00);
       _es7243I2cWrite(0x05, 0x1B);
@@ -449,28 +441,13 @@ public:
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
     };
 
-    void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
       // check that pins are valid
-      if ((sdaPin < 0) || (sclPin < 0)) {
-        ERRORSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
-        return;
-      }
 
       if ((i2sckPin < 0) || (mclkPin < 0)) {
         ERRORSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
         return;
       }
-
-      // Reserve SDA and SCL pins of the I2C interface
-      PinManagerPinType es7243Pins[2] = { { sdaPin, true }, { sclPin, true } };
-      if (!pinManager.allocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C)) {
-        pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
-        ERRORSR_PRINTF("\nAR: Failed to allocate ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
-        return;
-      }
-
-      pin_ES7243_SDA = sdaPin;
-      pin_ES7243_SCL = sclPin;
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es7243InitAdc();
@@ -478,15 +455,10 @@ public:
     }
 
     void deinitialize() {
-      // Release SDA and SCL pins of the I2C interface
-      PinManagerPinType es7243Pins[2] = { { pin_ES7243_SDA, true }, { pin_ES7243_SCL, true } };
-      pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
       I2SSource::deinitialize();
     }
 
-  private:
-    int8_t pin_ES7243_SDA;
-    int8_t pin_ES7243_SCL;
+
 };
 
 /* ES8388 Sound Modude
@@ -495,13 +467,6 @@ public:
 */
 class ES8388Source : public I2SSource {
   private:
-    // I2C initialization functions for ES8388
-    void _es8388I2cBegin() {
-      bool i2c_initialized = Wire.begin(pin_ES8388_SDA, pin_ES8388_SCL, 100000U);
-      if (i2c_initialized == false) {
-        ERRORSR_PRINTLN(F("AR: ES8388 failed to initialize I2C bus driver."));
-      }
-    }
 
     void _es8388I2cWrite(uint8_t reg, uint8_t val) {
 #ifndef ES8388_ADDR
@@ -526,7 +491,6 @@ class ES8388Source : public I2SSource {
       // Registries are decimal, settings are binary as that's how everything is listed in the docs
       // ...which makes it easier to reference the docs.
       //
-      _es8388I2cBegin(); 
       _es8388I2cWrite( 8,0b00000000); // I2S to slave
       _es8388I2cWrite( 2,0b11110011); // Power down DEM and STM
       _es8388I2cWrite(43,0b10000000); // Set same LRCK
@@ -596,33 +560,12 @@ class ES8388Source : public I2SSource {
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
     };
 
-    void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
-
-      // BUG: "use global I2C pins" are valid as -1, and -1 is seen as invalid here.
-      // Workaround: Set I2C pins here, which will also set them globally.
-      // Bug also exists in ES7243.
-
-      // check that pins are valid
-      if ((sdaPin < 0) || (sclPin < 0)) {
-        ERRORSR_PRINTF("\nAR: invalid ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
-        return;
-      }
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
 
       if ((i2sckPin < 0) || (mclkPin < 0)) {
         ERRORSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
         return;
       }
-
-      // Reserve SDA and SCL pins of the I2C interface
-      PinManagerPinType es8388Pins[2] = { { sdaPin, true }, { sclPin, true } };
-      if (!pinManager.allocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C)) {
-        pinManager.deallocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C);
-        ERRORSR_PRINTF("\nAR: Failed to allocate ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
-        return;
-      }
-
-      pin_ES8388_SDA = sdaPin;
-      pin_ES8388_SCL = sclPin;
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es8388InitAdc();
@@ -630,15 +573,10 @@ class ES8388Source : public I2SSource {
     }
 
     void deinitialize() {
-      // Release SDA and SCL pins of the I2C interface
-      PinManagerPinType es8388Pins[2] = { { pin_ES8388_SDA, true }, { pin_ES8388_SCL, true } };
-      pinManager.deallocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C);
       I2SSource::deinitialize();
     }
 
-  private:
-    int8_t pin_ES8388_SDA;
-    int8_t pin_ES8388_SCL;
+
 };
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
