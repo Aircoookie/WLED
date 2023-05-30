@@ -130,36 +130,43 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
-    for (size_t i = 0; i < 3; i++)
-    {
-      int rgbw[] = {0,0,0,0};
-      bool colValid = false;
-      JsonArray colX = colarr[i];
-      if (colX.isNull()) {
-        byte brgbw[] = {0,0,0,0};
-        const char* hexCol = colarr[i];
-        if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-          int kelvin = colarr[i] | -1;
-          if (kelvin <  0) continue;
-          if (kelvin == 0) seg.setColor(i, 0);
-          if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+    if (seg.getLightCapabilities() & 3) {
+      // segment has RGB or White
+      for (size_t i = 0; i < 3; i++)
+      {
+        int rgbw[] = {0,0,0,0};
+        bool colValid = false;
+        JsonArray colX = colarr[i];
+        if (colX.isNull()) {
+          byte brgbw[] = {0,0,0,0};
+          const char* hexCol = colarr[i];
+          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+            int kelvin = colarr[i] | -1;
+            if (kelvin <  0) continue;
+            if (kelvin == 0) seg.setColor(i, 0);
+            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+            colValid = true;
+          } else { //HEX string, e.g. "FFAA00"
+            colValid = colorFromHexString(brgbw, hexCol);
+          }
+          for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+        } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
+          byte sz = colX.size();
+          if (sz == 0) continue; //do nothing on empty array
+
+          copyArray(colX, rgbw, 4);
           colValid = true;
-        } else { //HEX string, e.g. "FFAA00"
-          colValid = colorFromHexString(brgbw, hexCol);
         }
-        for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
-      } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
-        byte sz = colX.size();
-        if (sz == 0) continue; //do nothing on empty array
 
-        copyArray(colX, rgbw, 4);
-        colValid = true;
+        if (!colValid) continue;
+
+        seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
+        if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
       }
-
-      if (!colValid) continue;
-
-      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
-      if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
+    } else {
+      // non RGB & non White segment (usually On/Off bus)
+      seg.setColor(0, ULTRAWHITE);
+      seg.setColor(1, BLACK);
     }
   }
 
@@ -202,7 +209,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["ix"], &seg.intensity);
 
   uint8_t pal = seg.palette;
-  if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
+  if (seg.getLightCapabilities() & 1) {  // ignore palette for White and On/Off segments
+    if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
+  }
 
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
@@ -713,7 +722,7 @@ void serializeInfo(JsonObject root)
   #endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
-  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
   if (psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;

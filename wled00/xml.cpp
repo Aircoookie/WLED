@@ -212,7 +212,7 @@ void appendGPIOinfo() {
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
 
-  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
     #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
     if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM on ESP32 (not on S2, S3 or C3)
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -561,6 +561,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
+    sappend('c',SET_F("RT"),retainMqttMsg);
     #else
     oappend(SET_F("toggle('MQTT');"));    // hide MQTT settings
     #endif
