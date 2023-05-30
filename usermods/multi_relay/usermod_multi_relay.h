@@ -20,6 +20,14 @@
 #define ON  true
 #define OFF false
 
+#ifndef USERMOD_USE_PCF8574
+  #undef USE_PCF8574
+  #define USE_PCF8574 false
+#else
+  #undef USE_PCF8574
+  #define USE_PCF8574 true
+#endif
+
 #ifndef PCF8574_ADDRESS
   #define PCF8574_ADDRESS 0x20  // some may start at 0x38
 #endif
@@ -50,23 +58,17 @@ class MultiRelay : public Usermod {
 
   private:
     // array of relays
-    Relay _relay[MULTI_RELAY_MAX_RELAYS];
+    Relay    _relay[MULTI_RELAY_MAX_RELAYS];
 
-    // switch timer start time
-    uint32_t _switchTimerStart = 0;
-    // old brightness
-    bool _oldMode;
-
-    // usermod enabled
-    bool enabled = false;  // needs to be configured (no default config)
-    // status of initialisation
-    bool initDone = false;
-    bool usePcf8574  = false;
-    uint8_t addrPcf8574 = PCF8574_ADDRESS;
-    bool HAautodiscovery = false;
-
-    uint16_t periodicBroadcastSec = 60;
-    unsigned long lastBroadcast = 0;
+    uint32_t _switchTimerStart; // switch timer start time
+    bool     _oldMode;          // old brightness
+    bool     enabled;           // usermod enabled
+    bool     initDone;          // status of initialisation
+    bool     usePcf8574;
+    uint8_t  addrPcf8574;
+    bool     HAautodiscovery;
+    uint16_t periodicBroadcastSec;
+    unsigned long lastBroadcast;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -103,7 +105,7 @@ class MultiRelay : public Usermod {
     /**
      * desctructor
      */
-    ~MultiRelay() {}
+    //~MultiRelay() {}
 
     /**
      * Enable/Disable the usermod
@@ -331,7 +333,16 @@ byte MultiRelay::IOexpanderRead(int address) {
 
 // public methods
 
-MultiRelay::MultiRelay() {
+MultiRelay::MultiRelay()
+  : _switchTimerStart(0)
+  , enabled(false)
+  , initDone(false)
+  , usePcf8574(USE_PCF8574)
+  , addrPcf8574(PCF8574_ADDRESS)
+  , HAautodiscovery(false)
+  , periodicBroadcastSec(60)
+  , lastBroadcast(0)
+{
   const int8_t defPins[] = {MULTI_RELAY_PINS};
   for (size_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
     _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;

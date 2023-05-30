@@ -172,7 +172,7 @@ Realtime LED offset: <input name="WO" type="number" min="-255" max="255" require
 <hr class="sml">
 <h3>Alexa Voice Assistant</h3>
 <div id="NoAlexa" class="hide">
-	<em style="color:#fa0;">This firmware build does not include Alexa support.<br></em><br>
+	<i class="warn">This firmware build does not include Alexa support.<br></i><br>
 </div>
 <div id="Alexa">
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
@@ -180,7 +180,7 @@ Alexa invocation name: <input type="text" name="AI" maxlength="32"><br>
 Also emulate devices to call the first <input name="AP" type="number" class="s" min="0" max="9" required> presets<br><br>
 </div>
 <hr class="sml">
-<div style="color: #fa0;">&#9888; <b>MQTT and Hue sync all connect to external hosts!<br>
+<div class="warn">&#9888; <b>MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of WLED.</b><br>
 </div>
 For best results, only use one of these services at a time.<br>
@@ -188,7 +188,7 @@ For best results, only use one of these services at a time.<br>
 <hr class="sml">
 <h3>MQTT</h3>
 <div id="NoMQTT" class="hide">
-	<em style="color:#fa0;">This firmware build does not include MQTT support.<br></em>
+	<i class="warn">This firmware build does not include MQTT support.<br></i>
 </div>
 <div id="MQTT">
 Enable MQTT: <input type="checkbox" name="MQ"><br>
@@ -207,7 +207,7 @@ Retain brightness & color messages: <input type="checkbox" name="RT"><br>
 </div>
 <h3>Philips Hue</h3>
 <div id="NoHue" class="hide">
-	<em style="color:#fa0;">This firmware build does not include Philips Hue support.<br></em>
+	<em class="warn">This firmware build does not include Philips Hue support.<br></em>
 </div>
 <div id="Hue">
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>

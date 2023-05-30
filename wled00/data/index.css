@@ -410,6 +410,7 @@ button {
 	position: -webkit-sticky;
 	position: sticky;
 	bottom: 0;
+	max-width: 300px;
 }
 
 #sliders .labels {
@@ -418,7 +419,7 @@ button {
 }
 
 .slider {
-	max-width: 300px;
+	/*max-width: 300px;*/
 	/* margin: 5px auto; add 5px; if you want some vertical space but looks ugly */
 	border-radius: 24px;
 	position: relative;
@@ -434,12 +435,16 @@ button {
 	z-index: 0;
 }
 
+#sliders .slider {
+	padding-right: 64px; /* offset for bubble */
+}
+
 #sliders .slider, #info .slider {
 	background-color: var(--c-2);
 }
 
 #sliders .sliderwrap, .sbs .sliderwrap {
-	left: 16px; /* offset for icon */
+	left: 32px; /* offset for icon */
 }
 
 .filter, .option {
@@ -685,18 +690,19 @@ img {
 
 .sliderbubble {
 	width: 24px;
-	position: relative;
+	position: absolute;
 	display: inline-block;
-	border-radius: 10px;
+	border-radius: 16px;
 	background: var(--c-3);
 	color: var(--c-f);
-	padding: 2px 4px;
+	padding: 4px;
 	font-size: 14px;
-	right: 3px;
-	transition: visibility 0.25s ease, opacity 0.25s ease;
+	right: 6px;
+	transition: visibility .25s ease,opacity .25s ease;
 	opacity: 0;
 	visibility: hidden;
-	left: 8px;
+	/* left: 8px; */
+	top: 4px;
 }
 
 output.sliderbubbleshow {
@@ -1022,8 +1028,9 @@ textarea {
 
 /* segment power wrapper */
 .sbs {
-	padding: 1px 0 1px 20px;
+	/*padding: 1px 0 1px 20px;*/
 	display: var(--sgp);
+	width: 100%;
 }
 
 .pname {
@@ -1538,8 +1545,11 @@ TD .checkmark, TD .radiomark {
 	#sliders .sliderbubble {
 		display: none;
 	}
-	.sliderwrap {
-		width: calc(100% - 28px);
+	#sliders .sliderwrap, .sbs .sliderwrap {
+		width: calc(100% - 42px);
+	}
+	#sliders .slider {
+		padding-right: 0;
 	}
 	#sliders .sliderwrap {
 		left: 12px;

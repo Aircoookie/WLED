@@ -52,7 +52,6 @@ class UsermodVL53L0XGestures : public Usermod {
     void setup() {
       PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
-      Wire.begin();
 
       sensor.setTimeout(150);
       if (!sensor.init())

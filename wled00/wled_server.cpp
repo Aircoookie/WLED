@@ -611,7 +611,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     } else {
       if (!s2[0]) strcpy_P(s2, s_redirecting);
 
-      serveMessage(request, 200, s, s2, (subPage == 1 || (subPage == 6 && doReboot)) ? 129 : (correctPIN ? 1 : 3));
+      serveMessage(request, 200, s, s2, (subPage == 1 || ((subPage == 6 || subPage == 8) && doReboot)) ? 129 : (correctPIN ? 1 : 3));
       return;
     }
   }

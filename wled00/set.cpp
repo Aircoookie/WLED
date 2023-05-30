@@ -462,7 +462,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       clearEEPROM();
       #endif
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
-      doReboot = true;
+      doReboot = true; // may reboot immediately on dual-core system (race condition) which is desireable in this case
     }
 
     if (request->hasArg(F("PIN"))) {
@@ -539,26 +539,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     // global I2C & SPI pins
     int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : (int)request->arg(F("SDA")).toInt();
     int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : (int)request->arg(F("SCL")).toInt();
-    #ifdef ESP8266
-    // cannot change pins on ESP8266
-    if (hw_sda_pin >= 0 && hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
-    if (hw_scl_pin >= 0 && hw_scl_pin != HW_PIN_SCL) hw_scl_pin = HW_PIN_SCL;
-    #endif
-    PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
-    if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
-      i2c_sda = hw_sda_pin;
-      i2c_scl = hw_scl_pin;
-      #ifdef ESP32
-      Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
-      #endif
-      Wire.begin();
-    } else {
-      // there is no Wire.end()
-      DEBUG_PRINTLN(F("Could not allocate I2C pins."));
-      uint8_t i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
-      pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
-      i2c_sda = -1;
-      i2c_scl = -1;
+    if (i2c_sda != hw_sda_pin || i2c_scl != hw_scl_pin) {
+      // only if pins changed
+      uint8_t old_i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
+      pinManager.deallocateMultiplePins(old_i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
+
+      PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
+      if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+        i2c_sda = hw_sda_pin;
+        i2c_scl = hw_scl_pin;
+        // no bus re-initialisation as usermods do not get any notification
+        //Wire.begin(i2c_sda, i2c_scl);
+      } else {
+        // there is no Wire.end()
+        DEBUG_PRINTLN(F("Could not allocate I2C pins."));
+        i2c_sda = -1;
+        i2c_scl = -1;
+      }
     }
     int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : (int)request->arg(F("MOSI")).toInt();
     int8_t hw_miso_pin = !request->arg(F("MISO")).length() ? -1 : (int)request->arg(F("MISO")).toInt();
@@ -569,26 +566,29 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (hw_miso_pin >= 0 && hw_miso_pin != HW_PIN_MISOSPI)  hw_mosi_pin = HW_PIN_MISOSPI;
     if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
     #endif
-    PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_miso_pin, true }, { hw_sclk_pin, true } };
-    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
-      spi_mosi = hw_mosi_pin;
-      spi_miso = hw_miso_pin;
-      spi_sclk = hw_sclk_pin;
-      // no bus re-initialisation as usermods do not get any notification
-      //SPI.end();
-      #ifdef ESP32
-      //SPI.begin(spi_sclk, spi_miso, spi_mosi);
-      #else
-      //SPI.begin();
-      #endif
-    } else {
-      //SPI.end();
-      DEBUG_PRINTLN(F("Could not allocate SPI pins."));
-      uint8_t spi[3] = { static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso), static_cast<uint8_t>(spi_sclk) };
-      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
-      spi_mosi = -1;
-      spi_miso = -1;
-      spi_sclk = -1;
+    if (spi_mosi != hw_mosi_pin || spi_miso != hw_miso_pin || spi_sclk != hw_sclk_pin) {
+      // only if pins changed
+      uint8_t old_spi[3] = { static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso), static_cast<uint8_t>(spi_sclk) };
+      pinManager.deallocateMultiplePins(old_spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
+      PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_miso_pin, true }, { hw_sclk_pin, true } };
+      if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+        spi_mosi = hw_mosi_pin;
+        spi_miso = hw_miso_pin;
+        spi_sclk = hw_sclk_pin;
+        // no bus re-initialisation as usermods do not get any notification
+        //SPI.end();
+        #ifdef ESP32
+        //SPI.begin(spi_sclk, spi_miso, spi_mosi);
+        #else
+        //SPI.begin();
+        #endif
+      } else {
+        //SPI.end();
+        DEBUG_PRINTLN(F("Could not allocate SPI pins."));
+        spi_mosi = -1;
+        spi_miso = -1;
+        spi_sclk = -1;
+      }
     }
 
     JsonObject um = doc.createNestedObject("um");
@@ -708,7 +708,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #endif
 
   lastEditTime = millis();
-  if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  // do not save if factory reset or LED settings (which are saved after LED re-init)
+  doSerializeConfig = subPage != 2 && !(subPage == 6 && doReboot);
+  if (subPage == 8) doReboot = request->hasArg(F("RBT")); // prevent race condition on dual core system (set reboot here, after doSerializeConfig has been set)
   #ifndef WLED_DISABLE_ALEXA
   if (subPage == 4) alexaInit();
   #endif

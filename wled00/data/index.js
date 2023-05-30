@@ -497,6 +497,7 @@ function loadFX(callback = null)
 		populateEffects();
 	})
 	.catch((e)=>{
+		//setTimeout(loadFX, 250); // retry
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -524,6 +525,7 @@ function loadFXData(callback = null)
 	})
 	.catch((e)=>{
 		fxdata = [];
+		//setTimeout(loadFXData, 250); // retry
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -1253,6 +1255,7 @@ function updateSelectedFx()
 		// hide non-0D effects if segment only has 1 pixel (0D)
 		var fxs = parent.querySelectorAll('.lstI');
 		for (const fx of fxs) {
+			if (!fx.dataset.opt) continue;
 			let opts = fx.dataset.opt.split(";");
 			if (fx.dataset.id>0) {
 				if (segLmax==0) fx.classList.add('hide'); // none of the segments selected (hide all effects)
