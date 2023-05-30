@@ -93,7 +93,10 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
   seg.map1D2D  = constrain(map1D2D, 0, 7);
-  seg.soundSim = constrain(soundSim, 0, 7);
+  seg.soundSim = constrain(soundSim, 0, 1);
+
+  uint8_t set = elem[F("set")] | seg.set;
+  seg.set = constrain(set, 0, 3);
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -105,7 +108,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     of = offsetAbs;
   }
   if (stop > start && of > len -1) of = len -1;
-  seg.set(start, stop, grp, spc, of, startY, stopY);
+  seg.setUp(start, stop, grp, spc, of, startY, stopY);
 
   if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
 
@@ -468,6 +471,7 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   byte segbri    = seg.opacity;
   root["bri"]    = (segbri) ? segbri : 255;
   root["cct"]    = seg.cct;
+  root[F("set")] = seg.set;
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 

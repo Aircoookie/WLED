@@ -174,37 +174,62 @@ button {
 }
 
 .slider-icon {
-	/*transform: translate(3px,3px);*/
 	position: absolute;
 	left: 8px;
 	bottom: 5px;
-}
-
-.e-icon {
-	transform: translateY(3px);
 }
 
 .sel-icon {
 	transform: translateX(3px);
 }
 
-.e-icon, .sel-icon, .slider-icon {
+.e-icon, .g-icon, .sel-icon, .slider-icon {
 	cursor: pointer;
 	color: var(--c-d);
 }
 
+.g-icon {
+	font-style: normal;
+	position: absolute;
+	top: 8px;
+	right: 8px;
+}
+
+/* pop-up container */
+.pop {
+	position: absolute;
+	display: inline-block;
+	top: 0;
+	right: 0;
+}
+
+/* pop-up content (segment sets) */
+.pop-c {
+	position: absolute;
+	background-color: var(--c-2);
+	border: 1px solid var(--c-8);
+	border-radius: 20px;
+	z-index: 1;
+	top: 3px;
+	right: 35px;
+	padding: 3px 8px 1px;
+	font-size: 24px;
+	line-height: 24px;
+}
+.pop-c span {
+	padding: 2px 6px;
+}
+  
 .search-icon {
 	position: absolute;
 	top: 8px;
 	left: 12px;
-	/*pointer-events: none;*/
 	width: 24px;
 	height: 24px;
 }
 
 .clear-icon {
 	position: absolute;
-	display: none;
 	top: 8px;
 	right: 9px;
 	cursor: pointer;
@@ -232,14 +257,12 @@ button {
 
 #liveview {
 	height: 4px;
-	display: none;
 	width: 100%;
 	border: 0px;
 }
 
 #liveview2D {
 	height: 90%;
-	display: none;
 	width: 90%;
 	border: 0px;
 	position: absolute;
@@ -482,13 +505,6 @@ button {
 	opacity: 1;
 }
 
-#pql, .edit-icon {
-	display: none;
-}
-
-.hide {
-	display: none !important;
-}
 .fade {
 	visibility: hidden; /* hide it */
 	opacity: 0; /* make it transparent */
@@ -567,7 +583,6 @@ button {
 	position: fixed;
 	top: calc(var(--th) + 5px);
 	left: 1px;
-	display: none;
 	cursor: pointer;
 }
 
@@ -662,7 +677,9 @@ img {
 #wbal  .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
 
 /* wrapper divs hidden by default */
-#rgbwrap, #swrap, #hwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
+#liveview, #liveview2D, #roverstar, #pql
+#rgbwrap, #swrap, #hwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw,
+.clear-icon, .edit-icon, .ptxt {
 	display: none;
 }
 
@@ -771,8 +788,8 @@ input[type=range]::-moz-range-thumb {
 	-webkit-transform:translate3d(0,0,0);
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
-	overflow: clip;
-	text-overflow: clip;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	border: 1px solid var(--c-3);
 	background-color: var(--c-3);
 }
@@ -803,6 +820,7 @@ input[type=range]::-moz-range-thumb {
 .btn-xs, .btn-pl-del, .btn-pl-add {
 	width: 42px !important;
 	height: 42px !important;
+	text-overflow: clip;
 }
 .btn-xs {
 	margin: 2px 0 0 0;
@@ -979,8 +997,7 @@ textarea {
 }
 
 .ptxt {
-  margin: -1px 4px 8px !important;
-	display: none;
+  	margin: -1px 4px 8px !important;
 }
 
 .stxt {
@@ -990,7 +1007,7 @@ textarea {
 .segname, .pname {
 	white-space: nowrap;
 	text-align: center;
-	overflow: clip;
+	overflow: hidden;
 	text-overflow: ellipsis;
 	line-height: 24px;
 	padding: 8px 24px;
@@ -1048,11 +1065,9 @@ textarea {
 
 #csl .xxs {
 	border: 2px solid var(--c-d) !important;
-	/*box-shadow: 0 0 0 2px var(--c-d);*/
 }
 #csl .xxs-w {
 	border-width: 5px !important;
-	/*box-shadow: 0 0 0 5px var(--c-d);*/
 }
 
 .qcs, #namelabel { /* text shadow for name to be legible on grey backround */
@@ -1066,7 +1081,6 @@ textarea {
 
 .pwr {
 	color: var(--c-6);
-	transform: translate(1px, 1px);
 	cursor: pointer;
 }
 
@@ -1081,16 +1095,11 @@ textarea {
 }
 
 .frz {
-	left: 32px;
+	left: 10px;
 	position: absolute;
-	top: -3px;
+	top: 8px;
 	cursor: pointer;
-	padding: 8px;
 	z-index: 1;
-}
-
-.expanded .frz {
-	display: none;
 }
 
 /* radiobuttons and checkmarks */
@@ -1234,7 +1243,6 @@ TD .checkmark, TD .radiomark {
 
 .lbl-s {
 	display: inline-block;
-	/* margin: 10px 4px 0 0; */
 	margin-top: 6px;
 	font-size: 13px;
 	width: 48%;
@@ -1283,10 +1291,6 @@ TD .checkmark, TD .radiomark {
 .selected input[type=text] {
 	background-color: var(--c-3);
 }
-
-/*.selected .radiomark {
-	border: 1px solid var(--c-3);
-}*/
 
 /* selected list item */
 .lstI.selected {
@@ -1405,7 +1409,7 @@ TD .checkmark, TD .radiomark {
 .expanded {
 	display: inline-block !important;
 }
-.expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide {
+.hide, .expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide, .expanded .frz, .expanded .g-icon {
 	display: none !important;
 }
 
@@ -1541,11 +1545,7 @@ TD .checkmark, TD .radiomark {
 		left: 12px;
 	}
 	.segname {
-		padding: 8px 16px;
-		max-width: 140px;
-	}
-	.segname, .pname {
-		max-width: 134px;
+		max-width: calc(100% - 110px);
 	}
 	.segt TD {
 		padding: 0 !important;

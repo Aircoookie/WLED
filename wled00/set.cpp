@@ -788,7 +788,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     spcI = getNumVal(&req, pos);
   }
-  selseg.set(startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
+  selseg.setUp(startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
   if (pos > 0) selseg.reverse = req.charAt(pos+3) != '0';

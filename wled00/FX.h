@@ -353,7 +353,8 @@ typedef struct Segment {
         bool    mirror_y    : 1;  //     8 : mirrored Y (2D)
         bool    transpose   : 1;  //     9 : transposed (2D, swapped X & Y)
         uint8_t map1D2D     : 3;  // 10-12 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
-        uint8_t soundSim    : 3;  // 13-15 : 0-7 sound simulation types
+        uint8_t soundSim    : 1;  //    13 : 0-1 sound simulation types ("soft" & "hard" or "on"/"off")
+        uint8_t set         : 2;  // 14-15 : 0-3 UI segment sets/groups
       };
     };
     uint8_t  grouping, spacing;
@@ -515,7 +516,7 @@ typedef struct Segment {
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
 
-    void    set(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
+    void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
     void    setCCT(uint16_t k);
     void    setOpacity(uint8_t o);

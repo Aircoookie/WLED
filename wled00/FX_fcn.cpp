@@ -379,7 +379,7 @@ void Segment::handleTransition() {
   }
 }
 
-void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
+void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
   //return if neither bounds nor grouping have changed
   bool boundsUnchanged = (start == i1 && stop == i2);
   #ifndef WLED_DISABLE_2D
@@ -474,7 +474,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "o2");   check2    = (sOpt >= 0) ? (bool)sOpt : false;
         sOpt = extractModeDefaults(fx, "o3");   check3    = (sOpt >= 0) ? (bool)sOpt : false;
         sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
-        sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 1);
         sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) reverse   = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) reverse_y = (bool)sOpt;
@@ -750,7 +750,7 @@ uint8_t Segment::differs(Segment& b) const {
   if (startY != b.startY)       d |= SEG_DIFFERS_BOUNDS;
   if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
 
-  //bit pattern: (msb first) sound:3, mapping:3, transposed, mirrorY, reverseY, [transitional, reset,] paused, mirrored, on, reverse, [selected]
+  //bit pattern: (msb first) set:2, sound:1, mapping:3, transposed, mirrorY, reverseY, [transitional, reset,] paused, mirrored, on, reverse, [selected]
   if ((options & 0b1111111110011110U) != (b.options & 0b1111111110011110U)) d |= SEG_DIFFERS_OPT;
   if ((options & 0x0001U) != (b.options & 0x0001U))                         d |= SEG_DIFFERS_SEL;
   for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i])    d |= SEG_DIFFERS_COL;
@@ -1427,7 +1427,7 @@ Segment& WS2812FX::getSegment(uint8_t id) {
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
   if (n >= _segments.size()) return;
-  _segments[n].set(i1, i2, grouping, spacing, offset, startY, stopY);
+  _segments[n].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
 }
 
 void WS2812FX::restartRuntime() {
