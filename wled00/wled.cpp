@@ -326,11 +326,11 @@ void WLED::setup()
   managed_pin_type pins[] = { {33, true}, {34, true}, {35, true}, {36, true}, {37, true} };
   pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
   #elif defined(CONFIG_IDF_TARGET_ESP32S2)
-  // S2: reserve GPIO 26-32 for PSRAM
+  // S2: reserve GPIO 26-32 for PSRAM (may fail due to isPinOk() but that will also prevent other allocation)
   managed_pin_type pins[] = { {26, true}, {27, true}, {28, true}, {29, true}, {30, true}, {31, true}, {32, true} };
   pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
   #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  // C3: reserve GPIO 12-17 for PSRAM
+  // C3: reserve GPIO 12-17 for PSRAM (may fail due to isPinOk() but that will also prevent other allocation)
   managed_pin_type pins[] = { {12, true}, {13, true}, {14, true}, {15, true}, {16, true}, {17, true} };
   pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
   #else
@@ -485,6 +485,7 @@ void WLED::beginStrip()
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
+    // fix for #3196
     briLast = briS; bri = 0;
     strip.fill(BLACK);
     strip.show();

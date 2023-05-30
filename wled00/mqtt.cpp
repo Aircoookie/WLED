@@ -142,12 +142,12 @@ void publishMqtt()
   sprintf_P(s, PSTR("%u"), bri);
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/g"));
-  mqtt->publish(subuf, 0, retainMqttMsg, s);         // optionally retain message (#2236)
+  mqtt->publish(subuf, 0, retainMqttMsg, s);         // optionally retain message (#2263)
 
   sprintf_P(s, PSTR("#%06X"), (col[3] << 24) | (col[0] << 16) | (col[1] << 8) | (col[2]));
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/c"));
-  mqtt->publish(subuf, 0, retainMqttMsg, s);         // optionally retain message (#2236)
+  mqtt->publish(subuf, 0, retainMqttMsg, s);         // optionally retain message (#2263)
 
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/status"));
@@ -157,7 +157,7 @@ void publishMqtt()
   XML_response(nullptr, apires);
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/v"));
-  mqtt->publish(subuf, 0, retainMqttMsg, apires);   // optionally retain message (#2236)
+  mqtt->publish(subuf, 0, retainMqttMsg, apires);   // optionally retain message (#2263)
   #endif
 }
 
