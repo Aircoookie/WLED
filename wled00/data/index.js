@@ -1082,8 +1082,8 @@ function ddpAll() {
 		ins.push(output);
 		start+=node.count;
 	}
-	console.log("ins", ins);
-	callNode("4.3.2.1", "cfg", {"hw":{"led":{"ins":ins}}});
+	console.log("ins", lastinfo.ip,JSON.stringify({"hw":{"led":{"ins":ins}}}));
+	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}});
 }
 
 function populateNodes(i,n)
@@ -1103,7 +1103,7 @@ function populateNodes(i,n)
 		//WLEDMM add this node to nodes
 		let thisNode = {};
 		thisNode.name = i.name;
-		thisNode.ip = locip; //not working for ap node yet...
+		thisNode.ip = i.ip;
 		n.nodes.push(thisNode);
 
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
