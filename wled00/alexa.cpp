@@ -103,7 +103,7 @@ void onAlexaChange(EspalexaDevice* dev)
       uint16_t ct = dev->getCt();
       if (!ct) return;
       uint16_t k = 1000000 / ct; //mireds to kelvin
-      
+
       if (strip.hasCCTBus()) {
         bool hasManualWhite = strip.getActiveSegsLightCapabilities(true) & SEG_CAPABILITY_W;
 
