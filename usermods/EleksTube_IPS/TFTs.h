@@ -153,14 +153,10 @@ private:
     {
       (void) read32(bmpFS); (void) read32(bmpFS); (void) read32(bmpFS); // size, w resolution, h resolution
       paletteSize = read32(bmpFS);
-      if (paletteSize == 0) paletteSize = bitDepth * bitDepth; //if 0, size is 2^bitDepth
+      if (paletteSize == 0) paletteSize = 1 << bitDepth; //if 0, size is 2^bitDepth
       bmpFS.seek(14 + headerSize); // start of color palette
       for (uint16_t i = 0; i < paletteSize; i++) {
         palette[i] = read32(bmpFS);
-      }
-      if (bitDepth == 1) { // monochromatic BMP
-        palette[0] = 0;
-        palette[1] = 255;
       }
     }
 
