@@ -141,7 +141,7 @@ private:
     h = read32(bmpFS); // height
     (void) read16(bmpFS); // color planes (must be 1)
     bitDepth = read16(bmpFS);
-    
+
     if (read32(bmpFS) != 0 || (bitDepth != 24 && bitDepth != 1 && bitDepth != 4 && bitDepth != 8)) {
       Serial.println(F("BMP format not recognized."));
       bmpFS.close();
