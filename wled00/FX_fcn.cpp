@@ -1330,6 +1330,14 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   }
 }
 
+uint8_t WS2812FX::getActiveSegsLightCapabilities(bool selectedOnly) {
+  uint8_t totalLC = 0;
+  for (segment &seg : _segments) {
+    if (seg.isActive() && (!selectedOnly || seg.isSelected())) totalLC |= seg.getLightCapabilities();
+  }
+  return totalLC;
+}
+
 uint8_t WS2812FX::getFirstSelectedSegId(void)
 {
   size_t i = 0;
