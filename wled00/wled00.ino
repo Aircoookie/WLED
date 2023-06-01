@@ -23,7 +23,7 @@ void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps, const cha
   if (caps & (1 << 11)) Serial.print("Internal ");
   if (caps & (1 << 12)) Serial.print("Default ");
   if (caps & (1 << 13)) Serial.print("IRAM+unaligned ");
-  if (caps & (1 << 14)) Serial.print("Retention DMA ");
+  if (caps & (1 << 14)) Serial.print("Retention_DMA ");
   if (caps & (1 << 15)) Serial.print("RTC_fast ");
   Serial.print("capabilities - largest free block: "+String(heap_caps_get_largest_free_block(caps)));
 
