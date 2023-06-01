@@ -32,7 +32,7 @@ void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps, const cha
   float fragmentation = 100.0f;
   if ((largest_free > 1) && (total_free > largest_free))
     fragmentation = 100.f * (1.0f - (float(largest_free) / float(total_free)) );
-  Serial.print("; availeable: " + String(total_free));
+  Serial.print("; \t availeable: " + String(total_free));
   Serial.print(" (frag "); Serial.print(fragmentation, 2); Serial.println("%).");
 
   if (!heap_caps_check_integrity_all(false)) {
