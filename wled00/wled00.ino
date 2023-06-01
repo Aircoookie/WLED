@@ -25,11 +25,35 @@ void heap_caps_alloc_failed_hook(size_t requested_size, uint32_t caps, const cha
   if (caps & (1 << 13)) Serial.print("IRAM+unaligned ");
   if (caps & (1 << 14)) Serial.print("Retention DMA ");
   if (caps & (1 << 15)) Serial.print("RTC_fast ");
-  Serial.println("capabilities - largest free block: "+String(heap_caps_get_largest_free_block(caps)));
+  Serial.print("capabilities - largest free block: "+String(heap_caps_get_largest_free_block(caps)));
+
+  size_t largest_free = heap_caps_get_largest_free_block(caps);
+  size_t total_free   = heap_caps_get_free_size(caps);
+  float fragmentation = 100.0f;
+  if ((largest_free > 1) && (total_free > largest_free))
+    fragmentation = 100.f * (1.0f - (float(largest_free) / float(total_free)) );
+  Serial.print("; availeable: " + String(total_free));
+  Serial.print(" (frag "); Serial.print(fragmentation, 2); Serial.println("%).");
+
   if (!heap_caps_check_integrity_all(false)) {
     Serial.println("*** Heap CORRUPTED: "+String(heap_caps_check_integrity_all(true)));
   }
 }
+
+#if 0  // softhack007 did not get this hook to work
+void esp_heap_trace_free_hook(void* ptr)
+{
+  if (ptr == nullptr) {
+    Serial.println("** free: attempt to free nullptr."); 
+  } else {
+    size_t blocksize = heap_caps_get_allocated_size(ptr);
+    if (blocksize > 256000)
+      Serial.println("**** free: bad pointer to " + String(blocksize) + "bytes.");
+    else
+      Serial.println("** free " + String(blocksize) + "bytes.");
+  }
+}
+#endif
 #endif
 
 #include "wled.h"
@@ -48,7 +72,7 @@ void loop() {
   //WLEDMM show loops per second
   loopCounter++;
   if (millis() - lastMillis >= 10000) {
-    USER_PRINTF("%lu lps\n",loopCounter/10);
+    //USER_PRINTF("%lu lps\n",loopCounter/10);
     lastMillis = millis();
     loopCounter = 0;
   }
