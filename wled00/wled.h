@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 23052310
+#define VERSION 2306010
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -690,9 +690,11 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
-WLED_GLOBAL bool doInitBusses _INIT(false);
-WLED_GLOBAL bool loadLedmap _INIT(false); //WLEDMM use as bool and use loadedLedmap for Nr
-WLED_GLOBAL uint8_t loadedLedmap _INIT(0); //WLEDMM default 0
+// WLEDMM a few "poor man's" mutal exclusion (mutex) flags, because there are not mutex objects on 8266.
+WLED_GLOBAL volatile bool doInitBusses _INIT(false);        // WLEDMM "volatile" added - needed as we want to sync parallel tasks
+WLED_GLOBAL volatile bool loadLedmap _INIT(false);          // WLEDMM use as bool and use loadedLedmap for Nr
+WLED_GLOBAL volatile uint8_t loadedLedmap _INIT(0);         // WLEDMM default 0
+WLED_GLOBAL volatile bool suspendStripService _INIT(false); // WLEDMM temporarily prevent running strip.service, when strip or segments are "under update" and inconsistent
 #ifndef ESP8266
 WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
 #endif

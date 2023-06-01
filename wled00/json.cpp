@@ -85,8 +85,15 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
   }
 
+  // WLEDMM: before changing segments, make sure our strip is _not_ servicing effects in parallel
+  suspendStripService = true; // temporarily lock out strip updates
+  if (strip.isServicing()) {
+    USER_PRINTLN(F("deserializeSegment(): strip is still drawing effects, waiting ..."));
+    strip.waitUntilIdle();
+  }
+
   Segment& seg = strip.getSegment(id);
-  Segment prev = seg; //make a backup so we can tell if something changed
+  Segment prev = seg; //make a backup so we can tell if something changed // WLEDMM fixMe: copy constructor = waste of memory
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
@@ -113,6 +120,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
       elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
       deserializeSegment(elem, i, presetId); // recursive call with new id
     }
+    suspendStripService = false; // WLEDMM release lock
     return true;
   }
 
@@ -153,7 +161,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (map1D2D != M12_jMap && seg.jMap)
     seg.deletejMap();
 
-  if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
+  if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps // WLEDMM softhack007: this line sometimes crashes with "Stack canary watchpoint triggered (async_tcp)"
 
   seg.map1D2D  = constrain(map1D2D, 0, 7);
   seg.soundSim = constrain(soundSim, 0, 7);
@@ -170,7 +178,10 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (stop > start && of > len -1) of = len -1;
   seg.set(start, stop, grp, spc, of, startY, stopY);
 
-  if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
+  if (seg.reset && seg.stop == 0) {
+    suspendStripService = false; // WLEDMM release lock
+    return true; // segment was deleted & is marked for reset, no need to change anything else
+  }
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
@@ -293,7 +304,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     // freeze and init to black
     if (!seg.freeze) {
       seg.freeze = true;
-      seg.fill(BLACK);
+      seg.fill(BLACK);  // WLEDMM why now?
     }
 
     uint16_t start = 0, stop = 0;
@@ -334,6 +345,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
   if (seg.differs(prev) & 0x7F) stateChanged = true;
 
+  suspendStripService = false; // WLEDMM release lock
   return true;
 }
 
@@ -387,6 +399,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       transitionDelay *= 100;
       transitionDelayTemp = transitionDelay;
     }
+  }
+
+  // WLEDMM: before changing strip, make sure our strip is _not_ servicing effects in parallel
+  suspendStripService = true; // temporarily lock out strip updates
+  if (strip.isServicing()) {
+    USER_PRINTLN(F("deserializeState(): strip is still drawing effects, waiting ..."));
+    strip.waitUntilIdle();
   }
 
   // temporary transition (applies only once)
@@ -505,6 +524,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       presetCycCurr = ps;
       unloadPlaylist();          // applying a preset unloads the playlist
       applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
+      suspendStripService = false; // WLEDMM release lock
       return stateResponse;
     }
   }
@@ -528,6 +548,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   stateUpdated(callMode);
   if (presetToRestore) currentPreset = presetToRestore;
 
+  suspendStripService = false; // WLEDMM release lock
   return stateResponse;
 }
 

@@ -700,7 +700,7 @@ class WS2812FX {  // 96 bytes
       _cumulativeFps500(2*500),      // WLEDMM more accurate FPS measurement for ESP32
       _lastShow500(0),
 #endif
-      _isServicing(false),
+      _isServicing(true),            // WLEDMM start with "true" - flag will be reset by strip.finalizeInit()
       _isOffRefreshRequired(false),
       _hasWhiteChannel(false),
       _triggered(false),
@@ -739,6 +739,7 @@ class WS2812FX {  // 96 bytes
       printSize(),
 #endif
       finalizeInit(),
+      waitUntilIdle(void),   // WLEDMM
       service(void),
       setMode(uint8_t segid, uint8_t m),
       setColor(uint8_t slot, uint32_t c),
