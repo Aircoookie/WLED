@@ -224,9 +224,16 @@ void initServer()
       } else {
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
+      //#ifdef ARDUINO_ARCH_ESP32
+      //DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+      //#endif
     }
     request->send(200, "application/json", F("{\"success\":true}"));
+#if !defined(ARDUINO_ARCH_ESP32)
   }, JSON_BUFFER_SIZE);
+#else
+  });  // WLEDMM JSON_BUFFER_SIZE not needed on ESP32
+#endif
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
