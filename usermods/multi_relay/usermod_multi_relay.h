@@ -36,13 +36,13 @@
 typedef struct relay_t {
   int8_t pin;
   struct { // reduces memory footprint
-    bool active   : 1;
-    bool mode     : 1;
-    bool state    : 1;
-    bool external : 1;
-    int8_t button : 4;
+    bool active   : 1;  // is the relay waiting to be switched
+    bool mode     : 1;  // does On mean 1 or 0 (inverted output)
+    bool state    : 1;  // 1 relay is On, 0 relay is Off
+    bool external : 1;  // is the relay externally controlled
+    int8_t button : 4;  // which button triggers relay
   };
-  uint16_t delay;
+  uint16_t delay;       // amount of ms to wait after it is activated
 } Relay;
 
 
@@ -217,7 +217,7 @@ void MultiRelay::handleOffTimer() {
   bool activeRelays = false;
   for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
     if (_relay[i].active && _switchTimerStart > 0 && now - _switchTimerStart > (_relay[i].delay*1000)) {
-      if (!_relay[i].external) toggleRelay(i);
+      if (!_relay[i].external) switchRelay(i, !offMode);
       _relay[i].active = false;
     } else if (periodicBroadcastSec && now - lastBroadcast > (periodicBroadcastSec*1000)) {
       if (_relay[i].pin>=0) publishMqtt(i);
