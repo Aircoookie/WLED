@@ -149,6 +149,7 @@ void WS2812FX::setUpMatrix() {
         DEBUG_PRINTF("%4d,", customMappingTable[i]);
       }
       DEBUG_PRINTLN();
+      USER_FLUSH();  // wait until serial buffer is written out - to avoid loss/corruption of future debug messages
       #endif
     } else { // memory allocation error
       customMappingTableSize = 0;
