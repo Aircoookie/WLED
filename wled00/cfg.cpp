@@ -90,6 +90,19 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // initialize LED pins and lengths prior to other HW (except for ethernet)
   JsonObject hw_led = hw["led"];
 
+  // WLEDMM: before changing strip, make sure our strip is _not_ servicing effects in parallel
+  suspendStripService = true; // temporarily lock out strip updates
+#ifdef ARDUINO_ARCH_ESP32
+  if (strip.isServicing() && (strncmp(pcTaskGetTaskName(NULL), "loopTask", 8) != 0)) { // if we are in looptask (arduino loop), its safe to proceed without waiting
+    if (fromFS) {
+      USER_PRINTLN(F("deserializeConfig(fromFS): strip is still drawing effects, waiting ..."));
+    } else {
+      USER_PRINTLN(F("deserializeConfig(): strip is still drawing effects, waiting ..."));
+    }
+    strip.waitUntilIdle();
+  }
+#endif
+
   uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
@@ -598,6 +611,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (!usermods_settings.isNull()) {
     needsSave = !usermods.readFromConfig(usermods_settings);
   }
+
+  suspendStripService = false; // WLEDMM release lock
 
   if (fromFS) return needsSave;
   // if from /json/cfg

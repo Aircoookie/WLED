@@ -1424,6 +1424,7 @@ void WS2812FX::enumerateLedmaps() {
 void WS2812FX::finalizeInit(void)
 {
   //reset segment runtimes
+  suspendStripService = true; // WELDMM avoid running effects on an incomplete strip
   for (segment &seg : _segments) {
     seg.markForReset();
     seg.resetIfRequired();
@@ -1503,6 +1504,27 @@ void WS2812FX::finalizeInit(void)
   loadCustomPalettes(); // (re)load all custom palettes
   DEBUG_PRINTLN(F("Loading custom ledmaps"));
   deserializeMap();     // (re)load default ledmap
+  _isServicing = false;        // WLEDMM
+  suspendStripService = false; // WELDMM ready, run !
+}
+
+// WLEDMM wait until strip is idle (=not servicing).
+// on 8266 this function does nothing, because we can only do "buisy waiting" on ESP32
+#define MAX_IDLE_WAIT_MS 50  // seems to work in most cases
+void WS2812FX::waitUntilIdle(void) {
+#ifdef ARDUINO_ARCH_ESP32
+  if (isServicing()) {
+    unsigned long waitStarted = millis();
+    do {
+      delay(1);
+      yield();
+    } while (isServicing() && (millis() - waitStarted < MAX_IDLE_WAIT_MS));
+    USER_PRINTF("strip.waitUntilIdle(): strip %sidle after %d ms. (task %s)\n", isServicing()?"not ":"", int(millis() - waitStarted), pcTaskGetTaskName(NULL));
+  }
+  return;
+#else
+  return;
+#endif
 }
 
 void WS2812FX::service() {

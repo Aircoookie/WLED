@@ -21,6 +21,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D
   if (subPage <1 || subPage >10 || !correctPIN) return;
 
+  // WLEDMM: before changing bus or strip settings, make sure our strip is _not_ servicing effects in parallel
+  if ((subPage == 2) || (subPage == 10)) {
+    suspendStripService = true; // temporarily lock out strip updates
+    if (strip.isServicing()) {
+      USER_PRINTLN(F("handleSettingsSet(): strip is still drawing effects, waiting ..."));
+      strip.waitUntilIdle();
+    }
+  }
+
   //WIFI SETTINGS
   if (subPage == 1)
   {
@@ -766,6 +775,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   #endif
 
+  if ((subPage == 2) || (subPage == 10)) {
+    suspendStripService = false; // WLEDMM release lock
+  }
+
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   #ifndef WLED_DISABLE_ALEXA
@@ -800,6 +813,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       selectedSeg = t;
       singleSegment = true;
     }
+  }
+
+  // WLEDMM: before changing segment settings, make sure our strip is _not_ servicing effects in parallel
+  if (strip.isServicing()) {
+      USER_PRINTLN(F("handleSet(): strip is still drawing effects, waiting ..."));
+      strip.waitUntilIdle();
   }
 
   Segment& selseg = strip.getSegment(selectedSeg);
