@@ -91,7 +91,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // WLEDMM: before changing segments, make sure our strip is _not_ servicing effects in parallel
   suspendStripService = true; // temporarily lock out strip updates
   if (strip.isServicing()) {
-    USER_PRINTLN(F("deserializeSegment(): strip is still drawing effects, waiting ..."));
+    USER_PRINTLN(F("deserializeSegment(): strip is still drawing effects."));
     strip.waitUntilIdle();
   }
 
@@ -410,7 +410,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // WLEDMM: before changing strip, make sure our strip is _not_ servicing effects in parallel
   suspendStripService = true; // temporarily lock out strip updates
   if (strip.isServicing()) {
-    USER_PRINTLN(F("deserializeState(): strip is still drawing effects, waiting ..."));
+    USER_PRINTLN(F("deserializeState(): strip is still drawing effects."));
     strip.waitUntilIdle();
   }
 

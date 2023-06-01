@@ -21,11 +21,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D
   if (subPage <1 || subPage >10 || !correctPIN) return;
 
-  // WLEDMM: before changing bus or strip settings, make sure our strip is _not_ servicing effects in parallel
-  if ((subPage == 2) || (subPage == 10)) {
+  // WLEDMM: before changing bus, ledmap, strip or 2D settings, make sure our strip is _not_ servicing effects in parallel
+  if ((subPage == 2) || (subPage == 3) || (subPage == 10)) {
     suspendStripService = true; // temporarily lock out strip updates
     if (strip.isServicing()) {
-      USER_PRINTLN(F("handleSettingsSet(): strip is still drawing effects, waiting ..."));
+      USER_PRINTLN(F("handleSettingsSet(): strip is still drawing effects."));
       strip.waitUntilIdle();
     }
   }
@@ -775,7 +775,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   #endif
 
-  if ((subPage == 2) || (subPage == 10)) {
+  if ((subPage == 2) || (subPage == 3) || (subPage == 10)) {
     suspendStripService = false; // WLEDMM release lock
   }
 
@@ -817,7 +817,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // WLEDMM: before changing segment settings, make sure our strip is _not_ servicing effects in parallel
   if (strip.isServicing()) {
-      USER_PRINTLN(F("handleSet(): strip is still drawing effects, waiting ..."));
+      USER_PRINTLN(F("handleSet(): strip is still drawing effects."));
       strip.waitUntilIdle();
   }
 

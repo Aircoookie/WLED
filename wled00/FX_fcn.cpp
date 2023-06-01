@@ -75,10 +75,12 @@
 // WLEDMM experimental . this is a "C style" wrapper for strip.waitUntilIdle()
 // This workaround is just needed for the segment class, that does't know about "strip"
 void strip_wait_until_idle(String whoCalledMe) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental 
   if (strip.isServicing() && (strncmp(pcTaskGetTaskName(NULL), "loopTask", 8) != 0)) { // if we are in looptask (arduino loop), its safe to proceed without waiting
-  USER_PRINTLN(whoCalledMe + String(": strip is still drawing effects, waiting ..."));
+  USER_PRINTLN(whoCalledMe + String(": strip is still drawing effects."));
   strip.waitUntilIdle();
   }
+#endif
 }
 
 
@@ -1520,7 +1522,7 @@ void WS2812FX::finalizeInit(void)
 // on 8266 this function does nothing, because we can only do "buisy waiting" on ESP32
 #define MAX_IDLE_WAIT_MS 50  // seems to work in most cases
 void WS2812FX::waitUntilIdle(void) {
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)
   if (isServicing()) {
     unsigned long waitStarted = millis();
     do {
