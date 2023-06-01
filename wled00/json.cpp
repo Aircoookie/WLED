@@ -46,8 +46,11 @@
  * JSON API (De)serialization
  */
 
+static bool inDeepCall = false; // WLEDMM needed so that recursive deserializeSegment() does not remove locks too early
+
 bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
+  const bool iAmGroot = !inDeepCall;  // WLEDMM will only be true if this is the toplevel of the recursion.
   //WLEDMM add USER_PRINT
   if (elem.size()!=1 || elem["stop"] != 0) { // not for {"stop":0}
     String temp;
@@ -88,7 +91,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // WLEDMM: before changing segments, make sure our strip is _not_ servicing effects in parallel
   suspendStripService = true; // temporarily lock out strip updates
   if (strip.isServicing()) {
-    USER_PRINTLN(F("deserializeSegment(): strip is still drawing effects, waiting ..."));
+    USER_PRINTLN(F("deserializeSegment(): strip is still drawing effects."));
     strip.waitUntilIdle();
   }
 
@@ -118,9 +121,11 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
       elem["start"] = start;
       elem["stop"]  = start + len;
       elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
-      deserializeSegment(elem, i, presetId); // recursive call with new id
+      inDeepCall = true;  // WLEDMM remember that we are going into recursion
+      deserializeSegment(elem, i, presetId); // recursive call with new id // WLEDMM expect problems like heap overflow
+      if (iAmGroot) inDeepCall = false;  // WLEDMM toplevel -> reset recursion flag
     }
-    suspendStripService = false; // WLEDMM release lock
+    if (iAmGroot) suspendStripService = false; // WLEDMM release lock
     return true;
   }
 
@@ -179,7 +184,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   seg.set(start, stop, grp, spc, of, startY, stopY);
 
   if (seg.reset && seg.stop == 0) {
-    suspendStripService = false; // WLEDMM release lock
+    if (iAmGroot) suspendStripService = false; // WLEDMM release lock
     return true; // segment was deleted & is marked for reset, no need to change anything else
   }
 
@@ -345,7 +350,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
   if (seg.differs(prev) & 0x7F) stateChanged = true;
 
-  suspendStripService = false; // WLEDMM release lock
+  if (iAmGroot) suspendStripService = false; // WLEDMM release lock
   return true;
 }
 
@@ -353,6 +358,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 // presetId is non-0 if called from handlePreset()
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
+  const bool iAmGroot = !inDeepCall;  // WLEDMM will only be true if this is the toplevel of the recursion.
   //WLEDMM add USER_PRINT
   String temp;
   serializeJson(root, temp);
@@ -404,7 +410,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // WLEDMM: before changing strip, make sure our strip is _not_ servicing effects in parallel
   suspendStripService = true; // temporarily lock out strip updates
   if (strip.isServicing()) {
-    USER_PRINTLN(F("deserializeState(): strip is still drawing effects, waiting ..."));
+    USER_PRINTLN(F("deserializeState(): strip is still drawing effects."));
     strip.waitUntilIdle();
   }
 
@@ -471,22 +477,28 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       for (size_t s = 0; s < strip.getSegmentsNum(); s++) {
         Segment &sg = strip.getSegment(s);
         if (sg.isSelected()) {
+          inDeepCall = true;  // WLEDMM remember that we are going into recursion
           deserializeSegment(segVar, s, presetId);
+          if (iAmGroot) inDeepCall = false;  // WLEDMM toplevel -> reset recursion flag
           //didSet = true;
         }
       }
       //TODO: not sure if it is good idea to change first active but unselected segment
       //if (!didSet) deserializeSegment(segVar, strip.getMainSegmentId(), presetId);
     } else {
+      inDeepCall = true;  // WLEDMM remember that we are going into recursion
       deserializeSegment(segVar, id, presetId); //apply only the segment with the specified ID
+      if (iAmGroot) inDeepCall = false;  // WLEDMM toplevel -> reset recursion flag
     }
   } else {
     size_t deleted = 0;
     JsonArray segs = segVar.as<JsonArray>();
+    inDeepCall = true;  // WLEDMM remember that we are going into recursion
     for (JsonObject elem : segs) {
       if (deserializeSegment(elem, it++, presetId) && !elem["stop"].isNull() && elem["stop"]==0) deleted++;
     }
     if (strip.getSegmentsNum() > 3 && deleted >= strip.getSegmentsNum()/2U) strip.purgeSegments(); // batch deleting more than half segments
+    if (iAmGroot) inDeepCall = false;  // WLEDMM toplevel -> reset recursion flag
   }
 
   usermods.readFromJsonState(root);
@@ -524,7 +536,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       presetCycCurr = ps;
       unloadPlaylist();          // applying a preset unloads the playlist
       applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
-      suspendStripService = false; // WLEDMM release lock
+      if (iAmGroot) suspendStripService = false; // WLEDMM release lock
       return stateResponse;
     }
   }
@@ -548,7 +560,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   stateUpdated(callMode);
   if (presetToRestore) currentPreset = presetToRestore;
 
-  suspendStripService = false; // WLEDMM release lock
+  if (iAmGroot) suspendStripService = false; // WLEDMM release lock
   return stateResponse;
 }
 

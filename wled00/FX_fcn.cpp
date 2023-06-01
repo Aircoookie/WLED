@@ -72,6 +72,17 @@
   #error "Max segments must be at least max number of busses!"
 #endif
 
+// WLEDMM experimental . this is a "C style" wrapper for strip.waitUntilIdle()
+// This workaround is just needed for the segment class, that does't know about "strip"
+void strip_wait_until_idle(String whoCalledMe) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental 
+  if (strip.isServicing() && (strncmp(pcTaskGetTaskName(NULL), "loopTask", 8) != 0)) { // if we are in looptask (arduino loop), its safe to proceed without waiting
+  USER_PRINTLN(whoCalledMe + String(": strip is still drawing effects."));
+  strip.waitUntilIdle();
+  }
+#endif
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation
@@ -1512,12 +1523,12 @@ void WS2812FX::finalizeInit(void)
 // on 8266 this function does nothing, because we can only do "buisy waiting" on ESP32
 #define MAX_IDLE_WAIT_MS 50  // seems to work in most cases
 void WS2812FX::waitUntilIdle(void) {
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)
   if (isServicing()) {
     unsigned long waitStarted = millis();
     do {
-      delay(1);
-      yield();
+      delay(1);  // Suspending for 1 tick or more gives other tasks a chance to run.
+      //yield(); // seems to be a no-op on esp32
     } while (isServicing() && (millis() - waitStarted < MAX_IDLE_WAIT_MS));
     USER_PRINTF("strip.waitUntilIdle(): strip %sidle after %d ms. (task %s)\n", isServicing()?"not ":"", int(millis() - waitStarted), pcTaskGetTaskName(NULL));
   }
@@ -2165,6 +2176,12 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   }
 
   if (!requestJSONBufferLock(7)) return false;
+
+  // WLEDMM: before changing maps, make sure our strip is _not_ servicing effects in parallel
+  if (strip.isServicing()) {
+    USER_PRINTLN(F("deserializeMap(): strip is still drawing effects, waiting ..."));
+    strip.waitUntilIdle();
+  }
 
   //WLEDMM: change upstream code: do not load complete ledmaps in json as this blows up memory, use file read instead
   //read the file

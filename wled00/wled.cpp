@@ -165,15 +165,19 @@ void WLED::loop()
     unsigned long stripMillis = millis();
     #endif
     if (!offMode || strip.isOffRefreshRequired()) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental 
       static unsigned long lastTimeService = 0; // WLEMM needed to remove stale lock
       if (!suspendStripService && !doInitBusses && !loadLedmap) { // WLEDMM prevent effect drawing while strip or segments are being updated
+#endif
         strip.service();
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)
         lastTimeService = millis();
       } else {
         if (suspendStripService && (millis() - lastTimeService > 1500)) { // WLEDMM remove stale lock after 1.5 seconds
           USER_PRINTLN("--> looptask: stale suspendStripService lock removed after 1500 ms."); // should not happen - check for missing "suspendStripService = false"
         }
       }
+#endif
     }
     #ifdef ESP8266
     else if (!noWifiSleep)

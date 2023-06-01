@@ -31,6 +31,8 @@
 
 #include "const.h"
 
+void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.cpp
+
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #define USE_GET_MILLISECOND_TIMER
 #include "FastLED.h"
@@ -505,6 +507,12 @@ typedef struct Segment {
       if (ledsrgb) Serial.printf(" [%u]", length()*sizeof(CRGB));
       Serial.println();
       //#endif
+
+      // WLEDMM only delete segments when they are not in use
+      #ifdef ARDUINO_ARCH_ESP32
+      strip_wait_until_idle("~Segment()");
+      #endif
+
       if (!Segment::_globalLeds && ledsrgb) free(ledsrgb);
       if (name) delete[] name;
       if (_t) delete _t;
@@ -748,6 +756,9 @@ class WS2812FX {  // 96 bytes
     }
 
     ~WS2812FX() {
+      //#ifdef WLED_DEBUG
+      if (Serial) Serial.println(F("~WS2812FX destroying strip.")); // WLEDMM can't use DEBUG_PRINTLN here
+      //#endif
       if (customMappingTable) delete[] customMappingTable;
       _mode.clear();
       _modeData.clear();
