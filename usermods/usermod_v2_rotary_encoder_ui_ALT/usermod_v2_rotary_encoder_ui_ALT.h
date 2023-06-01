@@ -265,7 +265,7 @@ class RotaryEncoderUIUsermod : public Usermod {
     /**
      * Enable/Disable the usermod
      */
-    inline void enable(bool enable) { enabled = enable; }
+    inline void enable(bool enable) { if (!(pinA<0 || pinB<0 || pinC<0)) enabled = enable; }
 
     /**
      * Get usermod enabled/disabled state
@@ -375,6 +375,7 @@ byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
  * modes_alpha_indexes and palettes_alpha_indexes.
  */
 void RotaryEncoderUIUsermod::sortModesAndPalettes() {
+  DEBUG_PRINTLN(F("Sorting modes and palettes."));
   //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
   modes_qstrings = strip.getModeDataSrc();
   modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
@@ -480,6 +481,7 @@ void RotaryEncoderUIUsermod::setup()
     pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
   } else {
     if ((i2c_sda == i2c_scl && i2c_sda == -1) || pinA<0 || pinB<0 || pinC<0) {
+      DEBUG_PRINTLN(F("Pins unused, disabling."));
       enabled = false;
       return;
     }
@@ -530,13 +532,12 @@ void RotaryEncoderUIUsermod::loop()
   }
 
   if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
+    DEBUG_PRINTLN(F("Current mode or palette changed."));
     currentEffectAndPaletteInitialized = false;
   }
 
-  if (currentTime >= (loopTime + 2)) // 2ms since last check of encoder = 500Hz
+  if (currentTime >= (loopTime + 20)) // 20ms since last check of encoder = 50Hz
   {
-    loopTime = currentTime; // Updates loopTime
-
     bool buttonPressed = !readPin(pinC); //0=pressed, 1=released
     if (buttonPressed) {
       if (!buttonPressedBefore) buttonPressedTime = currentTime;
@@ -644,6 +645,9 @@ void RotaryEncoderUIUsermod::loop()
       }
     }
     Enc_A_prev = Enc_A;     // Store value of A for next time
+    DEBUG_PRINTF("Inputs: A:%d B:%d SW:%d\n", (int)Enc_A, (int)Enc_B, (int)!buttonPressed);
+
+    loopTime = currentTime; // Updates loopTime
   }
 }
 
@@ -654,6 +658,7 @@ void RotaryEncoderUIUsermod::displayNetworkInfo() {
 }
 
 void RotaryEncoderUIUsermod::findCurrentEffectAndPalette() {
+  DEBUG_PRINTLN(F("Finding current mode and palette."));
   currentEffectAndPaletteInitialized = true;
   for (uint8_t i = 0; i < strip.getModeCount(); i++) {
     if (modes_alpha_indexes[i] == effectCurrent) {
@@ -661,6 +666,7 @@ void RotaryEncoderUIUsermod::findCurrentEffectAndPalette() {
       break;
     }
   }
+  DEBUG_PRINTLN(F("Found current mode."));
 
   for (uint8_t i = 0; i < strip.getPaletteCount(); i++) {
     if (palettes_alpha_indexes[i] == effectPalette) {
@@ -668,6 +674,7 @@ void RotaryEncoderUIUsermod::findCurrentEffectAndPalette() {
       break;
     }
   }
+  DEBUG_PRINTLN(F("Found palette."));
 }
 
 bool RotaryEncoderUIUsermod::changeState(const char *stateName, byte markedLine, byte markedCol, byte glyph) {
@@ -1067,6 +1074,7 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
   int8_t newDTpin  = top[FPSTR(_DT_pin)]  | pinA;
   int8_t newCLKpin = top[FPSTR(_CLK_pin)] | pinB;
   int8_t newSWpin  = top[FPSTR(_SW_pin)]  | pinC;
+  bool   oldPcf8574 = usePcf8574;
 
   presetHigh = top[FPSTR(_presetHigh)] | presetHigh;
   presetLow  = top[FPSTR(_presetLow)]  | presetLow;
@@ -1090,14 +1098,15 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
     DEBUG_PRINTLN(F(" config (re)loaded."));
     // changing parameters from settings page
     if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin) {
-      if (!usePcf8574) {
+      if (!oldPcf8574) {
         pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
         pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
         pinManager.deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
-        pinA = newDTpin;
-        pinB = newCLKpin;
-        pinC = newSWpin;
+        DEBUG_PRINTLN(F("Deallocated old pins."));
       }
+      pinA = newDTpin;
+      pinB = newCLKpin;
+      pinC = newSWpin;
       if (pinA<0 || pinB<0 || pinC<0) {
         enabled = false;
         return true;
