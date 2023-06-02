@@ -119,7 +119,7 @@ void handleSerial()
 
         } else if (next == 'X') {
           forceReconnect = true; // WLEDMM - force reconnect via Serial
-        }} else if (next == 0xB0) {updateBaudRate( 115200);
+        } else if (next == 0xB0) {updateBaudRate( 115200);
         } else if (next == 0xB1) {updateBaudRate( 230400);
         } else if (next == 0xB2) {updateBaudRate( 460800);
         } else if (next == 0xB3) {updateBaudRate( 500000);
