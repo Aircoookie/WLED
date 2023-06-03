@@ -1,11 +1,16 @@
 #pragma once
 
 #include "wled.h"
+#undef U8X8_NO_HW_I2C // borrowed from WLEDMM: we do want I2C hardware drivers - if possible
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 #include "4LD_wled_fonts.c"
 
+#ifndef FLD_ESP32_NO_THREADS
+  #define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
+#endif
+
 //
-// Insired by the usermod_v2_four_line_display
+// Inspired by the usermod_v2_four_line_display
 //
 // v2 usermod for using 128x32 or 128x64 i2c
 // OLED displays to provide a four line display
@@ -88,9 +93,11 @@ typedef enum {
 
 
 class FourLineDisplayUsermod : public Usermod {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   public:
     FourLineDisplayUsermod() { if (!instance) instance = this; }
     static FourLineDisplayUsermod* getInstance(void) { return instance; }
+#endif
 
   private:
 
@@ -215,9 +222,7 @@ class FourLineDisplayUsermod : public Usermod {
     void loop();
 
     //function to update lastredraw
-    void updateRedrawTime() {
-      lastRedraw = millis();
-    }
+    inline void updateRedrawTime() { lastRedraw = millis(); }
 
     /**
      * Redraw the screen (but only if things have changed
@@ -352,10 +357,13 @@ const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
 const char FourLineDisplayUsermod::_contrastFix[]     PROGMEM = "contrastFix";
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
 FourLineDisplayUsermod *FourLineDisplayUsermod::instance = nullptr;
+#endif
 
 // some displays need this to properly apply contrast
 void FourLineDisplayUsermod::setVcomh(bool highContrast) {
+  if (type == NONE || !enabled) return;
   u8x8_t *u8x8_struct = u8x8->getU8x8();
   u8x8_cad_StartTransfer(u8x8_struct);
   u8x8_cad_SendCmd(u8x8_struct, 0x0db); //address of value
@@ -364,6 +372,7 @@ void FourLineDisplayUsermod::setVcomh(bool highContrast) {
 }
 
 void FourLineDisplayUsermod::startDisplay() {
+  if (type == NONE || !enabled) return;
   lineHeight = u8x8->getRows() > 4 ? 2 : 1;
   DEBUG_PRINTLN(F("Starting display."));
   u8x8->setBusClock(ioFrequency);  // can be used for SPI too
@@ -590,7 +599,7 @@ void FourLineDisplayUsermod::connected() {
  * Da loop.
  */
 void FourLineDisplayUsermod::loop() {
-#ifndef ARDUINO_ARCH_ESP32
+#if !(defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS))
   if (!enabled || strip.isUpdating()) return;
   unsigned long now = millis();
   if (now < nextUpdate) return;
@@ -716,6 +725,11 @@ void FourLineDisplayUsermod::redraw(bool forceRedraw) {
 }
 
 void FourLineDisplayUsermod::updateBrightness() {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+  unsigned long now = millis();
+  while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
+  if (drawing || lockRedraw) return;
+#endif
   knownBrightness = bri;
   if (overlayUntil == 0) {
     lockRedraw = true;
@@ -728,6 +742,11 @@ void FourLineDisplayUsermod::updateBrightness() {
 }
 
 void FourLineDisplayUsermod::updateSpeed() {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+  unsigned long now = millis();
+  while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
+  if (drawing || lockRedraw) return;
+#endif
   knownEffectSpeed = effectSpeed;
   if (overlayUntil == 0) {
     lockRedraw = true;
@@ -740,6 +759,11 @@ void FourLineDisplayUsermod::updateSpeed() {
 }
 
 void FourLineDisplayUsermod::updateIntensity() {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+  unsigned long now = millis();
+  while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
+  if (drawing || lockRedraw) return;
+#endif
   knownEffectIntensity = effectIntensity;
   if (overlayUntil == 0) {
     lockRedraw = true;
@@ -752,6 +776,11 @@ void FourLineDisplayUsermod::updateIntensity() {
 }
 
 void FourLineDisplayUsermod::drawStatusIcons() {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+  unsigned long now = millis();
+  while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
+  if (drawing || lockRedraw) return;
+#endif
   uint8_t col = 15;
   uint8_t row = 0;
   lockRedraw = true;
@@ -775,6 +804,11 @@ void FourLineDisplayUsermod::setMarkLine(byte newMarkLineNum, byte newMarkColNum
 
 //Draw the arrow for the current setting beiong changed
 void FourLineDisplayUsermod::drawArrow() {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+  unsigned long now = millis();
+  while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
+  if (drawing || lockRedraw) return;
+#endif
   lockRedraw = true;
   if (markColNum != 255 && markLineNum !=255) drawGlyph(markColNum, markLineNum*lineHeight, 21, u8x8_4LineDisplay_WLED_icons_1x1);
   lockRedraw = false;
@@ -783,6 +817,11 @@ void FourLineDisplayUsermod::drawArrow() {
 //Display the current effect or palette (desiredEntry) 
 // on the appropriate line (row). 
 void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+  unsigned long now = millis();
+  while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
+  if (drawing || lockRedraw) return;
+#endif
   char lineBuffer[MAX_JSON_CHARS];
   if (overlayUntil == 0) {
     lockRedraw = true;
@@ -851,9 +890,11 @@ void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const c
 bool FourLineDisplayUsermod::wakeDisplay() {
   if (type == NONE || !enabled) return false;
   if (displayTurnedOff) {
+  #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
     unsigned long now = millis();
-    while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
-    if (drawing) return false;
+    while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
+    if (drawing || lockRedraw) return false;
+  #endif
     lockRedraw = true;
     clear();
     // Turn the display back on
@@ -870,9 +911,11 @@ bool FourLineDisplayUsermod::wakeDisplay() {
  * Used in Rotary Encoder usermod.
  */
 void FourLineDisplayUsermod::overlay(const char* line1, long showHowLong, byte glyphType) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   unsigned long now = millis();
   while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
-  if (drawing) return;
+  if (drawing || lockRedraw) return;
+#endif
   lockRedraw = true;
   // Turn the display back on
   if (!wakeDisplay()) clear();
@@ -895,9 +938,11 @@ void FourLineDisplayUsermod::overlay(const char* line1, long showHowLong, byte g
  * Clears the screen and prints.
  */
 void FourLineDisplayUsermod::overlayLogo(long showHowLong) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   unsigned long now = millis();
   while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
-  if (drawing) return;
+  if (drawing || lockRedraw) return;
+#endif
   lockRedraw = true;
   // Turn the display back on
   if (!wakeDisplay()) clear();
@@ -957,9 +1002,11 @@ void FourLineDisplayUsermod::overlayLogo(long showHowLong) {
  * Used in Auto Save usermod
  */
 void FourLineDisplayUsermod::overlay(const char* line1, const char* line2, long showHowLong) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   unsigned long now = millis();
   while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
-  if (drawing) return;
+  if (drawing || lockRedraw) return;
+#endif
   lockRedraw = true;
   // Turn the display back on
   if (!wakeDisplay()) clear();
@@ -979,9 +1026,11 @@ void FourLineDisplayUsermod::overlay(const char* line1, const char* line2, long 
 }
 
 void FourLineDisplayUsermod::networkOverlay(const char* line1, long showHowLong) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   unsigned long now = millis();
   while (drawing && millis()-now < 125) delay(1); // wait if someone else is drawing
-  if (drawing) return;
+  if (drawing || lockRedraw) return;
+#endif
   lockRedraw = true;
 
   String line;
@@ -1098,7 +1147,7 @@ bool FourLineDisplayUsermod::handleButton(uint8_t b) {
 #define ARDUINO_RUNNING_CORE 1
 #endif
 void FourLineDisplayUsermod::onUpdateBegin(bool init) {
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   if (init && Display_Task) {
     vTaskSuspend(Display_Task);   // update is about to begin, disable task to prevent crash
   } else {

@@ -57,6 +57,10 @@
   #define PCF8574_ADDRESS 0x20  // some may start at 0x38
 #endif
 
+#ifndef PCF8574_INT_PIN
+  #define PCF8574_INT_PIN -1    // GPIO connected to INT pin on PCF8574
+#endif
+
 // The last UI state, remove color and saturation option if display not active (too many options)
 #ifdef USERMOD_FOUR_LINE_DISPLAY
  #define LAST_UI_STATE 11
@@ -125,6 +129,21 @@ static int re_qstringCmp(const void *ap, const void *bp) {
 }
 
 
+static volatile uint8_t pcfPortData = 0;                // port expander port state
+static volatile uint8_t addrPcf8574 = PCF8574_ADDRESS;  // has to be accessible in ISR
+
+// Interrupt routine to read I2C rotary state
+// if we are to use PCF8574 port expander we will need to rely on interrupts as polling I2C every 2ms
+// is a waste of resources and causes 4LD to fail.
+// in such case rely on ISR to read pin values and store them into static variable
+static void IRAM_ATTR i2cReadingISR() {
+  Wire.requestFrom(addrPcf8574, 1U);
+  if (Wire.available()) {
+    pcfPortData = Wire.read();
+  }
+}
+
+
 class RotaryEncoderUIUsermod : public Usermod {
 
   private:
@@ -186,7 +205,7 @@ class RotaryEncoderUIUsermod : public Usermod {
     bool enabled;
 
     bool usePcf8574;
-    uint8_t addrPcf8574;
+    int8_t pinIRQ;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -199,6 +218,7 @@ class RotaryEncoderUIUsermod : public Usermod {
     static const char _applyToAll[];
     static const char _pcf8574[];
     static const char _pcfAddress[];
+    static const char _pcfINTpin[];
 
     /**
      * readPin() - read rotary encoder pin value
@@ -254,7 +274,7 @@ class RotaryEncoderUIUsermod : public Usermod {
       , initDone(false)
       , enabled(true)
       , usePcf8574(USE_PCF8574)
-      , addrPcf8574(PCF8574_ADDRESS)
+      , pinIRQ(PCF8574_INT_PIN)
     {}
 
     /*
@@ -356,15 +376,7 @@ class RotaryEncoderUIUsermod : public Usermod {
  */
 byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
   if (usePcf8574) {
-    byte _data = 0;
-    if (pin < 8) {
-      Wire.requestFrom(addrPcf8574, 1U);
-      if (Wire.available()) {
-        _data = Wire.read();
-        _data = (_data>>pin) & 1;
-      }
-    }
-    return _data;
+    return (pcfPortData>>pin) & 1;
   } else {
     return digitalRead(pin);
   }
@@ -460,14 +472,25 @@ void RotaryEncoderUIUsermod::setup()
 {
   DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
 
-  if (!usePcf8574) {
+  if (usePcf8574) {
+    if ((i2c_sda == i2c_scl && i2c_sda == -1) || pinA<0 || pinB<0 || pinC<0) {
+      DEBUG_PRINTLN(F("I2C and/or PCF8574 pins unused, disabling."));
+      enabled = false;
+      return;
+    } else {
+      if (pinIRQ >= 0 && pinManager.allocatePin(pinIRQ, false, PinOwner::UM_RotaryEncoderUI)) {
+        attachInterrupt(pinIRQ, i2cReadingISR, CHANGE); // RISING, FALLING, CHANGE, ONLOW, ONHIGH
+        DEBUG_PRINTLN(F("Interrupt attached."));
+      } else {
+        DEBUG_PRINTLN(F("Unable to allocate interrupt pin, disabling."));
+        pinIRQ = -1;
+        enabled = false;
+        return;
+      }
+    }
+  } else {
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
     if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
-      // BUG: configuring this usermod with conflicting pins
-      //      will cause it to de-allocate pins it does not own
-      //      (at second config)
-      //      This is the exact type of bug solved by pinManager
-      //      tracking the owner tags....
       pinA = pinB = pinC = -1;
       enabled = false;
       return;
@@ -479,12 +502,6 @@ void RotaryEncoderUIUsermod::setup()
     pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
     pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
     pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
-  } else {
-    if ((i2c_sda == i2c_scl && i2c_sda == -1) || pinA<0 || pinB<0 || pinC<0) {
-      DEBUG_PRINTLN(F("Pins unused, disabling."));
-      enabled = false;
-      return;
-    }
   }
 
   loopTime = millis();
@@ -536,7 +553,7 @@ void RotaryEncoderUIUsermod::loop()
     currentEffectAndPaletteInitialized = false;
   }
 
-  if (currentTime >= (loopTime + 20)) // 20ms since last check of encoder = 50Hz
+  if (currentTime >= (loopTime + 2)) // 2ms since last check of encoder = 500Hz
   {
     bool buttonPressed = !readPin(pinC); //0=pressed, 1=released
     if (buttonPressed) {
@@ -645,8 +662,6 @@ void RotaryEncoderUIUsermod::loop()
       }
     }
     Enc_A_prev = Enc_A;     // Store value of A for next time
-    DEBUG_PRINTF("Inputs: A:%d B:%d SW:%d\n", (int)Enc_A, (int)Enc_B, (int)!buttonPressed);
-
     loopTime = currentTime; // Updates loopTime
   }
 }
@@ -1051,6 +1066,7 @@ void RotaryEncoderUIUsermod::addToConfig(JsonObject &root) {
   top[FPSTR(_applyToAll)] = applyToAll;
   top[FPSTR(_pcf8574)]    = usePcf8574;
   top[FPSTR(_pcfAddress)] = addrPcf8574;
+  top[FPSTR(_pcfINTpin)]  = pinIRQ;
   DEBUG_PRINTLN(F("Rotary Encoder config saved."));
 }
 
@@ -1074,6 +1090,7 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
   int8_t newDTpin  = top[FPSTR(_DT_pin)]  | pinA;
   int8_t newCLKpin = top[FPSTR(_CLK_pin)] | pinB;
   int8_t newSWpin  = top[FPSTR(_SW_pin)]  | pinC;
+  int8_t newIRQpin = top[FPSTR(_pcfINTpin)] | pinIRQ;
   bool   oldPcf8574 = usePcf8574;
 
   presetHigh = top[FPSTR(_presetHigh)] | presetHigh;
@@ -1097,8 +1114,15 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
   } else {
     DEBUG_PRINTLN(F(" config (re)loaded."));
     // changing parameters from settings page
-    if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin) {
-      if (!oldPcf8574) {
+    if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin || pinIRQ!=newIRQpin) {
+      if (oldPcf8574) {
+        if (pinIRQ >= 0) {
+          detachInterrupt(pinIRQ);
+          pinManager.deallocatePin(pinIRQ, PinOwner::UM_RotaryEncoderUI);
+          DEBUG_PRINTLN(F("Deallocated old IRQ pin."));
+        }
+        pinIRQ = newIRQpin;
+      } else {
         pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
         pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
         pinManager.deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
@@ -1115,7 +1139,7 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
     }
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-  return !top[FPSTR(_pcf8574)].isNull();
+  return !top[FPSTR(_pcfINTpin)].isNull();
 }
 
 
@@ -1130,3 +1154,4 @@ const char RotaryEncoderUIUsermod::_presetLow[]  PROGMEM = "preset-low";
 const char RotaryEncoderUIUsermod::_applyToAll[] PROGMEM = "apply-2-all-seg";
 const char RotaryEncoderUIUsermod::_pcf8574[]    PROGMEM = "use-PCF8574";
 const char RotaryEncoderUIUsermod::_pcfAddress[] PROGMEM = "PCF8574-address";
+const char RotaryEncoderUIUsermod::_pcfINTpin[]  PROGMEM = "PCF8574-INT-pin";
