@@ -479,7 +479,8 @@ void RotaryEncoderUIUsermod::setup()
       return;
     } else {
       if (pinIRQ >= 0 && pinManager.allocatePin(pinIRQ, false, PinOwner::UM_RotaryEncoderUI)) {
-        attachInterrupt(pinIRQ, i2cReadingISR, CHANGE); // RISING, FALLING, CHANGE, ONLOW, ONHIGH
+        pinMode(pinIRQ, INPUT_PULLUP);
+        attachInterrupt(pinIRQ, i2cReadingISR, FALLING); // RISING, FALLING, CHANGE, ONLOW, ONHIGH
         DEBUG_PRINTLN(F("Interrupt attached."));
       } else {
         DEBUG_PRINTLN(F("Unable to allocate interrupt pin, disabling."));
