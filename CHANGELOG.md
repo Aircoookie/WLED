@@ -1,9 +1,17 @@
 ## WLED changelog
 
+#### Build 2306020
+
+-   Support for segment sets (PR #3171)
+-   Reduce sound simulation modes to 2 to facilitiate segment sets
+-   Trigger button immediately on press if all configured presets are the same (PR #3226)
+-   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
+
 #### Build 2305280
 -   DDP protocol update (#3193)
 -   added PCF8574 I2C port expander support for Multi relay usermod
 -   MQTT multipacket (fragmented) message fix
+-   added option to retain MQTT brightness and color messages
 -   new ethernet board: @srg74 Ethernet Shield
 -   new 2D effects: Soap (#3184) & Octopus & Waving cell (credit @St3P40 https://github.com/80Stepko08)
 -   various fixes and enhancements
