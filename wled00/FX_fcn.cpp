@@ -184,7 +184,7 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (reset) {
     if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
-    if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
+    //if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
     reset = false; // setOption(SEG_OPTION_RESET, false);
@@ -367,16 +367,15 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
 
 void Segment::handleTransition() {
   if (!transitional) return;
-  unsigned long maxWait = millis() + 20;
-  if (mode == FX_MODE_STATIC && next_time > maxWait) next_time = maxWait;
-  if (progress() == 0xFFFFU) {
-    if (_t) {
-      if (_t->_modeP != mode) markForReset();
+  uint16_t _progress = progress();
+  if (_t) { // thanks to @nXm AKA https://github.com/NMeirer
+    if (_progress >= 32767U && _t->_modeP != mode) markForReset();
+    if (_progress == 0xFFFFU) {
       delete _t;
       _t = nullptr;
     }
-    transitional = false; // finish transitioning segment
   }
+  if (_progress == 0xFFFFU) transitional = false; // finish transitioning segment
 }
 
 void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
@@ -1095,6 +1094,8 @@ void WS2812FX::service() {
   _isServicing = true;
   _segment_index = 0;
   for (segment &seg : _segments) {
+    // process transition (mode changes in the middle of transition)
+    seg.handleTransition();
     // reset the segment runtime data if needed
     seg.resetIfRequired();
 
@@ -1123,8 +1124,6 @@ void WS2812FX::service() {
         delay = (*_mode[seg.currentMode(seg.mode)])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
         if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
-
-        seg.handleTransition();
       }
 
       seg.next_time = nowUp + delay;
