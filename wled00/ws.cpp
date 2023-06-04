@@ -197,9 +197,9 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   if (wsBuf == nullptr) {    // 8266 does not support exceptions
 #endif
     wsBuf = nullptr;
-    DEBUG_PRINTLN(F("WS buffer allocation failed, dropping connections."));
-    ws.closeAll(1013); //code 1013 = temporary overload, try again later
-    ws.cleanupClients(0); //disconnect all clients to release memory
+    DEBUG_PRINTLN(F("WS buffer allocation failed."));
+    //ws.closeAll(1013); //code 1013 = temporary overload, try again later
+    //ws.cleanupClients(0); //disconnect all clients to release memory
     ws._cleanBuffers();
   }
   
@@ -213,7 +213,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     buffer[1] = 2; //version
-    buffer[2] = min(Segment::maxWidth, (uint16_t) 255); // WLEDMM prevent overflow
+    buffer[2] = min(Segment::maxWidth, (uint16_t) 255); // WLEDMM prevent overflow on buffer type uint8_t
     buffer[3] = min(Segment::maxHeight, (uint16_t) 255);
     //WLEDMM: no skipLines
   }
