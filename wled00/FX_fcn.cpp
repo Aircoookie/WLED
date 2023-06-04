@@ -1527,7 +1527,7 @@ void WS2812FX::waitUntilIdle(void) {
   if (isServicing()) {
     unsigned long waitStarted = millis();
     do {
-      delay(1);  // Suspending for 1 tick or more gives other tasks a chance to run.
+      delay(2);  // Suspending for 1 tick (or more) gives other tasks a chance to run.
       //yield(); // seems to be a no-op on esp32
     } while (isServicing() && (millis() - waitStarted < MAX_IDLE_WAIT_MS));
     USER_PRINTF("strip.waitUntilIdle(): strip %sidle after %d ms. (task %s)\n", isServicing()?"not ":"", int(millis() - waitStarted), pcTaskGetTaskName(NULL));

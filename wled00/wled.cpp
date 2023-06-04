@@ -102,8 +102,16 @@ void WLED::loop()
   #endif
   handleConnection();
   handleSerial();
-  handleNotifications();
-  handleTransitions();
+
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental: handleNotifications() calls strip.show(); handleTransitions modifies segments
+  if (!suspendStripService) {
+  #endif
+    handleNotifications();
+    handleTransitions();
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM end 
+  }
+  #endif
+
 #ifdef WLED_ENABLE_DMX
   handleDMX();
 #endif
@@ -255,6 +263,9 @@ void WLED::loop()
   }
 
   yield();
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental: pause handleWs while strip/segment data might be inconsistent
+  if (!suspendStripService)
+  #endif
   handleWs();
   handleStatusLED();
 
