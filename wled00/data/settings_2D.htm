@@ -7,11 +7,11 @@
 	<title>2D Set-up</title>
 	<script>
 	var d=document;
-	var loc = false, locip;
+	var loc = false, locip, locproto = "http:";
 	var maxPanels=64;
 	var ctx = null; // WLEDMM
 	function H(){window.open("https://kno.wled.ge/features/2D");}
-	function B(){window.open("/settings","_self");}
+	function B(){window.open(getURL("/settings"),"_self");}
 	function gId(n){return d.getElementById(n);}
 	function fS(){d.Sf.submit();} // <button type=submit> sometimes didn't work
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -42,9 +42,21 @@
 				locip = prompt("File Mode. Please enter WLED IP!");
 				localStorage.setItem('locIp', locip);
 			}
+		} else {
+			// detect reverse proxy
+			let path = window.location.pathname;
+			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			if (paths.length > 2) {
+				locproto = window.location.protocol;
+				loc = true;
+				locip = window.location.hostname+window.location.port+"/"+paths[0];
+			}
 		}
-		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=10';
-		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		loadJS(getURL('/settings/s.js?p=10'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+		if (loc) d.Sf.action = getURL('/settings/2D');
+	}
+	function getURL(path) {
+			return (loc ? locproto + "//" + locip : "") + path;
 	}
 
 	function UI() {

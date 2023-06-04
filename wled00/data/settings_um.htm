@@ -13,13 +13,13 @@
 	d.ro_gpio = [];
 	var umCfg = {};
 	var pins = [], pinO = [], owner;
-	var loc = false, locip;
+	var loc = false, locip, locproto = "http:";
 	var urows;
 	var numM = 0;
 	function gId(s) { return d.getElementById(s); }
 	function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
 	function H() { window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings"); }
-	function B() { window.open("/settings","_self"); }
+	function B() { window.open(getURL("/settings"),"_self"); }
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 	function loadJS(FILE_URL, async = true) {
 		let scE = d.createElement("script");
@@ -54,9 +54,22 @@
 				locip = prompt("File Mode. Please enter WLED IP!");
 				localStorage.setItem('locIp', locip);
 			}
+		} else {
+			// detect reverse proxy
+			let path = window.location.pathname;
+			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			if (paths.length > 2) {
+				locproto = window.location.protocol;
+				loc = true;
+				locip = window.location.hostname+window.location.port+"/"+paths[0];
+			}
 		}
 		ldS();
 		if (!numM) gId("um").innerHTML = "No Usermods installed.";
+		if (loc) d.Sf.action = getURL('/settings/um');
+	}
+	function getURL(path) {
+		return (loc ? locproto + "//" + locip : "") + path;
 	}
 	// https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
 	function isF(n) { return n === +n && n !== (n|0); }
@@ -196,8 +209,7 @@
 	}
 	// load settings and insert values into DOM
 	function ldS() {
-		var url = (loc?`http://${locip}`:'') + '/cfg.json';
-		fetch(url, {
+		fetch(getURL('/cfg.json'), {
 			method: 'get'
 		})
 		.then(res => {
@@ -216,8 +228,7 @@
 			}
 			if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
 			gId("um").innerHTML = urows;
-			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
-			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+			loadJS(getURL('/settings/s.js?p=8'), false);	// If we set async false, file is loaded and executed, then next statement is processed
 		})
 		.catch((error)=>{
 			gId('lserr').style.display = "inline";
