@@ -2248,8 +2248,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     loadedLedmap = n;
     f.close();
 
-    #ifdef WLED_DEBUG
       DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
+    #ifdef WLED_DEBUG_MAPS
       for (uint16_t j=0; j<customMappingSize; j++) { // fixing a minor warning: declaration of 'i' shadows a previous local
         if (!(j%Segment::maxWidth)) DEBUG_PRINTLN();
         DEBUG_PRINTF("%4d,", customMappingTable[j]);

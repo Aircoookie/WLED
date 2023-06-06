@@ -142,7 +142,7 @@ void WS2812FX::setUpMatrix() {
       // delete gap array as we no longer need it
       if (gapTable) delete[] gapTable;
 
-      #ifdef WLED_DEBUG
+      #ifdef WLED_DEBUG_MAPS
       DEBUG_PRINTF("Matrix ledmap: \n");
       for (uint16_t i=0; i<customMappingSize; i++) {
         if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
