@@ -415,7 +415,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
-      // char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed WLEDMM to do bus
+      char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -432,28 +432,27 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       sappend('c',rf,bus->isOffRefreshRequired());
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
-      //WLEDMM to do bus freq
-    //   uint16_t speed = bus->getFrequency();
-    //   if (bus->getType() > TYPE_ONOFF && bus->getType() < 48) {
-    //     switch (speed) {
-    //       case WLED_PWM_FREQ/3 : speed = 0; break;
-    //       case WLED_PWM_FREQ/2 : speed = 1; break;
-    //       default:
-    //       case WLED_PWM_FREQ   : speed = 2; break;
-    //       case WLED_PWM_FREQ*2 : speed = 3; break;
-    //       case WLED_PWM_FREQ*3 : speed = 4; break;
-    //     }
-    //   } else {
-    //     switch (speed) {
-    //       case  1000 : speed = 0; break;
-    //       case  2000 : speed = 1; break;
-    //       default:
-    //       case  5000 : speed = 2; break;
-    //       case 10000 : speed = 3; break;
-    //       case 20000 : speed = 4; break;
-    //     }
-    //   }
-    //   sappend('v',sp,speed);
+      uint16_t speed = bus->getFrequency();
+      if (bus->getType() > TYPE_ONOFF && bus->getType() < 48) {
+        switch (speed) {
+          case WLED_PWM_FREQ/3 : speed = 0; break;
+          case WLED_PWM_FREQ/2 : speed = 1; break;
+          default:
+          case WLED_PWM_FREQ   : speed = 2; break;
+          case WLED_PWM_FREQ*2 : speed = 3; break;
+          case WLED_PWM_FREQ*3 : speed = 4; break;
+        }
+      } else {
+        switch (speed) {
+          case  1000 : speed = 0; break;
+          case  2000 : speed = 1; break;
+          default:
+          case  5000 : speed = 2; break;
+          case 10000 : speed = 3; break;
+          case 20000 : speed = 4; break;
+        }
+      }
+      sappend('v',sp,speed);
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
