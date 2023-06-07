@@ -247,7 +247,11 @@
 #define B_SS_LPO_3 NeoPixelBusLg<Lpd6803GrbFeature, Lpd6803Method, NeoGammaNullMethod>
 
 //WS2801
+#ifdef WLED_USE_ETHERNET
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801MethodBase<TwoWireHspiImple<SpiSpeedHz>>, NeoGammaNullMethod>
+#else
 #define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801SpiHzMethod, NeoGammaNullMethod>
+#endif
 #define B_SS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Method, NeoGammaNullMethod>
 
 //P9813

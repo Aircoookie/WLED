@@ -592,6 +592,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
+    sappend('c',SET_F("RT"),retainMqttMsg);
     #else
     oappend(SET_F("toggle('MQTT');"));    // hide MQTT settings
     #endif

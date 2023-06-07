@@ -9,8 +9,8 @@
 
 void parseMQTTBriPayload(char* payload)
 {
-  if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; stateUpdated(1);}
-  else if (strstr(payload, "T" ) || strstr(payload, "t" )) {toggleOnOff(); stateUpdated(1);}
+  if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; stateUpdated(CALL_MODE_DIRECT_CHANGE);}
+  else if (strstr(payload, "T" ) || strstr(payload, "t" )) {toggleOnOff(); stateUpdated(CALL_MODE_DIRECT_CHANGE);}
   else {
     uint8_t in = strtoul(payload, NULL, 10);
     if (in == 0 && bri > 0) briLast = bri;
@@ -142,22 +142,22 @@ void publishMqtt()
   sprintf_P(s, PSTR("%u"), bri);
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/g"));
-  mqtt->publish(subuf, 0, true, s);         // retain message
+  mqtt->publish(subuf, 0, retainMqttMsg, s);         // optionally retain message (#2263)
 
   sprintf_P(s, PSTR("#%06X"), (col[3] << 24) | (col[0] << 16) | (col[1] << 8) | (col[2]));
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/c"));
-  mqtt->publish(subuf, 0, true, s);         // retain message
+  mqtt->publish(subuf, 0, retainMqttMsg, s);         // optionally retain message (#2263)
 
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/status"));
-  mqtt->publish(subuf, 0, true, "online");  // retain message for a LWT
+  mqtt->publish(subuf, 0, true, "online");          // retain message for a LWT
 
-  char apires[1024];                        // allocating 1024 bytes from stack can be risky
+  char apires[1024];                                // allocating 1024 bytes from stack can be risky
   XML_response(nullptr, apires);
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/v"));
-  mqtt->publish(subuf, 0, false, apires);   // do not retain message
+  mqtt->publish(subuf, 0, retainMqttMsg, apires);   // optionally retain message (#2263)
   #endif
 }
 

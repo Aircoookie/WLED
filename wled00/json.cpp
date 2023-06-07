@@ -169,7 +169,10 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps // WLEDMM softhack007: this line sometimes crashes with "Stack canary watchpoint triggered (async_tcp)"
 
   seg.map1D2D  = constrain(map1D2D, 0, 7);
-  seg.soundSim = constrain(soundSim, 0, 7);
+  seg.soundSim = constrain(soundSim, 0, 1);
+
+  uint8_t set = elem[F("set")] | seg.set;
+  seg.set = constrain(set, 0, 3);
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -181,7 +184,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     of = offsetAbs;
   }
   if (stop > start && of > len -1) of = len -1;
-  seg.set(start, stop, grp, spc, of, startY, stopY);
+  seg.setUp(start, stop, grp, spc, of, startY, stopY);
 
   if (seg.reset && seg.stop == 0) {
     if (iAmGroot) suspendStripService = false; // WLEDMM release lock
@@ -212,36 +215,43 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
-    for (size_t i = 0; i < 3; i++)
-    {
-      int rgbw[] = {0,0,0,0};
-      bool colValid = false;
-      JsonArray colX = colarr[i];
-      if (colX.isNull()) {
-        byte brgbw[] = {0,0,0,0};
-        const char* hexCol = colarr[i];
-        if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-          int kelvin = colarr[i] | -1;
-          if (kelvin <  0) continue;
-          if (kelvin == 0) seg.setColor(i, 0);
-          if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+    if (seg.getLightCapabilities() & 3) {
+      // segment has RGB or White
+      for (size_t i = 0; i < 3; i++)
+      {
+        int rgbw[] = {0,0,0,0};
+        bool colValid = false;
+        JsonArray colX = colarr[i];
+        if (colX.isNull()) {
+          byte brgbw[] = {0,0,0,0};
+          const char* hexCol = colarr[i];
+          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+            int kelvin = colarr[i] | -1;
+            if (kelvin <  0) continue;
+            if (kelvin == 0) seg.setColor(i, 0);
+            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+            colValid = true;
+          } else { //HEX string, e.g. "FFAA00"
+            colValid = colorFromHexString(brgbw, hexCol);
+          }
+          for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+        } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
+          byte sz = colX.size();
+          if (sz == 0) continue; //do nothing on empty array
+
+          copyArray(colX, rgbw, 4);
           colValid = true;
-        } else { //HEX string, e.g. "FFAA00"
-          colValid = colorFromHexString(brgbw, hexCol);
         }
-        for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
-      } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
-        byte sz = colX.size();
-        if (sz == 0) continue; //do nothing on empty array
 
-        copyArray(colX, rgbw, 4);
-        colValid = true;
+        if (!colValid) continue;
+
+        seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
+        if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
       }
-
-      if (!colValid) continue;
-
-      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
-      if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
+    } else {
+      // non RGB & non White segment (usually On/Off bus)
+      seg.setColor(0, ULTRAWHITE);
+      seg.setColor(1, BLACK);
     }
   }
 
@@ -284,7 +294,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["ix"], &seg.intensity);
 
   uint8_t pal = seg.palette;
-  if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
+  if (seg.getLightCapabilities() & 1) {  // ignore palette for White and On/Off segments
+    if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
+  }
 
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
@@ -589,6 +601,7 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   byte segbri    = seg.opacity;
   root["bri"]    = (segbri) ? segbri : 255;
   root["cct"]    = seg.cct;
+  root[F("set")] = seg.set;
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 

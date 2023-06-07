@@ -12,6 +12,7 @@
 #define DEFAULT_AP_SSID     "WLED-AP"
 #define DEFAULT_AP_PASS     "wled1234"
 #define DEFAULT_OTA_PASS    "wledota"
+#define DEFAULT_MDNS_NAME   "x"
 
 //increase if you need more
 #ifndef WLED_MAX_USERMODS
