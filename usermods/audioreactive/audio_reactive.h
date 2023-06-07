@@ -907,7 +907,6 @@ class AudioReactive : public Usermod {
 
     // variables  for UDP sound sync
     WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!)
-    uint8_t fftUdpBuffer[UDPSOUND_MAX_PACKET+1] = { 0 }; // static buffer for receiving
     unsigned long lastTime = 0;   // last time of running UDP Microphone Sync
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
@@ -1452,6 +1451,7 @@ class AudioReactive : public Usermod {
       size_t packetSize = fftUdp.parsePacket();
       if ((packetSize > 0) && ((packetSize < 5) || (packetSize > UDPSOUND_MAX_PACKET))) fftUdp.flush(); // discard invalid packets (too small or too big)
       if ((packetSize > 5) && (packetSize <= UDPSOUND_MAX_PACKET)) {
+        static uint8_t fftUdpBuffer[UDPSOUND_MAX_PACKET+1] = { 0 }; // static buffer for receiving, to reuse the same memory and avoid heap fragmentation
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
         fftUdp.read(fftUdpBuffer, packetSize);
 
