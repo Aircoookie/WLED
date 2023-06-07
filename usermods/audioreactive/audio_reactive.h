@@ -1378,9 +1378,10 @@ class AudioReactive : public Usermod {
       transmitData.FFT_Magnitude = my_magnitude;
       transmitData.FFT_MajorPeak = FFT_MajorPeak;
 
-      fftUdp.beginMulticastPacket();
-      fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
-      fftUdp.endPacket();
+      if (fftUdp.beginMulticastPacket() != 0) { // beginMulticastPacket returns 0 in case of error
+        fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
+        fftUdp.endPacket();
+      }
       return;
     } // transmitAudioData()
 
@@ -1448,7 +1449,21 @@ class AudioReactive : public Usermod {
       if (!udpSyncConnected) return false;
       bool haveFreshData = false;
 
-      size_t packetSize = fftUdp.parsePacket();
+      size_t packetSize = 0;
+      // WLEDMM use exception handler to catch out-of-memory errors
+      #if __cpp_exceptions
+        try{
+          packetSize = fftUdp.parsePacket();
+        } catch(...) {
+          packetSize = 0; // low heap memory -> discard packet.
+          fftUdp.flush();
+          DEBUG_PRINTLN(F("receiveAudioData: parsePacket out of memory exception caught!"));
+          USER_FLUSH();
+        }
+      #else
+        packetSize = fftUdp.parsePacket();
+      #endif
+
       if ((packetSize > 0) && ((packetSize < 5) || (packetSize > UDPSOUND_MAX_PACKET))) fftUdp.flush(); // discard invalid packets (too small or too big)
       if ((packetSize > 5) && (packetSize <= UDPSOUND_MAX_PACKET)) {
         static uint8_t fftUdpBuffer[UDPSOUND_MAX_PACKET+1] = { 0 }; // static buffer for receiving, to reuse the same memory and avoid heap fragmentation

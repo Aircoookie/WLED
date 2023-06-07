@@ -243,14 +243,14 @@ void handleNotifications()
   if (!packetSize && udpRgbConnected) {
     packetSize = rgbUdp.parsePacket();
     if (packetSize) {
-      if (!receiveDirect) return;
-      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
+      if (!receiveDirect) {rgbUdp.flush(); notifierUdp.flush(); notifier2Udp.flush(); return;}
+      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) {rgbUdp.flush(); notifierUdp.flush(); notifier2Udp.flush(); return;}
       realtimeIP = rgbUdp.remoteIP();
       DEBUG_PRINTLN(rgbUdp.remoteIP());
       uint8_t lbuf[packetSize];
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
-      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) {notifierUdp.flush(); notifier2Udp.flush(); return;}
       uint16_t id = 0;
       uint16_t totalLen = strip.getLengthTotal();
       for (size_t i = 0; i < packetSize -2; i += 3)
@@ -263,12 +263,12 @@ void handleNotifications()
     }
   }
 
-  if (!(receiveNotifications || receiveDirect)) return;
+  if (!(receiveNotifications || receiveDirect)) {notifierUdp.flush(); notifier2Udp.flush(); return;}
 
   localIP = Network.localIP();
   //notifier and UDP realtime
-  if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
-  if (!isSupp && notifierUdp.remoteIP() == localIP) return; //don't process broadcasts we send ourselves
+  if (!packetSize || packetSize > UDP_IN_MAXSIZE) {notifierUdp.flush(); notifier2Udp.flush(); return;}
+  if (!isSupp && notifierUdp.remoteIP() == localIP) {notifierUdp.flush(); notifier2Udp.flush(); return;}; //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
   uint16_t len;

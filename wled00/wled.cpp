@@ -278,14 +278,16 @@ void WLED::loop()
     DEBUG_PRINT(F("Name: "));       DEBUG_PRINTLN(serverDescription);
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
-    DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
+    DEBUG_PRINT(F("Free heap : "));     DEBUG_PRINTLN(ESP.getFreeHeap());
 	#ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINT(F("Avail heap: "));     DEBUG_PRINTLN(ESP.getMaxAllocHeap());
     DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
 	#endif
     #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
     if (psramFound()) {
       //DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
-      DEBUG_PRINT(F("Free PSRAM:  "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINT(F("Free PSRAM : "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINT(F("Avail PSRAM: "));     DEBUG_PRINT(ESP.:getMaxAllocPsram()/1024); DEBUG_PRINTLN("kB");
 	  DEBUG_PRINT(F("PSRAM in use:")); DEBUG_PRINT(ESP.getPsramSize() - ESP.getFreePsram()); DEBUG_PRINTLN(F(" Bytes"));
 
     } else {

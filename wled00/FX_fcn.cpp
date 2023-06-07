@@ -1494,9 +1494,9 @@ void WS2812FX::finalizeInit(void)
 
   //initialize leds array. TBD: realloc if nr of leds change
   if (Segment::_globalLeds) {
-    purgeSegments(true);
     free(Segment::_globalLeds);
     Segment::_globalLeds = nullptr;
+    purgeSegments(true);   // WLEDMM moved here, because it seems to improve stability.
   }
   if (useLedsArray && getLengthTotal()>0) { // WLEDMM avoid malloc(0)
     size_t arrSize = sizeof(CRGB) * getLengthTotal();
