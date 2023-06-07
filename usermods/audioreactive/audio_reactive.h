@@ -1775,6 +1775,8 @@ class AudioReactive : public Usermod {
             have_new_sample = receiveAudioData();
             if (have_new_sample) last_UDPTime = millis();
             lastTime = millis();
+          } else {
+            fftUdp.flush(); // WLEDMM: Flush this if we haven't read it.
           }
           if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
           else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
