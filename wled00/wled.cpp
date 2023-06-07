@@ -272,7 +272,7 @@ void WLED::loop()
   handleStatusLED();
 
 // DEBUG serial logging (every 30s)
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HEAP)
   if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Name: "));       DEBUG_PRINTLN(serverDescription);
@@ -316,7 +316,15 @@ void WLED::loop()
     DEBUG_PRINTLN(F("---END OF DEBUG INFO---"));
   }
   loops++;
-#endif        // WLED_DEBUG
+#endif
+#ifdef WLED_DEBUG_HEAP
+  if (millis() - debugTime > 4999 ) { // WLEDMM: Special case for debugging heap faster
+    DEBUG_PRINT(F("*** Free heap: "));     DEBUG_PRINT(heap_caps_get_free_size(0x1800));
+    DEBUG_PRINT(F("\tLargest free block: "));     DEBUG_PRINT(heap_caps_get_largest_free_block(0x1800));
+    DEBUG_PRINTLN(F(" ***"));    
+    debugTime = millis();
+  }
+#endif        // WLED_DEBUG_HEAP
   toki.resetTick();
 
 #if WLED_WATCHDOG_TIMEOUT > 0
@@ -1087,15 +1095,22 @@ void WLED::handleConnection()
   }
 
   // reconnect WiFi to clear stale allocations if heap gets too low
-  if (now - heapTime > 5000) {
-    uint32_t heap = ESP.getFreeHeap();
+  if (now - heapTime > 5000) { // WLEDMM: updated with better logic for small heap available by block, not total.
+    // uint32_t heap = ESP.getFreeHeap();
+    uint32_t heap = heap_caps_get_largest_free_block(0x1800); // WLEDMM: This is a better metric for free heap.
     if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! "));
+      DEBUG_PRINT(F("Heap too low! (step 2, force reconnect): "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
       strip.purgeSegments(true); // remove all but one segments from memory
     } else if (heap < MIN_HEAP_SIZE) {
+      DEBUG_PRINT(F("Heap too low! (step 1, flush unread UDP): "));
+      DEBUG_PRINTLN(heap);      
       strip.purgeSegments();
+      notifierUdp.flush();
+      rgbUdp.flush();
+      notifier2Udp.flush();
+      ntpUdp.flush();
     }
     lastHeap = heap;
     heapTime = now;
