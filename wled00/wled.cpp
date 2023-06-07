@@ -287,7 +287,7 @@ void WLED::loop()
     if (psramFound()) {
       //DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
       DEBUG_PRINT(F("Free PSRAM : "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
-      DEBUG_PRINT(F("Avail PSRAM: "));     DEBUG_PRINT(ESP.:getMaxAllocPsram()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINT(F("Avail PSRAM: "));     DEBUG_PRINT(ESP.getMaxAllocPsram()/1024); DEBUG_PRINTLN("kB");
 	  DEBUG_PRINT(F("PSRAM in use:")); DEBUG_PRINT(ESP.getPsramSize() - ESP.getFreePsram()); DEBUG_PRINTLN(F(" Bytes"));
 
     } else {

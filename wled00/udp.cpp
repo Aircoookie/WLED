@@ -268,7 +268,7 @@ void handleNotifications()
   localIP = Network.localIP();
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) {notifierUdp.flush(); notifier2Udp.flush(); return;}
-  if (!isSupp && notifierUdp.remoteIP() == localIP) {notifierUdp.flush(); notifier2Udp.flush(); return;}; //don't process broadcasts we send ourselves
+  if (!isSupp && notifierUdp.remoteIP() == localIP) {notifierUdp.flush(); notifier2Udp.flush(); return;} //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
   uint16_t len;
