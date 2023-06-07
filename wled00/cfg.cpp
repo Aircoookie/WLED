@@ -444,7 +444,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 #ifndef WLED_DISABLE_REMOTE
   JsonObject remote = doc["remote"];
   CJSON(enable_espnow_remote, remote[F("remote_enabled")]);
-  getStringFromJson(linked_remote, remote[F("linked_remote")], 13); // "wled/test"
+  getStringFromJson(linked_remote, remote[F("linked_remote")], 13);
 #endif
 
 
