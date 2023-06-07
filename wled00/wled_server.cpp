@@ -195,7 +195,7 @@ void initServer()
     JsonObject root = doc.as<JsonObject>();
     if (error || root.isNull()) {
       releaseJSONBufferLock();
-      request->send(400, "application/json", F("{\"error\":9}"));
+      request->send(400, "application/json", F("{\"error\":9}")); // ERR_JSON
       return;
     }
     const String& url = request->url();
@@ -210,6 +210,11 @@ void initServer()
       */
       verboseResponse = deserializeState(root);
     } else {
+      if (!correctPIN && strlen(settingsPIN)>0) {
+        request->send(403, "application/json", F("{\"error\":1}")); // ERR_DENIED
+        releaseJSONBufferLock();
+        return;
+      }
       verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
     }
     releaseJSONBufferLock();
