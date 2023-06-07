@@ -193,7 +193,9 @@ void WLED::loop()
     #endif
     #ifdef WLED_DEBUG
     stripMillis = millis() - stripMillis;
+    #ifndef WLED_DEBUG_HEAP  // WLEDMM heap debug messages take some time - this warning is popping in too often
     if (stripMillis > 50) DEBUG_PRINTLN("Slow strip.");
+    #endif
     avgStripMillis += stripMillis;
     if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
     #endif

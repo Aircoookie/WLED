@@ -47,7 +47,7 @@ void esp_heap_trace_free_hook(void* ptr)
     Serial.println("** free: attempt to free nullptr."); 
   } else {
     size_t blocksize = heap_caps_get_allocated_size(ptr);
-    if (blocksize > 256000)
+    if ((blocksize < 1) || (blocksize > 256000))
       Serial.println("**** free: bad pointer to " + String(blocksize) + "bytes.");
     else
       Serial.println("** free " + String(blocksize) + "bytes.");
