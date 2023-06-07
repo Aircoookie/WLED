@@ -107,7 +107,9 @@
 #endif
 #include <WiFiUdp.h>
 #include <DNSServer.h>
-#include <espnow.h>
+#ifndef WLED_DISABLE_REMOTE
+  #include <espnow.h>
+#endif
 #ifndef WLED_DISABLE_OTA
   #define NO_OTA_PORT
   #include <ArduinoOTA.h>
