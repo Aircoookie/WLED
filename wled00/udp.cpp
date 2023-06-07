@@ -141,9 +141,10 @@ void notify(byte callMode, bool followUp)
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
 
-  notifierUdp.beginPacket(broadcastIp, udpPort);
-  notifierUdp.write(udpOut, WLEDPACKETSIZE);
-  notifierUdp.endPacket();
+  if (0 != notifierUdp.beginPacket(broadcastIp, udpPort)) { // WLEDMM beginPacket == 0 --> error
+    notifierUdp.write(udpOut, WLEDPACKETSIZE);
+    notifierUdp.endPacket();
+  }
   notificationSentCallMode = callMode;
   notificationSentTime = millis();
   notificationCount = followUp ? notificationCount + 1 : 0;
@@ -203,12 +204,19 @@ void exitRealtime() {
 #define TMP2NET_OUT_PORT 65442
 
 void sendTPM2Ack() {
-  notifierUdp.beginPacket(notifierUdp.remoteIP(), TMP2NET_OUT_PORT);
-  uint8_t response_ack = 0xac;
-  notifierUdp.write(&response_ack, 1);
-  notifierUdp.endPacket();
+  if (0 != notifierUdp.beginPacket(notifierUdp.remoteIP(), TMP2NET_OUT_PORT)) {  // WLEDMM beginPacket == 0 --> error
+    uint8_t response_ack = 0xac;
+    notifierUdp.write(&response_ack, 1);
+    notifierUdp.endPacket();
+  }
 }
 
+#ifdef ARDUINO_ARCH_ESP32
+// WLEDMM don't use dynamic arrays for receiving UDP. ESP32 has enough RAM, and handleNotifications() is only called from main loop, so one static buffer should be enough.
+static uint8_t lbuf[UDP_IN_MAXSIZE+1];
+static uint8_t udpIn[UDP_IN_MAXSIZE+1];
+// WLEDMM end
+#endif
 
 void handleNotifications()
 {
@@ -247,7 +255,9 @@ void handleNotifications()
       if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) {rgbUdp.flush(); notifierUdp.flush(); notifier2Udp.flush(); return;}
       realtimeIP = rgbUdp.remoteIP();
       DEBUG_PRINTLN(rgbUdp.remoteIP());
-      uint8_t lbuf[packetSize];
+      #ifndef ARDUINO_ARCH_ESP32
+      uint8_t lbuf[packetSize+1]; // WLEDMM: use global buffer on ESP32
+      #endif
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
       if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) {notifierUdp.flush(); notifier2Udp.flush(); return;}
@@ -270,7 +280,9 @@ void handleNotifications()
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) {notifierUdp.flush(); notifier2Udp.flush(); return;}
   if (!isSupp && notifierUdp.remoteIP() == localIP) {notifierUdp.flush(); notifier2Udp.flush(); return;} //don't process broadcasts we send ourselves
 
-  uint8_t udpIn[packetSize +1];
+  #ifndef ARDUINO_ARCH_ESP32
+  uint8_t udpIn[packetSize +1];  // WLEDMM: use global buffer on ESP32
+  #endif
   uint16_t len;
   if (isSupp) len = notifier2Udp.read(udpIn, packetSize);
   else        len =  notifierUdp.read(udpIn, packetSize);
@@ -677,9 +689,10 @@ void sendSysInfoUDP()
     data[40+i] = (build>>(8*i)) & 0xFF;
 
   IPAddress broadcastIP(255, 255, 255, 255);
-  notifier2Udp.beginPacket(broadcastIP, udpPort2);
-  notifier2Udp.write(data, sizeof(data));
-  notifier2Udp.endPacket();
+  if (0 != notifier2Udp.beginPacket(broadcastIP, udpPort2)) {  // WLEDMM beginPacket == 0 --> error
+    notifier2Udp.write(data, sizeof(data));
+    notifier2Udp.endPacket();
+  }
 }
 
 
