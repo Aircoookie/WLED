@@ -204,7 +204,8 @@ function getURL(path) {
 }
 function onLoad()
 {
-	if (window.location.protocol == "file:") {
+	let l = window.location;
+	if (l.protocol == "file:") {
 		loc = true;
 		locip = localStorage.getItem('locIp');
 		if (!locip) {
@@ -213,12 +214,12 @@ function onLoad()
 		}
 	} else {
 		// detect reverse proxy and/or HTTPS
-		let l = window.location;
 		let pathn = l.pathname;
 		let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
+		//while (paths[0]==="") paths.shift();
 		locproto = l.protocol;
-		locip = l.hostname + (l.port ? ":" + l.port : "")
-		if (paths.length > 1) {
+		locip = l.hostname + (l.port ? ":" + l.port : "");
+		if (paths.length > 0 && paths[0]!=="") {
 			loc = true;
 			locip +=  "/" + paths[0];
 		} else if (locproto==="https:") {
@@ -2594,7 +2595,7 @@ function cnfReset()
 		bt.innerHTML = "Confirm Reboot";
 		cnfr = true; return;
 	}
-	window.location.href = "/reset";
+	window.location.href = getURL("/reset");
 }
 
 var cnfrS = false;

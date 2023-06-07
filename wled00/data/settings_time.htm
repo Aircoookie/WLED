@@ -33,7 +33,8 @@
 		});
 	}
 	function S() {
-		if (window.location.protocol == "file:") {
+		let l = window.location;
+		if (l.protocol == "file:") {
 			loc = true;
 			locip = localStorage.getItem('locIp');
 			if (!locip) {
@@ -42,12 +43,12 @@
 			}
 		} else {
 			// detect reverse proxy
-			let path = window.location.pathname;
+			let path = l.pathname;
 			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
 			if (paths.length > 2) {
-				locproto = window.location.protocol;
+				locproto = l.protocol;
 				loc = true;
-				locip = window.location.hostname+window.location.port+"/"+paths[0];
+				locip = l.hostname+l.port+"/"+paths[0];
 			}
 		}
 		loadJS(getURL('/settings/s.js?p=5'), false);	// If we set async false, file is loaded and executed, then next statement is processed
