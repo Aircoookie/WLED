@@ -1,0 +1,17 @@
+
+#define ESP_NOW_STATE_UNINIT       0
+#define ESP_NOW_STATE_ON           1
+#define ESP_NOW_STATE_ERROR        2
+
+#define NIGHT_MODE_DEACTIVATED     -1
+#define NIGHT_MODE_BRIGHTNESS      5
+
+#define WIZMOTE_BUTTON_ON          1
+#define WIZMOTE_BUTTON_OFF         2
+#define WIZMOTE_BUTTON_NIGHT       3
+#define WIZMOTE_BUTTON_ONE         16
+#define WIZMOTE_BUTTON_TWO         17
+#define WIZMOTE_BUTTON_THREE       18
+#define WIZMOTE_BUTTON_FOUR        19
+#define WIZMOTE_BUTTON_BRIGHT_UP   9
+#define WIZMOTE_BUTTON_BRIGHT_DOWN 8

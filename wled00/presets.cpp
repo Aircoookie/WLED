@@ -120,6 +120,15 @@ bool applyPreset(byte index, byte callMode)
   return true;
 }
 
+// apply preset or fallback to a effect and palette if it doesn't exist
+void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID)
+{
+  applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
+  //these two will be overwritten if preset exists in handlePresets()
+  effectCurrent = effectID;
+  effectPalette = paletteID;
+}
+
 void handlePresets()
 {
   if (presetToSave) {

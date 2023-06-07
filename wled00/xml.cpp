@@ -328,11 +328,21 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AC"),apChannel);
     sappend('c',SET_F("WS"),noWifiSleep);
 
+    #ifndef WLED_DISABLE_REMOTE
+    sappend('c',SET_F("RE"),enable_espnow_remote);
+    sappends('s',SET_F("RMAC"),linked_remote);
+    #endif
+
     #ifdef WLED_USE_ETHERNET
     sappend('v',SET_F("ETH"),ethernetType);
     #else
     //hide ethernet setting if not compiled in
     oappend(SET_F("document.getElementById('ethd').style.display='none';"));
+    #endif
+
+    #ifdef WLED_DISABLE_REMOTE
+    //hide remote settings if not compiled
+    oappend(SET_F("document.getElementById('remd').style.display='none';"));
     #endif
 
     if (Network.isConnected()) //is connected
@@ -360,6 +370,19 @@ void getSettingsJS(byte subPage, char* dest)
     {
       sappends('m',SET_F("(\"sip\")[1]"),(char*)F("Not active"));
     }
+
+    #ifndef WLED_DISABLE_REMOTE
+    if (last_signal_src[0] != 0) //Have seen an ESP-NOW Remote
+    {
+      sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
+    } else if (!enable_espnow_remote)
+    {
+      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable remote to listen)"));
+    } else 
+    {
+      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
+    }
+    #endif
   }
 
   if (subPage == 2)
