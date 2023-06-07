@@ -895,6 +895,8 @@ class AudioReactive : public Usermod {
       double FFT_MajorPeak;   //  08 Bytes
     };
 
+    #define UDPSOUND_MAX_PACKET 96 // max packet size for audiosync, with a bit of "headroom"
+
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
   #ifdef SR_ENABLE_DEFAULT
     bool     enabled = true;        // WLEDMM
@@ -904,7 +906,8 @@ class AudioReactive : public Usermod {
     bool     initDone = false;
 
     // variables  for UDP sound sync
-    WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!) 
+    WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!)
+    uint8_t fftUdpBuffer[UDPSOUND_MAX_PACKET+1] = { 0 }; // static buffer for receiving
     unsigned long lastTime = 0;   // last time of running UDP Microphone Sync
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
@@ -1447,20 +1450,20 @@ class AudioReactive : public Usermod {
       bool haveFreshData = false;
 
       size_t packetSize = fftUdp.parsePacket();
-      if (packetSize > 5) {
+      if ((packetSize > 0) && ((packetSize < 5) || (packetSize > UDPSOUND_MAX_PACKET))) fftUdp.flush(); // discard invalid packets (too small or too big)
+      if ((packetSize > 5) && (packetSize <= UDPSOUND_MAX_PACKET)) {
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
-        uint8_t fftBuff[packetSize];
-        fftUdp.read(fftBuff, packetSize);
+        fftUdp.read(fftUdpBuffer, packetSize);
 
         // VERIFY THAT THIS IS A COMPATIBLE PACKET
-        if (packetSize == sizeof(audioSyncPacket) && (isValidUdpSyncVersion((const char *)fftBuff))) {
-          decodeAudioData(packetSize, fftBuff);
+        if (packetSize == sizeof(audioSyncPacket) && (isValidUdpSyncVersion((const char *)fftUdpBuffer))) {
+          decodeAudioData(packetSize, fftUdpBuffer);
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v2");
           haveFreshData = true;
           receivedFormat = 2;
         } else {
-          if (packetSize == sizeof(audioSyncPacket_v1) && (isValidUdpSyncVersion_v1((const char *)fftBuff))) {
-            decodeAudioData_v1(packetSize, fftBuff);
+          if (packetSize == sizeof(audioSyncPacket_v1) && (isValidUdpSyncVersion_v1((const char *)fftUdpBuffer))) {
+            decodeAudioData_v1(packetSize, fftUdpBuffer);
             //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v1");
             haveFreshData = true;
             receivedFormat = 1;
@@ -1715,11 +1718,12 @@ class AudioReactive : public Usermod {
         int userloopDelay = int(t_now - lastUMRun);
         if (lastUMRun == 0) userloopDelay=0; // startup - don't have valid data from last run.
 
-        #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
-          // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
-          if ((userloopDelay > /*23*/ 65) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
-            USER_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
-          }
+        #if defined(SR_DEBUG)
+          // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second.
+          // softhack007 disabled temporarily - avoid serial console spam with MANY leds and low FPS
+          //if ((userloopDelay > /*23*/ 65) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+            //DEBUG_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
+          //}
         #endif
 
         // run filters, and repeat in case of loop delays (hick-up compensation)
