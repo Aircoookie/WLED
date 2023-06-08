@@ -47,7 +47,7 @@
 			var req = new XMLHttpRequest();
 			req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
 			req.addEventListener('error', function(e){showToast(e.stack,true);});
-			req.open("POST", "/upload");
+			req.open("POST", getURL("/upload"));
 			var formData = new FormData();
 			formData.append("data", fO.files[0], name);
 			req.send(formData);
@@ -82,6 +82,10 @@
 					loc = true;
 					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
 				}
+			}
+			if (loc) {
+				gId("bckcfg").setAttribute('href',getURL(gId("bckcfg").pathname));
+				gId("bckpresets").setAttribute('href',getURL(gId("bckpresets").pathname));
 			}
 			loadJS(getURL('/settings/s.js?p=6'), false);	// If we set async false, file is loaded and executed, then next statement is processed
 			if (loc) d.Sf.action = getURL('/settings/sec');
