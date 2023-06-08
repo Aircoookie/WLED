@@ -1375,7 +1375,7 @@ void WS2812FX::enumerateLedmaps() {
     snprintf_P(fileName, sizeof(fileName), PSTR("/ledmap%d.json"), i);
     bool isFile = WLED_FS.exists(fileName);
 
-        #ifndef ESP8266
+    #ifndef ESP8266
     if (ledmapNames[i-1]) { //clear old name
       delete[] ledmapNames[i-1];
       ledmapNames[i-1] = nullptr;
@@ -1934,7 +1934,6 @@ void WS2812FX::resetSegments(bool boundsOnly) { //WLEDMM add boundsonly
     _mainSegment = 0;
   } else { //WLEDMM boundsonly
     for (segment &seg : _segments) {
-      bool recreateLeds = false;
       #ifndef WLED_DISABLE_2D
       seg.start = 0;
       seg.stop = Segment::maxWidth;
