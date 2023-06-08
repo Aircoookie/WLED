@@ -802,6 +802,7 @@ function populateSegments(s)
 				`<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
 				(cfg.comp.segpwr ? segp : '') +
 				`<div class="segin" id="seg${i}in">`+
+					`<input id="seg${i}fx" value="${inst.fx}" type="hidden"/>` + // <!--WLEDMM-->
 					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
 					`<table class="infot segt">`+
 					`<tr>`+
@@ -835,7 +836,7 @@ function populateSegments(s)
 					(!isMSeg ? rvXck : '') +
 					(isMSeg&&stoY-staY>1&&stoX-staX>1 ? map2D : '') +
 					(s.AudioReactive && s.AudioReactive.on ? "" : sndSim) +
-					(s.ARTIFX && s.ARTIFX.on && fxName.includes("ARTI-FX") ? cusEff : "") +
+					(s.ARTIFX && s.ARTIFX.on && fxName.includes("ARTI-FX") ? cusEff : "") + // <!--WLEDMM-->
 					`<label class="check revchkl" id="seg${i}lbtm">`+
 						(isMSeg?'Transpose':'Mirror effect') + (isMSeg ?
 						'<input type="checkbox" id="seg'+i+'tp" onchange="setTp('+i+')" '+(inst.tp?"checked":"")+'>':

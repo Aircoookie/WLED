@@ -65,10 +65,11 @@ void WS2812FX::setUpMatrix() {
 
     //WLEDMM recreate customMappingTable if more space needed
     if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
-      USER_PRINTF("setupmatrix customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
+      uint32_t size = MAX(ledmapMaxSize, Segment::maxWidth * Segment::maxHeight);//TroyHack
+      USER_PRINTF("setupmatrix customMappingTable alloc %d from %d\n", size, customMappingTableSize);
       if (customMappingTable != nullptr) delete[] customMappingTable;
-      customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
-      if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+      customMappingTable = new uint16_t[size];
+      if (customMappingTable != nullptr) customMappingTableSize = size;
     }
 
     if (customMappingTable != nullptr) {
