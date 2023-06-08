@@ -62,7 +62,7 @@
 			if (paths.length > 2) {
 				locproto = l.protocol;
 				loc = true;
-				locip = l.hostname+l.port+"/"+paths[0];
+				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
 			}
 		}
 		ldS();
