@@ -189,8 +189,8 @@ void serializePlaylist(JsonObject obj);
 //presets.cpp
 void initPresetsFile();
 void handlePresets();
-void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID);
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+void applyPresetWithFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID, uint8_t callMode);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};

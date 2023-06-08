@@ -1,5 +1,21 @@
 #include "wled.h"
-#include "remote_codes.h"
+
+#define ESP_NOW_STATE_UNINIT       0
+#define ESP_NOW_STATE_ON           1
+#define ESP_NOW_STATE_ERROR        2
+
+#define NIGHT_MODE_DEACTIVATED     -1
+#define NIGHT_MODE_BRIGHTNESS      5
+
+#define WIZMOTE_BUTTON_ON          1
+#define WIZMOTE_BUTTON_OFF         2
+#define WIZMOTE_BUTTON_NIGHT       3
+#define WIZMOTE_BUTTON_ONE         16
+#define WIZMOTE_BUTTON_TWO         17
+#define WIZMOTE_BUTTON_THREE       18
+#define WIZMOTE_BUTTON_FOUR        19
+#define WIZMOTE_BUTTON_BRIGHT_UP   9
+#define WIZMOTE_BUTTON_BRIGHT_DOWN 8
 
 #ifdef WLED_DISABLE_REMOTE
 void handleRemote(){}
@@ -22,12 +38,10 @@ typedef struct message_structure {
   uint8_t byte13;  // Unknown, maybe checksum
 } message_structure;
 
-int esp_now_state = ESP_NOW_STATE_UNINIT;
-uint32_t last_seq = -1;
-
-int brightnessBeforeNightMode = NIGHT_MODE_DEACTIVATED;
-
-message_structure incoming;
+static int esp_now_state = ESP_NOW_STATE_UNINIT;
+static uint32_t last_seq = -1;
+static int brightnessBeforeNightMode = NIGHT_MODE_DEACTIVATED;
+static message_structure incoming;
 
 // Pulled from the IR Remote logic but reduced to 10 steps with a constant of 3
 const byte brightnessSteps[] = {
@@ -94,6 +108,13 @@ void setOff() {
     toggleOnOff(); 
   }
 }
+
+void presetWithFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) {
+  applyPresetWithFallback(presetID, CALL_MODE_BUTTON_PRESET, effectID, paletteID);
+  //these two will be overwritten if preset exists in handlePresets()
+  effectCurrent = effectID;
+  effectPalette = paletteID;
+}
  
 // Callback function that will be executed when data is received
 void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
@@ -128,15 +149,15 @@ void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
   DEBUG_PRINT(F("] button: "));
   DEBUG_PRINTLN(incoming.button);
   switch (incoming.button) {
-    case WIZMOTE_BUTTON_ON             : setOn();                                     stateUpdated(CALL_MODE_BUTTON); break;
-    case WIZMOTE_BUTTON_OFF            : setOff();                                    stateUpdated(CALL_MODE_BUTTON); break;
-    case WIZMOTE_BUTTON_ONE            : presetFallback(1, FX_MODE_STATIC,        0); resetNightMode(); break;
-    case WIZMOTE_BUTTON_TWO            : presetFallback(2, FX_MODE_BREATH,        0); resetNightMode(); break;
-    case WIZMOTE_BUTTON_THREE          : presetFallback(3, FX_MODE_FIRE_FLICKER,  0); resetNightMode(); break;
-    case WIZMOTE_BUTTON_FOUR           : presetFallback(4, FX_MODE_RAINBOW,       0); resetNightMode(); break;
-    case WIZMOTE_BUTTON_NIGHT          : activateNightMode();                         stateUpdated(CALL_MODE_BUTTON); break;
-    case WIZMOTE_BUTTON_BRIGHT_UP      : brightnessUp();                              stateUpdated(CALL_MODE_BUTTON); break;
-    case WIZMOTE_BUTTON_BRIGHT_DOWN    : brightnessDown();                            stateUpdated(CALL_MODE_BUTTON); break;
+    case WIZMOTE_BUTTON_ON             : setOn();                                         stateUpdated(CALL_MODE_BUTTON); break;
+    case WIZMOTE_BUTTON_OFF            : setOff();                                        stateUpdated(CALL_MODE_BUTTON); break;
+    case WIZMOTE_BUTTON_ONE            : presetWithFallback(1, FX_MODE_STATIC,        0); resetNightMode(); break;
+    case WIZMOTE_BUTTON_TWO            : presetWithFallback(2, FX_MODE_BREATH,        0); resetNightMode(); break;
+    case WIZMOTE_BUTTON_THREE          : presetWithFallback(3, FX_MODE_FIRE_FLICKER,  0); resetNightMode(); break;
+    case WIZMOTE_BUTTON_FOUR           : presetWithFallback(4, FX_MODE_RAINBOW,       0); resetNightMode(); break;
+    case WIZMOTE_BUTTON_NIGHT          : activateNightMode();                             stateUpdated(CALL_MODE_BUTTON); break;
+    case WIZMOTE_BUTTON_BRIGHT_UP      : brightnessUp();                                  stateUpdated(CALL_MODE_BUTTON); break;
+    case WIZMOTE_BUTTON_BRIGHT_DOWN    : brightnessDown();                                stateUpdated(CALL_MODE_BUTTON); break;
     default: break;
 
   }

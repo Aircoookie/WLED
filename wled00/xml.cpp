@@ -331,6 +331,9 @@ void getSettingsJS(byte subPage, char* dest)
     #ifndef WLED_DISABLE_REMOTE
     sappend('c',SET_F("RE"),enable_espnow_remote);
     sappends('s',SET_F("RMAC"),linked_remote);
+    #else
+    //hide remote settings if not compiled
+    oappend(SET_F("document.getElementById('remd').style.display='none';"));
     #endif
 
     #ifdef WLED_USE_ETHERNET
@@ -338,11 +341,6 @@ void getSettingsJS(byte subPage, char* dest)
     #else
     //hide ethernet setting if not compiled in
     oappend(SET_F("document.getElementById('ethd').style.display='none';"));
-    #endif
-
-    #ifdef WLED_DISABLE_REMOTE
-    //hide remote settings if not compiled
-    oappend(SET_F("document.getElementById('remd').style.display='none';"));
     #endif
 
     if (Network.isConnected()) //is connected
