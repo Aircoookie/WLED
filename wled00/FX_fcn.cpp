@@ -110,13 +110,14 @@ Segment::Segment(const Segment &orig) {
 
 //WLEDMM: recreate ledsrgb if more space needed (will not free ledsrgb!)
 void Segment::allocLeds() {
-  if (!ledsrgb || sizeof(CRGB)*length() > ledsrgbSize) {
-    USER_PRINTF("allocLeds %d from %d\n", sizeof(CRGB)*length(), ledsrgb?ledsrgbSize:0);
-    ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length());
-    ledsrgbSize = ledsrgb?sizeof(CRGB)*length():0;
+  uint16_t size = sizeof(CRGB)*MAX(length(), ledmapMaxSize); //TroyHack
+  if (!ledsrgb || size > ledsrgbSize) {
+    USER_PRINTF("allocLeds %d from %d\n", size, ledsrgb?ledsrgbSize:0);
+    ledsrgb = (CRGB*)malloc(size);
+    ledsrgbSize = ledsrgb?size:0;
   }
   else {
-    USER_PRINTF("reuse Leds %d from %d\n", sizeof(CRGB)*length(), ledsrgb?ledsrgbSize:0);
+    USER_PRINTF("reuse Leds %d from %d\n", size, ledsrgb?ledsrgbSize:0);
   }
 }
 
@@ -1368,6 +1369,7 @@ uint8_t * Segment::getAudioPalette(int pal) {
 //WLEDMM from util.cpp
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void WS2812FX::enumerateLedmaps() {
+  ledmapMaxSize = 0;
   ledMaps = 1;
   for (int i=1; i<10; i++) {
     char fileName[33];
@@ -1393,7 +1395,6 @@ void WS2812FX::enumerateLedmaps() {
           f.find("\"n\":");
           char name[33];
           f.readBytesUntil('\n', name, sizeof(name));
-          USER_PRINTF("enumerateLedmaps %s %s\n", fileName, name);
 
           size_t len = 0;
           if (name != nullptr) {
@@ -1410,6 +1411,18 @@ void WS2812FX::enumerateLedmaps() {
             ledmapNames[i-1] = new char[len+1];
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
           }
+
+          //WLEDMM calc ledmapMaxSize (TroyHack)
+          char dim[33];
+          f.find("\"width\":");
+          f.readBytesUntil('\n', dim, sizeof(dim)); //hack: use fileName as we have this allocated already
+          uint16_t maxWidth = atoi(dim);
+          f.find("\"height\":");
+          f.readBytesUntil('\n', dim, sizeof(dim));
+          uint16_t maxHeight = atoi(dim);
+          ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
+
+          USER_PRINTF("enumerateLedmaps %s %s (%dx%d -> %d)\n", fileName, name, maxWidth, maxHeight, ledmapMaxSize);
         }
         f.close();
         releaseJSONBufferLock();
@@ -2200,7 +2213,6 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
   uint16_t maxWidth = atoi(fileName);
 
-
   f.find("\"height\":");
   f.readBytesUntil('\n', fileName, sizeof(fileName));
   uint16_t maxHeight = atoi(fileName);
@@ -2218,19 +2230,22 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   //WLEDMM recreate customMappingTable if more space needed
   if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
-    USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
+    uint32_t size = MAX(ledmapMaxSize, Segment::maxWidth * Segment::maxHeight);//TroyHack
+    USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", size, customMappingTableSize);
+	
     //if (customMappingTable != nullptr) delete[] customMappingTable;
-    //customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+    //customMappingTable = new uint16_t[size];
+
     // don't use new / delete
     if (customMappingTable != nullptr) {
-      customMappingTable = (uint16_t*) reallocf(customMappingTable, sizeof(uint16_t) * Segment::maxWidth * Segment::maxHeight);  // reallocf will free memory if it cannot resize
+      customMappingTable = (uint16_t*) reallocf(customMappingTable, sizeof(uint16_t) * size);  // reallocf will free memory if it cannot resize
     }
     if (customMappingTable == nullptr) { // second try
       DEBUG_PRINTLN("deserializeMap: trying to get fresh memory block.");
-      customMappingTable = (uint16_t*) calloc(Segment::maxWidth * Segment::maxHeight, sizeof(uint16_t));
+      customMappingTable = (uint16_t*) calloc(size, sizeof(uint16_t));
       if (customMappingTable == nullptr) DEBUG_PRINTLN("deserializeMap: alloc failed!");
     }
-    if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+    if (customMappingTable != nullptr) customMappingTableSize = size;
   }
 
   if (customMappingTable != nullptr) {

@@ -65,19 +65,22 @@ void WS2812FX::setUpMatrix() {
 
     //WLEDMM recreate customMappingTable if more space needed
     if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
-      USER_PRINTF("setupmatrix customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
+      uint32_t size = MAX(ledmapMaxSize, Segment::maxWidth * Segment::maxHeight);//TroyHack
+      USER_PRINTF("setupmatrix customMappingTable alloc %d from %d\n", size, customMappingTableSize);
+
       //if (customMappingTable != nullptr) delete[] customMappingTable;
-      //customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+      //customMappingTable = new uint16_t[size];
+
       // don't use new / delete
       if (customMappingTable != nullptr) {  // resize
-        customMappingTable = (uint16_t*) reallocf(customMappingTable, sizeof(uint16_t) * Segment::maxWidth * Segment::maxHeight); // reallocf will free memory if it cannot resize
+        customMappingTable = (uint16_t*) reallocf(customMappingTable, sizeof(uint16_t) * size); // reallocf will free memory if it cannot resize
       }
       if (customMappingTable == nullptr) { // second try
         DEBUG_PRINTLN("setUpMatrix: trying to get fresh memory block.");
-        customMappingTable = (uint16_t*) calloc(Segment::maxWidth * Segment::maxHeight, sizeof(uint16_t));
+        customMappingTable = (uint16_t*) calloc(size, sizeof(uint16_t));
         if (customMappingTable == nullptr) DEBUG_PRINTLN("setUpMatrix: alloc failed");
       }
-      if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+      if (customMappingTable != nullptr) customMappingTableSize = size;
     }
 
     if (customMappingTable != nullptr) {
