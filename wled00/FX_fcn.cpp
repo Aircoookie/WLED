@@ -1392,16 +1392,16 @@ void WS2812FX::enumerateLedmaps() {
         f = WLED_FS.open(fileName, "r");
         if (f) {
           f.find("\"n\":");
-          char name[33];
-          f.readBytesUntil('\n', name, sizeof(name));
+          char name[34] = { '\0' };  // ensure string termination
+          f.readBytesUntil('\n', name, sizeof(name)-1);
 
-          size_t len = 0;
-          if (name != nullptr) {
-            len = strlen(name);
-            if (len > 0 && len < 33) {
-              ledmapNames[i-1] = new char[len+1];
-              if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
-            }
+          size_t len = strlen(name);
+          if (len > 0 && len < 33) {
+            if ((len > 0) && (name[len-1] == '\r')) { name[len-1] = '\0'; len--;} // kill trailing `\r` (DOS format: \r\n)
+            if ((len > 0) && (name[len-1] == ','))  { name[len-1] = '\0'; len--;} // kill trailing `,`
+            if ((len > 0) && (name[len-1] == ' '))  { name[len-1] = '\0'; len--;} // kill trailing ` `
+            ledmapNames[i-1] = new char[len+1]; // +1 to include terminating \0 
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
@@ -1412,18 +1412,20 @@ void WS2812FX::enumerateLedmaps() {
           }
 
           //WLEDMM calc ledmapMaxSize (TroyHack)
-          char dim[33];
+          char dim[34] = { '\0' };
           f.find("\"width\":");
-          f.readBytesUntil('\n', dim, sizeof(dim)); //hack: use fileName as we have this allocated already
+          f.readBytesUntil('\n', dim, sizeof(dim)-1); //hack: use fileName as we have this allocated already
           uint16_t maxWidth = atoi(dim);
           f.find("\"height\":");
-          f.readBytesUntil('\n', dim, sizeof(dim));
+          memset(dim, 0, sizeof(dim)); // clear buffer before reading
+          f.readBytesUntil('\n', dim, sizeof(dim)-1);
           uint16_t maxHeight = atoi(dim);
           ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
 
           USER_PRINTF("enumerateLedmaps %s %s (%dx%d -> %d)\n", fileName, name, maxWidth, maxHeight, ledmapMaxSize);
         }
         f.close();
+        USER_FLUSH();
         releaseJSONBufferLock();
       }
       #endif
