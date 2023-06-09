@@ -352,6 +352,7 @@ uint16_t  __attribute__((pure)) crc16(const unsigned char* data_p, size_t length
 um_data_t* simulateSound(uint8_t simulationId);
 // WLEDMM enumerateLedmaps(); moved to FX.h
 CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal); //WLEDMM netmindz ar palette
+char *cleanUpName(char *in); // to clean up a name that was read from file
 
 #ifdef WLED_ADD_EEPROM_SUPPORT
 //wled_eeprom.cpp

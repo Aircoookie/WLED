@@ -536,4 +536,33 @@ CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal) {
   }
 
   return value;
-} 
+}
+
+// WLEDMM extended "trim string" function to support enumerateLedmaps
+// The function takes char* as input, and removes all leading and trailing "decorations" like spaces, tabs, line endings, quotes, colons
+// The conversion is "in place" (destructive).
+// example: cleanUpName("\t \"Ring241x 60/9 squeeze \" ,\r") returns "Ring241x 60/9 squeeze"
+// 
+// Null pointer and zero size "C strings" are handled correctly.
+// Will not work with flash strings. Unicode encoded multi-byte char strings may get corrupted.
+//
+static const char *unwantedChars = "\r\n\t\b ,;:\"\'`´\\"; // list of chars to delete
+//
+char *cleanUpName(char *in) {
+  if (nullptr == in) return(in);
+  size_t len = strlen(in);
+  if (len == 0) return(in);
+
+  // delete trailing garbage
+  while ((len > 0) && (strchr(unwantedChars, in[len-1]) != nullptr)) {
+    in[len-1] = '\0'; // deletes last char
+    len--;
+  }
+  // delete leading garbage
+  while ((len > 0) && (strchr(unwantedChars, in[0]) != nullptr)) {
+    (void) memmove(in, in+1, len); // shifts string left by one
+    len--;
+  }
+  
+  return(in);
+}

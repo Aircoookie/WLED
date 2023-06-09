@@ -1398,9 +1398,8 @@ void WS2812FX::enumerateLedmaps() {
 
           size_t len = strlen(name);
           if (len > 0 && len < 33) {
-            if ((len > 0) && (name[len-1] == '\r')) { name[len-1] = '\0'; len--;} // kill trailing `\r` (DOS format: \r\n)
-            if ((len > 0) && (name[len-1] == ','))  { name[len-1] = '\0'; len--;} // kill trailing `,`
-            if ((len > 0) && (name[len-1] == ' '))  { name[len-1] = '\0'; len--;} // kill trailing ` `
+            (void) cleanUpName(name);
+            len = strlen(name);
             ledmapNames[i-1] = new char[len+1]; // +1 to include terminating \0 
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
           }
@@ -1416,14 +1415,14 @@ void WS2812FX::enumerateLedmaps() {
           char dim[34] = { '\0' };
           f.find("\"width\":");
           f.readBytesUntil('\n', dim, sizeof(dim)-1); //hack: use fileName as we have this allocated already
-          uint16_t maxWidth = atoi(dim);
+          uint16_t maxWidth = atoi(cleanUpName(dim));
           f.find("\"height\":");
           memset(dim, 0, sizeof(dim)); // clear buffer before reading
           f.readBytesUntil('\n', dim, sizeof(dim)-1);
-          uint16_t maxHeight = atoi(dim);
+          uint16_t maxHeight = atoi(cleanUpName(dim));
           ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
 
-          USER_PRINTF("enumerateLedmaps %s %s (%dx%d -> %d)\n", fileName, name, maxWidth, maxHeight, ledmapMaxSize);
+          USER_PRINTF("enumerateLedmaps %s \"%s\" (%dx%d -> %d)\n", fileName, name, maxWidth, maxHeight, ledmapMaxSize);
         }
         f.close();
         USER_FLUSH();
