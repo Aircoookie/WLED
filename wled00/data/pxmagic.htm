@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="pt_BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    /-->
+    <link
+      rel="shortcut icon"
+      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAABdVJREFUWEfdl9tvFFUcx7/nzJnttNvddqHdS1nYWZRbJYSgPmhJuwXtBaIRsPDCQ32BLf4NhLYEAtGES8FGH2QNL1weFImkEYFZor6IKBGolQi7FYIt1CW7ZVm6M3PMmS2lpYVumyYmTrKZS+ac3+f3/f3O98wS/McHmX78EANCo4a36tOZaxoAIQY1xGyBtQnF7pWCqh8y0salMydciMV1YGogUwNQjyhS4NWEQRRGHT5mgkECAYGO+QG7buPQr34TcSH2QSZfNfIHUI8oJFCVkJ1uZQgFIEQCOAUxCQjlMJCFTIfwst+Z6Z4CRJ4ArUyqeTdFi/0KkShE5jovAEEBAAIKA4QMgkIHpRSL/KWZK4faHfmUIz8A9YiC4JupopIiVkD6QYkNg4YfWV4KzgEbGYRTug2TZ5E2yzAv4NN7TmsOxGonLUUeAK0Mqzek7MWFikNOoevYchgA6jf14KE+GybncLAHOHtsAQgRz68hZZZgXtCf+X1f26Qq5AUg1Taky0t1+UB7FVYvBUwAvSbQ2PQDJMKxf+dKVC8GGAHu6EDjxkso91dmf+v4qGiyMuQFwGrfSvtKBuXDe+qxcgFgEuAuB9Y0nYJEDOzfvR5VC3N9f58DdRs0lM1Zkf3l0L6ZA/CUpuUDe96GItLnwNxFwHtNXwFGFh/vbQLjOWWCi4F31muY5V+RvdIxQwCiBGUlVN6163W0bs/Jfuz4SrzfdBaUm2jfWY/trVFwMBw7XoUNGy/DPacye7Vj78wogNp16UJHuQwigXCx8B6BsQwIhiwAEzY8NotgchskSBCuoAZ82e6OthkCWNWUZvagbJLCXKFpBjJ9iJMnZoOYQNOmAQxxO8BtoFyU6BGCQXv2xsE8AEKhENM07QUbSStD7aY0Kw7KJgpgigCidUkGlBGrHIZOYRo2UAJQi/ARgmph9sYkCojYpG3HjtSteLw8FotZEONhBEBTmhUHZJPYLeMRP0gGwIUjCBgCcAZquaIJKhRQ7dmeCQBEUDFEVVU2Tw3cI83NzcoCNXgvC8I4B4/Hb86KRCJPHcxywddSzOljQKG1BjkRJxMcHIRSqy9giDUASISBkiHMDzj17q8jjtEbk4gVmP/SP9zUCSjRe2/Gyi0fGKZii5a8kvS6y4xoNOrIKRFihTVtKXVZlUJEFM6s7AmF5YbizHNxxcqEJJ6JC3FPTRQbDzI/Heqw3FDEqA7VpExw6Xas1ykUFzFGGxHbEt6WqvB6pVjMdEYirRkBoITak6zEKyvoZzIM6Iaig9qYKIFhZHWxI3IqWbISntVlPGYGbEhzj74kOCv788F1TkDTm5tbFVVFsq+vz+js7HQAsEo+xglVVVUa6tcky7zzjO+jXSMqiA+Q2sY3Uow8xq/X/3Itq1yaMGBAO3NRTISatdUpMdX1a9ddyyvnJgwoOH/mRwdiIkgu+5rqxhSjQ9I57ZxT07SREj9rxSy8dVuqzOOTbvf+6RzpBTWkbK5flfR5y42TXxx3VTfUJ8t8bly+cLRI0zRs/nB3utzjwZefH3VW19Umyiu80kDs7rCKgMg+6JeT/f13jMOffTKS/TgFhrtTaWxsTLq9biN+K+6KxWJYvHhhwufx4VY87opEIkbL1vBDj8cP7eJ3FsCWlnC6wlOB06dP2QcGBqTG+rqE2+tFPN7rEnMGAsHE/bt90jffnhG1H7NFT7QZsXB4S8rnma0ARBcrm4DpN+MxEVwMZi1bw+kxAOFt6QqvF5p2XgDpVikb6hIej5cNV5n1/30v0/np2OwnVGBEhYZVCQjv5ZLR3fOHa1TdngPgFh5iATyZQ0DkFgc1urq6hJrjPlBetB1bnT18jHZKFg6H015vxZOMkbsXCjwFGB73vDlGJs7je2AURu5yGGAk4IsAxg1+9sH/A6ClpSXpdrsRjUbFGp/SP6SZUEAEZKFQaIKNbNIKjHXCyV/P9YDIWDTdhQsXppzxTPSABTHdjGcKIE+xJn/tX+9QrZtHUiv3AAAAAElFTkSuQmCC"
+    />
+    <title>Pixel Magic Tool - @ajotanc</title>
+  </head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    ::selection {
+      background: #1982c4;
+      color: #ffffff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-size: 12px;
+      font-family: "Tahoma", monospace;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      margin: 0;
+    }
+
+    h3 {
+      color: #5f5f5f;
+    }
+
+    .divider {
+      width: calc(100% - 10px);
+      height: 1px;
+      background: #ececec;
+      margin: 20px auto;
+    }
+
+    .container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .content {
+      width: 100%;
+      min-width: 540px;
+      max-width: 900px;
+      margin: 20px;
+    }
+
+    #response,
+    #preview,
+    #image,
+    form,
+    canvas {
+      width: 100%;
+    }
+
+    form {
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8f8f8;
+      border-radius: 8px;
+      border: 1px solid #cccccc;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin: 20px 0 0;
+    }
+
+    .row:nth-child(2) {
+      margin: 0;
+    }
+
+    .column {
+      flex-basis: calc(50% - 10px);
+
+      position: relative;
+      padding: 0 5px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    button {
+      font-family: "Tahoma", monospace;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background-color: #f0f0f0;
+      font-size: 12px;
+      display: inline-block;
+      font-family: "Tahoma", monospace;
+      outline: none;
+    }
+
+    input[type="color"] {
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      padding: 0px 1px;
+      outline: none;
+    }
+
+    .input-group {
+      display: flex;
+    }
+
+    .input-group input {
+      border-radius: 5px 0 0 5px;
+    }
+
+    .input-description {
+      padding: 10px;
+      font-size: 14px;
+      color: #626262;
+      background: #d9d9d9;
+      border-radius: 0px 5px 5px 0;
+    }
+
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M.6 2.6L4 6l3.4-3.4L8 3.2 4 7.2.1 3.3z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 10px 10px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+      margin: 0 0 10px;
+    }
+
+    input[type="submit"] {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4caf50;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .dropzone {
+      width: 100%;
+      border: 1px dashed #a9a9a9;
+      background-color: #f5f5f5;
+      color: #666;
+      font-size: 12px;
+      text-align: center;
+      padding: 40px 10px;
+      border-radius: 5px;
+      margin: 20px 0;
+      transition: all 0.5s ease-in-out;
+    }
+
+    .dropzone p {
+      margin: 0;
+      padding: 0;
+    }
+
+    .dropzone:hover {
+      cursor: pointer;
+      background-color: #eee;
+    }
+
+    .dropzone.dragover {
+      background-color: #ddd;
+    }
+
+    .range-slider {
+      appearance: none;
+      background-color: #ddd;
+      height: 8px;
+      width: 100%;
+      border-radius: 10px;
+      outline: none;
+      margin: 16px 0;
+    }
+
+    .range-slider::-webkit-slider-thumb {
+      appearance: none;
+      height: 16px;
+      width: 16px;
+      background-color: #4caf50;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 0;
+    }
+
+    .range-slider::-moz-range-thumb {
+      appearance: none;
+      height: 16px;
+      width: 16px;
+      background-color: #4caf50;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 0;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+    }
+
+    .switch input {
+      outline: none;
+      display: none;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      border-radius: 34px;
+      transition: 0.4s;
+    }
+
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.4s;
+    }
+
+    input:checked + .switch-slider {
+      background-color: #4caf50;
+    }
+
+    input:focus + .switch-slider {
+      box-shadow: 0 0 1px #4caf50;
+    }
+
+    input:checked + .switch-slider:before {
+      transform: translateX(18px);
+    }
+
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: max-content;
+      padding: 6px 12px;
+      margin: 10px 0 0;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+
+      transform: translateY(30px);
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .toast-icon {
+      font-size: 22px;
+      margin-right: 8px;
+    }
+
+    .toast .toast-body {
+      padding: 8px 0;
+      color: #fdfdfd;
+    }
+
+    .toast.success {
+      background-color: #8ac926;
+    }
+
+    .toast.error {
+      background-color: #ff595e;
+    }
+
+    .toast.warning {
+      background-color: #ffca3a;
+    }
+
+    .toast-progress {
+      position: absolute;
+      left: 4px;
+      bottom: 4px;
+      width: calc(100% - 8px);
+      height: 3px;
+      transform: scaleX(0);
+      transform-origin: left;
+      border-radius: inherit;
+    }
+
+    .toast.success .toast-progress {
+      background: linear-gradient(to right, #8ac926, #c5ca30);
+    }
+
+    .toast.error .toast-progress {
+      background: linear-gradient(to right, #ff595e, #e23c4e);
+    }
+
+    .toast.warning .toast-progress {
+      background: linear-gradient(to right, #ffca3a, #ffda3d);
+    }
+
+    #multipleCanvas {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      position: relative;
+    }
+
+    #multipleCanvas .controls {
+      width: 100%;
+      position: absolute;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 23px;
+    }
+
+    #multipleCanvas .controls button {
+      border: 0;
+      outline: 0;
+      width: 46px;
+      height: 46px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fdfdfd;
+      text-align: center;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    #multipleCanvas .controls span {
+      vertical-align: middle;
+    }
+
+    #multipleCanvas .carousel {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    #multipleCanvas .carousel img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      margin-right: 20px;
+      border: 0;
+    }
+
+    #multipleCanvas .carousel img:last-child {
+      margin-right: 0;
+    }
+
+    .button {
+      width: 100%;
+      border: 0;
+      padding: 10px 18px;
+      border-radius: 4px;
+      color: #fdfdfd;
+      cursor: pointer;
+      margin: 0 0 10px;
+      background: #1982c4;
+      transition: all 0.5s ease-in-out;
+    }
+
+    .button:hover {
+      background: #4267ac;
+    }
+
+    .button:last-child {
+      margin-bottom: 0;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .buttonRainbow {
+      width: 100%;
+      border: 0;
+      padding: 10px 18px;
+      border-radius: 4px;
+      color: #fdfdfd;
+      cursor: pointer;
+      background: linear-gradient(
+        to right,
+        #ff595e,
+        #ffca3a,
+        #8ac926,
+        #1982c4,
+        #6a4c93
+      );
+    }
+
+    .buttonRainbow:hover {
+      animation-play-state: paused;
+    }
+
+    #preview {
+      border: 1px solid #cccccc;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+
+    #preview .buttons {
+      margin: 0 0 20px;
+    }
+
+    .w-full {
+      flex-basis: 100% !important;
+    }
+
+    .margin-zero {
+      margin: 0;
+    }
+
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+    }
+
+    #overlay.loading::after {
+      content: "";
+      display: block;
+      position: absolute;
+      top: calc(50% - 19px);
+      left: calc(50% - 19px);
+      width: 26px;
+      height: 26px;
+      border: 6px solid rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    input.invalid,
+    select.invalid,
+    textarea.invalid {
+      border: 1px solid #df1f1f;
+    }
+
+    input.invalid + .error-message,
+    select.invalid + .error-message,
+    textarea.invalid + .error-message {
+      display: block;
+      color: #df1f1f;
+      padding: 4px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .slide-container {
+      width: 100%;
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+    }
+
+    .slide {
+      scroll-snap-align: center;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 0 0 30px;
+      flex-direction: column;
+    }
+
+    .header .brand {
+      width: 100%;
+      max-width: 300px;
+      height: 100%;
+      display: block;
+      outline: none;
+      border: 0;
+    }
+
+    .header .title {
+      display: none;
+    }
+
+    .github {
+      display: flex;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial,
+        sans-serif;
+      font-size: 0;
+      line-height: 0;
+      white-space: nowrap;
+      font-size: 12px;
+      color: #24292f;
+      font-weight: 600;
+      margin: 10px 0;
+      justify-content: center;
+    }
+
+    .github .widget {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 5px;
+    }
+
+    .github .button {
+      margin: 0;
+      width: auto;
+      padding: 5px 10px;
+      color: #24292f;
+      background: #ebf0f4;
+      border: 1px solid rgba(31, 35, 40, 0.15);
+      background-image: linear-gradient(180deg, #f6f8fa, #ebf0f4 90%);
+      display: flex;
+      text-decoration: none;
+      align-items: center;
+    }
+
+    .github .button:not(:last-child) {
+      border-radius: 0.25em 0 0 0.25em;
+    }
+
+    .github .button:hover {
+      background-image: linear-gradient(180deg, #ebf0f4, #f6f8fa 90%);
+    }
+
+    .github .icon {
+      margin-right: 5px;
+      fill: #24292f;
+    }
+
+    .github .count {
+      display: block;
+      padding: 13px 10px;
+      border: 1px solid rgba(31, 35, 40, 0.15);
+      border-left: 0;
+      border-radius: 0 0.25em 0.25em 0;
+    }
+
+    #alert {
+      padding: 10px 20px;
+      border: 1px solid #ffe69c;
+      background: #fff3cd;
+      border-radius: 8px;
+      margin: 20px 0 0;
+      font-size: 14px;
+      font-weight: bold;
+      color: #664d03;
+    }
+
+    .subtitle {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      margin: 2px 0 5px;
+      color: #1982c4;
+    }
+
+    .subtitle a {
+      text-decoration: none;
+      font-weight: 600;
+      color: #1982c4;
+    }
+
+    .subtitle a:hover,
+    .subtitle a:focus,
+    .subtitle a:active {
+      color: #1982c4;
+    }
+
+    @media (max-width: 767px) {
+      .title h1 {
+        font-size: 20px;
+      }
+      .title h3 {
+        font-size: 14px;
+      }
+
+      .content {
+        min-width: 0;
+      }
+
+      .row {
+        flex-direction: column;
+        margin: 0;
+      }
+
+      .column {
+        flex-basis: 100%;
+        margin: 20px 0 0;
+        padding: 0;
+      }
+
+      .divider {
+        margin: 20px auto 0;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .row {
+        flex-wrap: nowrap;
+      }
+    }
+
+    @keyframes progress {
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+      0% {
+        border-top-color: #ff595e;
+      }
+      25% {
+        border-top-color: #ffca3a;
+      }
+      50% {
+        border-top-color: #8ac926;
+      }
+      75% {
+        border-top-color: #1982c4;
+      }
+      100% {
+        border-top-color: #6a4c93;
+      }
+    }
+
+    @keyframes rainbow {
+      0% {
+        background-position: 0% 0%;
+      }
+      50% {
+        background-position: 100% 100%;
+      }
+      100% {
+        background-position: 0% 0%;
+      }
+    }
+
+    @keyframes fadeIn {
+      5% {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      95% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+  <body>
+    <div class="container">
+      <div class="content">
+        <form id="formGenerate" novalidate>
+          <div class="header">
+            <!--img
+              class="brand"
+              src="https://user-images.githubusercontent.com/47322034/244749589-300b240b-40a3-4a9a-a6f0-925631919d9b.png"
+              alt="Pixel Magic Tool"
+              title="Pixel Magic Tool"
+            /-->
+            <div class="title">
+              <h1>Pixel Magic Tool</h1>
+              <h3>Image converter for WLED presets and playlists JSON</h3>
+            </div>
+          </div>
+          <div class="row">
+            <div class="column valitade">
+              <label for="hostname">Hostname</label>
+              <input type="text" name="hostname" id="hostname" required />
+            </div>
+            <div class="column valitade">
+              <label for="name">Preset Name</label>
+              <input
+                type="text"
+                name="name"
+                id="name"
+                value="New Preset"
+                required
+              />
+            </div>
+          </div>
+          <div class="row">
+            <div class="column valitade">
+              <label for="pattern">Pattern</label>
+              <select name="pattern" id="pattern" required>
+                <option value="">Select a choice</option>
+                <option value="1" title="['ffffff']" selected>
+                  Individual
+                </option>
+                <option value="2" title="[0, 'ffffff']">Index</option>
+                <option value="3" title="[0, 5, 'ffffff']">Range</option>
+              </select>
+            </div>
+            <div class="column valitade">
+              <label for="output">Output</label>
+              <select name="output" id="output" required>
+                <option value="">Select a choice</option>
+                <option value="json" selected>WLED JSON</option>
+                <option value="ha">Home Assistant</option>
+                <option value="curl">CURL</option>
+              </select>
+            </div>
+          </div>
+          <div class="row output" style="display: none">
+            <div class="column valitade">
+              <label for="device">Device</label>
+              <input type="text" name="device" id="device" required />
+            </div>
+            <div class="column valitade">
+              <label for="uniqueId">Unique Id</label>
+              <input type="text" name="uniqueId" id="uniqueId" required />
+            </div>
+            <div class="column valitade">
+              <label for="friendlyName">Friendly Name</label>
+              <input
+                type="text"
+                name="friendlyName"
+                id="friendlyName"
+                required
+              />
+            </div>
+          </div>
+          <div class="row">
+            <div class="column valitade">
+              <label for="segments">Segment Id</label>
+              <select name="segments" id="segments" required>
+                <option value="">Select a choice</option>
+              </select>
+            </div>
+            <div class="column valitade">
+              <label for="brightness">Brightness</label>
+              <input
+                type="range"
+                name="brightness"
+                id="brightness"
+                min="0"
+                max="255"
+                value="128"
+                class="range-slider"
+              />
+            </div>
+          </div>
+          <div class="row">
+            <div class="column valitade">
+              <label for="animation">Animation</label>
+              <label class="switch">
+                <input type="checkbox" name="animation" id="animation" />
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div class="column valitade">
+              <label for="transparentImage">Transparent Image</label>
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  name="transparentImage"
+                  id="transparentImage"
+                />
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div class="column valitade">
+              <label for="resizeImage">Resize Image</label>
+              <label class="switch">
+                <input type="checkbox" name="resizeImage" id="resizeImage" />
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="row resizeImage" style="display: none">
+            <div class="column valitade">
+              <label for="width">Width</label>
+              <input type="number" name="width" id="width" value="32" />
+            </div>
+            <div class="column valitade">
+              <label for="height">Height</label>
+              <input type="number" name="height" id="height" value="32" />
+            </div>
+          </div>
+          <div class="row animation" style="display: none">
+            <div class="column valitade">
+              <label for="frames">Frames</label>
+              <input type="number" name="frames" id="frames" value="4" />
+            </div>
+            <div class="column valitade">
+              <label for="duration">Duration</label>
+              <div class="input-group">
+                <input
+                  type="number"
+                  name="duration"
+                  id="duration"
+                  value="0.5"
+                  required="required"
+                  min="0"
+                  step="0.1"
+                  inputmode="numeric"
+                />
+                <div class="input-description">sec</div>
+              </div>
+            </div>
+            <div class="column valitade">
+              <label for="transition">Transition</label>
+              <div class="input-group">
+                <input
+                  type="number"
+                  name="transition"
+                  id="transition"
+                  value="0.2"
+                  required="required"
+                  min="0"
+                  step="0.1"
+                  inputmode="numeric"
+                />
+                <div class="input-description">sec</div>
+              </div>
+            </div>
+          </div>
+          <div class="row transparentImage" style="display: none">
+            <div class="column valitade w-full">
+              <label for="color">Choose a color</label>
+              <small class="subtitle"
+                >Color that will replace the
+                <strong>transparent pixels</strong> in the image</small
+              >
+              <input type="color" name="color" id="color" value="#ffffff" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="column valitade w-full">
+              <label for="images">Images</label>
+              <small class="subtitle"
+                >Images uploaded to
+                <a href="http://[wled-ip]/edit" target="_blank">WLED</a>
+                or upload image</small
+              >
+              <select name="images" id="images" required>
+                <option value="">Select a choice</option>
+              </select>
+            </div>
+          </div>
+          <div id="alert" style="display: none">
+            <span
+              >To define a large number of colors. 32x32 or larger matrix
+              presets need to be split into multiple requests at the same
+              time!</span
+            >
+          </div>
+          <div id="dropzone" class="dropzone valitade" style="display: none">
+            <p id="dropzoneLabel">
+              Drag and drop a file here or click to select a file
+            </p>
+            <input
+              type="file"
+              name="source"
+              id="source"
+              accept="image/*"
+              style="display: none"
+            />
+          </div>
+          <div class="row">
+            <div class="column w-full">
+              <button type="button" class="buttonRainbow" id="btnGenerate">
+                Generate
+              </button>
+            </div>
+          </div>
+        </form>
+        <div id="preview" style="display: none">
+          <div class="row margin-zero">
+            <div class="column w-full">
+              <textarea
+                name="response"
+                id="response"
+                cols="30"
+                rows="10"
+                readonly="readonly"
+              ></textarea>
+            </div>
+          </div>
+          <div id="isNotAnimation">
+            <div class="buttons">
+              <div class="row margin-zero">
+                <div class="column">
+                  <button type="button" class="button" id="btnCopyToClipboard">
+                    Copy to Clipboard
+                  </button>
+                </div>
+                <div class="column">
+                  <button type="button" class="button" id="btnDownloadPreset">
+                    Download
+                  </button>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div class="row margin-zero" id="notBigData">
+                <div class="column">
+                  <button type="button" class="button" id="btnSimulatePreset">
+                    Simulate
+                  </button>
+                </div>
+                <div class="column">
+                  <button type="button" class="button" id="btnSavePreset">
+                    Save
+                  </button>
+                </div>
+              </div>
+              <div class="row margin-zero" id="bigData">
+                <div class="column w-full">
+                  <button
+                    type="button"
+                    class="button"
+                    id="btnSimulatePresetBigData"
+                  >
+                    Simulate
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="singleCanvas"></div>
+          </div>
+          <div id="isAnimation">
+            <div class="buttons">
+              <div class="row margin-zero">
+                <div class="column">
+                  <button type="button" class="button" id="btnCopyToClipboard">
+                    Copy to Clipboard
+                  </button>
+                </div>
+                <div class="column">
+                  <button type="button" class="button" id="btnDownloadPreset">
+                    Download
+                  </button>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div class="row margin-zero">
+                <div class="column w-full">
+                  <button type="button" class="button" id="btnSavePlaylist">
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="multipleCanvas"></div>
+          </div>
+        </div>
+        <div class="github">
+          <div class="widget">
+            <a
+              class="button"
+              id="profile"
+              href="https://github.com/ajotanc"
+              target="_blank"
+              title="Alerson Jorge"
+            >
+              <svg class="icon" viewBox="0 0 16 16" width="16" height="16">
+                <path
+                  d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"
+                ></path>
+              </svg>
+              <span>Follow @ajotanc</span>
+            </a>
+            <span class="count" id="followers">0</span>
+          </div>
+          <div class="widget">
+            <a class="button" id="repository" target="_blank" href="#">
+              <svg class="icon" viewBox="0 0 16 16" width="16" height="16">
+                <path
+                  d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"
+                ></path>
+              </svg>
+              <span>Star</span>
+            </a>
+            <span class="count" id="star">0</span>
+          </div>
+          <div class="widget">
+            <a class="button" id="issue" target="_blank" href="#">
+              <svg class="icon" viewBox="0 0 16 16" width="16" height="16">
+                <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path>
+                <path
+                  d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"
+                ></path>
+              </svg>
+              <span>Issue</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="toast-container"></div>
+    <div id="overlay"></div>
+  </body>
+  <script>
+    const e="file:"===window.location.protocol?"http:":window.location.protocol,t=window.location.host||"0.0.0.0",n="PixelMagicTool";let a=`${e}//${t}`;const o=document.getElementById("hostname");o.value=t,o.addEventListener("change",(async()=>{a=`${e}//${o.value}`,await m(),await r(),i()}));let s=[],c={},l=[];function i(){const e=document.getElementById("images").parentNode.querySelector("a");e.href=e.href.replace("[wled-ip]",o.value)}async function d(e,t=!1,n=5e3){const o=`${a}/presets.json`,s=`${a}/json`;let c=0;B();const l=e.map((async e=>new Promise(((t,a)=>{setTimeout((async()=>{try{const t=await fetch(o),n=await t.json(),a=Object.keys(n),c=a.find((t=>"object"==typeof n[t]&&!n[t].playlist&&n[t].n===e.n))||parseInt(a.pop())+1,l=Object.assign(e,{psave:c}),i={method:"POST",body:JSON.stringify(l)};try{const t=await fetch(s,i),{success:n}=await t.json();n&&w(`Preset "${e.n}" save successfully!`)}catch(e){w(`Error saving preset: ${e}`,"error")}}catch(e){w(e,"error")}finally{t()}}),n*c++)}))));await Promise.all(l),t?setTimeout((async()=>{await async function(){const{value:e}=document.getElementById("duration"),{value:t}=document.getElementById("transition"),{value:n}=document.getElementById("name"),o=`${a}/presets.json`,s=`${a}/json`;try{const a=await fetch(o),c=await a.json(),l=Object.keys(c),i=l.filter((e=>"object"==typeof c[e]&&!c[e].playlist&&c[e].n&&c[e].n.includes(n))),d={psave:l.find((e=>"object"==typeof c[e]&&c[e].playlist&&c[e].n&&c[e].n===n))||parseInt(l.pop())+1,n:n,on:!0,o:!1,playlist:{ps:i,dur:Array.from({length:i.length},(()=>10*e)),transition:Array.from({length:i.length},(()=>10*t)),repeat:0,end:0}},r={method:"POST",body:JSON.stringify(d)};try{const e=await fetch(s,r),{success:t}=await e.json();t&&w(`Playlist "${n}" save successfully!`)}catch(e){w(`Error saving preset: ${e}`,"error")}}catch(e){w(e,"error")}}().then((()=>{b()})).catch((()=>{b()}))}),n):b()}async function r(){const e=`${a}/edit?list=/`,t=document.getElementById("images");t.innerHTML="";[{text:"Select a choice",value:""},{text:"Upload",value:"upload"}].forEach((({text:e,value:n})=>{const a=new Option(e,n);t.appendChild(a)})),B();try{const n=await fetch(e),o=await n.json(),s=["jpeg","jpg","png","gif"];o.filter((e=>{const{name:t}=e,[n,a]=t.split(".");return e.name=t.replace("/",""),s.includes(a)})).map((e=>{const{name:n}=e,o=document.createElement("option");o.text=n,o.value=`${a}/${n}`,t.add(o)}))}catch(e){w(e,"error")}finally{b()}}async function m(){const e=document.getElementById("segments"),t=document.getElementById("width"),n=document.getElementById("height"),o=`${a}/json/state`;e.innerHTML="";[{text:"Select a choice",value:""}].forEach((({text:t,value:n})=>{const a=new Option(t,n);e.appendChild(a)})),B();try{const a=await fetch(o),{seg:s}=await a.json();s&&s.forEach((function({id:a,n:o,stop:s,stopY:c},l){const i=document.createElement("option");i.text=o||`Segment ${a}`,i.value=a,i.setAttribute("data-width",s),i.setAttribute("data-height",c),0===l&&(i.selected=!0,t.value=s,n.value=c),e.add(i)}))}catch(e){w(e,"error")}finally{b()}}!async function(){await async function(){const e=document.getElementById("followers"),t=document.getElementById("repository"),a=document.getElementById("issue"),o=document.getElementById("star"),s="https://api.github.com/users/ajotanc";try{const t=await fetch(s),n=await t.json();e.textContent=n.followers}catch(e){w(e,"error")}try{const e=await fetch(`${s}/repos`),c=await e.json(),{name:l,html_url:i,stargazers_count:d}=c.find((({name:e})=>e===n));t.href=i,a.href=`${i}/issues`,o.textContent=d}catch(e){w(e,"error")}}(),await m(),await r(),i()}();const u=document.getElementById("dropzone"),y=document.getElementById("source");function p(e){return new Promise(((t,n)=>{const a=new Image;a.addEventListener("load",(function(){t(a)})),a.addEventListener("error",(function(){n(new Error("Error loading image"))})),a.src=e}))}function g(e){const{value:t}=document.getElementById("pattern"),{value:n}=document.getElementById("segments"),{value:a}=document.getElementById("brightness"),{value:o}=document.getElementById("width"),{value:s}=document.getElementById("height"),{checked:c}=document.getElementById("resizeImage"),l=48,i=o*l,d=s*l,r=i<=768?14:18,m=o*s,u=[];let y=[];const{ctx:p}=v(o,s);p.drawImage(e,0,0,o,s);const g=p.getImageData(0,0,o,s).data,{canvas:E,ctx:I}=v(i,d);for(let e=0;e<s;e++)for(let t=0;t<o;t++){const n=e*o+t,a=f(g[4*n],g[4*n+1],g[4*n+2],g[4*n+3]),{r:s,g:c,b:i}=h(a);u.push(a);let d=t*l,m=e*l;I.fillStyle=`rgb(${s}, ${c}, ${i})`,I.fillRect(d,m,l,l),I.lineWidth=1,I.strokeStyle="#ffffff",I.strokeRect(d,m,l,l);let y=d+24,p=m+24;I.font=`${r}px Arial`,I.fillStyle="ffffff"==a?"#111111":"#ffffff",I.textAlign="center",I.textBaseline="middle",I.fillText(n+1,y,p)}switch(t){case"1":y=u;break;case"2":y=function(e){const t=[];return e.forEach(((e,n)=>{t.push(n,e)})),t}(u);break;case"3":y=function(e,t,n){let a=0,o=0,s=e[0],c=[];if(n&&t>512){const t=function(e){return e.reduce(((e,t,n)=>(n%512==0?e.push([{index:n,color:t}]):e[e.length-1].push({index:n,color:t}),e)),[])}(e);t.forEach(((n,l)=>{const i=[];n.forEach(((e,t)=>{const{index:n,color:c}=e;c!==s&&(o=n,i.push(a,o,s),a=n),s=c})),c.push(i),l===t.length-1&&i.push(a,e.length,s)}))}else e.forEach(((e,t)=>{e!==s&&(o=t,c.push(a,o,s),a=t),s=e})),c.push(a,e.length,s);return c}(u,m,c)}return{canvas:E,bri:a,id:n,i:y,length:m}}function f(e,t,n,a){const{checked:o}=document.getElementById("transparentImage"),{value:s}=document.getElementById("color");return 0===a?o?s.replace("#","").toLowerCase():E(255,255,255):E(e,t,n)}function h(e){3===(e=e.replace("#","")).length&&(e=e.replace(/(.)/g,"$1$1"));const[t,n,a]=e.match(/.{2}/g).map((e=>parseInt(e,16)));return{r:t,g:n,b:a}}function E(e,t,n){return("000000"+(e<<16|t<<8|n).toString(16)).slice(-6)}function v(e,t){const n=document.createElement("canvas");n.width=e,n.height=t;const a=n.getContext("2d",{willReadFrequently:!0});return a.imageSmoothingQuality="high",a.imageSmoothingEnabled=!1,{canvas:n,ctx:a}}function I(e,t){return"ha"===e?function(e){const{value:t}=document.getElementById("device"),{value:n}=document.getElementById("friendlyName"),{value:a}=document.getElementById("uniqueId"),{value:o}=document.getElementById("hostname");if(t){return function(e){function t(e,t){return"object"!=typeof e||Array.isArray(e)?e:n(e,t+1)}function n(e,a=0){const o="  ".repeat(a);return Object.entries(e).map((([e,s])=>"object"!=typeof s||Array.isArray(s)?`${o}${e}: ${t(s,a)}`:`${o}${e}:\n${n(s,a+1)}`)).join("\n")}return n(e)}({switches:{[t]:{friendly_name:n,unique_id:a,command_on:`curl -X POST "http://${o}/json/state" -d '${e}' -H "Content-Type: application/json"`,command_off:`curl -X POST "http://${o}/json/state" -d '{"on":false}' -H "Content-Type: application/json"`}}})}}(t):"curl"===e?function(e){const{value:t}=document.getElementById("hostname");return`curl -X POST "http://${t}/json/state" -d '${e}' -H "Content-Type: application/json"`}(t):t}function w(e,t="success",n=2e3,a="preview"){const o=document.getElementById(a),s=document.createElement("div");s.style.animation="fadeIn",s.style.animationDuration=`${n+100}ms`,s.style.animationTimingFunction="linear",s.classList.add("toast",t);const c="success"===t?"check_circle":t,l=document.createElement("span");l.classList.add("toast-icon","material-icons"),l.textContent=c,s.appendChild(l);const i=document.createElement("span");i.classList.add("toast-body"),i.textContent=e,s.appendChild(i);const d=document.createElement("div");d.classList.add("toast-progress"),d.style.animation="progress",d.style.animationDuration=`${n+100}ms`,d.style.animationDelay="0s",s.appendChild(d),document.getElementById("toast-container").appendChild(s),setTimeout((()=>{s.style.opacity=0,setTimeout((()=>{s.remove()}),100)}),n),"error"===t&&(o.style.display="none")}function B(){const e=document.getElementById("overlay");e.classList.add("loading"),e.style.display="block",e.style.cursor="not-allowed",document.body.style.overflow="hidden"}function b(){const e=document.getElementById("overlay");e.classList.remove("loading"),e.style.display="none",e.style.cursor="default",document.body.style.overflow="auto"}function L(e){e.preventDefault();const t=document.getElementById("formGenerate").querySelectorAll("input, select, textarea");let n=!0;const a=navigator.language||navigator.userLanguage;return t.forEach((e=>{const t=e.closest(".valitade");if(!t)return;let o=!0,s=t;for(;s!==document.body;){const e=window.getComputedStyle(s);if("none"===e.display||"hidden"===e.display){o=!1;break}s=s.parentNode}if(o&&(!e.checkValidity()||"file"===e.type&&0===e.files.length)){e.classList.add("invalid");const o=e.dataset.errorMessage||e.validationMessage||function(e){e.includes("-")&&(e=e.split("-")[1]);const t={en:"This field is required.",br:"Este campo é obrigatório.",pt:"Este campo é obrigatório.",es:"¡Este campo es obligatorio.",fr:"Ce champ est obligatoire.",de:"Dieses Feld ist erforderlich.",it:"Questo campo è obbligatorio."};return t[e.toLowerCase()]||t.en}(a);let s=t.querySelector(".error-message");s||(s=document.createElement("div"),s.classList.add("error-message"),t.appendChild(s)),s.innerText=o,n=!1}else{e.classList.remove("invalid");const n=t.querySelector(".error-message");n&&t.removeChild(n)}})),n}function j(){const{checked:e}=document.getElementById("animation"),t=e?["gif"]:["jpeg","jpg","png","gif"],n=document.getElementById("source").files[0],a=document.getElementById("images"),{value:o}=a.selectedOptions[0],s="upload"===o?n.name.split(".").pop():o.split(".").pop();return!!t.includes(s)||(w(e?"Image format is not valid, select a GIF!":"Image format is not valid","error"),!1)}u.addEventListener("dragover",(e=>{e.preventDefault()})),u.addEventListener("drop",(e=>{e.preventDefault();const t=document.getElementById("dropzoneLabel");y.files=e.dataTransfer.files;const{name:n}=y.files[0];t.textContent=`Image ${n} selected!`,L(e)})),u.addEventListener("click",(()=>{y.click()})),y.addEventListener("change",(e=>{const t=document.getElementById("dropzoneLabel"),{name:n}=e.target.files[0];t.textContent=`Image ${n} selected!`,L(e)})),document.getElementById("btnSimulatePresetBigData").addEventListener("click",(async()=>{const e=`${a}/json/state`;B();const t=l.map((async(t,n)=>new Promise((async(a,o)=>{setTimeout((async()=>{try{const a={method:"POST",body:JSON.stringify(t)},o=await fetch(e,a),{success:s}=await o.json();n===l.length-1&&s&&w("Preset sent successfully!")}catch(e){w(e,"error")}finally{b()}}),100)}))));await Promise.all(t)})),document.getElementById("btnSimulatePreset").addEventListener("click",(async()=>{const e=`${a}/json/state`,t={method:"POST",body:JSON.stringify(c)};B();try{const n=await fetch(e,t),{success:a}=await n.json();a&&w("Preset sent successfully!")}catch(e){w(e,"error")}finally{b()}})),document.getElementById("btnSavePreset").addEventListener("click",(async()=>{const{value:e}=document.getElementById("name");s.splice(0),s.push(Object.assign({},c,{n:e,o:!1})),await d(s)})),document.getElementById("btnSavePlaylist").addEventListener("click",(async()=>{await d(s,!0)})),document.querySelectorAll("#btnCopyToClipboard").forEach((e=>{e.addEventListener("click",(async()=>{const e=document.getElementById("response");e.select();try{await navigator.clipboard.writeText(e.value),w("Text copied to clipboard")}catch(e){try{await document.execCommand("copy"),w("Text copied to clipboard")}catch(e){w(e,"error")}}}))})),document.querySelectorAll("#btnDownloadPreset").forEach((e=>{e.addEventListener("click",(()=>{const{value:e}=document.getElementById("response"),{value:t}=document.getElementById("output");!function(e,t,n){let a,o;switch(n){case"json":a="application/json",o="json";break;case"ha":a="application/x-yaml",o="yaml";break;case"curl":a="text/plain",o="txt"}const s=new Blob([e],{type:a}),c=URL.createObjectURL(s),l=document.createElement("a");l.href=c,l.download=`${t}.${o}`,l.click(),URL.revokeObjectURL(c)}(e,`WLED_${(new Date).getTime()}`,t)}))})),document.getElementById("segments").addEventListener("change",(e=>{const t=document.getElementById("width"),n=document.getElementById("height"),a=e.target.selectedOptions[0],o=a.getAttribute("data-width"),s=a.getAttribute("data-height");t.value=o,n.value=s})),document.getElementById("output").addEventListener("change",(e=>{const t=document.getElementsByClassName("output"),{value:n}=e.target.selectedOptions[0];Array.from(t).forEach((function(e){e.style.display="ha"===n?"flex":"none"}))})),document.getElementById("images").addEventListener("change",(e=>{const t=document.getElementById("dropzone"),{value:n}=e.target.selectedOptions[0];if("upload"===n){const e=document.getElementById("dropzoneLabel"),n=document.getElementById("source");e.textContent="Drag and drop a file here or click to select a file",n.value="",t.style.display="block"}else t.style.display="none"})),document.getElementById("transparentImage").addEventListener("change",(e=>{const t=document.getElementsByClassName("transparentImage"),{checked:n}=e.target;Array.from(t).forEach((function(e){e.style.display=n?"flex":"none"}))})),document.getElementById("resizeImage").addEventListener("change",(e=>{const t=document.getElementsByClassName("resizeImage"),n=document.getElementById("pattern"),{checked:a}=e.target;Array.from(t).forEach((function(e){a?(n.value=3,e.style.display="flex"):(n.value=1,e.style.display="none")}))})),document.getElementById("animation").addEventListener("change",(e=>{const t=document.getElementsByClassName("animation"),n=document.getElementById("pattern"),{checked:a}=e.target;Array.from(t).forEach((function(e){a?(w('If you want all frames in the image, set it to "0"',"warning",5e3),e.style.display="flex",n.value=3):(e.style.display="none",n.value=1)}))})),document.getElementById("btnGenerate").addEventListener("click",(async e=>{const{checked:t}=document.getElementById("animation"),n=document.getElementById("preview"),a=document.getElementById("isNotAnimation"),o=document.getElementById("singleCanvas"),i=document.getElementById("isAnimation"),d=document.getElementById("multipleCanvas");L(e)&&(e.preventDefault(),s.splice(0),l.splice(0),n.style.display="block",t?(i.style.display="block",a.style.display="none",o.innerHTML="",await async function(){if(j()){const e=document.getElementById("source").files[0],t=document.getElementById("images"),n=(document.getElementById("preview"),document.getElementById("response")),{value:a}=document.getElementById("name"),{value:o}=document.getElementById("frames"),{value:c}=document.getElementById("output"),{value:l}=document.getElementById("duration"),{text:i,value:d}=t.selectedOptions[0];B();try{const t=new FormData;if("upload"===d)t.append("image",e);else{const e=await fetch(d),n=await e.blob(),a=new File([n],i,{type:n.type});t.append("image",a)}const r=await fetch(`https://ajota.vercel.app/api/wled/frames?amount=${o}`,{method:"POST",body:t}),{message:m,frames:u}=await r.json();if(!r.ok)return void w(m,"error");s=[];const y=[],f=[],h=1e3*l,E=u.map((async(e,t)=>{const n=await p(e),{canvas:o,bri:c,id:l,i:i}=g(n),d={on:!0,bri:c,seg:{id:l,i:i}},r=`${a} ${t+1}`;y.push(`${r}|${JSON.stringify(d)}`),f.push(o),s.push(Object.assign(d,{n:r,o:!0}))}));await Promise.all(E);const v=y.map((e=>{const[t,n]=e.split("|"),a=I(c,n);return`${["ha","curl"].includes(c)?"#":"//"} ${t}\n${a}`}));n.value=v.join("\n"),w(m),function(e,t,n=3e3){let a=0;const o=document.createElement("div");o.classList.add("carousel"),t.forEach(((e,t)=>{t===a||(e.style.display="none"),o.appendChild(e)}));const s=document.getElementById(e);function c(){t[a].style.display="none",a++,a>=t.length&&(a=0),t[a].style.display="block",u()}function l(){t[a].style.display="none",a--,a<0&&(a=t.length-1),t[a].style.display="block",u()}s.innerHTML="",s.appendChild(o);const i=document.createElement("button");i.classList.add("btnNext"),i.innerHTML='<span class="material-icons">navigate_next</span>',i.addEventListener("click",(()=>{clearTimeout(m),c()}));const d=document.createElement("button");d.classList.add("btnPrevious"),d.innerHTML='<span class="material-icons">navigate_before</span>',d.addEventListener("click",(()=>{clearTimeout(m),l()}));const r=document.createElement("div");let m;function u(){clearTimeout(m),m=setTimeout((()=>{c(),0===a&&o.scrollTo(0,0)}),n)}r.classList.add("controls"),r.appendChild(d),r.appendChild(i),s.appendChild(r),u(),o.addEventListener("mouseover",(()=>{clearTimeout(m)})),o.addEventListener("mouseout",(()=>{u()}))}("multipleCanvas",f,h)}catch(e){w(e,"error")}finally{b()}}}()):(i.style.display="none",a.style.display="block",d.innerHTML="",await async function(){if(j()){const e=document.getElementById("source").files[0],{value:t}=document.getElementById("images"),{value:n}=document.getElementById("output");B();try{const a=document.getElementById("response"),o=document.getElementById("notBigData"),s=document.getElementById("bigData"),i=document.getElementById("alert"),d=document.getElementById("singleCanvas");d.innerHTML="";const r="upload"===t?URL.createObjectURL(e):t,m=await p(r),{canvas:u,bri:y,id:f,i:h,length:E}=g(m);let v=null;if(E>512){o.style.display="none",s.style.display="flex",i.style.display="flex";const e=h.map((e=>{const t={on:!0,bri:y,seg:{id:f,i:e}};l.push(t)}));await Promise.all(e);const t=l.map((e=>I(n,JSON.stringify(e))));v=["json","ha"].includes(n)?t.join("\n"):t.join(" && ")}else{o.style.display="flex",s.style.display="none",i.style.display="none",await new Promise((e=>{Object.assign(c,{on:!0,bri:y,seg:{id:f,i:h}}),e()}));const e=JSON.stringify(c);v=I(n,e)}a.value=v,d.appendChild(u)}catch(e){w(e,"error")}finally{b()}}}()))}));
+  </script>
+</html>

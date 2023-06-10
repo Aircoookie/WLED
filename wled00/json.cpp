@@ -455,6 +455,29 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+  // accepting config changes (not permanent, unless config is saved)
+  JsonObject cfg = root["cfg"];
+  if (!cfg.isNull()) {
+    // reconfigure button presets (on the fly)
+    JsonVariant btn = cfg["btn"];
+    if (btn.is<JsonObject>()) {
+      uint8_t btn_id = btn["id"] | 0;
+      macroButton[btn_id]      = btn["s"] | macroButton[btn_id];
+      macroLongPress[btn_id]   = btn["l"] | macroLongPress[btn_id];
+      macroDoublePress[btn_id] = btn["d"] | macroDoublePress[btn_id];
+    } else {
+      uint8_t btn_id = 0;
+      for (JsonObject _btn : btn.as<JsonArray>()) {
+        btn_id = _btn["id"] | btn_id;
+        if (btn_id >= WLED_MAX_BUTTONS) continue;
+        macroButton[btn_id]      = _btn["s"] | macroButton[btn_id];
+        macroLongPress[btn_id]   = _btn["l"] | macroLongPress[btn_id];
+        macroDoublePress[btn_id] = _btn["d"] | macroDoublePress[btn_id];
+        btn_id++;
+      }
+    }
+  }
+
   stateUpdated(callMode);
   if (presetToRestore) currentPreset = presetToRestore;
 

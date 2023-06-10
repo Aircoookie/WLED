@@ -10,7 +10,7 @@
 		d.um_p = [];
 		d.rsvd = [];
 		d.ro_gpio = [];
-		d.max_gpio = 39;
+		d.max_gpio = 50;
 		var customStarts=false,startsDirty=[],maxCOOverrides=5;
 		var loc = false, locip, locproto = "http:";
 		function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
@@ -28,6 +28,7 @@
 			scE.addEventListener("load", () => {
 				GetV();checkSi();setABL();
 				if (d.um_p[0]==-1) d.um_p.shift();
+				pinDropdowns();
 			});
 			// error event
 			scE.addEventListener("error", (ev) => {
@@ -546,7 +547,63 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 				}
 			}
 		}
-		function S(){
+		function pinDropdowns() {
+			let fields = ["IR","RL"]; // IR & relay
+			gId("btns").querySelectorAll('input[type="number"]').forEach((e)=>{fields.push(e.name);}) // buttons
+			for (let i of d.Sf.elements) {
+				if (i.type === "number" && fields.includes(i.name)) { //select all pin select elements
+					let v = parseInt(i.value);
+					let sel = addDropdown(i.name,0);
+					for (var j = -1; j <= d.max_gpio; j++) {
+						if (d.rsvd.includes(j)) continue;
+						let foundPin = d.um_p.indexOf(j);
+						let txt = (j === -1) ? "unused" : `${j}`;
+						if (foundPin >= 0 && j !== v) txt += ` used`; // already reserved pin
+						if (d.ro_gpio.includes(j)) txt += " (R/O)";
+						let opt = addOption(sel, txt, j);
+						if (j === v) opt.selected = true; // this is "our" pin
+						else if (d.um_p.includes(j)) opt.disabled = true; // someone else's pin
+					}
+				}
+			}
+		}
+		// https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
+		function addDropdown(field) {
+			let sel = d.createElement('select');
+			sel.classList.add("pin");
+			let inp = d.getElementsByName(field)[0];
+			if (inp && inp.tagName === "INPUT" && (inp.type === "text" || inp.type === "number")) {  // may also use nodeName
+				let v = inp.value;
+				let n = inp.name;
+				// copy the existing input element's attributes to the new select element
+				for (var i = 0; i < inp.attributes.length; ++ i) {
+					var att = inp.attributes[i];
+					// type and value don't apply, so skip them
+					// ** you might also want to skip style, or others -- modify as needed **
+					if (att.name != 'type' && att.name != 'value' && att.name != 'class' && att.name != 'style') {
+						sel.setAttribute(att.name, att.value);
+					}
+				}
+				sel.setAttribute("data-val", v);
+				// finally, replace the old input element with the new select element
+				inp.parentElement.replaceChild(sel, inp);
+				return sel;
+			}
+			return null;
+		}
+		function addOption(sel,txt,val) {
+			if (sel===null) return; // select object missing
+			let opt = d.createElement("option");
+			opt.value = val;
+			opt.text = txt;
+			sel.appendChild(opt);
+			for (let i=0; i<sel.childNodes.length; i++) {
+				let c = sel.childNodes[i];
+				if (c.value == sel.dataset.val) sel.selectedIndex = i;
+			}
+			return opt;
+		}
+		function S() {
 			let l = window.location;
 			if (l.protocol == "file:") {
 				loc = true;

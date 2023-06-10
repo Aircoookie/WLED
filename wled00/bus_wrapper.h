@@ -122,6 +122,9 @@
 #define I_SS_LPO_3 48
 
 
+// In the following NeoGammaNullMethod can be replaced with NeoGammaWLEDMethod to perform Gamma correction implicitly
+// unfortunately that may apply Gamma correction to pre-calculated palettes which is undesired
+
 /*** ESP8266 Neopixel methods ***/
 #ifdef ESP8266
 //RGB
