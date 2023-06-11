@@ -17,7 +17,7 @@
 		function N() {
 			const button = gId("scan");
 			button.disabled = true;
-			button.innerHTML = "Scanning...";
+			button.textContent = "Scanning...";
 
 			fetch(getURL("/json/net")).then((response) => {
 				return response.json();
@@ -68,7 +68,7 @@
 						const option = cE("option");
 
 						option.setAttribute("value", networks[i].ssid);
-						option.innerHTML = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
+						option.textContent = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
 
 						if (networks[i].ssid === cs.value) {
 							option.setAttribute("selected", "selected");
@@ -79,14 +79,14 @@
 					const option = cE("option");
 
 					option.setAttribute("value", "!Cs");
-					option.innerHTML = `Other network...`;
+					option.textContent = `Other network...`;
 					select.appendChild(option);
 
 					cs.replaceWith(select);
 				}
 
 				button.disabled = false;
-				button.innerHTML = "Scan";
+				button.textContent = "Scan";
 			});
 		}
 		// replace WiFi select with custom SSID input field again
