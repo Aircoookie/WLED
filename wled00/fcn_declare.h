@@ -199,6 +199,8 @@ void handlePlaylist();
 void serializePlaylist(JsonObject obj);
 
 //presets.cpp
+bool presetsSavePending(void);    // WLEDMM true if presetToSave, playlistSave or saveLedmap
+bool presetsActionPending(void);  // WLEDMM true if presetToApply, presetToSave, playlistSave or saveLedmap
 void initPresetsFile();
 void handlePresets();
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);

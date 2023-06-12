@@ -20,6 +20,20 @@ static const char *getFileName(bool persist = true) {
   return persist ? "/presets.json" : "/tmp.json";
 }
 
+bool presetsSavePending(void) {  // WLEDMM true if presetToSave, playlistSave or saveLedmap
+  if (presetToSave > 0) return(true);
+  if (playlistSave == true) return(true);
+  if (saveLedmap >= 0) return(true);
+  return(false);
+}
+bool presetsActionPending(void) {  // WLEDMM true if presetToApply, presetToSave, playlistSave or saveLedmap
+  if (presetToApply > 0) return(true);
+  if (presetToSave > 0) return(true);
+  if (playlistSave == true) return(true);
+  if (saveLedmap >= 0) return(true);
+  return(false);
+}
+
 static void doSaveState() {
   bool persist = (presetToSave < 251);
   const char *filename = getFileName(persist);

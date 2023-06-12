@@ -87,6 +87,10 @@ void WLED::reset()
   ESP.restart();
 }
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_FASTPATH)
+#define yield() {}  // WLEDMM yield() is completely unnecessary on esp32. See https://github.com/espressif/arduino-esp32/issues/1385
+#endif
+
 void WLED::loop()
 {
   #ifdef WLED_DEBUG
@@ -140,6 +144,18 @@ void WLED::loop()
   #endif
 
   yield();
+
+  // https://github.com/Makuna/NeoPixelBus/wiki/ESP32-and-RTOS-Tasks
+  // On ESP32, when the CPU is loaded, asynchronous WiFi libraries (like ESPAsyncWebServer or async-mqtt-client) may interfere with interrupts used to control the LEDs (I2S mode is less affected by this), 
+  // which causes flickering of LEDs.
+  #if defined(ARDUINO_ARCH_ESP32) && (defined(WLEDMM_FASTPATH) || defined(WLEDMM_PROTECT_SERVICE))  // WLEDMM experimental: avoid strip flickering
+  #define FILEWRITE_MAX_WAIT_MS 30  // max time for waiting - aligned with 33 fps
+  //if (doReboot || doSerializeConfig || doCloseFile || loadLedmap || presetsActionPending()) {     // WLEDMM trx this to also wait before reading from files
+  if (doReboot || doSerializeConfig || doCloseFile || presetsSavePending()) {                       // WLEDMM wait until strip gets idle before writing to files
+    unsigned long waitStripStart = millis();
+    while (strip.isUpdating() && (millis() - waitStripStart < FILEWRITE_MAX_WAIT_MS)) {delay(3);}
+  }
+  #endif
 
   if (doSerializeConfig) serializeConfig();
 
@@ -339,6 +355,10 @@ void WLED::loop()
   #endif
 #endif
 }
+
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_FASTPATH)
+#undef yield  // WLEDMM restore yield()
+#endif
 
 void WLED::enableWatchdog() {
 #if WLED_WATCHDOG_TIMEOUT > 0
