@@ -233,7 +233,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     gammaCorrectCol = request->hasArg(F("GC"));
     gammaCorrectVal = request->arg(F("GV")).toFloat();
     if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3)
-      calcGammaTable(gammaCorrectVal);
+      NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal);
     else {
       gammaCorrectVal = 1.0f; // no gamma correction
       gammaCorrectBri = false;

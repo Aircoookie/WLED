@@ -7,7 +7,7 @@
 	<title>Usermod Settings</title>
 	<script>
 	var d = document;
-	d.max_gpio = 39;
+	d.max_gpio = 50;
 	d.um_p = [];
 	d.rsvd = [];
 	d.ro_gpio = [];
@@ -39,6 +39,7 @@
 			d.Sf.MISO.max = d.max_gpio;
 			let inp = d.getElementsByTagName("input");
 			for (let i of inp) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
+			pinDropdowns();
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {
@@ -103,8 +104,10 @@
 		if (isO(o)) {
 			for (const [k,v] of Object.entries(o)) {
 				if (isO(v)) {
+					let oldO = owner; // keep parent name
 					owner = k;
 					getPins(v);
+					owner = oldO;
 					continue;
 				}
 				if (k.replace("[]","").substr(-3)=="pin") {
@@ -163,11 +166,67 @@
 			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
 		}
 	}
+	function pinDropdowns() {
+		for (let i of d.Sf.elements) {
+			if (i.type === "number" && (i.name.includes("pin") || ["SDA","SCL","MOSI","MISO","SCLK"].includes(i.name))) { //select all pin select elements
+				let v = parseInt(i.value);
+				let sel = addDropdown(i.name,0);
+				for (var j = -1; j <= d.max_gpio; j++) {
+					if (d.rsvd.includes(j)) continue;
+					let foundPin = pins.indexOf(j);
+					let txt = (j === -1) ? "unused" : `${j}`;
+					if (foundPin >= 0 && j !== v) txt += ` ${pinO[foundPin]=="if"?"global":pinO[foundPin]}`; // already reserved pin
+					if (d.ro_gpio.includes(j)) txt += " (R/O)";
+					let opt = addOption(sel, txt, j);
+					if (j === v) opt.selected = true; // this is "our" pin
+					else if (pins.includes(j)) opt.disabled = true; // someone else's pin
+				}
+			}
+		}
+	}
+	function UI(e) {
+		// update changed select options across all usermods
+		let oldV = parseInt(e.dataset.val);
+		e.dataset.val = e.value;
+		let txt = e.name.split(":")[e.name.split(":").length-2];
+		let selects = d.Sf.querySelectorAll("select[class='pin']");
+		for (let sel of selects) {
+			if (sel == e) continue
+			Array.from(sel.options).forEach((i)=>{
+				if (!(i.value==oldV || i.value==e.value)) return;
+				if (i.value == -1) {
+					i.text = "unused";
+					return
+				}
+				i.text = i.value;
+				if (i.value==oldV) {
+					i.disabled = false;
+				}
+				if (i.value==e.value) {
+					i.disabled = true;
+					i.text += ` ${txt}`;
+				}
+				if (d.ro_gpio.includes(parseInt(i.value))) i.text += " (R/O)";
+			});
+		}
+	}
 	// https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
 	function addDropdown(um,fld) {
 		let sel = d.createElement('select');
-		let arr = d.getElementsByName(um+":"+fld);
-		let inp = arr[1]; // assume 1st field to be hidden (type)
+		if (typeof(fld) === "string") {	// parameter from usermod (field name)
+			if (fld.includes("pin")) sel.classList.add("pin");
+			um += ":"+fld;
+		} else if (typeof(fld) === "number") sel.classList.add("pin"); // a hack to add a class
+		let arr = d.getElementsByName(um);
+		let idx = arr[0].type==="hidden"?1:0; // ignore hidden field
+		if (arr.length > 2) {
+			// we have array of values (usually pins)
+			for (let i of arr) {
+				if (i.type === "number") break;
+				idx++;
+			}
+		}
+		let inp = arr[idx];
 		if (inp && inp.tagName === "INPUT" && (inp.type === "text" || inp.type === "number")) {  // may also use nodeName
 			let v = inp.value;
 			let n = inp.name;
@@ -181,8 +240,10 @@
 				}
 			}
 			sel.setAttribute("data-val", v);
+			sel.setAttribute("onchange", "UI(this)");
 			// finally, replace the old input element with the new select element
 			inp.parentElement.replaceChild(sel, inp);
+			if (arr[0].type==="hidden") arr[0].parentElement.removeChild(arr[0]); // remove hidden element from DOM
 			return sel;
 		}
 		return null;
@@ -197,6 +258,7 @@
 			let c = sel.childNodes[i];
 			if (c.value == sel.dataset.val) sel.selectedIndex = i;
 		}
+		return opt;
 	}
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
 	function addInfo(name,el,txt, txt2="") {
@@ -207,6 +269,10 @@
 			if (txt!="") obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
 			if (txt2!="") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
 		}
+	}
+	// add Help Button
+	function addHB(um) {
+		addInfo(um + ':help',0,`<button onclick="location.href='https://kno.wled.ge/usermods/${um}'" type="button">?</button>`);
 	}
 	// load settings and insert values into DOM
 	function ldS() {
