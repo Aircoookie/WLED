@@ -11,6 +11,8 @@
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
 
+#include "../usermods/phillipswho/usermod_v2_phillipswho.h"
+
 #ifdef USERMOD_BATTERY
   #include "../usermods/Battery/usermod_v2_Battery.h"
 #endif
@@ -197,7 +199,9 @@ void registerUsermods()
    * || || ||
    * \/ \/ \/
    */
-  //usermods.add(new MyExampleUsermod());
+
+  usermods.add(new PhillipsWho());
+  
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
   #endif
