@@ -117,7 +117,11 @@ void presetWithFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) {
 }
  
 // Callback function that will be executed when data is received
+#ifdef ESP8266
 void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
+#else
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+#endif
 
   sprintf (last_signal_src, "%02x%02x%02x%02x%02x%02x",
     mac [0], mac [1], mac [2], mac [3], mac [4], mac [5]);
@@ -174,7 +178,11 @@ void handleRemote() {
         DEBUG_PRINTLN(F("Error initializing ESP-NOW"));
         esp_now_state = ESP_NOW_STATE_ERROR;
       }
+
+      #ifdef ESP8266
       esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+      #endif
+      
       esp_now_register_recv_cb(OnDataRecv);
       esp_now_state = ESP_NOW_STATE_ON;
     }

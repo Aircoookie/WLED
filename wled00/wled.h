@@ -75,6 +75,9 @@
   {
   #include <user_interface.h>
   }
+  #ifndef WLED_DISABLE_REMOTE
+    #include <espnow.h>
+  #endif
 #else // ESP32
   #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
   #include <WiFi.h>
@@ -91,6 +94,9 @@
     #include <LittleFS.h>
   #endif
   #include "esp_task_wdt.h"
+  #ifndef WLED_DISABLE_REMOTE
+    #include <esp_now.h>
+  #endif
 #endif
 #include <Wire.h>
 #include <SPI.h>
@@ -107,9 +113,6 @@
 #endif
 #include <WiFiUdp.h>
 #include <DNSServer.h>
-#ifndef WLED_DISABLE_REMOTE
-  #include <espnow.h>
-#endif
 #ifndef WLED_DISABLE_OTA
   #define NO_OTA_PORT
   #include <ArduinoOTA.h>
