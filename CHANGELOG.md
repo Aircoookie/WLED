@@ -1,5 +1,9 @@
 ## WLED changelog
 
+#### Build 2306???
+-   added pin dropdowns
+-   introduced (unused ATM) NeoGammaWLEDMethod class
+
 #### Build 2306040
 -   Bumped version to 0.14-b3 (beta 3)
 -   Reverse proxy support
