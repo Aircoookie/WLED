@@ -933,9 +933,10 @@ class PolyBus {
       if (num > 9) return I_NONE;
       if (num > 7) offset = num -7;
       #else
-      // ESP32 "audio_fastpath" - 8 RMT and 1 I2S channels. RMT 5-8 have sending delays, so use I2S#1 as 5th bus, before going for RMT 5-8
+      // ESP32 "audio_fastpath" - 8 RMT and 1 I2S channels. RMT 5-8 have sending delays, so use I2S#1 before going for RMT 5-8
       if (num > 8) return I_NONE;
-      if (num == 2) offset = 2;  // use I2S channel 2 as 3rd bus - seems to be a good compromise for performance
+      if (num == 2) offset = 2;    // use I2S#1 as 3rd bus - seems to be a good compromise for performance
+      //if (num == 0) offset = 2;  // un-comment to use I2S#1 as 1st bus - sometimes helps, if you experience flickering during Wifi or filesystem activity.
       #endif
       #endif
       switch (busType) {
