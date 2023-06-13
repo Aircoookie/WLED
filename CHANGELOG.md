@@ -1,14 +1,12 @@
 ## WLED changelog
 
-#### Build 2306???
--   added pin dropdowns
--   introduced (unused ATM) NeoGammaWLEDMethod class
-
-#### Build 2306040
+#### Build 2306130
 -   Bumped version to 0.14-b3 (beta 3)
+-   added pin dropdowns in LED preferences (not for LED pins) and usermods
+-   introduced (unused ATM) NeoGammaWLEDMethod class
 -   Reverse proxy support
 -   PCF8754 support for Rotary encoder (requires wiring INT pin to ESP GPIO)
--   Rely on global I2C pins for usermods
+-   Rely on global I2C pins for usermods (breaking change)
 -   various fixes and enhancements
 
 #### Build 2306020
