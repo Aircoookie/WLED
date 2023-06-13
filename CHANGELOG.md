@@ -1,7 +1,15 @@
 ## WLED changelog
 
-#### Build 2306020
+#### Build 2306130
+-   Bumped version to 0.14-b3 (beta 3)
+-   added pin dropdowns in LED preferences (not for LED pins) and usermods
+-   introduced (unused ATM) NeoGammaWLEDMethod class
+-   Reverse proxy support
+-   PCF8754 support for Rotary encoder (requires wiring INT pin to ESP GPIO)
+-   Rely on global I2C pins for usermods (breaking change)
+-   various fixes and enhancements
 
+#### Build 2306020
 -   Support for segment sets (PR #3171)
 -   Reduce sound simulation modes to 2 to facilitiate segment sets
 -   Trigger button immediately on press if all configured presets are the same (PR #3226)

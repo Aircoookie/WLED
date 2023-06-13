@@ -6,11 +6,11 @@
 	<meta charset="utf-8">
 	<title>Sync Settings</title>
 	<script>var d=document;
-	var loc = false, locip;
+	var loc = false, locip, locproto = "http:";
 	function gId(s){return d.getElementById(s);}
 	function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
 	function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
-	function B(){window.open("/settings","_self");}
+	function B(){window.open(getURL("/settings"),"_self");}
 	function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
 					else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -56,16 +56,28 @@
 	function SP(){var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
 	function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();FC();}
 	function S(){
-		if (window.location.protocol == "file:") {
+		let l = window.location;
+		if (l.protocol == "file:") {
 			loc = true;
 			locip = localStorage.getItem('locIp');
 			if (!locip) {
 				locip = prompt("File Mode. Please enter WLED IP!");
 				localStorage.setItem('locIp', locip);
 			}
+		} else {
+			// detect reverse proxy
+			let paths = l.pathname.slice(1,l.pathname.endsWith('/')?-1:undefined).split("/");
+			if (paths.length > 2) {
+				locproto = l.protocol;
+				loc = true;
+				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+			}
 		}
-		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=4';
-		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		loadJS(getURL('/settings/s.js?p=4'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+		if (loc) d.Sf.action = getURL('/settings/sync');
+	}
+	function getURL(path) {
+		return (loc ? locproto + "//" + locip : "") + path;
 	}
 	</script>
 	<style>@import url("style.css");</style>
@@ -172,7 +184,7 @@ Realtime LED offset: <input name="WO" type="number" min="-255" max="255" require
 <hr class="sml">
 <h3>Alexa Voice Assistant</h3>
 <div id="NoAlexa" class="hide">
-	<em style="color:#fa0;">This firmware build does not include Alexa support.<br></em><br>
+	<i class="warn">This firmware build does not include Alexa support.<br></i><br>
 </div>
 <div id="Alexa">
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
@@ -180,7 +192,7 @@ Alexa invocation name: <input type="text" name="AI" maxlength="32"><br>
 Also emulate devices to call the first <input name="AP" type="number" class="s" min="0" max="9" required> presets<br><br>
 </div>
 <hr class="sml">
-<div style="color: #fa0;">&#9888; <b>MQTT and Hue sync all connect to external hosts!<br>
+<div class="warn">&#9888; <b>MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of WLED.</b><br>
 </div>
 For best results, only use one of these services at a time.<br>
@@ -188,7 +200,7 @@ For best results, only use one of these services at a time.<br>
 <hr class="sml">
 <h3>MQTT</h3>
 <div id="NoMQTT" class="hide">
-	<em style="color:#fa0;">This firmware build does not include MQTT support.<br></em>
+	<i class="warn">This firmware build does not include MQTT support.<br></i>
 </div>
 <div id="MQTT">
 Enable MQTT: <input type="checkbox" name="MQ"><br>
@@ -207,7 +219,7 @@ Retain brightness & color messages: <input type="checkbox" name="RT"><br>
 </div>
 <h3>Philips Hue</h3>
 <div id="NoHue" class="hide">
-	<em style="color:#fa0;">This firmware build does not include Philips Hue support.<br></em>
+	<em class="warn">This firmware build does not include Philips Hue support.<br></em>
 </div>
 <div id="Hue">
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>

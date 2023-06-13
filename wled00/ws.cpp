@@ -78,7 +78,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       if((info->index + len) == info->len){
         if(info->final){
           if(info->message_opcode == WS_TEXT) {
-            client->text(F("{\"error\":9}")); //we do not handle split packets right now
+            client->text(F("{\"error\":9}")); // ERR_JSON we do not handle split packets right now
           }
         }
       }
