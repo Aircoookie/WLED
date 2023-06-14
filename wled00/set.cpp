@@ -10,8 +10,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   // PIN code request
   if (subPage == 252)
   {
-    correctPIN = (strlen(settingsPIN)==0 || strncmp(settingsPIN, request->arg(F("PIN")).c_str(), 4)==0);
-    lastEditTime = millis();
+    checkSettingsPIN(request->arg(F("PIN")).c_str());
     return;
   }
 
@@ -484,7 +483,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (otaLock && strcmp(otaPass,request->arg(F("OP")).c_str()) == 0)
       {
         // brute force protection: do not unlock even if correct if last save was less than 3 seconds ago
-        if (millis() - lastEditTime > 3000) pwdCorrect = true;
+        if (millis() - lastEditTime > PIN_RETRY_COOLDOWN) pwdCorrect = true;
       }
       if (!otaLock && request->arg(F("OP")).length() > 0)
       {

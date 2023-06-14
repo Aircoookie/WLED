@@ -138,7 +138,7 @@ void WLED::loop()
   }
 
   // 15min PIN time-out
-  if (strlen(settingsPIN)>0 && millis() - lastEditTime > 900000) {
+  if (strlen(settingsPIN)>0 && correctPIN && millis() - lastEditTime > PIN_TIMEOUT) {
     correctPIN = false;
     createEditHandler(false);
   }

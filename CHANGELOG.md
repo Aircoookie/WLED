@@ -1,5 +1,9 @@
 ## WLED changelog
 
+#### Build 2306140
+
+-   Add settings PIN (un)locking to JSON post API
+
 #### Build 2306130
 -   Bumped version to 0.14-b3 (beta 3)
 -   added pin dropdowns in LED preferences (not for LED pins) and usermods

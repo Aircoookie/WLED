@@ -198,6 +198,8 @@ void initServer()
       request->send(400, "application/json", F("{\"error\":9}")); // ERR_JSON
       return;
     }
+    if (root.containsKey("pin")) checkSettingsPIN(root["pin"].as<const char*>());
+
     const String& url = request->url();
     isConfig = url.indexOf("cfg") > -1;
     if (!isConfig) {
@@ -582,7 +584,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   }
 
   // if OTA locked or too frequent PIN entry requests fail hard
-  if ((subPage == 1 && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < 3000))
+  if ((subPage == 1 && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < PIN_RETRY_COOLDOWN))
   {
     serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254); return;
   }
@@ -606,10 +608,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
-    if (subPage == 252) {
-      createEditHandler(correctPIN);
-    } else
-      strcat_P(s, PSTR(" settings saved."));
+    if (subPage != 252) strcat_P(s, PSTR(" settings saved."));
 
     if (subPage == 252 && correctPIN) {
       subPage = originalSubPage; // on correct PIN load settings page the user intended
