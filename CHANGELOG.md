@@ -1,7 +1,10 @@
 ## WLED changelog
 
-#### Build 2306140
+#### Build 2306141
+-   Lissajous improvements
+-   Scrolling Text improvements (leading 0)
 
+#### Build 2306140
 -   Add settings PIN (un)locking to JSON post API
 
 #### Build 2306130
