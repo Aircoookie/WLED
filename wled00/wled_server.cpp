@@ -9,9 +9,6 @@
 #ifdef WLED_ENABLE_PIXART
   #include "html_pixart.h"
 #endif
-#ifdef WLED_ENABLE_PXMAGIC
-  #include "html_pxmagic.h"
-#endif
 #include "html_cpal.h"
 
 /*
@@ -364,17 +361,6 @@ void initServer()
     if (handleFileRead(request, "/pixart.htm")) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_pixart, PAGE_pixart_L);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-  });
-  #endif
-  
-  #ifdef WLED_ENABLE_PXMAGIC
-  server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleFileRead(request, "/pxmagic.htm")) return;
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_pxmagic, PAGE_pxmagic_L);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
