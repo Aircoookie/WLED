@@ -5096,7 +5096,9 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
+  if (SEGENV.call == 0) { SEGMENT.setUpLeds(); SEGMENT.fill(BLACK);}  // WLEDMM fadeToBlackBy() needs previous setUpLeds()
   SEGMENT.fadeToBlackBy(SEGMENT.intensity);
+  
   uint_fast16_t phase = (strip.now * (1 + SEGENV.custom3)) /32;  // allow user to control rotation speed
 
   if (SEGENV.check3) { // WLEDMM: this is the original "float" code featuring anti-aliasing
