@@ -271,10 +271,9 @@ void PIRsensorSwitch::publishMqtt(const char* state)
 #ifndef WLED_DISABLE_MQTT
   //Check if MQTT Connected, otherwise it will crash the 8266
   if (WLED_MQTT_CONNECTED) {
-    char subuf[64];
-    strcpy(subuf, mqttDeviceTopic);
-    strcat_P(subuf, PSTR("/motion"));
-    mqtt->publish(subuf, 0, false, state);
+    char buf[64];
+    sprintf_P(buf, PSTR("%s/motion"), mqttDeviceTopic);   //max length: 33 + 7 = 40
+    mqtt->publish(buf, 0, false, state);
   }
 #endif
 }
