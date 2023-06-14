@@ -5101,10 +5101,16 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   SEGMENT.fadeToBlackBy(SEGMENT.intensity);
   uint_fast16_t phase = (strip.now * (1 + SEGENV.custom3)) /32;  // allow user to control rotation speed
 
-  //for (int i=0; i < 4*(cols+rows); i ++) {
+  if (SEGENV.check3) { // WLEDMM: this is the original "float" code featuring anti-aliasing
+      unsigned maxLoops = max(192, 4*(cols+rows));
+      maxLoops = ((maxLoops / 128) +1) * 128; // make sure whe have half or full turns => multiples of 128
+      for (int i=0; i < maxLoops; i ++) {
+        float xlocn = float(sin8(phase/2 + (i* SEGMENT.speed)/64)) / 255.0f;  // WLEDMM align speed with original effect
+        float ylocn = float(cos8(phase/2 + i*2)) / 255.0f;
+        SEGMENT.setPixelColorXY(xlocn, ylocn, SEGMENT.color_from_palette(millis()/100+i, false, PALETTE_SOLID_WRAP, 0)); // draw pixel with anti-aliasing
+      }
+  } else
   for (int i=0; i < 256; i ++) {
-    //float xlocn = float(sin8(now/4+i*(SEGMENT.speed>>5))) / 255.0f;
-    //float ylocn = float(cos8(now/4+i*2)) / 255.0f;
     //WLEDMM: stick to the original calculations of xlocn and ylocn
     uint_fast8_t xlocn = sin8(phase/2 + (i*SEGMENT.speed)/64);
     uint_fast8_t ylocn = cos8(phase/2 + i*2);
@@ -5113,10 +5119,9 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
     SEGMENT.setPixelColorXY((uint8_t)xlocn, (uint8_t)ylocn, SEGMENT.color_from_palette(millis()/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
 
-
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous ☾@X frequency,Fade rate,,,Speed;!;!;2;;sx=64,c3=15";
+static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous ☾@X frequency,Fade rate,,,Speed,,,☾ Smooth Style;!;!;2;;sx=64,c3=15";
 
 
 ///////////////////////
