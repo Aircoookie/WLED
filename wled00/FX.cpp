@@ -5097,23 +5097,24 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t rows = SEGMENT.virtualHeight();
 
   SEGMENT.fadeToBlackBy(SEGMENT.intensity);
+  uint_fast16_t phase = (strip.now * (1 + SEGENV.custom3)) /32;  // allow user to control rotation speed
 
   //for (int i=0; i < 4*(cols+rows); i ++) {
   for (int i=0; i < 256; i ++) {
     //float xlocn = float(sin8(now/4+i*(SEGMENT.speed>>5))) / 255.0f;
     //float ylocn = float(cos8(now/4+i*2)) / 255.0f;
     //WLEDMM: stick to the original calculations of xlocn and ylocn
-    uint8_t xlocn = sin8(strip.now/2+i*(SEGMENT.speed>>6));
-    uint8_t ylocn = cos8(strip.now/2+i*2);
-    xlocn = map(xlocn,0,255,0,cols-1);
-    ylocn = map(ylocn,0,255,0,rows-1);
-    SEGMENT.setPixelColorXY(xlocn, ylocn, SEGMENT.color_from_palette(millis()/100+i, false, PALETTE_SOLID_WRAP, 0));
+    uint_fast8_t xlocn = sin8(phase/2 + (i*SEGMENT.speed)/64);
+    uint_fast8_t ylocn = cos8(phase/2 + i*2);
+    xlocn = (cols < 2) ? 1 : (map(2*xlocn, 0,511, 0,2*(cols-1)) +1) /2;    // softhack007: "*2 +1" for proper rounding
+    ylocn = (rows < 2) ? 1 : (map(2*ylocn, 0,511, 0,2*(rows-1)) +1) /2;    // "rows > 2" is needed to avoid div/0 in map()
+    SEGMENT.setPixelColorXY((uint8_t)xlocn, (uint8_t)ylocn, SEGMENT.color_from_palette(millis()/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
 
 
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous ☾@X frequency,Fade rate;!;!;2";
+static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous ☾@X frequency,Fade rate,,,Speed;!;!;2;;sx=64,c3=15";
 
 
 ///////////////////////
