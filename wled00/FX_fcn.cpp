@@ -1410,20 +1410,24 @@ void WS2812FX::enumerateLedmaps() {
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
           }
 
-          //WLEDMM calc ledmapMaxSize (TroyHack)
-          char dim[34] = { '\0' };
-          f.find("\"width\":");
-          f.readBytesUntil('\n', dim, sizeof(dim)-1); //hack: use fileName as we have this allocated already
-          uint16_t maxWidth = atoi(cleanUpName(dim));
-          f.find("\"height\":");
-          memset(dim, 0, sizeof(dim)); // clear buffer before reading
-          f.readBytesUntil('\n', dim, sizeof(dim)-1);
-          uint16_t maxHeight = atoi(cleanUpName(dim));
-          ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
-
           USER_PRINTF("enumerateLedmaps %s \"%s\"", fileName, name);
-          if (maxWidth*ledmapMaxSize>0)
-            USER_PRINTF(" (%dx%d -> %d)\n", maxWidth, maxHeight, ledmapMaxSize);
+          if (isMatrix) {
+            //WLEDMM calc ledmapMaxSize (TroyHack)
+            char dim[34] = { '\0' };
+            f.find("\"width\":");
+            f.readBytesUntil('\n', dim, sizeof(dim)-1); //hack: use fileName as we have this allocated already
+            uint16_t maxWidth = atoi(cleanUpName(dim));
+            f.find("\"height\":");
+            memset(dim, 0, sizeof(dim)); // clear buffer before reading
+            f.readBytesUntil('\n', dim, sizeof(dim)-1);
+            uint16_t maxHeight = atoi(cleanUpName(dim));
+            ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
+
+            if (maxWidth*ledmapMaxSize>0)
+              USER_PRINTF(" (%dx%d -> %d)\n", maxWidth, maxHeight, ledmapMaxSize);
+            else
+              USER_PRINTLN();
+          }
           else
             USER_PRINTLN();
         }
