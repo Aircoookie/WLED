@@ -561,61 +561,62 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
 
   if (url.indexOf("sett") >= 0)
   {
-    if      (url.indexOf(".js")  > 0) subPage = 254;
-    else if (url.indexOf(".css") > 0) subPage = 253;
-    else if (url.indexOf("wifi") > 0) subPage = 1;
-    else if (url.indexOf("leds") > 0) subPage = 2;
-    else if (url.indexOf("ui")   > 0) subPage = 3;
-    else if (url.indexOf("sync") > 0) subPage = 4;
-    else if (url.indexOf("time") > 0) subPage = 5;
-    else if (url.indexOf("sec")  > 0) subPage = 6;
-    else if (url.indexOf("dmx")  > 0) subPage = 7;
-    else if (url.indexOf("um")   > 0) subPage = 8;
-    else if (url.indexOf("2D")   > 0) subPage = 10;
-    else if (url.indexOf("lock") > 0) subPage = 251;
+    if      (url.indexOf(".js")  > 0) subPage = SUBPAGE_JS;
+    else if (url.indexOf(".css") > 0) subPage = SUBPAGE_CSS;
+    else if (url.indexOf("wifi") > 0) subPage = SUBPAGE_WIFI;
+    else if (url.indexOf("leds") > 0) subPage = SUBPAGE_LEDS;
+    else if (url.indexOf("ui")   > 0) subPage = SUBPAGE_UI;
+    else if (url.indexOf("sync") > 0) subPage = SUBPAGE_SYNC;
+    else if (url.indexOf("time") > 0) subPage = SUBPAGE_TIME;
+    else if (url.indexOf("sec")  > 0) subPage = SUBPAGE_SEC;
+    else if (url.indexOf("dmx")  > 0) subPage = SUBPAGE_DMX;
+    else if (url.indexOf("um")   > 0) subPage = SUBPAGE_UM;
+    else if (url.indexOf("2D")   > 0) subPage = SUBPAGE_2D;
+    else if (url.indexOf("lock") > 0) subPage = SUBPAGE_LOCK;
   }
-  else if (url.indexOf("/update") >= 0) subPage = 9; // update page, for PIN check
+  else if (url.indexOf("/update") >= 0) subPage = SUBPAGE_UPDATE; // update page, for PIN check
   //else if (url.indexOf("/edit")   >= 0) subPage = 10;
-  else subPage = 255; // welcome page
+  else subPage = SUBPAGE_WELCOME;
 
   if (!correctPIN && strlen(settingsPIN) > 0 && (subPage > 0 && subPage < 11)) {
     originalSubPage = subPage;
-    subPage = 252; // require PIN
+    subPage = SUBPAGE_PINREQ; // require PIN
   }
 
   // if OTA locked or too frequent PIN entry requests fail hard
-  if ((subPage == 1 && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < PIN_RETRY_COOLDOWN))
+  if ((subPage == SUBPAGE_WIFI && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < PIN_RETRY_COOLDOWN))
   {
     serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254); return;
   }
 
   if (post) { //settings/set POST request, saving
-    if (subPage != 1 || !(wifiLock && otaLock)) handleSettingsSet(request, subPage);
+    if (subPage != SUBPAGE_WIFI || !(wifiLock && otaLock)) handleSettingsSet(request, subPage);
 
     char s[32];
     char s2[45] = "";
 
     switch (subPage) {
-      case 1: strcpy_P(s, PSTR("WiFi")); strcpy_P(s2, PSTR("Please connect to the new IP (if changed)")); forceReconnect = true; break;
-      case 2: strcpy_P(s, PSTR("LED")); break;
-      case 3: strcpy_P(s, PSTR("UI")); break;
-      case 4: strcpy_P(s, PSTR("Sync")); break;
-      case 5: strcpy_P(s, PSTR("Time")); break;
-      case 6: strcpy_P(s, PSTR("Security")); if (doReboot) strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
-      case 7: strcpy_P(s, PSTR("DMX")); break;
-      case 8: strcpy_P(s, PSTR("Usermods")); break;
-      case 10: strcpy_P(s, PSTR("2D")); break;
-      case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
+      case SUBPAGE_WIFI   : strcpy_P(s, PSTR("WiFi")); strcpy_P(s2, PSTR("Please connect to the new IP (if changed)")); forceReconnect = true; break;
+      case SUBPAGE_LEDS   : strcpy_P(s, PSTR("LED")); break;
+      case SUBPAGE_UI     : strcpy_P(s, PSTR("UI")); break;
+      case SUBPAGE_SYNC   : strcpy_P(s, PSTR("Sync")); break;
+      case SUBPAGE_TIME   : strcpy_P(s, PSTR("Time")); break;
+      case SUBPAGE_SEC    : strcpy_P(s, PSTR("Security")); if (doReboot) strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
+      case SUBPAGE_DMX    : strcpy_P(s, PSTR("DMX")); break;
+      case SUBPAGE_UM     : strcpy_P(s, PSTR("Usermods")); break;
+      case SUBPAGE_2D     : strcpy_P(s, PSTR("2D")); break;
+      case SUBPAGE_PINREQ : strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
-    if (subPage != 252) strcat_P(s, PSTR(" settings saved."));
+    if (subPage != SUBPAGE_PINREQ) strcat_P(s, PSTR(" settings saved."));
 
-    if (subPage == 252 && correctPIN) {
+    if (subPage == SUBPAGE_PINREQ && correctPIN) {
       subPage = originalSubPage; // on correct PIN load settings page the user intended
     } else {
       if (!s2[0]) strcpy_P(s2, s_redirecting);
 
-      serveMessage(request, 200, s, s2, (subPage == 1 || ((subPage == 6 || subPage == 8) && doReboot)) ? 129 : (correctPIN ? 1 : 3));
+      bool redirectAfter9s = (subPage == SUBPAGE_WIFI || ((subPage == SUBPAGE_SEC || subPage == SUBPAGE_UM) && doReboot));
+      serveMessage(request, 200, s, s2, redirectAfter9s ? 129 : (correctPIN ? 1 : 3));
       return;
     }
   }
@@ -623,30 +624,30 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   AsyncWebServerResponse *response;
   switch (subPage)
   {
-    case 1:   response = request->beginResponse_P(200, "text/html", PAGE_settings_wifi, PAGE_settings_wifi_length); break;
-    case 2:   response = request->beginResponse_P(200, "text/html", PAGE_settings_leds, PAGE_settings_leds_length); break;
-    case 3:   response = request->beginResponse_P(200, "text/html", PAGE_settings_ui,   PAGE_settings_ui_length);   break;
-    case 4:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sync, PAGE_settings_sync_length); break;
-    case 5:   response = request->beginResponse_P(200, "text/html", PAGE_settings_time, PAGE_settings_time_length); break;
-    case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
+    case SUBPAGE_WIFI    : response = request->beginResponse_P(200, "text/html", PAGE_settings_wifi, PAGE_settings_wifi_length); break;
+    case SUBPAGE_LEDS    : response = request->beginResponse_P(200, "text/html", PAGE_settings_leds, PAGE_settings_leds_length); break;
+    case SUBPAGE_UI      : response = request->beginResponse_P(200, "text/html", PAGE_settings_ui,   PAGE_settings_ui_length);   break;
+    case SUBPAGE_SYNC    : response = request->beginResponse_P(200, "text/html", PAGE_settings_sync, PAGE_settings_sync_length); break;
+    case SUBPAGE_TIME    : response = request->beginResponse_P(200, "text/html", PAGE_settings_time, PAGE_settings_time_length); break;
+    case SUBPAGE_SEC     : response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
 #ifdef WLED_ENABLE_DMX
-    case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
+    case SUBPAGE_DMX     : response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
 #endif
-    case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
-    case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
+    case SUBPAGE_UM      : response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
+    case SUBPAGE_UPDATE  : response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
 #ifndef WLED_DISABLE_2D
-    case 10:  response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
+    case SUBPAGE_2D      : response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
 #endif
-    case 251: {
+    case SUBPAGE_LOCK    : {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
       createEditHandler(correctPIN);
       serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
       return;
     }
-    case 252: response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
-    case 253: response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
-    case 254: serveSettingsJS(request); return;
-    case 255: response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
+    case SUBPAGE_PINREQ  : response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
+    case SUBPAGE_CSS     : response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
+    case SUBPAGE_JS      : serveSettingsJS(request); return;
+    case SUBPAGE_WELCOME : response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
     default:  response = request->beginResponse_P(200, "text/html", PAGE_settings,      PAGE_settings_length);      break;
   }
   response->addHeader(FPSTR(s_content_enc),"gzip");
