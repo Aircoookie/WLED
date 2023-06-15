@@ -186,12 +186,12 @@ bool Segment::allocateData(size_t len) {
   if (data && _dataLen == len) return true; //already allocated
   deallocateData();
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
-  // if possible use SPI RAM on ESP32
-  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-  if (psramFound())
-    data = (byte*) ps_malloc(len);
-  else
-  #endif
+  // do not use SPI RAM on ESP32 since it is slow
+  //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+  //if (psramFound())
+  //  data = (byte*) ps_malloc(len);
+  //else
+  //#endif
     data = (byte*) malloc(len);
   if (!data) return false; //allocation failed
   Segment::addUsedSegmentData(len);
@@ -438,7 +438,7 @@ void Segment::handleTransition() {
   }
 }
 
-void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
+void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
   //return if neither bounds nor grouping have changed
   bool boundsUnchanged = (start == i1 && stop == i2);
   #ifndef WLED_DISABLE_2D
@@ -542,7 +542,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "o3");   check3    = (sOpt >= 0) ? (bool)sOpt : false;
         //WLEDMM: return to old setting if not explicitly set
         sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) {if (oldMap==-1) oldMap = map1D2D; map1D2D   = constrain(sOpt, 0, 7);} else {if (oldMap!=-1) map1D2D = oldMap; oldMap = -1;}
-        sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) {if (oldSim==-1) oldSim = soundSim; soundSim  = constrain(sOpt, 0, 7);} else {if (oldSim!=-1) soundSim = oldSim; oldSim = -1;}
+        sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) {if (oldSim==-1) oldSim = soundSim; soundSim  = constrain(sOpt, 0, 1);} else {if (oldSim!=-1) soundSim = oldSim; oldSim = -1;}
         sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) {if (oldReverse==-1) oldReverse = reverse; reverse   = (bool)sOpt;} else {if (oldReverse!=-1) reverse = oldReverse==1; oldReverse = -1;}
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) {if (oldMirror==-1) oldMirror = mirror; mirror  = (bool)sOpt;} else {if (oldMirror!=-1) mirror = oldMirror==1; oldMirror = -1;} // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) {if (oldReverse_y==-1) oldReverse_y = reverse_y; reverse_y = (bool)sOpt;} else {if (oldReverse_y!=-1) reverse_y = oldReverse_y==1; oldReverse_y = -1;}
@@ -1064,7 +1064,7 @@ uint8_t Segment::differs(Segment& b) const {
   if (startY != b.startY)       d |= SEG_DIFFERS_BOUNDS;
   if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
 
-  //bit pattern: (msb first) sound:3, mapping:3, transposed, mirrorY, reverseY, [transitional, reset,] paused, mirrored, on, reverse, [selected]
+  //bit pattern: (msb first) set:2, sound:1, mapping:3, transposed, mirrorY, reverseY, [transitional, reset,] paused, mirrored, on, reverse, [selected]
   if ((options & 0b1111111110011110U) != (b.options & 0b1111111110011110U)) d |= SEG_DIFFERS_OPT;
   if ((options & 0x0001U) != (b.options & 0x0001U))                         d |= SEG_DIFFERS_SEL;
   for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i])    d |= SEG_DIFFERS_COL;
@@ -1411,18 +1411,27 @@ void WS2812FX::enumerateLedmaps() {
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
           }
 
-          //WLEDMM calc ledmapMaxSize (TroyHack)
-          char dim[34] = { '\0' };
-          f.find("\"width\":");
-          f.readBytesUntil('\n', dim, sizeof(dim)-1); //hack: use fileName as we have this allocated already
-          uint16_t maxWidth = atoi(cleanUpName(dim));
-          f.find("\"height\":");
-          memset(dim, 0, sizeof(dim)); // clear buffer before reading
-          f.readBytesUntil('\n', dim, sizeof(dim)-1);
-          uint16_t maxHeight = atoi(cleanUpName(dim));
-          ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
+          USER_PRINTF("enumerateLedmaps %s \"%s\"", fileName, name);
+          if (isMatrix) {
+            //WLEDMM calc ledmapMaxSize (TroyHack)
+            char dim[34] = { '\0' };
+            f.find("\"width\":");
+            f.readBytesUntil('\n', dim, sizeof(dim)-1); //hack: use fileName as we have this allocated already
+            uint16_t maxWidth = atoi(cleanUpName(dim));
+            f.find("\"height\":");
+            memset(dim, 0, sizeof(dim)); // clear buffer before reading
+            f.readBytesUntil('\n', dim, sizeof(dim)-1);
+            uint16_t maxHeight = atoi(cleanUpName(dim));
+            ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
 
-          USER_PRINTF("enumerateLedmaps %s \"%s\" (%dx%d -> %d)\n", fileName, name, maxWidth, maxHeight, ledmapMaxSize);
+            if (maxWidth*maxHeight>0) {
+              USER_PRINTF(" (%dx%d -> %d)\n", maxWidth, maxHeight, ledmapMaxSize);
+            } else {
+              USER_PRINTLN();
+            }
+          }
+          else
+            USER_PRINTLN();
         }
         f.close();
         USER_FLUSH();
@@ -1822,6 +1831,14 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   }
 }
 
+uint8_t WS2812FX::getActiveSegsLightCapabilities(bool selectedOnly) {
+  uint8_t totalLC = 0;
+  for (segment &seg : _segments) {
+    if (seg.isActive() && (!selectedOnly || seg.isSelected())) totalLC |= seg.getLightCapabilities();
+  }
+  return totalLC;
+}
+
 uint8_t WS2812FX::getFirstSelectedSegId(void)
 {
   size_t i = 0;
@@ -1919,7 +1936,7 @@ Segment& WS2812FX::getSegment(uint8_t id) {
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
   if (n >= _segments.size()) return;
-  _segments[n].set(i1, i2, grouping, spacing, offset, startY, stopY);
+  _segments[n].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
 }
 
 void WS2812FX::restartRuntime() {
@@ -2208,31 +2225,32 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
   USER_PRINTLN(fileName);
 
-  //WLEDMM: read width and height (mandatory in file!!)
-  f.find("\"width\":");
-  f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
-  uint16_t maxWidth = atoi(fileName);
+  if (isMatrix) {
+    //WLEDMM: read width and height
+    f.find("\"width\":");
+    f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
+    uint16_t maxWidth = atoi(fileName);
 
-  f.find("\"height\":");
-  f.readBytesUntil('\n', fileName, sizeof(fileName));
-  uint16_t maxHeight = atoi(fileName);
+    f.find("\"height\":");
+    f.readBytesUntil('\n', fileName, sizeof(fileName));
+    uint16_t maxHeight = atoi(fileName);
 
-  USER_PRINTF("deserializeMap %d x %d\n", maxWidth, maxHeight);
-  if (maxWidth * maxHeight <= 0) {
-    releaseJSONBufferLock();
-    return false;
+    //WLEDMM: support ledmap file properties width and height: if found change segment
+    if (maxWidth * maxHeight > 0) {
+      Segment::maxWidth = maxWidth;
+      Segment::maxHeight = maxHeight;
+      resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
+    }
+    else
+      setUpMatrix(); //reset segment sizes to panels
   }
 
-  //WLEDMM: support ledmap file properties width and height
-  Segment::maxWidth = maxWidth;
-  Segment::maxHeight = maxHeight;
-  resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
+  USER_PRINTF("deserializeMap %d x %d\n", Segment::maxWidth, Segment::maxHeight);
 
   //WLEDMM recreate customMappingTable if more space needed
   if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
     uint32_t size = MAX(ledmapMaxSize, Segment::maxWidth * Segment::maxHeight);//TroyHack
     USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", size, customMappingTableSize);
-	
     //if (customMappingTable != nullptr) delete[] customMappingTable;
     //customMappingTable = new uint16_t[size];
 
@@ -2249,7 +2267,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   }
 
   if (customMappingTable != nullptr) {
-    customMappingSize  = maxWidth * maxHeight;
+    customMappingSize  = Segment::maxWidth * Segment::maxHeight;
 
     //WLEDMM: find the map values
     f.find("\"map\":[");

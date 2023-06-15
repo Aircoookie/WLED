@@ -146,7 +146,7 @@
 // The following is a construct to enable code to compile without it.
 // There is a code thet will still not use PSRAM though:
 //    AsyncJsonResponse is a derived class that implements DynamicJsonDocument (AsyncJson-v6.h)
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
+#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))         // WLEDMM
 struct PSRAM_Allocator {
   void* allocate(size_t size) {
     if (psramFound()) return ps_malloc(size); // use PSRAM if it exists
@@ -178,6 +178,10 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #ifndef CLIENT_PASS
   #define CLIENT_PASS ""
+#endif
+
+#ifndef MDNS_NAME
+  #define MDNS_NAME DEFAULT_MDNS_NAME
 #endif
 
 #if defined(WLED_AP_PASS) && !defined(WLED_AP_SSID)
@@ -291,7 +295,7 @@ WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
 WLED_GLOBAL char clientSSID[33] _INIT(CLIENT_SSID);
 WLED_GLOBAL char clientPass[65] _INIT(CLIENT_PASS);
-WLED_GLOBAL char cmDNS[33] _INIT("x");                             // mDNS address (placeholder, is replaced by wledXXXXXX.local)
+WLED_GLOBAL char cmDNS[33] _INIT(MDNS_NAME);                       // mDNS address (*.local, replaced by wledXXXXXX if default is used)
 WLED_GLOBAL char apSSID[33] _INIT("");                             // AP off by default (unless setup)
 WLED_GLOBAL byte apChannel _INIT(1);                               // 2.4GHz WiFi AP channel (1-13)
 WLED_GLOBAL byte apHide    _INIT(0);                               // hidden AP SSID
@@ -433,6 +437,7 @@ WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username
 WLED_GLOBAL char mqttPass[65] _INIT("");                   // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
+WLED_GLOBAL bool retainMqttMsg _INIT(false);               // retain brightness and color
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 #else
 #define WLED_MQTT_CONNECTED false

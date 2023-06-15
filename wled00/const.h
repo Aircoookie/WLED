@@ -12,6 +12,7 @@
 #define DEFAULT_AP_SSID     "WLED-AP"
 #define DEFAULT_AP_PASS     "wled1234"
 #define DEFAULT_OTA_PASS    "wledota"
+#define DEFAULT_MDNS_NAME   "x"
 
 //increase if you need more
 #ifndef WLED_MAX_USERMODS
@@ -138,6 +139,7 @@
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
 #define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
 //WLEDMM
+#define USERMOD_ID_MCUTEMP               89     //Usermod "usermod_v2_artifx.h"
 #define USERMOD_ID_ARTIFX                90     //Usermod "usermod_v2_artifx.h"
 #define USERMOD_ID_WEATHER               91     //Usermod "usermod_v2_weather.h"
 #define USERMOD_ID_GAMES                 92     //Usermod "usermod_v2_games.h"

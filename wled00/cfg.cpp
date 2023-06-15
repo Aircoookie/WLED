@@ -196,7 +196,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode); //WLEDMM to do bus , freqkHz
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz);
         mem += BusManager::memUsage(bc);
         if (mem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
@@ -480,6 +480,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
   getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // ""
+  CJSON(retainMqttMsg, if_mqtt[F("rtn")]);
 #endif
 
 #ifndef WLED_DISABLE_HUESYNC
@@ -802,7 +803,7 @@ void serializeConfig() {
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbwm")] = bus->getAutoWhiteMode();
-    // ins[F("freq")] = bus->getFrequency(); WLEDMM to do bus
+    ins[F("freq")] = bus->getFrequency();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
@@ -956,6 +957,7 @@ void serializeConfig() {
   if_mqtt[F("user")] = mqttUser;
   if_mqtt[F("pskl")] = strlen(mqttPass);
   if_mqtt[F("cid")] = mqttClientID;
+  if_mqtt[F("rtn")] = retainMqttMsg;
 
   JsonObject if_mqtt_topics = if_mqtt.createNestedObject(F("topics"));
   if_mqtt_topics[F("device")] = mqttDeviceTopic;

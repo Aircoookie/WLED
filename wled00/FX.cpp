@@ -2805,7 +2805,7 @@ uint16_t mode_bouncing_balls(void) {
       // number of balls based on intensity setting to max of 7 (cycles colors)
       // non-chosen color is a random color
       uint16_t numBalls = (SEGMENT.intensity * (maxNumBalls - 1)) / 255 + 1; // minimum 1 ball
-      constexpr float gravity = -9.81; // standard value of gravity
+      const float gravity = -9.81f; // standard value of gravity
       const bool hasCol2 = SEGCOLOR(2);
       const unsigned long time = millis();
 
@@ -4177,11 +4177,9 @@ static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,#
   By Stefan Seegel
 */
 uint16_t mode_washing_machine(void) {
-  float speed = tristate_square8(strip.now >> 7, 90, 15);
-  float quot  = 32.0f - ((float)SEGMENT.speed / 16.0f);
-  speed /= quot;
+  int speed = tristate_square8(strip.now >> 7, 90, 15);
 
-  SEGENV.step += (speed * 128.0f);
+  SEGENV.step += (speed * 2048) / (512 - SEGMENT.speed);
 
   for (int i = 0; i < SEGLEN; i++) {
     uint8_t col = sin8(((SEGMENT.intensity / 25 + 1) * 255 * i / SEGLEN) + (SEGENV.step >> 7));
@@ -4595,7 +4593,7 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   }
 
   SEGMENT.fadeToBlackBy(16 + (SEGMENT.speed>>3)); // create fading trails
-  float t = (float)(millis())/128;              // timebase
+  unsigned long t = millis()/128;                 // timebase
   // outer stars
   for (size_t i = 0; i < 8; i++) {
     x = beatsin8(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i % 2) ? 128 : 0) + t * i);
@@ -5098,7 +5096,9 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
+  if (SEGENV.call == 0) { SEGMENT.setUpLeds(); SEGMENT.fill(BLACK);}  // WLEDMM fadeToBlackBy() needs previous setUpLeds()
   SEGMENT.fadeToBlackBy(SEGMENT.intensity);
+  
   uint_fast16_t phase = (strip.now * (1 + SEGENV.custom3)) /32;  // allow user to control rotation speed
 
   if (SEGENV.check3) { // WLEDMM: this is the original "float" code featuring anti-aliasing

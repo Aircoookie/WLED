@@ -737,6 +737,14 @@ function populateSegments(s)
 
 		ledmapFileNames.push((inst.n?inst.n:"default") + ".json"); //WLEDMM
 
+		// segment set icon color
+		let cG = "var(--c-b)";
+		switch (inst.set) {
+			case 1: cG = "var(--c-r)"; break;
+			case 2: cG = "var(--c-g)"; break;
+			case 3: cG = "var(--c-l)"; break;
+		}
+
 		let segp = `<div id="segp${i}" class="sbs">`+
 						`<i class="icons slider-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>`+
 						`<div class="sliderwrap il">`+
@@ -748,97 +756,100 @@ function populateSegments(s)
 		let stoX = inst.stop;
 		let staY = inst.startY;
 		let stoY = inst.stopY;
+		let isMSeg = isM && staX<mw*mh; // 2D matrix segment
 		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark"></span></label>`;
 		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark"></span></label>`;
 		let rvYck = "", miYck ="";
-		if (isM && staX<mw*mh) {
+		if (isMSeg) {
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
 		}
 		// WLEDMM: jMap
-		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
-			<div class="sel-p"><select class="sel-p" id="seg${i}m12" onchange="setM12(${i})">
-				<option value="0" ${inst.m12==0?' selected':''}>Pixels</option>
-				<option value="1" ${inst.m12==1?' selected':''}>Bar</option>
-				<option value="2" ${inst.m12==2?' selected':''}>Arc</option>
-				<option value="3" ${inst.m12==3?' selected':''}>Corner</option>
-				<option value="4" ${inst.m12==4?' selected':''}>jMap ☾</option>
-				<option value="5" ${inst.m12==5?' selected':''}>Circle ☾</option>
-				<option value="6" ${inst.m12==6?' selected':''}>Block ☾</option>
-			</select></div>
-		</div>`;
-		let sndSim = `<div data-snd="si" class="lbl-s hide">Sound sim<br>
-			<div class="sel-p"><select class="sel-p" id="seg${i}si" onchange="setSi(${i})">
-				<option value="0" ${inst.si==0?' selected':''}>BeatSin</option>
-				<option value="1" ${inst.si==1?' selected':''}>WeWillRockYou</option>
-				<option value="2" ${inst.si==2?' selected':''}>U10_3</option>
-				<option value="3" ${inst.si==3?' selected':''}>U14_3</option>
-			</select></div>
-		</div>`;
+		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>`+
+						`<div class="sel-p"><select class="sel-p" id="seg${i}m12" onchange="setM12(${i})">`+
+							`<option value="0" ${inst.m12==0?' selected':''}>Pixels</option>`+
+							`<option value="1" ${inst.m12==1?' selected':''}>Bar</option>`+
+							`<option value="2" ${inst.m12==2?' selected':''}>Arc</option>`+
+							`<option value="3" ${inst.m12==3?' selected':''}>Corner</option>`+
+							`<option value="4" ${inst.m12==4?' selected':''}>jMap ☾</option>`+
+							`<option value="5" ${inst.m12==5?' selected':''}>Circle ☾</option>`+
+							`<option value="6" ${inst.m12==6?' selected':''}>Block ☾</option>`+
+							`</select></div>`+
+					`</div>`;
+		let sndSim = `<div data-snd="si" class="lbl-s hide">Sound sim<br>`+
+						`<div class="sel-p"><select class="sel-p" id="seg${i}si" onchange="setSi(${i})">`+
+							`<option value="0" ${inst.si==0?' selected':''}>BeatSin</option>`+
+							`<option value="1" ${inst.si==1?' selected':''}>WeWillRockYou</option>`+
+						`</select></div>`+
+					`</div>`;
 		//WLEDMM ARTIFX
 		let fxName = eJson.find((o)=>{return o.id==selectedFx}).name;
 		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">ARTI-FX Editor ☾</button><br>`;
-		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
-	<label class="check schkl">
-		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
-		<span class="checkmark"></span>
-	</label>
-	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
-	<div class="segname" onclick="selSegEx(${i})">
-		${inst.n ? inst.n : "Segment "+i}
-		<i class="icons edit-icon flr" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
-	</div>
-	<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
-	${cfg.comp.segpwr?segp:''}
-	<div class="segin" id="seg${i}in">
-		<input id="seg${i}fx" value="${inst.fx}" type="hidden"/> <!--WLEDMM-->
-		<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
-		<table class="infot segt">
-		<tr>
-			<td>${isM&&staX<mw*mh?'Start X':'Start LED'}</td>
-			<td>${isM&&staX<mw*mh?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>
-			<td>${isM&&staX<mw*mh?'':'Offset'}</td>
-		</tr>
-		<tr>
-			<td><input class="segn" id="seg${i}s" type="number" min="0" max="${(isM&&staX<mw*mh?mw:ledCount)-1}" value="${staX}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td><input class="segn" id="seg${i}e" type="number" min="0" max="${(isM&&staX<mw*mh?mw:ledCount)}" value="${stoX-(cfg.comp.seglen?staX:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td style="text-align:revert;">${isM&&staX<mw*mh?miXck+'<br>'+rvXck:''}<input class="segn ${isM&&staX<mw*mh?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
-		</tr>
-		${isM&&staX<mw*mh ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
-		'<tr>'+
-			'<td><input class="segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+staY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
-			'<td><input class="segn" id="seg'+i+'eY" type="number" min="0" max="'+mh+'" value="'+(stoY-(cfg.comp.seglen?staY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
-			'<td style="text-align:revert;">'+miYck+'<br>'+rvYck+'</td>'+
-		'</tr>':''}
-		<tr>
-			<td>Grouping</td>
-			<td>Spacing</td>
-			<td></td>
-		</tr>
-		<tr>
-			<td><input class="segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td><input class="segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td style="text-align:revert;"><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
-		</tr>
-		</table>
-		<div class="h bp" id="seg${i}len"></div>
-		${!(isM&&staX<mw*mh)?rvXck:''}
-		${isM&&staX<mw*mh&&stoY-staY>1&&stoX-staX>1?map2D:''}
-		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
-		${s.ARTIFX && s.ARTIFX.on && fxName.includes("ARTI-FX") ? cusEff : ""}
-		<label class="check revchkl" id="seg${i}lbtm">
-			${isM&&staX<mw*mh?'Transpose':'Mirror effect'}${isM&&staX<mw*mh?
-			'<input type="checkbox" id="seg'+i+'tp" onchange="setTp('+i+')" '+(inst.tp?"checked":"")+'>':
-			'<input type="checkbox" id="seg'+i+'mi" onchange="setMi('+i+')" '+(inst.mi?"checked":"")+'>'}
-			<span class="checkmark"></span>
-		</label>
-		<div class="del">
-			<button class="btn btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>
-			<button class="btn btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
-		</div>
-	</div>
-	${cfg.comp.segpwr?'':segp}
-</div>`;
+		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-set="${inst.set}">`+
+				`<label class="check schkl">`+
+					`<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>`+
+					`<span class="checkmark"></span>`+
+				`</label>`+
+				`<div class="segname" onclick="selSegEx(${i})">`+
+					`<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>`+
+					(inst.n ? inst.n : "Segment "+i) +
+					`<div class="pop hide" onclick="event.preventDefault();event.stopPropagation();">`+
+						`<i class="icons g-icon" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.set+"A".charCodeAt(0))};</i>`+
+						`<div class="pop-c hide"><span style="color:var(--c-f);" onclick="setGrp(${i},0);">&#x278A;</span><span style="color:var(--c-r);" onclick="setGrp(${i},1);">&#x278B;</span><span style="color:var(--c-g);" onclick="setGrp(${i},2);">&#x278C;</span><span style="color:var(--c-l);" onclick="setGrp(${i},3);">&#x278D;</span></div>`+
+					`</div> `+
+					`<i class="icons edit-icon flr" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
+				`</div>`+
+				`<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
+				(cfg.comp.segpwr ? segp : '') +
+				`<div class="segin" id="seg${i}in">`+
+					`<input id="seg${i}fx" value="${inst.fx}" type="hidden"/>` + // <!--WLEDMM-->
+					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
+					`<table class="infot segt">`+
+					`<tr>`+
+						`<td>${isMSeg?'Start X':'Start LED'}</td>`+
+						`<td>${isMSeg?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>`+
+						`<td>${isMSeg?'':'Offset'}</td>`+
+					`</tr>`+
+					`<tr>`+
+						`<td><input class="segn" id="seg${i}s" type="number" min="0" max="${(isMSeg?mw:ledCount)-1}" value="${staX}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
+						`<td><input class="segn" id="seg${i}e" type="number" min="0" max="${(isMSeg?mw:ledCount)}" value="${stoX-(cfg.comp.seglen?staX:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
+						`<td ${isMSeg?'style="text-align:revert;"':''}>${isMSeg?miXck+'<br>'+rvXck:''}<input class="segn ${isMSeg?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>`+
+					`</tr>`+
+					(isMSeg ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
+					'<tr>'+
+						'<td><input class="segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+staY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+						'<td><input class="segn" id="seg'+i+'eY" type="number" min="0" max="'+mh+'" value="'+(stoY-(cfg.comp.seglen?staY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+						'<td style="text-align:revert;">'+miYck+'<br>'+rvYck+'</td>'+
+					'</tr>' : '') +
+					`<tr>`+
+						`<td>Grouping</td>`+
+						`<td>Spacing</td>`+
+						`<td></td>`+
+					`</tr>`+
+					`<tr>`+
+						`<td><input class="segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
+						`<td><input class="segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
+						`<td><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>`+
+					`</tr>`+
+					`</table>`+
+					`<div class="h bp" id="seg${i}len"></div>`+
+					(!isMSeg ? rvXck : '') +
+					(isMSeg&&stoY-staY>1&&stoX-staX>1 ? map2D : '') +
+					(s.AudioReactive && s.AudioReactive.on ? "" : sndSim) +
+					(s.ARTIFX && s.ARTIFX.on && fxName.includes("ARTI-FX") ? cusEff : "") + // <!--WLEDMM-->
+					`<label class="check revchkl" id="seg${i}lbtm">`+
+						(isMSeg?'Transpose':'Mirror effect') + (isMSeg ?
+						'<input type="checkbox" id="seg'+i+'tp" onchange="setTp('+i+')" '+(inst.tp?"checked":"")+'>':
+						'<input type="checkbox" id="seg'+i+'mi" onchange="setMi('+i+')" '+(inst.mi?"checked":"")+'>') +
+						`<span class="checkmark"></span>`+
+					`</label>`+
+					`<div class="del">`+
+						`<button class="btn btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>`+
+						`<button class="btn btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>`+
+					`</div>`+
+				`</div>`+
+				(cfg.comp.segpwr ? '' : segp) +
+			`</div>`;
 	}
 
 	gId('segcont').innerHTML = cn;
@@ -855,7 +866,7 @@ function populateSegments(s)
 		gId(`segd${lSeg}`).classList.add("hide");
 		gId(`segp0`).classList.add("hide");
 	}
-	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
+	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).classList.remove("hide");
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 
 	if (Array.isArray(li.maps) && li.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
@@ -1010,8 +1021,8 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">`+
-		`<label class="radio schkl" onclick="event.preventDefault()">`+
+	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'" '}onClick="${clickAction}(${id})">`+
+		`<label title="(${id})" class="radio schkl" onclick="event.preventDefault()">`+ // (#1984)
 			`<input type="radio" value="${id}" name="${listName}">`+
 			`<span class="radiomark"></span>`+
 			`<div class="lstIcontent">`+
@@ -1737,6 +1748,8 @@ function readState(s,command=false)
 		return true;
 	}
 
+	if (s.seg.length>2) d.querySelectorAll(".pop").forEach((e)=>{e.classList.remove("hide");});
+
 	var cd = gId('csl').children;
 	for (let e = cd.length-1; e >= 0; e--) {
 		cd[e].dataset.r = i.col[e][0];
@@ -2147,9 +2160,13 @@ function makeSeg()
 
 function resetUtil(off=false)
 {
-	gId('segutil').innerHTML = `<div class="seg btn btn-s ${off?'off':''}" style="border-radius:24px;padding:0;">`
+	gId('segutil').innerHTML = `<div class="seg btn btn-s${off?' off':''}" style="padding:0;">`
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
-	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>`;
+	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div>`
+	+ '<div class="pop hide" onclick="event.stopPropagation();">'
+	+ `<i class="icons g-icon" onclick="this.nextElementSibling.classList.toggle('hide');">&#xE34B;</i>`
+	+ '<div class="pop-c hide"><span style="color:var(--c-f);" onclick="selGrp(0);">&#x278A;</span><span style="color:var(--c-r);" onclick="selGrp(1);">&#x278B;</span><span style="color:var(--c-g);" onclick="selGrp(2);">&#x278C;</span><span style="color:var(--c-l);" onclick="selGrp(3);">&#x278D;</span></div>'
+	+ '</div></div>';
 }
 
 function makePlSel(el, incPl=false)
@@ -2435,6 +2452,20 @@ function selSeg(s)
 	requestJson(obj);
 }
 
+function selGrp(g)
+{
+	event.preventDefault();
+	event.stopPropagation();
+	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
+	var obj = {"seg":[]};
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":false});
+	if (sel) for (let s of sel||[]) {
+		let i = parseInt(s.id.substring(3));
+		obj.seg[i] = {"id":i,"sel":true};
+	}
+	if (obj.seg.length) requestJson(obj);
+}
+
 function rptSeg(s)
 {
 	//TODO: 2D support
@@ -2552,6 +2583,14 @@ function setTp(s)
 {
 	var tp = gId(`seg${s}tp`).checked;
 	var obj = {"seg": {"id": s, "tp": tp}};
+	requestJson(obj);
+}
+
+function setGrp(s, g)
+{
+	event.preventDefault();
+	event.stopPropagation();
+	var obj = {"seg": {"id": s, "set": g}};
 	requestJson(obj);
 }
 

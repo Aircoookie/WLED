@@ -66,7 +66,7 @@ static void doSaveState() {
     size_t len = measureJson(*fileDoc) + 1;
     DEBUG_PRINTLN(len);
     // if possible use SPI RAM on ESP32
-    #if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
+    #if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))        // WLEDMM
     if (psramFound())
       tmpRAMbuffer = (char*) ps_malloc(len);
     else

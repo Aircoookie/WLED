@@ -14,15 +14,19 @@
 
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/91013628/230378884-5a0f15ee-1aa2-4998-9df7-ade9f32a3d0f.png">
 
-MoonModules/WLED is a fork from Aircoookie/WLED which contains latest merge of v0.14 of WLED with additional features.
+MoonModules/WLED is a fork from [Aircoookie/WLED](https://github.com/Aircoookie/WLED) which contains latest merge of v0.14 of WLED with [additional features](https://mm.kno.wled.ge/moonmodules/what-is-moonmodules/).
 
-This fork is created by members of the Atuline/WLED team to make development against v0.14 possible while still preserving Atuline/WLED v0.13 as a stable and supported version. The Atuline/WLED fork is also called WLED SR (Sound Reactive).
+This fork is created by members of the [Atuline/WLED](https://github.com/atuline/WLED) team to make development against v0.14 possible while still preserving [Atuline/WLED v0.13.x](https://github.com/atuline/WLED/tree/dev) as a stable and supported version. The Atuline/WLED fork is also called WLED SR (Sound Reactive).
 
 More info here: <a href="https://mm.kno.wled.ge/moonmodules/what-is-moonmodules/">what-is-moonmodules</a>
 
 <a href="https://www.paypal.com/donate?business=moonmodules@icloud.com"><img src="https://img.shields.io/badge/send%20me%20a%20small%20gift-paypal-blue.svg" alt="HTML tutorial" style="max-width: 100%;"></a>
 Donations will be used to buy WLED related hardware, software or drinks shared with the contributors of this repo.
 
-*Disclaimer:*   
+## Contributing
+We welcome contributions to this project! See [contributing](https://github.com/MoonModules/WLED/blob/mdev/CONTRIBUTING.md) for more information.
+> We would like to have this repository in a polite and friendly atmosphere, so please be kind and respectful to others. For more details, look at [Code of Conduct](https://github.com/MoonModules/WLED/blob/mdev/CODE_OF_CONDUCT.md).
+
+## *Disclaimer:*   
 
 Using this software is the users responsibility as it is not bug free. Therefore contributors of this repo are not reliable for anything including but not limited to spontaneous combustion of the entire led strip, the house and the inevitable heat death of the universe

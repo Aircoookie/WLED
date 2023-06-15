@@ -29,10 +29,11 @@ struct BusConfig {
   bool refreshReq;
   uint8_t autoWhite;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY) {
+  uint16_t frequency;
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U) {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw;
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw; frequency = clock_kHz;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
@@ -114,6 +115,7 @@ class Bus {
     virtual void     setColorOrder() {}
     virtual uint8_t  getColorOrder() { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds() { return 0; }
+    virtual uint16_t getFrequency() { return 0U; }
     inline  uint16_t getStart() { return _start; }
     inline  void     setStart(uint16_t start) { _start = start; }
     inline  uint8_t  getType() { return _type; }
@@ -203,6 +205,8 @@ class BusDigital : public Bus {
       return _skip;
     }
 
+    uint16_t getFrequency() { return _frequencykHz; }
+
     void reinit();
 
     void cleanup();
@@ -216,6 +220,7 @@ class BusDigital : public Bus {
     uint8_t _pins[2] = {255, 255};
     uint8_t _iType = 0; //I_NONE;
     uint8_t _skip = 0;
+    uint16_t _frequencykHz = 0U;
     void * _busPtr = nullptr;
     const ColorOrderMap &_colorOrderMap;
 };
@@ -234,6 +239,8 @@ class BusPwm : public Bus {
 
     uint8_t getPins(uint8_t* pinArray);
 
+    uint16_t getFrequency() { return _frequency; }
+
     void cleanup() {
       deallocatePins();
     }
@@ -248,6 +255,7 @@ class BusPwm : public Bus {
     #ifdef ARDUINO_ARCH_ESP32
     uint8_t _ledcStart = 255;
     #endif
+    uint16_t _frequency = 0U;
 
     void deallocatePins();
 };
@@ -335,7 +343,7 @@ class BusManager {
 
     void setStatusPixel(uint32_t c);
 
-    void IRAM_ATTR setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
+    void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
 
     void setBrightness(uint8_t b);
 
