@@ -1421,7 +1421,11 @@ void WS2812FX::enumerateLedmaps() {
           uint16_t maxHeight = atoi(cleanUpName(dim));
           ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
 
-          USER_PRINTF("enumerateLedmaps %s \"%s\" (%dx%d -> %d)\n", fileName, name, maxWidth, maxHeight, ledmapMaxSize);
+          USER_PRINTF("enumerateLedmaps %s \"%s\"", fileName, name);
+          if (maxWidth*ledmapMaxSize>0)
+            USER_PRINTF(" (%dx%d -> %d)\n", maxWidth, maxHeight, ledmapMaxSize);
+          else
+            USER_PRINTLN();
         }
         f.close();
         USER_FLUSH();
@@ -2204,23 +2208,27 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
   USER_PRINTLN(fileName);
 
-  //WLEDMM: read width and height
-  f.find("\"width\":");
-  f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
-  uint16_t maxWidth = atoi(fileName);
+  if (isMatrix) {
+    //WLEDMM: read width and height
+    f.find("\"width\":");
+    f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
+    uint16_t maxWidth = atoi(fileName);
 
-  f.find("\"height\":");
-  f.readBytesUntil('\n', fileName, sizeof(fileName));
-  uint16_t maxHeight = atoi(fileName);
+    f.find("\"height\":");
+    f.readBytesUntil('\n', fileName, sizeof(fileName));
+    uint16_t maxHeight = atoi(fileName);
 
-  USER_PRINTF("deserializeMap %d x %d\n", maxWidth, maxHeight);
-
-  //WLEDMM: support ledmap file properties width and height: if found change segment
-  if (maxWidth * maxHeight > 0) {
-    Segment::maxWidth = maxWidth;
-    Segment::maxHeight = maxHeight;
-    resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
+    //WLEDMM: support ledmap file properties width and height: if found change segment
+    if (maxWidth * maxHeight > 0) {
+      Segment::maxWidth = maxWidth;
+      Segment::maxHeight = maxHeight;
+      resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
+    }
+    else
+      setUpMatrix(); //reset segment sizes to panels
   }
+
+  USER_PRINTF("deserializeMap %d x %d\n", Segment::maxWidth, Segment::maxHeight);
 
   //WLEDMM recreate customMappingTable if more space needed
   if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
@@ -2232,7 +2240,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   }
 
   if (customMappingTable != nullptr) {
-    customMappingSize  = maxWidth * maxHeight;
+    customMappingSize  = Segment::maxWidth * Segment::maxHeight;
 
     //WLEDMM: find the map values
     f.find("\"map\":[");
