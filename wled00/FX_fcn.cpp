@@ -1423,10 +1423,11 @@ void WS2812FX::enumerateLedmaps() {
             uint16_t maxHeight = atoi(cleanUpName(dim));
             ledmapMaxSize = MAX(ledmapMaxSize, maxWidth * maxHeight);
 
-            if (maxWidth*ledmapMaxSize>0)
+            if (maxWidth*maxHeight>0) {
               USER_PRINTF(" (%dx%d -> %d)\n", maxWidth, maxHeight, ledmapMaxSize);
-            else
+            } else {
               USER_PRINTLN();
+            }
           }
           else
             USER_PRINTLN();
