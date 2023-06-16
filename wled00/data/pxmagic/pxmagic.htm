@@ -5,26 +5,17 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="author" content="@ajotanc" />
-    <meta
-      http-equiv="Cache-Control"
-      content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
 
     <title>Pixel Magic Tool</title>
-
-    <link
-      rel="shortcut icon"
-      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKpJREFUeNqMU4sNxCAIpRcGODdxhN5ITnIj1RHYxG7QYsI1pD0+LyFGorzHExdwUEp581JlS2OM/X7mBT7m5U2i/juAAbO+VDn/UIIBs8ZX1g9Hz7YQwipAwtRUrkmOHh4YbnfpGVS+WybqnnWPPyVwZ74KMMsauN29ucCs25ZSzDjtzQVKpaqYm/RLmbnA6WzGbQuYdJscpXnMF+M4JFbvL0AwoZfSU4ABABLYR6r7lELpAAAAAElFTkSuQmCC" />
 
     <style>
       :root {
         --overlay: rgba(0, 0, 0, 0.5);
         --background: #111;
+        --color: #bbb;
         --gray-dark: #222;
         --gray-medium: #333;
         --gray-light: #eeeeee;
-        --gray: #bbb;
         --blue-dark: #284352;
         --blue-medium: #3b708b;
         --blue-light: #48a;
@@ -58,12 +49,22 @@
         background: var(--background);
       }
 
+      textarea,
+      form,
+      canvas {
+        width: 100%;
+      }
+
       small {
         display: block;
         font-weight: 400;
         margin: 2px 0 5px;
-        color: var(--gray);
+        color: var(--color);
         font-size: 12px;
+      }
+
+      footer {
+        margin: 10px 5px 0;
       }
 
       a {
@@ -88,7 +89,7 @@
       .content {
         width: 100%;
         min-width: 540px;
-        max-width: 900px;
+        max-width: 1024px;
         margin: 20px;
       }
 
@@ -106,12 +107,6 @@
 
       .m-top {
         margin-top: 10px !important;
-      }
-
-      #response,
-      form,
-      canvas {
-        width: 100%;
       }
 
       .row {
@@ -135,7 +130,7 @@
         display: block;
         margin-bottom: 5px;
         font-weight: bold;
-        color: var(--gray);
+        color: var(--color);
       }
 
       input[type="text"],
@@ -175,9 +170,9 @@
         min-width: 40px;
         padding: 10px 0;
         color: #222;
-        background: var(--gray);
+        background: var(--color);
         border-radius: 0px 5px 5px 0;
-        border: 1px solid var(--gray);
+        border: 1px solid var(--color);
         border-left: 0;
         text-align: center;
         font-size: 14px;
@@ -248,12 +243,12 @@
       }
 
       .dropzone.dragover {
-        background-color: var(--gray);
+        background-color: var(--color);
       }
 
       .range-slider {
         appearance: none;
-        background-color: var(--gray);
+        background-color: var(--color);
         height: 8px;
         width: 100%;
         border-radius: 10px;
@@ -393,22 +388,30 @@
         );
       }
 
-      #multipleCanvas {
+      .header {
         display: flex;
-        justify-content: center;
         align-items: center;
+        padding: 0 0 40px;
         flex-direction: column;
-        position: relative;
       }
 
-      #multipleCanvas .carousel {
+      .header .brand {
+        width: 100%;
+        max-width: 200px;
+        height: 100%;
+        display: block;
+        outline: none;
+        border: 0;
+      }
+
+      .carousel {
         display: flex;
         height: 100%;
         width: 100%;
         cursor: pointer;
       }
 
-      #multipleCanvas .carousel img {
+      .carousel img {
         display: block;
         width: 100%;
         height: 100%;
@@ -416,7 +419,7 @@
         border: 0;
       }
 
-      #multipleCanvas .carousel img:last-child {
+      .carousel img:last-child {
         margin-right: 0;
       }
 
@@ -425,7 +428,7 @@
         border: 0;
         padding: 10px 18px;
         border-radius: 50px;
-        color: var(--gray);
+        color: var(--color);
         cursor: pointer;
         margin: 0 0 10px;
         background: var(--gray-medium);
@@ -512,26 +515,6 @@
 
       .slide {
         scroll-snap-align: center;
-      }
-
-      .header {
-        display: flex;
-        align-items: center;
-        padding: 0 0 40px;
-        flex-direction: column;
-      }
-
-      .header .brand {
-        width: 100%;
-        max-width: 200px;
-        height: 100%;
-        display: block;
-        outline: none;
-        border: 0;
-      }
-
-      footer {
-        margin: 10px 5px 0;
       }
 
       @media (max-width: 767px) {
@@ -660,11 +643,11 @@
             </svg>
           </div>
           <div class="row">
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="hostname">Hostname</label>
               <input type="text" name="hostname" id="hostname" required />
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="name">Preset Name</label>
               <input
                 type="text"
@@ -675,7 +658,7 @@
             </div>
           </div>
           <div class="row">
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="pattern">Pattern</label>
               <div class="customSelect">
                 <select name="pattern" id="pattern" required>
@@ -688,7 +671,7 @@
                 </select>
               </div>
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="output">Output</label>
               <div class="customSelect">
                 <select name="output" id="output" required>
@@ -701,15 +684,15 @@
             </div>
           </div>
           <div class="row output" style="display: none">
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="device">Device</label>
               <input type="text" name="device" id="device" required />
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="uniqueId">Unique Id</label>
               <input type="text" name="uniqueId" id="uniqueId" required />
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="friendlyName">Friendly Name</label>
               <input
                 type="text"
@@ -719,15 +702,17 @@
             </div>
           </div>
           <div class="row">
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="segments">Segment Id</label>
               <div class="customSelect">
-                <select name="segments" id="segments" required>
-                  <option value="">Select a choice</option>
+                <select name="segments" id="segments">
+                  <option value="0" data-width="16" data-height="16">
+                    Segment 0
+                  </option>
                 </select>
               </div>
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="brightness">Brightness</label>
               <div class="input-group">
                 <input
@@ -745,14 +730,14 @@
             </div>
           </div>
           <div class="row">
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="animation">Animation</label>
               <label class="switch">
                 <input type="checkbox" name="animation" id="animation" />
                 <span class="switch-slider"></span>
               </label>
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="transparentImage">Transparent Image</label>
               <label class="switch">
                 <input
@@ -762,7 +747,7 @@
                 <span class="switch-slider"></span>
               </label>
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="resizeImage">Resize Image</label>
               <label class="switch">
                 <input type="checkbox" name="resizeImage" id="resizeImage" />
@@ -771,21 +756,21 @@
             </div>
           </div>
           <div class="row resizeImage" style="display: none">
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="width">Width</label>
               <input type="number" name="width" id="width" value="16" />
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="height">Height</label>
               <input type="number" name="height" id="height" value="16" />
             </div>
           </div>
           <div class="row animation" style="display: none">
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="frames">Frames</label>
               <input type="number" name="frames" id="frames" value="4" />
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="duration">Duration</label>
               <div class="input-group">
                 <input
@@ -800,7 +785,7 @@
                 <div class="input-description">sec</div>
               </div>
             </div>
-            <div class="column valitade">
+            <div class="column" validate>
               <label for="transition">Transition</label>
               <div class="input-group">
                 <input
@@ -817,7 +802,7 @@
             </div>
           </div>
           <div class="row transparentImage" style="display: none">
-            <div class="column valitade w-full">
+            <div class="column w-full" validate>
               <label for="color">Choose a color</label>
               <small>
                 Color that will replace the
@@ -827,11 +812,12 @@
             </div>
           </div>
           <div class="row">
-            <div class="column valitade w-full">
+            <div class="column w-full" validate>
               <label for="images">Images</label>
               <div class="customSelect">
                 <select name="images" id="images" required>
                   <option value="">Select a choice</option>
+                  <option value="upload">Upload</option>
                 </select>
               </div>
             </div>
@@ -847,7 +833,7 @@
               </small>
             </div>
           </div>
-          <div id="dropzone" class="dropzone valitade" style="display: none">
+          <div id="dropzone" class="dropzone" validate style="display: none">
             <p id="dropzoneLabel">
               Drag and drop a file here or click to select a file
             </p>
@@ -855,7 +841,7 @@
               type="file"
               name="source"
               id="source"
-              accept="image/*"
+              accept="image/jpg,image/jpeg,image/png,image/gif"
               style="display: none" />
           </div>
           <div class="row">
@@ -912,10 +898,11 @@
     <div id="overlay"></div>
   </body>
   <script>
+    const d = document;
     const params = new URLSearchParams(window.location.search);
     const host =
       params.get("mode") === "dev"
-        ? "10.0.0.41"
+        ? params.get("hn")
         : window.location.host
         ? window.location.host
         : "0.0.0.0";
@@ -924,7 +911,7 @@
 
     let WLED_URL = `${protocol}//${host}`;
 
-    const hostname = document.getElementById("hostname");
+    const hostname = element("hostname");
     hostname.value = host;
 
     hostname.addEventListener("change", async () => {
@@ -946,15 +933,19 @@
       hostnameLabel();
     })();
 
+    function element(id) {
+      return d.getElementById(id);
+    }
+
     function hostnameLabel() {
-      const link = document.getElementById("wledEdit");
+      const link = element("wledEdit");
       link.href = link.href.replace("[wled-ip]", hostname.value);
     }
 
     async function playlist() {
-      const { value: duration } = document.getElementById("duration");
-      const { value: transition } = document.getElementById("transition");
-      const { value: name } = document.getElementById("name");
+      const { value: duration } = element("duration");
+      const { value: transition } = element("transition");
+      const { value: name } = element("name");
 
       const urlPreset = `${WLED_URL}/presets.json`;
       const url = `${WLED_URL}/json`;
@@ -972,7 +963,7 @@
             data[key].n.startsWith(name)
         );
 
-        const psave =
+        const id =
           items.find(
             (key) =>
               typeof data[key] === "object" &&
@@ -982,7 +973,7 @@
           ) || parseInt(items.pop()) + 1;
 
         const body = {
-          psave,
+          psave: parseInt(id),
           n: name,
           on: true,
           o: false,
@@ -1008,7 +999,7 @@
           const { success } = await response.json();
 
           if (success) {
-            toast(`Playlist "${name}" save successfully!`);
+            toast(`Playlist "${name}" save successfully`);
           }
         } catch (error) {
           toast(`Error saving preset: ${error}`, "error");
@@ -1034,7 +1025,7 @@
               const data = await response.json();
               const items = Object.keys(data);
 
-              const psave =
+              const id =
                 items.find(
                   (key) =>
                     typeof data[key] === "object" &&
@@ -1042,7 +1033,7 @@
                     data[key].n === item.n
                 ) || parseInt(items.pop()) + 1;
 
-              const body = Object.assign(item, { psave });
+              const body = Object.assign(item, { psave: parseInt(id) });
               const options = {
                 method: "POST",
                 body: JSON.stringify(body),
@@ -1053,7 +1044,7 @@
                 const { success } = await response.json();
 
                 if (success) {
-                  toast(`Preset "${item.n}" save successfully!`);
+                  toast(`Preset "${item.n}" save successfully`);
                 }
               } catch (error) {
                 toast(`Error saving preset: ${error}`, "error");
@@ -1075,7 +1066,7 @@
             .then(() => {
               hide();
             })
-            .catch(() => {
+            .finally(() => {
               hide();
             });
         }, delay);
@@ -1086,18 +1077,7 @@
 
     async function images() {
       const url = `${WLED_URL}/edit?list=/`;
-      const selectImages = document.getElementById("images");
-      selectImages.innerHTML = "";
-
-      const options = [
-        { text: "Select a choice", value: "" },
-        { text: "Upload", value: "upload" },
-      ];
-
-      options.forEach(({ text, value }) => {
-        const option = new Option(text, value);
-        selectImages.appendChild(option);
-      });
+      const select = element("images");
 
       show();
 
@@ -1106,24 +1086,33 @@
         const data = await response.json();
         const mimeTypes = ["jpeg", "jpg", "png", "gif"];
 
-        const images = data
-          .filter((file) => {
-            const { name } = file;
-            const [filename, mimetype] = name.split(".");
+        const images = data.filter((file) => {
+          const { name } = file;
+          const [filename, mimetype] = name.split(".");
+          file.name = name.replace("/", "");
+          return mimeTypes.includes(mimetype);
+        });
 
-            file.name = name.replace("/", "");
+        const options = [
+          { text: "Select a choice", value: "" },
+          { text: "Upload", value: "upload" },
+        ];
 
-            return mimeTypes.includes(mimetype);
-          })
-          .map((file) => {
-            const { name } = file;
-            const option = document.createElement("option");
+        if (images) {
+          options.push(
+            ...images.map(({ name }) => ({
+              text: name,
+              value: `${WLED_URL}/${name}`,
+            }))
+          );
 
-            option.text = name;
-            option.value = `${WLED_URL}/${name}`;
+          select.innerHTML = "";
 
-            selectImages.add(option);
+          options.forEach(({ text, value }) => {
+            const option = new Option(text, value);
+            select.appendChild(option);
           });
+        }
       } catch (error) {
         toast(error, "error");
       } finally {
@@ -1132,46 +1121,50 @@
     }
 
     async function segments() {
-      const selectSegments = document.getElementById("segments");
-      const pattern = document.getElementById("pattern");
-      const width = document.getElementById("width");
-      const height = document.getElementById("height");
-
-      const url = `${WLED_URL}/json/state`;
-
-      selectSegments.innerHTML = "";
-
-      const options = [{ text: "Select a choice", value: "" }];
-
-      options.forEach(({ text, value }) => {
-        const option = new Option(text, value);
-        selectSegments.appendChild(option);
-      });
+      const select = element("segments");
+      const pattern = element("pattern");
+      const width = element("width");
+      const height = element("height");
 
       show();
 
       try {
+        const url = `${WLED_URL}/json/state`;
         const response = await fetch(url);
         const { seg: segments } = await response.json();
 
-        segments &&
-          segments.forEach(function ({ id, n, stop: w, stopY: h }, index) {
-            const option = document.createElement("option");
-            option.text = n ? n : `Segment ${id}`;
-            option.value = id;
-            option.dataset.width = w;
-            option.dataset.height = h;
+        const options = [
+          { text: "Segment Default", value: 0, width: 16, height: 16 },
+        ];
 
-            if (index === 0) {
-              option.selected = true;
-              width.value = w;
-              height.value = h;
+        if (segments) {
+          options.splice(0);
+          options.push(
+            ...segments.map(({ id, n, start, stop, startY, stopY }) => ({
+              text: n ? n : `Segment ${id}`,
+              value: id,
+              width: stop - start,
+              height: stopY - startY,
+            }))
+          );
+        }
 
-              pattern.value = w * h > 512 ? 3 : 1;
-            }
+        select.innerHTML = "";
 
-            selectSegments.add(option);
-          });
+        options.forEach(({ text, value, width: w, height: h }, index) => {
+          const option = new Option(text, value);
+          option.dataset.width = w;
+          option.dataset.height = h;
+
+          if (index === 0) {
+            option.selected = true;
+            width.value = w;
+            height.value = h;
+            pattern.value = w * h > 512 ? 3 : 1;
+          }
+
+          select.add(option);
+        });
       } catch (error) {
         toast(error, "error");
       } finally {
@@ -1179,8 +1172,8 @@
       }
     }
 
-    const dropzone = document.getElementById("dropzone");
-    const source = document.getElementById("source");
+    const dropzone = element("dropzone");
+    const source = element("source");
 
     dropzone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -1189,15 +1182,14 @@
     dropzone.addEventListener("drop", (e) => {
       e.preventDefault();
 
-      const dropzoneLabel = document.getElementById("dropzoneLabel");
+      const dropzoneLabel = element("dropzoneLabel");
 
-      console.log(e.dataTransfer);
       source.files = e.dataTransfer.files;
 
       const { name } = source.files[0];
       dropzoneLabel.textContent = `Image ${name} selected!`;
 
-      validateForm(e);
+      validate(e);
     });
 
     dropzone.addEventListener("click", () => {
@@ -1205,7 +1197,7 @@
     });
 
     source.addEventListener("change", (e) => {
-      const dropzoneLabel = document.getElementById("dropzoneLabel");
+      const dropzoneLabel = element("dropzoneLabel");
       const { value } = e.target;
 
       if (value) {
@@ -1216,38 +1208,36 @@
           "Drag and drop a file here or click to select a file";
       }
 
-      validateForm(e);
+      validate(e);
     });
 
-    document
-      .getElementById("btnSimulatePreset")
-      .addEventListener("click", async () => {
-        const url = `${WLED_URL}/json/state`;
+    element("btnSimulatePreset").addEventListener("click", async () => {
+      const url = `${WLED_URL}/json/state`;
 
-        const options = {
-          method: "POST",
-          body: JSON.stringify(jsonSendWLED),
-        };
+      const options = {
+        method: "POST",
+        body: JSON.stringify(jsonSendWLED),
+      };
 
-        show();
+      show();
 
-        try {
-          const response = await fetch(url, options);
-          const { success } = await response.json();
+      try {
+        const response = await fetch(url, options);
+        const { success } = await response.json();
 
-          if (success) {
-            toast("Preset sent successfully!");
-          }
-        } catch (error) {
-          toast(error, "error");
-        } finally {
-          hide();
+        if (success) {
+          toast("Successfully simulated preset");
         }
-      });
+      } catch (error) {
+        toast(error, "error");
+      } finally {
+        hide();
+      }
+    });
 
-    document.getElementById("btnSave").addEventListener("click", async () => {
-      const { checked } = document.getElementById("animation");
-      const { value: name } = document.getElementById("name");
+    element("btnSave").addEventListener("click", async () => {
+      const { checked } = element("animation");
+      const { value: name } = element("name");
 
       if (checked) {
         await insert(jsonSaveWLED, true);
@@ -1262,41 +1252,37 @@
       }
     });
 
-    document.querySelectorAll("#btnCopyToClipboard").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const response = document.getElementById("response");
+    element("btnCopyToClipboard").addEventListener("click", async () => {
+      const response = element("response");
 
-        response.select();
+      response.select();
 
+      try {
+        await navigator.clipboard.writeText(response.value);
+        toast("Text copied to clipboard");
+      } catch (error) {
         try {
-          await navigator.clipboard.writeText(response.value);
+          await d.execCommand("copy");
           toast("Text copied to clipboard");
         } catch (error) {
-          try {
-            await document.execCommand("copy");
-            toast("Text copied to clipboard");
-          } catch (error) {
-            toast(error, "error");
-          }
+          toast(error, "error");
         }
-      });
+      }
     });
 
-    document.querySelectorAll("#btnDownloadPreset").forEach((button) => {
-      button.addEventListener("click", () => {
-        const { value: response } = document.getElementById("response");
-        const { value: output } = document.getElementById("output");
+    element("btnDownloadPreset").addEventListener("click", () => {
+      const { value: response } = element("response");
+      const { value: output } = element("output");
 
-        const timestamp = new Date().getTime();
-        const filename = `WLED_${timestamp}`;
+      const timestamp = new Date().getTime();
+      const filename = `WLED_${timestamp}`;
 
-        downloadFile(response, filename, output);
-      });
+      downloadFile(response, filename, output);
     });
 
-    document.getElementById("segments").addEventListener("change", (e) => {
-      const width = document.getElementById("width");
-      const height = document.getElementById("height");
+    element("segments").addEventListener("change", (e) => {
+      const width = element("width");
+      const height = element("height");
 
       const { width: w, height: h } = e.target.selectedOptions[0].dataset;
 
@@ -1304,8 +1290,8 @@
       height.value = h;
     });
 
-    document.getElementById("output").addEventListener("change", (e) => {
-      const output = document.getElementsByClassName("output");
+    element("output").addEventListener("change", (e) => {
+      const output = d.getElementsByClassName("output");
       const { value } = e.target.selectedOptions[0];
 
       Array.from(output).forEach(function (element) {
@@ -1317,20 +1303,20 @@
       });
     });
 
-    document.getElementById("brightness").addEventListener("change", (e) => {
+    element("brightness").addEventListener("change", (e) => {
       const { value } = e.target;
-      const brightnessValue = document.getElementById("brightnessValue");
+      const brightnessValue = element("brightnessValue");
 
       brightnessValue.textContent = value;
     });
 
-    document.getElementById("images").addEventListener("change", (e) => {
-      const dropzone = document.getElementById("dropzone");
+    element("images").addEventListener("change", (e) => {
+      const dropzone = element("dropzone");
       const { value } = e.target.selectedOptions[0];
 
       if (value === "upload") {
-        const dropzoneLabel = document.getElementById("dropzoneLabel");
-        const source = document.getElementById("source");
+        const dropzoneLabel = element("dropzoneLabel");
+        const source = element("source");
 
         dropzoneLabel.textContent =
           "Drag and drop a file here or click to select a file";
@@ -1342,25 +1328,22 @@
       }
     });
 
-    document
-      .getElementById("transparentImage")
-      .addEventListener("change", (e) => {
-        const transparentImage =
-          document.getElementsByClassName("transparentImage");
-        const { checked } = e.target;
+    element("transparentImage").addEventListener("change", (e) => {
+      const transparentImage = d.getElementsByClassName("transparentImage");
+      const { checked } = e.target;
 
-        Array.from(transparentImage).forEach(function (element) {
-          if (checked) {
-            element.style.display = "flex";
-          } else {
-            element.style.display = "none";
-          }
-        });
+      Array.from(transparentImage).forEach(function (element) {
+        if (checked) {
+          element.style.display = "flex";
+        } else {
+          element.style.display = "none";
+        }
       });
+    });
 
-    document.getElementById("resizeImage").addEventListener("change", (e) => {
-      const resizeImage = document.getElementsByClassName("resizeImage");
-      const pattern = document.getElementById("pattern");
+    element("resizeImage").addEventListener("change", (e) => {
+      const resizeImage = d.getElementsByClassName("resizeImage");
+      const pattern = element("pattern");
       const { checked } = e.target;
 
       Array.from(resizeImage).forEach(function (element) {
@@ -1374,10 +1357,11 @@
       });
     });
 
-    document.getElementById("animation").addEventListener("change", (e) => {
-      const animation = document.getElementsByClassName("animation");
+    element("animation").addEventListener("change", (e) => {
+      const animation = d.getElementsByClassName("animation");
 
-      const pattern = document.getElementById("pattern");
+      const pattern = element("pattern");
+      const source = element("source");
 
       const { checked } = e.target;
 
@@ -1389,51 +1373,42 @@
             5000
           );
 
+          source.setAttribute("accept", "image/gif");
           element.style.display = "flex";
           pattern.value = 3;
         } else {
+          source.setAttribute(
+            "accept",
+            "image/jpg,image/jpeg,image/png,image/gif"
+          );
           element.style.display = "none";
           pattern.value = 1;
         }
       });
     });
 
-    document
-      .getElementById("btnGenerate")
-      .addEventListener("click", async (event) => {
-        const { checked } = document.getElementById("animation");
+    element("btnGenerate").addEventListener("click", async (event) => {
+      const { checked } = element("animation");
 
-        const recreatedImage = document.getElementById("recreatedImage");
-        const preview = document.getElementById("preview");
+      const preview = element("preview");
+      const recreatedImage = element("recreatedImage");
+      const simulate = element("simulate");
 
-        const simulate = document.getElementById("simulate");
+      if (validate(event)) {
+        jsonSaveWLED.splice(0);
 
-        if (validateForm(event)) {
-          jsonSaveWLED.splice(0);
+        preview.style.display = "block";
+        recreatedImage.innerHTML = "";
 
-          preview.style.display = "block";
-          recreatedImage.innerHTML = "";
-
-          // dataAnimation.forEach((buttons) => {
-          //   const animation =
-          //     buttons.dataset.animation === "true" ? true : false;
-
-          //   if (animation === checked) {
-          //     buttons.style.display = "flex";
-          //   } else {
-          //     buttons.style.display = "none";
-          //   }
-          // });
-
-          if (checked) {
-            simulate.style.display = "none";
-            await generateAnimation();
-          } else {
-            simulate.style.display = "flex";
-            await generate();
-          }
+        if (checked) {
+          simulate.style.display = "none";
+          await generateAnimation();
+        } else {
+          simulate.style.display = "flex";
+          await generate();
         }
-      });
+      }
+    });
 
     function loadImage(src) {
       return new Promise((resolve, reject) => {
@@ -1452,160 +1427,167 @@
     }
 
     async function generate() {
-      if (checkMimeType()) {
-        const file = document.getElementById("source").files[0];
+      const file = element("source").files[0];
 
-        const { value: images } = document.getElementById("images");
-        const { value: output } = document.getElementById("output");
+      const { value: images } = element("images");
+      const { value: output } = element("output");
 
-        show();
+      show();
 
-        try {
-          const response = document.getElementById("response");
-          const recreatedImage = document.getElementById("recreatedImage");
+      try {
+        const response = element("response");
+        const recreatedImage = element("recreatedImage");
 
-          const urlImage =
-            images === "upload" ? URL.createObjectURL(file) : images;
+        const urlImage =
+          images === "upload" ? URL.createObjectURL(file) : images;
 
-          const image = await loadImage(urlImage);
-          const { canvas, bri, id, i, length } = recreate(image);
+        const image = await loadImage(urlImage);
+        const { canvas, bri, id, i } = recreate(image);
 
-          await new Promise((resolve) => {
-            Object.assign(jsonSendWLED, {
-              on: true,
-              bri,
-              seg: {
-                id,
-                i,
-              },
-            });
-
-            resolve();
+        await new Promise((resolve) => {
+          Object.assign(jsonSendWLED, {
+            on: true,
+            bri,
+            seg: {
+              id,
+              i,
+            },
           });
 
-          const jsonData = JSON.stringify(jsonSendWLED);
-          const dataResponse = formatOutput(output, jsonData);
+          resolve();
+        });
 
-          response.value = dataResponse;
-          recreatedImage.appendChild(canvas);
-        } catch (error) {
-          toast(error, "error");
-        } finally {
-          hide();
-        }
+        const jsonData = JSON.stringify(jsonSendWLED);
+        const dataResponse = formatOutput(output, jsonData);
+
+        response.value = dataResponse;
+        recreatedImage.appendChild(canvas);
+      } catch (error) {
+        toast(error, "error");
+      } finally {
+        hide();
       }
     }
 
     async function generateAnimation() {
-      if (checkMimeType()) {
-        const file = document.getElementById("source").files[0];
+      const file = element("source").files[0];
+      const images = element("images");
+      const response = element("response");
 
-        const images = document.getElementById("images");
+      const { value: presetName } = element("name");
+      const { value: amount } = element("frames");
+      const { value: output } = element("output");
+      const { value: duration } = element("duration");
 
-        const response = document.getElementById("response");
+      const { text: imageName, value: imageValue } = images.selectedOptions[0];
 
-        const { value: presetName } = document.getElementById("name");
-        const { value: amount } = document.getElementById("frames");
-        const { value: output } = document.getElementById("output");
-        const { value: duration } = document.getElementById("duration");
+      show();
 
-        const { text: imageName, value: imageValue } =
-          images.selectedOptions[0];
+      try {
+        const body = new FormData();
 
-        show();
+        if (imageValue === "upload") {
+          body.append("image", file);
+        } else {
+          const responseImage = await fetch(imageValue);
+          const blob = await responseImage.blob();
 
-        try {
-          const body = new FormData();
+          const file = new File([blob], imageName, { type: blob.type });
 
-          if (imageValue === "upload") {
-            body.append("image", file);
-          } else {
-            const responseImage = await fetch(imageValue);
-            const blob = await responseImage.blob();
-
-            const file = new File([blob], imageName, { type: blob.type });
-
-            body.append("image", file);
-          }
-
-          const responseFrames = await fetch(
-            `https://pixelmagictool.vercel.app/api/wled/frames?amount=${amount}`,
-            {
-              method: "POST",
-              body,
-            }
-          );
-
-          const { message, frames } = await responseFrames.json();
-
-          if (!responseFrames.ok) {
-            toast(message, "error");
-            return;
-          }
-
-          jsonSaveWLED = [];
-
-          const texteares = [];
-          const canvases = [];
-
-          const delay = duration * 1000;
-
-          const promises = frames.map(async (frame, index) => {
-            const image = await loadImage(frame);
-            const { canvas, bri, id, i } = recreate(image);
-            const jsonData = {
-              on: true,
-              bri,
-              seg: { id, i },
-            };
-
-            const n = `${presetName} ${index + 1}`;
-
-            texteares.push(`${n}|${JSON.stringify(jsonData)}`);
-            canvases.push(canvas);
-
-            jsonSaveWLED.push(Object.assign(jsonData, { n, o: true }));
-          });
-
-          await Promise.all(promises);
-
-          const dataResponse = texteares.map((item) => {
-            const [presetName, json] = item.split("|");
-            const outputFormatted = formatOutput(output, json);
-            const comment = ["ha", "curl"].includes(output) ? "#" : "//";
-
-            return `${comment} ${presetName}\n${outputFormatted}`;
-          });
-
-          response.value = dataResponse.join("\n");
-          toast(message);
-          carousel("recreatedImage", canvases, delay);
-        } catch (error) {
-          toast(error, "error");
-        } finally {
-          hide();
+          body.append("image", file);
         }
+
+        const responseFrames = await fetch(
+          `https://pixelmagictool.vercel.app/api/wled/frames?amount=${amount}`,
+          {
+            method: "POST",
+            body,
+          }
+        );
+
+        const { message, frames } = await responseFrames.json();
+
+        if (!responseFrames.ok) {
+          toast(message, "error");
+          return;
+        }
+
+        jsonSaveWLED = [];
+
+        const texteares = [];
+        const canvases = [];
+
+        const delay = duration * 1000;
+
+        const promises = frames.map(async (frame, index) => {
+          const image = await loadImage(frame);
+          const { canvas, bri, id, i } = recreate(image);
+          const jsonData = {
+            on: true,
+            bri,
+            seg: { id, i },
+          };
+
+          const n = `${presetName} ${index + 1}`;
+
+          texteares.push(`${n}|${JSON.stringify(jsonData)}`);
+          canvases.push(canvas);
+
+          jsonSaveWLED.push(Object.assign(jsonData, { n, o: true }));
+        });
+
+        await Promise.all(promises);
+
+        const dataResponse = texteares.map((item) => {
+          const [presetName, json] = item.split("|");
+          const outputFormatted = formatOutput(output, json);
+          const comment = ["ha", "curl"].includes(output) ? "#" : "//";
+
+          return `${comment} ${presetName}\n${outputFormatted}`;
+        });
+
+        response.value = dataResponse.join("\n");
+        toast(message);
+        carousel("recreatedImage", canvases, delay);
+      } catch (error) {
+        toast(error, "error");
+      } finally {
+        hide();
       }
     }
 
     function recreate(image) {
-      const { value: pattern } = document.getElementById("pattern");
-      const { value: segmentId } = document.getElementById("segments");
-      const { value: bri } = document.getElementById("brightness");
-      const { value: width } = document.getElementById("width");
-      const { value: height } = document.getElementById("height");
+      const { value: pattern } = element("pattern");
+      const { value: segmentId } = element("segments");
+      const { value: brightness } = element("brightness");
+      const { value: resizeWidth } = element("width");
+      const { value: resizeHeight } = element("height");
+      const { checked: resizeImage } = element("resizeImage");
 
-      const { checked: resizeImage } = document.getElementById("resizeImage");
+      const imgWidth = image.naturalWidth;
+      const imgHeight = image.naturalHeight;
+
+      const width = resizeImage ? resizeWidth : imgWidth;
+      const height = resizeImage ? resizeHeight : imgHeight;
+
+      const { width: segmentWidth, height: segmentHeight } =
+        element("segments").selectedOptions[0].dataset;
 
       const pixelsRef = 48;
-      const fullWidth = width * pixelsRef;
-      const fullHeight = height * pixelsRef;
+
+      const fullWidth = resizeImage
+        ? segmentWidth * pixelsRef
+        : imgWidth * pixelsRef;
+      const fullHeight = resizeImage
+        ? segmentHeight * pixelsRef
+        : imgHeight * pixelsRef;
+
       const fontSize = fullWidth <= 768 ? 14 : 18;
-      const length = width * height;
+
+      const segmentWidthFinal = resizeImage ? segmentWidth : width;
+      const segmentHeightFinal = resizeImage ? segmentHeight : height;
 
       const colors = [];
-
-      let i = [];
 
       const { ctx: reference } = createCanvas(width, height);
 
@@ -1616,38 +1598,48 @@
 
       const { canvas, ctx } = createCanvas(fullWidth, fullHeight);
 
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const index = y * width + x;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, fullWidth, fullHeight);
 
-          const red = pixels[index * 4];
-          const green = pixels[index * 4 + 1];
-          const blue = pixels[index * 4 + 2];
-          const alpha = pixels[index * 4 + 3];
-
-          const hex = pixelColor(red, green, blue, alpha);
-          const { r, g, b } = hexToRgb(hex);
-
-          colors.push(hex);
-
+      for (let y = 0; y < segmentHeightFinal; y++) {
+        for (let x = 0; x < segmentWidthFinal; x++) {
           let coordinateX = x * pixelsRef;
           let coordinateY = y * pixelsRef;
 
-          ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-          ctx.fillRect(coordinateX, coordinateY, pixelsRef, pixelsRef);
+          let hex = "000000";
+
+          if (x < width && y < height) {
+            let index = y * width + x;
+
+            let red = pixels[index * 4];
+            let green = pixels[index * 4 + 1];
+            let blue = pixels[index * 4 + 2];
+            let alpha = pixels[index * 4 + 3];
+
+            hex = pixelColor(red, green, blue, alpha);
+            let { r, g, b } = hexToRgb(hex);
+
+            colors.push(hex);
+
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.fillRect(coordinateX, coordinateY, pixelsRef, pixelsRef);
+          } else {
+            colors.push("000000");
+          }
 
           ctx.lineWidth = 1;
-          ctx.strokeStyle = "#eeeeee";
+          ctx.strokeStyle = "#111111";
           ctx.strokeRect(coordinateX, coordinateY, pixelsRef, pixelsRef);
 
+          let pixelId = y * segmentWidth + x + 1;
           let offsetX = coordinateX + pixelsRef / 2;
           let offsetY = coordinateY + pixelsRef / 2;
 
           ctx.font = `${fontSize}px Arial`;
-          ctx.fillStyle = hex == "ffffff" ? "#252525" : "#eeeeee";
+          ctx.fillStyle = hex === "ffffff" ? "#111111" : "#eeeeee";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(index + 1, offsetX, offsetY);
+          ctx.fillText(pixelId, offsetX, offsetY);
         }
       }
 
@@ -1656,23 +1648,22 @@
           i = colors;
           break;
         case "2":
-          i = individualLedIndex(colors);
+          i = index(colors);
           break;
         case "3":
-          i = rangeLeds(colors);
+          i = range(colors);
           break;
       }
 
       return {
         canvas,
-        bri,
-        id: segmentId,
+        bri: parseInt(brightness),
+        id: parseInt(segmentId),
         i,
-        length,
       };
     }
 
-    function rangeLeds(colors) {
+    function range(colors) {
       let startIndex = 0;
       let endIndex = 0;
       let currentColor = colors[0];
@@ -1705,8 +1696,8 @@
     }
 
     function pixelColor(r, g, b, a) {
-      const { checked } = document.getElementById("transparentImage");
-      const { value } = document.getElementById("color");
+      const { checked } = element("transparentImage");
+      const { value } = element("color");
 
       if (a === 0) {
         if (checked) {
@@ -1738,7 +1729,7 @@
       return ("000000" + hex).slice(-6);
     }
 
-    function individualLedIndex(colors) {
+    function index(colors) {
       const pattern = [];
       colors.forEach((led, index) => {
         pattern.push(index, led);
@@ -1748,7 +1739,7 @@
     }
 
     function createCanvas(width, height) {
-      const canvas = document.createElement("canvas");
+      const canvas = d.createElement("canvas");
 
       canvas.width = width;
       canvas.height = height;
@@ -1763,7 +1754,7 @@
 
     function formatOutput(output, json) {
       return output === "ha"
-        ? homeAssistant(json)
+        ? yaml(json)
         : output === "curl"
         ? curl(json)
         : json;
@@ -1792,20 +1783,20 @@
       const blob = new Blob([text], { type: mimeType });
       const url = URL.createObjectURL(blob);
 
-      const anchorElement = document.createElement("a");
+      const anchorElement = d.createElement("a");
       anchorElement.href = url;
       anchorElement.download = `${filename}.${fileExtension}`;
 
       anchorElement.click();
 
-      WLED_URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
     }
 
-    function homeAssistant(jsonData) {
-      const { value: device } = document.getElementById("device");
-      const { value: friendly_name } = document.getElementById("friendlyName");
-      const { value: unique_id } = document.getElementById("uniqueId");
-      const { value: hostname } = document.getElementById("hostname");
+    function yaml(jsonData) {
+      const { value: device } = element("device");
+      const { value: friendly_name } = element("friendlyName");
+      const { value: unique_id } = element("uniqueId");
+      const { value: hostname } = element("hostname");
 
       if (device) {
         const yamlData = {
@@ -1824,7 +1815,7 @@
     }
 
     function curl(jsonData) {
-      const { value: hostname } = document.getElementById("hostname");
+      const { value: hostname } = element("hostname");
       return `curl -X POST "http://${hostname}/json/state" -d '${jsonData}' -H "Content-Type: application/json"`;
     }
 
@@ -1862,8 +1853,8 @@
       duration = 2000,
       hideElement = "preview"
     ) {
-      const hide = document.getElementById(hideElement);
-      const toast = document.createElement("div");
+      const hide = element(hideElement);
+      const toast = d.createElement("div");
       const wait = 100;
 
       toast.style.animation = "fadeIn";
@@ -1872,14 +1863,14 @@
 
       toast.classList.add("toast", type);
 
-      const body = document.createElement("span");
+      const body = d.createElement("span");
       body.classList.add("toast-body");
 
       body.textContent = message;
 
       toast.appendChild(body);
 
-      const progress = document.createElement("div");
+      const progress = d.createElement("div");
       progress.classList.add("toast-progress");
 
       progress.style.animation = "progress";
@@ -1888,7 +1879,7 @@
 
       toast.appendChild(progress);
 
-      document.getElementById("toast-container").appendChild(toast);
+      element("toast-container").appendChild(toast);
 
       setTimeout(() => {
         toast.style.opacity = 0;
@@ -1904,7 +1895,7 @@
 
     function carousel(id, images, delay = 3000) {
       let index = 0;
-      const carousel = document.createElement("div");
+      const carousel = d.createElement("div");
       carousel.classList.add("carousel");
 
       images.forEach((canvas, i) => {
@@ -1916,7 +1907,7 @@
         }
       });
 
-      const container = document.getElementById(id);
+      const container = element(id);
       container.innerHTML = "";
       container.appendChild(carousel);
 
@@ -1964,35 +1955,39 @@
     }
 
     function show() {
-      const overlay = document.getElementById("overlay");
+      const overlay = element("overlay");
       overlay.classList.add("loading");
       overlay.style.display = "block";
       overlay.style.cursor = "not-allowed";
 
-      document.body.style.overflow = "hidden";
+      d.body.style.overflow = "hidden";
     }
 
     function hide() {
-      const overlay = document.getElementById("overlay");
+      const overlay = element("overlay");
       overlay.classList.remove("loading");
       overlay.style.display = "none";
       overlay.style.cursor = "default";
 
-      document.body.style.overflow = "auto";
+      d.body.style.overflow = "auto";
     }
 
-    function validateForm(event) {
+    function validate(event) {
       event.preventDefault();
 
-      const form = document.getElementById("formGenerate");
+      const form = element("formGenerate");
       const inputs = form.querySelectorAll("input, select, textarea");
 
       let isValid = true;
 
       const browserLanguage = navigator.language || navigator.userLanguage;
+      const messageRequired =
+        browserLanguage === "pt-br"
+          ? "Este campo é obrigatório"
+          : "This field is required";
 
       inputs.forEach((input) => {
-        const parent = input.closest(".valitade");
+        const parent = input.closest("[validate]");
 
         if (!parent) {
           return;
@@ -2001,7 +1996,7 @@
         let isVisible = true;
 
         let tempParent = parent;
-        while (tempParent !== document.body) {
+        while (tempParent !== d.body) {
           const parentStyles = window.getComputedStyle(tempParent);
           if (
             parentStyles.display === "none" ||
@@ -2023,12 +2018,12 @@
           const errorMessage =
             input.dataset.errorMessage ||
             input.validationMessage ||
-            getRequiredFieldMessage(browserLanguage);
+            messageRequired;
 
           let errorElement = parent.querySelector(".error-message");
 
           if (!errorElement) {
-            errorElement = document.createElement("div");
+            errorElement = d.createElement("div");
             errorElement.classList.add("error-message");
             parent.appendChild(errorElement);
           }
@@ -2046,51 +2041,6 @@
       });
 
       return isValid;
-    }
-
-    function getRequiredFieldMessage(language) {
-      if (language.includes("-")) {
-        language = language.split("-")[1];
-      }
-
-      const messages = {
-        en: "This field is required.",
-        br: "Este campo é obrigatório.",
-        pt: "Este campo é obrigatório.",
-        es: "¡Este campo es obligatorio.",
-        fr: "Ce champ est obligatoire.",
-        de: "Dieses Feld ist erforderlich.",
-        it: "Questo campo è obbligatorio.",
-      };
-
-      return messages[language.toLowerCase()] || messages.en;
-    }
-
-    function checkMimeType() {
-      const { checked: animation } = document.getElementById("animation");
-      const mimeTypes = animation ? ["gif"] : ["jpeg", "jpg", "png", "gif"];
-
-      const source = document.getElementById("source").files[0];
-      const images = document.getElementById("images");
-
-      const { value: image } = images.selectedOptions[0];
-
-      const extension =
-        image === "upload"
-          ? source.name.split(".").pop()
-          : image.split(".").pop();
-
-      if (!mimeTypes.includes(extension)) {
-        toast(
-          animation
-            ? "Image format is not valid, select a GIF!"
-            : "Image format is not valid",
-          "error"
-        );
-        return false;
-      }
-
-      return true;
     }
   </script>
 </html>
