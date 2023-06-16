@@ -26,7 +26,8 @@ var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, css:true, hdays:false} //WLEDMM segexp true as default
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, 
+		  css:true, hdays:false, fxdef:true} //WLEDMM segexp true as default
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -2625,8 +2626,7 @@ function setFX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
-
-	var obj = {"seg": {"fx": parseInt(ind),"fxdef":1}}; // fxdef sets effect parameters to default values, TODO add client setting
+	var obj = {"seg": {"fx": parseInt(ind), "fxdef": cfg.comp.fxdef}}; // fxdef sets effect parameters to default values
 	requestJson(obj);
 }
 
