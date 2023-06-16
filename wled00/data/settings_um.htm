@@ -11,6 +11,7 @@
 	d.um_p = [];
 	d.rsvd = [];
 	d.ro_gpio = [];
+	d.extra = [];
 	var umCfg = {};
 	var pins = [], pinO = [], owner;
 	var loc = false, locip, locproto = "http:";
@@ -30,16 +31,11 @@
 		// success event 
 		scE.addEventListener("load", () => {
 			GetV();
-			for (let k=0; k<d.rsvd.length; k++) { pins.push(d.rsvd[k]); pinO.push("rsvd"); }
-			if (d.um_p[0]==-1) d.um_p.shift();
-			d.Sf.SDA.max = d.max_gpio;
-			d.Sf.SCL.max = d.max_gpio;
-			d.Sf.MOSI.max = d.max_gpio;
-			d.Sf.SCLK.max = d.max_gpio;
-			d.Sf.MISO.max = d.max_gpio;
-			let inp = d.getElementsByTagName("input");
-			for (let i of inp) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
-			pinDropdowns();
+			for (let r of d.rsvd) { pins.push(r); pinO.push("rsvd"); } // reserved pins
+			if (d.um_p[0]==-1) d.um_p.shift();	// remove filler
+			d.Sf.SDA.max = d.Sf.SCL.max = d.Sf.MOSI.max = d.Sf.SCLK.max = d.Sf.MISO.max = d.max_gpio;
+			//for (let i of d.getElementsByTagName("input")) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
+			pinDropdowns(); // convert INPUT to SELECT for pins
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {
@@ -77,6 +73,7 @@
 	function isF(n) { return n === +n && n !== (n|0); }
 	function isI(n) { return n === +n && n === (n|0); }
 	function check(o,k) {   // input object, pin owner key
+		/* no longer necessary with pin dropdown fields
 		var n = o.name.replace("[]","").substr(-3);
 		if (o.type=="number" && n.substr(0,3)=="pin") {
 			for (var i=0; i<pins.length; i++) {
@@ -99,6 +96,7 @@
 				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
 			}
 		}
+		*/
 	}
 	function getPins(o) {
 		if (isO(o)) {
@@ -181,6 +179,13 @@
 					if (j === v) opt.selected = true; // this is "our" pin
 					else if (pins.includes(j)) opt.disabled = true; // someone else's pin
 				}
+				let um = i.name.split(":")[0];
+				d.extra.forEach((o)=>{
+					if (o[um] && o[um].pin) o[um].pin.forEach((e)=>{
+						let opt = addOption(sel,e[0],e[1]);
+						if (e[1]==v) opt.selected = true;
+					});
+				});
 			}
 		}
 	}
@@ -198,15 +203,17 @@
 					i.text = "unused";
 					return
 				}
-				i.text = i.value;
-				if (i.value==oldV) {
-					i.disabled = false;
+				if (i.value<100) { // TODO remove this hack and use d.extra
+					i.text = i.value;
+					if (i.value==oldV) {
+						i.disabled = false;
+					}
+					if (i.value==e.value) {
+						i.disabled = true;
+						i.text += ` ${txt}`;
+					}
+					if (d.ro_gpio.includes(parseInt(i.value))) i.text += " (R/O)";
 				}
-				if (i.value==e.value) {
-					i.disabled = true;
-					i.text += ` ${txt}`;
-				}
-				if (d.ro_gpio.includes(parseInt(i.value))) i.text += " (R/O)";
 			});
 		}
 	}
@@ -235,7 +242,7 @@
 				var att = inp.attributes[i];
 				// type and value don't apply, so skip them
 				// ** you might also want to skip style, or others -- modify as needed **
-				if (att.name != 'type' && att.name != 'value' && att.name != 'class' && att.name != 'style') {
+				if (att.name != 'type' && att.name != 'value' && att.name != 'class' && att.name != 'style' && att.name != 'oninput' && att.name != 'max' && att.name != 'min') {
 					sel.setAttribute(att.name, att.value);
 				}
 			}
@@ -243,7 +250,6 @@
 			sel.setAttribute("onchange", "UI(this)");
 			// finally, replace the old input element with the new select element
 			inp.parentElement.replaceChild(sel, inp);
-			if (arr[0].type==="hidden") arr[0].parentElement.removeChild(arr[0]); // remove hidden element from DOM
 			return sel;
 		}
 		return null;

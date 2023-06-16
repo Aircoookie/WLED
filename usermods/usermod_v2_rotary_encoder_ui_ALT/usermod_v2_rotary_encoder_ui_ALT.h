@@ -343,7 +343,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      */
     void addToConfig(JsonObject &root);
 
-    //void appendConfigData();
+    void appendConfigData();
 
     /**
      * restore the changeable values
@@ -376,6 +376,7 @@ class RotaryEncoderUIUsermod : public Usermod {
  */
 byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
   if (usePcf8574) {
+    if (pin >= 100) pin -= 100; // PCF I/O ports
     return (pcfPortData>>pin) & 1;
   } else {
     return digitalRead(pin);
@@ -1071,9 +1072,10 @@ void RotaryEncoderUIUsermod::addToConfig(JsonObject &root) {
   DEBUG_PRINTLN(F("Rotary Encoder config saved."));
 }
 
-//void RotaryEncoderUIUsermod::appendConfigData() {
-//  oappend(SET_F("addInfo('RotaryEncoderUIUsermod:PCF8574-address',1,'<i>(not hex!)</i>');"));
-//}
+void RotaryEncoderUIUsermod::appendConfigData() {
+  oappend(SET_F("addInfo('Rotary-Encoder:PCF8574-address',1,'<i>(not hex!)</i>');"));
+  oappend(SET_F("d.extra.push({'Rotary-Encoder':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
+}
 
 /**
  * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
@@ -1122,7 +1124,7 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
           pinManager.deallocatePin(pinIRQ, PinOwner::UM_RotaryEncoderUI);
           DEBUG_PRINTLN(F("Deallocated old IRQ pin."));
         }
-        pinIRQ = newIRQpin;
+        pinIRQ = newIRQpin<100 ? newIRQpin : -1; // ignore PCF8574 pins
       } else {
         pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
         pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
