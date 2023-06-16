@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="@ajotanc">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="@ajotanc" />
 
     <title>Pixel Magic Tool</title>
+
+    <!-- <link
+      rel="shortcut icon"
+      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAK9JREFUeNqUUssNwyAMJZWVUw4dhRHakZA6RqWMFEbwKDnk1FNBekEWxOBYQggL/D68yXXq+M7PtHkcefn89vrOw/UrP96w/NUFGiDLRz71GyY0QJa1Yn+nFa0ShqUNYCAF0QvoceOB4naEZif6UTNRapYaTyauRi4DEspr4Hbs5YKsbmtMyeJ0LxeESV4gB+hlSy4oO2txWysyus0a0+lO6vBjxcTMlG4mt2H6F2AAhU5NWu4dorQAAAAASUVORK5CYII=
+  " /> -->
 
     <style>
       :root {
         --overlay: rgba(0, 0, 0, 0.5);
         --background: #111;
-        --color: #bbb;
+        --text: #bbb;
         --gray-dark: #222;
         --gray-medium: #333;
         --gray-light: #eeeeee;
@@ -48,52 +53,38 @@
         background: var(--background);
       }
 
-      textarea,
-      form,
       canvas {
         width: 100%;
+      }
+
+      form {
+        margin-bottom: 20px;
       }
 
       small {
         display: block;
         font-weight: 400;
         margin: 2px 0 5px;
-        color: var(--color);
+        color: var(--text);
         font-size: 12px;
       }
 
       footer {
-        margin: 10px 5px 0;
+        width: 100%;
+        margin: 0 auto 20px;
+        display: block;
+        text-align: center;
       }
 
       a {
         text-decoration: none;
-        color: var(--gray-light);
+        color: var(--blue-light);
         font-size: 12px;
         font-weight: 600;
       }
 
-      a:hover,
-      a:focus,
-      a:hide {
-        color: var(--gray-medium);
-      }
-
-      .container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .content {
-        width: 100%;
-        min-width: 540px;
-        max-width: 1024px;
-        margin: 20px;
-      }
-
-      .w-full {
-        flex-basis: 100% !important;
+      :is(a:hover, a:focus, a:active) {
+        color: var(--blue-medium);
       }
 
       .m-zero {
@@ -108,15 +99,25 @@
         margin-top: 10px !important;
       }
 
-      .row {
+      .container {
+        width: 100%;
         display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        margin: 20px 0 0;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
       }
 
-      .row:nth-child(2) {
-        margin: 0;
+      .content {
+        width: calc(100% - 40px);
+        max-width: 768px;
+        margin: 20px;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        margin: 20px 0 0;
       }
 
       .column {
@@ -125,11 +126,17 @@
         padding: 0 5px;
       }
 
+      .column-full {
+        flex-basis: 100%;
+        position: relative;
+        padding: 0 5px;
+      }
+
       label {
         display: block;
         margin-bottom: 5px;
         font-weight: bold;
-        color: var(--color);
+        color: var(--text);
       }
 
       input[type="text"],
@@ -141,7 +148,6 @@
         border-radius: 50px;
         background-color: var(--gray-medium);
         border: 1px solid var(--gray-medium);
-        display: inline-block;
         outline: none;
         color: var(--gray-light);
         font-size: 14px;
@@ -162,50 +168,50 @@
       }
 
       .input-group input:not([type="range"]) {
-        border-radius: 5px 0 0 5px;
+        border-radius: 8px 0 0 8px;
       }
 
       .input-group .input-description {
-        min-width: 40px;
+        width: 38px;
+        height: 38px;
         padding: 10px 0;
-        color: #222;
-        background: var(--color);
+        color: var(--gray-dark);
+        background: var(--gray-light);
         border-radius: 0px 5px 5px 0;
-        border: 1px solid var(--color);
+        border: 1px solid var(--gray-light);
         border-left: 0;
         text-align: center;
         font-size: 14px;
         line-height: 16px;
-        height: 38px;
         font-weight: 600;
       }
 
       .input-group .square {
-        border-radius: 5px;
+        border-radius: 8px !important;
         margin-left: 10px;
       }
 
       textarea {
         resize: vertical;
         min-height: 200px;
-        margin: 0 0 10px;
-        border-radius: 5px;
+        border-radius: 8px;
       }
 
-      .customSelect select {
+      .custom-select {
+        position: relative;
+      }
+
+      .custom-select select {
         appearance: none;
         -webkit-appearance: none;
         -moz-appearance: none;
         background-image: none;
         padding-right: 20px;
         cursor: pointer;
-        display: flex;
-        position: relative;
       }
 
-      .customSelect::after {
+      .custom-select label::after {
         content: "";
-        display: flex;
         position: absolute;
         top: calc(50% + 6px);
         right: 16px;
@@ -218,14 +224,14 @@
       }
 
       .dropzone {
-        width: calc(100% - 10px);
+        width: 100%;
         border: 1px dashed var(--gray-light);
         background-color: var(--gray-dark);
         color: var(--gray-light);
         text-align: center;
         padding: 40px 10px;
-        border-radius: 5px;
-        margin: 20px 5px;
+        border-radius: 8px;
+        margin: 20px 0 0;
         transition: all 0.5s ease-in-out;
       }
 
@@ -236,18 +242,13 @@
         border-color: var(--gray-dark);
       }
 
-      .dropzone p {
-        margin: 0;
-        padding: 0;
-      }
-
       .dropzone.dragover {
-        background-color: var(--color);
+        background-color: var(--gray-medium);
       }
 
       .range-slider {
         appearance: none;
-        background-color: var(--color);
+        background-color: var(--gray-light);
         height: 8px;
         width: 100%;
         border-radius: 10px;
@@ -323,11 +324,10 @@
       .toast {
         display: flex;
         align-items: center;
-        width: max-content;
+        width: auto;
         padding: 6px 12px;
         margin: 10px 0 0;
         border-radius: 8px;
-        color: var(--gray-light);
         transform: translateY(30px);
         opacity: 0;
         visibility: hidden;
@@ -336,7 +336,7 @@
       .toast .toast-body {
         padding: 8px 0;
         font-weight: 600;
-        color: var(--gray-light);
+        color: var(--text);
         letter-spacing: 0.5px;
       }
 
@@ -389,9 +389,9 @@
 
       .header {
         display: flex;
-        align-items: center;
-        padding: 0 0 40px;
         flex-direction: column;
+        align-items: center;
+        padding: 0 0 20px;
       }
 
       .header .brand {
@@ -427,7 +427,7 @@
         border: 0;
         padding: 10px 18px;
         border-radius: 50px;
-        color: var(--color);
+        color: var(--text);
         cursor: pointer;
         margin: 0 0 10px;
         background: var(--gray-medium);
@@ -450,21 +450,6 @@
         display: flex;
         flex-direction: column;
         width: 100%;
-      }
-
-      #preview {
-        width: 100%;
-        margin: 20px 0 10px;
-        border-radius: 8px;
-      }
-
-      #preview .buttons {
-        margin: 0 0 15px;
-      }
-
-      #recreatedImage {
-        margin: 0 5px;
-        width: calc(100% - 10px);
       }
 
       #overlay {
@@ -491,10 +476,12 @@
         animation: spin 1s linear infinite;
       }
 
-      input.invalid,
-      select.invalid,
-      textarea.invalid {
-        border: 1px solid var(--error-dark);
+      #recreatedImage {
+        margin: 20px 0;
+      }
+
+      .invalid {
+        border: 1px solid var(--error-dark) !important;
       }
 
       .error-message {
@@ -505,45 +492,22 @@
         font-size: 12px;
       }
 
-      .slide-container {
-        width: 100%;
-        display: flex;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-      }
-
-      .slide {
-        scroll-snap-align: center;
-      }
-
       @media (max-width: 767px) {
-        .m-top {
-          margin: 20px 0 !important;
-        }
-
-        .content {
-          min-width: 360px;
-        }
-
         .header {
           padding-bottom: 0;
         }
 
         .row {
+          flex-wrap: wrap;
           flex-direction: column;
           margin: 0;
         }
 
-        .column {
+        .column,
+        .column-full {
           flex-basis: 100%;
           margin: 20px 0 0;
           padding: 0;
-        }
-      }
-
-      @media (min-width: 768px) {
-        .row {
-          flex-wrap: nowrap;
         }
       }
 
@@ -658,8 +622,8 @@
           </div>
           <div class="row">
             <div class="column" validate>
-              <label for="pattern">Pattern</label>
-              <div class="customSelect">
+              <div class="custom-select">
+                <label for="pattern">Pattern</label>
                 <select name="pattern" id="pattern" required>
                   <option value="">Select a choice</option>
                   <option value="1" title="['ffffff']" selected>
@@ -671,8 +635,8 @@
               </div>
             </div>
             <div class="column" validate>
-              <label for="output">Output</label>
-              <div class="customSelect">
+              <div class="custom-select">
+                <label for="output">Output</label>
                 <select name="output" id="output" required>
                   <option value="">Select a choice</option>
                   <option value="json" selected>WLED JSON</option>
@@ -702,8 +666,8 @@
           </div>
           <div class="row">
             <div class="column" validate>
-              <label for="segments">Segment Id</label>
-              <div class="customSelect">
+              <div class="custom-select">
+                <label for="segments">Segment Id</label>
                 <select name="segments" id="segments">
                   <option value="0" data-width="16" data-height="16">
                     Segment 0
@@ -722,9 +686,11 @@
                   max="255"
                   value="128"
                   class="range-slider" />
-                <div id="brightnessValue" class="input-description square">
-                  128
-                </div>
+                <input
+                  type="text"
+                  id="brightnessValue"
+                  class="input-description square"
+                  value="128" />
               </div>
             </div>
           </div>
@@ -801,7 +767,7 @@
             </div>
           </div>
           <div class="row transparentImage" style="display: none">
-            <div class="column w-full" validate>
+            <div class="column-full" validate>
               <label for="color">Choose a color</label>
               <small>
                 Color that will replace the
@@ -811,18 +777,14 @@
             </div>
           </div>
           <div class="row">
-            <div class="column w-full" validate>
-              <label for="images">Images</label>
-              <div class="customSelect">
+            <div class="column-full" validate>
+              <div class="custom-select">
+                <label for="images">Images</label>
                 <select name="images" id="images" required>
                   <option value="">Select a choice</option>
                   <option value="upload">Upload</option>
                 </select>
               </div>
-            </div>
-          </div>
-          <div class="row m-zero">
-            <div class="column w-full">
               <small>
                 Images uploaded to
                 <a id="wledEdit" href="http://[wled-ip]/edit" target="_blank">
@@ -844,7 +806,7 @@
               style="display: none" />
           </div>
           <div class="row">
-            <div class="column w-full">
+            <div class="column-full">
               <button type="button" class="button" id="btnGenerate">
                 Generate
               </button>
@@ -852,16 +814,11 @@
           </div>
         </form>
         <div id="preview" style="display: none">
-          <div class="row m-zero">
-            <div class="column w-full">
-              <textarea
-                name="response"
-                id="response"
-                readonly="readonly"></textarea>
-            </div>
-          </div>
+          <div id="recreatedImage"></div>
+          <textarea name="response" id="response" readonly="readonly">
+          </textarea>
           <div class="buttons">
-            <div class="row m-zero">
+            <div class="row">
               <div class="column">
                 <button type="button" class="button" id="btnCopyToClipboard">
                   Copy to Clipboard
@@ -876,22 +833,21 @@
                 </button>
               </div>
             </div>
-            <div class="row m-zero" id="simulate" style="display: none">
-              <div class="column w-full m-top">
+            <div class="row" id="simulate" style="display: none">
+              <div class="column-full">
                 <button type="button" class="button" id="btnSimulatePreset">
                   Simulate
                 </button>
               </div>
             </div>
           </div>
-          <div id="recreatedImage"></div>
         </div>
-        <footer>
-          <a href="https://github.com/ajotanc/PixelMagicTool" target="_blank"
-            >Github &copy; Pixel Magic Tool</a
-          >
-        </footer>
       </div>
+      <footer>
+        <a href="https://github.com/ajotanc/PixelMagicTool" target="_blank">
+          Github &copy; Pixel Magic Tool
+        </a>
+      </footer>
     </div>
     <div id="toast-container"></div>
     <div id="overlay"></div>
@@ -899,12 +855,11 @@
   <script>
     const d = document;
     const params = new URLSearchParams(window.location.search);
-    const host =
-      params.get("mode") === "dev"
-        ? params.get("hn")
-        : window.location.host
-        ? window.location.host
-        : "0.0.0.0";
+    const host = params.get("hn")
+      ? params.get("hn")
+      : window.location.host
+      ? window.location.host
+      : "0.0.0.0";
     const protocol =
       window.location.protocol === "file:" ? "http:" : window.location.protocol;
 
@@ -1302,11 +1257,21 @@
       });
     });
 
-    element("brightness").addEventListener("change", (e) => {
+    element("brightnessValue").addEventListener("input", (e) => {
+      const brightness = element("brightness");
       const { value } = e.target;
-      const brightnessValue = element("brightnessValue");
 
-      brightnessValue.textContent = value;
+      let bri = value <= 255 ? value : 255;
+
+      brightness.value = bri;
+      e.target.value = bri;
+    });
+
+    element("brightness").addEventListener("input", (e) => {
+      const brightnessValue = element("brightnessValue");
+      const { value } = e.target;
+
+      brightnessValue.value = value;
     });
 
     element("images").addEventListener("change", (e) => {
@@ -1559,9 +1524,18 @@
       const { value: pattern } = element("pattern");
       const { value: segmentId } = element("segments");
       const { value: brightness } = element("brightness");
-      const { value: resizeWidth } = element("width");
-      const { value: resizeHeight } = element("height");
+      const { value: inputWidth } = element("width");
+      const { value: inputHeight } = element("height");
       const { checked: resizeImage } = element("resizeImage");
+
+      const resizeWidth = parseInt(inputWidth);
+      const resizeHeight = parseInt(inputHeight);
+
+      const { width: dataWidth, height: dataHeight } =
+        element("segments").selectedOptions[0].dataset;
+
+      const segmentWidth = parseInt(dataWidth);
+      const segmentHeight = parseInt(dataHeight);
 
       const imgWidth = image.naturalWidth;
       const imgHeight = image.naturalHeight;
@@ -1569,22 +1543,18 @@
       const width = resizeImage ? resizeWidth : imgWidth;
       const height = resizeImage ? resizeHeight : imgHeight;
 
-      const { width: segmentWidth, height: segmentHeight } =
-        element("segments").selectedOptions[0].dataset;
+      const overallWidth = resizeImage ? segmentWidth : width;
+      const overallHeight = resizeImage ? segmentHeight : height;
+
+      const startX = Math.floor((segmentWidth - width) / 2);
+      const startY = Math.floor((segmentHeight - height) / 2);
 
       const pixelsRef = 48;
 
-      const fullWidth = resizeImage
-        ? segmentWidth * pixelsRef
-        : imgWidth * pixelsRef;
-      const fullHeight = resizeImage
-        ? segmentHeight * pixelsRef
-        : imgHeight * pixelsRef;
+      const canvasWidth = overallWidth * pixelsRef;
+      const canvasHeight = overallHeight * pixelsRef;
 
-      const fontSize = fullWidth <= 768 ? 14 : 18;
-
-      const segmentWidthFinal = resizeImage ? segmentWidth : width;
-      const segmentHeightFinal = resizeImage ? segmentHeight : height;
+      const fontSize = canvasWidth <= 768 ? 14 : 18;
 
       const colors = [];
 
@@ -1595,20 +1565,32 @@
       const imageData = reference.getImageData(0, 0, width, height);
       const pixels = imageData.data;
 
-      const { canvas, ctx } = createCanvas(fullWidth, fullHeight);
+      const { canvas, ctx } = createCanvas(canvasWidth, canvasHeight);
 
       ctx.fillStyle = "#000000";
-      ctx.fillRect(0, 0, fullWidth, fullHeight);
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-      for (let y = 0; y < segmentHeightFinal; y++) {
-        for (let x = 0; x < segmentWidthFinal; x++) {
-          let coordinateX = x * pixelsRef;
-          let coordinateY = y * pixelsRef;
+      for (let h = 0; h < overallHeight; h++) {
+        for (let w = 0; w < overallWidth; w++) {
+          let pixelId = h * overallWidth + w + 1;
+
+          let coordinateX = w * pixelsRef;
+          let coordinateY = h * pixelsRef;
+
+          let pixelX = w - startX;
+          let pixelY = h - startY;
 
           let hex = "000000";
 
-          if (x < width && y < height) {
-            let index = y * width + x;
+          if (
+            (resizeImage &&
+              pixelX >= 0 &&
+              pixelX < width &&
+              pixelY >= 0 &&
+              pixelY < height) ||
+            (!resizeImage && w < width && h < height)
+          ) {
+            let index = resizeImage ? pixelY * width + pixelX : h * width + w;
 
             let red = pixels[index * 4];
             let green = pixels[index * 4 + 1];
@@ -1630,12 +1612,11 @@
           ctx.strokeStyle = "#111111";
           ctx.strokeRect(coordinateX, coordinateY, pixelsRef, pixelsRef);
 
-          let pixelId = y * segmentWidth + x + 1;
           let offsetX = coordinateX + pixelsRef / 2;
           let offsetY = coordinateY + pixelsRef / 2;
 
           ctx.font = `${fontSize}px Arial`;
-          ctx.fillStyle = hex === "ffffff" ? "#111111" : "#eeeeee";
+          ctx.fillStyle = hex === "000000" ? "#eeeeee" : "#111111";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(pixelId, offsetX, offsetY);
