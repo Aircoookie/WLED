@@ -61,6 +61,12 @@
 -   Improved ESP8266 stability by reducing WebSocket response resends
 -   Updated ESP8266 core to 3.1.2
 
+#### Build 2306180
+
+-   Added client-side option for applying effect defaults from metadata
+-   Improved ESP8266 stability by reducing WebSocket response resends
+-   Updated ESP8266 core to 3.1.2
+
 #### Build 2306141
 -   Lissajous improvements
 -   Scrolling Text improvements (leading 0)
