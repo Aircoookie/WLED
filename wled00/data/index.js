@@ -1,5 +1,5 @@
 //page js
-var loc = false, locip;
+var loc = false, locip, locproto = "http:";
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
@@ -26,7 +26,8 @@ var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false, css:true, hdays:false}
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
+		  css:true, hdays:false, fxdef:true}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -193,20 +194,37 @@ function loadSkinCSS(cId)
 		l.id   = cId;
 		l.rel  = 'stylesheet';
 		l.type = 'text/css';
-		l.href = (loc?`http://${locip}`:'.') + '/skin.css';
+		l.href = getURL('/skin.css');
 		l.media = 'all';
 		h.appendChild(l);
 	}
 }
 
+function getURL(path) {
+	return (loc ? locproto + "//" + locip : "") + path;
+}
 function onLoad()
 {
-	if (window.location.protocol == "file:") {
+	let l = window.location;
+	if (l.protocol == "file:") {
 		loc = true;
 		locip = localStorage.getItem('locIp');
 		if (!locip) {
 			locip = prompt("File Mode. Please enter WLED IP!");
 			localStorage.setItem('locIp', locip);
+		}
+	} else {
+		// detect reverse proxy and/or HTTPS
+		let pathn = l.pathname;
+		let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
+		//while (paths[0]==="") paths.shift();
+		locproto = l.protocol;
+		locip = l.hostname + (l.port ? ":" + l.port : "");
+		if (paths.length > 0 && paths[0]!=="") {
+			loc = true;
+			locip +=  "/" + paths[0];
+		} else if (locproto==="https:") {
+			loc = true;
 		}
 	}
 	var sett = localStorage.getItem('wledUiCfg');
@@ -217,7 +235,7 @@ function onLoad()
 	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
 	applyCfg();
 	if (cfg.comp.hdays) { //load custom holiday list
-		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
+		fetch(getURL("/holidays.json"), {	// may be loaded from external source
 			method: 'get'
 		})
 		.then((res)=>{
@@ -433,9 +451,7 @@ function loadPresets(callback = null)
 	// afterwards
 	if (!callback && pmt == pmtLast) return;
 
-	var url = (loc?`http://${locip}`:'') + '/presets.json';
-
-	fetch(url, {
+	fetch(getURL('/presets.json'), {
 		method: 'get'
 	})
 	.then(res => {
@@ -459,9 +475,7 @@ function loadPresets(callback = null)
 
 function loadPalettes(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/palettes';
-
-	fetch(url, {
+	fetch(getURL('/json/palettes'), {
 		method: 'get'
 	})
 	.then((res)=>{
@@ -483,9 +497,7 @@ function loadPalettes(callback = null)
 
 function loadFX(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/effects';
-
-	fetch(url, {
+	fetch(getURL('/json/effects'), {
 		method: 'get'
 	})
 	.then((res)=>{
@@ -497,6 +509,7 @@ function loadFX(callback = null)
 		populateEffects();
 	})
 	.catch((e)=>{
+		//setTimeout(loadFX, 250); // retry
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -507,9 +520,7 @@ function loadFX(callback = null)
 
 function loadFXData(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/fxdata';
-
-	fetch(url, {
+	fetch(getURL('/json/fxdata'), {
 		method: 'get'
 	})
 	.then((res)=>{
@@ -524,6 +535,7 @@ function loadFXData(callback = null)
 	})
 	.catch((e)=>{
 		fxdata = [];
+		//setTimeout(loadFXData, 250); // retry
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -1032,8 +1044,7 @@ function populateNodes(i,n)
 
 function loadNodes()
 {
-	var url = (loc?`http://${locip}`:'') + '/json/nodes';
-	fetch(url, {
+	fetch(getURL('/json/nodes'), {
 		method: 'get'
 	})
 	.then((res)=>{
@@ -1253,6 +1264,7 @@ function updateSelectedFx()
 		// hide non-0D effects if segment only has 1 pixel (0D)
 		var fxs = parent.querySelectorAll('.lstI');
 		for (const fx of fxs) {
+			if (!fx.dataset.opt) continue;
 			let opts = fx.dataset.opt.split(";");
 			if (fx.dataset.id>0) {
 				if (segLmax==0) fx.classList.add('hide'); // none of the segments selected (hide all effects)
@@ -1293,7 +1305,8 @@ function cmpP(a, b)
 
 function makeWS() {
 	if (ws || lastinfo.ws < 0) return;
-	ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+'://'+(loc?locip:window.location.hostname)+'/ws');
+	let url = loc ? getURL('/ws').replace("http","ws") : "ws://"+window.location.hostname+"/ws";
+	ws = new WebSocket(url);
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
 		if (e.data instanceof ArrayBuffer) return; // liveview packet
@@ -1572,7 +1585,6 @@ function requestJson(command=null)
 	if (command && !reqsLegal) return; // stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(()=>{if (ws) ws.close(); ws=null; showErrorToast()}, 3000);
 	var req = null;
-	var url = (loc?`http://${locip}`:'') + '/json/si';
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
 	if (command) {
@@ -1593,7 +1605,7 @@ function requestJson(command=null)
 		return;
 	}
 
-	fetch(url, {
+	fetch(getURL('/json/si'), {
 		method: type,
 		headers: {
 			"Content-type": "application/json; charset=UTF-8"
@@ -1688,7 +1700,7 @@ function toggleLiveview()
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	var url = (loc?`http://${locip}`:'') + "/" + lvID;
+	var url = getURL("/" + lvID);
 	gId(lvID).src = (isLv) ? url:"about:blank";
 	gId('buttonSr').className = (isLv) ? "active":"";
 	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
@@ -2227,8 +2239,7 @@ function setFX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
-
-	var obj = {"seg": {"fx": parseInt(ind),"fxdef":1}}; // fxdef sets effect parameters to default values, TODO add client setting
+	var obj = {"seg": {"fx": parseInt(ind), "fxdef": cfg.comp.fxdef}}; // fxdef sets effect parameters to default values
 	requestJson(obj);
 }
 
@@ -2584,7 +2595,7 @@ function cnfReset()
 		bt.innerHTML = "Confirm Reboot";
 		cnfr = true; return;
 	}
-	window.location.href = "/reset";
+	window.location.href = getURL("/reset");
 }
 
 var cnfrS = false;
@@ -2638,9 +2649,7 @@ function loadPalettesData(callback = null)
 
 function getPalettesData(page, callback)
 {
-	var url = (loc?`http://${locip}`:'') + `/json/palx?page=${page}`;
-
-	fetch(url, {
+	fetch(getURL(`/json/palx?page=${page}`), {
 		method: 'get',
 		headers: {
 			"Content-type": "application/json; charset=UTF-8"

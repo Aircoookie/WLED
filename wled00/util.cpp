@@ -373,6 +373,16 @@ int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 }
 
 
+void checkSettingsPIN(const char* pin) {
+  if (!pin) return;
+  if (!correctPIN && millis() - lastEditTime < PIN_RETRY_COOLDOWN) return; // guard against PIN brute force
+  bool correctBefore = correctPIN;
+  correctPIN = (strlen(settingsPIN) == 0 || strncmp(settingsPIN, pin, 4) == 0);
+  if (correctBefore != correctPIN) createEditHandler(correctPIN);
+  lastEditTime = millis();
+}
+
+
 uint16_t crc16(const unsigned char* data_p, size_t length) {
   uint8_t x;
   uint16_t crc = 0xFFFF;

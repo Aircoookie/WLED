@@ -5095,21 +5095,22 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t rows = SEGMENT.virtualHeight();
 
   SEGMENT.fadeToBlackBy(SEGMENT.intensity);
+  uint_fast16_t phase = (millis() * (1 + SEGENV.custom3)) /32;  // allow user to control rotation speed
 
   //for (int i=0; i < 4*(cols+rows); i ++) {
   for (int i=0; i < 256; i ++) {
     //float xlocn = float(sin8(now/4+i*(SEGMENT.speed>>5))) / 255.0f;
     //float ylocn = float(cos8(now/4+i*2)) / 255.0f;
-    uint8_t xlocn = sin8(millis()/4+i*(SEGMENT.speed>>5));
-    uint8_t ylocn = cos8(millis()/4+i*2);
-    xlocn = map(xlocn,0,255,0,cols-1);
-    ylocn = map(ylocn,0,255,0,rows-1);
-    SEGMENT.setPixelColorXY(xlocn, ylocn, SEGMENT.color_from_palette(millis()/100+i, false, PALETTE_SOLID_WRAP, 0));
+    uint_fast8_t xlocn = sin8(phase/2 + (i*SEGMENT.speed)/32);
+    uint_fast8_t ylocn = cos8(phase/2 + i*2);
+    xlocn = (cols < 2) ? 1 : (map(2*xlocn, 0,511, 0,2*(cols-1)) +1) /2;    // softhack007: "(2* ..... +1) /2" for proper rounding
+    ylocn = (rows < 2) ? 1 : (map(2*ylocn, 0,511, 0,2*(rows-1)) +1) /2;    // "rows > 1" is needed to avoid div/0 in map()
+    SEGMENT.setPixelColorXY((uint8_t)xlocn, (uint8_t)ylocn, SEGMENT.color_from_palette(millis()/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
 
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate;!;!;2";
+static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate,,,Speed;!;!;2;;c3=15";
 
 
 ///////////////////////
@@ -5876,11 +5877,17 @@ uint16_t mode_2Dscrollingtext(void) {
     case 4: letterWidth = 7; letterHeight =  9; break;
     case 5: letterWidth = 5; letterHeight = 12; break;
   }
+  const bool zero = SEGMENT.check3;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   char text[33] = {'\0'};
   if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
-  if (!strlen(text) || !strncmp_P(text,PSTR("#DATE"),5) || !strncmp_P(text,PSTR("#DDMM"),5) || !strncmp_P(text,PSTR("#MMDD"),5) || !strncmp_P(text,PSTR("#TIME"),5) || !strncmp_P(text,PSTR("#HHMM"),5)) { // fallback if empty segment name: display date and time
+  if (!strlen(text)
+    || !strncmp_P(text,PSTR("#DATE"),5)
+    || !strncmp_P(text,PSTR("#DDMM"),5)
+    || !strncmp_P(text,PSTR("#MMDD"),5)
+    || !strncmp_P(text,PSTR("#TIME"),5)
+    || !strncmp_P(text,PSTR("#HHMM"),5)) { // fallback if empty segment name: display date and time
     char sec[5];
     byte AmPmHour = hour(localTime);
     boolean isitAM = true;
@@ -5890,12 +5897,12 @@ uint16_t mode_2Dscrollingtext(void) {
     }
     if (useAMPM) sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
     else         sprintf_P(sec, PSTR(":%02d"), second(localTime));
-    if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, PSTR("%d.%d.%d"), day(localTime), month(localTime), year(localTime));
-    else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, PSTR("%d.%d"), day(localTime), month(localTime));
-    else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, PSTR("%d/%d"), month(localTime), day(localTime));
-    else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, PSTR("%2d:%02d%s"), AmPmHour, minute(localTime), sec);
-    else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, PSTR("%2d:%02d"), AmPmHour, minute(localTime));
-    else sprintf_P(text, PSTR("%s %d, %d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
+    if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"), day(localTime), month(localTime), year(localTime));
+    else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d"):PSTR("%d.%d"), day(localTime), month(localTime));
+    else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d"):PSTR("%d/%d"), month(localTime), day(localTime));
+    else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s"):PSTR("%2d:%02d%s"), AmPmHour, minute(localTime), sec);
+    else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d"):PSTR("%d:%02d"), AmPmHour, minute(localTime));
+    else sprintf_P(text, zero?PSTR("%s %02d, %04d %02d:%02d%s"):PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   }
   const int numberOfLetters = strlen(text);
 
@@ -5922,7 +5929,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,,Gradient,Overlay;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,,Gradient,Overlay,0;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
 
 
 ////////////////////////////

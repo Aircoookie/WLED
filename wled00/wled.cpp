@@ -74,13 +74,6 @@ void WLED::loop()
   handleAlexa();
   #endif
 
-  yield();
-
-  if (doSerializeConfig) serializeConfig();
-
-  if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
-    reset();
-
   if (doCloseFile) {
     closeFile();
     yield();
@@ -146,7 +139,7 @@ void WLED::loop()
   }
 
   // 15min PIN time-out
-  if (strlen(settingsPIN)>0 && millis() - lastEditTime > 900000) {
+  if (strlen(settingsPIN)>0 && correctPIN && millis() - lastEditTime > PIN_TIMEOUT) {
     correctPIN = false;
     createEditHandler(false);
   }
@@ -170,13 +163,14 @@ void WLED::loop()
     strip.finalizeInit(); // also loads default ledmap if present
     if (aligned) strip.makeAutoSegments();
     else strip.fixInvalidSegments();
-    yield();
-    serializeConfig();
+    doSerializeConfig = true;
   }
   if (loadLedmap >= 0) {
     if (!strip.deserializeMap(loadLedmap) && strip.isMatrix && loadLedmap == 0) strip.setUpMatrix();
     loadLedmap = -1;
   }
+  yield();
+  if (doSerializeConfig) serializeConfig();
 
   yield();
   handleWs();
@@ -230,6 +224,9 @@ void WLED::loop()
     ESP.wdtFeed();
   #endif
 #endif
+
+  if (doReboot && (!doInitBusses || !doSerializeConfig)) // if busses have to be inited & saved, wait until next iteration
+    reset();
 }
 
 void WLED::enableWatchdog() {

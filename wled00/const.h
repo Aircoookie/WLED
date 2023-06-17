@@ -320,7 +320,8 @@
 
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
-#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
+#define ERR_DENIED       1  // Permission denied
+#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?) OBSOLETE
 #define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
@@ -332,12 +333,29 @@
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
 #define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
 
-//Timer mode types
+// Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness
 #define NL_MODE_FADE              1            //Fade to target brightness gradually
 #define NL_MODE_COLORFADE         2            //Fade to target brightness and secondary color gradually
 #define NL_MODE_SUN               3            //Sunrise/sunset. Target brightness is set immediately, then Sunrise effect is started. Max 60 min.
 
+// Settings sub page IDs
+#define SUBPAGE_MENU              0
+#define SUBPAGE_WIFI              1
+#define SUBPAGE_LEDS              2
+#define SUBPAGE_UI                3
+#define SUBPAGE_SYNC              4
+#define SUBPAGE_TIME              5
+#define SUBPAGE_SEC               6
+#define SUBPAGE_DMX               7
+#define SUBPAGE_UM                8
+#define SUBPAGE_UPDATE            9
+#define SUBPAGE_2D               10
+#define SUBPAGE_LOCK            251
+#define SUBPAGE_PINREQ          252
+#define SUBPAGE_CSS             253
+#define SUBPAGE_JS              254
+#define SUBPAGE_WELCOME         255
 
 #define NTP_PACKET_SIZE 48
 
@@ -442,7 +460,10 @@
   #define DEFAULT_LED_COUNT 30
 #endif
 
-#define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
+#define INTERFACE_UPDATE_COOLDOWN 2000 // time in ms to wait between websockets, alexa, and MQTT updates
+
+#define PIN_RETRY_COOLDOWN   3000 // time in ms after an incorrect attempt PIN and OTA pass will be rejected even if correct
+#define PIN_TIMEOUT        900000 // time in ms after which the PIN will be required again, 15 minutes
 
 // HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
 // which GPIO pins are actually used in a hardwarea layout (controller board)

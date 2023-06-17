@@ -197,7 +197,7 @@ void appendGPIOinfo() {
   #elif defined(CONFIG_IDF_TARGET_ESP32C3)
   oappend(SET_F("d.rsvd=[11,12,13,14,15,16,17"));
   #elif defined(ESP32)
-  oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31"));
+  oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31,37,38"));
   #else
   oappend(SET_F("d.rsvd=[6,7,8,9,10,11"));
   #endif
@@ -285,7 +285,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage <0 || subPage >10) return;
 
-  if (subPage == 0)
+  if (subPage == SUBPAGE_MENU)
   {
   #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
     oappend(PSTR("gId('2dbtn').style.display='';"));
@@ -295,7 +295,7 @@ void getSettingsJS(byte subPage, char* dest)
   #endif
   }
 
-  if (subPage == 1)
+  if (subPage == SUBPAGE_WIFI)
   {
     sappends('s',SET_F("CS"),clientSSID);
 
@@ -383,7 +383,7 @@ void getSettingsJS(byte subPage, char* dest)
     #endif
   }
 
-  if (subPage == 2)
+  if (subPage == SUBPAGE_LEDS)
   {
     char nS[32];
 
@@ -514,7 +514,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 
-  if (subPage == 3)
+  if (subPage == SUBPAGE_UI)
   {
     sappends('s',SET_F("DS"),serverDescription);
     sappend('c',SET_F("ST"),syncToggleReceive);
@@ -525,7 +525,7 @@ void getSettingsJS(byte subPage, char* dest)
   #endif
   }
 
-  if (subPage == 4)
+  if (subPage == SUBPAGE_SYNC)
   {
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
@@ -618,7 +618,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("BD"),serialBaud);
   }
 
-  if (subPage == 5)
+  if (subPage == SUBPAGE_TIME)
   {
     sappend('c',SET_F("NT"),ntpEnabled);
     sappends('s',SET_F("NS"),ntpServerName);
@@ -682,7 +682,7 @@ void getSettingsJS(byte subPage, char* dest)
     }
   }
 
-  if (subPage == 6)
+  if (subPage == SUBPAGE_SEC)
   {
     byte l = strlen(settingsPIN);
     char fpass[l+1]; //fill PIN field with 0000
@@ -704,7 +704,7 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
-  if (subPage == 7)
+  if (subPage == SUBPAGE_DMX)
   {
     sappend('v',SET_F("PU"),e131ProxyUniverse);
 
@@ -731,7 +731,7 @@ void getSettingsJS(byte subPage, char* dest)
   }
   #endif
 
-  if (subPage == 8) //usermods
+  if (subPage == SUBPAGE_UM) //usermods
   {
     appendGPIOinfo();
     oappend(SET_F("numM="));
@@ -750,7 +750,7 @@ void getSettingsJS(byte subPage, char* dest)
     usermods.appendConfigData();
   }
 
-  if (subPage == 9) // update
+  if (subPage == SUBPAGE_UPDATE) // update
   {
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
     olen -= 2; //delete ";
@@ -766,7 +766,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(")\";"));
   }
 
-  if (subPage == 10) // 2D matrices
+  if (subPage == SUBPAGE_2D) // 2D matrices
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
     #ifndef WLED_DISABLE_2D
