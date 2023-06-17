@@ -54,14 +54,15 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
         releaseJSONBufferLock(); // will clean fileDoc
 
-        // force broadcast in 500ms after updating client
-        if (verboseResponse) {
-          sendDataWs(client);
-          lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
-        } else {
-          // we have to send something back otherwise WS connection closes
-          client->text(F("{\"success\":true}"));
-          lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
+        if (!interfaceUpdateCallMode) { // individual client response only needed if no WS broadcast soon
+          if (verboseResponse) {
+            sendDataWs(client);
+          } else {
+            // we have to send something back otherwise WS connection closes
+            client->text(F("{\"success\":true}"));
+          }
+          // force broadcast in 500ms after updating client
+          //lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500); // ESP8266 does not like this
         }
       }
     } else {

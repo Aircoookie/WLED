@@ -460,7 +460,7 @@
   #define DEFAULT_LED_COUNT 30
 #endif
 
-#define INTERFACE_UPDATE_COOLDOWN 2000 // time in ms to wait between websockets, alexa, and MQTT updates
+#define INTERFACE_UPDATE_COOLDOWN 1000 // time in ms to wait between websockets, alexa, and MQTT updates
 
 #define PIN_RETRY_COOLDOWN   3000 // time in ms after an incorrect attempt PIN and OTA pass will be rejected even if correct
 #define PIN_TIMEOUT        900000 // time in ms after which the PIN will be required again, 15 minutes
