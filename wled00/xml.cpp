@@ -328,7 +328,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AC"),apChannel);
     sappend('c',SET_F("WS"),noWifiSleep);
 
-    #ifndef WLED_DISABLE_REMOTE
+    #ifndef WLED_DISABLE_ESPNOW
     sappend('c',SET_F("RE"),enable_espnow_remote);
     sappends('s',SET_F("RMAC"),linked_remote);
     #else
@@ -369,7 +369,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappends('m',SET_F("(\"sip\")[1]"),(char*)F("Not active"));
     }
 
-    #ifndef WLED_DISABLE_REMOTE
+    #ifndef WLED_DISABLE_ESPNOW
     if (last_signal_src[0] != 0) //Have seen an ESP-NOW Remote
     {
       sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);

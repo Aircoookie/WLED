@@ -34,7 +34,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     noWifiSleep = request->hasArg(F("WS"));
 
-    #ifndef WLED_DISABLE_REMOTE
+    #ifndef WLED_DISABLE_ESPNOW
     enable_espnow_remote = request->hasArg(F("RE"));
     strlcpy(linked_remote,request->arg(F("RMAC")).c_str(), 13);
 

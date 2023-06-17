@@ -443,7 +443,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(retainMqttMsg, if_mqtt[F("rtn")]);
 #endif
 
-#ifndef WLED_DISABLE_REMOTE
+#ifndef WLED_DISABLE_ESPNOW
   JsonObject remote = doc["remote"];
   CJSON(enable_espnow_remote, remote[F("remote_enabled")]);
   getStringFromJson(linked_remote, remote[F("linked_remote")], 13);
@@ -902,7 +902,7 @@ void serializeConfig() {
   if_mqtt_topics[F("group")] = mqttGroupTopic;
 #endif
 
-#ifndef WLED_DISABLE_REMOTE
+#ifndef WLED_DISABLE_ESPNOW
   JsonObject remote = doc.createNestedObject(F("remote"));
   remote[F("remote_enabled")] = enable_espnow_remote;
   remote[F("linked_remote")] = linked_remote;

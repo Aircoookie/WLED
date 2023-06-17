@@ -44,7 +44,7 @@
   #define WLED_ENABLE_WEBSOCKETS
 #endif
 
-//#define WLED_DISABLE_REMOTE      // Removes dependence on esp now 
+//#define WLED_DISABLE_ESPNOW      // Removes dependence on esp now 
 
 #define WLED_ENABLE_FS_EDITOR      // enable /edit page for editing FS content. Will also be disabled with OTA lock
 
@@ -75,7 +75,7 @@
   {
   #include <user_interface.h>
   }
-  #ifndef WLED_DISABLE_REMOTE
+  #ifndef WLED_DISABLE_ESPNOW
     #include <espnow.h>
   #endif
 #else // ESP32
@@ -95,7 +95,7 @@
   #endif
   #include "esp_task_wdt.h"
 
-  #ifndef WLED_DISABLE_REMOTE
+  #ifndef WLED_DISABLE_ESPNOW
     #include <esp_now.h>
   #endif
 #endif
@@ -453,7 +453,7 @@ WLED_GLOBAL bool hueApplyColor _INIT(true);
 
 WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
 
-#ifndef WLED_DISABLE_REMOTE
+#ifndef WLED_DISABLE_ESPNOW
 WLED_GLOBAL bool enable_espnow_remote _INIT(false);
 WLED_GLOBAL char linked_remote[13]   _INIT("");
 WLED_GLOBAL char last_signal_src[13]   _INIT("");

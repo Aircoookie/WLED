@@ -17,7 +17,7 @@
 #define WIZMOTE_BUTTON_BRIGHT_UP   9
 #define WIZMOTE_BUTTON_BRIGHT_DOWN 8
 
-#ifdef WLED_DISABLE_REMOTE
+#ifdef WLED_DISABLE_ESPNOW
 void handleRemote(){}
 #else
 
@@ -111,9 +111,6 @@ void setOff() {
 
 void presetWithFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) {
   applyPresetWithFallback(presetID, CALL_MODE_BUTTON_PRESET, effectID, paletteID);
-  //these two will be overwritten if preset exists in handlePresets()
-  effectCurrent = effectID;
-  effectPalette = paletteID;
 }
  
 // Callback function that will be executed when data is received
