@@ -95,8 +95,6 @@
   #endif
   #include "esp_task_wdt.h"
 
-  #define WLED_DISABLE_REMOTE // Temporarily disable ESP-NOW for esp32 platform
-
   #ifndef WLED_DISABLE_REMOTE
     #include <esp_now.h>
   #endif
