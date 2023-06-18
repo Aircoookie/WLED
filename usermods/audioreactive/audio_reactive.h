@@ -786,18 +786,19 @@ static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels) // p
 // peak detection is called from FFT task when vReal[] contains valid FFT results
 static void detectSamplePeak(void) {
   bool havePeak = false;
-#if 0
+#if 1
+  // softhack007: this code continuously triggers while volume in the selected bin is above a certain threshold. So it does not detect peaks - it detects volume in a frequency bin.
   // Poor man's beat detection by seeing if sample > Average + some value.
   // This goes through ALL of the 255 bins - but ignores stupid settings
   // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
-  if ((sampleAvg > 1) && (maxVol > 0) && (binNum > 1) && (vReal[binNum] > maxVol) && ((millis() - timeOfPeak) > 100)) {
+  if ((sampleAvg > 1) && (maxVol > 0) && (binNum > 4) && (vReal[binNum] > maxVol) && ((millis() - timeOfPeak) > 100)) {
     havePeak = true;
   }
 #endif
 
 #if 0
   // alternate detection, based on FFT_MajorPeak and FFT_Magnitude. Not much better...
-  if ((binNum > 1) && (binNum < 10) && (sampleAgc > 127) && 
+  if ((binNum > 1)  && (maxVol > 8) && (binNum < 10) && (sampleAgc > 127) && 
       (FFT_MajorPeak > 50) && (FFT_MajorPeak < 250) && (FFT_Magnitude > (16.0f * (maxVol+42.0)) /*my_magnitude > 136.0f*16.0f*/) && 
       (millis() - timeOfPeak > 80)) {
     havePeak = true;
@@ -1224,8 +1225,8 @@ class AudioReactive : public Usermod {
       if ((sampleMax < sampleReal) && (sampleReal > 0.5f)) {
         sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);  // new peak - with some filtering
 #if 1
-        // another simple way to detect samplePeak
-        if ((binNum < 10) && (millis() - timeOfPeak > 80) && (sampleAvg > 1)) {
+        // another simple way to detect samplePeak - cannot detect beats, but reacts on peak volume
+        if (((binNum < 12) || ((maxVol < 1))) && (millis() - timeOfPeak > 80) && (sampleAvg > 1)) {
           samplePeak    = true;
           timeOfPeak    = millis();
           udpSamplePeak = true;
