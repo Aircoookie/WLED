@@ -472,7 +472,7 @@ class ES8388Source : public I2SSource {
     void _es8388I2cBegin() {
       bool i2c_initialized = Wire.begin(pin_ES8388_SDA, pin_ES8388_SCL, 100000U);
       if (i2c_initialized == false) {
-        ERRORSR_PRINTLN(F("AR: ES8388 failed to initialize I2C bus driver."));
+        DEBUGSR_PRINTLN(F("AR: ES8388 failed to initialize I2C bus driver."));
       }
     }
 
