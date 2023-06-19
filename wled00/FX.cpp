@@ -6057,7 +6057,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
     SEGMENT.custom2 = *maxVol * 2;
   }
   if (SEGMENT.custom1 < 1) SEGMENT.custom1 = 1;   // WLEDMM prevent stupid settings for bin
-  if (SEGMENT.custom2 < 48) SEGMENT.custom2 = 48; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
+  if (SEGMENT.custom2 < 24) SEGMENT.custom2 = 24; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -6678,7 +6678,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
     SEGMENT.custom2 = *maxVol * 2;
   }
   if (SEGMENT.custom1 < 1) SEGMENT.custom1 = 1;   // WLEDMM prevent stupid settings for bin
-  if (SEGMENT.custom2 < 48) SEGMENT.custom2 = 48; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
+  if (SEGMENT.custom2 < 24) SEGMENT.custom2 = 24; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -7282,7 +7282,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   }
 
   if (SEGMENT.custom1 < 1) SEGMENT.custom1 = 1;   // WLEDMM prevent stupid settings for bin
-  if (SEGMENT.custom2 < 48) SEGMENT.custom2 = 48; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
+  if (SEGMENT.custom2 < 24) SEGMENT.custom2 = 24; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.

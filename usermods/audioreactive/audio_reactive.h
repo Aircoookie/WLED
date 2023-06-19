@@ -794,7 +794,7 @@ static void detectSamplePeak(void) {
 
 #if 0
   // alternate detection, based on FFT_MajorPeak and FFT_Magnitude. Not much better...
-  if ((binNum > 1)  && (maxVol > 8) && (binNum < 10) && (sampleAgc > 127) && 
+  if ((binNum > 0)  && (maxVol > 8) && (binNum < 10) && (sampleAgc > 127) && 
       (FFT_MajorPeak > 50) && (FFT_MajorPeak < 250) && (FFT_Magnitude > (16.0f * (maxVol+42.0)) /*my_magnitude > 136.0f*16.0f*/) && 
       (millis() - timeOfPeak > 80)) {
     havePeak = true;
@@ -1218,7 +1218,7 @@ class AudioReactive : public Usermod {
         sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);  // new peak - with some filtering
 #if 1
         // another simple way to detect samplePeak - cannot detect beats, but reacts on peak volume
-        if (((binNum < 12) || ((maxVol < 1))) && (millis() - timeOfPeak > 80) && (sampleAvg > 1)) {
+        if (((binNum < 11) || (maxVol < 1)) && (millis() - timeOfPeak > 80) && (sampleAvg > 1)) {
           samplePeak    = true;
           timeOfPeak    = millis();
           udpSamplePeak = true;
