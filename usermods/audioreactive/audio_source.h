@@ -577,12 +577,12 @@ class ES8388Source : public I2SSource {
 
       // check that pins are valid
       if ((sdaPin < 0) || (sclPin < 0)) {
-        ERRORSR_PRINTF("\nAR: invalid ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        DEBUGSR_PRINTF("\nAR: invalid ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
         return;
       }
 
       if ((i2sckPin < 0) || (mclkPin < 0)) {
-        ERRORSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
         return;
       }
 
@@ -590,7 +590,7 @@ class ES8388Source : public I2SSource {
       PinManagerPinType es8388Pins[2] = { { sdaPin, true }, { sclPin, true } };
       if (!pinManager.allocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C)) {
         pinManager.deallocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C);
-        ERRORSR_PRINTF("\nAR: Failed to allocate ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        DEBUGSR_PRINTF("\nAR: Failed to allocate ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
         return;
       }
 
