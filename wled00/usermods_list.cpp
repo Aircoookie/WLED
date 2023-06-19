@@ -189,6 +189,13 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_SHT
+#include "../usermods/sht/usermod_sht.h"
+#endif
+
+#if (defined(USERMOD_ULC_BATTERYMANAGEMENT) && defined(ARDUINO_ARCH_ESP32))
+#include "../usermods/ULC_Battery_Management/usermod_ulc_batterymanagement.h"
+#endif
 
 void registerUsermods()
 {
@@ -357,4 +364,8 @@ void registerUsermods()
   #ifdef USERMOD_SHT
   usermods.add(new ShtUsermod());
   #endif
+
+  #if (defined(USERMOD_ULC_BATTERYMANAGEMENT) && defined(ARDUINO_ARCH_ESP32))
+  usermods.add(new UsermodULCBatteryManagement());
+  #endif  
 }
