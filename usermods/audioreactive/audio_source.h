@@ -565,7 +565,7 @@ class ES8388Source : public I2SSource {
 
   public:
     ES8388Source(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
-      I2SSource(sampleRate, blockSize, sampleScale, i2sMaster) {
+      I2SSource(sampleRate, blockSize, sampleScale) {
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
     };
 
