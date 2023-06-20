@@ -49,6 +49,13 @@
   #define USERMOD_ABL_EXT 2500
 #endif
 
+// custom map function
+// https://forum.arduino.cc/t/floating-point-using-map-function/348113/2
+double mapf(double x, double in_min, double in_max, double out_min, double out_max) 
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 class UsermodULCBatteryManagement : public Usermod {
 
   private:
@@ -81,26 +88,6 @@ class UsermodULCBatteryManagement : public Usermod {
     static const char _readInterval[];
     static const char _maxCurrentBattery[];
     static const char _maxCurrentExt[];
-
-    // custom map function
-    // https://forum.arduino.cc/t/floating-point-using-map-function/348113/2
-    double mapf(double x, double in_min, double in_max, double out_min, double out_max) 
-    {
-      return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    }
-
-    float truncate(float val, byte dec) 
-    {
-      float x = val * pow(10, dec);
-      float y = round(x);
-      float z = x - y;
-      if ((int)z == 5)
-      {
-          y++;
-      }
-      x = y / pow(10, dec);
-      return x;
-    }
 
   public:
 
