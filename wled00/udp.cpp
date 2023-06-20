@@ -240,8 +240,10 @@ void handleNotifications()
   if (!udpConnected) return;
 
   bool isSupp = false;
+  notifierUdp.flush();
   int packetSize = notifierUdp.parsePacket();    // WLEDMM function returns int, not size_t
   if ((packetSize < 1) && udp2Connected) {
+    notifier2Udp.flush();
     packetSize = notifier2Udp.parsePacket();
     isSupp = true;
   }
@@ -249,6 +251,7 @@ void handleNotifications()
 
   //hyperion / raw RGB
   if (!packetSize && udpRgbConnected) {
+    rgbUdp.flush();
     packetSize = rgbUdp.parsePacket();
     if (packetSize) {
       if (!receiveDirect) {rgbUdp.flush(); notifierUdp.flush(); notifier2Udp.flush(); return;}

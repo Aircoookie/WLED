@@ -226,6 +226,7 @@ void sendNTPPacket()
 
 bool checkNTPResponse()
 {
+  ntpUdp.flush();
   int cb = ntpUdp.parsePacket();
   if (!cb) return false;
 
