@@ -9,30 +9,6 @@
   #define USERMOD_BATTERY_MEASUREMENT_INTERVAL 5000
 #endif
 
-#ifndef USERMOD_BATTERY_ADC_PRECISION
-  #define USERMOD_BATTERY_ADC_PRECISION 4095.0f
-#endif
-
-#ifndef USERMOD_BATTERY_ADC_REF
-  #define USERMOD_BATTERY_ADC_REF 3.3f
-#endif
-
-#ifndef USERMOD_BATTERY_ADC_R1
-  #define USERMOD_BATTERY_ADC_R1 8.0f
-#endif
-
-#ifndef USERMOD_BATTERY_ADC_R2
-  #define USERMOD_BATTERY_ADC_R2 2.5f
-#endif
-
-#ifndef USERMOD_BATTERY_MIN_VOLTAGE
-  #define USERMOD_BATTERY_MIN_VOLTAGE 2.6f
-#endif
-
-#ifndef USERMOD_BATTERY_MAX_VOLTAGE
-  #define USERMOD_BATTERY_MAX_VOLTAGE 4.2f
-#endif
-
 #ifndef USERMOD_IP5306_SDA
   #define USERMOD_IP5306_SDA 32
 #endif
@@ -63,9 +39,7 @@ class UsermodULCBatteryManagement : public Usermod {
 
     bool initDone = false;
     bool initializing = true;
-    // GPIO pin used for battery measurment (with a default compile-time fallback)
-    int8_t ip5306_sda = USERMOD_IP5306_SDA;
-    int8_t ip5306_scl = USERMOD_IP5306_SCL;
+
     // how often do we measure?
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
     unsigned long nextReadTime = 0;
@@ -73,11 +47,6 @@ class UsermodULCBatteryManagement : public Usermod {
 
     uint32_t ablBattery = USERMOD_ABL_BATTERY;
     uint32_t ablExt = USERMOD_ABL_EXT;
-    
-    // battery min. voltage
-    float minBatteryVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
-    // battery max. voltage
-    float maxBatteryVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
 
     uint8_t batteryLevel = 0; 
     bool isCharging = false;
@@ -92,17 +61,7 @@ class UsermodULCBatteryManagement : public Usermod {
   public:
 
     void setup() {
-      DEBUG_PRINTLN(F("Allocating ip5306 pins..."));
-      PinManagerPinType pins[2] = { { ip5306_sda, true }, { ip5306_scl, true } };
-      if (pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C))
-      {
-        ip5306 = new IP5306(ip5306_sda, ip5306_scl);
-        DEBUG_PRINTLN(F("IP5306 allocation succeeded."));
-      } else {
-        if (ip5306_sda >= 0 && ip5306_scl >= 0) DEBUG_PRINTLN(F("IP5306 allocation failed."));
-        ip5306_sda = -1;  // allocation failed
-        ip5306_scl = -1;
-      }
+      ip5306 = new IP5306();
 
       nextReadTime = millis() + 5000;
       lastReadTime = millis();
@@ -175,8 +134,6 @@ class UsermodULCBatteryManagement : public Usermod {
       if (initializing) {
         batteryPercentage.add((nextReadTime - millis()) / 1000);
         batteryPercentage.add(" sec");
-        //batteryVoltage.add((nextReadTime - millis()) / 1000);
-        //batteryVoltage.add(" sec");
         batteryState.add((nextReadTime - millis()) / 1000);
         batteryState.add(" sec");
         return;
@@ -220,8 +177,6 @@ class UsermodULCBatteryManagement : public Usermod {
      */
     void addToConfig(JsonObject &root) {
       JsonObject battery = root.createNestedObject(FPSTR(_name)); // usermodname
-      //battery["minBatteryVoltage"] = minBatteryVoltage;           // usermodparam
-      //battery["maxBatteryVoltage"] = maxBatteryVoltage;           // usermodparam
       battery[FPSTR(_readInterval)] = readingInterval;
       battery[FPSTR(_maxCurrentBattery)] = ablBattery;
       battery[FPSTR(_maxCurrentExt)] = ablExt;
