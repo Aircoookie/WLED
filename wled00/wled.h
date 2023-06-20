@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2306160
+#define VERSION 2306210
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -703,7 +703,7 @@ WLED_GLOBAL volatile bool suspendStripService _INIT(false); // WLEDMM temporaril
 #ifndef ESP8266
 WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
 #endif
-WLED_GLOBAL uint16_t  ledmapMaxSize _INIT(0); //WLEDMM TroyHack
+WLED_GLOBAL size_t  ledmapMaxSize _INIT(0); //WLEDMM TroyHack
 #if WLED_MAX_LEDMAPS>16
 WLED_GLOBAL uint32_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 #else

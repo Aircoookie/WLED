@@ -31,6 +31,7 @@
 
 #include "const.h"
 
+bool canUseSerial(void);                        // WLEDMM implemented in wled_serial.cpp
 void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.cpp
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
@@ -398,7 +399,7 @@ typedef struct Segment {
     uint16_t aux1;  // custom var
     byte* data;     // effect data pointer
     CRGB* ledsrgb;     // local leds[] array (may be a pointer to global) //WLEDMM rename to ledsrgb to search on them (temp?)
-    uint16_t ledsrgbSize; //WLEDMM
+    size_t ledsrgbSize; //WLEDMM 
     static CRGB *_globalLeds;             // global leds[] array
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
     void *jMap = nullptr; //WLEDMM jMap
@@ -414,8 +415,8 @@ typedef struct Segment {
         uint8_t _reserved : 4;
       };
     };
-    uint16_t _dataLen;
-    static uint16_t _usedSegmentData;
+    size_t _dataLen;                   // WLEDMM uint16_t is too small
+    static size_t _usedSegmentData;    // WLEDMM uint16_t is too small
 
     // transition data, valid only if transitional==true, holds values during transition
     struct Transition {
@@ -502,11 +503,13 @@ typedef struct Segment {
 
     ~Segment() {
       //#ifdef WLED_DEBUG
-      Serial.print(F("Destroying segment:"));
-      if (name) Serial.printf(" %s (%p)", name, name);
-      if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
-      if (ledsrgb) Serial.printf(" [%u]", length()*sizeof(CRGB));
-      Serial.println();
+      if(canUseSerial()) {
+        Serial.print(F("Destroying segment:"));
+        if (name) Serial.printf(" name=%s (%p)", name, name);
+        if (data) Serial.printf(" dataLen=%d (%p)", (int)_dataLen, data);
+        if (ledsrgb) Serial.printf(" [%sledsrgb %u bytes]", Segment::_globalLeds ? "global ":"",length()*sizeof(CRGB));
+        Serial.println();
+      }
       //#endif
 
       // WLEDMM only delete segments when they are not in use
@@ -514,7 +517,7 @@ typedef struct Segment {
       strip_wait_until_idle("~Segment()");
       #endif
 
-      if (!Segment::_globalLeds && ledsrgb) free(ledsrgb);
+      if (!Segment::_globalLeds && (ledsrgb != nullptr)) {free(ledsrgb); ledsrgb = nullptr;}
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();
@@ -534,13 +537,13 @@ typedef struct Segment {
     inline bool     hasRGB(void)         const { return _isRGB; }
     inline bool     hasWhite(void)       const { return _hasW; }
     inline bool     isCCT(void)          const { return _isCCT; }
-    inline uint16_t width(void)          const { return stop - start; }           // segment width in physical pixels (length if 1D)
-    inline uint16_t height(void)         const { return max(1, stopY - startY); } // segment height (if 2D) in physical pixels // WLEDMM make sure its always > 0
+    inline uint16_t width(void)          const { return (stop > start)   ? (stop - start)   : 0; } // segment width in physical pixels (length if 1D)
+    inline uint16_t height(void)         const { return (stopY > startY) ? (stopY - startY) : 0; } // segment height (if 2D) in physical pixels // WLEDMM make sure its always > 0
     inline uint16_t length(void)         const { return width() * height(); }     // segment length (count) in physical pixels
     inline uint16_t groupLength(void)    const { return grouping + spacing; }
     inline uint8_t  getLightCapabilities(void) const { return _capabilities; }
 
-    static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
+    static size_t   getUsedSegmentData(void)    { return _usedSegmentData; } // WLEDMM size_t
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
 
     void    allocLeds(); //WLEDMM
@@ -556,7 +559,7 @@ typedef struct Segment {
     void    refreshLightCapabilities(void);
 
     // runtime data functions
-    inline uint16_t dataSize(void) const { return _dataLen; }
+    inline size_t dataSize(void) const { return _dataLen; }
     bool allocateData(size_t len);
     void deallocateData(void);
     void resetIfRequired(void);

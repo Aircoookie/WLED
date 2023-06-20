@@ -87,7 +87,7 @@ void strip_wait_until_idle(String whoCalledMe) {
 ///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation
 ///////////////////////////////////////////////////////////////////////////////
-uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
+size_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
 CRGB    *Segment::_globalLeds = nullptr;
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
@@ -110,14 +110,22 @@ Segment::Segment(const Segment &orig) {
 
 //WLEDMM: recreate ledsrgb if more space needed (will not free ledsrgb!)
 void Segment::allocLeds() {
-  uint16_t size = sizeof(CRGB)*MAX(length(), ledmapMaxSize); //TroyHack
-  if (!ledsrgb || size > ledsrgbSize) {
-    USER_PRINTF("allocLeds %d from %d\n", size, ledsrgb?ledsrgbSize:0);
+  size_t size = sizeof(CRGB)*max((size_t) length(), ledmapMaxSize); //TroyHack
+  if ((size < sizeof(CRGB)) || (size > 164000)) {                   //softhack too small (<3) or too large (>160Kb)
+    USER_PRINTF("allocLeds warning: size == %u !!\n", size);
+    USER_FLUSH();
+    if (ledsrgb && (ledsrgbSize == 0)) {
+      USER_PRINTLN("allocLeds warning: ledsrgbSize == 0 but ledsrgb!=NULL");
+      free(ledsrgb); ledsrgb=nullptr;
+    } // softhack007 clean up buffer
+  }
+  if ((size > 0) && (!ledsrgb || size > ledsrgbSize)) {    //softhack dont allocate zero bytes
+    USER_PRINTF("allocLeds %u from %u\n", size, ledsrgb?ledsrgbSize:0);
     ledsrgb = (CRGB*)malloc(size);
     ledsrgbSize = ledsrgb?size:0;
   }
   else {
-    USER_PRINTF("reuse Leds %d from %d\n", size, ledsrgb?ledsrgbSize:0);
+    USER_PRINTF("reuse Leds %u from %u\n", size, ledsrgb?ledsrgbSize:0);
   }
 }
 
@@ -143,7 +151,7 @@ Segment& Segment::operator= (const Segment &orig) {
     // WLEDMM reuse leds instead of removing themn
     // if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: nullify below!
     CRGB* oldLeds = ledsrgb;
-    uint16_t oldLedsSize = ledsrgbSize;
+    size_t oldLedsSize = ledsrgbSize;
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -2249,16 +2257,16 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   //WLEDMM recreate customMappingTable if more space needed
   if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
-    uint32_t size = MAX(ledmapMaxSize, Segment::maxWidth * Segment::maxHeight);//TroyHack
-    USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", size, customMappingTableSize);
+    size_t size = max(ledmapMaxSize, size_t(Segment::maxWidth * Segment::maxHeight));//TroyHack
+    USER_PRINTF("deserializemap customMappingTable alloc %u from %u\n", size, customMappingTableSize);
     //if (customMappingTable != nullptr) delete[] customMappingTable;
     //customMappingTable = new uint16_t[size];
 
     // don't use new / delete
-    if (customMappingTable != nullptr) {
+    if ((size > 0) && (customMappingTable != nullptr)) {
       customMappingTable = (uint16_t*) reallocf(customMappingTable, sizeof(uint16_t) * size);  // reallocf will free memory if it cannot resize
     }
-    if (customMappingTable == nullptr) { // second try
+    if ((size > 0) && (customMappingTable == nullptr)) { // second try
       DEBUG_PRINTLN("deserializeMap: trying to get fresh memory block.");
       customMappingTable = (uint16_t*) calloc(size, sizeof(uint16_t));
       if (customMappingTable == nullptr) DEBUG_PRINTLN("deserializeMap: alloc failed!");

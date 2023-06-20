@@ -67,16 +67,16 @@ void WS2812FX::setUpMatrix() {
 
     //WLEDMM recreate customMappingTable if more space needed
     if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
-      uint32_t size = MAX(ledmapMaxSize, Segment::maxWidth * Segment::maxHeight);//TroyHack
+      size_t size = max(ledmapMaxSize, size_t(Segment::maxWidth * Segment::maxHeight));//TroyHack
       USER_PRINTF("setupmatrix customMappingTable alloc %d from %d\n", size, customMappingTableSize);
       //if (customMappingTable != nullptr) delete[] customMappingTable;
       //customMappingTable = new uint16_t[size];
 
       // don't use new / delete
-      if (customMappingTable != nullptr) {  // resize
+      if ((size > 0) && (customMappingTable != nullptr)) {  // resize
         customMappingTable = (uint16_t*) reallocf(customMappingTable, sizeof(uint16_t) * size); // reallocf will free memory if it cannot resize
       }
-      if (customMappingTable == nullptr) { // second try
+      if ((size > 0) && (customMappingTable == nullptr)) { // second try
         DEBUG_PRINTLN("setUpMatrix: trying to get fresh memory block.");
         customMappingTable = (uint16_t*) calloc(size, sizeof(uint16_t));
         if (customMappingTable == nullptr) DEBUG_PRINTLN("setUpMatrix: alloc failed");
@@ -144,7 +144,7 @@ void WS2812FX::setUpMatrix() {
       }
 
       // delete gap array as we no longer need it
-      if (gapTable) delete[] gapTable;
+      if (gapTable) {delete[] gapTable; gapTable=nullptr;}   // softhack prevent dangling pointer
 
       #ifdef WLED_DEBUG_MAPS
       DEBUG_PRINTF("Matrix ledmap: \n");
