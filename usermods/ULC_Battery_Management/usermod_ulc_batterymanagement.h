@@ -9,14 +9,6 @@
   #define USERMOD_BATTERY_MEASUREMENT_INTERVAL 5000
 #endif
 
-#ifndef USERMOD_IP5306_SDA
-  #define USERMOD_IP5306_SDA 32
-#endif
-
-#ifndef USERMOD_IP5306_SCL
-  #define USERMOD_IP5306_SCL 33
-#endif
-
 #ifndef USERMOD_ABL_BATTERY
   #define USERMOD_ABL_BATTERY 1250
 #endif
@@ -61,6 +53,8 @@ class UsermodULCBatteryManagement : public Usermod {
   public:
 
     void setup() {
+      if (i2c_sda < 0 || i2c_scl < 0) return;
+
       ip5306 = new IP5306();
 
       nextReadTime = millis() + 5000;

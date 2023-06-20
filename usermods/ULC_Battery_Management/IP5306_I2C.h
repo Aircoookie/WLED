@@ -194,12 +194,9 @@ union {
 
 class IP5306{
   public:
-    /*@brief initialize i2c 
-      @param sda and scl pin number
+    /*@brief initialize i2c
     */
-    IP5306(uint8_t sda_pin=21, uint8_t scl_pin=22) {
-      Wire.begin(sda_pin,scl_pin);
-
+    IP5306(void) {
       /*initialize register data*/
       reg_SYS_CTL0_t.reg_byte = i2c_read(IP5306_ADDRESS,SYS_CTL0);
       reg_SYS_CTL1_t.reg_byte = i2c_read(IP5306_ADDRESS,SYS_CTL1);
@@ -209,7 +206,6 @@ class IP5306{
       reg_Charger_CTL1_t.reg_byte = i2c_read(IP5306_ADDRESS,Charger_CTL1);
       reg_Charger_CTL2_t.reg_byte = i2c_read(IP5306_ADDRESS,Charger_CTL2);
       reg_Charger_CTL3_t.reg_byte = i2c_read(IP5306_ADDRESS,Charger_CTL3);
-
     }
 
     /*@brief  write data to register 
