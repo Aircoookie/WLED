@@ -540,7 +540,7 @@ typedef struct Segment {
     inline uint16_t width(void)          const { return (stop > start)   ? (stop - start)   : 0; } // segment width in physical pixels (length if 1D)
     inline uint16_t height(void)         const { return (stopY > startY) ? (stopY - startY) : 0; } // segment height (if 2D) in physical pixels // WLEDMM make sure its always > 0
     inline uint16_t length(void)         const { return width() * height(); }     // segment length (count) in physical pixels
-    inline uint16_t groupLength(void)    const { return grouping + spacing; }
+    inline uint16_t groupLength(void)    const { return max(1, grouping + spacing); } // WLEDMM length = 0 could lead to div/0 in virtualWidth() and virtualHeight()
     inline uint8_t  getLightCapabilities(void) const { return _capabilities; }
 
     static size_t   getUsedSegmentData(void)    { return _usedSegmentData; } // WLEDMM size_t
@@ -628,6 +628,7 @@ typedef struct Segment {
     inline uint16_t XY(uint_fast16_t x, uint_fast16_t y) { // support function to get relative index within segment (for leds[]) // WLEDMM inline for speed
       uint_fast16_t width  = virtualWidth();   // segment width in logical pixels
       uint_fast16_t height = virtualHeight();  // segment height in logical pixels
+      if ((width == 0) || (height == 0)) return 0; // softhack007 avoid div/0
       return (x%width) + (y%height) * width;
     }
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color

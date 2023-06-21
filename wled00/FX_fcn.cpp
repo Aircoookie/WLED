@@ -1050,7 +1050,7 @@ uint32_t Segment::getPixelColor(int i)
   i += start;
   /* offset/phase */
   i += offset;
-  if (i >= stop) i -= length();
+  if ((i >= stop) && (stop>0)) i -= length(); // WLEDMM avoid negative index (stop = 0 is a possible value)
   return strip.getPixelColor(i);
 }
 

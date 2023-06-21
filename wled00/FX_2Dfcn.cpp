@@ -115,7 +115,7 @@ void WS2812FX::setUpMatrix() {
           //  1 ... active pixel (it will count and will be mapped)
           JsonArray map = doc.as<JsonArray>();
           gapSize = map.size();
-          if (!map.isNull() && gapSize >= customMappingSize) { // not an empty map
+          if (!map.isNull() && (gapSize > 0) && gapSize >= customMappingSize) { // not an empty map //softhack also check gapSize>0 
             gapTable = new int8_t[gapSize];
             if (gapTable) for (size_t i = 0; i < gapSize; i++) {
               gapTable[i] = constrain(map[i], -1, 1);

@@ -100,7 +100,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
-    uint16_t len = elem["len"];
+    int len = elem["len"]; // WLEDMM bugfix for broken presets with len < 0
     stop = (len > 0) ? start + len : seg.stop;
   }
   // 2D segments
@@ -113,7 +113,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     elem.remove("id");  // remove for recursive call
     elem.remove("rpt"); // remove for recursive call
     elem.remove("n");   // remove for recursive call
-    uint16_t len = stop - start;
+    uint16_t len = (stop >= start) ? (stop - start) : 0;  // WLEDMM stop < 1 is allowed, so we need to avoid underflow
     for (size_t i=id+1; i<strip.getMaxSegments(); i++) {
       start = start + len;
       if (start >= strip.getLengthTotal()) break;
@@ -592,7 +592,7 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
       root[F("stopY")]  = seg.stopY;
     }
   }
-  if (!forPreset) root["len"] = seg.stop - seg.start;
+  if (!forPreset) root["len"] = (seg.stop >= seg.start) ? (seg.stop - seg.start) : 0; // WLEDMM correct handling for stop=0
   root["grp"]    = seg.grouping;
   root[F("spc")] = seg.spacing;
   root[F("of")]  = seg.offset;
