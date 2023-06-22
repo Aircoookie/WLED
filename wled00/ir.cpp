@@ -70,15 +70,15 @@ void decBrightness()
   }
 }
 
-// apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID)
 {
-  USER_PRINTF("presetFallback1 %d %d %d\n", presetID, effectID, paletteID);
-  applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
+  //USER_PRINTF("presetFallback1 %d %d %d\n", presetID, effectID, paletteID);
+  //applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
   //these two will be overwritten if preset exists in handlePresets()
-  USER_PRINTF("presetFallback2 %d %d %d\n", presetID, effectID, paletteID);
-  effectCurrent = effectID;
-  effectPalette = paletteID;
+  applyPresetWithFallback(presetID, CALL_MODE_BUTTON_PRESET, effectID, paletteID);
+  USER_PRINTF("applyPresetWithFallback %d %d %d\n", presetID, effectID, paletteID);
+  //effectCurrent = effectID;
+  //effectPalette = paletteID;
 }
 
 byte relativeChange(byte property, int8_t amount, byte lowerBoundary, byte higherBoundary)
