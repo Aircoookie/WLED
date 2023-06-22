@@ -9,7 +9,7 @@
 #ifdef WLED_ENABLE_PIXART
   #include "html_pixart.h"
 #endif
-#ifdef WLED_ENABLE_PXMAGIC
+#ifndef WLED_DISABLE_PXMAGIC
   #include "html_pxmagic.h"
 #endif
 #include "html_cpal.h"
@@ -370,7 +370,7 @@ void initServer()
   });
   #endif
 
-  #ifdef WLED_ENABLE_PXMAGIC
+  #ifndef WLED_DISABLE_PXMAGIC
   server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleFileRead(request, "/pxmagic.htm")) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
