@@ -72,6 +72,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
+#ifdef WLED_ENABLE_LEGACY
 //Deprecated, use of /json/state and presets recommended instead
 void URL_response(AsyncWebServerRequest *request)
 {
@@ -120,6 +121,7 @@ void URL_response(AsyncWebServerRequest *request)
 
   if (request != nullptr) request->send(200, "text/html", obuf);
 }
+#endif
 
 void extractPin(JsonObject &obj, const char *key) {
   if (obj[key].is<JsonArray>()) {

@@ -1684,27 +1684,23 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	//WLEDSR adding liveview2D support
 	if (isInfo && isM) toggleInfo();
 	if (isNodes && isM) toggleNodes();
 	isLv = !isLv;
+	let wsOn = ws && ws.readyState === WebSocket.OPEN;
 
 	var lvID = "liveview";
-	if (isM) {   
-		lvID = "liveview2D"
-		if (isLv) {
-		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-		d.getElementById('kliveview2D').innerHTML = cn;
-		}
-
-		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
+	if (wsOn) lvID += "ws";
+	if (isM && wsOn) {   
+		lvID += "2D";
+		if (isLv) gId('klv2D').innerHTML = `<iframe id="${lvID}" src="about:blank"></iframe>`;
+		gId('mlv2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	var url = getURL("/" + lvID);
-	gId(lvID).src = (isLv) ? url:"about:blank";
-	gId('buttonSr').className = (isLv) ? "active":"";
-	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
+	gId(lvID).src = (isLv) ? getURL("/" + lvID):"about:blank";
+	gId('buttonSr').classList.toggle("active");
+	if (!isLv && wsOn) ws.send('{"lv":false}');
 	size();
 }
 
