@@ -305,23 +305,26 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
 }
 
 void Segment::startTransition(uint16_t dur) {
-  if (transitional || _t) return; // already in transition no need to store anything
+  if (!dur) {
+    transitional = false;
+    if (_t) {
+      delete _t;
+      _t = nullptr;
+    }
+    return;
+  }
+  if (transitional && _t) return; // already in transition no need to store anything
 
   // starting a transition has to occur before change so we get current values 1st
-  uint8_t _briT = currentBri(on ? opacity : 0);
-  uint8_t _cctT = currentBri(cct, true);
-  CRGBPalette16 _palT = CRGBPalette16(DEFAULT_COLOR); loadPalette(_palT, palette);
-  uint8_t _modeP = mode;
-  uint32_t _colorT[NUM_COLORS];
-  for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
-
-  if (!_t) _t = new Transition(dur); // no previous transition running
+  _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
-  _t->_briT  = _briT;
-  _t->_cctT  = _cctT;
+
+  CRGBPalette16 _palT = CRGBPalette16(DEFAULT_COLOR); loadPalette(_palT, palette);
+  _t->_briT  = on ? opacity : 0;
+  _t->_cctT  = cct;
   _t->_palT  = _palT;
-  _t->_modeP = _modeP;
-  for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
+  _t->_modeP = mode;
+  for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = colors[i];
   transitional = true; // setOption(SEG_OPTION_TRANSITIONAL, true);
 }
 
@@ -334,10 +337,10 @@ uint16_t Segment::progress() {
 }
 
 uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
-  if (transitional && _t) {
-    uint32_t prog = progress() + 1;
-    if (useCct) return ((briNew * prog) + _t->_cctT * (0x10000 - prog)) >> 16;
-    else        return ((briNew * prog) + _t->_briT * (0x10000 - prog)) >> 16;
+  uint32_t prog = progress();
+  if (transitional && _t && prog < 0xFFFFU) {
+    if (useCct) return ((briNew * prog) + _t->_cctT * (0xFFFFU - prog)) >> 16;
+    else        return ((briNew * prog) + _t->_briT * (0xFFFFU - prog)) >> 16;
   } else {
     return briNew;
   }
@@ -368,6 +371,7 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
 void Segment::handleTransition() {
   if (!transitional) return;
   uint16_t _progress = progress();
+  if (_progress == 0xFFFFU) transitional = false; // finish transitioning segment
   if (_t) { // thanks to @nXm AKA https://github.com/NMeirer
     if (_progress >= 32767U && _t->_modeP != mode) markForReset();
     if (_progress == 0xFFFFU) {
@@ -375,7 +379,6 @@ void Segment::handleTransition() {
       _t = nullptr;
     }
   }
-  if (_progress == 0xFFFFU) transitional = false; // finish transitioning segment
 }
 
 void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
@@ -622,7 +625,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
-  if (!_bri_t && !transitional && fadeTransition) return; // if _bri_t == 0 && segment is not transitionig && transitions are enabled then save a few CPU cycles
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -1590,7 +1592,7 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col) {
 }
 
 void WS2812FX::setTransitionMode(bool t) {
-  for (segment &seg : _segments) if (!seg.transitional) seg.startTransition(t ? _transitionDur : 0);
+  for (segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0);
 }
 
 #ifdef WLED_DEBUG

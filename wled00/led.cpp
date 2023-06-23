@@ -146,8 +146,8 @@ void stateUpdated(byte callMode) {
     if (transitionActive) {
       briOld = briT;
       tperLast = 0;
-    }
-    strip.setTransitionMode(true); // force all segments to transition mode
+    } else
+      strip.setTransitionMode(true); // force all segments to transition mode
     transitionActive = true;
     transitionStartTime = millis();
   } else {
