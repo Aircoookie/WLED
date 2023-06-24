@@ -104,10 +104,20 @@ void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
 //improv.cpp
+enum ImprovRPCType {
+  Command_Wifi = 0x01,
+  Request_State = 0x02,
+  Request_Info = 0x03,
+  Request_Scan = 0x04
+};
+
 void handleImprovPacket();
+void sendImprovRPCResult(ImprovRPCType type, uint8_t n_strings = 0, const char **strings = nullptr);
 void sendImprovStateResponse(uint8_t state, bool error = false);
 void sendImprovInfoResponse();
-void sendImprovRPCResponse(byte commandId);
+void startImprovWifiScan();
+void handleImprovWifiScan();
+void sendImprovIPRPCResult(ImprovRPCType type);
 
 //ir.cpp
 void applyRepeatActions();
