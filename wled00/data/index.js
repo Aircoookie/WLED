@@ -22,7 +22,7 @@ var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var isM = false, mw = 0, mh=0;
-var ws, cpick, ranges;
+var ws, cpick, ranges, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
@@ -1331,7 +1331,7 @@ function makeWS() {
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
-		setTimeout(makeWS,1500); // retry WS connection
+		if (wsRpt++ < 5) setTimeout(makeWS,1500); // retry WS connection
 		ws = null;
 	}
 	ws.onopen = (e)=>{
@@ -1637,6 +1637,7 @@ function requestJson(command=null)
 		//load presets and open websocket sequentially
 		if (!pJson || isEmpty(pJson)) setTimeout(()=>{
 			loadPresets(()=>{
+				wsRpt = 0;
 				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
 			});
 		},25);
@@ -1697,7 +1698,7 @@ function toggleLiveview()
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	gId(lvID).src = (isLv) ? getURL("/" + lvID + ((wsOn) ? "?ws":"")):"about:blank";
+	gId(lvID).src = (isLv) ? getURL("/" + lvID):"about:blank";
 	gId('buttonSr').classList.toggle("active");
 	if (!isLv && wsOn) ws.send('{"lv":false}');
 	size();
