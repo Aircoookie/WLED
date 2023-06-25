@@ -116,15 +116,8 @@ void initServer()
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
 #ifdef WLED_ENABLE_WEBSOCKETS
-  server.on("/liveviewws", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws, PAGE_liveviewws_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-  });
   #ifndef WLED_DISABLE_2D
-  server.on("/liveviewws2D", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws2D, PAGE_liveviewws2D_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
@@ -239,18 +232,13 @@ void initServer()
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
 
-#ifdef WLED_ENABLE_LEGACY
+#ifdef WLED_ENABLE_USERMOD_PAGE
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
-  });
-
-  //Deprecated, use of /json/state and presets recommended instead
-  server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
-    URL_response(request);
   });
 #endif
 

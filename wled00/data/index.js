@@ -217,7 +217,7 @@ function onLoad()
 		// detect reverse proxy and/or HTTPS
 		let pathn = l.pathname;
 		let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
-		if (paths[0]==="sliders") paths.shift();
+		//if (paths[0]==="sliders") paths.shift();
 		//while (paths[0]==="") paths.shift();
 		locproto = l.protocol;
 		locip = l.hostname + (l.port ? ":" + l.port : "");
@@ -1690,7 +1690,6 @@ function toggleLiveview()
 	let wsOn = ws && ws.readyState === WebSocket.OPEN;
 
 	var lvID = "liveview";
-	if (wsOn) lvID += "ws";
 	if (isM && wsOn) {   
 		lvID += "2D";
 		if (isLv) gId('klv2D').innerHTML = `<iframe id="${lvID}" src="about:blank"></iframe>`;
@@ -1698,7 +1697,7 @@ function toggleLiveview()
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	gId(lvID).src = (isLv) ? getURL("/" + lvID):"about:blank";
+	gId(lvID).src = (isLv) ? getURL("/" + lvID + ((wsOn) ? "?ws":"")):"about:blank";
 	gId('buttonSr').classList.toggle("active");
 	if (!isLv && wsOn) ws.send('{"lv":false}');
 	size();
