@@ -1336,6 +1336,7 @@ function makeWS() {
 	}
 	ws.onopen = (e)=>{
 		//ws.send("{'v':true}"); // unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
+		wsRpt = 0;
 		reqsLegal = true;
 	}
 }
@@ -1698,7 +1699,7 @@ function toggleLiveview()
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	gId(lvID).src = (isLv) ? getURL("/" + lvID):"about:blank";
+	gId(lvID).src = (isLv) ? getURL("/" + lvID + ((wsOn) ? "?ws":"")):"about:blank";
 	gId('buttonSr').classList.toggle("active");
 	if (!isLv && wsOn) ws.send('{"lv":false}');
 	size();
