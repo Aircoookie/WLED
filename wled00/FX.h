@@ -380,7 +380,6 @@ typedef struct Segment {
     uint16_t aux1;  // custom var
     byte* data;     // effect data pointer
     CRGB* leds;     // local leds[] array (may be a pointer to global)
-    static CRGB *_globalLeds;             // global leds[] array
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
 
   private:
@@ -487,7 +486,7 @@ typedef struct Segment {
       //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
       //Serial.println();
       //#endif
-      if (!Segment::_globalLeds && leds) free(leds);
+      if (leds) free(leds);
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();
@@ -497,7 +496,7 @@ typedef struct Segment {
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
 #ifdef WLED_DEBUG
-    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && leds?sizeof(CRGB)*length():0); }
+    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (leds?sizeof(CRGB)*length():0); }
 #endif
 
     inline bool     getOption(uint8_t n) const { return ((options >> n) & 0x01); }
@@ -710,7 +709,7 @@ class WS2812FX {  // 96 bytes
       panel.clear();
 #endif
       customPalettes.clear();
-      if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
+      if (_globalLedBuffer) free(_globalLedBuffer);
     }
 
     static WS2812FX* getInstance(void) { return instance; }
@@ -758,7 +757,7 @@ class WS2812FX {  // 96 bytes
       // return true if the strip is being sent pixel updates
       isUpdating(void),
       deserializeMap(uint8_t n=0),
-      useLedsArray = false;
+      useGlobalLedBuffer = false;
 
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
@@ -904,6 +903,8 @@ class WS2812FX {  // 96 bytes
 
     uint8_t _segment_index;
     uint8_t _mainSegment;
+
+    static uint32_t *_globalLedBuffer; // global leds[] array
 
     void
       estimateCurrentAndLimitBri(void);

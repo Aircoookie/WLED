@@ -74,7 +74,6 @@
 // Segment class implementation
 ///////////////////////////////////////////////////////////////////////////////
 uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
-CRGB    *Segment::_globalLeds = nullptr;
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
 
@@ -86,11 +85,11 @@ Segment::Segment(const Segment &orig) {
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
-  if (leds && !Segment::_globalLeds) leds = nullptr;
+  leds = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+  if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
 }
 
 // move constructor
@@ -111,7 +110,7 @@ Segment& Segment::operator= (const Segment &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (leds) free(leds);
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -120,12 +119,12 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
-    if (!Segment::_globalLeds) leds = nullptr;
+    leds = nullptr;
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+    if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
   }
   return *this;
 }
@@ -137,7 +136,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
     if (_t) delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (leds) free(leds);
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
@@ -183,7 +182,7 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) {
-    if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
+    if (leds) { free(leds); leds = nullptr; }
     //if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
@@ -193,19 +192,16 @@ void Segment::resetIfRequired() {
 
 void Segment::setUpLeds() {
   // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
-  if (Segment::_globalLeds)
-    #ifndef WLED_DISABLE_2D
-    leds = &Segment::_globalLeds[start + startY*Segment::maxWidth];
-    #else
-    leds = &Segment::_globalLeds[start];
-    #endif
-  else if (leds == nullptr && length() > 0) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
+  if (WS2812FX::_globalLedBuffer) return; // TODO optional seg buffer for FX without lossy restore due to opacity
+
+  // no global buffer
+  if (leds == nullptr && length() > 0) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
     //#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     //if (psramFound())
     //  leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());   // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
     //else
     //#endif
-      leds = (CRGB*)malloc(sizeof(CRGB)*length());
+    leds = (CRGB*)malloc(sizeof(CRGB)*length());
   }
 }
 
@@ -1062,22 +1058,22 @@ void WS2812FX::finalizeInit(void)
     Segment::maxHeight = 1;
   }
 
-  //initialize leds array. TBD: realloc if nr of leds change
-  if (Segment::_globalLeds) {
-    purgeSegments(true);
-    free(Segment::_globalLeds);
-    Segment::_globalLeds = nullptr;
+  // initialize leds array
+  if (_globalLedBuffer) {
+    //purgeSegments(true);
+    free(_globalLedBuffer);
+    _globalLedBuffer = nullptr;
   }
-  if (useLedsArray) {
-    size_t arrSize = sizeof(CRGB) * getLengthTotal();
+  if (useGlobalLedBuffer) {
+    size_t arrSize = sizeof(uint32_t) * getLengthTotal();
     // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards (see setUpLeds())
     //#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     //if (psramFound())
-    //  Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
+    //  Segment::_globalLedBuffer = (CRGB*) ps_malloc(arrSize);
     //else
     //#endif
-      Segment::_globalLeds = (CRGB*) malloc(arrSize);
-    memset(Segment::_globalLeds, 0, arrSize);
+    _globalLedBuffer = (uint32_t*) malloc(arrSize);
+    memset(_globalLedBuffer, 0, arrSize);
   }
 
   //segments are created in makeAutoSegments();
@@ -1604,7 +1600,7 @@ void WS2812FX::printSize() {
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF("Map: %d*%d=%uB\n", sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));
   size = getLengthTotal();
-  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%u=%uB\n", sizeof(CRGB), size, size*sizeof(CRGB));
+  if (useGlobalLedBuffer) DEBUG_PRINTF("Buffer: %d*%u=%uB\n", sizeof(CRGB), size, size*sizeof(CRGB));
 }
 #endif
 
@@ -1707,6 +1703,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
 
 WS2812FX* WS2812FX::instance = nullptr;
+uint32_t* WS2812FX::_globalLedBuffer = nullptr;
 
 const char JSON_mode_names[] PROGMEM = R"=====(["FX names moved"])=====";
 const char JSON_palette_names[] PROGMEM = R"=====([
