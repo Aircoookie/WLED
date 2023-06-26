@@ -99,10 +99,20 @@ void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
 //improv.cpp
+enum ImprovRPCType {
+  Command_Wifi = 0x01,
+  Request_State = 0x02,
+  Request_Info = 0x03,
+  Request_Scan = 0x04
+};
+
 void handleImprovPacket();
+void sendImprovRPCResult(ImprovRPCType type, uint8_t n_strings = 0, const char **strings = nullptr);
 void sendImprovStateResponse(uint8_t state, bool error = false);
 void sendImprovInfoResponse();
-void sendImprovRPCResponse(uint8_t commandId);
+void startImprovWifiScan();
+void handleImprovWifiScan();
+void sendImprovIPRPCResult(ImprovRPCType type);
 
 //ir.cpp
 void applyRepeatActions();
@@ -165,9 +175,11 @@ void handleTransitions();
 void handleNightlight();
 byte __attribute__((pure)) scaledBri(byte in);                     // WLEDMM: added attribute pure
 
+#ifdef WLED_ENABLE_LOXONE
 //lx_parser.cpp
 bool parseLx(int lxValue, byte* rgbw);
 void parseLxJson(int lxValue, byte segId, bool secondary);
+#endif
 
 //mqtt.cpp
 bool initMqtt();
@@ -222,7 +234,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=tru
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
-uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
+uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri=255, bool isRGBW=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void exitRealtime();
 void handleNotifications();
