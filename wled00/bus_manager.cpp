@@ -172,7 +172,7 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
   if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
     uint16_t pOld = pix;
     pix = IC_INDEX_WS2812_1CH_3X(pix);
-    uint32_t c = PolyBus::getPixelColor(_busPtr, _iType, pix, co);
+    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, pix, co));
     switch (pOld % 3) { // get only the single channel
       case 0: c = RGBW32(G(c), G(c), G(c), G(c)); break;
       case 1: c = RGBW32(R(c), R(c), R(c), R(c)); break;
@@ -180,7 +180,7 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
     }
     return c;
   }
-  return PolyBus::getPixelColor(_busPtr, _iType, pix, co);
+  return restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, pix, co));
 }
 
 uint8_t BusDigital::getPins(uint8_t* pinArray) {

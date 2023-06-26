@@ -677,6 +677,7 @@ class WS2812FX {  // 96 bytes
       // true private variables
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
+      _renderBrightness(0),
       _transitionDur(750),
       _targetFps(WLED_FPS),
       _frametime(FRAMETIME_FIXED),
@@ -875,7 +876,7 @@ class WS2812FX {  // 96 bytes
 
   private:
     uint16_t _length;
-    uint8_t  _brightness;
+    uint8_t  _brightness, _renderBrightness;
     uint16_t _transitionDur;
 
     uint8_t  _targetFps;
@@ -906,7 +907,7 @@ class WS2812FX {  // 96 bytes
 
     static uint32_t *_globalLedBuffer; // global leds[] array
 
-    void
+    uint8_t
       estimateCurrentAndLimitBri(void);
 };
 

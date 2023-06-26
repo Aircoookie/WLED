@@ -1102,8 +1102,12 @@ void WS2812FX::service() {
     // last condition ensures all solid segments are updated at the same time
     if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
-      if (seg.grouping == 0) seg.grouping = 1; //sanity check
-      doShow = true;
+      if (seg.grouping == 0) seg.grouping = 1; // sanity check
+      if (!doShow) {
+        busses.setBrightness(_brightness); // bus luminance must be set before FX using setPixelColor()
+        _renderBrightness = _brightness; // save in case brightness gets changed while FX is calculated
+        doShow = true;
+      }
       uint16_t delay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen
@@ -1142,13 +1146,18 @@ void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
   if (i < customMappingSize) i = customMappingTable[i];
   if (i >= _length) return;
-  busses.setPixelColor(i, col);
+  if (_globalLedBuffer) {
+    _globalLedBuffer[i] = col;
+  } else {
+    busses.setPixelColor(i, col);
+  }
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   if (i < customMappingSize) i = customMappingTable[i];
   if (i >= _length) return 0;
+  if (_globalLedBuffer) return _globalLedBuffer[i];
   return busses.getPixelColor(i);
 }
 
@@ -1164,7 +1173,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 #define MA_FOR_ESP        100 //how much mA does the ESP use (Wemos D1 about 80mA, ESP32 about 120mA)
                               //you can set it to 0 if the ESP is powered by USB and the LEDs by external
 
-void WS2812FX::estimateCurrentAndLimitBri() {
+uint8_t WS2812FX::estimateCurrentAndLimitBri() {
   //power limit calculation
   //each LED can draw up 195075 "power units" (approx. 53mA)
   //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
@@ -1180,7 +1189,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
   if (ablMilliampsMax < 150 || actualMilliampsPerLed == 0) { //0 mA per LED and too low numbers turn off calculation
     currentMilliamps = 0;
     busses.setBrightness(_brightness);
-    return;
+    return _brightness;
   }
 
   uint16_t pLen = getLengthPhysical();
@@ -1219,13 +1228,14 @@ void WS2812FX::estimateCurrentAndLimitBri() {
 
   uint32_t powerSum0 = powerSum;
   powerSum *= _brightness;
+  uint8_t newBri = _brightness;
 
   if (powerSum > powerBudget) //scale brightness down to stay in current limit
   {
     float scale = (float)powerBudget / (float)powerSum;
     uint16_t scaleI = scale * 255;
     uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
-    uint8_t newBri = scale8(_brightness, scaleB);
+    newBri = scale8(_brightness, scaleB);
     busses.setBrightness(newBri); //to keep brightness uniform, sets virtual busses too
     currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
   } else {
@@ -1234,6 +1244,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
   }
   currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
   currentMilliamps += pLen; //add standby power back to estimate
+  return newBri;
 }
 
 void WS2812FX::show(void) {
@@ -1242,7 +1253,16 @@ void WS2812FX::show(void) {
   show_callback callback = _callback;
   if (callback) callback();
 
-  estimateCurrentAndLimitBri();
+  uint8_t busBrightness = estimateCurrentAndLimitBri();
+
+  if (_globalLedBuffer) { // copy data from buffer to bus
+    for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, _globalLedBuffer[i]);
+  } else {
+    // if brightness changed since last show, must set everything again to update to new luminance
+    if (_renderBrightness != busBrightness) {
+      for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, busses.getPixelColor(i)); // LOSSY and slow!
+    }
+  }
 
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
@@ -1254,6 +1274,7 @@ void WS2812FX::show(void) {
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
   _lastShow = now;
+  _renderBrightness = _brightness;
 }
 
 /**
@@ -1321,6 +1342,7 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   if (direct) {
     // would be dangerous if applied immediately (could exceed ABL), but will not output until the next show()
     busses.setBrightness(b);
+    _renderBrightness = b;
   } else {
     unsigned long t = millis();
     if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon

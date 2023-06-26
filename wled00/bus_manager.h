@@ -223,6 +223,18 @@ class BusDigital : public Bus {
     uint16_t _frequencykHz = 0U;
     void * _busPtr = nullptr;
     const ColorOrderMap &_colorOrderMap;
+
+    inline uint32_t restoreColorLossy(uint32_t c) {
+      if (_bri == 255) return c;
+      uint8_t* chan = (uint8_t*) &c;
+
+      for (uint8_t i=0; i<4; i++)
+      {
+        uint16_t val = chan[i];
+        chan[i] = (val << 8) / (_bri + 1);
+      }
+      return c;
+    }
 };
 
 
