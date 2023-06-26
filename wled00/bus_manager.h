@@ -154,6 +154,7 @@ class Bus {
     inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
     inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
     inline static uint8_t getGlobalAWMode()           { return _gAWM; }
+    inline static void    setRestoreBri(uint8_t b)    { _restaurationBri = b; }
 
     bool reversed = false;
 
@@ -168,6 +169,7 @@ class Bus {
     static uint8_t _gAWM;
     static int16_t _cct;
     static uint8_t _cctBlend;
+    static uint8_t _restaurationBri; // previous brightness used as setPixelColor was called. Used for lossy restoration
 
     uint32_t autoWhiteCalc(uint32_t c);
 };
@@ -231,7 +233,7 @@ class BusDigital : public Bus {
       for (uint8_t i=0; i<4; i++)
       {
         uint16_t val = chan[i];
-        chan[i] = (val << 8) / (_bri + 1);
+        chan[i] = ((val << 8) + _restaurationBri) / (_restaurationBri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
       }
       return c;
     }

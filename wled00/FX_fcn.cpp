@@ -1209,7 +1209,13 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
     uint16_t len = bus->getLength();
     uint32_t busPowerSum = 0;
     for (uint_fast16_t i = 0; i < len; i++) { //sum up the usage of each LED
-      uint32_t c = bus->getPixelColor(i);
+      uint32_t c = 0;
+      if (_globalLedBuffer)
+      {
+        c = _globalLedBuffer[bus->getStart() + i];
+      } else {
+        c = bus->getPixelColor(i);
+      }
       byte r = R(c), g = G(c), b = B(c), w = W(c);
 
       if(useWackyWS2815PowerModel) { //ignore white component on WS2815 power calculation
@@ -1253,6 +1259,7 @@ void WS2812FX::show(void) {
   show_callback callback = _callback;
   if (callback) callback();
 
+  Bus::setRestoreBri(_renderBrightness);
   uint8_t busBrightness = estimateCurrentAndLimitBri();
 
   if (_globalLedBuffer) { // copy data from buffer to bus
@@ -1260,7 +1267,8 @@ void WS2812FX::show(void) {
   } else {
     // if brightness changed since last show, must set everything again to update to new luminance
     if (_renderBrightness != busBrightness) {
-      for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, busses.getPixelColor(i)); // LOSSY and slow!
+      for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, busses.getPixelColor(i)); // LOSSLESS due to trick (but still slow!)
+      Bus::setRestoreBri(busBrightness);
     }
   }
 
@@ -1343,6 +1351,7 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
     // would be dangerous if applied immediately (could exceed ABL), but will not output until the next show()
     busses.setBrightness(b);
     _renderBrightness = b;
+    Bus::setRestoreBri(b);
   } else {
     unsigned long t = millis();
     if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon

@@ -563,3 +563,4 @@ uint16_t BusManager::getTotalLength() {
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
 uint8_t Bus::_gAWM = 255;
+uint8_t Bus::_restaurationBri = 255;

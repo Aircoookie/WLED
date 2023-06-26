@@ -134,7 +134,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0;  // bus iterator
     if (fromFS) busses.removeAll(); // can't safely manipulate busses directly in network callback
-    uint32_t mem = 0;
+    uint32_t mem = 0, globalBufMem = 0;
+    uint16_t maxlen = 0;
     bool busesChanged = false;
     for (JsonObject elm : ins) {
       if (s >= WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES) break;
@@ -162,7 +163,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz);
         mem += BusManager::memUsage(bc);
-        if (mem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
+        if (strip.useGlobalLedBuffer && start + length > maxlen) {
+          maxlen = start + length;
+          globalBufMem = maxlen * 4;
+        }
+        if (mem + globalBufMem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);

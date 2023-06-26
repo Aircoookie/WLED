@@ -151,11 +151,16 @@ void WLED::loop()
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
     busses.removeAll();
-    uint32_t mem = 0;
+    uint32_t mem = 0, globalBufMem = 0;
+    uint16_t maxlen = 0;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
       mem += BusManager::memUsage(*busConfigs[i]);
-      if (mem <= MAX_LED_MEMORY) {
+      if (strip.useGlobalLedBuffer && busConfigs[i]->start + busConfigs[i]->count > maxlen) {
+          maxlen = busConfigs[i]->start + busConfigs[i]->count;
+          globalBufMem = maxlen * 4;
+      }
+      if (mem + globalBufMem <= MAX_LED_MEMORY) {
         busses.add(*busConfigs[i]);
       }
       delete busConfigs[i]; busConfigs[i] = nullptr;
