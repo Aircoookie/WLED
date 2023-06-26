@@ -1263,7 +1263,8 @@ void WS2812FX::show(void) {
   uint8_t busBrightness = estimateCurrentAndLimitBri();
 
   if (_globalLedBuffer) { // copy data from buffer to bus
-    for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, _globalLedBuffer[i]);
+    //for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, _globalLedBuffer[i]);
+    busses.setColorsFromBuffer(_globalLedBuffer);
   } else {
     // if brightness changed since last show, must set everything again to update to new luminance
     if (_renderBrightness != busBrightness) {

@@ -506,12 +506,21 @@ void BusManager::setStatusPixel(uint32_t c) {
   }
 }
 
-void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c, int16_t cct) {
+void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
   for (uint8_t i = 0; i < numBusses; i++) {
     Bus* b = busses[i];
     uint16_t bstart = b->getStart();
     if (pix < bstart || pix >= bstart + b->getLength()) continue;
     busses[i]->setPixelColor(pix - bstart, c);
+  }
+}
+
+void BusManager::setColorsFromBuffer(uint32_t* buf) {
+  for (uint8_t i = 0; i < numBusses; i++) {
+    Bus* b = busses[i];
+    uint16_t bstart = b->getStart();
+    for (uint16_t pix = 0; pix < b->getLength(); pix++)
+      busses[i]->setPixelColor(pix, buf[bstart + pix]);
   }
 }
 
