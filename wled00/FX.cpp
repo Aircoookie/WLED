@@ -5879,7 +5879,7 @@ uint16_t mode_2Dscrollingtext(void) {
   }
   const bool zero = SEGMENT.check3;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  char text[33] = {'\0'};
+  char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
   if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
   if (!strlen(text)
