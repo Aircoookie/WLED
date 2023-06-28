@@ -184,8 +184,7 @@ private:
 public:
   void setup()
   {
-    PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };  // allocate pins
-    if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { sensorType=0; return; }
+    if (i2c_scl<0 || i2c_sda<0) { enabled = false; sensorType = 0; return; }
     
     if (!bme.begin())
     {

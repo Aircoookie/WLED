@@ -113,8 +113,7 @@ private:
 public:
   void setup()
   {
-    PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };  // allocate pins
-    if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) return;
+    if (i2c_scl<0 || i2c_sda<0) { enabled = false; return; }
     sensorFound = lightMeter.begin();
     initDone = true;
   }
@@ -174,7 +173,9 @@ public:
       user = root.createNestedObject(F("u"));
 
     JsonArray lux_json = user.createNestedArray(F("Luminance"));
-    if (!sensorFound) {
+    if (!enabled) {
+      lux_json.add(F("disabled"));
+    } else if (!sensorFound) {
         // if no sensor 
         lux_json.add(F("BH1750 "));
         lux_json.add(F("Not Found"));

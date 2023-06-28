@@ -70,9 +70,10 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     const char * name = elem["n"].as<const char*>();
     size_t len = 0;
     if (name != nullptr) len = strlen(name);
-    if (len > 0 && len < 33) {
+    if (len > 0) {
+      if (len > WLED_MAX_SEGNAME_LEN) len = WLED_MAX_SEGNAME_LEN;
       seg.name = new char[len+1];
-      if (seg.name) strlcpy(seg.name, name, 33);
+      if (seg.name) strlcpy(seg.name, name, WLED_MAX_SEGNAME_LEN+1);
     } else {
       // but is empty (already deleted above)
       elem.remove("n");
@@ -425,7 +426,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
   if (!root["pd"].isNull() && stateChanged) {
     currentPreset = root[F("pd")] | currentPreset;
-    if (root["win"].isNull()) presetCycCurr = currentPreset;
+    if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise it was set in handleSet() [set.cpp]
     presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
     //unloadPlaylist(); // applying a preset unloads the playlist, may be needed here too?
   } else if (!root["ps"].isNull()) {

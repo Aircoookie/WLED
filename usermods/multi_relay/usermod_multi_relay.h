@@ -14,6 +14,9 @@
 
 #ifndef MULTI_RELAY_PINS
   #define MULTI_RELAY_PINS -1
+  #define MULTI_RELAY_ENABLED false
+#else
+  #define MULTI_RELAY_ENABLED true
 #endif
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
@@ -336,7 +339,7 @@ byte MultiRelay::IOexpanderRead(int address) {
 
 MultiRelay::MultiRelay()
   : _switchTimerStart(0)
-  , enabled(false)
+  , enabled(MULTI_RELAY_ENABLED)
   , initDone(false)
   , usePcf8574(USE_PCF8574)
   , addrPcf8574(PCF8574_ADDRESS)
@@ -479,7 +482,7 @@ void MultiRelay::publishHomeAssistantAutodiscovery() {
 void MultiRelay::setup() {
   // pins retrieved from cfg.json (readFromConfig()) prior to running setup()
   // if we want PCF8574 expander I2C pins need to be valid
-  if (i2c_sda == i2c_scl && i2c_sda == -1) usePcf8574 = false;
+  if (i2c_sda<0 || i2c_scl<0) usePcf8574 = false;
 
   uint8_t state = 0;
   for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
@@ -765,7 +768,7 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
   usePcf8574 = top[FPSTR(_pcf8574)] | usePcf8574;
   addrPcf8574 = top[FPSTR(_pcfAddress)] | addrPcf8574;
   // if I2C is not globally initialised just ignore
-  if (i2c_sda == i2c_scl && i2c_sda == -1) usePcf8574 = false;
+  if (i2c_sda<0 || i2c_scl<0) usePcf8574 = false;
   periodicBroadcastSec = top[FPSTR(_broadcast)] | periodicBroadcastSec;
   periodicBroadcastSec = min(900,max(0,(int)periodicBroadcastSec));
   HAautodiscovery = top[FPSTR(_HAautodiscovery)] | HAautodiscovery;

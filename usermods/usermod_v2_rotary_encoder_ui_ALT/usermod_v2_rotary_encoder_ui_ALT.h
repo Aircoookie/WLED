@@ -474,7 +474,7 @@ void RotaryEncoderUIUsermod::setup()
   DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
 
   if (usePcf8574) {
-    if ((i2c_sda == i2c_scl && i2c_sda == -1) || pinA<0 || pinB<0 || pinC<0) {
+    if (i2c_sda < 0 || i2c_scl < 0 || pinA < 0 || pinB < 0 || pinC < 0) {
       DEBUG_PRINTLN(F("I2C and/or PCF8574 pins unused, disabling."));
       enabled = false;
       return;
