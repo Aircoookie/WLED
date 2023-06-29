@@ -67,7 +67,13 @@ class ANIMartRIXMod:public ANIMartRIX {
 	  if (SEGENV.call == 0) {
 		init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), false);
 	  }
-	  float speedFactor = map(SEGMENT.speed, 0, 255, 1, 100) / 10;
+	  float speedFactor = 1.0;
+	  if (SEGMENT.speed < 128) {
+		speedFactor = map(SEGMENT.speed,   0, 127, 1, 10) / 10;
+	  }
+	  else{
+		speedFactor = map(SEGMENT.speed, 128, 255, 10, 100) / 10;
+	  } 
 	  setSpeedFactor(speedFactor);
 	}
 	void setPixelColor(int x, int y, rgb pixel) {
