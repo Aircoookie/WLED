@@ -67,7 +67,7 @@ class ANIMartRIXMod:public ANIMartRIX {
 	  if (SEGENV.call == 0) {
 		init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), false);
 	  }
-	  float speedFactor = map(source, 0, 255, 1, 100) / 10;
+	  float speedFactor = map(SEGMENT.speed, 0, 255, 1, 100) / 10;
 	  setSpeedFactor(speedFactor);
 	}
 	void setPixelColor(int x, int y, rgb pixel) {
@@ -420,6 +420,7 @@ class AnimartrixUsermod : public Usermod {
 
     void addToJsonInfo(JsonObject& root)
     {
+	  if(!enabled) return;
       char myStringBuffer[16]; // buffer for snprintf()
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
