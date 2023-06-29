@@ -67,6 +67,8 @@ class ANIMartRIXMod:public ANIMartRIX {
 	  if (SEGENV.call == 0) {
 		init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), false);
 	  }
+	  float speedFactor = map(source, 0, 255, 1, 100) / 10;
+	  setSpeedFactor(speedFactor);
 	}
 	void setPixelColor(int x, int y, rgb pixel) {
 		SEGMENT.setPixelColorXY(x, y, CRGB(pixel.red, pixel.green, pixel.blue));
