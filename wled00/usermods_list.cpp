@@ -403,6 +403,6 @@ void registerUsermods()
   usermods.add(new GamesUsermod());
 #endif
 #ifdef USERMOD_ANIMARTRIX
-  usermods.add(new AnimartrixUsermod("Animartrix", true));
+  usermods.add(new AnimartrixUsermod("Animartrix", false));
 #endif
 }
