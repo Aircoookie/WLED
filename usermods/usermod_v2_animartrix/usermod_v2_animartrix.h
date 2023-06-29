@@ -351,6 +351,8 @@ class AnimartrixUsermod : public Usermod {
 	
 
     void setup() {
+		
+		if(!enabled) return;
 
       strip.addEffect(255, &mode_Module_Experiment10, _data_FX_mode_Module_Experiment10);
       strip.addEffect(255, &mode_Module_Experiment9, _data_FX_mode_Module_Experiment9);
