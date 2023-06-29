@@ -69,7 +69,7 @@ class ANIMartRIXMod:public ANIMartRIX {
 	  }
 	  float speedFactor = 1.0;
 	  if (SEGMENT.speed < 128) {
-		speedFactor = map(SEGMENT.speed,   0, 127, 1, 10) / 10;
+		speedFactor = (float) map(SEGMENT.speed,   0, 127, 1, 10) / 10.0f;
 	  }
 	  else{
 		speedFactor = map(SEGMENT.speed, 128, 255, 10, 100) / 10;
