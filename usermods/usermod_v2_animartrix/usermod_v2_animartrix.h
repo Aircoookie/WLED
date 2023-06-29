@@ -233,6 +233,7 @@ uint16_t mode_Big_Caleido() {
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs5() { 
+	anim.initEffect(); 	
 	anim.RGB_Blobs5();
 	return FRAMETIME;
 }
