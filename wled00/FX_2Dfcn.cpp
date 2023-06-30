@@ -199,8 +199,6 @@ void /*IRAM_ATTR*/ Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (Segment::maxHeight==1) return; // not a matrix set-up
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
-  if (leds) leds[XY(x,y)] = col;
-
   uint8_t _bri_t = currentBri(on ? opacity : 0);
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
@@ -286,8 +284,6 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
-  int i = XY(x,y);
-  if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
   if (transpose) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed

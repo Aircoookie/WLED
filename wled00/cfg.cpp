@@ -90,7 +90,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.cctBlending, hw_led[F("cb")]);
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
-  CJSON(strip.useGlobalLedBuffer, hw_led[F("ld")]);
+  CJSON(useGlobalLedBuffer, hw_led[F("ld")]);
 
   #ifndef WLED_DISABLE_2D
   // 2D Matrix Settings
@@ -163,7 +163,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz);
         mem += BusManager::memUsage(bc);
-        if (strip.useGlobalLedBuffer && start + length > maxlen) {
+        if (useGlobalLedBuffer && start + length > maxlen) {
           maxlen = start + length;
           globalBufMem = maxlen * 4;
         }
@@ -711,7 +711,7 @@ void serializeConfig() {
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override
-  hw_led[F("ld")] = strip.useGlobalLedBuffer;
+  hw_led[F("ld")] = useGlobalLedBuffer;
 
   #ifndef WLED_DISABLE_2D
   // 2D Matrix Settings

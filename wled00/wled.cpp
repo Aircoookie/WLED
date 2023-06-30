@@ -156,7 +156,7 @@ void WLED::loop()
     for (uint8_t i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
       mem += BusManager::memUsage(*busConfigs[i]);
-      if (strip.useGlobalLedBuffer && busConfigs[i]->start + busConfigs[i]->count > maxlen) {
+      if (useGlobalLedBuffer && busConfigs[i]->start + busConfigs[i]->count > maxlen) {
           maxlen = busConfigs[i]->start + busConfigs[i]->count;
           globalBufMem = maxlen * 4;
       }

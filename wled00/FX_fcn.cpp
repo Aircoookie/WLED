@@ -85,11 +85,9 @@ Segment::Segment(const Segment &orig) {
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
-  leds = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
 }
 
 // move constructor
@@ -100,7 +98,6 @@ Segment::Segment(Segment &&orig) noexcept {
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
-  orig.leds = nullptr;
 }
 
 // copy assignment
@@ -110,7 +107,6 @@ Segment& Segment::operator= (const Segment &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
-    if (leds) free(leds);
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -119,12 +115,10 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
-    leds = nullptr;
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
   }
   return *this;
 }
@@ -136,13 +130,11 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
     if (_t) delete _t;
-    if (leds) free(leds);
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;
     orig._t   = nullptr;
-    orig.leds = nullptr;
   }
   return *this;
 }
@@ -182,26 +174,9 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) {
-    if (leds) { free(leds); leds = nullptr; }
-    //if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
     reset = false; // setOption(SEG_OPTION_RESET, false);
-  }
-}
-
-void Segment::setUpLeds() {
-  // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
-  if (WS2812FX::_globalLedBuffer) return; // TODO optional seg buffer for FX without lossy restore due to opacity
-
-  // no global buffer
-  if (leds == nullptr && length() > 0) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
-    //#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-    //if (psramFound())
-    //  leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());   // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
-    //else
-    //#endif
-    leds = (CRGB*)malloc(sizeof(CRGB)*length());
   }
 }
 
@@ -617,8 +592,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
-  if (leds) leds[i] = col;
-
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
   if (_bri_t < 255) {
@@ -717,8 +690,6 @@ uint32_t Segment::getPixelColor(int i)
     return 0;
   }
 #endif
-
-  if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
 
   if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();
@@ -1058,24 +1029,6 @@ void WS2812FX::finalizeInit(void)
     Segment::maxHeight = 1;
   }
 
-  // initialize leds array
-  if (_globalLedBuffer) {
-    //purgeSegments(true);
-    free(_globalLedBuffer);
-    _globalLedBuffer = nullptr;
-  }
-  if (useGlobalLedBuffer) {
-    size_t arrSize = sizeof(uint32_t) * getLengthTotal();
-    // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards (see setUpLeds())
-    //#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-    //if (psramFound())
-    //  Segment::_globalLedBuffer = (CRGB*) ps_malloc(arrSize);
-    //else
-    //#endif
-    _globalLedBuffer = (uint32_t*) malloc(arrSize);
-    memset(_globalLedBuffer, 0, arrSize);
-  }
-
   //segments are created in makeAutoSegments();
   DEBUG_PRINTLN(F("Loading custom palettes"));
   loadCustomPalettes(); // (re)load all custom palettes
@@ -1103,11 +1056,10 @@ void WS2812FX::service() {
     if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
       if (seg.grouping == 0) seg.grouping = 1; // sanity check
-      if (!doShow) {
-        busses.setBrightness(_brightness); // bus luminance must be set before FX using setPixelColor()
-        _renderBrightness = _brightness; // save in case brightness gets changed while FX is calculated
+//      if (!doShow) {
+//        busses.setBrightness(_brightness); // bus luminance must be set before FX using setPixelColor()
         doShow = true;
-      }
+//      }
       uint16_t delay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen
@@ -1146,18 +1098,13 @@ void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
   if (i < customMappingSize) i = customMappingTable[i];
   if (i >= _length) return;
-  if (_globalLedBuffer) {
-    _globalLedBuffer[i] = col;
-  } else {
-    busses.setPixelColor(i, col);
-  }
+  busses.setPixelColor(i, col);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   if (i < customMappingSize) i = customMappingTable[i];
   if (i >= _length) return 0;
-  if (_globalLedBuffer) return _globalLedBuffer[i];
   return busses.getPixelColor(i);
 }
 
@@ -1188,7 +1135,6 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
 
   if (ablMilliampsMax < 150 || actualMilliampsPerLed == 0) { //0 mA per LED and too low numbers turn off calculation
     currentMilliamps = 0;
-    busses.setBrightness(_brightness);
     return _brightness;
   }
 
@@ -1209,15 +1155,14 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
     uint16_t len = bus->getLength();
     uint32_t busPowerSum = 0;
     for (uint_fast16_t i = 0; i < len; i++) { //sum up the usage of each LED
-      uint32_t c = 0;
-      if (_globalLedBuffer)
-      {
-        c = _globalLedBuffer[bus->getStart() + i];
-      } else {
-        c = bus->getPixelColor(i);
-      }
+      uint32_t c = bus->getPixelColor(i);
       byte r = R(c), g = G(c), b = B(c), w = W(c);
-
+      if (useGlobalLedBuffer) {
+        r = scale8(r, _brightness);
+        g = scale8(g, _brightness); 
+        b = scale8(b, _brightness);
+        w = scale8(w, _brightness);
+      }
       if(useWackyWS2815PowerModel) { //ignore white component on WS2815 power calculation
         busPowerSum += (MAX(MAX(r,g),b)) * 3;
       } else {
@@ -1232,22 +1177,14 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
     powerSum += busPowerSum;
   }
 
-  uint32_t powerSum0 = powerSum;
-  powerSum *= _brightness;
   uint8_t newBri = _brightness;
-
-  if (powerSum > powerBudget) //scale brightness down to stay in current limit
-  {
+  if (powerSum > powerBudget) {//scale brightness down to stay in current limit
     float scale = (float)powerBudget / (float)powerSum;
     uint16_t scaleI = scale * 255;
     uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
     newBri = scale8(_brightness, scaleB);
-    busses.setBrightness(newBri); //to keep brightness uniform, sets virtual busses too
-    currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
-  } else {
-    currentMilliamps = powerSum / puPerMilliamp;
-    busses.setBrightness(_brightness);
   }
+  currentMilliamps = (powerSum * newBri) / puPerMilliamp;
   currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
   currentMilliamps += pLen; //add standby power back to estimate
   return newBri;
@@ -1259,19 +1196,8 @@ void WS2812FX::show(void) {
   show_callback callback = _callback;
   if (callback) callback();
 
-  Bus::setRestoreBri(_renderBrightness);
   uint8_t busBrightness = estimateCurrentAndLimitBri();
-
-  if (_globalLedBuffer) { // copy data from buffer to bus
-    //for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, _globalLedBuffer[i]);
-    busses.setColorsFromBuffer(_globalLedBuffer);
-  } else {
-    // if brightness changed since last show, must set everything again to update to new luminance
-    if (_renderBrightness != busBrightness) {
-      for (uint16_t i = 0; i < _length; i++) busses.setPixelColor(i, busses.getPixelColor(i)); // LOSSLESS due to trick (but still slow!)
-      Bus::setRestoreBri(busBrightness);
-    }
-  }
+  busses.setBrightness(busBrightness);
 
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
@@ -1283,7 +1209,6 @@ void WS2812FX::show(void) {
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
   _lastShow = now;
-  _renderBrightness = _brightness;
 }
 
 /**
@@ -1351,8 +1276,6 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   if (direct) {
     // would be dangerous if applied immediately (could exceed ABL), but will not output until the next show()
     busses.setBrightness(b);
-    _renderBrightness = b;
-    Bus::setRestoreBri(b);
   } else {
     unsigned long t = millis();
     if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
@@ -1735,7 +1658,6 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
 
 WS2812FX* WS2812FX::instance = nullptr;
-uint32_t* WS2812FX::_globalLedBuffer = nullptr;
 
 const char JSON_mode_names[] PROGMEM = R"=====(["FX names moved"])=====";
 const char JSON_palette_names[] PROGMEM = R"=====([
