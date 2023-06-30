@@ -242,7 +242,7 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-// #define FX_MODE_CANDY_CANE             114  // removed in 0.14!
+#define FX_MODE_IMAGE                  114  // was Candy Cane
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117 // candidate for removal (check3 in dynamic)
