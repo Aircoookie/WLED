@@ -1230,7 +1230,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
     uint16_t scaleI = scale * 255;
     uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
     uint8_t newBri = scale8(_brightness, scaleB);
-    busses.setBrightness(newBri); //to keep brightness uniform, sets virtual busses too
+    busses.setBrightness(newBri, (scaleB < 255)); //to keep brightness uniform, sets virtual busses too - softhack007: apply reductions immediately
     currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
   } else {
     currentMilliamps = powerSum / puPerMilliamp;
