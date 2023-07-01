@@ -108,7 +108,7 @@ class Bus {
     virtual void     setStatusPixel(uint32_t c) {}
     virtual void     setPixelColor(uint16_t pix, uint32_t c) = 0;
     virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
-    virtual void     setBrightness(uint8_t b) { _bri = b; };
+    virtual void     setBrightness(uint8_t b, bool immediate=false) { _bri = b; };
     virtual void     cleanup() = 0;
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
     virtual uint16_t getLength() { return _len; }
@@ -181,7 +181,7 @@ class BusDigital : public Bus {
 
     bool canShow();
 
-    void setBrightness(uint8_t b);
+    void setBrightness(uint8_t b, bool immediate);
 
     void setStatusPixel(uint32_t c);
 
@@ -345,7 +345,7 @@ class BusManager {
 
     void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
 
-    void setBrightness(uint8_t b);
+    void setBrightness(uint8_t b, bool immediate=false);          // immediate=true is for use in ABL, it applies brightness immediately (warning: inefficient)
 
     void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
 
