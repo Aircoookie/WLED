@@ -3,7 +3,7 @@
 
 File file;
 char lastFilename[34] = "/";
-GifDecoder<64, 64, 12, true> decoder;
+GifDecoder<64,64,12,true> decoder;
 bool gifDecodeFailed = false;
 long lastFrameDisplayTime = 0, currentFrameDelay = 0;
 
@@ -51,7 +51,7 @@ void drawPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t
   // set multiple pixels if upscaling
   for (int16_t i = 0; i < (activeSeg->width()+(gifWidth-1)) / gifWidth; i++) {
     for (int16_t j = 0; j < (activeSeg->height()+(gifHeight-1)) / gifHeight; j++) {
-      activeSeg->setPixelColorXY(outX + i, outY + j, red, green, blue);
+      activeSeg->setPixelColorXY(outX + i, outY + j, gamma8(red), gamma8(green), gamma8(blue));
     }
   }
 }
@@ -62,7 +62,7 @@ bool renderImageToSegment(Segment &seg) {
   activeSeg = &seg;
 
   if (strncmp(lastFilename +1, seg.name, 32) != 0) {
-    Serial.println("segname changed");
+    //Serial.println("segname changed");
     strncpy(lastFilename +1, seg.name, 32);
     gifDecodeFailed = false;
     if (strcmp(lastFilename + strlen(lastFilename) - 4, ".gif") != 0) {
@@ -71,9 +71,11 @@ bool renderImageToSegment(Segment &seg) {
       return false;
     }
     if (file) file.close();
-    Serial.print("opening gif: ");
-    Serial.println(openGif(lastFilename));
+    //Serial.print("opening gif: ");
+    //Serial.println(openGif(lastFilename));
+    openGif(lastFilename);
     if (!file) { gifDecodeFailed = true; return false; }
+    //decoder = new GifDecoder<64,64,12,true>();
     decoder.setScreenClearCallback(screenClearCallback);
     decoder.setUpdateScreenCallback(updateScreenCallback);
     decoder.setDrawPixelCallback(drawPixelCallback);
@@ -90,11 +92,14 @@ bool renderImageToSegment(Segment &seg) {
   if (gifDecodeFailed) return false;
   if (!file) { gifDecodeFailed = true; return false; }
 
-  if((millis() - lastFrameDisplayTime) > currentFrameDelay) {
+  // speed 0 = half speed, 128 = normal, 255 = as fast as possible
+  // TODO: 0 = 4x slow, 64 = 2x slow, 128 = normal, 192 = 2x fast, 255 = 4x fast
+  uint32_t wait = currentFrameDelay * 2 - seg.speed * currentFrameDelay / 128;
+
+  if((millis() - lastFrameDisplayTime) > wait) {
     decoder.getSize(&gifWidth, &gifHeight);
     fillPixX = (seg.width()+(gifWidth-1)) / gifWidth;
     fillPixY = (seg.height()+(gifHeight-1)) / gifHeight;
-    Serial.println("decoding frame");
     int result = decoder.decodeFrame(false);
     if (result < 0) { gifDecodeFailed = true; return false; }
     currentFrameDelay = decoder.getFrameDelay_ms();
