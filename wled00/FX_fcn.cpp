@@ -85,9 +85,11 @@ Segment::Segment(const Segment &orig) {
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
+  leds = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+  if (orig.leds) { leds = (uint32_t*)malloc(sizeof(uint32_t)*length()); if (leds) memcpy(leds, orig.leds, sizeof(uint32_t)*length()); }
 }
 
 // move constructor
@@ -98,6 +100,7 @@ Segment::Segment(Segment &&orig) noexcept {
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
+  orig.leds = nullptr;
 }
 
 // copy assignment
@@ -107,6 +110,7 @@ Segment& Segment::operator= (const Segment &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
+    if (leds) free(leds);
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -115,10 +119,12 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
+    leds = nullptr;
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+    if (orig.leds) { leds = (uint32_t*)malloc(sizeof(uint32_t)*length()); if (leds) memcpy(leds, orig.leds, sizeof(uint32_t)*length()); }
   }
   return *this;
 }
@@ -128,6 +134,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
   //DEBUG_PRINTLN(F("-- Moving segment --"));
   if (this != &orig) {
     if (name) delete[] name; // free old name
+    if (leds) free(leds);
     deallocateData(); // free old runtime data
     if (_t) delete _t;
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -135,6 +142,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     orig.data = nullptr;
     orig._dataLen = 0;
     orig._t   = nullptr;
+    orig.leds = nullptr;
   }
   return *this;
 }
@@ -174,9 +182,25 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) {
+    if (leds) { free(leds); leds = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
     reset = false; // setOption(SEG_OPTION_RESET, false);
+  }
+}
+
+void Segment::setUpLeds() {
+  // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
+  if (useGlobalLedBuffer) return; // TODO optional seg buffer for FX without lossy restore due to opacity
+
+  // no global buffer
+  if (leds == nullptr && length() > 0) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
+    //#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+    //if (psramFound())
+    //  leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());   // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
+    //else
+    //#endif
+    leds = (uint32_t *)calloc(length(), sizeof(uint32_t));
   }
 }
 
@@ -592,6 +616,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
+  if (leds) leds[i] = col;
+
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
   if (_bri_t < 255) {
@@ -690,6 +716,8 @@ uint32_t Segment::getPixelColor(int i)
     return 0;
   }
 #endif
+
+  if (leds) return leds[i];
 
   if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();

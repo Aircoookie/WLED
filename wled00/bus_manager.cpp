@@ -147,18 +147,11 @@ void BusDigital::show() {
       else pix += _skip;
       PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
     }
-    PolyBus::show(_busPtr, _iType);
   } else {
     PolyBus::applyPostAdjustments(_busPtr, _iType);
-    PolyBus::show(_busPtr, _iType);
-    // now restore (as close as possible) previous colors
-    // warning: this may not be the best idea as the buffer may still be in use
-    for (size_t i=0; i<_len; i++) {
-      uint8_t co = _colorOrderMap.getPixelColorOrder(i+_start, _colorOrder);
-      setPixelColor(i, restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, co), _bri));
-    }
   }
-  PolyBus::setBrightness(_busPtr, _iType, 255); // restore full brightness
+  PolyBus::show(_busPtr, _iType);
+  PolyBus::setBrightness(_busPtr, _iType, 255); // restore full brightness at bus level (setting unscaled pixel color)
 }
 
 bool BusDigital::canShow() {
@@ -243,7 +236,7 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
       }
       return c;
     }
-    return PolyBus::getPixelColor(_busPtr, _iType, pix, co);
+    return restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, pix, co), _bri);
   }
 }
 

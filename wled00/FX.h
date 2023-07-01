@@ -379,6 +379,7 @@ typedef struct Segment {
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
     byte* data;     // effect data pointer
+    uint32_t* leds; // local leds[] array (may be a pointer to global)
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
 
   private:
@@ -461,6 +462,7 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
+      leds(nullptr),
       _capabilities(0),
       _dataLen(0),
       _t(nullptr)
@@ -485,6 +487,7 @@ typedef struct Segment {
       //#endif
       if (name) delete[] name;
       if (_t) delete _t;
+      if (leds) free(leds);
       deallocateData();
     }
 
@@ -492,7 +495,7 @@ typedef struct Segment {
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
 #ifdef WLED_DEBUG
-    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0); }
+    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (leds?sizeof(CRGB)*length():0); }
 #endif
 
     inline bool     getOption(uint8_t n) const { return ((options >> n) & 0x01); }
@@ -533,7 +536,7 @@ typedef struct Segment {
       * Safe to call from interrupts and network requests.
       */
     inline void markForReset(void) { reset = true; }  // setOption(SEG_OPTION_RESET, true)
-    inline void setUpLeds(void) {} // legacy filler (should be removed)
+    void setUpLeds(void); // local double buffer/lossless getPixelColor()
 
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
