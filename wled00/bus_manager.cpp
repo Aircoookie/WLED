@@ -127,15 +127,15 @@ bool BusDigital::canShow() {
   return PolyBus::canShow(_busPtr, _iType);
 }
 
-void BusDigital::setBrightness(uint8_t b) {
+void BusDigital::setBrightness(uint8_t b, bool immediate) {
   //Fix for turning off onboard LED breaking bus
   #ifdef LED_BUILTIN
   if (_bri == 0 && b > 0) {
     if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins);
   }
   #endif
-  Bus::setBrightness(b);
-  PolyBus::setBrightness(_busPtr, _iType, b);
+  Bus::setBrightness(b, immediate);
+  PolyBus::setBrightness(_busPtr, _iType, b, immediate);
 }
 
 //If LEDs are skipped, it is possible to use the first as a status LED.
@@ -516,9 +516,9 @@ void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c, int16_t cct) 
   }
 }
 
-void BusManager::setBrightness(uint8_t b) {
+void BusManager::setBrightness(uint8_t b, bool immediate) {
   for (uint8_t i = 0; i < numBusses; i++) {
-    busses[i]->setBrightness(b);
+    busses[i]->setBrightness(b, immediate);
   }
 }
 
