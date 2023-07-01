@@ -3,7 +3,7 @@
 
 File file;
 char lastFilename[34] = "/";
-GifDecoder<64,64,12,true> decoder;
+GifDecoder<320,320,12,true>* decoder;
 bool gifDecodeFailed = false;
 long lastFrameDisplayTime = 0, currentFrameDelay = 0;
 
@@ -75,35 +75,45 @@ bool renderImageToSegment(Segment &seg) {
     //Serial.println(openGif(lastFilename));
     openGif(lastFilename);
     if (!file) { gifDecodeFailed = true; return false; }
-    //decoder = new GifDecoder<64,64,12,true>();
-    decoder.setScreenClearCallback(screenClearCallback);
-    decoder.setUpdateScreenCallback(updateScreenCallback);
-    decoder.setDrawPixelCallback(drawPixelCallback);
-    decoder.setFileSeekCallback(fileSeekCallback);
-    decoder.setFilePositionCallback(filePositionCallback);
-    decoder.setFileReadCallback(fileReadCallback);
-    decoder.setFileReadBlockCallback(fileReadBlockCallback);
-    decoder.setFileSizeCallback(fileSizeCallback);
+    if (!decoder) decoder = new GifDecoder<320,320,12,true>();
+    decoder->setScreenClearCallback(screenClearCallback);
+    decoder->setUpdateScreenCallback(updateScreenCallback);
+    decoder->setDrawPixelCallback(drawPixelCallback);
+    decoder->setFileSeekCallback(fileSeekCallback);
+    decoder->setFilePositionCallback(filePositionCallback);
+    decoder->setFileReadCallback(fileReadCallback);
+    decoder->setFileReadBlockCallback(fileReadBlockCallback);
+    decoder->setFileSizeCallback(fileSizeCallback);
     Serial.println("Starting decoding");
-    if(decoder.startDecoding() < 0) { gifDecodeFailed = true; return false; }
+    if(decoder->startDecoding() < 0) { gifDecodeFailed = true; return false; }
     Serial.println("Decoding started");
   }
 
   if (gifDecodeFailed) return false;
-  if (!file) { gifDecodeFailed = true; return false; }
+  if (!file || !decoder) { gifDecodeFailed = true; return false; }
 
-  // speed 0 = half speed, 128 = normal, 255 = as fast as possible
+  // speed 0 = half speed, 128 = normal, 255 = full FX FPS
   // TODO: 0 = 4x slow, 64 = 2x slow, 128 = normal, 192 = 2x fast, 255 = 4x fast
   uint32_t wait = currentFrameDelay * 2 - seg.speed * currentFrameDelay / 128;
 
-  if((millis() - lastFrameDisplayTime) > wait) {
-    decoder.getSize(&gifWidth, &gifHeight);
+  if((millis() - lastFrameDisplayTime) >= wait) {
+    decoder->getSize(&gifWidth, &gifHeight);
     fillPixX = (seg.width()+(gifWidth-1)) / gifWidth;
     fillPixY = (seg.height()+(gifHeight-1)) / gifHeight;
-    int result = decoder.decodeFrame(false);
+    int result = decoder->decodeFrame(false);
     if (result < 0) { gifDecodeFailed = true; return false; }
-    currentFrameDelay = decoder.getFrameDelay_ms();
+    long lastFrameDelay = currentFrameDelay;
+    currentFrameDelay = decoder->getFrameDelay_ms();
+    long tooSlowBy = (millis() - lastFrameDisplayTime) - wait; // if last frame was longer than intended, compensate
+    currentFrameDelay -= tooSlowBy;
+    //currentFrameDelay -= LASTFRAMEDELAY;
     lastFrameDisplayTime = millis();
   }
   return true;
+}
+
+void endPlayback() {
+  if (file) file.close();
+  delete decoder;
+  gifDecodeFailed = false;
 }
