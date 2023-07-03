@@ -487,7 +487,7 @@ typedef struct Segment {
       //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
       //Serial.println();
       //#endif
-      if (!Segment::_globalLeds && leds) free(leds);
+      if (!Segment::_globalLeds && leds) { free(leds); leds = nullptr;} // reset to nullptr, to avoid race conditions
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();
@@ -710,7 +710,7 @@ class WS2812FX {  // 96 bytes
       panel.clear();
 #endif
       customPalettes.clear();
-      if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
+      if (useLedsArray && Segment::_globalLeds) {free(Segment::_globalLeds); Segment::_globalLeds = nullptr;} // reset to nullptr, to avoid race conditions
     }
 
     static WS2812FX* getInstance(void) { return instance; }

@@ -97,11 +97,11 @@ Segment::Segment(const Segment &orig) {
 Segment::Segment(Segment &&orig) noexcept {
   //DEBUG_PRINTLN(F("-- Move segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
+  orig.leds = nullptr;
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
-  orig.leds = nullptr;
 }
 
 // copy assignment
@@ -111,7 +111,7 @@ Segment& Segment::operator= (const Segment &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (leds && !Segment::_globalLeds) {free(leds); leds=nullptr;} 
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -137,7 +137,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
     if (_t) delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (leds && !Segment::_globalLeds) {free(leds); leds=nullptr;}
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
@@ -1078,7 +1078,7 @@ void WS2812FX::finalizeInit(void)
     //else
     //#endif
       Segment::_globalLeds = (CRGB*) malloc(arrSize);
-    memset(Segment::_globalLeds, 0, arrSize);
+    if (Segment::_globalLeds && (arrSize > 0)) memset(Segment::_globalLeds, 0, arrSize);
   }
 
   //segments are created in makeAutoSegments();
