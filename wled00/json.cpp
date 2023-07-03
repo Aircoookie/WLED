@@ -34,7 +34,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
-    uint16_t len = elem["len"];
+    int len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
   }
   // 2D segments
@@ -473,7 +473,7 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
       root[F("stopY")]  = seg.stopY;
     }
   }
-  if (!forPreset) root["len"] = seg.stop - seg.start;
+  if (!forPreset) root["len"] = (seg.stop >= seg.start) ? (seg.stop - seg.start) : 0;
   root["grp"]    = seg.grouping;
   root[F("spc")] = seg.spacing;
   root[F("of")]  = seg.offset;
