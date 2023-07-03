@@ -116,7 +116,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
   _colorOrder = bc.colorOrder;
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
-  if (useGlobalLedBuffer && !allocData(_len * (hasWhite() + 3*hasRGB()))) return; //warning: hardcoded channel count
+  if (useGlobalLedBuffer && !allocData(_len * (Bus::hasWhite(_type) + 3*Bus::hasRGB(_type)))) return; //warning: hardcoded channel count
   uint16_t lenToCreate = _len;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
@@ -126,9 +126,12 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
 
 void BusDigital::show() {
   if (!_valid) return;
+  static unsigned long sumMicros = 0;
+  static size_t calls = 0;
+  unsigned long microsStart = micros();
   PolyBus::setBrightness(_busPtr, _iType, _bri);
   if (useGlobalLedBuffer) {
-    size_t channels = hasWhite() + 3*hasRGB();
+    size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     for (size_t i=0; i<_len; i++) {
       size_t offset = i*channels;
       uint8_t co = _colorOrderMap.getPixelColorOrder(i+_start, _colorOrder);
@@ -140,7 +143,7 @@ void BusDigital::show() {
           case 2: c = RGBW32(_data[offset-2], _data[offset-1], _data[offset]  , 0); break;
         }
       } else {
-        c = RGBW32(_data[offset],_data[offset+1],_data[offset+2],(hasWhite()?_data[offset+3]:0));
+        c = RGBW32(_data[offset],_data[offset+1],_data[offset+2],(Bus::hasWhite(_type)?_data[offset+3]:0));
       }
       uint16_t pix = i;
       if (reversed) pix = _len - pix -1;
@@ -152,6 +155,12 @@ void BusDigital::show() {
   }
   PolyBus::show(_busPtr, _iType);
   PolyBus::setBrightness(_busPtr, _iType, 255); // restore full brightness at bus level (setting unscaled pixel color)
+  sumMicros += micros() - microsStart;
+  if (++calls == 100) {
+    DEBUG_PRINTF("Bus calls: %d micros: %lu avg: %lu\n", calls, sumMicros, sumMicros/calls);
+    sumMicros = 0;
+    calls = 0;
+  }
 }
 
 bool BusDigital::canShow() {
@@ -172,25 +181,25 @@ void BusDigital::setBrightness(uint8_t b) {
 //If LEDs are skipped, it is possible to use the first as a status LED.
 //TODO only show if no new show due in the next 50ms
 void BusDigital::setStatusPixel(uint32_t c) {
-  if (_valid && _skip && canShow()) {
+  if (_valid && _skip) {
     PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
-    PolyBus::show(_busPtr, _iType);
+    if (canShow()) PolyBus::show(_busPtr, _iType);
   }
 }
 
 void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid) return;
-  if (hasWhite()) c = autoWhiteCalc(c);
+  if (Bus::hasWhite(_type)) c = autoWhiteCalc(c);
   if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
   if (useGlobalLedBuffer) {
-    size_t channels = hasWhite() + 3*hasRGB();
+    size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
-    if (hasRGB()) {
+    if (Bus::hasRGB(_type)) {
       _data[offset++] = R(c);
       _data[offset++] = G(c);
       _data[offset++] = B(c);
     }
-    if (hasWhite()) _data[offset] = W(c);
+    if (Bus::hasWhite(_type)) _data[offset] = W(c);
   } else {
     if (reversed) pix = _len - pix -1;
     else pix += _skip;
@@ -212,13 +221,13 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
 uint32_t BusDigital::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
   if (useGlobalLedBuffer) {
-    size_t channels = hasWhite() + 3*hasRGB();
+    size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     uint32_t c;
-    if (!hasRGB()) {
+    if (!Bus::hasRGB(_type)) {
       c = RGBW32(_data[offset], _data[offset], _data[offset], _data[offset]);
     } else {
-      c = RGBW32(_data[offset], _data[offset+1], _data[offset+2], hasWhite() ? _data[offset+3] : 0);
+      c = RGBW32(_data[offset], _data[offset+1], _data[offset+2], Bus::hasWhite(_type) ? _data[offset+3] : 0);
     }
     return c;
   } else {
@@ -469,7 +478,7 @@ BusNetwork::BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
 void BusNetwork::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid || pix >= _len) return;
-  if (hasWhite()) c = autoWhiteCalc(c);
+  if (_rgbw) c = autoWhiteCalc(c);
   if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
   uint16_t offset = pix * _UDPchannels;
   _data[offset]   = R(c);

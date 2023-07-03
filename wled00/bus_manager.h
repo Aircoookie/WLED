@@ -130,20 +130,22 @@ class Bus {
     inline  bool     isOffRefreshRequired() { return _needsRefresh; }
             bool     containsPixel(uint16_t pix) { return pix >= _start && pix < _start+_len; }
 
-    virtual bool hasRGB() {
-      if ((_type >= TYPE_WS2812_1CH && _type <= TYPE_WS2812_WWA) || _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ONOFF) return false;
+    virtual bool hasRGB(void) { return Bus::hasRGB(_type); }
+    static  bool hasRGB(uint8_t type) {
+      if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_ANALOG_1CH || type == TYPE_ANALOG_2CH || type == TYPE_ONOFF) return false;
       return true;
     }
-    virtual bool hasWhite() { return Bus::hasWhite(_type); }
+    virtual bool hasWhite(void) { return Bus::hasWhite(_type); }
     static  bool hasWhite(uint8_t type) {
       if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true; // digital types with white channel
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true; // analog types with white channel
       if (type == TYPE_NET_DDP_RGBW) return true; // network types with white channel
       return false;
     }
-    virtual bool hasCCT() {
-      if (_type == TYPE_WS2812_2CH_X3 || _type == TYPE_WS2812_WWA ||
-          _type == TYPE_ANALOG_2CH    || _type == TYPE_ANALOG_5CH) return true;
+    virtual bool hasCCT(void) { return Bus::hasCCT(_type); }
+    static  bool hasCCT(uint8_t type) {
+      if (type == TYPE_WS2812_2CH_X3 || type == TYPE_WS2812_WWA ||
+          type == TYPE_ANALOG_2CH    || type == TYPE_ANALOG_5CH) return true;
       return false;
     }
     static void setCCT(uint16_t cct) {
