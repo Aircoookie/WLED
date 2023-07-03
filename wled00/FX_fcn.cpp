@@ -1704,12 +1704,12 @@ void WS2812FX::estimateCurrentAndLimitBri() {
     uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
     uint8_t newBri = scale8(_brightness, scaleB);
     // to keep brightness uniform, sets virtual busses too - softhack007: apply reductions immediately
-    //busses.setBrightness(newBri, (scaleB < 255)); // best for performance, but leaves some flickering
-    busses.setBrightness(newBri, true); // sub-optimal, but prevents flickering
+    if (scaleB < 255) busses.setBrightness(scaleB, true); // NPB-LG has already applied brightness, so its suffifient to post-apply scaling
+    busses.setBrightness(newBri, false);                  // set new brightness for next frame
     currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
   } else {
     currentMilliamps = powerSum / puPerMilliamp;
-    busses.setBrightness(_brightness, true); // immediate = true is needed to prevent flickering
+    busses.setBrightness(_brightness, false);            // set new brightness for next frame
   }
   currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
   currentMilliamps += pLen; //add standby power back to estimate
