@@ -236,13 +236,13 @@ class BusDigital : public Bus {
     void * _busPtr = nullptr;
     const ColorOrderMap &_colorOrderMap;
 
-    inline uint32_t restoreColorLossy(uint32_t c, uint8_t _restaurationBri) {
-      if (_bri == 255) return c;
+    inline uint32_t restoreColorLossy(uint32_t c, uint_fast8_t _restaurationBri) {
+      if (_restaurationBri == 255) return c;
       uint8_t* chan = (uint8_t*) &c;
 
-      for (uint8_t i=0; i<4; i++)
+      for (uint_fast8_t i=0; i<4; i++)
       {
-        uint16_t val = chan[i];
+        uint_fast16_t val = chan[i];
         chan[i] = ((val << 8) + _restaurationBri) / (_restaurationBri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
       }
       return c;
