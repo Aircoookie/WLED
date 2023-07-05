@@ -116,7 +116,8 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
   _colorOrder = bc.colorOrder;
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
-  if (useGlobalLedBuffer && !allocData(_len * (Bus::hasWhite(_type) + 3*Bus::hasRGB(_type)))) return; //warning: hardcoded channel count
+  if (bc.doubleBuffer && !allocData(_len * (Bus::hasWhite(_type) + 3*Bus::hasRGB(_type)))) return; //warning: hardcoded channel count
+  buffering = bc.doubleBuffer;
   uint16_t lenToCreate = _len;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
@@ -126,11 +127,13 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
 
 void BusDigital::show() {
   if (!_valid) return;
+  #ifdef WLED_DEBUG
   static unsigned long sumMicros = 0;
   static size_t calls = 0;
   unsigned long microsStart = micros();
+  #endif
   PolyBus::setBrightness(_busPtr, _iType, _bri);
-  if (useGlobalLedBuffer) {
+  if (buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     for (size_t i=0; i<_len; i++) {
       size_t offset = i*channels;
@@ -155,12 +158,14 @@ void BusDigital::show() {
   }
   PolyBus::show(_busPtr, _iType);
   PolyBus::setBrightness(_busPtr, _iType, 255); // restore full brightness at bus level (setting unscaled pixel color)
+  #ifdef WLED_DEBUG
   sumMicros += micros() - microsStart;
   if (++calls == 100) {
     DEBUG_PRINTF("Bus calls: %d micros: %lu avg: %lu\n", calls, sumMicros, sumMicros/calls);
     sumMicros = 0;
     calls = 0;
   }
+  #endif
 }
 
 bool BusDigital::canShow() {
@@ -191,7 +196,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid) return;
   if (Bus::hasWhite(_type)) c = autoWhiteCalc(c);
   if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-  if (useGlobalLedBuffer) {
+  if (buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     if (Bus::hasRGB(_type)) {
@@ -220,7 +225,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
 
 uint32_t BusDigital::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
-  if (useGlobalLedBuffer) {
+  if (buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     uint32_t c;
@@ -272,7 +277,7 @@ void BusDigital::cleanup() {
   _iType = I_NONE;
   _valid = false;
   _busPtr = nullptr;
-  if (useGlobalLedBuffer) freeData();
+  if (_data != nullptr) freeData();
   pinManager.deallocatePin(_pins[1], PinOwner::BusDigital);
   pinManager.deallocatePin(_pins[0], PinOwner::BusDigital);
 }

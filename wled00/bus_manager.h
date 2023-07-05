@@ -34,10 +34,11 @@ struct BusConfig {
   uint8_t autoWhite;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   uint16_t frequency;
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U) {
+  bool doubleBuffer;
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false) {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw; frequency = clock_kHz;
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw; frequency = clock_kHz; doubleBuffer = dblBfr;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
@@ -181,7 +182,7 @@ class Bus {
 
     uint32_t autoWhiteCalc(uint32_t c);
     uint8_t *allocData(size_t size = 1);
-    void     freeData() { if (_data) free(_data); _data = nullptr; }
+    void     freeData() { if (_data != nullptr) free(_data); _data = nullptr; }
 };
 
 
@@ -235,6 +236,7 @@ class BusDigital : public Bus {
     uint16_t _frequencykHz = 0U;
     void * _busPtr = nullptr;
     const ColorOrderMap &_colorOrderMap;
+    bool buffering = false; // temporary until we figure out why comparison "_data != nullptr" causes severe FPS drop
 
     inline uint32_t restoreColorLossy(uint32_t c, uint_fast8_t _restaurationBri) {
       if (_bri == 255) return c;

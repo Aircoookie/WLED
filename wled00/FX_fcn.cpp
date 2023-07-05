@@ -1219,9 +1219,11 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
 }
 
 void WS2812FX::show(void) {
+  #ifdef WLED_DEBUG
   static unsigned long sumMicros = 0, sumCurrent = 0;
   static size_t calls = 0;
   unsigned long microsStart = micros();
+  #endif
 
   // avoid race condition, caputre _callback value
   show_callback callback = _callback;
@@ -1229,7 +1231,9 @@ void WS2812FX::show(void) {
 
   uint8_t busBrightness = estimateCurrentAndLimitBri();
   busses.setBrightness(busBrightness);
+  #ifdef WLED_DEBUG
   sumCurrent += micros() - microsStart;
+  #endif
 
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
@@ -1242,12 +1246,14 @@ void WS2812FX::show(void) {
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
   _lastShow = now;
 
+  #ifdef WLED_DEBUG
   sumMicros += micros() - microsStart;
   if (++calls == 100) {
     DEBUG_PRINTF("show calls: %d micros: %lu avg: %lu (current: %lu avg: %lu)\n", calls, sumMicros, sumMicros/calls, sumCurrent, sumCurrent/calls);
     sumMicros = sumCurrent = 0;
     calls = 0;
   }
+  #endif
 }
 
 /**
