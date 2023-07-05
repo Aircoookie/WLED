@@ -35,12 +35,19 @@ void WLED::reset()
 void WLED::loop()
 {
   #ifdef WLED_DEBUG
+  static unsigned      serviceCount = 0;
   static unsigned long maxUsermodMillis = 0;
-  static uint16_t avgUsermodMillis = 0;
+  static size_t        avgUsermodMillis = 0;
   static unsigned long maxStripMillis = 0;
-  static uint16_t avgStripMillis = 0;
+  static size_t        avgStripMillis = 0;
+  static size_t        avgHandlingMillis = 0;
+  static size_t        avgHandling2Millis = 0;
+  static size_t        avgHandling3Millis = 0;
   #endif
 
+  #ifdef WLED_DEBUG
+  unsigned long handlingMillis = millis();
+  #endif
   handleTime();
   #ifndef WLED_DISABLE_INFRARED
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
@@ -53,6 +60,10 @@ void WLED::loop()
 #ifdef WLED_ENABLE_DMX
   handleDMX();
 #endif
+  #ifdef WLED_DEBUG
+  handlingMillis = millis() - handlingMillis;
+  avgHandlingMillis += handlingMillis;
+  #endif
   userLoop();
 
   #ifdef WLED_DEBUG
@@ -65,6 +76,9 @@ void WLED::loop()
   if (usermodMillis > maxUsermodMillis) maxUsermodMillis = usermodMillis;
   #endif
 
+  #ifdef WLED_DEBUG
+  unsigned long handling2Millis = millis();
+  #endif
   yield();
   handleIO();
   #ifndef WLED_DISABLE_INFRARED
@@ -72,6 +86,10 @@ void WLED::loop()
   #endif
   #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
+  #endif
+  #ifdef WLED_DEBUG
+  handling2Millis = millis() - handling2Millis;
+  avgHandling2Millis += handling2Millis;
   #endif
 
   if (doCloseFile) {
@@ -146,7 +164,7 @@ void WLED::loop()
 
   //LED settings have been saved, re-init busses
   //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate!
-  if (doInitBusses) {
+  if (busConfigs[0] != nullptr) {
     doInitBusses = false;
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
@@ -177,9 +195,16 @@ void WLED::loop()
   yield();
   if (doSerializeConfig) serializeConfig();
 
+  #ifdef WLED_DEBUG
+  unsigned long handling3Millis = millis();
+  #endif
   yield();
   handleWs();
   handleStatusLED();
+  #ifdef WLED_DEBUG
+  handling3Millis = millis() - handling3Millis;
+  avgHandling3Millis += handling3Millis;
+  #endif
 
 // DEBUG serial logging (every 30s)
 #ifdef WLED_DEBUG
@@ -207,6 +232,9 @@ void WLED::loop()
       DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 30);
       DEBUG_PRINT(F("UM time[ms]: "));     DEBUG_PRINT(avgUsermodMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxUsermodMillis);
       DEBUG_PRINT(F("Strip time[ms]: "));  DEBUG_PRINT(avgStripMillis/loops); DEBUG_PRINT("/"); DEBUG_PRINTLN(maxStripMillis);
+      DEBUG_PRINT(F("Handling 1 time[ms]: ")); DEBUG_PRINTLN(avgHandlingMillis/loops);
+      DEBUG_PRINT(F("Handling 2 time[ms]: ")); DEBUG_PRINTLN(avgHandling2Millis/loops);
+      DEBUG_PRINT(F("Handling 3 time[ms]: ")); DEBUG_PRINTLN(avgHandling3Millis/loops);
     }
     strip.printSize();
     loops = 0;
@@ -214,6 +242,9 @@ void WLED::loop()
     maxStripMillis = 0;
     avgUsermodMillis = 0;
     avgStripMillis = 0;
+    avgHandlingMillis = 0;
+    avgHandling2Millis = 0;
+    avgHandling3Millis = 0;
     debugTime = millis();
   }
   loops++;
