@@ -237,7 +237,7 @@ class BusDigital : public Bus {
     const ColorOrderMap &_colorOrderMap;
 
     inline uint32_t restoreColorLossy(uint32_t c, uint_fast8_t _restaurationBri) {
-      if (_restaurationBri == 255) return c;
+      if (_bri == 255) return c;
       uint8_t* chan = (uint8_t*) &c;
 
       for (uint_fast8_t i=0; i<4; i++)
