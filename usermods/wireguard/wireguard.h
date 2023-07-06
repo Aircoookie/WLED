@@ -6,7 +6,7 @@
 
 class WireguardUsermod : public Usermod {
    public:
-    void setup() { configTzTime(posix_tz.c_str(), ntpServerName); }
+    void setup() { configTzTime(posix_tz, ntpServerName); }
 
     void connected() {
         if (wg.is_initialized()) {
@@ -15,19 +15,21 @@ class WireguardUsermod : public Usermod {
     }
 
     void loop() {
-        struct tm timeinfo;
-        if (!is_enabled || !getLocalTime(&timeinfo, 0)) {
-            return;
-        }
+        if (millis() - lastTime > 5000) {
+            if (is_enabled && WLED_CONNECTED) {
+                if (!wg.is_initialized()) {
+                    struct tm timeinfo;
+                    if (getLocalTime(&timeinfo, 0)) {
+                        if (strlen(preshared_key) < 1) {
+                            wg.begin(local_ip, private_key, endpoint_address, public_key, endpoint_port, NULL);
+                        } else {
+                            wg.begin(local_ip, private_key, endpoint_address, public_key, endpoint_port, preshared_key);
+                        }
+                    }
+                }
+            }
 
-        if (wg.is_initialized() || !WLED_CONNECTED) {
-            return;
-        }
-
-        if (preshared_key.length() < 5) {
-            wg.begin(local_ip, private_key.c_str(), endpoint_address.c_str(), public_key.c_str(), endpoint_port, NULL);
-        } else {
-            wg.begin(local_ip, private_key.c_str(), endpoint_address.c_str(), public_key.c_str(), endpoint_port, preshared_key.c_str());
+            lastTime = millis();
         }
     }
 
@@ -35,9 +37,9 @@ class WireguardUsermod : public Usermod {
         JsonObject user = root["u"];
         if (user.isNull()) user = root.createNestedObject("u");
 
-        JsonArray infoArr = user.createNestedArray(F("WireGuard VPN"));
+        JsonArray infoArr = user.createNestedArray(F("WireGuard"));
         String uiDomString;
-        
+
         struct tm timeinfo;
         if (!getLocalTime(&timeinfo, 0)) {
             uiDomString = "Time out of sync!";
@@ -48,55 +50,78 @@ class WireguardUsermod : public Usermod {
                 uiDomString = "netif down :(";
             }
         }
-        if(is_enabled) infoArr.add(uiDomString);
+        if (is_enabled) infoArr.add(uiDomString);
+    }
+
+    void appendConfigData() {
+        oappend(SET_F("addInfo('WireGuard:host',1,'Server Hostname');"));           // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo('WireGuard:port',1,'Server Port');"));               // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo('WireGuard:ip',1,'Device IP');"));                   // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo('WireGuard:psk',1,'Pre Shared Key (optional)');"));  // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo('WireGuard:pem',1,'Private Key');"));                // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo('WireGuard:pub',1,'Public Key');"));                 // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo('WireGuard:tz',1,'POSIX timezone string');"));       // 0 is field type, 1 is actual field
     }
 
     void addToConfig(JsonObject& root) {
-        JsonObject top = root.createNestedObject(F("WireGuard VPN"));
-        top[F("Endpoint Address")] = endpoint_address;
-        top[F("Endpoint Port")] = endpoint_port;
-        top[F("Local IP")] = local_ip_buf;
-        top[F("PSK")] = preshared_key;
-        top[F("Private Key")] = private_key;
-        top[F("Public Key")] = public_key;
-        top[F("POSIX Timezone")] = posix_tz;
+        JsonObject top = root.createNestedObject(F("WireGuard"));
+        top[F("host")] = endpoint_address;
+        top[F("port")] = endpoint_port;
+        top[F("ip")] = local_ip.toString();
+        top[F("psk")] = preshared_key;
+        top[F("pem")] = private_key;
+        top[F("pub")] = public_key;
+        top[F("tz")] = posix_tz;
     }
 
     bool readFromConfig(JsonObject& root) {
-        JsonObject top = root[F("WireGuard VPN")];
+        JsonObject top = root[F("WireGuard")];
 
-        bool configComplete = !top.isNull();
+        if (top["host"].isNull() || top["port"].isNull() || top["ip"].isNull() || top["pem"].isNull() || top["pub"].isNull() || top["tz"].isNull()) {
+            is_enabled = false;
+            return false;
+        } else {
+            const char* host = top["host"];
+            strncpy(endpoint_address, host, 100);
 
-        configComplete &= getJsonValue(top[F("Endpoint Address")], endpoint_address);
-        configComplete &= getJsonValue(top[F("Endpoint Port")], endpoint_port);
-        configComplete &= getJsonValue(top[F("Local IP")], local_ip_buf);
-        configComplete &= getJsonValue(top[F("Private Key")], private_key);
-        configComplete &= getJsonValue(top[F("Public Key")], public_key);
-        configComplete &= getJsonValue(top[F("POSIX Timezone")], posix_tz);
-        getJsonValue(top[F("PSK")], preshared_key);
+            const char* ip_s = top["ip"];
+            uint8_t ip[4];
+            sscanf(ip_s, "%u.%u.%u.%u", &ip[0], &ip[1], &ip[2], &ip[3]);
+            local_ip = IPAddress(ip[0], ip[1], ip[2], ip[3]);
 
-        local_ip.fromString(local_ip_buf);
+            const char* pem = top["pem"];
+            strncpy(private_key, pem, 45);
 
-        is_enabled = configComplete;
+            const char* pub = top["pub"];
+            strncpy(public_key, pub, 45);
 
-        if (wg.is_initialized()) {
-            wg.end();
+            const char* tz = top["tz"];
+            strncpy(posix_tz, tz, 150);
+
+            endpoint_port = top["port"];
+
+            if (!top["psk"].isNull()) {
+                const char* psk = top["psk"];
+                strncpy(preshared_key, psk, 45);
+            }
+
+            is_enabled = true;
         }
 
-        return configComplete;
+        return is_enabled;
     }
 
     uint16_t getId() { return USERMOD_ID_WIREGUARD; }
 
    private:
     WireGuard wg;
-    String preshared_key;  // [Interface] PrivateKey
-    String private_key;    // [Interface] PrivateKey
-    String local_ip_buf;
+    char preshared_key[45];
+    char private_key[45];
     IPAddress local_ip;
-    String public_key;        // [Peer] PublicKey
-    String endpoint_address;  // [Peer] Endpoint
-    String posix_tz;
-    int endpoint_port = 0;  // [Peer] Endpoint
+    char public_key[45];
+    char endpoint_address[100];
+    char posix_tz[150];
+    int endpoint_port = 0;
     bool is_enabled = false;
+    unsigned long lastTime = 0;
 };
