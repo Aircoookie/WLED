@@ -628,7 +628,8 @@ typedef struct Segment {
     inline uint16_t XY(uint_fast16_t x, uint_fast16_t y) { // support function to get relative index within segment (for leds[]) // WLEDMM inline for speed
       uint_fast16_t width  = virtualWidth();   // segment width in logical pixels
       uint_fast16_t height = virtualHeight();  // segment height in logical pixels
-      if ((width == 0) || (height == 0)) return 0; // softhack007 avoid div/0
+      if (width == 0) return 0;           // softhack007 avoid div/0
+      if (height == 0) return (x%width);  // softhack007 avoid div/0
       return (x%width) + (y%height) * width;
     }
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
