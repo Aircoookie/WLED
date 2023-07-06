@@ -1208,6 +1208,7 @@ void Segment::fade_out(uint8_t rate) {
 
 // fades all pixels to black using nscale8()
 void Segment::fadeToBlackBy(uint8_t fadeBy) {
+  if (fadeBy == 0) return;   // optimization - no scaling to apply
   const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();      // WLEDMM use fast int types
   const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
   const uint_fast8_t scaledown = 255-fadeBy;  // WLEDMM faster to pre-compute this
@@ -1229,10 +1230,11 @@ void Segment::fadeToBlackBy(uint8_t fadeBy) {
  */
 void Segment::blur(uint8_t blur_amount)
 {
+  if (blur_amount == 0) return; // optimization: 0 means "don't blur"
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     // compatibility with 2D
-    const uint_fast16_t cols = virtualWidth();                 // WLEDMM use fast int types
+    const uint_fast16_t cols = virtualWidth();
     const uint_fast16_t rows = virtualHeight();
     for (uint_fast16_t i = 0; i < rows; i++) blurRow(i, blur_amount); // blur all rows
     for (uint_fast16_t k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
@@ -1247,7 +1249,7 @@ void Segment::blur(uint8_t blur_amount)
   {
     CRGB cur = CRGB(getPixelColor(i));
     CRGB part = cur;
-    CRGB before = cur; // WLEDMM
+    uint32_t before = uint32_t(cur); // remember color before blur
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
@@ -1258,7 +1260,7 @@ void Segment::blur(uint8_t blur_amount)
       uint8_t b = B(c);
       setPixelColor((uint16_t)(i-1), qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
     }
-    if (before != cur) // WLEDMM optimization: don't write same color again
+    if (before != uint32_t(cur))     // optimization: only set pixel if color has changed
       setPixelColor((uint16_t)i,cur.red, cur.green, cur.blue);
     carryover = part;
   }
