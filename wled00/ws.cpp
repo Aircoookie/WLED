@@ -166,14 +166,15 @@ bool sendLiveLedsWs(uint32_t wsClient)
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   size_t pos = (strip.isMatrix ? 4 : 2);  // start of data
   size_t bufSize = pos + (used/n)*3;
-  size_t skipLines = 0;
 
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
   buffer[0] = 'L';
   buffer[1] = 1; //version
+
 #ifndef WLED_DISABLE_2D
+  size_t skipLines = 0;
   if (strip.isMatrix) {
     buffer[1] = 2; //version
     buffer[2] = Segment::maxWidth;
@@ -198,13 +199,13 @@ bool sendLiveLedsWs(uint32_t wsClient)
     }
 #endif
     uint32_t c = strip.getPixelColor(i);
-    uint8_t r = useGlobalLedBuffer ? scale8(R(c), strip.getBrightness()) : R(c);
-    uint8_t g = useGlobalLedBuffer ? scale8(G(c), strip.getBrightness()) : G(c);
-    uint8_t b = useGlobalLedBuffer ? scale8(B(c), strip.getBrightness()) : B(c);
-    uint8_t w = useGlobalLedBuffer ? scale8(W(c), strip.getBrightness()) : W(c);
-    buffer[pos++] = qadd8(w, r); //R, add white channel to RGB channels as a simple RGBW -> RGB map
-    buffer[pos++] = qadd8(w, g); //G
-    buffer[pos++] = qadd8(w, b); //B
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
+    uint8_t w = W(c);
+    buffer[pos++] = scale8(qadd8(w, r), strip.getBrightness()); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    buffer[pos++] = scale8(qadd8(w, g), strip.getBrightness()); //G
+    buffer[pos++] = scale8(qadd8(w, b), strip.getBrightness()); //B
   }
 
   wsc->binary(wsBuf);
