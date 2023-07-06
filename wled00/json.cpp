@@ -1089,9 +1089,13 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   for (size_t i= 0; i < used; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
-    uint8_t r = qadd8(W(c), R(c)); //add white channel to RGB channels as a simple RGBW -> RGB map
-    uint8_t g = qadd8(W(c), G(c));
-    uint8_t b = qadd8(W(c), B(c));
+    uint8_t r = useGlobalLedBuffer ? scale8(R(c), strip.getBrightness()) : R(c);
+    uint8_t g = useGlobalLedBuffer ? scale8(G(c), strip.getBrightness()) : G(c);
+    uint8_t b = useGlobalLedBuffer ? scale8(B(c), strip.getBrightness()) : B(c);
+    uint8_t w = useGlobalLedBuffer ? scale8(W(c), strip.getBrightness()) : W(c);
+    r = qadd8(w, r); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    g = qadd8(w, g); //G
+    b = qadd8(w, b); //B
     olen += sprintf(obuf + olen, "\"%06X\",", RGBW32(r,g,b,0));
   }
   olen -= 1;

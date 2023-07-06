@@ -97,32 +97,33 @@ uint8_t *Bus::allocData(size_t size) {
 }
 
 
-BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bus(bc.type, bc.start, bc.autoWhite), _colorOrderMap(com) {
+BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
+: Bus(bc.type, bc.start, bc.autoWhite, bc.count, bc.reversed, (bc.refreshReq || bc.type == TYPE_TM1814))
+, _skip(bc.skipAmount) //sacrificial pixels
+, _colorOrder(bc.colorOrder)
+, _colorOrderMap(com)
+{
   if (!IS_DIGITAL(bc.type) || !bc.count) return;
   if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
   _frequencykHz = 0U;
   _pins[0] = bc.pins[0];
   if (IS_2PIN(bc.type)) {
     if (!pinManager.allocatePin(bc.pins[1], true, PinOwner::BusDigital)) {
-    cleanup(); return;
+      cleanup();
+      return;
     }
     _pins[1] = bc.pins[1];
     _frequencykHz = bc.frequency ? bc.frequency : 2000U; // 2MHz clock if undefined
   }
-  reversed = bc.reversed;
-  _needsRefresh = bc.refreshReq || bc.type == TYPE_TM1814;
-  _skip = bc.skipAmount;    //sacrificial pixels
-  _len = bc.count;
-  _colorOrder = bc.colorOrder;
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
-  if (bc.doubleBuffer && !allocData(_len * (Bus::hasWhite(_type) + 3*Bus::hasRGB(_type)))) return; //warning: hardcoded channel count
+  if (bc.doubleBuffer && !allocData(bc.count * (Bus::hasWhite(_type) + 3*Bus::hasRGB(_type)))) return; //warning: hardcoded channel count
   buffering = bc.doubleBuffer;
-  uint16_t lenToCreate = _len;
-  if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
+  uint16_t lenToCreate = bc.count;
+  if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
-  DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_pins[1],_iType);
+  DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], _pins[1], _iType);
 }
 
 void BusDigital::show() {
@@ -149,8 +150,8 @@ void BusDigital::show() {
         c = RGBW32(_data[offset],_data[offset+1],_data[offset+2],(Bus::hasWhite(_type)?_data[offset+3]:0));
       }
       uint16_t pix = i;
-      if (reversed) pix = _len - pix -1;
-      else pix += _skip;
+      if (_reversed) pix  = _len - pix -1;
+      else           pix += _skip;
       PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
     }
   } else {
@@ -206,8 +207,8 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
     }
     if (Bus::hasWhite(_type)) _data[offset] = W(c);
   } else {
-    if (reversed) pix = _len - pix -1;
-    else pix += _skip;
+    if (_reversed) pix  = _len - pix -1;
+    else           pix += _skip;
     uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
     if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
       uint16_t pOld = pix;
@@ -236,8 +237,8 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
     }
     return c;
   } else {
-    if (reversed) pix = _len - pix -1;
-    else pix += _skip;
+    if (_reversed) pix  = _len - pix -1;
+    else           pix += _skip;
     uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
     if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
       uint16_t pOld = pix;
@@ -283,8 +284,9 @@ void BusDigital::cleanup() {
 }
 
 
-BusPwm::BusPwm(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
-  _valid = false;
+BusPwm::BusPwm(BusConfig &bc)
+: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
+{
   if (!IS_PWM(bc.type)) return;
   uint8_t numPins = NUM_PWM_PINS(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
@@ -312,7 +314,6 @@ BusPwm::BusPwm(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
     ledcAttachPin(_pins[i], _ledcStart + i);
     #endif
   }
-  reversed = bc.reversed;
   _data = _pwmdata; // avoid malloc() and use stack
   _valid = true;
 }
@@ -381,7 +382,7 @@ void BusPwm::show() {
   uint8_t numPins = NUM_PWM_PINS(_type);
   for (uint8_t i = 0; i < numPins; i++) {
     uint8_t scaled = (_data[i] * _bri) / 255;
-    if (reversed) scaled = 255 - scaled;
+    if (_reversed) scaled = 255 - scaled;
     #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
@@ -416,8 +417,10 @@ void BusPwm::deallocatePins() {
 }
 
 
-BusOnOff::BusOnOff(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
-  _valid = false;
+BusOnOff::BusOnOff(BusConfig &bc)
+: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
+, _onoffdata(0)
+{
   if (bc.type != TYPE_ONOFF) return;
 
   uint8_t currentPin = bc.pins[0];
@@ -426,7 +429,6 @@ BusOnOff::BusOnOff(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
   }
   _pin = currentPin; //store only after allocatePin() succeeds
   pinMode(_pin, OUTPUT);
-  reversed = bc.reversed;
   _data = &_onoffdata; // avoid malloc() and use stack
   _valid = true;
 }
@@ -448,7 +450,7 @@ uint32_t BusOnOff::getPixelColor(uint16_t pix) {
 
 void BusOnOff::show() {
   if (!_valid) return;
-  digitalWrite(_pin, reversed ? !(bool)_data[0] : (bool)_data[0]);
+  digitalWrite(_pin, _reversed ? !(bool)_data[0] : (bool)_data[0]);
 }
 
 uint8_t BusOnOff::getPins(uint8_t* pinArray) {
@@ -458,8 +460,10 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) {
 }
 
 
-BusNetwork::BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
-  _valid = false;
+BusNetwork::BusNetwork(BusConfig &bc)
+: Bus(bc.type, bc.start, bc.autoWhite, bc.count)
+, _broadcastLock(false)
+{
   switch (bc.type) {
     case TYPE_NET_ARTNET_RGB:
       _rgbw = false;
@@ -475,9 +479,7 @@ BusNetwork::BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
       break;
   }
   _UDPchannels = _rgbw ? 4 : 3;
-  _len = bc.count;
   _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
-  _broadcastLock = false;
   _valid = (allocData(_len * _UDPchannels) != nullptr);
 }
 

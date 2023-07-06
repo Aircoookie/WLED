@@ -35,6 +35,10 @@ void WLED::reset()
 void WLED::loop()
 {
   #ifdef WLED_DEBUG
+  static unsigned long lastRun = 0;
+  size_t loopDelay = (millis() - lastRun);
+  if (lastRun == 0) loopDelay=0; // startup - don't have valid data from last run.
+  if (loopDelay > 2) DEBUG_PRINTF("Loop delayed more than %dms.\n", loopDelay);
   static unsigned long maxUsermodMillis = 0;
   static size_t        avgUsermodMillis = 0;
   static unsigned long maxStripMillis = 0;
@@ -146,7 +150,7 @@ void WLED::loop()
 
   //LED settings have been saved, re-init busses
   //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate!
-  if (busConfigs[0] != nullptr) {
+  if (doInitBusses) {
     doInitBusses = false;
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
@@ -217,6 +221,7 @@ void WLED::loop()
     debugTime = millis();
   }
   loops++;
+  lastRun = millis();
 #endif        // WLED_DEBUG
   toki.resetTick();
 

@@ -1084,10 +1084,7 @@ void WS2812FX::service() {
     if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
       if (seg.grouping == 0) seg.grouping = 1; // sanity check
-//      if (!doShow) {
-//        busses.setBrightness(_brightness); // bus luminance must be set before FX using setPixelColor()
-        doShow = true;
-//      }
+      doShow = true;
       uint16_t delay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen

@@ -178,11 +178,11 @@ bool sendLiveLedsWs(uint32_t wsClient)
     buffer[1] = 2; //version
     buffer[2] = Segment::maxWidth;
     buffer[3] = Segment::maxHeight;
-    if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS*4) {
+    if (used > MAX_LIVE_LEDS_WS*4) {
       buffer[2] = Segment::maxWidth/4;
       buffer[3] = Segment::maxHeight/4;
       skipLines = 3;
-    } else if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS) {
+    } else if (used > MAX_LIVE_LEDS_WS) {
       buffer[2] = Segment::maxWidth/2;
       buffer[3] = Segment::maxHeight/2;
       skipLines = 1;
@@ -198,9 +198,13 @@ bool sendLiveLedsWs(uint32_t wsClient)
     }
 #endif
     uint32_t c = strip.getPixelColor(i);
-    buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
-    buffer[pos++] = qadd8(W(c), G(c)); //G
-    buffer[pos++] = qadd8(W(c), B(c)); //B
+    uint8_t r = useGlobalLedBuffer ? scale8(R(c), strip.getBrightness()) : R(c);
+    uint8_t g = useGlobalLedBuffer ? scale8(G(c), strip.getBrightness()) : G(c);
+    uint8_t b = useGlobalLedBuffer ? scale8(B(c), strip.getBrightness()) : B(c);
+    uint8_t w = useGlobalLedBuffer ? scale8(W(c), strip.getBrightness()) : W(c);
+    buffer[pos++] = qadd8(w, r); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    buffer[pos++] = qadd8(w, g); //G
+    buffer[pos++] = qadd8(w, b); //B
   }
 
   wsc->binary(wsBuf);

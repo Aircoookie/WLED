@@ -431,7 +431,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',lt,bus->getType());
       sappend('v',co,bus->getColorOrder() & 0x0F);
       sappend('v',ls,bus->getStart());
-      sappend('c',cv,bus->reversed);
+      sappend('c',cv,bus->isReversed());
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
       sappend('v',aw,bus->getAutoWhiteMode());
