@@ -1709,7 +1709,8 @@ void WS2812FX::estimateCurrentAndLimitBri() {
   }
 
   uint32_t powerSum0 = powerSum;
-  powerSum *= _brightness;
+  //powerSum *= _brightness; // for NPBrightnessBus
+  powerSum *= 255;           // no need to scale down powerSum - NPB-LG getPixelColor returns colors scaled down by brightness
 
   if (powerSum > powerBudget) //scale brightness down to stay in current limit
   {
@@ -1718,9 +1719,10 @@ void WS2812FX::estimateCurrentAndLimitBri() {
     uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
     uint8_t newBri = scale8(_brightness, scaleB);
     // to keep brightness uniform, sets virtual busses too - softhack007: apply reductions immediately
-    if (scaleB < 255) busses.setBrightness(scaleB, true); // NPB-LG has already applied brightness, so its suffifient to post-apply scaling
+    if (scaleB < 255) busses.setBrightness(scaleB, true); // NPB-LG has already applied brightness, so its suffifient to post-apply scaling ==> use scaleB instead of newBri
     busses.setBrightness(newBri, false);                  // set new brightness for next frame
-    currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
+    //currentMilliamps = (powerSum0 * newBri) / puPerMilliamp; // for NPBrightnessBus
+    currentMilliamps = (powerSum0 * scaleB) / puPerMilliamp;   // for NPBus-LG
   } else {
     currentMilliamps = powerSum / puPerMilliamp;
     busses.setBrightness(_brightness, false);            // set new brightness for next frame

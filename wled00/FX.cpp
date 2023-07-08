@@ -5285,7 +5285,7 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
 
   SEGMENT.fadeToBlackBy(SEGMENT.custom1>>2);
 
-  float t = millis() / (33 - SEGMENT.speed/8);
+  uint_fast32_t t = (millis() * 8) / (256 - SEGMENT.speed);  // optimized to avoid float
   for (int i = 0; i < cols; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
     uint16_t thisMax = map(thisVal, 0, 255, 0, cols-1);
@@ -6058,7 +6058,8 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
     SEGMENT.custom2 = *maxVol * 2;
   }
   if (SEGMENT.custom1 < 1) SEGMENT.custom1 = 1;   // WLEDMM prevent stupid settings for bin
-  if (SEGMENT.custom2 < 48) SEGMENT.custom2 = 48; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
+
+  if (SEGMENT.custom2 < 24) SEGMENT.custom2 = 24; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -6690,7 +6691,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
     SEGMENT.custom2 = *maxVol * 2;
   }
   if (SEGMENT.custom1 < 1) SEGMENT.custom1 = 1;   // WLEDMM prevent stupid settings for bin
-  if (SEGMENT.custom2 < 48) SEGMENT.custom2 = 48; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
+  if (SEGMENT.custom2 < 24) SEGMENT.custom2 = 24; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -7297,7 +7298,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   }
 
   if (SEGMENT.custom1 < 1) SEGMENT.custom1 = 1;   // WLEDMM prevent stupid settings for bin
-  if (SEGMENT.custom2 < 48) SEGMENT.custom2 = 48; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
+  if (SEGMENT.custom2 < 24) SEGMENT.custom2 = 24; // WLEDMM prevent stupid settings for maxVol (below 24 = noise)
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
