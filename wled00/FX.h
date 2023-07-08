@@ -389,7 +389,7 @@ typedef struct Segment {
     };
     uint8_t startY;  // start Y coodrinate 2D (top); there should be no more than 255 rows
     uint8_t stopY;   // stop Y coordinate 2D (bottom); there should be no more than 255 rows
-    char *name;
+    char *name = nullptr; // WLEDMM initialize to nullptr
 
     // runtime data
     unsigned long next_time;  // millis() of next update
@@ -397,8 +397,8 @@ typedef struct Segment {
     uint32_t call;  // call counter
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
-    byte* data;     // effect data pointer
-    CRGB* ledsrgb;     // local leds[] array (may be a pointer to global) //WLEDMM rename to ledsrgb to search on them (temp?)
+    byte* data = nullptr;     // effect data pointer // WLEDMM initialize to nullptr
+    CRGB* ledsrgb = nullptr;     // local leds[] array (may be a pointer to global) //WLEDMM rename to ledsrgb to search on them (temp?), and initialilize to nullptr
     size_t ledsrgbSize; //WLEDMM 
     static CRGB *_globalLeds;             // global leds[] array
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)

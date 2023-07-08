@@ -228,7 +228,7 @@ bool checkNTPResponse()
 {
   ntpUdp.flush();
   int cb = ntpUdp.parsePacket();
-  if (!cb) return false;
+  if (!cb) {ntpUdp.flush(); return false;}    // WLEDMM flush buffer
 
   uint32_t ntpPacketReceivedTime = millis();
   DEBUG_PRINT(F("NTP recv, l="));

@@ -92,7 +92,7 @@ CRGB    *Segment::_globalLeds = nullptr;
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
 
-// copy constructor
+// copy constructor - creates a new segment by copy from orig, but does not copy buffers. Does not modify orig!
 Segment::Segment(const Segment &orig) {
   USER_PRINTLN(F("-- Copy segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment)); //WLEDMM copy to this
@@ -100,11 +100,12 @@ Segment::Segment(const Segment &orig) {
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
-  if (ledsrgb && !Segment::_globalLeds) ledsrgb = nullptr; //WLEDMM constructor so there was nothing. ledsrgb not freed as still used by orig!
+  if (ledsrgb && !Segment::_globalLeds) {ledsrgb = nullptr; ledsrgbSize = 0;}  // WLEDMM
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
+  else markForReset(); // WLEDMM
+  // if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); } // WLEDMM
   jMap = nullptr; //WLEDMM jMap
 }
 
@@ -120,16 +121,18 @@ void Segment::allocLeds() {
     } // softhack007 clean up buffer
   }
   if ((size > 0) && (!ledsrgb || size > ledsrgbSize)) {    //softhack dont allocate zero bytes
-    USER_PRINTF("allocLeds %u from %u\n", size, ledsrgb?ledsrgbSize:0);
-    ledsrgb = (CRGB*)malloc(size);
+    USER_PRINTF("allocLeds (%d,%d to %d,%d), %u from %u\n", start, startY, stop, stopY, size, ledsrgb?ledsrgbSize:0);
+    if (ledsrgb) free(ledsrgb);   // we need a bigger buffer, so free the old one first
+    ledsrgb = (CRGB*)calloc(size, 1);
     ledsrgbSize = ledsrgb?size:0;
+    if (ledsrgb == nullptr) USER_PRINTLN("allocLeds failed!!");
   }
   else {
     USER_PRINTF("reuse Leds %u from %u\n", size, ledsrgb?ledsrgbSize:0);
   }
 }
 
-// move constructor
+// move constructor --> moves everything (including buffer) from orig to this
 Segment::Segment(Segment &&orig) noexcept {
   USER_PRINTLN(F("-- Move segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -137,21 +140,21 @@ Segment::Segment(Segment &&orig) noexcept {
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
-  orig.ledsrgb = nullptr; //WLEDMM: do not free as moved to here (constructor so there where no leds)
-  orig.jMap = nullptr; //WLEDMM jMap
+  orig.ledsrgb = nullptr; //WLEDMM
+  orig.ledsrgbSize = 0;   // WLEDMM
+  orig.jMap = nullptr;    //WLEDMM jMap
 }
 
-// copy assignment
+// copy assignment --> overwrite segment withg orig - deletes old buffers in "this", but does not change orig!
 Segment& Segment::operator= (const Segment &orig) {
-  USER_PRINTLN(F("-- Copying segment --"));
+  USER_PRINTLN(F("-- Copy-assignment segment --"));
   if (this != &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
-    // WLEDMM reuse leds instead of removing themn
-    // if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: nullify below!
     CRGB* oldLeds = ledsrgb;
     size_t oldLedsSize = ledsrgbSize;
+    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb);
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -160,20 +163,22 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
-    if (!Segment::_globalLeds) {ledsrgb = oldLeds; ledsrgbSize = oldLedsSize;};// WLEDMM reuse leds instead of ledsrgb = nullptr;
+    //if (!Segment::_globalLeds) {ledsrgb = oldLeds; ledsrgbSize = oldLedsSize;}; // WLEDMM reuse leds instead of ledsrgb = nullptr;
+    if (!Segment::_globalLeds) {ledsrgb = nullptr; ledsrgbSize = 0;};             // WLEDMM copy has no buffers (yet)
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
+    else markForReset(); // WLEDMM
+    //if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); } // WLEDMM don't copy old buffer
     jMap = nullptr; //WLEDMM jMap
   }
   return *this;
 }
 
-// move assignment
+// move assignment --> moves everything (including buffers) from "orig" to "this"
 Segment& Segment::operator= (Segment &&orig) noexcept {
-  USER_PRINTLN(F("-- Moving segment --"));
+  USER_PRINTLN(F("-- Move-assignment segment --"));
   if (this != &orig) {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
@@ -185,13 +190,18 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     orig._dataLen = 0;
     orig._t   = nullptr;
     orig.ledsrgb = nullptr;  //WLEDMM: do not free as moved to here
+    orig.ledsrgbSize = 0;    //WLEDMM
     orig.jMap = nullptr; //WLEDMM jMap
   }
   return *this;
 }
 
 bool Segment::allocateData(size_t len) {
-  if (data && _dataLen == len) return true; //already allocated
+  if (data && _dataLen >= len) {
+    if (call == 0) memset(data, 0, len); // WLEDMM: clear data when SEGENV.call==0
+    return true; //already allocated
+  }
+  //DEBUG_PRINTF("allocateData(%u) start %d, stop %d, vlen %d\n", len, start, stop, virtualLength());
   deallocateData();
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
   // do not use SPI RAM on ESP32 since it is slow
@@ -201,7 +211,7 @@ bool Segment::allocateData(size_t len) {
   //else
   //#endif
     data = (byte*) malloc(len);
-  if (!data) return false; //allocation failed
+  if (!data) { _dataLen = 0; return false;} //allocation failed // WLEDMM reset dataLen
   Segment::addUsedSegmentData(len);
   _dataLen = len;
   memset(data, 0, len);
@@ -209,9 +219,10 @@ bool Segment::allocateData(size_t len) {
 }
 
 void Segment::deallocateData() {
-  if (!data) return;
+  if (!data) {_dataLen = 0; return;}  // WLEDMM reset dataLen
   free(data);
   data = nullptr;
+  //DEBUG_PRINTLN("deallocateData() called free().");
   Segment::addUsedSegmentData(-_dataLen);
   _dataLen = 0;
 }
@@ -225,8 +236,7 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) {
-    //WLEDMM no need to free leds as we will reuse them
-    // if (ledsrgb && !Segment::_globalLeds) { free(ledsrgb); ledsrgb = nullptr; }
+    if (ledsrgb && !Segment::_globalLeds) { free(ledsrgb); ledsrgb = nullptr; ledsrgbSize=0;} // WLEDMM segment has changed, so we need a fresh buffer.
     if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
@@ -236,19 +246,22 @@ void Segment::resetIfRequired() {
 
 void Segment::setUpLeds() {
   // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
-  if (Segment::_globalLeds)
+  if (Segment::_globalLeds) {
     #ifndef WLED_DISABLE_2D
     ledsrgb = &Segment::_globalLeds[start + startY*Segment::maxWidth];
+    ledsrgbSize = length() * sizeof(CRGB); // also set this when using global leds.
+    //USER_PRINTF("\nsetUpLeds() Global LEDs: startX=%d stopx=%d startY=%d stopy=%d maxwidth=%d; length=%d, size=%d\n\n", start, stop, startY, stopY, Segment::maxWidth, length(), ledsrgbSize/3);
     #else
     leds = &Segment::_globalLeds[start];
     #endif
-  else if ((ledsrgb == nullptr) && (length() > 0)) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
+  } else if (length() > 0) { //WLEDMM we always want a new buffer //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
     //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
     //if (psramFound())
     //  ledsrgb = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
     //else
     //#endif
     allocLeds(); //WLEDMM
+    //USER_PRINTF("\nsetUpLeds() local LEDs: startX=%d stopx=%d startY=%d stopy=%d maxwidth=%d; length=%d, size=%d\n\n", start, stop, startY, stopY, Segment::maxWidth, length(), ledsrgbSize/3);
   }
 }
 
@@ -456,7 +469,7 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
       && (!grp || (grouping == grp && spacing == spc))
       && (ofs == UINT16_MAX || ofs == offset)) return;
 
-  if (stop) fill(BLACK); //turn old segment range off
+  if (stop>start) fill(BLACK); //turn old segment range off // WLEDMM stop > start
   if (i2 <= i1) { //disable segment
     stop = 0;
     markForReset();
@@ -1049,8 +1062,9 @@ uint32_t Segment::getPixelColor(int i)
   i *= groupLength();
   i += start;
   /* offset/phase */
-  i += offset;
+  if (offset < INT16_MAX) i += offset; // WLEDMM
   if ((i >= stop) && (stop>0)) i -= length(); // WLEDMM avoid negative index (stop = 0 is a possible value)
+  if (i<0) i=0; // WLEDMM just to be 100% sure
   return strip.getPixelColor(i);
 }
 
@@ -1540,7 +1554,7 @@ void WS2812FX::finalizeInit(void)
     //else
     //#endif
       if (arrSize > 0) Segment::_globalLeds = (CRGB*) malloc(arrSize); // WLEDMM avoid malloc(0)
-    if (Segment::_globalLeds != nullptr) memset(Segment::_globalLeds, 0, arrSize); // WLEDMM avoid dereferencing nullptr
+    if ((Segment::_globalLeds != nullptr) && (arrSize > 0)) memset(Segment::_globalLeds, 0, arrSize); // WLEDMM avoid dereferencing nullptr
   }
 
   //segments are created in makeAutoSegments();
@@ -1563,7 +1577,7 @@ void WS2812FX::waitUntilIdle(void) {
       delay(2);  // Suspending for 1 tick (or more) gives other tasks a chance to run.
       //yield(); // seems to be a no-op on esp32
     } while (isServicing() && (millis() - waitStarted < MAX_IDLE_WAIT_MS));
-    USER_PRINTF("strip.waitUntilIdle(): strip %sidle after %d ms. (task %s)\n", isServicing()?"not ":"", int(millis() - waitStarted), pcTaskGetTaskName(NULL));
+    USER_PRINTF("strip.waitUntilIdle(): strip %sidle after %d ms. (task %s with prio=%d)\n", isServicing()?"not ":"", int(millis() - waitStarted), pcTaskGetTaskName(NULL), uxTaskPriorityGet(NULL));
   }
   return;
 #else
@@ -1945,7 +1959,9 @@ void WS2812FX::purgeSegments(bool force) {
 }
 
 Segment& WS2812FX::getSegment(uint8_t id) {
-  return _segments[id >= _segments.size() ? getMainSegmentId() : id]; // vectors
+  uint8_t mainSegID = getMainSegmentId();
+  if (mainSegID >= _segments.size()) mainSegID=0;  // WLEDMM fallback in case that getMainSegmentId() is invalid
+  return _segments[id >= _segments.size() ? mainSegID : id]; // vectors
 }
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {

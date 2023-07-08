@@ -48,6 +48,7 @@
 
 static bool inDeepCall = false; // WLEDMM needed so that recursive deserializeSegment() does not remove locks too early
 
+// WLEDMM caution - this function may run outside of arduino loop context (async_tcp with priority=3)
 bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   const bool iAmGroot = !inDeepCall;  // WLEDMM will only be true if this is the toplevel of the recursion.
@@ -368,6 +369,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
 // presetId is non-0 if called from handlePreset()
+// WLEDMM caution - this function may run outside of arduino loop context (async_tcp with priority=3)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   const bool iAmGroot = !inDeepCall;  // WLEDMM will only be true if this is the toplevel of the recursion.
@@ -418,6 +420,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       transitionDelayTemp = transitionDelay;
     }
   }
+
+#ifdef ARDUINO_ARCH_ESP32
+  delay(2); // WLEDMM experimental - de-serialize takes time, so allow other tasks to run
+#endif
 
   // WLEDMM: before changing strip, make sure our strip is _not_ servicing effects in parallel
   suspendStripService = true; // temporarily lock out strip updates
