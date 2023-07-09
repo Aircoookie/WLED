@@ -116,14 +116,6 @@ void initServer()
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
 #ifdef WLED_ENABLE_WEBSOCKETS
-  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws, PAGE_liveviewws_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-    //request->send_P(200, "text/html", PAGE_liveviewws);
-  });
   #ifndef WLED_DISABLE_2D
   server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
@@ -131,19 +123,16 @@ void initServer()
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
-    //request->send_P(200, "text/html", PAGE_liveviewws);
   });
   #endif
-#else
+#endif
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveview, PAGE_liveview_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
-    //request->send_P(200, "text/html", PAGE_liveview);
   });
-#endif
 
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -165,10 +154,6 @@ void initServer()
     {
       request->send_P(200, "image/x-icon", favicon, 156);
     }
-  });
-
-  server.on("/sliders", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveIndex(request);
   });
 
   server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -247,19 +232,15 @@ void initServer()
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
 
+#ifdef WLED_ENABLE_USERMOD_PAGE
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
-    //request->send_P(200, "text/html", PAGE_usermod);
   });
-
-  //Deprecated, use of /json/state and presets recommended instead
-  server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
-    URL_response(request);
-  });
+#endif
 
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
@@ -356,9 +337,14 @@ void initServer()
     serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
   });
   #endif
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     if (captivePortal(request)) return;
-    serveIndexOrWelcome(request);
+    if (!showWelcomePage || request->hasArg(F("sliders"))){
+      serveIndex(request);
+    } else {
+      serveSettings(request);
+    }
   });
 
   #ifdef WLED_ENABLE_PIXART
@@ -420,18 +406,7 @@ void initServer()
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
-    //request->send_P(404, "text/html", PAGE_404);
   });
-}
-
-
-void serveIndexOrWelcome(AsyncWebServerRequest *request)
-{
-  if (!showWelcomePage){
-    serveIndex(request);
-  } else {
-    serveSettings(request);
-  }
 }
 
 bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)

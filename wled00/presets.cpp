@@ -180,7 +180,7 @@ void handlePresets()
       fdo.remove("ps"); // remove load request for presets to prevent recursive crash (if not called by button and contains preset cycling string "1~5~")
     deserializeState(fdo, CALL_MODE_NO_NOTIFY, tmpPreset); // may change presetToApply by calling applyPreset()
   }
-  if (!errorFlag && tmpPreset < 255 && changePreset) presetCycCurr = currentPreset = tmpPreset;
+  if (!errorFlag && tmpPreset < 255 && changePreset) currentPreset = tmpPreset;
 
   #if defined(ARDUINO_ARCH_ESP32)
   //Aircoookie recommended not to delete buffer

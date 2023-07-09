@@ -45,6 +45,10 @@
 #define ENCODER_SW_PIN 19
 #endif
 
+#ifndef ENCODER_MAX_DELAY_MS    // max delay between polling encoder pins
+#define ENCODER_MAX_DELAY_MS 8  // 8 milliseconds => max 120 change impulses in 1 second, for full turn of a 30/30 encoder (4 changes per segment, 30 segments for one turn)
+#endif
+
 #ifndef USERMOD_USE_PCF8574
   #undef USE_PCF8574
   #define USE_PCF8574 false
@@ -539,8 +543,9 @@ void RotaryEncoderUIUsermod::setup()
   */
 void RotaryEncoderUIUsermod::loop()
 {
-  if (!enabled || strip.isUpdating()) return;
+  if (!enabled) return;
   unsigned long currentTime = millis(); // get the current elapsed time
+  if (strip.isUpdating() && ((currentTime - loopTime) < ENCODER_MAX_DELAY_MS)) return;  // be nice, but not too nice
 
   // Initialize effectCurrentIndex and effectPaletteIndex to
   // current state. We do it here as (at least) effectCurrent

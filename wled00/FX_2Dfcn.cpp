@@ -191,6 +191,8 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 uint16_t /*IRAM_ATTR*/ Segment::XY(uint16_t x, uint16_t y) {
   uint16_t width  = virtualWidth();   // segment width in logical pixels
   uint16_t height = virtualHeight();  // segment height in logical pixels
+  if (width == 0) return 0;           // softhack007 avoid div/0
+  if (height == 0) return (x%width);  // softhack007 avoid div/0
   return (x%width) + (y%height) * width;
 }
 
@@ -303,6 +305,7 @@ void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t 
 
 // Adds the specified color with the existing pixel color perserving color balance.
 void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
+  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
   uint32_t col = getPixelColorXY(x,y);
   uint8_t r = R(col);
   uint8_t g = G(col);
@@ -327,50 +330,54 @@ void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
 
 // blurRow: perform a blur on a row of a rectangular matrix
 void Segment::blurRow(uint16_t row, fract8 blur_amount) {
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
+  const uint_fast16_t cols = virtualWidth();
+  const uint_fast16_t rows = virtualHeight();
 
   if (row >= rows) return;
   // blur one row
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint16_t x = 0; x < cols; x++) {
+  for (uint_fast16_t x = 0; x < cols; x++) {
     CRGB cur = getPixelColorXY(x, row);
+    uint32_t before = uint32_t(cur);     // remember color before blur
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
-    if (x) {
+    if (x>0) {
       CRGB prev = CRGB(getPixelColorXY(x-1, row)) + part;
       setPixelColorXY(x-1, row, prev);
     }
-    setPixelColorXY(x, row, cur);
+    if (before != uint32_t(cur))         // optimization: only set pixel if color has changed
+      setPixelColorXY(x, row, cur);
     carryover = part;
   }
 }
 
 // blurCol: perform a blur on a column of a rectangular matrix
 void Segment::blurCol(uint16_t col, fract8 blur_amount) {
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
+  const uint_fast16_t cols = virtualWidth();
+  const uint_fast16_t rows = virtualHeight();
 
   if (col >= cols) return;
   // blur one column
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint16_t i = 0; i < rows; i++) {
-    CRGB cur = getPixelColorXY(col, i);
+  for (uint_fast16_t y = 0; y < rows; y++) {
+    CRGB cur = getPixelColorXY(col, y);
     CRGB part = cur;
+    uint32_t before = uint32_t(cur);     // remember color before blur
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
-    if (i) {
-      CRGB prev = CRGB(getPixelColorXY(col, i-1)) + part;
-      setPixelColorXY(col, i-1, prev);
+    if (y>0) {
+      CRGB prev = CRGB(getPixelColorXY(col, y-1)) + part;
+      setPixelColorXY(col, y-1, prev);
     }
-    setPixelColorXY(col, i, cur);
+    if (before != uint32_t(cur))         // optimization: only set pixel if color has changed
+      setPixelColorXY(col, y, cur);
     carryover = part;
   }
 }
@@ -389,8 +396,8 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
   for (uint16_t j = 0; j < dim1; j++) {
     uint16_t x = vertical ? i : j;
     uint16_t y = vertical ? j : i;
-    uint16_t xp = vertical ? x : x-1;
-    uint16_t yp = vertical ? y-1 : y;
+    int16_t xp = vertical ? x : x-1;  // "signed" to prevent underflow
+    int16_t yp = vertical ? y-1 : y;  // "signed" to prevent underflow
     uint16_t xn = vertical ? x : x+1;
     uint16_t yn = vertical ? y+1 : y;
     CRGB curr = getPixelColorXY(x,y);

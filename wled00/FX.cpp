@@ -278,7 +278,7 @@ uint16_t mode_random_color(void) {
   SEGMENT.fill(color_blend(SEGMENT.color_wheel(SEGENV.aux1), SEGMENT.color_wheel(SEGENV.aux0), fade));
   return FRAMETIME;
 }
-static const char _data_FX_MODE_RANDOM_COLOR[] PROGMEM = "Random Colors@!,Fade time;;!";
+static const char _data_FX_MODE_RANDOM_COLOR[] PROGMEM = "Random Colors@!,Fade time;;!;01";
 
 
 /*
@@ -432,7 +432,7 @@ uint16_t mode_rainbow(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_RAINBOW[] PROGMEM = "Colorloop@!,Saturation;;!";
+static const char _data_FX_MODE_RAINBOW[] PROGMEM = "Colorloop@!,Saturation;;!;01";
 
 
 /*
@@ -5273,7 +5273,7 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
 
   SEGMENT.fadeToBlackBy(SEGMENT.custom1>>2);
 
-  float t = millis() / (33 - SEGMENT.speed/8);
+  uint_fast32_t t = (millis() * 8) / (256 - SEGMENT.speed);  // optimized to avoid float
   for (int i = 0; i < cols; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
     uint16_t thisMax = map(thisVal, 0, 255, 0, cols-1);
@@ -5878,7 +5878,7 @@ uint16_t mode_2Dscrollingtext(void) {
   }
   const bool zero = SEGMENT.check3;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  char text[33] = {'\0'};
+  char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
   if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
   if (!strlen(text)

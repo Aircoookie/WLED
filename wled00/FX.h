@@ -505,9 +505,9 @@ typedef struct Segment {
     inline bool     hasRGB(void)         const { return _isRGB; }
     inline bool     hasWhite(void)       const { return _hasW; }
     inline bool     isCCT(void)          const { return _isCCT; }
-    inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
-    inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
-    inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
+    inline uint16_t width(void)          const { return (stop > start)   ? (stop - start)   : 0; } // segment width in physical pixels (length if 1D)
+    inline uint16_t height(void)         const { return (stopY > startY) ? (stopY - startY) : 0; } // segment height (if 2D) in physical pixels // softhack007: make sure its always > 0
+    inline uint16_t length(void)         const { return width() * height(); }                      // segment length (count) in physical pixels
     inline uint16_t groupLength(void)    const { return grouping + spacing; }
     inline uint8_t  getLightCapabilities(void) const { return _capabilities; }
 
