@@ -1178,7 +1178,7 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
     powerBudget = 0;
   }
 
-  uint32_t powerSum = 0;
+  uint32_t powerSum = 0; // could overflow if more than 22K LEDs (uint32_t MAX / 195075 PU per LED)
 
   for (uint_fast8_t bNum = 0; bNum < busses.getNumBusses(); bNum++) {
     Bus *bus = busses.getBus(bNum);
@@ -1186,14 +1186,9 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
     uint16_t len = bus->getLength();
     uint32_t busPowerSum = 0;
     for (uint_fast16_t i = 0; i < len; i++) { //sum up the usage of each LED
-      uint32_t c = bus->getPixelColor(i);
+      uint32_t c = bus->getPixelColor(i); // always returns original or restored color without brightness scaling
       byte r = R(c), g = G(c), b = B(c), w = W(c);
-      if (useGlobalLedBuffer) { // TODO this should only apply for digital bus typpes
-        r = scale8(r, _brightness);
-        g = scale8(g, _brightness); 
-        b = scale8(b, _brightness);
-        w = scale8(w, _brightness);
-      }
+
       if(useWackyWS2815PowerModel) { //ignore white component on WS2815 power calculation
         busPowerSum += (MAX(MAX(r,g),b)) * 3;
       } else {
@@ -1209,13 +1204,16 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
   }
 
   uint8_t newBri = _brightness;
+  uint32_t powerSumUnscaled = powerSum;
+  powerSum *= _brightness;
+
   if (powerSum > powerBudget) { //scale brightness down to stay in current limit
     float scale = (float)powerBudget / (float)powerSum;
     uint16_t scaleI = scale * 255;
     uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
     newBri = scale8(_brightness, scaleB);
   }
-  currentMilliamps = (powerSum * newBri) / puPerMilliamp;
+  currentMilliamps = (powerSumUnscaled * newBri) / puPerMilliamp;
   currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
   currentMilliamps += pLen; //add standby power back to estimate
   return newBri;

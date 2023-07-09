@@ -174,7 +174,7 @@ bool BusDigital::canShow() {
   return PolyBus::canShow(_busPtr, _iType);
 }
 
-void BusDigital::setBrightness(uint8_t b, bool immediate) {
+void BusDigital::setBrightness(uint8_t b) {
   //Fix for turning off onboard LED breaking bus
   #ifdef LED_BUILTIN
   if (_bri == 0 && b > 0) {
@@ -224,6 +224,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   }
 }
 
+// returns original color if global buffering is enabled, else returns lossly restored color from bus
 uint32_t BusDigital::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
   if (buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
@@ -587,9 +588,9 @@ void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
   }
 }
 
-void BusManager::setBrightness(uint8_t b, bool immediate) {
+void BusManager::setBrightness(uint8_t b) {
   for (uint8_t i = 0; i < numBusses; i++) {
-    busses[i]->setBrightness(b, immediate);
+    busses[i]->setBrightness(b);
   }
 }
 
