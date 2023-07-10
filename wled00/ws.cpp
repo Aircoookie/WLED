@@ -167,6 +167,17 @@ void sendDataWs(AsyncWebSocketClient * client)
   releaseJSONBufferLock();
 }
 
+// WLEDMM function to recover full-brigh pixel (based on code from upstream alt-buffer, which is based on code from NeoPixelBrightnessBus)
+static uint32_t restoreColorLossy(uint32_t c, uint_fast8_t _restaurationBri) {
+  if (_restaurationBri == 255) return c;
+  uint8_t* chan = (uint8_t*) &c;
+  for (uint_fast8_t i=0; i<4; i++) {
+    uint_fast16_t val = chan[i];
+    chan[i] = ((val << 8) + _restaurationBri) / (_restaurationBri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
+  }
+  return c;
+}
+
 static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
 {
   AsyncWebSocketClient * wsc = ws.client(wsClient);
@@ -219,13 +230,15 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   }
 #endif
 
+  uint8_t stripBrightness = strip.getBrightness();
   for (size_t i = 0; pos < bufSize -2; i += n)
   {
   //WLEDMM: no skipLines
-    uint32_t c = strip.getPixelColor(i);
-    buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
-    buffer[pos++] = qadd8(W(c), G(c)); //G
-    buffer[pos++] = qadd8(W(c), B(c)); //B
+    uint32_t c = restoreColorLossy(strip.getPixelColor(i), stripBrightness); // WLEDMM full bright preview - does _not_ recover ABL reductions
+    uint8_t w = W(c);  // WLEDMM small optimization
+    buffer[pos++] = qadd8(w, R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    buffer[pos++] = qadd8(w, G(c)); //G
+    buffer[pos++] = qadd8(w, B(c)); //B
   }
 
   wsc->binary(wsBuf);
