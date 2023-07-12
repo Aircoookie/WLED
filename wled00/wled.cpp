@@ -23,7 +23,7 @@ void WLED::reset()
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.closeAll(1012);
   #endif
-  long dly = millis();
+  unsigned long dly = millis();
   while (millis() - dly < 450) {
     yield();        // enough time to send response to client
   }
@@ -36,13 +36,17 @@ void WLED::loop()
 {
   #ifdef WLED_DEBUG
   static unsigned long lastRun = 0;
-  size_t loopDelay = (millis() - lastRun);
+  unsigned long        loopMillis = millis();
+  size_t               loopDelay = loopMillis - lastRun;
   if (lastRun == 0) loopDelay=0; // startup - don't have valid data from last run.
-  if (loopDelay > 2) DEBUG_PRINTF("Loop delayed more than %dms.\n", loopDelay);
+  if (loopDelay > 2) DEBUG_PRINTF("Loop delayed more than %ums.\n", loopDelay);
+  static unsigned long maxLoopMillis = 0;
+  static size_t        avgLoopMillis = 0;
   static unsigned long maxUsermodMillis = 0;
   static size_t        avgUsermodMillis = 0;
   static unsigned long maxStripMillis = 0;
   static size_t        avgStripMillis = 0;
+  unsigned long        stripMillis;
   #endif
 
   handleTime();
@@ -84,6 +88,9 @@ void WLED::loop()
     yield();
   }
 
+  #ifdef WLED_DEBUG
+  stripMillis = millis();
+  #endif
   if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly))  // block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
@@ -102,22 +109,18 @@ void WLED::loop()
     handlePresets();
     yield();
 
-    #ifdef WLED_DEBUG
-    unsigned long stripMillis = millis();
-    #endif
     if (!offMode || strip.isOffRefreshRequired())
       strip.service();
     #ifdef ESP8266
     else if (!noWifiSleep)
       delay(1); //required to make sure ESP enters modem sleep (see #1184)
     #endif
-    #ifdef WLED_DEBUG
-    stripMillis = millis() - stripMillis;
-    if (stripMillis > 50) DEBUG_PRINTLN("Slow strip.");
-    avgStripMillis += stripMillis;
-    if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
-    #endif
   }
+  #ifdef WLED_DEBUG
+  stripMillis = millis() - stripMillis;
+  avgStripMillis += stripMillis;
+  if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
+  #endif
 
   yield();
 #ifdef ESP8266
@@ -186,8 +189,31 @@ void WLED::loop()
   handleWs();
   handleStatusLED();
 
+  toki.resetTick();
+
+#if WLED_WATCHDOG_TIMEOUT > 0
+  // we finished our mainloop, reset the watchdog timer
+  if (!strip.isUpdating())
+  #ifdef ARDUINO_ARCH_ESP32
+    esp_task_wdt_reset();
+  #else
+    ESP.wdtFeed();
+  #endif
+#endif
+
+  if (doReboot && (!doInitBusses || !doSerializeConfig)) // if busses have to be inited & saved, wait until next iteration
+    reset();
+
 // DEBUG serial logging (every 30s)
 #ifdef WLED_DEBUG
+  loopMillis = millis() - loopMillis;
+  if (loopMillis > 30) {
+    DEBUG_PRINTF("Loop took %lums.\n", loopMillis);
+    DEBUG_PRINTF("Usermods took %lums.\n", usermodMillis);
+    DEBUG_PRINTF("Strip took %lums.\n", stripMillis);
+  }
+  avgLoopMillis += loopMillis;
+  if (loopMillis > maxLoopMillis) maxLoopMillis = loopMillis;
   if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
@@ -210,11 +236,13 @@ void WLED::loop()
     DEBUG_PRINT(F("Client IP: "));       DEBUG_PRINTLN(Network.localIP());
     if (loops > 0) { // avoid division by zero
       DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 30);
+      DEBUG_PRINT(F("Loop time[ms]: "));   DEBUG_PRINT(avgLoopMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxLoopMillis);
       DEBUG_PRINT(F("UM time[ms]: "));     DEBUG_PRINT(avgUsermodMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxUsermodMillis);
       DEBUG_PRINT(F("Strip time[ms]: "));  DEBUG_PRINT(avgStripMillis/loops); DEBUG_PRINT("/"); DEBUG_PRINTLN(maxStripMillis);
     }
     strip.printSize();
     loops = 0;
+    maxLoopMillis = 0;
     maxUsermodMillis = 0;
     maxStripMillis = 0;
     avgUsermodMillis = 0;
@@ -224,20 +252,6 @@ void WLED::loop()
   loops++;
   lastRun = millis();
 #endif        // WLED_DEBUG
-  toki.resetTick();
-
-#if WLED_WATCHDOG_TIMEOUT > 0
-  // we finished our mainloop, reset the watchdog timer
-  if (!strip.isUpdating())
-  #ifdef ARDUINO_ARCH_ESP32
-    esp_task_wdt_reset();
-  #else
-    ESP.wdtFeed();
-  #endif
-#endif
-
-  if (doReboot && (!doInitBusses || !doSerializeConfig)) // if busses have to be inited & saved, wait until next iteration
-    reset();
 }
 
 void WLED::enableWatchdog() {

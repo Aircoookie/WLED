@@ -22,7 +22,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   int stop = elem["stop"] | -1;
 
-  // if using vectors use this code to append segment
+  // append segment
   if (id >= strip.getSegmentsNum()) {
     if (stop <= 0) return false; // ignore empty/inactive segments
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
@@ -110,7 +110,10 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     of = offsetAbs;
   }
   if (stop > start && of > len -1) of = len -1;
-  seg.setUp(start, stop, grp, spc, of, startY, stopY);
+
+  // update segment (delete if necessary)
+  // we must not change segment dimensions during drawing of effects as that may produce undesired behaviour (crash)
+  seg.setUp(start, stop, grp, spc, of, startY, stopY, !strip.isServicing());
 
   if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
 
@@ -468,12 +471,14 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   if (segmentBounds) {
     root["start"] = seg.start;
     root["stop"] = seg.stop;
+    #ifndef WLED_DISABLE_2D
     if (strip.isMatrix) {
       root[F("startY")] = seg.startY;
       root[F("stopY")]  = seg.stopY;
     }
+    #endif
   }
-  if (!forPreset) root["len"] = (seg.stop >= seg.start) ? (seg.stop - seg.start) : 0;
+  if (!forPreset) root["len"] = seg.stop - seg.start;
   root["grp"]    = seg.grouping;
   root[F("spc")] = seg.spacing;
   root[F("of")]  = seg.offset;

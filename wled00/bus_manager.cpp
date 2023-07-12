@@ -128,11 +128,6 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
 
 void BusDigital::show() {
   if (!_valid) return;
-  #ifdef WLED_DEBUG
-  static unsigned long sumMicros = 0;
-  static size_t calls = 0;
-  unsigned long microsStart = micros();
-  #endif
   PolyBus::setBrightness(_busPtr, _iType, _bri);
   if (buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
@@ -159,14 +154,6 @@ void BusDigital::show() {
   }
   PolyBus::show(_busPtr, _iType);
   PolyBus::setBrightness(_busPtr, _iType, 255); // restore full brightness at bus level (setting unscaled pixel color)
-  #ifdef WLED_DEBUG
-  sumMicros += micros() - microsStart;
-  if (++calls == 100) {
-    DEBUG_PRINTF("Bus calls: %d micros: %lu avg: %lu\n", calls, sumMicros, sumMicros/calls);
-    sumMicros = 0;
-    calls = 0;
-  }
-  #endif
 }
 
 bool BusDigital::canShow() {
