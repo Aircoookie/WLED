@@ -605,11 +605,12 @@ void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color,
 
 //WLEDMM for artifx
 bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
-  char fileName[32];
+  if (!isActive()) return true; // segment not active, nothing to do
+  char fileName[32] = { '\0' };
   //WLEDMM: als support segment name ledmaps
-  bool isFile = false;;
+  bool isFile = false;
   // strcpy_P(fileName, PSTR("/mario"));
-  sprintf(fileName, "/%s%d.json", name, fileNr); //WLEDMM: trick to not include 0 in ledmap.json
+  snprintf(fileName, sizeof(fileName), "/%s%d.json", name, fileNr); //WLEDMM: trick to not include 0 in ledmap.json
   // strcat(fileName, ".json");
   isFile = WLED_FS.exists(fileName);
 
