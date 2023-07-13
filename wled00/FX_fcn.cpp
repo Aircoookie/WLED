@@ -76,6 +76,9 @@
 uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
+uint8_t  Segment::_queuedChangesSegId = 255U;
+uint16_t Segment::_qStart  = 0, Segment::_qStop  = 0;
+uint16_t Segment::_qStartY = 0, Segment::_qStopY = 0;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
@@ -174,12 +177,15 @@ void Segment::deallocateData() {
   * may free that data buffer.
   */
 void Segment::resetIfRequired() {
-  if (reset) {
-    deallocateData();
-    next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
-    if (_queuedChanges) setUp(_qStart, _qStop, grouping, spacing, offset, _qStartY, _qStopY, true);
-    reset = false; // setOption(SEG_OPTION_RESET, false);
+  if (!reset) return;
+  
+  deallocateData();
+  next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
+  if (_queuedChangesSegId == strip.getCurrSegmentId()) { // apply queued changes
+    setUp(_qStart, _qStop, grouping, spacing, offset, _qStartY, _qStopY);
+    _queuedChangesSegId = 255;
   }
+  reset = false;
 }
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
@@ -354,8 +360,10 @@ void Segment::handleTransition() {
   }
 }
 
-void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y, bool immediate) {
-  _queuedChanges = false; // cancel anything queued
+// segId is given when called from network callback, changes are queued if that segment is currently in its effect function
+void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y, uint8_t segId) {
+  if (_queuedChangesSegId == segId) _queuedChangesSegId = 255; // cancel queued change if already queued for this segment
+
   // return if neither bounds nor grouping have changed
   bool boundsUnchanged = (start == i1 && stop == i2);
   #ifndef WLED_DISABLE_2D
@@ -376,36 +384,39 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
   if (ofs < UINT16_MAX) offset = ofs;
 
   markForReset();
-  if (!boundsUnchanged) {
-    if (immediate) {
-      if (i2 <= i1) { //disable segment
-        stop = 0;
-        return;
-      }
-      if (i1 < Segment::maxWidth || (i1 >= Segment::maxWidth*Segment::maxHeight && i1 < strip.getLengthTotal())) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
-      stop = i2 > Segment::maxWidth*Segment::maxHeight ? MIN(i2,strip.getLengthTotal()) : (i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2));
-      startY = 0;
-      stopY  = 1;
-      #ifndef WLED_DISABLE_2D
-      if (Segment::maxHeight>1) { // 2D
-        if (i1Y < Segment::maxHeight) startY = i1Y;
-        stopY = i2Y > Segment::maxHeight ? Segment::maxHeight : MAX(1,i2Y);
-      }
-      #endif
-      // safety check
-      if (start >= stop || startY >= stopY) {
-        stop = 0;
-        return;
-      }
-      if (!boundsUnchanged) refreshLightCapabilities();
-    } else {
-      _qStart  = i1;
-      _qStop   = i2;
-      _qStartY = i1Y;
-      _qStopY  = i2Y;
-      _queuedChanges = true;
-    }
+  if (boundsUnchanged) return; // TODO test if it is save to change grp/spc/ofs without queueing
+  // queuing a change for a second segment will lead to the loss of the first change if not yet applied
+  // however this is not a problem as the queued change is applied immediately after the effect function in that segment returns
+  if (segId < MAX_NUM_SEGMENTS && segId == strip.getCurrSegmentId() && strip.isServicing()) { // queue change to prevent concurrent access
+    _qStart  = i1;
+    _qStop   = i2;
+    _qStartY = i1Y;
+    _qStopY  = i2Y;
+    _queuedChangesSegId = segId;
+    return; // queued changes are applied immediately after effect function returns
   }
+
+  // apply change immediately
+  if (i2 <= i1) { //disable segment
+    stop = 0;
+    return;
+  }
+  if (i1 < Segment::maxWidth || (i1 >= Segment::maxWidth*Segment::maxHeight && i1 < strip.getLengthTotal())) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
+  stop = i2 > Segment::maxWidth*Segment::maxHeight ? MIN(i2,strip.getLengthTotal()) : (i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2));
+  startY = 0;
+  stopY  = 1;
+  #ifndef WLED_DISABLE_2D
+  if (Segment::maxHeight>1) { // 2D
+    if (i1Y < Segment::maxHeight) startY = i1Y;
+    stopY = i2Y > Segment::maxHeight ? Segment::maxHeight : MAX(1,i2Y);
+  }
+  #endif
+  // safety check
+  if (start >= stop || startY >= stopY) {
+    stop = 0;
+    return;
+  }
+  refreshLightCapabilities();
 }
 
 
@@ -1087,7 +1098,7 @@ void WS2812FX::service() {
     // reset the segment runtime data if needed
     seg.resetIfRequired();
 
-    if (!seg.isActive()) continue;
+    if (!seg.isActive()) { _segment_index++; continue; }
 
     // last condition ensures all solid segments are updated at the same time
     if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
@@ -1115,6 +1126,7 @@ void WS2812FX::service() {
 
       seg.next_time = nowUp + delay;
     }
+    seg.resetIfRequired(); // another reset chance, mainly to apply new segment bounds if queued
     _segment_index++;
   }
   _virtualSegmentLength = 0;

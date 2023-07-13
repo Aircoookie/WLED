@@ -112,8 +112,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (stop > start && of > len -1) of = len -1;
 
   // update segment (delete if necessary)
-  // we must not change segment dimensions during drawing of effects as that may produce undesired behaviour (crash)
-  seg.setUp(start, stop, grp, spc, of, startY, stopY, !strip.isServicing());
+  // we must not change segment dimensions during drawing of effects in that segment as concurrent access may cause a crash
+  seg.setUp(start, stop, grp, spc, of, startY, stopY, id);
 
   if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
 
@@ -1065,7 +1065,10 @@ void serveJson(AsyncWebServerRequest* request)
 
   DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
 
-  size_t len = response->setLength();
+  #ifdef WLED_DEBUG
+  size_t len =
+  #endif
+  response->setLength();
   DEBUG_PRINT(F("JSON content length: ")); DEBUG_PRINTLN(len);
 
   request->send(response);

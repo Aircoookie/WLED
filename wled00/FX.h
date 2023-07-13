@@ -395,8 +395,8 @@ typedef struct Segment {
     uint16_t        _dataLen;
     static uint16_t _usedSegmentData;
 
-    uint16_t _qStart, _qStop, _qStartY, _qStopY;
-    bool     _queuedChanges;
+    static uint16_t _qStart, _qStop, _qStartY, _qStopY;
+    static uint8_t _queuedChangesSegId;
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
@@ -466,7 +466,6 @@ typedef struct Segment {
       data(nullptr),
       _capabilities(0),
       _dataLen(0),
-      _queuedChanges(false),
       _t(nullptr)
     {
       //refreshLightCapabilities();
@@ -515,7 +514,7 @@ typedef struct Segment {
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
 
-    void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, bool immediate=false);
+    void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, uint8_t segId = 255);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
     void    setCCT(uint16_t k);
     void    setOpacity(uint8_t o);
