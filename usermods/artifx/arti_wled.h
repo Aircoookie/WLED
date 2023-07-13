@@ -214,9 +214,11 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
       case F_millis:
         return millis();
 
+#ifndef WLED_DISABLE_2D
       case F_jsonToPixels:
         SEGMENT.jsonToPixels(SEGMENT.name,(uint8_t)par1);
         return floatNull;
+#endif
 
       default: {}
     }

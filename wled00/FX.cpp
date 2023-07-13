@@ -37,12 +37,12 @@
 #define indexToVStrip(index, stripNr) ((index) | (int((stripNr)+1)<<16))
 
 // effect utility functions
-uint8_t sin_gap(uint16_t in) {
+static uint8_t sin_gap(uint16_t in) {
   if (in & 0x100) return 0;
   return sin8(in + 192); // correct phase shift of sine so that it starts and stops at 0
 }
 
-uint16_t triwave16(uint16_t in) {
+static uint16_t triwave16(uint16_t in) {
   if (in < 0x8000) return in *2;
   return 0xFFFF - (in - 0x8000)*2;
 }
@@ -54,7 +54,7 @@ uint16_t triwave16(uint16_t in) {
  * @param attdec attac & decay, max. pulsewidth / 2
  * @returns signed waveform value
  */
-int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
+static int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
   int8_t a = 127;
   if (x > 127) {
     a = -127;

@@ -79,7 +79,7 @@ void WS2812FX::setUpMatrix() {
       if ((size > 0) && (customMappingTable == nullptr)) { // second try
         DEBUG_PRINTLN("setUpMatrix: trying to get fresh memory block.");
         customMappingTable = (uint16_t*) calloc(size, sizeof(uint16_t));
-        if (customMappingTable == nullptr) DEBUG_PRINTLN("setUpMatrix: alloc failed");
+        if (customMappingTable == nullptr) USER_PRINTLN("setUpMatrix: alloc failed");
       }
       if (customMappingTable != nullptr) customMappingTableSize = size;
     }
@@ -157,7 +157,7 @@ void WS2812FX::setUpMatrix() {
       #endif
     } else { // memory allocation error
       customMappingTableSize = 0;
-      DEBUG_PRINTLN(F("Ledmap alloc error."));
+      USER_PRINTLN(F("Ledmap alloc error."));
       isMatrix = false;
       panels = 0;
       panel.clear();

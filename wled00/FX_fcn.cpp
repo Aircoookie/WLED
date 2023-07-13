@@ -94,7 +94,7 @@ uint16_t Segment::maxHeight = 1;
 
 // copy constructor - creates a new segment by copy from orig, but does not copy buffers. Does not modify orig!
 Segment::Segment(const Segment &orig) {
-  USER_PRINTLN(F("-- Copy segment constructor --"));
+  DEBUG_PRINTLN(F("-- Copy segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment)); //WLEDMM copy to this
   transitional = false; // copied segment cannot be in transition
   name = nullptr;
@@ -114,8 +114,7 @@ Segment::Segment(const Segment &orig) {
 void Segment::allocLeds() {
   size_t size = sizeof(CRGB)*max((size_t) length(), ledmapMaxSize); //TroyHack
   if ((size < sizeof(CRGB)) || (size > 164000)) {                   //softhack too small (<3) or too large (>160Kb)
-    USER_PRINTF("allocLeds warning: size == %u !!\n", size);
-    USER_FLUSH();
+    DEBUG_PRINTF("allocLeds warning: size == %u !!\n", size);
     if (ledsrgb && (ledsrgbSize == 0)) {
       USER_PRINTLN("allocLeds warning: ledsrgbSize == 0 but ledsrgb!=NULL");
       free(ledsrgb); ledsrgb=nullptr;
@@ -135,7 +134,7 @@ void Segment::allocLeds() {
 
 // move constructor --> moves everything (including buffer) from orig to this
 Segment::Segment(Segment &&orig) noexcept {
-  USER_PRINTLN(F("-- Move segment constructor --"));
+  DEBUG_PRINTLN(F("-- Move segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
   orig.transitional = false; // old segment cannot be in transition any more
   orig.name = nullptr;
@@ -149,7 +148,7 @@ Segment::Segment(Segment &&orig) noexcept {
 
 // copy assignment --> overwrite segment withg orig - deletes old buffers in "this", but does not change orig!
 Segment& Segment::operator= (const Segment &orig) {
-  USER_PRINTLN(F("-- Copy-assignment segment --"));
+  DEBUG_PRINTLN(F("-- Copy-assignment segment --"));
   if (this != &orig) {
     // clean destination
     transitional = false; // copied segment cannot be in transition
@@ -182,7 +181,7 @@ Segment& Segment::operator= (const Segment &orig) {
 
 // move assignment --> moves everything (including buffers) from "orig" to "this"
 Segment& Segment::operator= (Segment &&orig) noexcept {
-  USER_PRINTLN(F("-- Move-assignment segment --"));
+  DEBUG_PRINTLN(F("-- Move-assignment segment --"));
   if (this != &orig) {
     transitional = false; // just temporary
     if (name) { delete[] name; name = nullptr; } // free old name
@@ -257,7 +256,8 @@ void Segment::setUpLeds() {
     ledsrgbSize = length() * sizeof(CRGB); // also set this when using global leds.
     //USER_PRINTF("\nsetUpLeds() Global LEDs: startX=%d stopx=%d startY=%d stopy=%d maxwidth=%d; length=%d, size=%d\n\n", start, stop, startY, stopY, Segment::maxWidth, length(), ledsrgbSize/3);
     #else
-    leds = &Segment::_globalLeds[start];
+    ledsrgb = &Segment::_globalLeds[start];
+    ledsrgbSize = length() * sizeof(CRGB); // also set this when using global leds.
     #endif
   } else if (length() > 0) { //WLEDMM we always want a new buffer //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
     //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
@@ -630,12 +630,12 @@ class JMapC {
     char previousSegmentName[50] = "";
 
     ~JMapC() {
-      USER_PRINTLN("~JMapC");
+      DEBUG_PRINTLN("~JMapC");
       deletejVectorMap();
     }
     void deletejVectorMap() {
       if (jVectorMap.size() > 0) {
-        USER_PRINTLN("delete jVectorMap");
+        DEBUG_PRINTLN("delete jVectorMap");
         for (size_t i=0; i<jVectorMap.size(); i++)
           if (jVectorMap[i].array) { delete[] jVectorMap[i].array; jVectorMap[i].array = nullptr; } // softhack007 quickfix for memory leak
         jVectorMap.clear();
@@ -679,7 +679,7 @@ class JMapC {
       else if (SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
         uint32_t dataSize = 0;
         deletejVectorMap();
-        USER_PRINT("New "); USER_PRINTLN(SEGMENT.name);
+        DEBUG_PRINT("New "); DEBUG_PRINTLN(SEGMENT.name);
         char jMapFileName[50];
         strcpy(jMapFileName, "/");
         strcat(jMapFileName, SEGMENT.name);
@@ -699,6 +699,7 @@ class JMapC {
           if (err) 
           {
             USER_PRINTF("deserializeJson() of parseTree failed with code %s\n", err.c_str());
+            USER_FLUSH();
             if (SEGMENT.name) delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded // softhack007 avoid deleting nullptr
             return;
           }
@@ -752,7 +753,7 @@ class JMapC {
 //WLEDMM jMap
 void Segment::createjMap() {
   if (!jMap) {
-    USER_PRINTLN("createjMap");
+    DEBUG_PRINTLN("createjMap");
     jMap = new JMapC();
   }
 }
@@ -761,7 +762,7 @@ void Segment::createjMap() {
 void Segment::deletejMap() {
   //Should be called from ~Segment but causes crash (and ~Segment is called quite often...)
   if (jMap) {
-    USER_PRINTLN("deletejMap");
+    DEBUG_PRINTLN("deletejMap");
     delete (JMapC *)jMap; jMap = nullptr;
   }
 }
@@ -1991,7 +1992,7 @@ void WS2812FX::restartRuntime() {
 }
 
 void WS2812FX::resetSegments(bool boundsOnly) { //WLEDMM add boundsonly
-  USER_PRINTF("resetSegments %d %dx%d\n", boundsOnly, Segment::maxWidth, Segment::maxHeight);
+  DEBUG_PRINTF("resetSegments %d %dx%d\n", boundsOnly, Segment::maxWidth, Segment::maxHeight);
   if (!boundsOnly) {
     _segments.clear(); // destructs all Segment as part of clearing
     #ifndef WLED_DISABLE_2D
@@ -2328,7 +2329,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     loadedLedmap = n;
     f.close();
 
-      DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
+    USER_PRINTF("Custom ledmap: %d\n", loadedLedmap);
     #ifdef WLED_DEBUG_MAPS
       for (uint16_t j=0; j<customMappingSize; j++) { // fixing a minor warning: declaration of 'i' shadows a previous local
         if (!(j%Segment::maxWidth)) DEBUG_PRINTLN();
@@ -2338,7 +2339,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     #endif
   } else { // memory allocation error
     customMappingTableSize = 0;
-    DEBUG_PRINTLN(F("Deserializemap: Ledmap alloc error."));
+    USER_PRINTLN(F("Deserializemap: Ledmap alloc error."));
+    USER_FLUSH();
   }
 
   releaseJSONBufferLock();

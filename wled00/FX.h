@@ -97,7 +97,6 @@ void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.
   assuming each segment uses the same amount of data. 256 for ESP8266, 640 for ESP32. */
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / strip.getMaxSegments())
 
-//#define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 #define MIN_SHOW_DELAY   (_frametime < 16 ? (_frametime <8? (_frametime <7? (_frametime <6 ? 2 :3) :4) : 8) : 15)    // WLEDMM support higher framerates (up to 250fps)
 
 #define NUM_COLORS       3 /* number of colors per segment */
@@ -502,7 +501,7 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      //#ifdef WLED_DEBUG
+      #ifdef WLED_DEBUG
       if(canUseSerial()) {
         Serial.print(F("Destroying segment:"));
         if (name) Serial.printf(" name=%s (%p)", name, name);
@@ -510,7 +509,7 @@ typedef struct Segment {
         if (ledsrgb) Serial.printf(" [%sledsrgb %u bytes]", Segment::_globalLeds ? "global ":"",length()*sizeof(CRGB));
         Serial.println();
       }
-      //#endif
+      #endif
 
       // WLEDMM only delete segments when they are not in use
       #ifdef ARDUINO_ARCH_ESP32
@@ -603,8 +602,8 @@ typedef struct Segment {
     void addPixelColor(int n, CRGB c, bool fast = false)          { addPixelColor(n, RGBW32(c.r,c.g,c.b,0), fast); } // automatically inline
     void fadePixelColor(uint16_t n, uint8_t fade);
     uint8_t get_random_wheel_index(uint8_t pos);
-	uint32_t __attribute__((pure)) color_from_palette(uint_fast16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
-    uint32_t color_wheel(uint8_t pos);
+	  uint32_t __attribute__((pure)) color_from_palette(uint_fast16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
+    uint32_t __attribute__((pure)) color_wheel(uint8_t pos);
 
     // 2D matrix
     inline uint16_t virtualWidth() const {  // WLEDMM use fast types, and make function inline
@@ -762,9 +761,9 @@ class WS2812FX {  // 96 bytes
     }
 
     ~WS2812FX() {
-      //#ifdef WLED_DEBUG
+      #ifdef WLED_DEBUG
       if (Serial) Serial.println(F("~WS2812FX destroying strip.")); // WLEDMM can't use DEBUG_PRINTLN here
-      //#endif
+      #endif
       if (customMappingTable) delete[] customMappingTable;
       _mode.clear();
       _modeData.clear();
@@ -853,7 +852,7 @@ class WS2812FX {  // 96 bytes
       ablMilliampsMax,
       currentMilliamps,
       getLengthPhysical(void),
-      getLengthTotal(void), // will include virtual/nonexistent pixels in matrix
+      __attribute__((pure)) getLengthTotal(void), // will include virtual/nonexistent pixels in matrix //WLEDMM attribute added
       getFps();
 
     inline uint16_t getFrameTime(void) { return _frametime; }
