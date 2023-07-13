@@ -9,7 +9,11 @@ static volatile uint16_t wsLiveClientId = 0;        // WLEDMM added "static"
 static volatile unsigned long wsLastLiveTime = 0;   // WLEDMM
 //uint8_t* wsFrameBuffer = nullptr;
 
+#if !defined(ARDUINO_ARCH_ESP32) || defined(WLEDMM_FASTPATH)   // WLEDMM
 #define WS_LIVE_INTERVAL 160
+#else
+#define WS_LIVE_INTERVAL 80
+#endif
 
 void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
