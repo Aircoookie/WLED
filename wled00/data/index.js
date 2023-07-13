@@ -1004,10 +1004,15 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
 function btype(b)
 {
 	switch (b) {
+		case 2:
 		case 32: return "ESP32";
+		case 3:
 		case 33: return "ESP32-S2";
+		case 4:
 		case 34: return "ESP32-S3";
+		case 5:
 		case 35: return "ESP32-C3";
+		case 1:
 		case 82: return "ESP8266";
 	}
 	return "?";
@@ -1028,8 +1033,9 @@ function populateNodes(i,n)
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
 		for (var o of n.nodes) {
 			if (o.name) {
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
-				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+				let onoff = `<i class="icons e-icon flr ${o.type&0x80?'':'off'}" onclick="rmtTgl('${o.ip}',this);"">&#xe08f;</i>`;
+				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');"><div class="bname">${bname(o)}</div>${o.vid<2307130?'':onoff}</button>`;
+				urows += inforow(url,`${btype(o.type&0x7F)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
 		}
@@ -2569,6 +2575,24 @@ function setBalance(b)
 {
 	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
+}
+
+function rmtTgl(ip,i) {
+	event.preventDefault();
+	event.stopPropagation();
+	fetch(`http://${ip}/win&T=2`, {method: 'get'})
+	.then((r)=>{
+		return r.text();
+	})
+	.then((t)=>{
+		let c = (new window.DOMParser()).parseFromString(t, "text/xml");
+		// perhaps just i.classList.toggle("off"); would be enough
+		if (c.getElementsByTagName('ac')[0].textContent === "0") {
+			i.classList.add("off");
+		} else {
+			i.classList.remove("off");
+		}
+	});
 }
 
 var hc = 0;
