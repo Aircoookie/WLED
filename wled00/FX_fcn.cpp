@@ -96,6 +96,7 @@ uint16_t Segment::maxHeight = 1;
 Segment::Segment(const Segment &orig) {
   USER_PRINTLN(F("-- Copy segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment)); //WLEDMM copy to this
+  transitional = false; // copied segment cannot be in transition
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
@@ -103,8 +104,8 @@ Segment::Segment(const Segment &orig) {
   if (ledsrgb && !Segment::_globalLeds) {ledsrgb = nullptr; ledsrgbSize = 0;}  // WLEDMM
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-  if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  else markForReset(); // WLEDMM
+  //if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+  //else markForReset(); // WLEDMM
   // if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); } // WLEDMM
   jMap = nullptr; //WLEDMM jMap
 }
@@ -136,6 +137,7 @@ void Segment::allocLeds() {
 Segment::Segment(Segment &&orig) noexcept {
   USER_PRINTLN(F("-- Move segment constructor --"));
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
+  orig.transitional = false; // old segment cannot be in transition any more
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
@@ -150,6 +152,7 @@ Segment& Segment::operator= (const Segment &orig) {
   USER_PRINTLN(F("-- Copy-assignment segment --"));
   if (this != &orig) {
     // clean destination
+    transitional = false; // copied segment cannot be in transition
     if (name) delete[] name;
     if (_t)   delete _t;
     CRGB* oldLeds = ledsrgb;
@@ -158,6 +161,7 @@ Segment& Segment::operator= (const Segment &orig) {
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
+    transitional = false;
     // erase pointers to allocated data
     name = nullptr;
     data = nullptr;
@@ -168,8 +172,8 @@ Segment& Segment::operator= (const Segment &orig) {
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-    if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    else markForReset(); // WLEDMM
+    //if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+    //else markForReset(); // WLEDMM
     //if (orig.ledsrgb && !Segment::_globalLeds) { allocLeds(); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); } // WLEDMM don't copy old buffer
     jMap = nullptr; //WLEDMM jMap
   }
@@ -180,9 +184,10 @@ Segment& Segment::operator= (const Segment &orig) {
 Segment& Segment::operator= (Segment &&orig) noexcept {
   USER_PRINTLN(F("-- Move-assignment segment --"));
   if (this != &orig) {
-    if (name) delete[] name; // free old name
+    transitional = false; // just temporary
+    if (name) { delete[] name; name = nullptr; } // free old name
     deallocateData(); // free old runtime data
-    if (_t) delete _t;
+    if (_t) { delete _t; _t = nullptr; }
     if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: not needed anymore as we will use leds from copy. no need to nullify ledsrgb as it gets new value in memcpy
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
@@ -408,16 +413,16 @@ void Segment::startTransition(uint16_t dur) {
 // transition progression between 0-65535
 uint16_t Segment::progress() {
   if (!transitional || !_t) return 0xFFFFU;
-  uint32_t timeNow = millis();
+  unsigned long timeNow = millis();
   if (timeNow - _t->_start > _t->_dur || _t->_dur == 0) return 0xFFFFU;
   return (timeNow - _t->_start) * 0xFFFFU / _t->_dur;
 }
 
 uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
-  if (transitional && _t) {
-    uint32_t prog = progress() + 1;
-    if (useCct) return ((briNew * prog) + _t->_cctT * (0x10000 - prog)) >> 16;
-    else        return ((briNew * prog) + _t->_briT * (0x10000 - prog)) >> 16;
+  uint32_t prog = progress();
+  if (transitional && _t && prog < 0xFFFFU) {
+    if (useCct) return ((briNew * prog) + _t->_cctT * (0xFFFFU - prog)) >> 16;
+    else        return ((briNew * prog) + _t->_briT * (0xFFFFU - prog)) >> 16;
   } else {
     return briNew;
   }
@@ -437,7 +442,7 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
     // minimum blend time is 100ms maximum is 65535ms
-    uint32_t timeMS = millis() - _t->_start;
+    unsigned long timeMS = millis() - _t->_start;
     uint16_t noOfBlends = (255U * timeMS / _t->_dur) - _t->_prevPaletteBlends;
     for (int i=0; i<noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, targetPalette, 48);
     targetPalette = _t->_palT; // copy transitioning/temporary palette
@@ -828,6 +833,7 @@ void xyFromBlock(uint16_t &x,uint16_t &y, uint16_t i, uint16_t vW, uint16_t vH, 
 
 void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATTR conditionaly
 {
+  if (!isActive()) return; // not active
 #ifndef WLED_DISABLE_2D
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
 #endif
@@ -974,6 +980,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
 // anti-aliased normalized version of setPixelColor()
 void Segment::setPixelColor(float i, uint32_t col, bool aa)
 {
+  if (!isActive()) return; // not active
   int vStrip = int(i/10.0f); // hack to allow running on virtual strips (2D segment columns/rows)
   i -= int(i);
 
@@ -1005,6 +1012,7 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 
 uint32_t Segment::getPixelColor(int i)
 {
+  if (!isActive()) return 0; // not active
 #ifndef WLED_DISABLE_2D
   int vStrip = i>>16;
 #endif
@@ -1099,6 +1107,11 @@ void Segment::refreshLightCapabilities() {
   uint16_t segStartIdx = 0xFFFFU;
   uint16_t segStopIdx  = 0;
 
+  if (!isActive()) {
+    _capabilities = 0;
+    return;
+  }
+
   if (start < Segment::maxWidth * Segment::maxHeight) {
     // we are withing 2D matrix (includes 1D segments)
     for (int y = startY; y < stopY; y++) for (int x = start; x < stop; x++) {
@@ -1143,6 +1156,7 @@ void Segment::refreshLightCapabilities() {
  * Fills segment with color
  */
 void Segment::fill(uint32_t c) {
+  if (!isActive()) return; // not active
   const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();             // WLEDMM use fast int types
   const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
   for(uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
@@ -1158,6 +1172,7 @@ void Segment::blendPixelColor(int n, uint32_t color, uint8_t blend) {
 
 // Adds the specified color with the existing pixel color perserving color balance.
 void Segment::addPixelColor(int n, uint32_t color, bool fast) {
+  if (!isActive()) return; // not active
   uint32_t col = getPixelColor(n);
   uint8_t r = R(col);
   uint8_t g = G(col);
@@ -1176,6 +1191,7 @@ void Segment::addPixelColor(int n, uint32_t color, bool fast) {
 }
 
 void Segment::fadePixelColor(uint16_t n, uint8_t fade) {
+  if (!isActive()) return; // not active
   CRGB pix = CRGB(getPixelColor(n)).nscale8_video(fade);
   setPixelColor(n, pix);
 }
@@ -1184,6 +1200,7 @@ void Segment::fadePixelColor(uint16_t n, uint8_t fade) {
  * fade out function, higher rate = quicker fade
  */
 void Segment::fade_out(uint8_t rate) {
+  if (!isActive()) return; // not active
   const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();           // WLEDMM use fast int types
   const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
 
@@ -1222,7 +1239,7 @@ void Segment::fade_out(uint8_t rate) {
 
 // fades all pixels to black using nscale8()
 void Segment::fadeToBlackBy(uint8_t fadeBy) {
-  if (fadeBy == 0) return;   // optimization - no scaling to apply
+  if (!isActive() || fadeBy == 0) return;   // optimization - no scaling to apply
   const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();      // WLEDMM use fast int types
   const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
   const uint_fast8_t scaledown = 255-fadeBy;  // WLEDMM faster to pre-compute this
@@ -1244,7 +1261,7 @@ void Segment::fadeToBlackBy(uint8_t fadeBy) {
  */
 void Segment::blur(uint8_t blur_amount)
 {
-  if (blur_amount == 0) return; // optimization: 0 means "don't blur"
+  if (!isActive() || blur_amount == 0) return; // optimization: 0 means "don't blur"
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     // compatibility with 2D

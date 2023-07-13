@@ -306,6 +306,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa, bool fast
 
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
+  if (!isActive()) return 0; // not active
   int i = XY(x,y);
   if (ledsrgb) return RGBW32(ledsrgb[i].r, ledsrgb[i].g, ledsrgb[i].b, 0);
   if (reverse  ) x = virtualWidth()  - x - 1;
@@ -324,6 +325,7 @@ void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t 
 
 // Adds the specified color with the existing pixel color perserving color balance.
 void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
+  if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
   uint32_t col = getPixelColorXY(x,y);
   uint8_t r = R(col);
@@ -343,12 +345,14 @@ void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
 }
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
+  if (!isActive()) return; // not active
   CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
   setPixelColorXY(x, y, pix);
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
 void Segment::blurRow(uint16_t row, fract8 blur_amount) {
+  if (!isActive()) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
@@ -376,6 +380,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
 
 // blurCol: perform a blur on a column of a rectangular matrix
 void Segment::blurCol(uint16_t col, fract8 blur_amount) {
+  if (!isActive()) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
@@ -455,6 +460,7 @@ void Segment::blur1d(fract8 blur_amount) {   //WLEDMM: use fast types
 }
 
 void Segment::moveX(int8_t delta, bool wrap) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (!delta || abs(delta) >= cols) return;
@@ -472,6 +478,7 @@ void Segment::moveX(int8_t delta, bool wrap) {
 }
 
 void Segment::moveY(int8_t delta, bool wrap) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (!delta || abs(delta) >= rows) return;
@@ -507,6 +514,7 @@ void Segment::move(uint8_t dir, uint8_t delta, bool wrap) {
 }
 
 void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  if (!isActive()) return; // not active
   // Bresenham’s Algorithm
   int d = 3 - (2*radius);
   int y = radius, x = 0;
@@ -531,6 +539,7 @@ void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for (int16_t y = -radius; y <= radius; y++) {
@@ -544,6 +553,7 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
 }
 
 void Segment::nscale8(uint8_t scale) {  //WLEDMM: use fast types
+  if (!isActive()) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
   for(uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
@@ -553,6 +563,7 @@ void Segment::nscale8(uint8_t scale) {  //WLEDMM: use fast types
 
 //line function
 void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
@@ -569,6 +580,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 }
 
 void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color, uint32_t fillColor) {
+  if (!isActive()) return; // not active
   // float step = degrees / (2.85f*MAX(radius,1));
   // for (float rad = 0.0f; rad <= degrees+step/2; rad += step) {
   //   // may want to try float version as well (with or without antialiasing)
@@ -637,6 +649,7 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
+  if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
@@ -672,6 +685,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
 void Segment::wu_pixel(uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+  if (!isActive()) return; // not active
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel

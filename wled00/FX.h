@@ -429,7 +429,7 @@ typedef struct Segment {
       //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
       //uint32_t      _step, _call; // previous mode/effect runtime data
       //byte         *_data;        // previous mode/effect runtime data
-      uint32_t      _start;
+      unsigned long _start;         // must accommodate millis()
       uint16_t      _dur;
       Transition(uint16_t dur=750)
         : _briT(255)
@@ -518,8 +518,8 @@ typedef struct Segment {
       #endif
 
       if (!Segment::_globalLeds && (ledsrgb != nullptr)) {free(ledsrgb); ledsrgb = nullptr;}
-      if (name) delete[] name;
-      if (_t) delete _t;
+      if (name) { delete[] name; name = nullptr; }
+      if (_t)   { transitional = false; delete _t; _t = nullptr; }
       deallocateData();
     }
 
@@ -537,7 +537,7 @@ typedef struct Segment {
     inline bool     hasRGB(void)         const { return _isRGB; }
     inline bool     hasWhite(void)       const { return _hasW; }
     inline bool     isCCT(void)          const { return _isCCT; }
-    inline uint16_t width(void)          const { return (stop > start)   ? (stop - start)   : 0; } // segment width in physical pixels (length if 1D)
+    inline uint16_t width(void)          const { return isActive() ? (stop - start) : 0; }         // segment width in physical pixels (length if 1D)
     inline uint16_t height(void)         const { return (stopY > startY) ? (stopY - startY) : 0; } // segment height (if 2D) in physical pixels // WLEDMM make sure its always > 0
     inline uint16_t length(void)         const { return width() * height(); }     // segment length (count) in physical pixels
     inline uint16_t groupLength(void)    const { return max(1, grouping + spacing); } // WLEDMM length = 0 could lead to div/0 in virtualWidth() and virtualHeight()
