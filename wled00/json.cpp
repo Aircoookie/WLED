@@ -112,8 +112,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (stop > start && of > len -1) of = len -1;
 
   // update segment (delete if necessary)
-  // we must not change segment dimensions during drawing of effects in that segment as concurrent access may cause a crash
-  seg.setUp(start, stop, grp, spc, of, startY, stopY, id);
+  // do not call seg.setUp() here, as it may cause a crash due to concurrent access if the segment is currently drawing effects
+  // WS2812FX handles queueing of the change
+  strip.setSegment(id, start, stop, grp, spc, of, startY, stopY);
 
   if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
 

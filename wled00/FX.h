@@ -395,9 +395,6 @@ typedef struct Segment {
     uint16_t        _dataLen;
     static uint16_t _usedSegmentData;
 
-    static uint16_t _qStart, _qStop, _qStartY, _qStopY;
-    static uint8_t _queuedChangesSegId;
-
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
       uint32_t      _colorT[NUM_COLORS];
@@ -689,7 +686,15 @@ class WS2812FX {  // 96 bytes
       customMappingSize(0),
       _lastShow(0),
       _segment_index(0),
-      _mainSegment(0)
+      _mainSegment(0),
+      _queuedChangesSegId(255),
+      _qStart(0),
+      _qStop(0),
+      _qStartY(0),
+      _qStopY(0),
+      _qGrouping(0),
+      _qSpacing(0),
+      _qOffset(0)
     {
       WS2812FX::instance = this;
       _mode.reserve(_modeCount);     // allocate memory to prevent initial fragmentation (does not increase size())
@@ -745,7 +750,7 @@ class WS2812FX {  // 96 bytes
     inline void trigger(void) { _triggered = true; } // Forces the next frame to be computed on all active segments.
     inline void setShowCallback(show_callback cb) { _callback = cb; }
     inline void setTransition(uint16_t t) { _transitionDur = t; }
-    inline void appendSegment(const Segment &seg = Segment()) { _segments.push_back(seg); }
+    inline void appendSegment(const Segment &seg = Segment()) { if (_segments.size() < getMaxSegments()) _segments.push_back(seg); }
 
     bool
       checkSegmentAlignment(void),
@@ -899,9 +904,16 @@ class WS2812FX {  // 96 bytes
 
     uint8_t _segment_index;
     uint8_t _mainSegment;
+    uint8_t _queuedChangesSegId;
+    uint16_t _qStart, _qStop, _qStartY, _qStopY;
+    uint8_t _qGrouping, _qSpacing;
+    uint16_t _qOffset;
 
     uint8_t
       estimateCurrentAndLimitBri(void);
+
+    void
+      setUpSegmentFromQueuedChanges(void);
 };
 
 extern const char JSON_mode_names[];

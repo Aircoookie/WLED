@@ -76,9 +76,6 @@
 uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
-uint8_t  Segment::_queuedChangesSegId = 255U;
-uint16_t Segment::_qStart  = 0, Segment::_qStop  = 0;
-uint16_t Segment::_qStartY = 0, Segment::_qStopY = 0;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
@@ -181,10 +178,6 @@ void Segment::resetIfRequired() {
   
   deallocateData();
   next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
-  if (_queuedChangesSegId == strip.getCurrSegmentId()) { // apply queued changes
-    setUp(_qStart, _qStop, grouping, spacing, offset, _qStartY, _qStopY);
-    _queuedChangesSegId = 255;
-  }
   reset = false;
 }
 
@@ -362,8 +355,6 @@ void Segment::handleTransition() {
 
 // segId is given when called from network callback, changes are queued if that segment is currently in its effect function
 void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y, uint8_t segId) {
-  if (_queuedChangesSegId == segId) _queuedChangesSegId = 255; // cancel queued change if already queued for this segment
-
   // return if neither bounds nor grouping have changed
   bool boundsUnchanged = (start == i1 && stop == i2);
   #ifndef WLED_DISABLE_2D
@@ -384,17 +375,7 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
   if (ofs < UINT16_MAX) offset = ofs;
 
   markForReset();
-  if (boundsUnchanged) return; // TODO test if it is save to change grp/spc/ofs without queueing
-  // queuing a change for a second segment will lead to the loss of the first change if not yet applied
-  // however this is not a problem as the queued change is applied immediately after the effect function in that segment returns
-  if (segId < MAX_NUM_SEGMENTS && segId == strip.getCurrSegmentId() && strip.isServicing()) { // queue change to prevent concurrent access
-    _qStart  = i1;
-    _qStop   = i2;
-    _qStartY = i1Y;
-    _qStopY  = i2Y;
-    _queuedChangesSegId = segId;
-    return; // queued changes are applied immediately after effect function returns
-  }
+  if (boundsUnchanged) return;
 
   // apply change immediately
   if (i2 <= i1) { //disable segment
@@ -1098,10 +1079,8 @@ void WS2812FX::service() {
     // reset the segment runtime data if needed
     seg.resetIfRequired();
 
-    if (!seg.isActive()) { _segment_index++; continue; }
-
     // last condition ensures all solid segments are updated at the same time
-    if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
+    if (seg.isActive() && (nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC)))
     {
       doShow = true;
       uint16_t delay = FRAMETIME;
@@ -1126,7 +1105,7 @@ void WS2812FX::service() {
 
       seg.next_time = nowUp + delay;
     }
-    seg.resetIfRequired(); // another reset chance, mainly to apply new segment bounds if queued
+    if (_segment_index == _queuedChangesSegId) setUpSegmentFromQueuedChanges();
     _segment_index++;
   }
   _virtualSegmentLength = 0;
@@ -1453,10 +1432,32 @@ Segment& WS2812FX::getSegment(uint8_t id) {
   return _segments[id >= _segments.size() ? getMainSegmentId() : id]; // vectors
 }
 
-// compatibility method (deprecated)
-void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
-  if (n >= _segments.size()) return;
-  _segments[n].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
+// sets new segment bounds, queues if that segment is currently running
+void WS2812FX::setSegment(uint8_t segId, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
+  if (segId >= getSegmentsNum()) {
+    if (i2 <= i1) return; // do not append empty/inactive segments
+    appendSegment(Segment(0, strip.getLengthTotal()));
+    segId = getSegmentsNum()-1; // segments are added at the end of list
+  }
+
+  if (_queuedChangesSegId == segId) _queuedChangesSegId = 255; // cancel queued change if already queued for this segment
+
+  if (segId < getMaxSegments() && segId == getCurrSegmentId() && isServicing()) { // queue change to prevent concurrent access
+    // queuing a change for a second segment will lead to the loss of the first change if not yet applied
+    // however this is not a problem as the queued change is applied immediately after the effect function in that segment returns
+    _qStart  = i1; _qStop   = i2; _qStartY = startY; _qStopY  = stopY;
+    _qGrouping = grouping; _qSpacing  = spacing; _qOffset   = offset;
+    _queuedChangesSegId = segId;
+    return; // queued changes are applied immediately after effect function returns
+  }
+  
+  _segments[segId].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
+}
+
+void WS2812FX::setUpSegmentFromQueuedChanges() {
+  if (_queuedChangesSegId >= getSegmentsNum()) return;
+  getSegment(_queuedChangesSegId).setUp(_qStart, _qStop, _qGrouping, _qSpacing, _qOffset, _qStartY, _qStopY);
+  _queuedChangesSegId = 255;
 }
 
 void WS2812FX::restartRuntime() {
