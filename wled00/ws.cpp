@@ -253,7 +253,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
 
 void handleWs()
 {
-  if (millis() - wsLastLiveTime > MAX((strip.getLengthTotal()/20), WS_LIVE_INTERVAL)) //WLEDMM dynamic nr of peek frames per second
+  if (millis() - wsLastLiveTime > max((strip.getLengthTotal()/20), WS_LIVE_INTERVAL)) //WLEDMM dynamic nr of peek frames per second
   {
     #ifdef ESP8266
     ws.cleanupClients(3);
