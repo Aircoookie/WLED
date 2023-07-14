@@ -1,7 +1,27 @@
 ## WLED changelog
 
-#### Build 2306180
+#### Build 2307130
+-   larger `oappend()` stack buffer (3.5k) for ESP32
+-   Preset cycle bugfix (#3262)
+-   Rotary encoder ALT fix for large LED count (#3276)
+-   effect updates (2D Plasmaball), `blur()` speedup
+-   On/Off toggle from nodes view (may show unknow device type on older versions) (#3291)
+-   various fixes and improvements (ABL, crashes when changing presets with different segments)
 
+#### Build 2306270
+-   ESP-NOW remote support (#3237)
+-   Pixel Magic tool (display pixel art) (#3249)
+-   Websocket (peek) fallback when connection cannot be established, WS retries (#3267)
+-   Add WiFi network scan RPC command to Improv Serial (#3271)
+-   Longer (custom option available) segment name for ESP32
+-   various fixes and improvements
+
+#### Build 2306210
+-   0.14.0-b3 release
+-   respect global I2C in all usermods (no local initilaisation of I2C bus)
+-   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
+
+#### Build 2306180
 -   Added client-side option for applying effect defaults from metadata
 -   Improved ESP8266 stability by reducing WebSocket response resends
 -   Updated ESP8266 core to 3.1.2
