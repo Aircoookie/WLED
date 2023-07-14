@@ -228,18 +228,18 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
     if (_reversed) pix  = _len - pix -1;
     else           pix += _skip;
     uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
+    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, (_type==TYPE_WS2812_1CH_X3) ? IC_INDEX_WS2812_1CH_3X(pix) : pix, co), _bri);
     if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
-      uint16_t pOld = pix;
-      pix = IC_INDEX_WS2812_1CH_3X(pix);
-      uint32_t c = PolyBus::getPixelColor(_busPtr, _iType, pix, co);
-      switch (pOld % 3) { // get only the single channel
-        case 0: c = RGBW32(G(c), G(c), G(c), G(c)); break;
-        case 1: c = RGBW32(R(c), R(c), R(c), R(c)); break;
-        case 2: c = RGBW32(B(c), B(c), B(c), B(c)); break;
+      uint8_t r = R(c);
+      uint8_t g = _reversed ? B(c) : G(c); // should G and B be switched if _reversed?
+      uint8_t b = _reversed ? G(c) : B(c);
+      switch (pix % 3) { // get only the single channel
+        case 0: c = RGBW32(g, g, g, g); break;
+        case 1: c = RGBW32(r, r, r, r); break;
+        case 2: c = RGBW32(b, b, b, b); break;
       }
-      return c;
     }
-    return restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, pix, co), _bri);
+    return c;
   }
 }
 
