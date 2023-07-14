@@ -53,11 +53,13 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   const bool iAmGroot = !inDeepCall;  // WLEDMM will only be true if this is the toplevel of the recursion.
   //WLEDMM add USER_PRINT
+  #ifdef WLED_DEBUG
   if (elem.size()!=1 || elem["stop"] != 0) { // not for {"stop":0}
     String temp;
     serializeJson(elem, temp);
     USER_PRINTF("deserializeSegment %s\n", temp.c_str());
   }
+  #endif
 
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return false;
@@ -374,9 +376,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   const bool iAmGroot = !inDeepCall;  // WLEDMM will only be true if this is the toplevel of the recursion.
   //WLEDMM add USER_PRINT
+  #ifdef WLED_DEBUG
   String temp;
   serializeJson(root, temp);
   USER_PRINTF("deserializeState %s\n", temp.c_str());
+  #endif
 
   bool stateResponse = root[F("v")] | false;
 

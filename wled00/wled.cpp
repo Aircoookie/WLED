@@ -436,6 +436,9 @@ void WLED::setup()
   USER_FLUSH(); delay(100);
   USER_PRINTLN();
   USER_PRINT(F("---WLED "));
+  #ifdef WLEDMM_FASTPATH
+  USER_PRINT("=FASTPATH= ");
+  #endif
   USER_PRINT(versionString);
   USER_PRINT(" ");
   USER_PRINT(VERSION);

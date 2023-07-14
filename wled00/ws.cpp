@@ -10,7 +10,7 @@ static volatile unsigned long wsLastLiveTime = 0;   // WLEDMM
 //uint8_t* wsFrameBuffer = nullptr;
 
 #if !defined(ARDUINO_ARCH_ESP32) || defined(WLEDMM_FASTPATH)   // WLEDMM
-#define WS_LIVE_INTERVAL 160
+#define WS_LIVE_INTERVAL 120
 #else
 #define WS_LIVE_INTERVAL 80
 #endif
@@ -19,14 +19,14 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 {
   if(type == WS_EVT_CONNECT){
     //client connected
-    USER_PRINTLN(F("WS client connected."));
+    DEBUG_PRINTLN(F("WS client connected."));
     sendDataWs(client);
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
-    USER_PRINTLN(F("WS client disconnected."));
+    DEBUG_PRINTLN(F("WS client disconnected."));
   } else if(type == WS_EVT_DATA){
-    USER_PRINTLN(F("WS event data."));
+    DEBUG_PRINTLN(F("WS event data."));
     // data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
     if(info->final && info->index == 0 && info->len == len){
@@ -91,7 +91,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     }
   } else if(type == WS_EVT_ERROR){
     //error was received from the other end
-    DEBUG_PRINTLN(F("WS error."));
+    USER_PRINTLN(F("WS error."));
 
   } else if(type == WS_EVT_PONG){
     //pong message was received (in response to a ping request maybe)
@@ -102,7 +102,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
 void sendDataWs(AsyncWebSocketClient * client)
 {
-  USER_PRINTF("sendDataWs\n");
+  DEBUG_PRINTF("sendDataWs\n");
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
@@ -147,7 +147,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   #endif
   if (!buffer || heap1-heap2<len) {
     releaseJSONBufferLock();
-    DEBUG_PRINTLN(F("WS buffer allocation failed."));
+    USER_PRINTLN(F("WS buffer allocation failed."));
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
     ws.cleanupClients(0); //disconnect all clients to release memory
     ws._cleanBuffers();
@@ -212,7 +212,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   if (wsBuf == nullptr) {    // 8266 does not support exceptions
 #endif
     wsBuf = nullptr;
-    DEBUG_PRINTLN(F("WS buffer allocation failed."));
+    USER_PRINTLN(F("WS buffer allocation failed."));
     //ws.closeAll(1013); //code 1013 = temporary overload, try again later
     //ws.cleanupClients(0); //disconnect all clients to release memory
     ws._cleanBuffers();

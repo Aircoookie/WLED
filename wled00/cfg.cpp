@@ -21,7 +21,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   //WLEDMM add USER_PRINT
   // String temp;
   // serializeJson(doc, temp);
-  USER_PRINTF("deserializeConfig\n");
+  DEBUG_PRINTF("deserializeConfig\n");
 
   bool needsSave = false;
   //int rev_major = doc["rev"][0]; // 1
@@ -1065,7 +1065,7 @@ void serializeConfig() {
   usermods.addToConfig(usermods_settings);
 
   //WLEDMM add USER_PRINT
-  USER_PRINTF("serializeConfig\n");
+  DEBUG_PRINTF("serializeConfig\n");
 
   File f = WLED_FS.open("/cfg.json", "w");
   if (f) serializeJson(doc, f);
