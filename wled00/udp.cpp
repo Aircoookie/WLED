@@ -189,7 +189,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
 void exitRealtime() {
   if (!realtimeMode) return;
   if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-  strip.setBrightness(scaledBri(bri));
+  strip.setBrightness(scaledBri(bri), true);
   realtimeTimeout = 0; // cancel realtime mode immediately
   realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediately
   realtimeIP[0] = 0;
@@ -362,7 +362,7 @@ void handleNotifications()
           uint16_t stopY  = 1, stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
           uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
           if (!receiveSegmentOptions) {
-            selseg.set(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+            selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
             continue;
           }
           //for (size_t j = 1; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, on, reversed; ignore selected
@@ -396,9 +396,9 @@ void handleNotifications()
             stopY  = (udpIn[34+ofs] << 8 | udpIn[35+ofs]);
           }
           if (receiveSegmentBounds) {
-            selseg.set(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+            selseg.setUp(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
           } else {
-            selseg.set(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+            selseg.setUp(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
           }
         }
         stateChanged = true;
@@ -669,6 +669,7 @@ void sendSysInfoUDP()
   #else
   data[38] = NODE_TYPE_ID_UNDEFINED;
   #endif
+  if (bri) data[38] |= 0x80U;  // add on/off state
   data[39] = ip[3]; // unit ID == last IP number
 
   uint32_t build = VERSION;
@@ -771,7 +772,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
 
         // write the colors, the write write(const uint8_t *buffer, size_t size)
         // function is just a loop internally too
-        for (size_t i = 0; i < packetSize; i += 3) {
+        for (size_t i = 0; i < packetSize; i += (isRGBW?4:3)) {
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // R
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // G
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // B
@@ -821,9 +822,9 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
           }
         }
 
-        byte buffer[ART_NET_HEADER_SIZE];
-        memcpy_P(buffer, ART_NET_HEADER, ART_NET_HEADER_SIZE);
-        ddpUdp.write(buffer, ART_NET_HEADER_SIZE); // This doesn't change. Hard coded ID, OpCode, and protocol version.
+        byte header_buffer[ART_NET_HEADER_SIZE];
+        memcpy_P(header_buffer, ART_NET_HEADER, ART_NET_HEADER_SIZE);
+        ddpUdp.write(header_buffer, ART_NET_HEADER_SIZE); // This doesn't change. Hard coded ID, OpCode, and protocol version.
         ddpUdp.write(sequenceNumber & 0xFF); // sequence number. 1..255
         ddpUdp.write(0x00); // physical - more an FYI, not really used for anything. 0..3
         ddpUdp.write((currentPacket) & 0xFF); // Universe LSB. 1 full packet == 1 full universe, so just use current packet number.

@@ -40,39 +40,39 @@ class WordClockUsermod : public Usermod
     // Normal wiring
     const int maskMinutes[14][maskSizeMinutes] = 
     {
-      {107, 108, 109,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // :00
-      {  7,   8,   9,  10,  40,  41,  42,  43,  -1,  -1,  -1,  -1}, // :05 fünf nach
-      { 11,  12,  13,  14,  40,  41,  42,  43,  -1,  -1,  -1,  -1}, // :10 zehn nach
-      { 26,  27,  28,  29,  30,  31,  32,  -1,  -1,  -1,  -1,  -1}, // :15 viertel
-      { 15,  16,  17,  18,  19,  20,  21,  40,  41,  42,  43,  -1}, // :20 zwanzig nach
-      {  7,   8,   9,  10,  33,  34,  35,  44,  45,  46,  47,  -1}, // :25 fünf vor halb
-      { 44,  45,  46,  47,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // :30 halb
-      {  7,   8,   9,  10,  40,  41,  42,  43,  44,  45,  46,  47}, // :35 fünf nach halb
-      { 15,  16,  17,  18,  19,  20,  21,  33,  34,  35,  -1,  -1}, // :40 zwanzig vor
-      { 22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  -1}, // :45 dreiviertel
-      { 11,  12,  13,  14,  33,  34,  35,  -1,  -1,  -1,  -1,  -1}, // :50 zehn vor
-      {  7,   8,   9,  10,  33,  34,  35,  -1,  -1,  -1,  -1,  -1}, // :55 fünf vor
-      { 26,  27,  28,  29,  30,  31,  32,  40,  41,  42,  43,  -1}, // :15 alternative viertel nach
-      { 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  -1,  -1}  // :45 alternative viertel vor
+      {107, 108, 109,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 0 - 00
+      {  7,   8,   9,  10,  40,  41,  42,  43,  -1,  -1,  -1,  -1}, // 1 - 05 fünf nach
+      { 11,  12,  13,  14,  40,  41,  42,  43,  -1,  -1,  -1,  -1}, // 2 - 10 zehn nach
+      { 26,  27,  28,  29,  30,  31,  32,  -1,  -1,  -1,  -1,  -1}, // 3 - 15 viertel
+      { 15,  16,  17,  18,  19,  20,  21,  40,  41,  42,  43,  -1}, // 4 - 20 zwanzig nach
+      {  7,   8,   9,  10,  33,  34,  35,  44,  45,  46,  47,  -1}, // 5 - 25 fünf vor halb
+      { 44,  45,  46,  47,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 6 - 30 halb
+      {  7,   8,   9,  10,  40,  41,  42,  43,  44,  45,  46,  47}, // 7 - 35 fünf nach halb
+      { 15,  16,  17,  18,  19,  20,  21,  33,  34,  35,  -1,  -1}, // 8 - 40 zwanzig vor
+      { 22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  -1}, // 9 - 45 dreiviertel
+      { 11,  12,  13,  14,  33,  34,  35,  -1,  -1,  -1,  -1,  -1}, // 10 - 50 zehn vor
+      {  7,   8,   9,  10,  33,  34,  35,  -1,  -1,  -1,  -1,  -1}, // 11 - 55 fünf vor
+      { 26,  27,  28,  29,  30,  31,  32,  40,  41,  42,  43,  -1}, // 12 - 15 alternative viertel nach
+      { 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  -1,  -1}  // 13 - 45 alternative viertel vor
     };
 
     // Meander wiring
     const int maskMinutesMea[14][maskSizeMinutesMea] = 
     {
-      { 99, 100, 101,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // :00
-      {  7,   8,   9,  10,  33,  34,  35,  36,  -1,  -1,  -1,  -1}, // :05 fünf nach
-      { 18,  19,  20,  21,  33,  34,  35,  36,  -1,  -1,  -1,  -1}, // :10 zehn nach
-      { 26,  27,  28,  29,  30,  31,  32,  -1,  -1,  -1,  -1,  -1}, // :15 viertel
-      { 11,  12,  13,  14,  15,  16,  17,  33,  34,  35,  36,  -1}, // :20 zwanzig nach
-      {  7,   8,   9,  10,  41,  42,  43,  44,  45,  46,  47,  -1}, // :25 fünf vor halb
-      { 44,  45,  46,  47,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // :30 halb
-      {  7,   8,   9,  10,  33,  34,  35,  36,  44,  45,  46,  47}, // :35 fünf nach halb
-      { 11,  12,  13,  14,  15,  16,  17,  41,  42,  43,  -1,  -1}, // :40 zwanzig vor
-      { 22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  -1}, // :45 dreiviertel
-      { 18,  19,  20,  21,  41,  42,  43,  -1,  -1,  -1,  -1,  -1}, // :50 zehn vor
-      {  7,   8,   9,  10,  41,  42,  43,  -1,  -1,  -1,  -1,  -1}, // :55 fünf vor
-      { 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  -1}, // :15 alternative viertel nach
-      { 26,  27,  28,  29,  30,  31,  32,  41,  42,  43,  -1,  -1}  // :45 alternative viertel vor
+      { 99, 100, 101,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 0 - 00
+      {  7,   8,   9,  10,  33,  34,  35,  36,  -1,  -1,  -1,  -1}, // 1 - 05 fünf nach
+      { 18,  19,  20,  21,  33,  34,  35,  36,  -1,  -1,  -1,  -1}, // 2 - 10 zehn nach
+      { 26,  27,  28,  29,  30,  31,  32,  -1,  -1,  -1,  -1,  -1}, // 3 - 15 viertel
+      { 11,  12,  13,  14,  15,  16,  17,  33,  34,  35,  36,  -1}, // 4 - 20 zwanzig nach
+      {  7,   8,   9,  10,  41,  42,  43,  44,  45,  46,  47,  -1}, // 5 - 25 fünf vor halb
+      { 44,  45,  46,  47,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // 6 - 30 halb
+      {  7,   8,   9,  10,  33,  34,  35,  36,  44,  45,  46,  47}, // 7 - 35 fünf nach halb
+      { 11,  12,  13,  14,  15,  16,  17,  41,  42,  43,  -1,  -1}, // 8 - 40 zwanzig vor
+      { 22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  -1}, // 9 - 45 dreiviertel
+      { 18,  19,  20,  21,  41,  42,  43,  -1,  -1,  -1,  -1,  -1}, // 10 - 50 zehn vor
+      {  7,   8,   9,  10,  41,  42,  43,  -1,  -1,  -1,  -1,  -1}, // 11 - 55 fünf vor
+      { 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  -1}, // 12 - 15 alternative viertel nach
+      { 26,  27,  28,  29,  30,  31,  32,  41,  42,  43,  -1,  -1}  // 13 - 45 alternative viertel vor
     };
 
 
@@ -284,12 +284,13 @@ class WordClockUsermod : public Usermod
             setHours(hours + 1, false);
             break;
         case 9:
-            // viertel vor bzw dreiviertel
+            // viertel vor
             if (nord) {
-              setMinutes(9);
+              setMinutes(13);
             } 
+            // dreiviertel
               else {
-              setMinutes(12);
+              setMinutes(9);
             }
             setHours(hours + 1, false);
             break;
@@ -422,12 +423,18 @@ class WordClockUsermod : public Usermod
      */
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject("WordClockUsermod");
-      top["active"] = usermodActive;
-      top["displayItIs"] = displayItIs;
-      top["ledOffset"] = ledOffset;
-      top["Meander wiring?"] = meander;
-      top["Norddeutsch"] = nord;
+      JsonObject top = root.createNestedObject(F("WordClockUsermod"));
+      top[F("active")] = usermodActive;
+      top[F("displayItIs")] = displayItIs;
+      top[F("ledOffset")] = ledOffset;
+      top[F("Meander wiring?")] = meander;
+      top[F("Norddeutsch")] = nord;
+    }
+
+    void appendConfigData()
+    {
+      oappend(SET_F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
+      oappend(SET_F("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');"));
     }
 
     /*
@@ -450,15 +457,15 @@ class WordClockUsermod : public Usermod
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-      JsonObject top = root["WordClockUsermod"];
+      JsonObject top = root[F("WordClockUsermod")];
 
       bool configComplete = !top.isNull();
 
-      configComplete &= getJsonValue(top["active"], usermodActive);
-      configComplete &= getJsonValue(top["displayItIs"], displayItIs);
-      configComplete &= getJsonValue(top["ledOffset"], ledOffset);
-      configComplete &= getJsonValue(top["Meander wiring?"], meander);
-      configComplete &= getJsonValue(top["Norddeutsch"], nord);
+      configComplete &= getJsonValue(top[F("active")], usermodActive);
+      configComplete &= getJsonValue(top[F("displayItIs")], displayItIs);
+      configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
+      configComplete &= getJsonValue(top[F("Meander wiring?")], meander);
+      configComplete &= getJsonValue(top[F("Norddeutsch")], nord);
 
       return configComplete;
     }

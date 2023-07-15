@@ -8,7 +8,6 @@
 #pragma once
 
 #include "wled.h"
-#include <Wire.h>
 #include <BH1750.h>
 
 // the max frequency to check photoresistor, 10 seconds
@@ -56,15 +55,6 @@ private:
   static const char _offset[];
   static const char _HomeAssistantDiscovery[];
 
-  // set the default pins based on the architecture, these get overridden by Usermod menu settings
-  #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards
-    #define HW_PIN_SCL 22
-    #define HW_PIN_SDA 21
-  #else // ESP8266 boards
-    #define HW_PIN_SCL 5
-    #define HW_PIN_SDA 4
-  #endif
-  int8_t ioPin[2] = {HW_PIN_SCL, HW_PIN_SDA};        // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
   bool initDone = false;
   bool sensorFound = false;
 
@@ -123,14 +113,7 @@ private:
 public:
   void setup()
   {
-    bool HW_Pins_Used = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA); // note whether architecture-based hardware SCL/SDA pins used
-    PinOwner po = PinOwner::UM_BH1750; // defaults to being pinowner for SCL/SDA pins
-    PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };  // allocate pins
-    if (HW_Pins_Used) po = PinOwner::HW_I2C; // allow multiple allocations of HW I2C bus pins
-    if (!pinManager.allocateMultiplePins(pins, 2, po)) return;
-    
-    Wire.begin(ioPin[1], ioPin[0]);
-
+    if (i2c_scl<0 || i2c_sda<0) { enabled = false; return; }
     sensorFound = lightMeter.begin();
     initDone = true;
   }
@@ -190,7 +173,9 @@ public:
       user = root.createNestedObject(F("u"));
 
     JsonArray lux_json = user.createNestedArray(F("Luminance"));
-    if (!sensorFound) {
+    if (!enabled) {
+      lux_json.add(F("disabled"));
+    } else if (!sensorFound) {
         // if no sensor 
         lux_json.add(F("BH1750 "));
         lux_json.add(F("Not Found"));
@@ -216,9 +201,6 @@ public:
     top[FPSTR(_minReadInterval)] = minReadingInterval;
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
     top[FPSTR(_offset)] = offset;
-    JsonArray io_pin = top.createNestedArray(F("pin"));
-    for (byte i=0; i<2; i++) io_pin.add(ioPin[i]);
-    top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
 
     DEBUG_PRINTLN(F("BH1750 config saved."));
   }
@@ -226,8 +208,6 @@ public:
   // called before setup() to populate properties from values stored in cfg.json
   bool readFromConfig(JsonObject &root)
   {
-    int8_t newPin[2]; for (byte i=0; i<2; i++) newPin[i] = ioPin[i]; // prepare to note changed pins
-
     // we look for JSON object.
     JsonObject top = root[FPSTR(_name)];
     if (top.isNull())
@@ -244,27 +224,12 @@ public:
     configComplete &= getJsonValue(top[FPSTR(_minReadInterval)], minReadingInterval, 500); //ms
     configComplete &= getJsonValue(top[FPSTR(_HomeAssistantDiscovery)], HomeAssistantDiscovery, false);
     configComplete &= getJsonValue(top[FPSTR(_offset)], offset, 1);
-    for (byte i=0; i<2; i++) configComplete &= getJsonValue(top[F("pin")][i], newPin[i], ioPin[i]);
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
-      // first run: reading from cfg.json
-      for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
       DEBUG_PRINTLN(F(" config loaded."));
     } else {
       DEBUG_PRINTLN(F(" config (re)loaded."));
-      // changing parameters from settings page
-      bool pinsChanged = false;
-      for (byte i=0; i<2; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; } // check if any pins changed
-      if (pinsChanged) { //if pins changed, deallocate old pins and allocate new ones
-        PinOwner po = PinOwner::UM_BH1750;
-        if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-        pinManager.deallocateMultiplePins((const uint8_t *)ioPin, 2, po);  // deallocate pins
-        for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
-        setup();
-      }
-      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[F("pin")].isNull();
     }
 
     return configComplete;

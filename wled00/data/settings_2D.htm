@@ -7,11 +7,11 @@
 	<title>2D Set-up</title>
 	<script>
 	var d=document;
-	var loc = false, locip;
+	var loc = false, locip, locproto = "http:";
 	var maxPanels=64;
 	var ctx = null; // WLEDMM
 	function H(){window.open("https://kno.wled.ge/features/2D");}
-	function B(){window.open("/settings","_self");}
+	function B(){window.open(getURL("/settings"),"_self");}
 	function gId(n){return d.getElementById(n);}
 	function fS(){d.Sf.submit();} // <button type=submit> sometimes didn't work
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -35,16 +35,29 @@
 		});
 	}
 	function S() {
-		if (window.location.protocol == "file:") {
+		let l = window.location;
+		if (l.protocol == "file:") {
 			loc = true;
 			locip = localStorage.getItem('locIp');
 			if (!locip) {
 				locip = prompt("File Mode. Please enter WLED IP!");
 				localStorage.setItem('locIp', locip);
 			}
+		} else {
+			// detect reverse proxy
+			let path = l.pathname;
+			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			if (paths.length > 2) {
+				locproto = l.protocol;
+				loc = true;
+				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+			}
 		}
-		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=10';
-		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		loadJS(getURL('/settings/s.js?p=10'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+		if (loc) d.Sf.action = getURL('/settings/2D');
+	}
+	function getURL(path) {
+			return (loc ? locproto + "//" + locip : "") + path;
 	}
 
 	function UI() {
@@ -322,7 +335,7 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 				<option value="1">Vertical</option>
 			</select><br>
 			Serpentine: <input type="checkbox" name="PS"><br>
-			<i style="color:#fa0;">Pressing Populate will create LED panel layout with pre-arranged matrix.<br>Values above <i>will not</i> affect final layout.<br>
+			<i  class="warn">Pressing Populate will create LED panel layout with pre-arranged matrix.<br>Values above <i>will not</i> affect final layout.<br>
 				WARNING: You may need to update each panel parameters after they are generated.</i><br>
 			<button type="button" onclick="gen();expand(gId('expGen'),gId('mxGen'));">Populate</button>
 		</div>
