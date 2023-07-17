@@ -1208,10 +1208,10 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
 
   uint8_t newBri = _brightness;
   if (powerSum * _brightness / 255 > powerBudget) { //scale brightness down to stay in current limit
-    float scale = (float)powerBudget / (float)powerSum;
+    float scale = (float)(powerBudget * 255) / (float)(powerSum * _brightness);
     uint16_t scaleI = scale * 255;
     uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
-    newBri = scale8(_brightness, scaleB);
+    newBri = scale8(_brightness, scaleB) + 1;
   }
   currentMilliamps = (powerSum * newBri) / 255;
   currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
