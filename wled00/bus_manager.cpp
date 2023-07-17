@@ -153,7 +153,10 @@ void BusDigital::show() {
     PolyBus::applyPostAdjustments(_busPtr, _iType);
   }
   PolyBus::show(_busPtr, _iType);
-  PolyBus::setBrightness(_busPtr, _iType, 255); // restore full brightness at bus level (setting unscaled pixel color)
+  // looks like the following causes periodic miscalculations in ABL when not using double buffering
+  // when we no longer restore full brightness at busl level we only get a single frame with incorrect brightness
+  // when turning WLED off otherwise ABL calculations are OK
+  //PolyBus::setBrightness(_busPtr, _iType, 255); // restore full brightness at bus level (setting unscaled pixel color)
 }
 
 bool BusDigital::canShow() {
@@ -228,7 +231,7 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
     if (_reversed) pix  = _len - pix -1;
     else           pix += _skip;
     uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
-    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, (_type==TYPE_WS2812_1CH_X3) ? IC_INDEX_WS2812_1CH_3X(pix) : pix, co), _bri);
+    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, (_type==TYPE_WS2812_1CH_X3) ? IC_INDEX_WS2812_1CH_3X(pix) : pix, co));
     if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
       uint8_t r = R(c);
       uint8_t g = _reversed ? B(c) : G(c); // should G and B be switched if _reversed?

@@ -1230,8 +1230,7 @@ void WS2812FX::show(void) {
   unsigned long microsStart = micros();
   #endif
 
-  uint8_t busBrightness = estimateCurrentAndLimitBri();
-  busses.setBrightness(busBrightness);
+  busses.setBrightness(estimateCurrentAndLimitBri());
   #ifdef WLED_DEBUG
   sumCurrent += micros() - microsStart;
   #endif

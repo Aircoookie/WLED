@@ -224,14 +224,13 @@ class BusDigital : public Bus {
     const ColorOrderMap &_colorOrderMap;
     bool buffering; // temporary until we figure out why comparison "_data != nullptr" causes severe FPS drop
 
-    inline uint32_t restoreColorLossy(uint32_t c, uint_fast8_t _restaurationBri) {
-      if (_bri == 255) return c;
-      uint8_t* chan = (uint8_t*) &c;
-
-      for (uint_fast8_t i=0; i<4; i++)
-      {
-        uint_fast16_t val = chan[i];
-        chan[i] = ((val << 8) + _restaurationBri) / (_restaurationBri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
+    inline uint32_t restoreColorLossy(uint32_t c) {
+      if (_bri < 255) {
+        uint8_t* chan = (uint8_t*) &c;
+        for (uint_fast8_t i=0; i<4; i++) {
+          uint_fast16_t val = chan[i];
+          chan[i] = ((val << 8) + _bri) / (_bri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
+        }
       }
       return c;
     }
