@@ -341,7 +341,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
   CRGB carryover = CRGB::Black;
   for (uint_fast16_t x = 0; x < cols; x++) {
     CRGB cur = getPixelColorXY(x, row);
-    uint32_t before = uint32_t(cur);     // remember color before blur
+    CRGB before = cur;     // remember color before blur
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
@@ -350,7 +350,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
       CRGB prev = CRGB(getPixelColorXY(x-1, row)) + part;
       setPixelColorXY(x-1, row, prev);
     }
-    if (before != uint32_t(cur))         // optimization: only set pixel if color has changed
+    if (before != cur)         // optimization: only set pixel if color has changed
       setPixelColorXY(x, row, cur);
     carryover = part;
   }
@@ -369,7 +369,7 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
   for (uint_fast16_t y = 0; y < rows; y++) {
     CRGB cur = getPixelColorXY(col, y);
     CRGB part = cur;
-    uint32_t before = uint32_t(cur);     // remember color before blur
+    CRGB before = cur;     // remember color before blur
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
@@ -377,7 +377,7 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
       CRGB prev = CRGB(getPixelColorXY(col, y-1)) + part;
       setPixelColorXY(col, y-1, prev);
     }
-    if (before != uint32_t(cur))         // optimization: only set pixel if color has changed
+    if (before != cur)         // optimization: only set pixel if color has changed
       setPixelColorXY(col, y, cur);
     carryover = part;
   }

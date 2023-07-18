@@ -921,7 +921,7 @@ void Segment::blur(uint8_t blur_amount)
   {
     CRGB cur = CRGB(getPixelColor(i));
     CRGB part = cur;
-    uint32_t before = uint32_t(cur); // remember color before blur
+    CRGB before = cur; // remember color before blur
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
@@ -932,7 +932,7 @@ void Segment::blur(uint8_t blur_amount)
       uint8_t b = B(c);
       setPixelColor((uint16_t)(i-1), qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
     }
-    if (before != uint32_t(cur))     // optimization: only set pixel if color has changed
+    if (before != cur)     // optimization: only set pixel if color has changed
       setPixelColor((uint16_t)i,cur.red, cur.green, cur.blue);
     carryover = part;
   }
