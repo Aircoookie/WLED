@@ -8,9 +8,7 @@
 #include "const.h"
 
 //colors.cpp
-uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
-void colorRGBtoRGBW(byte* rgb);
 
 #define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
 #define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
@@ -175,6 +173,28 @@ class Bus {
         if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
       #endif
     }
+    inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
+    inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
+    inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
+    inline static uint8_t getGlobalAWMode()           { return _gAWM; }
+
+  protected:
+    uint8_t  _type;
+    uint8_t  _bri;
+    uint16_t _start;
+    uint16_t _len;
+    bool     _reversed;
+    bool     _valid;
+    bool     _needsRefresh;
+    uint8_t  _autoWhiteMode;
+    uint8_t  *_data;
+    static uint8_t _gAWM;
+    static int16_t _cct;
+    static uint8_t _cctBlend;
+
+    uint32_t autoWhiteCalc(uint32_t c);
+    uint8_t *allocData(size_t size = 1);
+    void     freeData() { if (_data != nullptr) free(_data); _data = nullptr; }
     static void calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
       uint8_t cct = 0; //0 - full warm white, 255 - full cold white
       uint8_t w = byte(c >> 24);
@@ -201,28 +221,6 @@ class Bus {
       cw = (w * cw) / 255;
       #endif
     }
-    inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
-    inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
-    inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
-    inline static uint8_t getGlobalAWMode()           { return _gAWM; }
-
-  protected:
-    uint8_t  _type;
-    uint8_t  _bri;
-    uint16_t _start;
-    uint16_t _len;
-    bool     _reversed;
-    bool     _valid;
-    bool     _needsRefresh;
-    uint8_t  _autoWhiteMode;
-    uint8_t  *_data;
-    static uint8_t _gAWM;
-    static int16_t _cct;
-    static uint8_t _cctBlend;
-
-    uint32_t autoWhiteCalc(uint32_t c);
-    uint8_t *allocData(size_t size = 1);
-    void     freeData() { if (_data != nullptr) free(_data); _data = nullptr; }
 };
 
 

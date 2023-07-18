@@ -9,6 +9,9 @@
 #include "bus_wrapper.h"
 #include "bus_manager.h"
 
+//colors.cpp
+uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
+void colorRGBtoRGBW(byte* rgb);
 
 //udp.cpp
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
