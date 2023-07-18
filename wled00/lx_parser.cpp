@@ -5,7 +5,7 @@
 /*
  * Parser for Loxone formats
  */
-bool parseLx(int lxValue, byte rgbw[4])
+bool parseLx(int lxValue, byte* rgbw)
 {
   DEBUG_PRINT(F("LX: Lox = "));
   DEBUG_PRINTLN(lxValue);

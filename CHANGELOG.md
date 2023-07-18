@@ -1,5 +1,75 @@
 ## WLED changelog
 
+#### Build 2307130
+-   larger `oappend()` stack buffer (3.5k) for ESP32
+-   Preset cycle bugfix (#3262)
+-   Rotary encoder ALT fix for large LED count (#3276)
+-   effect updates (2D Plasmaball), `blur()` speedup
+-   On/Off toggle from nodes view (may show unknow device type on older versions) (#3291)
+-   various fixes and improvements (ABL, crashes when changing presets with different segments)
+
+#### Build 2306270
+-   ESP-NOW remote support (#3237)
+-   Pixel Magic tool (display pixel art) (#3249)
+-   Websocket (peek) fallback when connection cannot be established, WS retries (#3267)
+-   Add WiFi network scan RPC command to Improv Serial (#3271)
+-   Longer (custom option available) segment name for ESP32
+-   various fixes and improvements
+
+#### Build 2306210
+-   0.14.0-b3 release
+-   respect global I2C in all usermods (no local initilaisation of I2C bus)
+-   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
+
+#### Build 2306180
+-   Added client-side option for applying effect defaults from metadata
+-   Improved ESP8266 stability by reducing WebSocket response resends
+-   Updated ESP8266 core to 3.1.2
+
+#### Build 2306141
+-   Lissajous improvements
+-   Scrolling Text improvements (leading 0)
+
+#### Build 2306140
+-   Add settings PIN (un)locking to JSON post API
+
+#### Build 2306130
+-   Bumped version to 0.14-b3 (beta 3)
+-   added pin dropdowns in LED preferences (not for LED pins) and usermods
+-   introduced (unused ATM) NeoGammaWLEDMethod class
+-   Reverse proxy support
+-   PCF8754 support for Rotary encoder (requires wiring INT pin to ESP GPIO)
+-   Rely on global I2C pins for usermods (breaking change)
+-   various fixes and enhancements
+
+#### Build 2306020
+-   Support for segment sets (PR #3171)
+-   Reduce sound simulation modes to 2 to facilitiate segment sets
+-   Trigger button immediately on press if all configured presets are the same (PR #3226)
+-   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
+
+#### Build 2305280
+-   DDP protocol update (#3193)
+-   added PCF8574 I2C port expander support for Multi relay usermod
+-   MQTT multipacket (fragmented) message fix
+-   added option to retain MQTT brightness and color messages
+-   new ethernet board: @srg74 Ethernet Shield
+-   new 2D effects: Soap (#3184) & Octopus & Waving cell (credit @St3P40 https://github.com/80Stepko08)
+-   various fixes and enhancements
+
+#### Build 2305090
+-   new ethernet board: @Wladi ABC! WLED Eth
+-   Battery usermod voltage calculation (#3116)
+-   custom palette editor (#3164)
+-   improvements in Dancing Shadows and Tartan effects
+-   UCS389x support
+-   switched to NeoPixelBus 2.7.5 (replaced NeoPixelBrightnessBus with NeoPixelBusLg)
+-   SPI bus clock selection (for LEDs) (#3173)
+-   DMX mode preset fix (#3134)
+-   iOS fix for scroll (#3182)
+-   Wordclock "Norddeutsch" fix (#3161)
+-   various fixes and enhancements
+
 #### Build 2304090
 -   updated Arduino ESP8266 core to 4.1.0 (newer compiler)
 -   updated NeoPixelBus to 2.7.3 (with support for UCS890x chipset)

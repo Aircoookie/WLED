@@ -353,7 +353,8 @@ typedef struct Segment {
         bool    mirror_y    : 1;  //     8 : mirrored Y (2D)
         bool    transpose   : 1;  //     9 : transposed (2D, swapped X & Y)
         uint8_t map1D2D     : 3;  // 10-12 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
-        uint8_t soundSim    : 3;  // 13-15 : 0-7 sound simulation types
+        uint8_t soundSim    : 1;  //    13 : 0-1 sound simulation types ("soft" & "hard" or "on"/"off")
+        uint8_t set         : 2;  // 14-15 : 0-3 UI segment sets/groups
       };
     };
     uint8_t  grouping, spacing;
@@ -486,7 +487,7 @@ typedef struct Segment {
       //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
       //Serial.println();
       //#endif
-      if (!Segment::_globalLeds && leds) free(leds);
+      if (!Segment::_globalLeds && leds) { free(leds); leds = nullptr;} // reset to nullptr, to avoid race conditions
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();
@@ -506,16 +507,16 @@ typedef struct Segment {
     inline bool     hasRGB(void)         const { return _isRGB; }
     inline bool     hasWhite(void)       const { return _hasW; }
     inline bool     isCCT(void)          const { return _isCCT; }
-    inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
-    inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
-    inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
+    inline uint16_t width(void)          const { return (stop > start)   ? (stop - start)   : 0; } // segment width in physical pixels (length if 1D)
+    inline uint16_t height(void)         const { return (stopY > startY) ? (stopY - startY) : 0; } // segment height (if 2D) in physical pixels // softhack007: make sure its always > 0
+    inline uint16_t length(void)         const { return width() * height(); }                      // segment length (count) in physical pixels
     inline uint16_t groupLength(void)    const { return grouping + spacing; }
     inline uint8_t  getLightCapabilities(void) const { return _capabilities; }
 
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
 
-    void    set(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
+    void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
     void    setCCT(uint16_t k);
     void    setOpacity(uint8_t o);
@@ -709,7 +710,7 @@ class WS2812FX {  // 96 bytes
       panel.clear();
 #endif
       customPalettes.clear();
-      if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
+      if (useLedsArray && Segment::_globalLeds) {free(Segment::_globalLeds); Segment::_globalLeds = nullptr;} // reset to nullptr, to avoid race conditions
     }
 
     static WS2812FX* getInstance(void) { return instance; }
@@ -771,6 +772,7 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
+      getActiveSegsLightCapabilities(bool selectedOnly = false),
       setPixelSegment(uint8_t n);
 
     inline uint8_t getBrightness(void) { return _brightness; }

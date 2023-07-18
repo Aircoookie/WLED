@@ -37,8 +37,8 @@ void applyValuesToSelectedSegs()
 
     if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
     if (effectIntensity != selsegPrev.intensity) {seg.intensity = effectIntensity; stateChanged = true;}
-    if (effectPalette   != selsegPrev.palette)   {seg.palette   = effectPalette;   stateChanged = true;}
-    if (effectCurrent   != selsegPrev.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
+    if (effectPalette   != selsegPrev.palette)   {seg.setPalette(effectPalette);   stateChanged = true;}
+    if (effectCurrent   != selsegPrev.mode)      {seg.setMode(effectCurrent);      stateChanged = true;}
     uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
     if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0);           stateChanged = true;}
@@ -104,6 +104,7 @@ void stateUpdated(byte callMode) {
     if (stateChanged) currentPreset = 0; //something changed, so we are no longer in the preset
 
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
+    if (bri != briOld && nodeBroadcastEnabled) sendSysInfoUDP(); // update on state
 
     //set flag to update ws and mqtt
     interfaceUpdateCallMode = callMode;
@@ -146,8 +147,8 @@ void stateUpdated(byte callMode) {
     if (transitionActive) {
       briOld = briT;
       tperLast = 0;
-    }
-    strip.setTransitionMode(true); // force all segments to transition mode
+    } else
+      strip.setTransitionMode(true); // force all segments to transition mode
     transitionActive = true;
     transitionStartTime = millis();
   } else {

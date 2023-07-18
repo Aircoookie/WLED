@@ -302,7 +302,7 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
 }
 
 //gamma 2.8 lookup table used for color correction
-static byte gammaT[] = {
+uint8_t NeoGammaWLEDMethod::gammaT[256] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -320,27 +320,22 @@ static byte gammaT[] = {
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
 
-uint8_t gamma8_cal(uint8_t b, float gamma)
-{
-  return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
-}
-
 // re-calculates & fills gamma table
-void calcGammaTable(float gamma)
+void NeoGammaWLEDMethod::calcGammaTable(float gamma)
 {
-  for (uint16_t i = 0; i < 256; i++) {
-    gammaT[i] = gamma8_cal(i, gamma);
+  for (size_t i = 0; i < 256; i++) {
+    gammaT[i] = (int)(powf((float)i / 255.0f, gamma) * 255.0f + 0.5f);
   }
 }
 
-// used for individual channel or brightness gamma correction
-uint8_t gamma8(uint8_t b)
+uint8_t NeoGammaWLEDMethod::Correct(uint8_t value)
 {
-  return gammaT[b];
+  if (!gammaCorrectCol) return value;
+  return gammaT[value];
 }
 
 // used for color gamma correction
-uint32_t gamma32(uint32_t color)
+uint32_t NeoGammaWLEDMethod::Correct32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;
   uint8_t w = W(color);

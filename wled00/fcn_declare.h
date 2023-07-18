@@ -50,6 +50,18 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
 
 //colors.cpp
+// similar to NeoPixelBus NeoGammaTableMethod but allows dynamic changes (superseded by NPB::NeoGammaDynamicTableMethod)
+class NeoGammaWLEDMethod {
+  public:
+    static uint8_t Correct(uint8_t value);      // apply Gamma to single channel
+    static uint32_t Correct32(uint32_t color);  // apply Gamma to RGBW32 color (WLED specific, not used by NPB)
+    static void calcGammaTable(float gamma);    // re-calculates & fills gamma table
+    static inline uint8_t rawGamma8(uint8_t val) { return gammaT[val]; }  // get value from Gamma table (WLED specific, not used by NPB)
+  private:
+    static uint8_t gammaT[];
+};
+#define gamma32(c) NeoGammaWLEDMethod::Correct32(c)
+#define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
 uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
 uint32_t color_add(uint32_t,uint32_t);
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
@@ -63,10 +75,6 @@ bool colorFromHexString(byte* rgb, const char* in);
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
 void setRandomColor(byte* rgb);
-uint8_t gamma8_cal(uint8_t b, float gamma);
-void calcGammaTable(float gamma);
-uint8_t gamma8(uint8_t b);
-uint32_t gamma32(uint32_t);
 
 //dmx.cpp
 void initDMX();
@@ -96,10 +104,20 @@ void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
 //improv.cpp
+enum ImprovRPCType {
+  Command_Wifi = 0x01,
+  Request_State = 0x02,
+  Request_Info = 0x03,
+  Request_Scan = 0x04
+};
+
 void handleImprovPacket();
+void sendImprovRPCResult(ImprovRPCType type, uint8_t n_strings = 0, const char **strings = nullptr);
 void sendImprovStateResponse(uint8_t state, bool error = false);
 void sendImprovInfoResponse();
-void sendImprovRPCResponse(uint8_t commandId);
+void startImprovWifiScan();
+void handleImprovWifiScan();
+void sendImprovIPRPCResult(ImprovRPCType type);
 
 //ir.cpp
 void applyRepeatActions();
@@ -129,8 +147,8 @@ bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, 
 void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true, bool selectedSegmentsOnly = false);
 void serializeInfo(JsonObject root);
-void serializeModeNames(JsonArray arr, const char *qstring);
-void serializeModeData(JsonObject root);
+void serializeModeNames(JsonArray root);
+void serializeModeData(JsonArray root);
 void serveJson(AsyncWebServerRequest* request);
 #ifdef WLED_ENABLE_JSONLIVE
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
@@ -152,9 +170,11 @@ void handleTransitions();
 void handleNightlight();
 byte scaledBri(byte in);
 
+#ifdef WLED_ENABLE_LOXONE
 //lx_parser.cpp
 bool parseLx(int lxValue, byte* rgbw);
 void parseLxJson(int lxValue, byte segId, bool secondary);
+#endif
 
 //mqtt.cpp
 bool initMqtt();
@@ -190,11 +210,15 @@ void serializePlaylist(JsonObject obj);
 void initPresetsFile();
 void handlePresets();
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+void applyPresetWithFallback(uint8_t presetID, uint8_t callMode, uint8_t effectID = 0, uint8_t paletteID = 0);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};
 void deletePreset(byte index);
 bool getPresetName(byte index, String& name);
+
+//remote.cpp
+void handleRemote();
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
@@ -203,7 +227,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=tru
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
-uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
+uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri=255, bool isRGBW=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void exitRealtime();
 void handleNotifications();
@@ -325,6 +349,7 @@ void releaseJSONBufferLock();
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen, uint8_t *var = nullptr);
 int16_t extractModeDefaults(uint8_t mode, const char *segVar);
+void checkSettingsPIN(const char *pin);
 uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
@@ -372,7 +397,6 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request);
 void serveIndex(AsyncWebServerRequest* request);
 String msgProcessor(const String& var);
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
-String settingsProcessor(const String& var);
 String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
 void serveSettingsJS(AsyncWebServerRequest* request);
