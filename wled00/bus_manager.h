@@ -124,7 +124,7 @@ class Bus {
     virtual void     setStatusPixel(uint32_t c)  {}
     virtual void     setPixelColor(uint16_t pix, uint32_t c) = 0;
     virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
-    virtual void     setBrightness(uint8_t b)    { _bri = b; };
+    virtual void     setBrightness(uint8_t b, bool updateBuffer = false) { _bri = b; };
     virtual void     cleanup() = 0;
     virtual uint8_t  getPins(uint8_t* pinArray)  { return 0; }
     virtual uint16_t getLength()                 { return _len; }
@@ -202,7 +202,7 @@ class BusDigital : public Bus {
 
     void show();
     bool canShow();
-    void setBrightness(uint8_t b);
+    void setBrightness(uint8_t b, bool updateBuffer = false);
     void setStatusPixel(uint32_t c);
     void setPixelColor(uint16_t pix, uint32_t c);
     void setColorOrder(uint8_t colorOrder);
@@ -219,17 +219,20 @@ class BusDigital : public Bus {
     uint8_t _colorOrder;
     uint8_t _pins[2];
     uint8_t _iType;
+    uint8_t _prevBri;
     uint16_t _frequencykHz;
     void * _busPtr;
     const ColorOrderMap &_colorOrderMap;
-    bool buffering; // temporary until we figure out why comparison "_data != nullptr" causes severe FPS drop
+    bool _buffering; // temporary until we figure out why comparison "_data != nullptr" causes severe FPS drop
+    bool _dirty;
 
     inline uint32_t restoreColorLossy(uint32_t c) {
-      if (_bri < 255) {
+      uint8_t restoreBri = _dirty ? _prevBri : _bri;
+      if (restoreBri < 255) {
         uint8_t* chan = (uint8_t*) &c;
         for (uint_fast8_t i=0; i<4; i++) {
           uint_fast16_t val = chan[i];
-          chan[i] = ((val << 8) + _bri) / (_bri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
+          chan[i] = ((val << 8) + restoreBri) / (restoreBri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
         }
       }
       return c;
@@ -317,7 +320,7 @@ class BusManager {
     bool canAllShow();
     void setStatusPixel(uint32_t c);
     void setPixelColor(uint16_t pix, uint32_t c);
-    void setBrightness(uint8_t b);
+    void setBrightness(uint8_t b, bool updateBuffer = false);
     void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
     uint32_t getPixelColor(uint16_t pix);
 

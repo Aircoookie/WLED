@@ -1230,7 +1230,9 @@ void WS2812FX::show(void) {
   unsigned long microsStart = micros();
   #endif
 
-  busses.setBrightness(estimateCurrentAndLimitBri());
+  uint8_t newBri = estimateCurrentAndLimitBri();
+  if (newBri < _brightness) busses.setBrightness(newBri, true); // "repaint" all pixels
+
   #ifdef WLED_DEBUG
   sumCurrent += micros() - microsStart;
   #endif
@@ -1239,6 +1241,9 @@ void WS2812FX::show(void) {
   // all of the data has been sent.
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
   busses.show();
+
+  // return bus brightness to original value
+  if (newBri < _brightness) busses.setBrightness(_brightness);
 
   #ifdef WLED_DEBUG
   sumMicros += micros() - microsStart;
@@ -1320,11 +1325,16 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
     }
   }
   if (direct) {
-    // would be dangerous if applied immediately (could exceed ABL), but will not output until the next show()
-    busses.setBrightness(b);
+    // setting brightness with NeoPixelBusLg has no effect on already painted pixels,
+    // so we need to force an update to existing buffer
+    // that would be dangerous if applied immediately (could exceed ABL), but will not output until the next show()
+    busses.setBrightness(b, true);
   } else {
+    // setting brightness with NeoPixelBusLg has no effect on already painted pixels,
+    // so we need to redraw whole canvas for the change of brightness to take effect
+    busses.setBrightness(b);
     unsigned long t = millis();
-    if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
+    if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) trigger(); //apply brightness change immediately if no refresh soon
   }
 }
 
