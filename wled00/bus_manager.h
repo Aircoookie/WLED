@@ -124,7 +124,7 @@ class Bus {
     virtual void     setStatusPixel(uint32_t c)  {}
     virtual void     setPixelColor(uint16_t pix, uint32_t c) = 0;
     virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
-    virtual void     setBrightness(uint8_t b, bool updateBuffer = false) { _bri = b; };
+    virtual void     setBrightness(uint8_t b)    { _bri = b; };
     virtual void     cleanup() = 0;
     virtual uint8_t  getPins(uint8_t* pinArray)  { return 0; }
     virtual uint16_t getLength()                 { return _len; }
@@ -202,7 +202,7 @@ class BusDigital : public Bus {
 
     void show();
     bool canShow();
-    void setBrightness(uint8_t b, bool updateBuffer = false);
+    void setBrightness(uint8_t b);
     void setStatusPixel(uint32_t c);
     void setPixelColor(uint16_t pix, uint32_t c);
     void setColorOrder(uint8_t colorOrder);
@@ -317,7 +317,7 @@ class BusManager {
     bool canAllShow();
     void setStatusPixel(uint32_t c);
     void setPixelColor(uint16_t pix, uint32_t c);
-    void setBrightness(uint8_t b, bool updateBuffer = false);
+    void setBrightness(uint8_t b);
     void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
     uint32_t getPixelColor(uint16_t pix);
 

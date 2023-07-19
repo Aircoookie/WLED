@@ -157,7 +157,7 @@ bool BusDigital::canShow() {
   return PolyBus::canShow(_busPtr, _iType);
 }
 
-void BusDigital::setBrightness(uint8_t b, bool updateNPBBuffer) {
+void BusDigital::setBrightness(uint8_t b) {
   if (_bri == b) return;
   //Fix for turning off onboard LED breaking bus
   #ifdef LED_BUILTIN
@@ -168,14 +168,18 @@ void BusDigital::setBrightness(uint8_t b, bool updateNPBBuffer) {
   uint8_t prevBri = _bri;
   Bus::setBrightness(b);
   PolyBus::setBrightness(_busPtr, _iType, b);
-  if (!_buffering && updateNPBBuffer) {
-    uint16_t hwLen = _len;
-    if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
-    for (uint_fast16_t i = 0; i < hwLen; i++) {
-      // use 0 as color order, actual order does not matter here as we just update the channel values as-is
-      uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0),prevBri);
-      PolyBus::setPixelColor(_busPtr, _iType, i, c, 0);
-    }
+
+  if (_buffering) return;
+
+  // must update/repaint every LED in the NeoPixelBus buffer to the new brightness
+  // the only case where repainting is unnecessary is when all pixels are set after the brightness change but before the next show
+  // (which we can't rely on)
+  uint16_t hwLen = _len;
+  if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
+  for (uint_fast16_t i = 0; i < hwLen; i++) {
+    // use 0 as color order, actual order does not matter here as we just update the channel values as-is
+    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0),prevBri);
+    PolyBus::setPixelColor(_busPtr, _iType, i, c, 0);
   }
 }
 
@@ -583,9 +587,9 @@ void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
   }
 }
 
-void BusManager::setBrightness(uint8_t b, bool updateBuffer) {
+void BusManager::setBrightness(uint8_t b) {
   for (uint8_t i = 0; i < numBusses; i++) {
-    busses[i]->setBrightness(b, updateBuffer);
+    busses[i]->setBrightness(b);
   }
 }
 
