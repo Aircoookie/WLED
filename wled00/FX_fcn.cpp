@@ -1082,11 +1082,6 @@ void WS2812FX::service() {
     // last condition ensures all solid segments are updated at the same time
     if (seg.isActive() && (nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC)))
     {
-      if (!doShow) {
-        // returning bus brightness to its original value is done here, as to not interfere with asyncronous show()
-        // TODO if it is safe, prefer to restore brightness in show()
-        busses.setBrightness(_brightness, true); // "repaint" all pixels if brightness has changed
-      }
       doShow = true;
       uint16_t delay = FRAMETIME;
 
@@ -1247,9 +1242,10 @@ void WS2812FX::show(void) {
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
   busses.show();
 
-  // returning bus brightness to its original value is done in the next frame, as to not interfere with asyncronous show()
-  // TODO if it is safe, prefer to restore brightness here
-  //if (newBri < _brightness) busses.setBrightness(_brightness, true);
+  // restore bus brightness to its original value
+  // this is done right after show, so this is only OK if LED updates are completed before show() returns
+  // or async show has a separate buffer (ESP32 RMT and I2S are ok)
+  if (newBri < _brightness) busses.setBrightness(_brightness, true);
 
   #ifdef WLED_DEBUG
   sumMicros += micros() - microsStart;
@@ -1321,6 +1317,8 @@ void WS2812FX::setCCT(uint16_t k) {
   }
 }
 
+// direct=true either expects the caller to call show() themselves (realtime modes) or be ok waiting for the next frame for the change to apply
+// direct=false immediately triggers an effect redraw
 void WS2812FX::setBrightness(uint8_t b, bool direct) {
   if (gammaCorrectBri) b = gamma8(b);
   if (_brightness == b) return;
