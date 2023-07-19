@@ -1082,6 +1082,11 @@ void WS2812FX::service() {
     // last condition ensures all solid segments are updated at the same time
     if (seg.isActive() && (nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC)))
     {
+      if (!doShow) {
+        // returning bus brightness to its original value is done here, as to not interfere with asyncronous show()
+        // TODO if it is safe, prefer to restore brightness in show()
+        busses.setBrightness(_brightness, true); // "repaint" all pixels if brightness has changed
+      }
       doShow = true;
       uint16_t delay = FRAMETIME;
 
@@ -1242,8 +1247,9 @@ void WS2812FX::show(void) {
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
   busses.show();
 
-  // return bus brightness to original value
-  if (newBri < _brightness) busses.setBrightness(_brightness);
+  // returning bus brightness to its original value is done in the next frame, as to not interfere with asyncronous show()
+  // TODO if it is safe, prefer to restore brightness here
+  //if (newBri < _brightness) busses.setBrightness(_brightness, true);
 
   #ifdef WLED_DEBUG
   sumMicros += micros() - microsStart;
