@@ -145,13 +145,16 @@
 			if (t < 32) {
 				if (t==26 || t==29) len *= 2; // 16 bit LEDs
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
+					if (t == 17) return len*25 + dbl; //GRBCW
 					if (t > 28) return len*20 + dbl; //RGBW
 					return len*15 + dbl;
 				} else if (maxM >= 10000) //ESP32 RMT uses double buffer?
 				{
+					if (t == 17) return len*10 + dbl; //GRBCW
 					if (t > 28) return len*8 + dbl; //RGBW
 					return len*6 + dbl;
 				}
+				if (t == 17) return len*5 + dbl; //GRBCW
 				if (t > 28) return len*4 + dbl; //RGBW
 				return len*3 + dbl;
 			}
@@ -200,7 +203,7 @@
 					if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+				gRGBW |= isRGBW = ((t > 16 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 				gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
 				gId("dig"+n+"w").style.display = (t > 28 && t < 32) ? "inline":"none";  // show swap channels dropdown
 				if (!(t > 28 && t < 32)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
@@ -347,6 +350,7 @@ ${i+1}:
 <option value="25">TM1829</option>\
 <option value="26">UCS8903</option>\
 <option value="29">UCS8904 RGBW</option>\
+<option value="17">FW1906 GRBCW</option>\
 <option value="50">WS2801</option>\
 <option value="51">APA102</option>\
 <option value="52">LPD8806</option>\

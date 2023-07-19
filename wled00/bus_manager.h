@@ -132,14 +132,14 @@ class Bus {
     }
     virtual bool hasWhite() { return Bus::hasWhite(_type); }
     static  bool hasWhite(uint8_t type) {
-      if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true; // digital types with white channel
+      if ((type >= TYPE_FW1906 && type <= TYPE_WS2812_WWA) || type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true; // digital types with white channel
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true; // analog types with white channel
       if (type == TYPE_NET_DDP_RGBW) return true; // network types with white channel
       return false;
     }
     virtual bool hasCCT() {
       if (_type == TYPE_WS2812_2CH_X3 || _type == TYPE_WS2812_WWA ||
-          _type == TYPE_ANALOG_2CH    || _type == TYPE_ANALOG_5CH) return true;
+          _type == TYPE_ANALOG_2CH    || _type == TYPE_ANALOG_5CH || _type == TYPE_FW1906) return true;
       return false;
     }
     static void setCCT(uint16_t cct) {

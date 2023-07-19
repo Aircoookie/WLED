@@ -223,6 +223,7 @@
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
 //Digital types (data pin only) (16-31)
+#define TYPE_FW1906              17            //RGB + CW + WW + unused channel (6 channels per IC)
 #define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
 #define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
 #define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
