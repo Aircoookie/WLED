@@ -280,6 +280,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid) return;
   if (Bus::hasWhite(_type)) c = autoWhiteCalc(c);
   if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
+  if (_type == TYPE_FW1906) calculateCCT(c, PolyBus::cctWW, PolyBus::cctCW); // FW1906 ignores W component in c
   if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
@@ -645,13 +646,13 @@ uint32_t BusManager::memUsage(BusConfig &bc) {
   uint16_t multiplier = 1;
   if (IS_DIGITAL(bc.type)) { // digital types
     if (IS_16BIT(bc.type)) len *= 2; // 16-bit LEDs
-    #ifdef ESP8266
       if (bc.type > 28) channels = 4; //RGBW
+      if (bc.type == TYPE_FW1906) channels = 5; //GRBCW
+    #ifdef ESP8266
       if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
         multiplier = 5;
       }
     #else //ESP32 RMT uses double buffer, I2S uses 5x buffer
-      if (bc.type > 28) channels = 4; //RGBW
       multiplier = 2;
     #endif
   }
