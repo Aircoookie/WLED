@@ -134,7 +134,7 @@ button {
 
 .off {
 	color: var(--c-6) !important;
-	cursor: default !important;
+	/* cursor: default !important; */
 }
 
 .top .icons, .bot .icons {
@@ -269,6 +269,20 @@ button {
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%,-50%);
+}
+
+#pxm {
+    display: none;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    position: absolute;
+}
+
+#ipxm {
+    width: 100%;
+    height: 100%;
+    position: relative;
 }
 
 .tab {
@@ -798,6 +812,7 @@ input[type=range]::-moz-range-thumb {
 	text-overflow: ellipsis;
 	border: 1px solid var(--c-3);
 	background-color: var(--c-3);
+    z-index: 9;
 }
 #segutil .btn-s:hover,
 #segutil2 .btn-s:hover,
@@ -1010,7 +1025,7 @@ textarea {
 	width: 50px !important;
 }
 
-.segname, .pname {
+.segname, .pname, .bname {
 	white-space: nowrap;
 	text-align: center;
 	overflow: hidden;
@@ -1019,6 +1034,9 @@ textarea {
 	padding: 8px 24px;
 	max-width: 170px;
 	position: relative;
+}
+.bname {
+	padding: 0 24px;
 }
 
 .segname .flr, .pname .flr {
