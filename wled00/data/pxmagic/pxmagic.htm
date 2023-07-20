@@ -7,10 +7,13 @@
 
     <title>Pixel Magic Tool</title>
 
+    <!-- <link
+      rel="shortcut icon"
+      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAK9JREFUeNqUUssNwyAMJZWVUw4dhRHakZA6RqWMFEbwKDnk1FNBekEWxOBYQggL/D68yXXq+M7PtHkcefn89vrOw/UrP96w/NUFGiDLRz71GyY0QJa1Yn+nFa0ShqUNYCAF0QvoceOB4naEZif6UTNRapYaTyauRi4DEspr4Hbs5YKsbmtMyeJ0LxeESV4gB+hlSy4oO2txWysyus0a0+lO6vBjxcTMlG4mt2H6F2AAhU5NWu4dorQAAAAASUVORK5CYII=
+  " /> -->
+
     <style>
       :root {
-        --s-thumb: #0006;
-        --s-background: #0003;
         --overlay: rgba(0, 0, 0, 0.5);
         --background: #111;
         --text: #bbb;
@@ -29,24 +32,6 @@
         --warning-dark: #dc2f02;
         --warning-medium: #e85d04;
         --warning-light: #f48c06;
-      }
-
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: var(--s-thumb);
-        opacity: 0.2;
-        border-radius: 5px;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--s-background);
       }
 
       ::selection {
@@ -80,7 +65,7 @@
         display: block;
         font-weight: 400;
         margin: 2px 0 5px;
-        color: var(--gray-light);
+        color: var(--text);
         font-size: 12px;
       }
 
@@ -98,7 +83,7 @@
         font-weight: 600;
       }
 
-      a:is(:hover, :focus, :active) {
+      :is(a:hover, a:focus, a:active) {
         color: var(--blue-medium);
       }
 
@@ -123,7 +108,8 @@
       }
 
       .content {
-        width: min(768px, calc(100% - 40px));
+        width: calc(100% - 40px);
+        max-width: 768px;
         margin: 20px;
       }
 
@@ -131,19 +117,19 @@
         display: flex;
         flex-wrap: nowrap;
         justify-content: space-between;
-        margin-top: 20px;
+        margin: 20px 0 0;
       }
 
       .column {
         flex-basis: calc(50% - 10px);
         position: relative;
-        padding-inline: 5px;
+        padding: 0 5px;
       }
 
       .column-full {
         flex-basis: 100%;
         position: relative;
-        padding-inline: 5px;
+        padding: 0 5px;
       }
 
       label {
@@ -171,7 +157,7 @@
         width: 32px;
         height: 32px;
         cursor: pointer;
-        padding-inline: 1px;
+        padding: 0px 1px;
         outline: none;
       }
 
@@ -186,19 +172,18 @@
       }
 
       .input-group .input-description {
-        width: 100%;
-        max-width: 38px;
+        width: 38px;
         height: 38px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        padding: 10px 0;
         color: var(--gray-dark);
         background: var(--gray-light);
-        border-radius: 0px 8px 8px 0;
+        border-radius: 0px 5px 5px 0;
         border: 1px solid var(--gray-light);
         border-left: 0;
+        text-align: center;
         font-size: 14px;
         line-height: 16px;
+        font-weight: 600;
       }
 
       .input-group .square {
@@ -206,19 +191,10 @@
         margin-left: 10px;
       }
 
-      .input-group .square input {
-        text-align: center;
-        background: none;
-        padding: 0;
-        border: 0;
-        color: var(--gray-dark);
-      }
-
       textarea {
-        resize: none;
+        resize: vertical;
         min-height: 200px;
         border-radius: 8px;
-        overflow-x: hidden;
       }
 
       .custom-select {
@@ -255,7 +231,7 @@
         text-align: center;
         padding: 40px 10px;
         border-radius: 8px;
-        margin-top: 20px;
+        margin: 20px 0 0;
         transition: all 0.5s ease-in-out;
       }
 
@@ -277,7 +253,7 @@
         width: 100%;
         border-radius: 10px;
         outline: none;
-        margin-block: 15px;
+        margin: 16px 0;
       }
 
       .range-slider::-webkit-slider-thumb {
@@ -350,7 +326,7 @@
         align-items: center;
         width: auto;
         padding: 6px 12px;
-        margin-top: 10px;
+        margin: 10px 0 0;
         border-radius: 8px;
         transform: translateY(30px);
         opacity: 0;
@@ -358,7 +334,7 @@
       }
 
       .toast .toast-body {
-        padding-block: 8px;
+        padding: 8px 0;
         font-weight: 600;
         color: var(--text);
         letter-spacing: 0.5px;
@@ -384,7 +360,7 @@
         height: 3px;
         transform: scaleX(0);
         transform-origin: left;
-        border-radius: 8px;
+        border-radius: inherit;
       }
 
       .toast.success .toast-progress {
@@ -415,7 +391,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding-bottom: 20px;
+        padding: 0 0 20px;
       }
 
       .header .brand {
@@ -434,6 +410,18 @@
         cursor: pointer;
       }
 
+      .carousel img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        margin-right: 20px;
+        border: 0;
+      }
+
+      .carousel img:last-child {
+        margin-right: 0;
+      }
+
       .button {
         width: 100%;
         border: 0;
@@ -441,7 +429,7 @@
         border-radius: 50px;
         color: var(--text);
         cursor: pointer;
-        margin-bottom: 10px;
+        margin: 0 0 10px;
         background: var(--gray-medium);
         border: 1px solid var(--gray-dark);
         transition: all 0.5s ease-in-out;
@@ -489,7 +477,7 @@
       }
 
       #recreatedImage {
-        margin-block: 20px;
+        margin: 20px 0;
       }
 
       .invalid {
@@ -499,7 +487,7 @@
       .error-message {
         display: block;
         color: var(--error-dark);
-        padding-block: 4px;
+        padding: 4px 0;
         font-weight: 600;
         font-size: 12px;
       }
@@ -518,7 +506,7 @@
         .column,
         .column-full {
           flex-basis: 100%;
-          margin-top: 20px;
+          margin: 20px 0 0;
           padding: 0;
         }
       }
@@ -698,13 +686,11 @@
                   max="255"
                   value="128"
                   class="range-slider" />
-                <div class="input-description square">
-                  <input
-                    type="text"
-                    name="brightnessValue"
-                    id="brightnessValue"
-                    value="128" />
-                </div>
+                <input
+                  type="text"
+                  id="brightnessValue"
+                  class="input-description square"
+                  value="128" />
               </div>
             </div>
           </div>
@@ -712,11 +698,7 @@
             <div class="column" validate>
               <label for="animation">Animation</label>
               <label class="switch">
-                <input
-                  type="checkbox"
-                  name="animation"
-                  id="animation"
-                  data-parent="animation" />
+                <input type="checkbox" name="animation" id="animation" />
                 <span class="switch-slider"></span>
               </label>
             </div>
@@ -726,20 +708,14 @@
                 <input
                   type="checkbox"
                   name="transparentImage"
-                  id="transparentImage"
-                  data-parent="transparentImage" />
+                  id="transparentImage" />
                 <span class="switch-slider"></span>
               </label>
             </div>
             <div class="column" validate>
               <label for="resizeImage">Resize Image</label>
               <label class="switch">
-                <input
-                  type="checkbox"
-                  name="resizeImage"
-                  id="resizeImage"
-                  data-parent="resizeImage"
-                  checked />
+                <input type="checkbox" name="resizeImage" id="resizeImage" />
                 <span class="switch-slider"></span>
               </label>
             </div>
@@ -771,9 +747,7 @@
                   min="0"
                   step="0.1"
                   inputmode="numeric" />
-                <div class="input-description">
-                  <span>sec</span>
-                </div>
+                <div class="input-description">sec</div>
               </div>
             </div>
             <div class="column" validate>
@@ -788,9 +762,7 @@
                   min="0"
                   step="0.1"
                   inputmode="numeric" />
-                <div class="input-description">
-                  <span>sec</span>
-                </div>
+                <div class="input-description">sec</div>
               </div>
             </div>
           </div>
@@ -881,7 +853,7 @@
     <div id="overlay"></div>
   </body>
   <script>
-    const doc = document;
+    const d = document;
     const params = new URLSearchParams(window.location.search);
     const host = params.get("hn")
       ? params.get("hn")
@@ -912,29 +884,16 @@
       await segments();
       await images();
 
-      checked();
       hostnameLabel();
     })();
 
     function element(id) {
-      return doc.getElementById(id);
+      return d.getElementById(id);
     }
 
     function hostnameLabel() {
       const link = element("wledEdit");
       link.href = link.href.replace("[wled-ip]", hostname.value);
-    }
-
-    function checked() {
-      const checkbox = doc.querySelectorAll('input[type="checkbox"]');
-
-      checkbox.forEach((cb) => {
-        let parentName = cb.dataset.parent;
-        let parent = doc.getElementsByClassName(parentName)[0];
-        let { checked } = cb;
-
-        parent.style.display = checked ? "flex" : "none";
-      });
     }
 
     async function playlist() {
@@ -1040,7 +999,6 @@
 
                 if (success) {
                   toast(`Preset "${item.n}" save successfully`);
-                  window.parent.postMessage("loadPresets", WLED_URL);
                 }
               } catch (error) {
                 toast(`Error saving preset: ${error}`, "error");
@@ -1258,7 +1216,7 @@
         toast("Text copied to clipboard");
       } catch (error) {
         try {
-          await doc.execCommand("copy");
+          await d.execCommand("copy");
           toast("Text copied to clipboard");
         } catch (error) {
           toast(error, "error");
@@ -1287,7 +1245,7 @@
     });
 
     element("output").addEventListener("change", (e) => {
-      const output = doc.getElementsByClassName("output");
+      const output = d.getElementsByClassName("output");
       const { value } = e.target.selectedOptions[0];
 
       Array.from(output).forEach(function (element) {
@@ -1335,55 +1293,62 @@
     });
 
     element("transparentImage").addEventListener("change", (e) => {
-      const transparentImage = doc.getElementsByClassName("transparentImage")[0];
+      const transparentImage = d.getElementsByClassName("transparentImage");
       const { checked } = e.target;
 
-      if (checked) {
-        transparentImage.style.display = "flex";
-      } else {
-        transparentImage.style.display = "none";
-      }
+      Array.from(transparentImage).forEach(function (element) {
+        if (checked) {
+          element.style.display = "flex";
+        } else {
+          element.style.display = "none";
+        }
+      });
     });
 
     element("resizeImage").addEventListener("change", (e) => {
-      const resizeImage = doc.getElementsByClassName("resizeImage")[0];
+      const resizeImage = d.getElementsByClassName("resizeImage");
       const pattern = element("pattern");
       const { checked } = e.target;
 
-      if (checked) {
-        pattern.value = 3;
-        resizeImage.style.display = "flex";
-      } else {
-        pattern.value = 1;
-        resizeImage.style.display = "none";
-      }
+      Array.from(resizeImage).forEach(function (element) {
+        if (checked) {
+          pattern.value = 3;
+          element.style.display = "flex";
+        } else {
+          pattern.value = 1;
+          element.style.display = "none";
+        }
+      });
     });
 
     element("animation").addEventListener("change", (e) => {
-      const animation = doc.getElementsByClassName("animation")[0];
+      const animation = d.getElementsByClassName("animation");
+
       const pattern = element("pattern");
       const source = element("source");
 
       const { checked } = e.target;
 
-      if (checked) {
-        toast(
-          'If you want all frames in the image, set it to "0"',
-          "warning",
-          5000
-        );
+      Array.from(animation).forEach(function (element) {
+        if (checked) {
+          toast(
+            'If you want all frames in the image, set it to "0"',
+            "warning",
+            5000
+          );
 
-        source.setAttribute("accept", "image/gif");
-        animation.style.display = "flex";
-        pattern.value = 3;
-      } else {
-        source.setAttribute(
-          "accept",
-          "image/jpg,image/jpeg,image/png,image/gif"
-        );
-        animation.style.display = "none";
-        pattern.value = 1;
-      }
+          source.setAttribute("accept", "image/gif");
+          element.style.display = "flex";
+          pattern.value = 3;
+        } else {
+          source.setAttribute(
+            "accept",
+            "image/jpg,image/jpeg,image/png,image/gif"
+          );
+          element.style.display = "none";
+          pattern.value = 1;
+        }
+      });
     });
 
     element("btnGenerate").addEventListener("click", async (event) => {
@@ -1754,7 +1719,7 @@
     }
 
     function createCanvas(width, height) {
-      const canvas = doc.createElement("canvas");
+      const canvas = d.createElement("canvas");
 
       canvas.width = width;
       canvas.height = height;
@@ -1798,7 +1763,7 @@
       const blob = new Blob([text], { type: mimeType });
       const url = URL.createObjectURL(blob);
 
-      const anchorElement = doc.createElement("a");
+      const anchorElement = d.createElement("a");
       anchorElement.href = url;
       anchorElement.download = `${filename}.${fileExtension}`;
 
@@ -1819,8 +1784,8 @@
             [device]: {
               friendly_name,
               unique_id,
-              command_on: `curl -X POST "http://${hostname}/json/state" -doc '${jsonData}' -H "Content-Type: application/json"`,
-              command_off: `curl -X POST "http://${hostname}/json/state" -doc '{"on":false}' -H "Content-Type: application/json"`,
+              command_on: `curl -X POST "http://${hostname}/json/state" -d '${jsonData}' -H "Content-Type: application/json"`,
+              command_off: `curl -X POST "http://${hostname}/json/state" -d '{"on":false}' -H "Content-Type: application/json"`,
             },
           },
         };
@@ -1831,7 +1796,7 @@
 
     function curl(jsonData) {
       const { value: hostname } = element("hostname");
-      return `curl -X POST "http://${hostname}/json/state" -doc '${jsonData}' -H "Content-Type: application/json"`;
+      return `curl -X POST "http://${hostname}/json/state" -d '${jsonData}' -H "Content-Type: application/json"`;
     }
 
     function convertToYaml(obj) {
@@ -1869,7 +1834,7 @@
       hideElement = "preview"
     ) {
       const hide = element(hideElement);
-      const toast = doc.createElement("div");
+      const toast = d.createElement("div");
       const wait = 100;
 
       toast.style.animation = "fadeIn";
@@ -1878,14 +1843,14 @@
 
       toast.classList.add("toast", type);
 
-      const body = doc.createElement("span");
+      const body = d.createElement("span");
       body.classList.add("toast-body");
 
       body.textContent = message;
 
       toast.appendChild(body);
 
-      const progress = doc.createElement("div");
+      const progress = d.createElement("div");
       progress.classList.add("toast-progress");
 
       progress.style.animation = "progress";
@@ -1910,7 +1875,7 @@
 
     function carousel(id, images, delay = 3000) {
       let index = 0;
-      const carousel = doc.createElement("div");
+      const carousel = d.createElement("div");
       carousel.classList.add("carousel");
 
       images.forEach((canvas, i) => {
@@ -1975,7 +1940,7 @@
       overlay.style.display = "block";
       overlay.style.cursor = "not-allowed";
 
-      doc.body.style.overflow = "hidden";
+      d.body.style.overflow = "hidden";
     }
 
     function hide() {
@@ -1984,7 +1949,7 @@
       overlay.style.display = "none";
       overlay.style.cursor = "default";
 
-      doc.body.style.overflow = "auto";
+      d.body.style.overflow = "auto";
     }
 
     function validate(event) {
@@ -2011,7 +1976,7 @@
         let isVisible = true;
 
         let tempParent = parent;
-        while (tempParent !== doc.body) {
+        while (tempParent !== d.body) {
           const parentStyles = window.getComputedStyle(tempParent);
           if (
             parentStyles.display === "none" ||
@@ -2038,7 +2003,7 @@
           let errorElement = parent.querySelector(".error-message");
 
           if (!errorElement) {
-            errorElement = doc.createElement("div");
+            errorElement = d.createElement("div");
             errorElement.classList.add("error-message");
             parent.appendChild(errorElement);
           }

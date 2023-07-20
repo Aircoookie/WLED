@@ -1,6 +1,6 @@
 //page js
 var loc = false, locip, locproto = "http:";
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isPXM = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -22,12 +22,11 @@ var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var isM = false, mw = 0, mh=0;
-var ws, cpick, ranges, wsRpt=0;
+var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
-		  css:true, hdays:false, fxdef:true, pxm: false}
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false, css:true, hdays:false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -38,9 +37,6 @@ var hol = [
 	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
 	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
-
-// Buttons
-var btnPXM = gId('buttonPixelMagicTool');
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -220,7 +216,6 @@ function onLoad()
 		// detect reverse proxy and/or HTTPS
 		let pathn = l.pathname;
 		let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
-		//if (paths[0]==="sliders") paths.shift();
 		//while (paths[0]==="") paths.shift();
 		locproto = l.protocol;
 		locip = l.hostname + (l.port ? ":" + l.port : "");
@@ -279,6 +274,7 @@ function onLoad()
 		});
 	});
 	resetUtil();
+
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	//size();
 	gId("cv").style.opacity=0;
@@ -287,8 +283,6 @@ function onLoad()
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
-
-    btnPXM.style.display = cfg.comp.pxm ? "block" : "none";
 }
 
 function updateTablinks(tabI)
@@ -777,7 +771,7 @@ function populateSegments(s)
 				`<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
 				(cfg.comp.segpwr ? segp : '') +
 				`<div class="segin" id="seg${i}in">`+
-					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=${li.arch=="esp8266"?32:64} value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
+					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
 					`<table class="infot segt">`+
 					`<tr>`+
 						`<td>${isMSeg?'Start X':'Start LED'}</td>`+
@@ -830,7 +824,6 @@ function populateSegments(s)
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
 	for (var i = 0; i <= lSeg; i++) {
-		if (!gId(`seg${i}`)) continue;
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).classList.add("hide");
@@ -1009,15 +1002,10 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
 function btype(b)
 {
 	switch (b) {
-		case 2:
 		case 32: return "ESP32";
-		case 3:
 		case 33: return "ESP32-S2";
-		case 4:
 		case 34: return "ESP32-S3";
-		case 5:
 		case 35: return "ESP32-C3";
-		case 1:
 		case 82: return "ESP8266";
 	}
 	return "?";
@@ -1038,9 +1026,8 @@ function populateNodes(i,n)
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
 		for (var o of n.nodes) {
 			if (o.name) {
-				let onoff = `<i class="icons e-icon flr ${o.type&0x80?'':'off'}" onclick="rmtTgl('${o.ip}',this);"">&#xe08f;</i>`;
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');"><div class="bname">${bname(o)}</div>${o.vid<2307130?'':onoff}</button>`;
-				urows += inforow(url,`${btype(o.type&0x7F)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
 		}
@@ -1052,40 +1039,6 @@ function populateNodes(i,n)
 	${urows}
 	</table>`;
 	gId('kn').innerHTML = cn;
-}
-
-function togglePixelMagicTool()
-{
-    if (isInfo) toggleInfo();
-    if (isNodes) toggleNodes();
-	if (isLv && isM) toggleLiveview();
-
-    isPXM = !isPXM;
-
-    var id = "pxm";
-
-    if (isPXM) gId('ipxm').innerHTML = `<iframe id="${id}" src="about:blank"></iframe>`;
-    gId('mpxm').style.transform = (isPXM) ? "translateY(0px)":"translateY(100%)";
-
-    var iframe = gId(id);
-    iframe.style.display = (isPXM) ? "block":"none";
-    iframe.src = (isPXM) ? getURL("/pxmagic.htm"):"about:blank";
-
-    iframe.onload = function () {
-        if(isPXM){
-            var iframeContent = this.contentDocument;
-            iframeContent.body.style.backgroundColor = "transparent";
-            var header = iframeContent.querySelector('.header');
-            header.style.display = "none";
-        }
-    }
-
-	btnPXM.className = (isPXM) ? "active":"";
-    size();
-}
-
-function updateNameResize(){
-    btnPXM.querySelector('p').textContent = (wW < 1024) ? "PXM" : "Pixel Magic";
 }
 
 function loadNodes()
@@ -1376,12 +1329,11 @@ function makeWS() {
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
-		if (wsRpt++ < 5) setTimeout(makeWS,1500); // retry WS connection
+		setTimeout(makeWS,1500); // retry WS connection
 		ws = null;
 	}
 	ws.onopen = (e)=>{
 		//ws.send("{'v':true}"); // unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
-		wsRpt = 0;
 		reqsLegal = true;
 	}
 }
@@ -1683,7 +1635,6 @@ function requestJson(command=null)
 		//load presets and open websocket sequentially
 		if (!pJson || isEmpty(pJson)) setTimeout(()=>{
 			loadPresets(()=>{
-				wsRpt = 0;
 				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
 			});
 		},25);
@@ -1731,30 +1682,33 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	if (isInfo) toggleInfo();
-	if (isNodes) toggleNodes();
-	if (isPXM) togglePixelMagicTool();
+	//WLEDSR adding liveview2D support
+	if (isInfo && isM) toggleInfo();
+	if (isNodes && isM) toggleNodes();
 	isLv = !isLv;
-	let wsOn = ws && ws.readyState === WebSocket.OPEN;
 
 	var lvID = "liveview";
-	if (isM && wsOn) {   
-		lvID += "2D";
-		if (isLv) gId('klv2D').innerHTML = `<iframe id="${lvID}" src="about:blank"></iframe>`;
-		gId('mlv2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
+	if (isM) {   
+		lvID = "liveview2D"
+		if (isLv) {
+		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
+		d.getElementById('kliveview2D').innerHTML = cn;
+		}
+
+		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	gId(lvID).src = (isLv) ? getURL("/" + lvID + ((wsOn) ? "?ws":"")):"about:blank";
-	gId('buttonSr').classList.toggle("active");
-	if (!isLv && wsOn) ws.send('{"lv":false}');
+	var url = getURL("/" + lvID);
+	gId(lvID).src = (isLv) ? url:"about:blank";
+	gId('buttonSr').className = (isLv) ? "active":"";
+	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
 	size();
 }
 
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
-	if (isPXM) togglePixelMagicTool();
 	if (isLv && isM) toggleLiveview();
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
@@ -1765,7 +1719,6 @@ function toggleInfo()
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
-	if (isPXM) togglePixelMagicTool();
 	if (isLv && isM) toggleLiveview();
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
@@ -2093,14 +2046,14 @@ function tglSegn(s)
 function selSegAll(o)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":o.checked});
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":o.checked});
 	requestJson(obj);
 }
 
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":(i==s)});
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
 	obj.mainseg = s;
 	requestJson(obj);
 }
@@ -2118,7 +2071,7 @@ function selGrp(g)
 	event.stopPropagation();
 	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":false});
 	if (sel) for (let s of sel||[]) {
 		let i = parseInt(s.id.substring(3));
 		obj.seg[i] = {"id":i,"sel":true};
@@ -2285,7 +2238,8 @@ function setFX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
-	var obj = {"seg": {"fx": parseInt(ind), "fxdef": cfg.comp.fxdef}}; // fxdef sets effect parameters to default values
+
+	var obj = {"seg": {"fx": parseInt(ind),"fxdef":1}}; // fxdef sets effect parameters to default values, TODO add client setting
 	requestJson(obj);
 }
 
@@ -2619,24 +2573,6 @@ function setBalance(b)
 	requestJson(obj);
 }
 
-function rmtTgl(ip,i) {
-	event.preventDefault();
-	event.stopPropagation();
-	fetch(`http://${ip}/win&T=2`, {method: 'get'})
-	.then((r)=>{
-		return r.text();
-	})
-	.then((t)=>{
-		let c = (new window.DOMParser()).parseFromString(t, "text/xml");
-		// perhaps just i.classList.toggle("off"); would be enough
-		if (c.getElementsByTagName('ac')[0].textContent === "0") {
-			i.classList.add("off");
-		} else {
-			i.classList.remove("off");
-		}
-	});
-}
-
 var hc = 0;
 setInterval(()=>{
 	if (!isInfo) return;
@@ -2917,20 +2853,7 @@ function size()
 	if (isLv) h -= 4;
 	sCol('--tp', h + "px");
 	togglePcMode();
-    updateNameResize();
 	lastw = wW;
-}
-
-function listenMessage(e){
-    const { origin, data } = e;
-    
-    if (origin === window.location.origin) {
-        switch(data){
-            case 'loadPresets':
-                setTimeout(()=>{pmtLast=0; loadPresets();}, 250);
-                break;
-        }
-    }
 }
 
 function togglePcMode(fromB = false)
@@ -2972,7 +2895,6 @@ size();
 _C.style.setProperty('--n', N);
 
 window.addEventListener('resize', size, true);
-window.addEventListener('message', listenMessage, true);
 
 _C.addEventListener('mousedown', lock, false);
 _C.addEventListener('touchstart', lock, false);
