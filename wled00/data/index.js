@@ -1,6 +1,6 @@
 //page js
 var loc = false, locip, locproto = "http:";
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isPXM = false;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -26,7 +26,7 @@ var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false, css:true, hdays:false}
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false, css:true, hdays:false, pxm: false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -37,6 +37,9 @@ var hol = [
 	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
 	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
+
+// Buttons
+var btnPXM = gId('buttonPixelMagicTool');
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -283,6 +286,8 @@ function onLoad()
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
+
+    btnPXM.style.display = cfg.comp.pxm ? "block" : "none";
 }
 
 function updateTablinks(tabI)
@@ -1685,6 +1690,7 @@ function toggleLiveview()
 	//WLEDSR adding liveview2D support
 	if (isInfo && isM) toggleInfo();
 	if (isNodes && isM) toggleNodes();
+	if (isPXM && isM) togglePixelMagicTool();
 	isLv = !isLv;
 
 	var lvID = "liveview";
@@ -1709,6 +1715,7 @@ function toggleLiveview()
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
+	if (isPXM) togglePixelMagicTool();
 	if (isLv && isM) toggleLiveview();
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
@@ -1719,11 +1726,46 @@ function toggleInfo()
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
+	if (isPXM) togglePixelMagicTool();
 	if (isLv && isM) toggleLiveview();
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
 	gId('buttonNodes').className = (isNodes) ? "active":"";
+}
+
+function togglePixelMagicTool()
+{
+    if (isInfo) toggleInfo();
+    if (isNodes) toggleNodes();
+	if (isLv && isM) toggleLiveview();
+
+    isPXM = !isPXM;
+
+    var id = "pxm";
+
+    if (isPXM) gId('ipxm').innerHTML = `<iframe id="${id}" src="about:blank"></iframe>`;
+    gId('mpxm').style.transform = (isPXM) ? "translateY(0px)":"translateY(100%)";
+
+    var iframe = gId(id);
+    iframe.style.display = (isPXM) ? "block":"none";
+    iframe.src = (isPXM) ? getURL("/pxmagic.htm"):"about:blank";
+
+    iframe.onload = function () {
+        if(isPXM){
+            var iframeContent = this.contentDocument;
+            iframeContent.body.style.backgroundColor = "transparent";
+            var header = iframeContent.querySelector('.header');
+            header.style.display = "none";
+        }
+    }
+
+	btnPXM.className = (isPXM) ? "active":"";
+    size();
+}
+
+function updateNameResize(){
+    btnPXM.querySelector('p').textContent = (wW < 1024) ? "PXM" : "Pixel Magic";
 }
 
 function makeSeg()
@@ -2853,7 +2895,20 @@ function size()
 	if (isLv) h -= 4;
 	sCol('--tp', h + "px");
 	togglePcMode();
+    updateNameResize();
 	lastw = wW;
+}
+
+function listenMessage(e){
+    const { origin, data } = e;
+    
+    if (origin === window.location.origin) {
+        switch(data){
+            case 'loadPresets':
+                setTimeout(()=>{pmtLast=0; loadPresets();}, 250);
+                break;
+        }
+    }
 }
 
 function togglePcMode(fromB = false)
@@ -2895,6 +2950,7 @@ size();
 _C.style.setProperty('--n', N);
 
 window.addEventListener('resize', size, true);
+window.addEventListener('message', listenMessage, true);
 
 _C.addEventListener('mousedown', lock, false);
 _C.addEventListener('touchstart', lock, false);
