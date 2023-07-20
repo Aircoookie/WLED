@@ -171,6 +171,7 @@ async function onLoad()
 		// detect reverse proxy and/or HTTPS
 		let pathn = l.pathname;
 		let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
+		if (paths[0]==="sliders") paths.shift();
 		//while (paths[0]==="") paths.shift();
 		locproto = l.protocol;
 		locip = l.hostname + (l.port ? ":" + l.port : "");

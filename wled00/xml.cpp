@@ -72,55 +72,6 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
-//Deprecated, use of /json/state and presets recommended instead
-void URL_response(AsyncWebServerRequest *request)
-{
-  char sbuf[256];
-  char s2buf[100];
-  obuf = s2buf;
-  olen = 0;
-
-  char s[16];
-  oappend(SET_F("http://"));
-  IPAddress localIP = Network.localIP();
-  sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
-  oappend(s);
-
-  oappend(SET_F("/win&A="));
-  oappendi(bri);
-  oappend(SET_F("&CL=h"));
-  for (int i = 0; i < 3; i++)
-  {
-   sprintf(s,"%02X", col[i]);
-   oappend(s);
-  }
-  oappend(SET_F("&C2=h"));
-  for (int i = 0; i < 3; i++)
-  {
-   sprintf(s,"%02X", colSec[i]);
-   oappend(s);
-  }
-  oappend(SET_F("&FX="));
-  oappendi(effectCurrent);
-  oappend(SET_F("&SX="));
-  oappendi(effectSpeed);
-  oappend(SET_F("&IX="));
-  oappendi(effectIntensity);
-  oappend(SET_F("&FP="));
-  oappendi(effectPalette);
-
-  obuf = sbuf;
-  olen = 0;
-
-  oappend(SET_F("<html><body><a href=\""));
-  oappend(s2buf);
-  oappend(SET_F("\" target=\"_blank\">"));
-  oappend(s2buf);
-  oappend(SET_F("</a></body></html>"));
-
-  if (request != nullptr) request->send(200, "text/html", obuf);
-}
-
 void extractPin(JsonObject &obj, const char *key) {
   if (obj[key].is<JsonArray>()) {
     JsonArray pins = obj[key].as<JsonArray>();
@@ -285,7 +236,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage <0 || subPage >10) return;
 
-  if (subPage == 0)
+  if (subPage == SUBPAGE_MENU)
   {
   #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
     oappend(PSTR("gId('2dbtn').style.display='';"));
@@ -295,7 +246,7 @@ void getSettingsJS(byte subPage, char* dest)
   #endif
   }
 
-  if (subPage == 1)
+  if (subPage == SUBPAGE_WIFI)
   {
     sappends('s',SET_F("CS"),clientSSID);
 
@@ -327,6 +278,14 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("AC"),apChannel);
     sappend('c',SET_F("WS"),noWifiSleep);
+
+    #ifndef WLED_DISABLE_ESPNOW
+    sappend('c',SET_F("RE"),enable_espnow_remote);
+    sappends('s',SET_F("RMAC"),linked_remote);
+    #else
+    //hide remote settings if not compiled
+    oappend(SET_F("document.getElementById('remd').style.display='none';"));
+    #endif
 
     #ifdef WLED_USE_ETHERNET
     sappend('v',SET_F("ETH"),ethernetType);
@@ -360,9 +319,22 @@ void getSettingsJS(byte subPage, char* dest)
     {
       sappends('m',SET_F("(\"sip\")[1]"),(char*)F("Not active"));
     }
+
+    #ifndef WLED_DISABLE_ESPNOW
+    if (last_signal_src[0] != 0) //Have seen an ESP-NOW Remote
+    {
+      sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
+    } else if (!enable_espnow_remote)
+    {
+      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable remote to listen)"));
+    } else 
+    {
+      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
+    }
+    #endif
   }
 
-  if (subPage == 2)
+  if (subPage == SUBPAGE_LEDS)
   {
     char nS[32];
 
@@ -493,7 +465,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 
-  if (subPage == 3)
+  if (subPage == SUBPAGE_UI)
   {
     sappends('s',SET_F("DS"),serverDescription);
     sappend('c',SET_F("ST"),syncToggleReceive);
@@ -504,7 +476,7 @@ void getSettingsJS(byte subPage, char* dest)
   #endif
   }
 
-  if (subPage == 4)
+  if (subPage == SUBPAGE_SYNC)
   {
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
@@ -597,7 +569,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("BD"),serialBaud);
   }
 
-  if (subPage == 5)
+  if (subPage == SUBPAGE_TIME)
   {
     sappend('c',SET_F("NT"),ntpEnabled);
     sappends('s',SET_F("NS"),ntpServerName);
@@ -661,7 +633,7 @@ void getSettingsJS(byte subPage, char* dest)
     }
   }
 
-  if (subPage == 6)
+  if (subPage == SUBPAGE_SEC)
   {
     byte l = strlen(settingsPIN);
     char fpass[l+1]; //fill PIN field with 0000
@@ -683,7 +655,7 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
-  if (subPage == 7)
+  if (subPage == SUBPAGE_DMX)
   {
     sappend('v',SET_F("PU"),e131ProxyUniverse);
 
@@ -710,7 +682,7 @@ void getSettingsJS(byte subPage, char* dest)
   }
   #endif
 
-  if (subPage == 8) //usermods
+  if (subPage == SUBPAGE_UM) //usermods
   {
     appendGPIOinfo();
     oappend(SET_F("numM="));
@@ -729,7 +701,7 @@ void getSettingsJS(byte subPage, char* dest)
     usermods.appendConfigData();
   }
 
-  if (subPage == 9) // update
+  if (subPage == SUBPAGE_UPDATE) // update
   {
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
     olen -= 2; //delete ";
@@ -745,7 +717,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(")\";"));
   }
 
-  if (subPage == 10) // 2D matrices
+  if (subPage == SUBPAGE_2D) // 2D matrices
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
     #ifndef WLED_DISABLE_2D

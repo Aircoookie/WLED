@@ -7,19 +7,17 @@
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
-  // PIN code request
-  if (subPage == 252)
+  if (subPage == SUBPAGE_PINREQ)
   {
-    correctPIN = (strlen(settingsPIN)==0 || strncmp(settingsPIN, request->arg(F("PIN")).c_str(), 4)==0);
-    lastEditTime = millis();
+    checkSettingsPIN(request->arg(F("PIN")).c_str());
     return;
   }
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D
-  if (subPage <1 || subPage >10 || !correctPIN) return;
+  if (subPage < 1 || subPage > 10 || !correctPIN) return;
 
   //WIFI SETTINGS
-  if (subPage == 1)
+  if (subPage == SUBPAGE_WIFI)
   {
     strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
 
@@ -35,6 +33,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     int t = request->arg(F("AC")).toInt(); if (t > 0 && t < 14) apChannel = t;
 
     noWifiSleep = request->hasArg(F("WS"));
+
+    #ifndef WLED_DISABLE_ESPNOW
+    enable_espnow_remote = request->hasArg(F("RE"));
+    strlcpy(linked_remote,request->arg(F("RMAC")).c_str(), 13);
+
+    //Normalize MAC format to lowercase
+    strlcpy(linked_remote,strlwr(linked_remote), 13);
+    #endif
 
     #ifdef WLED_USE_ETHERNET
     ethernetType = request->arg(F("ETH")).toInt();
@@ -58,7 +64,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //LED SETTINGS
-  if (subPage == 2)
+  if (subPage == SUBPAGE_LEDS)
   {
     int t = 0;
 
@@ -262,7 +268,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //UI
-  if (subPage == 3)
+  if (subPage == SUBPAGE_UI)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
     syncToggleReceive = request->hasArg(F("ST"));
@@ -280,7 +286,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //SYNC
-  if (subPage == 4)
+  if (subPage == SUBPAGE_SYNC)
   {
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
@@ -379,7 +385,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //TIME
-  if (subPage == 5)
+  if (subPage == SUBPAGE_TIME)
   {
     ntpEnabled = request->hasArg(F("NT"));
     strlcpy(ntpServerName, request->arg(F("NS")).c_str(), 33);
@@ -453,7 +459,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //SECURITY
-  if (subPage == 6)
+  if (subPage == SUBPAGE_SEC)
   {
     if (request->hasArg(F("RS"))) //complete factory reset
     {
@@ -484,7 +490,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (otaLock && strcmp(otaPass,request->arg(F("OP")).c_str()) == 0)
       {
         // brute force protection: do not unlock even if correct if last save was less than 3 seconds ago
-        if (millis() - lastEditTime > 3000) pwdCorrect = true;
+        if (millis() - lastEditTime > PIN_RETRY_COOLDOWN) pwdCorrect = true;
       }
       if (!otaLock && request->arg(F("OP")).length() > 0)
       {
@@ -502,7 +508,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
-  if (subPage == 7)
+  if (subPage == SUBPAGE_DMX)
   {
     int t = request->arg(F("PU")).toInt();
     if (t >= 0  && t <= 63999) e131ProxyUniverse = t;
@@ -532,7 +538,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #endif
 
   //USERMODS
-  if (subPage == 8)
+  if (subPage == SUBPAGE_UM)
   {
     if (!requestJSONBufferLock(5)) return;
 
@@ -672,7 +678,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
   #ifndef WLED_DISABLE_2D
   //2D panels
-  if (subPage == 10)
+  if (subPage == SUBPAGE_2D)
   {
     strip.isMatrix = request->arg(F("SOMP")).toInt();
     strip.panel.clear(); // release memory if allocated
@@ -709,10 +715,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
   lastEditTime = millis();
   // do not save if factory reset or LED settings (which are saved after LED re-init)
-  doSerializeConfig = subPage != 2 && !(subPage == 6 && doReboot);
-  if (subPage == 8) doReboot = request->hasArg(F("RBT")); // prevent race condition on dual core system (set reboot here, after doSerializeConfig has been set)
+  doSerializeConfig = subPage != SUBPAGE_LEDS && !(subPage == SUBPAGE_SEC && doReboot);
+  if (subPage == SUBPAGE_UM) doReboot = request->hasArg(F("RBT")); // prevent race condition on dual core system (set reboot here, after doSerializeConfig has been set)
   #ifndef WLED_DISABLE_ALEXA
-  if (subPage == 4) alexaInit();
+  if (subPage == SUBPAGE_SYNC) alexaInit();
   #endif
 }
 

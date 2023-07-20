@@ -82,13 +82,14 @@ void DisplayTaskCode(void * parameter);
 
 typedef enum {
   NONE = 0,
-  SSD1306,      // U8X8_SSD1306_128X32_UNIVISION_HW_I2C
-  SH1106,       // U8X8_SH1106_128X64_WINSTAR_HW_I2C
-  SSD1306_64,   // U8X8_SSD1306_128X64_NONAME_HW_I2C
-  SSD1305,      // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
-  SSD1305_64,   // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
-  SSD1306_SPI,  // U8X8_SSD1306_128X32_NONAME_HW_SPI
-  SSD1306_SPI64 // U8X8_SSD1306_128X64_NONAME_HW_SPI
+  SSD1306,          // U8X8_SSD1306_128X32_UNIVISION_HW_I2C
+  SH1106,           // U8X8_SH1106_128X64_WINSTAR_HW_I2C
+  SSD1306_64,       // U8X8_SSD1306_128X64_NONAME_HW_I2C
+  SSD1305,          // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
+  SSD1305_64,       // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
+  SSD1306_SPI,      // U8X8_SSD1306_128X32_NONAME_HW_SPI
+  SSD1306_SPI64,    // U8X8_SSD1306_128X64_NONAME_HW_SPI
+  SSD1309_SPI64     // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
 } DisplayType;
 
 
@@ -533,24 +534,18 @@ void FourLineDisplayUsermod::sleepOrClock(bool enabled) {
 // gets called once at boot. Do all initialization that doesn't depend on
 // network here
 void FourLineDisplayUsermod::setup() {
-  if (type == NONE || !enabled) return;
-
-  bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
+  bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type == SSD1309_SPI64);
 
   // check if pins are -1 and disable usermod as PinManager::allocateMultiplePins() will accept -1 as a valid pin
   if (isSPI) {
-    PinManagerPinType cspins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
-    if (ioPin[0]==-1 || ioPin[1]==-1 || ioPin[1]==-1) { type=NONE; return; }
-    if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
-    PinManagerPinType pins[2] = { { spi_sclk, true }, { spi_mosi, true } };
-    if (spi_sclk==-1 || spi_mosi==-1 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_SPI)) {
-      pinManager.deallocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay);
+    if (spi_sclk<0 || spi_mosi<0 || ioPin[0]<0 || ioPin[1]<0 || ioPin[1]<0) {
       type = NONE;
-      return;
+    } else {
+      PinManagerPinType cspins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
+      if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type = NONE; }
     }
   } else {
-    PinManagerPinType pins[2] = { {i2c_scl, true }, { i2c_sda, true } };
-    if (i2c_scl==-1 || i2c_sda==-1 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { type=NONE; return; }
+    if (i2c_scl<0 || i2c_sda<0) { type=NONE; }
   }
 
   DEBUG_PRINTLN(F("Allocating display."));
@@ -563,20 +558,16 @@ void FourLineDisplayUsermod::setup() {
     case SSD1305_64:    u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C();  break;
     // U8X8 uses global SPI variable that is attached to VSPI bus on ESP32
     case SSD1306_SPI:   u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_HW_SPI(ioPin[0], ioPin[1], ioPin[2]); break; // Pins are cs, dc, reset
-    case SSD1306_SPI64: u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[0], ioPin[1], ioPin[2]);  break; // Pins are cs, dc, reset
+    case SSD1306_SPI64: u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[0], ioPin[1], ioPin[2]);    break; // Pins are cs, dc, reset
+    case SSD1309_SPI64: u8x8 = (U8X8 *) new U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI(ioPin[0], ioPin[1], ioPin[2]);   break; // Pins are cs, dc, reset
     // catchall
-    default:            u8x8 = (U8X8 *) new U8X8_NULL(); break;
+    default:            u8x8 = (U8X8 *) new U8X8_NULL(); enabled = false; break; // catchall to create U8x8 instance
   }
 
   if (nullptr == u8x8) {
     DEBUG_PRINTLN(F("Display init failed."));
     if (isSPI) {
-      int8_t pins[] = {spi_sclk, spi_mosi};
-      pinManager.deallocateMultiplePins((const uint8_t*)pins, 2, PinOwner::HW_SPI);
       pinManager.deallocateMultiplePins((const uint8_t*)ioPin, 3, PinOwner::UM_FourLineDisplay);
-    } else {
-      int8_t pins[] = {i2c_scl, i2c_sda};
-      pinManager.deallocateMultiplePins((const uint8_t*)pins, 2, PinOwner::HW_I2C);
     }
     type = NONE;
     return;
@@ -1215,6 +1206,7 @@ void FourLineDisplayUsermod::appendConfigData() {
   oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
   oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
   oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
+  oappend(SET_F("addOption(dd,'SSD1309 SPI 128x64',8);"));
   oappend(SET_F("addInfo('4LineDisplay:type',1,'<br><i class=\"warn\">Change may require reboot</i>','');"));
   oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','SPI CS');"));
   oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'','SPI DC');"));
@@ -1306,38 +1298,30 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
     bool pinsChanged = false;
     for (byte i=0; i<3; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
     if (pinsChanged || type!=newType) {
-      bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
-      bool newSPI = (newType == SSD1306_SPI || newType == SSD1306_SPI64);
+      bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type == SSD1309_SPI64);
+      bool newSPI = (newType == SSD1306_SPI || newType == SSD1306_SPI64 || newType == SSD1309_SPI64);
       if (isSPI) {
         if (pinsChanged || !newSPI) pinManager.deallocateMultiplePins((const uint8_t*)oldPin, 3, PinOwner::UM_FourLineDisplay);
         if (!newSPI) {
           // was SPI but is no longer SPI
-          int8_t oldPins[] = {spi_sclk, spi_mosi};
-          pinManager.deallocateMultiplePins((const uint8_t*)oldPins, 2, PinOwner::HW_SPI);
-          PinManagerPinType pins[2] = { {i2c_scl, true }, { i2c_sda, true } };
-          if (i2c_scl==-1 || i2c_sda==-1 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { newType=NONE; }
+          if (i2c_scl<0 || i2c_sda<0) { newType=NONE; }
         } else {
           // still SPI but pins changed
           PinManagerPinType cspins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
-          if (ioPin[0]==-1 || ioPin[1]==-1 || ioPin[1]==-1) { newType=NONE; }
+          if (ioPin[0]<0 || ioPin[1]<0 || ioPin[1]<0) { newType=NONE; }
           else if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
         }
       } else if (newSPI) {
         // was I2C but is now SPI
-        int8_t oldPins[] = {i2c_scl, i2c_sda};
-        pinManager.deallocateMultiplePins((const uint8_t*)oldPins, 2, PinOwner::HW_I2C);
-        PinManagerPinType pins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
-        if (ioPin[0]==-1 || ioPin[1]==-1 || ioPin[1]==-1) { newType=NONE; }
-        else if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
-        else {
-          PinManagerPinType pins[2] = { { spi_sclk, true }, { spi_mosi, true } };
-          if (spi_sclk==-1 || spi_mosi==-1 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_SPI)) {
-            pinManager.deallocateMultiplePins(pins, 3, PinOwner::UM_FourLineDisplay);
-            newType = NONE;
-          }
+        if (spi_sclk<0 || spi_mosi<0) {
+          newType=NONE;
+        } else {
+          PinManagerPinType pins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
+          if (ioPin[0]<0 || ioPin[1]<0 || ioPin[1]<0) { newType=NONE; }
+          else if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
         }
       } else {
-        // just I2C tye changed
+        // just I2C type changed
       }
       type = newType;
       switch (type) {
@@ -1369,8 +1353,12 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
           u8x8_Setup(u8x8->getU8x8(), u8x8_d_ssd1306_128x64_noname, u8x8_cad_001, u8x8_byte_arduino_hw_spi, u8x8_gpio_and_delay_arduino);
           u8x8_SetPin_4Wire_HW_SPI(u8x8->getU8x8(), ioPin[0], ioPin[1], ioPin[2]); // Pins are cs, dc, reset
           break;
+        case SSD1309_SPI64:
+          u8x8_Setup(u8x8->getU8x8(), u8x8_d_ssd1309_128x64_noname0, u8x8_cad_001, u8x8_byte_arduino_hw_spi, u8x8_gpio_and_delay_arduino);
+          u8x8_SetPin_4Wire_HW_SPI(u8x8->getU8x8(), ioPin[0], ioPin[1], ioPin[2]); // Pins are cs, dc, reset
         default:
           u8x8_Setup(u8x8->getU8x8(), u8x8_d_null_cb, u8x8_cad_empty, u8x8_byte_empty, u8x8_dummy_cb);
+          enabled = false;
           break;
       }
       startDisplay();

@@ -45,6 +45,10 @@
 #define ENCODER_SW_PIN 19
 #endif
 
+#ifndef ENCODER_MAX_DELAY_MS    // max delay between polling encoder pins
+#define ENCODER_MAX_DELAY_MS 8  // 8 milliseconds => max 120 change impulses in 1 second, for full turn of a 30/30 encoder (4 changes per segment, 30 segments for one turn)
+#endif
+
 #ifndef USERMOD_USE_PCF8574
   #undef USE_PCF8574
   #define USE_PCF8574 false
@@ -343,7 +347,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      */
     void addToConfig(JsonObject &root);
 
-    //void appendConfigData();
+    void appendConfigData();
 
     /**
      * restore the changeable values
@@ -376,6 +380,7 @@ class RotaryEncoderUIUsermod : public Usermod {
  */
 byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
   if (usePcf8574) {
+    if (pin >= 100) pin -= 100; // PCF I/O ports
     return (pcfPortData>>pin) & 1;
   } else {
     return digitalRead(pin);
@@ -473,7 +478,7 @@ void RotaryEncoderUIUsermod::setup()
   DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
 
   if (usePcf8574) {
-    if ((i2c_sda == i2c_scl && i2c_sda == -1) || pinA<0 || pinB<0 || pinC<0) {
+    if (i2c_sda < 0 || i2c_scl < 0 || pinA < 0 || pinB < 0 || pinC < 0) {
       DEBUG_PRINTLN(F("I2C and/or PCF8574 pins unused, disabling."));
       enabled = false;
       return;
@@ -538,8 +543,9 @@ void RotaryEncoderUIUsermod::setup()
   */
 void RotaryEncoderUIUsermod::loop()
 {
-  if (!enabled || strip.isUpdating()) return;
+  if (!enabled) return;
   unsigned long currentTime = millis(); // get the current elapsed time
+  if (strip.isUpdating() && ((currentTime - loopTime) < ENCODER_MAX_DELAY_MS)) return;  // be nice, but not too nice
 
   // Initialize effectCurrentIndex and effectPaletteIndex to
   // current state. We do it here as (at least) effectCurrent
@@ -1071,9 +1077,10 @@ void RotaryEncoderUIUsermod::addToConfig(JsonObject &root) {
   DEBUG_PRINTLN(F("Rotary Encoder config saved."));
 }
 
-//void RotaryEncoderUIUsermod::appendConfigData() {
-//  oappend(SET_F("addInfo('RotaryEncoderUIUsermod:PCF8574-address',1,'<i>(not hex!)</i>');"));
-//}
+void RotaryEncoderUIUsermod::appendConfigData() {
+  oappend(SET_F("addInfo('Rotary-Encoder:PCF8574-address',1,'<i>(not hex!)</i>');"));
+  oappend(SET_F("d.extra.push({'Rotary-Encoder':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
+}
 
 /**
  * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
@@ -1122,7 +1129,7 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
           pinManager.deallocatePin(pinIRQ, PinOwner::UM_RotaryEncoderUI);
           DEBUG_PRINTLN(F("Deallocated old IRQ pin."));
         }
-        pinIRQ = newIRQpin;
+        pinIRQ = newIRQpin<100 ? newIRQpin : -1; // ignore PCF8574 pins
       } else {
         pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
         pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);

@@ -120,6 +120,15 @@ bool applyPreset(byte index, byte callMode)
   return true;
 }
 
+// apply preset or fallback to a effect and palette if it doesn't exist
+void applyPresetWithFallback(uint8_t index, uint8_t callMode, uint8_t effectID, uint8_t paletteID)
+{
+  applyPreset(index, callMode);
+  //these two will be overwritten if preset exists in handlePresets()
+  effectCurrent = effectID;
+  effectPalette = paletteID;
+}
+
 void handlePresets()
 {
   if (presetToSave) {
@@ -171,7 +180,7 @@ void handlePresets()
       fdo.remove("ps"); // remove load request for presets to prevent recursive crash (if not called by button and contains preset cycling string "1~5~")
     deserializeState(fdo, CALL_MODE_NO_NOTIFY, tmpPreset); // may change presetToApply by calling applyPreset()
   }
-  if (!errorFlag && tmpPreset < 255 && changePreset) presetCycCurr = currentPreset = tmpPreset;
+  if (!errorFlag && tmpPreset < 255 && changePreset) currentPreset = tmpPreset;
 
   #if defined(ARDUINO_ARCH_ESP32)
   //Aircoookie recommended not to delete buffer

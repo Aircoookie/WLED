@@ -91,6 +91,21 @@
   #endif
 #endif
 
+#ifndef WLED_MAX_SEGNAME_LEN
+  #ifdef ESP8266
+    #define WLED_MAX_SEGNAME_LEN 32
+  #else
+    #define WLED_MAX_SEGNAME_LEN 64
+  #endif
+#else
+  #if WLED_MAX_SEGNAME_LEN<32
+    #undef WLED_MAX_SEGNAME_LEN
+    #define WLED_MAX_SEGNAME_LEN 32
+  #else
+    #warning WLED UI does not support modified maximum segment name length!
+  #endif
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
@@ -333,12 +348,29 @@
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
 #define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
 
-//Timer mode types
+// Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness
 #define NL_MODE_FADE              1            //Fade to target brightness gradually
 #define NL_MODE_COLORFADE         2            //Fade to target brightness and secondary color gradually
 #define NL_MODE_SUN               3            //Sunrise/sunset. Target brightness is set immediately, then Sunrise effect is started. Max 60 min.
 
+// Settings sub page IDs
+#define SUBPAGE_MENU              0
+#define SUBPAGE_WIFI              1
+#define SUBPAGE_LEDS              2
+#define SUBPAGE_UI                3
+#define SUBPAGE_SYNC              4
+#define SUBPAGE_TIME              5
+#define SUBPAGE_SEC               6
+#define SUBPAGE_DMX               7
+#define SUBPAGE_UM                8
+#define SUBPAGE_UPDATE            9
+#define SUBPAGE_2D               10
+#define SUBPAGE_LOCK            251
+#define SUBPAGE_PINREQ          252
+#define SUBPAGE_CSS             253
+#define SUBPAGE_JS              254
+#define SUBPAGE_WELCOME         255
 
 #define NTP_PACKET_SIZE 48
 
@@ -371,7 +403,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3096
+#define SETTINGS_STACK_BUF_SIZE 3608  // warning: quite a large value for stack
 #endif
 
 #ifdef WLED_USE_ETHERNET
@@ -443,7 +475,10 @@
   #define DEFAULT_LED_COUNT 30
 #endif
 
-#define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
+#define INTERFACE_UPDATE_COOLDOWN 1000 // time in ms to wait between websockets, alexa, and MQTT updates
+
+#define PIN_RETRY_COOLDOWN   3000 // time in ms after an incorrect attempt PIN and OTA pass will be rejected even if correct
+#define PIN_TIMEOUT        900000 // time in ms after which the PIN will be required again, 15 minutes
 
 // HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
 // which GPIO pins are actually used in a hardwarea layout (controller board)

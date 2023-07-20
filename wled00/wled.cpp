@@ -46,7 +46,9 @@ void WLED::loop()
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   #endif
   handleConnection();
+  handleRemote();
   handleSerial();
+  handleImprovWifiScan();
   handleNotifications();
   handleTransitions();
 #ifdef WLED_ENABLE_DMX
@@ -138,7 +140,7 @@ void WLED::loop()
   }
 
   // 15min PIN time-out
-  if (strlen(settingsPIN)>0 && millis() - lastEditTime > 900000) {
+  if (strlen(settingsPIN)>0 && correctPIN && millis() - lastEditTime > PIN_TIMEOUT) {
     correctPIN = false;
     createEditHandler(false);
   }
@@ -645,7 +647,6 @@ void WLED::initConnection()
   ws.onEvent(wsEvent);
   #endif
 
-
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(WIFI_PHY_MODE_11N);
@@ -844,7 +845,7 @@ void WLED::handleConnection()
     if (improvActive) {
       if (improvError == 3) sendImprovStateResponse(0x00, true);
       sendImprovStateResponse(0x04);
-      if (improvActive > 1) sendImprovRPCResponse(0x01);
+      if (improvActive > 1) sendImprovIPRPCResult(ImprovRPCType::Command_Wifi);
     }
     initInterfaces();
     userConnected();

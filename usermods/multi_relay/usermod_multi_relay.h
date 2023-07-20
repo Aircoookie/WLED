@@ -5,14 +5,18 @@
 #ifndef MULTI_RELAY_MAX_RELAYS
   #define MULTI_RELAY_MAX_RELAYS 4
 #else
-  #if MULTI_RELAY_MAX_RELAYS>16
+  #if MULTI_RELAY_MAX_RELAYS>8
     #undef MULTI_RELAY_MAX_RELAYS
-    #define MULTI_RELAY_MAX_RELAYS 16
+    #define MULTI_RELAY_MAX_RELAYS 8
+    #warning Maximum relays set to 8
   #endif
 #endif
 
 #ifndef MULTI_RELAY_PINS
   #define MULTI_RELAY_PINS -1
+  #define MULTI_RELAY_ENABLED false
+#else
+  #define MULTI_RELAY_ENABLED true
 #endif
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
@@ -45,7 +49,7 @@ typedef struct relay_t {
   int8_t pin;
   struct { // reduces memory footprint
     bool active   : 1;  // is the relay waiting to be switched
-    bool mode     : 1;  // does On mean 1 or 0 (inverted output)
+    bool invert   : 1;  // does On mean 1 or 0
     bool state    : 1;  // 1 relay is On, 0 relay is Off
     bool external : 1;  // is the relay externally controlled
     int8_t button : 4;  // which button triggers relay
@@ -315,7 +319,7 @@ int MultiRelay::getValue(String data, char separator, int index) {
 
 //Write a byte to the IO expander
 byte MultiRelay::IOexpanderWrite(byte address, byte _data ) {
-  Wire.beginTransmission(addrPcf8574 + address);
+  Wire.beginTransmission(address);
   Wire.write(_data);
   return Wire.endTransmission(); 
 }
@@ -323,7 +327,7 @@ byte MultiRelay::IOexpanderWrite(byte address, byte _data ) {
 //Read a byte from the IO expander
 byte MultiRelay::IOexpanderRead(int address) {
   byte _data = 0;
-  Wire.requestFrom(addrPcf8574 + address, 1);
+  Wire.requestFrom(address, 1);
   if (Wire.available()) {
     _data = Wire.read();
   }
@@ -335,7 +339,7 @@ byte MultiRelay::IOexpanderRead(int address) {
 
 MultiRelay::MultiRelay()
   : _switchTimerStart(0)
-  , enabled(false)
+  , enabled(MULTI_RELAY_ENABLED)
   , initDone(false)
   , usePcf8574(USE_PCF8574)
   , addrPcf8574(PCF8574_ADDRESS)
@@ -347,7 +351,7 @@ MultiRelay::MultiRelay()
   for (size_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
     _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;
     _relay[i].delay    = 0;
-    _relay[i].mode     = false;
+    _relay[i].invert   = false;
     _relay[i].active   = false;
     _relay[i].state    = false;
     _relay[i].external = false;
@@ -359,25 +363,27 @@ MultiRelay::MultiRelay()
  * switch relay on/off
  */
 void MultiRelay::switchRelay(uint8_t relay, bool mode) {
-  if (relay>=MULTI_RELAY_MAX_RELAYS || (_relay[relay].pin<0 && !usePcf8574)) return;
+  if (relay>=MULTI_RELAY_MAX_RELAYS || _relay[relay].pin<0) return;
   _relay[relay].state = mode;
-  if (usePcf8574) {
-    byte expander = relay/8;
-    uint16_t state = 0;
-    for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) state |= (uint16_t)_relay[i].state << i; // fill relay states for all pins
-    state = (mode ? !_relay[relay].mode : _relay[relay].mode) ? state | (1<<relay) : state & ~(1<<relay); // take into account invert mode
-    IOexpanderWrite(expander, state>>(8*expander));
-    DEBUG_PRINT(F("PCF8574 Writing to ")); DEBUG_PRINT(addrPcf8574 + expander); DEBUG_PRINT(F(" with data ")); DEBUG_PRINTLN(state>>(8*expander));
-  } else {
+  if (usePcf8574 && _relay[relay].pin >= 100) {
+    // we need to send all ouputs at the same time
+    uint8_t state = 0;
+    for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      if (_relay[i].pin < 100) continue;
+      uint8_t pin = _relay[i].pin - 100;
+      state |= (_relay[i].invert ? !_relay[i].state : _relay[i].state) << pin; // fill relay states for all pins
+    }
+    IOexpanderWrite(addrPcf8574, state);
+    DEBUG_PRINT(F("Writing to PCF8574: ")); DEBUG_PRINTLN(state);
+  } else if (_relay[relay].pin < 100) {
     pinMode(_relay[relay].pin, OUTPUT);
-    digitalWrite(_relay[relay].pin, mode ? !_relay[relay].mode : _relay[relay].mode);
-  }
+    digitalWrite(_relay[relay].pin, _relay[relay].invert ? !_relay[relay].state : _relay[relay].state);
+  } else return;
   publishMqtt(relay);
 }
 
 uint8_t MultiRelay::getActiveRelayCount() {
   uint8_t count = 0;
-  if (usePcf8574) return MULTI_RELAY_MAX_RELAYS;  // we don't know how many there are
   for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) if (_relay[i].pin>=0) count++;
   return count;
 }
@@ -476,28 +482,27 @@ void MultiRelay::publishHomeAssistantAutodiscovery() {
 void MultiRelay::setup() {
   // pins retrieved from cfg.json (readFromConfig()) prior to running setup()
   // if we want PCF8574 expander I2C pins need to be valid
-  if (i2c_sda == i2c_scl && i2c_sda == -1) usePcf8574 = false;
+  if (i2c_sda<0 || i2c_scl<0) usePcf8574 = false;
 
-  if (usePcf8574) {
-    uint16_t state = 0;
-    for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) state |= (uint16_t)(_relay[i].external ? (_relay[i].mode ? !_relay[i].state : _relay[i].state) : (_relay[i].mode ? !offMode : offMode)) << i; // fill relay states for all pins
-    for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i += 8) {
-      byte expander = i/8;
-      IOexpanderWrite(expander, state>>(8*expander));  // init expander (set all outputs)
-      delay(1);
-    }
-    DEBUG_PRINTLN(F("PCF8574(s) inited."));
-  } else {
-    for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-      if (_relay[i].pin<0) continue;
-      if (!pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
-        _relay[i].pin = -1;  // allocation failed
-      } else {
+  uint8_t state = 0;
+  for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+    if (usePcf8574 && _relay[i].pin >= 100) {
+      uint8_t pin = _relay[i].pin - 100;
+      if (!_relay[i].external) _relay[i].state = !offMode;
+      state |= (uint8_t)(_relay[i].invert ? !_relay[i].state : _relay[i].state) << pin;
+    } else if (_relay[i].pin<100 && _relay[i].pin>=0) {
+      if (pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
         if (!_relay[i].external) _relay[i].state = !offMode;
         switchRelay(i, _relay[i].state);
         _relay[i].active = false;
+      } else {
+        _relay[i].pin = -1;  // allocation failed
       }
     }
+  }
+  if (usePcf8574) {
+    IOexpanderWrite(addrPcf8574, state);  // init expander (set all outputs)
+    DEBUG_PRINTLN(F("PCF8574(s) inited."));
   }
   _oldMode = offMode;
   initDone = true;
@@ -519,7 +524,7 @@ void MultiRelay::loop() {
     _oldMode = offMode;
     _switchTimerStart = millis();
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-      if ((_relay[i].pin>=0 || usePcf8574) && !_relay[i].external) _relay[i].active = true;
+      if ((_relay[i].pin>=0) && !_relay[i].external) _relay[i].active = true;
     }
   }
 
@@ -635,7 +640,7 @@ void MultiRelay::addToJsonInfo(JsonObject &root) {
 
     String uiDomString;
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-      if ((_relay[i].pin<0 && !usePcf8574) || !_relay[i].external) continue;
+      if (_relay[i].pin<0 || !_relay[i].external) continue;
       uiDomString = F("Relay "); uiDomString += i;
       JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
 
@@ -726,7 +731,7 @@ void MultiRelay::addToConfig(JsonObject &root) {
     String parName = FPSTR(_relay_str); parName += '-'; parName += i;
     JsonObject relay = top.createNestedObject(parName);
     relay["pin"]              = _relay[i].pin;
-    relay[FPSTR(_activeHigh)] = _relay[i].mode;
+    relay[FPSTR(_activeHigh)] = _relay[i].invert;
     relay[FPSTR(_delay_str)]  = _relay[i].delay;
     relay[FPSTR(_external)]   = _relay[i].external;
     relay[FPSTR(_button)]     = _relay[i].button;
@@ -735,9 +740,10 @@ void MultiRelay::addToConfig(JsonObject &root) {
 }
 
 void MultiRelay::appendConfigData() {
-  oappend(SET_F("addInfo('MultiRelay:first-PCF8574',1,'<i>(not hex!)</i>','address');"));
+  oappend(SET_F("addInfo('MultiRelay:PCF8574-address',1,'<i>(not hex!)</i>');"));
   oappend(SET_F("addInfo('MultiRelay:broadcast-sec',1,'(MQTT message)');"));
-  oappend(SET_F("addInfo('MultiRelay:relay-0:pin',1,'(use -1 for PCF8574)');"));
+  //oappend(SET_F("addInfo('MultiRelay:relay-0:pin',1,'(use -1 for PCF8574)');"));
+  oappend(SET_F("d.extra.push({'MultiRelay':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
 }
 
 /**
@@ -762,7 +768,7 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
   usePcf8574 = top[FPSTR(_pcf8574)] | usePcf8574;
   addrPcf8574 = top[FPSTR(_pcfAddress)] | addrPcf8574;
   // if I2C is not globally initialised just ignore
-  if (i2c_sda == i2c_scl && i2c_sda == -1) usePcf8574 = false;
+  if (i2c_sda<0 || i2c_scl<0) usePcf8574 = false;
   periodicBroadcastSec = top[FPSTR(_broadcast)] | periodicBroadcastSec;
   periodicBroadcastSec = min(900,max(0,(int)periodicBroadcastSec));
   HAautodiscovery = top[FPSTR(_HAautodiscovery)] | HAautodiscovery;
@@ -771,14 +777,14 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
     String parName = FPSTR(_relay_str); parName += '-'; parName += i;
     oldPin[i]          = _relay[i].pin;
     _relay[i].pin      = top[parName]["pin"] | _relay[i].pin;
-    _relay[i].mode     = top[parName][FPSTR(_activeHigh)] | _relay[i].mode;
+    _relay[i].invert   = top[parName][FPSTR(_activeHigh)] | _relay[i].invert;
     _relay[i].external = top[parName][FPSTR(_external)]   | _relay[i].external;
     _relay[i].delay    = top[parName][FPSTR(_delay_str)]  | _relay[i].delay;
     _relay[i].button   = top[parName][FPSTR(_button)]     | _relay[i].button;
     // begin backwards compatibility (beta) remove when 0.13 is released
     parName += '-';
     _relay[i].pin      = top[parName+"pin"] | _relay[i].pin;
-    _relay[i].mode     = top[parName+FPSTR(_activeHigh)] | _relay[i].mode;
+    _relay[i].invert   = top[parName+FPSTR(_activeHigh)] | _relay[i].invert;
     _relay[i].external = top[parName+FPSTR(_external)]   | _relay[i].external;
     _relay[i].delay    = top[parName+FPSTR(_delay_str)]  | _relay[i].delay;
     // end compatibility
@@ -792,22 +798,11 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
   } else {
     // deallocate all pins 1st
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
-      if (oldPin[i]>=0) {
+      if (oldPin[i]>=0 && oldPin[i]<100) {
         pinManager.deallocatePin(oldPin[i], PinOwner::UM_MultiRelay);
       }
     // allocate new pins
-    for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-      if (_relay[i].pin>=0 && pinManager.allocatePin(_relay[i].pin, true, PinOwner::UM_MultiRelay)) {
-        if (!_relay[i].external) {
-          _relay[i].state = !offMode;
-          switchRelay(i, _relay[i].state);
-          _oldMode = offMode;
-        }
-      } else {
-        _relay[i].pin = -1;
-      }
-      _relay[i].active = false;
-    }
+    setup();
     DEBUG_PRINTLN(F(" config (re)loaded."));
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
@@ -825,4 +820,4 @@ const char MultiRelay::_button[]          PROGMEM = "button";
 const char MultiRelay::_broadcast[]       PROGMEM = "broadcast-sec";
 const char MultiRelay::_HAautodiscovery[] PROGMEM = "HA-autodiscovery";
 const char MultiRelay::_pcf8574[]         PROGMEM = "use-PCF8574";
-const char MultiRelay::_pcfAddress[]      PROGMEM = "first-PCF8574";
+const char MultiRelay::_pcfAddress[]      PROGMEM = "PCF8574-address";
