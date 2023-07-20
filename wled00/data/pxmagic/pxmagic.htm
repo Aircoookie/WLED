@@ -881,7 +881,7 @@
     <div id="overlay"></div>
   </body>
   <script>
-    const doc = document;
+    const d = document;
     const params = new URLSearchParams(window.location.search);
     const host = params.get("hn")
       ? params.get("hn")
@@ -917,7 +917,7 @@
     })();
 
     function element(id) {
-      return doc.getElementById(id);
+      return d.getElementById(id);
     }
 
     function hostnameLabel() {
@@ -926,11 +926,11 @@
     }
 
     function checked() {
-      const checkbox = doc.querySelectorAll('input[type="checkbox"]');
+      const checkbox = d.querySelectorAll('input[type="checkbox"]');
 
       checkbox.forEach((cb) => {
         let parentName = cb.dataset.parent;
-        let parent = doc.getElementsByClassName(parentName)[0];
+        let parent = d.getElementsByClassName(parentName)[0];
         let { checked } = cb;
 
         parent.style.display = checked ? "flex" : "none";
@@ -1258,7 +1258,7 @@
         toast("Text copied to clipboard");
       } catch (error) {
         try {
-          await doc.execCommand("copy");
+          await d.execCommand("copy");
           toast("Text copied to clipboard");
         } catch (error) {
           toast(error, "error");
@@ -1287,7 +1287,7 @@
     });
 
     element("output").addEventListener("change", (e) => {
-      const output = doc.getElementsByClassName("output");
+      const output = d.getElementsByClassName("output");
       const { value } = e.target.selectedOptions[0];
 
       Array.from(output).forEach(function (element) {
@@ -1335,7 +1335,7 @@
     });
 
     element("transparentImage").addEventListener("change", (e) => {
-      const transparentImage = doc.getElementsByClassName("transparentImage")[0];
+      const transparentImage = d.getElementsByClassName("transparentImage")[0];
       const { checked } = e.target;
 
       if (checked) {
@@ -1346,7 +1346,7 @@
     });
 
     element("resizeImage").addEventListener("change", (e) => {
-      const resizeImage = doc.getElementsByClassName("resizeImage")[0];
+      const resizeImage = d.getElementsByClassName("resizeImage")[0];
       const pattern = element("pattern");
       const { checked } = e.target;
 
@@ -1360,7 +1360,7 @@
     });
 
     element("animation").addEventListener("change", (e) => {
-      const animation = doc.getElementsByClassName("animation")[0];
+      const animation = d.getElementsByClassName("animation")[0];
       const pattern = element("pattern");
       const source = element("source");
 
@@ -1754,7 +1754,7 @@
     }
 
     function createCanvas(width, height) {
-      const canvas = doc.createElement("canvas");
+      const canvas = d.createElement("canvas");
 
       canvas.width = width;
       canvas.height = height;
@@ -1798,7 +1798,7 @@
       const blob = new Blob([text], { type: mimeType });
       const url = URL.createObjectURL(blob);
 
-      const anchorElement = doc.createElement("a");
+      const anchorElement = d.createElement("a");
       anchorElement.href = url;
       anchorElement.download = `${filename}.${fileExtension}`;
 
@@ -1819,8 +1819,8 @@
             [device]: {
               friendly_name,
               unique_id,
-              command_on: `curl -X POST "http://${hostname}/json/state" -doc '${jsonData}' -H "Content-Type: application/json"`,
-              command_off: `curl -X POST "http://${hostname}/json/state" -doc '{"on":false}' -H "Content-Type: application/json"`,
+              command_on: `curl -X POST "http://${hostname}/json/state" -d '${jsonData}' -H "Content-Type: application/json"`,
+              command_off: `curl -X POST "http://${hostname}/json/state" -d '{"on":false}' -H "Content-Type: application/json"`,
             },
           },
         };
@@ -1831,7 +1831,7 @@
 
     function curl(jsonData) {
       const { value: hostname } = element("hostname");
-      return `curl -X POST "http://${hostname}/json/state" -doc '${jsonData}' -H "Content-Type: application/json"`;
+      return `curl -X POST "http://${hostname}/json/state" -d '${jsonData}' -H "Content-Type: application/json"`;
     }
 
     function convertToYaml(obj) {
@@ -1869,7 +1869,7 @@
       hideElement = "preview"
     ) {
       const hide = element(hideElement);
-      const toast = doc.createElement("div");
+      const toast = d.createElement("div");
       const wait = 100;
 
       toast.style.animation = "fadeIn";
@@ -1878,14 +1878,14 @@
 
       toast.classList.add("toast", type);
 
-      const body = doc.createElement("span");
+      const body = d.createElement("span");
       body.classList.add("toast-body");
 
       body.textContent = message;
 
       toast.appendChild(body);
 
-      const progress = doc.createElement("div");
+      const progress = d.createElement("div");
       progress.classList.add("toast-progress");
 
       progress.style.animation = "progress";
@@ -1910,7 +1910,7 @@
 
     function carousel(id, images, delay = 3000) {
       let index = 0;
-      const carousel = doc.createElement("div");
+      const carousel = d.createElement("div");
       carousel.classList.add("carousel");
 
       images.forEach((canvas, i) => {
@@ -1975,7 +1975,7 @@
       overlay.style.display = "block";
       overlay.style.cursor = "not-allowed";
 
-      doc.body.style.overflow = "hidden";
+      d.body.style.overflow = "hidden";
     }
 
     function hide() {
@@ -1984,7 +1984,7 @@
       overlay.style.display = "none";
       overlay.style.cursor = "default";
 
-      doc.body.style.overflow = "auto";
+      d.body.style.overflow = "auto";
     }
 
     function validate(event) {
@@ -2011,7 +2011,7 @@
         let isVisible = true;
 
         let tempParent = parent;
-        while (tempParent !== doc.body) {
+        while (tempParent !== d.body) {
           const parentStyles = window.getComputedStyle(tempParent);
           if (
             parentStyles.display === "none" ||
@@ -2038,7 +2038,7 @@
           let errorElement = parent.querySelector(".error-message");
 
           if (!errorElement) {
-            errorElement = doc.createElement("div");
+            errorElement = d.createElement("div");
             errorElement.classList.add("error-message");
             parent.appendChild(errorElement);
           }
