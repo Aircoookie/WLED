@@ -35,7 +35,7 @@ IRAM_ATTR_YN uint32_t color_blend(uint32_t color1, uint32_t color2, uint_fast16_
  * color add function that preserves ratio
  * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
  */
-uint32_t color_add(uint32_t c1, uint32_t c2)
+IRAM_ATTR_YN uint32_t color_add(uint32_t c1, uint32_t c2)   // WLEDMM added IRAM_ATTR_YN
 {
   uint32_t r = R(c1) + R(c2);
   uint32_t g = G(c1) + G(c2);
@@ -362,7 +362,7 @@ void calcGammaTable(float gamma)
 }
 
 // used for individual channel or brightness gamma correction
-uint8_t gamma8(uint8_t b)
+IRAM_ATTR_YN uint8_t gamma8(uint8_t b)   // WLEDMM added IRAM_ATTR_YN
 {
   return gammaT[b];
 }

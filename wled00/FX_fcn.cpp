@@ -1216,6 +1216,7 @@ void Segment::fade_out(uint8_t rate) {
 
   for (uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
     uint32_t color = is2D() ? getPixelColorXY(x, y) : getPixelColor(x);
+    if (color == color2) continue;  // WLEDMM speedup - pixel color = target color, so nothing to do
     int w1 = W(color);
     int r1 = R(color);
     int g1 = G(color);
