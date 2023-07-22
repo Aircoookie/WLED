@@ -140,7 +140,7 @@ void BusDigital::setBrightness(uint8_t b, bool immediate) {
 //TODO only show if no new show due in the next 50ms
 void BusDigital::setStatusPixel(uint32_t c) {
   if (_skip && canShow()) {
-    PolyBus::setPixelColor(_busPtr, _iType, 0, R(c), G(c), B(c), W(c), 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
+    PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
     PolyBus::show(_busPtr, _iType);
   }
 }
@@ -161,12 +161,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
       case 2: c = RGBW32(R(cOld), G(cOld), W(c)   , 0); break;
     }
   }
-  
-  uint8_t ww = W(c), cw = 0;
-  if (_type == TYPE_FW1906)
-    calculateCCT(c, ww, cw);
-
-  PolyBus::setPixelColor(_busPtr, _iType, pix, R(c), G(c), B(c), ww, cw, co);
+  PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
 }
 
 uint32_t BusDigital::getPixelColor(uint16_t pix) {

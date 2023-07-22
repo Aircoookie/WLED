@@ -2,6 +2,7 @@
 #define BusWrapper_h
 
 #include "NeoPixelBusLg.h"
+#include "bus_manager.h"
 
 // temporary - these defines should actually be set in platformio.ini
 // C3: I2S0 and I2S1 methods not supported (has one I2S bus)
@@ -755,9 +756,33 @@ class PolyBus {
     }
     return true;
   };
-  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint8_t r, uint8_t g, uint8_t b, uint8_t ww, uint8_t cw, uint8_t co) {
-    RgbwColor col;
 
+  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c, uint8_t co) {
+    uint8_t r = c >> 16;
+    uint8_t g = c >> 8;
+    uint8_t b = c >> 0;
+    uint8_t w = c >> 24;
+    RgbwColor col;
+    uint8_t ww = w, cw = 0;
+
+    switch (busType) {
+    #ifdef ESP8266
+      case I_8266_U0_FW6_5:
+      case I_8266_U1_FW6_5:
+      case I_8266_DM_FW6_5:
+      case I_8266_BB_FW6_5:
+    #endif
+    #ifdef ARDUINO_ARCH_ESP32
+      case I_32_RN_FW6_5:
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5:
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5:
+      #endif
+    #endif
+        Bus::calculateCCT(c, ww, cw);
+    }
     // reorder channels to selected order
     switch (co & 0x0F) {
       default: col.G = g; col.R = r; col.B = b; break; //0 = GRB, default

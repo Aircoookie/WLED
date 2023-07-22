@@ -153,26 +153,6 @@ class Bus {
         if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
       #endif
     }
-    inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
-    inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
-    inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
-    inline static uint8_t getGlobalAWMode()           { return _gAWM; }
-
-    bool reversed = false;
-
-  protected:
-    uint8_t  _type;
-    uint8_t  _bri;
-    uint16_t _start;
-    uint16_t _len;
-    bool     _valid;
-    bool     _needsRefresh;
-    uint8_t  _autoWhiteMode;
-    static uint8_t _gAWM;
-    static int16_t _cct;
-    static uint8_t _cctBlend;
-
-    uint32_t autoWhiteCalc(uint32_t c);
     static void calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
       uint8_t cct = 0; //0 - full warm white, 255 - full cold white
       uint8_t w = byte(c >> 24);
@@ -199,6 +179,26 @@ class Bus {
       cw = (w * cw) / 255;
       #endif
     }
+    inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
+    inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
+    inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
+    inline static uint8_t getGlobalAWMode()           { return _gAWM; }
+
+    bool reversed = false;
+
+  protected:
+    uint8_t  _type;
+    uint8_t  _bri;
+    uint16_t _start;
+    uint16_t _len;
+    bool     _valid;
+    bool     _needsRefresh;
+    uint8_t  _autoWhiteMode;
+    static uint8_t _gAWM;
+    static int16_t _cct;
+    static uint8_t _cctBlend;
+
+    uint32_t autoWhiteCalc(uint32_t c);
 };
 
 
