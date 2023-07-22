@@ -147,7 +147,7 @@ void BusDigital::setStatusPixel(uint32_t c) {
 
 void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (_type == TYPE_FW1906 || _type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || _type == TYPE_WS2812_1CH_X3) c = autoWhiteCalc(c);
-  if (_type != TYPE_FW1906 && _cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
+  if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
   if (reversed) pix = _len - pix -1;
   else pix += _skip;
   uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
