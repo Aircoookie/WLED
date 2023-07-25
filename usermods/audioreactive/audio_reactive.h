@@ -1969,6 +1969,7 @@ class AudioReactive : public Usermod {
       infoArr.add(uiDomString);
 
       if (enabled) {
+#ifdef ARDUINO_ARCH_ESP32
         // Input Level Slider
         if (disableSoundProcessing == false) {                                 // only show slider when audio processing is running
           if (soundAgc > 0) {
@@ -1991,7 +1992,7 @@ class AudioReactive : public Usermod {
           uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
           infoArr.add(uiDomString);
         } 
-
+#endif
         // The following can be used for troubleshooting user errors and is so not enclosed in #ifdef WLED_DEBUG
 #ifdef ARDUINO_ARCH_ESP32
         // current Audio input
@@ -2127,9 +2128,11 @@ class AudioReactive : public Usermod {
           enabled = usermod[FPSTR(_enabled)].as<bool>();
           if (prevEnabled != enabled) onUpdateBegin(!enabled);
         }
+#ifdef ARDUINO_ARCH_ESP32
         if (usermod[FPSTR(_inputLvl)].is<int>()) {
           inputLevel = min(255,max(0,usermod[FPSTR(_inputLvl)].as<int>()));
         }
+#endif
       }
     }
 
