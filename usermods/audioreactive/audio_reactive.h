@@ -2450,7 +2450,9 @@ class AudioReactive : public Usermod {
 #endif
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
+#ifdef ARDUINO_ARCH_ESP32
       oappend(SET_F("addOption(dd,'Send',1);"));
+#endif
       oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
 #ifdef ARDUINO_ARCH_ESP32
