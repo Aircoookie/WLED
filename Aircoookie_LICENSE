@@ -1,3 +1,6 @@
+The license below is valid for the code that is common with upstream "AC WLED" from https://github.com/Aircoookie/WLED.
+Additions and code changes that are exclusive to this fork ("MoonModules WLED") are under GPLv3 license, see LICENSE.
+
 MIT License
 
 Copyright (c) 2016 Christian Schwinne
