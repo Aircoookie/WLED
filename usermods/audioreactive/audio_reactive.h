@@ -23,6 +23,12 @@
 #define FFT_PREFER_EXACT_PEAKS  // use different FFT wndowing -> results in "sharper" peaks and less "leaking" into other frequencies
 //#define SR_STATS
 
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+// this applies "pink noise scaling" to FFT results before computing the major peak for effects.
+// currently only for ESP32-S3 and classic ESP32, due to increased runtime
+#define FFT_MAJORPEAK_HUMAN_EAR
+#endif
+
 // Comment/Uncomment to toggle usb serial debugging
 // #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
 // #define FFT_SAMPLING_LOG             // FFT result debugging
@@ -289,6 +295,13 @@ static float vImag[samplesFFT] = {0.0f};       // imaginary parts
 static float windowWeighingFactors[samplesFFT] = {0.0f};
 #endif
 
+#ifdef FFT_MAJORPEAK_HUMAN_EAR
+static float pinkFactors[samplesFFT] = {0.0f};              // "pink noise" correction factors
+constexpr float pinkcenter = 23.66;                         // sqrt(560) - center freq for scaling is 560 hz. 
+constexpr float binWidth = SAMPLE_RATE / (float)samplesFFT; // frequency range of each FFT result bin
+#endif
+
+
 // Create FFT object
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
@@ -375,6 +388,17 @@ void FFTcode(void * parameter)
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
   const TickType_t xFrequencyDouble = FFT_MIN_CYCLE * portTICK_PERIOD_MS * 2;  
   static bool isFirstRun = false;
+
+#ifdef FFT_MAJORPEAK_HUMAN_EAR
+  // pre-compute pink noise scaling table
+  for(uint_fast16_t binInd = 0; binInd < samplesFFT; binInd++) {
+    float binFreq = binInd * binWidth + binWidth/2.0f;
+    if (binFreq > (SAMPLE_RATE * 0.42f))
+      binFreq = (SAMPLE_RATE * 0.42f) - 0.25 * (binFreq - (SAMPLE_RATE * 0.42f)); // supress noise and aliasing 
+    pinkFactors[binInd] = sqrtf(binFreq) / pinkcenter;
+  }
+  pinkFactors[0] *= 0.5;  // suppress 0-42hz bin
+#endif
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for(;;) {
@@ -498,10 +522,27 @@ void FFTcode(void * parameter)
         FFT.ComplexToMagnitude();                               // Compute magnitudes
         #endif
 
+        #ifdef FFT_MAJORPEAK_HUMAN_EAR
+        // scale FFT results
+        for(uint_fast16_t binInd = 0; binInd < samplesFFT; binInd++)
+          vReal[binInd] *= pinkFactors[binInd];
+        #endif
+
         #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
           FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
         #else
         FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
+        #endif
+
+        #ifdef FFT_MAJORPEAK_HUMAN_EAR
+        // undo scaling - we want unmodified values for FFTResult[] computations
+        for(uint_fast16_t binInd = 0; binInd < samplesFFT; binInd++)
+          vReal[binInd] *= 1.0f/pinkFactors[binInd];
+        //fix peak magnitude
+        if ((FFT_MajorPeak > (binWidth/1.25f)) && (FFT_MajorPeak < (SAMPLE_RATE/2.2f)) && (FFT_Magnitude > 4.0f)) {
+          unsigned peakBin = constrain((int)((FFT_MajorPeak + binWidth/2.0f) / binWidth), 0, samplesFFT -1);
+          FFT_Magnitude *= fmaxf(1.0f/pinkFactors[peakBin], 1.0f);
+        }
         #endif
         FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
         FFT_MajPeakSmth = FFT_MajPeakSmth + 0.42 * (FFT_MajorPeak - FFT_MajPeakSmth);   // I like this "swooping peak" look
