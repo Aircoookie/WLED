@@ -2422,12 +2422,14 @@ uint16_t ripple_base()
       } else
       #endif
       {
-        int16_t left = rippleorigin - propI -1;
-        for (int16_t v = left; v < left +4; v++) {
+        int left = rippleorigin - propI -1;
+        for (int v = left; v < left +4; v++) {
           uint8_t mag = scale8(cubicwave8((propF>>2)+(v-left)*64), amp);
-          SEGMENT.setPixelColor(v, color_blend(SEGMENT.getPixelColor(v), col, mag)); // TODO
-          int16_t w = left + propI*2 + 3 -(v-left);
-          SEGMENT.setPixelColor(w, color_blend(SEGMENT.getPixelColor(w), col, mag)); // TODO
+          if ((v >= 0) && (v < SEGLEN))                                                // WLEDMM bugfix: v and w can be negative or out-of-range
+            SEGMENT.setPixelColor(v, color_blend(SEGMENT.getPixelColor(v), col, mag)); // TODO
+          int w = left + propI*2 + 3 -(v-left);
+          if ((v >= 0) && (v < SEGLEN))                                                // WLEDMM bugfix: v and w can be negative or out-of-range
+            SEGMENT.setPixelColor(w, color_blend(SEGMENT.getPixelColor(w), col, mag)); // TODO
         }
       }
       ripplestate += rippledecay;
