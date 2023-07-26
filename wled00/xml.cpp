@@ -72,55 +72,6 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
-//Deprecated, use of /json/state and presets recommended instead
-void URL_response(AsyncWebServerRequest *request)
-{
-  char sbuf[256];
-  char s2buf[100];
-  obuf = s2buf;
-  olen = 0;
-
-  char s[16];
-  oappend(SET_F("http://"));
-  IPAddress localIP = Network.localIP();
-  sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
-  oappend(s);
-
-  oappend(SET_F("/win&A="));
-  oappendi(bri);
-  oappend(SET_F("&CL=h"));
-  for (int i = 0; i < 3; i++)
-  {
-   sprintf(s,"%02X", col[i]);
-   oappend(s);
-  }
-  oappend(SET_F("&C2=h"));
-  for (int i = 0; i < 3; i++)
-  {
-   sprintf(s,"%02X", colSec[i]);
-   oappend(s);
-  }
-  oappend(SET_F("&FX="));
-  oappendi(effectCurrent);
-  oappend(SET_F("&SX="));
-  oappendi(effectSpeed);
-  oappend(SET_F("&IX="));
-  oappendi(effectIntensity);
-  oappend(SET_F("&FP="));
-  oappendi(effectPalette);
-
-  obuf = sbuf;
-  olen = 0;
-
-  oappend(SET_F("<html><body><a href=\""));
-  oappend(s2buf);
-  oappend(SET_F("\" target=\"_blank\">"));
-  oappend(s2buf);
-  oappend(SET_F("</a></body></html>"));
-
-  if (request != nullptr) request->send(200, "text/html", obuf);
-}
-
 void extractPin(JsonObject &obj, const char *key) {
   if (obj[key].is<JsonArray>()) {
     JsonArray pins = obj[key].as<JsonArray>();
@@ -404,7 +355,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
-    sappend('c',SET_F("LD"),strip.useLedsArray);
+    sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -431,7 +382,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',lt,bus->getType());
       sappend('v',co,bus->getColorOrder() & 0x0F);
       sappend('v',ls,bus->getStart());
-      sappend('c',cv,bus->reversed);
+      sappend('c',cv,bus->isReversed());
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
       sappend('v',aw,bus->getAutoWhiteMode());

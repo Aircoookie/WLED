@@ -278,7 +278,7 @@ uint16_t mode_random_color(void) {
   SEGMENT.fill(color_blend(SEGMENT.color_wheel(SEGENV.aux1), SEGMENT.color_wheel(SEGENV.aux0), fade));
   return FRAMETIME;
 }
-static const char _data_FX_MODE_RANDOM_COLOR[] PROGMEM = "Random Colors@!,Fade time;;!";
+static const char _data_FX_MODE_RANDOM_COLOR[] PROGMEM = "Random Colors@!,Fade time;;!;01";
 
 
 /*
@@ -289,7 +289,6 @@ uint16_t mode_dynamic(void) {
   if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
 
   if(SEGENV.call == 0) {
-    //SEGMENT.setUpLeds();  //lossless getPixelColor()
     //SEGMENT.fill(BLACK);
     for (int i = 0; i < SEGLEN; i++) SEGENV.data[i] = random8();
   }
@@ -433,7 +432,7 @@ uint16_t mode_rainbow(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_RAINBOW[] PROGMEM = "Colorloop@!,Saturation;;!";
+static const char _data_FX_MODE_RAINBOW[] PROGMEM = "Colorloop@!,Saturation;;!;01";
 
 
 /*
@@ -607,7 +606,6 @@ static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!,!;!,!;!;;m12=0"; 
 uint16_t dissolve(uint32_t color) {
   //bool wa = (SEGCOLOR(1) != 0 && strip.getBrightness() < 255); //workaround, can't compare getPixel to color if not full brightness
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();  //lossless getPixelColor()
     SEGMENT.fill(SEGCOLOR(1));
   }
 
@@ -1206,7 +1204,6 @@ uint16_t mode_fireworks() {
   const uint16_t height = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();  //lossless getPixelColor()
     SEGMENT.fill(SEGCOLOR(1));
     SEGENV.aux0 = UINT16_MAX;
     SEGENV.aux1 = UINT16_MAX;
@@ -1215,19 +1212,21 @@ uint16_t mode_fireworks() {
 
   bool valid1 = (SEGENV.aux0 < width*height);
   bool valid2 = (SEGENV.aux1 < width*height);
+  uint8_t x = SEGENV.aux0%width, y = SEGENV.aux0/width; // 2D coordinates stored in upper and lower byte
   uint32_t sv1 = 0, sv2 = 0;
-  if (valid1) sv1 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(SEGENV.aux0%width, SEGENV.aux0/width) : SEGMENT.getPixelColor(SEGENV.aux0); // get spark color
-  if (valid2) sv2 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(SEGENV.aux1%width, SEGENV.aux1/width) : SEGMENT.getPixelColor(SEGENV.aux1);
+  if (valid1) sv1 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux0); // get spark color
+  if (valid2) sv2 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux1);
   if (!SEGENV.step) SEGMENT.blur(16);
-  if (valid1) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(SEGENV.aux0%width, SEGENV.aux0/width, sv1); else SEGMENT.setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
-  if (valid2) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(SEGENV.aux1%width, SEGENV.aux1/width, sv2); else SEGMENT.setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
+  if (valid1) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv1); else SEGMENT.setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
+  if (valid2) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv2); else SEGMENT.setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
 
   for (int i=0; i<MAX(1, width/20); i++) {
     if (random8(129 - (SEGMENT.intensity >> 1)) == 0) {
       uint16_t index = random16(width*height);
-      uint16_t j = index % width, k = index / width;
+      x = index % width;
+      y = index / width;
       uint32_t col = SEGMENT.color_from_palette(random8(), false, false, 0);
-      if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(j, k, col);
+      if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, col);
       else                SEGMENT.setPixelColor(index, col);
       SEGENV.aux1 = SEGENV.aux0;  // old spark
       SEGENV.aux0 = index;        // remember where spark occured
@@ -1905,7 +1904,6 @@ static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 uint16_t mode_juggle(void) {
   if (SEGLEN == 1) return mode_static();
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();  //lossless getPixelColor()
     SEGMENT.fill(BLACK);
   }
 
@@ -4586,7 +4584,6 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
 
   // initialize on first call
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -4596,22 +4593,22 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   for (size_t i = 0; i < 8; i++) {
     x = beatsin8(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.intensity>>3, 0, rows - 1, 0, ((i % 2) ? 192 : 64) + t * i);
-    SEGMENT.addPixelColorXY(x, y, CHSV(i*32, 255, 255));
+    SEGMENT.addPixelColorXY(x, y, SEGMENT.color_from_palette(i*32, false, PALETTE_SOLID_WRAP, SEGMENT.check1?0:255));
   }
   // inner stars
   for (size_t i = 0; i < 4; i++) {
     x = beatsin8(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.custom3   , rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
-    SEGMENT.addPixelColorXY(x, y, CHSV(i*32, 255, 255));
+    SEGMENT.addPixelColorXY(x, y, SEGMENT.color_from_palette(255-i*64, false, PALETTE_SOLID_WRAP, SEGMENT.check1?0:255));
   }
   // central white dot
-  SEGMENT.setPixelColorXY(cols/2, rows/2, CHSV(0, 0, 255));
+  SEGMENT.setPixelColorXY(cols/2, rows/2, WHITE);
   // blur everything a bit
   SEGMENT.blur(16);
 
   return FRAMETIME;
 } // mode_2DBlackHole()
-static const char _data_FX_MODE_2DBLACKHOLE[] PROGMEM = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;;2";
+static const char _data_FX_MODE_2DBLACKHOLE[] PROGMEM = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.,Solid;!;!;2;pal=11";
 
 
 ////////////////////////////
@@ -4624,7 +4621,6 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
     SEGENV.aux0 = 0; // start with red hue
   }
@@ -4678,7 +4674,6 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -4705,7 +4700,6 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -4751,7 +4745,6 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -4759,11 +4752,12 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
 
   const uint16_t maxDim = MAX(cols, rows)/2;
   unsigned long t = millis() / (32 - (SEGMENT.speed>>3));
+  unsigned long t_20 = t/20; // softhack007: pre-calculating this gives about 10% speedup
   for (float i = 1; i < maxDim; i += 0.25) {
     float angle = radians(t * (maxDim - i));
     uint16_t myX = (cols>>1) + (uint16_t)(sin_t(angle) * i) + (cols%2);
     uint16_t myY = (rows>>1) + (uint16_t)(cos_t(angle) * i) + (rows%2);
-    SEGMENT.setPixelColorXY(myX, myY, ColorFromPalette(SEGPALETTE, (i * 20) + (t / 20), 255, LINEARBLEND));
+    SEGMENT.setPixelColorXY(myX, myY, ColorFromPalette(SEGPALETTE, (i * 20) + t_20, 255, LINEARBLEND));
   }
   SEGMENT.blur(SEGMENT.intensity>>3);
 
@@ -4782,7 +4776,6 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -4817,7 +4810,6 @@ uint16_t mode_2DFrizzles(void) {                 // By: Stepko https://editor.so
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -4855,8 +4847,6 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   uint16_t *crcBuffer = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize); 
 
   CRGB backgroundColor = SEGCOLOR(1);
-
-  if (SEGENV.call == 0) SEGMENT.setUpLeds();
 
   if (SEGENV.call == 0 || strip.now - SEGMENT.step > 3000) {
     SEGENV.step = strip.now;
@@ -4914,7 +4904,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     } // i,j
 
     // Rules of Life
-    uint32_t col = prevLeds[XY(x,y)];
+    uint32_t col = uint32_t(prevLeds[XY(x,y)]) & 0x00FFFFFF;  // uint32_t operator returns RGBA, we want RGBW -> cut off "alpha" byte
     uint32_t bgc = RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0);
     if      ((col != bgc) && (neighbors <  2)) SEGMENT.setPixelColorXY(x,y, bgc); // Loneliness
     else if ((col != bgc) && (neighbors >  3)) SEGMENT.setPixelColorXY(x,y, bgc); // Overpopulation
@@ -5123,7 +5113,6 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -5268,13 +5257,12 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
   SEGMENT.fadeToBlackBy(SEGMENT.custom1>>2);
 
-  float t = millis() / (33 - SEGMENT.speed/8);
+  uint_fast32_t t = (millis() * 8) / (256 - SEGMENT.speed);  // optimized to avoid float
   for (int i = 0; i < cols; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
     uint16_t thisMax = map(thisVal, 0, 255, 0, cols-1);
@@ -5316,7 +5304,6 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
   CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
     SEGENV.step = 0;
   }
@@ -5366,7 +5353,6 @@ uint16_t mode_2DPulser(void) {                       // By: ldirko   https://edi
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -5394,7 +5380,6 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -5426,7 +5411,6 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -5469,7 +5453,6 @@ uint16_t mode_2DSunradiation(void) {                   // By: ldirko https://edi
   byte *bump = reinterpret_cast<byte*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -5517,7 +5500,6 @@ uint16_t mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.so
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -5557,7 +5539,6 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -5626,7 +5607,6 @@ uint16_t mode_2Dcrazybees(void) {
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
     for (size_t i = 0; i < n; i++) {
       bee[i].posX = random8(0, cols);
@@ -5696,7 +5676,6 @@ uint16_t mode_2Dghostrider(void) {
 
   const size_t maxLighters = min(cols + rows, LIGHTERS_AM);
 
-  if (SEGENV.call == 0) SEGMENT.setUpLeds();
   if (SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
@@ -5781,7 +5760,6 @@ uint16_t mode_2Dfloatingblobs(void) {
   if (!SEGENV.allocateData(sizeof(blob_t))) return mode_static(); //allocation failed
   blob_t *blob = reinterpret_cast<blob_t*>(SEGENV.data);
 
-  if (SEGENV.call == 0) SEGMENT.setUpLeds();
   if (SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols; // re-initialise if virtual size changes
     SEGENV.aux1 = rows;
@@ -5879,7 +5857,7 @@ uint16_t mode_2Dscrollingtext(void) {
   }
   const bool zero = SEGMENT.check3;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  char text[33] = {'\0'};
+  char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
   if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
   if (!strlen(text)
@@ -5947,7 +5925,6 @@ uint16_t mode_2Ddriftrose(void) {
   const float L = min(cols, rows) / 2.f;
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6102,7 +6079,6 @@ uint16_t mode_2DSwirl(void) {
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6149,7 +6125,6 @@ uint16_t mode_2DWaverly(void) {
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6378,7 +6353,6 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6506,7 +6480,6 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6732,7 +6705,6 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6801,7 +6773,6 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
   float volumeSmth    = *(float*)um_data->u_data[0];
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6840,7 +6811,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;1f;m12=3,si=0"; // Corner, Beatsin
+static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Speed,Sound effect,Low bin,High bin,Sensivity;;;1f;m12=3,si=0"; // Corner, Beatsin
 
 
 //////////////////////
@@ -6903,7 +6874,6 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
   float volumeSmth    = *(float*)um_data->u_data[0];
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -6944,7 +6914,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
   return FRAMETIME;
 } // mode_freqwave()
-static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;1f;m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Speed,Sound effect,Low bin,High bin,Pre-amp;;;1f;m12=2,si=0"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7088,7 +7058,6 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
     SEGENV.aux0 = 255;
     SEGMENT.custom1 = *binNum;
@@ -7205,7 +7174,6 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
@@ -7418,7 +7386,6 @@ uint16_t mode_2Dsoap() {
 
   // init
   if (SEGENV.call == 0) {
-    SEGMENT.setUpLeds();
     *noise32_x = random16();
     *noise32_y = random16();
     *noise32_z = random16();
@@ -7536,12 +7503,12 @@ uint16_t mode_2Doctopus() {
     SEGENV.aux1 = rows;
     *offsX = SEGMENT.custom1;
     *offsY = SEGMENT.custom2;
-    const uint8_t C_X = cols / 2 + (SEGMENT.custom1 - 128)*cols/255;
-    const uint8_t C_Y = rows / 2 + (SEGMENT.custom2 - 128)*rows/255;
+    const int C_X = (cols / 2) + ((SEGMENT.custom1 - 128)*cols)/255;
+    const int C_Y = (rows / 2) + ((SEGMENT.custom2 - 128)*rows)/255;
     for (int x = 0; x < cols; x++) {
       for (int y = 0; y < rows; y++) {
-        rMap[XY(x, y)].angle = 40.7436f * atan2f(y - C_Y, x - C_X); // avoid 128*atan2()/PI
-        rMap[XY(x, y)].radius = hypotf(x - C_X, y - C_Y) * mapp; //thanks Sutaburosu
+        rMap[XY(x, y)].angle  = 40.7436f * atan2f((y - C_Y), (x - C_X));  // avoid 128*atan2()/PI
+        rMap[XY(x, y)].radius = hypotf((x - C_X), (y - C_Y)) * mapp;      //thanks Sutaburosu
       }
     }
   }

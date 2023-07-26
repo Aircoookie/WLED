@@ -391,12 +391,6 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       filter: "html-minify",
     },
     {
-      file: "liveviewws.htm",
-      name: "PAGE_liveviewws",
-      method: "gzip",
-      filter: "html-minify",
-    },
-    {
       file: "liveviewws2D.htm",
       name: "PAGE_liveviewws2D",
       method: "gzip",

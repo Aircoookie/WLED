@@ -23,7 +23,7 @@ void WLED::reset()
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.closeAll(1012);
   #endif
-  long dly = millis();
+  unsigned long dly = millis();
   while (millis() - dly < 450) {
     yield();        // enough time to send response to client
   }
@@ -35,10 +35,18 @@ void WLED::reset()
 void WLED::loop()
 {
   #ifdef WLED_DEBUG
+  static unsigned long lastRun = 0;
+  unsigned long        loopMillis = millis();
+  size_t               loopDelay = loopMillis - lastRun;
+  if (lastRun == 0) loopDelay=0; // startup - don't have valid data from last run.
+  if (loopDelay > 2) DEBUG_PRINTF("Loop delayed more than %ums.\n", loopDelay);
+  static unsigned long maxLoopMillis = 0;
+  static size_t        avgLoopMillis = 0;
   static unsigned long maxUsermodMillis = 0;
-  static uint16_t avgUsermodMillis = 0;
+  static size_t        avgUsermodMillis = 0;
   static unsigned long maxStripMillis = 0;
-  static uint16_t avgStripMillis = 0;
+  static size_t        avgStripMillis = 0;
+  unsigned long        stripMillis;
   #endif
 
   handleTime();
@@ -48,6 +56,7 @@ void WLED::loop()
   handleConnection();
   handleRemote();
   handleSerial();
+  handleImprovWifiScan();
   handleNotifications();
   handleTransitions();
 #ifdef WLED_ENABLE_DMX
@@ -79,6 +88,9 @@ void WLED::loop()
     yield();
   }
 
+  #ifdef WLED_DEBUG
+  stripMillis = millis();
+  #endif
   if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly))  // block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
@@ -97,22 +109,18 @@ void WLED::loop()
     handlePresets();
     yield();
 
-    #ifdef WLED_DEBUG
-    unsigned long stripMillis = millis();
-    #endif
     if (!offMode || strip.isOffRefreshRequired())
       strip.service();
     #ifdef ESP8266
     else if (!noWifiSleep)
       delay(1); //required to make sure ESP enters modem sleep (see #1184)
     #endif
-    #ifdef WLED_DEBUG
-    stripMillis = millis() - stripMillis;
-    if (stripMillis > 50) DEBUG_PRINTLN("Slow strip.");
-    avgStripMillis += stripMillis;
-    if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
-    #endif
   }
+  #ifdef WLED_DEBUG
+  stripMillis = millis() - stripMillis;
+  avgStripMillis += stripMillis;
+  if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
+  #endif
 
   yield();
 #ifdef ESP8266
@@ -151,11 +159,16 @@ void WLED::loop()
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
     busses.removeAll();
-    uint32_t mem = 0;
+    uint32_t mem = 0, globalBufMem = 0;
+    uint16_t maxlen = 0;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
       mem += BusManager::memUsage(*busConfigs[i]);
-      if (mem <= MAX_LED_MEMORY) {
+      if (useGlobalLedBuffer && busConfigs[i]->start + busConfigs[i]->count > maxlen) {
+          maxlen = busConfigs[i]->start + busConfigs[i]->count;
+          globalBufMem = maxlen * 4;
+      }
+      if (mem + globalBufMem <= MAX_LED_MEMORY) {
         busses.add(*busConfigs[i]);
       }
       delete busConfigs[i]; busConfigs[i] = nullptr;
@@ -176,8 +189,31 @@ void WLED::loop()
   handleWs();
   handleStatusLED();
 
+  toki.resetTick();
+
+#if WLED_WATCHDOG_TIMEOUT > 0
+  // we finished our mainloop, reset the watchdog timer
+  if (!strip.isUpdating())
+  #ifdef ARDUINO_ARCH_ESP32
+    esp_task_wdt_reset();
+  #else
+    ESP.wdtFeed();
+  #endif
+#endif
+
+  if (doReboot && (!doInitBusses || !doSerializeConfig)) // if busses have to be inited & saved, wait until next iteration
+    reset();
+
 // DEBUG serial logging (every 30s)
 #ifdef WLED_DEBUG
+  loopMillis = millis() - loopMillis;
+  if (loopMillis > 30) {
+    DEBUG_PRINTF("Loop took %lums.\n", loopMillis);
+    DEBUG_PRINTF("Usermods took %lums.\n", usermodMillis);
+    DEBUG_PRINTF("Strip took %lums.\n", stripMillis);
+  }
+  avgLoopMillis += loopMillis;
+  if (loopMillis > maxLoopMillis) maxLoopMillis = loopMillis;
   if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
@@ -200,11 +236,13 @@ void WLED::loop()
     DEBUG_PRINT(F("Client IP: "));       DEBUG_PRINTLN(Network.localIP());
     if (loops > 0) { // avoid division by zero
       DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 30);
+      DEBUG_PRINT(F("Loop time[ms]: "));   DEBUG_PRINT(avgLoopMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxLoopMillis);
       DEBUG_PRINT(F("UM time[ms]: "));     DEBUG_PRINT(avgUsermodMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxUsermodMillis);
       DEBUG_PRINT(F("Strip time[ms]: "));  DEBUG_PRINT(avgStripMillis/loops); DEBUG_PRINT("/"); DEBUG_PRINTLN(maxStripMillis);
     }
     strip.printSize();
     loops = 0;
+    maxLoopMillis = 0;
     maxUsermodMillis = 0;
     maxStripMillis = 0;
     avgUsermodMillis = 0;
@@ -212,21 +250,8 @@ void WLED::loop()
     debugTime = millis();
   }
   loops++;
+  lastRun = millis();
 #endif        // WLED_DEBUG
-  toki.resetTick();
-
-#if WLED_WATCHDOG_TIMEOUT > 0
-  // we finished our mainloop, reset the watchdog timer
-  if (!strip.isUpdating())
-  #ifdef ARDUINO_ARCH_ESP32
-    esp_task_wdt_reset();
-  #else
-    ESP.wdtFeed();
-  #endif
-#endif
-
-  if (doReboot && (!doInitBusses || !doSerializeConfig)) // if busses have to be inited & saved, wait until next iteration
-    reset();
 }
 
 void WLED::enableWatchdog() {
@@ -511,7 +536,7 @@ void WLED::initAP(bool resetAP)
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
   #endif
 
@@ -646,7 +671,6 @@ void WLED::initConnection()
   ws.onEvent(wsEvent);
   #endif
 
-
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(WIFI_PHY_MODE_11N);
@@ -690,7 +714,7 @@ void WLED::initConnection()
 
   WiFi.begin(clientSSID, clientPass);
 #ifdef ARDUINO_ARCH_ESP32
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
   #endif
   WiFi.setSleep(!noWifiSleep);
@@ -845,7 +869,7 @@ void WLED::handleConnection()
     if (improvActive) {
       if (improvError == 3) sendImprovStateResponse(0x00, true);
       sendImprovStateResponse(0x04);
-      if (improvActive > 1) sendImprovRPCResponse(0x01);
+      if (improvActive > 1) sendImprovIPRPCResult(ImprovRPCType::Command_Wifi);
     }
     initInterfaces();
     userConnected();

@@ -22,7 +22,7 @@ var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var isM = false, mw = 0, mh=0;
-var ws, cpick, ranges;
+var ws, cpick, ranges, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
@@ -217,7 +217,7 @@ function onLoad()
 		// detect reverse proxy and/or HTTPS
 		let pathn = l.pathname;
 		let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
-		if (paths[0]==="sliders") paths.shift();
+		//if (paths[0]==="sliders") paths.shift();
 		//while (paths[0]==="") paths.shift();
 		locproto = l.protocol;
 		locip = l.hostname + (l.port ? ":" + l.port : "");
@@ -773,7 +773,7 @@ function populateSegments(s)
 				`<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
 				(cfg.comp.segpwr ? segp : '') +
 				`<div class="segin" id="seg${i}in">`+
-					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
+					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=${li.arch=="esp8266"?32:64} value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
 					`<table class="infot segt">`+
 					`<tr>`+
 						`<td>${isMSeg?'Start X':'Start LED'}</td>`+
@@ -826,6 +826,7 @@ function populateSegments(s)
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
 	for (var i = 0; i <= lSeg; i++) {
+		if (!gId(`seg${i}`)) continue;
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).classList.add("hide");
@@ -1004,10 +1005,15 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
 function btype(b)
 {
 	switch (b) {
+		case 2:
 		case 32: return "ESP32";
+		case 3:
 		case 33: return "ESP32-S2";
+		case 4:
 		case 34: return "ESP32-S3";
+		case 5:
 		case 35: return "ESP32-C3";
+		case 1:
 		case 82: return "ESP8266";
 	}
 	return "?";
@@ -1028,8 +1034,9 @@ function populateNodes(i,n)
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
 		for (var o of n.nodes) {
 			if (o.name) {
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
-				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+				let onoff = `<i class="icons e-icon flr ${o.type&0x80?'':'off'}" onclick="rmtTgl('${o.ip}',this);"">&#xe08f;</i>`;
+				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');"><div class="bname">${bname(o)}</div>${o.vid<2307130?'':onoff}</button>`;
+				urows += inforow(url,`${btype(o.type&0x7F)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
 		}
@@ -1331,11 +1338,12 @@ function makeWS() {
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
-		setTimeout(makeWS,1500); // retry WS connection
+		if (wsRpt++ < 5) setTimeout(makeWS,1500); // retry WS connection
 		ws = null;
 	}
 	ws.onopen = (e)=>{
 		//ws.send("{'v':true}"); // unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
+		wsRpt = 0;
 		reqsLegal = true;
 	}
 }
@@ -1637,6 +1645,7 @@ function requestJson(command=null)
 		//load presets and open websocket sequentially
 		if (!pJson || isEmpty(pJson)) setTimeout(()=>{
 			loadPresets(()=>{
+				wsRpt = 0;
 				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
 			});
 		},25);
@@ -1684,27 +1693,22 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	//WLEDSR adding liveview2D support
 	if (isInfo && isM) toggleInfo();
 	if (isNodes && isM) toggleNodes();
 	isLv = !isLv;
+	let wsOn = ws && ws.readyState === WebSocket.OPEN;
 
 	var lvID = "liveview";
-	if (isM) {   
-		lvID = "liveview2D"
-		if (isLv) {
-		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-		d.getElementById('kliveview2D').innerHTML = cn;
-		}
-
-		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
+	if (isM && wsOn) {   
+		lvID += "2D";
+		if (isLv) gId('klv2D').innerHTML = `<iframe id="${lvID}" src="about:blank"></iframe>`;
+		gId('mlv2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	var url = getURL("/" + lvID);
-	gId(lvID).src = (isLv) ? url:"about:blank";
-	gId('buttonSr').className = (isLv) ? "active":"";
-	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
+	gId(lvID).src = (isLv) ? getURL("/" + lvID + ((wsOn) ? "?ws":"")):"about:blank";
+	gId('buttonSr').classList.toggle("active");
+	if (!isLv && wsOn) ws.send('{"lv":false}');
 	size();
 }
 
@@ -2048,14 +2052,14 @@ function tglSegn(s)
 function selSegAll(o)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":o.checked});
+	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":o.checked});
 	requestJson(obj);
 }
 
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
+	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":(i==s)});
 	obj.mainseg = s;
 	requestJson(obj);
 }
@@ -2073,7 +2077,7 @@ function selGrp(g)
 	event.stopPropagation();
 	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":false});
+	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
 	if (sel) for (let s of sel||[]) {
 		let i = parseInt(s.id.substring(3));
 		obj.seg[i] = {"id":i,"sel":true};
@@ -2572,6 +2576,24 @@ function setBalance(b)
 {
 	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
+}
+
+function rmtTgl(ip,i) {
+	event.preventDefault();
+	event.stopPropagation();
+	fetch(`http://${ip}/win&T=2`, {method: 'get'})
+	.then((r)=>{
+		return r.text();
+	})
+	.then((t)=>{
+		let c = (new window.DOMParser()).parseFromString(t, "text/xml");
+		// perhaps just i.classList.toggle("off"); would be enough
+		if (c.getElementsByTagName('ac')[0].textContent === "0") {
+			i.classList.add("off");
+		} else {
+			i.classList.remove("off");
+		}
+	});
 }
 
 var hc = 0;
