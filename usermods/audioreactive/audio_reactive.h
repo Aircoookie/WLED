@@ -819,6 +819,8 @@ static void detectSamplePeak(void) {
   }
 }
 
+#endif
+
 static void autoResetPeak(void) {
   uint16_t MinShowDelay = MAX(50, strip.getMinShowDelay());  // Fixes private class variable compiler error. Unsure if this is the correct way of fixing the root problem. -THATDONFC
   if (millis() - timeOfPeak > MinShowDelay) {          // Auto-reset of samplePeak after a complete frame has passed.
@@ -827,7 +829,6 @@ static void autoResetPeak(void) {
   }
 }
 
-#endif
 ////////////////////
 // usermod class  //
 ////////////////////
