@@ -424,7 +424,7 @@
   #if defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
   #define JSON_BUFFER_SIZE 48000 // WLEDMM
   #else
-  #define JSON_BUFFER_SIZE 60000 // WLEDMM
+  #define JSON_BUFFER_SIZE 56000 // WLEDMM (was 60000) slightly reduced to avoid build error "region dram0_0_seg overflowed"
   #endif
  #else
   #define JSON_BUFFER_SIZE 24576
