@@ -124,14 +124,14 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     mac [0], mac [1], mac [2], mac [3], mac [4], mac [5]);
 
   if (strcmp(last_signal_src, linked_remote) != 0) {
-    DEBUG_PRINT(F("ESP Now Message Received from Unlinked Sender: "));
-    DEBUG_PRINTLN(last_signal_src);
+    USER_PRINT(F("ESP Now Message Received from Unlinked Sender: "));
+    USER_PRINTLN(last_signal_src);
     return;
   }
 
   if (len != sizeof(incoming)) {
-    DEBUG_PRINT(F("Unknown incoming ESP Now message received of length "));
-    DEBUG_PRINTLN(len);
+    USER_PRINT(F("Unknown incoming ESP Now message received of length "));
+    USER_PRINTLN(len);
     return;
   }
 
@@ -143,12 +143,12 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   }
 
 
-  DEBUG_PRINT(F("Incoming ESP Now Packet["));
-  DEBUG_PRINT(cur_seq);
-  DEBUG_PRINT(F("] from sender["));
-  DEBUG_PRINT(last_signal_src);
-  DEBUG_PRINT(F("] button: "));
-  DEBUG_PRINTLN(incoming.button);
+  USER_PRINT(F("\nIncoming ESP Now Packet["));
+  USER_PRINT(cur_seq);
+  USER_PRINT(F("] from sender["));
+  USER_PRINT(last_signal_src);
+  USER_PRINT(F("] button: "));
+  USER_PRINTLN(incoming.button);
   switch (incoming.button) {
     case WIZMOTE_BUTTON_ON             : setOn();                                         stateUpdated(CALL_MODE_BUTTON); break;
     case WIZMOTE_BUTTON_OFF            : setOff();                                        stateUpdated(CALL_MODE_BUTTON); break;
@@ -169,10 +169,10 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 void handleRemote() {
   if (enable_espnow_remote) {
     if (esp_now_state == ESP_NOW_STATE_UNINIT) {
-      DEBUG_PRINTLN(F("Initializing ESP_NOW listener"));
+      USER_PRINTLN(F("\nInitializing ESP_NOW listener!\n"));
       // Init ESP-NOW
-      if (esp_now_init() != 0) {
-        DEBUG_PRINTLN(F("Error initializing ESP-NOW"));
+      if (esp_now_init() != ESP_OK) {
+        USER_PRINTLN(F("Error initializing ESP-NOW"));
         esp_now_state = ESP_NOW_STATE_ERROR;
       }
 
@@ -185,9 +185,9 @@ void handleRemote() {
     }
   } else {
     if (esp_now_state == ESP_NOW_STATE_ON) {
-      DEBUG_PRINTLN(F("Disabling ESP-NOW Remote Listener"));
-      if (esp_now_deinit() != 0) {
-        DEBUG_PRINTLN(F("Error de-initializing ESP-NOW"));
+      USER_PRINTLN(F("Disabling ESP-NOW Remote Listener"));
+      if (esp_now_deinit() != ESP_OK) {
+        USER_PRINTLN(F("Error de-initializing ESP-NOW"));
       }
       esp_now_state = ESP_NOW_STATE_UNINIT;
     } else if (esp_now_state == ESP_NOW_STATE_ERROR) {
