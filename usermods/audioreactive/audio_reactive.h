@@ -87,6 +87,12 @@ static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same t
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 
+static uint8_t soundAgc = 1;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
+
+// user settable parameters for limitSoundDynamics()
+static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
+static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
+static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 
 #ifdef ARDUINO_ARCH_ESP32
 
@@ -107,12 +113,7 @@ static uint8_t inputLevel = 128;              // UI slider value
 #else
   uint8_t sampleGain = SR_GAIN;               // sample gain (config value)
 #endif
-static uint8_t soundAgc = 1;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 
-// user settable parameters for limitSoundDynamics()
-static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
-static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
-static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 // user settable options for FFTResult scaling
 static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized sqare root
 #ifndef SR_FREQ_PROF
