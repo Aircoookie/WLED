@@ -1174,7 +1174,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
           curPalette.add("r");
           curPalette.add("r");
         break;
-      case 73: //WLEDMM random AC
+      case 74: //WLEDMM random AC
           curPalette.add("r");
           curPalette.add("r");
           curPalette.add("r");
