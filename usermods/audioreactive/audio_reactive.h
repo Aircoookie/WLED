@@ -2473,7 +2473,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
-      oappend(SET_F("addInfo('AudioReactive:sync:mode',1,'Sync audio data with other WLEDs');"));
+      oappend(SET_F("addInfo('AudioReactive:sync:mode',1,'<br> Sync audio data with other WLEDs');"));
 
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
 

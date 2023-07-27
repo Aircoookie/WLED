@@ -526,7 +526,7 @@ void WLED::setup()
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 #ifdef ARDUINO_ARCH_ESP32
   #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)  // unfortunately not availeable in older framework versions
-  USER_PRINT(F("\nArduino  max stack  ")); USER_PRINTLN(getArduinoLoopTaskStackSize());
+  DEBUG_PRINT(F("\nArduino  max stack  ")); DEBUG_PRINTLN(getArduinoLoopTaskStackSize());
   #endif
   DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
 #endif
