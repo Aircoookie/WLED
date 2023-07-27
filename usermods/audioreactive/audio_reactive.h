@@ -90,6 +90,7 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel 
 // TODO: probably best not used by receive nodes
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 
+// TODO: probably best not used by receive nodes
 // user settable parameters for limitSoundDynamics()
 static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
 static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
