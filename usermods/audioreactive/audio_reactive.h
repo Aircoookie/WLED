@@ -1538,6 +1538,7 @@ class AudioReactive : public Usermod {
         um_data->u_type[4] = UMT_FLOAT;
         um_data->u_data[5] = &my_magnitude;    // used (New)
         um_data->u_type[5] = UMT_FLOAT;
+#ifdef ARDUINO_ARCH_ESP32
         um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[6] = UMT_BYTE;
         um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
@@ -1548,6 +1549,7 @@ class AudioReactive : public Usermod {
         um_data->u_type[9]  = UMT_FLOAT;
         um_data->u_data[10] = &agcSensitivity; // used (New)
         um_data->u_type[10] = UMT_FLOAT;
+#endif
       }
 
 #ifdef ARDUINO_ARCH_ESP32
