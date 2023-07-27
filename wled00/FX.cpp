@@ -289,8 +289,8 @@ uint16_t mode_dynamic(void) {
   if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
 
   if(SEGENV.call == 0) {
-    //SEGMENT.setUpLeds();  //lossless getPixelColor()
-    //SEGMENT.fill(BLACK);
+    SEGMENT.setUpLeds();  // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
     for (int i = 0; i < SEGLEN; i++) SEGENV.data[i] = random8();
   }
 
@@ -304,7 +304,7 @@ uint16_t mode_dynamic(void) {
     SEGENV.step = it;
   }
 
-  if (SEGMENT.check1) {
+  if ((SEGMENT.check1) && (SEGENV.call > 1)) {
     for (int i = 0; i < SEGLEN; i++) {
       SEGMENT.blendPixelColor(i, SEGMENT.color_wheel(SEGENV.data[i]), 16);
     }
@@ -1120,6 +1120,7 @@ static const char _data_FX_MODE_RUNNING_RANDOM[] PROGMEM = "Stream ☾@!,Zone si
 uint16_t larson_scanner(bool dual) {
   uint16_t counter = strip.now * ((SEGMENT.speed >> 2) +8);
   uint16_t index = counter * SEGLEN  >> 16;
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
 
   SEGMENT.fade_out(SEGMENT.intensity);
 
@@ -1243,6 +1244,10 @@ uint16_t mode_rain() {
   if (SEGLEN == 1) return mode_static();
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  if(SEGENV.call == 0) {
+    SEGMENT.setUpLeds();  // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
   SEGENV.step += FRAMETIME;
   if (SEGENV.call && SEGENV.step > SPEED_FORMULA_L) {
     SEGENV.step = 1;
@@ -1875,6 +1880,11 @@ uint16_t mode_pride_2015(void) {
   uint16_t hue16 = sHue16;//gHue * 256;
   uint16_t hueinc16 = beatsin88(113, 1, 3000);
 
+  if(SEGENV.call == 0) {
+    SEGMENT.setUpLeds();  // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
+
   sPseudotime += duration * msmultiplier;
   sHue16 += duration * beatsin88( 400, 5,9);
   uint16_t brightnesstheta16 = sPseudotime;
@@ -2046,6 +2056,11 @@ uint16_t mode_colorwaves() {
   sHue16 += duration * beatsin88(400, 5, 9);
   uint16_t brightnesstheta16 = sPseudotime;
 
+  if(SEGENV.call == 0) {
+    SEGMENT.setUpLeds();  // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
+
   for (int i = 0 ; i < SEGLEN; i++) {
     hue16 += hueinc16;
     uint8_t hue8 = hue16 >> 8;
@@ -2193,6 +2208,10 @@ static const char _data_FX_MODE_NOISE16_4[] PROGMEM = "Noise 4@!;!;!";
 uint16_t mode_colortwinkle() {
   uint16_t dataSize = (SEGLEN+7) >> 3; //1 bit per LED
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  if(SEGENV.call == 0) {
+    SEGMENT.setUpLeds();  // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
 
   CRGB fastled_col, prev;
   fract8 fadeUpAmount = strip.getBrightness()>28 ? 8 + (SEGMENT.speed>>2) : 68-strip.getBrightness();
@@ -2398,6 +2417,7 @@ uint16_t ripple_base()
   uint16_t dataSize = sizeof(ripple) * maxRipples;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  if (SEGENV.call == 0) SEGENV.setUpLeds();                 // WLEDMM use lossless getPixelColor()
 
   Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
 
@@ -4918,7 +4938,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     } // i,j
 
     // Rules of Life
-    uint32_t col = uint32_t(prevLeds[XY(x,y)]);    // softhack007: explicit conversion added - needed with newer fastled releases    
+    CRGB preCol = prevLeds[XY(x,y)];
+    uint32_t col = RGBW32(preCol.r, preCol.g, preCol.b, 0); // WLEDMM explicit color conversion CRGB -> RGB
     uint32_t bgc = RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0);
     if      ((col != bgc) && (neighbors <  2)) SEGMENT.setPixelColorXY(x,y, bgc); // Loneliness
     else if ((col != bgc) && (neighbors >  3)) SEGMENT.setPixelColorXY(x,y, bgc); // Overpopulation
@@ -5879,6 +5900,10 @@ uint16_t mode_2Dscrollingtext(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds(); // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
 
   int letterWidth;
   int letterHeight;
@@ -7351,7 +7376,11 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
   #endif
 
-  if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
+  if (SEGENV.call == 0) {
+    for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
+    SEGMENT.setUpLeds(); // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
 
   bool rippleTime = false;
   if (millis() - SEGENV.step >= (256U - SEGMENT.intensity)) {
