@@ -21,6 +21,10 @@
 void handleRemote(){}
 #else
 
+#if !defined(ARDUINO_ARCH_ESP32) && !defined(ESP_OK)
+#define ESP_OK 0  // add missing constant for stupid esp8266
+#endif
+
 // This is kind of an esoteric strucure because it's pulled from the "Wizmote"
 // product spec. That remote is used as the baseline for behavior and availability
 // since it's broadly commercially available and works out of the box as a drop-in
