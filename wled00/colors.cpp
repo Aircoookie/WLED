@@ -232,7 +232,7 @@ bool colorFromHexString(byte* rgb, const char* in) {
   }
   return true;
 }
-
+#if 0  // WLEDMM minf/maxf are defined in libm already
 static float minf (float v, float w)  // WLEDMM better use standard library fminf()
 {
   if (w > v) return v;
@@ -244,10 +244,11 @@ static float maxf (float v, float w)  // WLEDMM better use standard library fmax
   if (w > v) return w;
   return v;
 }
+#endif
 
 // adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
 // called from bus manager when color correction is enabled!
-uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)
+uint32_t IRAM_ATTR_YN colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)  // WLEDMM: IRAM_ATTR_YN
 {
   //remember so that slow colorKtoRGB() doesn't have to run for every setPixelColor()
   static byte correctionRGB[4] = {0,0,0,0};
