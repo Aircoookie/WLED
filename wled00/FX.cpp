@@ -6971,7 +6971,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float FFT_MajorPeak = *(float*)um_data->u_data[SEGENV.check1 ? 8:4];              // WLEDMM may use FFT_MajorPeakSmth
   float my_magnitude  = *(float*)um_data->u_data[5] / 4.0f;
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
@@ -6982,7 +6982,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   int fadeoutDelay = (256 - SEGMENT.speed) / 96; // WLEDMM
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fade_out(SEGMENT.speed);
 
-  int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(MAX_FREQ_LOG10 - 1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+  int locn = roundf((log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(MAX_FREQ_LOG10 - 1.78f));  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN. // WLEDMM proper rounding
   if (locn < 1) locn = 0; // avoid underflow
 
   if (locn >=SEGLEN) locn = SEGLEN-1;
@@ -7003,7 +7003,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   return FRAMETIME_FIXED;
 } // mode_freqmap()
-static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color;!,!;!;1f;sx=192,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color,,,,Smooth mover ☾;!,!;!;1f;sx=192,m12=0,si=0,c1=1"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -7269,7 +7269,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[8];  // WLEDMM use FFT_MajorPeakSmth
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f;
 
   if (SEGENV.call == 0) SEGMENT.fill(BLACK);
