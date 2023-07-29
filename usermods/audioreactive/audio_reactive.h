@@ -23,10 +23,23 @@
 #define FFT_PREFER_EXACT_PEAKS  // use different FFT wndowing -> results in "sharper" peaks and less "leaking" into other frequencies
 //#define SR_STATS
 
+#if !defined(FFTTASK_PRIORITY)
+#define FFTTASK_PRIORITY 1 // standard: looptask prio
+//#define FFTTASK_PRIORITY 2 // above looptask, below asyc_tcp
+//#define FFTTASK_PRIORITY 4 // above asyc_tcp
+#endif
+
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
 // this applies "pink noise scaling" to FFT results before computing the major peak for effects.
 // currently only for ESP32-S3 and classic ESP32, due to increased runtime
 #define FFT_MAJORPEAK_HUMAN_EAR
+#endif
+
+// high-resolution type for input filters
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+#define SR_HIRES_TYPE double  // ESP32 and ESP32-S3 (with FPU) are fast enough to use "double"
+#else
+#define SR_HIRES_TYPE float   // prefer faster type on slower boards (-S2, -C3)
 #endif
 
 // Comment/Uncomment to toggle usb serial debugging
@@ -250,9 +263,6 @@ static float sampleTime = 0;        // avg (blocked) time for reading I2S sample
 static float   lastFftCalc[NUM_GEQ_CHANNELS] = {0.0f};                // backup of last FFT channels (before postprocessing)
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f};                    // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
-#ifdef SR_DEBUG
-static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table used for testing to determine how our post-processing is working.
-#endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32C3)
 // audio source parameters and constant
@@ -366,11 +376,11 @@ constexpr bool skipSecondFFT = false;
 static void runDCBlocker(uint_fast16_t numSamples, float *sampleBuffer) {
   constexpr float filterR = 0.990f;      // around 40hz
   static float xm1 = 0.0f;
-  static float ym1 = 0.0f;
+  static SR_HIRES_TYPE ym1 = 0.0f;
 
   for (unsigned i=0; i < numSamples; i++) {
     float value = sampleBuffer[i];
-    float filtered = value-xm1 + filterR*ym1;
+    SR_HIRES_TYPE filtered = (SR_HIRES_TYPE)(value-xm1) + filterR*ym1;
     xm1 = value;
     ym1 = filtered;    
     sampleBuffer[i] = filtered;
@@ -382,14 +392,21 @@ static void runDCBlocker(uint_fast16_t numSamples, float *sampleBuffer) {
 //
 void FFTcode(void * parameter)
 {
-  // DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID()); // causes trouble on -S2
+  #ifdef SR_DEBUG
+    USER_FLUSH();
+    USER_PRINT("AR: "); USER_PRINT(pcTaskGetTaskName(NULL));
+    USER_PRINT(" task started on core "); USER_PRINT(xPortGetCoreID()); // causes trouble on -S2
+    USER_PRINT(" [prio="); USER_PRINT(uxTaskPriorityGet(NULL));
+    USER_PRINT(", min free stack="); USER_PRINT(uxTaskGetStackHighWaterMark(NULL));
+    USER_PRINTLN("]"); USER_FLUSH();
+  #endif
 
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
   const TickType_t xFrequencyDouble = FFT_MIN_CYCLE * portTICK_PERIOD_MS * 2;  
   static bool isFirstRun = false;
 
-#ifdef FFT_MAJORPEAK_HUMAN_EAR
+  #ifdef FFT_MAJORPEAK_HUMAN_EAR
   // pre-compute pink noise scaling table
   for(uint_fast16_t binInd = 0; binInd < samplesFFT; binInd++) {
     float binFreq = binInd * binWidth + binWidth/2.0f;
@@ -398,7 +415,7 @@ void FFTcode(void * parameter)
     pinkFactors[binInd] = sqrtf(binFreq) / pinkcenter;
   }
   pinkFactors[0] *= 0.5;  // suppress 0-42hz bin
-#endif
+  #endif
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for(;;) {
@@ -1936,7 +1953,7 @@ class AudioReactive : public Usermod {
             "FFT",                            // Name of the task
             5000,                             // Stack size in words
             NULL,                             // Task input parameter
-            1,                                // Priority of the task
+            FFTTASK_PRIORITY,                 // Priority of the task
             &FFT_Task                         // Task handle
             , 0                               // Core where the task should run
           );
