@@ -1177,7 +1177,11 @@ uint16_t mode_comet(void) {
   if (SEGLEN == 1) return mode_static();
   uint16_t counter = strip.now * ((SEGMENT.speed >>2) +1);
   uint16_t index = (counter * SEGLEN) >> 16;
-  if (SEGENV.call == 0) SEGENV.aux0 = index;
+  if (SEGENV.call == 0) {
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+    SEGENV.aux0 = index;
+  }
 
   SEGMENT.fade_out(SEGMENT.intensity);
 
@@ -1695,6 +1699,7 @@ uint16_t mode_multi_comet(void) {
   if (SEGENV.step == it) return FRAMETIME;
   if (!SEGENV.allocateData(sizeof(uint16_t) * 8)) return mode_static(); //allocation failed
 
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
   SEGMENT.fade_out(SEGMENT.intensity);
 
   uint16_t* comets = reinterpret_cast<uint16_t*>(SEGENV.data);
@@ -1987,6 +1992,7 @@ uint16_t mode_fire_2012() {
   const uint16_t strips = SEGMENT.nrOfVStrips();
   if (!SEGENV.allocateData(strips * SEGLEN)) return mode_static(); //allocation failed
   byte* heat = SEGENV.data;
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
 
   const uint32_t it = strip.now >> 5; //div 32
 
@@ -2882,6 +2888,7 @@ static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravit
 */
 uint16_t sinelon_base(bool dual, bool rainbow=false) {
   if (SEGLEN == 1) return mode_static();
+  if (SEGENV.call == 0) { SEGENV.setUpLeds(); SEGMENT.fill(BLACK); }  // WLEDMM use lossless getPixelColor()
   SEGMENT.fade_out(SEGMENT.intensity);
   uint16_t pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
   if (SEGENV.call == 0) SEGENV.aux0 = pos;
@@ -3276,6 +3283,7 @@ uint16_t mode_exploding_fireworks(void)
   if (SEGLEN == 1) return mode_static();
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
 
   //allocate segment data
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
@@ -4027,6 +4035,7 @@ static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!,Zones;;!;;m12=1"; //ver
 uint16_t mode_chunchun(void)
 {
   if (SEGLEN == 1) return mode_static();
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
   SEGMENT.fade_out(254); // add a bit of trail
   uint16_t counter = strip.now * (6 + (SEGMENT.speed >> 4));
   uint16_t numBirds = 2 + (SEGLEN >> 3);  // 2 + 1/8 of a segment
@@ -4086,6 +4095,7 @@ uint16_t mode_dancing_shadows(void)
   uint16_t dataSize = sizeof(spotlight) * numSpotlights;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   Spotlight* spotlights = reinterpret_cast<Spotlight*>(SEGENV.data);
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
 
   SEGMENT.fill(BLACK);
 
@@ -4541,6 +4551,7 @@ static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!,!;1,2,3;!;;sx=24,pa
 // Controls are speed, # of pixels, faderate.
 uint16_t mode_perlinmove(void) {
   if (SEGLEN == 1) return mode_static();
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
   SEGMENT.fade_out(255-SEGMENT.custom1);
   for (int i = 0; i < SEGMENT.intensity/16 + 1; i++) {
     uint16_t locn = inoise16(millis()*128/(260-SEGMENT.speed)+i*15000, millis()*128/(260-SEGMENT.speed)); // Get a new pixel location from moving noise.
@@ -6256,6 +6267,10 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
   const uint16_t dataSize = sizeof(gravity);
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6304,6 +6319,10 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
   uint16_t dataSize = sizeof(gravity);
   if (!SEGENV.allocateData(dataSize)) return mode_static();     //allocation failed
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6439,6 +6458,7 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
 
   SEGMENT.fade_out(224); // 6.25%
   uint16_t my_sampleAgc = fmax(fmin(volumeSmth, 255.0), 0);
@@ -6592,6 +6612,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
 
   //uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
   uint8_t fadeRate = map(SEGMENT.speed,0,255,200,254);
@@ -6718,6 +6739,8 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   if (SEGENV.call == 0) {
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
   }
@@ -6751,6 +6774,10 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
   uint8_t fadeVal = map(SEGMENT.speed, 0, 255, 224, 254);
   uint16_t pos = random16(SEGLEN);                        // Set a random starting position.
 
+  if (SEGENV.call == 0) {
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
   SEGMENT.fade_out(fadeVal);
 
   um_data_t *um_data;
@@ -6787,6 +6814,7 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
+  if (SEGENV.call == 0) SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
 
   myVals[millis()%32] = volumeSmth;    // filling values semi randomly
 
@@ -6822,6 +6850,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) {
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
     SEGMENT.fill(BLACK);
     SEGENV.aux0 = 0;
   }
@@ -7003,7 +7032,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   return FRAMETIME_FIXED;
 } // mode_freqmap()
-static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color,,,,Smooth mover ☾;!,!;!;1f;sx=192,m12=0,si=0,c1=1"; // Pixels, Beatsin
+static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color,,,,Smooth mover ☾;!,!;!;1f;sx=192,m12=0,si=0,o1=1"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -7079,7 +7108,10 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;    // Get to 255 as quick as you can.
 
-  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  if (SEGENV.call == 0) {
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
   int fadeoutDelay = (256 - SEGMENT.speed) / 64;
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fade_out(fadeRate);
 
@@ -7194,6 +7226,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   if (SEGENV.call == 0) {
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
     SEGMENT.fill(BLACK);
     SEGENV.aux0 = 0; // WLEDMM: last color index, to perform some color smoothing
   }
@@ -7243,7 +7276,10 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
-  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  if (SEGENV.call == 0) {
+    SEGMENT.fill(BLACK);
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
+  }
   //SEGMENT.fade_out(224);                                          // Just in case something doesn't get faded.
   int fadeoutDelay = (256 - SEGMENT.speed) / 96;
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fadeToBlackBy(4+ SEGMENT.speed/4);
@@ -7272,7 +7308,10 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   float   FFT_MajorPeak = *(float*)  um_data->u_data[8];  // WLEDMM use FFT_MajorPeakSmth
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f;
 
-  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  if (SEGENV.call == 0) {
+    SEGENV.setUpLeds();   // WLEDMM use lossless getPixelColor()
+    SEGMENT.fill(BLACK);
+  }
   SEGMENT.fadeToBlackBy(16);                        // Just in case something doesn't get faded.
 
   float frTemp = FFT_MajorPeak;
