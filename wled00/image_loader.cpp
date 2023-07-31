@@ -1,3 +1,5 @@
+#ifndef WLED_DISABLE_GIF
+
 #include "GifDecoder.h"
 #include "wled.h"
 
@@ -56,26 +58,34 @@ void drawPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t
   }
 }
 
+#define IMAGE_ERROR_NONE 0
+#define IMAGE_ERROR_NO_NAME 1
+#define IMAGE_ERROR_SEG_LIMIT 2
+#define IMAGE_ERROR_UNSUPPORTED_FORMAT 3
+#define IMAGE_ERROR_FILE_MISSING 4
+#define IMAGE_ERROR_DECODER_ALLOC 5
+#define IMAGE_ERROR_GIF_DECODE 6
+#define IMAGE_ERROR_FRAME_DECODE 7
+#define IMAGE_ERROR_PREV 255
+
 // renders an image (.gif only; .bmp and .fseq to be added soon) from FS to a segment
-bool renderImageToSegment(Segment &seg) {
-  if (!seg.name) return false;
+byte renderImageToSegment(Segment &seg) {
+  if (!seg.name) return IMAGE_ERROR_NO_NAME;
+  if (activeSeg && activeSeg != &seg) return IMAGE_ERROR_SEG_LIMIT; // only one segment at a time
   activeSeg = &seg;
 
-  if (strncmp(lastFilename +1, seg.name, 32) != 0) {
-    //Serial.println("segname changed");
+  if (strncmp(lastFilename +1, seg.name, 32) != 0) { // segment name changed, load new image
     strncpy(lastFilename +1, seg.name, 32);
     gifDecodeFailed = false;
     if (strcmp(lastFilename + strlen(lastFilename) - 4, ".gif") != 0) {
-      //DEBUG_PRINTLN(F("Image file not found or not a .gif"));
       gifDecodeFailed = true;
-      return false;
+      return IMAGE_ERROR_UNSUPPORTED_FORMAT;
     }
     if (file) file.close();
-    //Serial.print("opening gif: ");
-    //Serial.println(openGif(lastFilename));
     openGif(lastFilename);
-    if (!file) { gifDecodeFailed = true; return false; }
+    if (!file) { gifDecodeFailed = true; return IMAGE_ERROR_FILE_MISSING; }
     if (!decoder) decoder = new GifDecoder<320,320,12,true>();
+    if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
     decoder->setScreenClearCallback(screenClearCallback);
     decoder->setUpdateScreenCallback(updateScreenCallback);
     decoder->setDrawPixelCallback(drawPixelCallback);
@@ -85,12 +95,13 @@ bool renderImageToSegment(Segment &seg) {
     decoder->setFileReadBlockCallback(fileReadBlockCallback);
     decoder->setFileSizeCallback(fileSizeCallback);
     Serial.println("Starting decoding");
-    if(decoder->startDecoding() < 0) { gifDecodeFailed = true; return false; }
+    if(decoder->startDecoding() < 0) { gifDecodeFailed = true; return IMAGE_ERROR_GIF_DECODE; }
     Serial.println("Decoding started");
   }
 
-  if (gifDecodeFailed) return false;
-  if (!file || !decoder) { gifDecodeFailed = true; return false; }
+  if (gifDecodeFailed) return IMAGE_ERROR_PREV;
+  if (!file) { gifDecodeFailed = true; return IMAGE_ERROR_FILE_MISSING; }
+  if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
 
   // speed 0 = half speed, 128 = normal, 255 = full FX FPS
   // TODO: 0 = 4x slow, 64 = 2x slow, 128 = normal, 192 = 2x fast, 255 = 4x fast
@@ -101,19 +112,21 @@ bool renderImageToSegment(Segment &seg) {
     fillPixX = (seg.width()+(gifWidth-1)) / gifWidth;
     fillPixY = (seg.height()+(gifHeight-1)) / gifHeight;
     int result = decoder->decodeFrame(false);
-    if (result < 0) { gifDecodeFailed = true; return false; }
+    if (result < 0) { gifDecodeFailed = true; return IMAGE_ERROR_FRAME_DECODE; }
     long lastFrameDelay = currentFrameDelay;
     currentFrameDelay = decoder->getFrameDelay_ms();
     long tooSlowBy = (millis() - lastFrameDisplayTime) - wait; // if last frame was longer than intended, compensate
     currentFrameDelay -= tooSlowBy;
-    //currentFrameDelay -= LASTFRAMEDELAY;
     lastFrameDisplayTime = millis();
   }
   return true;
 }
 
-void endPlayback() {
+void endImagePlayback() {
   if (file) file.close();
   delete decoder;
   gifDecodeFailed = false;
+  activeSeg = nullptr;
 }
+
+#endif

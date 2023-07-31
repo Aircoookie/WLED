@@ -106,12 +106,14 @@ void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
 //image_loader.cpp
+#ifndef WLED_DISABLE_GIF
 bool fileSeekCallback(unsigned long position);
 unsigned long filePositionCallback(void);
 int fileReadCallback(void);
 int fileReadBlockCallback(void * buffer, int numberOfBytes);
 int fileSizeCallback(void);
-bool renderImageToSegment(Segment &seg);
+byte renderImageToSegment(Segment &seg);
+#endif
 
 //improv.cpp
 enum ImprovRPCType {
