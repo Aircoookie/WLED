@@ -4192,12 +4192,7 @@ static const char _data_FX_MODE_WASHING_MACHINE[] PROGMEM = "Washing Machine@!,!
   Draws a .gif image from filesystem on the matrix/strip
 */
 uint16_t mode_image(void) {
-  SEGMENT.setUpLeds(); // temporary per-segment buffering
   renderImageToSegment(SEGMENT);
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i)); // temporary, refresh all LEDs for lossy ABL
-  }
-
   return FRAMETIME;
 }
 static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,;;;12;sx=128";

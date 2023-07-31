@@ -127,6 +127,7 @@ void endImagePlayback() {
   delete decoder;
   gifDecodeFailed = false;
   activeSeg = nullptr;
+  lastFilename[0] = '\0';
 }
 
 #endif
