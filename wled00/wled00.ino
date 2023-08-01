@@ -1,4 +1,3 @@
-
 /*
  * WLED Arduino IDE compatibility file.
  * 
