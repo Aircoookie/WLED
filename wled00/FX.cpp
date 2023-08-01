@@ -2854,7 +2854,7 @@ static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravit
 
 
 /*
- *  bouncing balls on a track track Effect modified from Air Cookie's bouncing balls
+ *  bouncing balls on a track track Effect modified from Aircoookie's bouncing balls
  *  Courtesy of pjhatch (https://github.com/pjhatch)
  *  https://github.com/Aircoookie/WLED/pull/1039
  */
@@ -2882,9 +2882,9 @@ static uint16_t rolling_balls(void) {
     for (int i = 0; i < maxNumBalls; i++) {
       balls[i].lastBounceUpdate = strip.now;
       balls[i].velocity = 20.0f * float(random16(1000, 10000))/10000.0f;  // number from 1 to 10
-      if (random8()<128) balls[i].velocity = -balls[i].velocity;
-      balls[i].height = (float(random16(0, 10000)) / 10000.0f);    // from 0. to 1.
-      balls[i].mass   = (float(random16(1000, 10000)) / 10000.0f); // from .1 to 1.
+      if (random8()<128) balls[i].velocity = -balls[i].velocity;    // 50% chance of reverse direction
+      balls[i].height = (float(random16(0, 10000)) / 10000.0f);     // from 0. to 1.
+      balls[i].mass   = (float(random16(1000, 10000)) / 10000.0f);  // from .1 to 1.
     }
   }
 
@@ -2897,12 +2897,12 @@ static uint16_t rolling_balls(void) {
     float timeSinceLastUpdate = float((strip.now - balls[i].lastBounceUpdate))/cfac;
     float thisHeight = balls[i].height + balls[i].velocity * timeSinceLastUpdate; // this method keeps higher resolution
     // test if intensity level was increased and some balls are way off the track then put them back
-    if (thisHeight<-.5 || thisHeight> 1.5){
+    if (thisHeight < -0.5f || thisHeight > 1.5f){
       thisHeight = balls[i].height = (float(random16(0, 10000)) / 10000.0f); // from 0. to 1.
       balls[i].lastBounceUpdate = strip.now;
     }
     // check if reached ends of the strip
-    if ((thisHeight <= 0.0f && balls[i].velocity<0.0f) || (thisHeight >= 1.0f && balls[i].velocity > 0.0f)) {
+    if ((thisHeight <= 0.0f && balls[i].velocity < 0.0f) || (thisHeight >= 1.0f && balls[i].velocity > 0.0f)) {
       balls[i].velocity = -balls[i].velocity; // reverse velocity
       balls[i].lastBounceUpdate = strip.now;
       balls[i].height = thisHeight;
@@ -2918,7 +2918,7 @@ static uint16_t rolling_balls(void) {
           if ((tcollided > 2.0f) && (tcollided < float(strip.now - balls[j].lastBounceUpdate))) { // 2ms minimum to avoid duplicate bounces
             balls[i].height = balls[i].height + balls[i].velocity*(tcollided + float(balls[j].lastBounceUpdate - balls[i].lastBounceUpdate))/cfac;
             balls[j].height = balls[i].height;
-            balls[i].lastBounceUpdate = (unsigned long)(tcollided + .5f) + balls[j].lastBounceUpdate;
+            balls[i].lastBounceUpdate = (unsigned long)(tcollided + 0.5f) + balls[j].lastBounceUpdate;
             balls[j].lastBounceUpdate = balls[i].lastBounceUpdate;
             float vtmp = balls[i].velocity;
             balls[i].velocity = ((balls[i].mass - balls[j].mass)*vtmp              + 2.0f*balls[j].mass*balls[j].velocity)/(balls[i].mass + balls[j].mass);
