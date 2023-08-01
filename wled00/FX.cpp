@@ -2878,8 +2878,6 @@ static uint16_t rolling_balls(void) {
   // non-chosen color is a random color
   uint8_t numBalls = SEGMENT.intensity/16 + 1;
 
-  unsigned long time = millis();
-
   if (SEGENV.call == 0) {
     for (int i = 0; i < maxNumBalls; i++) {
       balls[i].lastBounceUpdate = strip.now;
