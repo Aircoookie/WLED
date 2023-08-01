@@ -1,54 +1,63 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-	<meta content='width=device-width' name='viewport'>
-  <meta name="theme-color" content="#333333">
-	<title>WLED Setup</title>
-	<style>
-		body {
-			font-family: Verdana, Helvetica, sans-serif;
-			text-align: center;
-			background-color: #333;
-			margin: 0;
-			color: #fff;
-		}
-    
-    button {
-      outline: none;
-      cursor: pointer;
-      padding: 8px;
-      margin: 10px;
-      width: 230px;
-      text-transform: uppercase;
-      font-family: helvetica;
-      font-size: 19px;
-      background-color: #222;
-      color: white;
-      border: 0px solid white;
-      border-radius: 5px;
-    }
+	<head>
+		<meta charset="utf-8">
+		<meta content='width=device-width' name='viewport'>
+		<meta name="theme-color" content="#222222">
+		<title>Welcome!</title>
+		<style>
+			body {
+				font-family: Verdana, Helvetica, sans-serif;
+				text-align: center;
+				background-color: #222;
+				margin: 0;
+				color: #fff;
+			}
+	
+			button {
+				outline: none;
+				cursor: pointer;
+				padding: 8px;
+				margin: 10px;
+				width: 230px;
+				text-transform: uppercase;
+				font-family: helvetica;
+				font-size: 19px;
+				background-color: #333;
+				color: white;
+				border: 0px solid white;
+				border-radius: 25px;
+			}
 
-		svg {
-			fill: #fff;
-		}
-	</style>
-</head>
-<body>
-<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
-<defs>
-	<symbol id="lnr-smile" viewBox="0 0 1024 1024"><path d="M486.4 1024c-129.922 0-252.067-50.594-343.936-142.464s-142.464-214.014-142.464-343.936c0-129.923 50.595-252.067 142.464-343.936s214.013-142.464 343.936-142.464c129.922 0 252.067 50.595 343.936 142.464s142.464 214.014 142.464 343.936-50.594 252.067-142.464 343.936c-91.869 91.87-214.014 142.464-343.936 142.464zM486.4 102.4c-239.97 0-435.2 195.23-435.2 435.2s195.23 435.2 435.2 435.2 435.2-195.23 435.2-435.2-195.23-435.2-435.2-435.2z"></path><path d="M332.8 409.6c-42.347 0-76.8-34.453-76.8-76.8s34.453-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.453 76.8-76.8 76.8zM332.8 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M640 409.6c-42.349 0-76.8-34.453-76.8-76.8s34.451-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.451 76.8-76.8 76.8zM640 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M486.4 870.4c-183.506 0-332.8-149.294-332.8-332.8 0-14.139 11.462-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 155.275 126.325 281.6 281.6 281.6s281.6-126.325 281.6-281.6c0-14.139 11.461-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 183.506-149.294 332.8-332.8 332.8z"></path></symbol>
-</defs></svg>
-<br><br>
-<svg><use xlink:href="#lnr-smile"></use></svg>
-<h1>Welcome to WLED!</h1>
-<h3>Thank you for installing my application!</h3>
-If you encounter a bug or have a question/feature suggestion, feel free to open a GitHub issue!<br><br>
-<b>Next steps:</b><br><br>
-Connect the module to your local WiFi here!<br>
-<button onclick="window.location.href='/settings/wifi'">WiFi settings</button><br>
-<i>Just trying this out in AP mode?</i><br>
-<button onclick="window.location.href='/sliders'">To the controls!</button>
-
-</body>
+			img {
+				width: 950px;
+				max-width: 82%;
+				image-rendering: pixelated;
+				image-rendering: crisp-edges;
+				margin: 4vh 0 0 0;
+				animation: fi 1s;
+			}
+			
+			@keyframes fi {
+				from { opacity: 0; }
+				to   { opacity: 1; }
+			}
+	
+			.main {
+				animation: fi 1.5s .7s both;
+			}
+		</style>
+	</head>
+	<body>
+		<img alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAAAfCAMAAADazLOuAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABLUExURQAAAAB81gCU/zKq///mo7sWMN8bO+ZIYtZaAP9rAP+HMsCiG+TAIOnMS0KqNU7KPnLUZOrq6v///4CAgGhoaL+/v6CgoExMTAAAAAlm4O8AAAAZdFJOU////////////////////////////////wABNAq3AAAACXBIWXMAAA7DAAAOwwHHb6hkAAACN0lEQVRIS73VjVLCMBAEYIr8CYKkrdj3f1J37zaXFCpTO+piaDgbPq9px9VQ0qyrvKj4q6m0Zr1h+M7xF1zRmnWzqV9/0d2jttGotO1uv9dUObwej5oqp7fzWVPl8n69aprzoOUUbbvdIbV3OLwitXc6vSG1d7m8I3feSEN0j2CeNbOY4MxigjOLCc4sZsTV2l1cCyy4wIILLLjAxtykltq2rbTU+qi01N5rXNO2leaFORoija2l5MM5a02ac9Ya16Sk5tgaPrUpjZub0BL6YqSxKwbH77XUUmSkJXSl8QtaMuyJhq5maL5nTKVpZC13VmtMpTFT2g4vJjTuGfMzzXftiUZnhdtgb1xofvypRon5TjNnxYN9zJo6K5ruSIzQtGuVZn0x91rKvdHBvm39E7SyZ4y06Gz8BDBFKzsXmhcwyfsGZ9VpbhoiCinaxPNmGWmWWrNU2jB0q6HvOhN1JUtCixQtp2g51ZVUXIPS2RMAD++T2nY/DrDjOMDO4wC7jmNYj3d73nrXug8Yt9uNB8xNU1cKNXWlUFNXCjV1pZhGTE83m2vWfYf/NGj4Bg1zu5JD3/MnH5ZWfLOksbmGWGjgXMN5/C2GXYGFFW9Nmtle6Xut0Gm+JsayCj8z0nhjGvYJzVf4aSzmNYsr+u7Q2JIdoX3YOQjOslmsW1jJ3120nE9gfo79hTaNdcsqVR610lvO47pllae9ReZ805zKo2a3iaY5c75pTmVCA6dJ5H7N0sr/asPwBehb7ifEhusRAAAAAElFTkSuQmCC">
+		<div class="main">
+			<h1>Welcome to WLED!</h1>
+			<h3>Thank you for installing my application!</h3>
+			<b>Next steps:</b><br><br>
+			Connect the module to your local WiFi here!<br>
+			<button onclick="window.location.href='./settings/wifi'">WiFi settings</button><br>
+			<i>Just trying this out in AP mode?</i><br>
+			<button onclick="window.location.href='./?sliders'">To the controls!</button><br>
+		</div>
+	</body>
 </html>

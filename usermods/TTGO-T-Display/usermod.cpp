@@ -56,7 +56,7 @@ void userSetup() {
     tft.setTextColor(TFT_WHITE);
     tft.setCursor(1, 10);
     tft.setTextDatum(MC_DATUM);
-    tft.setTextSize(2);
+    tft.setTextSize(3);
     tft.print("Loading...");
 
     if (TFT_BL > 0) { // TFT_BL has been set in the TFT_eSPI library in the User Setup file TTGO_T_Display.h
@@ -110,9 +110,9 @@ void userLoop() {
     needRedraw = true;
   } else if (knownBrightness != bri) {
     needRedraw = true;
-  } else if (knownMode != strip.getMode()) {
+  } else if (knownMode != strip.getMainSegment().mode) {
     needRedraw = true;
-  } else if (knownPalette != strip.getSegment(0).palette) {
+  } else if (knownPalette != strip.getMainSegment().palette) {
     needRedraw = true;
   }
 
@@ -136,79 +136,60 @@ void userLoop() {
   #endif
   knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
   knownBrightness = bri;
-  knownMode = strip.getMode();
-  knownPalette = strip.getSegment(0).palette;
+  knownMode = strip.getMainSegment().mode;
+  knownPalette = strip.getMainSegment().palette;
 
   tft.fillScreen(TFT_BLACK);
   tft.setTextSize(2);
   // First row with Wifi name
-  tft.setCursor(1, 10);
+  tft.setCursor(1, 1);
   tft.print(knownSsid.substring(0, tftcharwidth > 1 ? tftcharwidth - 1 : 0));
   // Print `~` char to indicate that SSID is longer, than our dicplay
   if (knownSsid.length() > tftcharwidth)
     tft.print("~");
 
-  // Second row with IP or Psssword
-  tft.setCursor(1, 40);
-  // Print password in AP mode and if led is OFF.
-  if (apActive && bri == 0)
-    tft.print(apPass);
-  else
+  // Second row with AP IP and Password or IP
+  tft.setTextSize(2);
+  tft.setCursor(1, 24);
+  // Print AP IP and password in AP mode or knownIP if AP not active.
+  // if (apActive && bri == 0)
+  //   tft.print(apPass);
+  // else
+  //   tft.print(knownIp);
+
+  if (apActive) {
+    tft.print("AP IP: ");
     tft.print(knownIp);
+    tft.setCursor(1,46);
+    tft.print("AP Pass:");
+    tft.print(apPass);
+  }
+  else {
+    tft.print("IP: ");
+    tft.print(knownIp);
+    tft.setCursor(1,46);
+    //tft.print("Signal Strength: ");
+    //tft.print(i.wifi.signal);
+    tft.print("Brightness: ");
+    tft.print(((float(bri)/255)*100));
+    tft.print("%");
+  }
 
   // Third row with mode name
-  tft.setCursor(1, 70);
-  uint8_t qComma = 0;
-  bool insideQuotes = false;
-  uint8_t printedChars = 0;
-  char singleJsonSymbol;
-  // Find the mode name in JSON
-  for (size_t i = 0; i < strlen_P(JSON_mode_names); i++) {
-    singleJsonSymbol = pgm_read_byte_near(JSON_mode_names + i);
-    switch (singleJsonSymbol) {
-    case '"':
-      insideQuotes = !insideQuotes;
-      break;
-    case '[':
-    case ']':
-      break;
-    case ',':
-      qComma++;
-    default:
-      if (!insideQuotes || (qComma != knownMode))
-        break;
-      tft.print(singleJsonSymbol);
-      printedChars++;
-    }
-    if ((qComma > knownMode) || (printedChars > tftcharwidth - 1))
-      break;
-  }
-  // Fourth row with palette name
-  tft.setCursor(1, 100);
-  qComma = 0;
-  insideQuotes = false;
-  printedChars = 0;
-  // Looking for palette name in JSON.
-  for (size_t i = 0; i < strlen_P(JSON_palette_names); i++) {
-    singleJsonSymbol = pgm_read_byte_near(JSON_palette_names + i);
-    switch (singleJsonSymbol) {
-    case '"':
-      insideQuotes = !insideQuotes;
-      break;
-    case '[':
-    case ']':
-      break;
-    case ',':
-      qComma++;
-    default:
-      if (!insideQuotes || (qComma != knownPalette))
-        break;
-      tft.print(singleJsonSymbol);
-      printedChars++;
-    }
-    // The following is modified from the code from the u8g2/u8g8 based code (knownPalette was knownMode)
-    if ((qComma > knownPalette) || (printedChars > tftcharwidth - 1))
-      break;
-  }
+  tft.setCursor(1, 68);
+  char lineBuffer[tftcharwidth+1];
+  extractModeName(knownMode, JSON_mode_names, lineBuffer, tftcharwidth);
+  tft.print(lineBuffer);
 
+  // Fourth row with palette name
+  tft.setCursor(1, 90);
+  extractModeName(knownPalette, JSON_palette_names, lineBuffer, tftcharwidth);
+  tft.print(lineBuffer);
+
+  // Fifth row with estimated mA usage
+  tft.setCursor(1, 112);
+  // Print estimated milliamp usage (must specify the LED type in LED prefs for this to be a reasonable estimate).
+  tft.print(strip.currentMilliamps);
+  tft.print("mA (estimated)");
+  
 }

@@ -1,0 +1,147 @@
+{
+  "desc": "24-key",
+  "0xF700FF": {
+    "label": "+",
+    "pos": "1x1",
+    "cmnt": "Speed +",
+    "cmd": "SX=~16"
+  },
+  "0xF7807F": {
+    "label": "-",
+    "pos": "1x2",
+    "cmnt": "Speed -",
+    "cmd": "SX=~-16"
+  },
+  "0xF740BF": {
+    "label": "On/Off",
+    "pos": "1x3",
+    "cmnt": "Toggle On/Off",
+    "cmd": "T=2"
+  },
+  "0xF7C03F": {
+    "label": "W",
+    "pos": "1x4",
+    "cmnt": "Cycle color palette",
+    "cmd": "FP=~"
+  },
+  "0xF720DF": {
+    "label": "R",
+    "pos": "2x1",
+    "cmnt": "Lava",
+    "cmd": "FP=8"
+  },
+  "0xF7A05F": {
+    "label": "G",
+    "pos": "2x2",
+    "cmnt": "Forest",
+    "cmd": "FP=10"
+  },
+  "0xF7609F": {
+    "label": "B",
+    "pos": "2x3",
+    "cmnt": "Breeze",
+    "cmd": "FP=15"
+  },
+  "0xF7E01F": {
+    "label": "Bright -",
+    "pos": "2x4",
+    "cmnt": "Bright -",
+    "cmd": "A=~-16"
+  },
+  "0xF710EF": {
+    "label": "Timer1H",
+    "pos": "3x1",
+    "cmnt": "Timer 60 min",
+    "cmd": "NL=60&NT=0"
+  },
+  "0xF7906F": {
+    "label": "Timer4H",
+    "pos": "3x2",
+    "cmnt": "Timer 30 min",
+    "cmd": "NL=30&NT=0"
+  },
+  "0xF750AF": {
+    "label": "Timer8H",
+    "pos": "3x3",
+    "cmnt": "Timer 15 min",
+    "cmd": "NL=15&NT=0"
+  },
+  "0xF7D02F": {
+    "label": "Bright128",
+    "pos": "3x4",
+    "cmnt": "Bright 128",
+    "cmd": "A=128"
+  },
+  "0xF730CF": {
+    "label": "Music1",
+    "pos": "4x1",
+    "cmnt": "Cycle FX +",
+    "cmd": "FX=~"
+  },
+  "0xF7B04F": {
+    "label": "Music2",
+    "pos": "4x2",
+    "cmnt": "Cycle FX -",
+    "cmd": "FX=~-1"
+  },
+  "0xF7708F": {
+    "label": "Music3",
+    "pos": "4x3",
+    "cmnt": "Reset FX and FP",
+    "cmd": "FX=1&PF=6"
+  },
+  "0xF7F00F": {
+    "label": "Bright +",
+    "pos": "4x4",
+    "cmnt": "Bright +",
+    "cmd": "A=~16"
+  },
+  "0xF708F7": {
+    "label": "Mode1",
+    "pos": "5x1",
+    "cmnt": "Preset 1",
+    "cmd": "PL=1"
+  },
+  "0xF78877": {
+    "label": "Mode2",
+    "pos": "5x2",
+    "cmnt": "Preset 2",
+    "cmd": "PL=2"
+  },
+  "0xF748B7": {
+    "label": "Mode3",
+    "pos": "5x3",
+    "cmnt": "Preset 3",
+    "cmd": "PL=3"
+  },
+  "0xF7C837": {
+    "label": "Up",
+    "pos": "5x4",
+    "cmnt": "Intensity +",
+    "cmd": "IX=~16"
+  },
+  "0xF728D7": {
+    "label": "Mode4",
+    "pos": "6x1",
+    "cmnt": "Preset 4",
+    "cmd": "PL=4"
+  },
+  "0xF7A857": {
+    "label": "Mode5",
+    "pos": "6x2",
+    "cmnt": "Preset 5",
+    "cmd": "PL=5"
+  },
+  "0xF76897": {
+    "label": "Cycle",
+    "pos": "6x3",
+    "cmnt": "Toggle preset cycle",
+    "cmd": "CY=1&PT=60000"
+  },
+  "0xF7E817": {
+    "label": "Down",
+    "pos": "6x4",
+    "cmnt": "Intensity -",
+    "cmd": "IX=~-16"
+  }
+}

@@ -47,7 +47,7 @@ void userLoop()
       if (millis() + strip.timebase > (cycleTime - 25)) { //wipe complete
         effectCurrent = FX_MODE_STATIC;
         timeStaticStart = millis();
-        colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+        colorUpdated(CALL_MODE_NOTIFICATION);
         wipeState = 2;
       }
     } else if (wipeState == 2) { //static
@@ -59,7 +59,7 @@ void userLoop()
       #ifdef STAIRCASE_WIPE_OFF
       effectCurrent = FX_MODE_COLOR_WIPE;
       strip.timebase = 360 + (255 - effectSpeed)*75 - millis(); //make sure wipe starts fully lit
-      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+      colorUpdated(CALL_MODE_NOTIFICATION);
       wipeState = 4;
       #else
       turnOff();
@@ -89,11 +89,11 @@ void startWipe()
   resetTimebase(); //make sure wipe starts from beginning
 
   //set wipe direction
-  WS2812FX::Segment& seg = strip.getSegment(0);
+  Segment& seg = strip.getSegment(0);
   bool doReverse = (userVar0 == 2);
   seg.setOption(1, doReverse);
 
-  colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+  colorUpdated(CALL_MODE_NOTIFICATION);
 }
 
 void turnOff()
@@ -104,7 +104,7 @@ void turnOff()
   transitionDelayTemp = 4000; //fade out slowly
   #endif
   bri = 0;
-  colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+  stateUpdated(CALL_MODE_NOTIFICATION);
   wipeState = 0;
   userVar0 = 0;
   previousUserVar0 = 0;

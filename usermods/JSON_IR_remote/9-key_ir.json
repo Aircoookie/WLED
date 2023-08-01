@@ -1,0 +1,47 @@
+{
+  "desc": "9-key",
+  "0xFF629D": {
+    "label": "Power",
+    "cmd": "T=2"
+  },
+  "0xFF22DD": {
+    "label": "A",
+    "cmnt": "Preset 1",
+    "cmd": "PL=1"
+  },
+  "0xFF02FD": {
+    "label": "B",
+    "cmnt": "Preset 2",
+    "cmd": "PL=2"
+  },
+  "0xFFC23D": {
+    "label": "C",
+    "cmnt": "Preset 3",
+    "cmd": "PL=3"
+  },
+  "0xFF30CF": {
+    "label": "Left",
+    "cmnt": "Speed -",
+    "cmd": "SI=~-16"
+  },
+  "0xFF7A85": {
+    "label": "Right",
+    "cmnt": "Speed +",
+    "cmd": "SI=~16"
+  },
+  "0xFF9867": {
+    "label": "Up",
+    "cmnt": "Bright +",
+    "cmd": "A=~16"
+  },
+  "0xFF38C7": {
+    "label": "Down",
+    "cmnt": "Bright -",
+    "cmd": "A=~-16"
+  },
+  "0xFF18E7": {
+    "label": "Select",
+    "cmnt": "Cycle effects",
+    "cmd": "CY=0&FX=~"
+  }
+}

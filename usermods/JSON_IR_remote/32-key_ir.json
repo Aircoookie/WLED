@@ -1,0 +1,185 @@
+{
+  "desc": "32-key",
+  "0xFF08F7": {
+    "label": "On",
+    "pos": "1x1",
+    "cmd": "T=1"
+  },
+  "0xFFC03F": {
+    "label": "Off",
+    "pos": "1x2",
+    "cmd": "T=0"
+  },
+  "0xFF807F": {
+    "label": "Auto",
+    "pos": "1x3",
+    "cmnt": "Toggle preset cycle",
+    "cmd": "CY=2"
+  },
+  "0xFF609F": {
+    "label": "Mode",
+    "pos": "1x4",
+    "cmnt": "Cycle effects",
+    "cmd": "FX=~&CY=0"
+  },
+  "0xFF906F": {
+    "label": "4H",
+    "pos": "2x1",
+    "cmnt": "Timer 60min",
+    "cmd": "NL=60&NT=0"
+  },
+  "0xFFB847": {
+    "label": "6H",
+    "pos": "2x2",
+    "cmnt": "Timer 90min",
+    "cmd": "NL=90&NT=0"
+  },
+  "0xFFF807": {
+    "label": "8H",
+    "pos": "2x3",
+    "cmnt": "Timer 120min",
+    "cmd": "NL=120&NT=0"
+  },
+  "0xFFB04F": {
+    "label": "Timer Off",
+    "pos": "2x4",
+    "cmd": "NL=0"
+  },
+  "0xFF9867": {
+    "label": "Red",
+    "pos": "3x1",
+    "cmnt": "Lava",
+    "cmd": "FP=8"
+  },
+  "0xFFD827": {
+    "label": "Green",
+    "pos": "3x2",
+    "cmnt": "Forest",
+    "cmd": "FP=10"
+  },
+  "0xFF8877": {
+    "label": "Blue",
+    "pos": "3x3",
+    "cmnt": "Breeze",
+    "cmd": "FP=15"
+  },
+  "0xFFA857": {
+    "label": "White",
+    "pos": "3x4",
+    "cmd": "FP=5&CL=hFFFFFF&C2=hFFE4CD&C3=hE4E4FF"
+  },
+  "0xFFE817": {
+    "label": "OrangeRed",
+    "pos": "4x1",
+    "cmnt": "Sakura",
+    "cmd": "FP=49"
+  },
+  "0xFF48B7": {
+    "label": "SeaGreen",
+    "pos": "4x2",
+    "cmnt": "Rivendale",
+    "cmd": "FP=14"
+  },
+  "0xFF6897": {
+    "label": "RoyalBlue",
+    "pos": "4x3",
+    "cmnt": "Ocean",
+    "cmd": "FP=9"
+  },
+  "0xFFB24D": {
+    "label": "DarkBlue",
+    "pos": "4x4",
+    "cmnt": "Breeze",
+    "cmd": "FP=15"
+  },
+  "0xFF02FD": {
+    "label": "Orange",
+    "pos": "5x1",
+    "cmnt": "Orangery",
+    "cmd": "FP=47"
+  },
+  "0xFF32CD": {
+    "label": "YellowGreen",
+    "pos": "5x2",
+    "cmnt": "Aurora",
+    "cmd": "FP=37"
+  },
+  "0xFF20DF": {
+    "label": "SkyBlue",
+    "pos": "5x3",
+    "cmnt": "Beech",
+    "cmd": "FP=22"
+  },
+  "0xFF00FF": {
+    "label": "Orchid",
+    "pos": "5x4",
+    "cmd": "FP=5&CL=hDA70D6&C2=hDA70A0&C3=h89618F"
+  },
+  "0xFF50AF": {
+    "label": "Yellow",
+    "pos": "6x1",
+    "cmd": "FP=5&CL=hFFFF00&C2=hFFC800&C3=hFDFFDE"
+  },
+  "0xFF7887": {
+    "label": "DarkGreen",
+    "pos": "6x2",
+    "cmnt": "Orange and Teal",
+    "cmd": "FP=44"
+  },
+  "0xFF708F": {
+    "label": "RebeccaPurple",
+    "pos": "6x3",
+    "cmd": "FP=5&CL=h800080&C2=h800040&C3=h4B1C54"
+  },
+  "0xFF58A7": {
+    "label": "Plum",
+    "pos": "6x4",
+    "cmd": "FP=5&CL=hDDA0DD&C2=hDDA0BE&C3=h8D7791"
+  },
+  "0xFF38C7": {
+    "label": "Strobe",
+    "pos": "7x1",
+    "cmnt": "Dancing Shadows",
+    "cmd": "FX=112&CY=0"
+  },
+  "0xFF28D7": {
+    "label": "In Waves",
+    "pos": "7x2",
+    "cmnt": "Noise 1",
+    "cmd": "FX=70&CY=0"
+  },
+  "0xFFF00F": {
+    "label": "Speed +",
+    "pos": "7x3",
+    "cmd": "SX=~16"
+  },
+  "0xFF30CF": {
+    "label": "Speed -",
+    "pos": "7x4",
+    "cmd": "SX=~-16"
+  },
+  "0xFF40BF": {
+    "label": "Jump",
+    "pos": "8x1",
+    "cmnt": "Colortwinkles",
+    "cmd": "FX=74&CY=0"
+  },
+  "0xFF12ED": {
+    "label": "Fade",
+    "pos": "8x2",
+    "cmnt": "Sunrise",
+    "cmd": "FX=104&CY=0"
+  },
+  "0xFF2AD5": {
+    "label": "Flash",
+    "pos": "8x3",
+    "cmnt": "Railway",
+    "cmd": "FX=78&CY=0"
+  },
+  "0xFFA05F": {
+    "label": "Chase Flash",
+    "pos": "8x4",
+    "cmnt": "Washing Machine",
+    "cmd": "FX=113&CY=0"
+  }
+}
