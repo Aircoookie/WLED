@@ -7419,6 +7419,7 @@ uint16_t mode_2Dsoap() {
   int amplitude;
   int8_t shiftX = 0; //(SEGMENT.custom1 - 128) / 4;
   int8_t shiftY = 0; //(SEGMENT.custom2 - 128) / 4;
+  CRGB ledsbuff[MAX(cols,rows)];
 
   amplitude = (cols >= 16) ? (cols-8)/8 : 1;
   for (int y = 0; y < rows; y++) {
@@ -7439,9 +7440,9 @@ uint16_t mode_2Dsoap() {
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < cols)) PixelB = SEGMENT.getPixelColorXY(zF, y);
       else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[XY(abs(zF),y)]*3);
-      CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
-      SEGMENT.setPixelColorXY(x, y, pix);
+      ledsbuff[x] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
     }
+    for (int x = 0; x < cols; x++) SEGMENT.setPixelColorXY(x, y, ledsbuff[x]);
   }
 
   amplitude = (rows >= 16) ? (rows-8)/8 : 1;
@@ -7463,9 +7464,9 @@ uint16_t mode_2Dsoap() {
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < rows)) PixelB = SEGMENT.getPixelColorXY(x, zF);
       else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[XY(x,abs(zF))]*3);
-      CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
-      SEGMENT.setPixelColorXY(x, y, pix);
+      ledsbuff[y] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
     }
+    for (int y = 0; y < rows; y++) SEGMENT.setPixelColorXY(x, y, ledsbuff[y]);
   }
 
   return FRAMETIME;
