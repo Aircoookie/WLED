@@ -77,6 +77,11 @@ uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for t
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
 
+CRGBPalette16 Segment::_randomPalette = CRGBPalette16(DEFAULT_COLOR);
+CRGBPalette16 Segment::_newRandomPalette = CRGBPalette16(DEFAULT_COLOR);
+unsigned long Segment::_lastPaletteChange = 0; // perhaps it should be per segment
+uint8_t       Segment::_noOfBlendsRemaining = 0;
+
 // copy constructor
 Segment::Segment(const Segment &orig) {
   //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
@@ -182,10 +187,6 @@ void Segment::resetIfRequired() {
 }
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
-  static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
-  static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
-  static CRGBPalette16 prevRandomPalette = CRGBPalette16(CRGB(BLACK));
-  byte tcp[72];
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
   //default palette. Differs depending on effect
@@ -206,27 +207,18 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
     case 1: {//periodically replace palette with a random one. Transition palette change in 500ms
-      uint32_t timeSinceLastChange = millis() - _lastPaletteChange;
+      unsigned long timeSinceLastChange = millis() - _lastPaletteChange;
       if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
-        prevRandomPalette = randomPalette;
-        randomPalette = CRGBPalette16(
+        _randomPalette = _newRandomPalette;
+        _newRandomPalette = CRGBPalette16(
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)));
         _lastPaletteChange = millis();
-        timeSinceLastChange = 0;
+        _noOfBlendsRemaining = 255;
       }
-      if (timeSinceLastChange <= 250) {
-        targetPalette = prevRandomPalette;
-        // there needs to be 255 palette blends (48) for full blend but that is too resource intensive
-        // so 128 is a compromise (we need to perform full blend of the two palettes as each segment can have random
-        // palette selected but only 2 static palettes are used)
-        size_t noOfBlends = ((128U * timeSinceLastChange) / 250U);
-        for (size_t i=0; i<noOfBlends; i++) nblendPaletteTowardPalette(targetPalette, randomPalette, 48);
-      } else {
-        targetPalette = randomPalette;
-      }
+      targetPalette = _randomPalette;
       break;}
     case 2: {//primary color only
       CRGB prim = gamma32(colors[0]);
@@ -268,6 +260,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       if (pal>245) {
         targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
       } else {
+        byte tcp[72];
         memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[pal-13])), 72);
         targetPalette.loadDynamicGradientPalette(tcp);
       }
@@ -350,6 +343,17 @@ void Segment::handleTransition() {
       delete _t;
       _t = nullptr;
     }
+  }
+}
+
+// relies on WS2812FX::service() to call it max every 8ms or more (MIN_SHOW_DELAY)
+void Segment::handleRandomPalette() {
+  if (_noOfBlendsRemaining > 0) {
+    // there needs to be 255 palette blends (48) for full blend
+    size_t noOfBlends = 3; // blending time ~850ms when MIN_SHOW_DELAY>10
+    if (noOfBlends > _noOfBlendsRemaining) noOfBlends = _noOfBlendsRemaining;
+    for (size_t i=0; i<noOfBlends; i++) nblendPaletteTowardPalette(_randomPalette, _newRandomPalette, 48);
+    _noOfBlendsRemaining -= noOfBlends;
   }
 }
 
@@ -1073,6 +1077,7 @@ void WS2812FX::service() {
 
   _isServicing = true;
   _segment_index = 0;
+  Segment::handleRandomPalette(); // move it into for loop when each segment has individual random palette
   for (segment &seg : _segments) {
     // process transition (mode changes in the middle of transition)
     seg.handleTransition();
@@ -1224,18 +1229,8 @@ void WS2812FX::show(void) {
   show_callback callback = _callback;
   if (callback) callback();
 
-  #ifdef WLED_DEBUG
-  static unsigned long sumMicros = 0, sumCurrent = 0;
-  static size_t calls = 0;
-  unsigned long microsStart = micros();
-  #endif
-
   uint8_t newBri = estimateCurrentAndLimitBri();
   busses.setBrightness(newBri); // "repaints" all pixels if brightness changed
-
-  #ifdef WLED_DEBUG
-  sumCurrent += micros() - microsStart;
-  #endif
 
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
@@ -1246,15 +1241,6 @@ void WS2812FX::show(void) {
   // this is done right after show, so this is only OK if LED updates are completed before show() returns
   // or async show has a separate buffer (ESP32 RMT and I2S are ok)
   if (newBri < _brightness) busses.setBrightness(_brightness);
-
-  #ifdef WLED_DEBUG
-  sumMicros += micros() - microsStart;
-  if (++calls == 100) {
-    DEBUG_PRINTF("%d show calls: %lu[us] avg: %lu[us] (current: %lu[us] avg: %lu[us])\n", calls, sumMicros, sumMicros/calls, sumCurrent, sumCurrent/calls);
-    sumMicros = sumCurrent = 0;
-    calls = 0;
-  }
-  #endif
 
   unsigned long now = millis();
   size_t diff = now - _lastShow;

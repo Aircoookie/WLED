@@ -395,6 +395,12 @@ typedef struct Segment {
     uint16_t        _dataLen;
     static uint16_t _usedSegmentData;
 
+    // perhaps this should be per segment, not static
+    static CRGBPalette16 _randomPalette;
+    static CRGBPalette16 _newRandomPalette;
+    static unsigned long _lastPaletteChange;
+    static uint8_t       _noOfBlendsRemaining;
+
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
       uint32_t      _colorT[NUM_COLORS];
@@ -510,6 +516,7 @@ typedef struct Segment {
 
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+    static void     handleRandomPalette();
 
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, uint8_t segId = 255);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
