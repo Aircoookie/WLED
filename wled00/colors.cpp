@@ -358,8 +358,9 @@ static void calcInvGammaTable(float gamma)
   }
 }
 uint8_t unGamma8(uint8_t value) {
-  if (!gammaCorrectCol || (value == 0) || (value == 255)) return value;
-  if ((gammaCorrectVal <= 1.0f) || (gammaCorrectVal > 3.0f)) return value;
+  //if (!gammaCorrectCol || (value == 0) || (value == 255)) return value;
+  if ((value == 0) || (value == 255)) return value;
+  if ((gammaCorrectVal < 0.999f) || (gammaCorrectVal > 3.0f)) return value;
   if (gammaTinv[255] == 0) calcInvGammaTable(gammaCorrectVal);
   return gammaTinv[value];
 }

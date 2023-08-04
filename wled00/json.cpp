@@ -1440,9 +1440,19 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   for (size_t i= 0; i < used; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
-    uint8_t r = qadd8(W(c), R(c)); //add white channel to RGB channels as a simple RGBW -> RGB map
-    uint8_t g = qadd8(W(c), G(c));
-    uint8_t b = qadd8(W(c), B(c));
+    // WLEDMM begin: live leds with color gamma correction
+    uint8_t w = W(c);  // not sure why, but it looks better if always using "white" without corrections
+    uint8_t r,g,b;
+    if (gammaCorrectPreview) {
+      r = qadd8(w, unGamma8(R(c))); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+      g = qadd8(w, unGamma8(G(c))); //G
+      b = qadd8(w, unGamma8(B(c))); //B
+    } else {
+    // WLEDMM end
+      r = qadd8(w, R(c)); //add white channel to RGB channels as a simple RGBW -> RGB map
+      g = qadd8(w, G(c));
+      b = qadd8(w, B(c));
+    }
     olen += sprintf(obuf + olen, "\"%06X\",", RGBW32(r,g,b,0));
   }
   olen -= 1;
