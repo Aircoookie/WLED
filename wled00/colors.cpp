@@ -347,6 +347,24 @@ static const byte gammaT[256] = {
   245, 247, 250, 252, 255 };
 #endif
 
+// WLEDMM begin
+static uint8_t gammaTinv[256] = { 0 };
+static void calcInvGammaTable(float gamma)
+{
+  float gammaInv = 1.0f / 2.4f;    // surprise surprise: WLED palettes use a fixed gamma of 2.4 !!!
+  //float gammaInv = 1.0f / gamma; // if we go by the book, 1.0/gamma will revert gamma corrections
+  for (size_t i = 0; i < 256; i++) {
+    gammaTinv[i] = (int)(powf((float)i / 255.0f, gammaInv) * 255.0f + 0.5f);
+  }
+}
+uint8_t unGamma8(uint8_t value) {
+  if (!gammaCorrectCol || (value == 0) || (value == 255)) return value;
+  if ((gammaCorrectVal <= 1.0f) || (gammaCorrectVal > 3.0f)) return value;
+  if (gammaTinv[255] == 0) calcInvGammaTable(gammaCorrectVal);
+  return gammaTinv[value];
+}
+// wleDMM end
+
 uint8_t gamma8_cal(uint8_t b, float gamma)
 {
   return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
@@ -360,6 +378,7 @@ void calcGammaTable(float gamma)
     gammaT[i] = gamma8_cal(i, gamma);
   }
 #endif
+  calcInvGammaTable(gamma); // WLEDMM
 }
 
 // used for individual channel or brightness gamma correction

@@ -366,16 +366,20 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.8
   float light_gc_bri = light["gc"]["bri"];
   float light_gc_col = light["gc"]["col"];
+  float light_gc_prev = light["gc"]["prev"];  // WLEDMM
   if (light_gc_bri > 1.0f) gammaCorrectBri = true;
   else                     gammaCorrectBri = false;
   if (light_gc_col > 1.0f) gammaCorrectCol = true;
   else                     gammaCorrectCol = false;
+  if (light_gc_prev > 1.0f) gammaCorrectPreview = true;  // WLEDMM
+  else                      gammaCorrectPreview = false; // WLEDMM
   if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3) {
     if (gammaCorrectVal != 2.8f) calcGammaTable(gammaCorrectVal);
   } else {
     gammaCorrectVal = 1.0f; // no gamma correction
     gammaCorrectBri = false;
     gammaCorrectCol = false;
+    gammaCorrectPreview = false; // WLEDMM
   }
 
   JsonObject light_tr = light["tr"];
@@ -877,6 +881,7 @@ void serializeConfig() {
   JsonObject light_gc = light.createNestedObject("gc");
   light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
   light_gc["col"] = (gammaCorrectCol) ? gammaCorrectVal : 1.0f;  // keep compatibility
+  light_gc["prev"] = (gammaCorrectPreview) ? gammaCorrectVal : 1.0f;  // WLEDMM
   light_gc["val"] = gammaCorrectVal;
 
   JsonObject light_tr = light.createNestedObject("tr");

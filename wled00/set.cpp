@@ -251,6 +251,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t <= 250) bootPreset = t;
     gammaCorrectBri = request->hasArg(F("GB"));
     gammaCorrectCol = request->hasArg(F("GC"));
+    gammaCorrectPreview = request->hasArg(F("GCP"));  // WLEDMM
     gammaCorrectVal = request->arg(F("GV")).toFloat();
     if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3)
       calcGammaTable(gammaCorrectVal);
@@ -258,6 +259,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       gammaCorrectVal = 1.0f; // no gamma correction
       gammaCorrectBri = false;
       gammaCorrectCol = false;
+      gammaCorrectPreview = false; // WLEDMM
     }
 
     fadeTransition = request->hasArg(F("TF"));

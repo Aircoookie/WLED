@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2307310
+#define VERSION 2308040
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -339,7 +339,8 @@ WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load
 WLED_GLOBAL bool autoSegments    _INIT(false);
 WLED_GLOBAL bool correctWB       _INIT(false); // CCT color correction of RGB color
 WLED_GLOBAL bool cctFromRgb      _INIT(false); // CCT is calculated from RGB instead of using seg.cct
-WLED_GLOBAL bool gammaCorrectCol _INIT(true ); // use gamma correction on colors
+WLED_GLOBAL bool gammaCorrectCol _INIT(true ); // use gamma correction on colors // WLEDMM that's what you would think, but the code tells a different story.
+WLED_GLOBAL bool gammaCorrectPreview _INIT(false); // WLEDMM: revert gamma correction for LiveLeds (screens have their own gamma correction)
 WLED_GLOBAL bool gammaCorrectBri _INIT(false); // use gamma correction on brightness
 WLED_GLOBAL float gammaCorrectVal _INIT(2.8f); // gamma correction value
 

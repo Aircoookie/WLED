@@ -505,6 +505,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 
     sappend('c',SET_F("GB"),gammaCorrectBri);
     sappend('c',SET_F("GC"),gammaCorrectCol);
+    sappend('c',SET_F("GCP"),gammaCorrectPreview);   // WLEDMM
     dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
