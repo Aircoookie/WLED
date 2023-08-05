@@ -381,6 +381,28 @@ typedef struct Segment {
     byte     *data; // effect data pointer
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
 
+    typedef struct TemporarySegmentData {
+      uint32_t _colorT[NUM_COLORS];
+      //uint8_t  _opacityT;
+      //uint8_t  _cctT;        // temporary CCT
+      //uint16_t _optionsT;
+      uint8_t  _speedT;
+      uint8_t  _intensityT;
+      uint8_t  _custom1T, _custom2T;   // custom FX parameters/sliders
+      struct {
+        uint8_t _custom3T : 5;        // reduced range slider (0-31)
+        bool    _check1T  : 1;        // checkmark 1
+        bool    _check2T  : 1;        // checkmark 2
+        bool    _check3T  : 1;        // checkmark 3
+      };
+      uint16_t _aux0T;
+      uint16_t _aux1T;
+      uint32_t _stepT;
+      uint32_t _callT;
+      uint8_t *_dataT;
+      uint16_t _dataLenT;
+    } tmpsegd_t;
+
   private:
     union {
       uint8_t  _capabilities;
@@ -399,41 +421,35 @@ typedef struct Segment {
     static CRGBPalette16 _randomPalette;
     static CRGBPalette16 _newRandomPalette;
     static unsigned long _lastPaletteChange;
-    static uint8_t       _noOfBlendsRemaining;
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
-      uint32_t      _colorT[NUM_COLORS];
+      tmpsegd_t     _tmpSeg;
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
+      uint8_t       _modeT;       // previous mode/effect
       CRGBPalette16 _palT;        // temporary palette
       uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 belnds possible)
-      uint8_t       _modeP;       // previous mode/effect
-      //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
-      //uint32_t      _step, _call; // previous mode/effect runtime data
-      //byte         *_data;        // previous mode/effect runtime data
-      unsigned long _start;         // must accommodate millis()
+      unsigned long _start;       // must accommodate millis()
       uint16_t      _dur;
       Transition(uint16_t dur=750)
-        : _briT(255)
-        , _cctT(127)
-        , _palT(CRGBPalette16(CRGB::Black))
+        : _palT(CRGBPalette16(CRGB::Black))
         , _prevPaletteBlends(0)
-        , _modeP(FX_MODE_STATIC)
         , _start(millis())
         , _dur(dur)
       {}
+      /*
       Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o)
-        : _briT(b)
-        , _cctT(c)
-        , _palT(CRGBPalette16(CRGB::Black))
+        : _palT(CRGBPalette16(CRGB::Black))
         , _prevPaletteBlends(0)
-        , _modeP(FX_MODE_STATIC)
         , _start(millis())
         , _dur(d)
       {
-        for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
+        _tmpSeg._opacityT = b;
+        _tmpSeg._cctT = c;
+        for (size_t i=0; i<NUM_COLORS; i++) _tmpSeg._colorT[i] = o[i];
       }
+      */
     } *_t;
 
   public:
@@ -544,6 +560,8 @@ typedef struct Segment {
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
     void     handleTransition(void);
+    void     saveSegenv(tmpsegd_t *tmpSegD);
+    void     restoreSegenv(tmpsegd_t *tmpSegD);
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
     uint8_t  currentMode(uint8_t modeNew);
