@@ -382,10 +382,8 @@ typedef struct Segment {
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
 
     typedef struct TemporarySegmentData {
+      uint16_t _optionsT;
       uint32_t _colorT[NUM_COLORS];
-      //uint8_t  _opacityT;
-      //uint8_t  _cctT;        // temporary CCT
-      //uint16_t _optionsT;
       uint8_t  _speedT;
       uint8_t  _intensityT;
       uint8_t  _custom1T, _custom2T;   // custom FX parameters/sliders
@@ -560,8 +558,8 @@ typedef struct Segment {
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
     void     handleTransition(void);
-    void     saveSegenv(tmpsegd_t *tmpSegD);
-    void     restoreSegenv(tmpsegd_t *tmpSegD);
+    void     saveSegenv(tmpsegd_t *tmpSegD = nullptr);
+    void     restoreSegenv(tmpsegd_t *tmpSegD = nullptr);
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
     uint8_t  currentMode(uint8_t modeNew);

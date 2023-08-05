@@ -288,9 +288,7 @@ void Segment::startTransition(uint16_t dur) {
   _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
 
-  DEBUG_PRINT(F("-- Saving transition environment. "));
-  DEBUG_PRINTLN(on ? opacity : 0);
-  saveSegenv(&(_t->_tmpSeg));
+  saveSegenv();
   CRGBPalette16 _palT = CRGBPalette16(DEFAULT_COLOR); loadPalette(_palT, palette);
   _t->_palT             = _palT;
   _t->_modeT            = mode;
@@ -328,18 +326,14 @@ uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
 }
 
 uint8_t Segment::currentMode(uint8_t newMode) {
-  uint16_t prog = progress();
-  if (prog < 0xFFFFU) { // implicit check for transitional & _t in progress()
-    restoreSegenv(&(_t->_tmpSeg));
-    opacity  -= (uint32_t)opacity * prog / 0xFFFFU;
-    return _t->_modeT;
-  }
+  uint16_t prog = progress(); // implicit check for transitional & _t in progress()
+  if (prog < 0xFFFFU) return _t->_modeT;
   return newMode;
 }
 
 void Segment::saveSegenv(tmpsegd_t *tmpSeg) {
-  //tmpSeg._opacityT   = on ? opacity : 0;
-  //tmpSeg._optionsT   = options;
+  if (tmpSeg == nullptr) { if (_t) tmpSeg = &(_t->_tmpSeg); else return; }
+  tmpSeg->_optionsT   = options;
   for (size_t i=0; i<NUM_COLORS; i++) tmpSeg->_colorT[i] = colors[i];
   tmpSeg->_speedT     = speed;
   tmpSeg->_intensityT = intensity;
@@ -358,17 +352,19 @@ void Segment::saveSegenv(tmpsegd_t *tmpSeg) {
 }
 
 void Segment::restoreSegenv(tmpsegd_t *tmpSeg) {
-  if (&(_t->_tmpSeg) != tmpSeg) {
-    DEBUG_PRINTF("Temp: %p != %p\n", &(_t->_tmpSeg), tmpSeg);
-    DEBUG_PRINTLN(F("-- Restoring OLD environment."));
-    // update possibly changed variables to keep old effect running correctly
-    _t->_tmpSeg._aux0T = aux0;
-    _t->_tmpSeg._aux1T = aux1;
-    _t->_tmpSeg._stepT = step;
-    _t->_tmpSeg._callT = call;
+  if (tmpSeg == nullptr) {
+    if (_t) tmpSeg = &(_t->_tmpSeg);
+    else return;
+  } else {
+    if (&(_t->_tmpSeg) != tmpSeg) {
+      // update possibly changed variables to keep old effect running correctly
+      _t->_tmpSeg._aux0T = aux0;
+      _t->_tmpSeg._aux1T = aux1;
+      _t->_tmpSeg._stepT = step;
+      _t->_tmpSeg._callT = call;
+    }
   }
-  //opacity   = tmpSeg._opacityT;
-  //options   = tmpSeg._optionsT;
+  options   = tmpSeg->_optionsT;
   for (size_t i=0; i<NUM_COLORS; i++) colors[i] = tmpSeg->_colorT[i];
   speed     = tmpSeg->_speedT;
   intensity = tmpSeg->_intensityT;
@@ -703,6 +699,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
   i += start; // starting pixel in a group
 
+  uint32_t tmpCol = col;
   // set all the pixels in the group
   for (int j = 0; j < grouping; j++) {
     uint16_t indexSet = i + ((reverse) ? -j : j);
@@ -711,11 +708,13 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         uint16_t indexMir = stop - indexSet + start - 1;
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
-        strip.setPixelColor(indexMir, col);
+        if (transitional && _t && currentMode(mode) != _t->_modeT) tmpCol = color_blend(strip.getPixelColor(indexMir), col, progress(), true);
+        strip.setPixelColor(indexMir, tmpCol);
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
-      strip.setPixelColor(indexSet, col);
+      if (transitional && _t && currentMode(mode) != _t->_modeT) tmpCol = color_blend(strip.getPixelColor(indexSet), col, progress(), true);
+      strip.setPixelColor(indexSet, tmpCol);
     }
   }
 }
@@ -1176,24 +1175,22 @@ void WS2812FX::service() {
         for (uint8_t c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
 
         // Effect blending (execute previous effect then new effect while in transition)
-        // WARNING: seg.currentMode(mode) (while in transition) will overwrite SEGENV variables!!!
-        // so they need to be saved first and then restored before running new mode.
+        // If two effects are being blended (each may have different segment settings), those
+        // settings need to be saved first and then restored before running new mode.
+        // The seetings need to be applied from transition buffer for previous effect.
         // The blending will largely depend on the effect behaviour since actual output (LEDs) may be
         // overwritten by later effect. To enable seamless blending for every effect, additional LED buffer
         // would need to be allocated for each effect and then blended together for each pixel.
         Segment::tmpsegd_t _tmpSegData;
         seg.saveSegenv(&_tmpSegData);
-        uint8_t newMode    = seg.mode;
-        uint8_t newOpacity = seg.opacity;
-        uint8_t tmpMode    = seg.currentMode(seg.mode);
+        uint8_t tmpMode = seg.currentMode(seg.mode);
+        if (seg.mode != tmpMode) seg.restoreSegenv(nullptr); // restore transition data (including temporary opacity)
         delay = (*_mode[tmpMode])(); // run old mode
-        if (newMode != tmpMode) {
+        if (seg.mode != tmpMode) {
           if (tmpMode != FX_MODE_HALLOWEEN_EYES) seg.call++;
-          seg.restoreSegenv(&_tmpSegData); // restore mode state
-          seg.opacity = (uint32_t)newOpacity * seg.progress() / 0xFFFFU;
-          delay += (*_mode[seg.mode])();  // run new mode
-          delay /= 2;                     // average the delay
-          seg.opacity = newOpacity;
+          seg.restoreSegenv(&_tmpSegData);    // restore mode state
+          uint16_t d2 = (*_mode[seg.mode])(); // run new mode
+          delay = MIN(delay,d2);              // use shortest delay
         }
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
         if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
