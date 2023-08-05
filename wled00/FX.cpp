@@ -715,7 +715,7 @@ uint16_t mode_hyper_sparkle(void) {
 
   if (strip.now - SEGENV.aux0 > SEGENV.step) {
     if (random8((255-SEGMENT.intensity) >> 4) == 0) {
-      for (int i = 0; i < MAX(1, SEGLEN/3); i++) {
+      for (int i = 0; i < max(1, SEGLEN/3); i++) {
         SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(1));
       }
     }
@@ -1227,7 +1227,7 @@ uint16_t mode_fireworks() {
   if (valid1) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(SEGENV.aux0%width, SEGENV.aux0/width, sv1); else SEGMENT.setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
   if (valid2) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(SEGENV.aux1%width, SEGENV.aux1/width, sv2); else SEGMENT.setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
 
-  for (int i=0; i<MAX(1, width/20); i++) {
+  for (int i=0; i<max(1, width/20); i++) {
     if (random8(129 - (SEGMENT.intensity >> 1)) == 0) {
       uint16_t index = random16(width*height);
       uint16_t j = index % width, k = index / width;
@@ -3054,7 +3054,7 @@ uint16_t candle(bool multi)
   if (multi)
   {
     //allocate segment data
-    uint16_t dataSize = (SEGLEN -1) *3; //max. 1365 pixels (ESP8266)
+    uint16_t dataSize = max(1, SEGLEN -1) *3; //max. 1365 pixels (ESP8266)
     if (!SEGENV.allocateData(dataSize)) return candle(false); //allocation failed
   }
 
@@ -3187,7 +3187,7 @@ uint16_t mode_starburst(void) {
     if (random8((144-(SEGMENT.speed >> 1))) == 0 && stars[j].birth == 0)
     {
       // Pick a random color and location.
-      uint16_t startPos = random16(SEGLEN-1);
+      uint16_t startPos = (SEGLEN > 1) ? random16(SEGLEN-1) : 0;
       float multiplier = (float)(random8())/255.0 * 1.0;
 
       stars[j].color = CRGB(SEGMENT.color_wheel(random8()));
@@ -3432,7 +3432,7 @@ uint16_t mode_drip(void)
       uint8_t numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
 
       float gravity = -0.0005 - (SEGMENT.speed/25000.0); //increased gravity (50000 to 25000)
-      gravity *= SEGLEN-1;
+      gravity *= max(1, SEGLEN-1);
       int sourcedrop = 12;
 
       for (int j=0;j<numDrops;j++) {
@@ -6861,7 +6861,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
     uint16_t segLoc = random16(SEGLEN);
-    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]));
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/max(1, SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]));
     ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
 
     SEGENV.step = 1;
@@ -6901,7 +6901,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   if ((SEGENV.aux1 < SEGLEN) && (volumeSmth > 1.0f)) SEGMENT.setPixelColor(SEGENV.aux1,SEGENV.step); // "repaint" last pixel after blur
 
   uint16_t segLoc = random16(SEGLEN);
-  unsigned pixColor = 2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1);                  // WLEDMM avoid uint8 overflow, and preserve pixel parameters for redraw
+  unsigned pixColor = (2*fftResult[SEGENV.aux0%16]*240)/max(1, SEGLEN-1);                  // WLEDMM avoid uint8 overflow, and preserve pixel parameters for redraw
   unsigned pixIntensity = min((unsigned)(2.0f*fftResult[SEGENV.aux0%16]), 255U);
 
   if (volumeSmth > 1.0f) {
