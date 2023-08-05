@@ -81,6 +81,8 @@ CRGBPalette16 Segment::_randomPalette = CRGBPalette16(DEFAULT_COLOR);
 CRGBPalette16 Segment::_newRandomPalette = CRGBPalette16(DEFAULT_COLOR);
 unsigned long Segment::_lastPaletteChange = 0; // perhaps it should be per segment
 
+bool Segment::_modeBlend = false;
+
 // copy constructor
 Segment::Segment(const Segment &orig) {
   //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
@@ -708,12 +710,12 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         uint16_t indexMir = stop - indexSet + start - 1;
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
-        if (transitional && _t && currentMode(mode) != _t->_modeT) tmpCol = color_blend(strip.getPixelColor(indexMir), col, progress(), true);
+        if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexMir), col, progress(), true);
         strip.setPixelColor(indexMir, tmpCol);
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
-      if (transitional && _t && currentMode(mode) != _t->_modeT) tmpCol = color_blend(strip.getPixelColor(indexSet), col, progress(), true);
+      if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexSet), col, progress(), true);
       strip.setPixelColor(indexSet, tmpCol);
     }
   }
@@ -920,7 +922,7 @@ void Segment::fade_out(uint8_t rate) {
   const uint16_t rows = virtualHeight(); // will be 1 for 1D
 
   rate = (255-rate) >> 1;
-  float mappedRate = float(rate) +1.1;
+  float mappedRate = float(rate) +1.1f;
 
   uint32_t color = colors[1]; // SEGCOLOR(1); // target color
   int w2 = W(color);
@@ -1184,12 +1186,14 @@ void WS2812FX::service() {
         Segment::tmpsegd_t _tmpSegData;
         seg.saveSegenv(&_tmpSegData);
         uint8_t tmpMode = seg.currentMode(seg.mode);
-        if (seg.mode != tmpMode) seg.restoreSegenv(nullptr); // restore transition data (including temporary opacity)
+        if (seg.mode != tmpMode) seg.restoreSegenv(); // restore transition data (including temporary opacity)
         delay = (*_mode[tmpMode])(); // run old mode
         if (seg.mode != tmpMode) {
           if (tmpMode != FX_MODE_HALLOWEEN_EYES) seg.call++;
           seg.restoreSegenv(&_tmpSegData);    // restore mode state
+          Segment::modeBlend(true);           // set semaphore
           uint16_t d2 = (*_mode[seg.mode])(); // run new mode
+          Segment::modeBlend(false);          // unset semaphore
           delay = MIN(delay,d2);              // use shortest delay
         }
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;

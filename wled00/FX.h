@@ -416,13 +416,14 @@ typedef struct Segment {
     static uint16_t _usedSegmentData;
 
     // perhaps this should be per segment, not static
-    static CRGBPalette16 _randomPalette;
-    static CRGBPalette16 _newRandomPalette;
-    static unsigned long _lastPaletteChange;
+    static CRGBPalette16 _randomPalette;      // actual random palette
+    static CRGBPalette16 _newRandomPalette;   // target random palette
+    static unsigned long _lastPaletteChange;  // last random palette change time in millis()
+    static bool          _modeBlend;          // mode/effect blending semaphore
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
-      tmpsegd_t     _tmpSeg;
+      tmpsegd_t     _tmpSeg;      // previous segment environment
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       uint8_t       _modeT;       // previous mode/effect
@@ -530,6 +531,7 @@ typedef struct Segment {
 
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+    static void     modeBlend(bool blend)       { _modeBlend = blend; }
     static void     handleRandomPalette();
 
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, uint8_t segId = 255);
