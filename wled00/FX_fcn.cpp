@@ -80,7 +80,6 @@ uint16_t Segment::maxHeight = 1;
 CRGBPalette16 Segment::_randomPalette = CRGBPalette16(DEFAULT_COLOR);
 CRGBPalette16 Segment::_newRandomPalette = CRGBPalette16(DEFAULT_COLOR);
 unsigned long Segment::_lastPaletteChange = 0; // perhaps it should be per segment
-uint8_t       Segment::_noOfBlendsRemaining = 0;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
@@ -216,7 +215,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)));
         _lastPaletteChange = millis();
-        _noOfBlendsRemaining = 255;
+        handleRandomPalette(); // do initial blend
       }
       targetPalette = _randomPalette;
       break;}
@@ -348,13 +347,9 @@ void Segment::handleTransition() {
 
 // relies on WS2812FX::service() to call it max every 8ms or more (MIN_SHOW_DELAY)
 void Segment::handleRandomPalette() {
-  if (_noOfBlendsRemaining > 0) {
-    // there needs to be 255 palette blends (48) for full blend
-    size_t noOfBlends = 3; // blending time ~850ms when MIN_SHOW_DELAY>10
-    if (noOfBlends > _noOfBlendsRemaining) noOfBlends = _noOfBlendsRemaining;
-    for (size_t i=0; i<noOfBlends; i++) nblendPaletteTowardPalette(_randomPalette, _newRandomPalette, 48);
-    _noOfBlendsRemaining -= noOfBlends;
-  }
+  // just do a blend; if the palettes are identical it will just compare 48 bytes (same as _randomPalette == _newRandomPalette)
+  // this will slowly blend _newRandomPalette into _randomPalette every 15ms or 8ms (depending on MIN_SHOW_DELAY)
+  nblendPaletteTowardPalette(_randomPalette, _newRandomPalette, 48);
 }
 
 // segId is given when called from network callback, changes are queued if that segment is currently in its effect function

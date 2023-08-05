@@ -399,7 +399,6 @@ typedef struct Segment {
     static CRGBPalette16 _randomPalette;
     static CRGBPalette16 _newRandomPalette;
     static unsigned long _lastPaletteChange;
-    static uint8_t       _noOfBlendsRemaining;
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
