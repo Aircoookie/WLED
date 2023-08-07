@@ -5621,6 +5621,7 @@ uint16_t mode_2Dghostrider(void) {
     SEGENV.aux1 = rows;
     random16_set_seed(strip.now);
     lighter->angleSpeed = random8(0,20) - 10;
+    lighter->gAngle = random16();
     lighter->Vspeed = 5;
     lighter->gPosX = (cols/2) * 10;
     lighter->gPosY = (rows/2) * 10;
@@ -5628,6 +5629,7 @@ uint16_t mode_2Dghostrider(void) {
       lighter->lightersPosX[i] = lighter->gPosX;
       lighter->lightersPosY[i] = lighter->gPosY + i;
       lighter->time[i] = i * 2;
+      lighter->reg[i] = false;
     }
   }
 

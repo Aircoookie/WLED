@@ -498,14 +498,14 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      //#ifdef WLED_DEBUG
-      //Serial.print(F("Destroying segment:"));
+      #ifdef WLED_DEBUG
+      Serial.printf("-- Destroying segment: %p\n", this);
       //if (name) Serial.printf(" %s (%p)", name, name);
       //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
       //Serial.println();
-      //#endif
+      #endif
       if (name) { delete[] name; name = nullptr; }
-      if (_t)   { transitional = false; delete _t; _t = nullptr; }
+      stopTransition();
       deallocateData();
     }
 
@@ -559,6 +559,7 @@ typedef struct Segment {
 
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
+    void     stopTransition(void);
     void     handleTransition(void);
     void     saveSegenv(tmpsegd_t *tmpSegD = nullptr);
     void     restoreSegenv(tmpsegd_t *tmpSegD = nullptr);

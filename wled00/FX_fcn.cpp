@@ -85,7 +85,7 @@ bool Segment::_modeBlend = false;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
-  //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
+  //DEBUG_PRINTF("-- Copy segment constructor: %p -> %p\n", &orig, this);
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
   transitional = false; // copied segment cannot be in transition
   name = nullptr;
@@ -94,12 +94,12 @@ Segment::Segment(const Segment &orig) {
   _t = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-  //if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+  //if (orig._t)   { _t = new Transition(orig._t->_dur); }
 }
 
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
-  //DEBUG_PRINTLN(F("-- Move segment constructor --"));
+  //DEBUG_PRINTF("-- Move segment constructor: %p -> %p\n", &orig, this);
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
   orig.transitional = false; // old segment cannot be in transition any more
   orig.name = nullptr;
@@ -110,12 +110,15 @@ Segment::Segment(Segment &&orig) noexcept {
 
 // copy assignment
 Segment& Segment::operator= (const Segment &orig) {
-  //DEBUG_PRINTLN(F("-- Copying segment --"));
+  //DEBUG_PRINTF("-- Copying segment: %p -> %p\n", &orig, this);
   if (this != &orig) {
     // clean destination
     transitional = false; // copied segment cannot be in transition
     if (name) delete[] name;
-    if (_t)   delete _t;
+    if (_t) {
+      if (_t->_tmpSeg._dataT) free(_t->_tmpSeg._dataT);
+      delete _t;
+    }
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -135,12 +138,16 @@ Segment& Segment::operator= (const Segment &orig) {
 
 // move assignment
 Segment& Segment::operator= (Segment &&orig) noexcept {
-  //DEBUG_PRINTLN(F("-- Moving segment --"));
+  //DEBUG_PRINTF("-- Moving segment: %p -> %p\n", &orig, this);
   if (this != &orig) {
     transitional = false; // just temporary
     if (name) { delete[] name; name = nullptr; } // free old name
     deallocateData(); // free old runtime data
-    if (_t) { delete _t; _t = nullptr; }
+    if (_t) {
+      if (_t->_tmpSeg._dataT) free(_t->_tmpSeg._dataT);
+      delete _t;
+      _t = nullptr;
+    }
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.transitional = false; // old segment cannot be in transition
     orig.name = nullptr;
@@ -153,12 +160,14 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 
 bool Segment::allocateData(size_t len) {
   if (data && _dataLen == len) return true; //already allocated
+  //DEBUG_PRINTF("--   Allocating data (%d): %p\n", len, this);
   deallocateData();
-  if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
+  if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) { DEBUG_PRINTF("!!! Effect RAM depleted: %d/%d !!!\n", len, Segment::getUsedSegmentData()); return false; } //not enough memory
   // do not use SPI RAM on ESP32 since it is slow
   data = (byte*) malloc(len);
-  if (!data) return false; //allocation failed
+  if (!data) { DEBUG_PRINTLN(F("!!! Allocation failed. !!!")); return false; } //allocation failed
   Segment::addUsedSegmentData(len);
+  DEBUG_PRINTF("---  Allocated data (%p): %d/%d -> %p\n", this, len, Segment::getUsedSegmentData(), data);
   _dataLen = len;
   memset(data, 0, len);
   return true;
@@ -166,9 +175,11 @@ bool Segment::allocateData(size_t len) {
 
 void Segment::deallocateData() {
   if (!data) return;
+  DEBUG_PRINTF("---  Released data (%d/%d): %p -> %p\n", _dataLen, Segment::getUsedSegmentData(), this, data);
   free(data);
   data = nullptr;
-  Segment::addUsedSegmentData(-_dataLen);
+  // WARNING it looks like we have a memory leak somewhere
+  Segment::addUsedSegmentData(_dataLen <= Segment::getUsedSegmentData() ? -_dataLen : -Segment::getUsedSegmentData());
   _dataLen = 0;
 }
 
@@ -181,7 +192,7 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (!reset) return;
-  DEBUG_PRINTLN(F("-- Segment reset."));
+  //DEBUG_PRINTF("-- Segment reset: %p\n", this);
   startTransition(0); // stop pending transition
   deallocateData();
   next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
@@ -273,15 +284,8 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
 
 void Segment::startTransition(uint16_t dur) {
   if (!dur) {
-    transitional = false;
-    if (_t) {
-      if (_t->_tmpSeg._dataT && _t->_tmpSeg._dataLenT > 0) {
-        free(_t->_tmpSeg._dataT);
-        _t->_tmpSeg._dataT = nullptr;
-      }
-      delete _t;
-      _t = nullptr;
-    }
+    if (_t) _t->_dur = dur; // this will stop transition in next handleTransisiton()
+    else    transitional = false;
     return;
   }
   if (transitional && _t) return; // already in transition no need to store anything
@@ -290,23 +294,46 @@ void Segment::startTransition(uint16_t dur) {
   _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
 
+  //DEBUG_PRINTF("-- Started transition: %p\n", this);
   saveSegenv();
   CRGBPalette16 _palT = CRGBPalette16(DEFAULT_COLOR); loadPalette(_palT, palette);
   _t->_palT             = _palT;
   _t->_modeT            = mode;
   _t->_briT             = on ? opacity : 0;
   _t->_cctT             = cct;
+  _t->_tmpSeg._optionsT |= 0b0000000001000000; // mark old segment transitional
   _t->_tmpSeg._dataLenT = 0;
   _t->_tmpSeg._dataT    = nullptr;
   if (_dataLen > 0 && data) {
     _t->_tmpSeg._dataT = (byte *)malloc(_dataLen);
     if (_t->_tmpSeg._dataT) {
-      DEBUG_PRINTLN(F("-- Allocated duplicate data."));
+      //DEBUG_PRINTF("--  Allocated duplicate data (%d): %p\n", _dataLen, _t->_tmpSeg._dataT);
       memcpy(_t->_tmpSeg._dataT, data, _dataLen);
       _t->_tmpSeg._dataLenT = _dataLen;
     }
   }
   transitional = true; // setOption(SEG_OPTION_TRANSITIONAL, true);
+}
+
+void Segment::stopTransition() {
+  if (!transitional) return;
+  transitional = false; // finish transitioning segment
+  //DEBUG_PRINTF("-- Stopping transition: %p\n", this);
+  if (_t) {
+    if (_t->_tmpSeg._dataT && _t->_tmpSeg._dataLenT > 0) {
+      //DEBUG_PRINTF("--  Released duplicate data (%d): %p\n", _t->_tmpSeg._dataLenT, _t->_tmpSeg._dataT);
+      free(_t->_tmpSeg._dataT);
+      _t->_tmpSeg._dataT = nullptr;
+    }
+    delete _t;
+    _t = nullptr;
+  }
+}
+
+void Segment::handleTransition() {
+  if (!transitional) return;
+  uint16_t _progress = progress();
+  if (_progress == 0xFFFFU) stopTransition();
 }
 
 // transition progression between 0-65535
@@ -318,22 +345,8 @@ uint16_t Segment::progress() {
   return 0xFFFFU;
 }
 
-uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
-  uint32_t prog = progress();
-  if (prog < 0xFFFFU) {
-    if (useCct) return ((briNew * prog) + _t->_cctT * (0xFFFFU - prog)) >> 16;
-    else        return ((briNew * prog) + _t->_briT * (0xFFFFU - prog)) >> 16;
-  }
-  return briNew;
-}
-
-uint8_t Segment::currentMode(uint8_t newMode) {
-  uint16_t prog = progress(); // implicit check for transitional & _t in progress()
-  if (prog < 0xFFFFU) return _t->_modeT;
-  return newMode;
-}
-
 void Segment::saveSegenv(tmpsegd_t *tmpSeg) {
+  //DEBUG_PRINTF("--  Saving temp seg: %p (%p)\n", this, tmpSeg);
   if (tmpSeg == nullptr) { if (_t) tmpSeg = &(_t->_tmpSeg); else return; }
   tmpSeg->_optionsT   = options;
   for (size_t i=0; i<NUM_COLORS; i++) tmpSeg->_colorT[i] = colors[i];
@@ -351,9 +364,11 @@ void Segment::saveSegenv(tmpsegd_t *tmpSeg) {
   tmpSeg->_callT      = call;
   tmpSeg->_dataT      = data;
   tmpSeg->_dataLenT   = _dataLen;
+  //DEBUG_PRINTF("--   temp seg data: %p (%d,%p)\n", this, _dataLen, data);
 }
 
 void Segment::restoreSegenv(tmpsegd_t *tmpSeg) {
+  //DEBUG_PRINTF("--  Restoring temp seg: %p (%p)\n", this, tmpSeg);
   if (tmpSeg == nullptr) {
     if (_t) tmpSeg = &(_t->_tmpSeg);
     else return;
@@ -364,6 +379,9 @@ void Segment::restoreSegenv(tmpsegd_t *tmpSeg) {
       _t->_tmpSeg._aux1T = aux1;
       _t->_tmpSeg._stepT = step;
       _t->_tmpSeg._callT = call;
+      if (_t->_tmpSeg._dataT != data) DEBUG_PRINTF("---  data re-allocated: (%p) %p -> %p\n", this, _t->_tmpSeg._dataT, data);
+      _t->_tmpSeg._dataT = data;        // sometimes memory gets re-allocated (!! INVESTIGATE WHY !!)
+      _t->_tmpSeg._dataLenT = _dataLen; // sometimes memory gets re-allocated (!! INVESTIGATE WHY !!)
     }
   }
   options   = tmpSeg->_optionsT;
@@ -382,6 +400,22 @@ void Segment::restoreSegenv(tmpsegd_t *tmpSeg) {
   call      = tmpSeg->_callT;
   data      = tmpSeg->_dataT;
   _dataLen  = tmpSeg->_dataLenT;
+  //DEBUG_PRINTF("--   temp seg data: %p (%d,%p)\n", this, _dataLen, data);
+}
+
+uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
+  uint32_t prog = progress();
+  if (prog < 0xFFFFU) {
+    if (useCct) return ((briNew * prog) + _t->_cctT * (0xFFFFU - prog)) >> 16;
+    else        return ((briNew * prog) + _t->_briT * (0xFFFFU - prog)) >> 16;
+  }
+  return briNew;
+}
+
+uint8_t Segment::currentMode(uint8_t newMode) {
+  uint16_t prog = progress(); // implicit check for transitional & _t in progress()
+  if (prog < 0xFFFFU) return _t->_modeT;
+  return newMode;
 }
 
 uint32_t Segment::currentColor(uint8_t slot, uint32_t colorNew) {
@@ -400,24 +434,6 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
     targetPalette = _t->_palT; // copy transitioning/temporary palette
   }
   return targetPalette;
-}
-
-void Segment::handleTransition() {
-  if (!transitional) return;
-  uint16_t _progress = progress();
-  if (_progress == 0xFFFFU) transitional = false; // finish transitioning segment
-  if (_t) { // thanks to @nXm AKA https://github.com/NMeirer
-    //if (_progress >= 32767U && _t->_modeP != mode) markForReset();
-    if (_progress == 0xFFFFU) {
-      DEBUG_PRINTLN(F("-- Stopping transition."));
-      if (_t->_tmpSeg._dataT && _t->_tmpSeg._dataLenT > 0) {
-        free(_t->_tmpSeg._dataT);
-        _t->_tmpSeg._dataT = nullptr;
-      }
-      delete _t;
-      _t = nullptr;
-    }
-  }
 }
 
 // relies on WS2812FX::service() to call it max every 8ms or more (MIN_SHOW_DELAY)
@@ -1186,7 +1202,7 @@ void WS2812FX::service() {
         Segment::tmpsegd_t _tmpSegData;
         seg.saveSegenv(&_tmpSegData);
         uint8_t tmpMode = seg.currentMode(seg.mode);
-        if (seg.mode != tmpMode) seg.restoreSegenv(); // restore transition data (including temporary opacity)
+        if (seg.mode != tmpMode) seg.restoreSegenv(); // restore transition data
         delay = (*_mode[tmpMode])(); // run old mode
         if (seg.mode != tmpMode) {
           if (tmpMode != FX_MODE_HALLOWEEN_EYES) seg.call++;
