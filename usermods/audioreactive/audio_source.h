@@ -461,7 +461,7 @@ public:
         return;
       }
       if (!pinManager.joinWire()) {    // WLEDMM specific: start I2C with globally defined pins
-        ERRORSR_PRINTF("\nAR: failed to start I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
+        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
       }
 
@@ -588,7 +588,7 @@ class ES8388Source : public I2SSource {
         return;
       }
       if (!pinManager.joinWire()) {    // WLEDMM specific: start I2C with globally defined pins
-        ERRORSR_PRINTF("\nAR: failed to start I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
+        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
       }
 
