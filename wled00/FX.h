@@ -487,6 +487,9 @@ typedef struct Segment {
       _t(nullptr)
     {
       //refreshLightCapabilities();
+      #ifdef WLED_DEBUG
+      //Serial.printf("-- Creating segment: %p\n", this);
+      #endif
     }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
@@ -499,7 +502,7 @@ typedef struct Segment {
 
     ~Segment() {
       #ifdef WLED_DEBUG
-      Serial.printf("-- Destroying segment: %p\n", this);
+      //Serial.printf("-- Destroying segment: %p\n", this);
       //if (name) Serial.printf(" %s (%p)", name, name);
       //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
       //Serial.println();

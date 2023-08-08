@@ -175,7 +175,7 @@ bool Segment::allocateData(size_t len) {
 
 void Segment::deallocateData() {
   if (!data) return;
-  DEBUG_PRINTF("---  Released data (%d/%d): %p -> %p\n", _dataLen, Segment::getUsedSegmentData(), this, data);
+  DEBUG_PRINTF("---  Released data (%p): %d/%d -> %p\n", this, _dataLen, Segment::getUsedSegmentData(), data);
   free(data);
   data = nullptr;
   // WARNING it looks like we have a memory leak somewhere
@@ -193,7 +193,6 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (!reset) return;
   //DEBUG_PRINTF("-- Segment reset: %p\n", this);
-  startTransition(0); // stop pending transition
   deallocateData();
   next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
   reset = false;
@@ -307,7 +306,7 @@ void Segment::startTransition(uint16_t dur) {
   if (_dataLen > 0 && data) {
     _t->_tmpSeg._dataT = (byte *)malloc(_dataLen);
     if (_t->_tmpSeg._dataT) {
-      //DEBUG_PRINTF("--  Allocated duplicate data (%d): %p\n", _dataLen, _t->_tmpSeg._dataT);
+      DEBUG_PRINTF("--  Allocated duplicate data (%d): %p\n", _dataLen, _t->_tmpSeg._dataT);
       memcpy(_t->_tmpSeg._dataT, data, _dataLen);
       _t->_tmpSeg._dataLenT = _dataLen;
     }
@@ -321,7 +320,7 @@ void Segment::stopTransition() {
   //DEBUG_PRINTF("-- Stopping transition: %p\n", this);
   if (_t) {
     if (_t->_tmpSeg._dataT && _t->_tmpSeg._dataLenT > 0) {
-      //DEBUG_PRINTF("--  Released duplicate data (%d): %p\n", _t->_tmpSeg._dataLenT, _t->_tmpSeg._dataT);
+      DEBUG_PRINTF("--  Released duplicate data (%d): %p\n", _t->_tmpSeg._dataLenT, _t->_tmpSeg._dataT);
       free(_t->_tmpSeg._dataT);
       _t->_tmpSeg._dataT = nullptr;
     }
@@ -380,6 +379,7 @@ void Segment::restoreSegenv(tmpsegd_t *tmpSeg) {
       _t->_tmpSeg._stepT = step;
       _t->_tmpSeg._callT = call;
       if (_t->_tmpSeg._dataT != data) DEBUG_PRINTF("---  data re-allocated: (%p) %p -> %p\n", this, _t->_tmpSeg._dataT, data);
+      //if (_t->_tmpSeg._dataT && _t->_tmpSeg._dataLenT > 0) free(_t->_tmpSeg._dataT); // not good
       _t->_tmpSeg._dataT = data;        // sometimes memory gets re-allocated (!! INVESTIGATE WHY !!)
       _t->_tmpSeg._dataLenT = _dataLen; // sometimes memory gets re-allocated (!! INVESTIGATE WHY !!)
     }
@@ -557,6 +557,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "pal");  if (sOpt >= 0) setPalette(sOpt); //else setPalette(0);
       }
+      markForReset();
       stateChanged = true; // send UDP/WS broadcast
     }
   }
