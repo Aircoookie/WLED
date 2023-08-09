@@ -1170,12 +1170,12 @@ void WS2812FX::service() {
   _segment_index = 0;
   Segment::handleRandomPalette(); // move it into for loop when each segment has individual random palette
   for (segment &seg : _segments) {
-    if (!seg.isActive()) continue;
-
     // process transition (mode changes in the middle of transition)
     seg.handleTransition();
     // reset the segment runtime data if needed
     seg.resetIfRequired();
+
+    if (!seg.isActive()) continue;
 
     // last condition ensures all solid segments are updated at the same time
     if (nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
@@ -1387,9 +1387,7 @@ void WS2812FX::setMode(uint8_t segid, uint8_t m) {
   if (m >= getModeCount()) m = getModeCount() - 1;
 
   if (_segments[segid].mode != m) {
-    _segments[segid].startTransition(_transitionDur); // set effect transitions
-    //_segments[segid].markForReset();
-    _segments[segid].mode = m;
+    _segments[segid].setMode(m); // do not load defaults
   }
 }
 
