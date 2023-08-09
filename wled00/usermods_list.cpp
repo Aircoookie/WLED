@@ -10,6 +10,13 @@
  * \/ \/ \/
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
+#ifdef USERMOD_BACKGROUND_V2
+  #include "../usermods/usermod_v2_background/usermod_v2_background.h"
+#endif
+
+#ifdef USERMOD_BACKGROUND_TDISPLAY
+  #include "../usermods/usermod_v2_background/usermod_v2_tdisplay.h"
+#endif
 
 #ifdef USERMOD_BATTERY
   #include "../usermods/Battery/usermod_v2_Battery.h"
@@ -202,6 +209,15 @@ void registerUsermods()
    * \/ \/ \/
    */
   //usermods.add(new MyExampleUsermod());
+  #ifdef USERMOD_BACKGROUND_V2
+  usermods.add(new UsermodBackgroundDemo());
+  #endif
+
+  #ifdef USERMOD_BACKGROUND_TDISPLAY
+  #include <TFT_eSPI.h>
+  usermods.add(new UsermodBackgroundTDisplay());
+  #endif
+
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
   #endif

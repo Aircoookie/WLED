@@ -296,6 +296,10 @@ class Usermod {
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
+
+    #if defined(WLED_ENABLE_BACKGROUND)
+    virtual void backgroundLoop() {}
+    #endif
 };
 
 class UsermodManager {
@@ -323,6 +327,10 @@ class UsermodManager {
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
     byte getModCount() {return numMods;};
+
+    #if defined(WLED_ENABLE_BACKGROUND)
+    void backgroundLoop();
+    #endif
 };
 
 //usermods_list.cpp

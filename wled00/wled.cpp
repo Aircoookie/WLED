@@ -285,6 +285,31 @@ DEBUG_PRINTLN(F("Watchdog: disabled"));
 #endif
 }
 
+#if defined(WLED_ENABLE_BACKGROUND)
+void WLED::backgroundTask(void *parameter)
+{
+  // WLED *instance = static_cast<WLED *>(parameter);
+  
+  for (;;)
+  {
+    // instance->usermods.backgroundLoop();
+    usermods.backgroundLoop();
+    EVERY_N_MILLISECONDS(150){ delay(1); }
+  }
+}
+
+void WLED::backgroundSetup(){
+  xTaskCreatePinnedToCore(
+      backgroundTask,         /* Task function. */
+      "BGTask",               /* name of task. */
+      backgroundStackSize,    /* Stack size of task */
+      this,                   /* parameter of the task */
+      1,                      /* priority of the task */
+      &BackgroundTaskHandle,  /* Task handle to keep track of created task */
+      xPortGetCoreID() == 0 ? 1 : 0); /* pin task to other core */      
+}
+#endif
+
 void WLED::setup()
 {
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
@@ -495,6 +520,10 @@ void WLED::setup()
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
+  #endif
+
+  #if defined(WLED_ENABLE_BACKGROUND)
+  backgroundSetup();
   #endif
 }
 
