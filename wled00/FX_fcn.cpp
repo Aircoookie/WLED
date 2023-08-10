@@ -575,6 +575,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) {if (oldMirror_y==-1) oldMirror_y = mirror_y; mirror_y  = (bool)sOpt;} else {if (oldMirror_y!=-1) mirror_y = oldMirror_y==1; oldMirror_y = -1;} // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "pal");  if (sOpt >= 0) {if (oldPalette==-1) oldPalette = palette; setPalette(sOpt);} else {if (oldPalette!=-1) setPalette(oldPalette); oldPalette = -1;}
       }
+      if (!fadeTransition) markForReset(); // WLEDMM quickfix for effect "double startup" bug. -> only works when "Crossfade" is disabled (led settings)
       stateChanged = true; // send UDP/WS broadcast
     }
   }
