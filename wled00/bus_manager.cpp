@@ -123,6 +123,9 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
+  if (_valid)
+    for (int i=0; i<_skip; i++)
+      PolyBus::setPixelColor(_busPtr, _iType, i, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // clear sacrificial pixels
   DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], _pins[1], _iType);
 }
 
@@ -187,6 +190,8 @@ void BusDigital::setBrightness(uint8_t b) {
 //TODO only show if no new show due in the next 50ms
 void BusDigital::setStatusPixel(uint32_t c) {
   if (_valid && _skip) {
+    for (int i=1; i<_skip; i++)
+      PolyBus::setPixelColor(_busPtr, _iType, i, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
     PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
     if (canShow()) PolyBus::show(_busPtr, _iType);
   }
