@@ -337,7 +337,6 @@ void Segment::handleTransition() {
   uint16_t _progress = progress();
   if (_progress == 0xFFFFU) transitional = false; // finish transitioning segment
   if (_t) { // thanks to @nXm AKA https://github.com/NMeirer
-    if (_progress >= 32767U && _t->_modeP != mode) markForReset();
     if (_progress == 0xFFFFU) {
       delete _t;
       _t = nullptr;
@@ -465,6 +464,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "pal");  if (sOpt >= 0) setPalette(sOpt); //else setPalette(0);
       }
+      markForReset();
       stateChanged = true; // send UDP/WS broadcast
     }
   }
@@ -1274,7 +1274,7 @@ void WS2812FX::setMode(uint8_t segid, uint8_t m) {
 
   if (_segments[segid].mode != m) {
     _segments[segid].startTransition(_transitionDur); // set effect transitions
-    //_segments[segid].markForReset();
+    _segments[segid].markForReset();
     _segments[segid].mode = m;
   }
 }
