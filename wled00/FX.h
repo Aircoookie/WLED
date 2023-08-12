@@ -423,7 +423,7 @@ typedef struct Segment {
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
-      tmpsegd_t     _tmpSeg;      // previous segment environment
+      tmpsegd_t     _segT;        // previous segment environment
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       uint8_t       _modeT;       // previous mode/effect
@@ -437,18 +437,6 @@ typedef struct Segment {
         , _start(millis())
         , _dur(dur)
       {}
-      /*
-      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o)
-        : _palT(CRGBPalette16(CRGB::Black))
-        , _prevPaletteBlends(0)
-        , _start(millis())
-        , _dur(d)
-      {
-        _tmpSeg._opacityT = b;
-        _tmpSeg._cctT = c;
-        for (size_t i=0; i<NUM_COLORS; i++) _tmpSeg._colorT[i] = o[i];
-      }
-      */
     } *_t;
 
   public:
@@ -564,8 +552,8 @@ typedef struct Segment {
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
     void     stopTransition(void);
     void     handleTransition(void);
-    void     saveSegenv(tmpsegd_t *tmpSegD = nullptr);
-    void     restoreSegenv(tmpsegd_t *tmpSegD = nullptr);
+    void     swapSegenv(tmpsegd_t &tmpSegD);
+    void     restoreSegenv(tmpsegd_t &tmpSegD);
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
     uint8_t  currentMode(uint8_t modeNew);

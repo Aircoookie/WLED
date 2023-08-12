@@ -223,7 +223,7 @@ void /*IRAM_ATTR*/ Segment::setPixelColorXY(int x, int y, uint32_t col)
       if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
       // if blending modes, blend with underlying pixel
-      if (_modeBlend) tmpCol = color_blend(strip.getPixelColorXY(start + xX, startY + yY), col, progress(), true);
+      if (_modeBlend) tmpCol = color_blend(strip.getPixelColorXY(start + xX, startY + yY), col, 0xFFFFU - progress(), true);
 
       strip.setPixelColorXY(start + xX, startY + yY, tmpCol);
 
