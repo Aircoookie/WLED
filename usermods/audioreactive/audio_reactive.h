@@ -94,6 +94,10 @@ static bool limiterOn = true;                 // bool: enable / disable dynamics
 static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
 static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 
+// peak detection
+static uint8_t maxVol = 31;          // (was 10) Reasonable value for constant volume for 'peak detector', as it won't always trigger  (deprecated)
+static uint8_t binNum = 8;           // Used to select the bin for FFT based beat detection  (deprecated)
+
 #ifdef ARDUINO_ARCH_ESP32
 
 // use audio source class (ESP32 specific)
@@ -1548,6 +1552,20 @@ class AudioReactive : public Usermod {
         um_data->u_type[9]  = UMT_FLOAT;
         um_data->u_data[10] = &agcSensitivity; // used (New)
         um_data->u_type[10] = UMT_FLOAT;
+#else
+       // ESP8266 
+        // See https://github.com/MoonModules/WLED/pull/60#issuecomment-1666972133 for explaination of these alternative sources of data
+
+        um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[6] = UMT_BYTE;
+        um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[7] = UMT_BYTE;
+        um_data->u_data[8] = &FFT_MajorPeak; // new
+        um_data->u_type[8] = UMT_FLOAT;
+        um_data->u_data[9]  = &volumeSmth;  // used (New)
+        um_data->u_type[9]  = UMT_FLOAT;
+        // um_data->u_data[10] = &agcSensitivity; // used (New)
+        // um_data->u_type[10] = UMT_FLOAT;
 #endif
       }
 
