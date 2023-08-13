@@ -89,7 +89,6 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel 
 // TODO: probably best not used by receive nodes
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 
-// TODO: probably best not used by receive nodes
 // user settable parameters for limitSoundDynamics()
 static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
 static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
@@ -2208,16 +2207,16 @@ class AudioReactive : public Usermod {
       poweruser[F("micLev")] = micLevelMethod;
       poweruser[F("freqDist")] = freqDist;
       poweruser[F("freqRMS")] = averageByRMS;
-
+ 
+      JsonObject freqScale = top.createNestedObject("frequency");
+      freqScale[F("scale")] = FFTScalingMode;
+      freqScale[F("profile")] = pinkIndex; //WLEDMM
+#endif
       JsonObject dynLim = top.createNestedObject("dynamics");
       dynLim[F("limiter")] = limiterOn;
       dynLim[F("rise")] = attackTime;
       dynLim[F("fall")] = decayTime;
 
-      JsonObject freqScale = top.createNestedObject("frequency");
-      freqScale[F("scale")] = FFTScalingMode;
-      freqScale[F("profile")] = pinkIndex; //WLEDMM
-#endif
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
       sync[F("mode")] = audioSyncEnabled;
@@ -2280,13 +2279,13 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["experiments"][F("freqDist")], freqDist);
       configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
 
+      configComplete &= getJsonValue(top["frequency"][F("scale")], FFTScalingMode);
+      configComplete &= getJsonValue(top["frequency"][F("profile")], pinkIndex);  //WLEDMM
+#endif
       configComplete &= getJsonValue(top["dynamics"][F("limiter")], limiterOn);
       configComplete &= getJsonValue(top["dynamics"][F("rise")],  attackTime);
       configComplete &= getJsonValue(top["dynamics"][F("fall")],  decayTime);
 
-      configComplete &= getJsonValue(top["frequency"][F("scale")], FFTScalingMode);
-      configComplete &= getJsonValue(top["frequency"][F("profile")], pinkIndex);  //WLEDMM
-#endif
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
 
