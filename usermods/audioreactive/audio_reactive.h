@@ -6,7 +6,6 @@
 
 #include <driver/i2s.h>
 #include <driver/adc.h>
-#include <arduinoFFT.h>
 
 #endif
 
@@ -314,6 +313,7 @@ static float windowWeighingFactors[samplesFFT] = {0.0f};
   // around 50% slower on -S2
 // lib_deps += https://github.com/blazoncek/arduinoFFT.git
 #endif
+#include <arduinoFFT.h>
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, windowWeighingFactors);
