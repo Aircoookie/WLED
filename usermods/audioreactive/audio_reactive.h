@@ -164,8 +164,6 @@ static uint8_t freqDist = 0;                              // 0=old 1=rightshift 
 //static float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
 
 // peak detection
-static uint8_t maxVol = 31;          // (was 10) Reasonable value for constant volume for 'peak detector', as it won't always trigger  (deprecated)
-static uint8_t binNum = 8;           // Used to select the bin for FFT based beat detection  (deprecated)
 static void detectSamplePeak(void);  // peak detection function (needs scaled FFT reasults in vReal[])
 static void autoResetPeak(void);     // peak auto-reset function
 
