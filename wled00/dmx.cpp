@@ -104,9 +104,25 @@ bool dmxInputInitialized = false; //true once initDmx finished successfully
 
 void initDMX() {
 
-
   if(dmxInputReceivePin > 0 && dmxInputEnablePin > 0 && dmxInputTransmitPin > 0) 
   {
+
+    const managed_pin_type pins[] = {
+      {dmxInputTransmitPin, false}, //these are not used as gpio pins, this isOutput is always false.
+      {dmxInputReceivePin, false},
+      {dmxInputEnablePin, false}      
+    };
+    const bool pinsAllocated = pinManager.allocateMultiplePins(pins, 3, PinOwner::DMX_INPUT);
+    if(!pinsAllocated)
+    {
+      USER_PRINTF("Error: Failed to allocate pins for DMX_INPUT. Pins already in use:\n");
+      USER_PRINTF("rx in use by: %s\n", pinManager.getPinOwnerText(dmxInputReceivePin).c_str());
+      USER_PRINTF("tx in use by: %s\n", pinManager.getPinOwnerText(dmxInputTransmitPin).c_str());
+      USER_PRINTF("en in use by: %s\n", pinManager.getPinOwnerText(dmxInputEnablePin).c_str());
+      return;
+    }
+
+
     dmx_config_t config{                                             
         255,                          /*alloc_size*/             
         0,                            /*model_id*/               
