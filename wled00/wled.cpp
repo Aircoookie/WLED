@@ -423,6 +423,11 @@ void WLED::setup()
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   PinManager::allocatePin(2, true, PinOwner::DMX);
 #endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  if(dmxInputTransmitPin > 0) PinManager::allocatePin(dmxInputTransmitPin, true, PinOwner::DMX);
+  if(dmxInputReceivePin > 0) PinManager::allocatePin(dmxInputReceivePin, true, PinOwner::DMX);
+  if(dmxInputEnablePin > 0) PinManager::allocatePin(dmxInputEnablePin, true, PinOwner::DMX);
+#endif
 
   DEBUG_PRINTLN(F("Registering usermods ..."));
   registerUsermods();

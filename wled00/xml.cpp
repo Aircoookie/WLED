@@ -436,6 +436,17 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     printSetFormCheckbox(settingsScript,PSTR("ES"),e131SkipOutOfSequence);
     printSetFormCheckbox(settingsScript,PSTR("EM"),e131Multicast);
     printSetFormValue(settingsScript,PSTR("EU"),e131Universe);
+#ifdef WLED_ENABLE_DMX
+    oappend(SET_F("hideNoDMX();"));  // WLEDMM hide "not compiled in" message    
+#endif    
+#ifndef WLED_ENABLE_DMX_INPUT
+    oappend(SET_F("hideDMXInput();"));  // WLEDMM hide "dmx input" settings
+#else
+    oappend(SET_F("hideNoDMXInput();"));  // WLEDMM hide "not compiled in" message
+    sappend('v',SET_F("IDMT"),dmxInputTransmitPin);
+    sappend('v',SET_F("IDMR"),dmxInputReceivePin);
+    sappend('v',SET_F("IDME"),dmxInputEnablePin);
+#endif
     printSetFormValue(settingsScript,PSTR("DA"),DMXAddress);
     printSetFormValue(settingsScript,PSTR("XX"),DMXSegmentSpacing);
     printSetFormValue(settingsScript,PSTR("PY"),e131Priority);
