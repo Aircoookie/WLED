@@ -124,7 +124,7 @@ void WLED::loop()
   handleDMX();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
-  handleDMXInput();
+  dmxInput.update();
 #endif
   userLoop();
 
@@ -696,7 +696,8 @@ void WLED::setup()
   initDMX();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
-  initDMXInput();
+  const uint8_t dmxInputPortNumber = 2; //TODO turn into config variable?!
+  dmxInput.init(dmxInputReceivePin, dmxInputTransmitPin, dmxInputEnablePin, dmxInputPortNumber);
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
