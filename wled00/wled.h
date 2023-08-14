@@ -639,13 +639,14 @@ WLED_GLOBAL DNSServer dnsServer;
 // network time
 WLED_GLOBAL bool ntpConnected _INIT(false);
 WLED_GLOBAL time_t localTime _INIT(0);
+WLED_GLOBAL uint32_t ntpSyncInterval _INIT(43200U);
 WLED_GLOBAL unsigned long ntpLastSyncTime _INIT(999000000L);
 WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;
 WLED_GLOBAL uint16_t ntpLocalPort _INIT(2390);
 WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
-WLED_GLOBAL float longitude _INIT(0.0);
-WLED_GLOBAL float latitude _INIT(0.0);
+WLED_GLOBAL float longitude _INIT(0.0f);
+WLED_GLOBAL float latitude _INIT(0.0f);
 WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
 WLED_GLOBAL Toki toki _INIT(Toki());

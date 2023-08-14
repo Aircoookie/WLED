@@ -574,6 +574,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("NT"),ntpEnabled);
     sappends('s',SET_F("NS"),ntpServerName);
     sappend('c',SET_F("CF"),!useAMPM);
+    int syncIntervalIndex;
+    switch (ntpSyncInterval) {
+      case 86400: syncIntervalIndex = 0; break;
+      case 21600: syncIntervalIndex = 2; break;
+      case 14400: syncIntervalIndex = 3; break;
+      case 10800: syncIntervalIndex = 4; break;
+      default   : syncIntervalIndex = 1; break;
+    }
+    sappend('i',SET_F("NP"),syncIntervalIndex);
     sappend('i',SET_F("TZ"),currentTimezone);
     sappend('v',SET_F("UO"),utcOffsetSecs);
     char tm[32];

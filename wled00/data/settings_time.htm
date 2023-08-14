@@ -171,6 +171,13 @@
 		Get time from NTP server: <input type="checkbox" name="NT"><br>
 		<input type="text" name="NS" maxlength="32"><br>
 		Use 24h format: <input type="checkbox" name="CF"><br>
+		NTP refresh: <select name="NP">
+			<option value="86400">once</option>
+			<option value="43200" selected>twice</option>
+			<option value="21600">4 times</option>
+			<option value="14400">6 times</option>
+			<option value="10800">8 times</option>
+		</select> per day<br>
 		Time zone: 
 		<select name="TZ">
 			<option value="0" selected>GMT(UTC)</option>

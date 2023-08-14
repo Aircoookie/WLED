@@ -390,6 +390,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     ntpEnabled = request->hasArg(F("NT"));
     strlcpy(ntpServerName, request->arg(F("NS")).c_str(), 33);
     useAMPM = !request->hasArg(F("CF"));
+    ntpSyncInterval = min(86400U, max(10800U, (unsigned int)request->arg(F("NP")).toInt()));
     currentTimezone = request->arg(F("TZ")).toInt();
     utcOffsetSecs = request->arg(F("UO")).toInt();
 
