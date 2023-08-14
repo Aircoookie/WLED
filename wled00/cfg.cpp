@@ -462,9 +462,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (tdd >= 0) realtimeTimeoutMs = tdd * 100;
 
   #ifdef WLED_ENABLE_DMX_INPUT
-    CJSON(dmxTransmitPin, if_live_dmx[F("rxPin")]);
-    CJSON(dmxReceivePin, if_live_dmx[F("txPin")]);
-    CJSON(dmxEnablePin, if_live_dmx[F("enablePin")]);
+    CJSON(dmxInputTransmitPin, if_live_dmx[F("inputRxPin")]);
+    CJSON(dmxInputReceivePin, if_live_dmx[F("inputTxPin")]);
+    CJSON(dmxInputEnablePin, if_live_dmx[F("enablePin")]);
   #endif
 
   CJSON(arlsForceMaxBri, if_live[F("maxbri")]);
@@ -947,9 +947,9 @@ void serializeConfig() {
   if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
   #ifdef WLED_ENABLE_DMX_INPUT
-    if_live_dmx[F("rxPin")] = dmxTransmitPin;
-    if_live_dmx[F("txPin")] = dmxReceivePin;
-    if_live_dmx[F("enablePin")] = dmxEnablePin;
+    if_live_dmx[F("rxPin")] = dmxInputTransmitPin;
+    if_live_dmx[F("txPin")] = dmxInputReceivePin;
+    if_live_dmx[F("enablePin")] = dmxInputEnablePin;
   #endif
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;

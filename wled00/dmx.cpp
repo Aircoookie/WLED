@@ -102,9 +102,9 @@ void handleDMX() {}
 dmx_port_t dmxPort = 2;
 void initDMX() {
 /* Set the DMX hardware pins to the pins that we want to use. */
-  if(dmxReceivePin > 0) {
-    USER_PRINTF("Listening for DMX on pin %u\n", dmxReceivePin);
-    dmx_set_pin(dmxPort, dmxTransmitPin, dmxReceivePin, dmxEnablePin);
+  if(dmxInputReceivePin > 0) {
+    USER_PRINTF("Listening for DMX on pin %u\n", dmxInputReceivePin);
+    dmx_set_pin(dmxPort, dmxInputTransmitPin, dmxInputReceivePin, dmxInputEnablePin);
   }
   else {
     USER_PRINTLN("DMX input disabled due to dmxReceivePin not being set");
@@ -122,7 +122,7 @@ bool dmxIsConnected = false;
 unsigned long dmxLastUpdate = 0;
 
 void handleDMXInput() {
-  if(dmxReceivePin < 1) {
+  if(dmxInputReceivePin < 1) {
     return;
   }
   byte dmxdata[DMX_PACKET_SIZE];
