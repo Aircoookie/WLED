@@ -72,6 +72,9 @@ uint8_t unGamma8(uint8_t value);                                                
 //dmx.cpp
 void initDMX();
 void handleDMX();
+
+//dmx_input.cpp
+void initDMXInput();
 void handleDMXInput();
 
 //e131.cpp
