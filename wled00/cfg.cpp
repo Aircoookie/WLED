@@ -940,6 +940,7 @@ void serializeConfig() {
   JsonObject if_ntp = interfaces.createNestedObject("ntp");
   if_ntp["en"] = ntpEnabled;
   if_ntp[F("host")] = ntpServerName;
+  if_ntp[F("int")] = ntpSyncInterval;
   if_ntp[F("tz")] = currentTimezone;
   if_ntp[F("offset")] = utcOffsetSecs;
   if_ntp[F("ampm")] = useAMPM;
