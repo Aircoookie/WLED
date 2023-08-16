@@ -5786,8 +5786,8 @@ uint16_t mode_2Dscrollingtext(void) {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  int letterWidth;
-  int letterHeight;
+  int letterWidth, rotLW;
+  int letterHeight, rotLH;
   switch (map(SEGMENT.custom2, 0, 255, 1, 5)) {
     default:
     case 1: letterWidth = 4; letterHeight =  6; break;
@@ -5796,59 +5796,83 @@ uint16_t mode_2Dscrollingtext(void) {
     case 4: letterWidth = 7; letterHeight =  9; break;
     case 5: letterWidth = 5; letterHeight = 12; break;
   }
-  const bool zero = SEGMENT.check3;
-  const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
+  // letters are rotated
+  if (((SEGMENT.custom3+1)>>3) % 2) {
+    rotLH = letterWidth;
+    rotLW = letterHeight;
+  } else {
+    rotLW = letterWidth;
+    rotLH = letterHeight;
+  }
+
   char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
   if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
+  const bool zero = strchr(text, '0') != nullptr;
+  const int  numberOfLetters = strlen(text);
 
-  if (!strlen(text)
-    || !strncmp_P(text,PSTR("#DATE"),5)
-    || !strncmp_P(text,PSTR("#DDMM"),5)
-    || !strncmp_P(text,PSTR("#MMDD"),5)
-    || !strncmp_P(text,PSTR("#TIME"),5)
-    || !strncmp_P(text,PSTR("#HHMM"),5)) { // fallback if empty segment name: display date and time
-    char sec[5];
-    byte AmPmHour = hour(localTime);
-    boolean isitAM = true;
-    if (useAMPM) {
-      if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
-      if (AmPmHour == 0) { AmPmHour  = 12; }
-    }
-    if (useAMPM) sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
-    else         sprintf_P(sec, PSTR(":%02d"), second(localTime));
-    if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"), day(localTime), month(localTime), year(localTime));
-    else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d"):PSTR("%d.%d"), day(localTime), month(localTime));
-    else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d"):PSTR("%d/%d"), month(localTime), day(localTime));
-    else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s"):PSTR("%2d:%02d%s"), AmPmHour, minute(localTime), sec);
-    else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d"):PSTR("%d:%02d"), AmPmHour, minute(localTime));
-    else sprintf_P(text, zero?PSTR("%s %02d, %04d %02d:%02d%s"):PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
+  char sec[5];
+  int  AmPmHour = hour(localTime);
+  bool isitAM = true;
+  if (useAMPM) {
+    if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
+    if (AmPmHour == 0) { AmPmHour  = 12; }
+    sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
+  } else {
+    sprintf_P(sec, PSTR(":%02d"), second(localTime));
   }
-  const int numberOfLetters = strlen(text);
+
+  if (!numberOfLetters) { // fallback if empty segment name: display date and time
+    sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
+  } else {
+    if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"),   day(localTime),   month(localTime),  year(localTime));
+    else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d")     :PSTR("%d.%d"),      day(localTime),   month(localTime));
+    else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d")     :PSTR("%d/%d"),      month(localTime), day(localTime));
+    else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s")   :PSTR("%2d:%02d%s"), AmPmHour,         minute(localTime), sec);
+    else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
+  }
+
+  int width = (numberOfLetters * rotLW);
+  int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-rotLH)/2;
+  if (width <= cols) {
+    // scroll vertically (e.g. ^^ Way out ^^) if it fits
+    int speed = map(SEGMENT.speed, 0, 255, 5000, 1000);
+    int frac = millis()%speed + 1;
+    if (SEGMENT.intensity == 255) {
+      yoffset = (2 * frac * rows)/speed - rows;
+    } else if (SEGMENT.intensity == 0) {
+      yoffset = rows - (2 * frac * rows)/speed;
+    }
+  }
 
   if (SEGENV.step < millis()) {
-    if ((numberOfLetters * letterWidth) > cols) ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols;      // offset
-    else                                          SEGENV.aux0  = (cols + (numberOfLetters * letterWidth))/2;
+    // calculate start offset
+    if (width > cols) {
+      if (SEGMENT.check3) {
+        if (SEGENV.aux0 == 0) SEGENV.aux0  = width + cols - 1;
+        else                --SEGENV.aux0;
+      } else                ++SEGENV.aux0 %= width + cols;
+    } else                    SEGENV.aux0  = (cols + width)/2;
     ++SEGENV.aux1 &= 0xFF; // color shift
-    SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
-    if (!SEGMENT.check2) {
-      for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++ )
-        SEGMENT.blendPixelColorXY(x, y, SEGCOLOR(1), 255 - (SEGMENT.custom1>>1));
-    }
+    SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED); // shift letters every 238ms or 46ms
   }
+
+  if (!SEGMENT.check2) SEGMENT.fade_out(255 - (SEGMENT.custom1>>4));  // trail
+
   for (int i = 0; i < numberOfLetters; i++) {
-    if (int(cols) - int(SEGENV.aux0) + letterWidth*(i+1) < 0) continue; // don't draw characters off-screen
+    int xoffset = int(cols) - int(SEGENV.aux0) + rotLW*i;
+    if (xoffset + rotLW < 0) continue; // don't draw characters off-screen
     uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
     uint32_t col2 = BLACK;
     if (SEGMENT.check1 && SEGMENT.palette == 0) {
       col1 = SEGCOLOR(0);
       col2 = SEGCOLOR(2);
     }
-    SEGMENT.drawCharacter(text[i], int(cols) - int(SEGENV.aux0) + letterWidth*i, yoffset, letterWidth, letterHeight, col1, col2);
+    SEGMENT.drawCharacter(text[i], xoffset, yoffset, letterWidth, letterHeight, col1, col2, (SEGMENT.custom3+1)>>3);
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,,Gradient,Overlay,0;!,!,Gradient;!;2;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,Rotate letters,Gradient,Overlay,Reverse dir.;!,!,Gradient;!;2;ix=128,c1=0,c3=0,rev=0,mi=0,rY=0,mY=0";
 
 
 ////////////////////////////

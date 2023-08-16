@@ -569,7 +569,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, uint8_t rotate) {
   if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
@@ -582,9 +582,6 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
-    int16_t y0 = y + i;
-    if (y0 < 0) continue; // drawing off-screen
-    if (y0 >= rows) break; // drawing off-screen
     uint8_t bits = 0;
     switch (font) {
       case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 5x8 font
@@ -596,8 +593,15 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     }
     col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
     for (int j = 0; j<w; j++) { // character width
-      int16_t x0 = x + (w-1) - j;
-      if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
+      int x0, y0;
+      switch (rotate) {
+        case  3: x0 = x + (h-1) - i; y0 = y + (w-1) - j; break;
+        case  2: x0 = x + j;         y0 = y + (h-1) - i; break;
+        case  1: x0 = x + i;         y0 = y + j;         break;
+        default: x0 = x + (w-1) - j; y0 = y + i;         break;
+      }
+      if (x0 < 0 || x0 >= cols || y0 < 0 || y0 >= rows) continue; // drawing off-screen
+      if (((bits>>(j+(8-w))) & 0x01)) { // bit set
         setPixelColorXY(x0, y0, col);
       }
     }
