@@ -5847,14 +5847,18 @@ uint16_t mode_2Dscrollingtext(void) {
 
   int letterWidth;
   int letterHeight;
-  switch (map(SEGMENT.custom2, 0, 255, 1, 5)) {
+  switch (map(SEGMENT.custom2, 0, 255, 1, 9)) {
     default:
     case 1: letterWidth = 4; letterHeight =  6; break;
     case 2: letterWidth = 5; letterHeight =  8; break;
     case 3: letterWidth = 6; letterHeight =  8; break;
     case 4: letterWidth = 7; letterHeight =  9; break;
     case 5: letterWidth = 5; letterHeight = 12; break;
-  }
+    case 6: letterWidth = 12; letterHeight = 16; break;
+    case 7: letterWidth = 12; letterHeight = 24; break;
+    case 8: letterWidth = 16; letterHeight = 32; break;
+    case 9: letterWidth = 25; letterHeight = 57; break;
+}
   const bool zero = SEGMENT.check3;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};

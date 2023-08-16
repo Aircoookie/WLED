@@ -562,40 +562,73 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 #include "src/font/console_font_5x12.h"
 #include "src/font/console_font_6x8.h"
 #include "src/font/console_font_7x9.h"
+#include "src/font/console_font_12x16.h"
+#include "src/font/console_font_12x24.h"
+#include "src/font/console_font_16x32.h"
+#include "src/font/console_font_25x57.h"
 
 // draws a raster font character on canvas
-// only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
+// only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48, 7x9=63, 12x16=192, 16x24=288, 16x32=512 and 25x57=1425 fonts ATM
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
-  if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
+  int num_bytes;
 
+  if (w <= 8) {
+    num_bytes = 1;
+  } 
+  else if(w <= 16){
+    num_bytes = 2;
+  }
+  else if (w <= 24){
+    num_bytes = 3;
+  }
+  else if (w <= 32){
+    num_bytes = 4;
+  }
+  else {
+    return;
+  }
+  
   CRGB col = CRGB(color);
   CRGBPalette16 grad = CRGBPalette16(col, col2 ? CRGB(col2) : col);
 
+// modifications to support characters whose width is > 8 bits
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
     int16_t y0 = y + i;
     if (y0 < 0) continue; // drawing off-screen
     if (y0 >= rows) break; // drawing off-screen
-    uint8_t bits = 0;
+    const uint8_t *bits = 0;
     switch (font) {
-      case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 5x8 font
-      case 40: bits = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); break;  // 5x8 font
-      case 48: bits = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); break;  // 6x8 font
-      case 63: bits = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); break;  // 7x9 font
-      case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); break; // 5x12 font
+      case 24: bits = &console_font_4x6[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 5x8 font
+      case 40: bits = &console_font_5x8[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 5x8 font
+      case 48: bits = &console_font_6x8[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 6x8 font
+      case 63: bits = &console_font_7x9[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 7x9 font
+      case 60: bits = &console_font_5x12[(chr * h * num_bytes) + (i * num_bytes)]; break; // 5x12 font
+      case 192: bits = &console_font_12x16[(chr * h * num_bytes) + (i * num_bytes)]; break; // 12x16 font
+      case 288: bits = &console_font_12x24[(chr * h * num_bytes) + (i * num_bytes)]; break; // 16x24 font
+      case 512: bits = &console_font_16x32[(chr * h * num_bytes) + (i * num_bytes)]; break; // 16x32 font
+      case 1425: bits = &console_font_25x57[(chr * h * num_bytes) + (i * num_bytes)]; break; // 25x57 font
       default: return;
     }
-    col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
-    for (int j = 0; j<w; j++) { // character width
-      int16_t x0 = x + (w-1) - j;
-      if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        setPixelColorXY(x0, y0, col);
+
+    int j1 = 0;
+    int wb = w % 8;
+    if(wb == 0)
+      wb = 8; // get width of the first byte to process
+    for (int k = 1; k <= num_bytes; k++) {  // loop through all bytes of the character 
+      col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
+      for (int j = 0; j<wb; j++) { // character width in this byte
+        int16_t x0 = x + w - j1++;  // run through pixels of font right to left
+        if ((x0 >= 0 || x0 < cols) && ((bits[num_bytes - k]>>(j+(8-wb))) & 0x01)) { // bit set & drawing on-screen
+          setPixelColorXY(x0, y0, col);
+        }
       }
+      wb = 8;   // process 8 bits for all other bytes
     }
   }
 }
