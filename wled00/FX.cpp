@@ -5831,12 +5831,13 @@ uint16_t mode_2Dscrollingtext(void) {
     else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
   }
 
+  const unsigned long now = millis(); // reduce millis() calls
   int width = (numberOfLetters * rotLW);
   int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-rotLH)/2;
   if (width <= cols) {
     // scroll vertically (e.g. ^^ Way out ^^) if it fits
     int speed = map(SEGMENT.speed, 0, 255, 5000, 1000);
-    int frac = millis()%speed + 1;
+    int frac = now % speed + 1;
     if (SEGMENT.intensity == 255) {
       yoffset = (2 * frac * rows)/speed - rows;
     } else if (SEGMENT.intensity == 0) {
@@ -5844,7 +5845,7 @@ uint16_t mode_2Dscrollingtext(void) {
     }
   }
 
-  if (SEGENV.step < millis()) {
+  if (SEGENV.step < now) {
     // calculate start offset
     if (width > cols) {
       if (SEGMENT.check3) {
@@ -5853,7 +5854,7 @@ uint16_t mode_2Dscrollingtext(void) {
       } else                ++SEGENV.aux0 %= width + cols;
     } else                    SEGENV.aux0  = (cols + width)/2;
     ++SEGENV.aux1 &= 0xFF; // color shift
-    SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED); // shift letters every 238ms or 46ms
+    SEGENV.step = now + map(SEGMENT.speed, 0, 255, 250, 50); // shift letters every ~250ms to ~50ms
   }
 
   if (!SEGMENT.check2) SEGMENT.fade_out(255 - (SEGMENT.custom1>>4));  // trail
@@ -5872,7 +5873,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,Rotate letters,Gradient,Overlay,Reverse dir.;!,!,Gradient;!;2;ix=128,c1=0,c3=0,rev=0,mi=0,rY=0,mY=0";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size,Rotate,Gradient,Overlay,Reverse;!,!,Gradient;!;2;ix=128,c1=0,c3=0,rev=0,mi=0,rY=0,mY=0";
 
 
 ////////////////////////////
