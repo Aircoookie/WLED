@@ -783,6 +783,9 @@ void WLED::initConnection()
 {
   DEBUG_PRINTF_P(PSTR("initConnection() called @ %lus.\n"), millis()/1000);
 
+  #ifdef WLED_ENABLE_DMX_INPUT
+  dmxInput.disable();
+  #endif
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
@@ -811,6 +814,11 @@ void WLED::initConnection()
   if (!WLED_WIFI_CONFIGURED) {
     DEBUG_PRINTLN(F("No connection configured."));
     if (!apActive) initAP();        // instantly go to ap mode
+    
+    #ifdef WLED_ENABLE_DMX_INPUT
+    dmxInput.enable();
+    #endif
+    return;
   } else if (!apActive) {
     if (apBehavior == AP_BEHAVIOR_ALWAYS) {
       DEBUG_PRINTLN(F("Access point ALWAYS enabled."));
@@ -860,6 +868,10 @@ void WLED::initConnection()
     statusESPNow = espNowOK ? ESP_NOW_STATE_ON : ESP_NOW_STATE_ERROR;
   }
 #endif
+
+  #ifdef WLED_ENABLE_DMX_INPUT
+  dmxInput.enable();
+  #endif
 }
 
 void WLED::initInterfaces()
