@@ -558,17 +558,27 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         if (vStrip>0) setPixelColorXY(vStrip - 1, vH - i - 1, col);
         else          for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col);
         break;
-      case M12_pArc:
+      case M12_pArc: {
         // expand in circular fashion from center
-        if (i==0)
-          setPixelColorXY(0, 0, col);
+        uint16_t cx = vW/2;
+        uint16_t cy = vH/2;
+        if (i==0) {
+          setPixelColorXY(cx, cy, col);
+          setPixelColorXY(cx - 1, cy, col);
+          setPixelColorXY(cx, cy - 1, col);
+          setPixelColorXY(cx - 1, cy - 1, col);
+        }
         else {
           float step = HALF_PI / (2.85f*i);
           for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
             // may want to try float version as well (with or without antialiasing)
             int x = roundf(sin_t(rad) * i);
             int y = roundf(cos_t(rad) * i);
-            setPixelColorXY(x, y, col);
+            if (x >= cx || y >= cy) continue;
+            setPixelColorXY(cx + x, cy + y, col);
+            setPixelColorXY(cx - x - 1, cy + y, col);
+            setPixelColorXY(cx + x, cy - y - 1, col);
+            setPixelColorXY(cx - x - 1, cy - y - 1, col);
           }
           // Bresenham’s Algorithm (may not fill every pixel)
           //int d = 3 - (2*i);
@@ -586,6 +596,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
           //}
         }
         break;
+      }
       case M12_pCorner:
         for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
