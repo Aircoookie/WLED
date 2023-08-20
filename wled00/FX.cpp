@@ -4766,6 +4766,64 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
 static const char _data_FX_MODE_2DDRIFT[] PROGMEM = "Drift@Rotation speed,Blur amount;;!;2";
 
 
+/////////////////////////
+//     2D Fire2012     //
+/////////////////////////
+
+uint16_t mode_2Dfire2012(void) {                // Fire2012 by Mark Kriegsman. Converted to WLED by Andrew Tuline. Ported from WLED-SR by Alexey Panteleev.
+  if (!strip.isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint8_t COOLING = SEGMENT.intensity;
+  const uint8_t SPARKING = SEGMENT.custom1;
+
+  CRGBPalette16 currentPalette  = CRGBPalette16( CRGB::Black, CRGB::Red, CRGB::Orange, CRGB::Yellow);
+
+  if (millis() - SEGENV.step >= ((256-SEGMENT.speed) >>2)) {
+    SEGENV.step = millis();
+    // static byte *heat = (uint16_t *)dataStore;
+
+    if (!SEGENV.allocateData(sizeof(byte) * 4096)) return mode_static(); //allocation failed
+    byte *heat = reinterpret_cast<byte*>(SEGENV.data);
+
+    const uint16_t cols = SEGMENT.virtualWidth();
+    const uint16_t rows = SEGMENT.virtualHeight();
+
+    for (uint16_t mw = 0; mw < cols; mw++) {            // Move along the width of the flame
+
+      uint16_t cell;
+      // Step 1.  Cool down every cell a little
+      for (uint16_t mh = 0; mh < rows; mh++) {
+        cell = (mw*cols+mh)%4096;
+        heat[cell] = qsub8( heat[cell],  random16(0, ((COOLING * 10) / rows) + 2));
+      }
+
+      // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+      for (uint16_t mh = rows - 1; mh >= 2; mh--) {
+        cell = (mw*cols+mh)%4096;
+        heat[cell] = (heat[cell - 1] + heat[cell - 2] + heat[cell - 2] ) / 3;
+      }
+
+      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+      if (random8(0,255) < SPARKING ) {
+        uint8_t mh = random8(3);
+        cell = (mw*cols+mh)%4096;
+        heat[cell] = qadd8( heat[cell], random8(160,255) );
+      }
+
+      // Step 4.  Map from heat cells to LED colors
+      for (uint16_t mh = 0; mh < rows; mh++) {
+        cell = (mw*cols+mh)%4096;
+        byte colorindex = scale8( heat[cell], 240);
+        uint16_t pixelnumber = (rows-1) - mh;                                  // Flip it upside down.
+        SEGMENT.setPixelColorXY(mw, pixelnumber, ColorFromPalette(currentPalette, colorindex, 255));
+      } // for mh
+    } // for mw
+  } // if millis
+
+  return FRAMETIME;
+} // mode_2Dfire2012()
+static const char _data_FX_MODE_2DFIRE2012[] PROGMEM = "Fire 2D@Speed,Cooling,Sparking;;!;2";
+
 //////////////////////////
 //     2D Firenoise     //
 //////////////////////////
@@ -7756,6 +7814,7 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_2DNOISE, &mode_2Dnoise, _data_FX_MODE_2DNOISE);
 
+  addEffect(FX_MODE_2DFIRE2012, &mode_2Dfire2012, _data_FX_MODE_2DFIRE2012);
   addEffect(FX_MODE_2DFIRENOISE, &mode_2Dfirenoise, _data_FX_MODE_2DFIRENOISE);
   addEffect(FX_MODE_2DSQUAREDSWIRL, &mode_2Dsquaredswirl, _data_FX_MODE_2DSQUAREDSWIRL);
 
