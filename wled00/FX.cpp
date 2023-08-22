@@ -5138,7 +5138,7 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   uint_fast16_t phase = (strip.now * (1 + SEGENV.custom3)) /32;  // allow user to control rotation speed
 
   if (SEGENV.check3) { // WLEDMM: this is the original "float" code featuring anti-aliasing
-      unsigned maxLoops = max(192, 4*(cols+rows));
+      int maxLoops = max(192, 4*(cols+rows));
       maxLoops = ((maxLoops / 128) +1) * 128; // make sure whe have half or full turns => multiples of 128
       for (int i=0; i < maxLoops; i ++) {
         float xlocn = float(sin8(phase/2 + (i* SEGMENT.speed)/64)) / 255.0f;  // WLEDMM align speed with original effect

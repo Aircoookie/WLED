@@ -226,9 +226,15 @@ void sendNTPPacket()
 
 bool checkNTPResponse()
 {
+#ifdef ARDUINO_ARCH_ESP32
   ntpUdp.flush();
+#endif
   int cb = ntpUdp.parsePacket();
+#ifdef ARDUINO_ARCH_ESP32
   if (!cb) {ntpUdp.flush(); return false;}    // WLEDMM flush buffer
+#else
+  if (!cb) {return false;}    // WLEDMM do not flush buffer
+#endif
 
   uint32_t ntpPacketReceivedTime = millis();
   DEBUG_PRINT(F("NTP recv, l="));

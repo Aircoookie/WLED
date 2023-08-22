@@ -240,10 +240,14 @@ void handleNotifications()
   if (!udpConnected) return;
 
   bool isSupp = false;
+#ifdef ARDUINO_ARCH_ESP32
   notifierUdp.flush();
+#endif
   int packetSize = notifierUdp.parsePacket();    // WLEDMM function returns int, not size_t
   if ((packetSize < 1) && udp2Connected) {
+#ifdef ARDUINO_ARCH_ESP32
     notifier2Udp.flush();
+#endif
     packetSize = notifier2Udp.parsePacket();
     isSupp = true;
   }
@@ -251,11 +255,18 @@ void handleNotifications()
 
   //hyperion / raw RGB
   if (!packetSize && udpRgbConnected) {
+#ifdef ARDUINO_ARCH_ESP32
     rgbUdp.flush();
+#endif
     packetSize = rgbUdp.parsePacket();
     if (packetSize) {
+#ifdef ARDUINO_ARCH_ESP32
       if (!receiveDirect) {rgbUdp.flush(); notifierUdp.flush(); notifier2Udp.flush(); return;}
       if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) {rgbUdp.flush(); notifierUdp.flush(); notifier2Udp.flush(); return;}
+#else
+      if (!receiveDirect) {return;}
+      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) {return;}
+#endif
       realtimeIP = rgbUdp.remoteIP();
       DEBUG_PRINTLN(rgbUdp.remoteIP());
       #ifndef ARDUINO_ARCH_ESP32
@@ -263,10 +274,14 @@ void handleNotifications()
       #endif
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
+#ifdef ARDUINO_ARCH_ESP32
       if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) {notifierUdp.flush(); notifier2Udp.flush(); return;}
+#else
+      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) {return;}
+#endif
       uint16_t id = 0;
       uint16_t totalLen = strip.getLengthTotal();
-      for (size_t i = 0; i < packetSize -2; i += 3)
+      for (int i = 0; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
         id++; if (id >= totalLen) break;
@@ -276,12 +291,21 @@ void handleNotifications()
     }
   }
 
+#ifdef ARDUINO_ARCH_ESP32
   if (!(receiveNotifications || receiveDirect)) {notifierUdp.flush(); notifier2Udp.flush(); return;}
+#else
+  if (!(receiveNotifications || receiveDirect)) {return;}
+#endif
 
   localIP = Network.localIP();
   //notifier and UDP realtime
+#ifdef ARDUINO_ARCH_ESP32
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) {notifierUdp.flush(); notifier2Udp.flush(); return;}
   if (!isSupp && notifierUdp.remoteIP() == localIP) {notifierUdp.flush(); notifier2Udp.flush(); return;} //don't process broadcasts we send ourselves
+#else
+  if (!packetSize || packetSize > UDP_IN_MAXSIZE) {return;}
+  if (!isSupp && notifierUdp.remoteIP() == localIP) {return;} //don't process broadcasts we send ourselves
+#endif
 
   #ifndef ARDUINO_ARCH_ESP32
   uint8_t udpIn[packetSize +1];  // WLEDMM: use global buffer on ESP32
@@ -539,14 +563,14 @@ void handleNotifications()
     uint16_t totalLen = strip.getLengthTotal();
     if (udpIn[0] == 1) //warls
     {
-      for (size_t i = 2; i < packetSize -3; i += 4)
+      for (int i = 2; i < packetSize -3; i += 4)
       {
         setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
       }
     } else if (udpIn[0] == 2) //drgb
     {
       uint16_t id = 0;
-      for (size_t i = 2; i < packetSize -2; i += 3)
+      for (int i = 2; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
 
@@ -555,7 +579,7 @@ void handleNotifications()
     } else if (udpIn[0] == 3) //drgbw
     {
       uint16_t id = 0;
-      for (size_t i = 2; i < packetSize -3; i += 4)
+      for (int i = 2; i < packetSize -3; i += 4)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
 
@@ -564,7 +588,7 @@ void handleNotifications()
     } else if (udpIn[0] == 4) //dnrgb
     {
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (size_t i = 4; i < packetSize -2; i += 3)
+      for (int i = 4; i < packetSize -2; i += 3)
       {
         if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
@@ -573,7 +597,7 @@ void handleNotifications()
     } else if (udpIn[0] == 5) //dnrgbw
     {
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (size_t i = 4; i < packetSize -2; i += 4)
+      for (int i = 4; i < packetSize -2; i += 4)
       {
         if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);

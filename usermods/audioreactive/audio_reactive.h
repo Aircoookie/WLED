@@ -1515,7 +1515,9 @@ class AudioReactive : public Usermod {
           packetSize = fftUdp.parsePacket();
         } catch(...) {
           packetSize = 0; // low heap memory -> discard packet.
-          fftUdp.flush();
+#ifdef ARDUINO_ARCH_ESP32
+          fftUdp.flush();  // this does not work on 8266
+#endif
           DEBUG_PRINTLN(F("receiveAudioData: parsePacket out of memory exception caught!"));
           USER_FLUSH();
         }
@@ -1850,7 +1852,9 @@ class AudioReactive : public Usermod {
             if (have_new_sample) last_UDPTime = millis();
             lastTime = millis();
           } else {
-            fftUdp.flush(); // WLEDMM: Flush this if we haven't read it.
+#ifdef ARDUINO_ARCH_ESP32
+            fftUdp.flush(); // WLEDMM: Flush this if we haven't read it. Does not work on 8266.
+#endif
           }
           if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
           else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
