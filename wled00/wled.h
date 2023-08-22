@@ -63,6 +63,11 @@
 //This is generally a terrible idea, but improves boot success on boards with a 3.3v regulator + cap setup that can't provide 400mA peaks
 //#define WLED_DISABLE_BROWNOUT_DET
 
+// WLED-MM MANDATORY flags
+#ifdef ARDUINO_ARCH_ESP32      // this feature seems unstable on 8266
+#define WLEDMM_PROTECT_SERVICE // prevents crashes when effects are drawing while asyncWebServer tries to modify segments at the same time
+#endif
+
 // Library inclusions.
 #include <Arduino.h>
 #ifdef ESP8266
