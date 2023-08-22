@@ -161,7 +161,19 @@ void WLED::loop()
   }
   #endif
 
-  if (doSerializeConfig) serializeConfig();
+  if (doSerializeConfig)
+  {
+    #ifdef WLED_ENABLE_DMX_INPUT
+    dmxInput.disable();
+    #endif
+    
+    serializeConfig();
+
+    #ifdef WLED_ENABLE_DMX_INPUT
+    dmxInput.enable();
+    #endif
+  } 
+    
 
   if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
     reset();
