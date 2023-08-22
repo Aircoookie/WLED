@@ -88,6 +88,7 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel 
 
 // TODO: probably best not used by receive nodes
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
+static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
 
 // user settable parameters for limitSoundDynamics()
 static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
@@ -942,7 +943,6 @@ class AudioReactive : public Usermod {
     // variables used in effects
     int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
     float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
-    float agcSensitivity = 128;   // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
     float soundPressure = 0;      // Sound Pressure estimation, based on microphone raw readings. 0 ->5db, 255 ->105db
 
     // used to feed "Info" Page
@@ -1560,12 +1560,12 @@ class AudioReactive : public Usermod {
         um_data->u_type[6] = UMT_BYTE;
         um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[7] = UMT_BYTE;
-        um_data->u_data[8] = &FFT_MajorPeak; // new
+        um_data->u_data[8] = &FFT_MajorPeak; // new - substitute for FFT_MajPeakSmth
         um_data->u_type[8] = UMT_FLOAT;
-        um_data->u_data[9]  = &volumeSmth;  // used (New)
+        um_data->u_data[9]  = &volumeSmth;  // used (New) - substitute for soundPressure
         um_data->u_type[9]  = UMT_FLOAT;
-        // um_data->u_data[10] = &agcSensitivity; // used (New)
-        // um_data->u_type[10] = UMT_FLOAT;
+        um_data->u_data[10] = &agcSensitivity; // used (New) - dummy value (128 => 50%)
+        um_data->u_type[10] = UMT_FLOAT;
 #endif
       }
 
