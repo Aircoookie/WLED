@@ -144,7 +144,7 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
     #endif
   #else
     // ESP 8266
-      if ((gpio == 0) || (gpio == 17)) return (F("analog-in (A0)"));  // 17 seems to be an alias for "A0" on 8266
+      if ((gpio == A0) || (gpio == 17)) return (F("analog-in (A0)"));  // 17 seems to be an alias for "A0" on 8266
 
   #endif
 
