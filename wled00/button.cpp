@@ -262,7 +262,7 @@ void handleButton()
           shortPressAction(b);
         buttonPressedBefore[b] = true;
         buttonPressedTime[b] = now; // continually update (for debouncing to work in release handler)
-        return;
+        continue;
       }
 
       if (!buttonPressedBefore[b]) buttonPressedTime[b] = now;
@@ -283,7 +283,7 @@ void handleButton()
       // released after rising-edge short press action
       if (macroButton[b] && macroButton[b] == macroLongPress[b] && macroButton[b] == macroDoublePress[b]) {
         if (dur > WLED_DEBOUNCE_THRESHOLD) buttonPressedBefore[b] = false; // debounce, blocks button for 50 ms once it has been released
-        return;
+        continue;
       }
 
       if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} // too short "press", debounce
