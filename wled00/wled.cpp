@@ -121,7 +121,7 @@ void WLED::loop()
   #endif
 
 #ifdef WLED_ENABLE_DMX_OUTPUT
-  handleDMX();
+  handleDMXOutput();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
   dmxInput.update();

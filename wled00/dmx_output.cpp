@@ -26,7 +26,7 @@
 #endif
 #endif
 
-void handleDMX()
+void handleDMXOutput()
 {
   // don't act, when in DMX Proxy mode
   if (e131ProxyUniverse != 0) return;
@@ -91,5 +91,5 @@ void initDMX() {
 }
 #else
 void initDMX(){}
-void handleDMX() {}
+void handleDMXOutput() {}
 #endif
