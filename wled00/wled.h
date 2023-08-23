@@ -64,9 +64,7 @@
 //#define WLED_DISABLE_BROWNOUT_DET
 
 // WLED-MM MANDATORY flags
-#ifdef ARDUINO_ARCH_ESP32      // this feature seems unstable on 8266
 #define WLEDMM_PROTECT_SERVICE // prevents crashes when effects are drawing while asyncWebServer tries to modify segments at the same time
-#endif
 
 // Library inclusions.
 #include <Arduino.h>
