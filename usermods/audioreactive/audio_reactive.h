@@ -1408,10 +1408,10 @@ class AudioReactive : public Usermod {
     } // transmitAudioData()
 #endif
     static bool isValidUdpSyncVersion(const char *header) {
-      return strncmp(header, UDP_SYNC_HEADER, 6) == 0;
+      return strncmp_P(header, UDP_SYNC_HEADER, 6) == 0;
     }
     static bool isValidUdpSyncVersion_v1(const char *header) {
-      return strncmp(header, UDP_SYNC_HEADER_v1, 6) == 0;
+      return strncmp_P(header, UDP_SYNC_HEADER_v1, 6) == 0;
     }
 
     void decodeAudioData(int packetSize, uint8_t *fftBuff) {
