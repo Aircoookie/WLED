@@ -1915,6 +1915,96 @@ uint16_t mode_pride_2015(void) {
 }
 static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 
+//////////////////////
+//       JBL        //
+//////////////////////
+
+
+uint16_t pos = 0;
+uint8_t hue = 0;
+int hueDelay = 0;
+
+uint8_t red(uint32_t c)
+{
+  return (c >> 16);
+}
+uint8_t green(uint32_t c)
+{
+  return (c >> 8);
+}
+uint8_t blue(uint32_t c)
+{
+  return (c);
+}
+
+uint16_t mode_jbl()
+{
+
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    // add support for no audio
+    um_data = simulateSound(SEGMENT.soundSim);
+  }
+  uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
+  uint8_t *maxVol    =  (uint8_t*)um_data->u_data[6];
+  uint8_t *binNum    =  (uint8_t*)um_data->u_data[7];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
+
+
+
+
+  hueDelay++;
+
+  if (hue > 254)
+  {
+    hue = 0;
+  }
+
+  if (hueDelay > SEGMENT.custom1)
+  {
+    hueDelay = 0;
+    hue++;
+  }
+
+  float speed = 0;
+
+  uint16_t counter = 0;
+
+  if (volumeSmth * SEGMENT.intensity > (255 - SEGMENT.speed))
+  {
+    speed = 1000;
+  }
+  else
+  {
+    speed = 20;
+  };
+
+  pos += speed;
+
+  counter = pos;
+  counter = counter >> 8;
+
+  for (uint16_t i = 0; i < SEGLEN; i++)
+  {
+    uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
+
+    uint32_t paletteColor = SEGMENT.color_from_palette(colorIndex, false, true, 255);
+
+    uint8_t r = red(paletteColor);
+    uint8_t g = green(paletteColor);
+    uint8_t b = blue(paletteColor);
+
+    uint8_t activeColor = max(r, max(g, b));
+
+    CRGB rgb(CHSV(hue, 255, activeColor));
+
+    SEGMENT.setPixelColor(i, rgb.r, rgb.g, rgb.b);
+  };
+
+  return FRAMETIME;
+} // mode_jbl()
+
+static const char _data_FX_MODE_JBL[] PROGMEM = "JBL@Sensitivity 1,Sensivity 2,Color change speed;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
@@ -8060,6 +8150,7 @@ void WS2812FX::setupEffectData() {
   // --- 1D audio effects ---
   addEffect(FX_MODE_PIXELS, &mode_pixels, _data_FX_MODE_PIXELS);
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
+  addEffect(FX_MODE_JBL, &mode_jbl, _data_FX_MODE_JBL);
   addEffect(FX_MODE_JUGGLES, &mode_juggles, _data_FX_MODE_JUGGLES);
   addEffect(FX_MODE_MATRIPIX, &mode_matripix, _data_FX_MODE_MATRIPIX);
   addEffect(FX_MODE_GRAVIMETER, &mode_gravimeter, _data_FX_MODE_GRAVIMETER);
