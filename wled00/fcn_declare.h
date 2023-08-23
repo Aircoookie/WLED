@@ -183,8 +183,8 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
 void setRandomColor(byte* rgb);
 
-//dmx.cpp
-void initDMX();
+//dmx_output.cpp
+void initDMXOutput();
 void handleDMXOutput();
 
 //dmx_input.cpp

@@ -68,7 +68,7 @@ void handleDMXOutput()
   dmx.update();        // update the DMX bus
 }
 
-void initDMX() {
+void initDMXOutput() {
  #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
   dmx.init(512);        // initialize with bus length
  #else
@@ -76,6 +76,6 @@ void initDMX() {
  #endif
 }
 #else
-void initDMX(){}
+void initDMXOutput(){}
 void handleDMXOutput() {}
 #endif
