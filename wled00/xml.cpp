@@ -446,6 +446,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     sappend('v',SET_F("IDMT"),dmxInputTransmitPin);
     sappend('v',SET_F("IDMR"),dmxInputReceivePin);
     sappend('v',SET_F("IDME"),dmxInputEnablePin);
+    sappend('v',SET_F("IDMP"),dmxInputPort);
 #endif
     printSetFormValue(settingsScript,PSTR("DA"),DMXAddress);
     printSetFormValue(settingsScript,PSTR("XX"),DMXSegmentSpacing);

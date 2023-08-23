@@ -423,7 +423,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 #ifdef WLED_ENABLE_DMX_INPUT
     dmxInputTransmitPin = request->arg(F("IDMT")).toInt();
     dmxInputReceivePin = request->arg(F("IDMR")).toInt();
-    dmxInputEnablePin= request->arg(F("IDME")).toInt();
+    dmxInputEnablePin = request->arg(F("IDME")).toInt();
+    dmxInputPort = request->arg(F("IDMP")).toInt();
+    if(dmxInputPort <= 0 || dmxInputPort > 2) dmxInputPort = 2;
 #endif
 
     #ifndef WLED_DISABLE_ALEXA
