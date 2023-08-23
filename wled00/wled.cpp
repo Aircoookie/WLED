@@ -430,8 +430,8 @@ void WLED::setup()
   #endif
 
   //Serial0.setDebugOutput(false);
-  #ifdef WLED_DEBUG
-  Serial.setDebugOutput(true);
+  #if CORE_DEBUG_LEVEL || defined(WLED_DEBUG_HEAP) || defined(WLED_DEBUG)
+  Serial.setDebugOutput(true);  // enables kernel debug messages on Serial
   #endif
   USER_FLUSH(); delay(100);
   USER_PRINTLN();
@@ -1029,6 +1029,8 @@ void WLED::initInterfaces()
     hueIP[2] = ipAddress[2];
   }
 #endif
+
+// aOtaEnabled=false; strcpy(cmDNS, ""); // WLEDMM use this to disable OTA and mDNS
 
 //WLEDMM: add netdebug variables
 #ifdef WLED_DEBUG_HOST
