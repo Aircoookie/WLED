@@ -2004,7 +2004,7 @@ uint16_t mode_jbl()
   return FRAMETIME;
 } // mode_jbl()
 
-static const char _data_FX_MODE_JBL[] PROGMEM = "JBL@Sensitivity 1,Sensivity 2;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
+static const char _data_FX_MODE_JBL[] PROGMEM = "JBL@Color change speed,Sensivity;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
