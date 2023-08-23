@@ -1960,7 +1960,7 @@ uint16_t mode_jbl()
     hue = 0;
   }
 
-  if (hueDelay > SEGMENT.custom1)
+  if (hueDelay > SEGMENT.speed)
   {
     hueDelay = 0;
     hue++;
@@ -1970,7 +1970,7 @@ uint16_t mode_jbl()
 
   uint16_t counter = 0;
 
-  if (volumeSmth * SEGMENT.intensity > (255 - SEGMENT.speed))
+  if (volumeSmth * 2 > (255 - SEGMENT.intensity))
   {
     speed = 1000;
   }
@@ -2004,7 +2004,7 @@ uint16_t mode_jbl()
   return FRAMETIME;
 } // mode_jbl()
 
-static const char _data_FX_MODE_JBL[] PROGMEM = "JBL@Sensitivity 1,Sensivity 2,Color change speed;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
+static const char _data_FX_MODE_JBL[] PROGMEM = "JBL@Sensitivity 1,Sensivity 2;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
