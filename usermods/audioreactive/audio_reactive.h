@@ -9,7 +9,7 @@
 
 #endif
 
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+#if defined(ARDUINO_ARCH_ESP32) && (defined(WLED_DEBUG) || defined(SR_DEBUG))
 #include <esp_timer.h>
 #endif
 
@@ -74,10 +74,13 @@ static bool udpSyncConnected = false;         // UDP connection status -> true i
 #define NUM_GEQ_CHANNELS 16                                           // number of frequency channels. Don't change !!
 
 // audioreactive variables
+#ifdef ARDUINO_ARCH_ESP32
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
 static float    sampleAvg = 0.0f;               // Smoothed Average sample - sampleAvg < 1 means "quiet" (simple noise gate)
 static float    sampleAgc = 0.0f;               // Smoothed AGC sample
+static uint8_t  soundAgc = 0;                   // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
+#endif
 static float    volumeSmth = 0.0f;              // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
 static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
 static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
@@ -87,7 +90,6 @@ static unsigned long timeOfPeak = 0; // time of last sample peak detection.
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 
 // TODO: probably best not used by receive nodes
-static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
 
 // user settable parameters for limitSoundDynamics()
@@ -96,6 +98,10 @@ static uint16_t attackTime = 50;              // int: attack time in millisecond
 static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 
 // peak detection
+#ifdef ARDUINO_ARCH_ESP32
+static void detectSamplePeak(void);  // peak detection function (needs scaled FFT reasults in vReal[]) - no used for 8266 receive-only mode
+#endif
+static void autoResetPeak(void);     // peak auto-reset function
 static uint8_t maxVol = 31;          // (was 10) Reasonable value for constant volume for 'peak detector', as it won't always trigger  (deprecated)
 static uint8_t binNum = 8;           // Used to select the bin for FFT based beat detection  (deprecated)
 
@@ -163,10 +169,6 @@ static uint8_t freqDist = 0;                              // 0=old 1=rightshift 
 // variables used in effects
 //static int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
 //static float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
-
-// peak detection
-static void detectSamplePeak(void);  // peak detection function (needs scaled FFT reasults in vReal[])
-static void autoResetPeak(void);     // peak auto-reset function
 
 // shared vars for debugging
 #ifdef MIC_LOGGER
@@ -931,6 +933,7 @@ class AudioReactive : public Usermod {
     int      last_soundAgc = -1;   // used to detect AGC mode change (for resetting AGC internal error buffers)
     double   control_integrated = 0.0;   // persistent across calls to agcAvg(); "integrator control" = accumulated error
 
+#ifdef ARDUINO_ARCH_ESP32
     // variables used by getSample() and agcAvg()
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controler.
@@ -939,6 +942,7 @@ class AudioReactive : public Usermod {
     float    sampleReal = 0.0f;	  // "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
     int16_t  sampleRaw = 0;       // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel)
     int16_t  rawSampleAgc = 0;    // not smoothed AGC sample
+#endif
 
     // variables used in effects
     int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
@@ -1402,10 +1406,10 @@ class AudioReactive : public Usermod {
     } // transmitAudioData()
 #endif
     static bool isValidUdpSyncVersion(const char *header) {
-      return strncmp_P(header, UDP_SYNC_HEADER, 6) == 0;
+      return strncmp(header, UDP_SYNC_HEADER, 6) == 0;
     }
     static bool isValidUdpSyncVersion_v1(const char *header) {
-      return strncmp_P(header, UDP_SYNC_HEADER_v1, 6) == 0;
+      return strncmp(header, UDP_SYNC_HEADER_v1, 6) == 0;
     }
 
     void decodeAudioData(int packetSize, uint8_t *fftBuff) {
@@ -1413,12 +1417,14 @@ class AudioReactive : public Usermod {
       // update samples for effects
       volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
       volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
+#ifdef ARDUINO_ARCH_ESP32
       // update internal samples
       sampleRaw    = volumeRaw;
       sampleAvg    = volumeSmth;
       rawSampleAgc = volumeRaw;
       sampleAgc    = volumeSmth;
-      multAgc      = 1.0f;   
+      multAgc      = 1.0f;
+#endif
       // Only change samplePeak IF it's currently false.
       // If it's true already, then the animation still needs to respond.
       autoResetPeak();
@@ -1427,7 +1433,7 @@ class AudioReactive : public Usermod {
             if (samplePeak) timeOfPeak = millis();
             //userVar1 = samplePeak;
       }
-      //These values are only available on the ESP32
+      //These values are only computed by ESP32
       for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket->fftResult[i];
       my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
       FFT_Magnitude = my_magnitude;
@@ -1439,12 +1445,14 @@ class AudioReactive : public Usermod {
       // update samples for effects
       volumeSmth   = fmaxf(receivedPacket->sampleAgc, 0.0f);
       volumeRaw    = volumeSmth;   // V1 format does not have "raw" AGC sample
+#ifdef ARDUINO_ARCH_ESP32
       // update internal samples
       sampleRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
       sampleAvg    = fmaxf(receivedPacket->sampleAvg, 0.0f);;
       sampleAgc    = volumeSmth;
       rawSampleAgc = volumeRaw;
       multAgc      = 1.0f;   
+#endif
       // Only change samplePeak IF it's currently false.
       // If it's true already, then the animation still needs to respond.
       autoResetPeak();
@@ -1482,7 +1490,9 @@ class AudioReactive : public Usermod {
         packetSize = fftUdp.parsePacket();
       #endif
 
+#ifdef ARDUINO_ARCH_ESP32
       if ((packetSize > 0) && ((packetSize < 5) || (packetSize > UDPSOUND_MAX_PACKET))) fftUdp.flush(); // discard invalid packets (too small or too big)
+#endif
       if ((packetSize > 5) && (packetSize <= UDPSOUND_MAX_PACKET)) {
         static uint8_t fftUdpBuffer[UDPSOUND_MAX_PACKET+1] = { 0 }; // static buffer for receiving, to reuse the same memory and avoid heap fragmentation
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
@@ -1693,7 +1703,7 @@ class AudioReactive : public Usermod {
       }
       
       if (audioSyncPort > 0 && (audioSyncEnabled & 0x03)) {
-      #ifndef ESP8266
+      #ifdef ARDUINO_ARCH_ESP32
         udpSyncConnected = fftUdp.beginMulticast(IPAddress(239, 0, 0, 1), audioSyncPort);
       #else
         udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
@@ -1851,7 +1861,9 @@ class AudioReactive : public Usermod {
         volumeSmth =0.0f;
         volumeRaw =0;
         my_magnitude = 0.1; FFT_Magnitude = 0.01; FFT_MajorPeak = 2;
+#ifdef ARDUINO_ARCH_ESP32
         multAgc = 1;
+#endif
         DEBUGSR_PRINTLN(F("AR  loop(): UDP closed due to inactivity."));
       }
 
@@ -1864,6 +1876,7 @@ class AudioReactive : public Usermod {
       #endif
 
       // Info Page: keep max sample from last 5 seconds
+#ifdef ARDUINO_ARCH_ESP32
       if ((millis() -  sampleMaxTimer) > CYCLE_SAMPLEMAX) {
         sampleMaxTimer = millis();
         maxSample5sec = (0.15 * maxSample5sec) + 0.85 *((soundAgc) ? sampleAgc : sampleAvg); // reset, and start with some smoothing
@@ -1871,6 +1884,16 @@ class AudioReactive : public Usermod {
       } else {
          if ((sampleAvg >= 1)) maxSample5sec = fmaxf(maxSample5sec, (soundAgc) ? rawSampleAgc : sampleRaw); // follow maximum volume
       }
+#else  // similar functionality for 8266 receive only - use VolumeSmth instead of raw sample data
+      if ((millis() -  sampleMaxTimer) > CYCLE_SAMPLEMAX) {
+        sampleMaxTimer = millis();
+        maxSample5sec = (0.15 * maxSample5sec) + 0.85 * volumeSmth; // reset, and start with some smoothing
+        if (volumeSmth < 1.0f) maxSample5sec = 0; // noise gate
+        if (maxSample5sec < 0.0f) maxSample5sec = 0; // avoid negative values
+      } else {
+         if (volumeSmth >= 1.0f) maxSample5sec = fmaxf(maxSample5sec, volumeRaw); // follow maximum volume
+      }
+#endif
 
 #ifdef ARDUINO_ARCH_ESP32
       //UDP Microphone Sync  - transmit mode
@@ -1976,7 +1999,9 @@ class AudioReactive : public Usermod {
      */
     void addToJsonInfo(JsonObject& root)
     {
-      char myStringBuffer[16]; // buffer for snprintf()
+#ifdef ARDUINO_ARCH_ESP32
+      char myStringBuffer[16]; // buffer for snprintf() - not used yet on 8266
+#endif
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
@@ -2019,7 +2044,6 @@ class AudioReactive : public Usermod {
         } 
 #endif
         // The following can be used for troubleshooting user errors and is so not enclosed in #ifdef WLED_DEBUG
-#ifdef ARDUINO_ARCH_ESP32
         // current Audio input
         infoArr = user.createNestedArray(F("Audio Source"));
         if (audioSyncEnabled & 0x02) {
@@ -2033,6 +2057,11 @@ class AudioReactive : public Usermod {
           } else {
             infoArr.add(F(" - no connection"));
           }
+#ifndef ARDUINO_ARCH_ESP32  // substitute for 8266
+        } else {
+          infoArr.add(F("sound sync Off"));
+        }
+#else  // ESP32 only
         } else {
           // Analog or I2S digital input
           if (audioSource && (audioSource->isInitialized())) {
