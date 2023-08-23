@@ -82,7 +82,7 @@ void handleDMXOutput()
   dmx.update();        // update the DMX bus
 }
 
-void initDMX() {
+void initDMXOutput() {
  #ifdef ESP8266
   dmx.init(512);        // initialize with bus length
  #else
@@ -90,6 +90,6 @@ void initDMX() {
  #endif
 }
 #else
-void initDMX(){}
+void initDMXOutput(){}
 void handleDMXOutput() {}
 #endif

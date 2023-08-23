@@ -705,7 +705,7 @@ void WLED::setup()
   }
 #endif
 #ifdef WLED_ENABLE_DMX_OUTPUT
-  initDMX();
+  initDMXOutput();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
   dmxInput.init(dmxInputReceivePin, dmxInputTransmitPin, dmxInputEnablePin, dmxInputPort);
