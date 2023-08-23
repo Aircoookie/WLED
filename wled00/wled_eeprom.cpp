@@ -310,7 +310,7 @@ void loadSettingsFromEEPROM()
     e131Port = EEPROM.read(2187) + ((EEPROM.read(2188) << 8) & 0xFF00);
   }
 
-  #ifdef WLED_ENABLE_DMX
+  #ifdef WLED_ENABLE_DMX_OUTPUT
   if (lastEEPROMversion > 19)
   {
     e131ProxyUniverse = EEPROM.read(2185) + ((EEPROM.read(2186) << 8) & 0xFF00);
@@ -339,7 +339,7 @@ void loadSettingsFromEEPROM()
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
-  #ifdef WLED_ENABLE_DMX
+  #ifdef WLED_ENABLE_DMX_OUTPUT
   // DMX (2530 - 2549)2535
   DMXChannels = EEPROM.read(2530);
   DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);

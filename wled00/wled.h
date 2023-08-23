@@ -35,7 +35,7 @@
 #else
   #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
 #endif
-//#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+//#define WLED_ENABLE_DMX_OUTPUT          // uses 3.5kb (use LEDPIN other than 2)
 //#define WLED_ENABLE_DMX_INPUT      // Listen for DMX over Serial
 //#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
@@ -136,7 +136,7 @@
   #include "src/dependencies/espalexa/EspalexaDevice.h"
 #endif
 
-#ifdef WLED_ENABLE_DMX
+#ifdef WLED_ENABLE_DMX_OUTPUT
  #ifdef ESP8266
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
@@ -415,7 +415,7 @@ WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
-#ifdef WLED_ENABLE_DMX
+#ifdef WLED_ENABLE_DMX_OUTPUT
  #ifdef ESP8266
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
@@ -520,7 +520,7 @@ WLED_GLOBAL unsigned long lastEditTime _INIT(0);
 
 WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
 
-#ifdef WLED_ENABLE_DMX
+#ifdef WLED_ENABLE_DMX_OUTPUT
   // dmx CONFIG
   WLED_GLOBAL byte DMXChannels _INIT(7);        // number of channels per fixture
   WLED_GLOBAL byte DMXFixtureMap[15] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));

@@ -540,7 +540,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
   }
 
-  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+  #ifdef WLED_ENABLE_DMX_OUTPUT // include only if DMX is enabled
   if (subPage == 7)
   {
     int t = request->arg(F("PU")).toInt();
