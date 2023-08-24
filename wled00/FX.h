@@ -335,7 +335,7 @@ void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.
 #define FX_MODE_2DAKEMI                186
 #define FX_MODE_ARTIFX                 187 //WLEDMM ARTIFX
 
-#define FX_MODE_JBL                    188
+#define FX_MODE_PARTYBOX                    188
 
 #define MODE_COUNT                     189
 

@@ -1916,12 +1916,12 @@ uint16_t mode_pride_2015(void) {
 static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 
 //////////////////////
-//       JBL        //
+//       PARTYBOX        //
 //////////////////////
 
 
 
-uint16_t mode_jbl() {
+uint16_t mode_partybox() {
 
   if (SEGENV.call == 0) {
     SEGMENT.fill(BLACK);    // clear LEDs
@@ -1953,9 +1953,9 @@ uint16_t mode_jbl() {
     SEGENV.aux1 = 0;
   }
 
-  if (SEGENV.aux0 > SEGMENT.custom1) {
-    SEGENV.aux1 = 0;
-    SEGENV.aux0++;
+  if (SEGENV.aux0 > map(255-SEGMENT.custom1, 0, 255, 0, 140)) {
+    SEGENV.aux0 = 0;
+    SEGENV.aux1++;
   }
 
   uint_fast32_t speed = 0;
@@ -1963,7 +1963,7 @@ uint16_t mode_jbl() {
   uint16_t counter = 0;
 
   if (volumeSmth * 2 > (255 - SEGMENT.intensity)) {
-    speed = SEGMENT.speed * 50;
+    speed = SEGMENT.speed * map(SEGMENT.custom2, 0, 255, 0, 100);
   } else {
     speed = SEGMENT.speed;
   };
@@ -1990,9 +1990,9 @@ uint16_t mode_jbl() {
   };
 
   return FRAMETIME;
-} // mode_jbl()
+} // mode_partybox()
 
-static const char _data_FX_MODE_JBL[] PROGMEM = "JBL@Effect speed,Sensivity,Color change speed;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
+static const char _data_FX_MODE_PARTYBOX[] PROGMEM = "partybox@Effect speed,Sensivity,Color change speed,Effect speed active multiplier;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
@@ -8138,7 +8138,7 @@ void WS2812FX::setupEffectData() {
   // --- 1D audio effects ---
   addEffect(FX_MODE_PIXELS, &mode_pixels, _data_FX_MODE_PIXELS);
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
-  addEffect(FX_MODE_JBL, &mode_jbl, _data_FX_MODE_JBL);
+  addEffect(FX_MODE_PARTYBOX, &mode_partybox, _data_FX_MODE_PARTYBOX);
   addEffect(FX_MODE_JUGGLES, &mode_juggles, _data_FX_MODE_JUGGLES);
   addEffect(FX_MODE_MATRIPIX, &mode_matripix, _data_FX_MODE_MATRIPIX);
   addEffect(FX_MODE_GRAVIMETER, &mode_gravimeter, _data_FX_MODE_GRAVIMETER);
