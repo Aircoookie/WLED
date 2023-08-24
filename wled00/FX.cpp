@@ -1920,25 +1920,16 @@ static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 //////////////////////
 
 
-uint16_t pos = 0;
-uint8_t hue = 0;
-int hueDelay = 0;
 
-uint8_t red(uint32_t c)
-{
-  return (c >> 16);
-}
-uint8_t green(uint32_t c)
-{
-  return (c >> 8);
-}
-uint8_t blue(uint32_t c)
-{
-  return (c);
-}
+uint16_t mode_jbl() {
 
-uint16_t mode_jbl()
-{
+  static uint16_t mode_jbl_pos = 0;
+  
+  /*
+  * use of persistent variables:
+  * aux0: hueDelay
+  * aux1: hue
+  */
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -1950,53 +1941,44 @@ uint16_t mode_jbl()
   uint8_t *binNum    =  (uint8_t*)um_data->u_data[7];
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
+  SEGENV.aux0++;
 
-
-
-  hueDelay++;
-
-  if (hue > 254)
-  {
-    hue = 0;
+  if (SEGENV.aux1 > 254) {
+    SEGENV.aux1 = 0;
   }
 
-  if (hueDelay > SEGMENT.speed)
-  {
-    hueDelay = 0;
-    hue++;
+  if (SEGENV.aux0 > SEGMENT.speed) {
+    SEGENV.aux1 = 0;
+    SEGENV.aux0++;
   }
 
-  float speed = 0;
+  uint_fast32_t speed = 0;
 
   uint16_t counter = 0;
 
-  if (volumeSmth * 2 > (255 - SEGMENT.intensity))
-  {
+  if (volumeSmth * 2 > (255 - SEGMENT.intensity)) {
     speed = 1000;
-  }
-  else
-  {
+  } else {
     speed = 20;
   };
 
-  pos += speed;
+  mode_jbl_pos += speed;
 
-  counter = pos;
-  counter = counter >> 8;
+  counter = mode_jbl_pos >> 8;
 
-  for (uint16_t i = 0; i < SEGLEN; i++)
-  {
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+
     uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
 
     uint32_t paletteColor = SEGMENT.color_from_palette(colorIndex, false, true, 255);
 
-    uint8_t r = red(paletteColor);
-    uint8_t g = green(paletteColor);
-    uint8_t b = blue(paletteColor);
+    uint8_t r = R(paletteColor);
+    uint8_t g = G(paletteColor);
+    uint8_t b = B(paletteColor);
 
     uint8_t activeColor = max(r, max(g, b));
 
-    CRGB rgb(CHSV(hue, 255, activeColor));
+    CRGB rgb(CHSV(SEGENV.aux1, 255, activeColor));
 
     SEGMENT.setPixelColor(i, rgb.r, rgb.g, rgb.b);
   };
@@ -2031,7 +2013,7 @@ static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;;!;;sx=64,ix=
 
 
 uint16_t mode_palette() {
-  uint16_t counter = 0;
+      uint16_t counter = 0;
   if (SEGMENT.speed != 0)
   {
     counter = (strip.now * ((SEGMENT.speed >> 3) +1)) & 0xFFFF;
