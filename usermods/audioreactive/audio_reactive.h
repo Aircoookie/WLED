@@ -37,7 +37,7 @@
 #endif
 
 // high-resolution type for input filters
-#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && defined(ARDUINO_ARCH_ESP32)
 #define SR_HIRES_TYPE double  // ESP32 and ESP32-S3 (with FPU) are fast enough to use "double"
 #else
 #define SR_HIRES_TYPE float   // prefer faster type on slower boards (-S2, -C3)
@@ -987,11 +987,11 @@ class AudioReactive : public Usermod {
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
 
+#ifdef ARDUINO_ARCH_ESP32
     // used for AGC
     int      last_soundAgc = -1;   // used to detect AGC mode change (for resetting AGC internal error buffers)
     double   control_integrated = 0.0;   // persistent across calls to agcAvg(); "integrator control" = accumulated error
 
-#ifdef ARDUINO_ARCH_ESP32
     // variables used by getSample() and agcAvg()
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controler.
@@ -1018,7 +1018,7 @@ class AudioReactive : public Usermod {
     static const char _name[];
     static const char _enabled[];
     static const char _inputLvl[];
-#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     static const char _analogmic[];
 #endif
     static const char _digitalmic[];
@@ -1747,6 +1747,9 @@ class AudioReactive : public Usermod {
       delay(100);
       if (enabled) connectUDPSoundSync();
       initDone = true;
+      DEBUGSR_PRINT(F("AR: init done, enabled = "));
+      DEBUGSR_PRINTLN(enabled ? F("true.") : F("false."));
+      USER_FLUSH();
     }
 
 
@@ -1996,7 +1999,7 @@ class AudioReactive : public Usermod {
       memset(fftAvg, 0, sizeof(fftAvg)); 
       memset(fftResult, 0, sizeof(fftResult)); 
       for(int i=(init?0:1); i<NUM_GEQ_CHANNELS; i+=2) fftResult[i] = 16; // make a tiny pattern
-      inputLevel = 128;                                    // resset level slider to default
+      inputLevel = 128;                                    // reset level slider to default
       autoResetPeak();
 
       if (init && FFT_Task) {
@@ -2030,7 +2033,30 @@ class AudioReactive : public Usermod {
       if (enabled) disableSoundProcessing = false;
     }
 
+#else // reduced function for 8266
+    void onUpdateBegin(bool init)
+    {
+      // gracefully suspend audio (if running)
+      disableSoundProcessing = true;
+      // reset sound data
+      volumeRaw = 0; volumeSmth = 0;
+      for(int i=(init?0:1); i<NUM_GEQ_CHANNELS; i+=2) fftResult[i] = 16; // make a tiny pattern
+      autoResetPeak();
 
+      if (init) {
+        if (udpSyncConnected) {   // close UDP sync connection (if open)
+          udpSyncConnected = false;
+          fftUdp.stop();
+          DEBUGSR_PRINTLN(F("AR onUpdateBegin(true): UDP connection closed."));
+          receivedFormat = 0;
+        }
+      }
+      yield();   // to make sure that Wifi stays alive
+      if (enabled) disableSoundProcessing = false;
+    }
+#endif
+
+#ifdef ARDUINO_ARCH_ESP32
     /**
      * handleButton() can be used to override default button behaviour. Returning true
      * will prevent button working in a default way.
@@ -2319,7 +2345,7 @@ class AudioReactive : public Usermod {
       poweruser[F("micLev")] = micLevelMethod;
       poweruser[F("freqDist")] = freqDist;
       poweruser[F("freqRMS")] = averageByRMS;
- 
+
       JsonObject freqScale = top.createNestedObject("frequency");
       freqScale[F("scale")] = FFTScalingMode;
       freqScale[F("profile")] = pinkIndex; //WLEDMM
@@ -2643,7 +2669,7 @@ class AudioReactive : public Usermod {
 const char AudioReactive::_name[]       PROGMEM = "AudioReactive";
 const char AudioReactive::_enabled[]    PROGMEM = "enabled";
 const char AudioReactive::_inputLvl[]   PROGMEM = "inputLevel";
-#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 const char AudioReactive::_analogmic[]  PROGMEM = "analogmic";
 #endif
 const char AudioReactive::_digitalmic[] PROGMEM = "digitalmic";
