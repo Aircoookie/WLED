@@ -568,8 +568,9 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 #include "src/font/console_font_25x57.h"
 
 // draws a raster font character on canvas
-// only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48, 7x9=63, 12x16=192, 16x24=288, 16x32=512 and 25x57=1425 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
+// only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48, 7x9=63, 12x16=192, 12x24=288 and 16x32=512 fonts ATM
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, uint8_t rotate) {
+  if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
@@ -580,15 +581,11 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
   if (w <= 8) {
     num_bytes = 1;
   } 
+#ifdef WLED_ENABLE_LARGE_FONTS
   else if(w <= 16){
     num_bytes = 2;
   }
-  else if (w <= 24){
-    num_bytes = 3;
-  }
-  else if (w <= 32){
-    num_bytes = 4;
-  }
+#endif        // WLED_ENABLE_LARGE_FONTS
   else {
     return;
   }
@@ -599,21 +596,21 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 // modifications to support characters whose width is > 8 bits
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
-    int16_t y0 = y + i;
-    if (y0 < 0) continue; // drawing off-screen
-    if (y0 >= rows) break; // drawing off-screen
-    const uint8_t *bits = 0;
-    switch (font) {
-      case 24: bits = &console_font_4x6[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 5x8 font
-      case 40: bits = &console_font_5x8[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 5x8 font
-      case 48: bits = &console_font_6x8[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 6x8 font
-      case 63: bits = &console_font_7x9[(chr * h * num_bytes) + (i * num_bytes)]; break;  // 7x9 font
-      case 60: bits = &console_font_5x12[(chr * h * num_bytes) + (i * num_bytes)]; break; // 5x12 font
-      case 192: bits = &console_font_12x16[(chr * h * num_bytes) + (i * num_bytes)]; break; // 12x16 font
-      case 288: bits = &console_font_12x24[(chr * h * num_bytes) + (i * num_bytes)]; break; // 16x24 font
-      case 512: bits = &console_font_16x32[(chr * h * num_bytes) + (i * num_bytes)]; break; // 16x32 font
-      case 1425: bits = &console_font_25x57[(chr * h * num_bytes) + (i * num_bytes)]; break; // 25x57 font
-      default: return;
+    uint8_t bits[2] = {0};
+    for ( int j = 0; j < num_bytes; j++){
+      switch (font) {
+        case 24: bits[0] = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 4x6 font
+        case 40: bits[0] = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); break;  // 5x8 font
+        case 48: bits[0] = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); break;  // 6x8 font
+        case 63: bits[0] = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); break;  // 7x9 font
+        case 60: bits[0] = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); break; // 5x12 font
+  #ifdef WLED_ENABLE_LARGE_FONTS
+        case 192: bits[j] = pgm_read_byte_near(&console_font_12x16[(chr * h * num_bytes) + (i * num_bytes) + j]); break; // 12x16 font
+        case 288: bits[j] = pgm_read_byte_near(&console_font_12x24[(chr * h * num_bytes) + (i * num_bytes) + j]); break; // 12x24 font
+        case 512: bits[j] = pgm_read_byte_near(&console_font_16x32[(chr * h * num_bytes) + (i * num_bytes) + j]); break; // 16x32 font
+  #endif        // WLED_ENABLE_LARGE_FONTS
+        default: return;
+      }
     }
 
     int j1 = 0;
@@ -623,8 +620,15 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     for (int k = 1; k <= num_bytes; k++) {  // loop through all bytes of the character 
       col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
       for (int j = 0; j<wb; j++) { // character width in this byte
-        int16_t x0 = x + w - j1++;  // run through pixels of font right to left
-        if ((x0 >= 0 || x0 < cols) && ((bits[num_bytes - k]>>(j+(8-wb))) & 0x01)) { // bit set & drawing on-screen
+        int x0, y0;   // incorporate fx-blending branch changes
+        switch (rotate) {
+          case  3: x0 = x + (h-1) - i;    y0 = y + (w-1) - j; break;
+          case  2: x0 = x + j1;           y0 = y + (h-1) - i; break;
+          case  1: x0 = x + i;            y0 = y + j;         break;
+          default: x0 = x + (w-1) - j1++; y0 = y + i;         break;
+        }
+        if (x0 < 0 || x0 >= cols || y0 < 0 || y0 >= rows) continue; // drawing off-screen
+        if (((bits[num_bytes - k]>>(j+(8-wb))) & 0x01)) { // bit set
           setPixelColorXY(x0, y0, col);
         }
       }
