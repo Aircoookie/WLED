@@ -1953,7 +1953,7 @@ uint16_t mode_partybox() {
     SEGENV.aux1 = 0;
   }
 
-  if (SEGENV.aux0 > map(255-SEGMENT.custom1, 0, 255, 0, 140)) {
+  if (SEGENV.aux0 > map(SEGMENT.custom1, 0, 255, 0, 14)) {
     SEGENV.aux0 = 0;
     SEGENV.aux1++;
   }
