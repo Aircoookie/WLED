@@ -20,6 +20,8 @@ Good:
 ```cpp
 if (a == b) {
   doStuff(a);
+} else {
+  doOtherStuff(b);
 }
 ```
 
