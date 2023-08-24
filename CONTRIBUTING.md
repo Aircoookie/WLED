@@ -24,15 +24,17 @@ if (a == b) {
 ```
 
 ```cpp
+if (a == b) doStuff(a);
+```
+
+less readable, but acceptable in some cases:
+```cpp
 if (a == b)
 {
   doStuff(a);
 }
 ```
 
-```cpp
-if (a == b) doStuff(a);
-```
 
 There should always be a space between a keyword and its condition and between the condition and brace.  
 Within the condition, no space should be between the paranthesis and variables.  
