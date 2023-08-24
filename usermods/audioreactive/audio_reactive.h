@@ -1724,11 +1724,11 @@ class AudioReactive : public Usermod {
       delay(250); // give microphone enough time to initialise
 
       if (!audioSource) enabled = false;                 // audio failed to initialise
-      if (FFT_Task == nullptr) enabled = false;          // FFT task creation failed
 #endif
-      if (enabled) onUpdateBegin(false);                 // create FFT task
-      if (enabled) disableSoundProcessing = false;       // all good - enable audio processing
+      if (enabled) onUpdateBegin(false);                 // create FFT task, and initailize network
+
 #ifdef ARDUINO_ARCH_ESP32
+      if (FFT_Task == nullptr) enabled = false;          // FFT task creation failed
       if((!audioSource) || (!audioSource->isInitialized())) {  // audio source failed to initialize. Still stay "enabled", as there might be input arriving via UDP Sound Sync 
       #ifdef WLED_DEBUG
         DEBUG_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
@@ -1740,6 +1740,7 @@ class AudioReactive : public Usermod {
         USER_PRINTLN(F("AR: sound input driver initialized successfully."));        
       }
 #endif
+      if (enabled) disableSoundProcessing = false;       // all good - enable audio processing
       // try to start UDP
       last_UDPTime = 0;
       receivedFormat = 0;
