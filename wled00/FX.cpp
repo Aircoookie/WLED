@@ -1923,12 +1923,18 @@ static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 
 uint16_t mode_jbl() {
 
-  static uint16_t mode_jbl_pos = 0;
-  
+  if (SEGENV.call == 0) {
+    SEGMENT.fill(BLACK);    // clear LEDs
+    SEGENV.aux0 = 0;
+    SEGENV.aux1 = 0;
+    SEGENV.step = 0;
+  }
+
   /*
   * use of persistent variables:
   * aux0: hueDelay
   * aux1: hue
+  * step: pos
   */
 
   um_data_t *um_data;
@@ -1962,9 +1968,9 @@ uint16_t mode_jbl() {
     speed = 20;
   };
 
-  mode_jbl_pos += speed;
+  SEGENV.step += speed;
 
-  counter = mode_jbl_pos >> 8;
+  counter = SEGENV.step >> 8;
 
   for (uint16_t i = 0; i < SEGLEN; i++) {
 
