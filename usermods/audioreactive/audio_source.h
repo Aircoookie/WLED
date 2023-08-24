@@ -1,5 +1,5 @@
 #pragma once
-
+#ifdef ARDUINO_ARCH_ESP32
 #include <Wire.h>
 #include "wled.h"
 #include <driver/i2s.h>
@@ -893,3 +893,4 @@ class SPH0654 : public I2SSource {
 #endif
     }
 };
+#endif
