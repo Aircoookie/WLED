@@ -1916,12 +1916,12 @@ uint16_t mode_pride_2015(void) {
 static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 
 //////////////////////
-//       PARTYBOX        //
+//       PARTYJERK        //
 //////////////////////
 
 
 
-uint16_t mode_partybox() {
+uint16_t mode_partyjerk() {
 
   if (SEGENV.call == 0) {
     SEGMENT.fill(BLACK);    // clear LEDs
@@ -1990,9 +1990,9 @@ uint16_t mode_partybox() {
   };
 
   return FRAMETIME;
-} // mode_partybox()
+} // mode_partyjerk()
 
-static const char _data_FX_MODE_PARTYBOX[] PROGMEM = "partybox@Effect speed,Sensivity,Color change speed,Effect speed active multiplier;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
+static const char _data_FX_MODE_PARTYJERK[] PROGMEM = "Party jerk@Effect speed,Sensivity,Color change speed,Effect speed active multiplier;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
@@ -8138,7 +8138,7 @@ void WS2812FX::setupEffectData() {
   // --- 1D audio effects ---
   addEffect(FX_MODE_PIXELS, &mode_pixels, _data_FX_MODE_PIXELS);
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
-  addEffect(FX_MODE_PARTYBOX, &mode_partybox, _data_FX_MODE_PARTYBOX);
+  addEffect(FX_MODE_PARTYJERK, &mode_partyjerk, _data_FX_MODE_PARTYJERK);
   addEffect(FX_MODE_JUGGLES, &mode_juggles, _data_FX_MODE_JUGGLES);
   addEffect(FX_MODE_MATRIPIX, &mode_matripix, _data_FX_MODE_MATRIPIX);
   addEffect(FX_MODE_GRAVIMETER, &mode_gravimeter, _data_FX_MODE_GRAVIMETER);
