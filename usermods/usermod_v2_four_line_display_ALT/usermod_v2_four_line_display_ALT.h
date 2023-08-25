@@ -1081,7 +1081,7 @@ bool FourLineDisplayUsermod::handleButton(uint8_t b) {
   static bool buttonLongPressed = false;
   static unsigned long buttonPressedTime = 0;
   static unsigned long buttonWaitTime = 0;
-  bool handled = true;
+  bool handled = false;
 
   //momentary button logic
   if (isButtonPressed(b)) { //pressed
@@ -1090,11 +1090,12 @@ bool FourLineDisplayUsermod::handleButton(uint8_t b) {
     buttonPressedBefore = true;
 
     if (now - buttonPressedTime > 600) { //long press
-      buttonLongPressed = true;
       //TODO: handleButton() handles button 0 without preset in a different way for double click
       //so we need to override with same behaviour
-      longPressAction(0);
-      //handled = false;
+      //DEBUG_PRINTLN(F("4LD action."));
+      //if (!buttonLongPressed) longPressAction(0);
+      buttonLongPressed = true;
+      return false;
     }
 
   } else if (!isButtonPressed(b) && buttonPressedBefore) { //released
@@ -1126,7 +1127,7 @@ bool FourLineDisplayUsermod::handleButton(uint8_t b) {
     buttonWaitTime = 0;
     //TODO: handleButton() handles button 0 without preset in a different way for double click
     //so we need to override with same behaviour
-    shortPressAction(0);
+    //shortPressAction(0);
     //handled = false;
   }
   return handled;
