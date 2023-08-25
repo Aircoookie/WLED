@@ -13,4 +13,5 @@ Add a build flag `-D USERMOD_INTERNAL_TEMPERATURE` to your `platformio.ini` (or 
 
 ## Authors
 Soeren Willrodt [@lost-hope](https://github.com/lost-hope)
+
 Dimitry Zhemkov [@dima-zhemkov](https://github.com/dima-zhemkov)
