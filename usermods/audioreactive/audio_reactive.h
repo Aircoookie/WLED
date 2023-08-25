@@ -992,6 +992,8 @@ class AudioReactive : public Usermod {
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
 
+    bool updateIsRunning = false; // true during OTA.
+
 #ifdef ARDUINO_ARCH_ESP32
     // used for AGC
     int      last_soundAgc = -1;   // used to detect AGC mode change (for resetting AGC internal error buffers)
@@ -1436,6 +1438,7 @@ class AudioReactive : public Usermod {
       }
       if (udpSyncConnected) return;                                          // already connected
       if (millis() - last_connection_attempt < 15000) return;                // only try once in 15 seconds
+      if (updateIsRunning) return;                                           // don't reconect during OTA
 
       // if we arrive here, we need a UDP connection but don't have one
       last_connection_attempt = millis();
@@ -2036,6 +2039,7 @@ class AudioReactive : public Usermod {
       }
       micDataReal = 0.0f;                     // just to be sure
       if (enabled) disableSoundProcessing = false;
+      updateIsRunning = init;
     }
 
 #else // reduced function for 8266
@@ -2056,8 +2060,8 @@ class AudioReactive : public Usermod {
           receivedFormat = 0;
         }
       }
-      yield();   // to make sure that Wifi stays alive
-      if (enabled) disableSoundProcessing = false;
+      if (enabled) disableSoundProcessing = init; // init = true means that OTA is just starting --> don't process audio
+      updateIsRunning = init;
     }
 #endif
 
