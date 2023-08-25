@@ -98,7 +98,12 @@ static float    micDataReal = 0.0f;             // MicIn data with full 24bit re
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
 static float    sampleAvg = 0.0f;               // Smoothed Average sample - sampleAvg < 1 means "quiet" (simple noise gate)
 static float    sampleAgc = 0.0f;               // Smoothed AGC sample
+#ifdef SR_SQUELCH
+static uint8_t  soundAgc = 1;                   // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value) - enable AGC if default "squelch" was provided
+#else
 static uint8_t  soundAgc = 0;                   // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
+#endif
+
 #endif
 static float    volumeSmth = 0.0f;              // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
 static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
@@ -987,6 +992,8 @@ class AudioReactive : public Usermod {
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
 
+    bool updateIsRunning = false; // true during OTA.
+
 #ifdef ARDUINO_ARCH_ESP32
     // used for AGC
     int      last_soundAgc = -1;   // used to detect AGC mode change (for resetting AGC internal error buffers)
@@ -1431,6 +1438,7 @@ class AudioReactive : public Usermod {
       }
       if (udpSyncConnected) return;                                          // already connected
       if (millis() - last_connection_attempt < 15000) return;                // only try once in 15 seconds
+      if (updateIsRunning) return;                                           // don't reconect during OTA
 
       // if we arrive here, we need a UDP connection but don't have one
       last_connection_attempt = millis();
@@ -2031,6 +2039,7 @@ class AudioReactive : public Usermod {
       }
       micDataReal = 0.0f;                     // just to be sure
       if (enabled) disableSoundProcessing = false;
+      updateIsRunning = init;
     }
 
 #else // reduced function for 8266
@@ -2051,8 +2060,8 @@ class AudioReactive : public Usermod {
           receivedFormat = 0;
         }
       }
-      yield();   // to make sure that Wifi stays alive
-      if (enabled) disableSoundProcessing = false;
+      if (enabled) disableSoundProcessing = init; // init = true means that OTA is just starting --> don't process audio
+      updateIsRunning = init;
     }
 #endif
 

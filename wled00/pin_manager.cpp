@@ -270,7 +270,7 @@ String PinManagerClass::getPinConflicts(int gpio) {
   if ((gpio == 0xFF) || (gpio < 0)) return(F(""));      // explicitly allow -1 as a no-op
   if (!isPinOk(gpio, false)) return(F(""));             // invalid GPIO
 
-  if (ownerConflict[gpio] == PinOwner::None) {
+  if ((ownerConflict[gpio] == PinOwner::None) || (ownerTag[gpio] == ownerConflict[gpio])) { // no conflict, or "fake" conflict with current owner
     return(F(""));             // no conflict fot this GPIO
   } else {                     // found previous conflic!
     return String("!! Conflict with ") + getOwnerText(ownerConflict[gpio]) + String(" !!");
