@@ -162,16 +162,8 @@ void WLED::loop()
   #endif
 
   if (doSerializeConfig)
-  {
-    #ifdef WLED_ENABLE_DMX_INPUT
-    dmxInput.disable();
-    #endif
-    
+  {   
     serializeConfig();
-
-    #ifdef WLED_ENABLE_DMX_INPUT
-    dmxInput.enable();
-    #endif
   } 
     
 
@@ -969,9 +961,6 @@ bool WLED::initEthernet()
 
 void WLED::initConnection()
 {
-  #ifdef WLED_ENABLE_DMX_INPUT
-  dmxInput.disable();
-  #endif
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
@@ -992,10 +981,6 @@ void WLED::initConnection()
   if (!WLED_WIFI_CONFIGURED) {
     USER_PRINTLN(F("No WiFi connection configured."));  // WLEDMM
     if (!apActive) initAP();        // instantly go to ap mode
-    
-    #ifdef WLED_ENABLE_DMX_INPUT
-    dmxInput.enable();
-    #endif
     return;
   } else if (!apActive) {
     if (apBehavior == AP_BEHAVIOR_ALWAYS) {
@@ -1035,10 +1020,6 @@ void WLED::initConnection()
 #else
   wifi_set_sleep_type((noWifiSleep) ? NONE_SLEEP_T : MODEM_SLEEP_T);
 #endif
-
-  #ifdef WLED_ENABLE_DMX_INPUT
-  dmxInput.enable();
-  #endif
 }
 
 void WLED::initInterfaces()
