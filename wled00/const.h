@@ -147,8 +147,9 @@
 #define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
 #define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
-#define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
+#define USERMOD_ID_KLIPPER               40     //Usermod Klipper percentage
 #define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
+#define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
