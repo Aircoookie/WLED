@@ -148,8 +148,14 @@ bool oappendi(int i)
 bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
-  if (olen + len >= SETTINGS_STACK_BUF_SIZE)
+  if (olen + len >= SETTINGS_STACK_BUF_SIZE) {
+#ifdef WLED_DEBUG
+    DEBUG_PRINT(F("oappend() buffer overflow. Cannnot append "));
+    DEBUG_PRINT(len); DEBUG_PRINT(F(" bytes \t\""));
+    DEBUG_PRINT(txt); DEBUG_PRINTLN(F("\""));
+#endif
     return false;        // buffer full
+  }
   strcpy(obuf + olen, txt);
   olen += len;
   return true;
