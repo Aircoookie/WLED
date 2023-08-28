@@ -148,8 +148,14 @@ bool oappendi(int i)
 bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
-  if (olen + len >= SETTINGS_STACK_BUF_SIZE)
+  if (olen + len >= SETTINGS_STACK_BUF_SIZE) {
+#ifdef WLED_DEBUG
+    DEBUG_PRINT(F("oappend() buffer overflow. Cannnot append "));
+    DEBUG_PRINT(len); DEBUG_PRINT(F(" bytes \t\""));
+    DEBUG_PRINT(txt); DEBUG_PRINTLN(F("\""));
+#endif
     return false;        // buffer full
+  }
   strcpy(obuf + olen, txt);
   olen += len;
   return true;
@@ -244,6 +250,12 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
       dest[j] = 0; // terminate string
       return strlen(dest);
     } else return 0;
+  }
+
+  if (src == JSON_palette_names && mode > GRADIENT_PALETTE_COUNT) {
+    snprintf_P(dest, maxLen, PSTR("~ Custom %d~"), 255-mode);
+    dest[maxLen-1] = '\0';
+    return strlen(dest);
   }
 
   uint8_t qComma = 0;
