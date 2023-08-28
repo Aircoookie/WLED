@@ -398,8 +398,14 @@ void RotaryEncoderUIUsermod::sortModesAndPalettes() {
   modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
   re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
-  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
-  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());  // only use internal palettes
+  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount()+strip.customPalettes.size());
+  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount()+strip.customPalettes.size());
+  if (strip.customPalettes.size()) {
+    for (int i=0; i<strip.customPalettes.size(); i++) {
+      palettes_alpha_indexes[strip.getPaletteCount()+i] = 255-i;
+      palettes_qstrings[strip.getPaletteCount()+i] = PSTR("~Custom~");
+    }
+  }
 
   // How many palette names start with '*' and should not be sorted?
   // (Also skipping the first one, 'Default').
@@ -496,7 +502,7 @@ void RotaryEncoderUIUsermod::setup()
     }
   } else {
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
-    if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
+    if (pinA<0 || pinB<0 || !pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       pinA = pinB = pinC = -1;
       enabled = false;
       return;
@@ -507,7 +513,7 @@ void RotaryEncoderUIUsermod::setup()
     #endif
     pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
     pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
-    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+    if (pinC>=0) pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
   }
 
   loopTime = millis();
@@ -682,21 +688,25 @@ void RotaryEncoderUIUsermod::displayNetworkInfo() {
 void RotaryEncoderUIUsermod::findCurrentEffectAndPalette() {
   DEBUG_PRINTLN(F("Finding current mode and palette."));
   currentEffectAndPaletteInitialized = true;
-  for (uint8_t i = 0; i < strip.getModeCount(); i++) {
+
+  effectCurrentIndex = 0;
+  for (int i = 0; i < strip.getModeCount(); i++) {
     if (modes_alpha_indexes[i] == effectCurrent) {
       effectCurrentIndex = i;
+      DEBUG_PRINTLN(F("Found current mode."));
       break;
     }
   }
-  DEBUG_PRINTLN(F("Found current mode."));
 
-  for (uint8_t i = 0; i < strip.getPaletteCount(); i++) {
+  effectPaletteIndex = 0;
+  DEBUG_PRINTLN(effectPalette);
+  for (uint8_t i = 0; i < strip.getPaletteCount()+strip.customPalettes.size(); i++) {
     if (palettes_alpha_indexes[i] == effectPalette) {
       effectPaletteIndex = i;
+      DEBUG_PRINTLN(F("Found palette."));
       break;
     }
   }
-  DEBUG_PRINTLN(F("Found palette."));
 }
 
 bool RotaryEncoderUIUsermod::changeState(const char *stateName, byte markedLine, byte markedCol, byte glyph) {
@@ -731,7 +741,9 @@ void RotaryEncoderUIUsermod::changeBrightness(bool increase) {
   }
   display->updateRedrawTime();
 #endif
-  bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+  //bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+  if (bri < 40) bri = max(min((increase ? bri+fadeAmount/2 : bri-fadeAmount/2), 255), 0); // slower steps when brightness < 16%
+  else bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
   lampUdated();
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   display->updateBrightness();
@@ -878,7 +890,7 @@ void RotaryEncoderUIUsermod::changePalette(bool increase) {
   }
   display->updateRedrawTime();
 #endif
-  effectPaletteIndex = max(min((increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()-1), 0);
+  effectPaletteIndex = max(min((unsigned)(increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()+strip.customPalettes.size()-1), 0U);
   effectPalette = palettes_alpha_indexes[effectPaletteIndex];
   stateChanged = true;
   if (applyToAll) {
