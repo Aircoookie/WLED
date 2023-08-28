@@ -161,6 +161,8 @@ void stateUpdated(byte callMode) {
 
 void updateInterfaces(uint8_t callMode)
 {
+  if (!interfaceUpdateCallMode || millis() - lastInterfaceUpdate < INTERFACE_UPDATE_COOLDOWN) return;
+
   sendDataWs();
   lastInterfaceUpdate = millis();
   interfaceUpdateCallMode = 0; //disable
@@ -180,7 +182,7 @@ void updateInterfaces(uint8_t callMode)
 void handleTransitions()
 {
   //handle still pending interface update
-  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN) updateInterfaces(interfaceUpdateCallMode);
+  updateInterfaces(interfaceUpdateCallMode);
 #ifndef WLED_DISABLE_MQTT
   if (doPublishMqtt) publishMqtt();
 #endif
