@@ -442,14 +442,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   CJSON(mqttEnabled, if_mqtt["en"]);
-  getStringFromJson(mqttServer, if_mqtt[F("broker")], 33);
+  getStringFromJson(mqttServer, if_mqtt[F("broker")], MQTT_MAX_SERVER_LEN+1);
   CJSON(mqttPort, if_mqtt["port"]); // 1883
   getStringFromJson(mqttUser, if_mqtt[F("user")], 41);
   getStringFromJson(mqttPass, if_mqtt["psk"], 65); //normally not present due to security
   getStringFromJson(mqttClientID, if_mqtt[F("cid")], 41);
 
-  getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
-  getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // ""
+  getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], MQTT_MAX_TOPIC_LEN+1); // "wled/test"
+  getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], MQTT_MAX_TOPIC_LEN+1); // ""
   CJSON(retainMqttMsg, if_mqtt[F("rtn")]);
 #endif
 
