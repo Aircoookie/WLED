@@ -478,6 +478,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_SYNC)
   {
+    char nS[32];
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
     sappend('v',SET_F("GS"),syncGroups);
@@ -534,6 +535,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
     sappend('c',SET_F("RT"),retainMqttMsg);
+    oappend(SET_F("d.Sf.MD.maxlength=")); oappend(itoa(MQTT_MAX_TOPIC_LEN,nS,10));  oappend(SET_F(";"));
+    oappend(SET_F("d.Sf.MG.maxlength=")); oappend(itoa(MQTT_MAX_TOPIC_LEN,nS,10));  oappend(SET_F(";"));
+    oappend(SET_F("d.Sf.MS.maxlength=")); oappend(itoa(MQTT_MAX_SERVER_LEN,nS,10));  oappend(SET_F(";"));
     #else
     oappend(SET_F("toggle('MQTT');"));    // hide MQTT settings
     #endif
