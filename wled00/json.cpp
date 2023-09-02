@@ -739,6 +739,10 @@ void serializeInfo(JsonObject root)
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 
+  char time[32];
+  getTimeString(time);
+  root[F("time")] = time;
+
   usermods.addToJsonInfo(root);
 
   uint16_t os = 0;
