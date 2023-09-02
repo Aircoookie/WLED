@@ -419,14 +419,20 @@ typedef struct Segment {
     static CRGBPalette16 _randomPalette;      // actual random palette
     static CRGBPalette16 _newRandomPalette;   // target random palette
     static unsigned long _lastPaletteChange;  // last random palette change time in millis()
+    #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
+    #endif
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
+      #ifndef WLED_DISABLE_MODE_BLEND
       tmpsegd_t     _segT;        // previous segment environment
+      uint8_t       _modeT;       // previous mode/effect
+      #else
+      uint32_t      _colorT[NUM_COLORS];
+      #endif
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
-      uint8_t       _modeT;       // previous mode/effect
       CRGBPalette16 _palT;        // temporary palette
       uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 belnds possible)
       unsigned long _start;       // must accommodate millis()
@@ -522,7 +528,9 @@ typedef struct Segment {
 
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+    #ifndef WLED_DISABLE_MODE_BLEND
     static void     modeBlend(bool blend)       { _modeBlend = blend; }
+    #endif
     static void     handleRandomPalette();
 
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, uint8_t segId = 255);
@@ -552,8 +560,10 @@ typedef struct Segment {
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
     void     stopTransition(void);
     void     handleTransition(void);
+    #ifndef WLED_DISABLE_MODE_BLEND
     void     swapSegenv(tmpsegd_t &tmpSegD);
     void     restoreSegenv(tmpsegd_t &tmpSegD);
+    #endif
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
     uint8_t  currentMode(uint8_t modeNew);
