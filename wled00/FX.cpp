@@ -2931,7 +2931,8 @@ static uint16_t rolling_balls(void) {
 
     uint32_t color = SEGCOLOR(0);
     if (SEGMENT.palette) {
-      color = SEGMENT.color_wheel(i*(256/MAX(numBalls, 8)));
+      //color = SEGMENT.color_wheel(i*(256/MAX(numBalls, 8)));
+      color = SEGMENT.color_from_palette(i*255/numBalls, false, PALETTE_SOLID_WRAP, 0);
     } else if (hasCol2) {
       color = SEGCOLOR(i % NUM_COLORS);
     }
