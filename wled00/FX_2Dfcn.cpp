@@ -562,40 +562,77 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 #include "src/font/console_font_5x12.h"
 #include "src/font/console_font_6x8.h"
 #include "src/font/console_font_7x9.h"
+#include "src/font/console_font_12x16.h"
+#include "src/font/console_font_12x24.h"
+#include "src/font/console_font_16x32.h"
+#include "src/font/console_font_25x57.h"
 
 // draws a raster font character on canvas
-// only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
+// only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48, 7x9=63, 12x16=192, 12x24=288 and 16x32=512 fonts ATM
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, uint8_t rotate) {
   if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
+  int num_bytes;
 
+  if (w <= 8) {
+    num_bytes = 1;
+  } 
+#ifdef WLED_ENABLE_LARGE_FONTS
+  else if(w <= 16){
+    num_bytes = 2;
+  }
+#endif        // WLED_ENABLE_LARGE_FONTS
+  else {
+    return;
+  }
+  
   CRGB col = CRGB(color);
   CRGBPalette16 grad = CRGBPalette16(col, col2 ? CRGB(col2) : col);
 
+// modifications to support characters whose width is > 8 bits
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
-    int16_t y0 = y + i;
-    if (y0 < 0) continue; // drawing off-screen
-    if (y0 >= rows) break; // drawing off-screen
-    uint8_t bits = 0;
-    switch (font) {
-      case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 5x8 font
-      case 40: bits = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); break;  // 5x8 font
-      case 48: bits = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); break;  // 6x8 font
-      case 63: bits = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); break;  // 7x9 font
-      case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); break; // 5x12 font
-      default: return;
-    }
-    col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
-    for (int j = 0; j<w; j++) { // character width
-      int16_t x0 = x + (w-1) - j;
-      if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        setPixelColorXY(x0, y0, col);
+    uint8_t bits[2] = {0};
+    for ( int j = 0; j < num_bytes; j++){
+      switch (font) {
+        case 24: bits[0] = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 4x6 font
+        case 40: bits[0] = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); break;  // 5x8 font
+        case 48: bits[0] = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); break;  // 6x8 font
+        case 63: bits[0] = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); break;  // 7x9 font
+        case 60: bits[0] = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); break; // 5x12 font
+  #ifdef WLED_ENABLE_LARGE_FONTS
+        case 192: bits[j] = pgm_read_byte_near(&console_font_12x16[(chr * h * num_bytes) + (i * num_bytes) + j]); break; // 12x16 font
+        case 288: bits[j] = pgm_read_byte_near(&console_font_12x24[(chr * h * num_bytes) + (i * num_bytes) + j]); break; // 12x24 font
+        case 512: bits[j] = pgm_read_byte_near(&console_font_16x32[(chr * h * num_bytes) + (i * num_bytes) + j]); break; // 16x32 font
+  #endif        // WLED_ENABLE_LARGE_FONTS
+        default: return;
       }
+    }
+
+    int j1 = 0;
+    int wb = w % 8;
+    if(wb == 0)
+      wb = 8; // get width of the first byte to process
+    for (int k = 1; k <= num_bytes; k++) {  // loop through all bytes of the character 
+      col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
+      for (int j = 0; j<wb; j++) { // character width in this byte
+        int x0, y0;   // incorporate fx-blending branch changes
+        switch (rotate) {
+          case  3: x0 = x + (h-1) - i;    y0 = y + (w-1) - j; break;
+          case  2: x0 = x + j1;           y0 = y + (h-1) - i; break;
+          case  1: x0 = x + i;            y0 = y + j;         break;
+          default: x0 = x + (w-1) - j1++; y0 = y + i;         break;
+        }
+        if (x0 < 0 || x0 >= cols || y0 < 0 || y0 >= rows) continue; // drawing off-screen
+        if (((bits[num_bytes - k]>>(j+(8-wb))) & 0x01)) { // bit set
+          setPixelColorXY(x0, y0, col);
+        }
+      }
+      wb = 8;   // process 8 bits for all other bytes
     }
   }
 }
