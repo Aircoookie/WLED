@@ -2835,6 +2835,103 @@ static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravit
 
 
 /*
+ *  bouncing balls on a track track Effect modified from Aircoookie's bouncing balls
+ *  Courtesy of pjhatch (https://github.com/pjhatch)
+ *  https://github.com/Aircoookie/WLED/pull/1039
+ */
+// modified for balltrack mode
+typedef struct RollingBall {
+  unsigned long lastBounceUpdate;
+  float mass; // could fix this to be = 1. if memory is an issue
+  float velocity;
+  float height;
+} rball_t;
+
+static uint16_t rolling_balls(void) {
+  //allocate segment data
+  const uint16_t maxNumBalls = 16; // 255/16 + 1
+  uint16_t dataSize = sizeof(rball_t) * maxNumBalls;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+
+  rball_t *balls = reinterpret_cast<rball_t *>(SEGENV.data);
+
+  // number of balls based on intensity setting to max of 16 (cycles colors)
+  // non-chosen color is a random color
+  uint8_t numBalls = SEGMENT.intensity/16 + 1;
+
+  if (SEGENV.call == 0) {
+    for (int i = 0; i < maxNumBalls; i++) {
+      balls[i].lastBounceUpdate = strip.now;
+      balls[i].velocity = 20.0f * float(random16(1000, 10000))/10000.0f;  // number from 1 to 10
+      if (random8()<128) balls[i].velocity = -balls[i].velocity;    // 50% chance of reverse direction
+      balls[i].height = (float(random16(0, 10000)) / 10000.0f);     // from 0. to 1.
+      balls[i].mass   = (float(random16(1000, 10000)) / 10000.0f);  // from .1 to 1.
+    }
+  }
+
+  float cfac = float(scale8(8, 255-SEGMENT.speed) +1)*20000.0f; // this uses the Aircoookie conversion factor for scaling time using speed slider
+
+  bool hasCol2 = SEGCOLOR(2);
+  if (!SEGMENT.check2) SEGMENT.fill(hasCol2 ? BLACK : SEGCOLOR(1));
+
+  for (int i = 0; i < numBalls; i++) {
+    float timeSinceLastUpdate = float((strip.now - balls[i].lastBounceUpdate))/cfac;
+    float thisHeight = balls[i].height + balls[i].velocity * timeSinceLastUpdate; // this method keeps higher resolution
+    // test if intensity level was increased and some balls are way off the track then put them back
+    if (thisHeight < -0.5f || thisHeight > 1.5f){
+      thisHeight = balls[i].height = (float(random16(0, 10000)) / 10000.0f); // from 0. to 1.
+      balls[i].lastBounceUpdate = strip.now;
+    }
+    // check if reached ends of the strip
+    if ((thisHeight <= 0.0f && balls[i].velocity < 0.0f) || (thisHeight >= 1.0f && balls[i].velocity > 0.0f)) {
+      balls[i].velocity = -balls[i].velocity; // reverse velocity
+      balls[i].lastBounceUpdate = strip.now;
+      balls[i].height = thisHeight;
+    }
+    // check for collisions
+    if (SEGMENT.check1) {
+      for (int j = i+1; j < numBalls; j++) {
+        if (balls[j].velocity != balls[i].velocity) {
+          //  tcollided + balls[j].lastBounceUpdate is acutal time of collision (this keeps precision with long to float conversions)
+          float tcollided = (cfac*(balls[i].height - balls[j].height) +
+                balls[i].velocity*float(balls[j].lastBounceUpdate - balls[i].lastBounceUpdate))/(balls[j].velocity - balls[i].velocity);
+
+          if ((tcollided > 2.0f) && (tcollided < float(strip.now - balls[j].lastBounceUpdate))) { // 2ms minimum to avoid duplicate bounces
+            balls[i].height = balls[i].height + balls[i].velocity*(tcollided + float(balls[j].lastBounceUpdate - balls[i].lastBounceUpdate))/cfac;
+            balls[j].height = balls[i].height;
+            balls[i].lastBounceUpdate = (unsigned long)(tcollided + 0.5f) + balls[j].lastBounceUpdate;
+            balls[j].lastBounceUpdate = balls[i].lastBounceUpdate;
+            float vtmp = balls[i].velocity;
+            balls[i].velocity = ((balls[i].mass - balls[j].mass)*vtmp              + 2.0f*balls[j].mass*balls[j].velocity)/(balls[i].mass + balls[j].mass);
+            balls[j].velocity = ((balls[j].mass - balls[i].mass)*balls[j].velocity + 2.0f*balls[i].mass*vtmp)             /(balls[i].mass + balls[j].mass);
+            thisHeight = balls[i].height + balls[i].velocity*(strip.now - balls[i].lastBounceUpdate)/cfac;
+          }
+        }
+      }
+    }
+
+    uint32_t color = SEGCOLOR(0);
+    if (SEGMENT.palette) {
+      //color = SEGMENT.color_wheel(i*(256/MAX(numBalls, 8)));
+      color = SEGMENT.color_from_palette(i*255/numBalls, false, PALETTE_SOLID_WRAP, 0);
+    } else if (hasCol2) {
+      color = SEGCOLOR(i % NUM_COLORS);
+    }
+
+    if (thisHeight < 0.0f) thisHeight = 0.0f;
+    if (thisHeight > 1.0f) thisHeight = 1.0f;
+    uint16_t pos = round(thisHeight * (SEGLEN - 1));
+    SEGMENT.setPixelColor(pos, color);
+    balls[i].lastBounceUpdate = strip.now;
+    balls[i].height = thisHeight;
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay;!,!,!;!;1;m12=1"; //bar
+
+
+/*
 * Sinelon stolen from FASTLED examples
 */
 uint16_t sinelon_base(bool dual, bool rainbow=false) {
@@ -7607,6 +7704,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_FIRE_FLICKER, &mode_fire_flicker, _data_FX_MODE_FIRE_FLICKER);
   addEffect(FX_MODE_GRADIENT, &mode_gradient, _data_FX_MODE_GRADIENT);
   addEffect(FX_MODE_LOADING, &mode_loading, _data_FX_MODE_LOADING);
+  addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
 
   addEffect(FX_MODE_FAIRY, &mode_fairy, _data_FX_MODE_FAIRY);
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
