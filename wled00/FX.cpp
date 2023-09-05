@@ -2858,8 +2858,10 @@ static uint16_t rolling_balls(void) {
   // number of balls based on intensity setting to max of 16 (cycles colors)
   // non-chosen color is a random color
   uint8_t numBalls = SEGMENT.intensity/16 + 1;
+  bool hasCol2 = SEGCOLOR(2);
 
   if (SEGENV.call == 0) {
+    SEGMENT.fill(hasCol2 ? BLACK : SEGCOLOR(1));                    // start clean
     for (int i = 0; i < maxNumBalls; i++) {
       balls[i].lastBounceUpdate = strip.now;
       balls[i].velocity = 20.0f * float(random16(1000, 10000))/10000.0f;  // number from 1 to 10
@@ -2871,14 +2873,16 @@ static uint16_t rolling_balls(void) {
 
   float cfac = float(scale8(8, 255-SEGMENT.speed) +1)*20000.0f; // this uses the Aircoookie conversion factor for scaling time using speed slider
 
-  bool hasCol2 = SEGCOLOR(2);
-  if (!SEGMENT.check2) SEGMENT.fill(hasCol2 ? BLACK : SEGCOLOR(1));
+  if (SEGMENT.check3) SEGMENT.fade_out(250); // 2-8 pixel trails (optional)
+  else {
+  	if (!SEGMENT.check2) SEGMENT.fill(hasCol2 ? BLACK : SEGCOLOR(1)); // don't fill with background color if user wants to see trails
+  }
 
   for (int i = 0; i < numBalls; i++) {
     float timeSinceLastUpdate = float((strip.now - balls[i].lastBounceUpdate))/cfac;
     float thisHeight = balls[i].height + balls[i].velocity * timeSinceLastUpdate; // this method keeps higher resolution
     // test if intensity level was increased and some balls are way off the track then put them back
-    if (thisHeight < -0.5f || thisHeight > 1.5f){
+    if (thisHeight < -0.5f || thisHeight > 1.5f) {
       thisHeight = balls[i].height = (float(random16(0, 10000)) / 10000.0f); // from 0. to 1.
       balls[i].lastBounceUpdate = strip.now;
     }
@@ -2928,7 +2932,7 @@ static uint16_t rolling_balls(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay;!,!,!;!;1;m12=1"; //bar
+static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
 
 
 /*
