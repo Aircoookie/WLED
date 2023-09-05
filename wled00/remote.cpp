@@ -39,7 +39,7 @@ typedef struct message_structure {
 } message_structure;
 
 static int esp_now_state = ESP_NOW_STATE_UNINIT;
-static uint32_t last_seq = -1;
+static uint32_t last_seq = UINT32_MAX;
 static int brightnessBeforeNightMode = NIGHT_MODE_DEACTIVATED;
 static message_structure incoming;
 
@@ -168,7 +168,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 void handleRemote() {
   if (enable_espnow_remote) {
-    if (esp_now_state == ESP_NOW_STATE_UNINIT) {
+    if ((esp_now_state == ESP_NOW_STATE_UNINIT) && (interfacesInited || apActive)) { // ESPNOW requires Wifi to be initialized (either STA, or AP Mode) 
       DEBUG_PRINTLN(F("Initializing ESP_NOW listener"));
       // Init ESP-NOW
       if (esp_now_init() != 0) {

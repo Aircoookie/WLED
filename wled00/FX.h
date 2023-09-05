@@ -381,6 +381,26 @@ typedef struct Segment {
     byte     *data; // effect data pointer
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
 
+    typedef struct TemporarySegmentData {
+      uint16_t _optionsT;
+      uint32_t _colorT[NUM_COLORS];
+      uint8_t  _speedT;
+      uint8_t  _intensityT;
+      uint8_t  _custom1T, _custom2T;   // custom FX parameters/sliders
+      struct {
+        uint8_t _custom3T : 5;        // reduced range slider (0-31)
+        bool    _check1T  : 1;        // checkmark 1
+        bool    _check2T  : 1;        // checkmark 2
+        bool    _check3T  : 1;        // checkmark 3
+      };
+      uint16_t _aux0T;
+      uint16_t _aux1T;
+      uint32_t _stepT;
+      uint32_t _callT;
+      uint8_t *_dataT;
+      uint16_t _dataLenT;
+    } tmpsegd_t;
+
   private:
     union {
       uint8_t  _capabilities;
@@ -395,39 +415,34 @@ typedef struct Segment {
     uint16_t        _dataLen;
     static uint16_t _usedSegmentData;
 
+    // perhaps this should be per segment, not static
+    static CRGBPalette16 _randomPalette;      // actual random palette
+    static CRGBPalette16 _newRandomPalette;   // target random palette
+    static unsigned long _lastPaletteChange;  // last random palette change time in millis()
+    #ifndef WLED_DISABLE_MODE_BLEND
+    static bool          _modeBlend;          // mode/effect blending semaphore
+    #endif
+
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
     struct Transition {
+      #ifndef WLED_DISABLE_MODE_BLEND
+      tmpsegd_t     _segT;        // previous segment environment
+      uint8_t       _modeT;       // previous mode/effect
+      #else
       uint32_t      _colorT[NUM_COLORS];
+      #endif
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
       uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 belnds possible)
-      uint8_t       _modeP;       // previous mode/effect
-      //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
-      //uint32_t      _step, _call; // previous mode/effect runtime data
-      //byte         *_data;        // previous mode/effect runtime data
-      unsigned long _start;         // must accommodate millis()
+      unsigned long _start;       // must accommodate millis()
       uint16_t      _dur;
       Transition(uint16_t dur=750)
-        : _briT(255)
-        , _cctT(127)
-        , _palT(CRGBPalette16(CRGB::Black))
+        : _palT(CRGBPalette16(CRGB::Black))
         , _prevPaletteBlends(0)
-        , _modeP(FX_MODE_STATIC)
         , _start(millis())
         , _dur(dur)
       {}
-      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o)
-        : _briT(b)
-        , _cctT(c)
-        , _palT(CRGBPalette16(CRGB::Black))
-        , _prevPaletteBlends(0)
-        , _modeP(FX_MODE_STATIC)
-        , _start(millis())
-        , _dur(d)
-      {
-        for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
-      }
     } *_t;
 
   public:
@@ -466,6 +481,9 @@ typedef struct Segment {
       _t(nullptr)
     {
       //refreshLightCapabilities();
+      #ifdef WLED_DEBUG
+      //Serial.printf("-- Creating segment: %p\n", this);
+      #endif
     }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
@@ -477,14 +495,14 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      //#ifdef WLED_DEBUG
-      //Serial.print(F("Destroying segment:"));
+      #ifdef WLED_DEBUG
+      //Serial.printf("-- Destroying segment: %p\n", this);
       //if (name) Serial.printf(" %s (%p)", name, name);
       //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
       //Serial.println();
-      //#endif
+      #endif
       if (name) { delete[] name; name = nullptr; }
-      if (_t)   { transitional = false; delete _t; _t = nullptr; }
+      stopTransition();
       deallocateData();
     }
 
@@ -510,6 +528,10 @@ typedef struct Segment {
 
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+    #ifndef WLED_DISABLE_MODE_BLEND
+    static void     modeBlend(bool blend)       { _modeBlend = blend; }
+    #endif
+    static void     handleRandomPalette();
 
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, uint8_t segId = 255);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
@@ -536,7 +558,12 @@ typedef struct Segment {
 
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
+    void     stopTransition(void);
     void     handleTransition(void);
+    #ifndef WLED_DISABLE_MODE_BLEND
+    void     swapSegenv(tmpsegd_t &tmpSegD);
+    void     restoreSegenv(tmpsegd_t &tmpSegD);
+    #endif
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
     uint8_t  currentMode(uint8_t modeNew);
@@ -598,9 +625,9 @@ typedef struct Segment {
     void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
-    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0);
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0, uint8_t rotate = 0);
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
-    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0)); } // automatic inline
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, uint8_t rotate = 0) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0), rotate); } // automatic inline
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     void blur1d(fract8 blur_amount); // blur all rows in 1 dimension
     void blur2d(fract8 blur_amount) { blur(blur_amount); }

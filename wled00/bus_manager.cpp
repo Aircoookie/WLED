@@ -144,10 +144,14 @@ void BusDigital::show() {
         c = RGBW32(_data[offset],_data[offset+1],_data[offset+2],(Bus::hasWhite(_type)?_data[offset+3]:0));
       }
       uint16_t pix = i;
-      if (_reversed) pix  = _len - pix -1;
-      else           pix += _skip;
+      if (_reversed) pix = _len - pix -1;
+      pix += _skip;
       PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
     }
+    #if !defined(STATUSLED) || STATUSLED>=0
+    if (_skip) PolyBus::setPixelColor(_busPtr, _iType, 0, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
+    #endif
+    for (int i=1; i<_skip; i++) PolyBus::setPixelColor(_busPtr, _iType, i, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
   }
   PolyBus::show(_busPtr, _iType, !_buffering); // faster if buffer consistency is not important
 }
@@ -206,8 +210,8 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
     }
     if (Bus::hasWhite(_type)) _data[offset] = W(c);
   } else {
-    if (_reversed) pix  = _len - pix -1;
-    else           pix += _skip;
+    if (_reversed) pix = _len - pix -1;
+    pix += _skip;
     uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
     if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
       uint16_t pOld = pix;
@@ -237,8 +241,8 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
     }
     return c;
   } else {
-    if (_reversed) pix  = _len - pix -1;
-    else           pix += _skip;
+    if (_reversed) pix = _len - pix -1;
+    pix += _skip;
     uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
     uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, (_type==TYPE_WS2812_1CH_X3) ? IC_INDEX_WS2812_1CH_3X(pix) : pix, co),_bri);
     if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs

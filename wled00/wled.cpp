@@ -195,12 +195,15 @@ void WLED::loop()
 
 #if WLED_WATCHDOG_TIMEOUT > 0
   // we finished our mainloop, reset the watchdog timer
-  if (!strip.isUpdating())
+  static unsigned long lastWDTFeed = 0;
+  if (!strip.isUpdating() || millis() - lastWDTFeed > (WLED_WATCHDOG_TIMEOUT*500)) {
   #ifdef ARDUINO_ARCH_ESP32
     esp_task_wdt_reset();
   #else
     ESP.wdtFeed();
   #endif
+    lastWDTFeed = millis();
+  }
 #endif
 
   if (doReboot && (!doInitBusses || !doSerializeConfig)) // if busses have to be inited & saved, wait until next iteration

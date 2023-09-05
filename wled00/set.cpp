@@ -347,14 +347,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     #ifdef WLED_ENABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
-    strlcpy(mqttServer, request->arg(F("MS")).c_str(), 33);
+    strlcpy(mqttServer, request->arg(F("MS")).c_str(), MQTT_MAX_SERVER_LEN+1);
     t = request->arg(F("MQPORT")).toInt();
     if (t > 0) mqttPort = t;
     strlcpy(mqttUser, request->arg(F("MQUSER")).c_str(), 41);
     if (!isAsterisksOnly(request->arg(F("MQPASS")).c_str(), 41)) strlcpy(mqttPass, request->arg(F("MQPASS")).c_str(), 65);
     strlcpy(mqttClientID, request->arg(F("MQCID")).c_str(), 41);
-    strlcpy(mqttDeviceTopic, request->arg(F("MD")).c_str(), 33);
-    strlcpy(mqttGroupTopic, request->arg(F("MG")).c_str(), 33);
+    strlcpy(mqttDeviceTopic, request->arg(F("MD")).c_str(), MQTT_MAX_TOPIC_LEN+1);
+    strlcpy(mqttGroupTopic, request->arg(F("MG")).c_str(), MQTT_MAX_TOPIC_LEN+1);
     buttonPublishMqtt = request->hasArg(F("BM"));
     retainMqttMsg = request->hasArg(F("RT"));
     #endif
