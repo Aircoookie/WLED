@@ -11,6 +11,10 @@
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
 
+#ifdef USERMOD_AUTOBRIGHTNESS_PHOTORESISTOR
+  #include "../usermods/Autobrightness_with_photoresistor/usermod_autobrightness.h"
+#endif
+
 #ifdef USERMOD_BATTERY
   #include "../usermods/Battery/usermod_v2_Battery.h"
 #endif
@@ -206,6 +210,10 @@ void registerUsermods()
    * \/ \/ \/
    */
   //usermods.add(new MyExampleUsermod());
+  #ifdef USERMOD_AUTOBRIGHTNESS_PHOTORESISTOR
+  usermods.add(new UsermodAutobrightness());
+  #endif
+
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
   #endif
