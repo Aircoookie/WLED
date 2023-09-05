@@ -29,8 +29,11 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
   }
 
+  //DEBUG_PRINTLN("-- JSON deserialize segment.");
   Segment& seg = strip.getSegment(id);
+  //DEBUG_PRINTF("--  Original segment: %p\n", &seg);
   Segment prev = seg; //make a backup so we can tell if something changed
+  //DEBUG_PRINTF("--  Duplicate segment: %p\n", &prev);
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
@@ -979,9 +982,10 @@ void serializeNodes(JsonObject root)
 // deserializes mode data string into JsonArray
 void serializeModeData(JsonArray fxdata)
 {
-  char lineBuffer[128];
+  char lineBuffer[256];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    strncpy_P(lineBuffer, strip.getModeData(i), 127);
+    strncpy_P(lineBuffer, strip.getModeData(i), sizeof(lineBuffer)/sizeof(char)-1);
+    lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
     if (lineBuffer[0] != 0) {
       char* dataPtr = strchr(lineBuffer,'@');
       if (dataPtr) fxdata.add(dataPtr+1);
@@ -992,10 +996,12 @@ void serializeModeData(JsonArray fxdata)
 
 // deserializes mode names string into JsonArray
 // also removes effect data extensions (@...) from deserialised names
-void serializeModeNames(JsonArray arr) {
-  char lineBuffer[128];
+void serializeModeNames(JsonArray arr)
+{
+  char lineBuffer[256];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    strncpy_P(lineBuffer, strip.getModeData(i), 127);
+    strncpy_P(lineBuffer, strip.getModeData(i), sizeof(lineBuffer)/sizeof(char)-1);
+    lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
     if (lineBuffer[0] != 0) {
       char* dataPtr = strchr(lineBuffer,'@');
       if (dataPtr) *dataPtr = 0; // terminate mode data after name
