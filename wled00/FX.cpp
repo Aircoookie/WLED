@@ -351,6 +351,43 @@ uint16_t mode_breath(void) {
 }
 static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!;!,!;!;01";
 
+/*
+ * Box breathing effect.
+ */
+uint16_t mode_box_breath(void) {
+  uint16_t var = 0;
+  uint16_t totalCycleTime = 16384; // Represents the total time for a complete box breathing cycle
+  uint16_t phaseDuration = totalCycleTime / 4; // Each phase lasts for a quarter of the total cycle time
+
+  uint16_t counter = (strip.now * ((SEGMENT.speed >> 3) +10));
+  counter = (counter >> 2) + (counter >> 4); //0-16384 + 0-2048
+
+  // Determine the current phase based on the counter
+  if (counter < phaseDuration) {
+    // 4 seconds off
+    var = 0;
+  } else if (counter < 2 * phaseDuration) {
+    // 4 seconds transition on
+    uint16_t phaseCounter = counter - phaseDuration;
+    var = sin16(phaseCounter * 8192 / phaseDuration) / 103;
+  } else if (counter < 3 * phaseDuration) {
+    // 4 seconds on
+    var = 23170 / 103;
+  } else {
+    // 4 seconds transition off
+    uint16_t phaseCounter = counter - 3 * phaseDuration;
+    var = 23170 / 103 - sin16(phaseCounter * 8192 / phaseDuration) / 103;
+  }
+
+  uint8_t lum = 30 + var;
+  for (int i = 0; i < SEGLEN; i++) {
+    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), lum));
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_BOX_BREATH[] PROGMEM = "BoxBreathe@!;!,!;!;01";
+
 
 /*
  * Fades the LEDs between two colors
@@ -7663,6 +7700,7 @@ void WS2812FX::setupEffectData() {
   // --- 1D non-audio effects ---
   addEffect(FX_MODE_BLINK, &mode_blink, _data_FX_MODE_BLINK);
   addEffect(FX_MODE_BREATH, &mode_breath, _data_FX_MODE_BREATH);
+  addEffect(FX_MODE_BOX_BREATH, &mode_box_breath, _data_FX_MODE_BOX_BREATH);
   addEffect(FX_MODE_COLOR_WIPE, &mode_color_wipe, _data_FX_MODE_COLOR_WIPE);
   addEffect(FX_MODE_COLOR_WIPE_RANDOM, &mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);
   addEffect(FX_MODE_RANDOM_COLOR, &mode_random_color, _data_FX_MODE_RANDOM_COLOR);
