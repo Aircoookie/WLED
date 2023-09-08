@@ -395,10 +395,14 @@ typedef struct Segment {
       };
       uint16_t _aux0T;
       uint16_t _aux1T;
-      uint32_t _stepT = 0;
-      uint32_t _callT = 0;
-      uint8_t *_dataT = nullptr;
-      uint16_t _dataLenT = 0;
+      uint32_t _stepT;
+      uint32_t _callT;
+      uint8_t *_dataT;
+      uint16_t _dataLenT;
+      TemporarySegmentData()
+        : _dataT(nullptr) // just in case...
+        , _dataLenT(0)
+      {}
     } tmpsegd_t;
 
   private:

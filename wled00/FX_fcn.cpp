@@ -171,7 +171,8 @@ bool Segment::allocateData(size_t len) {
   if (len == 0) return(false); // nothing to do
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
     // not enough memory
-    DEBUG_PRINTF("!!! Effect RAM depleted: %d/%d !!!\n", len, Segment::getUsedSegmentData());
+    DEBUG_PRINT(F("!!! Effect RAM depleted: "));
+    DEBUG_PRINTF("%d/%d !!!\n", len, Segment::getUsedSegmentData());
     return false;
   }
   // do not use SPI RAM on ESP32 since it is slow
@@ -193,11 +194,10 @@ void Segment::deallocateData() {
     DEBUG_PRINT(F("---- Released data "));
     DEBUG_PRINTF("(%p): ", this);
     DEBUG_PRINT(F("inconsistent UsedSegmentData "));
-    DEBUG_PRINTF("(%d/%d), ", _dataLen, Segment::getUsedSegmentData());
-    DEBUG_PRINTLN(F("cowardly refusing to free nothing."));
+    DEBUG_PRINTF("(%d/%d)", _dataLen, Segment::getUsedSegmentData());
+    DEBUG_PRINTLN(F(", cowardly refusing to free nothing."));
   }
   data = nullptr;
-  // WARNING it looks like we have a memory leak somewhere
   Segment::addUsedSegmentData(_dataLen <= Segment::getUsedSegmentData() ? -_dataLen : -Segment::getUsedSegmentData());
   _dataLen = 0;
 }
@@ -372,9 +372,7 @@ uint16_t Segment::progress() {
 
 #ifndef WLED_DISABLE_MODE_BLEND
 void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
-  if (!_t) return;
   //DEBUG_PRINTF("--  Saving temp seg: %p (%p)\n", this, tmpSeg);
-  // if (nullptr == &tmpSeg) { DEBUG_PRINTLN(F("swapSegenv(): tmpSeg is nullptr !!")); return; } // sanity check  - should not happen as references cannot be NULL in C++
   tmpSeg._optionsT   = options;
   for (size_t i=0; i<NUM_COLORS; i++) tmpSeg._colorT[i] = colors[i];
   tmpSeg._speedT     = speed;
@@ -391,7 +389,7 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
   tmpSeg._callT      = call;
   tmpSeg._dataT      = data;
   tmpSeg._dataLenT   = _dataLen;
-  if (&tmpSeg != &(_t->_segT)) {
+  if (_t && &tmpSeg != &(_t->_segT)) {
     // swap SEGENV with transitional data
     options   = _t->_segT._optionsT;
     for (size_t i=0; i<NUM_COLORS; i++) colors[i] = _t->_segT._colorT[i];
@@ -415,7 +413,6 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
 
 void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
   //DEBUG_PRINTF("--  Restoring temp seg: %p (%p)\n", this, tmpSeg);
-  // if (nullptr == &tmpSeg) {DEBUG_PRINTLN(F("restoreSegenv(): tmpSeg is nullptr !!")); return;} // sanity check - should not happen as references cannot be NULL in C++
   if (_t && &(_t->_segT) != &tmpSeg) {
     // update possibly changed variables to keep old effect running correctly
     _t->_segT._aux0T = aux0;
