@@ -86,6 +86,33 @@
   #define USERMOD_BATTERY_LION_CALIBRATION 0
 #endif
 
+//the default ratio for the voltage divider
+#ifndef USERMOD_BATTERY_VOLTAGE_MULTIPLIER
+  #ifdef ARDUINO_ARCH_ESP32
+    #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 2.0f
+  #else //ESP8266 boards
+    #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 4.2f
+  #endif
+#endif
+
+#ifndef USERMOD_BATTERY_MAX_VOLTAGE
+  #define USERMOD_BATTERY_MAX_VOLTAGE 4.2f
+#endif
+
+// a common capacity for single 18650 battery cells is between 2500 and 3600 mAh
+#ifndef USERMOD_BATTERY_TOTAL_CAPACITY
+  #define USERMOD_BATTERY_TOTAL_CAPACITY 3100
+#endif
+
+// offset or calibration value to fine tune the calculated voltage
+#ifndef USERMOD_BATTERY_CALIBRATION
+  #define USERMOD_BATTERY_CALIBRATION 0
+#endif
+
+// calculate remaining time / the time that is left before the battery runs out of power
+// #ifndef USERMOD_BATTERY_CALCULATE_TIME_LEFT_ENABLED
+//   #define USERMOD_BATTERY_CALCULATE_TIME_LEFT_ENABLED false
+// #endif
 
 // auto-off feature
 #ifndef USERMOD_BATTERY_AUTO_OFF_ENABLED

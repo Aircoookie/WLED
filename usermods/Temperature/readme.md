@@ -7,6 +7,8 @@ May be expanded with support for different sensor types in the future.
 
 If temperature sensor is not detected during boot, this usermod will be disabled.
 
+Maintained by @blazoncek
+
 ## Installation
 
 Copy the example `platformio_override.ini` to the root directory.  This file should be placed in the same directory as `platformio.ini`.
@@ -14,7 +16,7 @@ Copy the example `platformio_override.ini` to the root directory.  This file sho
 ### Define Your Options
 
 * `USERMOD_DALLASTEMPERATURE`                      - enables this user mod wled00/usermods_list.cpp
-* `USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT` - number of milliseconds after boot to take first measurement, defaults to 20000 ms
+* `USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL` - number of milliseconds between measurements, defaults to 60000 ms (60s)
 
 All parameters can be configured at runtime via the Usermods settings page, including pin, temperature in degrees Celsius or Farenheit and measurement interval.
 
@@ -26,7 +28,6 @@ All parameters can be configured at runtime via the Usermods settings page, incl
 ### PlatformIO requirements
 
 If you are using `platformio_override.ini`, you should be able to refresh the task list and see your custom task, for example `env:d1_mini_usermod_dallas_temperature_C`.
-
 
 If you are not using `platformio_override.ini`, you might have to uncomment `OneWire@~2.3.5 under` `[common]` section in `platformio.ini`:
 
@@ -43,8 +44,9 @@ default_envs = d1_mini
 lib_deps =
   ...
   #For Dallas sensor uncomment following line
-  OneWire@~2.3.5
-...
+  OneWire@~2.3.7
+  # ... or you may want to use following with ESP32
+;  https://github.com/blazoncek/OneWire.git # fixes Sensor error on ESP32...
 ```
 
 ## Change Log
@@ -56,3 +58,6 @@ lib_deps =
 * Report the number of seconds until the first read in the info screen instead of sensor error
 2021-04
 * Adaptation for runtime configuration.
+2023-05
+* Rewrite to conform to newer recommendations.
+* Recommended @blazoncek fork of OneWire for ESP32 to avoid Sensor error

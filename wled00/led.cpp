@@ -37,8 +37,8 @@ void applyValuesToSelectedSegs()
 
     if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
     if (effectIntensity != selsegPrev.intensity) {seg.intensity = effectIntensity; stateChanged = true;}
-    if (effectPalette   != selsegPrev.palette)   {seg.palette   = effectPalette;   stateChanged = true;}
-    if (effectCurrent   != selsegPrev.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
+    if (effectPalette   != selsegPrev.palette)   {seg.setPalette(effectPalette);   stateChanged = true;}
+    if (effectCurrent   != selsegPrev.mode)      {seg.setMode(effectCurrent);      stateChanged = true;}
     uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
     if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0);           stateChanged = true;}
@@ -105,7 +105,7 @@ void stateUpdated(byte callMode) {
 
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
 
-    //set flag to update blynk, ws and mqtt
+    //set flag to update ws and mqtt
     interfaceUpdateCallMode = callMode;
     stateChanged = false;
   } else {
@@ -129,6 +129,9 @@ void stateUpdated(byte callMode) {
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
 
+  // notify usermods of state change
+  usermods.onStateChange(callMode);
+
   if (fadeTransition) {
     //set correct delay if not using notification delay
     if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay; // load actual transition duration
@@ -143,8 +146,8 @@ void stateUpdated(byte callMode) {
     if (transitionActive) {
       briOld = briT;
       tperLast = 0;
-    }
-    strip.setTransitionMode(true); // force all segments to transition mode
+    } else
+      strip.setTransitionMode(true); // force all segments to transition mode
     transitionActive = true;
     transitionStartTime = millis();
   } else {
@@ -166,10 +169,6 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setValue(bri);
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
-  #endif
-  #ifndef WLED_DISABLE_BLYNK
-  if (callMode != CALL_MODE_BLYNK &&
-      callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
   #endif
   doPublishMqtt = true;
   interfaceUpdateCallMode = 0; //disable
@@ -275,9 +274,7 @@ void handleNightlight()
           applyFinalBri();
         }
       }
-      #ifndef WLED_DISABLE_BLYNK
-      updateBlynk();
-      #endif
+
       if (macroNl > 0)
         applyPreset(macroNl);
       nightlightActiveOld = false;

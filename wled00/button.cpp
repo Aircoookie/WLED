@@ -225,12 +225,10 @@ void handleButton()
 {
   static unsigned long lastRead = 0UL;
   static unsigned long lastRun = 0UL;
-  bool analog = false;
   unsigned long now = millis();
 
-  //if (strip.isUpdating()) return; // don't interfere with strip updates. Our button will still be there in 1ms (next cycle)
-  if (strip.isUpdating() && (millis() - lastRun < 400)) return;   // be niced, but avoid button starvation
-  lastRun = millis();
+  if (strip.isUpdating() && (now - lastRun < 400)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
+  lastRun = now;
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
     #ifdef ESP8266
@@ -241,18 +239,31 @@ void handleButton()
 
     if (usermods.handleButton(b)) continue; // did usermod handle buttons
 
-    if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && now - lastRead > ANALOG_BTN_READ_CYCLE) {   // button is not a button but a potentiometer
-      analog = true;
-      handleAnalog(b); continue;
+    if (buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) { // button is not a button but a potentiometer
+      if (now - lastRead > ANALOG_BTN_READ_CYCLE) {
+        handleAnalog(b);
+        lastRead = now;
+      }
+      continue;
     }
 
-    //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+    // button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
     if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
-      handleSwitch(b); continue;
+      handleSwitch(b);
+      continue;
     }
 
-    //momentary button logic
-    if (isButtonPressed(b)) { //pressed
+    // momentary button logic
+    if (isButtonPressed(b)) { // pressed
+
+      // if all macros are the same, fire action immediately on rising edge
+      if (macroButton[b] && macroButton[b] == macroLongPress[b] && macroButton[b] == macroDoublePress[b]) {
+        if (!buttonPressedBefore[b])
+          shortPressAction(b);
+        buttonPressedBefore[b] = true;
+        buttonPressedTime[b] = now; // continually update (for debouncing to work in release handler)
+        return;
+      }
 
       if (!buttonPressedBefore[b]) buttonPressedTime[b] = now;
       buttonPressedBefore[b] = true;
@@ -267,9 +278,15 @@ void handleButton()
       }
 
     } else if (!isButtonPressed(b) && buttonPressedBefore[b]) { //released
-
       long dur = now - buttonPressedTime[b];
-      if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} //too short "press", debounce
+
+      // released after rising-edge short press action
+      if (macroButton[b] && macroButton[b] == macroLongPress[b] && macroButton[b] == macroDoublePress[b]) {
+        if (dur > WLED_DEBOUNCE_THRESHOLD) buttonPressedBefore[b] = false; // debounce, blocks button for 50 ms once it has been released
+        return;
+      }
+
+      if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} // too short "press", debounce
       bool doublePress = buttonWaitTime[b]; //did we have a short press before?
       buttonWaitTime[b] = 0;
 
@@ -305,7 +322,6 @@ void handleButton()
       shortPressAction(b);
     }
   }
-  if (analog) lastRead = now;
 }
 
 // If enabled, RMT idle level is set to HIGH when off

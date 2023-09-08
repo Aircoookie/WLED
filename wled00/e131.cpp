@@ -25,7 +25,7 @@ void handleDDPPacket(e131_packet_t* p) {
     }
   }
 
-  uint8_t ddpChannelsPerLed = (p->dataType == DDP_TYPE_RGBW32) ? 4 : 3; // data type 0x1A is RGBW (type 3, 8 bit/channel)
+  uint8_t ddpChannelsPerLed = ((p->dataType & 0b00111000)>>3 == 0b011) ? 4 : 3; // data type 0x1B (formerly 0x1A) is RGBW (type 3, 8 bit/channel)
 
   uint32_t start =  htonl(p->channelOffset) / ddpChannelsPerLed;
   start += DMXAddress / ddpChannelsPerLed;
@@ -70,10 +70,20 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     seq = p->art_sequence_number;
     mde = REALTIME_MODE_ARTNET;
   } else if (protocol == P_E131) {
+    // Ignore PREVIEW data (E1.31: 6.2.6)
+    if ((p->options & 0x80) != 0) return;
+    dmxChannels = htons(p->property_value_count) - 1;
+    // DMX level data is zero start code. Ignore everything else. (E1.11: 8.5)
+    if (dmxChannels == 0 || p->property_values[0] != 0) return;
     uni = htons(p->universe);
-    dmxChannels = htons(p->property_value_count) -1;
     e131_data = p->property_values;
     seq = p->sequence_number;
+    if (e131Priority != 0) {
+      if (p->priority < e131Priority ) return;
+      // track highest priority & skip all lower priorities
+      if (p->priority >= highPriority.get()) highPriority.set(p->priority);
+      if (p->priority < highPriority.get()) return;
+    }
   } else { //DDP
     realtimeIP = clientIP;
     handleDDPPacket(p);
@@ -163,14 +173,30 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       break;
 
     case DMX_MODE_PRESET:       // 2 channel: [Dimmer,Preset]
-      if (uni != e131Universe || availDMXLen < 2) return;
-      applyPreset(e131_data[dataOffset+1], CALL_MODE_NOTIFICATION);
-      if (bri != e131_data[dataOffset]) {
-        bri = e131_data[dataOffset];
-        strip.setBrightness(bri, true);
+      {
+        if (uni != e131Universe || availDMXLen < 2) return;
+
+        // limit max. selectable preset to 250, even though DMX max. val is 255
+        uint8_t dmxValPreset = (e131_data[dataOffset+1] > 250 ? 250 : e131_data[dataOffset+1]);
+        
+        // only apply preset if value changed 
+        if (dmxValPreset != 0 && dmxValPreset != currentPreset &&  
+            // only apply preset if not in playlist, or playlist changed
+            (currentPlaylist < 0 || dmxValPreset != currentPlaylist)) { 
+          presetCycCurr = dmxValPreset;
+          unloadPlaylist(); // applying a preset unloads the playlist
+          applyPreset(dmxValPreset, CALL_MODE_NOTIFICATION);
+        }
+
+        // only change brightness if value changed
+        if (bri != e131_data[dataOffset]) {                                        
+          bri = e131_data[dataOffset];
+          strip.setBrightness(scaledBri(bri), false);
+          stateUpdated(CALL_MODE_WS_SEND);
+        }
+        return;
+        break;
       }
-      return;
-      break;
 
     case DMX_MODE_EFFECT:           // 15 channels [bri,effectCurrent,effectSpeed,effectIntensity,effectPalette,effectOption,R,G,B,R2,G2,B2,R3,G3,B3]
     case DMX_MODE_EFFECT_W:         // 18 channels, same as above but with extra +3 white channels [..,W,W2,W3]

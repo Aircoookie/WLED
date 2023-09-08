@@ -27,6 +27,28 @@ class UsermodBattery : public Usermod
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
     unsigned long nextReadTime = 0;
     unsigned long lastReadTime = 0;
+    // battery min. voltage
+    float minBatteryVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
+    // battery max. voltage
+    float maxBatteryVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
+    // all battery cells summed up
+    unsigned int totalBatteryCapacity = USERMOD_BATTERY_TOTAL_CAPACITY;
+    // raw analog reading 
+    float rawValue = 0.0f;
+    // calculated voltage            
+    float voltage = maxBatteryVoltage;
+    // between 0 and 1, to control strength of voltage smoothing filter
+    float alpha = 0.05f;
+    // multiplier for the voltage divider that is in place between ADC pin and battery, default will be 2 but might be adapted to readout voltages over ~5v ESP32 or ~6.6v ESP8266
+    float voltageMultiplier = USERMOD_BATTERY_VOLTAGE_MULTIPLIER;
+    // mapped battery level based on voltage
+    int8_t batteryLevel = 100;
+    // offset or calibration value to fine tune the calculated voltage
+    float calibration = USERMOD_BATTERY_CALIBRATION;
+    
+    // time left estimation feature
+    // bool calculateTimeLeftEnabled = USERMOD_BATTERY_CALCULATE_TIME_LEFT_ENABLED;
+    // float estimatedTimeLeft = 0.0;
 
     // auto shutdown/shutoff/master off feature
     bool autoOffEnabled = USERMOD_BATTERY_AUTO_OFF_ENABLED;
@@ -92,6 +114,17 @@ class UsermodBattery : public Usermod
       }      
     }
 
+    float readVoltage()
+    {
+      #ifdef ARDUINO_ARCH_ESP32
+        // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default attentuation) and divide by 1000 to get from milivolts to volts and multiply by voltage multiplier and apply calibration value
+        return (analogReadMilliVolts(batteryPin) / 1000.0f) * voltageMultiplier  + calibration;
+      #else
+        // use analog read on esp8266 ( 0V ~ 1V no attenuation options) and divide by ADC precision 1023 and multiply by voltage multiplier and apply calibration value
+        return (analogRead(batteryPin) / 1023.0f) * voltageMultiplier + calibration;
+      #endif
+    }
+
   public:
     //Functions called by WLED
 
@@ -108,6 +141,7 @@ class UsermodBattery : public Usermod
           if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
+            voltage = readVoltage();
           }
 
         if (!success) {
@@ -117,8 +151,8 @@ class UsermodBattery : public Usermod
           pinMode(batteryPin, INPUT);
         }
       #else //ESP8266 boards have only one analog input pin A0
-
         pinMode(batteryPin, INPUT);
+        voltage = readVoltage();
       #endif
 
       //this could also be handled with a factory class but for only 2 types it should be sufficient for now
@@ -184,6 +218,14 @@ class UsermodBattery : public Usermod
       // calculate the voltage     
       voltage = ((rawValue / getAdcPrecision()) * bat->getMaxVoltage()) + bat->getCalibration();
 #endif
+      // initializing = false;
+
+      // rawValue = readVoltage();
+      // // filter with exponential smoothing because ADC in esp32 is fluctuating too much for a good single readout
+      // voltage = voltage + alpha * (rawValue - voltage);
+
+      // check if voltage is within specified voltage range, allow 10% over/under voltage - removed cause this just makes it hard for people to troubleshoot as the voltage in the web gui will say invalid instead of displaying a voltage
+      //voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
 
       bat->setVoltage(voltage);
       // translate battery voltage into percentage
@@ -379,8 +421,19 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         battery[F("pin")] = batteryPin;
       #endif
+
+      // battery[F("time-left")] = calculateTimeLeftEnabled;
+      battery[F("min-voltage")] = minBatteryVoltage;
+      battery[F("max-voltage")] = maxBatteryVoltage;
+      battery[F("capacity")] = totalBatteryCapacity;
+      battery[F("calibration")] = calibration;
+      battery[F("voltage-multiplier")] = voltageMultiplier;
+      battery[FPSTR(_readInterval)] = readingInterval;
       
       addBatteryToJsonObject(battery, false);
+
+      // read voltage in case calibration or voltage multiplier changed to see immediate effect
+      voltage = readVoltage();
 
       DEBUG_PRINTLN(F("Battery config saved."));
     }
@@ -447,6 +500,13 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
+      // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
+      setMinBatteryVoltage(battery[F("min-voltage")] | minBatteryVoltage);
+      setMaxBatteryVoltage(battery[F("max-voltage")] | maxBatteryVoltage);
+      setTotalBatteryCapacity(battery[F("capacity")] | totalBatteryCapacity);
+      setCalibration(battery[F("calibration")] | calibration);
+      setVoltageMultiplier(battery[F("voltage-multiplier")] | voltageMultiplier);
+      setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
       getUsermodConfigFromJsonObject(battery);
 
@@ -552,6 +612,117 @@ class UsermodBattery : public Usermod
         // esp8266
         return 1024.0f;
       #endif
+    }
+
+    /*
+
+    /*
+     * Get lowest configured battery voltage
+     */
+    float getMinBatteryVoltage()
+    {
+      return minBatteryVoltage;
+    }
+
+    /*
+     * Set lowest battery voltage
+     * can't be below 0 volt
+     */
+    void setMinBatteryVoltage(float voltage)
+    {
+      minBatteryVoltage = max(0.0f, voltage);
+    }
+
+    /*
+     * Get highest configured battery voltage
+     */
+    float getMaxBatteryVoltage()
+    {
+      return maxBatteryVoltage;
+    }
+    
+    /*
+     * Set highest battery voltage
+     * can't be below minBatteryVoltage
+     */
+    void setMaxBatteryVoltage(float voltage)
+    {
+      #ifdef USERMOD_BATTERY_USE_LIPO
+        maxBatteryVoltage = max(getMinBatteryVoltage()+0.7f, voltage);
+      #else
+        maxBatteryVoltage = max(getMinBatteryVoltage()+1.0f, voltage);
+      #endif
+    }
+
+
+    /*
+     * Get the capacity of all cells in parralel sumed up
+     * unit: mAh
+     */
+    unsigned int getTotalBatteryCapacity()
+    {
+      return totalBatteryCapacity;
+    }
+
+    void setTotalBatteryCapacity(unsigned int capacity)
+    {
+      totalBatteryCapacity = capacity;
+    }
+
+
+
+    /*
+     * Get the calculated voltage
+     * formula: (adc pin value / adc precision * max voltage) + calibration
+     */
+    float getVoltage()
+    {
+      return voltage;
+    }
+
+    /*
+     * Get the mapped battery level (0 - 100) based on voltage
+     * important: voltage can drop when a load is applied, so its only an estimate
+     */
+    int8_t getBatteryLevel()
+    {
+      return batteryLevel;
+    }
+
+    /*
+     * Get the configured calibration value
+     * a offset value to fine-tune the calculated voltage.
+     */
+    float getCalibration()
+    {
+      return calibration;
+    }
+
+    /*
+     * Set the voltage calibration offset value
+     * a offset value to fine-tune the calculated voltage.
+     */
+    void setCalibration(float offset)
+    {
+      calibration = offset;
+    }
+
+    /*
+     * Set the voltage multiplier value
+     * A multiplier that may need adjusting for different voltage divider setups
+     */
+    void setVoltageMultiplier(float multiplier)
+    {
+      voltageMultiplier = multiplier;
+    }
+
+    /*
+     * Get the voltage multiplier value
+     * A multiplier that may need adjusting for different voltage divider setups
+     */
+    float getVoltageMultiplier()
+    {
+      return voltageMultiplier;
     }
 
     /*

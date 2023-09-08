@@ -373,6 +373,16 @@ int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 }
 
 
+void checkSettingsPIN(const char* pin) {
+  if (!pin) return;
+  if (!correctPIN && millis() - lastEditTime < PIN_RETRY_COOLDOWN) return; // guard against PIN brute force
+  bool correctBefore = correctPIN;
+  correctPIN = (strlen(settingsPIN) == 0 || strncmp(settingsPIN, pin, 4) == 0);
+  if (correctBefore != correctPIN) createEditHandler(correctPIN);
+  lastEditTime = millis();
+}
+
+
 uint16_t crc16(const unsigned char* data_p, size_t length) {
   uint8_t x;
   uint16_t crc = 0xFFFF;
@@ -390,11 +400,12 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
 // Begin simulateSound (to enable audio enhanced effects to display something)
 ///////////////////////////////////////////////////////////////////////////////
 // Currently 4 types defined, to be fine tuned and new types added
+// (only 2 used as stored in 1 bit in segment options, consider switching to a single global simulation type)
 typedef enum UM_SoundSimulations {
   UMS_BeatSin = 0,
-  UMS_WeWillRockYou,
-  UMS_10_3,
-  UMS_14_3
+  UMS_WeWillRockYou
+  //UMS_10_13,
+  //UMS_14_3
 } um_soundSimulations_t;
 
 um_data_t* simulateSound(uint8_t simulationId)
@@ -479,7 +490,7 @@ um_data_t* simulateSound(uint8_t simulationId)
           fftResult[i] = 0;
       }
       break;
-    case UMS_10_3:
+  /*case UMS_10_3:
       for (int i = 0; i<16; i++)
         fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
         volumeSmth = fftResult[8];
@@ -488,7 +499,7 @@ um_data_t* simulateSound(uint8_t simulationId)
       for (int i = 0; i<16; i++)
         fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
       volumeSmth = fftResult[8];
-      break;
+      break;*/
   }
 
   samplePeak    = random8() > 250;
@@ -503,12 +514,49 @@ um_data_t* simulateSound(uint8_t simulationId)
 }
 
 
+// enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
-  for (size_t i=1; i<10; i++) {
-    char fileName[16];
+  for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
+    char fileName[33];
     sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
     bool isFile = WLED_FS.exists(fileName);
-    if (isFile) ledMaps |= 1 << i;
+
+    #ifndef ESP8266
+    if (ledmapNames[i-1]) { //clear old name
+      delete[] ledmapNames[i-1];
+      ledmapNames[i-1] = nullptr;
+    }
+    #endif
+
+    if (isFile) {
+      ledMaps |= 1 << i;
+
+      #ifndef ESP8266
+      if (requestJSONBufferLock(21)) {
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          size_t len = 0;
+          if (!doc["n"].isNull()) {
+            // name field exists
+            const char *name = doc["n"].as<const char*>();
+            if (name != nullptr) len = strlen(name);
+            if (len > 0 && len < 33) {
+              ledmapNames[i-1] = new char[len+1];
+              if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
+            }
+          }
+          if (!ledmapNames[i-1]) {
+            char tmp[33];
+            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            len = strlen(tmp);
+            ledmapNames[i-1] = new char[len+1];
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
+          }
+        }
+        releaseJSONBufferLock();
+      }
+      #endif
+    }
+
   }
 }
