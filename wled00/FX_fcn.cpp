@@ -190,7 +190,11 @@ void Segment::deallocateData() {
   if ((Segment::getUsedSegmentData() > 0) && (_dataLen > 0)) { // check that we don't have a dangling / inconsistent data pointer
     free(data);
   } else {
-    DEBUG_PRINTF("---- Released data (%p): inconsistent UsedSegmentData (%d/%d), cowardly refusing to free nothing.\n", this, _dataLen, Segment::getUsedSegmentData());
+    DEBUG_PRINT(F("---- Released data "));
+    DEBUG_PRINTF("(%p): ", this);
+    DEBUG_PRINT(F("inconsistent UsedSegmentData "));
+    DEBUG_PRINTF("(%d/%d), ", _dataLen, Segment::getUsedSegmentData());
+    DEBUG_PRINTLN(F("cowardly refusing to free nothing."));
   }
   data = nullptr;
   // WARNING it looks like we have a memory leak somewhere
@@ -370,7 +374,7 @@ uint16_t Segment::progress() {
 void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
   if (!_t) return;
   //DEBUG_PRINTF("--  Saving temp seg: %p (%p)\n", this, tmpSeg);
-  if (nullptr == &tmpSeg) { DEBUG_PRINTLN(F("swapSegenv(): tmpSeg is nullptr !!")); return; } // sanity check
+  // if (nullptr == &tmpSeg) { DEBUG_PRINTLN(F("swapSegenv(): tmpSeg is nullptr !!")); return; } // sanity check  - should not happen as references cannot be NULL in C++
   tmpSeg._optionsT   = options;
   for (size_t i=0; i<NUM_COLORS; i++) tmpSeg._colorT[i] = colors[i];
   tmpSeg._speedT     = speed;
@@ -411,7 +415,7 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
 
 void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
   //DEBUG_PRINTF("--  Restoring temp seg: %p (%p)\n", this, tmpSeg);
-  if (nullptr == &tmpSeg) {DEBUG_PRINTLN(F("restoreSegenv(): tmpSeg is nullptr !!")); return;} // sanity check
+  // if (nullptr == &tmpSeg) {DEBUG_PRINTLN(F("restoreSegenv(): tmpSeg is nullptr !!")); return;} // sanity check - should not happen as references cannot be NULL in C++
   if (_t && &(_t->_segT) != &tmpSeg) {
     // update possibly changed variables to keep old effect running correctly
     _t->_segT._aux0T = aux0;
