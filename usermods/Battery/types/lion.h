@@ -1,8 +1,8 @@
 #ifndef UMBLion_h
 #define UMBLion_h
 
-#include "battery_defaults.h"
-#include "battery.h"
+#include "../battery_defaults.h"
+#include "../battery.h"
 
 /**
  *  Lion Battery
@@ -17,7 +17,6 @@ class Lion : public Battery
         {
             this->setMinVoltage(USERMOD_BATTERY_LION_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_LION_MAX_VOLTAGE);
-            this->setCapacity(USERMOD_BATTERY_LION_CAPACITY);
             this->setVoltage(this->getVoltage());
             this->setCalibration(USERMOD_BATTERY_LION_CALIBRATION);
         }
@@ -26,7 +25,6 @@ class Lion : public Battery
         {
             if(cfg.minVoltage) this->setMinVoltage(cfg.minVoltage);
             if(cfg.maxVoltage) this->setMaxVoltage(cfg.maxVoltage);
-            if(cfg.calibration) this->setCapacity(cfg.calibration);
             if(cfg.level) this->setLevel(cfg.level);
             if(cfg.calibration) this->setCalibration(cfg.calibration);
         }

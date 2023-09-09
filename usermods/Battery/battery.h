@@ -14,7 +14,6 @@ class Battery
     protected:
         float minVoltage;
         float maxVoltage;
-        unsigned int capacity;
         float voltage;
         int8_t level = 100;
         float calibration; // offset or calibration value to fine tune the calculated voltage
@@ -34,7 +33,7 @@ class Battery
 
         /**
          * Corresponding battery curves
-         * calculates the capacity in % (0-100) with given voltage and possible voltage range
+         * calculates the level in % (0-100) with given voltage and possible voltage range
          */
         virtual float mapVoltage(float v, float min, float max) = 0;
         // { 
@@ -84,20 +83,6 @@ class Battery
         virtual void setMaxVoltage(float voltage)
         {
             this->maxVoltage = max(getMinVoltage()+.5f, voltage);
-        }
-
-        /*
-        * Get the capacity of all cells in parralel sumed up
-        * unit: mAh
-        */
-        unsigned int getCapacity()
-        {
-            return this->capacity;
-        }
-
-        void setCapacity(unsigned int capacity)
-        {
-            this->capacity = capacity;
         }
 
         float getVoltage()

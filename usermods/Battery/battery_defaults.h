@@ -40,9 +40,6 @@
 #ifndef USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE
   #define USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE 4.2f
 #endif
-#ifndef USERMOD_BATTERY_UNKOWN_CAPACITY
-  #define USERMOD_BATTERY_UNKOWN_CAPACITY 2500
-#endif
 #ifndef USERMOD_BATTERY_UNKOWN_CALIBRATION
   // offset or calibration value to fine tune the calculated voltage
   #define USERMOD_BATTERY_UNKOWN_CALIBRATION 0
@@ -59,9 +56,6 @@
 #ifndef USERMOD_BATTERY_LIPO_MAX_VOLTAGE
   #define USERMOD_BATTERY_LIPO_MAX_VOLTAGE 4.2f
 #endif
-#ifndef USERMOD_BATTERY_LIPO_CAPACITY
-  #define USERMOD_BATTERY_LIPO_CAPACITY 5000
-#endif
 #ifndef USERMOD_BATTERY_LIPO_CALIBRATION
   #define USERMOD_BATTERY_LIPO_CALIBRATION 0
 #endif
@@ -76,10 +70,6 @@
 #endif
 #ifndef USERMOD_BATTERY_LION_MAX_VOLTAGE
   #define USERMOD_BATTERY_LION_MAX_VOLTAGE 4.2f
-#endif
-#ifndef USERMOD_BATTERY_LION_CAPACITY
-  // a common capacity for single 18650 battery cells is between 2500 and 3600 mAh
-  #define USERMOD_BATTERY_LION_CAPACITY 3100
 #endif
 #ifndef USERMOD_BATTERY_LION_CALIBRATION
   // offset or calibration value to fine tune the calculated voltage
@@ -108,11 +98,6 @@
 #ifndef USERMOD_BATTERY_CALIBRATION
   #define USERMOD_BATTERY_CALIBRATION 0
 #endif
-
-// calculate remaining time / the time that is left before the battery runs out of power
-// #ifndef USERMOD_BATTERY_CALCULATE_TIME_LEFT_ENABLED
-//   #define USERMOD_BATTERY_CALCULATE_TIME_LEFT_ENABLED false
-// #endif
 
 // auto-off feature
 #ifndef USERMOD_BATTERY_AUTO_OFF_ENABLED
@@ -157,6 +142,7 @@ typedef struct bconfig_t
   float voltage;          // current voltage
   int8_t level;           // current level
   float calibration;      // offset or calibration value to fine tune the calculated voltage
+  float voltageMultiplier;
 } batteryConfig;
 
 
