@@ -14,11 +14,10 @@ class Lipo : public Battery
 
     public:
         Lipo()
+        : Battery()
         {
             this->setMinVoltage(USERMOD_BATTERY_LIPO_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_LIPO_MAX_VOLTAGE);
-            this->setVoltage(this->getVoltage());
-            this->setCalibration(USERMOD_BATTERY_LIPO_CALIBRATION);
         }
 
         void update(batteryConfig cfg)

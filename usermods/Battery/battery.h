@@ -17,6 +17,7 @@ class Battery
         float voltage;
         int8_t level = 100;
         float calibration; // offset or calibration value to fine tune the calculated voltage
+        float voltageMultiplier; // ratio for the voltage divider
         
         float linearMapping(float v, float min, float max, float oMin = 0.0f, float oMax = 100.0f)
         {
@@ -26,7 +27,9 @@ class Battery
     public:
         Battery()
         {
-
+            this->setVoltage(this->getVoltage());
+            this->setVoltageMultiplier(USERMOD_BATTERY_VOLTAGE_MULTIPLIER);
+            this->setCalibration(USERMOD_BATTERY_CALIBRATION);
         }
 
         virtual void update(batteryConfig cfg) = 0;
@@ -126,6 +129,24 @@ class Battery
         virtual void setCalibration(float offset)
         {
             calibration = offset;
+        }
+
+        /*
+        * Get the configured calibration value
+        * a value to set the voltage divider ratio
+        */
+        virtual float getVoltageMultiplier()
+        {
+            return voltageMultiplier;
+        }
+
+        /*
+        * Set the voltage multiplier value
+        * a value to set the voltage divider ratio.
+        */
+        virtual void setVoltageMultiplier(float multiplier)
+        {
+            voltageMultiplier = voltageMultiplier;
         }
 };
 

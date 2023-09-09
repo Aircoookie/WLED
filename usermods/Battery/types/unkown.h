@@ -14,18 +14,16 @@ class Unkown : public Battery
 
     public:
         Unkown()
+        : Battery()
         {
             this->setMinVoltage(USERMOD_BATTERY_UNKOWN_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE);
-            this->setVoltage(this->getVoltage());
-            this->setCalibration(USERMOD_BATTERY_UNKOWN_CALIBRATION);
         }
 
         void update(batteryConfig cfg)
         {
             if(cfg.minVoltage) this->setMinVoltage(cfg.minVoltage); else this->setMinVoltage(USERMOD_BATTERY_UNKOWN_MIN_VOLTAGE);
             if(cfg.maxVoltage) this->setMaxVoltage(cfg.maxVoltage); else this->setMaxVoltage(USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE);
-            if(cfg.calibration) this->setCalibration(cfg.calibration); else this->setCalibration(USERMOD_BATTERY_UNKOWN_CALIBRATION);
         }
 
         float mapVoltage(float v, float min, float max) override

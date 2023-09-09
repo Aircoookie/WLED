@@ -14,11 +14,10 @@ class Lion : public Battery
 
     public:
         Lion()
+        : Battery()
         {
             this->setMinVoltage(USERMOD_BATTERY_LION_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_LION_MAX_VOLTAGE);
-            this->setVoltage(this->getVoltage());
-            this->setCalibration(USERMOD_BATTERY_LION_CALIBRATION);
         }
 
         void update(batteryConfig cfg)

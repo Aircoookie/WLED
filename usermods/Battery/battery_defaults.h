@@ -40,10 +40,7 @@
 #ifndef USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE
   #define USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE 4.2f
 #endif
-#ifndef USERMOD_BATTERY_UNKOWN_CALIBRATION
-  // offset or calibration value to fine tune the calculated voltage
-  #define USERMOD_BATTERY_UNKOWN_CALIBRATION 0
-#endif
+
 /*
  *
  *  Lithium polymer (Li-Po) defaults
@@ -56,9 +53,7 @@
 #ifndef USERMOD_BATTERY_LIPO_MAX_VOLTAGE
   #define USERMOD_BATTERY_LIPO_MAX_VOLTAGE 4.2f
 #endif
-#ifndef USERMOD_BATTERY_LIPO_CALIBRATION
-  #define USERMOD_BATTERY_LIPO_CALIBRATION 0
-#endif
+
 /*
  *
  *  Lithium-ion (Li-Ion) defaults
@@ -71,12 +66,8 @@
 #ifndef USERMOD_BATTERY_LION_MAX_VOLTAGE
   #define USERMOD_BATTERY_LION_MAX_VOLTAGE 4.2f
 #endif
-#ifndef USERMOD_BATTERY_LION_CALIBRATION
-  // offset or calibration value to fine tune the calculated voltage
-  #define USERMOD_BATTERY_LION_CALIBRATION 0
-#endif
 
-//the default ratio for the voltage divider
+// the default ratio for the voltage divider
 #ifndef USERMOD_BATTERY_VOLTAGE_MULTIPLIER
   #ifdef ARDUINO_ARCH_ESP32
     #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 2.0f
@@ -85,13 +76,8 @@
   #endif
 #endif
 
-#ifndef USERMOD_BATTERY_MAX_VOLTAGE
-  #define USERMOD_BATTERY_MAX_VOLTAGE 4.2f
-#endif
-
-// a common capacity for single 18650 battery cells is between 2500 and 3600 mAh
-#ifndef USERMOD_BATTERY_TOTAL_CAPACITY
-  #define USERMOD_BATTERY_TOTAL_CAPACITY 3100
+#ifndef USERMOD_BATTERY_AVERAGING_ALPHA
+  #define USERMOD_BATTERY_AVERAGING_ALPHA 0.1f
 #endif
 
 // offset or calibration value to fine tune the calculated voltage
@@ -138,7 +124,6 @@ typedef struct bconfig_t
   batteryType type;
   float minVoltage;
   float maxVoltage;
-  unsigned int capacity;  // current capacity
   float voltage;          // current voltage
   int8_t level;           // current level
   float calibration;      // offset or calibration value to fine tune the calculated voltage

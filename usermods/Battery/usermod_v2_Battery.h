@@ -20,27 +20,15 @@ class UsermodBattery : public Usermod
     // battery pin can be defined in my_config.h
     int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
     
-    Battery* bat = nullptr;
-    batteryConfig bcfg;
+    Battery* bat = new Unkown();
+    batteryConfig cfg;
 
     // how often to read the battery voltage
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
     unsigned long nextReadTime = 0;
     unsigned long lastReadTime = 0;
-    // battery min. voltage
-    float minBatteryVoltage = 3.3f;
-    // battery max. voltage
-    float maxBatteryVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
-    // all battery cells summed up
-    unsigned int totalBatteryCapacity = USERMOD_BATTERY_TOTAL_CAPACITY;
-    // raw analog reading 
-    float rawValue = 0.0f;
-    // calculated voltage            
-    float voltage = maxBatteryVoltage;
     // between 0 and 1, to control strength of voltage smoothing filter
-    float alpha = 0.05f;
-    // mapped battery level based on voltage
-    int8_t batteryLevel = 100;
+    float alpha = USERMOD_BATTERY_AVERAGING_ALPHA;
     // offset or calibration value to fine tune the calculated voltage
     float calibration = USERMOD_BATTERY_CALIBRATION;
 
@@ -70,13 +58,16 @@ class UsermodBattery : public Usermod
     static const char _duration[];
     static const char _init[];
 
+    /**
+     * Helper for rounding floating point values 
+     */
     float dot2round(float x) 
     {
       float nx = (int)(x * 100 + .5);
       return (float)(nx / 100);
     }
 
-    /*
+    /**
      * Turn off all leds
      */
     void turnOff()
@@ -85,7 +76,7 @@ class UsermodBattery : public Usermod
       stateUpdated(CALL_MODE_DIRECT_CHANGE);
     }
 
-    /*
+    /**
      * Indicate low power by activating a configured preset for a given time and then switching back to the preset that was selected previously
      */
     void lowPowerIndicator()
@@ -108,25 +99,24 @@ class UsermodBattery : public Usermod
       }      
     }
 
-    // float readVoltage()
-    // {
-    //   #ifdef ARDUINO_ARCH_ESP32
-    //     // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default attentuation) and divide by 1000 to get from milivolts to volts and multiply by voltage multiplier and apply calibration value
-    //     return (analogReadMilliVolts(batteryPin) / 1000.0f) * voltageMultiplier  + calibration;
-    //   #else
-    //     // use analog read on esp8266 ( 0V ~ 1V no attenuation options) and divide by ADC precision 1023 and multiply by voltage multiplier and apply calibration value
-    //     return (analogRead(batteryPin) / 1023.0f) * voltageMultiplier + calibration;
-    //   #endif
-    // }
+    /**
+     * read the battery voltage in different ways depending on the architecture 
+     */
+    float readVoltage()
+    {
+      #ifdef ARDUINO_ARCH_ESP32
+        // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default attentuation) and divide by 1000 to get from milivolts to volts and multiply by voltage multiplier and apply calibration value
+        return (analogReadMilliVolts(batteryPin) / 1000.0f) * bat->getVoltageMultiplier()  + bat->getCalibration();
+      #else
+        // use analog read on esp8266 ( 0V ~ 1V no attenuation options) and divide by ADC precision 1023 and multiply by voltage multiplier and apply calibration value
+        return (analogRead(batteryPin) / 1023.0f) * bat->getVoltageMultiplier() + bat->getCalibration();
+      #endif
+    }
 
   public:
-    UsermodBattery()
-    {
-      bat = new Unkown();
-    }
     //Functions called by WLED
 
-    /*
+    /**
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
@@ -153,16 +143,15 @@ class UsermodBattery : public Usermod
         // voltage = readVoltage();
       #endif
 
-      //this could also be handled with a factory class but for only 2 types it should be sufficient for now
-      if(bcfg.type == (batteryType)lipo) {
+      // plug in the right battery type
+      if(cfg.type == (batteryType)lipo) {
         bat = new Lipo();
-      } else if(bcfg.type == (batteryType)lion) {
+      } else if(cfg.type == (batteryType)lion) {
         bat = new Lion();
-      } else {
-        bat = new Unkown(); // nullObject pattern
       }
 
-      bat->update(bcfg);
+      // update the choosen battery type with configured values
+      bat->update(cfg);
 
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
@@ -171,7 +160,7 @@ class UsermodBattery : public Usermod
     }
 
 
-    /*
+    /**
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
@@ -199,28 +188,15 @@ class UsermodBattery : public Usermod
 
       if (batteryPin < 0) return;  // nothing to read
 
-      initializing = false;     
-      float voltage = -1.0f;
-      float rawValue = 0.0f;
-#ifdef ARDUINO_ARCH_ESP32
-      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV)
-      rawValue = analogReadMilliVolts(batteryPin);
-      // calculate the voltage
-      voltage = (rawValue / 1000.0f) + calibration;
-      // usually a voltage divider (50%) is used on ESP32, so we need to multiply by 2
-      voltage *= 2.0f;
-#else
-      // read battery raw input
-      rawValue = analogRead(batteryPin);
-      // calculate the voltage     
-      voltage = ((rawValue / getAdcPrecision()) * bat->getMaxVoltage()) + bat->getCalibration();
-#endif
-      // filter with exponential smoothing because ADC in esp32 is fluctuating too much for a good single readout
-      voltage = voltage + alpha * (rawValue - voltage);
+      initializing = false;
+      float rawValue = readVoltage();
 
-      bat->setVoltage(voltage);
+      // filter with exponential smoothing because ADC in esp32 is fluctuating too much for a good single readout
+      float filteredVoltage = bat->getVoltage() + alpha * (rawValue - bat->getVoltage());
+
+      bat->setVoltage(filteredVoltage);
       // translate battery voltage into percentage
-      bat->calculateAndSetLevel(voltage);
+      bat->calculateAndSetLevel(filteredVoltage);
 
       // Auto off -- Master power off
       if (autoOffEnabled && (autoOffThreshold >= bat->getLevel()))
@@ -232,13 +208,13 @@ class UsermodBattery : public Usermod
       if (WLED_MQTT_CONNECTED) {
         char buf[64]; // buffer for snprintf()
         snprintf_P(buf, 63, PSTR("%s/voltage"), mqttDeviceTopic);
-        mqtt->publish(buf, 0, false, String(voltage).c_str());
+        mqtt->publish(buf, 0, false, String(bat->getVoltage()).c_str());
       }
 #endif
 
     }
 
-    /*
+    /**
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
@@ -286,7 +262,7 @@ class UsermodBattery : public Usermod
 
     void addBatteryToJsonObject(JsonObject& battery, bool forJsonState)
     {
-      if(forJsonState) { battery[F("type")] = bcfg.type; } else {battery[F("type")] = (String)bcfg.type; }  // has to be a String otherwise it won't get converted to a Dropdown
+      if(forJsonState) { battery[F("type")] = cfg.type; } else {battery[F("type")] = (String)cfg.type; }  // has to be a String otherwise it won't get converted to a Dropdown
       battery[F("min-voltage")] = bat->getMinVoltage();
       battery[F("max-voltage")] = bat->getMaxVoltage();
       battery[F("calibration")] = bat->getCalibration();
@@ -305,10 +281,10 @@ class UsermodBattery : public Usermod
 
     void getUsermodConfigFromJsonObject(JsonObject& battery)
     {
-      getJsonValue(battery[F("type")], bcfg.type);
-      getJsonValue(battery[F("min-voltage")], bcfg.minVoltage);
-      getJsonValue(battery[F("max-voltage")], bcfg.maxVoltage);
-      getJsonValue(battery[F("calibration")], bcfg.calibration);
+      getJsonValue(battery[F("type")], cfg.type);
+      getJsonValue(battery[F("min-voltage")], cfg.minVoltage);
+      getJsonValue(battery[F("max-voltage")], cfg.maxVoltage);
+      getJsonValue(battery[F("calibration")], cfg.calibration);
     
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
@@ -324,10 +300,10 @@ class UsermodBattery : public Usermod
       setLowPowerIndicatorDuration(lp[FPSTR(_duration)] | lowPowerIndicatorDuration);
       
       if(initDone) 
-        bat->update(bcfg);
+        bat->update(cfg);
     }
 
-    /*
+    /**
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
@@ -345,7 +321,7 @@ class UsermodBattery : public Usermod
     }
 
 
-    /*
+    /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
@@ -365,7 +341,7 @@ class UsermodBattery : public Usermod
     */
 
 
-    /*
+    /**
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
      * If you want to force saving the current state, use serializeConfig() in your loop().
@@ -449,7 +425,7 @@ class UsermodBattery : public Usermod
     }
 
 
-    /*
+    /**
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
      * This is called by WLED when settings are loaded (currently this only happens immediately after boot, or after saving on the Usermod Settings page)
      * 
@@ -482,8 +458,8 @@ class UsermodBattery : public Usermod
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
       // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
-      setMinBatteryVoltage(battery[F("min-voltage")] | minBatteryVoltage);
-      setMaxBatteryVoltage(battery[F("max-voltage")] | maxBatteryVoltage);
+      setMinBatteryVoltage(battery[F("min-voltage")] | bat->getMinVoltage());
+      setMaxBatteryVoltage(battery[F("max-voltage")] | bat->getMaxVoltage());
       setCalibration(battery[F("calibration")] | calibration);
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
@@ -515,7 +491,7 @@ class UsermodBattery : public Usermod
       return !battery[FPSTR(_readInterval)].isNull();
     }
 
-    /*
+    /**
      * TBD: Generate a preset sample for low power indication
      * a button on the config page would be cool, currently not possible
      */
@@ -554,7 +530,7 @@ class UsermodBattery : public Usermod
      *
      */
 
-    /*
+    /**
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
@@ -569,7 +545,7 @@ class UsermodBattery : public Usermod
       return readingInterval;
     }
 
-    /*
+    /**
      * minimum repetition is 3000ms (3s) 
      */
     void setReadingInterval(unsigned long newReadingInterval)
@@ -577,100 +553,78 @@ class UsermodBattery : public Usermod
       readingInterval = max((unsigned long)3000, newReadingInterval);
     }
 
-    /*
-     * Get the choosen adc precision
-     * esp8266 = 10bit resolution = 1024.0f 
-     * esp32 = 12bit resolution = 4095.0f
-     */
-    float getAdcPrecision()
-    {
-      #ifdef ARDUINO_ARCH_ESP32
-        // esp32
-        return 4096.0f;
-      #else
-        // esp8266
-        return 1024.0f;
-      #endif
-    }
-
-    /*
-
-    /*
+    /**
      * Get lowest configured battery voltage
      */
     float getMinBatteryVoltage()
     {
-      return minBatteryVoltage;
+      return bat->getMinVoltage();
     }
 
-    /*
+    /**
      * Set lowest battery voltage
-     * can't be below 0 volt
+     * cant be below 0 volt
      */
     void setMinBatteryVoltage(float voltage)
     {
-      minBatteryVoltage = max(0.0f, voltage);
+      bat->setMinVoltage(voltage);
     }
 
-    /*
+    /**
      * Get highest configured battery voltage
      */
     float getMaxBatteryVoltage()
     {
-      return maxBatteryVoltage;
+      return bat->getMaxVoltage();
     }
     
-    /*
+    /**
      * Set highest battery voltage
      * can't be below minBatteryVoltage
      */
     void setMaxBatteryVoltage(float voltage)
     {
-      #ifdef USERMOD_BATTERY_USE_LIPO
-        maxBatteryVoltage = max(getMinBatteryVoltage()+0.7f, voltage);
-      #else
-        maxBatteryVoltage = max(getMinBatteryVoltage()+1.0f, voltage);
-      #endif
+      bat->setMaxVoltage(voltage);
     }
 
 
-    /*
+    /**
      * Get the calculated voltage
      * formula: (adc pin value / adc precision * max voltage) + calibration
      */
     float getVoltage()
     {
-      return voltage;
+      return bat->getVoltage();
     }
 
-    /*
+    /**
      * Get the mapped battery level (0 - 100) based on voltage
      * important: voltage can drop when a load is applied, so its only an estimate
      */
     int8_t getBatteryLevel()
     {
-      return batteryLevel;
+      return bat->getLevel();
     }
 
-    /*
+    /**
      * Get the configured calibration value
      * a offset value to fine-tune the calculated voltage.
      */
     float getCalibration()
     {
-      return calibration;
+      return bat->getCalibration();
     }
 
-    /*
+    /**
      * Set the voltage calibration offset value
      * a offset value to fine-tune the calculated voltage.
      */
     void setCalibration(float offset)
     {
-      calibration = offset;
+      bat->setCalibration(offset);
     }
 
-    /*
+    /**
      * Get auto-off feature enabled status
      * is auto-off enabled, true/false
      */
@@ -679,7 +633,7 @@ class UsermodBattery : public Usermod
       return autoOffEnabled;
     }
 
-    /*
+    /**
      * Set auto-off feature status 
      */
     void setAutoOffEnabled(bool enabled)
@@ -687,7 +641,7 @@ class UsermodBattery : public Usermod
       autoOffEnabled = enabled;
     }
     
-    /*
+    /**
      * Get auto-off threshold in percent (0-100)
      */
     int8_t getAutoOffThreshold()
@@ -695,7 +649,7 @@ class UsermodBattery : public Usermod
       return autoOffThreshold;
     }
 
-    /*
+    /**
      * Set auto-off threshold in percent (0-100) 
      */
     void setAutoOffThreshold(int8_t threshold)
@@ -705,7 +659,7 @@ class UsermodBattery : public Usermod
       autoOffThreshold  = lowPowerIndicatorEnabled /*&& autoOffEnabled*/ ? min(lowPowerIndicatorThreshold-1, (int)autoOffThreshold) : autoOffThreshold;
     }
 
-    /*
+    /**
      * Get low-power-indicator feature enabled status
      * is the low-power-indicator enabled, true/false
      */
@@ -714,7 +668,7 @@ class UsermodBattery : public Usermod
       return lowPowerIndicatorEnabled;
     }
 
-    /*
+    /**
      * Set low-power-indicator feature status 
      */
     void setLowPowerIndicatorEnabled(bool enabled)
@@ -722,7 +676,7 @@ class UsermodBattery : public Usermod
       lowPowerIndicatorEnabled = enabled;
     }
 
-    /*
+    /**
      * Get low-power-indicator preset to activate when low power is detected
      */
     int8_t getLowPowerIndicatorPreset()
@@ -730,7 +684,7 @@ class UsermodBattery : public Usermod
       return lowPowerIndicatorPreset;
     }
 
-    /* 
+    /** 
      * Set low-power-indicator preset to activate when low power is detected
      */
     void setLowPowerIndicatorPreset(int8_t presetId)
@@ -748,7 +702,7 @@ class UsermodBattery : public Usermod
       return lowPowerIndicatorThreshold;
     }
 
-    /*
+    /**
      * Set low-power-indicator threshold in percent (0-100)
      */
     void setLowPowerIndicatorThreshold(int8_t threshold)
@@ -758,7 +712,7 @@ class UsermodBattery : public Usermod
       lowPowerIndicatorThreshold  = autoOffEnabled /*&& lowPowerIndicatorEnabled*/ ? max(autoOffThreshold+1, (int)lowPowerIndicatorThreshold) : max(5, (int)lowPowerIndicatorThreshold);
     }
 
-    /*
+    /**
      * Get low-power-indicator duration in seconds
      */
     int8_t getLowPowerIndicatorDuration()
@@ -766,7 +720,7 @@ class UsermodBattery : public Usermod
       return lowPowerIndicatorDuration;
     }
 
-    /*
+    /**
      * Set low-power-indicator duration in seconds
      */
     void setLowPowerIndicatorDuration(int8_t duration)
@@ -774,7 +728,7 @@ class UsermodBattery : public Usermod
       lowPowerIndicatorDuration = duration;
     }
 
-    /*
+    /**
      * Get low-power-indicator status when the indication is done thsi returns true
      */
     bool getLowPowerIndicatorDone()
