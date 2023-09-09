@@ -587,7 +587,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("LT"),tm);
     getTimeString(tm);
     sappends('m',SET_F("(\"times\")[0]"),tm);
-    if ((int)(longitude*10.) || (int)(latitude*10.)) {
+    if ((int)(longitude*10.0f) || (int)(latitude*10.0f)) {
       sprintf_P(tm, PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
       sappends('m',SET_F("(\"times\")[1]"),tm);
     }
