@@ -48,7 +48,7 @@ body:
     attributes:
       label: What version/release of MM WLED?
       description: You can find this in by going to Config -> Security & Updates -> Scroll to Bottom. Copy and paste the entire line after "Server message"
-      placeholder: "e.g. WLEDMM_0.14.0.2.1_esp32_4MB_max (build 2212061)"
+      placeholder: "e.g. build 2308250, WLEDMM_0.14.0-b27.31_esp32_4MB_M.bin"
     validations:
       required: true
   - type: dropdown
@@ -57,12 +57,12 @@ body:
       label: Which microcontroller/board are you seeing the problem on?
       multiple: true
       options:
-        - ESP8266
         - ESP32
         - ESP32-S3
         - ESP32-S2
         - ESP32-C3
         - Other
+        - ESP8266
     validations:
       required: true
   - type: textarea

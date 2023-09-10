@@ -1,6 +1,33 @@
 #pragma once
 
 #include "wled.h"
+
+// softhack007: workaround for ICE (internal compiler error) when compiling with new framework and "-O2":
+
+/* 
+	wled00/../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h: In function 'uint16_t mode_Waves()':
+	wled00/../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h:367:1: error: insn does not satisfy its constraints:
+ 	}
+ 	^
+	(insn 811 738 824 24 (set (reg/v:SF 19 f0 [orig:69 result ] [69])
+        	(mem/u/c:SF (symbol_ref/u:SI ("*.LC1657") [flags 0x2]) [0  S4 A32])) ".pio/libdeps/my_esp32_16MB_V4_S/animartrix/ANIMartRIX.h":372 47 {movsf_internal}
+     	(nil))
+	during RTL pass: postreload
+	wled00/../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h:367:1: internal compiler error: in extract_constrain_insn, at recog.c:2210
+	libbacktrace could not find executable to open
+	Please submit a full bug report,
+	with preprocessed source if appropriate.
+	See <https://gcc.gnu.org/bugs/> for instructions.
+*/
+
+#if defined(ARDUINO_ARCH_ESP32) && defined(ESP_IDF_VERSION)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+  // this pragma temporarily raises gcc optimization level to "-O3", to avoid internal error conditions
+  #pragma GCC push_options
+  #pragma GCC optimize ("O3")
+#endif
+#endif
+
 #include <ANIMartRIX.h>
 
 #warning WLEDMM usermod: CC BY-NC 3.0 licensed effects by Stefan Petrick, include this usermod only if you accept the terms!
@@ -448,4 +475,10 @@ class AnimartrixUsermod : public Usermod {
 };
 
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(ESP_IDF_VERSION)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+  // restore original gcc optimization level
+  #pragma GCC pop_options
+#endif
+#endif
 

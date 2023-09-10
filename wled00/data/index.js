@@ -676,8 +676,7 @@ function populateInfo(i)
 	if (i.ver.includes("0.14.1")) vcn = "Sitting Ducks"; // easter egg
 	if (i.ver.includes("0.14.0")) vcn = "Lupo";          // check for MM versioning scheme
 	if (i.ver.includes("0.14.0-b15")) vcn = "Sitting Ducks"; // late easter egg
-	if (i.ver.includes("0.14.0-b25")) vcn = "This is the way"; // recently watched The Mandalorian? I have spoken ;-)
-	if (i.ver.includes("0.14.0-b26")) vcn = "This is the way";
+	if (i.ver.includes("0.14.0-b2")) vcn = "This is the way"; // recently watched The Mandalorian? I have spoken ;-)
 	if (i.ver.includes("0.14.0-b15.22")) vcn = "Lupo";
 	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p>(WLEDMM_${i.ver} ${i.rel}.bin)</p><p><em>build ${i.vid}</em></p><table>
 ${urows}

@@ -109,6 +109,7 @@ void WLED::loop()
   handleRemote();
   #endif
   handleSerial();
+  handleImprovWifiScan();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental: handleNotifications() calls strip.show(); handleTransitions modifies segments
   if (!suspendStripService) {
@@ -827,7 +828,7 @@ void WLED::initAP(bool resetAP)
   USER_PRINTLN(apSSID);                    // WLEDMM
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
   #endif
 
@@ -962,7 +963,6 @@ void WLED::initConnection()
   ws.onEvent(wsEvent);
   #endif
 
-
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(WIFI_PHY_MODE_11N);
@@ -1010,7 +1010,7 @@ void WLED::initConnection()
 
   WiFi.begin(clientSSID, clientPass);
 #ifdef ARDUINO_ARCH_ESP32
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
   #endif
   WiFi.setSleep(!noWifiSleep);
@@ -1228,7 +1228,7 @@ void WLED::handleConnection()
     if (improvActive) {
       if (improvError == 3) sendImprovStateResponse(0x00, true);
       sendImprovStateResponse(0x04);
-      if (improvActive > 1) sendImprovRPCResponse(0x01);
+      if (improvActive > 1) sendImprovIPRPCResult(ImprovRPCType::Command_Wifi);
     }
     initInterfaces();
     userConnected();
