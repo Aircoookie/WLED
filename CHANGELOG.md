@@ -1,5 +1,10 @@
 ## WLED changelog
 
+#### Build 2309100
+-   Release of WLED beta version 0.14.0-b5 "Hoshi"
+-   New standard esp32 build with audioreactive
+-   Effect blending bugfixes, and minor optimizations
+
 #### Build 2309050
 -   Effect blending (#3311) (finally efect transitions!)
     *WARNING*: May not work well with ESP8266, with plenty of segments or usermods (low RAM condition)!!!
