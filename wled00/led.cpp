@@ -226,7 +226,7 @@ void handleNightlight()
     if (!nightlightActiveOld) //init
     {
       nightlightStartTime = millis();
-      nightlightDelayMs = (int)(nightlightDelayMins*60000);
+      nightlightDelayMs = (unsigned)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
       for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color

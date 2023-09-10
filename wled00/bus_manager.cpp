@@ -66,7 +66,7 @@ uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaul
   if (_count == 0) return defaultColorOrder;
   // upper nibble containd W swap information
   uint8_t swapW = defaultColorOrder >> 4;
-  for (uint8_t i = 0; i < _count; i++) {
+  for (unsigned i = 0; i < _count; i++) {
     if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
       return _mappings[i].colorOrder | (swapW << 4);
     }
@@ -180,7 +180,7 @@ void BusDigital::setBrightness(uint8_t b) {
   // (which we can't rely on)
   uint16_t hwLen = _len;
   if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
-  for (uint_fast16_t i = 0; i < hwLen; i++) {
+  for (unsigned i = 0; i < hwLen; i++) {
     // use 0 as color order, actual order does not matter here as we just update the channel values as-is
     uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0),prevBri);
     PolyBus::setPixelColor(_busPtr, _iType, i, c, 0);
@@ -261,7 +261,7 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
 
 uint8_t BusDigital::getPins(uint8_t* pinArray) {
   uint8_t numPins = IS_2PIN(_type) ? 2 : 1;
-  for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
+  for (unsigned i = 0; i < numPins; i++) pinArray[i] = _pins[i];
   return numPins;
 }
 
@@ -305,7 +305,7 @@ BusPwm::BusPwm(BusConfig &bc)
   }
   #endif
 
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     uint8_t currentPin = bc.pins[i];
     if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
       deallocatePins(); return;
@@ -384,7 +384,7 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) {
 void BusPwm::show() {
   if (!_valid) return;
   uint8_t numPins = NUM_PWM_PINS(_type);
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     uint8_t scaled = (_data[i] * _bri) / 255;
     if (_reversed) scaled = 255 - scaled;
     #ifdef ESP8266
@@ -398,7 +398,7 @@ void BusPwm::show() {
 uint8_t BusPwm::getPins(uint8_t* pinArray) {
   if (!_valid) return 0;
   uint8_t numPins = NUM_PWM_PINS(_type);
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     pinArray[i] = _pins[i];
   }
   return numPins;
@@ -406,7 +406,7 @@ uint8_t BusPwm::getPins(uint8_t* pinArray) {
 
 void BusPwm::deallocatePins() {
   uint8_t numPins = NUM_PWM_PINS(_type);
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
     if (!pinManager.isPinOk(_pins[i])) continue;
     #ifdef ESP8266
@@ -512,7 +512,7 @@ void BusNetwork::show() {
 }
 
 uint8_t BusNetwork::getPins(uint8_t* pinArray) {
-  for (uint8_t i = 0; i < 4; i++) {
+  for (unsigned i = 0; i < 4; i++) {
     pinArray[i] = _client[i];
   }
   return 4;
@@ -566,24 +566,24 @@ void BusManager::removeAll() {
   DEBUG_PRINTLN(F("Removing all."));
   //prevents crashes due to deleting busses while in use.
   while (!canAllShow()) yield();
-  for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
+  for (unsigned i = 0; i < numBusses; i++) delete busses[i];
   numBusses = 0;
 }
 
 void BusManager::show() {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->show();
   }
 }
 
 void BusManager::setStatusPixel(uint32_t c) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->setStatusPixel(c);
   }
 }
 
 void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     Bus* b = busses[i];
     uint16_t bstart = b->getStart();
     if (pix < bstart || pix >= bstart + b->getLength()) continue;
@@ -592,7 +592,7 @@ void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
 }
 
 void BusManager::setBrightness(uint8_t b) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->setBrightness(b);
   }
 }
@@ -607,7 +607,7 @@ void BusManager::setSegmentCCT(int16_t cct, bool allowWBCorrection) {
 }
 
 uint32_t BusManager::getPixelColor(uint16_t pix) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     Bus* b = busses[i];
     uint16_t bstart = b->getStart();
     if (pix < bstart || pix >= bstart + b->getLength()) continue;
@@ -617,7 +617,7 @@ uint32_t BusManager::getPixelColor(uint16_t pix) {
 }
 
 bool BusManager::canAllShow() {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     if (!busses[i]->canShow()) return false;
   }
   return true;
@@ -631,7 +631,7 @@ Bus* BusManager::getBus(uint8_t busNr) {
 //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
 uint16_t BusManager::getTotalLength() {
   uint16_t len = 0;
-  for (uint8_t i=0; i<numBusses; i++) len += busses[i]->getLength();
+  for (unsigned i=0; i<numBusses; i++) len += busses[i]->getLength();
   return len;
 }
 

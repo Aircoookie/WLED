@@ -1,6 +1,6 @@
 //page js
 var loc = false, locip, locproto = "http:";
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false/*, syncTglRecv = true*/;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -613,7 +613,7 @@ function parseInfo(i) {
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
 	ledCount    = i.leds.count;
-	syncTglRecv = i.str;
+	//syncTglRecv = i.str;
 	maxSeg      = i.leds.maxseg;
 	pmt         = i.fs.pmt;
 	gId('buttonNodes').style.display = lastinfo.ndc > 0 ? null:"none";
@@ -1688,7 +1688,7 @@ function toggleSync()
 	if (syncSend) showToast('Other lights in the network will now sync to this one.');
 	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
-	if (syncTglRecv) obj.udpn.recv = syncSend;
+	//if (syncTglRecv) obj.udpn.recv = syncSend;
 	requestJson(obj);
 }
 

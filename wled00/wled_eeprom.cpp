@@ -83,8 +83,8 @@ void loadSettingsFromEEPROM()
   nightlightDelayMinsDefault = EEPROM.read(224);
   nightlightDelayMins = nightlightDelayMinsDefault;
   nightlightMode = EEPROM.read(225);
-  notifyDirectDefault = EEPROM.read(226);
-  notifyDirect = notifyDirectDefault;
+  notifyDirect = EEPROM.read(226);
+  sendNotificationsRT = notifyDirect;
 
   apChannel = EEPROM.read(227);
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
@@ -163,7 +163,6 @@ void loadSettingsFromEEPROM()
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
   }
-  receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 
   if (lastEEPROMversion > 4) {
     #ifndef WLED_DISABLE_HUESYNC
@@ -278,10 +277,10 @@ void loadSettingsFromEEPROM()
   if (lastEEPROMversion > 13)
   {
     mqttEnabled = EEPROM.read(2299);
-    syncToggleReceive = EEPROM.read(397);
+    //syncToggleReceive = EEPROM.read(397);
   } else {
     mqttEnabled = true;
-    syncToggleReceive = false;
+    //syncToggleReceive = false;
   }
 
   if (lastEEPROMversion > 14)

@@ -134,7 +134,7 @@ void WS2812FX::setUpMatrix() {
 
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
-      for (uint16_t i=0; i<customMappingSize; i++) {
+      for (unsigned i=0; i<customMappingSize; i++) {
         if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
         DEBUG_PRINTF("%4d,", customMappingTable[i]);
       }
@@ -199,7 +199,7 @@ void /*IRAM_ATTR*/ Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
-  uint8_t _bri_t = currentBri(on ? opacity : 0);
+  uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -310,32 +310,17 @@ void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t 
 void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
   if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
-  uint32_t col = getPixelColorXY(x,y);
-  uint8_t r = R(col);
-  uint8_t g = G(col);
-  uint8_t b = B(col);
-  uint8_t w = W(col);
-  if (fast) {
-    r = qadd8(r, R(color));
-    g = qadd8(g, G(color));
-    b = qadd8(b, B(color));
-    w = qadd8(w, W(color));
-    col = RGBW32(r,g,b,w);
-  } else {
-    col = color_add(col, color);
-  }
-  setPixelColorXY(x, y, col);
+  setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color, fast));
 }
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
   if (!isActive()) return; // not active
-  CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
-  setPixelColorXY(x, y, pix);
+  setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), fade, true));
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
 void Segment::blurRow(uint16_t row, fract8 blur_amount) {
-  if (!isActive()) return; // not active
+  if (!isActive() || blur_amount == 0) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
@@ -344,7 +329,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint_fast16_t x = 0; x < cols; x++) {
+  for (unsigned x = 0; x < cols; x++) {
     CRGB cur = getPixelColorXY(x, row);
     CRGB before = cur;     // remember color before blur
     CRGB part = cur;
@@ -363,7 +348,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
 
 // blurCol: perform a blur on a column of a rectangular matrix
 void Segment::blurCol(uint16_t col, fract8 blur_amount) {
-  if (!isActive()) return; // not active
+  if (!isActive() || blur_amount == 0) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
@@ -372,7 +357,7 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint_fast16_t y = 0; y < rows; y++) {
+  for (unsigned y = 0; y < rows; y++) {
     CRGB cur = getPixelColorXY(col, y);
     CRGB part = cur;
     CRGB before = cur;     // remember color before blur
@@ -391,7 +376,7 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
 
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
 void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
-  if (!isActive()) return; // not active
+  if (!isActive() || blur_amount == 0) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const uint16_t dim1 = vertical ? rows : cols;
@@ -401,7 +386,7 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
   const float keep = 3.f - 2.f*seep;
   // 1D box blur
   CRGB tmp[dim1];
-  for (uint16_t j = 0; j < dim1; j++) {
+  for (int j = 0; j < dim1; j++) {
     uint16_t x = vertical ? i : j;
     uint16_t y = vertical ? j : i;
     int16_t xp = vertical ? x : x-1;  // "signed" to prevent underflow
@@ -417,7 +402,7 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
     b = (curr.b*keep + (prev.b + next.b)*seep) / 3;
     tmp[j] = CRGB(r,g,b);
   }
-  for (uint16_t j = 0; j < dim1; j++) {
+  for (int j = 0; j < dim1; j++) {
     uint16_t x = vertical ? i : j;
     uint16_t y = vertical ? j : i;
     setPixelColorXY(x, y, tmp[j]);
@@ -440,7 +425,7 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
 
 void Segment::blur1d(fract8 blur_amount) {
   const uint16_t rows = virtualHeight();
-  for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount);
+  for (unsigned y = 0; y < rows; y++) blurRow(y, blur_amount);
 }
 
 void Segment::moveX(int8_t delta, bool wrap) {
@@ -498,7 +483,7 @@ void Segment::move(uint8_t dir, uint8_t delta, bool wrap) {
 }
 
 void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
-  if (!isActive()) return; // not active
+  if (!isActive() || radius == 0) return; // not active
   // Bresenham’s Algorithm
   int d = 3 - (2*radius);
   int y = radius, x = 0;
@@ -523,7 +508,7 @@ void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
-  if (!isActive()) return; // not active
+  if (!isActive() || radius == 0) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for (int16_t y = -radius; y <= radius; y++) {
@@ -540,7 +525,7 @@ void Segment::nscale8(uint8_t scale) {
   if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+  for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
     setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
 }

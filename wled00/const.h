@@ -166,7 +166,7 @@
 #define CALL_MODE_NO_NOTIFY      5
 #define CALL_MODE_FX_CHANGED     6     //no longer used
 #define CALL_MODE_HUE            7
-#define CALL_MODE_PRESET_CYCLE   8
+#define CALL_MODE_PRESET_CYCLE   8     //no longer used
 #define CALL_MODE_BLYNK          9     //no longer used
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
@@ -270,6 +270,10 @@
 #define COL_ORDER_GBR             5
 #define COL_ORDER_MAX             5
 
+//ESP-NOW
+#define ESP_NOW_STATE_UNINIT       0
+#define ESP_NOW_STATE_ON           1
+#define ESP_NOW_STATE_ERROR        2
 
 //Button type
 #define BTN_TYPE_NONE             0
@@ -313,10 +317,9 @@
 #define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
 #define SEG_OPTION_FREEZE         4            //Segment contents will not be refreshed
 #define SEG_OPTION_RESET          5            //Segment runtime requires reset
-#define SEG_OPTION_TRANSITIONAL   6
-#define SEG_OPTION_REVERSED_Y     7
-#define SEG_OPTION_MIRROR_Y       8
-#define SEG_OPTION_TRANSPOSED     9
+#define SEG_OPTION_REVERSED_Y     6
+#define SEG_OPTION_MIRROR_Y       7
+#define SEG_OPTION_TRANSPOSED     8
 
 //Segment differs return byte
 #define SEG_DIFFERS_BRI        0x01 // opacity

@@ -77,6 +77,9 @@
   }
   #ifndef WLED_DISABLE_ESPNOW
     #include <espnow.h>
+    #define WIFI_MODE_STA WIFI_STA
+    #define WIFI_MODE_AP WIFI_AP
+    #include <QuickEspNow.h>
   #endif
 #else // ESP32
   #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
@@ -97,6 +100,7 @@
 
   #ifndef WLED_DISABLE_ESPNOW
     #include <esp_now.h>
+    #include <QuickEspNow.h>
   #endif
 #endif
 #include <Wire.h>
@@ -361,7 +365,7 @@ WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module - use d
 #else
 WLED_GLOBAL char serverDescription[33] _INIT(SERVERNAME);  // use predefined name
 #endif
-WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
+//WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 WLED_GLOBAL bool simplifiedUI          _INIT(false);   // enable simplified UI
 WLED_GLOBAL byte cacheInvalidate       _INIT(0);       // used to invalidate browser cache when switching from regular to simplified UI
 
@@ -402,7 +406,7 @@ WLED_GLOBAL byte alexaNumPresets _INIT(0);                        // number of p
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
-WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP realtime
+WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP/Hyperion realtime
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
@@ -465,9 +469,11 @@ WLED_GLOBAL bool hueApplyColor _INIT(true);
 WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
 
 #ifndef WLED_DISABLE_ESPNOW
-WLED_GLOBAL bool enable_espnow_remote _INIT(false);
-WLED_GLOBAL char linked_remote[13]   _INIT("");
-WLED_GLOBAL char last_signal_src[13]   _INIT("");
+WLED_GLOBAL bool enableESPNow        _INIT(false);  // global on/off for ESP-NOW
+WLED_GLOBAL byte statusESPNow        _INIT(ESP_NOW_STATE_UNINIT); // state of ESP-NOW stack (0 uninitialised, 1 initialised, 2 error)
+WLED_GLOBAL bool useESPNowSync       _INIT(false);  // use ESP-NOW wireless technology for sync
+WLED_GLOBAL char linked_remote[13]   _INIT("");     // MAC of ESP-NOW remote (Wiz Mote)
+WLED_GLOBAL char last_signal_src[13] _INIT("");     // last seen ESP-NOW sender
 #endif
 
 // Time CONFIG
@@ -563,8 +569,8 @@ WLED_GLOBAL bool disablePullUp                                _INIT(false);
 WLED_GLOBAL byte touchThreshold                               _INIT(TOUCH_THRESHOLD);
 
 // notifications
-WLED_GLOBAL bool notifyDirectDefault _INIT(notifyDirect);
-WLED_GLOBAL bool receiveNotifications _INIT(true);
+WLED_GLOBAL bool sendNotifications    _INIT(false);           // master notification switch
+WLED_GLOBAL bool sendNotificationsRT  _INIT(false);           // master notification switch (runtime)
 WLED_GLOBAL unsigned long notificationSentTime _INIT(0);
 WLED_GLOBAL byte notificationSentCallMode _INIT(CALL_MODE_INIT);
 WLED_GLOBAL uint8_t notificationCount _INIT(0);
