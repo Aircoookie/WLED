@@ -17,7 +17,7 @@ private:
   bool umSSDRDisplayTime = false;
   bool umSSDRInverted = false;
   bool umSSDRColonblink = true;
-  bool umSSDRLeadingZero = true;
+  bool umSSDRLeadingZero = false;
   bool umSSDREnableLDR = false;
   String umSSDRHours = "";
   String umSSDRMinutes = "";
