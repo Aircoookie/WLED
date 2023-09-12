@@ -5909,7 +5909,6 @@ uint16_t mode_2Dscrollingtext(void) {
   char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
   if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
   const bool zero = strchr(text, '0') != nullptr;
-  const int  numberOfLetters = strlen(text);
 
   char sec[5];
   int  AmPmHour = hour(localTime);
@@ -5922,7 +5921,7 @@ uint16_t mode_2Dscrollingtext(void) {
     sprintf_P(sec, PSTR(":%02d"), second(localTime));
   }
 
-  if (!numberOfLetters) { // fallback if empty segment name: display date and time
+  if (!strlen(text)) { // fallback if empty segment name: display date and time
     sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   } else {
     if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"),   day(localTime),   month(localTime),  year(localTime));
@@ -5932,6 +5931,7 @@ uint16_t mode_2Dscrollingtext(void) {
     else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
   }
 
+  const int  numberOfLetters = strlen(text);
   const unsigned long now = millis(); // reduce millis() calls
   int width = (numberOfLetters * rotLW);
   int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-rotLH)/2;
