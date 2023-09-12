@@ -161,7 +161,7 @@
 	
 	function Save() {
 		SetLS();
-		if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st || d.Sf.SU.checked != initial_su) d.Sf.submit();
+		if (d.Sf.DS.value != initial_ds || /*d.Sf.ST.checked != initial_st ||*/ d.Sf.SU.checked != initial_su) d.Sf.submit();
 	}
 	
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -176,7 +176,7 @@
 			//console.log("File loaded");
 			GetV(); 
 			initial_ds = d.Sf.DS.value;
-			initial_st = d.Sf.ST.checked;
+			//initial_st = d.Sf.ST.checked;
 			initial_su = d.Sf.SU.checked;
 			GetLS();
 		});
