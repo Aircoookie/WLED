@@ -310,17 +310,21 @@ void Segment::startTransition(uint16_t dur) {
   _t->_briT           = on ? opacity : 0;
   _t->_cctT           = cct;
 #ifndef WLED_DISABLE_MODE_BLEND
-  swapSegenv(_t->_segT);
-  _t->_modeT          = mode;
-  _t->_segT._dataLenT = 0;
-  _t->_segT._dataT    = nullptr;
-  if (_dataLen > 0 && data) {
-    _t->_segT._dataT = (byte *)malloc(_dataLen);
-    if (_t->_segT._dataT) {
-      //DEBUG_PRINTF("--  Allocated duplicate data (%d): %p\n", _dataLen, _t->_segT._dataT);
-      memcpy(_t->_segT._dataT, data, _dataLen);
-      _t->_segT._dataLenT = _dataLen;
+  if (modeBlending) {
+    swapSegenv(_t->_segT);
+    _t->_modeT          = mode;
+    _t->_segT._dataLenT = 0;
+    _t->_segT._dataT    = nullptr;
+    if (_dataLen > 0 && data) {
+      _t->_segT._dataT = (byte *)malloc(_dataLen);
+      if (_t->_segT._dataT) {
+        //DEBUG_PRINTF("--  Allocated duplicate data (%d): %p\n", _dataLen, _t->_segT._dataT);
+        memcpy(_t->_segT._dataT, data, _dataLen);
+        _t->_segT._dataLenT = _dataLen;
+      }
     }
+  } else {
+    for (size_t i=0; i<NUM_COLORS; i++) _t->_segT._colorT[i] = colors[i];
   }
 #else
   for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = colors[i];
@@ -407,8 +411,8 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
     _t->_segT._stepT = step;
     _t->_segT._callT = call;
     //if (_t->_segT._dataT != data) DEBUG_PRINTF("---  data re-allocated: (%p) %p -> %p\n", this, _t->_segT._dataT, data);
-    _t->_segT._dataT = data;        // sometimes memory gets re-allocated (!! INVESTIGATE WHY !!)
-    _t->_segT._dataLenT = _dataLen; // sometimes memory gets re-allocated (!! INVESTIGATE WHY !!)
+    _t->_segT._dataT = data;
+    _t->_segT._dataLenT = _dataLen;
   }
   options   = tmpSeg._optionsT;
   for (size_t i=0; i<NUM_COLORS; i++) colors[i] = tmpSeg._colorT[i];
@@ -443,7 +447,7 @@ uint8_t Segment::currentBri(bool useCct) {
 uint8_t Segment::currentMode() {
 #ifndef WLED_DISABLE_MODE_BLEND
   uint16_t prog = progress();
-  if (prog < 0xFFFFU) return _t->_modeT;
+  if (modeBlending && prog < 0xFFFFU) return _t->_modeT;
 #endif
   return mode;
 }
@@ -459,7 +463,7 @@ uint32_t Segment::currentColor(uint8_t slot) {
 CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   loadPalette(targetPalette, pal);
   uint16_t prog = progress();
-  if (prog < 0xFFFFU) {
+  if (strip.paletteFade && prog < 0xFFFFU) {
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
     // minimum blend time is 100ms maximum is 65535ms
@@ -574,7 +578,9 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
   // if we have a valid mode & is not reserved
   if (fx < strip.getModeCount() && strncmp_P("RSVD", strip.getModeData(fx), 4)) {
     if (fx != mode) {
-      if (fadeTransition) startTransition(strip.getTransition()); // set effect transitions
+#ifndef WLED_DISABLE_MODE_BLEND
+      if (modeBlending) startTransition(strip.getTransition()); // set effect transitions
+#endif
       mode = fx;
       // load default values from effect string
       if (loadDefaults) {
@@ -1207,7 +1213,7 @@ void WS2812FX::service() {
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
         delay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (seg.mode != tmpMode) {
+        if (modeBlending && seg.mode != tmpMode) {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
