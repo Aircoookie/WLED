@@ -2270,7 +2270,7 @@ uint16_t mode_meteor() {
     {
       byte meteorTrailDecay = 128 + random8(127);
       trail[i] = scale8(trail[i], meteorTrailDecay);
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, false, 0, trail[i]));
+      SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, false, 0), trail[i]));
     }
   }
 
@@ -2281,12 +2281,12 @@ uint16_t mode_meteor() {
       index -= SEGLEN;
     }
     trail[index] = 240;
-    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0, 255));
+    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0));
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail length;!;!";
+static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail length;!,!;!;1";
 
 
 // smooth meteor effect
@@ -2309,7 +2309,7 @@ uint16_t mode_meteor_smooth() {
       trail[i] += change;
       if (trail[i] > 245) trail[i] = 0;
       if (trail[i] > 240) trail[i] = 240;
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, false, 0, trail[i]));
+      SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, false, 0), trail[i]));
     }
   }
 
@@ -2320,13 +2320,13 @@ uint16_t mode_meteor_smooth() {
       index -= SEGLEN;
     }
     trail[index] = 240;
-    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0, 255));
+    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0));
   }
 
   SEGENV.step += SEGMENT.speed +1;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail length;!;!";
+static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail length;!,!;!;1";
 
 
 //Railway Crossing / Christmas Fairy lights
