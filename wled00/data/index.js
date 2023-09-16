@@ -430,14 +430,14 @@ function presetError(empty)
 		else
 			cn += `Here is a backup of the last known good state:`;
 		cn += `<textarea id="bck"></textarea><br><button class="btn" onclick="cpBck()">Copy to clipboard</button>`;
-		cn += `<button type="button" class="btn" onclick="saveBackup(gID('bck').value)">Restore</button>`;
+		cn += `<br><button type="button" class="btn" onclick="restore(gId('bck').value)">Restore</button>`;
 	}
 	cn += `</div>`;
 	gId('pcont').innerHTML = cn;
 	if (hasBackup) gId('bck').value = bckstr;
 }
 
-function saveBackup(txt) {
+function restore(txt) {
 	var req = new XMLHttpRequest();
 	req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
 	req.addEventListener('error', function(e){showToast(e.stack,true);});
@@ -446,6 +446,7 @@ function saveBackup(txt) {
 	var b = new Blob([txt], {type: "application/json"});
 	formData.append("data", b, '/presets.json');
 	req.send(formData);
+	setTimeout(loadPresets, 2000);
 	return false;
 }
 
