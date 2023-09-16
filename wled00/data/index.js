@@ -426,16 +426,27 @@ function presetError(empty)
 	if (hasBackup) {
 		cn += `<br><br>`;
 		if (empty)
-			cn += `However, there is backup preset data of a previous installation available.<br>
-			(Saving a preset will hide this and overwrite the backup)`;
+			cn += `However, there is backup preset data of a previous installation available.<br>(Saving a preset will hide this and overwrite the backup)`;
 		else
 			cn += `Here is a backup of the last known good state:`;
-		cn += `<textarea id="bck"></textarea><br>
-			<button class="btn" onclick="cpBck()">Copy to clipboard</button>`;
+		cn += `<textarea id="bck"></textarea><br><button class="btn" onclick="cpBck()">Copy to clipboard</button>`;
+		cn += `<button type="button" class="btn" onclick="saveBackup(gID('bck').value)">Restore</button>`;
 	}
 	cn += `</div>`;
 	gId('pcont').innerHTML = cn;
 	if (hasBackup) gId('bck').value = bckstr;
+}
+
+function saveBackup(txt) {
+	var req = new XMLHttpRequest();
+	req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
+	req.addEventListener('error', function(e){showToast(e.stack,true);});
+	req.open("POST", getURL("/upload"));
+	var formData = new FormData();
+	var b = new Blob([txt], {type: "application/json"});
+	formData.append("data", b, '/presets.json');
+	req.send(formData);
+	return false;
 }
 
 function loadPresets(callback = null)
