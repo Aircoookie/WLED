@@ -1419,7 +1419,7 @@ class AudioReactive : public Usermod {
           xTaskCreateUniversal(               // xTaskCreateUniversal also works on -S2 and -C3 with single core
             FFTcode,                          // Function to implement the task
             "FFT",                            // Name of the task
-            5000,                             // Stack size in words
+            3592,                             // Stack size in words // 3592 leaves 800-1024 bytes of task stack free
             NULL,                             // Task input parameter
             FFTTASK_PRIORITY,                 // Priority of the task
             &FFT_Task                         // Task handle
