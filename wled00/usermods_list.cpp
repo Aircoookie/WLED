@@ -373,4 +373,8 @@ void registerUsermods()
   #ifdef USERMOD_INTERNAL_TEMPERATURE
   usermods.add(new InternalTemperatureUsermod());
   #endif
+
+  #ifdef USERMOD_INTERNAL_TEMPERATURE
+  usermods.add(new CustomUsermod());
+  #endif
 }
