@@ -2310,7 +2310,7 @@ uint16_t mode_meteor() {
     {
       byte meteorTrailDecay = 128 + random8(127);
       trail[i] = scale8(trail[i], meteorTrailDecay);
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, false, 0, trail[i]));
+      SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, false, 0), trail[i]));
     }
   }
 
@@ -2321,12 +2321,12 @@ uint16_t mode_meteor() {
       index -= SEGLEN;
     }
     trail[index] = 240;
-    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0, 255));
+    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0));
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail length;!;!";
+static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail length;!,!;!;1";
 
 
 // smooth meteor effect
@@ -2349,7 +2349,7 @@ uint16_t mode_meteor_smooth() {
       trail[i] += change;
       if (trail[i] > 245) trail[i] = 0;
       if (trail[i] > 240) trail[i] = 240;
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, false, 0, trail[i]));
+      SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, false, 0), trail[i]));
     }
   }
 
@@ -2360,13 +2360,13 @@ uint16_t mode_meteor_smooth() {
       index -= SEGLEN;
     }
     trail[index] = 240;
-    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0, 255));
+    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0));
   }
 
   SEGENV.step += SEGMENT.speed +1;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail length;!;!";
+static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail length;!,!;!;1";
 
 
 //Railway Crossing / Christmas Fairy lights
@@ -2441,9 +2441,10 @@ uint16_t ripple_base()
 
       #ifndef WLED_DISABLE_2D
       if (SEGMENT.is2D()) {
+        propI /= 2;
         uint16_t cx = rippleorigin >> 8;
         uint16_t cy = rippleorigin & 0xFF;
-        uint8_t mag = scale8(cubicwave8((propF>>2)), amp);
+        uint8_t mag = scale8(sin8((propF>>2)), amp);
         if (propI > 0) SEGMENT.draw_circle(cx, cy, propI, color_blend(SEGMENT.getPixelColorXY(cx + propI, cy), col, mag));
       } else
       #endif
@@ -2461,7 +2462,7 @@ uint16_t ripple_base()
       ripplestate += rippledecay;
       ripples[i].state = (ripplestate > 254) ? 0 : ripplestate;
     } else {//randomly create new wave
-      if (random16(IBN + 10000) <= SEGMENT.intensity) {
+      if (random16(IBN + 10000) <= (SEGMENT.intensity >> (SEGMENT.is2D()*3))) {
         ripples[i].state = 1;
         ripples[i].pos = SEGMENT.is2D() ? ((random8(SEGENV.virtualWidth())<<8) | (random8(SEGENV.virtualHeight()))) : random16(SEGLEN);
         ripples[i].color = random8(); //color
@@ -2477,6 +2478,7 @@ uint16_t ripple_base()
 uint16_t mode_ripple(void) {
   if (SEGLEN == 1) return mode_static();
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1));
+  else                 SEGMENT.fade_out(250);
   return ripple_base();
 }
 static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,,,,,Overlay;,!;!;12";
