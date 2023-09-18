@@ -5218,7 +5218,7 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
           if (row < rows-1) SEGMENT.setPixelColorXY(col, row+1, spawnColor);
         } else {
           // fade other pixels
-          SEGMENT.setPixelColorXY(col, row, pix.nscale8(fade));
+          if (pix != CRGB::Black) SEGMENT.setPixelColorXY(col, row, pix.nscale8(fade)); // optimization: don't fade black pixels
         }
       }
     }
