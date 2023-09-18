@@ -5264,7 +5264,7 @@ static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous ☾@X frequen
 ///////////////////////
 //    2D Matrix      //
 ///////////////////////
-uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline & improved by merkisoft and ewowi.
+uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline & improved by merkisoft and ewowi, and softhack007.
   if (!strip.isMatrix) return mode_static(); // not a 2D set-up
 
   const uint16_t cols = SEGMENT.virtualWidth();
@@ -5273,6 +5273,8 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
+    SEGENV.aux0 = SEGENV.aux1 = UINT16_MAX;
+    SEGENV.step = 0;
   }
 
   uint8_t fade = map(SEGMENT.custom1, 0, 255, 50, 250);    // equals trail size
@@ -5290,10 +5292,23 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
 
   if (strip.now - SEGENV.step >= speed) {
     SEGENV.step = strip.now;
+    // find out what color value is returned by gPC for a "falling code" example pixel
+    // the color values returned may differ from the previously set values, due to
+    // - auto brightness limiter (dimming)
+    // - lossy color buffer (when not using global buffer)
+    // - color balance correction
+    // - segment opacity
+    CRGB oldSpawnColor = spawnColor;
+    if ((SEGENV.aux0 < cols) && (SEGENV.aux1 < rows)) {                     // we have a hint from last run
+        oldSpawnColor = SEGMENT.getPixelColorXY(SEGENV.aux0, SEGENV.aux1);  // find color of previous spawns
+        SEGENV.aux1 ++;                                                     // our sample pixel will be one row down the next time
+    }
+
+    // move pixels one row down. Falling codes keep color and add trail pixels; all others pixels are faded
     for (int row=rows-1; row>=0; row--) {
       for (int col=0; col<cols; col++) {
         CRGB pix = SEGMENT.getPixelColorXY(col, row);
-        if (pix == spawnColor) {
+        if (pix == oldSpawnColor) {  // this comparison may still fail due to overlays changing pixels, or due to gaps (2d-gaps.json)
           SEGMENT.setPixelColorXY(col, row, trailColor);  // create trail
           if (row < rows-1) SEGMENT.setPixelColorXY(col, row+1, spawnColor);
         } else {
@@ -5304,18 +5319,15 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
     }
 
     // check for empty screen to ensure code spawn
-    bool emptyScreen = true;
-    for (int x=0; x<cols; x++) for (int y=0; y<rows; y++) {
-      if (SEGMENT.getPixelColorXY(x,y)) {
-        emptyScreen = false;
-        break;
-      }
-    }
+    bool emptyScreen = (SEGENV.aux1 >= rows); // empty screen means that the last falling code has moved out of screen area
 
     // spawn new falling code
-    if (random8() < SEGMENT.intensity || emptyScreen) {
+    if (random8() <= SEGMENT.intensity || emptyScreen) {
       uint8_t spawnX = random8(cols);
       SEGMENT.setPixelColorXY(spawnX, 0, spawnColor);
+      // update hint for next run
+      SEGENV.aux0 = spawnX;
+      SEGENV.aux1 = 0;
     }
   } // if millis
 
