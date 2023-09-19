@@ -290,7 +290,7 @@ void registerUsermods()
 #endif
 
 #ifdef USERMOD_RTC
-  usermods.add(new RTCUsermod());
+  usermods.add(new RTCUsermod("RTC", true));
 #endif
 
 #ifdef USERMOD_ELEKSTUBE_IPS
