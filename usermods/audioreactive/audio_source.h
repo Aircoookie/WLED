@@ -206,6 +206,7 @@ class I2SSource : public AudioSource {
     }
 
     virtual void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t mclkPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+      DEBUGSR_PRINTLN("I2SSource:: initialize().");
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
             !pinManager.allocatePin(i2ssdPin, false, PinOwner::UM_Audioreactive)) { // #206
@@ -462,6 +463,7 @@ public:
     };
 
     void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      DEBUGSR_PRINTLN("ES7243:: initialize();");
       // check that pins are valid
       if ((sdaPin < 0) || (sclPin < 0)) {
         ERRORSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
@@ -618,6 +620,7 @@ class ES8388Source : public I2SSource {
     };
 
     void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      DEBUGSR_PRINTLN("ES8388Source:: initialize();");
 
       // BUG: "use global I2C pins" are valid as -1, and -1 is seen as invalid here.
       // Workaround: Set I2C pins here, which will also set them globally.
@@ -712,6 +715,7 @@ class I2SAdcSource : public I2SSource {
     AudioSourceType getType(void) {return(Type_I2SAdc);}
 
     void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+      DEBUGSR_PRINTLN("I2SAdcSource:: initialize().");
       _myADCchannel = 0x0F;
       if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
          ERRORSR_PRINTF("failed to allocate GPIO for audio analog input: %d\n", audioPin);
@@ -882,7 +886,8 @@ class SPH0654 : public I2SSource {
       I2SSource(sampleRate, blockSize, sampleScale, i2sMaster)
     {}
 
-    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+      DEBUGSR_PRINTLN("SPH0654:: initialize();");
       I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 // these registers are only existing in "classic" ESP32
