@@ -222,7 +222,7 @@ void registerUsermods()
    */
   //usermods.add(new MyExampleUsermod());
 #ifdef USERMOD_BATTERY
-  usermods.add(new UsermodBattery());
+  usermods.add(new UsermodBattery("Battery", true));
 #endif
 
 #ifdef USERMOD_DALLASTEMPERATURE
