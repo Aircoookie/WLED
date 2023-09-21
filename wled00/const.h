@@ -44,8 +44,8 @@
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-        #define WLED_MAX_BUSSES 8
-        #define WLED_MIN_VIRTUAL_BUSSES 2
+        #define WLED_MAX_BUSSES 9
+        #define WLED_MIN_VIRTUAL_BUSSES 1
       #else
         #define WLED_MAX_BUSSES 10
         #define WLED_MIN_VIRTUAL_BUSSES 0

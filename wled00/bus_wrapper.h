@@ -1177,8 +1177,12 @@ class PolyBus {
       uint8_t offset = 0; //0 = RMT (num 0-7) 8 = I2S0 9 = I2S1
       #if defined(CONFIG_IDF_TARGET_ESP32S2)
       // ESP32-S2 only has 4 RMT channels
-      if (num > 4) return I_NONE;
-      if (num > 3) offset = 1;  // only one I2S
+      #if defined(USERMOD_AUDIOREACTIVE)      // softhack007 I2S#0 is reserved for audio input
+        if (num > 3) return I_NONE;
+      #else
+        if (num > 4) return I_NONE;
+        if (num > 3) offset = 1;  // only one I2S
+      #endif
       #elif defined(CONFIG_IDF_TARGET_ESP32C3)
       // On ESP32-C3 only the first 2 RMT channels are usable for transmitting
       if (num > 1) return I_NONE;
@@ -1189,8 +1193,13 @@ class PolyBus {
       //if (num > 3) offset = num -4; // I2S not supported yet
       #else
       // standard ESP32 has 8 RMT and 2 I2S channels
-      if (num > 9) return I_NONE;
-      if (num > 7) offset = num -7;
+      #if defined(USERMOD_AUDIOREACTIVE)      // softhack007 I2S#0 is reserved for audio input, but I2S#1 is availeavle as 9th LED pin
+        if (num > 8) return I_NONE;
+        if (num == 8) offset = 2;
+      #else
+        if (num > 9) return I_NONE;
+        if (num > 7) offset = num -7;
+      #endif
       #endif
       switch (busType) {
         case TYPE_WS2812_1CH_X3:
