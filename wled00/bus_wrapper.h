@@ -1190,7 +1190,7 @@ class PolyBus {
       #else
       // standard ESP32 has 8 RMT and 2 I2S channels
       if (num > 9) return I_NONE;
-      if (num == 8) offset = 2;  // first use I2S#1 (so #0stays availeable for audio)
+      if (num == 8) offset = 2;  // first use I2S#1 (so #0 stays available for audio)
       if (num == 9) offset = 1;  // use I2S#0 as the last driver
       #endif
       switch (busType) {
