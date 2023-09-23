@@ -666,7 +666,7 @@ class I2SAdcSource : public I2SSource {
 
       // Determine Analog channel. Only Channels on ADC1 are supported
       int8_t channel = digitalPinToAnalogChannel(_audioPin);
-      if (channel > 9) {
+      if ((channel < 0) || (channel > 9)) {  // channel == -1 means "not an ADC pin"
         USER_PRINTF("AR: Incompatible GPIO used for analog audio input: %d\n", _audioPin);
         return;
       } else {
@@ -681,7 +681,7 @@ class I2SAdcSource : public I2SSource {
         return;
       }
 
-      adc1_config_width(ADC_WIDTH_BIT_12);   // ensure that ADC runs with 12bit resolution
+      // adc1_config_width(ADC_WIDTH_BIT_12);   // ensure that ADC runs with 12bit resolution - should not be needed, because i2s_set_adc_mode does that any way
 
       // Enable I2S mode of ADC
       err = i2s_set_adc_mode(ADC_UNIT_1, adc1_channel_t(channel));
