@@ -1,12 +1,17 @@
 ## WLED changelog
 
+#### Build 2309240
+-   Release of WLED beta version 0.14.0-b6 "Hoshi"
+-   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
+-   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
+
 #### Build 2309100
 -   Release of WLED beta version 0.14.0-b5 "Hoshi"
 -   New standard esp32 build with audioreactive
 -   Effect blending bugfixes, and minor optimizations
 
 #### Build 2309050
--   Effect blending (#3311) (finally efect transitions!)
+-   Effect blending (#3311) (finally effect transitions!)
     *WARNING*: May not work well with ESP8266, with plenty of segments or usermods (low RAM condition)!!!
 -   Added receive and send sync groups to JSON API (#3317) (you can change sync groups using preset)
 -   Internal temperature usermod (#3246)
@@ -35,7 +40,7 @@
 -   Preset cycle bugfix (#3262)
 -   Rotary encoder ALT fix for large LED count (#3276)
 -   effect updates (2D Plasmaball), `blur()` speedup
--   On/Off toggle from nodes view (may show unknow device type on older versions) (#3291)
+-   On/Off toggle from nodes view (may show unknown device type on older versions) (#3291)
 -   various fixes and improvements (ABL, crashes when changing presets with different segments)
 
 #### Build 2306270
@@ -48,7 +53,7 @@
 
 #### Build 2306210
 -   0.14.0-b3 release
--   respect global I2C in all usermods (no local initilaisation of I2C bus)
+-   respect global I2C in all usermods (no local initialization of I2C bus)
 -   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
 
 #### Build 2306180
@@ -74,7 +79,7 @@
 
 #### Build 2306020
 -   Support for segment sets (PR #3171)
--   Reduce sound simulation modes to 2 to facilitiate segment sets
+-   Reduce sound simulation modes to 2 to facilitate segment sets
 -   Trigger button immediately on press if all configured presets are the same (PR #3226)
 -   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
 
