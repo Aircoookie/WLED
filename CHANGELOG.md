@@ -2,7 +2,7 @@
 
 #### Build 2309240
 -   Release of WLED beta version 0.14.0-b6 "Hoshi"
--   Effect bugfixes and improvements
+-   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
 -   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
 
 #### Build 2309100
