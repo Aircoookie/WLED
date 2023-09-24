@@ -2300,17 +2300,18 @@ uint16_t mode_meteor() {
 
   byte* trail = SEGENV.data;
 
-  byte meteorSize= 1+ SEGLEN / 10;
+  const unsigned meteorSize= 1 + SEGLEN / 20; // 5%
   uint16_t counter = strip.now * ((SEGMENT.speed >> 2) +8);
   uint16_t in = counter * SEGLEN >> 16;
 
+  const int max = SEGMENT.palette==5 || !SEGMENT.check1 ? 240 : 255;
   // fade all leds to colors[1] in LEDs one step
   for (int i = 0; i < SEGLEN; i++) {
-    if (random8() <= 255 - SEGMENT.intensity)
-    {
-      byte meteorTrailDecay = 128 + random8(127);
+    if (random8() <= 255 - SEGMENT.intensity) {
+      byte meteorTrailDecay = 162 + random8(92);
       trail[i] = scale8(trail[i], meteorTrailDecay);
-      SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, false, 0), trail[i]));
+      uint32_t col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0, trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
+      SEGMENT.setPixelColor(i, col);
     }
   }
 
@@ -2320,13 +2321,14 @@ uint16_t mode_meteor() {
     if (index >= SEGLEN) {
       index -= SEGLEN;
     }
-    trail[index] = 240;
-    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0));
+    trail[index] = max;
+    uint32_t col = SEGMENT.check1 ? SEGMENT.color_from_palette(index, true, false, 0, trail[index]) : SEGMENT.color_from_palette(trail[index], false, true, 255);
+    SEGMENT.setPixelColor(index, col);
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail length;!,!;!;1";
+static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail,,,,Gradient;;!;1";
 
 
 // smooth meteor effect
@@ -2338,18 +2340,17 @@ uint16_t mode_meteor_smooth() {
 
   byte* trail = SEGENV.data;
 
-  byte meteorSize= 1+ SEGLEN / 10;
+  const unsigned meteorSize= 1+ SEGLEN / 20; // 5%
   uint16_t in = map((SEGENV.step >> 6 & 0xFF), 0, 255, 0, SEGLEN -1);
 
+  const int max = SEGMENT.palette==5 || !SEGMENT.check1 ? 240 : 255;
   // fade all leds to colors[1] in LEDs one step
   for (int i = 0; i < SEGLEN; i++) {
-    if (trail[i] != 0 && random8() <= 255 - SEGMENT.intensity)
-    {
-      int change = 3 - random8(12); //change each time between -8 and +3
-      trail[i] += change;
-      if (trail[i] > 245) trail[i] = 0;
-      if (trail[i] > 240) trail[i] = 240;
-      SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, false, 0), trail[i]));
+    if (/*trail[i] != 0 &&*/ random8() <= 255 - SEGMENT.intensity) {
+      int change = trail[i] + 4 - random8(24); //change each time between -20 and +4
+      trail[i] = constrain(change, 0, max);
+      uint32_t col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0, trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
+      SEGMENT.setPixelColor(i, col);
     }
   }
 
@@ -2359,14 +2360,15 @@ uint16_t mode_meteor_smooth() {
     if (index >= SEGLEN) {
       index -= SEGLEN;
     }
-    trail[index] = 240;
-    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0));
+    trail[index] = max;
+    uint32_t col = SEGMENT.check1 ? SEGMENT.color_from_palette(index, true, false, 0, trail[index]) : SEGMENT.color_from_palette(trail[index], false, true, 255);
+    SEGMENT.setPixelColor(index, col);
   }
 
   SEGENV.step += SEGMENT.speed +1;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail length;!,!;!;1";
+static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail,,,,Gradient;;!;1";
 
 
 //Railway Crossing / Christmas Fairy lights
