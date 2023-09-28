@@ -39,9 +39,6 @@ var hol = [
 	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
 
-// Buttons
-var btnPXM = gId('buttonPixelMagicTool');
-
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
@@ -279,7 +276,6 @@ function onLoad()
 		});
 	});
 	resetUtil();
-
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	//size();
 	gId("cv").style.opacity=0;
@@ -288,8 +284,6 @@ function onLoad()
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
-
-    btnPXM.style.display = cfg.comp.pxm ? "block" : "none";
 }
 
 function updateTablinks(tabI)
@@ -462,7 +456,6 @@ function loadPresets(callback = null)
 	})
 	.then(res => {
 		if (res.status=="404") return {"0":{}};
-		//if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
@@ -1766,12 +1759,7 @@ function togglePixelMagicTool()
         }
     }
 
-	btnPXM.className = (isPXM) ? "active":"";
     size();
-}
-
-function updateNameResize(){
-    btnPXM.querySelector('p').textContent = (wW < 1024) ? "PXM" : "Pixel Magic";
 }
 
 function makeSeg()
@@ -2066,10 +2054,12 @@ function resetPUtil()
 {
 	gId('psFind').classList.add('staytop');
 	let p = gId('putil');
+    let dpxm = cfg.comp.pxm ? "inline-block" : "none";
 	p.classList.add('staybot');
 	p.classList.remove('pres');
 	p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>Preset</button>`
-	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
+	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`
+    + `<button class="btn btn-pxm" id="buttonPixelMagicTool" onclick="togglePixelMagicTool()" style="display: ${dpxm};"><i class="icons btn-icon">&#xe410;</i>Pixel Magic Tool</button>`;
 }
 
 function tglCs(i)
@@ -2918,18 +2908,15 @@ function size()
 	if (isLv) h -= 4;
 	sCol('--tp', h + "px");
 	togglePcMode();
-    updateNameResize();
 	lastw = wW;
 }
 
 function listenMessage(e){
     const { origin, data } = e;
-    
     if (origin === window.location.origin) {
-        switch(data){
-            case 'loadPresets':
-                setTimeout(()=>{pmtLast=0; loadPresets();}, 250);
-                break;
+        if(data === 'loadPresets'){
+	        populatePresets();
+            setTimeout(()=>{pmtLast=0; loadPresets();}, 750); // force reloading of presets
         }
     }
 }

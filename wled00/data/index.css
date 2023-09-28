@@ -285,6 +285,11 @@ button {
     position: relative;
 }
 
+.btn-pxm {
+    width: 100% !important;
+    margin: 10px 0 !important;
+}
+
 .tab {
 	background-color: transparent;
 	color: var(--c-d);
@@ -812,6 +817,7 @@ input[type=range]::-moz-range-thumb {
 	text-overflow: ellipsis;
 	border: 1px solid var(--c-3);
 	background-color: var(--c-3);
+    z-index: 9;
 }
 #segutil .btn-s:hover,
 #segutil2 .btn-s:hover,
