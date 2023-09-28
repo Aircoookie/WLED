@@ -638,11 +638,11 @@
                 <label for="pattern">Pattern</label>
                 <select name="pattern" id="pattern" required>
                   <option value="">Select a choice</option>
-                  <option value="1" title="['ffffff']" selected>
-                    Individual
-                  </option>
+                  <option value="1" title="['ffffff']">Individual</option>
                   <option value="2" title="[0, 'ffffff']">Index</option>
-                  <option value="3" title="[0, 5, 'ffffff']">Range</option>
+                  <option value="3" title="[0, 5, 'ffffff']" selected>
+                    Range
+                  </option>
                 </select>
               </div>
             </div>
@@ -801,7 +801,7 @@
                 Color that will replace the
                 <strong>transparent pixels</strong> in the image
               </small>
-              <input type="color" name="color" id="color" value="#eeeeee" />
+              <input type="color" name="color" id="color" value="#00BFFF" />
             </div>
           </div>
           <div class="row">
@@ -809,8 +809,7 @@
               <div class="custom-select">
                 <label for="images">Images</label>
                 <select name="images" id="images" required>
-                  <option value="">Select a choice</option>
-                  <option value="upload">Upload</option>
+                  <option value="upload" selected>Upload</option>
                 </select>
               </div>
               <small>
@@ -822,7 +821,7 @@
               </small>
             </div>
           </div>
-          <div id="dropzone" class="dropzone" validate style="display: none">
+          <div id="dropzone" class="dropzone" validate>
             <p id="dropzoneLabel">
               Drag and drop a file here or click to select a file
             </p>
@@ -1089,10 +1088,7 @@
           return mimeTypes.includes(mimetype);
         });
 
-        const options = [
-          { text: "Select a choice", value: "" },
-          { text: "Upload", value: "upload" },
-        ];
+        const options = [{ text: "Upload", value: "upload" }];
 
         if (images) {
           options.push(
@@ -1106,6 +1102,11 @@
 
           options.forEach(({ text, value }) => {
             const option = new Option(text, value);
+
+            if (index === 0) {
+              option.selected = true;
+            }
+
             select.appendChild(option);
           });
         }
