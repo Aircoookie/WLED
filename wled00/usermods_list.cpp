@@ -133,6 +133,10 @@
   #include "../usermods/wizlights/wizlights.h"
 #endif
 
+#ifdef USERMOD_WIREGUARD
+  #include "../usermods/wireguard/wireguard.h"
+#endif
+
 #ifdef USERMOD_WORDCLOCK
   #include "../usermods/usermod_v2_word_clock/usermod_v2_word_clock.h"
 #endif
@@ -171,6 +175,10 @@
 
 #ifdef USERMOD_BOBLIGHT
   #include "../usermods/boblight/boblight.h"
+#endif
+
+#ifdef USERMOD_INTERNAL_TEMPERATURE
+  #include "../usermods/Internal_Temperature_v2/usermod_internal_temperature.h"
 #endif
 
 #if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI)
@@ -306,6 +314,10 @@ void registerUsermods()
   usermods.add(new WizLightsUsermod());
   #endif
 
+  #ifdef USERMOD_WIREGUARD
+  usermods.add(new WireguardUsermod());
+  #endif
+
   #ifdef USERMOD_WORDCLOCK
   usermods.add(new WordClockUsermod());
   #endif
@@ -356,5 +368,9 @@ void registerUsermods()
 
   #ifdef USERMOD_SHT
   usermods.add(new ShtUsermod());
+  #endif
+
+  #ifdef USERMOD_INTERNAL_TEMPERATURE
+  usermods.add(new InternalTemperatureUsermod());
   #endif
 }
