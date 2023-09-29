@@ -786,6 +786,11 @@ void serializeConfig() {
     matrix[F("pv")] = strip.matrix.vertical;
     matrix["ps"] = strip.matrix.serpentine;
 
+    matrix[F("pbl")] = strip.panelO.bottomStart;
+    matrix[F("prl")] = strip.panelO.rightStart;
+    matrix[F("pvl")] = strip.panelO.vertical;
+    matrix["psl"] = strip.panelO.serpentine;
+
     JsonArray panels = matrix.createNestedArray(F("panels"));
     for (uint8_t i=0; i<strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
