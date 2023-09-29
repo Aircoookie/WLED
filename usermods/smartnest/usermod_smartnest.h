@@ -150,6 +150,8 @@ public:
     delay(100);
     sendToBroker("report/firmware", versionString); // Reports the firmware version
     delay(100);
+    sendToBroker("report/branch", branchString); // Reports the firmware branch
+    delay(100);
     sendToBroker("report/ip", (char *)WiFi.localIP().toString().c_str()); // Reports the ip
     delay(100);
     sendToBroker("report/network", (char *)WiFi.SSID().c_str()); // Reports the network name

@@ -254,8 +254,13 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
   #define WLED_VERSION "dev"
 #endif
 
+#ifndef WLED_BRANCH
+  #define WLED_BRANCH "dev"
+#endif
+
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
+WLED_GLOBAL char branchString[] _INIT(TOSTRING(WLED_BRANCH));
 #define WLED_CODENAME "Hoshi"
 
 // AP and OTA default passwords (for maximum security change them!)
