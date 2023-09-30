@@ -294,7 +294,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
-    case 1: {//periodically replace palette with a random one. Transition palette change in 500ms
+    case 1: {//Random smooth: periodically replace palette with a random one. Transition palette change in 500ms
       uint32_t timeSinceLastChange = millis() - _lastPaletteChange;
       if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
         prevRandomPalette = randomPalette;

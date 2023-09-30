@@ -3055,7 +3055,7 @@ function genPresets()
 				if (!defaultString.includes("o1")) defaultString += ',"o1":0'; //Check 1
 				if (!defaultString.includes("o2")) defaultString += ',"o2":0'; //Check 2
 				if (!defaultString.includes("o3")) defaultString += ',"o3":0'; //Check 3
-				if (!defaultString.includes("pal")) defaultString += ',"pal":1'; //Random palette if not set different
+				if (!defaultString.includes("pal")) defaultString += ',"pal":11'; //Temporary for deterministic effects test: Set to 11/Raibow instead of 1/Random smooth palette (if not set different)
 				if (!defaultString.includes("m12") && m.includes("1") && !m.includes("1.5") && !m.includes("12")) 
 					defaultString += ',"rev":true,"mi":true,"rY":true,"mY":true,"m12":2'; //Arc expansion
 				else {
