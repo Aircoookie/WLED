@@ -20,6 +20,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return false;
 
+  bool newSeg = false;
   int stop = elem["stop"] | -1;
 
   // append segment
@@ -27,6 +28,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     if (stop <= 0) return false; // ignore empty/inactive segments
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
+    newSeg = true;
   }
 
   //DEBUG_PRINTLN("-- JSON deserialize segment.");
@@ -118,8 +120,12 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // do not call seg.setUp() here, as it may cause a crash due to concurrent access if the segment is currently drawing effects
   // WS2812FX handles queueing of the change
   strip.setSegment(id, start, stop, grp, spc, of, startY, stopY);
+  if (newSeg) seg.refreshLightCapabilities(); // fix for #3403
 
-  if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
+  if (seg.reset && seg.stop == 0) {
+    if (id == strip.getMainSegmentId()) strip.setMainSegmentId(0); // fix for #3403
+    return true; // segment was deleted & is marked for reset, no need to change anything else
+  }
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
