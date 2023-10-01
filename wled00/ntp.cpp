@@ -2,6 +2,21 @@
 #include "wled.h"
 #include "fcn_declare.h"
 
+// on esp8266, building with `-D WLED_USE_UNREAL_MATH` saves around 7Kb flash and 1KB RAM
+//  warning: causes errors in sunset calculations, see #3400
+#if defined(WLED_USE_UNREAL_MATH)
+#define sinf sin_t
+#define asinf asin_t
+#define cosf cos_t
+#define acosf acos_t
+#define tanf tan_t
+#define atanf atan_t
+#define fmodf fmod_t
+#define floorf floor_t
+#else
+#include <math.h>
+#endif
+
 /*
  * Acquires time from NTP server
  */
@@ -426,7 +441,7 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
   float L = fmodf(M + (1.916f * sinf(DEG_TO_RAD*M)) + (0.02f * sinf(2*DEG_TO_RAD*M)) + 282.634f, 360.0f);
 
   //5a. calculate the Sun's right ascension
-  float RA = fmodf(RAD_TO_DEG*atan(0.91764f * tan(DEG_TO_RAD*L)), 360.0f);
+  float RA = fmodf(RAD_TO_DEG*atanf(0.91764f * tanf(DEG_TO_RAD*L)), 360.0f);
 
   //5b. right ascension value needs to be in the same quadrant as L
   float Lquadrant  = floorf( L/90) * 90;
