@@ -82,6 +82,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (!elem["rev2D"].isNull()) elem["rY"] = elem["rev2D"];
   if (!elem["rot2D"].isNull()) elem["tp"] = elem["rot2D"];
 
+  bool newSeg = false;
   int stop = elem["stop"] | -1;
 
   // if using vectors use this code to append segment
@@ -89,6 +90,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     if (stop <= 0) return false; // ignore empty/inactive segments
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
+    newSeg = true;
   }
 
   // WLEDMM: before changing segments, make sure our strip is _not_ servicing effects in parallel
@@ -188,9 +190,12 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   if (stop > start && of > len -1) of = len -1;
   seg.setUp(start, stop, grp, spc, of, startY, stopY);
+	if (newSeg) seg.refreshLightCapabilities(); // fix for #3403
 
   if (seg.reset && seg.stop == 0) {
     if (iAmGroot) suspendStripService = false; // WLEDMM release lock
+
+    if (id == strip.getMainSegmentId()) strip.setMainSegmentId(0); // fix for #3403
     return true; // segment was deleted & is marked for reset, no need to change anything else
   }
 

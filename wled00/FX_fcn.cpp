@@ -1976,7 +1976,7 @@ void WS2812FX::purgeSegments(bool force) {
     }
   if (deleted) {
     _segments.shrink_to_fit();
-    if (_mainSegment >= _segments.size()) setMainSegmentId(0);
+    /*if (_mainSegment >= _segments.size())*/ setMainSegmentId(0);
   }
 }
 
