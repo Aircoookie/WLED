@@ -617,7 +617,7 @@ class AudioReactive : public Usermod {
     bool     enabled = false;
     bool     initDone = false;
     bool     addPalettes = false;
-    CRGBPalette16 *palette[MAX_PALETTES];
+    int8_t   palettes = 0;
 
     // variables  for UDP sound sync
     WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!) 
@@ -1632,8 +1632,18 @@ class AudioReactive : public Usermod {
           inputLevel = min(255,max(0,usermod[FPSTR(_inputLvl)].as<int>()));
         }
       }
+      if (root.containsKey(F("rmcpal")) && root[F("rmcpal")].as<bool>()) {
+        // handle removal of custom palettes from JSON call so we don't break things
+        removeAudioPalettes();
+      }
     }
 
+    void onStateChange(uint8_t callMode) {
+      if (initDone && enabled && addPalettes && palettes==0 && strip.customPalettes.size()<10) {
+        // if palettes were removed during JSON call re-add them
+        createAudioPalettes();
+      }
+    }
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -1846,20 +1856,24 @@ class AudioReactive : public Usermod {
 };
 
 void AudioReactive::removeAudioPalettes(void) {
-  for (int i=MAX_PALETTES-1; i>=0; i--) {
-    if (palette[i]) strip.customPalettes.pop_back();
-    palette[i] = nullptr;
+  DEBUG_PRINTLN(F("Removing audio palettes."));
+  while (palettes) {
+    strip.customPalettes.pop_back();
+    DEBUG_PRINTLN(palettes);
+    palettes--;
   }
+  DEBUG_PRINT(F("Total # of palettes: ")); DEBUG_PRINTLN(strip.customPalettes.size());
 }
 
 void AudioReactive::createAudioPalettes(void) {
+  DEBUG_PRINT(F("Total # of palettes: ")); DEBUG_PRINTLN(strip.customPalettes.size());
+  DEBUG_PRINTLN(F("Adding audio palettes."));
   for (int i=0; i<MAX_PALETTES; i++)
     if (strip.customPalettes.size() < 10) {
       strip.customPalettes.push_back(CRGBPalette16(CRGB(BLACK)));
-      palette[i] = &strip.customPalettes.back();
-    } else {
-      palette[i] = nullptr;
-    }
+      palettes++;
+      DEBUG_PRINTLN(palettes);
+    } else break;
 }
 
 // credit @netmindz ar palette, adapted for usermod @blazoncek
@@ -1892,7 +1906,7 @@ CRGB AudioReactive::getCRGBForBand(int x, int pal) {
 }
 
 void AudioReactive::fillAudioPalette(int pal) {
-  if (pal>=MAX_PALETTES || !palette[pal]) return; // palette does not exist
+  if (pal>=palettes) return; // palette does not exist
 
   uint8_t tcp[16];  // Needs to be 4 times however many colors are being used.
                     // 3 colors = 12, 4 colors = 16, etc.
@@ -1920,7 +1934,7 @@ void AudioReactive::fillAudioPalette(int pal) {
   tcp[14] = rgb.g;
   tcp[15] = rgb.b;
 
-  palette[pal]->loadDynamicGradientPalette(tcp);
+  strip.customPalettes[strip.customPalettes.size()-1-palettes+pal].loadDynamicGradientPalette(tcp);
 }
 
 // strings to reduce flash memory usage (used more than twice)
