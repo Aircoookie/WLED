@@ -5771,7 +5771,7 @@ uint16_t mode_2Dcrazybees(void) {
     uint8_t posX, posY, aimX, aimY, hue;
     int8_t deltaX, deltaY, signX, signY, error;
     void aimed(uint16_t w, uint16_t h) {
-      random16_set_seed(strip.now);
+      //WLEDMM seed NOT here for SuperSync
       aimX = random8(0, w);
       aimY = random8(0, h);
       hue = random8();
@@ -5787,6 +5787,7 @@ uint16_t mode_2Dcrazybees(void) {
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
+    random16_set_seed(strip.now); //WLEDMM seed here for SuperSync
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
     for (size_t i = 0; i < n; i++) {
@@ -7847,7 +7848,7 @@ uint16_t mode_2Dsoap() {
   const uint32_t mov = MIN(cols,rows)*(SEGMENT.speed+2)/2;
   const uint8_t  smoothness = MIN(250,SEGMENT.intensity); // limit as >250 produces very little changes
 
-  //WLEDMM: changing noise calculation for super sync to make it deterministic using strip.now
+  //WLEDMM: changing noise calculation for SuperSync to make it deterministic using strip.now
   // init
   if (SEGENV.call == 0) {
     random16_set_seed(535);
@@ -7964,7 +7965,7 @@ uint16_t mode_2Doctopus() {
 
   // re-init if SEGMENT dimensions or offset changed
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows || SEGMENT.custom1 != *offsX || SEGMENT.custom2 != *offsY) {
-    SEGENV.step = 0; // t
+    // SEGENV.step = 0; // t
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
     *offsX = SEGMENT.custom1;
@@ -7979,7 +7980,7 @@ uint16_t mode_2Doctopus() {
     }
   }
 
-  SEGENV.step += SEGMENT.speed / 32 + 1;  // 1-4 range
+  SEGENV.step = (strip.now / 40) * (SEGMENT.speed / 32 + 1);  // 1-4 range WLEDMM no += because of SuperSync (40fps effect)
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
       byte angle = rMap[XY(x,y)].angle;
