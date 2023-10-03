@@ -1055,7 +1055,7 @@ function bname(o)
 
 //WLEDMM call a node with json api command
 function callNode(ip, type, json) {
-	console.log("callNode", ip, json);
+	console.log("callNode", ip, type, json);
 
 	fetch('http://'+ip+'/json/'+type, {
         method: 'POST',
@@ -1074,7 +1074,13 @@ function callNode(ip, type, json) {
 	});
 }
 
+function SuperSync() {
+	if (!confirm('Press Yes/OK if you know what you are doing!')) return;
+	// callNode("192.168.8.235", "cfg", {"id":{"name":"SuperSyncer"}});
+}
+
 function ddpAll() {
+	if (!confirm('Press Yes/OK if you know what you are doing!')) return;
 	ins = [];
 	start = 0;
 	order = 0;
@@ -1095,7 +1101,9 @@ function ddpAll() {
 		ins.push(output);
 		start+=node.count;
 	}
-	console.log("ins", lastinfo.ip,JSON.stringify({"hw":{"led":{"ins":ins}}}));
+	// console.log("ins", lastinfo.ip,JSON.stringify({"hw":{"led":{"ins":ins}}}));
+
+	//update own cfg.json
 	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}});
 }
 
@@ -1121,14 +1129,28 @@ function populateNodes(i,n)
 
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
 		// console.log("populateNodes",i,n);
+
+		//set table header
+		urows += `<tr>`;
+		for (let nm of ["Instance", "Type", "OnOff", "IP", "Release", "Version", "Leds", "Effect", "Matrix", "Panel0"])
+			urows += `<th>${nm}</th>`;
+		urows += `</tr>`;
+
 		//loop over nodes e.g. {name: "MM 32 L", type: 32, ip: "192.168.121.249", age: 1, vid: 2305080}
-		for (var o of n.nodes) {
+		for (let o of n.nodes) {
 			if (o.name) {
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
-				// urows += inforow(url,`${btype(o.type)}<br><i id="node${nnodes}">${o.vid==0?"N/A":o.vid} ${o.mode}</i>`);
+
+				let url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
 
 				//WLEDMM fetch json from nodes and add in table rows
-				urows += `<tr id="node${nnodes}"><td class="keytd">${url}</td><td class="valtd">${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i></td></tr>`;
+				// add key (name button), val (type and vid)
+				urows += `<tr><td class="keytd">${url}</td><td class="valtd">${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i></td>`;
+
+				//add td placeholders
+				for (let nm of ["on", "ip", "rel", "ver", "lc", "fx", "mrx", "pnl"])
+					urows += `<td id="${nm}${nnodes}"></td>`;
+				urows += `</tr>`;
+
 				// console.log("Node", o);
 				if (o.ip) { //in ap mode no ip...
 					//fetch the rest of the nodes info
@@ -1143,18 +1165,24 @@ function populateNodes(i,n)
 						nodeInfo.count = info.leds.count;
 						//append to table row
 
-						// gId(`node${nnodes}`).appendChild(addEl('td', `<button class="btn btn-xs" onclick="callNode('${info["ip"]}');"><i class="icons on">&#xe08f;</i></button>`));
-						gId(`node${nnodes}`).appendChild(addEl('td', "<button class=\"btn btn-xs\" onclick=\"callNode('"+info["ip"]+"','state',{'on':"+(state["on"]?"false":"true")+"});\"><i class=\"icons "+(state["on"]?"on":"off")+"\">&#xe08f;</i></button>"));
-						// ${i.opt&0x100?inforow("Net Print ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
-						gId(`node${nnodes}`).appendChild(addEl('td', info["ip"]));
-						gId(`node${nnodes}`).appendChild(addEl('td', info["rel"]));
-						gId(`node${nnodes}`).appendChild(addEl('td', info["ver"]));
-						gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["count"]));
-						gId(`node${nnodes}`).appendChild(addEl('td', effects[state["seg"][0]["fx"]]));
+						//add on/off button
+						gId(`on${nnodes}`).innerHTML = "<button class=\"btn btn-xs\" onclick=\"callNode('"+info["ip"]+"','state',{'on':"+(state["on"]?"false":"true")+"});\"><i class=\"icons "+(state["on"]?"on":"off")+"\">&#xe08f;</i></button>";
+						gId(`ip${nnodes}`).innerText = info["ip"];
+						gId(`rel${nnodes}`).innerText = info["rel"];
+						gId(`ver${nnodes}`).innerText = info["ver"];
+						gId(`lc${nnodes}`).innerText = info["leds"]["count"] + " (" + info["leds"]["countP"] + ")";
+						gId(`fx${nnodes}`).innerText = effects[state["seg"][0]["fx"]];
 						if (info["leds"]["matrix"])
-							gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["matrix"]["w"] + "x" + info["leds"]["matrix"]["h"]));
+							gId(`mrx${nnodes}`).innerText = info["leds"]["matrix"]["w"] + "x" + info["leds"]["matrix"]["h"];
+
 						if (nodeInfo.ip != thisNode.ip)
-							extendedNodes.push(nodeInfo);
+							extendedNodes.push(nodeInfo); //used by ddpAll
+					});
+					fetchAndExecute(`http://${o.ip}/`, "cfg.json", nnodes, function(nnodes,text) {
+						let matrix = JSON.parse(text)["hw"]["led"]["matrix"];
+						// var str = JSON.stringify(matrix, null, 2); // jsonpretty
+						console.log(matrix);
+						gId(`pnl${nnodes}`).innerText = "(" + matrix["panels"][0].x + "," + matrix["panels"][0].y + ") - " + matrix["panels"][0].w + "x" + matrix["panels"][0].h;
 					});
 				}
 
@@ -1168,6 +1196,7 @@ function populateNodes(i,n)
 	${urows}
 	</table>`;
 	cn += "<button class=\"btn\" onclick=\"ddpAll();\">DDP all</button>"
+	cn += "<button class=\"btn\" onclick=\"SuperSync();\">SuperSync</button>"
 	gId('kn').innerHTML = cn;
 	// ${inforow("Current instance:",i.name)} //WLEDMM current instance is now also shown as node
 }

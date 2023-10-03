@@ -625,6 +625,7 @@ button {
 }
 
 #info td, #nodes td {
+	font-size: 12px; /*WLEDMM small table cells (nodes popup) */
   padding-bottom: 8px;
 }
 

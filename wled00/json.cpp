@@ -839,6 +839,7 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
+  leds[F("countP")] = strip.getLengthPhysical(); //WLEDMM
   leds[F("pwr")] = strip.currentMilliamps;
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
