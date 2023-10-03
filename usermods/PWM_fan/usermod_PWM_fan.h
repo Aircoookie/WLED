@@ -52,6 +52,7 @@ class PWMFanUsermod : public Usermod {
     uint8_t tachoUpdateSec    = 30;
     float   targetTemperature = 35.0;
     uint8_t minPWMValuePct    = 0;
+    uint8_t maxPWMValuePct    = 100;
     uint8_t numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
     uint8_t pwmValuePct       = 0;
 
@@ -63,6 +64,7 @@ class PWMFanUsermod : public Usermod {
     static const char _temperature[];
     static const char _tachoUpdateSec[];
     static const char _minPWMValuePct[];
+    static const char _maxPWMValuePct[];
     static const char _IRQperRotation[];
     static const char _speed[];
     static const char _lock[];
@@ -159,7 +161,7 @@ class PWMFanUsermod : public Usermod {
       float difftemp = temp - targetTemperature;
       // Default to run fan at full speed.
       int newPWMvalue = 255;
-      int pwmStep = ((100 - minPWMValuePct) * newPWMvalue) / (7*100);
+      int pwmStep = ((maxPWMValuePct - minPWMValuePct) * newPWMvalue) / (7*100);
       int pwmMinimumValue = (minPWMValuePct * newPWMvalue) / 100;
 
       if ((temp == NAN) || (temp <= -100.0)) {
@@ -312,6 +314,7 @@ class PWMFanUsermod : public Usermod {
       top[FPSTR(_tachoUpdateSec)] = tachoUpdateSec;
       top[FPSTR(_temperature)]    = targetTemperature;
       top[FPSTR(_minPWMValuePct)] = minPWMValuePct;
+      top[FPSTR(_maxPWMValuePct)] = maxPWMValuePct;
       top[FPSTR(_IRQperRotation)] = numberOfInterrupsInOneSingleRotation;
       DEBUG_PRINTLN(F("Autosave config saved."));
     }
@@ -345,6 +348,8 @@ class PWMFanUsermod : public Usermod {
       targetTemperature = top[FPSTR(_temperature)] | targetTemperature;
       minPWMValuePct    = top[FPSTR(_minPWMValuePct)] | minPWMValuePct;
       minPWMValuePct    = (uint8_t) min(100,max(0,(int)minPWMValuePct)); // bounds checking
+      maxPWMValuePct    = top[FPSTR(_maxPWMValuePct)] | maxPWMValuePct;
+      maxPWMValuePct    = (uint8_t) min(100,max((int)minPWMValuePct,(int)maxPWMValuePct)); // bounds checking
       numberOfInterrupsInOneSingleRotation = top[FPSTR(_IRQperRotation)] | numberOfInterrupsInOneSingleRotation;
       numberOfInterrupsInOneSingleRotation = (uint8_t) max(1,(int)numberOfInterrupsInOneSingleRotation); // bounds checking
 
@@ -389,6 +394,7 @@ const char PWMFanUsermod::_pwmPin[]         PROGMEM = "PWM-pin";
 const char PWMFanUsermod::_temperature[]    PROGMEM = "target-temp-C";
 const char PWMFanUsermod::_tachoUpdateSec[] PROGMEM = "tacho-update-s";
 const char PWMFanUsermod::_minPWMValuePct[] PROGMEM = "min-PWM-percent";
+const char PWMFanUsermod::_maxPWMValuePct[] PROGMEM = "max-PWM-percent";
 const char PWMFanUsermod::_IRQperRotation[] PROGMEM = "IRQs-per-rotation";
 const char PWMFanUsermod::_speed[]          PROGMEM = "speed";
 const char PWMFanUsermod::_lock[]           PROGMEM = "lock";
