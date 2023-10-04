@@ -5771,7 +5771,8 @@ uint16_t mode_2Dcrazybees(void) {
     uint8_t posX, posY, aimX, aimY, hue;
     int8_t deltaX, deltaY, signX, signY, error;
     void aimed(uint16_t w, uint16_t h) {
-      //WLEDMM seed NOT here for SuperSync
+      if (!notifyDirect) //WLEDMM SuperSync
+        random16_set_seed(strip.now);
       aimX = random8(0, w);
       aimY = random8(0, h);
       hue = random8();
@@ -5787,7 +5788,8 @@ uint16_t mode_2Dcrazybees(void) {
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    random16_set_seed(strip.now); //WLEDMM seed here for SuperSync
+    if (notifyDirect) //WLEDMM SuperSync
+      random16_set_seed(strip.now);
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
     for (size_t i = 0; i < n; i++) {
@@ -7848,25 +7850,40 @@ uint16_t mode_2Dsoap() {
   const uint32_t mov = MIN(cols,rows)*(SEGMENT.speed+2)/2;
   const uint8_t  smoothness = MIN(250,SEGMENT.intensity); // limit as >250 produces very little changes
 
-  //WLEDMM: changing noise calculation for SuperSync to make it deterministic using strip.now
   // init
   if (SEGENV.call == 0) {
-    random16_set_seed(535);
+    if (notifyDirect) {//WLEDMM SuperSync
+      random16_set_seed(535);
+      USER_PRINTF("SuperSync\n");
+    }
     SEGMENT.setUpLeds();
     *noise32_x = random16();
     *noise32_y = random16();
     *noise32_z = random16();
+  } else {
+    if (!notifyDirect) { //WLEDMM SuperSync
+      *noise32_x += mov;
+      *noise32_y += mov;
+      *noise32_z += mov;
+    }
   }
 
-  uint32_t noise32_x_MM = *noise32_x + mov * strip.now / 100; //10 fps (original 20-40 fps, depending on realized fps)
-  uint32_t noise32_y_MM = *noise32_y + mov * strip.now / 100;
-  uint32_t noise32_z_MM = *noise32_z + mov * strip.now / 100;
+  //WLEDMM: changing noise calculation for SuperSync to make it deterministic using strip.now
+  uint32_t noise32_x_MM = *noise32_x;
+  uint32_t noise32_y_MM = *noise32_y;
+  uint32_t noise32_z_MM = *noise32_z;
+
+  if (notifyDirect) { //WLEDMM SuperSync
+    noise32_x_MM = *noise32_x + mov * strip.now / 100; //10 fps (original 20-40 fps, depending on realized fps)
+    noise32_y_MM = *noise32_y + mov * strip.now / 100;
+    noise32_z_MM = *noise32_z + mov * strip.now / 100;
+  }
 
   for (int i = 0; i < cols; i++) {
     int32_t ioffset = scale32_x * (i - cols / 2);
     for (int j = 0; j < rows; j++) {
       int32_t joffset = scale32_y * (j - rows / 2);
-      uint8_t data = inoise16(noise32_x_MM + ioffset, noise32_y_MM + joffset, noise32_z_MM) >> 8;
+      uint8_t data = inoise16(noise32_x_MM + ioffset, noise32_y_MM + joffset, noise32_z_MM) >> 8; //WLEDMM SuperSync
       noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], smoothness) + scale8(data, 255 - smoothness);
     }
   }
@@ -7965,7 +7982,8 @@ uint16_t mode_2Doctopus() {
 
   // re-init if SEGMENT dimensions or offset changed
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows || SEGMENT.custom1 != *offsX || SEGMENT.custom2 != *offsY) {
-    // SEGENV.step = 0; // t
+    if (!notifyDirect) //WLEDMM SuperSync
+      SEGENV.step = 0; // t
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
     *offsX = SEGMENT.custom1;
@@ -7980,7 +7998,11 @@ uint16_t mode_2Doctopus() {
     }
   }
 
-  SEGENV.step = (strip.now / 40) * (SEGMENT.speed / 32 + 1);  // 1-4 range WLEDMM no += because of SuperSync (40fps effect)
+  if (notifyDirect) // WLEDMM SuperSync
+    SEGENV.step = (strip.now / 40) * (SEGMENT.speed / 32 + 1);  // WLEDMM 40fps
+  else
+    SEGENV.step += SEGMENT.speed / 32 + 1;  // 1-4 range
+
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
       byte angle = rMap[XY(x,y)].angle;
