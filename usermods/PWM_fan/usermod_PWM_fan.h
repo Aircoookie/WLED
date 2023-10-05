@@ -159,7 +159,7 @@ class PWMFanUsermod : public Usermod {
     void setFanPWMbasedOnTemperature(void) {
       float temp = getActualTemperature();
       float difftemp = temp - targetTemperature;
-      // Default to run fan at full speed.
+      // Default to run fan at full speed (or maxPWMPct Defined by the user).      
       int newPWMvalue = 255;
       int pwmStep = ((maxPWMValuePct - minPWMValuePct) * newPWMvalue) / (7*100);
       int pwmMinimumValue = (minPWMValuePct * newPWMvalue) / 100;
@@ -181,6 +181,8 @@ class PWMFanUsermod : public Usermod {
         newPWMvalue = pwmMinimumValue + 5*pwmStep;
       } else if (difftemp <= 3.0) {
         newPWMvalue = pwmMinimumValue + 6*pwmStep;
+      } else {
+        newPWMvalue = pwmMinimumValue + 7*pwmStep;
       }
       updateFanSpeed(newPWMvalue);
     }
