@@ -7,6 +7,7 @@
 /wled00/extLibs
 /platformio_override.ini
 /wled00/my_config.h
+/wled00/html_*.h
 /build_output
 .DS_Store
 .gitignore
