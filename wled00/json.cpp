@@ -1080,6 +1080,8 @@ void serveJson(AsyncWebServerRequest* request)
         JsonArray effects = lDoc.createNestedArray(F("effects"));
         serializeModeNames(effects); // remove WLED-SR extensions from effect names
         lDoc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
+      } else {
+          lastInterfaceUpdate = millis();  // softhack007 #3382 - delay re-sending of same JSON in updateInterfaces()
       }
       //lDoc["m"] = lDoc.memoryUsage(); // JSON buffer usage, for remote debugging
   }
