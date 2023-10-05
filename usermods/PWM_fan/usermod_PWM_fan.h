@@ -56,6 +56,11 @@ class PWMFanUsermod : public Usermod {
     uint8_t numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
     uint8_t pwmValuePct       = 0;
 
+    // constant values
+    static const uint8_t _pwmMaxValue     = 255;
+    static const uint8_t _pwmMaxStepCount = 7;
+    float _pwmTempStepSize = 0.5f;
+
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _enabled[];
@@ -158,33 +163,25 @@ class PWMFanUsermod : public Usermod {
 
     void setFanPWMbasedOnTemperature(void) {
       float temp = getActualTemperature();
-      float difftemp = temp - targetTemperature;
-      // Default to run fan at full speed (or maxPWMPct Defined by the user).      
-      int newPWMvalue = 255;
-      int pwmStep = ((maxPWMValuePct - minPWMValuePct) * newPWMvalue) / (7*100);
-      int pwmMinimumValue = (minPWMValuePct * newPWMvalue) / 100;
+      // dividing minPercent and maxPercent into equal pwmvalue sizes
+      int pwmStepSize = ((maxPWMValuePct - minPWMValuePct) * _pwmMaxValue) / (_pwmMaxStepCount*100);
+      int pwmStep = calculatePwmStep(temp - targetTemperature);
+      // minimum based on full speed - not entered MaxPercent 
+      int pwmMinimumValue = (minPWMValuePct * _pwmMaxValue) / 100;
+      updateFanSpeed(pwmMinimumValue + pwmStep*pwmStepSize);
+    }
 
-      if ((temp == NAN) || (temp <= -100.0)) {
+    uint8_t calculatePwmStep(float diffTemp){
+      if ((diffTemp == NAN) || (diffTemp <= -100.0)) {
         DEBUG_PRINTLN(F("WARNING: no temperature value available. Cannot do temperature control. Will set PWM fan to 255."));
-      } else if (difftemp <= 0.0) {
-        // Temperature is below target temperature. Run fan at minimum speed.
-        newPWMvalue = pwmMinimumValue;
-      } else if (difftemp <= 0.5) {
-        newPWMvalue = pwmMinimumValue + pwmStep;
-      } else if (difftemp <= 1.0) {
-        newPWMvalue = pwmMinimumValue + 2*pwmStep;
-      } else if (difftemp <= 1.5) {
-        newPWMvalue = pwmMinimumValue + 3*pwmStep;
-      } else if (difftemp <= 2.0) {
-        newPWMvalue = pwmMinimumValue + 4*pwmStep;
-      } else if (difftemp <= 2.5) {
-        newPWMvalue = pwmMinimumValue + 5*pwmStep;
-      } else if (difftemp <= 3.0) {
-        newPWMvalue = pwmMinimumValue + 6*pwmStep;
-      } else {
-        newPWMvalue = pwmMinimumValue + 7*pwmStep;
+        return _pwmMaxStepCount;
       }
-      updateFanSpeed(newPWMvalue);
+      if(diffTemp <=0){
+        return 0;
+      }
+      int calculatedStep = (diffTemp / _pwmTempStepSize)+1;
+      // anything greater than max stepcount gets max 
+      return (uint8_t)min((int)_pwmMaxStepCount,calculatedStep);      
     }
 
   public:
