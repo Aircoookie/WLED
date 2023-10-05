@@ -18,7 +18,6 @@ wled-update.sh
 /node_modules/
 
 /wled00/extLibs
-/wled00/html_*.h
 /wled00/LittleFS
 /wled00/my_config.h
 /wled00/Release
