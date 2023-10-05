@@ -80,7 +80,7 @@ a, a:visited {
 }
 
 button {
-	outline: none;
+	outline: 0;
 	cursor: pointer;
 	background-color: transparent;
 	border: 0;
@@ -91,7 +91,7 @@ button {
 	min-height: 40px;
 }
 button:hover {
-    background: var(--c-4);
+	background: var(--c-4);
 }
 
 .label {
@@ -293,7 +293,7 @@ button:hover {
 }
 
 #ndlt {
-  margin: 12px 0;
+	margin: 12px 0;
 }
 
 #roverstar {
@@ -320,7 +320,6 @@ button:hover {
 }
 
 #kv, #kn {
-	/*max-width: 490px;*/
 	display: inline-block;
 }
 
@@ -330,7 +329,7 @@ button:hover {
 }
 
 #info td, #nodes td {
-  padding-bottom: 8px;
+	padding-bottom: 8px;
 }
 
 #info .btn {
@@ -346,7 +345,7 @@ button:hover {
 }
 
 #kn td {
-  padding-bottom: 12px;
+	padding-bottom: 12px;
 }
 
 #heart {
@@ -385,7 +384,9 @@ img {
 .sliderdisplay {
 	content:'';
 	position: absolute;
-	top: 10px; left: 8px; right: 8px;
+	top: 10px;
+	left: 8px;
+	right: 8px;
 	height: 8px;
 	background: var(--c-4);
 	border-radius: 16px;
@@ -394,9 +395,10 @@ img {
 }
 #Colors .sliderdisplay {
 	height: 28px;
-	top: 0; bottom: 0;
-	left: 0; right: 0;
-	/*border: 1px solid var(--c-b);*/
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
 }
 #rwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #f00); }
 #gwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #0f0); }
@@ -482,8 +484,8 @@ input[type=range]::-moz-range-thumb {
 	overflow-y: scroll;
 	overflow-x: hidden;
 	width: 280px;
-    margin: 0 0 0 20px;
-  	-ms-overflow-style: none;
+	margin: 0 0 0 20px;
+	-ms-overflow-style: none;
 	scrollbar-width: none; /* Firefox */
 }
 
@@ -579,7 +581,7 @@ input[type=number], input[type=text] {
 	margin: 6px 6px 6px 0;
 	font-size: 19px;
 	transition: background-color .2s;
-	outline: none;
+	outline: 0;
 	width: 50px;
 	-webkit-appearance: textfield;
 	-moz-appearance: textfield;
@@ -734,13 +736,13 @@ input[type=number]::-webkit-outer-spin-button {
 	position: relative;
 	width: 280px;
 	transition: background-color .5s;
-    margin: auto auto 20px;
+	margin: auto auto 20px;
 	font-size: 19px;
 	line-height: 24px;
 }
 
 .lstI {
-    cursor: pointer;
+	cursor: pointer;
 	background-color: var(--c-2);
 	overflow: hidden;
 	border-radius: 20px;
@@ -757,13 +759,13 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstI:hover {
-    background: var(--c-4);
+	background: var(--c-4);
 }
 /*
 .lstI:last-child {
 	border: 0;
-    border-radius: 0 0 20px 20px;
-    padding-bottom: 10px;
+	border-radius: 0 0 20px 20px;
+	padding-bottom: 10px;
 }
 */
 .lstIcontent {
@@ -784,7 +786,7 @@ input[type=number]::-webkit-outer-spin-button {
 	position: absolute;
 	bottom: 0;
 	left: 0;
-  }
+}
 
 /* Dropdown Content (Hidden by Default) */
 .dd-content {
@@ -838,12 +840,12 @@ input[type=text].fnd {
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
-    padding: 8px 48px 8px 48px;
-    margin: 5px auto 0;
+	padding: 8px 48px 8px 48px;
+	margin: 5px auto 0;
 	text-align: left;
 	border-radius: 25px;
 	background-color: var(--c-2);
-    border: 1px solid var(--c-4);
+	border: 1px solid var(--c-4);
 }
 
 input[type=text].fnd:focus {
@@ -882,8 +884,8 @@ input[type=text].fnd:not(:placeholder-shown), input[type=text].fnd:hover {
 
 @media all and (max-width: 335px) {
 	.sliderbubble {
-    	display: none;
-  	}
+		display: none;
+	}
 }
 
 @media all and (max-width: 550px) and (min-width: 374px) {
