@@ -1,0 +1,15 @@
+{
+	"id": "wled",
+	"name": "WLED",
+	"short_name": "WLED",
+	"description": "Light controller",
+	"display": "standalone",
+	"background_color": "#000",
+	"theme_color": "#000",
+	"start_url": "/",
+	"icons": [{
+		"src": "/apple-touch-icon.png",
+		"sizes": "512x512",
+		"type": "image/png"
+	}]
+}

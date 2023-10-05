@@ -114,7 +114,7 @@
 	function genForm(s) {
 		var str = "";
 		str = addRec(s,"",l);
-		
+
 		gId('gen').innerHTML = str;
 	}
 	function GetLS()
@@ -158,12 +158,12 @@
 		localStorage.removeItem('wledPalx');
 		showToast("Cleared.");
 	}
-	
+
 	function Save() {
 		SetLS();
 		if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st || d.Sf.SU.checked != initial_su) d.Sf.submit();
 	}
-	
+
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 	function loadJS(FILE_URL, async = true) {
 		let scE = d.createElement("script");
@@ -171,10 +171,10 @@
 		scE.setAttribute("type", "text/javascript");
 		scE.setAttribute("async", async);
 		d.body.appendChild(scE);
-		// success event 
+		// success event
 		scE.addEventListener("load", () => {
 			//console.log("File loaded");
-			GetV(); 
+			GetV();
 			initial_ds = d.Sf.DS.value;
 			initial_st = d.Sf.ST.checked;
 			initial_su = d.Sf.SU.checked;
@@ -227,7 +227,7 @@
 		} else {
 			gId("theme_bg_url").value = "";
 		}
-		
+
 	}
 	function checkRandomBg() {
 		if (gId("theme_bg_url").value === "https://picsum.photos/1920/1080") {
@@ -248,7 +248,8 @@
 		return false;
 	}
 	</script>
-	<style>@import url("style.css");</style>
+	<link rel="stylesheet" href="/style.css">
+	<link rel="manifest" href="/app.webmanifest">
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
@@ -268,9 +269,9 @@
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
 		You will need to set them again if using a different browser, device or WLED IP address.<br>
 		Refresh the main UI to apply changes.</i><br>
-		
+
 		<div id="gen">Loading settings...</div>
-		
+
 		<h3>UI Appearance</h3>
 		<span class="l"></span>: <input type="checkbox" id="comp_labels" class="agi cb"><br>
 		<span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
