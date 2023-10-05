@@ -1,9 +1,9 @@
 # TTGO T-Display ESP32 with 240x135 TFT via SPI with TFT_eSPI
 This usermod enables use of the TTGO 240x135 T-Display ESP32 module
-for controlling WLED and showing the following information: 
+for controlling WLED and showing the following information:
 * Current SSID
 * IP address, if obtained
-  * If connected to a network, current brightness percentage is shown 
+  * If connected to a network, current brightness percentage is shown
   * In AP mode, AP, IP and password are shown
 * Current effect
 * Current palette
@@ -16,11 +16,11 @@ I have designed a 3D printed case around this board and an ["ElectroCookie"](htt
 Based on a rework of the ssd1306_i2c_oled_u8g2 usermod from the WLED repo.
 
 ## Hardware
-![Hardware](assets/ttgo_hardware1.png)
-![Hardware](assets/ttgo-tdisplay-enclosure1a.png)
-![Hardware](assets/ttgo-tdisplay-enclosure2a.png)
-![Hardware](assets/ttgo-tdisplay-enclosure3a.png)
-![Hardware](assets/ttgo-tdisplay-enclosure3a.png)
+![Hardware](assets/ttgo-hardware1.jpg)
+![Hardware](assets/ttgo-tdisplay-enclosure1a.jpg)
+![Hardware](assets/ttgo-tdisplay-enclosure2a.jpg)
+![Hardware](assets/ttgo-tdisplay-enclosure3a.jpg)
+![Hardware](assets/ttgo-tdisplay-enclosure3a.jpg)
 
 ## Github reference for TTGO-Tdisplay
 
@@ -46,7 +46,7 @@ Under the root folder of the project, in the `platformio.ini` file, uncomment th
 ...
 lib_deps =
     ...
-  #For use of the TTGO T-Display ESP32 Module with integrated TFT display uncomment the following line  
+  #For use of the TTGO T-Display ESP32 Module with integrated TFT display uncomment the following line
     #TFT_eSPI
 ...
 ```
