@@ -1080,7 +1080,7 @@ function SuperSync(nnodes) {
 	for (i=0; i<nnodes; i++) {
 		let node = extendedNodes[i];
 		if (node.info.ip != lastinfo.ip) { //do not add to self
-			if (gId(`eql${i}`).innerText == "no") {
+			if (gId(`eql${i}`).innerText != "yes") {
 				console.log(node.info.ip, gId(`ip${i}`).innerText, gId(`pnlX${i}`).innerText, extendedNodes[i].matrix);
 				callNode(node.info.ip, "cfg", {"hw":{"led":{"matrix":extendedNodes[i].matrix}}}); //self
 				callNode(node.info.ip, "state", {"rb":true}); //reboot
@@ -1132,17 +1132,21 @@ function populateNodes(i,n)
 	}
 
 	function checkNode(nodeNr) {
-		if (gId(`pnl${nodeNr}`).innerText == gId(`pnlX${nodeNr}`).innerText)
-			gId(`eql${nodeNr}`).innerText = "yes";
+		//if panel 0 the same and 1 or 2 panels (supersync always 1 or 2) and matrix size is this size then node is OK
+		if (gId(`pnl0${nodeNr}`).innerText != gId(`pnlX${nodeNr}`).innerText) 
+			gId(`eql${nodeNr}`).innerText = "pnl0 not pnlX";
+		else if (gId(`pnlC${nodeNr}`).innerText > 2)
+			gId(`eql${nodeNr}`).innerText = "nrOfP > 2";
+		else if (gId(`mrx${nodeNr}`).innerText != lastinfo.leds.matrix.w + "x" + lastinfo.leds.matrix.h)
+			gId(`eql${nodeNr}`).innerText = "mrx not " + lastinfo.leds.matrix.w + "x" + lastinfo.leds.matrix.h;
 		else
-			gId(`eql${nodeNr}`).innerText = "no";
-
+			gId(`eql${nodeNr}`).innerText = "yes";
 	}
 
 	function fetchInfoAndCfg(ip, nodeNr, parms, callback) {
 		//add td placeholders
 		urows += `<tr>`;
-		for (let nm of ["ins", "pwr", "type", "vid", "ip", "rel", "ver", "lc", "fx", "mrx", "pnl", "pnlX", "eql"])
+		for (let nm of ["ins", "pwr", "type", "vid", "ip", "rel", "ver", "lc", "fx", "mrx", "pnl0", "pnlC", "pnlX", "eql"])
 			urows += `<td id="${nm}${nodeNr}"></td>`;
 		urows += `</tr>`;
 
@@ -1159,19 +1163,20 @@ function populateNodes(i,n)
 			// console.log(nodeNr, state, info, effects);
 			
 			//add on/off button
-			gId(`pwr${nodeNr}`).innerHTML = "<button class=\"btn btn-xs\" onclick=\"callNode('"+info["ip"]+"','state',{'on':"+(state["on"]?"false":"true")+"});\"><i class=\"icons "+(state["on"]?"on":"off")+"\">&#xe08f;</i></button>";
-			gId(`type${nodeNr}`).innerText = info["arch"];
-			gId(`vid${nodeNr}`).innerText = info["vid"];
-			gId(`ip${nodeNr}`).innerText = info["ip"];
-			gId(`rel${nodeNr}`).innerText = info["rel"];
-			gId(`ver${nodeNr}`).innerText = info["ver"];
-			gId(`lc${nodeNr}`).innerText = info["leds"]["count"] + " (" + info["leds"]["countP"] + ")";
-			gId(`fx${nodeNr}`).innerText = effects[state["seg"][0]["fx"]];
-			if (info["leds"]["matrix"])
-				gId(`mrx${nodeNr}`).innerText = info["leds"]["matrix"]["w"] + "x" + info["leds"]["matrix"]["h"];
+			gId(`pwr${nodeNr}`).innerHTML = "<button class=\"btn btn-xs\" onclick=\"callNode('"+info.ip+"','state',{'on':"+(state.on?"false":"true")+"});\"><i class=\"icons "+(state.on?"on":"off")+"\">&#xe08f;</i></button>";
+			gId(`type${nodeNr}`).innerText = info.arch;
+			gId(`vid${nodeNr}`).innerText = info.vid;
+			gId(`ip${nodeNr}`).innerText = info.ip;
+			gId(`rel${nodeNr}`).innerText = info.rel;
+			gId(`ver${nodeNr}`).innerText = info.ver;
+			gId(`lc${nodeNr}`).innerText = info.leds.count + " (" + info.leds.countP + ")";
+			gId(`fx${nodeNr}`).innerText = effects[state.seg[0].fx];
+			if (info.leds.matrix)
+				gId(`mrx${nodeNr}`).innerText = info.leds.matrix.w + "x" + info.leds.matrix.h;
 
+			//used by ddpAll and SuperSync
 			extendedNodes[nodeNr] = {};
-			extendedNodes[nodeNr].info = info; //used by ddpAll and SuperSync
+			extendedNodes[nodeNr].info = info;
 
 			fetchAndExecute(`http://${ip}/`, "cfg.json", nodeNr, function(nodeNr,text) {
 				let cfg = JSON.parse(text);
@@ -1180,28 +1185,49 @@ function populateNodes(i,n)
 				if (ip == lastinfo.ip) { //self
 					color = `style="background-color: red;"`;
 				}
-				let url = `<button class="btn" ${color} title="${ip}" onclick="location.assign('http://${ip}');">${cfg["id"]["name"]}</button>`;
+				let url = `<button class="btn" ${color} title="${ip}" onclick="location.assign('http://${ip}');">${cfg.id.name}</button>`;
 				gId(`ins${nodeNr}`).innerHTML = url;
 	
-				let matrix = cfg["hw"]["led"]["matrix"];
+				let matrix = cfg.hw.led.matrix;
 				// var str = JSON.stringify(matrix, null, 2); // jsonpretty
 				if (matrix) {
 					// console.log(matrix);
-					gId(`pnl${nodeNr}`).innerText = showPanel(matrix.panels[0]); //show the first panel
+					gId(`pnl0${nodeNr}`).innerText = showPanel(matrix.panels[0]); //show the first panel
+					gId(`pnlC${nodeNr}`).innerText = matrix.panels.length; //show nr of panels
 
 					if (ip == lastinfo.ip) { //self
 						for (let i=0; i<nnodes; i++) {
 							if (matrix.panels[i]) {
 								gId(`pnlX${i}`).innerText = showPanel(matrix.panels[i]); //assign the desired panel
-								extendedNodes[i].matrix = structuredClone(matrix); //used by ddpAll and SuperSync Object.assign: by value, not by reference
+								extendedNodes[i].matrix = structuredClone(matrix); //structuredClone: by value, not by reference
 								extendedNodes[i].matrix.ba = true; //advanced
-								extendedNodes[i].matrix.mpc = 1;
-								extendedNodes[i].matrix.mph = 1;
-								extendedNodes[i].matrix.mpv = 1;
-								extendedNodes[i].matrix.panels = [matrix.panels[i]]; //used by ddpAll and SuperSync
+								//if the panel is b
+								let widthOK = extendedNodes[nodeNr].info.leds.matrix.w == matrix.panels[i].x + matrix.panels[i].w;
+								let heightOK = extendedNodes[nodeNr].info.leds.matrix.h == matrix.panels[i].y + matrix.panels[i].h;
+								if (widthOK && heightOK) {
+									extendedNodes[i].matrix.mpc = 1;
+									extendedNodes[i].matrix.mph = 1;
+									extendedNodes[i].matrix.mpv = 1;
+									extendedNodes[i].matrix.panels = [matrix.panels[i]];
+								} else {
+									let dummyPanel = {
+										"b": false,
+										"r": false,
+										"v": false,
+										"s": false,
+										"x": extendedNodes[nodeNr].info.leds.matrix.w - 1,
+										"y": extendedNodes[nodeNr].info.leds.matrix.h - 1,
+										"h": 1,
+										"w": 1
+									  };
+									extendedNodes[i].matrix.mpc = 2;
+									extendedNodes[i].matrix.mph = 1;
+									extendedNodes[i].matrix.mpv = 2;
+									extendedNodes[i].matrix.panels = [matrix.panels[i], dummyPanel];
+								}
 							}
 							else 
-								gId(`pnlX${i}`).innerText = "no panel for " + i;
+								gId(`pnlX${i}`).innerText = "";
 						}
 					}
 				}
@@ -1226,7 +1252,7 @@ function populateNodes(i,n)
 		
 		//set table header
 		urows += `<tr>`;
-		for (let nm of ["Instance", "Power", "Type", "Build", "IP", "Release", "Version", "Leds", "Effect", "Matrix", "Panel0", "PanelX", "Equal"])
+		for (let nm of ["Instance", "Power", "Type", "Build", "IP", "Release", "Version", "Leds", "Effect", "Matrix", "Panel0", "NrOfP", "PanelX", "Equal"])
 			urows += `<th>${nm}</th>`;
 		urows += `</tr>`;
 
@@ -1244,7 +1270,8 @@ function populateNodes(i,n)
 							//if all done
 							if (nnodesDone == nnodes ) {
 								for (let i=0; i<nnodes; i++) {
-									checkNode(i);
+									if (gId(`ip${i}`).innerText != lastinfo.ip) //not self
+										checkNode(i);
 								}
 								console.log("done", extendedNodes);
 							}
