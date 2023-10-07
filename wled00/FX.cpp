@@ -80,7 +80,7 @@ static int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
  */
 uint16_t mode_static(void) {
   SEGMENT.fill(SEGCOLOR(0));
-  return 350;
+  return FRAMETIME_FIXED_SLOW;    // WLEDMM to ensure smooth color changes from DMX (PR #73)
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 
