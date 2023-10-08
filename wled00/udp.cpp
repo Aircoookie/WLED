@@ -20,7 +20,7 @@ typedef struct PartialEspNowPacket {
 void notify(byte callMode, bool followUp)
 {
 #ifndef WLED_DISABLE_ESPNOW
-  if (!udpConnected || !useESPNowSync) return;
+  if (!udpConnected && !useESPNowSync) return;
 #else
   if (!udpConnected) return;
 #endif
