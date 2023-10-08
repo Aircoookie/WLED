@@ -5773,7 +5773,7 @@ uint16_t mode_2Dcrazybees(void) {
     uint8_t posX, posY, aimX, aimY, hue;
     int8_t deltaX, deltaY, signX, signY, error;
     void aimed(uint16_t w, uint16_t h) {
-      if (!notifyDirect) //WLEDMM SuperSync
+      if (!true) //WLEDMM SuperSync
         random16_set_seed(strip.now);
       aimX = random8(0, w);
       aimY = random8(0, h);
@@ -5790,7 +5790,7 @@ uint16_t mode_2Dcrazybees(void) {
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    if (notifyDirect) //WLEDMM SuperSync
+    if (true) //WLEDMM SuperSync
       random16_set_seed(strip.now);
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
@@ -7854,7 +7854,7 @@ uint16_t mode_2Dsoap() {
 
   // init
   if (SEGENV.call == 0) {
-    if (notifyDirect) {//WLEDMM SuperSync
+    if (true) {//WLEDMM SuperSync
       random16_set_seed(535);
       USER_PRINTF("SuperSync\n");
     }
@@ -7863,7 +7863,7 @@ uint16_t mode_2Dsoap() {
     *noise32_y = random16();
     *noise32_z = random16();
   } else {
-    if (!notifyDirect) { //WLEDMM SuperSync
+    if (!true) { //WLEDMM SuperSync
       *noise32_x += mov;
       *noise32_y += mov;
       *noise32_z += mov;
@@ -7875,7 +7875,7 @@ uint16_t mode_2Dsoap() {
   uint32_t noise32_y_MM = *noise32_y;
   uint32_t noise32_z_MM = *noise32_z;
 
-  if (notifyDirect) { //WLEDMM SuperSync
+  if (true) { //WLEDMM SuperSync
     noise32_x_MM = *noise32_x + mov * strip.now / 100; //10 fps (original 20-40 fps, depending on realized fps)
     noise32_y_MM = *noise32_y + mov * strip.now / 100;
     noise32_z_MM = *noise32_z + mov * strip.now / 100;
@@ -7984,7 +7984,7 @@ uint16_t mode_2Doctopus() {
 
   // re-init if SEGMENT dimensions or offset changed
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows || SEGMENT.custom1 != *offsX || SEGMENT.custom2 != *offsY) {
-    if (!notifyDirect) //WLEDMM SuperSync
+    if (!true) //WLEDMM SuperSync
       SEGENV.step = 0; // t
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
@@ -8000,7 +8000,7 @@ uint16_t mode_2Doctopus() {
     }
   }
 
-  if (notifyDirect) // WLEDMM SuperSync
+  if (true) // WLEDMM SuperSync
     SEGENV.step = (strip.now / 40) * (SEGMENT.speed / 32 + 1);  // WLEDMM 40fps
   else
     SEGENV.step += SEGMENT.speed / 32 + 1;  // 1-4 range
