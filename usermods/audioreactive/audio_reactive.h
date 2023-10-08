@@ -1496,7 +1496,7 @@ class AudioReactive : public Usermod {
 
       static uint8_t lastFrameCounter = 0;
       if(receivedPacket->frameCounter <= lastFrameCounter && receivedPacket->frameCounter != 0) { // TODO: might need extra checks here
-        DEBUGSR_PRINTLN("Skipping audio frame out of order or duplicated");
+        DEBUGSR_PRINTF("Skipping audio frame out of order or duplicated - %u vs %u\n", lastFrameCounter, receivedPacket->frameCounter);
         return;
       }
       else {
