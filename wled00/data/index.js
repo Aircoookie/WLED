@@ -41,7 +41,7 @@ var hol = [
 var ctx = null; // WLEDMM
 var ledmapNr = -1; //WLEDMM
 var ledmapFileNames = []; //WLEDMM
-let extendedNodes = []; //WLEDMM
+let nodesData = []; //WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -1074,28 +1074,12 @@ function callNode(ip, type, json) {
 	});
 }
 
-function SuperSync(nnodes) {
-	if (!confirm('Press Yes/OK if you know what you are doing!')) return;
-
-	for (i=0; i<nnodes; i++) {
-		let node = extendedNodes[i];
-		if (node.info.ip != lastinfo.ip) { //do not add to self
-			if (gId(`eql${i}`).innerText != "yes") {
-				console.log(node.info.ip, gId(`ip${i}`).innerText, gId(`pnlX${i}`).innerText, extendedNodes[i].led.matrix);
-				let len = extendedNodes[i].led.matrix.panels[0].h * extendedNodes[i].led.matrix.panels[0].w;
-				callNode(node.info.ip, "cfg", {"hw":{"led":{"matrix":extendedNodes[i].led.matrix}, "ins":[{"start": 0,"len": len}]}}); //self
-				callNode(node.info.ip, "state", {"rb":true}); //reboot
-			}
-		}
-	}
-}
-
 function ddpAll() {
 	if (!confirm('Press Yes/OK if you know what you are doing!')) return;
 	ins = [];
 	start = 0;
 	order = 0;
-	for (var node of extendedNodes) {
+	for (var node of nodesData) {
 		if (node.info.ip != lastinfo.ip) { //do not add to self
 			console.log(node);
 			output = {};
@@ -1120,52 +1104,94 @@ function ddpAll() {
 	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}}); //self
 }
 
+function SuperSync() {
+	if (!confirm('Press Yes/OK if you know what you are doing!')) return;
+
+	for (i=0; i<nodesData.length; i++) {
+		if (nodesData[i].info.ip != lastinfo.ip) { //do not add to self
+			if (gId(`ssu${i}`).innerText == "yes") { //only update if needed (see SSync column)
+				callNode(nodesData[i].info.ip, "cfg", {"hw":{"led":nodesData[i].cfg.hw.led}});
+				callNode(nodesData[i].info.ip, "cfg", {"light":{"scale-bri":nodesData[i].cfg.light["scale-bri"]}});
+				callNode(nodesData[i].info.ip, "state", {"rb":true}); //reboot
+			}
+		}
+	}
+}
+
 function populateNodes(i,n)
 {
+	var cn="";
 	var urows="";
 	var nnodes = 0;
-	var nnodesDone = 0;
-	var cn="";
-	extendedNodes = []; //WLEDMM reset nodes
+
+	//WLEDMM starts here
+	nodesData = []; //WLEDMM reset nodes
+	var nodesDone = 0;
 
 	function showPanel(panel) {
 		return "(" + panel.x + "," + panel.y + ") - " + panel.w + "x" + panel.h + " " + (panel.b?1:0) + (panel.r?1:0) + (panel.v?1:0) + (panel.s?1:0);
 	}
 
 	function checkNode(nodeNr) {
-		//if panel 0 the same and 1 or 2 panels (supersync always 1 or 2) and matrix size is this size then node is OK
-		if (gId(`pnl0${nodeNr}`).innerText != gId(`pnlX${nodeNr}`).innerText) 
-			gId(`eql${nodeNr}`).innerText = "pnl0 not pnlX";
-		else if (gId(`pnlC${nodeNr}`).innerText > 2)
-			gId(`eql${nodeNr}`).innerText = "nrOfP > 2";
-		else if (gId(`mrx${nodeNr}`).innerText != lastinfo.leds.matrix.w + "x" + lastinfo.leds.matrix.h)
-			gId(`eql${nodeNr}`).innerText = "mrx not " + lastinfo.leds.matrix.w + "x" + lastinfo.leds.matrix.h;
-		// else if (gId(`lpc${nodeNr}`).innerText != extendedNodes[nodeNr].info.leds.cloudsP)
-		// 	gId(`eql${nodeNr}`).innerText = "Leds P# not ...";
-		else
-			gId(`eql${nodeNr}`).innerText = "yes";
+		// console.log(nodeNr, nodesData[nodeNr]);
+		let errFound = false;
+
+		//warnings
+		if (gId(`vid${nodeNr}`).innerText != lastinfo.vid) {
+			gId(`vid${nodeNr}`).style.color = "orange";
+		}
+		if (gId(`ver${nodeNr}`).innerText != lastinfo.ver) {
+			gId(`ver${nodeNr}`).style.color = "orange";
+		}
+		if (gId(`scale-bri${nodeNr}`).innerText != nodesData[nodeNr].cfg.light["scale-bri"]) {
+			gId(`scale-bri${nodeNr}`).style.color = "orange";
+		}
+		if (gId(`fps${nodeNr}`).innerText != nodesData[nodeNr].cfg.light["fps"]) {
+			gId(`fps${nodeNr}`).style.color = "orange";
+		}
+
+		if (nodesData[nodeNr].cfg.hw.led.matrix) {
+			//if panel 0 the same and 1 or 2 panels (supersync always 1 or 2) and matrix size is this size then node is OK
+			if (nodesData[nodeNr].info.leds.countP != nodesData[nodeNr].cfg.hw.led.matrix.panels[0].w * nodesData[nodeNr].cfg.hw.led.matrix.panels[0].h) {
+				errFound = true;
+				gId(`lpc${nodeNr}`).style.color = "red";
+			}
+			if (gId(`mrx${nodeNr}`).innerText != lastinfo.leds.matrix.w + "x" + lastinfo.leds.matrix.h) {
+				errFound = true;
+				gId(`mrx${nodeNr}`).style.color = "red";
+			}
+			if (gId(`pnl0${nodeNr}`).innerText != gId(`pnlX${nodeNr}`).innerText)  {
+				errFound = true;
+				gId(`pnl0${nodeNr}`).style.color = "red";
+			}
+			if (gId(`pnlC${nodeNr}`).innerText > 2) {
+				errFound = true;
+				gId(`pnlC${nodeNr}`).style.color = "red";
+			}
+		}
+
+		//set the SuperSync Update needed column
+		gId(`ssu${nodeNr}`).innerText = errFound?"yes":"no";
+		if (errFound) {
+			gId(`ssu${nodeNr}`).style.color = "red";
+		}
 	}
 
+	//fetch both cfg.json and info from a node and store in nodesData array
 	function fetchInfoAndCfg(ip, nodeNr, parms, callback) {
 		//add td placeholders
 		urows += `<tr>`;
-		for (let nm of ["ins", "pwr", "type", "vid", "ip", "rel", "ver", "lpc", "lvc", "fx", "mrx", "pnl0", "pnlC", "pnlX", "eql"])
+		for (let nm of ["ins", "pwr", "ip", "type", "rel", "ver", "vid", "fx", "scale-bri", "fps", "lpc", "lvc", "mrx", "pnl0", "pnlC", "pnlX", "ssu"])
 			urows += `<td id="${nm}${nodeNr}"></td>`;
 		urows += `</tr>`;
 
-		// add key (name button), val (type and vid)
-		// urows += `<td class="keytd">${url}</td>`;//<td class="valtd">${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i></td>`;
-		
-		//fetch the rest of the nodes info
+		//fetch info, state and effects
 		fetchAndExecute(`http://${ip}/`, "json", nodeNr, function(nodeNr, text) {
-			// console.log(text);
-			let state = JSON.parse(text)["state"];
 			let info = JSON.parse(text)["info"];
+			let state = JSON.parse(text)["state"];
 			let effects = JSON.parse(text)["effects"];
 
-			// console.log(nodeNr, state, info, effects);
-			
-			//add on/off button
+			//set values
 			gId(`pwr${nodeNr}`).innerHTML = "<button class=\"btn btn-xs\" onclick=\"callNode('"+info.ip+"','state',{'on':"+(state.on?"false":"true")+"});\"><i class=\"icons "+(state.on?"on":"off")+"\">&#xe08f;</i></button>";
 			gId(`type${nodeNr}`).innerText = info.arch;
 			gId(`vid${nodeNr}`).innerText = info.vid;
@@ -1175,69 +1201,86 @@ function populateNodes(i,n)
 			gId(`lvc${nodeNr}`).innerText = info.leds.count;
 			gId(`lpc${nodeNr}`).innerText = info.leds.countP;
 			gId(`fx${nodeNr}`).innerText = effects[state.seg[0].fx];
-			if (info.leds.matrix)
+
+			//store data
+			nodesData[nodeNr] = {};
+			nodesData[nodeNr].info = info;
+
+			//if the node has a matrix, show matrix info
+			if (info.leds.matrix) {
 				gId(`mrx${nodeNr}`).innerText = info.leds.matrix.w + "x" + info.leds.matrix.h;
+			}
 
-			//used by ddpAll and SuperSync
-			extendedNodes[nodeNr] = {};
-			extendedNodes[nodeNr].info = info;
-
+			//fetch cfg.json
 			fetchAndExecute(`http://${ip}/`, "cfg.json", nodeNr, function(nodeNr,text) {
 				let cfg = JSON.parse(text);
 
-				let color = ""
-				if (ip == lastinfo.ip) { //self
-					color = `style="background-color: red;"`;
-				}
-				let url = `<button class="btn" ${color} title="${ip}" onclick="location.assign('http://${ip}');">${cfg.id.name}</button>`;
+				//set values
+				let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${cfg.id.name}</button>`;
 				gId(`ins${nodeNr}`).innerHTML = url;
-	
-				let led = cfg.hw.led;
-				// let matrix = cfg.hw.led.matrix;
-				// var str = JSON.stringify(matrix, null, 2); // jsonpretty
-				if (led.matrix) {
-					// console.log(matrix);
-					gId(`pnl0${nodeNr}`).innerText = showPanel(led.matrix.panels[0]); //show the first panel
-					gId(`pnlC${nodeNr}`).innerText = led.matrix.panels.length; //show nr of panels
+				gId(`scale-bri${nodeNr}`).innerText = cfg.light["scale-bri"]; //show nr of panels
+				gId(`fps${nodeNr}`).innerText = cfg.hw.led["fps"]; //show nr of panels
+				
+				//store data
+				nodesData[nodeNr].cfg = cfg;
 
-					if (ip == lastinfo.ip) { //self
-						for (let i=0; i<nnodes; i++) {
-							if (led.matrix.panels[i]) {
-								gId(`pnlX${i}`).innerText = showPanel(led.matrix.panels[i]); //assign the desired panel
-								extendedNodes[i].led = structuredClone(led); //structuredClone: by value, not by reference
-								extendedNodes[i].led.matrix.ba = true; //advanced
-								//if the panel is b
-								let widthOK = extendedNodes[nodeNr].info.leds.matrix.w == led.matrix.panels[i].x + led.matrix.panels[i].w;
-								let heightOK = extendedNodes[nodeNr].info.leds.matrix.h == led.matrix.panels[i].y + led.matrix.panels[i].h;
+				//if the node has a matrix, show matrix info
+				if (cfg.hw.led.matrix) {
+					gId(`pnl0${nodeNr}`).innerText = showPanel(cfg.hw.led.matrix.panels[0]); //show the first panel
+					gId(`pnlC${nodeNr}`).innerText = cfg.hw.led.matrix.panels.length; //show nr of panels
+
+					//if self, assign it's matrix details to all others
+					if (ip == lastinfo.ip) {
+						let panelIndex = 0; //loop over panels
+						for (let i=0; i<nnodes; i++) { //loop over all nodes found
+							if (panelIndex < cfg.hw.led.matrix.panels.length && nodesData[i] && nodesData[i].info.ip != lastinfo.ip) { //loop over panels of self: assign each panel to a different node
+								//nodesData[i] does not exist if not all fetches done
+
+								let panelX = cfg.hw.led.matrix.panels[panelIndex];
+
+								gId(`pnlX${i}`).innerText = showPanel(panelX);
+
+								nodesData[i].cfg = structuredClone(cfg); //structuredClone: by value, not by reference so we can make changex
+
+								//now modify led setup for the specific node
+								nodesData[i].cfg.hw.led.matrix.ba = true; //advanced settings mode
+
+								//set the first and second panel of the node
+								let widthOK = nodesData[nodeNr].info.leds.matrix.w == panelX.x + panelX.w;
+								let heightOK = nodesData[nodeNr].info.leds.matrix.h == panelX.y + panelX.h;
 								if (widthOK && heightOK) {
-									extendedNodes[i].led.matrix.mpc = 1;
-									extendedNodes[i].led.matrix.mph = 1;
-									extendedNodes[i].led.matrix.mpv = 1;
-									extendedNodes[i].led.matrix.panels = [led.matrix.panels[i]];
+									nodesData[i].cfg.hw.led.matrix.mpc = 1;
+									nodesData[i].cfg.hw.led.matrix.mph = 1;
+									nodesData[i].cfg.hw.led.matrix.mpv = 1;
+									nodesData[i].cfg.hw.led.matrix.panels = [panelX];
 								} else {
 									let dummyPanel = {"b": false,"r": false,"v": false,"s": false,
-										"x": extendedNodes[nodeNr].info.leds.matrix.w - 1,
-										"y": extendedNodes[nodeNr].info.leds.matrix.h - 1,
+										"x": nodesData[nodeNr].info.leds.matrix.w - 1,
+										"y": nodesData[nodeNr].info.leds.matrix.h - 1,
 										"h": 1, "w": 1};
-									extendedNodes[i].led.matrix.mpc = 2;
-									extendedNodes[i].led.matrix.mph = 1;
-									extendedNodes[i].led.matrix.mpv = 2;
-									extendedNodes[i].led.matrix.panels = [led.matrix.panels[i], dummyPanel];
+									nodesData[i].cfg.hw.led.matrix.mpc = 2;
+									nodesData[i].cfg.hw.led.matrix.mph = 1;
+									nodesData[i].cfg.hw.led.matrix.mpv = 2;
+									nodesData[i].cfg.hw.led.matrix.panels = [panelX, dummyPanel];
 								}
+
+								//only one led output, same as first master led output, length equal as panelX dimensions
+								nodesData[i].cfg.hw.led.ins = [cfg.hw.led.ins[0]];
+								nodesData[i].cfg.hw.led.ins[0].start = 0;
+								nodesData[i].cfg.hw.led.ins[0].len = panelX.w * panelX.h;
+
+								panelIndex++;
 							}
 							else 
 								gId(`pnlX${i}`).innerText = "";
 						}
 					}
 				}
-				nnodesDone++;
+				nodesDone++;
 				callback(parms);
 			});
 		});
-
-	}
-
-	// console.log("info", i);
+	} //fetchInfoAndCfg
 
 	if (n.nodes) {
 		//WLEDMM add this node to nodes
@@ -1248,46 +1291,37 @@ function populateNodes(i,n)
 		
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name)); //alphabetic on name
 		// console.log("populateNodes",i,n);
-		
+
 		//set table header
 		urows += `<tr>`;
-		for (let nm of ["Instance", "Power", "Type", "Build", "IP", "Release", "Version", "#P Leds", "#V Leds", "Effect", "Matrix", "Panel0", "NrOfP", "PanelX", "Equal"])
-			urows += `<th>${nm}</th>`;
+		for (let nm of ["Instance", "Power", "IP", "Type", "Release", "Version", "Build", "Effect", "Bri%", "FPS", "LedsP#", "LedsV#", "Matrix", "Panel0", "Panels", "PanelX", "SSync"])
+			urows += `<th style="font-size:80%;">${nm}</th>`;
 		urows += `</tr>`;
 
-		//first show own node
-		// fetchInfoAndCfg(i.ip, 0, n, function(n) {
-
-			//show other nodes e.g. {name: "MM 32 L", type: 32, ip: "192.168.121.249", age: 1, vid: 2305080}
-			for (let o of n.nodes) {
-				if (o.name) {
-					//WLEDMM fetch json from nodes and add in table rows
-
-					if (o.ip) { //in ap mode no ip...
-
-						fetchInfoAndCfg(o.ip, nnodes, -1, function() {
-							//if all done
-							if (nnodesDone == nnodes ) {
-								for (let i=0; i<nnodes; i++) {
-									if (gId(`ip${i}`).innerText != lastinfo.ip) //not self
-										checkNode(i);
-								}
-								console.log("done", extendedNodes);
+		//show other nodes e.g. {name: "MM 32 L", type: 32, ip: "192.168.121.249", age: 1, vid: 2305080}
+		for (let o of n.nodes) {
+			if (o.name) {
+				if (o.ip) { //in ap mode no ip...
+					fetchInfoAndCfg(o.ip, nnodes, -1, function() {
+						//if all done
+						if (nodesDone == nnodes ) {
+							for (let i=0; i<nnodes; i++) {
+								if (gId(`ip${i}`).innerText != lastinfo.ip) //not self
+									checkNode(i);
 							}
-						});
-					}
-
+						}
+					});
 					nnodes++;
 				}
 			}
-		// });
+		}
 	} //if n.nodes
 
 	if (i.ndc < 0) cn += `Instance List is disabled.`;
 	else if (!n.nodes) cn += `No other instances found.`;
 	cn += `<table>${urows}</table>`;
 	cn += `<button class="btn" onclick="ddpAll();">DDP all</button>`;
-	cn += `<button class="btn" onclick="SuperSync(${nnodes});">SuperSync</button>`;
+	cn += `<button class="btn" onclick="SuperSync();">SuperSync</button>`;
 	gId('kn').innerHTML = cn;
 	// ${inforow("Current instance:",i.name)} //WLEDMM current instance is now also shown as node
 }
