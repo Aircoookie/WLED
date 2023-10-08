@@ -1184,7 +1184,7 @@ function populateNodes(i,n)
 	function fetchInfoAndCfg(ip, nodeNr, parms, callback) {
 		//add td placeholders
 		urows += `<tr>`;
-		for (let nm of ["ins", "pwr", "ip", "type", "rel", "ver", "vid", "fx", "scale-bri", "gcc", "fps", "lpc", "lvc", "mrx", "pnl0", "pnlC", "pnlX", "ssu"])
+		for (let nm of ["ins", "pwr", "ip", "type", "rel", "ver", "vid", "fx", "scale-bri", "gcc", "fps", "fpsr", "lpc", "lvc", "mrx", "pnl0", "pnlC", "pnlX", "ssu"])
 			urows += `<td id="${nm}${nodeNr}"></td>`;
 		urows += `</tr>`;
 
@@ -1203,6 +1203,7 @@ function populateNodes(i,n)
 			gId(`ver${nodeNr}`).innerText = info.ver;
 			gId(`lvc${nodeNr}`).innerText = info.leds.count;
 			gId(`lpc${nodeNr}`).innerText = info.leds.countP;
+			gId(`fpsr${nodeNr}`).innerText = info.leds.fps;
 			gId(`fx${nodeNr}`).innerText = effects[state.seg[0].fx];
 
 			//store data
@@ -1298,7 +1299,7 @@ function populateNodes(i,n)
 
 		//set table header
 		urows += `<tr>`;
-		for (let nm of ["Instance", "Power", "IP", "Type", "Release", "Version", "Build", "Effect", "Bri%", "Gamma", "FPS", "LedsP#", "LedsV#", "Matrix", "Panel0", "Panels", "PanelX", "SSync"])
+		for (let nm of ["Instance", "Power", "IP", "Type", "Release", "Version", "Build", "Effect", "Bri%", "Gamma", "FPS", "FPS Real", "LedsP#", "LedsV#", "Matrix", "Panel0", "Panels", "PanelX", "SSync"])
 			urows += `<th style="font-size:80%;">${nm}</th>`;
 		urows += `</tr>`;
 
