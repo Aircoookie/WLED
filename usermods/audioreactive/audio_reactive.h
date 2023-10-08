@@ -966,7 +966,7 @@ class AudioReactive : public Usermod {
       float   sampleRaw;      //  04 Bytes  - either "sampleRaw" or "rawSampleAgc" depending on soundAgc setting
       float   sampleSmth;     //  04 Bytes  - either "sampleAvg" or "sampleAgc" depending on soundAgc setting
       uint8_t samplePeak;     //  01 Bytes  - 0 no peak; >=1 peak detected. In future, this will also provide peak Magnitude
-      uint8_t reserved1;      //  01 Bytes  - for future extensions - not used yet
+      uint8_t frameCounter;   //  01 Bytes  - track duplicate/out of order packets
       uint8_t fftResult[16];  //  16 Bytes
       float  FFT_Magnitude;   //  04 Bytes
       float  FFT_MajorPeak;   //  04 Bytes
@@ -1457,6 +1457,7 @@ class AudioReactive : public Usermod {
     void transmitAudioData()
     {
       if (!udpSyncConnected) return;
+      static uint8_t frameCounter = 0;
       //DEBUGSR_PRINTLN("Transmitting UDP Mic Packet");
 
       audioSyncPacket transmitData;
@@ -1466,7 +1467,7 @@ class AudioReactive : public Usermod {
       transmitData.sampleSmth  = (soundAgc) ? sampleAgc   : sampleAvg;
       transmitData.samplePeak  = udpSamplePeak ? 1:0;
       udpSamplePeak            = false;           // Reset udpSamplePeak after we've transmitted it
-      transmitData.reserved1   = 0;
+      transmitData.frameCounter = frameCounter;
 
       for (int i = 0; i < NUM_GEQ_CHANNELS; i++) {
         transmitData.fftResult[i] = (uint8_t)constrain(fftResult[i], 0, 254);
@@ -1479,7 +1480,8 @@ class AudioReactive : public Usermod {
         fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
         fftUdp.endPacket();
       }
-      return;
+      
+      frameCounter++;
     } // transmitAudioData()
 #endif
     static bool isValidUdpSyncVersion(const char *header) {
@@ -1491,6 +1493,16 @@ class AudioReactive : public Usermod {
 
     void decodeAudioData(int packetSize, uint8_t *fftBuff) {
       audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
+
+      static uint8_t lastFrameCounter = 0;
+      if(receivedPacket->frameCounter <= lastFrameCounter && receivedPacket->frameCounter != 0) { // TODO: might need extra checks here
+        DEBUGSR_PRINTLN("Skipping audio frame out of order or duplicated");
+        return;
+      }
+      else {
+        lastFrameCounter = receivedPacket->frameCounter;
+      }
+
       // update samples for effects
       volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
       volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
