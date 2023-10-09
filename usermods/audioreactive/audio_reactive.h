@@ -944,16 +944,6 @@ class AudioReactive : public Usermod {
     #else
     int8_t i2sckPin = I2S_CKPIN;
     #endif
-    #ifndef ES7243_SDAPIN
-    int8_t sdaPin = -1;
-    #else
-    int8_t sdaPin = ES7243_SDAPIN;
-    #endif
-    #ifndef ES7243_SCLPIN
-    int8_t sclPin = -1;
-    #else
-    int8_t sclPin = ES7243_SCLPIN;
-    #endif
     #ifndef MCLK_PIN
     int8_t mclkPin = I2S_PIN_NO_CHANGE;  /* ESP32: only -1, 0, 1, 3 allowed*/
     #else
@@ -1687,12 +1677,6 @@ class AudioReactive : public Usermod {
           //useInputFilter = 0; // in case you need to disable low-cut software filtering
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
-          // WLEDMM align global pins
-          if ((sdaPin >= 0) && (i2c_sda < 0)) i2c_sda = sdaPin; // copy usermod prefs into globals (if globals not defined)
-          if ((sclPin >= 0) && (i2c_scl < 0)) i2c_scl = sclPin;
-          if (i2c_sda >= 0) sdaPin = -1;                        // -1 = use global
-          if (i2c_scl >= 0) sclPin = -1;
-
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 3:
@@ -1733,11 +1717,6 @@ class AudioReactive : public Usermod {
           audioSource = new ES8388Source(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
           //useInputFilter = 0; // to disable low-cut software filtering and restore previous behaviour
           delay(100);
-          // WLEDMM align global pins
-          if ((sdaPin >= 0) && (i2c_sda < 0)) i2c_sda = sdaPin; // copy usermod prefs into globals (if globals not defined)
-          if ((sclPin >= 0) && (i2c_scl < 0)) i2c_scl = sclPin;
-          if (i2c_sda >= 0) sdaPin = -1;                        // -1 = use global
-          if (i2c_scl >= 0) sclPin = -1;
 
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
@@ -2382,18 +2361,12 @@ class AudioReactive : public Usermod {
 
       JsonObject dmic = top.createNestedObject(FPSTR(_digitalmic));
       dmic[F("type")] = dmType;
-      // WLEDMM: align with globals I2C pins
-      if ((dmType == 2) || (dmType == 6)) {         // only for ES7243 and ES8388
-        if (i2c_sda >= 0) sdaPin = -1;              // -1 = use global
-        if (i2c_scl >= 0) sclPin = -1;              // -1 = use global
-      }
+
       JsonArray pinArray = dmic.createNestedArray("pin");
       pinArray.add(i2ssdPin);
       pinArray.add(i2swsPin);
       pinArray.add(i2sckPin);
       pinArray.add(mclkPin);
-      pinArray.add(sdaPin);
-      pinArray.add(sclPin);
 
       JsonObject cfg = top.createNestedObject("config");
       cfg[F("squelch")] = soundSquelch;
@@ -2465,8 +2438,6 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][1], i2swsPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][2], i2sckPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][3], mclkPin);
-      configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][4], sdaPin);
-      configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][5], sclPin);
 
       configComplete &= getJsonValue(top["config"][F("squelch")], soundSquelch);
       configComplete &= getJsonValue(top["config"][F("gain")],    sampleGain);
@@ -2688,17 +2659,6 @@ class AudioReactive : public Usermod {
         oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',3,' ⎌',")); oappendi(MCLK_PIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'','I2C SDA');"));
-      oappend(SET_F("rOpt('AudioReactive:digitalmic:pin[]',4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
-      #ifdef ES7243_SDAPIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',4,' ⎌',")); oappendi(ES7243_SDAPIN); oappend(");"); 
-      #endif
-
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'','I2C SCL');"));
-      oappend(SET_F("rOpt('AudioReactive:digitalmic:pin[]',5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
-      #ifdef ES7243_SCLPIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
-      #endif
       oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',5);")); // disable read only pins
 #endif      
     }

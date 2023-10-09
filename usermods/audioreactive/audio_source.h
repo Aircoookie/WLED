@@ -592,9 +592,6 @@ class ES8388Source : public I2SSource {
       //    ERRORSR_PRINTF("\nAR: invalid I2S ES8388 pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
       //    return;
       // }
-      // BUG: "use global I2C pins" are valid as -1, and -1 is seen as invalid here.
-      // Workaround: Set I2C pins here, which will also set them globally.
-      // Bug also exists in ES7243.
        if ((i2c_sda < 0) || (i2c_scl < 0)) {  // check that global I2C pins are not "undefined"
         ERRORSR_PRINTF("\nAR: invalid ES8388 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
