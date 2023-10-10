@@ -73,6 +73,12 @@ static int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
   return 0;
 }
 
+// float version of map()  // WLEDMM moved here so its available for all effects
+static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
+  if (in_max == in_min) return (out_min);  // WLEDMM avoid div/0
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 // effect functions
 
 /*
@@ -5476,14 +5482,14 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
+  const CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
   }
 
-  float adjustHeight = (float)map(rows, 8, 32, 28, 12); // maybe use mapf() ???
+  float adjustHeight = mapf(rows, 8, 32, 28, 12); // maybe use mapf() ??? // WLEDMM yes!
   uint16_t adjScale = map(cols, 8, 64, 310, 63);
 /*
   if (SEGENV.aux1 != SEGMENT.custom1/12) {   // Hacky palette rotation. We need that black.
@@ -5518,14 +5524,15 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
     yEnd = rows;
   }
 
-  SEGENV.step = strip.now / 25 * (cols * rows); //40fps
+  SEGENV.step = (strip.now * (cols * rows)) / 25; // baseline 40fps
+  const float rows_2 = (float)rows / 2.0f;        // WLEDMM faster to pre-calculate this
   for (int x = xStart; x < xEnd; x++) {
     for (int y = yStart; y < yEnd; y++) {
     SEGENV.step++;
     SEGMENT.setPixelColorXY(x, y, ColorFromPalette(auroraPalette,
                                     qsub8(
                                       inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed),
-                                      fabsf((float)rows / 2.0f - (float)y) * adjustHeight)));
+                                      fabsf(rows_2 - (float)y) * adjustHeight)));  // WLEDMM
     }
   }
 
@@ -6379,11 +6386,6 @@ uint16_t mode_2DWaverly(void) {
 static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly ☾@Amplification,Sensitivity,,,,No Clouds,Sound Pressure,AGC debug;;!;2v;ix=64,si=0"; // Beatsin
 
 #endif // WLED_DISABLE_2D
-
-// float version of map()
-static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
 
 // Gravity struct requited for GRAV* effects
 typedef struct Gravity {
