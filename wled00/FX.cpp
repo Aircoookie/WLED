@@ -177,11 +177,11 @@ uint16_t color_wipe(bool rev, bool useRandomColors) {
       SEGENV.step = 3;
     }
     if (SEGENV.step == 1) { //if flag set, change to new random color
-      SEGENV.aux1 = SEGMENT.get_random_wheel_index(SEGENV.aux0);
+      SEGENV.aux1 = get_random_wheel_index(SEGENV.aux0);
       SEGENV.step = 2;
     }
     if (SEGENV.step == 3) {
-      SEGENV.aux0 = SEGMENT.get_random_wheel_index(SEGENV.aux1);
+      SEGENV.aux0 = get_random_wheel_index(SEGENV.aux1);
       SEGENV.step = 0;
     }
   }
@@ -271,7 +271,7 @@ uint16_t mode_random_color(void) {
   if (it != SEGENV.step) //new color
   {
     SEGENV.aux1 = SEGENV.aux0;
-    SEGENV.aux0 = SEGMENT.get_random_wheel_index(SEGENV.aux0); //aux0 will store our random color wheel index
+    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0); //aux0 will store our random color wheel index
     SEGENV.step = it;
   }
 
@@ -816,7 +816,7 @@ uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do_palett
     if (a < SEGENV.step) //we hit the start again, choose new color for Chase random
     {
       SEGENV.aux1 = SEGENV.aux0; //store previous random color
-      SEGENV.aux0 = SEGMENT.get_random_wheel_index(SEGENV.aux0);
+      SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
     }
     color1 = SEGMENT.color_wheel(SEGENV.aux0);
   }
@@ -1056,7 +1056,7 @@ uint16_t mode_chase_flash_random(void) {
     SEGENV.aux1 = (SEGENV.aux1 + 1) % SEGLEN;
 
     if (SEGENV.aux1 == 0) {
-      SEGENV.aux0 = SEGMENT.get_random_wheel_index(SEGENV.aux0);
+      SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
     }
   }
   return delay;
