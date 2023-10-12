@@ -89,13 +89,9 @@ bool Segment::_modeBlend = false;
 Segment::Segment(const Segment &orig) {
   //DEBUG_PRINTF("-- Copy segment constructor: %p -> %p\n", &orig, this);
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
-  name = nullptr;
-  data = nullptr;
-  _dataLen = 0;
   _t = nullptr; // copied segment cannot be in transition
-  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-  if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-  //if (orig._t)   { _t = new Transition(orig._t->_dur); }
+  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); } else { name = nullptr; }
+  if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); } else { data = nullptr; _dataLen = 0; }
 }
 
 // move constructor
@@ -113,25 +109,23 @@ Segment& Segment::operator= (const Segment &orig) {
   //DEBUG_PRINTF("-- Copying segment: %p -> %p\n", &orig, this);
   if (this != &orig) {
     // clean destination
-    if (name) delete[] name;
+    if (name) { delete[] name; name = nullptr; }
+    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (_t) {
       #ifndef WLED_DISABLE_MODE_BLEND
       if (_t->_segT._dataT) free(_t->_segT._dataT);
       #endif
       delete _t;
+      _t = nullptr; // copied segment cannot be in transition
     }
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     // erase pointers to allocated data
-    name = nullptr;
     data = nullptr;
     _dataLen = 0;
-    _t = nullptr; // copied segment cannot be in transition
     // copy source data
-    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-    //if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
   }
   return *this;
 }
@@ -141,7 +135,6 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
   //DEBUG_PRINTF("-- Moving segment: %p -> %p\n", &orig, this);
   if (this != &orig) {
     if (name) { delete[] name; name = nullptr; } // free old name
-    deallocateData(); // free old runtime data
     if (_t) {
       #ifndef WLED_DISABLE_MODE_BLEND
       if (_t->_segT._dataT) free(_t->_segT._dataT);
@@ -149,6 +142,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
       delete _t;
       _t = nullptr;
     }
+    deallocateData(); // free old runtime data
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
@@ -1361,12 +1355,12 @@ void WS2812FX::show(void) {
   // or async show has a separate buffer (ESP32 RMT and I2S are ok)
   if (newBri < _brightness) busses.setBrightness(_brightness);
 
-  unsigned long now = millis();
-  size_t diff = now - _lastShow;
+  unsigned long showNow = millis();
+  size_t diff = showNow - _lastShow;
   size_t fpsCurr = 200;
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr +2) >> 2;   // "+2" for proper rounding (2/4 = 0.5)
-  _lastShow = now;
+  _lastShow = showNow;
 }
 
 /**
