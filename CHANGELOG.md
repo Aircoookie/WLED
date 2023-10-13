@@ -1,5 +1,11 @@
 ## WLED changelog
 
+#### Build 2310010, build 2310130
+-   Release of WLED version 0.14.0 "Hoshi"
+-   Bugfixes for #3400, #3403, #3405
+-   minor HTML optimizations
+-   audioreactive: bugfix for UDP sound sync (partly initialized packets)
+
 #### Build 2309240
 -   Release of WLED beta version 0.14.0-b6 "Hoshi"
 -   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
