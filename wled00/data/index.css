@@ -461,7 +461,7 @@ button {
 
 .filter {
 	z-index: 1;
-	overflow: hidden;
+	overflow: visible;
 }
 
 /* Tooltip text */
