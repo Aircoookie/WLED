@@ -785,8 +785,8 @@ void serializeInfo(JsonObject root)
   #endif
   root[F("opt")] = os;
 
-  root[F("brand")] = "WLED";
-  root[F("product")] = F("FOSS");
+  root[F("brand")] = WLED_BRAND;
+  root[F("product")] = WLED_PRODUCT_NAME;
   root["mac"] = escapedMac;
   char s[16] = "";
   if (Network.isConnected())

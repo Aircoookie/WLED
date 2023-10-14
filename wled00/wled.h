@@ -10,6 +10,19 @@
 // version code in format yymmddb (b = daily build)
 #define VERSION 2310130
 
+// You can define custom product info from build flags.
+// This is useful to allow API consumer to identify what type of WLED version
+// they are interacting with.
+// Use like this:
+// -D WLED_BRAND="F(\"Custom Brand\")"
+// -D WLED_PRODUCT_NAME="F(\"Custom Product\")"
+#ifndef WLED_BRAND
+  #define WLED_BRAND F("WLED")
+#endif
+#ifndef WLED_PRODUCT_NAME
+  #define WLED_PRODUCT_NAME F("FOSS")
+#endif
+
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
 
