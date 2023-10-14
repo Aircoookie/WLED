@@ -299,8 +299,8 @@ void PIRsensorSwitch::publishHomeAssistantAutodiscovery()
     JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
     device[F("name")] = serverDescription;
     device[F("ids")]  = String(F("wled-sensor-")) + mqttClientID;
-    device[F("mf")]   = WLED_BRAND;
-    device[F("mdl")]  = WLED_PRODUCT_NAME;
+    device[F("mf")]   = F(WLED_BRAND);
+    device[F("mdl")]  = F(WLED_PRODUCT_NAME);
     device[F("sw")]   = versionString;
     
     sprintf_P(buf, PSTR("homeassistant/binary_sensor/%s/config"), uid);

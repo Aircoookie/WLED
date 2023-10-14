@@ -12,15 +12,19 @@
 
 // You can define custom product info from build flags.
 // This is useful to allow API consumer to identify what type of WLED version
-// they are interacting with.
+// they are interacting with. Be aware that changing this might cause some third
+// party API consumers to consider this as a non-WLED device since the values
+// returned by the API and by MQTT will no longer be default. However, most
+// third party only uses mDNS to validate, so this is generally fine to change.
+// For example, Home Assistant will still work fine even with this value changed.
 // Use like this:
-// -D WLED_BRAND="F(\"Custom Brand\")"
-// -D WLED_PRODUCT_NAME="F(\"Custom Product\")"
+// -D WLED_BRAND="\"Custom Brand\""
+// -D WLED_PRODUCT_NAME="\"Custom Product\""
 #ifndef WLED_BRAND
-  #define WLED_BRAND F("WLED")
+  #define WLED_BRAND "WLED"
 #endif
 #ifndef WLED_PRODUCT_NAME
-  #define WLED_PRODUCT_NAME F("FOSS")
+  #define WLED_PRODUCT_NAME "FOSS"
 #endif
 
 //uncomment this if you have a "my_config.h" file you'd like to use
