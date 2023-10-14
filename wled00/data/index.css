@@ -337,7 +337,8 @@ button {
 	width: calc(100%/var(--n));
 	box-sizing: border-box;
 	border: 0px;
-	overflow: auto;
+	overflow-y: auto;
+	overflow-x: hidden;
 	height: 100%;
 	overscroll-behavior: none;
 	padding: 0 4px;
@@ -461,11 +462,11 @@ button {
 
 .filter {
 	z-index: 1;
-	overflow: hidden;
+	/*overflow: visible;*/
 }
 
 /* Tooltip text */
-.slider .tooltiptext, .option .tooltiptext {
+.slider .tooltiptext, .option .tooltiptext, .filter .tooltiptext {
 	visibility: hidden;
 	background-color: var(--c-5);
 	/*border: 2px solid var(--c-2);*/
@@ -490,11 +491,17 @@ button {
 	opacity: 0;
 	transition: opacity 0.75s;
 }
-.option .tooltiptext {
+.option .tooltiptext, .filter .tooltiptext {
 	bottom: 120%;
 }
+.filter .ttfirst {
+	margin-left: -40px;
+}
+.filter .ttlast {
+	margin-left: -140px;
+}
 /* Tooltip arrow */
-.slider .tooltiptext::after, .option .tooltiptext::after {
+.slider .tooltiptext::after, .option .tooltiptext::after, .filter .tooltiptext::after {
 	content: "";
 	position: absolute;
 	top: 100%;
@@ -504,8 +511,14 @@ button {
 	border-style: solid;
 	border-color: var(--c-5) transparent transparent transparent;
 }
+.filter .ttfirst::after {
+	left: 15%;
+}
+.filter .ttlast::after {
+	left: 75%;
+}
 /* Show the tooltip text when you mouse over the tooltip container */
-.slider:hover .tooltiptext, .option .check:hover .tooltiptext {
+.slider:hover .tooltiptext, .option .check:hover .tooltiptext, .filter .check:hover .tooltiptext {
 	visibility: visible;
 	opacity: 1;
 }

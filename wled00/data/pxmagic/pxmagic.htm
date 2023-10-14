@@ -564,12 +564,9 @@
               <div class="custom-select">
                 <label for="pattern">Pattern</label>
                 <select name="pattern" id="pattern" required>
-                  <option value="">Select a choice</option>
-                  <option value="1" title="['ffffff']">
-                    Individual
-                  </option>
-                  <option value="2" title="[0,'ffffff']">Index</option>
                   <option value="3" title="[0,5,'ffffff']" selected>Range</option>
+                  <option value="2" title="[0,'ffffff']">Index</option>
+                  <option value="1" title="['ffffff']">Individual</option>
                 </select>
               </div>
             </div>
@@ -577,7 +574,6 @@
               <div class="custom-select">
                 <label for="output">Output</label>
                 <select name="output" id="output" required>
-                  <option value="">Select a choice</option>
                   <option value="json" selected>WLED JSON</option>
                   <option value="ha">Home Assistant</option>
                   <option value="curl">CURL</option>
@@ -718,24 +714,16 @@
           <div class="row">
             <div class="column-full" validate>
               <div class="custom-select">
-                <label for="images">Images</label>
-                <select name="images" id="images" required>
-                  <option value="">Select a choice</option>
-                  <option value="upload">Upload</option>
+                <label for="images">Images uploaded to WLED [<a id="wledEdit" href="http://[wled-ip]/edit" target="_blank">Upload</a>]</label>
+                <select name="images" id="images">
+                  <option value="">Select image</option>
                 </select>
               </div>
-              <small>
-                Images uploaded to
-                <a id="wledEdit" href="http://[wled-ip]/edit" target="_blank">
-                  <strong>WLED</strong>
-                </a>
-                or upload image
-              </small>
             </div>
           </div>
-          <div id="dropzone" class="dropzone" validate style="display: none">
+          <div id="dropzone" class="dropzone" validate>
             <p id="dropzoneLabel">
-              Drag and drop a file here or click to select a file
+              Drag and drop a file here or click to select a local file
             </p>
             <input
               type="file"
@@ -832,7 +820,7 @@
 
     function hostnameLabel() {
       const link = element("wledEdit");
-      link.href = link.href.replace("[wled-ip]", hostname.value);
+      link.href = WLED_URL + "/edit";
     }
 
     async function playlist() {
@@ -986,26 +974,23 @@
           return mimeTypes.includes(mimetype);
         });
 
-        const options = [
-          { text: "Select a choice", value: "" },
-          { text: "Upload", value: "upload" },
-        ];
+        const options = [];
 
-        if (images) {
+        if (images.length>0) {
           options.push(
             ...images.map(({ name }) => ({
               text: name,
               value: `${WLED_URL}/${name}`,
             }))
           );
-
-          select.innerHTML = "";
-
-          options.forEach(({ text, value }) => {
-            const option = new Option(text, value);
-            select.appendChild(option);
-          });
+        } else {
+          options.push({ text: "No images", value: "" });
         }
+        select.innerHTML = "";
+        options.forEach(({ text, value }) => {
+          const option = new Option(text, value);
+          select.appendChild(option);
+        });
       } catch (error) {
         toast(error, "error");
       } finally {
@@ -1053,7 +1038,7 @@
             option.selected = true;
             width.value = w;
             height.value = h;
-            pattern.value = w * h > 512 ? 3 : 1;
+            pattern.value = w * h > 64 ? 3 : 1;
           }
 
           select.add(option);
@@ -1216,19 +1201,6 @@
     element("images").addEventListener("change", (e) => {
       const dropzone = element("dropzone");
       const { value } = e.target.selectedOptions[0];
-
-      if (value === "upload") {
-        const dropzoneLabel = element("dropzoneLabel");
-        const source = element("source");
-
-        dropzoneLabel.textContent =
-          "Drag and drop a file here or click to select a file";
-        source.value = "";
-
-        dropzone.style.display = "block";
-      } else {
-        dropzone.style.display = "none";
-      }
     });
 
     element("transparentImage").addEventListener("change", (e) => {
@@ -1251,10 +1223,10 @@
 
       Array.from(resizeImage).forEach(function (element) {
         if (checked) {
-          pattern.value = 3;
+          //pattern.value = 3;
           element.style.display = "flex";
         } else {
-          pattern.value = 1;
+          //pattern.value = 1;
           element.style.display = "none";
         }
       });
@@ -1278,14 +1250,14 @@
 
           source.setAttribute("accept", "image/gif");
           element.style.display = "flex";
-          pattern.value = 3;
+          //pattern.value = 3;
         } else {
           source.setAttribute(
             "accept",
             "image/jpg,image/jpeg,image/png,image/gif"
           );
           element.style.display = "none";
-          pattern.value = 1;
+          //pattern.value = 1;
         }
       });
     });
@@ -1342,7 +1314,7 @@
         const recreatedImage = element("recreatedImage");
 
         const urlImage =
-          images === "upload" ? URL.createObjectURL(file) : images;
+          images === "" ? URL.createObjectURL(file) : images;
 
         const image = await loadImage(urlImage);
         const { canvas, bri, id, i } = recreate(image);
