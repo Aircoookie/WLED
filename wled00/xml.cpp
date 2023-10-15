@@ -288,6 +288,12 @@ void getSettingsJS(byte subPage, char* dest)
     #endif
 
     #ifdef WLED_USE_ETHERNET
+      #if defined(ARDUINO_ARCH_ESP32) && (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+      // leave WESP32 Rev 7+ option shown
+      #else
+      // hide WESP32 Rev 7+ option
+      oappend(SET_F("document.getElementById('wesp32_r7').style.display='none';"));
+      #endif
     sappend('v',SET_F("ETH"),ethernetType);
     #else
     //hide ethernet setting if not compiled in
