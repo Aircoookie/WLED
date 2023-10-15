@@ -265,7 +265,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 }
 
 // returns RGBW values of pixel
-uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
+uint32_t IRAM_ATTR Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   if (!isActive()) return 0; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;
@@ -275,23 +275,6 @@ uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
   return strip.getPixelColorXY(start + x, startY + y);
-}
-
-// Blends the specified color with the existing pixel color.
-void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) {
-  setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend));
-}
-
-// Adds the specified color with the existing pixel color perserving color balance.
-void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
-  if (!isActive()) return; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
-  setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color, fast));
-}
-
-void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
-  if (!isActive()) return; // not active
-  setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), fade, true));
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
