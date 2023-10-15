@@ -8033,7 +8033,7 @@ uint16_t mode_2Doctopus() {
   }
 
   if (true) // WLEDMM SuperSync
-    SEGENV.step = (strip.now / 25) * (SEGMENT.speed / 32 + 1);  // WLEDMM 40fps
+    SEGENV.step = strip.now * (SEGMENT.speed / 32 + 1) / 25;  // WLEDMM 40fps
   else
     SEGENV.step += SEGMENT.speed / 32 + 1;  // 1-4 range
 
