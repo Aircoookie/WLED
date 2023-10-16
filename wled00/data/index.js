@@ -284,6 +284,8 @@ function onLoad()
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
+
+    displayPixelMagicTool();
 }
 
 function updateTablinks(tabI)
@@ -2958,7 +2960,6 @@ function mergeDeep(target, ...sources)
 }
 
 size();
-displayPixelMagicTool();
 
 _C.style.setProperty('--n', N);
 
