@@ -2055,13 +2055,12 @@ function resetPUtil()
 {
 	gId('psFind').classList.add('staytop');
 	let p = gId('putil');
+    let dpxm = cfg.comp.pxm ? "inline-block" : "none";
 	p.classList.add('staybot');
 	p.classList.remove('pres');
 	p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>Preset</button>`
-	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
-
-    let dpxm = cfg.comp.pxm ? "block" : "none";
-    gId('bpxm').style.display = dpxm;
+	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`
+    + `<button class="btn btn-pxm" id="buttonPixelMagicTool" onclick="togglePixelMagicTool()" style="display: ${dpxm};"><i class="icons btn-icon">&#xe410;</i>Pixel Magic Tool</button>`;
 }
 
 function tglCs(i)
