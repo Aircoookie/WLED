@@ -411,22 +411,6 @@
         );
       }
 
-      .header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-bottom: 20px;
-      }
-
-      .header .brand {
-        width: 100%;
-        max-width: 200px;
-        height: 100%;
-        display: block;
-        outline: none;
-        border: 0;
-      }
-
       .carousel {
         display: flex;
         height: 100%;
@@ -505,10 +489,6 @@
       }
 
       @media (max-width: 767px) {
-        .header {
-          padding-bottom: 0;
-        }
-
         .row {
           flex-wrap: wrap;
           flex-direction: column;
@@ -553,70 +533,6 @@
     <div class="container">
       <div class="content">
         <form id="formGenerate" novalidate>
-          <div class="header">
-            <svg
-              class="brand"
-              version="1.1"
-              xmlns="http://www.w3.org/2000/svg"
-              xmlns:xlink="http://www.w3.org/1999/xlink"
-              x="0px"
-              y="0px"
-              width="200px"
-              height="130px"
-              viewBox="0 0 200 130"
-              enable-background="new 0 0 200 130"
-              xml:space="preserve">
-              <image
-                width="200"
-                height="130"
-                x="0"
-                y="0"
-                href="data:image/png;base64,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
-          ZVJlYWR5ccllPAAAAABJRU5ErkJggg==" />
-            </svg>
-          </div>
           <div class="row">
             <div class="column" validate>
               <label for="hostname">Hostname</label>
