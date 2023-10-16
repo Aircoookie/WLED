@@ -48,7 +48,7 @@
 		});
 		setTimeout(()=>{h.appendChild(l)},100);
 	});
-	setTimeout(()=>{h.appendChild(l)},100);
+	setTimeout(()=>{h.appendChild(l)},200);
 	</script>
 	<link rel="stylesheet" href="index.css">
 </head>
@@ -88,7 +88,7 @@
 <div class ="container">
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
-		<div id="hwrap" class="slider" style="margin-top: 20px;">
+		<div id="hwrap" class="slider">
 			<div class="sliderwrap il">
 				<input id="sliderH" class="noslide" oninput="fromH()" onchange="setColor(0)" max="359" min="0" type="range" value="0" step="any">
 				<div class="sliderdisplay" style="background: linear-gradient(90deg, #f00 2%, #ff0 19%, #0f0 35%, #0ff 52%, #00f 68%, #f0f 85%, #f00)"></div>
@@ -170,15 +170,20 @@
 			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 		</div>
 		<div id="csl">
-			<button id="csl0" class="btn xxs cl" onclick="selectSlot(0);" data-r="0" data-g="0" data-b="0" data-w="0">1</button>
-			<button id="csl1" class="btn xxs cl" onclick="selectSlot(1);" data-r="0" data-g="0" data-b="0" data-w="0">2</button>
-			<button id="csl2" class="btn xxs cl" onclick="selectSlot(2);" data-r="0" data-g="0" data-b="0" data-w="0">3</button>
+			<button id="csl0" title="Select slot" class="btn xxs cl" onclick="selectSlot(0);" data-r="0" data-g="0" data-b="0" data-w="0">1</button>
+			<button id="csl1" title="Select slot" class="btn xxs cl" onclick="selectSlot(1);" data-r="0" data-g="0" data-b="0" data-w="0">2</button>
+			<button id="csl2" title="Select slot" class="btn xxs cl" onclick="selectSlot(2);" data-r="0" data-g="0" data-b="0" data-w="0">3</button>
 		</div>
 		<p class="labels h" id="cslLabel"></p>
 		<div id="hexw">
 			<i class="icons sel-icon" onclick="tglRgb()">&#xe22d;</i>
-			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
+			<input id="hexc" title="Hex RGB" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
+		</div>
+		<div style="padding: 8px 0;">
+			<button title="Pixel Magic Tool" class="btn btn-xs" type="button" onclick="window.location.href=getURL('/pxmagic.htm')"><i class="icons btn-icon">&#xe410;</i></button>
+			<button title="Add custom palette" class="btn btn-xs" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
+			<button id="rmPal" title="Remove custom palette" class="btn btn-xs" type="button" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
 		</div>
 		<p class="labels" id="pall"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div id="palw" class="il">
@@ -197,10 +202,6 @@
 						</div>
 					</label>
 				</div>
-			</div>
-			<div style="padding-bottom: 10px;">
-				<button class="btn btn-xs" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
-				<button class="btn btn-xs" type="button" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
 			</div>
 		</div>
 	</div>

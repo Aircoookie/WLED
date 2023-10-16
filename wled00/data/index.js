@@ -74,6 +74,7 @@ function setCSL(cs)
 function applyCfg()
 {
 	cTheme(cfg.theme.base === "light");
+	gId("Colors").style.paddingTop = cfg.comp.colors.picker ? "0" : "20px";
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var l = cfg.comp.labels;
@@ -109,6 +110,7 @@ function tglLabels()
 function tglRgb()
 {
 	cfg.comp.colors.rgb = !cfg.comp.colors.rgb;
+	cfg.comp.colors.picker = !cfg.comp.colors.picker;
 	applyCfg();
 }
 
@@ -255,7 +257,6 @@ function onLoad()
 		});
 	} else
 		loadBg(cfg.theme.bg.url);
-	if (cfg.comp.css) loadSkinCSS('skinCss');
 
 	selectSlot(0);
 	updateTablinks(0);
@@ -265,14 +266,17 @@ function onLoad()
 	loadPalettes(()=>{
 		// fill effect extra data array
 		loadFXData(()=>{
-			// load and populate effects
-			loadFX(()=>{
-				setTimeout(()=>{ // ESP8266 can't handle quick requests
-					loadPalettesData(()=>{
-						requestJson();// will load presets and create WS
-					});
-				},100);
-			});
+			setTimeout(()=>{ // ESP8266 can't handle quick requests
+				// load and populate effects
+				loadFX(()=>{
+					setTimeout(()=>{ // ESP8266 can't handle quick requests
+						loadPalettesData(()=>{
+							requestJson();// will load presets and create WS
+							if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
+						});
+					},100);
+				});
+			},100);
 		});
 	});
 	resetUtil();
@@ -926,8 +930,9 @@ function populatePalettes()
 	}
 	gId('pallist').innerHTML=html;
 	// append custom palettes (when loading for the 1st time)
-	if (!isEmpty(lastinfo) && lastinfo.cpalcount) {
-		for (let j = 0; j<lastinfo.cpalcount; j++) {
+	let li = lastinfo;
+	if (!isEmpty(li) && li.cpalcount) {
+		for (let j = 0; j<li.cpalcount; j++) {
 			let div = d.createElement("div");
 			gId('pallist').appendChild(div);
 			div.outerHTML = generateListItemHtml(
@@ -939,6 +944,8 @@ function populatePalettes()
 			);
 		}
 	}
+	if (li.cpalcount>0) gId("rmPal").classList.remove("hide");
+	else                gId("rmPal").classList.add("hide");
 }
 
 function redrawPalPrev()
@@ -1566,10 +1573,14 @@ function setEffectParameters(idx)
 		}
 	}
 	gId("cslLabel").innerHTML = cslLabel;
+	if (cslLabel!=="") gId("cslLabel").classList.remove("hide");
+	else               gId("cslLabel").classList.add("hide");
 
 	// set palette on/off
 	var palw = gId("palw"); // wrapper
 	var pall = gId("pall");	// label
+	var icon = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> ';
+	var text = 'Color palette';
 	// if not controlDefined or palette has a value
 	if (hasRGB && ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="" && isNaN(paOnOff[0])))) {
 		palw.style.display = "inline-block";
@@ -1579,13 +1590,13 @@ function setEffectParameters(idx)
 			var v = Math.max(0,Math.min(255,parseInt(paOnOff[0].substr(dPos+1))));
 			paOnOff[0] = paOnOff[0].substring(0,dPos);
 		}
-		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
-		else                                       pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette';
+		if (paOnOff.length>0 && paOnOff[0] != "!") text = paOnOff[0];
 	} else {
 		// disable palette list
-		pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette not used';
+		text += ' not used';
 		palw.style.display = "none";
 	}
+	pall.innerHTML = icon + text;
 	// not all color selectors shown, hide palettes created from color selectors
 	// NOTE: this will disallow user to select "* Color ..." palettes which may be undesirable in some cases or for some users
 	//for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
