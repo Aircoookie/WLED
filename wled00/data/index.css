@@ -271,6 +271,14 @@ button {
 	transform: translate(-50%,-50%);
 }
 
+#pxm {
+    display: none;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    position: absolute;
+}
+
 #ipxm {
     width: 100%;
     height: 100%;
@@ -471,7 +479,7 @@ button {
 }
 
 /* Tooltip text */
-.slider .tooltiptext, .option .tooltiptext {
+.slider .tooltiptext, .option .tooltiptext, .btn .tooltiptext {
 	visibility: hidden;
 	background-color: var(--c-5);
 	/*border: 2px solid var(--c-2);*/
@@ -486,8 +494,8 @@ button {
 	position: absolute;
 	z-index: 1;
 	bottom: 80%;
-	left: 50%;
-	margin-left: -92px;
+    left: 50%;
+    transform: translate(-50%, -50%);
 
 	/* Ensure tooltip goes away when mouse leaves control */
 	pointer-events: none;
@@ -496,22 +504,28 @@ button {
 	opacity: 0;
 	transition: opacity 0.75s;
 }
+
 .option .tooltiptext {
 	bottom: 120%;
 }
+
+/* Tooltip for buttons */
+.btn .tooltiptext {
+	bottom: 90%;
+}
+
 /* Tooltip arrow */
-.slider .tooltiptext::after, .option .tooltiptext::after {
+.slider .tooltiptext::after, .option .tooltiptext::after, .btn .tooltiptext::after {
 	content: "";
 	position: absolute;
-	top: 100%;
-	left: 50%;
-	margin-left: -5px;
-	border-width: 5px;
+	top: calc(100% - 2px);
+	left: calc(50% - 8px);
+	border: 8px;
 	border-style: solid;
 	border-color: var(--c-5) transparent transparent transparent;
 }
 /* Show the tooltip text when you mouse over the tooltip container */
-.slider:hover .tooltiptext, .option .check:hover .tooltiptext {
+.slider:hover .tooltiptext, .option .check:hover .tooltiptext, .btn:hover .tooltiptext {
 	visibility: visible;
 	opacity: 1;
 }
@@ -800,7 +814,7 @@ input[type=range]::-moz-range-thumb {
 	-webkit-transform:translate3d(0,0,0);
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
-	overflow: hidden;
+	/* overflow: hidden; */
 	text-overflow: ellipsis;
 	border: 1px solid var(--c-3);
 	background-color: var(--c-3);
@@ -1041,7 +1055,6 @@ textarea {
 	/*padding: 1px 0 1px 20px;*/
 	display: var(--sgp);
 	width: 100%;
-	position: relative;
 }
 
 .pname {

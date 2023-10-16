@@ -1755,12 +1755,8 @@ function togglePixelMagicTool()
         if(isPXM){
             var iframeContent = this.contentDocument;
             iframeContent.body.style.backgroundColor = "transparent";
-            var header = iframeContent.querySelector('.header');
-            header.style.display = "none";
         }
     }
-
-    size();
 }
 
 function makeSeg()
@@ -2059,9 +2055,6 @@ function resetPUtil()
 	p.classList.remove('pres');
 	p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>Preset</button>`
 	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
-
-    let dpxm = cfg.comp.pxm ? "block" : "none";
-    gId('bpxm').style.display = dpxm;
 }
 
 function tglCs(i)
@@ -2923,6 +2916,12 @@ function listenMessage(e){
     }
 }
 
+function displayPixelMagicTool()
+{
+    let dpxm = cfg.comp.pxm ? "inline-block" : "none";
+    gId('bpxm').style.display = dpxm;
+}
+
 function togglePcMode(fromB = false)
 {
 	if (fromB) {
@@ -2959,6 +2958,8 @@ function mergeDeep(target, ...sources)
 }
 
 size();
+displayPixelMagicTool();
+
 _C.style.setProperty('--n', N);
 
 window.addEventListener('resize', size, true);

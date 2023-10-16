@@ -180,6 +180,14 @@
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
 		</div>
+        <div style="padding-block: 10px;">
+            <button class="btn btn-xs" type="button" onclick="togglePixelMagicTool()" id="bpxm">
+                <i class="icons btn-icon">&#xe410;</i>
+				<span class="tooltiptext">Pixel Magic Tool</span>
+            </button>
+            <button class="btn btn-xs" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
+            <button class="btn btn-xs" type="button" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
+        </div>
 		<p class="labels" id="pall"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div id="palw" class="il">
 			<div class="staytop fnd">
@@ -197,11 +205,6 @@
 						</div>
 					</label>
 				</div>
-			</div>
-			<div style="padding-bottom: 10px;">
-				<button class="btn btn-xs" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
-				<button class="btn btn-xs" type="button" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
-                <button class="btn btn-xs" type="button" onclick="togglePixelMagicTool()" id="bpxm"><i class="icons btn-icon">&#xe410;</i></button>
 			</div>
 		</div>
 	</div>
