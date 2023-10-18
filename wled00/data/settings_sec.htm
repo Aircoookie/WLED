@@ -94,6 +94,48 @@
 		function getURL(path) {
 			return (loc ? locproto + "//" + locip : "") + path;
 		}
+		function getFormattedDebugInformation(json) {
+			var debugInfo = "## Debug information ##\n\n";
+			debugInfo += "WLED version: " + json.ver + " (build " + json.vid + ")\n";
+			debugInfo += "LEDs:\n";
+			debugInfo += "\tCount: " + json.leds.count + "\n";
+			debugInfo += "\tPower: " + json.leds.pwr + "\n";
+			debugInfo += "\tFPS: " + json.leds.fps + "\n";
+			debugInfo += "\tMax power: " + json.leds.maxpwr + "\n";
+			debugInfo += "\tMax segment: " + json.leds.maxseg + "\n";
+			debugInfo += "UDP Port: " + json.udpport + "\n";
+			debugInfo += "WiFi:\n";
+			debugInfo += "\tRSSI: "+json.wifi.rssi+"\n";
+			debugInfo += "\tSignal: "+json.wifi.signal+"\n";
+			debugInfo += "\tChannel: "+json.wifi.channel+"\n";
+			debugInfo += "Architecture: " + json.arch + "\n";
+			debugInfo += "Core version: " + json.core + "\n";
+			debugInfo += "Free heap: " + json.freeheap + "\n";
+			debugInfo += "Uptime: " + json.uptime + "\n";
+			debugInfo += "Time: " + json.time + "\n";
+			debugInfo += "Opt: " + json.opt + "\n";
+			debugInfo += "Brand: " + json.brand + "\n";
+			debugInfo += "Product: " + json.product + "\n";
+			debugInfo += "MAC Address: " + json.mac + "\n";
+			debugInfo += "IP Address: " + json.ip + "\n";
+			return debugInfo;
+		}
+		function submitBugReport() {
+			fetch(getURL('/json/info'), {
+				method: 'get'
+			})
+			.then(res => res.json())
+			.then(json => {
+				var githubNewIssue = "https://github.com/Aircoookie/WLED/issues/new?assignees=&labels=bug&projects=&template=bug.yml";
+				var version = "&version=" + encodeURIComponent("WLED " + json.ver + " (build " + json.vid + ")");
+				var logs = "&logs=" + encodeURIComponent(getFormattedDebugInformation(json));
+				var url = githubNewIssue + version + logs;
+				window.open(url);
+			})
+			.catch((e)=>{
+				showToast(e, true);
+			});
+		}
 	</script>
 	<style>
 		@import url("style.css");
@@ -138,7 +180,9 @@
 		A huge thank you to everyone who helped me create WLED!<br><br>
 		(c) 2016-2023 Christian Schwinne <br>
 		<i>Licensed under the <a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">MIT license</a></i><br><br>
-		Server message: <span class="sip"> Response error! </span><hr>
+		Server message: <span class="sip"> Response error! </span><br>
+		<button type="button" onclick="submitBugReport()">Submit bug report</button>
+		<hr>
 		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
