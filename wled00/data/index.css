@@ -465,6 +465,36 @@ button {
 	/*overflow: visible;*/
 }
 
+/* New tooltip */
+.tooltip {
+    position: absolute;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+	background-color: var(--c-5);
+	box-shadow: 4px 4px 10px 4px var(--c-1);
+	color: var(--c-f);
+	text-align: center;
+	padding: 8px 16px;
+	border-radius: 6px;
+}
+  
+ .tooltip::after {
+    content: "";
+    position: absolute;
+	border: 8px;
+	border-style: solid;
+	border-color: var(--c-5) transparent transparent transparent;
+    top: 100%;
+	left: calc(50% - 8px);
+    z-index: 0;
+ }
+
+.tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
 /* Tooltip text */
 .slider .tooltiptext, .option .tooltiptext, .filter .tooltiptext {
 	visibility: hidden;
