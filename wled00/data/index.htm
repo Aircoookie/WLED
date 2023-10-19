@@ -231,32 +231,26 @@
 				<label id="filterPal" class="check fchkl">&#x1F3A8;
 					<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx(this)">
 					<span class="checkmark" tooltip="Uses palette"></span>
-					<span class="hide tooltiptext ttfirst">Uses palette</span>
 				</label>
 				<label id="filter0D" class="check fchkl hide">&#8226;
 					<input type="checkbox" data-flt="&#8226;" onchange="filterFx(this)">
 					<span class="checkmark" tooltip="Single pixel"></span>
-					<span class="hide tooltiptext">Single pixel</span>
 				</label>
 				<label id="filter1D" class="check fchkl">&#8942;
 					<input type="checkbox" data-flt="&#8942;" onchange="filterFx(this)">
 					<span class="checkmark" tooltip="1D"></span>
-					<span class="hide tooltiptext">1D</span>
 				</label>
 				<label id="filter2D" class="check fchkl">&#9638;
 					<input type="checkbox" data-flt="&#9638;" onchange="filterFx(this)">
 					<span class="checkmark" tooltip="2D Matrix"></span>
-					<span class="hide tooltiptext">2D</span>
 				</label>
 				<label id="filterVol" class="check fchkl">&#9834;
 					<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this)">
 					<span class="checkmark" tooltip="Volume"></span>
-					<span class="hide tooltiptext">Volume</span>
 				</label>
 				<label id="filterFreq" class="check fchkl">&#9835;
 					<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this)">
 					<span class="checkmark" tooltip="Frequency"></span>
-					<span class="hide tooltiptext ttlast">Frequency</span>
 				</label>
 			</div>
 			<div id="slider0" class="slider">
@@ -266,43 +260,38 @@
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span id="sliderLabel0" class="hide tooltiptext">Effect speed</span>
 			</div>
 			<div id="slider1" class="slider">
 				<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 				<div class="sliderwrap il">
-					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<input id="sliderIntensity" tooltip="Effect intensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel1">Effect intensity</span>
 			</div>
 			<div id="slider2" class="slider hide">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
+					<input id="sliderC1" tooltip="Custom 1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel2">Custom 1</span>
 			</div>
 			<div id="slider3" class="slider hide">
 				<i class="icons slider-icon">&#xe0a2;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
+					<input id="sliderC2" tooltip="Custom 2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel3">Custom 2</span>
 			</div>
 			<div id="slider4" class="slider hide">
 				<i class="icons slider-icon">&#xe0e8;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="31" min="0" type="range" value="0" />
+					<input id="sliderC3" tooltip="Custom 3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="31" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel4">Custom 3</span>
 			</div>
 			<div id="fxopt" class="option fade">
 				<label id="opt0" class="check ochkl hide"><i class="icons">&#xe2b3;</i><span class="tooltiptext" id="optLabel0">Check 1</span>

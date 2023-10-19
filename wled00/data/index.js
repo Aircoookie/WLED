@@ -1505,13 +1505,8 @@ function setEffectParameters(idx)
 	let nSliders = 5;
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
-		var label = gId("sliderLabel" + i);
 		// if (not controlDefined and for AC speed or intensity and for SR all sliders) or slider has a value
 		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
-			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
-			else if (i==0)                           label.innerHTML = "Effect speed";
-			else if (i==1)                           label.innerHTML = "Effect intensity";
-			else                                     label.innerHTML = "Custom" + (i-1);
 			slider.classList.remove('hide');
 		} else {
 			slider.classList.add('hide');
