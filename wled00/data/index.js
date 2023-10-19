@@ -27,7 +27,7 @@ var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
           labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
-		  css:true, hdays:false, fxdef:true, pxm: true}
+		  css:true, hdays:false, fxdef:true}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -284,8 +284,6 @@ function onLoad()
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
-
-    displayPixelMagicTool();
 }
 
 function updateTablinks(tabI)
@@ -2916,12 +2914,6 @@ function listenMessage(e){
             setTimeout(()=>{pmtLast=0; loadPresets();}, 750); // force reloading of presets
         }
     }
-}
-
-function displayPixelMagicTool()
-{
-    let dpxm = cfg.comp.pxm ? "inline-block" : "none";
-    gId('bpxm').style.display = dpxm;
 }
 
 function togglePcMode(fromB = false)

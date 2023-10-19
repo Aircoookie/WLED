@@ -102,6 +102,15 @@
         color: var(--blue-medium);
       }
 
+      #wledEdit {
+        padding: 4px 8px;
+        background: var(--blue-light);
+        margin-left: 6px;
+        display: inline-block;
+        border-radius: 4px;
+        color: var(--gray-light);
+      }
+
       .m-zero {
         margin: 0 !important;
       }
@@ -147,10 +156,11 @@
       }
 
       label {
-        display: block;
+        display: flex;
         margin-bottom: 5px;
         font-weight: bold;
         color: var(--text);
+        align-items: center;
       }
 
       input[type="text"],
@@ -280,11 +290,12 @@
         margin-block: 15px;
       }
 
-      .range-slider::-webkit-slider-thumb {
+      .range-slider::-webkit-slider-thumb,
+      .range-slider::-moz-range-thumb {
         appearance: none;
         height: 16px;
         width: 16px;
-        background-color: var(--gray-dark);
+        background-color: var(--blue-light);
         border-radius: 50%;
         cursor: pointer;
         border: 0;
@@ -660,7 +671,7 @@
               </label>
             </div>
           </div>
-          <div class="row resizeImage" style="display: none">
+          <div class="row resizeImage">
             <div class="column" validate>
               <label for="width">Width</label>
               <input type="number" name="width" id="width" value="16" />
@@ -723,23 +734,21 @@
           <div class="row">
             <div class="column-full" validate>
               <div class="custom-select">
-                <label for="images">Images</label>
-                <select name="images" id="images" required>
-                  <option value="upload" selected>Upload</option>
+                <label for="images">
+                  <span>Images upload to WLED</span>
+                  <a id="wledEdit" href="http://[wled-ip]/edit" target="_blank">
+                    upload
+                  </a>
+                </label>
+                <select name="images" id="images">
+                  <option value="">Select image</option>
                 </select>
               </div>
-              <small>
-                Images uploaded to
-                <a id="wledEdit" href="http://[wled-ip]/edit" target="_blank">
-                  <strong>WLED</strong>
-                </a>
-                or upload image
-              </small>
             </div>
           </div>
           <div id="dropzone" class="dropzone" validate>
             <p id="dropzoneLabel">
-              Drag and drop a file here or click to select a file
+              Drag and drop a file here or click to select a local file
             </p>
             <input
               type="file"
@@ -811,7 +820,7 @@
     const hostname = element("hostname");
     hostname.value = host;
 
-    hostname.addEventListener("change", async () => {
+    hostname.addEventListener("blur", async () => {
       WLED_URL = `${protocol}//${hostname.value}`;
 
       await segments();
@@ -827,7 +836,6 @@
       await segments();
       await images();
 
-      checked();
       hostnameLabel();
     })();
 
@@ -837,19 +845,7 @@
 
     function hostnameLabel() {
       const link = element("wledEdit");
-      link.href = link.href.replace("[wled-ip]", hostname.value);
-    }
-
-    function checked() {
-      const checkbox = d.querySelectorAll('input[type="checkbox"]');
-
-      checkbox.forEach((cb) => {
-        let parentName = cb.dataset.parent;
-        let parent = d.getElementsByClassName(parentName)[0];
-        let { checked } = cb;
-
-        parent.style.display = checked ? "flex" : "none";
-      });
+      link.href = WLED_URL + "/edit";
     }
 
     async function playlist() {
@@ -1004,9 +1000,9 @@
           return mimeTypes.includes(mimetype);
         });
 
-        const options = [{ text: "Upload", value: "upload" }];
+        const options = [{ text: "Select image", value: "" }];
 
-        if (images) {
+        if (images.length > 0) {
           options.push(
             ...images.map(({ name }) => ({
               text: name,
@@ -1235,12 +1231,12 @@
       const dropzone = element("dropzone");
       const { value } = e.target.selectedOptions[0];
 
-      if (value === "upload") {
+      if (!value) {
         const dropzoneLabel = element("dropzoneLabel");
         const source = element("source");
 
         dropzoneLabel.textContent =
-          "Drag and drop a file here or click to select a file";
+          "Drag and drop a file here or click to select a local file";
         source.value = "";
 
         dropzone.style.display = "block";
@@ -1266,10 +1262,8 @@
       const { checked } = e.target;
 
       if (checked) {
-        pattern.value = 3;
         resizeImage.style.display = "flex";
       } else {
-        pattern.value = 1;
         resizeImage.style.display = "none";
       }
     });
@@ -1290,14 +1284,12 @@
 
         source.setAttribute("accept", "image/gif");
         animation.style.display = "flex";
-        pattern.value = 3;
       } else {
         source.setAttribute(
           "accept",
           "image/jpg,image/jpeg,image/png,image/gif"
         );
         animation.style.display = "none";
-        pattern.value = 1;
       }
     });
 
@@ -1352,8 +1344,7 @@
         const response = element("response");
         const recreatedImage = element("recreatedImage");
 
-        const urlImage =
-          images === "upload" ? URL.createObjectURL(file) : images;
+        const urlImage = !images ? URL.createObjectURL(file) : images;
 
         const image = await loadImage(urlImage);
         const { canvas, bri, id, i } = recreate(image);
