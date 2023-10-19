@@ -20,8 +20,8 @@
 	--c-g: #2c1;
 	--c-l: #48a;
 	--c-y: #a90;
-	--t-b: 0.5;
-	--c-o: rgba(34, 34, 34, 0.9);
+	--t-b: .5;
+	--c-o: rgba(34, 34, 34, .9);
 	--c-tb : rgba(34, 34, 34, var(--t-b));
 	--c-tba: rgba(102, 102, 102, var(--t-b));
 	--c-tbh: rgba(51, 51, 51, var(--t-b));
@@ -33,7 +33,7 @@
 	--bbp: 9px 0 7px 0;
 	--bhd: none;
 	--sgp: "block";
-	--bmt: 0px;
+	--bmt: 0;
 }
 
 html {
@@ -88,7 +88,7 @@ a, a:visited {
 }
 
 button {
-	outline: none;
+	outline: 0;
 	cursor: pointer;
 }
 
@@ -238,7 +238,7 @@ button {
 .flr {
 	color: var(--c-f);
 	transform: rotate(0deg);
-	transition: transform 0.3s;
+	transition: transform .3s;
 	position: absolute;
 	top: 0;
 	right: 0;
@@ -258,13 +258,13 @@ button {
 #liveview {
 	height: 4px;
 	width: 100%;
-	border: 0px;
+	border: 0;
 }
 
 #liveview2D {
 	height: 90%;
 	width: 90%;
-	border: 0px;
+	border: 0;
 	position: absolute;
 	top: 50%;
 	left: 50%;
@@ -287,8 +287,8 @@ button {
 .tab button {
 	background-color: transparent;
 	float: left;
-	border: none;
-	transition: color 0.3s, background-color 0.3s;
+	border: 0;
+	transition: color .3s, background-color .3s;
 	font-size: 17px;
 	color: var(--c-c);
 	min-width: 44px;
@@ -301,7 +301,7 @@ button {
 
 .bot button {
 	padding: var(--bbp);
-	width:25%;
+	width: 25%;
 	margin: 0;
 }
 
@@ -336,7 +336,7 @@ button {
 	width: 100%;
 	width: calc(100%/var(--n));
 	box-sizing: border-box;
-	border: 0px;
+	border: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
 	height: 100%;
@@ -389,8 +389,8 @@ button {
 	align-items: center;
 	justify-content: center;
 	z-index: 11;
-	opacity: 0.95;
-	transition: 0.7s;
+	opacity: .95;
+	transition: .7s;
 	pointer-events: none;
 }
 
@@ -457,7 +457,7 @@ button {
 	padding: 4px 2px;
 	position: relative;
 	opacity: 1;
-	transition: opacity 0.5s linear, height 0.5s, transform 0.5s;
+	transition: opacity .5s linear, height .5s, transform .5s;
 }
 
 .filter {
@@ -496,7 +496,7 @@ button {
 }
 
 /* Tooltip text */
-.slider .tooltiptext, .option .tooltiptext, .filter .tooltiptext {
+.tooltiptext {
 	visibility: hidden;
 	background-color: var(--c-5);
 	/*border: 2px solid var(--c-2);*/
@@ -510,28 +510,28 @@ button {
 	width: 160px;
 	position: absolute;
 	z-index: 1;
-	bottom: 80%;
+	bottom: 120%;
+	transform: translate(-50%, 0%);
 	left: 50%;
-	margin-left: -92px;
 
 	/* Ensure tooltip goes away when mouse leaves control */
 	pointer-events: none;
 
 	/* Fade in tooltip */
 	opacity: 0;
-	transition: opacity 0.75s;
+	transition: opacity .75s;
 }
-.option .tooltiptext, .filter .tooltiptext {
-	bottom: 120%;
+.slider .tooltiptext {
+	bottom: 100%;
 }
-.filter .ttfirst {
-	margin-left: -40px;
+.ttfirst {
+	transform: translateX(-20%);
 }
-.filter .ttlast {
-	margin-left: -140px;
+.ttlast {
+	transform: translateX(-80%);
 }
 /* Tooltip arrow */
-.slider .tooltiptext::after, .option .tooltiptext::after, .filter .tooltiptext::after {
+.tooltiptext::after {
 	content: "";
 	position: absolute;
 	top: 100%;
@@ -541,14 +541,14 @@ button {
 	border-style: solid;
 	border-color: var(--c-5) transparent transparent transparent;
 }
-.filter .ttfirst::after {
-	left: 15%;
+.ttfirst::after {
+	left: 20%;
 }
-.filter .ttlast::after {
-	left: 75%;
+.ttlast::after {
+	left: 80%;
 }
 /* Show the tooltip text when you mouse over the tooltip container */
-.slider:hover .tooltiptext, .option .check:hover .tooltiptext, .filter .check:hover .tooltiptext {
+.slider:hover .tooltiptext, .check:hover .tooltiptext {
 	visibility: visible;
 	opacity: 1;
 }
@@ -557,7 +557,7 @@ button {
 	visibility: hidden; /* hide it */
 	opacity: 0; /* make it transparent */
 	transform: scaleY(0); /* shrink content */
-	height: 0px; /* force other elements to move */
+	height: 0; /* force other elements to move */
 	padding: 0; /* remove empty space */
 }
 
@@ -585,24 +585,24 @@ button {
 
 #toast.show {
 	opacity: 1;
-	animation: fadein 0.5s, fadein 0.5s 2.5s reverse;
+	animation: fadein .5s, fadein .5s 2.5s reverse;
 }
 
 #toast.error {
 	opacity: 1;
 	background-color: #b21;
-	animation: fadein 0.5s;
+	animation: fadein .5s;
 }
 
 .modal {
-	position:fixed;
-	left: 0px;
-	bottom: 0px;
-	right: 0px;
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	right: 0;
 	top: calc(var(--th) - 1px);
 	background-color: var(--c-o);
 	transform: translateY(100%);
-	transition: transform 0.4s;
+	transition: transform .4s;
 	padding: 8px;
 	font-size: 20px;
 	overflow: auto;
@@ -684,7 +684,7 @@ button {
 }
 
 #heart {
-	transition: color 0.9s;
+	transition: color .9s;
 	font-size: 16px;
 	color: #f00;
 }
@@ -763,7 +763,7 @@ input[type=range] {
 }
 
 input[type=range]:focus {
-	outline: none;
+	outline: 0;
 }
 input[type=range]::-webkit-slider-runnable-track {
 	width: 100%;
@@ -786,7 +786,7 @@ input[type=range]::-moz-range-track {
 	background-color: rgba(0, 0, 0, 0);
 }
 input[type=range]::-moz-range-thumb {
-	border: 0px solid rgba(0, 0, 0, 0);
+	border: 0 solid rgba(0, 0, 0, 0);
 	height: 16px;
 	width: 16px;
 	border-radius: 50%;
@@ -832,11 +832,11 @@ input[type=range]::-moz-range-thumb {
 	color: var(--c-d);
 	cursor: pointer;
 	border-radius: 25px;
-	transition-duration: 0.3s;
+	transition-duration: .3s;
 	-webkit-backface-visibility: hidden;
-	-webkit-transform:translate3d(0,0,0);
+	-webkit-transform: translate3d(0,0,0);
 	backface-visibility: hidden;
-	transform:translate3d(0,0,0);
+	transform: translate3d(0,0,0);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	border: 1px solid var(--c-3);
@@ -936,13 +936,13 @@ select {
 	cursor: pointer;
 	border: 0 solid var(--c-2);
 	border-radius: 20px;
-	transition-duration: 0.5s;
+	transition-duration: .5s;
 	-webkit-backface-visibility: hidden;
-	-webkit-transform:translate3d(0,0,0);
+	-webkit-transform: translate3d(0,0,0);
     -webkit-appearance: none;
     -moz-appearance: none;
 	backface-visibility: hidden;
-	transform:translate3d(0,0,0);
+	transform: translate3d(0,0,0);
 	text-overflow: ellipsis;
 }
 #tt {
@@ -985,13 +985,13 @@ input[type=number],
 input[type=text] {
 	background: var(--c-3);
 	color: var(--c-f);
-	border: 0px solid var(--c-2);
+	border: 0 solid var(--c-2);
 	border-radius: 10px;
 	padding: 8px;
 	/*margin: 6px 6px 6px 0;*/
 	font-size: 19px;
-	transition: background-color 0.2s;
-	outline: none;
+	transition: background-color .2s;
+	outline: 0;
 	-webkit-appearance: textfield;
 	-moz-appearance: textfield;
 	appearance: textfield;
@@ -1031,7 +1031,7 @@ textarea {
 	height: 90px;
 	border-radius: 5px;
 	border: 2px solid var(--c-5);
-	outline: none;
+	outline: 0;
 	resize: none;
 	font-size: 19px;
 	padding: 5px;
@@ -1084,7 +1084,7 @@ textarea {
 	top: 1px;
 }
 .plname {
-	top:0;
+	top: 0;
 }
 
 /* preset id number */
@@ -1164,8 +1164,8 @@ textarea {
 }
 
 .revchkl {
-	padding: 4px 0px 0px 35px;
-	margin-bottom: 0px;
+	padding: 4px 0 0 35px;
+	margin-bottom: 0;
 	margin-top: 8px;
 }
 
@@ -1261,9 +1261,9 @@ TD .checkmark, TD .radiomark {
 .seg, .pres {
 	background-color: var(--c-2);
 	/*color: var(--c-f);*/ /* seems to affect only the Add segment button, which should be same color as reset segments */
-	border: 0px solid var(--c-f);
+	border: 0 solid var(--c-f);
 	text-align: left;
-	transition: background-color 0.5s;
+	transition: background-color .5s;
 	border-radius: 21px;
 }
 
@@ -1280,8 +1280,8 @@ TD .checkmark, TD .radiomark {
 /* checkmark labels */
 .filter .fchkl, .option .ochkl {
 	display: inline-block;
-	min-width: 0.7em;
-	padding: 1px 4px 4px 32px;
+	min-width: .7em;
+	padding: 1px 4px 1px 32px;
 	text-align: left;
 	line-height: 24px;
 	vertical-align: middle;
@@ -1306,7 +1306,7 @@ TD .checkmark, TD .radiomark {
 /* list wrapper */
 .list {
 	position: relative;
-	transition: background-color 0.5s;
+	transition: background-color .5s;
     margin: auto auto 10px;
 	line-height: 24px;
 }
@@ -1356,7 +1356,7 @@ TD .checkmark, TD .radiomark {
 .lstI.sticky,
 .lstI.selected {
 	z-index: 1;
-	box-shadow: 0px 0px 10px 4px var(--c-1);
+	box-shadow: 0 0 10px 4px var(--c-1);
 }
 
 #pcont .selected:not([class*="expanded"]) {
@@ -1500,7 +1500,7 @@ TD .checkmark, TD .radiomark {
 }
 ::-webkit-scrollbar-thumb {
 	background: var(--c-sb);
-	opacity: 0.2;
+	opacity: .2;
 	border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb:hover {
