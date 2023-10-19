@@ -35,8 +35,8 @@ var hol = [
 	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
 	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
-	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
-	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
+	[0,6,4,1,"https://images.alphacoders.com/516/516792.jpg"], // 4th of July
+	[0,0,1,1,"https://images.alphacoders.com/119/1198800.jpg"] // new year
 ];
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
