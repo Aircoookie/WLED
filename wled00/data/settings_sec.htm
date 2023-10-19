@@ -136,6 +136,34 @@
 				showToast(e, true);
 			});
 		}
+		// Using this function instead of navigator.clipboard.writeText() because it is not supported on insecure origins
+		function copyToClipboard(text) {
+			const textArea = document.createElement("textarea");
+			textArea.value = text;
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+			try {
+				document.execCommand('copy');
+			} catch (err) {
+				console.error('Unable to copy to clipboard', err);
+			}
+			document.body.removeChild(textArea);
+		}
+		function copyDebugInformation() {
+			fetch(getURL('/json/info'), {
+				method: 'get'
+			})
+			.then(res => res.json())
+			.then(json => {
+				var debugInfo = getFormattedDebugInformation(json);
+				copyToClipboard(debugInfo);
+				showToast("Debug information copied to clipboard!");
+			})
+			.catch((e)=>{
+				showToast(e, true);
+			});
+		}
 	</script>
 	<style>
 		@import url("style.css");
@@ -182,6 +210,7 @@
 		<i>Licensed under the <a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">MIT license</a></i><br><br>
 		Server message: <span class="sip"> Response error! </span><br>
 		<button type="button" onclick="submitBugReport()">Submit bug report</button>
+		<button type="button" onclick="copyDebugInformation()">Copy debug information</button>
 		<hr>
 		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
