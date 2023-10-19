@@ -2936,6 +2936,43 @@ function mergeDeep(target, ...sources)
 	return mergeDeep(target, ...sources);
 }
 
+function tooltip(){
+    const elements = d.querySelectorAll("[tooltip]");
+  
+    elements.forEach(function (element) {
+        element.addEventListener("mouseover", function () {
+            const tooltip = d.createElement("span");
+  
+            tooltip.className = "tooltip";
+            tooltip.textContent = element.getAttribute("tooltip");
+    
+            const { top, left, width } = element.getBoundingClientRect();
+    
+            d.body.appendChild(tooltip);
+    
+            const { offsetHeight, offsetWidth } = tooltip;
+
+            console.log(element.type);
+            
+            const multiplier = element.type == "range" ? 0.2 : 0.4;
+            const newTop = top - (offsetHeight + (offsetHeight * multiplier));
+            const newLeft = left + (width / 2) - (offsetWidth / 2);
+
+            tooltip.style.top = newTop + "px";
+            tooltip.style.left = newLeft + "px";
+    
+            tooltip.classList.add("visible");
+        });
+  
+        element.addEventListener("mouseout", function () {
+            const tooltip = d.querySelector('.tooltip');
+
+            tooltip.classList.remove("visible");
+            d.body.removeChild(tooltip);
+        });
+    });
+};
+
 size();
 _C.style.setProperty('--n', N);
 
@@ -2947,3 +2984,5 @@ _C.addEventListener('touchstart', lock, false);
 _C.addEventListener('mouseout', move, false);
 _C.addEventListener('mouseup', move, false);
 _C.addEventListener('touchend', move, false);
+
+d.addEventListener('DOMContentLoaded', tooltip);
