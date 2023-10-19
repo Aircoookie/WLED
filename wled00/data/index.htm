@@ -181,9 +181,9 @@
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
 		</div>
 		<div style="padding: 8px 0;">
-			<button class="btn btn-xs" tooltip="Pixel Magic Tool" type="button" onclick="window.location.href=getURL('/pxmagic.htm')"><i class="icons btn-icon">&#xe410;</i></button>
-			<button class="btn btn-xs" tooltip="Add custom palette" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
-			<button class="btn btn-xs" tooltip="Remove custom palette" type="button" id="rmPal" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
+			<button title="Pixel Magic Tool" class="btn btn-xs" type="button" onclick="window.location.href=getURL('/pxmagic.htm')"><i class="icons btn-icon">&#xe410;</i></button>
+			<button title="Add custom palette" class="btn btn-xs" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
+			<button id="rmPal" title="Remove custom palette" class="btn btn-xs" type="button" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
 		</div>
 		<p class="labels" id="pall"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div id="palw" class="il">
@@ -230,43 +230,43 @@
 			<div id="filters" class="filter">
 				<label id="filterPal" class="check fchkl">&#x1F3A8;
 					<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx(this)">
-					<span class="checkmark" tooltip="Uses palette"></span>
-					<span class="hide tooltiptext ttfirst">Uses palette</span>
+					<span class="checkmark"></span>
+					<span class="tooltiptext ttfirst">Uses palette</span>
 				</label>
 				<label id="filter0D" class="check fchkl hide">&#8226;
 					<input type="checkbox" data-flt="&#8226;" onchange="filterFx(this)">
-					<span class="checkmark" tooltip="Single pixel"></span>
-					<span class="hide tooltiptext">Single pixel</span>
+					<span class="checkmark"></span>
+					<span class="tooltiptext">Single pixel</span>
 				</label>
 				<label id="filter1D" class="check fchkl">&#8942;
 					<input type="checkbox" data-flt="&#8942;" onchange="filterFx(this)">
-					<span class="checkmark" tooltip="1D"></span>
-					<span class="hide tooltiptext">1D</span>
+					<span class="checkmark"></span>
+					<span class="tooltiptext">1D</span>
 				</label>
 				<label id="filter2D" class="check fchkl">&#9638;
 					<input type="checkbox" data-flt="&#9638;" onchange="filterFx(this)">
-					<span class="checkmark" tooltip="2D Matrix"></span>
-					<span class="hide tooltiptext">2D</span>
+					<span class="checkmark"></span>
+					<span class="tooltiptext">2D</span>
 				</label>
 				<label id="filterVol" class="check fchkl">&#9834;
 					<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this)">
-					<span class="checkmark" tooltip="Volume"></span>
-					<span class="hide tooltiptext">Volume</span>
+					<span class="checkmark"></span>
+					<span class="tooltiptext">Volume</span>
 				</label>
 				<label id="filterFreq" class="check fchkl">&#9835;
 					<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this)">
-					<span class="checkmark" tooltip="Frequency"></span>
-					<span class="hide tooltiptext ttlast">Frequency</span>
+					<span class="checkmark"></span>
+					<span class="tooltiptext ttlast">Frequency</span>
 				</label>
 			</div>
 			<div id="slider0" class="slider">
 				<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
 				<div class="sliderwrap il">
-					<input id="sliderSpeed" tooltip="Effect speed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span id="sliderLabel0" class="hide tooltiptext">Effect speed</span>
+				<span id="sliderLabel0" class="tooltiptext">Effect speed</span>
 			</div>
 			<div id="slider1" class="slider">
 				<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
