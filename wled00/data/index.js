@@ -26,7 +26,7 @@ var ws, cpick, ranges, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
+		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
 		  css:true, hdays:false, fxdef:true, on:0, off:0}
 };
 var hol = [
@@ -74,7 +74,7 @@ function setCSL(cs)
 function applyCfg()
 {
 	cTheme(cfg.theme.base === "light");
-	gId("Colors").style.paddingTop = cfg.comp.colors.picker ? "0" : "20px";
+	gId("Colors").style.paddingTop = cfg.comp.colors.picker ? "0" : "28px";
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var l = cfg.comp.labels;
@@ -922,7 +922,7 @@ function populatePalettes()
 	for (let pa of lJson) {
 		html += generateListItemHtml(
 			'palette',
-		    pa[0],
+			pa[0],
 			pa[1],
 			'setPalette',
 			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
@@ -1211,6 +1211,7 @@ function updateUI()
 	gId('buttonPower').className = (isOn) ? 'active':'';
 	gId('buttonNl').className = (nlA) ? 'active':'';
 	gId('buttonSync').className = (syncSend) ? 'active':'';
+	gId('pxmb').style.display = (isM) ? "inline-block" : "none";
 
 	updateSelectedFx();
 	updateSelectedPalette(selectedPal); // must be after updateSelectedFx() to un-hide color slots for * palettes
@@ -1502,41 +1503,30 @@ function setEffectParameters(idx)
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
 
 	// set html slider items on/off
-	let sliders = d.querySelectorAll("#sliders .slider");
-
-    sliders.forEach(function(slider, i){
-        const tooltip = slider.querySelector('[tooltip]');
-        const text = tooltip.getAttribute("tooltip");
-
-        if ((!controlDefined && i < ((idx < 128) ? 2 : nSliders)) || (slOnOff.length > i && slOnOff[i] != "")) {
-            const newText = slOnOff.length > i && slOnOff[i] != "!" ? slOnOff[i] : text;
-            tooltip.setAttribute("tooltip", newText);
-			slider.classList.remove('hide');
-		} else {
-			slider.classList.add('hide');
-		}
-    });
+	let sliders = d.querySelectorAll("#sliders .sliderwrap");
+	sliders.forEach((slider, i)=>{
+		let text = slider.getAttribute("tooltip");
+		if ((!controlDefined && i < ((idx < 128) ? 2 : nSliders)) || (slOnOff.length > i && slOnOff[i] != "")) {
+			if (slOnOff.length > i && slOnOff[i] != "!") text = slOnOff[i];
+			slider.setAttribute("tooltip", text);
+			slider.parentElement.classList.remove('hide');
+		} else
+			slider.parentElement.classList.add('hide');
+	});
 
 	if (slOnOff.length > 5) { // up to 3 checkboxes
 		gId('fxopt').classList.remove('fade');
-
-        let checks = d.querySelectorAll("#fxopt .check");
-
-        checks.forEach(function(check, i){
-            const tooltip = check.querySelector('[tooltip]');
-            const text = tooltip.getAttribute("tooltip");
-
-            if (5 + i < slOnOff.length && slOnOff[5 + i] !== '') {
-                const newText = slOnOff[5 + i] == "!" ? text : slOnOff[5 + i].substr(0, 16);
-                tooltip.setAttribute("tooltip", newText);
+		let checks = d.querySelectorAll("#sliders .ochkl");
+		checks.forEach((check, i)=>{
+			let text = check.getAttribute("tooltip");
+			if (5+i < slOnOff.length && slOnOff[5+i] !== '') {
+				if (slOnOff.length > 5+i && slOnOff[5+i] != "!") text = slOnOff[5+i];
+				check.setAttribute("tooltip", text);
 				check.classList.remove('hide');
-			} else {
-                check.classList.add('hide');
-            }
-        });
-	} else {
-		gId('fxopt').classList.add('fade');
-	}
+			} else
+				check.classList.add('hide');
+		});
+	} else gId('fxopt').classList.add('fade');
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	setInterval(()=>{
@@ -2946,39 +2936,39 @@ function mergeDeep(target, ...sources)
 	return mergeDeep(target, ...sources);
 }
 
-function tooltip(){
-    const elements = d.querySelectorAll("[tooltip]");
+function tooltip()
+{
+	const elements = d.querySelectorAll("[tooltip]");
   
-    elements.forEach(function (element) {
-        element.addEventListener("mouseover", function () {
-            const tooltip = d.createElement("span");
+	elements.forEach((element)=>{
+		element.addEventListener("mouseover", ()=>{
+			const tooltip = d.createElement("span");
   
-            tooltip.className = "tooltip";
-            tooltip.textContent = element.getAttribute("tooltip");
-    
-            const { top, left, width } = element.getBoundingClientRect();
-    
-            d.body.appendChild(tooltip);
-    
-            const { offsetHeight, offsetWidth } = tooltip;
+			tooltip.className = "tooltip";
+			tooltip.textContent = element.getAttribute("tooltip");
+	
+			let { top, left, width } = element.getBoundingClientRect();
+	
+			d.body.appendChild(tooltip);
+	
+			const { offsetHeight, offsetWidth } = tooltip;
 
-            const multiplier = element.type == "range" ? 0.2 : 0.4;
-            const newTop = top - (offsetHeight + (offsetHeight * multiplier));
-            const newLeft = left + (width / 2) - (offsetWidth / 2);
+			const multiplier = element.className === "slider" ? 0 : .3;
+			top -= (offsetHeight + (offsetHeight * multiplier));
+			left += (width / 2) - (offsetWidth / 2);
 
-            tooltip.style.top = newTop + "px";
-            tooltip.style.left = newLeft + "px";
-    
-            tooltip.classList.add("visible");
-        });
+			tooltip.style.top = top + "px";
+			tooltip.style.left = left + "px";
+	
+			tooltip.classList.add("visible");
+		});
   
-        element.addEventListener("mouseout", function () {
-            const tooltip = d.querySelector('.tooltip');
-
-            tooltip.classList.remove("visible");
-            d.body.removeChild(tooltip);
-        });
-    });
+		element.addEventListener("mouseout", ()=>{
+			const tooltip = d.querySelector('.tooltip');
+			tooltip.classList.remove("visible");
+			d.body.removeChild(tooltip);
+		});
+	});
 };
 
 size();
