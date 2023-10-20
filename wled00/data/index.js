@@ -1514,12 +1514,15 @@ function setEffectParameters(idx)
 	}
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
-	setInterval(()=>{
+	function setSelectedEffectPosition() {
 		let top = parseInt(getComputedStyle(gId("sliders")).height);
 		top += 5;
 		let sel = d.querySelector('#fxlist .selected');
 		if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setFX())
-	},750);
+	}
+
+	setSelectedEffectPosition();
+	setInterval(setSelectedEffectPosition,750);
 	// set html color items on/off
 	var cslLabel = '';
 	var sep = '';
