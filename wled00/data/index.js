@@ -1502,16 +1502,22 @@ function setEffectParameters(idx)
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
 
 	// set html slider items on/off
-	let nSliders = 5;
-	for (let i=0; i<nSliders; i++) {
-		var slider = gId("slider" + i);
-		// if (not controlDefined and for AC speed or intensity and for SR all sliders) or slider has a value
-		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
+	let sliders = d.querySelectorAll("#sliders .slider");
+
+    sliders.forEach(function(slider, i){
+        const tooltip = slider.querySelector('[tooltip]');
+        const text = tooltip.getAttribute("tooltip");
+
+        if ((!controlDefined && i < ((idx < 128) ? 2 : nSliders)) || (slOnOff.length > i && slOnOff[i] != "")) {
+            const newText = slOnOff.length > i && slOnOff[i] != "!" ? slOnOff[i] : text;
+            tooltip.setAttribute("tooltip", newText);
+
 			slider.classList.remove('hide');
 		} else {
 			slider.classList.add('hide');
 		}
-	}
+    });
+
 	if (slOnOff.length>5) { // up to 3 checkboxes
 		gId('fxopt').classList.remove('fade');
 		for (let i = 0; i<3; i++) {
@@ -2949,8 +2955,6 @@ function tooltip(){
     
             const { offsetHeight, offsetWidth } = tooltip;
 
-            console.log(element.type);
-            
             const multiplier = element.type == "range" ? 0.2 : 0.4;
             const newTop = top - (offsetHeight + (offsetHeight * multiplier));
             const newLeft = left + (width / 2) - (offsetWidth / 2);
