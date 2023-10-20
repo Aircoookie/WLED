@@ -1506,8 +1506,8 @@ function setEffectParameters(idx)
 	let sliders = d.querySelectorAll("#sliders .sliderwrap");
 	sliders.forEach((slider, i)=>{
 		let text = slider.getAttribute("tooltip");
-		if ((!controlDefined && i < ((idx < 128) ? 2 : nSliders)) || (slOnOff.length > i && slOnOff[i] != "")) {
-			if (slOnOff.length > i && slOnOff[i] != "!") text = slOnOff[i];
+		if ((!controlDefined && i<((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i]!="")) {
+			if (slOnOff.length>i && slOnOff[i]!="!") text = slOnOff[i];
 			slider.setAttribute("tooltip", text);
 			slider.parentElement.classList.remove('hide');
 		} else
@@ -1519,8 +1519,8 @@ function setEffectParameters(idx)
 		let checks = d.querySelectorAll("#sliders .ochkl");
 		checks.forEach((check, i)=>{
 			let text = check.getAttribute("tooltip");
-			if (5+i < slOnOff.length && slOnOff[5+i] !== '') {
-				if (slOnOff.length > 5+i && slOnOff[5+i] != "!") text = slOnOff[5+i];
+			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
+				if (slOnOff.length>5+i && slOnOff[5+i]!="!") text = slOnOff[5+i];
 				check.setAttribute("tooltip", text);
 				check.classList.remove('hide');
 			} else
@@ -2953,7 +2953,7 @@ function tooltip()
 	
 			const { offsetHeight, offsetWidth } = tooltip;
 
-			const multiplier = element.className === "slider" ? 0 : .3;
+			const multiplier = element.classList.contains("sliderwrap") ? .2 : .4;
 			top -= (offsetHeight + (offsetHeight * multiplier));
 			left += (width / 2) - (offsetWidth / 2);
 

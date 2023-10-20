@@ -477,6 +477,7 @@ button {
 	text-align: center;
 	padding: 8px 16px;
 	border-radius: 6px;
+	z-index: 1;
 }
   
  .tooltip::after {
