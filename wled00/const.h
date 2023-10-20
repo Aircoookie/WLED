@@ -378,7 +378,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3792   // WLEDMM added 696 bytes of margin (was 3096) for audioreactive UI
+#define SETTINGS_STACK_BUF_SIZE 3802   // WLEDMM added 696+10 bytes of margin (was 3096) for audioreactive UI
 #endif
 
 #ifdef WLED_USE_ETHERNET

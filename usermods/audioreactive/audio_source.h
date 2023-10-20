@@ -615,6 +615,97 @@ class ES8388Source : public I2SSource {
 
 };
 
+class WM8978Source : public I2SSource {
+  private:
+    // I2C initialization functions for WM8978
+    void _wm8978I2cBegin() {
+      Wire.setClock(400000);
+    }
+
+    void _wm8978I2cWrite(uint8_t reg, uint16_t val) {
+      #ifndef WM8978_ADDR
+        #define WM8978_ADDR 0x1A
+      #endif
+      char buf[2];
+      buf[0] = (reg << 1) | ((val >> 8) & 0X01);
+      buf[1] = val & 0XFF;
+      Wire.beginTransmission(WM8978_ADDR);
+      Wire.write((const uint8_t*)buf, 2);
+      uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
+      if (i2cErr != 0) {
+        DEBUGSR_PRINTF("AR: WM8978 I2C write failed with error=%d  (addr=0x%X, reg 0x%X, val 0x%X).\n", i2cErr, WM8978_ADDR, reg, val);
+      }
+    }
+
+    void _wm8978InitAdc() {
+      // https://www.mouser.com/datasheet/2/76/WM8978_v4.5-1141768.pdf
+      // Sets ADC to around what AudioReactive expects, and loops line-in to line-out/headphone for monitoring.
+      // Registries are decimal, settings are 9-bit binary as that's how everything is listed in the docs
+      // ...which makes it easier to reference the docs.
+      //
+      _wm8978I2cBegin(); 
+
+      _wm8978I2cWrite( 0,0b000000000); // Reset all settings
+      _wm8978I2cWrite( 1,0b000001011); // Power Management 1 - power off most things
+      _wm8978I2cWrite( 2,0b110110011); // Power Management 2 - enable output and amp stages (amps may lift signal but it works better on the ADCs)
+      _wm8978I2cWrite( 3,0b000001100); // Power Management 3 - enable L&R output mixers
+      _wm8978I2cWrite( 4,0b001010000); // Audio Interface - standard I2S, 24-bit
+      _wm8978I2cWrite( 5,0b000000001); // Loopback Enable
+      _wm8978I2cWrite( 6,0b000000000); // Clock generation control - use external mclk
+      _wm8978I2cWrite( 7,0b000000100); // Sets sample rate to ~24kHz (only used for internal calculations, not I2S)
+      _wm8978I2cWrite(14,0b010001000); // 128x ADC oversampling - high pass filter disabled as it kills the bass response
+      _wm8978I2cWrite(43,0b000110000); // Mute signal paths we don't use
+      _wm8978I2cWrite(44,0b000000000); // Disconnect microphones
+      _wm8978I2cWrite(45,0b111000000); // Mute signal paths we don't use
+      _wm8978I2cWrite(46,0b111000000); // Mute signal paths we don't use
+      _wm8978I2cWrite(47,0b001000000); // 0dB gain on left line-in
+      _wm8978I2cWrite(48,0b001000000); // 0dB gain on right line-in
+      _wm8978I2cWrite(49,0b000000010); // Mixer thermal shutdown enable
+      _wm8978I2cWrite(50,0b000010110); // Output mixer enable only left bypass at 0dB gain
+      _wm8978I2cWrite(51,0b000010110); // Output mixer enable only right bypass at 0dB gain
+      _wm8978I2cWrite(52,0b110111001); // Left line-out enabled at 0dB gain
+      _wm8978I2cWrite(53,0b110111001); // Right line-out enabled at 0db gain
+      _wm8978I2cWrite(54,0b001000000); // Mute left speaker output
+      _wm8978I2cWrite(55,0b101000000); // Mute right speaker output
+
+    }
+
+  public:
+    WM8978Source(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
+      I2SSource(sampleRate, blockSize, sampleScale, i2sMaster) {
+      _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    };
+
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      DEBUGSR_PRINTLN("WM8978Source:: initialize();");
+
+      // if ((i2sckPin < 0) || (mclkPin < 0)) { // WLEDMM not sure if this check is needed here, too
+      //    ERRORSR_PRINTF("\nAR: invalid I2S WM8978 pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+      //    return;
+      // }
+      // BUG: "use global I2C pins" are valid as -1, and -1 is seen as invalid here.
+      // Workaround: Set I2C pins here, which will also set them globally.
+      // Bug also exists in ES7243.
+       if ((i2c_sda < 0) || (i2c_scl < 0)) {  // check that global I2C pins are not "undefined"
+        ERRORSR_PRINTF("\nAR: invalid WM8978 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
+        return;
+      }
+      if (!pinManager.joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
+        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
+        return;
+      }
+
+      // First route mclk, then configure ADC over I2C, then configure I2S
+      _wm8978InitAdc();
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+    }
+
+    void deinitialize() {
+      I2SSource::deinitialize();
+    }
+
+};
+
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
 #if !defined(SOC_I2S_SUPPORTS_ADC) && !defined(SOC_I2S_SUPPORTS_ADC_DAC)
   #warning this MCU does not support analog sound input
