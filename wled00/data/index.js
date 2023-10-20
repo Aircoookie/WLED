@@ -1511,22 +1511,29 @@ function setEffectParameters(idx)
         if ((!controlDefined && i < ((idx < 128) ? 2 : nSliders)) || (slOnOff.length > i && slOnOff[i] != "")) {
             const newText = slOnOff.length > i && slOnOff[i] != "!" ? slOnOff[i] : text;
             tooltip.setAttribute("tooltip", newText);
-
 			slider.classList.remove('hide');
 		} else {
 			slider.classList.add('hide');
 		}
     });
 
-	if (slOnOff.length>5) { // up to 3 checkboxes
+	if (slOnOff.length > 5) { // up to 3 checkboxes
 		gId('fxopt').classList.remove('fade');
-		for (let i = 0; i<3; i++) {
-			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
-				gId('opt'+i).classList.remove('hide');
-				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
-			} else
-				gId('opt'+i).classList.add('hide');
-		}
+
+        let checks = d.querySelectorAll("#fxopt .check");
+
+        checks.forEach(function(check, i){
+            const tooltip = check.querySelector('[tooltip]');
+            const text = tooltip.getAttribute("tooltip");
+
+            if (5 + i < slOnOff.length && slOnOff[5 + i] !== '') {
+                const newText = slOnOff[5 + i] == "!" ? text : slOnOff[5 + i].substr(0, 16);
+                tooltip.setAttribute("tooltip", newText);
+				check.classList.remove('hide');
+			} else {
+                check.classList.add('hide');
+            }
+        });
 	} else {
 		gId('fxopt').classList.add('fade');
 	}
