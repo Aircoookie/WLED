@@ -1093,8 +1093,8 @@ void serializeInfo(JsonObject root)
   #endif
   root[F("opt")] = os;
 
-  root[F("brand")] = "WLED";
-  root[F("product")] = F("FOSS");
+  root[F("brand")] = F(WLED_BRAND); //WLEDMM + Moustachauve/Wled-Native
+  root[F("product")] = F(WLED_PRODUCT_NAME); //WLEDMM + Moustachauve/Wled-Native
   root["mac"] = escapedMac;
   char s[16] = "";
   if (Network.isConnected())

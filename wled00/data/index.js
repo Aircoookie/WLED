@@ -1104,6 +1104,9 @@ function ddpAll() {
 	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}}); //self
 }
 
+//curl -s -F "update=@/Users/ewoudwijma/Developer/GitHub/MoonModules/WLED/build_output/release/WLEDMM_0.14.0-b27.31_esp32_4MB_M.bin" 192.168.8.105/update >nul &
+
+//WLEDMM
 function SuperSync() {
 	if (!confirm('Press Yes/OK if you know what you are doing!')) return;
 
@@ -1111,7 +1114,7 @@ function SuperSync() {
 		if (nodesData[i].info.ip != lastinfo.ip) { //do not add to self
 			if (gId(`ssu${i}`).innerText == "yes") { //only update if needed (see SSync column)
 				callNode(nodesData[i].info.ip, "cfg", {"hw":{"led":nodesData[i].cfg.hw.led}});
-				callNode(nodesData[i].info.ip, "cfg", {"light":{"scale-bri":nodesData[i].cfg.light["scale-bri"]}});
+				callNode(nodesData[i].info.ip, "cfg", {"light":nodesData[i].cfg.light});
 				callNode(nodesData[i].info.ip, "state", {"rb":true}); //reboot
 			}
 		}
@@ -1146,7 +1149,7 @@ function populateNodes(i,n)
 		if (gId(`scale-bri${nodeNr}`).innerText != nodesData[nodeNr].cfg.light["scale-bri"]) {
 			gId(`scale-bri${nodeNr}`).style.color = "orange";
 		}
-		if (gId(`fps${nodeNr}`).innerText != nodesData[nodeNr].cfg.light["fps"]) {
+		if (gId(`fps${nodeNr}`).innerText != nodesData[nodeNr].cfg.hw.led.fps) {
 			gId(`fps${nodeNr}`).style.color = "orange";
 		}
 
@@ -1181,7 +1184,7 @@ function populateNodes(i,n)
 	function fetchInfoAndCfg(ip, nodeNr, parms, callback) {
 		//add td placeholders
 		urows += `<tr>`;
-		for (let nm of ["ins", "pwr", "ip", "type", "rel", "ver", "vid", "fx", "scale-bri", "fps", "lpc", "lvc", "mrx", "pnl0", "pnlC", "pnlX", "ssu"])
+		for (let nm of ["ins", "pwr", "ip", "type", "rel", "ver", "vid", "fx", "scale-bri", "gcc", "fps", "fpsr", "lpc", "lvc", "mrx", "pnl0", "pnlC", "pnlX", "ssu"])
 			urows += `<td id="${nm}${nodeNr}"></td>`;
 		urows += `</tr>`;
 
@@ -1200,6 +1203,7 @@ function populateNodes(i,n)
 			gId(`ver${nodeNr}`).innerText = info.ver;
 			gId(`lvc${nodeNr}`).innerText = info.leds.count;
 			gId(`lpc${nodeNr}`).innerText = info.leds.countP;
+			gId(`fpsr${nodeNr}`).innerText = info.leds.fps;
 			gId(`fx${nodeNr}`).innerText = effects[state.seg[0].fx];
 
 			//store data
@@ -1218,11 +1222,12 @@ function populateNodes(i,n)
 				//set values
 				let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${cfg.id.name}</button>`;
 				gId(`ins${nodeNr}`).innerHTML = url;
-				gId(`scale-bri${nodeNr}`).innerText = cfg.light["scale-bri"]; //show nr of panels
-				gId(`fps${nodeNr}`).innerText = cfg.hw.led["fps"]; //show nr of panels
+				gId(`scale-bri${nodeNr}`).innerText = cfg.light["scale-bri"];
+				gId(`gcc${nodeNr}`).innerText = cfg.light.gc.col  > 1;
+				gId(`fps${nodeNr}`).innerText = cfg.hw.led.fps;
 				
 				//store data
-				nodesData[nodeNr].cfg = cfg;
+				// nodesData[nodeNr].cfg = cfg;
 
 				//if the node has a matrix, show matrix info
 				if (cfg.hw.led.matrix) {
@@ -1294,7 +1299,7 @@ function populateNodes(i,n)
 
 		//set table header
 		urows += `<tr>`;
-		for (let nm of ["Instance", "Power", "IP", "Type", "Release", "Version", "Build", "Effect", "Bri%", "FPS", "LedsP#", "LedsV#", "Matrix", "Panel0", "Panels", "PanelX", "SSync"])
+		for (let nm of ["Instance", "Power", "IP", "Type", "Release", "Version", "Build", "Effect", "Bri%", "Gamma", "FPS", "FPS Real", "LedsP#", "LedsV#", "Matrix", "Panel0", "Panels", "PanelX", "SSync"])
 			urows += `<th style="font-size:80%;">${nm}</th>`;
 		urows += `</tr>`;
 

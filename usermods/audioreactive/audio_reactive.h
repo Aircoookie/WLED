@@ -966,7 +966,7 @@ class AudioReactive : public Usermod {
       float   sampleRaw;      //  04 Bytes  - either "sampleRaw" or "rawSampleAgc" depending on soundAgc setting
       float   sampleSmth;     //  04 Bytes  - either "sampleAvg" or "sampleAgc" depending on soundAgc setting
       uint8_t samplePeak;     //  01 Bytes  - 0 no peak; >=1 peak detected. In future, this will also provide peak Magnitude
-      uint8_t reserved1;      //  01 Bytes  - for future extensions - not used yet
+      uint8_t frameCounter;   //  01 Bytes  - track duplicate/out of order packets
       uint8_t fftResult[16];  //  16 Bytes
       float  FFT_Magnitude;   //  04 Bytes
       float  FFT_MajorPeak;   //  04 Bytes
@@ -1457,16 +1457,19 @@ class AudioReactive : public Usermod {
     void transmitAudioData()
     {
       if (!udpSyncConnected) return;
+      static uint8_t frameCounter = 0;
       //DEBUGSR_PRINTLN("Transmitting UDP Mic Packet");
 
       audioSyncPacket transmitData;
+      memset(reinterpret_cast<void *>(&transmitData), 0, sizeof(transmitData)); // make sure that the packet - including "invisible" padding bytes added by the compiler - is fully initialized
+
       strncpy_P(transmitData.header, PSTR(UDP_SYNC_HEADER), 6);
       // transmit samples that were not modified by limitSampleDynamics()
       transmitData.sampleRaw   = (soundAgc) ? rawSampleAgc: sampleRaw;
       transmitData.sampleSmth  = (soundAgc) ? sampleAgc   : sampleAvg;
       transmitData.samplePeak  = udpSamplePeak ? 1:0;
       udpSamplePeak            = false;           // Reset udpSamplePeak after we've transmitted it
-      transmitData.reserved1   = 0;
+      transmitData.frameCounter = frameCounter;
 
       for (int i = 0; i < NUM_GEQ_CHANNELS; i++) {
         transmitData.fftResult[i] = (uint8_t)constrain(fftResult[i], 0, 254);
@@ -1479,7 +1482,8 @@ class AudioReactive : public Usermod {
         fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
         fftUdp.endPacket();
       }
-      return;
+      
+      frameCounter++;
     } // transmitAudioData()
 #endif
     static bool isValidUdpSyncVersion(const char *header) {
@@ -1491,6 +1495,16 @@ class AudioReactive : public Usermod {
 
     void decodeAudioData(int packetSize, uint8_t *fftBuff) {
       audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
+
+      static uint8_t lastFrameCounter = 0;
+      if(receivedPacket->frameCounter <= lastFrameCounter && receivedPacket->frameCounter != 0) { // TODO: might need extra checks here
+        DEBUGSR_PRINTF("Skipping audio frame out of order or duplicated - %u vs %u\n", lastFrameCounter, receivedPacket->frameCounter);
+        return;
+      }
+      else {
+        lastFrameCounter = receivedPacket->frameCounter;
+      }
+
       // update samples for effects
       volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
       volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
@@ -1731,6 +1745,23 @@ class AudioReactive : public Usermod {
           DEBUGSR_PRINTLN(F("AR: ES8388 Source (Line-In)"));
         #endif
           audioSource = new ES8388Source(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
+          //useInputFilter = 0; // to disable low-cut software filtering and restore previous behaviour
+          delay(100);
+          // WLEDMM align global pins
+          if ((sdaPin >= 0) && (i2c_sda < 0)) i2c_sda = sdaPin; // copy usermod prefs into globals (if globals not defined)
+          if ((sclPin >= 0) && (i2c_scl < 0)) i2c_scl = sclPin;
+          if (i2c_sda >= 0) sdaPin = -1;                        // -1 = use global
+          if (i2c_scl >= 0) sclPin = -1;
+
+          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+          break;
+        case 7:
+        #ifdef use_wm8978_mic
+          DEBUGSR_PRINTLN(F("AR: WM8978 Source (Mic)"));
+        #else
+          DEBUGSR_PRINTLN(F("AR: WM8978 Source (Line-In)"));
+        #endif
+          audioSource = new WM8978Source(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
           //useInputFilter = 0; // to disable low-cut software filtering and restore previous behaviour
           delay(100);
           // WLEDMM align global pins
@@ -2548,7 +2579,11 @@ class AudioReactive : public Usermod {
       #else
         oappend(SET_F("addOption(dd,'ES8388 ☾',6);"));
       #endif
-
+      #if SR_DMTYPE==7
+        oappend(SET_F("addOption(dd,'WM8978 ☾ (⎌)',7);"));
+      #else
+        oappend(SET_F("addOption(dd,'WM8978 ☾',7);"));
+      #endif
       #ifdef SR_SQUELCH
         oappend(SET_F("addInfo('AudioReactive:config:squelch',1,'<i>&#9100; ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field
       #endif

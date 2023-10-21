@@ -73,6 +73,12 @@ static int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
   return 0;
 }
 
+// float version of map()  // WLEDMM moved here so its available for all effects
+static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
+  if (in_max == in_min) return (out_min);  // WLEDMM avoid div/0
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 // effect functions
 
 /*
@@ -5476,15 +5482,14 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
+  const CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
-    SEGENV.step = 0;
   }
 
-  float adjustHeight = (float)map(rows, 8, 32, 28, 12); // maybe use mapf() ???
+  float adjustHeight = mapf(rows, 8, 32, 28, 12); // maybe use mapf() ??? // WLEDMM yes!
   uint16_t adjScale = map(cols, 8, 64, 310, 63);
 /*
   if (SEGENV.aux1 != SEGMENT.custom1/12) {   // Hacky palette rotation. We need that black.
@@ -5504,19 +5509,36 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
   uint16_t _scale = map(SEGMENT.intensity, 0, 255, 30, adjScale);
   byte _speed = map(SEGMENT.speed, 0, 255, 128, 16);
 
-  for (int x = 0; x < cols; x++) {
-    for (int y = 0; y < rows; y++) {
-      SEGENV.step++;
-      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(auroraPalette,
-                                      qsub8(
-                                        inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed),
-                                        fabsf((float)rows / 2.0f - (float)y) * adjustHeight)));
+  //WLEDMM add SuperSync control
+  uint16_t xStart, xEnd, yStart, yEnd;
+  if (SEGMENT.check1) { //Master (sync on needs to show the whole effect, children only their first panel)
+    xStart = strip.panel[0].xOffset;
+    xEnd = strip.panel[0].xOffset + strip.panel[0].width;
+    yStart = strip.panel[0].yOffset;
+    yEnd = strip.panel[0].yOffset + strip.panel[0].height;
+  }
+  else  {
+    xStart = 0;
+    xEnd = cols;
+    yStart = 0;
+    yEnd = rows;
+  }
+
+  SEGENV.step = (strip.now * (cols * rows)) / 25; // baseline 40fps
+  const float rows_2 = (float)rows / 2.0f;        // WLEDMM faster to pre-calculate this
+  for (int x = xStart; x < xEnd; x++) {
+    for (int y = yStart; y < yEnd; y++) {
+    SEGENV.step++;
+    SEGMENT.setPixelColorXY(x, y, ColorFromPalette(auroraPalette,
+                                    qsub8(
+                                      inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed),
+                                      fabsf(rows_2 - (float)y) * adjustHeight)));  // WLEDMM
     }
   }
 
   return FRAMETIME;
 } // mode_2DPolarLights()
-static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@!,Scale;;;2";
+static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@!,Scale,,,,SuperSync;;;2";
 
 
 /////////////////////////
@@ -5773,7 +5795,7 @@ uint16_t mode_2Dcrazybees(void) {
     uint8_t posX, posY, aimX, aimY, hue;
     int8_t deltaX, deltaY, signX, signY, error;
     void aimed(uint16_t w, uint16_t h) {
-      if (!notifyDirect) //WLEDMM SuperSync
+      if (!true) //WLEDMM SuperSync
         random16_set_seed(strip.now);
       aimX = random8(0, w);
       aimY = random8(0, h);
@@ -5790,7 +5812,7 @@ uint16_t mode_2Dcrazybees(void) {
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    if (notifyDirect) //WLEDMM SuperSync
+    if (true) //WLEDMM SuperSync
       random16_set_seed(strip.now);
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
@@ -6364,11 +6386,6 @@ uint16_t mode_2DWaverly(void) {
 static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly ☾@Amplification,Sensitivity,,,,No Clouds,Sound Pressure,AGC debug;;!;2v;ix=64,si=0"; // Beatsin
 
 #endif // WLED_DISABLE_2D
-
-// float version of map()
-static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
 
 // Gravity struct requited for GRAV* effects
 typedef struct Gravity {
@@ -7854,7 +7871,7 @@ uint16_t mode_2Dsoap() {
 
   // init
   if (SEGENV.call == 0) {
-    if (notifyDirect) {//WLEDMM SuperSync
+    if (true) {//WLEDMM SuperSync
       random16_set_seed(535);
       USER_PRINTF("SuperSync\n");
     }
@@ -7863,7 +7880,7 @@ uint16_t mode_2Dsoap() {
     *noise32_y = random16();
     *noise32_z = random16();
   } else {
-    if (!notifyDirect) { //WLEDMM SuperSync
+    if (!true) { //WLEDMM SuperSync
       *noise32_x += mov;
       *noise32_y += mov;
       *noise32_z += mov;
@@ -7875,7 +7892,7 @@ uint16_t mode_2Dsoap() {
   uint32_t noise32_y_MM = *noise32_y;
   uint32_t noise32_z_MM = *noise32_z;
 
-  if (notifyDirect) { //WLEDMM SuperSync
+  if (true) { //WLEDMM SuperSync
     noise32_x_MM = *noise32_x + mov * strip.now / 100; //10 fps (original 20-40 fps, depending on realized fps)
     noise32_y_MM = *noise32_y + mov * strip.now / 100;
     noise32_z_MM = *noise32_z + mov * strip.now / 100;
@@ -7982,9 +7999,24 @@ uint16_t mode_2Doctopus() {
   uint8_t *offsX = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize);
   uint8_t *offsY = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize + 1);
 
+  //WLEDMM add SuperSync control
+  uint16_t xStart, xEnd, yStart, yEnd;
+  if (SEGMENT.check1) { //Master (sync on needs to show the whole effect, children only their first panel)
+    xStart = strip.panel[0].xOffset;
+    xEnd = strip.panel[0].xOffset + strip.panel[0].width;
+    yStart = strip.panel[0].yOffset;
+    yEnd = strip.panel[0].yOffset + strip.panel[0].height;
+  }
+  else  {
+    xStart = 0;
+    xEnd = cols;
+    yStart = 0;
+    yEnd = rows;
+  }
+
   // re-init if SEGMENT dimensions or offset changed
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows || SEGMENT.custom1 != *offsX || SEGMENT.custom2 != *offsY) {
-    if (!notifyDirect) //WLEDMM SuperSync
+    if (!true) //WLEDMM SuperSync
       SEGENV.step = 0; // t
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
@@ -7992,21 +8024,21 @@ uint16_t mode_2Doctopus() {
     *offsY = SEGMENT.custom2;
     const uint8_t C_X = cols / 2 + (SEGMENT.custom1 - 128)*cols/255;
     const uint8_t C_Y = rows / 2 + (SEGMENT.custom2 - 128)*rows/255;
-    for (int x = 0; x < cols; x++) {
-      for (int y = 0; y < rows; y++) {
+    for (int x = xStart; x < xEnd; x++) {
+      for (int y = yStart; y < yEnd; y++) {
         rMap[XY(x, y)].angle = 40.7436f * atan2f(y - C_Y, x - C_X); // avoid 128*atan2()/PI
         rMap[XY(x, y)].radius = hypotf(x - C_X, y - C_Y) * mapp; //thanks Sutaburosu
       }
     }
   }
 
-  if (notifyDirect) // WLEDMM SuperSync
-    SEGENV.step = (strip.now / 40) * (SEGMENT.speed / 32 + 1);  // WLEDMM 40fps
+  if (true) // WLEDMM SuperSync
+    SEGENV.step = strip.now * (SEGMENT.speed / 32 + 1) / 25;  // WLEDMM 40fps
   else
     SEGENV.step += SEGMENT.speed / 32 + 1;  // 1-4 range
 
-  for (int x = 0; x < cols; x++) {
-    for (int y = 0; y < rows; y++) {
+  for (int x = xStart; x < xEnd; x++) {
+    for (int y = yStart; y < yEnd; y++) {
       byte angle = rMap[XY(x,y)].angle;
       byte radius = rMap[XY(x,y)].radius;
       //CRGB c = CHSV(SEGENV.step / 2 - radius, 255, sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step) + radius - SEGENV.step * 2 + angle * (SEGMENT.custom3/3+1)));
@@ -8018,7 +8050,7 @@ uint16_t mode_2Doctopus() {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,,Offset X,Offset Y,Legs;;!;2;";
+static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,,Offset X,Offset Y,Legs, SuperSync;;!;2;";
 
 
 //Waving Cell

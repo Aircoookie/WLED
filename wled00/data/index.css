@@ -624,7 +624,11 @@ button {
 	width: 100%;
 }
 
-#info td, #nodes td {
+/*WLEDMM split info and nodes table font attributes*/
+#info td {
+	padding-bottom: 8px;
+}
+#nodes td {
 	font-size: 12px; /*WLEDMM small table cells (nodes popup) */
   padding-bottom: 8px;
 }
