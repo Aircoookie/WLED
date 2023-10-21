@@ -107,19 +107,29 @@ class ANIMartRIXMod:public ANIMartRIX {
 	}
 
 	CRGB applyGamma(rgb pixel) {
-		uint8_t r = (uint8_t) pixel.red;
-		uint8_t g = (uint8_t) pixel.green;
-		uint8_t b = (uint8_t) pixel.blue;
-		return CRGB(gamma8(r), gamma8(g), gamma8(b));
+		if(enableGamma) {
+			uint8_t r = (uint8_t) pixel.red;
+			uint8_t g = (uint8_t) pixel.green;
+			uint8_t b = (uint8_t) pixel.blue;
+			return CRGB(gamma8(r), gamma8(g), gamma8(b));
+		}
+		else {
+			return CRGB(pixel.red, pixel.green, pixel.blue);
+		}
 	}
 
 	void setPixelColor(int index, rgb pixel) {
 		SEGMENT.setPixelColor(index, applyGamma(pixel));
   	}
 
+	void setEnableGamma(bool state) {
+		this->enableGamma = state;
+	}
 	// Add any extra custom effects not part of the ANIMartRIX libary here
 
 	private:
+
+	bool enableGamma = true;
 };
 ANIMartRIXMod anim;
 
@@ -390,7 +400,9 @@ class AnimartrixUsermod : public Usermod {
 
   public:
 
-    AnimartrixUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
+    AnimartrixUsermod(const char *name, bool enabled):Usermod(name, enabled) {
+		anim.setEnableGamma(enableGamma);
+	} //WLEDMM
 	
 
     void setup() {
@@ -474,13 +486,42 @@ class AnimartrixUsermod : public Usermod {
 
       String uiDomString = F("Animartrix requires the Creative Commons Attribution License CC BY-NC 3.0");
       infoArr.add(uiDomString);
+	  infoArr.add("Gamma Correction : " + enableGamma);
 	}
+
+
+    void addToConfig(JsonObject& root) {
+      JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
+      top[FPSTR("enabled")] = enabled;
+	  top[FPSTR("enableGamma")] = enableGamma;
+    }
+
+    bool readFromConfig(JsonObject& root) {
+      JsonObject top = root[FPSTR(_name)];
+      if (top.isNull()) {
+        DEBUG_PRINT(FPSTR(_name));
+        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        return false;
+      }
+
+      enabled        = top[FPSTR("enabled")] | enabled;
+      enableGamma    = top[FPSTR("enableGamma")] | enableGamma;
+      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINTLN(F(" config (re)loaded."));
+
+      anim.setEnableGamma(enableGamma);
+
+      return true;
+  }
+
 
     uint16_t getId()
     {
       return USERMOD_ID_ANIMARTRIX;
     }
 
+	private:
+	bool enableGamma;
 };
 
 
