@@ -103,18 +103,18 @@ class ANIMartRIXMod:public ANIMartRIX {
 	  setSpeedFactor(speedFactor);
 	}
 	void setPixelColor(int x, int y, rgb pixel) {
-		SEGMENT.setPixelColorXY(x, y, CRGB(
-			pgm_read_byte(&gamma8[(uint8_t) pixel.red]),
-			pgm_read_byte(&gamma8[(uint8_t) pixel.green]),
-			pgm_read_byte(&gamma8[(uint8_t) pixel.blue])
-		));
+		SEGMENT.setPixelColorXY(x, y, applyGamma(pixel));
 	}
+
+	CRGB applyGamma(rgb pixel) {
+		uint8_t r = (uint8_t) pixel.red;
+		uint8_t g = (uint8_t) pixel.green;
+		uint8_t b = (uint8_t) pixel.blue;
+		return CRGB(gamma8(r), gamma8(g), gamma8(b));
+	}
+
 	void setPixelColor(int index, rgb pixel) {
-		SEGMENT.setPixelColor(index, CRGB(
-			pgm_read_byte(&gamma8[(uint8_t) pixel.red]),
-			pgm_read_byte(&gamma8[(uint8_t) pixel.green]),
-			pgm_read_byte(&gamma8[(uint8_t) pixel.blue])
-		));
+		SEGMENT.setPixelColor(index, applyGamma(pixel));
   	}
 
 	// Add any extra custom effects not part of the ANIMartRIX libary here
