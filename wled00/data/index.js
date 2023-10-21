@@ -1,6 +1,6 @@
 //page js
 var loc = false, locip, locproto = "http:";
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isPXM = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -276,6 +276,7 @@ function onLoad()
 		});
 	});
 	resetUtil();
+
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	//size();
 	gId("cv").style.opacity=0;
@@ -456,6 +457,7 @@ function loadPresets(callback = null)
 	})
 	.then(res => {
 		if (res.status=="404") return {"0":{}};
+		//if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
@@ -1694,7 +1696,6 @@ function toggleLiveview()
 {
 	if (isInfo && isM) toggleInfo();
 	if (isNodes && isM) toggleNodes();
-	if (isPXM && isM) togglePixelMagicTool();
 	isLv = !isLv;
 	let wsOn = ws && ws.readyState === WebSocket.OPEN;
 
@@ -1715,7 +1716,6 @@ function toggleLiveview()
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
-	if (isPXM) togglePixelMagicTool();
 	if (isLv && isM) toggleLiveview();
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
@@ -1726,37 +1726,11 @@ function toggleInfo()
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
-	if (isPXM) togglePixelMagicTool();
 	if (isLv && isM) toggleLiveview();
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
 	gId('buttonNodes').className = (isNodes) ? "active":"";
-}
-
-function togglePixelMagicTool()
-{
-    if (isInfo) toggleInfo();
-    if (isNodes) toggleNodes();
-	if (isLv && isM) toggleLiveview();
-
-    isPXM = !isPXM;
-
-    var id = "pxm";
-
-    if (isPXM) gId('ipxm').innerHTML = `<iframe id="${id}" src="about:blank"></iframe>`;
-    gId('mpxm').style.transform = (isPXM) ? "translateY(0px)":"translateY(100%)";
-
-    var iframe = gId(id);
-    iframe.style.display = (isPXM) ? "block":"none";
-    iframe.src = (isPXM) ? getURL("/pxmagic.htm"):"about:blank";
-
-    iframe.onload = function () {
-        if(isPXM){
-            var iframeContent = this.contentDocument;
-            iframeContent.body.style.backgroundColor = "transparent";
-        }
-    }
 }
 
 function makeSeg()
@@ -2906,16 +2880,6 @@ function size()
 	lastw = wW;
 }
 
-function listenMessage(e){
-    const { origin, data } = e;
-    if (origin === window.location.origin) {
-        if(data === 'loadPresets'){
-	        populatePresets();
-            setTimeout(()=>{pmtLast=0; loadPresets();}, 750); // force reloading of presets
-        }
-    }
-}
-
 function togglePcMode(fromB = false)
 {
 	if (fromB) {
@@ -2952,11 +2916,9 @@ function mergeDeep(target, ...sources)
 }
 
 size();
-
 _C.style.setProperty('--n', N);
 
 window.addEventListener('resize', size, true);
-window.addEventListener('message', listenMessage, true);
 
 _C.addEventListener('mousedown', lock, false);
 _C.addEventListener('touchstart', lock, false);
