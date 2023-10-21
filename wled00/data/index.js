@@ -1091,7 +1091,7 @@ function updateTrail(e)
 {
 	if (e==null) return;
 	let sd = e.parentNode.getElementsByClassName('sliderdisplay')[0];
-	if (sd && getComputedStyle(sd).getPropertyValue("--bg") !== "none") {
+	if (sd && getComputedStyle(sd).getPropertyValue("--bg").trim() !== "none") { // trim() for Safari
 		var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 		var perc = Math.round(e.value * 100 / max);
 		if (perc < 50) perc += 2;
@@ -2953,9 +2953,9 @@ function tooltip()
 	
 			const { offsetHeight, offsetWidth } = tooltip;
 
-			const multiplier = element.classList.contains("sliderwrap") ? .2 : .4;
-			top -= (offsetHeight + (offsetHeight * multiplier));
-			left += (width / 2) - (offsetWidth / 2);
+			const offset = element.classList.contains("sliderwrap") ? 6 : 12;
+			top -= offsetHeight + offset;
+			left += (width - offsetWidth) / 2;
 
 			tooltip.style.top = top + "px";
 			tooltip.style.left = left + "px";
