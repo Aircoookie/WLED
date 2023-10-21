@@ -400,7 +400,7 @@ button {
 	position: sticky !important;
 	top: 0;
 	z-index: 2;
-    margin: 0 auto auto;
+	margin: 0 auto auto;
 }
 
 .staybot {
@@ -465,62 +465,35 @@ button {
 	/*overflow: visible;*/
 }
 
-/* Tooltip text */
-.tooltiptext {
+/* New tooltip */
+.tooltip {
+	position: absolute;
+	opacity: 0;
 	visibility: hidden;
+	transition: opacity .4s ease, visibility .4s ease;
 	background-color: var(--c-5);
-	/*border: 2px solid var(--c-2);*/
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 	color: var(--c-f);
 	text-align: center;
-	padding: 4px 8px;
+	padding: 8px 16px;
 	border-radius: 6px;
-
-	/* Position the tooltip text */
-	width: 160px;
-	position: absolute;
 	z-index: 1;
-	bottom: 120%;
-	transform: translate(-50%, 0%);
-	left: 50%;
-
-	/* Ensure tooltip goes away when mouse leaves control */
-	pointer-events: none;
-
-	/* Fade in tooltip */
-	opacity: 0;
-	transition: opacity .75s;
 }
-.slider .tooltiptext {
-	bottom: 100%;
-}
-.ttfirst {
-	transform: translateX(-20%);
-}
-.ttlast {
-	transform: translateX(-80%);
-}
-/* Tooltip arrow */
-.tooltiptext::after {
+  
+ .tooltip::after {
 	content: "";
 	position: absolute;
-	top: 100%;
-	left: 50%;
-	margin-left: -5px;
-	border-width: 5px;
+	border: 8px;
 	border-style: solid;
 	border-color: var(--c-5) transparent transparent transparent;
-}
-.ttfirst::after {
-	left: 20%;
-}
-.ttlast::after {
-	left: 80%;
-}
-/* Show the tooltip text when you mouse over the tooltip container */
-.slider:hover .tooltiptext, .check:hover .tooltiptext {
-	visibility: visible;
+	top: 100%;
+	left: calc(50% - 8px);
+	z-index: 0;
+ }
+
+.tooltip.visible {
 	opacity: 1;
+	visibility: visible;
 }
 
 .fade {
@@ -783,7 +756,7 @@ input[type=range]::-moz-range-thumb {
 }
 
 #briwrap {
-	min-width: 267px;
+	min-width: 300px;
 	float: right;
 	margin-top: var(--bmt);
 }
@@ -909,8 +882,8 @@ select {
 	transition-duration: .5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform: translate3d(0,0,0);
-    -webkit-appearance: none;
-    -moz-appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
 	backface-visibility: hidden;
 	transform: translate3d(0,0,0);
 	text-overflow: ellipsis;
@@ -930,15 +903,15 @@ div.sel-p {
 	position: relative;
 }
 div.sel-p:after {
-    content: "";
-    position: absolute;
-    right: 10px;
-    top: 22px;
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 8px solid var(--c-f);
+	content: "";
+	position: absolute;
+	right: 10px;
+	top: 22px;
+	width: 0;
+	height: 0;
+	border-left: 8px solid transparent;
+	border-right: 8px solid transparent;
+	border-top: 8px solid var(--c-f);
 }
 select.sel-ple {
 	text-align: center;
@@ -1277,14 +1250,14 @@ TD .checkmark, TD .radiomark {
 .list {
 	position: relative;
 	transition: background-color .5s;
-    margin: auto auto 10px;
+	margin: auto auto 10px;
 	line-height: 24px;
 }
 
 /* list item */
 .lstI {
 	align-items: center;
-    cursor: pointer;
+	cursor: pointer;
 	background-color: var(--c-2);
 	overflow: hidden;
 	position: -webkit-sticky;
@@ -1306,7 +1279,7 @@ TD .checkmark, TD .radiomark {
 
 #segcont .seg:hover:not([class*="expanded"]),
 .lstI:hover:not([class*="expanded"]) {
-    background: var(--c-5);
+	background: var(--c-5);
 }
 
 .selected .checkmark,
@@ -1383,8 +1356,8 @@ TD .checkmark, TD .radiomark {
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
-    padding: 8px 40px 8px 44px;
-    margin: 5px auto 0;
+	padding: 8px 40px 8px 44px;
+	margin: 5px auto 0;
 	text-align: left;
 	border-radius: 21px;
 	background: var(--c-2);
@@ -1496,7 +1469,7 @@ TD .checkmark, TD .radiomark {
 
 @media all and (max-width: 335px) {
 	.sliderbubble {
-    	display: none;
+		display: none;
   	}
 }
 

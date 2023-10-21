@@ -26,7 +26,7 @@ var ws, cpick, ranges, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
+		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
 		  css:true, hdays:false, fxdef:true, on:0, off:0}
 };
 var hol = [
@@ -74,7 +74,7 @@ function setCSL(cs)
 function applyCfg()
 {
 	cTheme(cfg.theme.base === "light");
-	gId("Colors").style.paddingTop = cfg.comp.colors.picker ? "0" : "20px";
+	gId("Colors").style.paddingTop = cfg.comp.colors.picker ? "0" : "28px";
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var l = cfg.comp.labels;
@@ -922,7 +922,7 @@ function populatePalettes()
 	for (let pa of lJson) {
 		html += generateListItemHtml(
 			'palette',
-		    pa[0],
+			pa[0],
 			pa[1],
 			'setPalette',
 			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
@@ -1091,7 +1091,7 @@ function updateTrail(e)
 {
 	if (e==null) return;
 	let sd = e.parentNode.getElementsByClassName('sliderdisplay')[0];
-	if (sd && getComputedStyle(sd).getPropertyValue("--bg") !== "none") {
+	if (sd && getComputedStyle(sd).getPropertyValue("--bg").trim() !== "none") { // trim() for Safari
 		var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 		var perc = Math.round(e.value * 100 / max);
 		if (perc < 50) perc += 2;
@@ -1211,6 +1211,7 @@ function updateUI()
 	gId('buttonPower').className = (isOn) ? 'active':'';
 	gId('buttonNl').className = (nlA) ? 'active':'';
 	gId('buttonSync').className = (syncSend) ? 'active':'';
+	gId('pxmb').style.display = (isM) ? "inline-block" : "none";
 
 	updateSelectedFx();
 	updateSelectedPalette(selectedPal); // must be after updateSelectedFx() to un-hide color slots for * palettes
@@ -1502,33 +1503,30 @@ function setEffectParameters(idx)
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
 
 	// set html slider items on/off
-	let nSliders = 5;
-	for (let i=0; i<nSliders; i++) {
-		var slider = gId("slider" + i);
-		var label = gId("sliderLabel" + i);
-		// if (not controlDefined and for AC speed or intensity and for SR all sliders) or slider has a value
-		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
-			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
-			else if (i==0)                           label.innerHTML = "Effect speed";
-			else if (i==1)                           label.innerHTML = "Effect intensity";
-			else                                     label.innerHTML = "Custom" + (i-1);
-			slider.classList.remove('hide');
-		} else {
-			slider.classList.add('hide');
-		}
-	}
-	if (slOnOff.length>5) { // up to 3 checkboxes
+	let sliders = d.querySelectorAll("#sliders .sliderwrap");
+	sliders.forEach((slider, i)=>{
+		let text = slider.getAttribute("tooltip");
+		if ((!controlDefined && i<((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i]!="")) {
+			if (slOnOff.length>i && slOnOff[i]!="!") text = slOnOff[i];
+			slider.setAttribute("tooltip", text);
+			slider.parentElement.classList.remove('hide');
+		} else
+			slider.parentElement.classList.add('hide');
+	});
+
+	if (slOnOff.length > 5) { // up to 3 checkboxes
 		gId('fxopt').classList.remove('fade');
-		for (let i = 0; i<3; i++) {
+		let checks = d.querySelectorAll("#sliders .ochkl");
+		checks.forEach((check, i)=>{
+			let text = check.getAttribute("tooltip");
 			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
-				gId('opt'+i).classList.remove('hide');
-				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
+				if (slOnOff.length>5+i && slOnOff[5+i]!="!") text = slOnOff[5+i];
+				check.setAttribute("tooltip", text);
+				check.classList.remove('hide');
 			} else
-				gId('opt'+i).classList.add('hide');
-		}
-	} else {
-		gId('fxopt').classList.add('fade');
-	}
+				check.classList.add('hide');
+		});
+	} else gId('fxopt').classList.add('fade');
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	setInterval(()=>{
@@ -2938,6 +2936,41 @@ function mergeDeep(target, ...sources)
 	return mergeDeep(target, ...sources);
 }
 
+function tooltip()
+{
+	const elements = d.querySelectorAll("[tooltip]");
+  
+	elements.forEach((element)=>{
+		element.addEventListener("mouseover", ()=>{
+			const tooltip = d.createElement("span");
+  
+			tooltip.className = "tooltip";
+			tooltip.textContent = element.getAttribute("tooltip");
+	
+			let { top, left, width } = element.getBoundingClientRect();
+	
+			d.body.appendChild(tooltip);
+	
+			const { offsetHeight, offsetWidth } = tooltip;
+
+			const offset = element.classList.contains("sliderwrap") ? 6 : 12;
+			top -= offsetHeight + offset;
+			left += (width - offsetWidth) / 2;
+
+			tooltip.style.top = top + "px";
+			tooltip.style.left = left + "px";
+	
+			tooltip.classList.add("visible");
+		});
+  
+		element.addEventListener("mouseout", ()=>{
+			const tooltip = d.querySelector('.tooltip');
+			tooltip.classList.remove("visible");
+			d.body.removeChild(tooltip);
+		});
+	});
+};
+
 size();
 _C.style.setProperty('--n', N);
 
@@ -2949,3 +2982,5 @@ _C.addEventListener('touchstart', lock, false);
 _C.addEventListener('mouseout', move, false);
 _C.addEventListener('mouseup', move, false);
 _C.addEventListener('touchend', move, false);
+
+d.addEventListener('DOMContentLoaded', tooltip);
