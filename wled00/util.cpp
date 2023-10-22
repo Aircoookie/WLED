@@ -416,9 +416,9 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
 // (only 2 used as stored in 1 bit in segment options, consider switching to a single global simulation type)
 typedef enum UM_SoundSimulations {
   UMS_BeatSin = 0,
-  UMS_WeWillRockYou
-  //UMS_10_13,
-  //UMS_14_3
+  UMS_WeWillRockYou,
+  UMS_10_13,
+  UMS_14_3
 } um_soundSimulations_t;
 
 um_data_t* simulateSound(uint8_t simulationId)
@@ -503,7 +503,7 @@ um_data_t* simulateSound(uint8_t simulationId)
           fftResult[i] = 0;
       }
       break;
-  /*case UMS_10_3:
+    case UMS_10_13:
       for (int i = 0; i<16; i++)
         fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
         volumeSmth = fftResult[8];
@@ -512,7 +512,7 @@ um_data_t* simulateSound(uint8_t simulationId)
       for (int i = 0; i<16; i++)
         fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
       volumeSmth = fftResult[8];
-      break;*/
+      break;
   }
 
   samplePeak    = random8() > 250;
@@ -572,4 +572,18 @@ void enumerateLedmaps() {
     }
 
   }
+}
+
+/*
+ * Returns a new, random color wheel index with a minimum distance of 42 from pos.
+ */
+uint8_t get_random_wheel_index(uint8_t pos) {
+  uint8_t r = 0, x = 0, y = 0, d = 0;
+  while (d < 42) {
+    r = random8();
+    x = abs(pos - r);
+    y = 255 - x;
+    d = MIN(x, y);
+  }
+  return r;
 }

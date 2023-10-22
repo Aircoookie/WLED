@@ -247,6 +247,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     fadeTransition = request->hasArg(F("TF"));
+    modeBlending = request->hasArg(F("EB"));
     t = request->arg(F("TD")).toInt();
     if (t >= 0) transitionDelayDefault = t;
     strip.paletteFade = request->hasArg(F("PF"));
