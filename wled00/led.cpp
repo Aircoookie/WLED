@@ -163,6 +163,8 @@ void updateInterfaces(uint8_t callMode)
 {
   sendDataWs();
   lastInterfaceUpdate = millis();
+  interfaceUpdateCallMode = 0; //disable
+
   if (callMode == CALL_MODE_WS_SEND) return;
 
   #ifndef WLED_DISABLE_ALEXA
@@ -172,7 +174,6 @@ void updateInterfaces(uint8_t callMode)
   }
   #endif
   doPublishMqtt = true;
-  interfaceUpdateCallMode = 0; //disable
 }
 
 
