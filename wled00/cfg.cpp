@@ -607,7 +607,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     getStringFromJson(otaPass, pwd, 33); //normally not present due to security
   }
 
-  #ifdef WLED_ENABLE_DMX_OUTPUT
+  #ifdef WLED_ENABLE_DMX
   JsonObject dmx = doc["dmx"];
   CJSON(DMXChannels, dmx[F("chan")]);
   CJSON(DMXGap,dmx[F("gap")]);
@@ -1070,7 +1070,7 @@ void serializeConfig() {
   ota[F("pskl")] = strlen(otaPass);
   ota[F("aota")] = aOtaEnabled;
 
-  #ifdef WLED_ENABLE_DMX_OUTPUT
+  #ifdef WLED_ENABLE_DMX
   JsonObject dmx = doc.createNestedObject("dmx");
   dmx[F("chan")] = DMXChannels;
   dmx[F("gap")] = DMXGap;

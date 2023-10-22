@@ -120,7 +120,7 @@ void WLED::loop()
   }
   #endif
 
-#ifdef WLED_ENABLE_DMX_OUTPUT
+#ifdef WLED_ENABLE_DMX
   handleDMXOutput();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
@@ -574,7 +574,7 @@ void WLED::setup()
 
   pinManager.manageDebugTXPin();
 
-#ifdef WLED_ENABLE_DMX_OUTPUT //reserve GPIO2 as hardcoded DMX pin
+#ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
 
@@ -696,7 +696,7 @@ void WLED::setup()
       ArduinoOTA.setHostname(cmDNS);
   }
 #endif
-#ifdef WLED_ENABLE_DMX_OUTPUT
+#ifdef WLED_ENABLE_DMX
   initDMXOutput();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT

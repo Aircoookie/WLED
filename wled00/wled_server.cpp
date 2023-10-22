@@ -361,7 +361,7 @@ void initServer()
 #endif
 
 
-  #ifdef WLED_ENABLE_DMX_OUTPUT
+  #ifdef WLED_ENABLE_DMX
   server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
   });
@@ -531,11 +531,11 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
 }
 
 
-#ifdef WLED_ENABLE_DMX_OUTPUT
+#ifdef WLED_ENABLE_DMX
 String dmxProcessor(const String& var)
 {
   String mapJS;
-  #ifdef WLED_ENABLE_DMX_OUTPUT
+  #ifdef WLED_ENABLE_DMX
     if (var == "DMXVARS") {
       mapJS += "\nCN=" + String(DMXChannels) + ";\n";
       mapJS += "CS=" + String(DMXStart) + ";\n";
@@ -661,7 +661,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 4:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sync, PAGE_settings_sync_length); break;
     case 5:   response = request->beginResponse_P(200, "text/html", PAGE_settings_time, PAGE_settings_time_length); break;
     case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
-#ifdef WLED_ENABLE_DMX_OUTPUT
+#ifdef WLED_ENABLE_DMX
     case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
 #endif
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;

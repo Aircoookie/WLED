@@ -185,7 +185,7 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
     if (gpio == IRPIN) return(F("(default) IR receiver pin"));
   #endif
 
-  #ifdef WLED_ENABLE_DMX_OUTPUT
+  #ifdef WLED_ENABLE_DMX
     if (gpio == 2) return(F("hardcoded DMX output pin"));
   #endif
 

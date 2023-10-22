@@ -449,7 +449,7 @@
 #endif
 #endif
 
-#ifdef WLED_ENABLE_DMX_OUTPUT
+#ifdef WLED_ENABLE_DMX
 #if (LEDPIN == 2)
   #undef LEDPIN
   #define LEDPIN 1

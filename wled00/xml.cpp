@@ -213,7 +213,7 @@ void appendGPIOinfo() {
   // add reserved and usermod pins as d.um_p array
   oappend(rsvd);
 
-  #ifdef WLED_ENABLE_DMX_OUTPUT
+  #ifdef WLED_ENABLE_DMX
   oappend(SET_F(",2")); // DMX hardcoded pin
   #endif
 
@@ -307,7 +307,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
   #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
     oappend(PSTR("gId('2dbtn').style.display='';"));
   #endif
-  #ifdef WLED_ENABLE_DMX_OUTPUT // include only if DMX is enabled
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     oappend(PSTR("gId('dmxbtn').style.display='';"));
   #endif
   }
@@ -573,7 +573,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);
     sappend('v',SET_F("EU"),e131Universe);
-#ifdef WLED_ENABLE_DMX_OUTPUT
+#ifdef WLED_ENABLE_DMX
     oappend(SET_F("hideNoDMX();"));  // WLEDMM hide "not compiled in" message    
 #endif    
 #ifndef WLED_ENABLE_DMX_INPUT
@@ -754,7 +754,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     oappend(SET_F("\";"));
   }
 
-  #ifdef WLED_ENABLE_DMX_OUTPUT // include only if DMX is enabled
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
     sappend('v',SET_F("PU"),e131ProxyUniverse);
