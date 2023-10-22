@@ -33,10 +33,9 @@ var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
 	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
 	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
-	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
-	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
-	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
+	[0,6,4,1,"https://images.alphacoders.com/516/516792.jpg"], // 4th of July
+	[0,0,1,1,"https://images.alphacoders.com/119/1198800.jpg"] // new year
 ];
 var ctx = null; // WLEDMM
 var ledmapNr = -1; //WLEDMM
@@ -1722,7 +1721,7 @@ function updateUI()
 	if (hasRGB) {
 		updateTrail(gId('sliderR'));
 		updateTrail(gId('sliderG'));
-		updateTrail(gId('sliderB'));	
+		updateTrail(gId('sliderB'));
 	}
 	if (hasWhite) updateTrail(gId('sliderW'));
 
@@ -2435,7 +2434,7 @@ function makeP(i,pl)
 			end: 0
 		};
 		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
-		content = 
+		content =
 `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
 	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r||rep<0?"checked":""}>
 	<span class="checkmark"></span>
