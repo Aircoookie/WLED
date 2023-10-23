@@ -482,6 +482,7 @@ BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   SMARTMATRIX_ALLOCATE_BUFFERS(smartMatrix, kMatrixWidth, kMatrixHeight, kRefreshDepth, kDmaBufferRows, kPanelType, kMatrixOptions);
   SMARTMATRIX_ALLOCATE_BACKGROUND_LAYER(backgroundLayer, kMatrixWidth, kMatrixHeight, COLOR_DEPTH, kBackgroundLayerOptions);
 
+  this->_len = (kMatrixWidth * kMatrixHeight);
 
   smartMatrix.addLayer(&backgroundLayer); 
   smartMatrix.setBrightness(brightness); 
@@ -490,9 +491,7 @@ BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   smartMatrix.setBrightness(125); // TODO - hard code for now
 
-  rgb24* smBuffer = backgroundLayer.backBuffer();
-
-  this->buffer = smBuffer;
+  this->buffer = backgroundLayer.backBuffer();
 
   backgroundLayer.swapBuffers(true);
 
