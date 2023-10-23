@@ -34,6 +34,10 @@ button, .btn {
   cursor: pointer;
   text-decoration: none;
 }
+button:hover, .btn:hover {
+  background: #444;
+  border-color: #444;
+}
 button.sml {
   padding: 8px;
   border-radius: 20px;

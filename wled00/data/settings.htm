@@ -15,7 +15,7 @@
 			scE.setAttribute("type", "text/javascript");
 			scE.setAttribute("async", async);
 			d.body.appendChild(scE);
-			// success event 
+			// success event
 			scE.addEventListener("load", () => {
 				//console.log("File loaded");
 				GetV();
@@ -73,6 +73,9 @@
 			width: calc(100% - 40px);
 			margin: 2vh auto 0;
 			cursor: pointer;
+		}
+		button:hover {
+			background: #444;
 		}
 	</style>
 </head>
