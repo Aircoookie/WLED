@@ -63,7 +63,6 @@ void toggleOnOff()
     briLast = bri;
     bri = 0;
   }
-  stateChanged = true;
 }
 
 
