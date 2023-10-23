@@ -527,14 +527,16 @@ uint32_t BusManager::memUsage(BusConfig &bc) {
 
 int BusManager::add(BusConfig &bc) {
   if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
+  USER_PRINTF("BusManager::add(bc.type=%u)\n", bc.type);
   if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
     busses[numBusses] = new BusNetwork(bc);
+  } else if (bc.type == TYPE_SMARTMATRIX) {
+    USER_PRINTLN("BusManager::add - Adding BusSmartMatrix");
+    busses[numBusses] = new BusSmartMatrix(bc);
   } else if (IS_DIGITAL(bc.type)) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
   } else if (bc.type == TYPE_ONOFF) {
     busses[numBusses] = new BusOnOff(bc);
-  } else if (bc.type == TYPE_SMARTMATRIX) {
-    busses[numBusses] = new BusSmartMatrix(bc);
   } else {
     busses[numBusses] = new BusPwm(bc);
   }
