@@ -1,6 +1,12 @@
 #ifndef BusManager_h
 #define BusManager_h
 
+#define WLED_ENABLE_SMARTMATRIX
+
+#ifdef WLED_ENABLE_SMARTMATRIX
+#include <MatrixHardware_ESP32_V0.h>
+#include <SmartMatrix.h>
+#endif
 /*
  * Class for addressing various light types
  */
@@ -326,6 +332,41 @@ class BusNetwork : public Bus {
     byte     *_data;
 };
 
+#ifdef WLED_ENABLE_SMARTMATRIX
+class BusSmartMatrix : public Bus {
+  public:
+    BusSmartMatrix(BusConfig &bc);
+
+    bool hasRGB() { return true; }
+    bool hasWhite() { return false; }
+
+    void setPixelColor(uint16_t pix, uint32_t c);
+
+    uint32_t __attribute__((pure)) getPixelColor(uint16_t pix);  // WLEDMM attribute added
+
+    void show();
+
+    bool canShow() {
+      // this should be a return value from UDP routine if it is still sending data out
+      return true; // !_broadcastLock; // TODO
+    }
+
+    uint8_t getPins(uint8_t* pinArray);
+
+    uint16_t getLength() {
+      return _len;
+    }
+
+    void cleanup();
+
+    ~BusSmartMatrix() {
+      cleanup();
+    }
+
+  private:
+    
+};
+#endif
 
 class BusManager {
   public:
