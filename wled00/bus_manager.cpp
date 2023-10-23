@@ -516,6 +516,8 @@ int BusManager::add(BusConfig &bc) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
   } else if (bc.type == TYPE_ONOFF) {
     busses[numBusses] = new BusOnOff(bc);
+  } else if (bc.type == TYPE_SMARTMATRIX) {
+    busses[numBusses] = new BusSmartMatrix(bc);
   } else {
     busses[numBusses] = new BusPwm(bc);
   }
