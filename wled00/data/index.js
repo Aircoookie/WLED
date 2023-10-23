@@ -1930,23 +1930,17 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	} else {
 		content =
 `<label class="check revchkl">
-	<span class="lstIname">
-	Include brightness
-	</span>
+	<span class="lstIname">Include brightness</span>
 	<input type="checkbox" id="p${i}ibtgl" checked>
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
-	<span class="lstIname">
-	Save segment bounds
-	</span>
+	<span class="lstIname">Save segment bounds</span>
 	<input type="checkbox" id="p${i}sbtgl" checked>
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
-	<span class="lstIname">
-	Checked segments only
-	</span>
+	<span class="lstIname">Checked segments only</span>
 	<input type="checkbox" id="p${i}sbchk">
 	<span class="checkmark"></span>
 </label>`;
@@ -1962,9 +1956,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 <div class="h">(leave empty for no Quick load button)</div>
 <div ${pl&&i==0?"style='display:none'":""}>
 <label class="check revchkl">
-	<span class="lstIname">
-	${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
-	</span>
+	<span class="lstIname">${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}</span>
 	<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
 	<span class="checkmark"></span>
 </label>
