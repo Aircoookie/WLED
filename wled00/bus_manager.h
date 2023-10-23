@@ -44,6 +44,7 @@ struct BusConfig {
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
+    else if (type == TYPE_SMARTMATRIX) nPins = 0;
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
@@ -342,28 +343,34 @@ class BusSmartMatrix : public Bus {
 
     void setPixelColor(uint16_t pix, uint32_t c);
 
-    uint32_t __attribute__((pure)) getPixelColor(uint16_t pix);  // WLEDMM attribute added
-
-    void show();
-
-    bool canShow() {
-      // this should be a return value from UDP routine if it is still sending data out
-      return true; // !_broadcastLock; // TODO
+    void show() {
+      Serial.println("SmartMatrix: show()");
+      backgroundLayer->swapBuffers(true);
     }
 
-    uint8_t getPins(uint8_t* pinArray);
+    bool canShow() {
+      // busy swapping still
+      return !backgroundLayer->isSwapPending();
+    }
+    
+    void setBrightness(uint8_t b, bool immediate);
+
+    // uint8_t getPins(uint8_t* pinArray) {} // todo
 
     uint16_t getLength() {
       return _len;
     }
 
-    void cleanup();
+    void cleanup() {}
 
     ~BusSmartMatrix() {
       cleanup();
     }
 
   private:
+    rgb24* buffer;
+    SMLayerBackground<rgb24, 0u>* backgroundLayer;
+    SmartMatrixHub75Calc<48, 64, 64, 0u, 0u>* smartMatrix;
     
 };
 #endif

@@ -476,12 +476,29 @@ BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   const uint32_t kMatrixOptions          = (SM_HUB75_OPTIONS_NONE);        // see docs for options: https://github.com/pixelmatix/SmartMatrix/wiki
   const uint8_t  kBackgroundLayerOptions = (SM_BACKGROUND_OPTIONS_NONE);
 
-  SMARTMATRIX_ALLOCATE_BUFFERS(matrix, kMatrixWidth, kMatrixHeight, kRefreshDepth, kDmaBufferRows, kPanelType, kMatrixOptions);
+  SMARTMATRIX_ALLOCATE_BUFFERS(smartMatrix, kMatrixWidth, kMatrixHeight, kRefreshDepth, kDmaBufferRows, kPanelType, kMatrixOptions);
   SMARTMATRIX_ALLOCATE_BACKGROUND_LAYER(backgroundLayer, kMatrixWidth, kMatrixHeight, COLOR_DEPTH, kBackgroundLayerOptions);
 
-  matrix.addLayer(&backgroundLayer); 
-  matrix.setBrightness(brightness); 
-  matrix.begin();
+
+  smartMatrix.addLayer(&backgroundLayer); 
+  smartMatrix.setBrightness(brightness); 
+  Serial.printf("BusSmartMatrix: kMatrixWidth=%u, kMatrixHeight=%u", kMatrixWidth, kMatrixHeight);
+  smartMatrix.begin();
+
+  this->buffer = backgroundLayer.backBuffer();
+  this->backgroundLayer = &backgroundLayer;
+  this->smartMatrix = &smartMatrix;
+}
+
+void BusSmartMatrix::setPixelColor(uint16_t pix, uint32_t c) {
+  uint8_t r = R(c);
+  uint8_t g = G(c);
+  uint8_t b = B(c);
+  this->buffer[pix] = rgb24(r, g, b);
+}
+
+void BusSmartMatrix::setBrightness(uint8_t b, bool immediate) {
+  this->smartMatrix->setBrightness(b);
 }
 
 // ***************************************************************************

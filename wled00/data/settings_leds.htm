@@ -355,6 +355,7 @@ ${i+1}:
 <!--option value="81">E1.31 RGB (network)</option-->
 <option value="82">Art-Net RGB (network)</option>
 <option value="88">DDP RGBW (network)</option>
+<option value="55">SmartMatrix</option>
 </select><br>
 <div id="co${i}" style="display:inline">Color Order:
 <select name="CO${i}">
@@ -382,6 +383,7 @@ ${i+1}:
 <div id="dig${i}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${i}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
+				// TODO: selective addition of SM
 			}
 			if (n==-1) {
 				o[--i].remove();--i;
