@@ -355,9 +355,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
-  notifyDirect         = udpn["send"] | notifyDirect;
+  sendNotificationsRT  = udpn["send"] | sendNotificationsRT;
   syncGroups           = udpn["sgrp"] | syncGroups;
-  receiveNotifications = udpn["recv"] | receiveNotifications;
   receiveGroups        = udpn["rgrp"] | receiveGroups;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
@@ -573,8 +572,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     }
 
     JsonObject udpn = root.createNestedObject("udpn");
-    udpn["send"] = notifyDirect;
-    udpn["recv"] = receiveNotifications;
+    udpn["send"] = sendNotificationsRT;
+    udpn["recv"] = receiveGroups != 0;
     udpn["sgrp"] = syncGroups;
     udpn["rgrp"] = receiveGroups;
 
@@ -609,7 +608,7 @@ void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
   root[F("vid")] = VERSION;
-  //root[F("cn")] = WLED_CODENAME;
+  root[F("cn")] = F(WLED_CODENAME);
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
@@ -654,7 +653,7 @@ void serializeInfo(JsonObject root)
   spi.add(spi_miso);
   #endif
 
-  root[F("str")] = syncToggleReceive;
+  root[F("str")] = false; //syncToggleReceive;
 
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;

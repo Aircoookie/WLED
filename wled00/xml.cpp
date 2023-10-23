@@ -31,7 +31,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend(SET_F("<ns>"));
   oappendi(notifyDirect);
   oappend(SET_F("</ns><nr>"));
-  oappendi(receiveNotifications);
+  oappendi(receiveGroups!=0);
   oappend(SET_F("</nr><nl>"));
   oappendi(nightlightActive);
   oappend(SET_F("</nl><nf>"));
@@ -280,11 +280,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("WS"),noWifiSleep);
 
     #ifndef WLED_DISABLE_ESPNOW
-    sappend('c',SET_F("RE"),enable_espnow_remote);
+    sappend('c',SET_F("RE"),enableESPNow);
     sappends('s',SET_F("RMAC"),linked_remote);
     #else
     //hide remote settings if not compiled
-    oappend(SET_F("document.getElementById('remd').style.display='none';"));
+    oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
     #endif
 
     #ifdef WLED_USE_ETHERNET
@@ -321,14 +321,11 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     #ifndef WLED_DISABLE_ESPNOW
-    if (last_signal_src[0] != 0) //Have seen an ESP-NOW Remote
-    {
+    if (strlen(last_signal_src) > 0) { //Have seen an ESP-NOW Remote
       sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
-    } else if (!enable_espnow_remote)
-    {
-      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable remote to listen)"));
-    } else 
-    {
+    } else if (!enableESPNow) {
+      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable ESP-NOW to listen)"));
+    } else {
       sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
     }
     #endif
@@ -441,6 +438,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("GC"),gammaCorrectCol);
     dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
+    sappend('c',SET_F("EB"),modeBlending);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
     sappend('v',SET_F("TP"),randomPaletteChangeTime);
@@ -468,7 +466,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == SUBPAGE_UI)
   {
     sappends('s',SET_F("DS"),serverDescription);
-    sappend('c',SET_F("ST"),syncToggleReceive);
+    //sappend('c',SET_F("ST"),syncToggleReceive);
   #ifdef WLED_ENABLE_SIMPLE_UI
     sappend('c',SET_F("SU"),simplifiedUI);
   #else
@@ -478,9 +476,15 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_SYNC)
   {
-    char nS[32];
+    [[maybe_unused]] char nS[32];
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
+  #ifndef WLED_DISABLE_ESPNOW
+    if (enableESPNow) sappend('c',SET_F("EN"),useESPNowSync);
+    else              oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+  #else
+    oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+  #endif
     sappend('v',SET_F("GS"),syncGroups);
     sappend('v',SET_F("GR"),receiveGroups);
 
@@ -489,10 +493,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RX"),receiveNotificationEffects);
     sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SG"),receiveSegmentBounds);
-    sappend('c',SET_F("SD"),notifyDirectDefault);
+    sappend('c',SET_F("SS"),sendNotifications);
+    sappend('c',SET_F("SD"),notifyDirect);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
-    sappend('c',SET_F("SM"),notifyMacro);
+//    sappend('c',SET_F("SM"),notifyMacro);
     sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);

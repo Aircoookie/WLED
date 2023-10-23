@@ -11,6 +11,7 @@
 
 		function gId(e) { return d.getElementById(e); }
 		function cE(e) { return d.createElement(e); }
+		function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
 		function H(){window.open("https://kno.wled.ge/features/settings/#wifi-settings");}
 		function B(){window.open(getURL("/settings"),"_self");}
 		function N() {
@@ -193,14 +194,16 @@
 		<i>Can help with connectivity issues.<br>
 		Do not enable if WiFi is working correctly, increases power consumption.</i>
 
-		<div id="remd">
-			<h3>Wireless Remote</h3>
+		<h3>ESP-NOW Wireless</h3>
+		<div id="NoESPNOW" class="hide">
+			<i class="warn">This firmware build does not include ESP-NOW support.<br></i>
+		</div>
+		<div id="ESPNOW">
+			Enable ESP-NOW: <input type="checkbox" name="RE"><br>
 			<i>Listen for events over ESP-NOW<br>
-			Keep disabled if not using a remote, increases power consumption.<br></i>
-		
-			Enable Remote: <input type="checkbox" name="RE"><br>
-			Hardware MAC: <input type="text" name="RMAC"><br>
-			Last Seen: <span class="rlid">None</span> <br>
+			Keep disabled if not using a remote or wireless sync, increases power consumption.<br></i>
+			Paired Remote MAC: <input type="text" name="RMAC" minlength="12" maxlength="12"><br>
+			Last device seen: <span class="rlid" onclick="d.Sf.RMAC.value=this.textContent;" style="cursor:pointer;">None</span> <br>
 		</div>
 
 		<div id="ethd">

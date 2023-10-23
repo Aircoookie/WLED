@@ -1,6 +1,6 @@
 //page js
 var loc = false, locip, locproto = "http:";
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false/*, syncTglRecv = true*/;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -26,17 +26,16 @@ var ws, cpick, ranges, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:"", random: false, randomGrayscale: false, randomBlur: false}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
-		  css:true, hdays:false, fxdef:true}
+		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
+		  css:true, hdays:false, fxdef:true, on:0, off:0}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
 	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
 	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
-	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
-	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
-	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
+	[0,6,4,1,"https://images.alphacoders.com/516/516792.jpg"], // 4th of July
+	[0,0,1,1,"https://images.alphacoders.com/119/1198800.jpg"] // new year
 ];
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
@@ -74,6 +73,7 @@ function setCSL(cs)
 function applyCfg()
 {
 	cTheme(cfg.theme.base === "light");
+	gId("Colors").style.paddingTop = cfg.comp.colors.picker ? "0" : "28px";
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var l = cfg.comp.labels;
@@ -109,6 +109,7 @@ function tglLabels()
 function tglRgb()
 {
 	cfg.comp.colors.rgb = !cfg.comp.colors.rgb;
+	cfg.comp.colors.picker = !cfg.comp.colors.picker;
 	applyCfg();
 }
 
@@ -255,7 +256,6 @@ function onLoad()
 		});
 	} else
 		loadBg(cfg.theme.bg.url);
-	if (cfg.comp.css) loadSkinCSS('skinCss');
 
 	selectSlot(0);
 	updateTablinks(0);
@@ -265,14 +265,17 @@ function onLoad()
 	loadPalettes(()=>{
 		// fill effect extra data array
 		loadFXData(()=>{
-			// load and populate effects
-			loadFX(()=>{
-				setTimeout(()=>{ // ESP8266 can't handle quick requests
-					loadPalettesData(()=>{
-						requestJson();// will load presets and create WS
-					});
-				},100);
-			});
+			setTimeout(()=>{ // ESP8266 can't handle quick requests
+				// load and populate effects
+				loadFX(()=>{
+					setTimeout(()=>{ // ESP8266 can't handle quick requests
+						loadPalettesData(()=>{
+							requestJson();// will load presets and create WS
+							if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
+						});
+					},100);
+				});
+			},100);
 		});
 	});
 	resetUtil();
@@ -426,16 +429,28 @@ function presetError(empty)
 	if (hasBackup) {
 		cn += `<br><br>`;
 		if (empty)
-			cn += `However, there is backup preset data of a previous installation available.<br>
-			(Saving a preset will hide this and overwrite the backup)`;
+			cn += `However, there is backup preset data of a previous installation available.<br>(Saving a preset will hide this and overwrite the backup)`;
 		else
 			cn += `Here is a backup of the last known good state:`;
-		cn += `<textarea id="bck"></textarea><br>
-			<button class="btn" onclick="cpBck()">Copy to clipboard</button>`;
+		cn += `<textarea id="bck"></textarea><br><button class="btn" onclick="cpBck()">Copy to clipboard</button>`;
+		cn += `<br><button type="button" class="btn" onclick="restore(gId('bck').value)">Restore</button>`;
 	}
 	cn += `</div>`;
 	gId('pcont').innerHTML = cn;
 	if (hasBackup) gId('bck').value = bckstr;
+}
+
+function restore(txt) {
+	var req = new XMLHttpRequest();
+	req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
+	req.addEventListener('error', function(e){showToast(e.stack,true);});
+	req.open("POST", getURL("/upload"));
+	var formData = new FormData();
+	var b = new Blob([txt], {type: "application/json"});
+	formData.append("data", b, '/presets.json');
+	req.send(formData);
+	setTimeout(loadPresets, 2000);
+	return false;
 }
 
 function loadPresets(callback = null)
@@ -613,7 +628,7 @@ function parseInfo(i) {
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
 	ledCount    = i.leds.count;
-	syncTglRecv = i.str;
+	//syncTglRecv = i.str;
 	maxSeg      = i.leds.maxseg;
 	pmt         = i.fs.pmt;
 	gId('buttonNodes').style.display = lastinfo.ndc > 0 ? null:"none";
@@ -672,8 +687,6 @@ function populateInfo(i)
 		}
 	}
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.14.")) vcn = "Hoshi";
-//	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>
@@ -908,7 +921,7 @@ function populatePalettes()
 	for (let pa of lJson) {
 		html += generateListItemHtml(
 			'palette',
-		    pa[0],
+			pa[0],
 			pa[1],
 			'setPalette',
 			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
@@ -916,8 +929,9 @@ function populatePalettes()
 	}
 	gId('pallist').innerHTML=html;
 	// append custom palettes (when loading for the 1st time)
-	if (!isEmpty(lastinfo) && lastinfo.cpalcount) {
-		for (let j = 0; j<lastinfo.cpalcount; j++) {
+	let li = lastinfo;
+	if (!isEmpty(li) && li.cpalcount) {
+		for (let j = 0; j<li.cpalcount; j++) {
 			let div = d.createElement("div");
 			gId('pallist').appendChild(div);
 			div.outerHTML = generateListItemHtml(
@@ -929,6 +943,8 @@ function populatePalettes()
 			);
 		}
 	}
+	if (li.cpalcount>0) gId("rmPal").classList.remove("hide");
+	else                gId("rmPal").classList.add("hide");
 }
 
 function redrawPalPrev()
@@ -1074,7 +1090,7 @@ function updateTrail(e)
 {
 	if (e==null) return;
 	let sd = e.parentNode.getElementsByClassName('sliderdisplay')[0];
-	if (sd && getComputedStyle(sd).getPropertyValue("--bg") !== "none") {
+	if (sd && getComputedStyle(sd).getPropertyValue("--bg").trim() !== "none") { // trim() for Safari
 		var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 		var perc = Math.round(e.value * 100 / max);
 		if (perc < 50) perc += 2;
@@ -1194,6 +1210,7 @@ function updateUI()
 	gId('buttonPower').className = (isOn) ? 'active':'';
 	gId('buttonNl').className = (nlA) ? 'active':'';
 	gId('buttonSync').className = (syncSend) ? 'active':'';
+	gId('pxmb').style.display = (isM) ? "inline-block" : "none";
 
 	updateSelectedFx();
 	updateSelectedPalette(selectedPal); // must be after updateSelectedFx() to un-hide color slots for * palettes
@@ -1209,7 +1226,7 @@ function updateUI()
 	if (hasRGB) {
 		updateTrail(gId('sliderR'));
 		updateTrail(gId('sliderG'));
-		updateTrail(gId('sliderB'));	
+		updateTrail(gId('sliderB'));
 	}
 	if (hasWhite) updateTrail(gId('sliderW'));
 
@@ -1485,41 +1502,41 @@ function setEffectParameters(idx)
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
 
 	// set html slider items on/off
-	let nSliders = 5;
-	for (let i=0; i<nSliders; i++) {
-		var slider = gId("slider" + i);
-		var label = gId("sliderLabel" + i);
-		// if (not controlDefined and for AC speed or intensity and for SR all sliders) or slider has a value
-		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
-			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
-			else if (i==0)                           label.innerHTML = "Effect speed";
-			else if (i==1)                           label.innerHTML = "Effect intensity";
-			else                                     label.innerHTML = "Custom" + (i-1);
-			slider.classList.remove('hide');
-		} else {
-			slider.classList.add('hide');
-		}
-	}
-	if (slOnOff.length>5) { // up to 3 checkboxes
+	let sliders = d.querySelectorAll("#sliders .sliderwrap");
+	sliders.forEach((slider, i)=>{
+		let text = slider.getAttribute("tooltip");
+		if ((!controlDefined && i<((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i]!="")) {
+			if (slOnOff.length>i && slOnOff[i]!="!") text = slOnOff[i];
+			slider.setAttribute("tooltip", text);
+			slider.parentElement.classList.remove('hide');
+		} else
+			slider.parentElement.classList.add('hide');
+	});
+
+	if (slOnOff.length > 5) { // up to 3 checkboxes
 		gId('fxopt').classList.remove('fade');
-		for (let i = 0; i<3; i++) {
+		let checks = d.querySelectorAll("#sliders .ochkl");
+		checks.forEach((check, i)=>{
+			let text = check.getAttribute("tooltip");
 			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
-				gId('opt'+i).classList.remove('hide');
-				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
+				if (slOnOff.length>5+i && slOnOff[5+i]!="!") text = slOnOff[5+i];
+				check.setAttribute("tooltip", text);
+				check.classList.remove('hide');
 			} else
-				gId('opt'+i).classList.add('hide');
-		}
-	} else {
-		gId('fxopt').classList.add('fade');
-	}
+				check.classList.add('hide');
+		});
+	} else gId('fxopt').classList.add('fade');
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
-	setInterval(()=>{
+	function setSelectedEffectPosition() {
 		let top = parseInt(getComputedStyle(gId("sliders")).height);
 		top += 5;
 		let sel = d.querySelector('#fxlist .selected');
 		if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setFX())
-	},750);
+	}
+
+	setSelectedEffectPosition();
+	setInterval(setSelectedEffectPosition,750);
 	// set html color items on/off
 	var cslLabel = '';
 	var sep = '';
@@ -1556,10 +1573,14 @@ function setEffectParameters(idx)
 		}
 	}
 	gId("cslLabel").innerHTML = cslLabel;
+	if (cslLabel!=="") gId("cslLabel").classList.remove("hide");
+	else               gId("cslLabel").classList.add("hide");
 
 	// set palette on/off
 	var palw = gId("palw"); // wrapper
 	var pall = gId("pall");	// label
+	var icon = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> ';
+	var text = 'Color palette';
 	// if not controlDefined or palette has a value
 	if (hasRGB && ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="" && isNaN(paOnOff[0])))) {
 		palw.style.display = "inline-block";
@@ -1569,13 +1590,13 @@ function setEffectParameters(idx)
 			var v = Math.max(0,Math.min(255,parseInt(paOnOff[0].substr(dPos+1))));
 			paOnOff[0] = paOnOff[0].substring(0,dPos);
 		}
-		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
-		else                                       pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette';
+		if (paOnOff.length>0 && paOnOff[0] != "!") text = paOnOff[0];
 	} else {
 		// disable palette list
-		pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette not used';
+		text += ' not used';
 		palw.style.display = "none";
 	}
+	pall.innerHTML = icon + text;
 	// not all color selectors shown, hide palettes created from color selectors
 	// NOTE: this will disallow user to select "* Color ..." palettes which may be undesirable in some cases or for some users
 	//for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
@@ -1666,6 +1687,8 @@ function togglePower()
 		obj.seg = [];
 		obj.seg[0] = {"id": lastinfo.liveseg, "frz": false};
 	}
+	if (cfg.comp.on >0 &&  isOn) obj = {"ps": cfg.comp.on }; // don't use setPreset()
+	if (cfg.comp.off>0 && !isOn) obj = {"ps": cfg.comp.off}; // don't use setPreset()
 	requestJson(obj);
 }
 
@@ -1688,7 +1711,7 @@ function toggleSync()
 	if (syncSend) showToast('Other lights in the network will now sync to this one.');
 	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
-	if (syncTglRecv) obj.udpn.recv = syncSend;
+	//if (syncTglRecv) obj.udpn.recv = syncSend;
 	requestJson(obj);
 }
 
@@ -1700,7 +1723,7 @@ function toggleLiveview()
 	let wsOn = ws && ws.readyState === WebSocket.OPEN;
 
 	var lvID = "liveview";
-	if (isM && wsOn) {   
+	if (isM && wsOn) {
 		lvID += "2D";
 		if (isLv) gId('klv2D').innerHTML = `<iframe id="${lvID}" src="about:blank"></iframe>`;
 		gId('mlv2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
@@ -1887,7 +1910,7 @@ function makeP(i,pl)
 			end: 0
 		};
 		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
-		content = 
+		content =
 `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
 	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r||rep<0?"checked":""}>
 	<span class="checkmark"></span>
@@ -1909,23 +1932,17 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	} else {
 		content =
 `<label class="check revchkl">
-	<span class="lstIname">
-	Include brightness
-	</span>
+	<span class="lstIname">Include brightness</span>
 	<input type="checkbox" id="p${i}ibtgl" checked>
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
-	<span class="lstIname">
-	Save segment bounds
-	</span>
+	<span class="lstIname">Save segment bounds</span>
 	<input type="checkbox" id="p${i}sbtgl" checked>
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
-	<span class="lstIname">
-	Checked segments only
-	</span>
+	<span class="lstIname">Checked segments only</span>
 	<input type="checkbox" id="p${i}sbchk">
 	<span class="checkmark"></span>
 </label>`;
@@ -1941,9 +1958,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 <div class="h">(leave empty for no Quick load button)</div>
 <div ${pl&&i==0?"style='display:none'":""}>
 <label class="check revchkl">
-	<span class="lstIname">
-	${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
-	</span>
+	<span class="lstIname">${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}</span>
 	<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
 	<span class="checkmark"></span>
 </label>
@@ -2915,6 +2930,41 @@ function mergeDeep(target, ...sources)
 	return mergeDeep(target, ...sources);
 }
 
+function tooltip()
+{
+	const elements = d.querySelectorAll("[tooltip]");
+  
+	elements.forEach((element)=>{
+		element.addEventListener("mouseover", ()=>{
+			const tooltip = d.createElement("span");
+  
+			tooltip.className = "tooltip";
+			tooltip.textContent = element.getAttribute("tooltip");
+	
+			let { top, left, width } = element.getBoundingClientRect();
+	
+			d.body.appendChild(tooltip);
+	
+			const { offsetHeight, offsetWidth } = tooltip;
+
+			const offset = element.classList.contains("sliderwrap") ? 6 : 12;
+			top -= offsetHeight + offset;
+			left += (width - offsetWidth) / 2;
+
+			tooltip.style.top = top + "px";
+			tooltip.style.left = left + "px";
+	
+			tooltip.classList.add("visible");
+		});
+  
+		element.addEventListener("mouseout", ()=>{
+			const tooltip = d.querySelector('.tooltip');
+			tooltip.classList.remove("visible");
+			d.body.removeChild(tooltip);
+		});
+	});
+};
+
 size();
 _C.style.setProperty('--n', N);
 
@@ -2926,3 +2976,5 @@ _C.addEventListener('touchstart', lock, false);
 _C.addEventListener('mouseout', move, false);
 _C.addEventListener('mouseup', move, false);
 _C.addEventListener('touchend', move, false);
+
+d.addEventListener('DOMContentLoaded', tooltip);

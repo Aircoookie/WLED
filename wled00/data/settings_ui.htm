@@ -26,7 +26,9 @@
 			"segexp" : "Always expand first segment",
 			"css": "Enable custom CSS",
 			"hdays": "Enable custom Holidays list",
-			"fxdef": "Use effect default parameters"
+			"fxdef": "Use effect default parameters",
+			"on": "Power button preset override for On",
+			"off": "Power button preset override for Off"
 		},
 		"theme":{
 			"alpha": {
@@ -163,7 +165,7 @@
 	
 	function Save() {
 		SetLS();
-		if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st || d.Sf.SU.checked != initial_su) d.Sf.submit();
+		if (d.Sf.DS.value != initial_ds || /*d.Sf.ST.checked != initial_st ||*/ d.Sf.SU.checked != initial_su) d.Sf.submit();
 	}
 	
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -178,7 +180,7 @@
 			//console.log("File loaded");
 			GetV(); 
 			initial_ds = d.Sf.DS.value;
-			initial_st = d.Sf.ST.checked;
+			//initial_st = d.Sf.ST.checked;
 			initial_su = d.Sf.SU.checked;
 			GetLS();
 		});
@@ -261,7 +263,7 @@
 		</div>
 		<h2>Web Setup</h2>
 		Server description: <input type="text" name="DS" maxlength="32"><br>
-		Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
+		<!-- Sync button toggles both send and receive: <input type="checkbox" name="ST"><br> -->
 		<div id="NoSimple" class="hide">
 			<i class="warn">This firmware build does not include simplified UI support.<br></i>
 		</div>

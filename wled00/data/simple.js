@@ -489,7 +489,7 @@ function parseInfo() {
 	d.title     = name;
 	isRgbw      = li.leds.wv;
 	ledCount    = li.leds.count;
-	syncTglRecv = li.str;
+//	syncTglRecv = li.str;
 	maxSeg      = li.leds.maxseg;
 	pmt         = li.fs.pmt;
 	cct         = li.leds.cct;
