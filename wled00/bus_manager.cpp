@@ -488,7 +488,7 @@ BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   USER_PRINTF("BusSmartMatrix: kMatrixWidth=%u, kMatrixHeight=%u", kMatrixWidth, kMatrixHeight);
   smartMatrix.begin();
 
-  smartMatrix->setBrightness(125); // TODO - hard code for now
+  smartMatrix.setBrightness(125); // TODO - hard code for now
 
   rgb24* smBuffer = backgroundLayer.backBuffer();
 
