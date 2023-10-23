@@ -344,7 +344,7 @@ class BusSmartMatrix : public Bus {
     void setPixelColor(uint16_t pix, uint32_t c);
 
     void show() {
-      Serial.println("SmartMatrix: show()");
+      // Serial.println("SmartMatrix: show()");
       backgroundLayer->swapBuffers(true);
     }
 
@@ -353,7 +353,7 @@ class BusSmartMatrix : public Bus {
       return !backgroundLayer->isSwapPending();
     }
     
-    void setBrightness(uint8_t b, bool immediate);
+    // void setBrightness(uint8_t b, bool immediate);
 
     // uint8_t getPins(uint8_t* pinArray) {} // todo
 
@@ -370,7 +370,7 @@ class BusSmartMatrix : public Bus {
   private:
     rgb24* buffer;
     SMLayerBackground<rgb24, 0u>* backgroundLayer;
-    SmartMatrixHub75Calc<48, 64, 64, 0u, 0u>* smartMatrix;
+    // SmartMatrixHub75Calc<36, 32, 32, 0u, 0u>* smartMatrix;
     
 };
 #endif
