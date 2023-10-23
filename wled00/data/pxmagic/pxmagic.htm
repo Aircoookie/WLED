@@ -7,13 +7,10 @@
 
     <title>Pixel Magic Tool</title>
 
-    <!-- <link
-      rel="shortcut icon"
-      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAK9JREFUeNqUUssNwyAMJZWVUw4dhRHakZA6RqWMFEbwKDnk1FNBekEWxOBYQggL/D68yXXq+M7PtHkcefn89vrOw/UrP96w/NUFGiDLRz71GyY0QJa1Yn+nFa0ShqUNYCAF0QvoceOB4naEZif6UTNRapYaTyauRi4DEspr4Hbs5YKsbmtMyeJ0LxeESV4gB+hlSy4oO2txWysyus0a0+lO6vBjxcTMlG4mt2H6F2AAhU5NWu4dorQAAAAASUVORK5CYII=
-  " /> -->
-
     <style>
       :root {
+        --s-thumb: #0006;
+        --s-background: #0003;
         --overlay: rgba(0, 0, 0, 0.5);
         --background: #111;
         --text: #bbb;
@@ -32,6 +29,24 @@
         --warning-dark: #dc2f02;
         --warning-medium: #e85d04;
         --warning-light: #f48c06;
+      }
+
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--s-thumb);
+        opacity: 0.2;
+        border-radius: 5px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--s-background);
       }
 
       ::selection {
@@ -65,7 +80,7 @@
         display: block;
         font-weight: 400;
         margin: 2px 0 5px;
-        color: var(--text);
+        color: var(--gray-light);
         font-size: 12px;
       }
 
@@ -83,8 +98,17 @@
         font-weight: 600;
       }
 
-      :is(a:hover, a:focus, a:active) {
+      a:is(:hover, :focus, :active) {
         color: var(--blue-medium);
+      }
+
+      #wledEdit {
+        padding: 4px 8px;
+        background: var(--blue-light);
+        margin-left: 6px;
+        display: inline-block;
+        border-radius: 4px;
+        color: var(--gray-light);
       }
 
       .m-zero {
@@ -108,8 +132,7 @@
       }
 
       .content {
-        width: calc(100% - 40px);
-        max-width: 768px;
+        width: min(768px, calc(100% - 40px));
         margin: 20px;
       }
 
@@ -117,26 +140,43 @@
         display: flex;
         flex-wrap: nowrap;
         justify-content: space-between;
-        margin: 20px 0 0;
+        margin-top: 20px;
       }
 
       .column {
         flex-basis: calc(50% - 10px);
         position: relative;
-        padding: 0 5px;
+        padding-inline: 5px;
       }
 
       .column-full {
         flex-basis: 100%;
         position: relative;
-        padding: 0 5px;
+        padding-inline: 5px;
+      }
+
+      .header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-bottom: 20px;
+      }
+
+      .header .brand {
+        width: 100%;
+        max-width: 200px;
+        height: 100%;
+        display: block;
+        outline: none;
+        border: 0;
       }
 
       label {
-        display: block;
+        display: flex;
         margin-bottom: 5px;
         font-weight: bold;
         color: var(--text);
+        align-items: center;
       }
 
       input[type="text"],
@@ -157,7 +197,7 @@
         width: 32px;
         height: 32px;
         cursor: pointer;
-        padding: 0px 1px;
+        padding-inline: 1px;
         outline: none;
       }
 
@@ -172,18 +212,19 @@
       }
 
       .input-group .input-description {
-        width: 38px;
+        width: 100%;
+        max-width: 38px;
         height: 38px;
-        padding: 10px 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         color: var(--gray-dark);
         background: var(--gray-light);
-        border-radius: 0px 5px 5px 0;
+        border-radius: 0px 8px 8px 0;
         border: 1px solid var(--gray-light);
         border-left: 0;
-        text-align: center;
         font-size: 14px;
         line-height: 16px;
-        font-weight: 600;
       }
 
       .input-group .square {
@@ -191,10 +232,19 @@
         margin-left: 10px;
       }
 
+      .input-group .square input {
+        text-align: center;
+        background: none;
+        padding: 0;
+        border: 0;
+        color: var(--gray-dark);
+      }
+
       textarea {
-        resize: vertical;
+        resize: none;
         min-height: 200px;
         border-radius: 8px;
+        overflow-x: hidden;
       }
 
       .custom-select {
@@ -231,7 +281,7 @@
         text-align: center;
         padding: 40px 10px;
         border-radius: 8px;
-        margin: 20px 0 0;
+        margin-top: 20px;
         transition: all 0.5s ease-in-out;
       }
 
@@ -253,14 +303,15 @@
         width: 100%;
         border-radius: 10px;
         outline: none;
-        margin: 16px 0;
+        margin-block: 15px;
       }
 
-      .range-slider::-webkit-slider-thumb {
+      .range-slider::-webkit-slider-thumb,
+      .range-slider::-moz-range-thumb {
         appearance: none;
         height: 16px;
         width: 16px;
-        background-color: var(--gray-dark);
+        background-color: var(--blue-light);
         border-radius: 50%;
         cursor: pointer;
         border: 0;
@@ -326,7 +377,7 @@
         align-items: center;
         width: auto;
         padding: 6px 12px;
-        margin: 10px 0 0;
+        margin-top: 10px;
         border-radius: 8px;
         transform: translateY(30px);
         opacity: 0;
@@ -334,7 +385,7 @@
       }
 
       .toast .toast-body {
-        padding: 8px 0;
+        padding-block: 8px;
         font-weight: 600;
         color: var(--text);
         letter-spacing: 0.5px;
@@ -360,7 +411,7 @@
         height: 3px;
         transform: scaleX(0);
         transform-origin: left;
-        border-radius: inherit;
+        border-radius: 8px;
       }
 
       .toast.success .toast-progress {
@@ -387,39 +438,11 @@
         );
       }
 
-      .header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0 0 20px;
-      }
-
-      .header .brand {
-        width: 100%;
-        max-width: 200px;
-        height: 100%;
-        display: block;
-        outline: none;
-        border: 0;
-      }
-
       .carousel {
         display: flex;
         height: 100%;
         width: 100%;
         cursor: pointer;
-      }
-
-      .carousel img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        margin-right: 20px;
-        border: 0;
-      }
-
-      .carousel img:last-child {
-        margin-right: 0;
       }
 
       .button {
@@ -429,7 +452,7 @@
         border-radius: 50px;
         color: var(--text);
         cursor: pointer;
-        margin: 0 0 10px;
+        margin-bottom: 10px;
         background: var(--gray-medium);
         border: 1px solid var(--gray-dark);
         transition: all 0.5s ease-in-out;
@@ -477,7 +500,7 @@
       }
 
       #recreatedImage {
-        margin: 20px 0;
+        margin-block: 20px;
       }
 
       .invalid {
@@ -487,16 +510,12 @@
       .error-message {
         display: block;
         color: var(--error-dark);
-        padding: 4px 0;
+        padding-block: 4px;
         font-weight: 600;
         font-size: 12px;
       }
 
       @media (max-width: 767px) {
-        .header {
-          padding-bottom: 0;
-        }
-
         .row {
           flex-wrap: wrap;
           flex-direction: column;
@@ -506,7 +525,7 @@
         .column,
         .column-full {
           flex-basis: 100%;
-          margin: 20px 0 0;
+          margin-top: 20px;
           padding: 0;
         }
       }
@@ -542,7 +561,7 @@
       <div class="content">
         <form id="formGenerate" novalidate>
           <div class="header">
-            <img alt="Pixel Magic Tool" width="192" height="128" src="data:image/gif;base64,R0lGODdhwACAAMQAAAAAACsrKzMzM0BAQEpKSlVVVV1dXWRkZGxsbHV1dXt7e4CAgIyMjJubm7e3t7i4uMXFxdPT0+Li4u/u7/Du8PDv7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABcALAAAAADAAIAAAAX/4CWOZGmeV6WibOu+cCzPdG3fp1rhfO//wCBOJywaj8jkSMdcKZ/QqFTUZE6v2Oyw6mRxm9qfghgup7qur9WMG6PZV/JLLYfTFnW7NG+if1F8Wmp6SA4qDjZ+XIBvYYOERg8qD4mKYDkqDXCPkEIRKhE8VQ8LhpdLf2UKCg1VnUGpJqaImEwKF25rqIubp689sSWzjLZUvme8bK6/PsEiDg4SKhLQfcetxzqaesvMPpIVlLXHyHm5eYFl3d48w+O6u3zryJDz7DfVKNDSFdS0JPbswdAhTuC7HcTS3Svizho8Yw9j6KBl0KHCiguDNCwRkNyLXBSbbGtxLlPCRhmx/3SMCDEek38Q0VnShTEllJXp5HwR5xJhT0U9baojt+wBNGgQdHKRYDToBQZGZ9L0KDQKTiecnsXKY2riiZI+a7asCmQe2JjHuja5RY8EOIInw1LliJJsJV0OHnyalC/r0wdv/QYORwwCYKcoACdVYZinSj8zgAI8ZbAyZBJqK8Cc7BPxQYVPJEu8jNgyy3LOMjvmbLEu2tM3SQ+UjdrnUWirPWPOWyVCU8xNCjaBkI8zaMU6GjuinYa2WLqwXy84ofq1l7mszYieTQc66IPNi8kKbj0ud2XMW2yvTcO038yb52B3AS43kvXh/T43Xnd99cjztVDfHuld1x1/nXGXE/9tmUHQXoAsLOagVQXGNc9+uoETygjYPJTZdwieAE58r7kGS4WfZQNhiMARxuIIg4Gom1aaWZjgEfip59yKui222TwxmqQgShLaGNuBoyFZngzdkGdChzJZ0lqCXFCAQpEUKimflhgu2QSJ7CHoV5g/TaDPIQRqmZ8zXZLZxIZTesfchcmUMGCWY+rIpZAPVjASCYt5lZ2B2oTXApbcoDglnRWw1WdiX0K35o0OtWCKfUPRQZxRDzBAAlR5ORCofia2MEEFZlLn5C6TbmnpJL8osECQTDhGK0ELOGrXrjzgQQdMHzYxHa/E8gBWpCMEK16xzNbgB7CKNivtoi+1mOf/tNhSKyiN1yZCQQUUfAvmXVKVK2eb50ZbYrXJqivRBBN8W2NZ5dabbnRbzpTkF9CquQW7P9Rrr5j4Turus9Y6I8qqPRwrMKndDpljitteoKyM+8L6g68PS0kwxjZG/DGa7fp7QxUTGltKx/qOTCmT5f5JKBf9iuwdvANnzAVxeQHm8wP8qEHKArlqWyrLHhs9L7cK69kxgCaLcKsKw4Z8NNIFIlyyzS5PbLWJU1dQNcVXY32tH7a6u65UUEcc9thKG2z2gmrU3PTMArd9t9R+wH3vd3OfHfjLX3tNNth9O13nBT7ntdfgVEF+YtSHE8544nirSHkJUN4tOb2b/30c/+bNqF2bQA53rOvCoXctIOnAmJ5j6g+v/q8atmeO3dugc/2TR51jLfPtXwyve3Rh507u3pWvDTnISi8uuokfGoXb5L47j5VsZ7kuhuGGf6g3o9mTOX1n3f9eMMyUK5JAhF3u2PqM2lOpeflyR/f8+PczH2fzL6ofEGhnov2xj02yi5z8ooQ/FCggbJYzoM76Jz3FvWw95GOeBF8QvOFgb3GGO9kC3wC+z8GAY/z6YAYrGLs9PaSEg5MBATG1vBWiK18IfCGKNojDKozLWS5sYA9XeD4LYo1/TEhZ6SAmxPwxkIQjfN58jnhAEJpugjw6HQU9eDz/URGLT2Qh68qHwf9fGXFzX5TYMeT1hVQJIYRFdBkNtSiyNA7xhadqoxHg6D31kaxwU0QaEvOQxyaecX1+hGLdDulFpBVNjQ9hY/GKwMdE2m+RLGhcNK4oAlldrJHvwY1e0LZEMkYRWTD4pOVcgMKkfY0kpGyhKYNIMxmosg05eyULCPhDMEKvjJhMJSe7thZGrjKWY/RfHBPZy4SJEZK4M6YTl0a8Z0Zvev64zVE65cya2NBcLptmNrVJznIKZ34CJKbQuhlIRF4gAcAEpRQRUsl0WtKMW5NnqZapvWlSsZ50DGO5HHPLXcbvlPiaJxkAGk+BERRFrVwlPwN6TIXSM4G0rJfdWOjJg2b/tJ3ztCc0BSqVjX7TnRS9pD4NWAXlScyl12SB+Lq4zz72s4quxBtMW4VTjMy0cIMk6S9zibdkStSm48EOQxE6VHDyVIQoDR9GlvrRqBLVPNUMKuKUilEmWvN8N8xWTH2pSMaI1SZU9eocz1qPruZQY2y9R1rf6qK4skMRCIgBPEe4Vrv2wqL9s48mQ/UbhjTTrxeIqCN5MDUcHdWvBKzXThnZ1xlkBrEjzVs1USpMzrLVhKVTgmfPCloeYEO00MOsHUZ7QNUKJTrbxFTPChsP16JVIZd9x+pYa9ssnCYrwE1tb5fTn2AEt6bDRc8+oUQo4yRXrjKCDTx4+1w8AcIxdB0SjndiUl1vsMQQP0LTaZ1bju4yIyIVQ4Zatlte874CvXCFyHrJS1333kce8UVGYNhbX/vuMRBv4cwDWAEX7rbXv4kqrp9E0KGQVCBla+gvgrEXso+Rd8J/vaBxN4xcDIdmlQE2kH067OEPu6AreiJRF0IAADs=" />
+            <img src=" data:image/png;base64,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" alt="Pixel Magic Tool" class="brand">
           </div>
           <div class="row">
             <div class="column" validate>
@@ -564,9 +583,12 @@
               <div class="custom-select">
                 <label for="pattern">Pattern</label>
                 <select name="pattern" id="pattern" required>
-                  <option value="3" title="[0,5,'ffffff']" selected>Range</option>
-                  <option value="2" title="[0,'ffffff']">Index</option>
+                  <option value="">Select a choice</option>
                   <option value="1" title="['ffffff']">Individual</option>
+                  <option value="2" title="[0, 'ffffff']">Index</option>
+                  <option value="3" title="[0, 5, 'ffffff']" selected>
+                    Range
+                  </option>
                 </select>
               </div>
             </div>
@@ -574,6 +596,7 @@
               <div class="custom-select">
                 <label for="output">Output</label>
                 <select name="output" id="output" required>
+                  <option value="">Select a choice</option>
                   <option value="json" selected>WLED JSON</option>
                   <option value="ha">Home Assistant</option>
                   <option value="curl">CURL</option>
@@ -621,11 +644,13 @@
                   max="255"
                   value="128"
                   class="range-slider" />
-                <input
-                  type="text"
-                  id="brightnessValue"
-                  class="input-description square"
-                  value="128" />
+                <div class="input-description square">
+                  <input
+                    type="text"
+                    name="brightnessValue"
+                    id="brightnessValue"
+                    value="128" />
+                </div>
               </div>
             </div>
           </div>
@@ -633,7 +658,11 @@
             <div class="column" validate>
               <label for="animation">Animation</label>
               <label class="switch">
-                <input type="checkbox" name="animation" id="animation" />
+                <input
+                  type="checkbox"
+                  name="animation"
+                  id="animation"
+                  data-parent="animation" />
                 <span class="switch-slider"></span>
               </label>
             </div>
@@ -643,19 +672,25 @@
                 <input
                   type="checkbox"
                   name="transparentImage"
-                  id="transparentImage" />
+                  id="transparentImage"
+                  data-parent="transparentImage" />
                 <span class="switch-slider"></span>
               </label>
             </div>
             <div class="column" validate>
               <label for="resizeImage">Resize Image</label>
               <label class="switch">
-                <input type="checkbox" name="resizeImage" id="resizeImage" />
+                <input
+                  type="checkbox"
+                  name="resizeImage"
+                  id="resizeImage"
+                  data-parent="resizeImage"
+                  checked />
                 <span class="switch-slider"></span>
               </label>
             </div>
           </div>
-          <div class="row resizeImage" style="display: none">
+          <div class="row resizeImage">
             <div class="column" validate>
               <label for="width">Width</label>
               <input type="number" name="width" id="width" value="16" />
@@ -682,7 +717,9 @@
                   min="0"
                   step="0.1"
                   inputmode="numeric" />
-                <div class="input-description">sec</div>
+                <div class="input-description">
+                  <span>sec</span>
+                </div>
               </div>
             </div>
             <div class="column" validate>
@@ -697,7 +734,9 @@
                   min="0"
                   step="0.1"
                   inputmode="numeric" />
-                <div class="input-description">sec</div>
+                <div class="input-description">
+                  <span>sec</span>
+                </div>
               </div>
             </div>
           </div>
@@ -708,13 +747,18 @@
                 Color that will replace the
                 <strong>transparent pixels</strong> in the image
               </small>
-              <input type="color" name="color" id="color" value="#eeeeee" />
+              <input type="color" name="color" id="color" value="#00BFFF" />
             </div>
           </div>
           <div class="row">
             <div class="column-full" validate>
               <div class="custom-select">
-                <label for="images">Images uploaded to WLED [<a id="wledEdit" href="http://[wled-ip]/edit" target="_blank">Upload</a>]</label>
+                <label for="images">
+                  <span>Images upload to WLED</span>
+                  <a id="wledEdit" href="http://[wled-ip]/edit" target="_blank">
+                    upload
+                  </a>
+                </label>
                 <select name="images" id="images">
                   <option value="">Select image</option>
                 </select>
@@ -795,7 +839,7 @@
     const hostname = element("hostname");
     hostname.value = host;
 
-    hostname.addEventListener("change", async () => {
+    hostname.addEventListener("blur", async () => {
       WLED_URL = `${protocol}//${hostname.value}`;
 
       await segments();
@@ -926,6 +970,7 @@
 
                 if (success) {
                   toast(`Preset "${item.n}" save successfully`);
+                  window.parent.postMessage("loadPresets", WLED_URL);
                 }
               } catch (error) {
                 toast(`Error saving preset: ${error}`, "error");
@@ -974,23 +1019,28 @@
           return mimeTypes.includes(mimetype);
         });
 
-        const options = [];
+        const options = [{ text: "Select image", value: "" }];
 
-        if (images.length>0) {
+        if (images.length > 0) {
           options.push(
             ...images.map(({ name }) => ({
               text: name,
               value: `${WLED_URL}/${name}`,
             }))
           );
-        } else {
-          options.push({ text: "No images", value: "" });
+
+          select.innerHTML = "";
+
+          options.forEach(({ text, value }) => {
+            const option = new Option(text, value);
+
+            if (index === 0) {
+              option.selected = true;
+            }
+
+            select.appendChild(option);
+          });
         }
-        select.innerHTML = "";
-        options.forEach(({ text, value }) => {
-          const option = new Option(text, value);
-          select.appendChild(option);
-        });
       } catch (error) {
         toast(error, "error");
       } finally {
@@ -1000,7 +1050,6 @@
 
     async function segments() {
       const select = element("segments");
-      const pattern = element("pattern");
       const width = element("width");
       const height = element("height");
 
@@ -1038,7 +1087,6 @@
             option.selected = true;
             width.value = w;
             height.value = h;
-            pattern.value = w * h > 64 ? 3 : 1;
           }
 
           select.add(option);
@@ -1201,65 +1249,65 @@
     element("images").addEventListener("change", (e) => {
       const dropzone = element("dropzone");
       const { value } = e.target.selectedOptions[0];
+
+      if (!value) {
+        const dropzoneLabel = element("dropzoneLabel");
+        const source = element("source");
+
+        dropzoneLabel.textContent =
+          "Drag and drop a file here or click to select a local file";
+        source.value = "";
+
+        dropzone.style.display = "block";
+      } else {
+        dropzone.style.display = "none";
+      }
     });
 
     element("transparentImage").addEventListener("change", (e) => {
-      const transparentImage = d.getElementsByClassName("transparentImage");
+      const transparentImage = d.getElementsByClassName("transparentImage")[0];
       const { checked } = e.target;
 
-      Array.from(transparentImage).forEach(function (element) {
-        if (checked) {
-          element.style.display = "flex";
-        } else {
-          element.style.display = "none";
-        }
-      });
+      if (checked) {
+        transparentImage.style.display = "flex";
+      } else {
+        transparentImage.style.display = "none";
+      }
     });
 
     element("resizeImage").addEventListener("change", (e) => {
-      const resizeImage = d.getElementsByClassName("resizeImage");
-      const pattern = element("pattern");
+      const resizeImage = d.getElementsByClassName("resizeImage")[0];
       const { checked } = e.target;
 
-      Array.from(resizeImage).forEach(function (element) {
-        if (checked) {
-          //pattern.value = 3;
-          element.style.display = "flex";
-        } else {
-          //pattern.value = 1;
-          element.style.display = "none";
-        }
-      });
+      if (checked) {
+        resizeImage.style.display = "flex";
+      } else {
+        resizeImage.style.display = "none";
+      }
     });
 
     element("animation").addEventListener("change", (e) => {
-      const animation = d.getElementsByClassName("animation");
-
-      const pattern = element("pattern");
+      const animation = d.getElementsByClassName("animation")[0];
       const source = element("source");
 
       const { checked } = e.target;
 
-      Array.from(animation).forEach(function (element) {
-        if (checked) {
-          toast(
-            'If you want all frames in the image, set it to "0"',
-            "warning",
-            5000
-          );
+      if (checked) {
+        toast(
+          'If you want all frames in the image, set it to "0"',
+          "warning",
+          5000
+        );
 
-          source.setAttribute("accept", "image/gif");
-          element.style.display = "flex";
-          //pattern.value = 3;
-        } else {
-          source.setAttribute(
-            "accept",
-            "image/jpg,image/jpeg,image/png,image/gif"
-          );
-          element.style.display = "none";
-          //pattern.value = 1;
-        }
-      });
+        source.setAttribute("accept", "image/gif");
+        animation.style.display = "flex";
+      } else {
+        source.setAttribute(
+          "accept",
+          "image/jpg,image/jpeg,image/png,image/gif"
+        );
+        animation.style.display = "none";
+      }
     });
 
     element("btnGenerate").addEventListener("click", async (event) => {
@@ -1313,8 +1361,7 @@
         const response = element("response");
         const recreatedImage = element("recreatedImage");
 
-        const urlImage =
-          images === "" ? URL.createObjectURL(file) : images;
+        const urlImage = !images ? URL.createObjectURL(file) : images;
 
         const image = await loadImage(urlImage);
         const { canvas, bri, id, i } = recreate(image);
