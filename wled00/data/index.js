@@ -1129,14 +1129,13 @@ function populateNodes(i,n)
 
 	//WLEDMM starts here
 	nodesData = []; //WLEDMM reset nodes
-	var nodesDone = 0;
 
 	function showPanel(panel) {
 		return "(" + panel.x + "," + panel.y + ") - " + panel.w + "x" + panel.h + " " + (panel.b?1:0) + (panel.r?1:0) + (panel.v?1:0) + (panel.s?1:0);
 	}
 
 	function checkNode(nodeNr) {
-		// console.log(nodeNr, nodesData[nodeNr]);
+		console.log("CheckNode", nodeNr, nodesData[nodeNr]);
 		let errFound = false;
 
 		//warnings
@@ -1207,7 +1206,7 @@ function populateNodes(i,n)
 			gId(`fx${nodeNr}`).innerText = effects[state.seg[0].fx];
 
 			//store data
-			nodesData[nodeNr] = {};
+			if (!nodesData[nodeNr]) nodesData[nodeNr] = {};
 			nodesData[nodeNr].info = info;
 
 			//if the node has a matrix, show matrix info
@@ -1226,9 +1225,6 @@ function populateNodes(i,n)
 				gId(`gcc${nodeNr}`).innerText = cfg.light.gc.col  > 1;
 				gId(`fps${nodeNr}`).innerText = cfg.hw.led.fps;
 				
-				//store data
-				// nodesData[nodeNr].cfg = cfg;
-
 				//if the node has a matrix, show matrix info
 				if (cfg.hw.led.matrix) {
 					gId(`pnl0${nodeNr}`).innerText = showPanel(cfg.hw.led.matrix.panels[0]); //show the first panel
@@ -1238,12 +1234,15 @@ function populateNodes(i,n)
 					if (ip == lastinfo.ip) {
 						let panelIndex = 0; //loop over panels
 						for (let i=0; i<nnodes; i++) { //loop over all nodes found
-							if (panelIndex < cfg.hw.led.matrix.panels.length && nodesData[i] && nodesData[i].info.ip != lastinfo.ip) { //loop over panels of self: assign each panel to a different node
-								//nodesData[i] does not exist if not all fetches done
-
+							if (panelIndex < cfg.hw.led.matrix.panels.length && n.nodes[i].ip != lastinfo.ip) { //loop over panels of self: assign each panel to a different node
+								
 								let panelX = cfg.hw.led.matrix.panels[panelIndex];
-
+								
 								gId(`pnlX${i}`).innerText = showPanel(panelX);
+								
+								//store data
+								//nodesData[i] does not exist if not all fetches done
+								if (!nodesData[i]) nodesData[i] = {};
 
 								nodesData[i].cfg = structuredClone(cfg); //structuredClone: by value, not by reference so we can make changex
 
@@ -1281,10 +1280,18 @@ function populateNodes(i,n)
 						}
 					}
 				}
-				nodesDone++;
-				callback(parms);
-			});
-		});
+				callback(nodeNr);
+			}, function(nodeNr, text) {console.log("cfg error", nodeNr, n.nodes[nodeNr].name, text);callback(nodeNr);}); //also callback on error
+		}, function(nodeNr, text) {
+			//to show nodes which failed in providing json info
+			let ip = n.nodes[nodeNr].ip;
+			let name =  n.nodes[nodeNr].name;
+			let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${name}</button>`;
+			gId(`ins${nodeNr}`).innerHTML = url;
+			gId(`ip${nodeNr}`).innerText = ip;
+			console.log("json error", nodeNr, ip, name, text);
+			callback(nodeNr); //also callback on error
+		}); 
 	} //fetchInfoAndCfg
 
 	if (n.nodes) {
@@ -1304,14 +1311,17 @@ function populateNodes(i,n)
 		urows += `</tr>`;
 
 		//show other nodes e.g. {name: "MM 32 L", type: 32, ip: "192.168.121.249", age: 1, vid: 2305080}
+		var nodesDone = 0;
 		for (let o of n.nodes) {
 			if (o.name) {
 				if (o.ip) { //in ap mode no ip...
-					fetchInfoAndCfg(o.ip, nnodes, -1, function() {
+					fetchInfoAndCfg(o.ip, nnodes, -1, function(nodeNr) {
+						nodesDone++;
+						console.log("nodesDone", nodesDone, nodeNr, n.nodes.length, nnodes, n.nodes[nodeNr].name);
 						//if all done
-						if (nodesDone == nnodes ) {
-							for (let i=0; i<nnodes; i++) {
-								if (gId(`ip${i}`).innerText != lastinfo.ip) //not self
+						if (nodesDone == n.nodes.length ) {
+							for (let i=0; i<n.nodes.length; i++) {
+								if (n.nodes[i].ip != lastinfo.ip && nodesData[i] && nodesData[i].info && nodesData[i].cfg) //not self and data has been collected (no errors getting files)
 									checkNode(i);
 							}
 						}
