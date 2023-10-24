@@ -194,9 +194,19 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   constexpr size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
 #endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
+  //WLEDMM skipping lines done right 
+  #ifndef WLED_DISABLE_2D
+    if (strip.isMatrix) {
+      if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS*4)
+        n = 4;
+      else if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS)
+        n = 2;
+      else
+        n = 1;
+    }
+  #endif
   size_t pos = (strip.isMatrix ? 4 : 2);
   size_t bufSize = pos + (used/n)*3;
-  //WLEDMM: no skipLines
 
   if ((bufSize < 1) || (used < 1)) return(false); // WLEDMM should not happen
   //AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
@@ -225,19 +235,24 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   wsBuf->lock();  // protect buffer from being cleaned by another WS instance
   buffer[0] = 'L';
   buffer[1] = 1; //version
-#ifndef WLED_DISABLE_2D
-  if (strip.isMatrix) {
-    buffer[1] = 2; //version
-    buffer[2] = min(Segment::maxWidth, (uint16_t) 255); // WLEDMM prevent overflow on buffer type uint8_t
-    buffer[3] = min(Segment::maxHeight, (uint16_t) 255);
-    //WLEDMM: no skipLines
-  }
-#endif
+  #ifndef WLED_DISABLE_2D
+    if (strip.isMatrix) {
+      buffer[1] = 2; //version
+      //WLEDMM skipping lines done right 
+      buffer[2] = MIN(Segment::maxWidth/n, (uint16_t) 255); // WLEDMM prevent overflow on buffer type uint8_t
+      buffer[3] = MIN(Segment::maxHeight/n, (uint16_t) 255);
+    }
+  #endif
 
   uint8_t stripBrightness = strip.getBrightness();
   for (size_t i = 0; pos < bufSize -2; i += n)
   {
-  //WLEDMM: no skipLines
+  //WLEDMM skipping lines done right 
+  #ifndef WLED_DISABLE_2D
+     if (strip.isMatrix && n > 1) {
+      if ((i/Segment::maxWidth)%(n)) i += Segment::maxWidth * (n-1);
+    }
+  #endif
     uint32_t c = restoreColorLossy(strip.getPixelColor(i), stripBrightness); // WLEDMM full bright preview - does _not_ recover ABL reductions
     // WLEDMM begin: preview with color gamma correction
     if (gammaCorrectPreview) {
