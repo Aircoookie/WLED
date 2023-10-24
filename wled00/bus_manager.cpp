@@ -539,9 +539,11 @@ int BusManager::add(BusConfig &bc) {
   USER_PRINTF("BusManager::add(bc.type=%u)\n", bc.type);
   if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
     busses[numBusses] = new BusNetwork(bc);
+#ifdef WLED_ENABLE_SMARTMATRIX
   } else if (bc.type == TYPE_SMARTMATRIX) {
     USER_PRINTLN("BusManager::add - Adding BusSmartMatrix");
     busses[numBusses] = new BusSmartMatrix(bc);
+#endif
   } else if (IS_DIGITAL(bc.type)) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
   } else if (bc.type == TYPE_ONOFF) {
