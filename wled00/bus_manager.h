@@ -1,8 +1,6 @@
 #ifndef BusManager_h
 #define BusManager_h
 
-#define WLED_ENABLE_SMARTMATRIX
-
 #ifdef WLED_ENABLE_SMARTMATRIX
 #include <MatrixHardware_ESP32_V0.h>
 #include <SmartMatrix.h>
