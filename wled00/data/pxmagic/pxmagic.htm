@@ -143,14 +143,20 @@
         margin-top: 20px;
       }
 
-      .column {
+      .col {
         flex-basis: calc(50% - 10px);
         position: relative;
         padding-inline: 5px;
       }
 
-      .column-full {
+      .col-full {
         flex-basis: 100%;
+        position: relative;
+        padding-inline: 5px;
+      }
+
+      .col-small {
+        flex-basis: 33.3333%;
         position: relative;
         padding-inline: 5px;
       }
@@ -158,14 +164,6 @@
       .header {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        padding-bottom: 20px;
-      }
-
-      .header {
-        display: flex;
-        flex-direction: column;
-        align-items: start;
         padding-bottom: 20px;
       }
 
@@ -551,8 +549,8 @@
           margin: 0;
         }
 
-        .column,
-        .column-full {
+        .col,
+        .col-full {
           flex-basis: 100%;
           margin-top: 20px;
           padding: 0;
@@ -609,11 +607,11 @@
             >
           </div>
           <div class="row">
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="hostname">Hostname</label>
               <input type="text" name="hostname" id="hostname" required />
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="name">Preset Name</label>
               <input
                 type="text"
@@ -624,7 +622,7 @@
             </div>
           </div>
           <div class="row">
-            <div class="column" validate>
+            <div class="col" validate>
               <div class="custom-select">
                 <label for="pattern">Pattern</label>
                 <select name="pattern" id="pattern" required>
@@ -637,7 +635,7 @@
                 </select>
               </div>
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <div class="custom-select">
                 <label for="output">Output</label>
                 <select name="output" id="output" required>
@@ -650,15 +648,15 @@
             </div>
           </div>
           <div class="row output" style="display: none">
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="device">Device</label>
               <input type="text" name="device" id="device" required />
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="uniqueId">Unique Id</label>
               <input type="text" name="uniqueId" id="uniqueId" required />
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="friendlyName">Friendly Name</label>
               <input
                 type="text"
@@ -668,7 +666,7 @@
             </div>
           </div>
           <div class="row">
-            <div class="column" validate>
+            <div class="col" validate>
               <div class="custom-select">
                 <label for="segments">Segment Id</label>
                 <select name="segments" id="segments">
@@ -678,7 +676,7 @@
                 </select>
               </div>
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="brightness">Brightness</label>
               <div class="input-group">
                 <input
@@ -700,7 +698,7 @@
             </div>
           </div>
           <div class="row">
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="animation">Animation</label>
               <label class="switch">
                 <input
@@ -711,7 +709,7 @@
                 <span class="switch-slider"></span>
               </label>
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="transparentImage">Transparent Image</label>
               <label class="switch">
                 <input
@@ -722,7 +720,7 @@
                 <span class="switch-slider"></span>
               </label>
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="resizeImage">Resize Image</label>
               <label class="switch">
                 <input
@@ -736,21 +734,21 @@
             </div>
           </div>
           <div class="row resizeImage">
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="width">Width</label>
               <input type="number" name="width" id="width" value="16" />
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="height">Height</label>
               <input type="number" name="height" id="height" value="16" />
             </div>
           </div>
           <div class="row animation" style="display: none">
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="frames">Frames</label>
               <input type="number" name="frames" id="frames" value="4" />
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="duration">Duration</label>
               <div class="input-group">
                 <input
@@ -767,7 +765,7 @@
                 </div>
               </div>
             </div>
-            <div class="column" validate>
+            <div class="col" validate>
               <label for="transition">Transition</label>
               <div class="input-group">
                 <input
@@ -786,7 +784,7 @@
             </div>
           </div>
           <div class="row transparentImage" style="display: none">
-            <div class="column-full" validate>
+            <div class="col-full" validate>
               <label for="color">Choose a color</label>
               <small>
                 Color that will replace the
@@ -796,7 +794,7 @@
             </div>
           </div>
           <div class="row">
-            <div class="column-full" validate>
+            <div class="col-full" validate>
               <div class="custom-select">
                 <label for="images">
                   <span>Images upload to WLED</span>
@@ -822,9 +820,17 @@
               style="display: none" />
           </div>
           <div class="row">
-            <div class="column-full">
+            <div class="col-full">
               <button type="button" class="button" id="btnGenerate">
                 Generate
+              </button>
+            </div>
+            <div class="col-small" id="gbth" style="display: none">
+              <button
+                type="button"
+                class="button"
+                onclick="window.location.href = WLED_URL;">
+                Back
               </button>
             </div>
           </div>
@@ -835,22 +841,22 @@
           </textarea>
           <div class="buttons">
             <div class="row">
-              <div class="column">
+              <div class="col">
                 <button type="button" class="button" id="btnCopyToClipboard">
                   Copy to Clipboard
                 </button>
               </div>
-              <div class="column">
+              <div class="col">
                 <button type="button" class="button" id="btnSave">Save</button>
               </div>
-              <div class="column">
+              <div class="col">
                 <button type="button" class="button" id="btnDownloadPreset">
                   Download
                 </button>
               </div>
             </div>
             <div class="row" id="simulate" style="display: none">
-              <div class="column-full">
+              <div class="col-full">
                 <button type="button" class="button" id="btnSimulatePreset">
                   Simulate
                 </button>
@@ -892,6 +898,9 @@
 
       hostnameLabel();
     });
+
+    gId("gbth").style.display =
+      window.location.protocol === "http:" ? "flex" : "none";
 
     let jsonSaveWLED = [];
     let jsonSendWLED = {};
@@ -1143,14 +1152,11 @@
       }
     }
 
-    const dropzone = gId("dropzone");
-    const source = gId("source");
-
-    dropzone.addEventListener("dragover", (e) => {
+    gId("dropzone").addEventListener("dragover", (e) => {
       e.preventDefault();
     });
 
-    dropzone.addEventListener("drop", (e) => {
+    gId("dropzone").addEventListener("drop", (e) => {
       e.preventDefault();
 
       source.files = e.dataTransfer.files;
@@ -1161,11 +1167,11 @@
       validate(e);
     });
 
-    dropzone.addEventListener("click", () => {
+    gId("dropzone").addEventListener("click", () => {
       source.click();
     });
 
-    source.addEventListener("change", (e) => {
+    gId("source").addEventListener("change", (e) => {
       const dropzoneLabel = gId("dropzoneLabel");
       const { value } = e.target;
 
@@ -1265,7 +1271,7 @@
 
     gId("brightnessValue").addEventListener("input", (e) => {
       const { value } = e.target;
-      let bri = value <= 255 ? value : 255;
+      const bri = value <= 255 ? value : 255;
 
       gId("brightness").value = bri;
       e.target.value = bri;
@@ -1305,9 +1311,7 @@
     gId("resizeImage").addEventListener("change", (e) => {
       const { checked } = e.target;
 
-			d.querySelector(".resizeImage").style.display = checked
-        ? "flex"
-        : "none";
+      d.querySelector(".resizeImage").style.display = checked ? "flex" : "none";
     });
 
     gId("animation").addEventListener("change", (e) => {
@@ -1326,10 +1330,7 @@
         source.setAttribute("accept", "image/gif");
         animation.style.display = "flex";
       } else {
-        source.setAttribute(
-          "accept",
-          "image/*"
-        );
+        source.setAttribute("accept", "image/*");
         animation.style.display = "none";
       }
     });
@@ -1338,13 +1339,12 @@
       const { checked } = gId("animation");
 
       if (validate(event)) {
-
-				jsonSaveWLED.splice(0);
+        jsonSaveWLED.splice(0);
 
         gId("preview").style.display = "block";
         gId("recreatedImage").innerHTML = "";
 
-				const simulate = gId("simulate");
+        const simulate = gId("simulate");
 
         if (checked) {
           simulate.style.display = "none";
@@ -1431,7 +1431,7 @@
       try {
         const body = new FormData();
 
-        if (imageValue === "upload") {
+        if (!imageValue) {
           body.append("image", file);
         } else {
           const responseImage = await fetch(imageValue);
