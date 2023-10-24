@@ -464,45 +464,28 @@ void BusNetwork::cleanup() {
 
 BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
-  #define num_x       32                       // how many LEDs are in one row?
-  #define num_y       32                       // how many rows?
+  HUB75_I2S_CFG mxconfig;
+  mxconfig.double_buff = true; // <------------- Turn on double buffer
+  mxconfig.mx_width = 64;
+  mxconfig.mx_height = 64;
+  mxconfig.gpio.e = 18;
+ // OK, now we can create our matrix object
+  display = new MatrixPanel_I2S_DMA(mxconfig);
 
-  #define radial_filter_radius 23.0;      // on 32x32, use 11 for 16x16
+  // let's adjust default brightness
+  display->setBrightness8(125);    // range is 0-255, 0 - 0%, 255 - 100%
 
-  #define COLOR_DEPTH 24                  // Choose the color depth used for storing pixels in the layers: 24 or 48 (24 is good for most sketches - If the sketch uses type `rgb24` directly, COLOR_DEPTH must be 24)
-  const uint16_t kMatrixWidth   = num_x;  // Set to the width of your display, must be a multiple of 8
-  const uint16_t kMatrixHeight  = num_y;  // Set to the height of your display
-  const uint8_t  kRefreshDepth  = 24;     // Tradeoff of color quality vs refresh rate, max brightness, and RAM usage.  36 is typically good, drop down to 24 if you need to.  On Teensy, multiples of 3, up to 48: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48.  On ESP32: 24, 36, 48
-  const uint8_t  kDmaBufferRows = 4;      // known working: 2-4, use 2 to save RAM, more to keep from dropping frames and automatically lowering refresh rate.  (This isn't used on ESP32, leave as default)
-  const uint8_t  kPanelType              = SM_PANELTYPE_HUB75_32ROW_MOD16SCAN;   // Choose the configuration that matches your panels.  See more details in MatrixCommonHub75.h and the docs: https://github.com/pixelmatix/SmartMatrix/wiki
-  const uint32_t kMatrixOptions          = (SM_HUB75_OPTIONS_NONE);        // see docs for options: https://github.com/pixelmatix/SmartMatrix/wiki
-  const uint8_t  kBackgroundLayerOptions = (SM_BACKGROUND_OPTIONS_NONE);
+  // Allocate memory and start DMA display
+  if( not display->begin() )
+      Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
 
-  USER_PRINTF("BusSmartMatrix: kMatrixWidth=%u, kMatrixHeight=%u", kMatrixWidth, kMatrixHeight);
-  
-  SMARTMATRIX_ALLOCATE_BUFFERS(smartMatrix, kMatrixWidth, kMatrixHeight, kRefreshDepth, kDmaBufferRows, kPanelType, kMatrixOptions);
-  SMARTMATRIX_ALLOCATE_BACKGROUND_LAYER(backgroundLayer, kMatrixWidth, kMatrixHeight, COLOR_DEPTH, kBackgroundLayerOptions);
-
-  this->_len = (kMatrixWidth * kMatrixHeight);
-
-  smartMatrix.addLayer(&backgroundLayer); 
-  smartMatrix.begin();
-
-  smartMatrix.setBrightness(50); // TODO - hard code for now
-
-  this->buffer = backgroundLayer.backBuffer();
-
-  backgroundLayer.swapBuffers(true);
-
-  this->backgroundLayer = &backgroundLayer;
-  // this->smartMatrix = &smartMatrix;
 }
 
 void BusSmartMatrix::setPixelColor(uint16_t pix, uint32_t c) {
   uint8_t r = R(c);
   uint8_t g = G(c);
   uint8_t b = B(c);
-  this->buffer[pix] = rgb24(r, g, b);
+  display->drawPixelRGB888(1, 1, r, g, b);
 }
 
 // void BusSmartMatrix::setBrightness(uint8_t b, bool immediate) {

@@ -1,9 +1,10 @@
 #ifndef BusManager_h
 #define BusManager_h
 
+#define WLED_ENABLE_SMARTMATRIX
+
 #ifdef WLED_ENABLE_SMARTMATRIX
-#include <MatrixHardware_ESP32_V0.h>
-#include <SmartMatrix.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #endif
 /*
  * Class for addressing various light types
@@ -343,12 +344,13 @@ class BusSmartMatrix : public Bus {
 
     void show() {
       // Serial.println("SmartMatrix: show()");
-      backgroundLayer->swapBuffers(true);
+      display->flipDMABuffer(); // Show the back buffer, set currently output buffer to the back (i.e. no longer being sent to LED panels)
+      display->clearScreen();   // Now clear the back-buffer
     }
 
     bool canShow() {
       // busy swapping still
-      return !backgroundLayer->isSwapPending();
+      return true; // return !backgroundLayer->isSwapPending();
     }
     
     // void setBrightness(uint8_t b, bool immediate);
@@ -366,9 +368,7 @@ class BusSmartMatrix : public Bus {
     }
 
   private:
-    rgb24* buffer;
-    SMLayerBackground<rgb24, 0u>* backgroundLayer;
-    // SmartMatrixHub75Calc<36, 32, 32, 0u, 0u>* smartMatrix;
+    MatrixPanel_I2S_DMA *display = nullptr;
     
 };
 #endif
