@@ -61,11 +61,11 @@ void WLED::loop()
 #ifdef WLED_ENABLE_DMX
   handleDMX();
 #endif
-  userLoop();
 
   #ifdef WLED_DEBUG
   unsigned long usermodMillis = millis();
   #endif
+  userLoop();
   usermods.loop();
   #ifdef WLED_DEBUG
   usermodMillis = millis() - usermodMillis;
@@ -186,7 +186,9 @@ void WLED::loop()
 
   yield();
   handleWs();
+#if defined(STATUSLED)
   handleStatusLED();
+#endif
 
   toki.resetTick();
 
@@ -256,9 +258,9 @@ void WLED::loop()
 #endif        // WLED_DEBUG
 }
 
-void WLED::enableWatchdog() {
 #if WLED_WATCHDOG_TIMEOUT > 0
-#ifdef ARDUINO_ARCH_ESP32
+void WLED::enableWatchdog() {
+  #ifdef ARDUINO_ARCH_ESP32
   esp_err_t watchdog = esp_task_wdt_init(WLED_WATCHDOG_TIMEOUT, true);
   DEBUG_PRINT(F("Watchdog enabled: "));
   if (watchdog == ESP_OK) {
@@ -268,22 +270,20 @@ void WLED::enableWatchdog() {
     return;
   }
   esp_task_wdt_add(NULL);
-#else
+  #else
   ESP.wdtEnable(WLED_WATCHDOG_TIMEOUT * 1000);
-#endif
-#endif
+  #endif
 }
 
 void WLED::disableWatchdog() {
-#if WLED_WATCHDOG_TIMEOUT > 0
-DEBUG_PRINTLN(F("Watchdog: disabled"));
-#ifdef ARDUINO_ARCH_ESP32
+  DEBUG_PRINTLN(F("Watchdog: disabled"));
+  #ifdef ARDUINO_ARCH_ESP32
   esp_task_wdt_delete(NULL);
-#else
+  #else
   ESP.wdtDisable();
-#endif
-#endif
+  #endif
 }
+#endif
 
 void WLED::setup()
 {
@@ -464,15 +464,19 @@ void WLED::setup()
 #ifndef WLED_DISABLE_OTA
   if (aOtaEnabled) {
     ArduinoOTA.onStart([]() {
-#ifdef ESP8266
+      #ifdef ESP8266
       wifi_set_sleep_type(NONE_SLEEP_T);
-#endif
+      #endif
+      #if WLED_WATCHDOG_TIMEOUT > 0
       WLED::instance().disableWatchdog();
+      #endif
       DEBUG_PRINTLN(F("Start ArduinoOTA"));
     });
     ArduinoOTA.onError([](ota_error_t error) {
+      #if WLED_WATCHDOG_TIMEOUT > 0
       // reenable watchdog on failed update
       WLED::instance().enableWatchdog();
+      #endif
     });
     if (strlen(cmDNS) > 0)
       ArduinoOTA.setHostname(cmDNS);
@@ -491,7 +495,9 @@ void WLED::setup()
   initServer();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
+  #if WLED_WATCHDOG_TIMEOUT > 0
   enableWatchdog();
+  #endif
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
@@ -915,9 +921,9 @@ void WLED::handleConnection()
 // else blink at 1Hz when WLED_CONNECTED is false (no WiFi, ?? no Ethernet ??)
 // else blink at 2Hz when MQTT is enabled but not connected
 // else turn the status LED off
+#if defined(STATUSLED)
 void WLED::handleStatusLED()
 {
-  #if defined(STATUSLED)
   uint32_t c = 0;
 
   #if STATUSLED>=0
@@ -957,5 +963,5 @@ void WLED::handleStatusLED()
       busses.setStatusPixel(0);
     #endif
   }
-  #endif
 }
+#endif

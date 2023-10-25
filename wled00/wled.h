@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2310180
+#define VERSION 2310250
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -864,8 +864,12 @@ public:
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
+  #if defined(STATUSLED)
   void handleStatusLED();
+  #endif
+  #if WLED_WATCHDOG_TIMEOUT > 0
   void enableWatchdog();
   void disableWatchdog();
+  #endif
 };
 #endif        // WLED_H
