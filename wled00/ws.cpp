@@ -187,23 +187,30 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   AsyncWebSocketClient * wsc = ws.client(wsClient);
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
-  size_t used = strip.getLengthTotal();
-#ifdef ESP8266
-  constexpr size_t MAX_LIVE_LEDS_WS = 256U;
-#else
-  constexpr size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
-#endif
-  size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
+  #ifdef ESP8266
+    constexpr size_t MAX_LIVE_LEDS_WS = 256U;
+  #else
+    constexpr size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
+  #endif
+  size_t used;// = strip.getLengthTotal();
+  size_t n;// = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   //WLEDMM skipping lines done right 
   #ifndef WLED_DISABLE_2D
     if (strip.isMatrix) {
-      if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS*4)
+      used = Segment::maxWidth * Segment::maxHeight;
+      if (used > MAX_LIVE_LEDS_WS*4)
         n = 4;
-      else if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS)
+      else if (used > MAX_LIVE_LEDS_WS)
         n = 2;
       else
         n = 1;
+    } else {
+      used = strip.getLengthTotal();
+      n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
     }
+  #else
+    used = strip.getLengthTotal();
+    n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   #endif
   size_t pos = (strip.isMatrix ? 4 : 2);
   size_t bufSize = pos + (used/n)*3;

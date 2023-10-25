@@ -1180,7 +1180,7 @@ function populateNodes(i,n)
 	}
 
 	//fetch both cfg.json and info from a node and store in nodesData array
-	function fetchInfoAndCfg(ip, nodeNr, parms, callback) {
+	function fetchInfoAndCfg(ip, nodeNr, callback) {
 		//add td placeholders
 		urows += `<tr>`;
 		for (let nm of ["ins", "pwr", "ip", "type", "rel", "ver", "vid", "fx", "scale-bri", "gcc", "fps", "fpsr", "lpc", "lvc", "mrx", "pnl0", "pnlC", "pnlX", "ssu"])
@@ -1188,22 +1188,24 @@ function populateNodes(i,n)
 		urows += `</tr>`;
 
 		//fetch info, state and effects
-		fetchAndExecute(`http://${ip}/`, "json", nodeNr, function(nodeNr, text) {
+		fetchAndExecute(`http://${ip}/`, "json/si", nodeNr, function(nodeNr, text) {
 			let info = JSON.parse(text)["info"];
 			let state = JSON.parse(text)["state"];
-			let effects = JSON.parse(text)["effects"];
 
 			//set values
+			let name =  n.nodes[nodeNr].name;
+			let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${name}</button>`;
+			gId(`ins${nodeNr}`).innerHTML = url;
+			gId(`ip${nodeNr}`).innerText = ip;
 			gId(`pwr${nodeNr}`).innerHTML = "<button class=\"btn btn-xs\" onclick=\"callNode('"+info.ip+"','state',{'on':"+(state.on?"false":"true")+"});\"><i class=\"icons "+(state.on?"on":"off")+"\">&#xe08f;</i></button>";
 			gId(`type${nodeNr}`).innerText = info.arch;
 			gId(`vid${nodeNr}`).innerText = info.vid;
-			gId(`ip${nodeNr}`).innerText = info.ip;
 			gId(`rel${nodeNr}`).innerText = info.rel;
 			gId(`ver${nodeNr}`).innerText = info.ver;
 			gId(`lvc${nodeNr}`).innerText = info.leds.count;
 			gId(`lpc${nodeNr}`).innerText = info.leds.countP;
 			gId(`fpsr${nodeNr}`).innerText = info.leds.fps;
-			gId(`fx${nodeNr}`).innerText = effects[state.seg[0].fx];
+			gId(`fx${nodeNr}`).innerText = eJson.find((o)=>{return o.id==state.seg[0].fx}).name;
 
 			//store data
 			if (!nodesData[nodeNr]) nodesData[nodeNr] = {};
@@ -1215,12 +1217,10 @@ function populateNodes(i,n)
 			}
 
 			//fetch cfg.json
-			fetchAndExecute(`http://${ip}/`, "cfg.json", nodeNr, function(nodeNr,text) {
+			fetchAndExecute(`http://${ip}/`, "cfg.json", nodeNr, function(nodeNr, text) {
 				let cfg = JSON.parse(text);
 
 				//set values
-				let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${cfg.id.name}</button>`;
-				gId(`ins${nodeNr}`).innerHTML = url;
 				gId(`scale-bri${nodeNr}`).innerText = cfg.light["scale-bri"];
 				gId(`gcc${nodeNr}`).innerText = cfg.light.gc.col  > 1;
 				gId(`fps${nodeNr}`).innerText = cfg.hw.led.fps;
@@ -1281,15 +1281,12 @@ function populateNodes(i,n)
 					}
 				}
 				callback(nodeNr);
-			}, function(nodeNr, text) {console.log("cfg error", nodeNr, n.nodes[nodeNr].name, text);callback(nodeNr);}); //also callback on error
+			}, function(nodeNr, text) {
+				console.log("cfg error", nodeNr, ip, n.nodes[nodeNr].name, text);
+				callback(nodeNr);
+			}); //also callback on error
 		}, function(nodeNr, text) {
-			//to show nodes which failed in providing json info
-			let ip = n.nodes[nodeNr].ip;
-			let name =  n.nodes[nodeNr].name;
-			let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${name}</button>`;
-			gId(`ins${nodeNr}`).innerHTML = url;
-			gId(`ip${nodeNr}`).innerText = ip;
-			console.log("json error", nodeNr, ip, name, text);
+			console.log("json error", nodeNr, ip, n.nodes[nodeNr].name, text);
 			callback(nodeNr); //also callback on error
 		}); 
 	} //fetchInfoAndCfg
@@ -1315,7 +1312,7 @@ function populateNodes(i,n)
 		for (let o of n.nodes) {
 			if (o.name) {
 				if (o.ip) { //in ap mode no ip...
-					fetchInfoAndCfg(o.ip, nnodes, -1, function(nodeNr) {
+					fetchInfoAndCfg(o.ip, nnodes, function(nodeNr) {
 						nodesDone++;
 						console.log("nodesDone", nodesDone, nodeNr, n.nodes.length, nnodes, n.nodes[nodeNr].name);
 						//if all done
@@ -3266,13 +3263,15 @@ function genPresets()
 //WLEDMM: utility function to load contents of file from FS (used in draw)
 function fetchAndExecute(url, name, parms, callback, callError = null)
 {
+	let errorCalled = false;
   fetch
   (url+name, {
     method: 'get'
   })
   .then(res => {
     if (!res.ok) {
-		callError("File " + name + " not found");
+		if (!errorCalled && callError) callError(parms, "File " + name + " not found");
+		errorCalled = true;
     	return "";
     }
     return res.text();
@@ -3281,7 +3280,8 @@ function fetchAndExecute(url, name, parms, callback, callError = null)
     callback(parms, text);
   })
   .catch(function (error) {
-	if (callError) callError(parms, "Error getting " + name);
+	if (!errorCalled && callError) callError(parms, "Error getting " + name);
+	errorCalled = true;
 	console.log(error);
   })
   .finally(() => {
