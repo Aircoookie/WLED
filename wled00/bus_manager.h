@@ -353,7 +353,7 @@ class BusSmartMatrix : public Bus {
       return true; // return !backgroundLayer->isSwapPending();
     }
     
-    // void setBrightness(uint8_t b, bool immediate);
+    void setBrightness(uint8_t b, bool immediate);
 
     // uint8_t getPins(uint8_t* pinArray) {} // todo
 
