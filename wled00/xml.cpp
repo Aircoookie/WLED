@@ -238,8 +238,8 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_MENU)
   {
-  #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
-    oappend(PSTR("gId('2dbtn').style.display='';"));
+  #ifdef WLED_DISABLE_2D // include only if 2D is not compiled in
+    oappend(PSTR("gId('2dbtn').style.display='none';"));
   #endif
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     oappend(PSTR("gId('dmxbtn').style.display='';"));
