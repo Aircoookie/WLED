@@ -637,12 +637,12 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) {
-		gId("filter0D").classList.remove('hide');
-		gId("filter1D").classList.add('hide');
+		//gId("filter0D").classList.remove('hide');
+		//gId("filter1D").classList.add('hide');
 		gId("filter2D").classList.add('hide');
 	} else {
-		gId("filter0D").classList.add('hide');
-		gId("filter1D").classList.remove('hide');
+		//gId("filter0D").classList.add('hide');
+		//gId("filter1D").classList.remove('hide');
 		gId("filter2D").classList.remove('hide');
 	}
 //	if (i.noaudio) {
@@ -2744,6 +2744,16 @@ function clean(c)
 	}
 }
 
+function filterFocus(e)
+{
+	let t = e.explicitOriginalTarget;
+	do {
+		if (t.id && (t.id === "fxFind")) { setTimeout(()=>{t.firstElementChild.focus()},150); return; }
+		t = t.parentElement;
+	} while (t.tagName !== "BODY");
+	setTimeout(()=>{gId('filters').classList.toggle('fade')},150);
+}
+
 function filterFx(o)
 {
 	if (!o) return;
@@ -2933,30 +2943,27 @@ function mergeDeep(target, ...sources)
 function tooltip()
 {
 	const elements = d.querySelectorAll("[tooltip]");
-  
 	elements.forEach((element)=>{
 		element.addEventListener("mouseover", ()=>{
 			const tooltip = d.createElement("span");
-  
 			tooltip.className = "tooltip";
 			tooltip.textContent = element.getAttribute("tooltip");
-	
+
 			let { top, left, width } = element.getBoundingClientRect();
-	
+
 			d.body.appendChild(tooltip);
-	
+
 			const { offsetHeight, offsetWidth } = tooltip;
 
-			const offset = element.classList.contains("sliderwrap") ? 6 : 12;
+			const offset = element.classList.contains("sliderwrap") ? 6 : 10;
 			top -= offsetHeight + offset;
 			left += (width - offsetWidth) / 2;
 
 			tooltip.style.top = top + "px";
 			tooltip.style.left = left + "px";
-	
 			tooltip.classList.add("visible");
 		});
-  
+
 		element.addEventListener("mouseout", ()=>{
 			const tooltip = d.querySelector('.tooltip');
 			tooltip.classList.remove("visible");

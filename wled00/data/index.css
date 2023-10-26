@@ -219,7 +219,7 @@ button {
 .pop-c span {
 	padding: 2px 6px;
 }
-  
+
 .search-icon {
 	position: absolute;
 	top: 8px;
@@ -463,6 +463,11 @@ button {
 .filter {
 	z-index: 1;
 	/*overflow: visible;*/
+	border-radius: 0 0 16px 16px;
+	max-width: 220px;
+	height: 54px;
+	line-height: 1.5;
+	padding-bottom: 8px;
 }
 
 /* New tooltip */
@@ -479,7 +484,7 @@ button {
 	border-radius: 6px;
 	z-index: 1;
 }
-  
+
  .tooltip::after {
 	content: "";
 	position: absolute;
@@ -1230,6 +1235,10 @@ TD .checkmark, TD .radiomark {
 	vertical-align: middle;
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
 	filter: grayscale(100%);
+}
+.filter .fchkl {
+	margin: 0 4px;
+	min-width: 20px;
 }
 
 .lbl-l {
