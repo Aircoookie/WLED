@@ -2746,14 +2746,12 @@ function clean(c)
 
 function filterFocus(e)
 {
-	//console.log(e);
 	let t = e.explicitOriginalTarget;
 	let f = gId("filters");
 	if (e.type === "focus") f.classList.remove('fade');	// immediately show (still has transition)
 	// compute sticky top (with delay for transition)
 	setTimeout(()=>{
 		let sti = parseInt(getComputedStyle(d.documentElement).getPropertyValue('--sti')) + (e.type === "focus" ? 1 : -1) * f.offsetHeight;
-		console.log(sti);
 		sCol('--sti', sti+"px");
 	}, 252);
 	if (e.type === "blur") {
