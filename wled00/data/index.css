@@ -34,6 +34,7 @@
 	--bhd: none;
 	--sgp: "block";
 	--bmt: 0;
+	--sti: 42px;
 }
 
 html {
@@ -457,7 +458,7 @@ button {
 	padding: 4px 2px;
 	position: relative;
 	opacity: 1;
-	transition: opacity .5s linear, height .5s, transform .5s;
+	transition: opacity .5s linear, height .25s, transform .25s;
 }
 
 .filter {
@@ -475,7 +476,7 @@ button {
 	position: absolute;
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity .4s ease, visibility .4s ease;
+	transition: opacity .25s ease, visibility .25s ease;
 	background-color: var(--c-5);
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 	color: var(--c-f);
@@ -1316,20 +1317,14 @@ TD .checkmark, TD .radiomark {
 	top: 42px;
 }
 
-#fxlist .lstI.selected {
-	top: 84px;
-}
-
-#fxlist .lstI.sticky {
-	top: 42px;
-}
-
+#fxlist .lstI.selected,
 #pallist .lstI.selected {
-	top: 84px;
+	top: calc(var(--sti) + 42px);
 }
 
+#fxlist .lstI.sticky,
 #pallist .lstI.sticky {
-	top: 42px;
+	top: var(--sti);
 }
 
 /* list item content */

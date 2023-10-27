@@ -2746,12 +2746,23 @@ function clean(c)
 
 function filterFocus(e)
 {
+	//console.log(e);
 	let t = e.explicitOriginalTarget;
-	do {
-		if (t.id && (t.id === "fxFind")) { setTimeout(()=>{t.firstElementChild.focus()},150); return; }
-		t = t.parentElement;
-	} while (t.tagName !== "BODY");
-	setTimeout(()=>{gId('filters').classList.toggle('fade')},150);
+	let f = gId("filters");
+	if (e.type === "focus") f.classList.remove('fade');	// immediately show (still has transition)
+	// compute sticky top (with delay for transition)
+	setTimeout(()=>{
+		let sti = parseInt(getComputedStyle(d.documentElement).getPropertyValue('--sti')) + (e.type === "focus" ? 1 : -1) * f.offsetHeight;
+		console.log(sti);
+		sCol('--sti', sti+"px");
+	}, 252);
+	if (e.type === "blur") {
+		do {
+			if (t.id && (t.id === "fxFind")) { setTimeout(()=>{t.firstElementChild.focus();},150); return; }
+			t = t.parentElement;
+		} while (t.tagName !== "BODY");
+		setTimeout(()=>{f.classList.add('fade');},255);	// wait with hiding
+	}
 }
 
 function filterFx(o)
