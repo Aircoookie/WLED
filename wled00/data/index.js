@@ -1421,7 +1421,7 @@ function readState(s,command=false)
 
 	if (s.seg.length>2) d.querySelectorAll(".pop").forEach((e)=>{e.classList.remove("hide");});
 
-	var cd = gId('csl').children;
+	var cd = gId('csl').querySelectorAll("button");
 	for (let e = cd.length-1; e >= 0; e--) {
 		cd[e].dataset.r = i.col[e][0];
 		cd[e].dataset.g = i.col[e][1];
@@ -1541,7 +1541,7 @@ function setEffectParameters(idx)
 	var cslLabel = '';
 	var sep = '';
 	var cslCnt = 0, oCsel = csel;
-	for (let i=0; i<gId("csl").children.length; i++) {
+	for (let i=0; i<gId("csl").querySelectorAll("button"); i++) {
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
 		if (coOnOff.length>i && coOnOff[i] != "") {
@@ -2964,7 +2964,7 @@ function tooltip()
 
 			const { offsetHeight, offsetWidth } = tooltip;
 
-			const offset = element.classList.contains("sliderwrap") ? 6 : 10;
+			const offset = element.classList.contains("sliderwrap") ? 4 : 10;
 			top -= offsetHeight + offset;
 			left += (width - offsetWidth) / 2;
 

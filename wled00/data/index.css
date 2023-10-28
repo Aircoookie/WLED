@@ -484,13 +484,13 @@ button {
 	padding: 8px 16px;
 	border-radius: 6px;
 	z-index: 1;
+	pointer-events: none;
 }
 
  .tooltip::after {
 	content: "";
 	position: absolute;
-	border: 8px;
-	border-style: solid;
+	border: 8px solid;
 	border-color: var(--c-5) transparent transparent transparent;
 	top: 100%;
 	left: calc(50% - 8px);
