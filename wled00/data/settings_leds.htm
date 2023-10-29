@@ -26,7 +26,9 @@
 			d.body.appendChild(scE);
 			// success event 
 			scE.addEventListener("load", () => {
-				GetV();checkSi();setABL();
+				GetV();
+				setABL();
+				checkSi();
 				if (d.um_p[0]==-1) d.um_p.shift();
 			});
 			// error event
