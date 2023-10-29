@@ -33,9 +33,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //DEBUG_PRINTLN("-- JSON deserialize segment.");
   Segment& seg = strip.getSegment(id);
-  //DEBUG_PRINTF("--  Original segment: %p\n", &seg);
-  Segment prev = seg; //make a backup so we can tell if something changed
-  //DEBUG_PRINTF("--  Duplicate segment: %p\n", &prev);
+  //DEBUG_PRINTF("--  Original segment: %p (%p)\n", &seg, seg.data);
+  Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
+  //DEBUG_PRINTF("--  Duplicate segment: %p (%p)\n", &prev, prev.data);
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {

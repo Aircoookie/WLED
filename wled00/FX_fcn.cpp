@@ -90,18 +90,21 @@ Segment::Segment(const Segment &orig) {
   //DEBUG_PRINTF("-- Copy segment constructor: %p -> %p\n", &orig, this);
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
   _t = nullptr; // copied segment cannot be in transition
-  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); } else { name = nullptr; }
-  if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); } else { data = nullptr; _dataLen = 0; }
+  name = nullptr;
+  data = nullptr;
+  _dataLen = 0;
+  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+  if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
 }
 
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
   //DEBUG_PRINTF("-- Move segment constructor: %p -> %p\n", &orig, this);
   memcpy((void*)this, (void*)&orig, sizeof(Segment));
+  orig._t   = nullptr; // old segment cannot be in transition any more
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
-  orig._t   = nullptr; // old segment cannot be in transition any more
 }
 
 // copy assignment
@@ -110,14 +113,7 @@ Segment& Segment::operator= (const Segment &orig) {
   if (this != &orig) {
     // clean destination
     if (name) { delete[] name; name = nullptr; }
-    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-    if (_t) {
-      #ifndef WLED_DISABLE_MODE_BLEND
-      if (_t->_segT._dataT) free(_t->_segT._dataT);
-      #endif
-      delete _t;
-      _t = nullptr; // copied segment cannot be in transition
-    }
+    stopTransition();
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -125,6 +121,7 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     // copy source data
+    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   }
   return *this;
@@ -135,13 +132,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
   //DEBUG_PRINTF("-- Moving segment: %p -> %p\n", &orig, this);
   if (this != &orig) {
     if (name) { delete[] name; name = nullptr; } // free old name
-    if (_t) {
-      #ifndef WLED_DISABLE_MODE_BLEND
-      if (_t->_segT._dataT) free(_t->_segT._dataT);
-      #endif
-      delete _t;
-      _t = nullptr;
-    }
+    stopTransition();
     deallocateData(); // free old runtime data
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
@@ -312,7 +303,7 @@ void Segment::startTransition(uint16_t dur) {
     if (_dataLen > 0 && data) {
       _t->_segT._dataT = (byte *)malloc(_dataLen);
       if (_t->_segT._dataT) {
-        //DEBUG_PRINTF("--  Allocated duplicate data (%d): %p\n", _dataLen, _t->_segT._dataT);
+        //DEBUG_PRINTF("--  Allocated duplicate data (%d) for %p: %p\n", _dataLen, this, _t->_segT._dataT);
         memcpy(_t->_segT._dataT, data, _dataLen);
         _t->_segT._dataLenT = _dataLen;
       }
@@ -330,7 +321,7 @@ void Segment::stopTransition() {
   if (isInTransition()) {
     #ifndef WLED_DISABLE_MODE_BLEND
     if (_t->_segT._dataT && _t->_segT._dataLenT > 0) {
-      //DEBUG_PRINTF("--  Released duplicate data (%d): %p\n", _t->_segT._dataLenT, _t->_segT._dataT);
+      //DEBUG_PRINTF("--  Released duplicate data (%d) for %p: %p\n", _t->_segT._dataLenT, this, _t->_segT._dataT);
       free(_t->_segT._dataT);
       _t->_segT._dataT = nullptr;
       _t->_segT._dataLenT = 0;

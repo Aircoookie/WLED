@@ -664,7 +664,7 @@ class AudioReactive : public Usermod {
     void removeAudioPalettes(void);
     void createAudioPalettes(void);
     CRGB getCRGBForBand(int x, int pal);
-    void fillAudioPalette(int pal);
+    void fillAudioPalettes(void);
 
     ////////////////////
     // Debug support  //
@@ -1371,7 +1371,7 @@ class AudioReactive : public Usermod {
         lastTime = millis();
       }
 
-      for (int i=0; i<MAX_PALETTES; i++) fillAudioPalette(i);
+      fillAudioPalettes();
     }
 
 
@@ -1859,7 +1859,7 @@ class AudioReactive : public Usermod {
 
 void AudioReactive::removeAudioPalettes(void) {
   DEBUG_PRINTLN(F("Removing audio palettes."));
-  while (palettes) {
+  while (palettes>0) {
     strip.customPalettes.pop_back();
     DEBUG_PRINTLN(palettes);
     palettes--;
@@ -1869,6 +1869,7 @@ void AudioReactive::removeAudioPalettes(void) {
 
 void AudioReactive::createAudioPalettes(void) {
   DEBUG_PRINT(F("Total # of palettes: ")); DEBUG_PRINTLN(strip.customPalettes.size());
+  if (palettes) return;
   DEBUG_PRINTLN(F("Adding audio palettes."));
   for (int i=0; i<MAX_PALETTES; i++)
     if (strip.customPalettes.size() < 10) {
@@ -1907,36 +1908,39 @@ CRGB AudioReactive::getCRGBForBand(int x, int pal) {
   return value;
 }
 
-void AudioReactive::fillAudioPalette(int pal) {
-  if (pal>=palettes) return; // palette does not exist
+void AudioReactive::fillAudioPalettes() {
+  if (!palettes) return;
+  size_t lastCustPalette = strip.customPalettes.size();
+  if (lastCustPalette >= palettes) lastCustPalette -= palettes;
+  for (size_t pal=0; pal<palettes; pal++) {
+    uint8_t tcp[16];  // Needs to be 4 times however many colors are being used.
+                      // 3 colors = 12, 4 colors = 16, etc.
 
-  uint8_t tcp[16];  // Needs to be 4 times however many colors are being used.
-                    // 3 colors = 12, 4 colors = 16, etc.
+    tcp[0] = 0;  // anchor of first color - must be zero
+    tcp[1] = 0;
+    tcp[2] = 0;
+    tcp[3] = 0;
+    
+    CRGB rgb = getCRGBForBand(1, pal);
+    tcp[4] = 1;  // anchor of first color
+    tcp[5] = rgb.r;
+    tcp[6] = rgb.g;
+    tcp[7] = rgb.b;
+    
+    rgb = getCRGBForBand(128, pal);
+    tcp[8] = 128;
+    tcp[9] = rgb.r;
+    tcp[10] = rgb.g;
+    tcp[11] = rgb.b;
+    
+    rgb = getCRGBForBand(255, pal);
+    tcp[12] = 255;  // anchor of last color - must be 255
+    tcp[13] = rgb.r;
+    tcp[14] = rgb.g;
+    tcp[15] = rgb.b;
 
-  tcp[0] = 0;  // anchor of first color - must be zero
-  tcp[1] = 0;
-  tcp[2] = 0;
-  tcp[3] = 0;
-  
-  CRGB rgb = getCRGBForBand(1, pal);
-  tcp[4] = 1;  // anchor of first color
-  tcp[5] = rgb.r;
-  tcp[6] = rgb.g;
-  tcp[7] = rgb.b;
-  
-  rgb = getCRGBForBand(128, pal);
-  tcp[8] = 128;
-  tcp[9] = rgb.r;
-  tcp[10] = rgb.g;
-  tcp[11] = rgb.b;
-  
-  rgb = getCRGBForBand(255, pal);
-  tcp[12] = 255;  // anchor of last color - must be 255
-  tcp[13] = rgb.r;
-  tcp[14] = rgb.g;
-  tcp[15] = rgb.b;
-
-  strip.customPalettes[strip.customPalettes.size()-1-palettes+pal].loadDynamicGradientPalette(tcp);
+    strip.customPalettes[lastCustPalette+pal].loadDynamicGradientPalette(tcp);
+  }
 }
 
 // strings to reduce flash memory usage (used more than twice)
