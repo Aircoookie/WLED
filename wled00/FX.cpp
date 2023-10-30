@@ -2600,9 +2600,27 @@ uint16_t mode_twinklecat()
 static const char _data_FX_MODE_TWINKLECAT[] PROGMEM = "Twinklecat@!,Twinkle rate,,,,Cool;;!";
 
 
-//inspired by https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectBlinkingHalloweenEyes
 uint16_t mode_halloween_eyes()
 {
+  enum class eyeState : uint8_t {
+    initializeOn = 0,
+    on,
+    blink,
+    initializeOff,
+    off,
+
+    count
+  };
+  struct EyeData {
+    eyeState state;
+    uint8 color;
+    uint16_t startPos;
+    uint16_t duration;
+    uint32_t startTime;
+    uint8_t blinkDuration;
+    uint32_t blinkStartTime;
+  };
+
   if (SEGLEN == 1) return mode_static();
   const uint16_t maxWidth = strip.isMatrix ? SEGMENT.virtualWidth() : SEGLEN;
   const uint16_t HALLOWEEN_EYE_SPACE = MAX(2, strip.isMatrix ? SEGMENT.virtualWidth()>>4: SEGLEN>>5);
@@ -2610,57 +2628,109 @@ uint16_t mode_halloween_eyes()
   uint16_t eyeLength = (2*HALLOWEEN_EYE_WIDTH) + HALLOWEEN_EYE_SPACE;
   if (eyeLength >= maxWidth) return mode_static(); //bail if segment too short
 
+  if (!SEGENV.allocateData(sizeof(EyeData))) return mode_static(); //allocation failed
+  EyeData& data = *reinterpret_cast<EyeData*>(SEGENV.data);
+
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1)); //fill background
 
-  uint8_t state = SEGENV.aux1 >> 8;
-  uint16_t stateTime = SEGENV.call;
-  if (stateTime == 0) stateTime = 2000;
+  data.state = static_cast<eyeState>(static_cast<uint8_t>(data.state) % static_cast<uint8_t>(eyeState::count));
+  uint16_t duration = data.duration;
+  duration = max(uint16_t{1u}, duration);
+  const uint32_t elapsedTime = strip.now - data.startTime;
 
-  if (state == 0) { //spawn eyes
-    SEGENV.aux0 = random16(0, maxWidth - eyeLength - 1); //start pos
-    SEGENV.aux1 = random8(); //color
-    if (strip.isMatrix) SEGMENT.offset = random16(SEGMENT.virtualHeight()-1); // a hack: reuse offset since it is not used in matrices
-    state = 1;
-  }
+  switch (data.state) {
+    case eyeState::initializeOn: {
+      data.startPos = random16(0, maxWidth - eyeLength - 1);
+      data.color = random8();
+      if (strip.isMatrix) SEGMENT.offset = random16(SEGMENT.virtualHeight()-1); // a hack: reuse offset since it is not used in matrices
+      duration = 128u + random16(SEGMENT.intensity*64u);
+      data.duration = duration;
+      data.state = eyeState::on;
+      [[fallthrough]];
+    }
+    case eyeState::on: {
+      uint16_t start2ndEye = data.startPos + HALLOWEEN_EYE_WIDTH + HALLOWEEN_EYE_SPACE;
+      duration = min(duration, static_cast<uint16_t>(128u + (SEGMENT.intensity*64u)));
 
-  if (state < 2) { //fade eyes
-    uint16_t startPos    = SEGENV.aux0;
-    uint16_t start2ndEye = startPos + HALLOWEEN_EYE_WIDTH + HALLOWEEN_EYE_SPACE;
-
-    uint32_t fadestage = (strip.now - SEGENV.step)*255 / stateTime;
-    if (fadestage > 255) fadestage = 255;
-    uint32_t c = color_blend(SEGMENT.color_from_palette(SEGENV.aux1 & 0xFF, false, false, 0), SEGCOLOR(1), fadestage);
-
-    for (int i = 0; i < HALLOWEEN_EYE_WIDTH; i++) {
-      if (strip.isMatrix) {
-        SEGMENT.setPixelColorXY(startPos    + i, SEGMENT.offset, c);
-        SEGMENT.setPixelColorXY(start2ndEye + i, SEGMENT.offset, c);
-      } else {
-        SEGMENT.setPixelColor(startPos    + i, c);
-        SEGMENT.setPixelColor(start2ndEye + i, c);
+      constexpr uint32_t minimumOnTimeBegin = 1024u;
+      constexpr uint32_t minimumOnTimeEnd = 1024u;
+      const uint32_t fadeInAnimationState = elapsedTime * static_cast<uint32_t>(256*8) / duration;
+      const uint32_t backgroundColor = SEGCOLOR(1);
+      const uint32_t eyeColor = SEGMENT.color_from_palette(data.color, false, false, 0);
+      uint32_t c = eyeColor;
+      if (fadeInAnimationState < 256u) {
+        c = color_blend(backgroundColor, eyeColor, fadeInAnimationState);
+      } else if (elapsedTime > minimumOnTimeBegin) {
+        const uint32_t remainingTime = (elapsedTime >= duration) ? 0u : (duration - elapsedTime);
+        if (remainingTime > minimumOnTimeEnd) {
+          if (random8() < 4u)
+          {
+            c = backgroundColor;
+            data.state = eyeState::blink;
+            data.blinkDuration = random8(8, 128);
+            data.blinkStartTime = strip.now;
+          }
+        }
       }
+
+      if (c != backgroundColor) {
+        for (int i = 0; i < HALLOWEEN_EYE_WIDTH; i++) {
+          if (strip.isMatrix) {
+            SEGMENT.setPixelColorXY(data.startPos + i, SEGMENT.offset, c);
+            SEGMENT.setPixelColorXY(start2ndEye   + i, SEGMENT.offset, c);
+          } else {
+            SEGMENT.setPixelColor(data.startPos + i, c);
+            SEGMENT.setPixelColor(start2ndEye   + i, c);
+          }
+        }
+      }
+      break;
+    }
+    case eyeState::blink: {
+      const uint32_t elapsedBlinkTime = strip.now - data.blinkStartTime;
+      if (elapsedBlinkTime >= data.blinkDuration) {
+        data.state = eyeState::on;
+      }
+      break;
+    }
+    case eyeState::initializeOff: {
+      const uint16_t eyeOffTimeBase = SEGMENT.speed*128u;
+      duration = eyeOffTimeBase + random16(eyeOffTimeBase);
+      data.duration = duration;
+      data.state = eyeState::off;
+      [[fallthrough]];
+    }
+    case eyeState::off: {
+      const uint16_t eyeOffTimeBase = SEGMENT.speed*128u;
+      duration = min(duration, static_cast<uint16_t>(2u * eyeOffTimeBase));
+      break;
+    }
+    case eyeState::count: {
+      data.state = eyeState::initializeOn;
+      break;
     }
   }
 
-  if (strip.now - SEGENV.step > stateTime) {
-    state++;
-    if (state > 2) state = 0;
-
-    if (state < 2) {
-      stateTime = 100 + SEGMENT.intensity*10; //eye fade time
-    } else {
-      uint16_t eyeOffTimeBase = (256 - SEGMENT.speed)*10;
-      stateTime = eyeOffTimeBase + random16(eyeOffTimeBase);
+  if (elapsedTime > duration) {
+    switch (data.state) {
+      case eyeState::initializeOn:
+      case eyeState::on:
+      case eyeState::blink:
+        data.state = eyeState::initializeOff;
+        break;
+      case eyeState::initializeOff:
+      case eyeState::off:
+      case eyeState::count:
+      default:
+        data.state = eyeState::initializeOn;
+        break;
     }
-    SEGENV.step = strip.now;
-    SEGENV.call = stateTime;
+    data.startTime = strip.now;
   }
-
-  SEGENV.aux1 = (SEGENV.aux1 & 0xFF) + (state << 8); //save state
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HALLOWEEN_EYES[] PROGMEM = "Halloween Eyes@Duration,Eye fade time,,,,,Overlay;!,!;!;12";
+static const char _data_FX_MODE_HALLOWEEN_EYES[] PROGMEM = "Halloween Eyes@Eye off time,Eye on time,,,,,Overlay;!,!;!;12";
 
 
 //Speed slider sets amount of LEDs lit, intensity sets unlit

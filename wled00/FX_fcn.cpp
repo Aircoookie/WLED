@@ -1261,7 +1261,7 @@ void WS2812FX::service() {
           Segment::modeBlend(false);          // unset semaphore
         }
 #endif
-        if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
+        seg.call++;
         if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
       }
 
