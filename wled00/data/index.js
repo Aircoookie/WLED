@@ -232,6 +232,7 @@ function onLoad()
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
 
+	tooltip();
 	resetPUtil();
 
 	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
@@ -2974,9 +2975,11 @@ function tooltip()
 		});
 
 		element.addEventListener("mouseout", ()=>{
-			const tooltip = d.querySelector('.tooltip');
-			tooltip.classList.remove("visible");
-			d.body.removeChild(tooltip);
+			const tooltips = d.querySelectorAll('.tooltip');
+			tooltips.forEach((tooltip)=>{
+				tooltip.classList.remove("visible");
+				d.body.removeChild(tooltip);
+			});
 		});
 	});
 };
@@ -2992,5 +2995,3 @@ _C.addEventListener('touchstart', lock, false);
 _C.addEventListener('mouseout', move, false);
 _C.addEventListener('mouseup', move, false);
 _C.addEventListener('touchend', move, false);
-
-d.addEventListener('DOMContentLoaded', tooltip);

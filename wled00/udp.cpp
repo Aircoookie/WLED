@@ -533,6 +533,7 @@ void handleNotifications()
   //wled notifier, ignore if realtime packets active
   if (udpIn[0] == 0 && !realtimeMode && receiveGroups)
   {
+    DEBUG_PRINT(F("UDP notification from: ")); DEBUG_PRINTLN(notifierUdp.remoteIP());
     parseNotifyPacket(udpIn);
     return;
   }
