@@ -7,7 +7,7 @@
 	<script>
 	var d = document;
 	var loc = false, locip, locproto = "http:";
-	var initial_ds, initial_st, initial_su;
+	var initial_ds, initial_st, initial_su, oldUrl;
 	var sett = null;
 	var l = {
 		"comp":{
@@ -37,9 +37,9 @@
 			},
 			"bg":{
 				"url":"BG image URL",
-				"random":"Random BG image",
-				"randomGrayscale":"Grayscale",
-				"randomBlur":"Blur"
+				"rnd":"Random BG image",
+				"rndGrayscale":"Grayscale",
+				"rndBlur":"Blur"
 			},
 			"color":{
 				"bg":"BG HEX color"
@@ -75,7 +75,7 @@
 	function addRec(s, path = "", label = null)
 	{
 		var str = "";
-		for (i in s)
+		for (let i in s)
 		{
 			var fk = path + (path?'_':'') + i;
 			if (isObject(s[i])) {
@@ -119,7 +119,11 @@
 		str = addRec(s,"",l);
 		
 		gId('gen').innerHTML = str;
-		randomBg();
+		if (gId('theme_bg_rnd').checked) {
+			oldUrl = "";
+			toggle("Image");
+			randomBg();
+		} else oldUrl = gId("theme_bg_url").value;
 	}
 	function GetLS()
 	{
@@ -226,18 +230,14 @@
 
 	// random BG image
 	function randomBg() {
-		if (gId("theme_bg_random").checked) {
-			let url = "https://picsum.photos/1920/1080";
-			if (gId("theme_bg_randomGrayscale").checked) url += "?grayscale";
-			if (gId("theme_bg_randomBlur").checked) url += (url.includes("?") ? "&" : "?") + "blur";
-			gId("theme_bg_url").value = url;
-			gId("bg_img_url").style.display = "none";
-			gId("bg_img_url_settings").style.display = "";
-		} else {
-			gId("theme_bg_url").value = "";
-			gId("bg_img_url").style.display = "";
-			gId("bg_img_url_settings").style.display = "none";
+		let url = oldUrl;
+		let t = "theme_bg_rnd";
+		if (gId(t).checked) {
+			url = "https://picsum.photos/1920/1080";
+			if (gId(`${t}Grayscale`).checked) url += "?grayscale";
+			if (gId(`${t}Blur`).checked) url += (url.includes("?") ? "&" : "?") + "blur";
 		}
+		gId("theme_bg_url").value = url;
 	}
 	function uploadFile(fO,name) {
 		var req = new XMLHttpRequest();
@@ -286,16 +286,15 @@
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_bg" class="agi"><br>
 		<span class="l"></span>: <input type="text" id="theme_color_bg" maxlength="9" class="agi"><br>
-		<div id="bg_img_url">
+		<span class="l"></span>: <input type="checkbox" id="theme_bg_rnd" class="agi cb" onchange="randomBg();toggle('Image');">
+		<div id="Image">
 			<span class="l"></span>: <input type="text" id="theme_bg_url" class="agi"><br>
 		</div>
-		<span class="l"></span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="randomBg()">
-		<div id="bg_img_url_settings">
+		<div id="NoImage" class="hide">
 			<h4>Random BG image settings</h4>
-			<span class="l"></span>: <input type="checkbox" id="theme_bg_randomGrayscale" class="agi cb" onchange="randomBg()"><br>
-			<span class="l"></span>: <input type="checkbox" id="theme_bg_randomBlur" class="agi cb" onchange="randomBg()"><br>
+			<span class="l"></span>: <input type="checkbox" id="theme_bg_rndGrayscale" class="agi cb" onchange="randomBg()"><br>
+			<span class="l"></span>: <input type="checkbox" id="theme_bg_rndBlur" class="agi cb" onchange="randomBg()"><br>
 		</div>
-		<br>
 		<input id="theme_base" class="agi" style="display:none">
 		<span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>
 		<div id="skin">Custom CSS: <input type="file" name="data" accept=".css"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/skin.css');"><br></div>
