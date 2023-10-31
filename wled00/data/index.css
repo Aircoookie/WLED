@@ -34,6 +34,7 @@
 	--bhd: none;
 	--sgp: "block";
 	--bmt: 0;
+	--sti: 42px;
 }
 
 html {
@@ -219,7 +220,7 @@ button {
 .pop-c span {
 	padding: 2px 6px;
 }
-  
+
 .search-icon {
 	position: absolute;
 	top: 8px;
@@ -457,12 +458,17 @@ button {
 	padding: 4px 2px;
 	position: relative;
 	opacity: 1;
-	transition: opacity .5s linear, height .5s, transform .5s;
+	transition: opacity .5s linear, height .25s, transform .25s;
 }
 
 .filter {
 	z-index: 1;
 	/*overflow: visible;*/
+	border-radius: 0 0 16px 16px;
+	max-width: 220px;
+	height: 54px;
+	line-height: 1.5;
+	padding-bottom: 8px;
 }
 
 /* New tooltip */
@@ -470,7 +476,7 @@ button {
 	position: absolute;
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity .4s ease, visibility .4s ease;
+	transition: opacity .25s ease, visibility .25s ease;
 	background-color: var(--c-5);
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 	color: var(--c-f);
@@ -478,13 +484,13 @@ button {
 	padding: 8px 16px;
 	border-radius: 6px;
 	z-index: 1;
+	pointer-events: none;
 }
-  
+
  .tooltip::after {
 	content: "";
 	position: absolute;
-	border: 8px;
-	border-style: solid;
+	border: 8px solid;
 	border-color: var(--c-5) transparent transparent transparent;
 	top: 100%;
 	left: calc(50% - 8px);
@@ -1231,6 +1237,10 @@ TD .checkmark, TD .radiomark {
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
 	filter: grayscale(100%);
 }
+.filter .fchkl {
+	margin: 0 4px;
+	min-width: 20px;
+}
 
 .lbl-l {
 	font-size: 13px;
@@ -1307,20 +1317,14 @@ TD .checkmark, TD .radiomark {
 	top: 42px;
 }
 
-#fxlist .lstI.selected {
-	top: 84px;
-}
-
-#fxlist .lstI.sticky {
-	top: 42px;
-}
-
+#fxlist .lstI.selected,
 #pallist .lstI.selected {
-	top: 84px;
+	top: calc(var(--sti) + 42px);
 }
 
+#fxlist .lstI.sticky,
 #pallist .lstI.sticky {
-	top: 42px;
+	top: var(--sti);
 }
 
 /* list item content */

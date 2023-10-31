@@ -232,6 +232,7 @@ function onLoad()
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
 
+	tooltip();
 	resetPUtil();
 
 	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
@@ -637,12 +638,12 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) {
-		gId("filter0D").classList.remove('hide');
-		gId("filter1D").classList.add('hide');
+		//gId("filter0D").classList.remove('hide');
+		//gId("filter1D").classList.add('hide');
 		gId("filter2D").classList.add('hide');
 	} else {
-		gId("filter0D").classList.add('hide');
-		gId("filter1D").classList.remove('hide');
+		//gId("filter0D").classList.add('hide');
+		//gId("filter1D").classList.remove('hide');
 		gId("filter2D").classList.remove('hide');
 	}
 //	if (i.noaudio) {
@@ -1421,7 +1422,7 @@ function readState(s,command=false)
 
 	if (s.seg.length>2) d.querySelectorAll(".pop").forEach((e)=>{e.classList.remove("hide");});
 
-	var cd = gId('csl').children;
+	var cd = gId('csl').querySelectorAll("button");
 	for (let e = cd.length-1; e >= 0; e--) {
 		cd[e].dataset.r = i.col[e][0];
 		cd[e].dataset.g = i.col[e][1];
@@ -1541,7 +1542,7 @@ function setEffectParameters(idx)
 	var cslLabel = '';
 	var sep = '';
 	var cslCnt = 0, oCsel = csel;
-	for (let i=0; i<gId("csl").children.length; i++) {
+	for (let i=0; i<gId("csl").querySelectorAll("button"); i++) {
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
 		if (coOnOff.length>i && coOnOff[i] != "") {
@@ -2744,6 +2745,25 @@ function clean(c)
 	}
 }
 
+function filterFocus(e)
+{
+	let t = e.explicitOriginalTarget;
+	let f = gId("filters");
+	if (e.type === "focus") f.classList.remove('fade');	// immediately show (still has transition)
+	// compute sticky top (with delay for transition)
+	setTimeout(()=>{
+		let sti = parseInt(getComputedStyle(d.documentElement).getPropertyValue('--sti')) + (e.type === "focus" ? 1 : -1) * f.offsetHeight;
+		sCol('--sti', sti+"px");
+	}, 252);
+	if (e.type === "blur") {
+		do {
+			if (t.id && (t.id === "fxFind")) { setTimeout(()=>{t.firstElementChild.focus();},150); return; }
+			t = t.parentElement;
+		} while (t.tagName !== "BODY");
+		setTimeout(()=>{f.classList.add('fade');},255);	// wait with hiding
+	}
+}
+
 function filterFx(o)
 {
 	if (!o) return;
@@ -2933,34 +2953,33 @@ function mergeDeep(target, ...sources)
 function tooltip()
 {
 	const elements = d.querySelectorAll("[tooltip]");
-  
 	elements.forEach((element)=>{
 		element.addEventListener("mouseover", ()=>{
 			const tooltip = d.createElement("span");
-  
 			tooltip.className = "tooltip";
 			tooltip.textContent = element.getAttribute("tooltip");
-	
+
 			let { top, left, width } = element.getBoundingClientRect();
-	
+
 			d.body.appendChild(tooltip);
-	
+
 			const { offsetHeight, offsetWidth } = tooltip;
 
-			const offset = element.classList.contains("sliderwrap") ? 6 : 12;
+			const offset = element.classList.contains("sliderwrap") ? 4 : 10;
 			top -= offsetHeight + offset;
 			left += (width - offsetWidth) / 2;
 
 			tooltip.style.top = top + "px";
 			tooltip.style.left = left + "px";
-	
 			tooltip.classList.add("visible");
 		});
-  
+
 		element.addEventListener("mouseout", ()=>{
-			const tooltip = d.querySelector('.tooltip');
-			tooltip.classList.remove("visible");
-			d.body.removeChild(tooltip);
+			const tooltips = d.querySelectorAll('.tooltip');
+			tooltips.forEach((tooltip)=>{
+				tooltip.classList.remove("visible");
+				d.body.removeChild(tooltip);
+			});
 		});
 	});
 };
@@ -2976,5 +2995,3 @@ _C.addEventListener('touchstart', lock, false);
 _C.addEventListener('mouseout', move, false);
 _C.addEventListener('mouseup', move, false);
 _C.addEventListener('touchend', move, false);
-
-d.addEventListener('DOMContentLoaded', tooltip);
