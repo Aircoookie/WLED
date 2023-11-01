@@ -40,7 +40,7 @@ bool isIp(String str) {
 
 void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (!correctPIN) {
-    if (final) request->send(500, "text/plain", FPSTR(s_unlock_cfg));
+    if (final) request->send(401, "text/plain", FPSTR(s_unlock_cfg));
     return;
   }
   if (!index) {
@@ -86,7 +86,7 @@ void createEditHandler(bool enable) {
     #endif
   } else {
     editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_cfg), 254);
+      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_cfg), 254);
     });
   }
 }
@@ -201,7 +201,7 @@ void initServer()
       verboseResponse = deserializeState(root);
     } else {
       if (!correctPIN && strlen(settingsPIN)>0) {
-        request->send(403, "application/json", F("{\"error\":1}")); // ERR_DENIED
+        request->send(401, "application/json", F("{\"error\":1}")); // ERR_DENIED
         releaseJSONBufferLock();
         return;
       }
@@ -211,6 +211,8 @@ void initServer()
 
     if (verboseResponse) {
       if (!isConfig) {
+        lastInterfaceUpdate = millis(); // prevent WS update until cooldown
+        interfaceUpdateCallMode = CALL_MODE_WS_SEND; // schedule WS update
         serveJson(request); return; //if JSON contains "v"
       } else {
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
@@ -282,7 +284,7 @@ void initServer()
   //init ota page
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
     if (otaLock) {
-      serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254);
+      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254);
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
@@ -292,7 +294,11 @@ void initServer()
       serveSettings(request, true); // handle PIN page POST request
       return;
     }
-    if (Update.hasError() || otaLock) {
+    if (otaLock) {
+      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254);
+      return;
+    }
+    if (Update.hasError()) {
       serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
     } else {
       serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131);
@@ -533,7 +539,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   }
   if (subPage > 0 && !correctPIN && strlen(settingsPIN)>0) {
     strcpy_P(buf, PSTR("alert('PIN incorrect.');"));
-    request->send(403, "application/javascript", buf);
+    request->send(401, "application/javascript", buf);
     return;
   }
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
@@ -575,7 +581,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   // if OTA locked or too frequent PIN entry requests fail hard
   if ((subPage == SUBPAGE_WIFI && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < PIN_RETRY_COOLDOWN))
   {
-    serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254); return;
+    serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254); return;
   }
 
   if (post) { //settings/set POST request, saving
@@ -605,7 +611,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       if (!s2[0]) strcpy_P(s2, s_redirecting);
 
       bool redirectAfter9s = (subPage == SUBPAGE_WIFI || ((subPage == SUBPAGE_SEC || subPage == SUBPAGE_UM) && doReboot));
-      serveMessage(request, 200, s, s2, redirectAfter9s ? 129 : (correctPIN ? 1 : 3));
+      serveMessage(request, (correctPIN ? 200 : 401), s, s2, redirectAfter9s ? 129 : (correctPIN ? 1 : 3));
       return;
     }
   }
@@ -633,7 +639,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
       return;
     }
-    case SUBPAGE_PINREQ  : response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
+    case SUBPAGE_PINREQ  : response = request->beginResponse_P(401, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
     case SUBPAGE_CSS     : response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
     case SUBPAGE_JS      : serveSettingsJS(request); return;
     case SUBPAGE_WELCOME : response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;

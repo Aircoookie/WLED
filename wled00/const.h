@@ -166,7 +166,7 @@
 #define CALL_MODE_NO_NOTIFY      5
 #define CALL_MODE_FX_CHANGED     6     //no longer used
 #define CALL_MODE_HUE            7
-#define CALL_MODE_PRESET_CYCLE   8
+#define CALL_MODE_PRESET_CYCLE   8     //no longer used
 #define CALL_MODE_BLYNK          9     //no longer used
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
@@ -313,10 +313,9 @@
 #define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
 #define SEG_OPTION_FREEZE         4            //Segment contents will not be refreshed
 #define SEG_OPTION_RESET          5            //Segment runtime requires reset
-#define SEG_OPTION_TRANSITIONAL   6
-#define SEG_OPTION_REVERSED_Y     7
-#define SEG_OPTION_MIRROR_Y       8
-#define SEG_OPTION_TRANSPOSED     9
+#define SEG_OPTION_REVERSED_Y     6
+#define SEG_OPTION_MIRROR_Y       7
+#define SEG_OPTION_TRANSPOSED     8
 
 //Segment differs return byte
 #define SEG_DIFFERS_BRI        0x01 // opacity
@@ -345,6 +344,7 @@
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_IRLOAD   13  // It was attempted to load an IR JSON cmd, but the "ir.json" file does not exist
+#define ERR_FS_RMLOAD   14  // It was attempted to load an remote JSON cmd, but the "remote.json" file does not exist
 #define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
 #define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)

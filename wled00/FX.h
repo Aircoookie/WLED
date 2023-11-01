@@ -109,20 +109,15 @@
 #define PINK       (uint32_t)0xFF1493
 #define ULTRAWHITE (uint32_t)0xFFFFFFFF
 #define DARKSLATEGRAY (uint32_t)0x2F4F4F
-#define DARKSLATEGREY (uint32_t)0x2F4F4F
+#define DARKSLATEGREY DARKSLATEGRAY
 
-// options
-// bit    7: segment is in transition mode
-// bits 4-6: TBD
-// bit    3: mirror effect within segment
-// bit    2: segment is on
-// bit    1: reverse segment
-// bit    0: segment is selected
+// segment options
 #define NO_OPTIONS   (uint16_t)0x0000
-#define TRANSPOSED   (uint16_t)0x0400 // rotated 90deg & reversed
-#define REVERSE_Y_2D (uint16_t)0x0200
-#define MIRROR_Y_2D  (uint16_t)0x0100
-#define TRANSITIONAL (uint16_t)0x0080
+#define TRANSPOSED   (uint16_t)0x0100 // rotated 90deg & reversed
+#define MIRROR_Y_2D  (uint16_t)0x0080
+#define REVERSE_Y_2D (uint16_t)0x0040
+#define RESET_REQ    (uint16_t)0x0020
+#define FROZEN       (uint16_t)0x0010
 #define MIRROR       (uint16_t)0x0008
 #define SEGMENT_ON   (uint16_t)0x0004
 #define REVERSE      (uint16_t)0x0002
@@ -348,12 +343,11 @@ typedef struct Segment {
         bool    mirror      : 1;  //     3 : mirrored
         bool    freeze      : 1;  //     4 : paused/frozen
         bool    reset       : 1;  //     5 : indicates that Segment runtime requires reset
-        bool    transitional: 1;  //     6 : transitional (there is transition occuring)
-        bool    reverse_y   : 1;  //     7 : reversed Y (2D)
-        bool    mirror_y    : 1;  //     8 : mirrored Y (2D)
-        bool    transpose   : 1;  //     9 : transposed (2D, swapped X & Y)
-        uint8_t map1D2D     : 3;  // 10-12 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
-        uint8_t soundSim    : 1;  //    13 : 0-1 sound simulation types ("soft" & "hard" or "on"/"off")
+        bool    reverse_y   : 1;  //     6 : reversed Y (2D)
+        bool    mirror_y    : 1;  //     7 : mirrored Y (2D)
+        bool    transpose   : 1;  //     8 : transposed (2D, swapped X & Y)
+        uint8_t map1D2D     : 3;  //  9-11 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
+        uint8_t soundSim    : 2;  // 12-13 : 0-3 sound simulation types ("soft" & "hard" or "on"/"off")
         uint8_t set         : 2;  // 14-15 : 0-3 UI segment sets/groups
       };
     };
@@ -484,7 +478,6 @@ typedef struct Segment {
       _dataLen(0),
       _t(nullptr)
     {
-      //refreshLightCapabilities();
       #ifdef WLED_DEBUG
       //Serial.printf("-- Creating segment: %p\n", this);
       #endif
@@ -519,6 +512,7 @@ typedef struct Segment {
 
     inline bool     getOption(uint8_t n) const { return ((options >> n) & 0x01); }
     inline bool     isSelected(void)     const { return selected; }
+    inline bool     isInTransition(void) const { return _t != nullptr; }
     inline bool     isActive(void)       const { return stop > start; }
     inline bool     is2D(void)           const { return (width()>1 && height()>1); }
     inline bool     hasRGB(void)         const { return _isRGB; }
@@ -569,15 +563,16 @@ typedef struct Segment {
     void     restoreSegenv(tmpsegd_t &tmpSegD);
     #endif
     uint16_t progress(void); //transition progression between 0-65535
-    uint8_t  currentBri(uint8_t briNew, bool useCct = false);
-    uint8_t  currentMode(uint8_t modeNew);
-    uint32_t currentColor(uint8_t slot, uint32_t colorNew);
+    uint8_t  currentBri(bool useCct = false);
+    uint8_t  currentMode(void);
+    uint32_t currentColor(uint8_t slot);
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
     CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
 
     // 1D strip
     uint16_t virtualLength(void) const;
     void setPixelColor(int n, uint32_t c); // set relative pixel within segment with color
+    void setPixelColor(unsigned n, uint32_t c)                    { setPixelColor(int(n), c); }
     void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); } // automatically inline
     void setPixelColor(int n, CRGB c)                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
     void setPixelColor(float i, uint32_t c, bool aa = true);
@@ -595,7 +590,6 @@ typedef struct Segment {
     void addPixelColor(int n, byte r, byte g, byte b, byte w = 0, bool fast = false) { addPixelColor(n, RGBW32(r,g,b,w), fast); } // automatically inline
     void addPixelColor(int n, CRGB c, bool fast = false)          { addPixelColor(n, RGBW32(c.r,c.g,c.b,0), fast); } // automatically inline
     void fadePixelColor(uint16_t n, uint8_t fade);
-    uint8_t get_random_wheel_index(uint8_t pos);
     uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
     uint32_t color_wheel(uint8_t pos);
 
@@ -606,6 +600,7 @@ typedef struct Segment {
   #ifndef WLED_DISABLE_2D
     uint16_t XY(uint16_t x, uint16_t y); // support function to get relative index within segment
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
+    void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColorXY(int(x), int(y), c); }
     void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
     void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
@@ -881,16 +876,14 @@ class WS2812FX {  // 96 bytes
     std::vector<Panel> panel;
 #endif
 
-    void
-      setUpMatrix(),
-      setPixelColorXY(int x, int y, uint32_t c);
+    void setUpMatrix();
 
     // outsmart the compiler :) by correctly overloading
-    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
-    inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
+    inline void setPixelColorXY(int x, int y, uint32_t c)   { setPixelColor(y * Segment::maxWidth + x, c); }
+    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
+    inline void setPixelColorXY(int x, int y, CRGB c)       { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
 
-    uint32_t
-      getPixelColorXY(uint16_t, uint16_t);
+    inline uint32_t getPixelColorXY(uint16_t x, uint16_t y) { return getPixelColor(isMatrix ? y * Segment::maxWidth + x : x);}
 
   // end 2D support
 
