@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.15.0-a0
+   @version 0.14.1-a4
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2401140
+#define VERSION 2311010
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -30,8 +30,8 @@
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-#ifndef WLED_DISABLE_ADALIGHT      // can be used to disable reading commands from serial RX pin (see issue #3128).
-  #define WLED_ENABLE_ADALIGHT     // disable saves 5Kb (uses GPIO3 (RX) for serial). Related serial protocols: Adalight/TPM2, Improv, Serial JSON, Continuous Serial Streaming
+#ifndef WLED_DISABLE_ADALIGHT      // can be used to disable reading commands from serial RX pin (see issue #3128). 
+  #define WLED_ENABLE_ADALIGHT     // disable saves 5Kb (uses GPIO3 (RX) for serial). Related serial protocols: Adalight/TPM2, Improv, Serial JSON, Continuous Serial Streaming 
 #else
   #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
 #endif
@@ -44,7 +44,7 @@
   #define WLED_ENABLE_WEBSOCKETS
 #endif
 
-//#define WLED_DISABLE_ESPNOW      // Removes dependence on esp now
+//#define WLED_DISABLE_ESPNOW      // Removes dependence on esp now 
 
 #define WLED_ENABLE_FS_EDITOR      // enable /edit page for editing FS content. Will also be disabled with OTA lock
 
@@ -77,9 +77,6 @@
   }
   #ifndef WLED_DISABLE_ESPNOW
     #include <espnow.h>
-    #define WIFI_MODE_STA WIFI_STA
-    #define WIFI_MODE_AP WIFI_AP
-    #include <QuickEspNow.h>
   #endif
 #else // ESP32
   #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
@@ -100,7 +97,6 @@
 
   #ifndef WLED_DISABLE_ESPNOW
     #include <esp_now.h>
-    #include <QuickEspNow.h>
   #endif
 #endif
 #include <Wire.h>
@@ -260,7 +256,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
-#define WLED_CODENAME "Kōsen"
+#define WLED_CODENAME "Hoshi"
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
@@ -319,7 +315,6 @@ WLED_GLOBAL bool noWifiSleep _INIT(true);                          // disabling 
 #else
 WLED_GLOBAL bool noWifiSleep _INIT(false);
 #endif
-WLED_GLOBAL bool force802_3g _INIT(false);
 
 #ifdef WLED_USE_ETHERNET
   #ifdef WLED_ETH_DEFAULT                                          // default ethernet board type if specified
@@ -355,6 +350,8 @@ WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
 WLED_GLOBAL byte nightlightMode      _INIT(NL_MODE_FADE); // See const.h for available modes. Was nightlightFade
+WLED_GLOBAL bool fadeTransition      _INIT(true);   // enable crossfading color transition
+WLED_GLOBAL uint16_t transitionDelay _INIT(750);    // default crossfade duration in ms
 
 WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
@@ -364,8 +361,9 @@ WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module - use d
 #else
 WLED_GLOBAL char serverDescription[33] _INIT(SERVERNAME);  // use predefined name
 #endif
+WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 WLED_GLOBAL bool simplifiedUI          _INIT(false);   // enable simplified UI
-WLED_GLOBAL byte cacheInvalidate       _INIT(0);       // used to invalidate browser cache
+WLED_GLOBAL byte cacheInvalidate       _INIT(0);       // used to invalidate browser cache when switching from regular to simplified UI
 
 // Sync CONFIG
 WLED_GLOBAL NodesMap Nodes;
@@ -394,6 +392,7 @@ WLED_GLOBAL bool receiveSegmentBounds          _INIT(false);      // apply segme
 WLED_GLOBAL bool notifyDirect _INIT(false);                       // send notification if change via UI or HTTP API
 WLED_GLOBAL bool notifyButton _INIT(false);                       // send if updated by button or infrared remote
 WLED_GLOBAL bool notifyAlexa  _INIT(false);                       // send notification if updated via Alexa
+WLED_GLOBAL bool notifyMacro  _INIT(false);                       // send notification for macro
 WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
 WLED_GLOBAL uint8_t udpNumRetries _INIT(0);                       // Number of times a UDP sync message is retransmitted. Increase to increase reliability
 
@@ -403,7 +402,7 @@ WLED_GLOBAL byte alexaNumPresets _INIT(0);                        // number of p
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
-WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP/Hyperion realtime
+WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP realtime
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
@@ -466,27 +465,16 @@ WLED_GLOBAL bool hueApplyColor _INIT(true);
 WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
 
 #ifndef WLED_DISABLE_ESPNOW
-WLED_GLOBAL bool enableESPNow        _INIT(false);  // global on/off for ESP-NOW
-WLED_GLOBAL byte statusESPNow        _INIT(ESP_NOW_STATE_UNINIT); // state of ESP-NOW stack (0 uninitialised, 1 initialised, 2 error)
-WLED_GLOBAL bool useESPNowSync       _INIT(false);  // use ESP-NOW wireless technology for sync
-WLED_GLOBAL char linked_remote[13]   _INIT("");     // MAC of ESP-NOW remote (Wiz Mote)
-WLED_GLOBAL char last_signal_src[13] _INIT("");     // last seen ESP-NOW sender
+WLED_GLOBAL bool enable_espnow_remote _INIT(false);
+WLED_GLOBAL char linked_remote[13]   _INIT("");
+WLED_GLOBAL char last_signal_src[13]   _INIT("");
 #endif
 
 // Time CONFIG
-#ifndef WLED_NTP_ENABLED
-  #define WLED_NTP_ENABLED false
-#endif
-#ifndef WLED_TIMEZONE
-  #define WLED_TIMEZONE 0
-#endif
-#ifndef WLED_UTC_OFFSET
-  #define WLED_UTC_OFFSET 0
-#endif
-WLED_GLOBAL bool ntpEnabled      _INIT(WLED_NTP_ENABLED); // get internet time. Only required if you use clock overlays or time-activated macros
-WLED_GLOBAL bool useAMPM         _INIT(false);            // 12h/24h clock format
-WLED_GLOBAL byte currentTimezone _INIT(WLED_TIMEZONE);    // Timezone ID. Refer to timezones array in wled10_ntp.ino
-WLED_GLOBAL int utcOffsetSecs    _INIT(WLED_UTC_OFFSET);  // Seconds to offset from UTC before timzone calculation
+WLED_GLOBAL bool ntpEnabled _INIT(false);    // get internet time. Only required if you use clock overlays or time-activated macros
+WLED_GLOBAL bool useAMPM _INIT(false);       // 12h/24h clock format
+WLED_GLOBAL byte currentTimezone _INIT(0);   // Timezone ID. Refer to timezones array in wled10_ntp.ino
+WLED_GLOBAL int utcOffsetSecs _INIT(0);      // Seconds to offset from UTC before timzone calculation
 
 WLED_GLOBAL byte overlayCurrent _INIT(0);    // 0: no overlay 1: analog clock 2: was single-digit clock 3: was cronixie
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(DEFAULT_LED_COUNT - 1);   // boundaries of overlay mode
@@ -539,15 +527,13 @@ WLED_GLOBAL bool wasConnected _INIT(false);
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same
 
 // transitions
-WLED_GLOBAL bool          fadeTransition          _INIT(true);    // enable crossfading brightness/color
-WLED_GLOBAL bool          modeBlending            _INIT(true);    // enable effect blending
 WLED_GLOBAL bool          transitionActive        _INIT(false);
-WLED_GLOBAL uint16_t      transitionDelay         _INIT(750);     // global transition duration
-WLED_GLOBAL uint16_t      transitionDelayDefault  _INIT(750);     // default transition time (stored in cfg.json)
+WLED_GLOBAL uint16_t      transitionDelayDefault  _INIT(transitionDelay); // default transition time (storec in cfg.json)
+WLED_GLOBAL uint16_t      transitionDelayTemp     _INIT(transitionDelay); // actual transition duration (overrides transitionDelay in certain cases)
 WLED_GLOBAL unsigned long transitionStartTime;
-WLED_GLOBAL float         tperLast                _INIT(0.0f);    // crossfade transition progress, 0.0f - 1.0f
-WLED_GLOBAL bool          jsonTransitionOnce      _INIT(false);   // flag to override transitionDelay (playlist, JSON API: "live" & "seg":{"i"} & "tt")
-WLED_GLOBAL uint8_t       randomPaletteChangeTime _INIT(5);       // amount of time [s] between random palette changes (min: 1s, max: 255s)
+WLED_GLOBAL float         tperLast                _INIT(0.0f);            // crossfade transition progress, 0.0f - 1.0f
+WLED_GLOBAL bool          jsonTransitionOnce      _INIT(false);           // flag to override transitionDelay (playlist, JSON API: "live" & "seg":{"i"} & "tt")
+WLED_GLOBAL uint8_t       randomPaletteChangeTime _INIT(5);               // amount of time [s] between random palette changes (min: 1s, max: 255s)
 
 // nightlight
 WLED_GLOBAL bool nightlightActive _INIT(false);
@@ -577,8 +563,8 @@ WLED_GLOBAL bool disablePullUp                                _INIT(false);
 WLED_GLOBAL byte touchThreshold                               _INIT(TOUCH_THRESHOLD);
 
 // notifications
-WLED_GLOBAL bool sendNotifications    _INIT(false);           // master notification switch
-WLED_GLOBAL bool sendNotificationsRT  _INIT(false);           // master notification switch (runtime)
+WLED_GLOBAL bool notifyDirectDefault _INIT(notifyDirect);
+WLED_GLOBAL bool receiveNotifications _INIT(true);
 WLED_GLOBAL unsigned long notificationSentTime _INIT(0);
 WLED_GLOBAL byte notificationSentCallMode _INIT(CALL_MODE_INIT);
 WLED_GLOBAL uint8_t notificationCount _INIT(0);
@@ -642,7 +628,6 @@ WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
 WLED_GLOBAL bool useMainSegmentOnly _INIT(false);
-WLED_GLOBAL bool realtimeRespectLedMaps _INIT(true);                     // Respect LED maps when receiving realtime data
 
 WLED_GLOBAL unsigned long lastInterfaceUpdate _INIT(0);
 WLED_GLOBAL byte interfaceUpdateCallMode _INIT(CALL_MODE_INIT);
@@ -658,12 +643,6 @@ WLED_GLOBAL String escapedMac;
 WLED_GLOBAL DNSServer dnsServer;
 
 // network time
-#ifndef WLED_LAT
-  #define WLED_LAT 0.0f
-#endif
-#ifndef WLED_LON
-  #define WLED_LON 0.0f
-#endif
 WLED_GLOBAL bool ntpConnected _INIT(false);
 WLED_GLOBAL time_t localTime _INIT(0);
 WLED_GLOBAL unsigned long ntpLastSyncTime _INIT(999000000L);
@@ -671,8 +650,8 @@ WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;
 WLED_GLOBAL uint16_t ntpLocalPort _INIT(2390);
 WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
-WLED_GLOBAL float longitude _INIT(WLED_LON);
-WLED_GLOBAL float latitude _INIT(WLED_LAT);
+WLED_GLOBAL float longitude _INIT(0.0);
+WLED_GLOBAL float latitude _INIT(0.0);
 WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
 WLED_GLOBAL Toki toki _INIT(Toki());
@@ -773,12 +752,7 @@ WLED_GLOBAL int8_t spi_sclk  _INIT(SPISCLKPIN);
 #endif
 
 // global ArduinoJson buffer
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-WLED_GLOBAL JsonDocument *pDoc _INIT(nullptr);
-#else
-WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> gDoc;
-WLED_GLOBAL JsonDocument *pDoc _INIT(&gDoc);
-#endif
+WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
@@ -883,12 +857,8 @@ public:
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
-  #if defined(STATUSLED)
   void handleStatusLED();
-  #endif
-  #if WLED_WATCHDOG_TIMEOUT > 0
   void enableWatchdog();
   void disableWatchdog();
-  #endif
 };
 #endif        // WLED_H
