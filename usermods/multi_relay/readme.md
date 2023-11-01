@@ -47,6 +47,19 @@ or
 
 You can override the default maximum number of relays (which is 4) by defining MULTI_RELAY_MAX_RELAYS.
 
+Some settings can be defined (defaults) at compile time by setting the following defines:
+
+MULTI_RELAY_HA_DISCOVERY true or false
+
+The following definitions should be a list of values (maximum number of entries is MULTI_RELAY_MAX_RELAYS) that will be applied to the relays in order:
+(e.g. assuming MULTI_RELAY_MAX_RELAYS=2)
+
+MULTI_RELAY_DELAYS 0,0
+MULTI_RELAY_EXTERNALS false,true
+MULTI_RELAY_INVERTS false,false
+
+These can be set via your platformio_override.ini file or as #define in your my_config.h (remember to set WLED_USE_MY_CONFIG in your platformio_override.ini)
+
 Example **usermods_list.cpp**:
 
 ```cpp
