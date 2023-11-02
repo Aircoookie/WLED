@@ -2615,10 +2615,11 @@ uint16_t mode_halloween_eyes()
     eyeState state;
     uint8 color;
     uint16_t startPos;
+    // duration + endTime could theoretically be replaced by a single endTime, however we would lose
+    // the ability to end the animation early when the user reduces the animation time.
     uint16_t duration;
     uint32_t startTime;
-    uint8_t blinkDuration;
-    uint32_t blinkStartTime;
+    uint32_t blinkEndTime;
   };
 
   if (SEGLEN == 1) return mode_static();
@@ -2667,8 +2668,7 @@ uint16_t mode_halloween_eyes()
           {
             c = backgroundColor;
             data.state = eyeState::blink;
-            data.blinkDuration = random8(8, 128);
-            data.blinkStartTime = strip.now;
+            data.blinkEndTime = strip.now + random8(8, 128);
           }
         }
       }
@@ -2687,8 +2687,7 @@ uint16_t mode_halloween_eyes()
       break;
     }
     case eyeState::blink: {
-      const uint32_t elapsedBlinkTime = strip.now - data.blinkStartTime;
-      if (elapsedBlinkTime >= data.blinkDuration) {
+      if (strip.now >= data.blinkEndTime) {
         data.state = eyeState::on;
       }
       break;
