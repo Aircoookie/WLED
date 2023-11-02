@@ -150,7 +150,7 @@
 #define USERMOD_ID_KLIPPER               40     //Usermod Klipper percentage
 #define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
 #define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
-#define USERMOD_ID_ANIMARTRIX            44     //Usermod "usermod_v2_animartrix.h"
+#define USERMOD_ID_LDR_DUSK_DAWN         43     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -167,7 +167,7 @@
 #define CALL_MODE_NO_NOTIFY      5
 #define CALL_MODE_FX_CHANGED     6     //no longer used
 #define CALL_MODE_HUE            7
-#define CALL_MODE_PRESET_CYCLE   8     //no longer used
+#define CALL_MODE_PRESET_CYCLE   8
 #define CALL_MODE_BLYNK          9     //no longer used
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
@@ -225,7 +225,7 @@
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
-//Digital types (data pin only) (16-39)
+//Digital types (data pin only) (16-31)
 #define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
 #define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
 #define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
@@ -235,11 +235,11 @@
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
 #define TYPE_TM1829              25
 #define TYPE_UCS8903             26
-#define TYPE_UCS8904             29            //first RGBW digital type (hardcoded in busmanager.cpp, memUsage())
+#define TYPE_UCS8904             29
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
-//"Analog" types (40-47)
-#define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
+//"Analog" types (PWM) (32-47)
+#define TYPE_ONOFF               40            //binary output (relays etc.)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
 #define TYPE_ANALOG_2CH          42            //analog WW + CW
 #define TYPE_ANALOG_3CH          43            //analog RGB
@@ -257,13 +257,10 @@
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 
-#define IS_TYPE_VALID(t) ((t) > 15 && (t) < 128)
-#define IS_DIGITAL(t)    (((t) > 15 && (t) < 40) || ((t) > 47 && (t) < 64)) //digital are 16-39 and 48-63
-#define IS_2PIN(t)       ((t) > 47 && (t) < 64)
-#define IS_16BIT(t)      ((t) == TYPE_UCS8903 || (t) == TYPE_UCS8904)
-#define IS_PWM(t)        ((t) > 40 && (t) < 46)     //does not include on/Off type
-#define NUM_PWM_PINS(t)  ((t) - 40)                 //for analog PWM 41-45 only
-#define IS_VIRTUAL(t)    ((t) >= 80 && (t) < 96)    //this was a poor choice a better would be 96-111
+#define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
+#define IS_PWM(t)     ((t) > 40 && (t) < 46)
+#define NUM_PWM_PINS(t) ((t) - 40) //for analog PWM 41-45 only
+#define IS_2PIN(t)      ((t) > 47)
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
@@ -274,10 +271,6 @@
 #define COL_ORDER_GBR             5
 #define COL_ORDER_MAX             5
 
-//ESP-NOW
-#define ESP_NOW_STATE_UNINIT       0
-#define ESP_NOW_STATE_ON           1
-#define ESP_NOW_STATE_ERROR        2
 
 //Button type
 #define BTN_TYPE_NONE             0
@@ -289,7 +282,6 @@
 #define BTN_TYPE_TOUCH            6
 #define BTN_TYPE_ANALOG           7
 #define BTN_TYPE_ANALOG_INVERTED  8
-#define BTN_TYPE_TOUCH_SWITCH     9
 
 //Ethernet board types
 #define WLED_NUM_ETH_TYPES       11
@@ -322,9 +314,10 @@
 #define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
 #define SEG_OPTION_FREEZE         4            //Segment contents will not be refreshed
 #define SEG_OPTION_RESET          5            //Segment runtime requires reset
-#define SEG_OPTION_REVERSED_Y     6
-#define SEG_OPTION_MIRROR_Y       7
-#define SEG_OPTION_TRANSPOSED     8
+#define SEG_OPTION_TRANSITIONAL   6
+#define SEG_OPTION_REVERSED_Y     7
+#define SEG_OPTION_MIRROR_Y       8
+#define SEG_OPTION_TRANSPOSED     9
 
 //Segment differs return byte
 #define SEG_DIFFERS_BRI        0x01 // opacity
@@ -346,16 +339,13 @@
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_DENIED       1  // Permission denied
-#define ERR_CONCURRENCY  2  // Conurrency (client active)
+#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?) OBSOLETE
 #define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
-#define ERR_NOT_IMPL     4  // Not implemented
-#define ERR_NORAM        8  // effect RAM depleted
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_IRLOAD   13  // It was attempted to load an IR JSON cmd, but the "ir.json" file does not exist
-#define ERR_FS_RMLOAD   14  // It was attempted to load an remote JSON cmd, but the "remote.json" file does not exist
 #define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
 #define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
@@ -454,11 +444,7 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
-  #if defined(ARDUINO_ARCH_ESP32S2)
-    #define JSON_BUFFER_SIZE 24576
-  #else
-    #define JSON_BUFFER_SIZE 32767
-  #endif
+  #define JSON_BUFFER_SIZE 24576
 #endif
 
 //#define MIN_HEAP_SIZE (8k for AsyncWebServer)
