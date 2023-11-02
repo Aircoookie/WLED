@@ -157,6 +157,10 @@
   #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
+#ifdef SUBARU
+#include "../usermods/Subaru/Subaru.h"
+#endif
+
 #ifdef USERMOD_ANALOG_CLOCK
   #include "../usermods/Analog_Clock/Analog_Clock.h"
 #endif
@@ -338,6 +342,10 @@ void registerUsermods()
   usermods.add(new AudioReactive());
   #endif
 
+  #ifdef SUBARU
+  usermods.add(new Subaru());
+  #endif
+
   #ifdef USERMOD_ANALOG_CLOCK
   usermods.add(new AnalogClockUsermod());
   #endif
@@ -368,7 +376,7 @@ void registerUsermods()
 
   #ifdef USERMOD_SHT
   usermods.add(new ShtUsermod());
-  #endif
+ #endif
 
   #ifdef USERMOD_INTERNAL_TEMPERATURE
   usermods.add(new InternalTemperatureUsermod());
