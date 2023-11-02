@@ -193,6 +193,9 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_LDR_DUSK_DAWN
+#include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+#endif
 
 //WLEDMM ARTIFX
 #ifdef USERMOD_ARTIFX
@@ -385,6 +388,15 @@ void registerUsermods()
   usermods.add(new mcuTemp("MCUTemp", true));
 #endif
 
+//#ifdef USERMOD_INTERNAL_TEMPERATURE
+//  usermods.add(new InternalTemperatureUsermod());
+//#endif
+
+#ifdef USERMOD_LDR_DUSK_DAWN
+  usermods.add(new LDR_Dusk_Dawn_v2());
+#endif
+
+
 // WLEDMM ARTIFX
 #ifdef USERMOD_ARTIFX
   usermods.add(new ARTIFXUserMod());
@@ -405,4 +417,5 @@ void registerUsermods()
 #ifdef USERMOD_ANIMARTRIX
   usermods.add(new AnimartrixUsermod("Animartrix", false));
 #endif
+
 }

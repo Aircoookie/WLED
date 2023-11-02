@@ -132,7 +132,10 @@
 #define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
 #define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
-#define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
+#define USERMOD_ID_KLIPPER               40     //Usermod Klipper percentage
+#define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
+#define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
+#define USERMOD_ID_LDR_DUSK_DAWN         43     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
 //WLEDMM
 #define USERMOD_ID_MCUTEMP               89     //Usermod "usermod_v2_artifx.h"
 #define USERMOD_ID_ARTIFX                90     //Usermod "usermod_v2_artifx.h"
