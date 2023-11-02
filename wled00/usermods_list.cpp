@@ -197,6 +197,9 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_LDR_DUSK_DAWN
+#include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+#endif
 
 void registerUsermods()
 {
@@ -372,5 +375,9 @@ void registerUsermods()
 
   #ifdef USERMOD_INTERNAL_TEMPERATURE
   usermods.add(new InternalTemperatureUsermod());
+  #endif
+
+  #ifdef USERMOD_LDR_DUSK_DAWN
+  usermods.add(new LDR_Dusk_Dawn_v2());
   #endif
 }
