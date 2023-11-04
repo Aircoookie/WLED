@@ -27,7 +27,7 @@ var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
           labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
-		  css:true, hdays:false, fxdef:true}
+		  css:true, hdays:false, fxdef:true, idsort: false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -1301,7 +1301,7 @@ function displayRover(i,s)
 
 function cmpP(a, b)
 {
-	if (!a[1].n) return (a[0] > b[0]);
+	if (cfg.comp.idsort || !a[1].n) return (parseInt(a[0]) > parseInt(b[0]));
 	// sort playlists first, followed by presets with characters and last presets with special 1st character
 	const c = a[1].n.charCodeAt(0);
 	const d = b[1].n.charCodeAt(0);
@@ -1798,6 +1798,7 @@ function makePlSel(el, incPl=false)
 	var arr = Object.entries(pJson);
 	for (var a of arr) {
 		var n = a[1].n ? a[1].n : "Preset " + a[0];
+		if (cfg.comp.idsort) n = a[0] + ' ' + n;
 		if (!incPl && a[1].playlist && a[1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
 		plSelContent += `<option value="${a[0]}" ${a[0]==el?"selected":""}>${n}</option>`
 	}
