@@ -2635,8 +2635,7 @@ uint16_t mode_halloween_eyes()
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1)); //fill background
 
   data.state = static_cast<eyeState>(data.state % eyeState::count);
-  uint16_t duration = data.duration;
-  duration = max(uint16_t{1u}, duration);
+  uint16_t duration = max(uint16_t{1u}, data.duration);
   const uint32_t elapsedTime = strip.now - data.startTime;
 
   switch (data.state) {
