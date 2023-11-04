@@ -2613,7 +2613,7 @@ uint16_t mode_halloween_eyes()
   };
   struct EyeData {
     eyeState state;
-    uint8 color;
+    uint8_t color;
     uint16_t startPos;
     // duration + endTime could theoretically be replaced by a single endTime, however we would lose
     // the ability to end the animation early when the user reduces the animation time.
