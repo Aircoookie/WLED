@@ -27,7 +27,7 @@ var cfg = {
 	theme:{base:"dark", bg:{url:"", rnd: false, rndGrayscale: false, rndBlur: false}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
 		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
-		  css:true, hdays:false, fxdef:true, on:0, off:0}
+		  css:true, hdays:false, fxdef:true, on:0, off:0, idsort: false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -284,11 +284,10 @@ function onLoad()
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	//size();
 	gId("cv").style.opacity=0;
-	var sls = d.querySelectorAll('input[type="range"]');
-	for (var sl of sls) {
+	d.querySelectorAll('input[type="range"]').forEach((sl)=>{
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
-	}
+	});
 }
 
 function updateTablinks(tabI)
@@ -582,8 +581,7 @@ function populatePresets(fromls)
 	if (!pJson) {setTimeout(loadPresets,250); return;}
 	delete pJson["0"];
 	var cn = "";
-	var arr = Object.entries(pJson);
-	arr.sort(cmpP);
+	var arr = Object.entries(pJson).sort(cmpP);
 	pQL = [];
 	var is = [];
 	pNum = 0;
@@ -708,7 +706,7 @@ ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
 </table>`;
 	gId('kv').innerHTML = cn;
 	//  update all sliders in Info
-	for (let sd of (gId('kv').getElementsByClassName('sliderdisplay')||[])) {
+	for (let sd of (d.querySelectorAll('#kv .sliderdisplay')||[])) {
 		let s = sd.previousElementSibling;
 		if (s) updateTrail(s);
 	}
@@ -1289,18 +1287,19 @@ function updateSelectedFx()
 		selectedEffect.classList.add('selected');
 		setEffectParameters(selectedFx);
 		// hide non-0D effects if segment only has 1 pixel (0D)
-		var fxs = parent.querySelectorAll('.lstI');
-		for (const fx of fxs) {
-			if (!fx.dataset.opt) continue;
-			let opts = fx.dataset.opt.split(";");
-			if (fx.dataset.id>0) {
-				if (segLmax==0) fx.classList.add('hide'); // none of the segments selected (hide all effects)
-				else {
-					if ((segLmax==1 && (!opts[3] || opts[3].indexOf("0")<0)) || (!isM && opts[3] && ((opts[3].indexOf("2")>=0 && opts[3].indexOf("1")<0)))) fx.classList.add('hide');
-					else fx.classList.remove('hide');
+		parent.querySelectorAll('.lstI').forEach((fx)=>{
+			let ds = fx.dataset;
+			if (ds.opt) {
+				let opts = ds.opt.split(";");
+				if (ds.id>0) {
+					if (segLmax==0) fx.classList.add('hide'); // none of the segments selected (hide all effects)
+					else {
+						if ((segLmax==1 && (!opts[3] || opts[3].indexOf("0")<0)) || (!isM && opts[3] && ((opts[3].indexOf("2")>=0 && opts[3].indexOf("1")<0)))) fx.classList.add('hide');
+						else fx.classList.remove('hide');
+					}
 				}
 			}
-		}
+		});
 		// hide 2D mapping and/or sound simulation options
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
@@ -1320,7 +1319,7 @@ function displayRover(i,s)
 
 function cmpP(a, b)
 {
-	if (!a[1].n) return (a[0] > b[0]);
+	if (cfg.comp.idsort || !a[1].n) return (parseInt(a[0]) > parseInt(b[0]));
 	// sort playlists first, followed by presets with characters and last presets with special 1st character
 	const c = a[1].n.charCodeAt(0);
 	const d = b[1].n.charCodeAt(0);
@@ -1542,7 +1541,8 @@ function setEffectParameters(idx)
 	var cslLabel = '';
 	var sep = '';
 	var cslCnt = 0, oCsel = csel;
-	for (let i=0; i<gId("csl").querySelectorAll("button"); i++) {
+//	for (let i=0; i<gId("csl").querySelectorAll("button"); i++) {
+	d.querySelectorAll("#csl button").forEach((e,i)=>{
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
 		if (coOnOff.length>i && coOnOff[i] != "") {
@@ -1572,7 +1572,7 @@ function setEffectParameters(idx)
 			btn.dataset.hide = 1;
 			btn.innerHTML = `${i+1}`; // name hidden buttons 1..3 for * palettes
 		}
-	}
+	});
 	gId("cslLabel").innerHTML = cslLabel;
 	if (cslLabel!=="") gId("cslLabel").classList.remove("hide");
 	else               gId("cslLabel").classList.add("hide");
@@ -1817,12 +1817,12 @@ function makePlSel(el, incPl=false)
 {
 	var plSelContent = "";
 	delete pJson["0"];	// remove filler preset
-	var arr = Object.entries(pJson);
-	for (var a of arr) {
+	Object.entries(pJson).sort(cmpP).forEach((a)=>{
 		var n = a[1].n ? a[1].n : "Preset " + a[0];
-		if (!incPl && a[1].playlist && a[1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
-		plSelContent += `<option value="${a[0]}" ${a[0]==el?"selected":""}>${n}</option>`
-	}
+		if (cfg.comp.idsort) n = a[0] + ' ' + n;
+		if (!(!incPl && a[1].playlist && a[1].playlist.ps)) // skip playlists, sub-playlists not yet supported
+			plSelContent += `<option value="${a[0]}" ${a[0]==el?"selected":""}>${n}</option>`;
+	});
 	return plSelContent;
 }
 
@@ -1831,21 +1831,19 @@ function refreshPlE(p)
 	var plEDiv = gId(`ple${p}`);
 	if (!plEDiv) return;
 	var content = "<div class=\"first c\">Playlist entries</div>";
-	for (var i = 0; i < plJson[p].ps.length; i++) {
-		content += makePlEntry(p,i);
-	}
+	plJson[p].ps.forEach((e,i)=>{content += makePlEntry(p,i);});
+
 	content += `<div class="hrz"></div>`;
 	plEDiv.innerHTML = content;
 	var dels = plEDiv.getElementsByClassName("btn-pl-del");
 	if (dels.length < 2) dels[0].style.display = "none";
 
-	var sels = gId(`seg${p+100}`).getElementsByClassName("sel");
-	for (var i of sels) {
+	d.querySelectorAll(`#seg${p+100} .sel`).forEach((i)=>{
 		if (i.dataset.val) {
 			if (parseInt(i.dataset.val) > 0) i.value = i.dataset.val;
 			else plJson[p].ps[i.dataset.index] = parseInt(i.value);
 		}
-	}
+	});
 }
 
 // p: preset ID, i: ps index
