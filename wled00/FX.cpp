@@ -2640,6 +2640,11 @@ uint16_t mode_halloween_eyes()
 
   switch (data.state) {
     case eyeState::initializeOn: {
+      // initialize the eyes-on state:
+      // - select eye position and color
+      // - select a duration
+      // - immediately switch to eyes on state.
+
       data.startPos = random16(0, maxWidth - eyeLength - 1);
       data.color = random8();
       if (strip.isMatrix) SEGMENT.offset = random16(SEGMENT.virtualHeight()-1); // a hack: reuse offset since it is not used in matrices
@@ -2649,7 +2654,14 @@ uint16_t mode_halloween_eyes()
       [[fallthrough]];
     }
     case eyeState::on: {
+      // eyes-on steate:
+      // - fade eyes in for some time
+      // - keep eyes on until the pre-selected duration is over
+      // - randomly switch to the blink (sub-)state, and initialize it with a blink duration (more precisely, a blink end time stamp)
+      // - never switch to the blink state if the animation just started or is about to end
+
       uint16_t start2ndEye = data.startPos + HALLOWEEN_EYE_WIDTH + HALLOWEEN_EYE_SPACE;
+      // If the user reduces the input while in this state, limit the duration.
       duration = min(duration, static_cast<uint16_t>(128u + (SEGMENT.intensity * 64u)));
 
       constexpr uint32_t minimumOnTimeBegin = 1024u;
@@ -2673,6 +2685,7 @@ uint16_t mode_halloween_eyes()
       }
 
       if (c != backgroundColor) {
+        // render eyes
         for (int i = 0; i < HALLOWEEN_EYE_WIDTH; i++) {
           if (strip.isMatrix) {
             SEGMENT.setPixelColorXY(data.startPos + i, SEGMENT.offset, c);
@@ -2686,12 +2699,19 @@ uint16_t mode_halloween_eyes()
       break;
     }
     case eyeState::blink: {
+      // eyes-on but currently blinking state:
+      // - wait until the blink time is over, then switch back to eyes-on
+
       if (strip.now >= data.blinkEndTime) {
         data.state = eyeState::on;
       }
       break;
     }
     case eyeState::initializeOff: {
+      // initialize eyes-off state:
+      // - select a duration
+      // - immediately switch to eyes-off state
+
       const uint16_t eyeOffTimeBase = SEGMENT.speed*128u;
       duration = eyeOffTimeBase + random16(eyeOffTimeBase);
       data.duration = duration;
@@ -2699,17 +2719,23 @@ uint16_t mode_halloween_eyes()
       [[fallthrough]];
     }
     case eyeState::off: {
+      // eyes-off state:
+      // - not much to do here
+
+      // If the user reduces the input while in this state, limit the duration.
       const uint16_t eyeOffTimeBase = SEGMENT.speed*128u;
       duration = min(duration, static_cast<uint16_t>(2u * eyeOffTimeBase));
       break;
     }
     case eyeState::count: {
+      // Can't happen, not an actual state.
       data.state = eyeState::initializeOn;
       break;
     }
   }
 
   if (elapsedTime > duration) {
+    // The current state duration is over, switch to the next state.
     switch (data.state) {
       case eyeState::initializeOn:
       case eyeState::on:
