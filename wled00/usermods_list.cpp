@@ -194,7 +194,11 @@
 #endif
 
 #ifdef USERMOD_PWM_OUTPUTS
-#include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
+  #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
+#endif
+
+#ifdef USERMOD_HTTP_PULL_LIGHT_CONTROL
+  #include "../usermods/usermod_v2_HttpPullLightControl/usermod_v2_HttpPullLightControl.h"
 #endif
 
 
@@ -372,5 +376,9 @@ void registerUsermods()
 
   #ifdef USERMOD_INTERNAL_TEMPERATURE
   usermods.add(new InternalTemperatureUsermod());
+  #endif
+
+  #ifdef USERMOD_HTTP_PULL_LIGHT_CONTROL
+  usermods.add(new HttpPullLightControl());
   #endif
 }
