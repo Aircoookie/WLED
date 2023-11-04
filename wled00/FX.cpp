@@ -2602,7 +2602,7 @@ static const char _data_FX_MODE_TWINKLECAT[] PROGMEM = "Twinklecat@!,Twinkle rat
 
 uint16_t mode_halloween_eyes()
 {
-  enum class eyeState : uint8_t {
+  enum eyeState : uint8_t {
     initializeOn = 0,
     on,
     blink,
@@ -2634,7 +2634,7 @@ uint16_t mode_halloween_eyes()
 
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1)); //fill background
 
-  data.state = static_cast<eyeState>(static_cast<uint8_t>(data.state) % static_cast<uint8_t>(eyeState::count));
+  data.state = static_cast<eyeState>(data.state % eyeState::count);
   uint16_t duration = data.duration;
   duration = max(uint16_t{1u}, duration);
   const uint32_t elapsedTime = strip.now - data.startTime;
@@ -2651,11 +2651,11 @@ uint16_t mode_halloween_eyes()
     }
     case eyeState::on: {
       uint16_t start2ndEye = data.startPos + HALLOWEEN_EYE_WIDTH + HALLOWEEN_EYE_SPACE;
-      duration = min(duration, static_cast<uint16_t>(128u + (SEGMENT.intensity*64u)));
+      duration = min(duration, static_cast<uint16_t>(128u + (SEGMENT.intensity * 64u)));
 
       constexpr uint32_t minimumOnTimeBegin = 1024u;
       constexpr uint32_t minimumOnTimeEnd = 1024u;
-      const uint32_t fadeInAnimationState = elapsedTime * static_cast<uint32_t>(256*8) / duration;
+      const uint32_t fadeInAnimationState = elapsedTime * uint32_t{256u * 8u} / duration;
       const uint32_t backgroundColor = SEGCOLOR(1);
       const uint32_t eyeColor = SEGMENT.color_from_palette(data.color, false, false, 0);
       uint32_t c = eyeColor;
