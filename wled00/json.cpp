@@ -133,12 +133,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     seg.setOption(SEG_OPTION_ON, segbri); // use transition
   }
 
-  bool on = elem["on"] | seg.on;
-  if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
-  seg.setOption(SEG_OPTION_ON, on); // use transition
-  bool frz = elem["frz"] | seg.freeze;
-  if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.freeze;
-  seg.freeze = frz;
+  seg.setOption(SEG_OPTION_ON, getBoolVal(elem["on"], seg.on)); // use transition
+  seg.freeze = getBoolVal(elem["frz"], seg.freeze);
 
   seg.setCCT(elem["cct"] | seg.cct);
 
@@ -201,15 +197,15 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   bool reverse  = seg.reverse;
   bool mirror   = seg.mirror;
   #endif
-  seg.selected  = elem["sel"] | seg.selected;
-  seg.reverse   = elem["rev"] | seg.reverse;
-  seg.mirror    = elem["mi"]  | seg.mirror;
+  seg.selected  = getBoolVal(elem["sel"], seg.selected);
+  seg.reverse   = getBoolVal(elem["rev"], seg.reverse);
+  seg.mirror    = getBoolVal(elem["mi"] , seg.mirror);
   #ifndef WLED_DISABLE_2D
   bool reverse_y = seg.reverse_y;
   bool mirror_y  = seg.mirror_y;
-  seg.reverse_y  = elem["rY"]  | seg.reverse_y;
-  seg.mirror_y   = elem["mY"]  | seg.mirror_y;
-  seg.transpose  = elem[F("tp")] | seg.transpose;
+  seg.reverse_y  = getBoolVal(elem["rY"]   , seg.reverse_y);
+  seg.mirror_y   = getBoolVal(elem["mY"]   , seg.mirror_y);
+  seg.transpose  = getBoolVal(elem[F("tp")], seg.transpose);
   if (seg.is2D() && seg.map1D2D == M12_pArc && (reverse != seg.reverse || reverse_y != seg.reverse_y || mirror != seg.mirror || mirror_y != seg.mirror_y)) seg.fill(BLACK); // clear entire segment (in case of Arc 1D to 2D expansion)
   #endif
 
@@ -234,9 +230,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["c3"], &cust3); // we can't pass reference to bifield
   seg.custom3 = constrain(cust3, 0, 31);
 
-  seg.check1 = elem["o1"] | seg.check1;
-  seg.check2 = elem["o2"] | seg.check2;
-  seg.check3 = elem["o3"] | seg.check3;
+  seg.check1 = getBoolVal(elem["o1"], seg.check1);
+  seg.check2 = getBoolVal(elem["o2"], seg.check2);
+  seg.check3 = getBoolVal(elem["o3"], seg.check3);
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -349,13 +345,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
 
   JsonObject nl       = root["nl"];
-  nightlightActive    = nl["on"]      | nightlightActive;
+  nightlightActive    = getBoolVal(nl["on"], nightlightActive);
   nightlightDelayMins = nl["dur"]     | nightlightDelayMins;
   nightlightMode      = nl["mode"]    | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
-  sendNotificationsRT  = udpn["send"] | sendNotificationsRT;
+  sendNotificationsRT  = getBoolVal(udpn["send"], sendNotificationsRT);
   syncGroups           = udpn["sgrp"] | syncGroups;
   receiveGroups        = udpn["rgrp"] | receiveGroups;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request

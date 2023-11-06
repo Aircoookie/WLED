@@ -69,6 +69,15 @@ bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
 }
 
 
+bool getBoolVal(JsonVariant elem, bool dflt) {
+  if (elem.is<const char*>() && elem.as<const char*>()[0] == 't') {
+    return !dflt;
+  } else {
+    return elem | dflt;
+  }
+}
+
+
 bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv)
 {
   const char *v = strstr(req, key);
