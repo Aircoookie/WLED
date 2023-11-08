@@ -144,7 +144,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
     case DMX_MODE_SINGLE_RGB:   // 3-4 channels: [R,G,B] + W (if present)
       if (uni != e131Universe) return;
-      const uint16_t dmxChannelCount = strip.hasWhiteChannel() ? 4 : 3;
+      uint16_t dmxChannelCount = strip.hasWhiteChannel() ? 4 : 3;
       if (availDMXLen < dmxChannelCount) return;
 
       realtimeLock(realtimeTimeoutMs, mde);
@@ -157,7 +157,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
     case DMX_MODE_SINGLE_DRGB:  // 4-5 channels: [Dimmer,R,G,B] + W (if present)
       if (uni != e131Universe) return;
-      const uint16_t dmxChannelCount = strip.hasWhiteChannel() ? 5 : 4;
+      uint16_t dmxChannelCount = strip.hasWhiteChannel() ? 5 : 4;
       if (availDMXLen < dmxChannelCount) return;
 
       realtimeLock(realtimeTimeoutMs, mde);
