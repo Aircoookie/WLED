@@ -177,7 +177,7 @@ async function onLoad()
 		locip = l.hostname + (l.port ? ":" + l.port : "");
 		if (paths.length > 0 && paths[0]!=="") {
 			loc = true;
-			locip +=  "/" + paths[0];
+			locip +=  "/" + paths.join('/');
 		} else if (locproto==="https:") {
 			loc = true;
 		}
