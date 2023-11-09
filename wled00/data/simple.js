@@ -66,6 +66,9 @@ function simplifyUI(doc) {
 
 	// Put effects below palett list
 	gId("Colors").innerHTML += gId("Effects").innerHTML;
+	// Put preset quick load before palette list
+	gId("Colors").insertBefore(gId("pql"), gId("pall"));
+
 	// Hide buttons in top bar
 	gId("buttonNl").style.display = "none";
 	gId("buttonSync").style.display = "none";
@@ -115,5 +118,4 @@ function finalizeSimpleUI() {
 	// set correct position of selected and sticky palette
 	Array.from(document.styleSheets[0].cssRules).find(rule => rule.selectorText == "#pallist .lstI.sticky").style.top = "0px";
 	Array.from(document.styleSheets[0].cssRules).find(rule => rule.selectorText == "#pallist .lstI.selected").style.top = "42px";
-	
 }
