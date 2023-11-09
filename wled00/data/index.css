@@ -413,6 +413,7 @@ button {
 	position: sticky;
 	bottom: 0;
 	max-width: 300px;
+	z-index: 2;
 }
 
 #sliders .labels {
