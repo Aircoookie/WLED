@@ -87,10 +87,6 @@ function simplifyUI(doc) {
 	gId("pallist").style.height = "300px";
 	gId("pallist").style.overflow = "scroll";
 
-	// set brightness to 255 and hide slider
-	gId("sliderBri").value = 255;
-	gId("briwrap").style.display = "none";
-
 	// Hide filter options
 	gId("filters").style.display = "none";
 }
@@ -99,8 +95,6 @@ function simplifyUI(doc) {
 function finalizeSimpleUI() {
 	// disable horizontal scrolling
 	simpleUI = true;
-	// set brightness
-	setBri();
 	// set correct position of selected and sticky palette
 	Array.from(document.styleSheets[0].cssRules).find(rule => rule.selectorText == "#pallist .lstI.sticky").style.top = "0px";
 	Array.from(document.styleSheets[0].cssRules).find(rule => rule.selectorText == "#pallist .lstI.selected").style.top = "42px";
