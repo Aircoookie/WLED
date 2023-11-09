@@ -51,7 +51,6 @@ fetch(getURL("/index.htm"))
 			script.parentNode.replaceChild(newScript, script);
 		});
 		finalizeSimpleUI();
-
 	})
 	.catch(error => console.error('Error:', error));
 
@@ -94,19 +93,6 @@ function simplifyUI(doc) {
 
 	// Hide filter options
 	gId("filters").style.display = "none";
-
-	/* var observer = new MutationObserver(function (mutations) {
-		mutations.forEach(function (mutation) {
-			if (mutation.attributeName === "class") {
-				let element = mutation.target;
-				if (element.matches("#pallist .lstI.selected")) {
-					element.style.top = "0px";
-				}
-			}
-		});
-	});
-	var config = { attributes: true, childList: true, subtree: true };
-	observer.observe(doc.body, config); */
 }
 
 // Called when simple UI is ready
