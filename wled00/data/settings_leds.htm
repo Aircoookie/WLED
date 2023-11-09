@@ -19,7 +19,7 @@
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
-			scE.setAttribute("src", FILE_URL);
+			scE.setAttribute("src", FILE_URL + "&c=" + Date.now());
 			scE.setAttribute("type", "text/javascript");
 			scE.setAttribute("async", async);
 			d.body.appendChild(scE);

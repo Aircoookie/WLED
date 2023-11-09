@@ -7,7 +7,7 @@
       strA = "";
     function send()
     {
-      nocache = "&nocache=" + Math.random() * 1000000;
+      nocache = "&nocache=" + Date.now();
       var request = new XMLHttpRequest();
       // send HTTP request
       request.open("GET", "win/" + strA +nocache, true);
