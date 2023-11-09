@@ -2743,7 +2743,6 @@ function clean(c)
 
 function filterFocus(e)
 {
-	let t = e.explicitOriginalTarget;
 	let f = gId("filters");
 	if (e.type === "focus") f.classList.remove('fade');	// immediately show (still has transition)
 	// compute sticky top (with delay for transition)
@@ -2752,6 +2751,7 @@ function filterFocus(e)
 		sCol('--sti', sti+"px");
 	}, 252);
 	if (e.type === "blur") {
+		let t = e.relatedTarget ? e.relatedTarget : e.explicitOriginalTarget;
 		do {
 			if (t.id && (t.id === "fxFind")) { setTimeout(()=>{t.firstElementChild.focus();},150); return; }
 			t = t.parentElement;
