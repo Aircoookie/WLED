@@ -86,6 +86,9 @@ function simplifyUI(doc) {
 	// Chage height of palette list
 	gId("pallist").style.height = "300px";
 	gId("pallist").style.overflow = "scroll";
+	// fix shadow
+	gId("pallist").style.margin = "0px -16px";
+	gId("pallist").style.padding = "0px 16px";
 
 	// Hide filter options
 	gId("filters").style.display = "none";
