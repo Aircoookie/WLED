@@ -2,6 +2,8 @@
 
 #include "wled.h"
 
+#define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+
 #ifndef MULTI_RELAY_MAX_RELAYS
   #define MULTI_RELAY_MAX_RELAYS 4
 #else
@@ -17,6 +19,22 @@
   #define MULTI_RELAY_ENABLED false
 #else
   #define MULTI_RELAY_ENABLED true
+#endif
+
+#ifndef MULTI_RELAY_HA_DISCOVERY
+  #define MULTI_RELAY_HA_DISCOVERY false
+#endif
+
+#ifndef MULTI_RELAY_DELAYS
+  #define MULTI_RELAY_DELAYS 0
+#endif
+
+#ifndef MULTI_RELAY_EXTERNALS
+  #define MULTI_RELAY_EXTERNALS false
+#endif
+
+#ifndef MULTI_RELAY_INVERTS
+  #define MULTI_RELAY_INVERTS false
 #endif
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
@@ -343,18 +361,22 @@ MultiRelay::MultiRelay()
   , initDone(false)
   , usePcf8574(USE_PCF8574)
   , addrPcf8574(PCF8574_ADDRESS)
-  , HAautodiscovery(false)
+  , HAautodiscovery(MULTI_RELAY_HA_DISCOVERY)
   , periodicBroadcastSec(60)
   , lastBroadcast(0)
 {
   const int8_t defPins[] = {MULTI_RELAY_PINS};
+  const int8_t relayDelays[] = {MULTI_RELAY_DELAYS};
+  const bool relayExternals[] = {MULTI_RELAY_EXTERNALS};
+  const bool relayInverts[] = {MULTI_RELAY_INVERTS};
+
   for (size_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-    _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;
-    _relay[i].delay    = 0;
-    _relay[i].invert   = false;
+    _relay[i].pin      = i < COUNT_OF(defPins) ? defPins[i] : -1;
+    _relay[i].delay    = i < COUNT_OF(relayDelays) ? relayDelays[i] : 0;
+    _relay[i].invert   = i < COUNT_OF(relayInverts) ? relayInverts[i] : false;
     _relay[i].active   = false;
     _relay[i].state    = false;
-    _relay[i].external = false;
+    _relay[i].external = i < COUNT_OF(relayExternals) ? relayExternals[i] : false;
     _relay[i].button   = -1;
   }
 }
