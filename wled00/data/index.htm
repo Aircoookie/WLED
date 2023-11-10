@@ -5,7 +5,7 @@
 	<meta charset="utf-8">
 	<meta name="theme-color" content="#222222">
 	<meta content="yes" name="apple-mobile-web-app-capable">
-	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
+	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC">
 	<title>WLED</title>
 	<script>
 	function feedback(){}
@@ -61,21 +61,21 @@
 <div class="wrapper" id="top">
 	<div class="tab top">
 		<div class="btnwrap">
-			<button id="buttonPower" onclick="togglePower()" class="tgl"><i class="icons">&#xe08f;</i><p class="tab-label">Power</p></button>
-			<button id="buttonNl" onclick="toggleNl()"><i class="icons">&#xe2a2;</i><p class="tab-label">Timer</p></button>
-			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
-			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Peek</p></button>
-			<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
-			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button>
-			<button onclick="window.location.href=getURL('/settings');"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
-			<button id="buttonPcm" onclick="togglePcMode(true)"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
+			<button id="buttonPower" onclick="togglePower()" class="tgl"><i class="icons">&#xe08f;</i><span class="tab-label">Power</span></button>
+			<button id="buttonNl" onclick="toggleNl()"><i class="icons">&#xe2a2;</i><span class="tab-label">Timer</span></button>
+			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><span class="tab-label">Sync</span></button>
+			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><span class="tab-label">Peek</span></button>
+			<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><span class="tab-label">Info</span></button>
+			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><span class="tab-label">Nodes</span></button>
+			<button onclick="window.location.href=getURL('/settings');"><i class="icons">&#xe0a2;</i><span class="tab-label">Config</span></button>
+			<button id="buttonPcm" onclick="togglePcMode(true)"><i class="icons">&#xe23d;</i><span class="tab-label">PC Mode</span></button>
 		</div>
 		<div id="briwrap">
 			<p class="hd">Brightness</p>
 			<div class="slider" style="padding-right:32px;">
 				<i class="icons slider-icon" onclick="tglTheme()" style="transform: translate(-32px,5px);">&#xe2a6;</i>
 				<div class="sliderwrap il">
-					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
+					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128">
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -104,14 +104,14 @@
 		</div>
 		<div id="vwrap" class="slider">
 			<div class="sliderwrap il">
-				<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any" />
+				<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any">
 				<div class="sliderdisplay"></div>
 			</div>
 			<span class="tooltiptext">Value/Brightness</span>
 		</div>
 		<div id="kwrap" class="slider">
 			<div class="sliderwrap il">
-				<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550" />
+				<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550">
 				<div class="sliderdisplay"></div>
 			</div>
 			<span class="tooltiptext">Kelvin/Temperature</span>
@@ -120,21 +120,21 @@
 			<!--p class="labels hd">RGB color</p-->
 			<div id="rwrap" class="slider">
 				<div class="sliderwrap il">
-					<input id="sliderR" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
+					<input id="sliderR" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128">
 					<div class="sliderdisplay"></div>
 				</div>
 				<span class="tooltiptext">Red channel</span>
 			</div>
 			<div id="gwrap" class="slider">
 				<div class="sliderwrap il">
-					<input id="sliderG" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
+					<input id="sliderG" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128">
 					<div class="sliderdisplay"></div>
 				</div>
 				<span class="tooltiptext">Green channel</span>
 			</div>
 			<div id="bwrap" class="slider">
 				<div class="sliderwrap il">
-					<input id="sliderB" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
+					<input id="sliderB" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128">
 					<div class="sliderdisplay"></div>
 				</div>
 				<span class="tooltiptext">Blue channel</span>
@@ -143,7 +143,7 @@
 		<div id="wwrap" class="slider">
 			<!--p class="labels hd">White channel</p-->
 			<div id="whibri" class="sliderwrap il">
-				<input id="sliderW" class="noslide" oninput="fromW()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
+				<input id="sliderW" class="noslide" oninput="fromW()" onchange="setColor(0)" max="255" min="0" type="range" value="128">
 				<div class="sliderdisplay"></div>
 			</div>
 			<span class="tooltiptext">White channel</span>
@@ -151,7 +151,7 @@
 		<div id="wbal" class="slider">
 			<!--p class="labels hd">White balance</p-->
 			<div class="sliderwrap il">
-				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
+				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128">
 				<div class="sliderdisplay"></div>
 			</div>
 			<span class="tooltiptext">White balance</span>
@@ -177,24 +177,24 @@
 		<p class="labels h" id="cslLabel"></p>
 		<div id="hexw">
 			<i class="icons sel-icon" onclick="tglRgb()">&#xe22d;</i>
-			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
+			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8">
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
 		</div>
 		<p class="labels" id="pall"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div id="palw" class="il">
 			<div class="staytop fnd">
-				<input type="text" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this,'pallist')" />
+				<input type="text" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this,'pallist')">
 				<i class="icons clear-icon" onclick="clean(this)">&#xe38f;</i>
 				<i class="icons search-icon">&#xe0a1;</i>
 			</div>
 			<div id="pallist" class="list">
 				<div class="lstI">
 					<label class="radio schkl" onclick="loadPalettes()"> 
-						<div class="lstIcontent">
+						<span class="lstIcontent">
 							<span class="lstIname">
 								Loading...
 							</span>
-						</div>
+						</span>
 					</label>
 				</div>
 			</div>
@@ -209,18 +209,18 @@
 		<div id="fx">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
 			<div class="staytop fnd" id="fxFind">
-				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist');gId('filters').classList.add('fade');" onblur="gId('filters').classList.remove('fade')"/>
+				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist');gId('filters').classList.add('fade');" onblur="gId('filters').classList.remove('fade')">
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
 				<i class="icons search-icon" onclick="gId('filters').classList.toggle('hide');" style="cursor:pointer;">&#xe0a1;</i>
 			</div>
 			<div id="fxlist" class="list">
 				<div class="lstI">
 					<label class="radio schkl" onclick="loadFX()"> 
-						<div class="lstIcontent">
+						<span class="lstIcontent">
 							<span class="lstIname">
 								Loading...
 							</span>
-						</div>
+						</span>
 					</label>
 				</div>
 			</div>
@@ -255,7 +255,7 @@
 			<div id="slider0" class="slider">
 				<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
 				<div class="sliderwrap il">
-					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128">
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -264,7 +264,7 @@
 			<div id="slider1" class="slider">
 				<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 				<div class="sliderwrap il">
-					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128">
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -273,7 +273,7 @@
 			<div id="slider2" class="slider hide">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
+					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0">
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -282,7 +282,7 @@
 			<div id="slider3" class="slider hide">
 				<i class="icons slider-icon">&#xe0a2;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
+					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0">
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -291,7 +291,7 @@
 			<div id="slider4" class="slider hide">
 				<i class="icons slider-icon">&#xe0e8;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="31" min="0" type="range" value="0" />
+					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="31" min="0" type="range" value="0">
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -332,7 +332,7 @@
 		</div>
 		<p class="labels hd">Presets</p>
 		<div class="staytop fnd" id="psFind">
-			<input type="text" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this,'pcont')" />
+			<input type="text" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this,'pcont')">
 			<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
 			<i class="icons search-icon">&#xe0a1;</i>
 		</div>
@@ -345,10 +345,10 @@
 </div>
 
 <div class="tab bot" id="bot">
-	<button class="tablinks" onclick="openTab(0)"><i class="icons">&#xe2b3;</i><p class="tab-label">Colors</p></button>
-	<button class="tablinks" onclick="openTab(1)"><i class="icons">&#xe23d;</i><p class="tab-label">Effects</p></button>
-	<button class="tablinks" onclick="openTab(2)"><i class="icons">&#xe34b;</i><p class="tab-label">Segments</p></button>
-	<button class="tablinks" onclick="openTab(3)"><i class="icons">&#xe04c;</i><p class="tab-label">Presets</p></button>
+	<button class="tablinks" onclick="openTab(0)"><i class="icons">&#xe2b3;</i><span class="tab-label">Colors</span></button>
+	<button class="tablinks" onclick="openTab(1)"><i class="icons">&#xe23d;</i><span class="tab-label">Effects</span></button>
+	<button class="tablinks" onclick="openTab(2)"><i class="icons">&#xe34b;</i><span class="tab-label">Segments</span></button>
+	<button class="tablinks" onclick="openTab(3)"><i class="icons">&#xe04c;</i><span class="tab-label">Presets</span></button>
 </div>
 
 <div id="connind"></div>
@@ -357,7 +357,7 @@
 <div id="info" class="modal">
 	<button class="btn btn-xs close" onclick="toggleInfo()"><i class="icons rot45">&#xe18a;</i></button>
 	<div id="imgw">
-		<img class="wi" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAFCAYAAAC5Fuf5AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABbSURBVChTlY9bDoAwDMNW7n9nwCipytQN4Z8tbrTHmDmF4oPzyldwRqp1SSdnV/NuZuzqerAByxXznBw3igkeFEfXyUuhK/yFM0CxJfyqXZEOc6/Sr9/bf7uIC5Nwd7orMvAPAAAAAElFTkSuQmCC" />
+		<img class="wi" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAFCAYAAAC5Fuf5AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABbSURBVChTlY9bDoAwDMNW7n9nwCipytQN4Z8tbrTHmDmF4oPzyldwRqp1SSdnV/NuZuzqerAByxXznBw3igkeFEfXyUuhK/yFM0CxJfyqXZEOc6/Sr9/bf7uIC5Nwd7orMvAPAAAAAElFTkSuQmCC">
 	</div>
 	<div id="kv">Loading...</div><br>
 	<div>
