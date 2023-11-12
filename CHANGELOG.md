@@ -1,8 +1,12 @@
 ## WLED changelog
 
-#### Build 2309120 till build 2311030
+#### Build 2309120 till build 2311120
 -   WLED version 0.15.0-a0
--   Implement global JSON API boolean toggle.
+-   Spookier Halloween Eyes (#3501)
+-   Compile time options for Multi Relay usermod (#3498)
+-   Fix for Dissolve (#3502)
+-   Better reverse proxy support (nested paths)
+-   Implement global JSON API boolean toggle (i.e. instead of "var":true or "var":false -> "var":"t").
 -   Sort presets by ID
 -   Fix #3496
 -   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
@@ -15,7 +19,7 @@
 -   Additional UI/UX improvements
 -   Segment class optimisations (internal)
 -   ESP-NOW sync
--   ESP-NOW Wiz remote JSON overrides (similar to IR JSON)
+-   ESP-NOW Wiz remote JSON overrides (similar to IR JSON) & bugfixes
 -   Gamma correction for custom palettes (#3399).
 -   Restore presets from browser local storage
 -   Optional effect blending
