@@ -165,6 +165,8 @@ void updateInterfaces(uint8_t callMode)
 
   sendDataWs();
   lastInterfaceUpdate = millis();
+  interfaceUpdateCallMode = 0; //disable further updates
+
   if (callMode == CALL_MODE_WS_SEND) return;
 
   #ifndef WLED_DISABLE_ALEXA
@@ -174,7 +176,6 @@ void updateInterfaces(uint8_t callMode)
   }
   #endif
   doPublishMqtt = true;
-  interfaceUpdateCallMode = 0; //disable
 }
 
 
@@ -226,7 +227,7 @@ void handleNightlight()
     if (!nightlightActiveOld) //init
     {
       nightlightStartTime = millis();
-      nightlightDelayMs = (int)(nightlightDelayMins*60000);
+      nightlightDelayMs = (unsigned)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
       for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color

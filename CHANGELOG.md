@@ -1,5 +1,35 @@
 ## WLED changelog
 
+#### Build 2309120 till build 2311030
+-   WLED version 0.15.0-a0
+-   Implement global JSON API boolean toggle.
+-   Sort presets by ID
+-   Fix #3496
+-   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
+-   Audio palettes (Audioreactive usermod, credit @netmindz)
+-   Better UI tooltips (@ajotnac, #3464)
+-   Better effect filters (filter dropdown)
+-   Fix udp sync (fix for #3487)
+-   Power button override (solves #3431)
+-   Additional HTTP request throttling (ESP8266)
+-   Additional UI/UX improvements
+-   Segment class optimisations (internal)
+-   ESP-NOW sync
+-   ESP-NOW Wiz remote JSON overrides (similar to IR JSON)
+-   Gamma correction for custom palettes (#3399).
+-   Restore presets from browser local storage
+-   Optional effect blending
+-   Restructured UDP Sync (internal)
+    -   Remove sync receive
+    -   Sync clarification
+-   Disallow 2D effects on non-2D segments
+-   Return of 2 audio simulations
+-   Bugfix in sync #3344 (internal)
+    -   remove excessive segments
+    -   ignore inactive segments if not syncing bounds
+    -   send UDP/WS on segment change
+    -   pop_back() when removing last segment
+
 #### Build 2310010, build 2310130
 -   Release of WLED version 0.14.0 "Hoshi"
 -   Bugfixes for #3400, #3403, #3405

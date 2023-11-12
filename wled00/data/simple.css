@@ -19,8 +19,8 @@
 	--c-r: #e42;
 	--c-g: #4e2;
 	--c-l: #48a;
-	--t-b: 0.5;
-	--c-o: rgba(34, 34, 34, 0.9);
+	--t-b: .5;
+	--c-o: rgba(34, 34, 34, .9);
 	--c-tb : rgba(34, 34, 34, var(--t-b));
 	--c-tba: rgba(102, 102, 102, var(--t-b));
 	--c-tbh: rgba(51, 51, 51, var(--t-b));
@@ -31,7 +31,7 @@
 	--tbp: 14px 8px 10px;
 	--bbp: 9px 0 7px 0;
 	--bhd: none;
-	--bmt: 0px;
+	--bmt: 0;
 }
 
 html {
@@ -86,11 +86,11 @@ a, a:visited {
 }
 
 button {
-	outline: none;
+	outline: 0;
 	cursor: pointer;
 	background-color: transparent;
-	border: none;
-	transition: color 0.3s, background-color 0.3s;
+	border: 0;
+	transition: color .3s, background-color .3s;
 	font-size: 19px;
 	color: var(--c-c);
 	min-width: 40px;
@@ -180,8 +180,8 @@ button:hover {
 .tab button {
 	background-color: transparent;
 	float: left;
-	border: none;
-	transition: color 0.3s, background-color 0.3s;
+	border: 0;
+	transition: color .3s, background-color .3s;
 	font-size: 17px;
 	color: var(--c-c);
 	min-width: 44px;
@@ -218,7 +218,7 @@ button:hover {
 	position: relative;
 	width: 100%;
 	box-sizing: border-box;
-	border: 0px;
+	border: 0;
 	overflow: auto;
 	height: 100%;
 	overscroll-behavior: none;
@@ -243,8 +243,8 @@ button:hover {
 	align-items: center;
 	justify-content: center;
 	z-index: 11;
-	opacity: 0.95;
-	transition: 0.7s;
+	opacity: .95;
+	transition: .7s;
 	pointer-events: none;
 }
 
@@ -267,24 +267,24 @@ button:hover {
 
 #toast.show {
 	opacity: 1;
-	animation: fadein 0.5s, fadein 0.5s 2.5s reverse;
+	animation: fadein .5s, fadein .5s 2.5s reverse;
 }
 
 #toast.error {
 	opacity: 1;
 	background-color: #b21;
-	animation: fadein 0.5s;
+	animation: fadein .5s;
 }
 
 .modal {
-	position:fixed;
-	left: 0px;
-	bottom: 0px;
-	right: 0px;
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	right: 0;
 	top: calc(var(--th) - 1px);
 	background-color: var(--c-o);
 	transform: translateY(100%);
-	transition: transform 0.4s;
+	transition: transform .4s;
 	padding: 8px;
 	font-size: 20px;
 	overflow: auto;
@@ -356,7 +356,7 @@ button:hover {
 }
 
 #heart {
-	transition: color 0.9s;
+	transition: color .9s;
 	font-size: 16px;
 	color: #f00;
 }
@@ -421,7 +421,7 @@ img {
 	padding: 4px 4px 2px;
 	font-size: 14px;
 	right: 3px;
-	transition: visibility 0.25s ease, opacity 0.25s ease;
+	transition: visibility .25s ease, opacity .25s ease;
 	opacity: 0;
 	visibility: hidden;
 }
@@ -531,9 +531,9 @@ input[type=range]::-moz-range-thumb {
 	cursor: pointer;
 	border: 1px solid var(--c-3);
 	border-radius: 25px;
-	transition-duration: 0.3s;
+	transition-duration: .3s;
 	-webkit-backface-visibility: hidden;
-	-webkit-transform:translate3d(0,0,0);
+	-webkit-transform: translate3d(0,0,0);
 	overflow: clip;
 	text-overflow: clip;
 	min-height: 40px;
@@ -586,13 +586,13 @@ option {
 input[type=number], input[type=text] {
 	background: var(--c-3);
 	color: var(--c-f);
-	border: 0px solid var(--c-f);
+	border: 0 solid var(--c-f);
 	border-radius: 5px;
 	padding: 8px;
 	margin: 6px 6px 6px 0;
 	font-size: 19px;
-	transition: background-color 0.2s;
-	outline: none;
+	transition: background-color .2s;
+	outline: 0;
 	width: 50px;
 	-webkit-appearance: textfield;
 	-moz-appearance: textfield;
@@ -614,9 +614,9 @@ input[type=number]::-webkit-outer-spin-button {
 
 .pid {
 	position: absolute;
-	top: 0px;
-	left: 0px;
-	padding: 12px 0px 0px 12px;
+	top: 0;
+	left: 0;
+	padding: 12px 0 0 12px;
 	font-size: 16px;
 	width: 20px;
 	text-align: center;
@@ -746,7 +746,7 @@ input[type=number]::-webkit-outer-spin-button {
 .list {
 	position: relative;
 	width: 280px;
-	transition: background-color 0.5s;
+	transition: background-color .5s;
     margin: auto auto 20px;
 	font-size: 19px;
 	line-height: 24px;
@@ -774,7 +774,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 /*
 .lstI:last-child {
-	border: none;
+	border: 0;
     border-radius: 0 0 20px 20px;
     padding-bottom: 10px;
 }
@@ -879,7 +879,7 @@ input[type=text].fnd:not(:placeholder-shown), input[type=text].fnd:hover {
 }
 ::-webkit-scrollbar-thumb {
 	background: var(--c-sb);
-	opacity: 0.2;
+	opacity: .2;
 	border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -927,7 +927,7 @@ input[type=text].fnd:not(:placeholder-shown), input[type=text].fnd:hover {
 		display: none !important;
 	}
 	#briwrap {
-		margin-top: 0px !important;
+		margin-top: 0 !important;
 		float: none;
 	}
 }

@@ -19,27 +19,41 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == SUBPAGE_WIFI)
   {
-    strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
+    char oldSSID[sizeof(clientSSID)];
 
-    if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
+    strcpy(oldSSID, clientSSID);
+    strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
+    if (!strcmp(oldSSID, clientSSID)) forceReconnect = true;
+
+    if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) {
+      strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
+      forceReconnect = true;
+    }
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
 
     apBehavior = request->arg(F("AB")).toInt();
+    strcpy(oldSSID, apSSID);
     strlcpy(apSSID, request->arg(F("AS")).c_str(), 33);
+    if (!strcmp(oldSSID, apSSID) && apActive) forceReconnect = true;
     apHide = request->hasArg(F("AH"));
     int passlen = request->arg(F("AP")).length();
-    if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg(F("AP")).c_str(), 65))) strlcpy(apPass, request->arg(F("AP")).c_str(), 65);
-    int t = request->arg(F("AC")).toInt(); if (t > 0 && t < 14) apChannel = t;
+    if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg(F("AP")).c_str(), 65))) {
+      strlcpy(apPass, request->arg(F("AP")).c_str(), 65);
+      forceReconnect = true;
+    }
+    int t = request->arg(F("AC")).toInt();
+    if (t != apChannel) forceReconnect = true;
+    if (t > 0 && t < 14) apChannel = t;
 
     noWifiSleep = request->hasArg(F("WS"));
 
     #ifndef WLED_DISABLE_ESPNOW
-    enable_espnow_remote = request->hasArg(F("RE"));
-    strlcpy(linked_remote,request->arg(F("RMAC")).c_str(), 13);
-
-    //Normalize MAC format to lowercase
-    strlcpy(linked_remote,strlwr(linked_remote), 13);
+    bool oldESPNow = enableESPNow;
+    enableESPNow = request->hasArg(F("RE"));
+    if (oldESPNow != enableESPNow) forceReconnect = true;
+    strlcpy(linked_remote, request->arg(F("RMAC")).c_str(), 13);
+    strlwr(linked_remote);  //Normalize MAC format to lowercase
     #endif
 
     #ifdef WLED_USE_ETHERNET
@@ -247,6 +261,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     fadeTransition = request->hasArg(F("TF"));
+    modeBlending = request->hasArg(F("EB"));
     t = request->arg(F("TD")).toInt();
     if (t >= 0) transitionDelayDefault = t;
     strip.paletteFade = request->hasArg(F("PF"));
@@ -271,7 +286,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == SUBPAGE_UI)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
-    syncToggleReceive = request->hasArg(F("ST"));
+    //syncToggleReceive = request->hasArg(F("ST"));
   #ifdef WLED_ENABLE_SIMPLE_UI
     if (simplifiedUI ^ request->hasArg(F("SU"))) {
       // UI selection changed, invalidate browser cache
@@ -293,6 +308,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("U2")).toInt();
     if (t > 0) udpPort2 = t;
 
+    #ifndef WLED_DISABLE_ESPNOW
+    useESPNowSync = request->hasArg(F("EN"));
+    #endif
+
     syncGroups = request->arg(F("GS")).toInt();
     receiveGroups = request->arg(F("GR")).toInt();
 
@@ -301,9 +320,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveNotificationEffects = request->hasArg(F("RX"));
     receiveSegmentOptions = request->hasArg(F("SO"));
     receiveSegmentBounds = request->hasArg(F("SG"));
-    receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
-    notifyDirectDefault = request->hasArg(F("SD"));
-    notifyDirect = notifyDirectDefault;
+    sendNotifications = request->hasArg(F("SS"));
+    notifyDirect = request->hasArg(F("SD"));
     notifyButton = request->hasArg(F("SB"));
     notifyAlexa = request->hasArg(F("SA"));
     notifyHue = request->hasArg(F("SH"));
@@ -317,7 +335,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!nodeListEnabled) Nodes.clear();
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
-    receiveDirect = request->hasArg(F("RD"));
+    receiveDirect = request->hasArg(F("RD")); // UDP realtime
     useMainSegmentOnly = request->hasArg(F("MO"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
@@ -1003,7 +1021,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //toggle receive UDP direct notifications
   pos = req.indexOf(F("RN="));
-  if (pos > 0) receiveNotifications = (req.charAt(pos+3) != '0');
+  if (pos > 0) receiveGroups = (req.charAt(pos+3) != '0') ? receiveGroups | 1 : receiveGroups & 0xFE;
 
   //receive live data via UDP/Hyperion
   pos = req.indexOf(F("RD="));

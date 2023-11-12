@@ -66,7 +66,7 @@ uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaul
   if (_count == 0) return defaultColorOrder;
   // upper nibble containd W swap information
   uint8_t swapW = defaultColorOrder >> 4;
-  for (uint8_t i = 0; i < _count; i++) {
+  for (unsigned i = 0; i < _count; i++) {
     if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
       return _mappings[i].colorOrder | (swapW << 4);
     }
@@ -118,7 +118,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
   if (bc.doubleBuffer && !allocData(bc.count * (Bus::hasWhite(_type) + 3*Bus::hasRGB(_type)))) return; //warning: hardcoded channel count
-  _buffering = bc.doubleBuffer;
+  //_buffering = bc.doubleBuffer;
   uint16_t lenToCreate = bc.count;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
@@ -128,7 +128,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
 
 void BusDigital::show() {
   if (!_valid) return;
-  if (_buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
+  if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     for (size_t i=0; i<_len; i++) {
       size_t offset = i*channels;
@@ -153,7 +153,7 @@ void BusDigital::show() {
     #endif
     for (int i=1; i<_skip; i++) PolyBus::setPixelColor(_busPtr, _iType, i, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
   }
-  PolyBus::show(_busPtr, _iType, !_buffering); // faster if buffer consistency is not important
+  PolyBus::show(_busPtr, _iType, !_data); // faster if buffer consistency is not important (use !_buffering this causes 20% FPS drop)
 }
 
 bool BusDigital::canShow() {
@@ -173,14 +173,14 @@ void BusDigital::setBrightness(uint8_t b) {
   Bus::setBrightness(b);
   PolyBus::setBrightness(_busPtr, _iType, b);
 
-  if (_buffering) return;
+  if (_data) return; // use _buffering this causes ~20% FPS drop
 
   // must update/repaint every LED in the NeoPixelBus buffer to the new brightness
   // the only case where repainting is unnecessary is when all pixels are set after the brightness change but before the next show
   // (which we can't rely on)
   uint16_t hwLen = _len;
   if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
-  for (uint_fast16_t i = 0; i < hwLen; i++) {
+  for (unsigned i = 0; i < hwLen; i++) {
     // use 0 as color order, actual order does not matter here as we just update the channel values as-is
     uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0),prevBri);
     PolyBus::setPixelColor(_busPtr, _iType, i, c, 0);
@@ -200,7 +200,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid) return;
   if (Bus::hasWhite(_type)) c = autoWhiteCalc(c);
   if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-  if (_buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
+  if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     if (Bus::hasRGB(_type)) {
@@ -228,9 +228,9 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
 }
 
 // returns original color if global buffering is enabled, else returns lossly restored color from bus
-uint32_t BusDigital::getPixelColor(uint16_t pix) {
+uint32_t IRAM_ATTR BusDigital::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
-  if (_buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
+  if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     uint32_t c;
@@ -261,7 +261,7 @@ uint32_t BusDigital::getPixelColor(uint16_t pix) {
 
 uint8_t BusDigital::getPins(uint8_t* pinArray) {
   uint8_t numPins = IS_2PIN(_type) ? 2 : 1;
-  for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
+  for (unsigned i = 0; i < numPins; i++) pinArray[i] = _pins[i];
   return numPins;
 }
 
@@ -305,7 +305,7 @@ BusPwm::BusPwm(BusConfig &bc)
   }
   #endif
 
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     uint8_t currentPin = bc.pins[i];
     if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
       deallocatePins(); return;
@@ -384,7 +384,7 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) {
 void BusPwm::show() {
   if (!_valid) return;
   uint8_t numPins = NUM_PWM_PINS(_type);
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     uint8_t scaled = (_data[i] * _bri) / 255;
     if (_reversed) scaled = 255 - scaled;
     #ifdef ESP8266
@@ -398,7 +398,7 @@ void BusPwm::show() {
 uint8_t BusPwm::getPins(uint8_t* pinArray) {
   if (!_valid) return 0;
   uint8_t numPins = NUM_PWM_PINS(_type);
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     pinArray[i] = _pins[i];
   }
   return numPins;
@@ -406,7 +406,7 @@ uint8_t BusPwm::getPins(uint8_t* pinArray) {
 
 void BusPwm::deallocatePins() {
   uint8_t numPins = NUM_PWM_PINS(_type);
-  for (uint8_t i = 0; i < numPins; i++) {
+  for (unsigned i = 0; i < numPins; i++) {
     pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
     if (!pinManager.isPinOk(_pins[i])) continue;
     #ifdef ESP8266
@@ -512,7 +512,7 @@ void BusNetwork::show() {
 }
 
 uint8_t BusNetwork::getPins(uint8_t* pinArray) {
-  for (uint8_t i = 0; i < 4; i++) {
+  for (unsigned i = 0; i < 4; i++) {
     pinArray[i] = _client[i];
   }
   return 4;
@@ -566,24 +566,24 @@ void BusManager::removeAll() {
   DEBUG_PRINTLN(F("Removing all."));
   //prevents crashes due to deleting busses while in use.
   while (!canAllShow()) yield();
-  for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
+  for (unsigned i = 0; i < numBusses; i++) delete busses[i];
   numBusses = 0;
 }
 
 void BusManager::show() {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->show();
   }
 }
 
 void BusManager::setStatusPixel(uint32_t c) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->setStatusPixel(c);
   }
 }
 
 void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     Bus* b = busses[i];
     uint16_t bstart = b->getStart();
     if (pix < bstart || pix >= bstart + b->getLength()) continue;
@@ -592,7 +592,7 @@ void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
 }
 
 void BusManager::setBrightness(uint8_t b) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->setBrightness(b);
   }
 }
@@ -607,7 +607,7 @@ void BusManager::setSegmentCCT(int16_t cct, bool allowWBCorrection) {
 }
 
 uint32_t BusManager::getPixelColor(uint16_t pix) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     Bus* b = busses[i];
     uint16_t bstart = b->getStart();
     if (pix < bstart || pix >= bstart + b->getLength()) continue;
@@ -617,7 +617,7 @@ uint32_t BusManager::getPixelColor(uint16_t pix) {
 }
 
 bool BusManager::canAllShow() {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (unsigned i = 0; i < numBusses; i++) {
     if (!busses[i]->canShow()) return false;
   }
   return true;
@@ -631,7 +631,7 @@ Bus* BusManager::getBus(uint8_t busNr) {
 //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
 uint16_t BusManager::getTotalLength() {
   uint16_t len = 0;
-  for (uint8_t i=0; i<numBusses; i++) len += busses[i]->getLength();
+  for (unsigned i=0; i<numBusses; i++) len += busses[i]->getLength();
   return len;
 }
 
