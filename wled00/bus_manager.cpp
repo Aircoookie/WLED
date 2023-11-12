@@ -118,7 +118,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
   if (bc.doubleBuffer && !allocData(bc.count * (Bus::hasWhite(_type) + 3*Bus::hasRGB(_type)))) return; //warning: hardcoded channel count
-  _buffering = bc.doubleBuffer;
+  //_buffering = bc.doubleBuffer;
   uint16_t lenToCreate = bc.count;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
@@ -128,7 +128,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
 
 void BusDigital::show() {
   if (!_valid) return;
-  if (_buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
+  if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     for (size_t i=0; i<_len; i++) {
       size_t offset = i*channels;
@@ -153,7 +153,7 @@ void BusDigital::show() {
     #endif
     for (int i=1; i<_skip; i++) PolyBus::setPixelColor(_busPtr, _iType, i, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
   }
-  PolyBus::show(_busPtr, _iType, !_buffering); // faster if buffer consistency is not important
+  PolyBus::show(_busPtr, _iType, !_data); // faster if buffer consistency is not important (use !_buffering this causes 20% FPS drop)
 }
 
 bool BusDigital::canShow() {
@@ -173,7 +173,7 @@ void BusDigital::setBrightness(uint8_t b) {
   Bus::setBrightness(b);
   PolyBus::setBrightness(_busPtr, _iType, b);
 
-  if (_buffering) return;
+  if (_data) return; // use _buffering this causes ~20% FPS drop
 
   // must update/repaint every LED in the NeoPixelBus buffer to the new brightness
   // the only case where repainting is unnecessary is when all pixels are set after the brightness change but before the next show
@@ -200,7 +200,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid) return;
   if (Bus::hasWhite(_type)) c = autoWhiteCalc(c);
   if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-  if (_buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
+  if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     if (Bus::hasRGB(_type)) {
@@ -228,9 +228,9 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
 }
 
 // returns original color if global buffering is enabled, else returns lossly restored color from bus
-uint32_t BusDigital::getPixelColor(uint16_t pix) {
+uint32_t IRAM_ATTR BusDigital::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
-  if (_buffering) { // should be _data != nullptr, but that causes ~20% FPS drop
+  if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     uint32_t c;

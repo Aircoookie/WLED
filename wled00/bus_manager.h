@@ -222,7 +222,7 @@ class BusDigital : public Bus {
     uint16_t _frequencykHz;
     void * _busPtr;
     const ColorOrderMap &_colorOrderMap;
-    bool _buffering; // temporary until we figure out why comparison "_data != nullptr" causes severe FPS drop
+    //bool _buffering; // temporary until we figure out why comparison "_data" causes severe FPS drop
 
     inline uint32_t restoreColorLossy(uint32_t c, uint8_t restoreBri) {
       if (restoreBri < 255) {
