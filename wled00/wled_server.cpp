@@ -1,9 +1,6 @@
 #include "wled.h"
 
 #include "html_ui.h"
-#ifdef WLED_ENABLE_SIMPLE_UI
-  #include "html_simple.h"
-#endif
 #include "html_settings.h"
 #include "html_other.h"
 #ifdef WLED_ENABLE_PIXART
@@ -253,26 +250,6 @@ void initServer()
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
 
-  server.on("/index.htm", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleFileRead(request, "/index.htm")) return;
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-  });
-
-#ifdef WLED_ENABLE_SIMPLE_UI
-  server.on("/simple.htm", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleFileRead(request, "/simple.htm")) return;
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-  });
-#endif
-
   server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
@@ -460,13 +437,7 @@ void serveIndex(AsyncWebServerRequest* request)
 
   if (handleIfNoneMatchCacheHeader(request)) return;
 
-  AsyncWebServerResponse *response;
-#ifdef WLED_ENABLE_SIMPLE_UI
-  if (simplifiedUI)
-    response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
-  else
-#endif
-    response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
+  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
   response->addHeader(FPSTR(s_content_enc),"gzip");
   setStaticContentCacheHeaders(response);
