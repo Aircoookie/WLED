@@ -3046,11 +3046,13 @@ function simplifyUI() {
 	// Chage height of palette list
 	gId("pallist").style.height = "300px";
 	gId("pallist").style.overflow = "scroll";
-	// fix shadow
+	// Fix shadow
 	gId("pallist").style.margin = "0px -16px";
 	gId("pallist").style.padding = "0px 16px";
-	// set correct position of selected and sticky palette
+	// Set correct position of selected and sticky palette
 	gId("pallist").classList.add("simplified");
+	// We only want Effect Search to stay on top
+	gId("palw").firstElementChild.classList.remove("staytop");
 
 	// Hide filter options
 	gId("filters").style.display = "none";
