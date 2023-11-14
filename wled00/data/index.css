@@ -1325,9 +1325,17 @@ TD .checkmark, TD .radiomark {
 	top: calc(var(--sti) + 42px);
 }
 
+#pallist.simplified .lstI.selected {
+	top: 42px;
+}
+
 #fxlist .lstI.sticky,
 #pallist .lstI.sticky {
 	top: var(--sti);
+}
+
+#pallist.simplified .lstI.sticky {
+	top: 0px;
 }
 
 /* list item content */

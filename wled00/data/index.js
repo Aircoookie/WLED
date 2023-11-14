@@ -12,7 +12,7 @@ var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0, wW;
-var simpleUI = false;
+var simplifiedUI = false;
 var tr = 7;
 var d = document;
 var palettesData;
@@ -626,6 +626,7 @@ function parseInfo(i) {
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
+	simplifiedUI    = i.simplifiedui;
 	ledCount    = i.leds.count;
 	//syncTglRecv = i.str;
 	maxSeg      = i.leds.maxseg;
@@ -1661,6 +1662,7 @@ function requestJson(command=null)
 			parseInfo(i);
 			populatePalettes(i);
 			if (isInfo) populateInfo(i);
+			if (simplifiedUI) simplifyUI();
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
@@ -2903,7 +2905,7 @@ function hasIroClass(classList)
 //required by rangetouch.js
 function lock(e)
 {
-	if (pcMode || simpleUI) return;
+	if (pcMode || simplifiedUI) return;
 	var l = e.target.classList;
 	var pl = e.target.parentElement.classList;
 
@@ -2917,7 +2919,7 @@ function lock(e)
 //required by rangetouch.js
 function move(e)
 {
-	if(!locked || pcMode || simpleUI) return;
+	if(!locked || pcMode || simplifiedUI) return;
 	var clientX = unify(e).clientX;
 	var dx = clientX - x0;
 	var s = Math.sign(dx);
@@ -3017,6 +3019,42 @@ function tooltip()
 		});
 	});
 };
+function simplifyUI() {
+	// Disable PC Mode as it does not exist in simple UI
+	if (pcMode) togglePcMode(true);
+
+	// Put effects below palett list
+	gId("Colors").innerHTML += gId("Effects").innerHTML;
+	// Put preset quick load before palette list
+	gId("Colors").insertBefore(gId("pql"), gId("pall"));
+
+	// Hide buttons in top bar
+	gId("buttonNl").style.display = "none";
+	gId("buttonSync").style.display = "none";
+	gId("buttonSr").style.display = "none";
+	gId("buttonPcm").style.display = "none";
+
+	// Hide bottom bar 
+	gId("bot").style.display = "none";
+	document.documentElement.style.setProperty('--bh', '0px');
+
+	// Hide other tabs
+	gId("Effects").style.display = "none";
+	gId("Segments").style.display = "none";
+	gId("Presets").style.display = "none";
+
+	// Chage height of palette list
+	gId("pallist").style.height = "300px";
+	gId("pallist").style.overflow = "scroll";
+	// fix shadow
+	gId("pallist").style.margin = "0px -16px";
+	gId("pallist").style.padding = "0px 16px";
+	// set correct position of selected and sticky palette
+	gId("pallist").classList.add("simplified");
+
+	// Hide filter options
+	gId("filters").style.display = "none";
+}
 
 size();
 _C.style.setProperty('--n', N);
