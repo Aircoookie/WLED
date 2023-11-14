@@ -1177,10 +1177,11 @@ class PolyBus {
       if (num > 3) return I_NONE;
       //if (num > 3) offset = num -4; // I2S not supported yet
       #else
-      #ifndef WLEDMM_FASTPATH
       // standard ESP32 has 8 RMT and 2 I2S channels
+      #ifndef WLEDMM_FASTPATH
       if (num > 9) return I_NONE;
-      if (num > 7) offset = num -7;
+      if (num == 8) offset = 2;  // first use I2S#1 (so #0 stays available for audio)
+      if (num == 9) offset = 1;  // use I2S#0 as the last driver
       #else
       // ESP32 "audio_fastpath" - 8 RMT and 1 I2S channels. RMT 5-8 have sending delays, so use I2S#1 before going for RMT 5-8
       if (num > 8) return I_NONE;

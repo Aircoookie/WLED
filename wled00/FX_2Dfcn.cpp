@@ -51,8 +51,9 @@ void WS2812FX::setUpMatrix() {
       }
     }
 
-    // safety check
-    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
+    // safety check 
+    // WLEDMM no chech on Segment::maxWidth * Segment::maxHeight > MAX_LEDS || 
+    if (Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
       DEBUG_PRINTF("2D Bounds error. %d x %d\n", Segment::maxWidth, Segment::maxHeight);
       isMatrix = false;
       Segment::maxWidth = _length;
@@ -158,7 +159,7 @@ void WS2812FX::setUpMatrix() {
     } else { // memory allocation error
       customMappingTableSize = 0;
       USER_PRINTLN(F("Ledmap alloc error."));
-      isMatrix = false;
+      isMatrix = false; //WLEDMM does not like this done in teh background while end users are confused whats happened...
       panels = 0;
       panel.clear();
       Segment::maxWidth = _length;

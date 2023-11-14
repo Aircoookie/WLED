@@ -422,8 +422,9 @@ void handleNotifications()
           }
           if (version > 11) {
             // when applying synced options ignore selected as it may be used as indicator of which segments to sync
-            // freeze, reset & transitional should never be synced
-            selseg.options = (selseg.options & 0x0071U) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0x8E); // ignore selected, freeze, reset & transitional
+            // freeze, reset should never be synced
+            // LSB to MSB: select, reverse, on, mirror, freeze, reset, reverse_y, mirror_y, transpose, map1d2d (3), ssim (2), set (2)
+            selseg.options = (selseg.options & 0b0000000000110001U) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0b11001110U); // ignore selected, freeze, reset
             if (applyEffects) {
               selseg.custom1 = udpIn[29+ofs];
               selseg.custom2 = udpIn[30+ofs];

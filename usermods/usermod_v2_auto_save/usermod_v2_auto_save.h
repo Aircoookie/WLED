@@ -90,7 +90,11 @@ class AutoSaveUsermod : public Usermod {
       #ifdef USERMOD_FOUR_LINE_DISPLAY
       if (display != nullptr) {
         display->wakeDisplay();
+      #if defined(USE_ALT_DISPLAY) || defined(USE_ALT_DISPlAY)
         if (display->canDraw()) display->overlay("Settings", "Auto Saved", 1500);   // WLEDMM bugfix
+      #else
+        display->overlay("Settings", "Auto Saved", 1500);
+      #endif
       }
       #endif
     }

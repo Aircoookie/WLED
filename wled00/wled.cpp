@@ -3,6 +3,8 @@
 #include "wled_ethernet.h"
 #include <Arduino.h>
 
+#warning WLED-MM GPL-v3. By installing WLED MM you implicitly accept the terms!
+
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"

@@ -44,13 +44,8 @@
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-      #ifndef WLEDMM_FASTPATH
-        #define WLED_MAX_BUSSES 8
-        #define WLED_MIN_VIRTUAL_BUSSES 2
-      #else
-        #define WLED_MAX_BUSSES 9           // WLEDMM I2S#1 is availeable for LEDs
+        #define WLED_MAX_BUSSES 9             // WLEDMM I2S#1 is availeable for LEDs
         #define WLED_MIN_VIRTUAL_BUSSES 1
-      #endif
       #else
         #define WLED_MAX_BUSSES 10
         #define WLED_MIN_VIRTUAL_BUSSES 0
@@ -137,7 +132,10 @@
 #define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
 #define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
-#define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
+#define USERMOD_ID_KLIPPER               40     //Usermod Klipper percentage
+#define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
+#define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
+#define USERMOD_ID_LDR_DUSK_DAWN         43     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
 //WLEDMM
 #define USERMOD_ID_MCUTEMP               89     //Usermod "usermod_v2_artifx.h"
 #define USERMOD_ID_ARTIFX                90     //Usermod "usermod_v2_artifx.h"
@@ -278,7 +276,7 @@
 #define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES       11
+#define WLED_NUM_ETH_TYPES       12 //WLEDMM +1 for Olimex ESP32-Gateway
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
@@ -291,6 +289,7 @@
 #define WLED_ETH_QUINLED_OCTA     8
 #define WLED_ETH_ABCWLEDV43ETH    9
 #define WLED_ETH_SERG74          10
+#define WLED_ETH_OLIMEX_GTW      11
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
@@ -382,7 +381,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3792   // WLEDMM added 696 bytes of margin (was 3096) for audioreactive UI
+#define SETTINGS_STACK_BUF_SIZE 3834   // WLEDMM added 696+32 bytes of margin (was 3096) for audioreactive UI
 #endif
 
 #ifdef WLED_USE_ETHERNET
