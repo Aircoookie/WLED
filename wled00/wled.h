@@ -3,7 +3,7 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.14.0-b2X
+   @version 0.14.1-b1x
    @author Christian Schwinne
  */
 
@@ -546,7 +546,7 @@ WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use i
 // wifi
 WLED_GLOBAL bool apActive _INIT(false);
 WLED_GLOBAL bool forceReconnect _INIT(false);
-WLED_GLOBAL uint32_t lastReconnectAttempt _INIT(0);
+WLED_GLOBAL unsigned long lastReconnectAttempt _INIT(0);
 WLED_GLOBAL bool interfacesInited _INIT(false);
 WLED_GLOBAL bool wasConnected _INIT(false);
 
