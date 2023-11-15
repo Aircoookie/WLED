@@ -24,6 +24,8 @@ void HttpPullLightControl::setup() {
 
   // Go on with generating a unique ID and splitting the URL into parts
   uniqueId = generateUniqueId();  // Cache the unique ID
+  DEBUG_PRINT(F("UniqueId calculated: "));
+  DEBUG_PRINTLN(uniqueId);
   parseUrl();
   DEBUG_PRINTLN(F("HttpPullLightControl successfully setup"));
 }
@@ -42,20 +44,51 @@ void HttpPullLightControl::loop() {
 
 // Generate a unique ID based on the MAC address and a SALT
 String HttpPullLightControl::generateUniqueId() {
-  // We use an easy to implement Fowler–Noll–Vo hash function so we dont need any Sha1.h or Crypto.h dependencies
   uint8_t mac[6];
   WiFi.macAddress(mac);
   char macStr[18];
   sprintf(macStr, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-  String input = String(macStr) + salt;
-  unsigned long hashValue = FNV_offset_basis;
-  for (char c : input) {
-    hashValue *= FNV_prime;
-    hashValue ^= c;
-  }
-  DEBUG_PRINT(F("Unique ID generated: "));
-  DEBUG_PRINTLN(hashValue);
-  return String(hashValue);
+  // Set the MAC Address to a string and make it UPPERcase
+  String macString = String(macStr);
+  macString.toUpperCase();
+  DEBUG_PRINT(F("WiFi MAC address is: "));
+  DEBUG_PRINTLN(macString);
+  DEBUG_PRINT(F("Salt is: "));
+  DEBUG_PRINTLN(salt);
+  String input = macString + salt;
+
+  #ifdef ESP8266
+    // For ESP8266 we use the Hash.h library which is built into the ESP8266 Core
+    return sha1(input);
+  #endif
+
+  #ifdef ESP32
+    // For ESP32 we use the mbedtls library which is built into the ESP32 core
+    int status = 0;
+    unsigned char shaResult[20]; // SHA1 produces a hash of 20 bytes  (which is 40 HEX characters)
+    mbedtls_sha1_context ctx;
+    mbedtls_sha1_init(&ctx);
+    status = mbedtls_sha1_starts_ret(&ctx);
+    if (status != 0) {
+      DEBUG_PRINTLN(F("Error starting SHA1 checksum calculation"));
+    }
+    status = mbedtls_sha1_update_ret(&ctx, reinterpret_cast<const unsigned char*>(input.c_str()), input.length());
+    if (status != 0) {
+      DEBUG_PRINTLN(F("Error feeding update buffer into ongoing SHA1 checksum calculation"));
+    }
+    status = mbedtls_sha1_finish_ret(&ctx, shaResult);
+    if (status != 0) {
+      DEBUG_PRINTLN(F("Error finishing SHA1 checksum calculation"));
+    }
+    mbedtls_sha1_free(&ctx);
+
+    // Convert the Hash to a hexadecimal string
+    char buf[41];
+    for (int i = 0; i < 20; i++) {
+      sprintf(&buf[i*2], "%02x", shaResult[i]);
+    }
+    return String(buf);
+  #endif
 }
 
 // This function is called when the user updates the Sald and so we need to re-calculate the unique ID
@@ -63,6 +96,8 @@ void HttpPullLightControl::updateSalt(String newSalt) {
   DEBUG_PRINTLN(F("Salt updated"));
   this->salt = newSalt;
   uniqueId = generateUniqueId();
+  DEBUG_PRINT(F("New UniqueId is: "));
+  DEBUG_PRINTLN(uniqueId);
 }
 
 // The function is used to separate the URL in a host part and a path part

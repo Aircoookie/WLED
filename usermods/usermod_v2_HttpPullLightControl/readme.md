@@ -17,7 +17,7 @@ The `usermod_v2_HttpPullLightControl` is a custom user module for WLED that enab
 * Specify the URL endpoint and polling interval.
 
 ## JSON Format and examples
-* The module sends a GET request to the configured URL, appending a unique identifier as a query parameter: `https://www.example.com/mycustompage.php?id=xxxxxxxx` where xxxxxxx is a hash of the MAC address combined with a given salt.
+* The module sends a GET request to the configured URL, appending a unique identifier as a query parameter: `https://www.example.com/mycustompage.php?id=xxxxxxxx` where xxxxxxx is a 40 character long SHA1 hash of the MAC address combined with a given salt.
 
 * Response Format (since v0.0.3) it is eactly the same as the WLED JSON API, see: https://kno.wled.ge/interfaces/json-api/
 After getting the URL (it can be a static file like static.json or a mylogic.php which gives a dynamic response), the response is read and parsed to WLED.

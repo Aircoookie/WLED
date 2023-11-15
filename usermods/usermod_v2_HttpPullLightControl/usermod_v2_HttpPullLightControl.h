@@ -1,7 +1,7 @@
 #pragma once
 /*
  * Usermod: HttpPullLightControl
- * Versie: 0.0.3
+ * Versie: 0.0.4
  * Repository: https://github.com/roelbroersma/WLED-usermodv2_HttpPullLightControl
  * Author: Roel Broersma
  * Website: https://www.roelbroersma.nl
@@ -19,7 +19,16 @@
 
 #include "wled.h"
 
-#define HTTP_PULL_LIGHT_CONTROL_VERSION "0.0.3"
+// Use the following for SHA1 computation of our HASH, unfortunatelly PlatformIO doesnt recognize Hash.h while its already in the Core.
+// We use Hash.h for ESP8266 (in the core) and mbedtls/sha256.h for ESP32 (in the core).
+#ifdef ESP8266
+  #include <Hash.h>
+#endif
+#ifdef ESP32
+  #include "mbedtls/sha1.h"
+#endif
+
+#define HTTP_PULL_LIGHT_CONTROL_VERSION "0.0.4"
 
 class HttpPullLightControl : public Usermod {
 private:
