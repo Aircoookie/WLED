@@ -94,9 +94,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip, awmode, channelSwap;
-    uint16_t length, start;
+    uint8_t colorOrder, type, skip, awmode, channelSwap, maPerLed;
+    uint16_t length, start, maMax;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
+
+    strip.ablMilliampsMax = request->arg(F("MA")).toInt();
+    //strip.milliampsPerLed = request->arg(F("LA")).toInt();
 
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
@@ -120,6 +123,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
       char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed (DotStar & PWM)
+      char la[4] = "LA"; la[2] = 48+s; la[3] = 0; //LED mA
+      char ma[4] = "MA"; ma[2] = 48+s; ma[3] = 0; //max mA
       if (!request->hasArg(lp)) {
         DEBUG_PRINT(F("No data for "));
         DEBUG_PRINTLN(s);
@@ -164,10 +169,17 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         freqHz = 0;
       }
       channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
+      if ((type > TYPE_TM1814 && type < TYPE_WS2801) || type >= TYPE_NET_DDP_RGB) { // analog and virtual
+        maPerLed = 0;
+        maMax = 0;
+      } else {
+        maPerLed = request->arg(la).toInt();
+        maMax = request->arg(ma).toInt(); // if ABL is disabled this will be 0
+      }
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freqHz, useGlobalLedBuffer);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freqHz, useGlobalLedBuffer, maPerLed, maMax);
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
@@ -240,9 +252,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
     touchThreshold = request->arg(F("TT")).toInt();
-
-    strip.ablMilliampsMax = request->arg(F("MA")).toInt();
-    strip.milliampsPerLed = request->arg(F("LA")).toInt();
 
     briS = request->arg(F("CA")).toInt();
 

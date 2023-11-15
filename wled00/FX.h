@@ -933,9 +933,6 @@ class WS2812FX {  // 96 bytes
     uint8_t _qGrouping, _qSpacing;
     uint16_t _qOffset;
 
-    uint8_t
-      estimateCurrentAndLimitBri(void);
-
     void
       setUpSegmentFromQueuedChanges(void);
 };

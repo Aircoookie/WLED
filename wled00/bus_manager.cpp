@@ -101,6 +101,8 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
 : Bus(bc.type, bc.start, bc.autoWhite, bc.count, bc.reversed, (bc.refreshReq || bc.type == TYPE_TM1814))
 , _skip(bc.skipAmount) //sacrificial pixels
 , _colorOrder(bc.colorOrder)
+, _milliAmpsPerLed(bc.milliAmpsPerLed)
+, _milliAmpsMax(bc.milliAmpsMax)
 , _colorOrderMap(com)
 {
   if (!IS_DIGITAL(bc.type) || !bc.count) return;
@@ -126,8 +128,81 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], _pins[1], _iType);
 }
 
+//fine tune power estimation constants for your setup
+//you can set it to 0 if the ESP is powered by USB and the LEDs by external
+#ifndef MA_FOR_ESP
+  #ifdef ESP8266
+    #define MA_FOR_ESP         80 //how much mA does the ESP use (Wemos D1 about 80mA)
+  #else
+    #define MA_FOR_ESP        120 //how much mA does the ESP use (ESP32 about 120mA)
+  #endif
+#endif
+
+//DISCLAIMER
+//The following function attemps to calculate the current LED power usage,
+//and will limit the brightness to stay below a set amperage threshold.
+//It is NOT a measurement and NOT guaranteed to stay within the ablMilliampsMax margin.
+//Stay safe with high amperage and have a reasonable safety margin!
+//I am NOT to be held liable for burned down garages or houses!
+
+// To disable brightness limiter we either set output max current to 0 or single LED current to 0
+uint8_t BusDigital::estimateCurrentAndLimitBri() {
+  bool useWackyWS2815PowerModel = false;
+  byte actualMilliampsPerLed = _milliAmpsPerLed;
+
+  if (_milliAmpsMax < MA_FOR_ESP || actualMilliampsPerLed == 0) { //0 mA per LED and too low numbers turn off calculation
+    return _bri;
+  }
+
+  if (_milliAmpsPerLed == 255) {
+    useWackyWS2815PowerModel = true;
+    actualMilliampsPerLed = 12; // from testing an actual strip
+  }
+
+  size_t powerBudget = (_milliAmpsMax - MA_FOR_ESP); //100mA for ESP power
+
+  uint32_t busPowerSum = 0;
+  for (unsigned i = 0; i < getLength(); i++) {  //sum up the usage of each LED
+    uint32_t c = getPixelColor(i); // always returns original or restored color without brightness scaling
+    byte r = R(c), g = G(c), b = B(c), w = W(c);
+
+    if (useWackyWS2815PowerModel) { //ignore white component on WS2815 power calculation
+      busPowerSum += (max(max(r,g),b)) * 3;
+    } else {
+      busPowerSum += (r + g + b + w);
+    }
+  }
+
+  if (hasWhite()) { //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    busPowerSum *= 3;
+    busPowerSum >>= 2; //same as /= 4
+  }
+
+  if (powerBudget > getLength()) { //each LED uses about 1mA in standby, exclude that from power budget
+    powerBudget -= getLength();
+  } else {
+    powerBudget = 0;
+  }
+
+  // powerSum has all the values of channels summed (max would be getLength()*765 as white is excluded) so convert to milliAmps
+  busPowerSum = (busPowerSum * actualMilliampsPerLed) / 765;
+
+  uint8_t newBri = _bri;
+  if (busPowerSum * _bri / 255 > powerBudget) { //scale brightness down to stay in current limit
+    float scale = (float)(powerBudget * 255) / (float)(busPowerSum * _bri);
+    uint16_t scaleI = scale * 255;
+    uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
+    newBri = unsigned(_bri * scaleB) / 256 + 1;
+  }
+  return newBri;
+}
+
 void BusDigital::show() {
   if (!_valid) return;
+
+  uint8_t newBri = estimateCurrentAndLimitBri();
+  if (newBri < _bri) PolyBus::setBrightness(_busPtr, _iType, newBri); // limit brightness to stay within current limits
+
   if (_data) { // use _buffering this causes ~20% FPS drop
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     for (size_t i=0; i<_len; i++) {
@@ -152,8 +227,22 @@ void BusDigital::show() {
     if (_skip) PolyBus::setPixelColor(_busPtr, _iType, 0, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
     #endif
     for (int i=1; i<_skip; i++) PolyBus::setPixelColor(_busPtr, _iType, i, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
+  } else {
+    if (newBri < _bri) {
+      uint16_t hwLen = _len;
+      if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
+      for (unsigned i = 0; i < hwLen; i++) {
+        // use 0 as color order, actual order does not matter here as we just update the channel values as-is
+        uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0), _bri);
+        PolyBus::setPixelColor(_busPtr, _iType, i, c, 0); // repaint all pixels with new brightness
+      }
+    }
   }
   PolyBus::show(_busPtr, _iType, !_data); // faster if buffer consistency is not important (use !_buffering this causes 20% FPS drop)
+  // restore bus brightness to its original value
+  // this is done right after show, so this is only OK if LED updates are completed before show() returns
+  // or async show has a separate buffer (ESP32 RMT and I2S are ok)
+  if (newBri < _bri) PolyBus::setBrightness(_busPtr, _iType, _bri);
 }
 
 bool BusDigital::canShow() {
@@ -172,7 +261,7 @@ void BusDigital::setBrightness(uint8_t b) {
   uint8_t prevBri = _bri;
   Bus::setBrightness(b);
   PolyBus::setBrightness(_busPtr, _iType, b);
-
+/*
   if (_data) return; // use _buffering this causes ~20% FPS drop
 
   // must update/repaint every LED in the NeoPixelBus buffer to the new brightness
@@ -182,9 +271,10 @@ void BusDigital::setBrightness(uint8_t b) {
   if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
   for (unsigned i = 0; i < hwLen; i++) {
     // use 0 as color order, actual order does not matter here as we just update the channel values as-is
-    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0),prevBri);
+    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0), prevBri);
     PolyBus::setPixelColor(_busPtr, _iType, i, c, 0);
   }
+*/
 }
 
 //If LEDs are skipped, it is possible to use the first as a status LED.

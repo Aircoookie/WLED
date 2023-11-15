@@ -107,32 +107,55 @@
 		}
 		function enABL()
 		{
-			var en = gId('able').checked;
-			d.Sf.LA.value = (en) ? laprev:0;
+			var en = d.Sf["ABL"].checked;
+			d.Sf["MA"].min = en ? 250 : 0;
 			gId('abl').style.display = (en) ? 'inline':'none';
 			gId('psu2').style.display = (en) ? 'inline':'none';
-			if (d.Sf.LA.value > 0) setABL();
+			if (!en) d.Sf["PPL"].checked = false;
+			enPPL();
 			UI();
 		}
-		function enLA()
+		function enPPL()
 		{
-			var val = d.Sf.LAsel.value;
-			d.Sf.LA.value = val;
-			gId('LAdis').style.display = (val == 50) ? 'inline':'none';
-			UI();
+			const abl = d.Sf["ABL"].checked;
+			const en = d.Sf["PPL"].checked;
+			d.Sf["MA"].readonly = en;
+			gId("ppldis").style.display = en ? 'inline' : 'none';
+			d.Sf.querySelectorAll("#mLC input[name^=MA]").forEach((i,n)=>{
+				gId("PSU"+n).style.display = en ? "inline" : "none";
+				const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
+				i.min = en && !((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 250 : 0;
+				if (!abl) i.value = 0;
+			});
+		}
+		function enLA(s,n)
+		{
+			const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
+			gId('LAdis'+n).style.display = s.selectedIndex==5 ? "inline" : "none";
+			d.Sf["LA"+n].value = s.value==="0" ? 55 : s.value;
+			d.Sf["LA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 1;
 		}
 		function setABL()
 		{
-			gId('able').checked = true;
-			d.Sf.LAsel.value = 50;
-			switch (parseInt(d.Sf.LA.value)) {
-				case 0: gId('able').checked = false; enABL(); break;
-				case 30: d.Sf.LAsel.value = 30; break;
-				case 35: d.Sf.LAsel.value = 35; break;
-				case 55: d.Sf.LAsel.value = 55; break;
-				case 255: d.Sf.LAsel.value = 255; break;
-				default: gId('LAdis').style.display = 'inline';
-			}
+			d.Sf["ABL"].checked = false;
+			// check if ABL is enabled (max mA entered per output)
+			d.Sf.querySelectorAll("#mLC input[name^=MA]").forEach((i,n)=>{
+				if (parseInt(i.value) > 0) d.Sf["ABL"].checked = true;
+			});
+			// select appropriate LED current
+			d.Sf.querySelectorAll("#mLC select[name^=LAsel]").forEach((sel,n)=>{
+				sel.value = 0; // set custom
+				switch (parseInt(d.Sf["LA"+n].value)) {
+					case 0: break; // disable ABL
+					case 15: sel.value = 15; break;
+					case 30: sel.value = 30; break;
+					case 35: sel.value = 35; break;
+					case 55: sel.value = 55; break;
+					case 255: sel.value = 255; break;
+				}
+				enLA(sel,n);
+			});
+			enABL();
 			gId('m1').innerHTML = maxM;
 		}
 		//returns mem usage
@@ -161,19 +184,22 @@
 		function UI(change=false)
 		{
 			let isRGBW = false, gRGBW = false, memu = 0;
-
-			gId('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
-
-			if (d.Sf.LA.value == 255) laprev = 12;
-			else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
+			let sumMA = 0, busMA = 0;
+			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
+			const ablEN = d.Sf["ABL"].checked;
+			const pplEN = d.Sf["PPL"].checked;
 
 			// enable/disable LED fields
 			d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((s)=>{
 				// is the field a LED type?
 				var n = s.name.substring(2);
 				var t = parseInt(s.value);
+				let isDig =  ((t >= 16 && t < 32) || (t >= 50 && t < 64));
+				let isVir = (t >= 80 && t < 96);
+				let isPwm = (t >= 40 && t < 48);
 				gId("p0d"+n).innerHTML = (t>=80 && t<96) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
 				gId("p1d"+n).innerHTML = (t> 49 && t<64) ? "Clk GPIO:" : "";
+				gId("abl"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none" : "inline";
 				//var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
 				memu += getMem(t, n); // calc memory
@@ -197,6 +223,8 @@
 				if (change) {
 					gId("rf"+n).checked = (gId("rf"+n).checked || t == 31); // LEDs require data in off state
 					if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
+					d.Sf["LA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 1;
+					d.Sf["MA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 250;
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
 				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
@@ -211,6 +239,9 @@
 				gId("dig"+n+"l").style.display = (t > 48 && t < 64) ? "inline":"none";  // bus clock speed
 				gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
 				gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
+				if (ablEN && pplEN && !((t >= 80 && t < 96) || (t >= 40 && t < 48))) {
+					sumMA += parseInt(d.Sf["MA"+n].value);
+				}
 			});
 			// display global white channel overrides
 			gId("wc").style.display = (gRGBW) ? 'inline':'none';
@@ -220,7 +251,6 @@
 			}
 			// check for pin conflicts
 			var LCs = d.Sf.querySelectorAll("#mLC input[name^=L]"); // input fields
-			var sLC = 0, sPC = 0, maxLC = 0;
 			for (i=0; i<LCs.length; i++) {
 				var nm = LCs[i].name.substring(0,2);  // field name
 				var n  = LCs[i].name.substring(2);    // bus number
@@ -233,19 +263,25 @@
 						var s = parseInt(gId("ls"+n).value); //start value
 						if (s+c > sLC) sLC = s+c; //update total count
 						if(c>maxLC)maxLC=c; //max per output
-						var t = parseInt(d.getElementsByName("LT"+n)[0].value); // LED type SELECT
+						var t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
 						if (t<80) sPC+=c; //virtual out busses do not count towards physical LEDs
+						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) sDI+=c;
+						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) {
+							let maPL = parseInt(d.Sf["LA"+n].value);
+							if (maPL==255) maPL = 12;
+							busMA += maPL*c;
+						}
 					} // increase led count
 					continue;
 				}
 				// do we have led pins for digital leds
 				if (nm=="L0" || nm=="L1") {
-					var lc=d.getElementsByName("LC"+n)[0];
+					var lc=d.Sf["LC"+n];
 					lc.max=maxPB; // update max led count value
 				}
 				// ignore IP address (stored in pins for virtual busses)
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-					var t = parseInt(d.getElementsByName("LT"+n)[0].value); // LED type SELECT
+					var t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
 					if (t>=80) {
 						LCs[i].max = 255;
 						LCs[i].min = 0;
@@ -267,7 +303,7 @@
 							if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4"/* || n2=="RL" || n2=="BT" || n2=="IR"*/) {
 								if (n2.substring(0,1)==="L") {
 									var m  = LCs[j].name.substring(2);
-									var t2 = parseInt(d.getElementsByName("LT"+m)[0].value, 10);
+									var t2 = parseInt(d.Sf["LT"+m].value, 10);
 									if (t2>=80) continue;
 								}
 								if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));  // add current pin
@@ -282,6 +318,14 @@
 				//	LCs[i].min = -1;
 				//}
 			}
+			d.Sf.querySelectorAll("#mLC input[name^=LC]").forEach((s,n)=>{
+				let c = parseInt(s.value,10); //get LED count
+				let t = parseInt(d.Sf["LT"+n].value);
+				if (ablEN) {
+					let v = Math.round(parseInt(d.Sf["MA"].value,10)*c/sDI);
+					if (!pplEN && !((t >= 80 && t < 96) || (t >= 40 && t < 48))) d.Sf["MA"+n].value = v;
+				} else d.Sf["MA"+n].value = 0;
+			});
 			// update total led count
 			gId("lc").textContent = sLC;
 			gId("pc").textContent = (sLC == sPC) ? "":"(" + sPC + " physical)";
@@ -294,27 +338,20 @@
 			gId('ledwarning').style.color = (maxLC > Math.max(maxPB,800) || bquot > 100) ? 'red':'orange';
 			gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
 			// calculate power
-			var val = Math.ceil((100 + sPC * laprev)/500)/2;
+			if (pplEN) d.Sf.MA.value = sumMA;
+			gId('ampwarning').style.display = (parseInt(d.Sf.MA.value,10) > 7200) ? 'inline':'none';
+			var val = Math.ceil((100 + busMA)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
-			var s = "";
-			var is12V = (d.Sf.LAsel.value == 30);
-			var isWS2815 = (d.Sf.LAsel.value == 255);
-			if (val < 1.02 && !is12V && !isWS2815)
-			{
-				s = "ESP 5V pin with 1A USB supply";
-			} else
-			{
-				s += is12V ? "12V ": isWS2815 ? "WS2815 12V " : "5V ";
-				s += val;
-				s += "A supply connected to LEDs";
-			}
-			var val2 = Math.ceil((100 + sPC * laprev)/1500)/2;
+			var s = "A power supply with total of ";
+			s += val;
+			s += "A is required.";
+			var val2 = Math.ceil((100 + busMA)/1500)/2;
 			val2 = (val2 > 5) ? Math.ceil(val2) : val2;
 			var s2 = "(for most effects, ~";
 			s2 += val2;
 			s2 += "A is enough)<br>";
 			gId('psu').innerHTML = s;
-			gId('psu2').innerHTML = isWS2815 ? "" : s2;
+			gId('psu2').innerHTML = s2;
 			gId("json").style.display = d.Sf.IT.value==8 ? "" : "none";
 		}
 		function lastEnd(i) {
@@ -364,6 +401,18 @@ ${i+1}:
 <option value="82">Art-Net RGB (network)</option>
 <option value="88">DDP RGBW (network)</option>
 </select><br>
+<div id="abl${i}">
+mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">
+<option value="55" selected>55mA (typ. 5V WS281x)</option>
+<option value="35">35mA (eco WS2812)</option>
+<option value="30">30mA (typ. 12V)</option>
+<option value="255">12mA (WS2815)</option>
+<option value="15">15mA (seed/fairy pixels)</option>
+<option value="0">Custom</option>
+</select><br>
+<div id="LAdis${i}" style="display: none;">max. mA/LED: <input name="LA${i}" type="number" min="1" max="254" oninput="UI()"> mA<br></div>
+<div id="PSU${i}">PSU: <input name="MA${i}" type="number" class="xl" min="250" max="65000" oninput="UI()"> mA<br></div>
+</div>
 <div id="co${i}" style="display:inline">Color Order:
 <select name="CO${i}">
 <option value="0">GRB</option>
@@ -697,29 +746,23 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 		<b><span id="psu">?</span></b><br>
 		<span id="psu2"><br></span>
 		<br>
-		Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
+		Enable automatic brightness limiter: <input type="checkbox" name="ABL" onchange="enABL()"><br>
 		<div id="abl">
-			Maximum Current: <input name="MA" type="number" class="l" min="250" max="65000" oninput="UI()" required> mA<br>
+			<i>Automatically limits brightness to stay close to the limit.<br>
+				Keep at &lt;1A if poweing LEDs directly from the ESP 5V pin!<br>
+				Analog (PWM) and virtual LEDs cannot use automatic brightness limiter.<br></i>
+			Maximum PSU Current: <input name="MA" type="number" class="xl" min="250" max="65000" oninput="UI()" required> mA<br>
+			Use per-output limiter: <input type="checkbox" name="PPL" onchange="enPPL()"><br>
+			<div id="ppldis" style="display:none;">
+				<i>Make sure you enter correct values in each LED output.<br>
+				If using multiple outputs with only one PSU, distribute its power proportionally amongst ouputs.</i><br>
+			</div>
 			<div id="ampwarning" class="warn" style="display: none;">
 				&#9888; Your power supply provides high current.<br>
 				To improve the safety of your setup,<br>
 				please use thick cables,<br>
 				multiple power injection points and a fuse!<br>
 			</div>
-			<i>Automatically limits brightness to stay close to the limit.<br>
-			Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
-			If you are using an external power supply, enter its rating.<br>
-			(Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
-			LED voltage (Max. current for a single LED):<br>
-			<select name="LAsel" onchange="enLA()">
-				<option value="55" selected>5V default (55mA)</option>
-				<option value="35">5V efficient (35mA)</option>
-				<option value="30">12V (30mA)</option>
-				<option value="255">WS2815 (12mA)</option>
-				<option value="50">Custom</option>
-			</select><br>
-			<span id="LAdis" style="display: none;">Custom max. current per LED: <input name="LA" type="number" min="0" max="255" id="la" oninput="UI()" required> mA<br></span>
-			<i>Keep at default if you are unsure about your type of LEDs.</i><br>
 		</div>
 		<h3>Hardware setup</h3>
 		<div id="mLC">LED outputs:</div>

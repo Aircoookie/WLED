@@ -35,8 +35,10 @@ struct BusConfig {
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   uint16_t frequency;
   bool doubleBuffer;
+  uint8_t milliAmpsPerLed;
+  uint16_t milliAmpsMax;
 
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false)
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false, uint8_t maPerLed=55, uint16_t maMax=ABL_MILLIAMPS_DEFAULT)
   : count(len)
   , start(pstart)
   , colorOrder(pcolorOrder)
@@ -45,6 +47,8 @@ struct BusConfig {
   , autoWhite(aw)
   , frequency(clock_kHz)
   , doubleBuffer(dblBfr)
+  , milliAmpsPerLed(maPerLed)
+  , milliAmpsMax(maMax)
   {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
@@ -132,6 +136,8 @@ class Bus {
     virtual uint8_t  getColorOrder()             { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds()               { return 0; }
     virtual uint16_t getFrequency()              { return 0U; }
+    virtual uint16_t getLEDCurrent()             { return 0; }
+    virtual uint16_t getMaxCurrent()             { return 0; }
     inline  void     setReversed(bool reversed)  { _reversed = reversed; }
     inline  uint16_t getStart()                  { return _start; }
     inline  void     setStart(uint16_t start)    { _start = start; }
@@ -211,6 +217,9 @@ class BusDigital : public Bus {
     uint8_t  getPins(uint8_t* pinArray);
     uint8_t  skippedLeds()   { return _skip; }
     uint16_t getFrequency()  { return _frequencykHz; }
+    uint8_t  estimateCurrentAndLimitBri();
+    uint16_t getLEDCurrent() { return _milliAmpsPerLed; }
+    uint16_t getMaxCurrent() { return _milliAmpsMax; }
     void reinit();
     void cleanup();
 
@@ -220,6 +229,8 @@ class BusDigital : public Bus {
     uint8_t _pins[2];
     uint8_t _iType;
     uint16_t _frequencykHz;
+    uint8_t _milliAmpsPerLed;
+    uint16_t _milliAmpsMax;
     void * _busPtr;
     const ColorOrderMap &_colorOrderMap;
     //bool _buffering; // temporary until we figure out why comparison "_data" causes severe FPS drop

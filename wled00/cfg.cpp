@@ -89,8 +89,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject hw_led = hw["led"];
 
   uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
+  uint16_t total = hw_led[F("total")] | strip.getLengthTotal();
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
-  CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
+  CJSON(strip.milliampsPerLed, hw_led[F("ledma")]); // no longer used
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | 255);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
@@ -167,8 +168,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
+      uint8_t maPerLed = elm[F("ledma")] | strip.milliampsPerLed; // replace with 55 when removing strip.milliampsPerLed
+      uint16_t maMax = elm[F("maxpwr")] | (strip.ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
+      // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
+      if ((ledType > TYPE_TM1814 && ledType < TYPE_WS2801) || ledType >= TYPE_NET_DDP_RGB) { // analog and virtual
+        maPerLed = 0;
+        maMax = 0;
+      }
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer);
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
         mem += BusManager::memUsage(bc);
         if (useGlobalLedBuffer && start + length > maxlen) {
           maxlen = start + length;
@@ -177,7 +185,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         if (mem + globalBufMem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
-        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer);
+        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
         busesChanged = true;
       }
       s++;
@@ -717,9 +725,9 @@ void serializeConfig() {
   JsonObject hw = doc.createNestedObject("hw");
 
   JsonObject hw_led = hw.createNestedObject("led");
-  hw_led[F("total")] = strip.getLengthTotal(); //no longer read, but provided for compatibility on downgrade
+  hw_led[F("total")] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
-  hw_led[F("ledma")] = strip.milliampsPerLed;
+  hw_led[F("ledma")] = strip.milliampsPerLed; // no longer used
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
@@ -766,6 +774,8 @@ void serializeConfig() {
     ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbwm")] = bus->getAutoWhiteMode();
     ins[F("freq")] = bus->getFrequency();
+    ins[F("maxpwr")] = bus->getMaxCurrent();
+    ins[F("ledma")] = bus->getLEDCurrent();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));

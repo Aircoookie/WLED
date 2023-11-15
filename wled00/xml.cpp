@@ -354,6 +354,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
     sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
+    uint16_t sumMa = 0;
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
       if (bus == nullptr) continue;
@@ -368,6 +369,8 @@ void getSettingsJS(byte subPage, char* dest)
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
       char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed
+      char la[4] = "LA"; la[2] = 48+s; la[3] = 0; //LED current
+      char ma[4] = "MA"; ma[2] = 48+s; ma[3] = 0; //max per-port PSU current
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -405,8 +408,13 @@ void getSettingsJS(byte subPage, char* dest)
         }
       }
       sappend('v',sp,speed);
+      sappend('v',la,bus->getLEDCurrent());
+      sappend('v',ma,bus->getMaxCurrent());
+      sumMa += bus->getMaxCurrent();
     }
+    sappend('c',SET_F("PPL"),(sumMa>0 && abs(sumMa - strip.ablMilliampsMax)>2)); // approxiamte detection if per-output limiter is enabled
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
+/*
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
@@ -415,7 +423,7 @@ void getSettingsJS(byte subPage, char* dest)
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));
     }
-
+*/
     oappend(SET_F("resetCOM("));
     oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
