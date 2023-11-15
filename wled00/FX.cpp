@@ -5286,66 +5286,62 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
+  uint16_t dataSize = (SEGLEN+7) >> 3; //1 bit per LED for trails
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+
   if (SEGENV.call == 0) {
+    memset(SEGMENT.data, 0, dataSize); // no falling spawns
     SEGMENT.fill(BLACK);
-    SEGENV.aux0 = SEGENV.aux1 = UINT16_MAX;
     SEGENV.step = 0;
   }
 
   uint8_t fade = map(SEGMENT.custom1, 0, 255, 50, 250);    // equals trail size
   uint8_t speed = (256-SEGMENT.speed) >> map(MIN(rows, 150), 0, 150, 0, 3);    // slower speeds for small displays
 
-  CRGB spawnColor;
-  CRGB trailColor;
+  uint32_t spawnColor;
+  uint32_t trailColor;
   if (SEGMENT.check1) {
     spawnColor = SEGCOLOR(0);
     trailColor = SEGCOLOR(1);
   } else {
-    spawnColor = CRGB(175,255,175);
-    trailColor = CRGB(27,130,39);
+    spawnColor = RGBW32(175,255,175,0);
+    trailColor = RGBW32(27,130,39,0);
   }
 
+  bool emptyScreen = true;
   if (strip.now - SEGENV.step >= speed) {
     SEGENV.step = strip.now;
-    // find out what color value is returned by gPC for a "falling code" example pixel
-    // the color values returned may differ from the previously set values, due to
-    // - auto brightness limiter (dimming)
-    // - lossy color buffer (when not using global buffer)
-    // - color balance correction
-    // - segment opacity
-    CRGB oldSpawnColor = spawnColor;
-    if ((SEGENV.aux0 < cols) && (SEGENV.aux1 < rows)) {                     // we have a hint from last run
-        oldSpawnColor = SEGMENT.getPixelColorXY(SEGENV.aux0, SEGENV.aux1);  // find color of previous spawns
-        SEGENV.aux1 ++;                                                     // our sample pixel will be one row down the next time
-    }
-    if ((oldSpawnColor == CRGB::Black) || (oldSpawnColor == trailColor)) oldSpawnColor = spawnColor; // reject "black", as it would mean that ALL pixels create trails
-
     // move pixels one row down. Falling codes keep color and add trail pixels; all others pixels are faded
-    for (int row=rows-1; row>=0; row--) {
-      for (int col=0; col<cols; col++) {
-        CRGB pix = SEGMENT.getPixelColorXY(col, row);
-        if (pix == oldSpawnColor) {  // this comparison may still fail due to overlays changing pixels, or due to gaps (2d-gaps.json)
+    // TODO: it would be better to paint trails idividually instead of relying on fadeToBlackBy()
+    SEGMENT.fadeToBlackBy(fade);
+    for (int row = rows-1; row >= 0; row--) {
+      for (int col = 0; col < cols; col++) {
+        unsigned index = XY(col, row) >> 3;
+        unsigned bitNum = XY(col, row) & 0x07;
+        if (bitRead(SEGENV.data[index], bitNum)) {
           SEGMENT.setPixelColorXY(col, row, trailColor);  // create trail
-          if (row < rows-1) SEGMENT.setPixelColorXY(col, row+1, spawnColor);
-        } else {
-          // fade other pixels
-          if (pix != CRGB::Black) SEGMENT.setPixelColorXY(col, row, pix.nscale8(fade)); // optimization: don't fade black pixels
+          bitClear(SEGENV.data[index], bitNum);
+          if (row < rows-1) {
+            SEGMENT.setPixelColorXY(col, row+1, spawnColor);
+            index = XY(col, row+1) >> 3;
+            bitNum = XY(col, row+1) & 0x07;
+            bitSet(SEGENV.data[index], bitNum);
+            emptyScreen = false;
+          }
         }
       }
     }
-
-    // check for empty screen to ensure code spawn
-    bool emptyScreen = (SEGENV.aux1 >= rows); // empty screen means that the last falling code has moved out of screen area
 
     // spawn new falling code
     if (random8() <= SEGMENT.intensity || emptyScreen) {
       uint8_t spawnX = random8(cols);
       SEGMENT.setPixelColorXY(spawnX, 0, spawnColor);
       // update hint for next run
-      SEGENV.aux0 = spawnX;
-      SEGENV.aux1 = 0;
+      unsigned index = XY(spawnX, 0) >> 3;
+      unsigned bitNum = XY(spawnX, 0) & 0x07;
+      bitSet(SEGENV.data[index], bitNum);
     }
-  } // if millis
+  }
 
   return FRAMETIME;
 } // mode_2Dmatrix()
