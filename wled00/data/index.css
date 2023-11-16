@@ -1421,7 +1421,7 @@ TD .checkmark, TD .radiomark {
 .expanded {
 	display: inline-block !important;
 }
-.hide, .expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide, .expanded .frz, .expanded .g-icon {
+.hide, .expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide, .expanded .frz, .expanded .g-icon, .nosimple {
 	display: none !important;
 }
 
