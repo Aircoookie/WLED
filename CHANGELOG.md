@@ -34,6 +34,16 @@
     -   send UDP/WS on segment change
     -   pop_back() when removing last segment
 
+#### Build 2311160
+-   Version bump: 0.14.1-b1
+-   Bugfixes (#3526, #3502, #3496, #3484, #3487, #3445, #3466, #3296, #3382, #3312)
+-   New feature: Sort presets by ID
+-   New usermod: LDR sensor (#3490 by @JeffWDH)
+-   Effect: Twinklefox & Tinklecat metadata fix
+-   Effect: separate #HH and #MM for Scrolling Text (#3480)
+-   SSDR usermod enhancements (#3368)
+-   PWM fan usermod enhancements (#3414)
+
 #### Build 2310010, build 2310130
 -   Release of WLED version 0.14.0 "Hoshi"
 -   Bugfixes for #3400, #3403, #3405
