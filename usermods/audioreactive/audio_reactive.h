@@ -1500,9 +1500,10 @@ class AudioReactive : public Usermod {
       // validate sequence, discard out-of-sequence packets
       static uint8_t lastFrameCounter = 0;
       bool sequenceOK = false;
-      if(receivedPacket->frameCounter > lastFrameCounter) sequenceOK = true;
-      if((lastFrameCounter > 248) && (receivedPacket->frameCounter < 12)) sequenceOK = true; // handle roll-over (255 -> 0)
-      if((sequenceOK == false) && (receivedPacket->frameCounter != 0)) { // always accept "0" - its the legacy value
+      if(receivedPacket->frameCounter > lastFrameCounter) sequenceOK = true;                  // sequence OK
+      if((lastFrameCounter < 12) && (receivedPacket->frameCounter > 248)) sequenceOK = false; // prevent sequence "roll-back" due to late packets (1->254)
+      if((lastFrameCounter > 248) && (receivedPacket->frameCounter < 12)) sequenceOK = true;  // handle roll-over (255 -> 0)
+      if((sequenceOK == false) && (receivedPacket->frameCounter != 0)) {                      // always accept "0" - its the legacy value
         DEBUGSR_PRINTF("Skipping audio frame out of order or duplicated - %u vs %u\n", lastFrameCounter, receivedPacket->frameCounter);
         return false;   // reject out-of sequence frame
       }
