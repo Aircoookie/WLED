@@ -3032,6 +3032,22 @@ function simplifyUI() {
 	// Put preset quick load before palette list and segemts
 	gId("Colors").insertBefore(gId("pql"), gId("pall"));
 
+	// Create dropdown for palette list
+	let div = document.createElement("div");
+	// Move every child of palw to div
+	while (gId("palw").firstChild) {
+		div.appendChild(gId("palw").firstChild);
+	}
+	div.classList.add("hide");
+	let btn = document.createElement("button");
+	btn.classList.add("btn");
+	btn.innerText = "Change palette";
+	btn.addEventListener("click", () => {
+		div.classList.toggle("hide");
+	});
+	gId("palw").prepend(div);
+	gId("palw").prepend(btn);
+
 	// Hide buttons in top bar
 	gId("buttonNl").style.display = "none";
 	gId("buttonSync").style.display = "none";
