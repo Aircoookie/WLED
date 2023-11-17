@@ -149,11 +149,11 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       realtimeLock(realtimeTimeoutMs, mde);
       if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
-      dmxChannelCount = useMainSegmentOnly ? strip.getMainSegment().hasWhite() : strip.hasWhiteChannel() ? 4 : 3;
+      dmxChannelCount = (useMainSegmentOnly ? strip.getMainSegment().hasWhite() : strip.hasWhiteChannel()) ? 4 : 3;
       if (availDMXLen < dmxChannelCount) return;
 
       wChannel = dmxChannelCount == 4 ? e131_data[dataOffset+3] : 0;
-      for (uint16_t i = 0; i < totalLen; i++)
+      for (uint16_t i = 0; i < useMainSegmentOnly ? strip.getMainSegment().length() : totalLen; i++)
         setRealtimePixel(i, e131_data[dataOffset+0], e131_data[dataOffset+1], e131_data[dataOffset+2], wChannel);
       break;
 
@@ -163,7 +163,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       realtimeLock(realtimeTimeoutMs, mde);
       if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
       
-      dmxChannelCount = useMainSegmentOnly ? strip.getMainSegment().hasWhite() : strip.hasWhiteChannel() ? 5 : 4;
+      dmxChannelCount = (useMainSegmentOnly ? strip.getMainSegment().hasWhite() : strip.hasWhiteChannel()) ? 5 : 4;
       if (availDMXLen < dmxChannelCount) return;
 
       if (bri != e131_data[dataOffset+0]) {
