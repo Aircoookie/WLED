@@ -3026,7 +3026,8 @@ function simplifyUI() {
 	if (pcMode) togglePcMode(true);
 
 	// Put effects below palett list
-	gId("Colors").innerHTML += gId("Effects").innerHTML;
+	gId("Colors").append(gId("fx"));
+	gId("Colors").append(gId("sliders"));
 	gId("fx").classList.add("simplified");
 	// Put segments before palette list if there are multiple segments
 	if (lastinfo.leds.seglc.length > 1) {
