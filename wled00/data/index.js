@@ -3027,13 +3027,14 @@ function simplifyUI() {
 
 	// Put effects below palett list
 	gId("Colors").innerHTML += gId("Effects").innerHTML;
-	gId("modeLabel").classList.remove("hd");
+	gId("fx").classList.add("simplified");
 	// Put segments before palette list if there are multiple segments
 	if (lastinfo.leds.seglc.length > 1) {
 		gId("Colors").insertBefore(gId("segcont"), gId("pall"));
 	}
 	// Put preset quick load before palette list and segemts
 	gId("Colors").insertBefore(gId("pql"), gId("pall"));
+	gId("pql").classList.add("simplified");
 
 	// Create dropdown for palette list
 	let div = document.createElement("div");
@@ -3047,6 +3048,11 @@ function simplifyUI() {
 	btn.innerText = "Change palette";
 	btn.addEventListener("click", () => {
 		div.classList.toggle("hide");
+		if (div.classList.contains("hide")) {
+			btn.innerText = "Change palette";
+		} else {
+			btn.innerText = "Hide palettes";
+		}
 	});
 	gId("palw").prepend(div);
 	gId("palw").prepend(btn);
@@ -3066,13 +3072,7 @@ function simplifyUI() {
 	gId("Segments").style.display = "none";
 	gId("Presets").style.display = "none";
 
-	// Chage height of palette list
-	gId("pallist").style.height = "300px";
-	gId("pallist").style.overflow = "scroll";
-	// Fix shadow
-	gId("pallist").style.margin = "0px -16px";
-	gId("pallist").style.padding = "0px 16px";
-	// Set correct position of selected and sticky palette
+	// Simplify palette list
 	gId("pallist").classList.add("simplified");
 	// We only want Effect Search to stay on top
 	gId("palw").firstElementChild.classList.remove("staytop");

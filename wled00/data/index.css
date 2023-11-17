@@ -758,9 +758,13 @@ input[type=range]::-moz-range-thumb {
 	margin: 4px 0 0;
 }
 
-/* Dynamically hide brightness slider label */
+/* Dynamically hide labels */
 .hd {
 	display: var(--bhd);
+}
+/* Do not hide labels when in simplified mode */
+.simplified .hd {
+	display: var(--bhd) !important;
 }
 
 #briwrap {
@@ -1323,6 +1327,14 @@ TD .checkmark, TD .radiomark {
 #fxlist .lstI.selected,
 #pallist .lstI.selected {
 	top: calc(var(--sti) + 42px);
+}
+
+#pallist.simplified {
+	height: 300px;
+	overflow: scroll;
+	/* Fix shadow */
+	margin: 0px -16px;
+	padding: 0px 16px;
 }
 
 #pallist.simplified .lstI.selected {
