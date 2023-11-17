@@ -153,7 +153,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       if (availDMXLen < dmxChannelCount) return;
 
       wChannel = dmxChannelCount == 4 ? e131_data[dataOffset+3] : 0;
-      for (uint16_t i = 0; i < useMainSegmentOnly ? strip.getMainSegment().length() : totalLen; i++)
+      for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[dataOffset+0], e131_data[dataOffset+1], e131_data[dataOffset+2], wChannel);
       break;
 
