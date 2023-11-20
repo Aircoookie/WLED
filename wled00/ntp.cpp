@@ -253,9 +253,9 @@ static bool isValidNtpResponse(byte * ntpPacket) {
       ntpPacket[18] == 0 && ntpPacket[19] == 0 &&
       ntpPacket[20] == 0 && ntpPacket[21] == 0 &&
       ntpPacket[22] == 0 && ntpPacket[23] == 0)               //reject ReferenceTimestamp == 0
-		return false;
+    return false;
 
-	return true;
+  return true;
 }
 
 bool checkNTPResponse()
