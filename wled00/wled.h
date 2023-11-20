@@ -644,10 +644,11 @@ WLED_GLOBAL String escapedMac;
 WLED_GLOBAL DNSServer dnsServer;
 
 // network time
+#define NTP_NEVER 999000000L
 WLED_GLOBAL bool ntpConnected _INIT(false);
 WLED_GLOBAL time_t localTime _INIT(0);
-WLED_GLOBAL unsigned long ntpLastSyncTime _INIT(999000000L);
-WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
+WLED_GLOBAL unsigned long ntpLastSyncTime _INIT(NTP_NEVER);
+WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(NTP_NEVER);
 WLED_GLOBAL IPAddress ntpServerIP;
 WLED_GLOBAL uint16_t ntpLocalPort _INIT(2390);
 WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
