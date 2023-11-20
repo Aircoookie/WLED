@@ -199,6 +199,9 @@ void handleNetworkTime()
   {
     if (millis() - ntpPacketSentTime > 10000)
     {
+      #ifdef ARDUINO_ARCH_ESP32   // I had problems using udp.flush() on 8266
+      while (ntpUdp.parsePacket() > 0) ntpUdp.flush(); // flush any existing packets
+      #endif
       sendNTPPacket();
       ntpPacketSentTime = millis();
     }
@@ -239,23 +242,41 @@ void sendNTPPacket()
   ntpUdp.endPacket();
 }
 
+static bool isValidNtpResponse(byte * ntpPacket) {
+  // Perform a few validity checks on the packet
+  //   based on https://github.com/taranais/NTPClient/blob/master/NTPClient.cpp
+  if((ntpPacket[0] & 0b11000000) == 0b11000000) return false; //reject LI=UNSYNC
+  // if((ntpPacket[0] & 0b00111000) >> 3 < 0b100) return false; //reject Version < 4
+  if((ntpPacket[0] & 0b00000111) != 0b100)      return false; //reject Mode != Server
+  if((ntpPacket[1] < 1) || (ntpPacket[1] > 15)) return false; //reject invalid Stratum
+  if( ntpPacket[16] == 0 && ntpPacket[17] == 0 && 
+      ntpPacket[18] == 0 && ntpPacket[19] == 0 &&
+      ntpPacket[20] == 0 && ntpPacket[21] == 0 &&
+      ntpPacket[22] == 0 && ntpPacket[23] == 0)               //reject ReferenceTimestamp == 0
+    return false;
+
+  return true;
+}
+
 bool checkNTPResponse()
 {
 #ifdef ARDUINO_ARCH_ESP32
   ntpUdp.flush();
 #endif
   int cb = ntpUdp.parsePacket();
-#ifdef ARDUINO_ARCH_ESP32
-  if (!cb) {ntpUdp.flush(); return false;}    // WLEDMM flush buffer
-#else
-  if (!cb) {return false;}    // WLEDMM do not flush buffer
-#endif
+  if (cb < NTP_MIN_PACKET_SIZE) {
+    #ifdef ARDUINO_ARCH_ESP32   // I had problems using udp.flush() on 8266
+    if (cb > 0) ntpUdp.flush();  // this avoids memory leaks on esp32
+    #endif
+    return false;
+  }
 
   uint32_t ntpPacketReceivedTime = millis();
   DEBUG_PRINT(F("NTP recv, l="));
   DEBUG_PRINTLN(cb);
   byte pbuf[NTP_PACKET_SIZE];
   ntpUdp.read(pbuf, NTP_PACKET_SIZE); // read the packet into the buffer
+  if (!isValidNtpResponse(pbuf)) return false;  // verify we have a valid response to client
 
   Toki::Time arrived  = toki.fromNTP(pbuf + 32);
   Toki::Time departed = toki.fromNTP(pbuf + 40);
