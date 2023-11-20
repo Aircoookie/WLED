@@ -247,7 +247,7 @@ static bool isValidNtpResponse(byte * ntpPacket) {
   //   based on https://github.com/taranais/NTPClient/blob/master/NTPClient.cpp
   if((ntpPacket[0] & 0b11000000) == 0b11000000) return false; //reject LI=UNSYNC
   // if((ntpPacket[0] & 0b00111000) >> 3 < 0b100) return false; //reject Version < 4
-  if((ntpPacket[0] & 0b00000111) != 0b100)      return false; //reject Mode == Server
+  if((ntpPacket[0] & 0b00000111) != 0b100)      return false; //reject Mode != Server
   if((ntpPacket[1] < 1) || (ntpPacket[1] > 15)) return false; //reject invalid Stratum
   if(	ntpPacket[16] == 0 && ntpPacket[17] == 0 && 
       ntpPacket[18] == 0 && ntpPacket[19] == 0 &&
