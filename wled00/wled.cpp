@@ -34,6 +34,8 @@ void WLED::reset()
 
 void WLED::loop()
 {
+  static uint32_t      lastHeap = UINT32_MAX;
+  static unsigned long heapTime = 0;
   #ifdef WLED_DEBUG
   static unsigned long lastRun = 0;
   unsigned long        loopMillis = millis();
@@ -149,6 +151,21 @@ void WLED::loop()
   if (strlen(settingsPIN)>0 && correctPIN && millis() - lastEditTime > PIN_TIMEOUT) {
     correctPIN = false;
     createEditHandler(false);
+  }
+
+  // reconnect WiFi to clear stale allocations if heap gets too low
+  if (millis() - heapTime > 15000) {
+    uint32_t heap = ESP.getFreeHeap();
+    if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
+      DEBUG_PRINT(F("Heap too low! ")); DEBUG_PRINTLN(heap);
+      forceReconnect = true;
+      strip.purgeSegments(true); // remove all but one segments from memory
+    } else if (heap < MIN_HEAP_SIZE) {
+      DEBUG_PRINTLN(F("Heap low, purging segments."));
+      strip.purgeSegments();
+    }
+    lastHeap = heap;
+    heapTime = millis();
   }
 
   //LED settings have been saved, re-init busses
@@ -816,32 +833,18 @@ void WLED::initInterfaces()
 void WLED::handleConnection()
 {
   static byte stacO = 0;
-  static uint32_t lastHeap = UINT32_MAX;
-  static unsigned long heapTime = 0;
   unsigned long now = millis();
 
   if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
     return;
 
-  if (lastReconnectAttempt == 0) {
-    DEBUG_PRINTLN(F("lastReconnectAttempt == 0"));
+  if (lastReconnectAttempt == 0 || forceReconnect) {
+    DEBUG_PRINTLN(F("Initial connect or forced reconnect."));
     initConnection();
+    interfacesInited = false;
+    forceReconnect = false;
+    wasConnected = false;
     return;
-  }
-
-  // reconnect WiFi to clear stale allocations if heap gets too low
-  if (now - heapTime > 5000) {
-    uint32_t heap = ESP.getFreeHeap();
-    if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! "));
-      DEBUG_PRINTLN(heap);
-      forceReconnect = true;
-      strip.purgeSegments(true); // remove all but one segments from memory
-    } else if (heap < MIN_HEAP_SIZE) {
-      strip.purgeSegments();
-    }
-    lastHeap = heap;
-    heapTime = now;
   }
 
   byte stac = 0;
@@ -865,14 +868,6 @@ void WLED::handleConnection()
       }
     }
   }
-  if (forceReconnect) {
-    DEBUG_PRINTLN(F("Forcing reconnect."));
-    initConnection();
-    interfacesInited = false;
-    forceReconnect = false;
-    wasConnected = false;
-    return;
-  }
   if (!Network.isConnected()) {
     if (interfacesInited) {
       DEBUG_PRINTLN(F("Disconnected!"));
@@ -890,8 +885,15 @@ void WLED::handleConnection()
       initConnection();
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
-      DEBUG_PRINTLN(F("Not connected AP."));
-      initAP();
+      if (!(apBehavior == AP_BEHAVIOR_BOOT_NO_CONN && now > 300000)) {
+        DEBUG_PRINTLN(F("Not connected AP."));
+        initAP();  // start AP only within first 5min
+      }
+    } if (apActive && apBehavior == AP_BEHAVIOR_BOOT_NO_CONN && now > 300000 && stac == 0) { // disconnect AP after 5min
+      dnsServer.stop();
+      WiFi.softAPdisconnect(true);
+      apActive = false;
+      DEBUG_PRINTLN(F("Access point disabled (after 5min)."));
     }
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
