@@ -885,11 +885,11 @@ void WLED::handleConnection()
       initConnection();
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
-      if (!(apBehavior == AP_BEHAVIOR_BOOT_NO_CONN && now > 300000)) {
+      if (!(apBehavior == AP_BEHAVIOR_BOOT_NO_CONN_5MIN && now > 300000)) {
         DEBUG_PRINTLN(F("Not connected AP."));
         initAP();  // start AP only within first 5min
       }
-    } if (apActive && apBehavior == AP_BEHAVIOR_BOOT_NO_CONN && now > 300000 && stac == 0) { // disconnect AP after 5min
+    } if (apActive && apBehavior == AP_BEHAVIOR_BOOT_NO_CONN_5MIN && now > 300000 && stac == 0) { // disconnect AP after 5min
       dnsServer.stop();
       WiFi.softAPdisconnect(true);
       apActive = false;
@@ -914,7 +914,7 @@ void WLED::handleConnection()
       dnsServer.stop();
       WiFi.softAPdisconnect(true);
       apActive = false;
-      DEBUG_PRINTLN(F("Access point disabled (handle)."));
+      DEBUG_PRINTLN(F("Access point disabled (connected)."));
     }
   }
 }
