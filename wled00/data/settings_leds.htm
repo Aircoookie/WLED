@@ -512,6 +512,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 			c += `<option value="6" ${t==6?"selected":""}>Touch</option>`;
 			c += `<option value="7" ${t==7?"selected":""}>Analog</option>`;
 			c += `<option value="8" ${t==8?"selected":""}>Analog inverted</option>`;
+			c += `<option value="9" ${t==9?"selected":""}>Touch (switch)</option>`;
 			c += `</select>`;
 			c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#x2715;</span><br>`;
 			gId("btns").innerHTML = c;
