@@ -1289,6 +1289,11 @@ TD .checkmark, TD .radiomark {
 	margin-top: 0;
 }
 
+#segcont.simple .lstI {
+	margin-top: 4px;
+	min-height: unset;
+}
+
 /* selected item/element */
 .selected { /* has to be after .lstI since !important is not ok */
 	background: var(--c-4);
@@ -1334,7 +1339,7 @@ TD .checkmark, TD .radiomark {
 	overflow: scroll;
 	/* Fix shadow */
 	margin: 0px -16px;
-	padding: 0px 16px;
+	padding: 0px 0px 0px 16px;
 }
 
 #pallist.simplified .lstI.selected {
@@ -1433,7 +1438,7 @@ TD .checkmark, TD .radiomark {
 .expanded {
 	display: inline-block !important;
 }
-.hide, .expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide, .expanded .frz, .expanded .g-icon, .nosimple {
+.hide, .expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide, .expanded .frz, .expanded .g-icon {
 	display: none !important;
 }
 
