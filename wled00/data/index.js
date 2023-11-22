@@ -837,8 +837,6 @@ function populateSegments(s)
 	}
 
 	gId('segcont').innerHTML = cn;
-	if (simplifiedUI) gId('segcont').classList.add("simple");
-	else              gId('segcont').classList.remove("simple");
 	let noNewSegs = (lowestUnused >= maxSeg);
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
@@ -3080,6 +3078,9 @@ function simplifyUI() {
 	gId("pallist").classList.add("simplified");
 	// We only want Effect Search to stay on top
 	gId("palw").firstElementChild.classList.remove("staytop");
+
+	// Simplify segments
+	gId('segcont').classList.add("simple");
 
 	// Hide filter options
 	gId("filters").style.display = "none";
