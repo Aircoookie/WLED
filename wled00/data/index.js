@@ -626,7 +626,7 @@ function parseInfo(i) {
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
-	simplifiedUI    = i.simplifiedui | true;
+	simplifiedUI    = i.simplifiedui;
 	ledCount    = i.leds.count;
 	//syncTglRecv = i.str;
 	maxSeg      = i.leds.maxseg;
