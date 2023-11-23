@@ -1356,7 +1356,7 @@ TD .checkmark, TD .radiomark {
 	padding: 24px;
 	border-radius: 10px;
 	background-color: var(--c-5);
-	overflow: none;
+	overflow: scroll;
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 }
 
@@ -1379,10 +1379,6 @@ TD .checkmark, TD .radiomark {
 #fxlist .lstI.sticky,
 #pallist .lstI.sticky {
 	top: var(--sti);
-}
-
-#pallist.simplified .lstI.sticky {
-	top: 0px;
 }
 
 /* list item content */
