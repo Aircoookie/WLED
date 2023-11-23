@@ -985,9 +985,9 @@ void serializeInfo(JsonObject root)
   root[F("getflash")] = ESP.getFlashChipSize(); //WLEDMM and Athom, works for both ESP32 and ESP8266
 
   root[F("freeheap")] = ESP.getFreeHeap();
-  root[F("freestack")] = uxTaskGetStackHighWaterMark(NULL); //WLEDMM
   //WLEDMM: conditional on esp32
   #if defined(ARDUINO_ARCH_ESP32)
+    root[F("freestack")] = uxTaskGetStackHighWaterMark(NULL); //WLEDMM
     root[F("minfreeheap")] = ESP.getMinFreeHeap();
   #endif
   #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
