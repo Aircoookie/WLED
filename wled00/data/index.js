@@ -2274,6 +2274,10 @@ function setPalette(paletteId = null)
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
 
+	if (simplifiedUI) {
+		gId("palw").lastChild.classList.toggle("hideD");
+	}
+
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }
@@ -3025,6 +3029,7 @@ function tooltip()
 function simplifyUI() {
 	// Disable PC Mode as it does not exist in simple UI
 	if (pcMode) togglePcMode(true);
+	_C.style.setProperty('--n', 1);
 
 	// Put effects below palett list
 	gId("Colors").append(gId("fx"));
@@ -3044,18 +3049,16 @@ function simplifyUI() {
 	while (gId("palw").firstChild) {
 		div.appendChild(gId("palw").firstChild);
 	}
-	div.classList.add("hide");
+	div.classList.add("hideD", "dialog");
 	let btn = document.createElement("button");
 	btn.classList.add("btn");
 	btn.innerText = "Change palette";
-	btn.addEventListener("click", () => {
-		div.classList.toggle("hide");
-		if (div.classList.contains("hide")) {
-			btn.innerText = "Change palette";
-		} else {
-			btn.innerText = "Hide palettes";
-		}
-	});
+	let togglePal = (e) => {
+		if (e.target != btn && e.target != div) return
+		gId("palw").lastChild.classList.toggle("hideD");
+	};
+	btn.addEventListener("click", togglePal);
+	div.addEventListener("click", togglePal);
 	gId("palw").prepend(div);
 	gId("palw").prepend(btn);
 
