@@ -319,6 +319,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     receiveDirect = request->hasArg(F("RD"));
     useMainSegmentOnly = request->hasArg(F("MO"));
+    realtimeRespectLedMaps = request->hasArg(F("RLM"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
     t = request->arg(F("EP")).toInt();
@@ -1008,6 +1009,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //receive live data via UDP/Hyperion
   pos = req.indexOf(F("RD="));
   if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
+
+  // Respect LED maps when receiving realtime data
+  pos = req.indexOf(F("RLM="));
+  if (pos > 0) realtimeRespectLedMaps = (req.charAt(pos+4) != '0');
 
   //main toggle on/off (parse before nightlight, #1214)
   pos = req.indexOf(F("&T="));

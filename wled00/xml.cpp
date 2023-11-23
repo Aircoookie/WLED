@@ -327,7 +327,7 @@ void getSettingsJS(byte subPage, char* dest)
     } else if (!enable_espnow_remote)
     {
       sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable remote to listen)"));
-    } else 
+    } else
     {
       sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
     }
@@ -500,6 +500,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('c',SET_F("MO"),useMainSegmentOnly);
+    sappend('c',SET_F("RLM"),realtimeRespectLedMaps);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);

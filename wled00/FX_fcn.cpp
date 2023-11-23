@@ -898,8 +898,7 @@ void Segment::refreshLightCapabilities() {
   if (start < Segment::maxWidth * Segment::maxHeight) {
     // we are withing 2D matrix (includes 1D segments)
     for (int y = startY; y < stopY; y++) for (int x = start; x < stop; x++) {
-      uint16_t index = x + Segment::maxWidth * y;
-      if (index < strip.customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+      uint16_t index = strip.getMappedPixelIndex(x + Segment::maxWidth * y); // convert logical address to physical
       if (index < 0xFFFFU) {
         if (segStartIdx > index) segStartIdx = index;
         if (segStopIdx  < index) segStopIdx  = index;
@@ -1289,14 +1288,14 @@ void WS2812FX::service() {
 
 void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
-  if (i < customMappingSize) i = customMappingTable[i];
+  i = getMappedPixelIndex(i);
   if (i >= _length) return;
   busses.setPixelColor(i, col);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  if (i < customMappingSize) i = customMappingTable[i];
+  i = getMappedPixelIndex(i);
   if (i >= _length) return 0;
   return busses.getPixelColor(i);
 }
@@ -1599,7 +1598,7 @@ void WS2812FX::setSegment(uint8_t segId, uint16_t i1, uint16_t i2, uint8_t group
     _queuedChangesSegId = segId;
     return; // queued changes are applied immediately after effect function returns
   }
-  
+
   _segments[segId].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
 }
 
@@ -1873,6 +1872,13 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   releaseJSONBufferLock();
   return true;
+}
+
+uint16_t WS2812FX::getMappedPixelIndex(uint16_t index) {
+  if ((realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)
+    && index < customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+
+  return index;
 }
 
 

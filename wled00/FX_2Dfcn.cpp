@@ -164,7 +164,7 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
 #else
   uint16_t index = x;
 #endif
-  if (index < customMappingSize) index = customMappingTable[index];
+  index = getMappedPixelIndex(index);
   if (index >= _length) return;
   busses.setPixelColor(index, col);
 }
@@ -176,7 +176,7 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #else
   uint16_t index = x;
 #endif
-  if (index < customMappingSize) index = customMappingTable[index];
+  index = getMappedPixelIndex(index);
   if (index >= _length) return 0;
   return busses.getPixelColor(index);
 }
