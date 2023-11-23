@@ -2720,25 +2720,46 @@ function search(f,l=null)
 {
 	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
 	if (!l) return;
+
+	// clear filter if searching in fxlist
+	if (l === 'fxlist' && f === document.activeElement) {
+		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{e.checked=false;});
+	}
+
 	var el = gId(l).querySelectorAll('.lstI');
 	// filter list items but leave (Default & Solid) always visible
 	for (i = (l==='pcont'?0:1); i < el.length; i++) {
 		var it = el[i];
 		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
-		it.style.display = (itT.indexOf(f.value.toUpperCase())<0) ? 'none' : '';
+		const itTsearchIndex = itT.indexOf(f.value.toUpperCase());
+		it.style.display = (itTsearchIndex<0) ? 'none' : '';
+		it.dataset.searchIndex  = itTsearchIndex;
 	}
+
+	// sort list items by search index and name
+	const sortedListItems = Array.from(el).sort((a, b) => {
+		const aSearchIndex = parseInt(a.dataset.searchIndex);
+		const bSearchIndex = parseInt(b.dataset.searchIndex);
+
+		if (aSearchIndex !== bSearchIndex) {
+			return aSearchIndex - bSearchIndex;
+		}
+
+        const aName = a.querySelector('.lstIname').innerText.toUpperCase();
+        const bName = b.querySelector('.lstIname').innerText.toUpperCase();
+
+        return aName.localeCompare(bName);
+    });
+	sortedListItems.forEach(item => {
+        gId(l).append(item);
+    });
 }
 
 function clean(c)
 {
 	c.style.display='none';
-	var i=c.previousElementSibling;
-	i.value='';
-	i.focus();
-	i.dispatchEvent(new Event('input'));
-	if (i.parentElement.id=='fxFind') {
-		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{e.checked=false;});
-	}
+	c.previousElementSibling.value='';
+	search(c.previousElementSibling, c.parentElement.nextElementSibling.id);
 }
 
 function filterFocus(e)
@@ -2760,14 +2781,19 @@ function filterFocus(e)
 	}
 }
 
-function filterFx(o)
+function filterFx()
 {
-	if (!o) return;
-	let i = gId('fxFind').children[0];
-	i.value=!o.checked?'':o.dataset.flt;
-	i.focus();
-	i.dispatchEvent(new Event('input'));
-	gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{if(e!==o)e.checked=false;});
+	const searchIn = gId('fxFind').children[0];
+	searchIn.value = '';
+	clean(searchIn.nextElementSibling);
+	const el = gId("fxlist").querySelectorAll('.lstI');
+	for (let i = 1; i < el.length; i++) {
+		const it = el[i];
+		const itT = it.querySelector('.lstIname').innerText;
+		let hide = false;
+		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{if (e.checked && !itT.includes(e.dataset.flt)) hide = true;});
+		it.style.display = hide ? 'none' : '';
+	}
 }
 
 // make sure "dur" and "transition" are arrays with at least the length of "ps"
