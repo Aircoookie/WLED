@@ -2775,12 +2775,10 @@ function filterFocus(e)
 		sCol('--sti', sti+"px");
 	}, 252);
 	if (e.type === "blur") {
-		let t = e.relatedTarget ? e.relatedTarget : e.explicitOriginalTarget;
-		do {
-			if (t.id && (t.id === "fxFind")) { setTimeout(()=>{t.firstElementChild.focus();},150); return; }
-			t = t.parentElement;
-		} while (t.tagName !== "BODY");
-		setTimeout(()=>{f.classList.add('fade');},255);	// wait with hiding
+		setTimeout(()=>{
+			if (e.target === document.activeElement) return;
+			f.classList.add('fade');
+		},255);	// wait with hiding
 	}
 }
 
@@ -2788,6 +2786,7 @@ function filterFx()
 {
 	const searchIn = gId('fxFind').children[0];
 	searchIn.value = '';
+	searchIn.focus();
 	clean(searchIn.nextElementSibling);
 	const el = gId("fxlist").querySelectorAll('.lstI');
 	for (let i = 1; i < el.length; i++) {
