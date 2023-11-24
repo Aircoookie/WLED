@@ -2722,9 +2722,12 @@ function search(f,l=null)
 	if (!l) return;
 
 	// clear filter if searching in fxlist
-	if (l === 'fxlist' && f === document.activeElement) {
+	if (l === 'fxlist' && f.value !== '') {
 		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{e.checked=false;});
 	}
+
+	// do not search if filter is active
+	if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
 
 	var el = gId(l).querySelectorAll('.lstI');
 	// filter list items but leave (Default & Solid) always visible
