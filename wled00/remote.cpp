@@ -14,6 +14,11 @@
 #define WIZMOTE_BUTTON_BRIGHT_UP   9
 #define WIZMOTE_BUTTON_BRIGHT_DOWN 8
 
+#define WIZ_SMART_BUTTON_ON          100
+#define WIZ_SMART_BUTTON_OFF         101
+#define WIZ_SMART_BUTTON_BRIGHT_UP   102
+#define WIZ_SMART_BUTTON_BRIGHT_DOWN 103
+
 // This is kind of an esoteric strucure because it's pulled from the "Wizmote"
 // product spec. That remote is used as the baseline for behavior and availability
 // since it's broadly commercially available and works out of the box as a drop-in
@@ -210,6 +215,10 @@ void handleRemote(uint8_t *incomingData, size_t len) {
       case WIZMOTE_BUTTON_NIGHT          : activateNightMode();                             break;
       case WIZMOTE_BUTTON_BRIGHT_UP      : brightnessUp();                                  break;
       case WIZMOTE_BUTTON_BRIGHT_DOWN    : brightnessDown();                                break;
+      case WIZ_SMART_BUTTON_ON           : setOn();                                         break;
+      case WIZ_SMART_BUTTON_OFF          : setOff();                                        break;
+      case WIZ_SMART_BUTTON_BRIGHT_UP    : brightnessUp();                                  break;
+      case WIZ_SMART_BUTTON_BRIGHT_DOWN  : brightnessDown();                                break;
       default: break;
     }
   last_seq = cur_seq;
