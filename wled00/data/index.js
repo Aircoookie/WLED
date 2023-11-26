@@ -2716,31 +2716,30 @@ function hideModes(txt)
 	}
 }
 */
-function search(f,l=null)
-{
-	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
-	if (!l) return;
+function search(field, listId = null) {
+	field.nextElementSibling.style.display = (field.value !== '') ? 'block' : 'none';
+	if (!listId) return;
 
 	// clear filter if searching in fxlist
-	if (l === 'fxlist' && f.value !== '') {
-		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{e.checked=false;});
+	if (listId === 'fxlist' && field.value !== '') {
+		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
 	}
 
 	// do not search if filter is active
 	if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
 
-	var el = gId(l).querySelectorAll('.lstI');
+	const listItems = gId(listId).querySelectorAll('.lstI');
 	// filter list items but leave (Default & Solid) always visible
-	for (i = (l==='pcont'?0:1); i < el.length; i++) {
-		var it = el[i];
-		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
-		const itTsearchIndex = itT.indexOf(f.value.toUpperCase());
-		it.style.display = (itTsearchIndex<0) ? 'none' : '';
-		it.dataset.searchIndex  = itTsearchIndex;
+	for (i = (listId === 'pcont' ? 0 : 1); i < listItems.length; i++) {
+		const listItem = listItems[i];
+		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
+		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
+		listItem.style.display = (searchIndex < 0) ? 'none' : '';
+		listItem.dataset.searchIndex = searchIndex;
 	}
 
 	// sort list items by search index and name
-	const sortedListItems = Array.from(el).sort((a, b) => {
+	const sortedListItems = Array.from(listItems).sort((a, b) => {
 		const aSearchIndex = parseInt(a.dataset.searchIndex);
 		const bSearchIndex = parseInt(b.dataset.searchIndex);
 
@@ -2748,53 +2747,51 @@ function search(f,l=null)
 			return aSearchIndex - bSearchIndex;
 		}
 
-        const aName = a.querySelector('.lstIname').innerText.toUpperCase();
-        const bName = b.querySelector('.lstIname').innerText.toUpperCase();
+		const aName = a.querySelector('.lstIname').innerText.toUpperCase();
+		const bName = b.querySelector('.lstIname').innerText.toUpperCase();
 
-        return aName.localeCompare(bName);
-    });
+		return aName.localeCompare(bName);
+	});
 	sortedListItems.forEach(item => {
-        gId(l).append(item);
-    });
+		gId(listId).append(item);
+	});
 }
 
-function clean(c)
-{
-	c.style.display='none';
-	c.previousElementSibling.value='';
-	search(c.previousElementSibling, c.parentElement.nextElementSibling.id);
+function clean(clearButton) {
+	clearButton.style.display = 'none';
+	const inputField = clearButton.previousElementSibling;
+	inputField.value = '';
+	search(inputField, clearButton.parentElement.nextElementSibling.id);
 }
 
-function filterFocus(e)
-{
-	let f = gId("filters");
+function filterFocus(e) {
+	const f = gId("filters");
 	if (e.type === "focus") f.classList.remove('fade');	// immediately show (still has transition)
 	// compute sticky top (with delay for transition)
-	setTimeout(()=>{
-		let sti = parseInt(getComputedStyle(d.documentElement).getPropertyValue('--sti')) + (e.type === "focus" ? 1 : -1) * f.offsetHeight;
-		sCol('--sti', sti+"px");
+	setTimeout(() => {
+		const sti = parseInt(getComputedStyle(d.documentElement).getPropertyValue('--sti')) + (e.type === "focus" ? 1 : -1) * f.offsetHeight;
+		sCol('--sti', sti + "px");
 	}, 252);
 	if (e.type === "blur") {
-		setTimeout(()=>{
+		setTimeout(() => {
 			if (e.target === document.activeElement && document.hasFocus()) return;
 			f.classList.add('fade');
-		},255);	// wait with hiding
+		}, 255);	// wait with hiding
 	}
 }
 
-function filterFx()
-{
-	const searchIn = gId('fxFind').children[0];
-	searchIn.value = '';
-	searchIn.focus();
-	clean(searchIn.nextElementSibling);
-	const el = gId("fxlist").querySelectorAll('.lstI');
-	for (let i = 1; i < el.length; i++) {
-		const it = el[i];
-		const itT = it.querySelector('.lstIname').innerText;
+function filterFx() {
+	const inputField = gId('fxFind').children[0];
+	inputField.value = '';
+	inputField.focus();
+	clean(inputField.nextElementSibling);
+	const listItems = gId("fxlist").querySelectorAll('.lstI');
+	for (let i = 1; i < listItems.length; i++) {
+		const listItem = listItems[i];
+		const listItemName = listItem.querySelector('.lstIname').innerText;
 		let hide = false;
-		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{if (e.checked && !itT.includes(e.dataset.flt)) hide = true;});
-		it.style.display = hide ? 'none' : '';
+		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { if (e.checked && !listItemName.includes(e.dataset.flt)) hide = true; });
+		listItem.style.display = hide ? 'none' : '';
 	}
 }
 
