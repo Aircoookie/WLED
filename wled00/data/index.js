@@ -232,6 +232,7 @@ function onLoad()
 
 	tooltip();
 	resetPUtil();
+	initFilters();
 
 	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
 	applyCfg();
@@ -2764,6 +2765,10 @@ function clean(clearButton) {
 	search(inputField, clearButton.parentElement.nextElementSibling.id);
 }
 
+function initFilters() {
+	gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
+}
+
 function filterFocus(e) {
 	const f = gId("filters");
 	if (e.type === "focus") f.classList.remove('fade');	// immediately show (still has transition)
@@ -2775,6 +2780,8 @@ function filterFocus(e) {
 	if (e.type === "blur") {
 		setTimeout(() => {
 			if (e.target === document.activeElement && document.hasFocus()) return;
+			// do not hide if filter is active
+			if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
 			f.classList.add('fade');
 		}, 255);	// wait with hiding
 	}
