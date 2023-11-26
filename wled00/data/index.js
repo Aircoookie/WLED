@@ -2776,7 +2776,7 @@ function filterFocus(e)
 	}, 252);
 	if (e.type === "blur") {
 		setTimeout(()=>{
-			if (e.target === document.activeElement) return;
+			if (e.target === document.activeElement && document.hasFocus()) return;
 			f.classList.add('fade');
 		},255);	// wait with hiding
 	}
@@ -2796,6 +2796,11 @@ function filterFx()
 		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{if (e.checked && !itT.includes(e.dataset.flt)) hide = true;});
 		it.style.display = hide ? 'none' : '';
 	}
+}
+
+function preventBlur(e) {
+	if (e.target === gId("fxFind").children[0] || e.target === gId("filters")) return;
+	e.preventDefault();
 }
 
 // make sure "dur" and "transition" are arrays with at least the length of "ps"

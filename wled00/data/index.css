@@ -469,6 +469,7 @@ button {
 	height: 54px;
 	line-height: 1.5;
 	padding-bottom: 8px;
+	pointer-events: none;
 }
 
 /* New tooltip */
@@ -1240,6 +1241,7 @@ TD .checkmark, TD .radiomark {
 .filter .fchkl {
 	margin: 0 4px;
 	min-width: 20px;
+	pointer-events: auto;
 }
 
 .lbl-l {

@@ -197,8 +197,8 @@
 	<div id="Effects" class="tabcontent">
 		<div id="fx">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
-			<div class="staytop fnd" id="fxFind">
-				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="filterFocus(event);search(this,'fxlist');" onblur="filterFocus(event);" />
+			<div class="staytop fnd" id="fxFind" onmousedown="preventBlur(event);">
+				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="filterFocus(event);search(this,'fxlist');" onblur="filterFocus(event);">
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
 				<i class="icons search-icon" style="cursor:pointer;">&#xe0a1;</i>
 				<div id="filters" class="filter fade">
