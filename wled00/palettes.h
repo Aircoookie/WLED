@@ -3,7 +3,7 @@
  */
 
 // From ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
-// Unfortunaltely, these are stored in RAM!
+// Unfortunately, these are stored in RAM!
 
 // Gradient palette "ib_jul01_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/ing/xmas/tn/ib_jul01.png.index.html
@@ -12,8 +12,6 @@
 
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
-
-#define GRADIENT_PALETTE_COUNT 58
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -516,7 +514,7 @@ const byte Tiamat_gp[] PROGMEM = {
   220,  39,252,135, //gc from 177,254,255
   240, 193,213,253, //gc from 203,239,253
   255, 255,249,255};
-  
+
 //Custom palette by Aircoookie
 
 const byte April_Night_gp[] PROGMEM = {
@@ -600,16 +598,16 @@ const byte Atlantica_gp[] PROGMEM = {
     0, 255,   5,   0, //red
    60, 255,   5,   0,
    60, 196,  57,   2, //amber (start 61?)
-  120, 196,  57,   2, 
+  120, 196,  57,   2,
   120,   6, 126,   2, //green (start 126?)
   180,   6, 126,   2,
   180,   4,  30, 114, //blue (start 191?)
   255,   4,  30, 114};
-  
+
 // Gradient palette "temperature_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/arendal/tn/temperature.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
-// Size: 144 bytes of program space.  
+// Size: 144 bytes of program space.
 
 const byte temperature_gp[] PROGMEM = {
     0,   1, 27,105,

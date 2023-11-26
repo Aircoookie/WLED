@@ -22,12 +22,12 @@
 
 // 10 bits
 #ifndef USERMOD_SN_PHOTORESISTOR_ADC_PRECISION
-#define USERMOD_SN_PHOTORESISTOR_ADC_PRECISION 1024.0
+#define USERMOD_SN_PHOTORESISTOR_ADC_PRECISION 1024.0f
 #endif
 
 // resistor size 10K hms
 #ifndef USERMOD_SN_PHOTORESISTOR_RESISTOR_VALUE
-#define USERMOD_SN_PHOTORESISTOR_RESISTOR_VALUE 10000.0
+#define USERMOD_SN_PHOTORESISTOR_RESISTOR_VALUE 10000.0f
 #endif
 
 // only report if differance grater than offset value
@@ -109,6 +109,7 @@ public:
     {
       lastLDRValue = currentLDRValue;
 
+#ifndef WLED_DISABLE_MQTT
       if (WLED_MQTT_CONNECTED)
       {
         char subuf[45];
@@ -121,6 +122,12 @@ public:
         DEBUG_PRINTLN("Missing MQTT connection. Not publishing data");
       }
     }
+#endif
+  }
+
+  uint16_t getLastLDRValue()
+  {
+    return lastLDRValue;
   }
 
   void addToJsonInfo(JsonObject &root)

@@ -19,10 +19,59 @@ enum class AdaState {
   TPM2_Header_CountLo,
 };
 
+uint16_t currentBaud = 1152; //default baudrate 115200 (divided by 100)
+bool continuousSendLED = false;
+uint32_t lastUpdate = 0;
+
+void updateBaudRate(uint32_t rate){
+  uint16_t rate100 = rate/100;
+  if (rate100 == currentBaud || rate100 < 96) return;
+  currentBaud = rate100;
+
+  if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut){
+    Serial.print(F("Baud is now ")); Serial.println(rate);
+  }
+
+  Serial.flush();
+  Serial.begin(rate);
+}
+
+// RGB LED data return as JSON array. Slow, but easy to use on the other end.
+void sendJSON(){
+  if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut) {
+    uint16_t used = strip.getLengthTotal();
+    Serial.write('[');
+    for (uint16_t i=0; i<used; i++) {
+      Serial.print(strip.getPixelColor(i));
+      if (i != used-1) Serial.write(',');
+    }
+    Serial.println("]");
+  }
+}
+
+// RGB LED data returned as bytes in TPM2 format. Faster, and slightly less easy to use on the other end.
+void sendBytes(){
+  if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut) {
+    Serial.write(0xC9); Serial.write(0xDA);
+    uint16_t used = strip.getLengthTotal();
+    uint16_t len = used*3;
+    Serial.write(highByte(len));
+    Serial.write(lowByte(len));
+    for (uint16_t i=0; i < used; i++) {
+      uint32_t c = strip.getPixelColor(i);
+      Serial.write(qadd8(W(c), R(c))); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+      Serial.write(qadd8(W(c), G(c))); //G
+      Serial.write(qadd8(W(c), B(c))); //B
+    }
+    Serial.write(0x36); Serial.write('\n');
+  }
+}
+
 void handleSerial()
 {
-  if (pinManager.isPinAllocated(3)) return;
-  
+  if (pinManager.isPinAllocated(hardwareRX)) return;
+  if (!Serial) return;              // arduino docs: `if (Serial)` indicates whether or not the USB CDC serial connection is open. For all non-USB CDC ports, this will always return true
+
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
   static uint16_t count = 0;
@@ -30,7 +79,7 @@ void handleSerial()
   static byte check = 0x00;
   static byte red   = 0x00;
   static byte green = 0x00;
-  
+
   while (Serial.available() > 0)
   {
     yield();
@@ -46,13 +95,25 @@ void handleSerial()
           return;
         } else if (next == 'v') {
           Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
+
+        } else if (next == 0xB0) {updateBaudRate( 115200);
+        } else if (next == 0xB1) {updateBaudRate( 230400);
+        } else if (next == 0xB2) {updateBaudRate( 460800);
+        } else if (next == 0xB3) {updateBaudRate( 500000);
+        } else if (next == 0xB4) {updateBaudRate( 576000);
+        } else if (next == 0xB5) {updateBaudRate( 921600);
+        } else if (next == 0xB6) {updateBaudRate(1000000);
+        } else if (next == 0xB7) {updateBaudRate(1500000);
+
+        } else if (next == 'l') {sendJSON(); // Send LED data as JSON Array
+        } else if (next == 'L') {sendBytes(); // Send LED data as TPM2 Data Packet
+
+        } else if (next == 'o') {continuousSendLED = false; // Disable Continuous Serial Streaming
+        } else if (next == 'O') {continuousSendLED = true; // Enable Continuous Serial Streaming
+
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
-          #ifdef WLED_USE_DYNAMIC_JSON
-          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          #else
           if (!requestJSONBufferLock(16)) return;
-          #endif
           Serial.setTimeout(100);
           DeserializationError error = deserializeJson(doc, Serial);
           if (error) {
@@ -61,7 +122,7 @@ void handleSerial()
           }
           verboseResponse = deserializeState(doc.as<JsonObject>());
           //only send response if TX pin is unused for other purposes
-          if (verboseResponse && !pinManager.isPinAllocated(1)) {
+          if (verboseResponse && (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut)) {
             doc.clear();
             JsonObject state = doc.createNestedObject("state");
             serializeState(state);
@@ -124,7 +185,6 @@ void handleSerial()
         if (!realtimeOverride) setRealtimePixel(pixel++, red, green, blue, 0);
         if (--count > 0) state = AdaState::Data_Red;
         else {
-          if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
           realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
 
           if (!realtimeOverride) strip.show();
@@ -132,7 +192,19 @@ void handleSerial()
         }
         break;
     }
+
+    // All other received bytes will disable Continuous Serial Streaming
+    if (continuousSendLED && next != 'O'){
+      continuousSendLED = false;
+      }
+
     Serial.read(); //discard the byte
   }
   #endif
+
+  // If Continuous Serial Streaming is enabled, send new LED data as bytes
+  if (continuousSendLED && (lastUpdate != strip.getLastShow())){
+    sendBytes();
+    lastUpdate = strip.getLastShow();
+  }
 }

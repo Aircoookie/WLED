@@ -45,7 +45,7 @@ body:
     attributes:
       label: What version of WLED?
       description: You can find this in by going to Config -> Security & Updates -> Scroll to Bottom. Copy and paste the entire line after "Server message"
-      placeholder: "e.g. WLED 0.13.0-b4 (build 2110110)"
+      placeholder: "e.g. WLED 0.13.1 (build 2203150)"
     validations:
       required: true
   - type: dropdown
@@ -56,6 +56,9 @@ body:
       options:
         - ESP8266
         - ESP32
+        - ESP32-S3
+        - ESP32-S2
+        - ESP32-C3
         - Other
     validations:
       required: true
