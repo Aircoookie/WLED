@@ -86,7 +86,7 @@ static float mapf(float x, float in_min, float in_max, float out_min, float out_
  */
 uint16_t mode_static(void) {
   SEGMENT.fill(SEGCOLOR(0));
-  return FRAMETIME_FIXED_SLOW;    // WLEDMM to ensure smooth color changes from DMX (PR #73)
+  return strip.isOffRefreshRequired() ? FRAMETIME : FRAMETIME_FIXED_SLOW; // WLEDMM to ensure smooth color changes from DMX (PR #73)
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 
