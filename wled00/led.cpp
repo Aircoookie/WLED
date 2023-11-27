@@ -134,10 +134,8 @@ void stateUpdated(byte callMode) {
   usermods.onStateChange(callMode);
 
   if (fadeTransition) {
-    // restore (global) transition time if not called from UDP notifier or single/temporary transition from JSON (also playlist)
-    if (!(callMode == CALL_MODE_NOTIFICATION || jsonTransitionOnce)) strip.setTransition(transitionDelay);
-    jsonTransitionOnce = false;
     if (strip.getTransition() == 0) {
+      jsonTransitionOnce = false;
       transitionActive = false;
       applyFinalBri();
       strip.trigger();
@@ -190,7 +188,10 @@ void handleTransitions()
     float tper = (millis() - transitionStartTime)/(float)strip.getTransition();
     if (tper >= 1.0f) {
       strip.setTransitionMode(false); // stop all transitions
+      // restore (global) transition time if not called from UDP notifier or single/temporary transition from JSON (also playlist)
+      if (jsonTransitionOnce) strip.setTransition(transitionDelay);
       transitionActive = false;
+      jsonTransitionOnce = false;
       tperLast = 0;
       applyFinalBri();
       return;
