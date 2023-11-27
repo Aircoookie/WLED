@@ -779,6 +779,7 @@ class WS2812FX {  // 96 bytes
     inline void appendSegment(const Segment &seg = Segment()) { if (_segments.size() < getMaxSegments()) _segments.push_back(seg); }
 
     bool
+      paletteFade,
       checkSegmentAlignment(void),
       hasRGBWBus(void),
       hasCCTBus(void),
@@ -791,7 +792,6 @@ class WS2812FX {  // 96 bytes
     inline bool isOffRefreshRequired(void) {return _isOffRefreshRequired;}
 
     uint8_t
-      paletteFade,
       paletteBlend,
       milliampsPerLed,
       cctBlending,

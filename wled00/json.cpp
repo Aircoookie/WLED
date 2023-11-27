@@ -240,8 +240,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     seg.map1D2D = M12_Pixels; // no mapping
 
     // set brightness immediately and disable transition
-    transitionDelayTemp = 0;
     jsonTransitionOnce = true;
+    seg.stopTransition();
+    strip.setTransition(0);
     strip.setBrightness(scaledBri(bri), true);
 
     // freeze and init to black
@@ -323,23 +324,18 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   int tr = -1;
   if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
     tr = root[F("transition")] | -1;
-    if (tr >= 0)
-    {
-      transitionDelay = tr;
-      transitionDelay *= 100;
-      transitionDelayTemp = transitionDelay;
+    if (tr >= 0) {
+      transitionDelay = tr * 100;
+      if (fadeTransition) strip.setTransition(transitionDelay);
     }
   }
 
   // temporary transition (applies only once)
   tr = root[F("tt")] | -1;
-  if (tr >= 0)
-  {
-    transitionDelayTemp = tr;
-    transitionDelayTemp *= 100;
+  if (tr >= 0) {
     jsonTransitionOnce = true;
+    if (fadeTransition) strip.setTransition(tr * 100);
   }
-  strip.setTransition(transitionDelayTemp); // required here for color transitions to have correct duration
 
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
@@ -375,8 +371,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   if (root.containsKey("live")) {
     if (root["live"].as<bool>()) {
-      transitionDelayTemp = 0;
       jsonTransitionOnce = true;
+      strip.setTransition(0);
       realtimeLock(65000);
     } else {
       exitRealtime();

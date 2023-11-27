@@ -377,6 +377,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(modeBlending, light_tr["fx"]);
   int tdd = light_tr["dur"] | -1;
   if (tdd >= 0) transitionDelay = transitionDelayDefault = tdd * 100;
+  strip.setTransition(fadeTransition ? transitionDelayDefault : 0);
   CJSON(strip.paletteFade, light_tr["pal"]);
   CJSON(randomPaletteChangeTime, light_tr[F("rpc")]);
 

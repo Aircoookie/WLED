@@ -134,11 +134,11 @@ void stateUpdated(byte callMode) {
   usermods.onStateChange(callMode);
 
   if (fadeTransition) {
-    //set correct delay if not using notification delay
-    if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay; // load actual transition duration
+    // restore (global) transition time if not called from UDP notifier or single/temporary transition from JSON (also playlist)
+    if (!(callMode == CALL_MODE_NOTIFICATION || jsonTransitionOnce)) strip.setTransition(transitionDelay);
     jsonTransitionOnce = false;
-    strip.setTransition(transitionDelayTemp);
-    if (transitionDelayTemp == 0) {
+    if (strip.getTransition() == 0) {
+      transitionActive = false;
       applyFinalBri();
       strip.trigger();
       return;
@@ -152,7 +152,6 @@ void stateUpdated(byte callMode) {
     transitionActive = true;
     transitionStartTime = millis();
   } else {
-    strip.setTransition(0);
     applyFinalBri();
     strip.trigger();
   }
@@ -187,12 +186,10 @@ void handleTransitions()
   if (doPublishMqtt) publishMqtt();
 #endif
 
-  if (transitionActive && transitionDelayTemp > 0)
-  {
-    float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;
-    if (tper >= 1.0f)
-    {
-      strip.setTransitionMode(false);
+  if (transitionActive && strip.getTransition() > 0) {
+    float tper = (millis() - transitionStartTime)/(float)strip.getTransition();
+    if (tper >= 1.0f) {
+      strip.setTransitionMode(false); // stop all transitions
       transitionActive = false;
       tperLast = 0;
       applyFinalBri();
