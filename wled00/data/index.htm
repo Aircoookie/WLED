@@ -48,7 +48,7 @@
 		});
 		setTimeout(()=>{h.appendChild(l)},100);
 	});
-	setTimeout(()=>{h.appendChild(l)},100);
+	setTimeout(()=>{h.appendChild(l)},200);
 	</script>
 	<link rel="stylesheet" href="index.css">
 </head>
@@ -72,8 +72,8 @@
 		</div>
 		<div id="briwrap">
 			<p class="hd">Brightness</p>
-			<div class="slider" style="padding-right:32px;">
-				<i class="icons slider-icon" onclick="tglTheme()" style="transform: translate(-32px,5px);">&#xe2a6;</i>
+			<div class="slider">
+				<i class="icons slider-icon" onclick="tglTheme()" style="transform: translateY(2px);">&#xe2a6;</i>
 				<div class="sliderwrap il">
 					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
 					<div class="sliderdisplay"></div>
@@ -88,97 +88,90 @@
 <div class ="container">
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
-		<div id="hwrap" class="slider" style="margin-top: 20px;">
-			<div class="sliderwrap il">
+		<div id="hwrap" class="slider">
+			<div tooltip="Hue" class="sliderwrap il">
 				<input id="sliderH" class="noslide" oninput="fromH()" onchange="setColor(0)" max="359" min="0" type="range" value="0" step="any">
 				<div class="sliderdisplay" style="background: linear-gradient(90deg, #f00 2%, #ff0 19%, #0f0 35%, #0ff 52%, #00f 68%, #f0f 85%, #f00)"></div>
 			</div>
-			<span class="tooltiptext">Hue</span>
 		</div>
 		<div id="swrap" class="slider">
-			<div class="sliderwrap il">
+			<div tooltip="Saturation" class="sliderwrap il">
 				<input id="sliderS" class="noslide" oninput="fromS()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any">
 				<div class="sliderdisplay" style="background: linear-gradient(90deg, #aaa 0%, #f00)"></div>
 			</div>
-			<span class="tooltiptext">Saturation</span>
 		</div>
 		<div id="vwrap" class="slider">
-			<div class="sliderwrap il">
+			<div tooltip="Value/Brightness" class="sliderwrap il">
 				<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any" />
 				<div class="sliderdisplay"></div>
 			</div>
-			<span class="tooltiptext">Value/Brightness</span>
 		</div>
 		<div id="kwrap" class="slider">
-			<div class="sliderwrap il">
+			<div tooltip="Kelvin/Temperature" class="sliderwrap il">
 				<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550" />
 				<div class="sliderdisplay"></div>
 			</div>
-			<span class="tooltiptext">Kelvin/Temperature</span>
 		</div>
 		<div id="rgbwrap">
-			<!--p class="labels hd">RGB color</p-->
 			<div id="rwrap" class="slider">
-				<div class="sliderwrap il">
+				<div tooltip="Red channel" class="sliderwrap il">
 					<input id="sliderR" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<span class="tooltiptext">Red channel</span>
 			</div>
 			<div id="gwrap" class="slider">
-				<div class="sliderwrap il">
+				<div tooltip="Green channel" class="sliderwrap il">
 					<input id="sliderG" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<span class="tooltiptext">Green channel</span>
 			</div>
 			<div id="bwrap" class="slider">
-				<div class="sliderwrap il">
+				<div tooltip="Blue channel" class="sliderwrap il">
 					<input id="sliderB" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<span class="tooltiptext">Blue channel</span>
 			</div>
 		</div>
 		<div id="wwrap" class="slider">
-			<!--p class="labels hd">White channel</p-->
-			<div id="whibri" class="sliderwrap il">
+			<div id="whibri" tooltip="White channel" class="sliderwrap il">
 				<input id="sliderW" class="noslide" oninput="fromW()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
-			<span class="tooltiptext">White channel</span>
 		</div>
 		<div id="wbal" class="slider">
-			<!--p class="labels hd">White balance</p-->
-			<div class="sliderwrap il">
+			<div tooltip="White balance" class="sliderwrap il">
 				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
-			<span class="tooltiptext">White balance</span>
 		</div>
 		<div id="qcs-w">
-			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
-			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
-			<div class="qcs" onclick="pC('#ffc800');" title="Yellow" style="background-color:#ffc800;"></div>
-			<div class="qcs" onclick="pC('#ffe0a0');" title="Warm White" style="background-color:#ffe0a0;"></div>
-			<div class="qcs" onclick="pC('#ffffff');" title="White" style="background-color:#ffffff;"></div>
-			<div class="qcs qcsb" onclick="pC('#000000');" title="Black" style="background-color:#000000;"></div><br>
-			<div class="qcs" onclick="pC('#ff00ff');" title="Pink" style="background-color:#ff00ff;"></div>
-			<div class="qcs" onclick="pC('#0000ff');" title="Blue" style="background-color:#0000ff;"></div>
-			<div class="qcs" onclick="pC('#00ffc8');" title="Cyan" style="background-color:#00ffc8;"></div>
-			<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
-			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
+			<div class="qcs" onclick="pC('#ff0000');" tooltip="Red" style="background-color:#ff0000;"></div>
+			<div class="qcs" onclick="pC('#ffa000');" tooltip="Orange" style="background-color:#ffa000;"></div>
+			<div class="qcs" onclick="pC('#ffc800');" tooltip="Yellow" style="background-color:#ffc800;"></div>
+			<div class="qcs" onclick="pC('#ffe0a0');" tooltip="Warm White" style="background-color:#ffe0a0;"></div>
+			<div class="qcs" onclick="pC('#ffffff');" tooltip="White" style="background-color:#ffffff;"></div>
+			<div class="qcs qcsb" onclick="pC('#000000');" tooltip="Black" style="background-color:#000000;"></div><br>
+			<div class="qcs" onclick="pC('#ff00ff');" tooltip="Pink" style="background-color:#ff00ff;"></div>
+			<div class="qcs" onclick="pC('#0000ff');" tooltip="Blue" style="background-color:#0000ff;"></div>
+			<div class="qcs" onclick="pC('#00ffc8');" tooltip="Cyan" style="background-color:#00ffc8;"></div>
+			<div class="qcs" onclick="pC('#08ff00');" tooltip="Green" style="background-color:#08ff00;"></div>
+			<div class="qcs" onclick="pC('rnd');" tooltip="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 		</div>
 		<div id="csl">
-			<button id="csl0" class="btn xxs cl" onclick="selectSlot(0);" data-r="0" data-g="0" data-b="0" data-w="0">1</button>
-			<button id="csl1" class="btn xxs cl" onclick="selectSlot(1);" data-r="0" data-g="0" data-b="0" data-w="0">2</button>
-			<button id="csl2" class="btn xxs cl" onclick="selectSlot(2);" data-r="0" data-g="0" data-b="0" data-w="0">3</button>
+			<button id="csl0" tooltip="Select slot" class="btn xxs cl" onclick="selectSlot(0);" data-r="0" data-g="0" data-b="0" data-w="0">1</button>
+			<button id="csl1" tooltip="Select slot" class="btn xxs cl" onclick="selectSlot(1);" data-r="0" data-g="0" data-b="0" data-w="0">2</button>
+			<button id="csl2" tooltip="Select slot" class="btn xxs cl" onclick="selectSlot(2);" data-r="0" data-g="0" data-b="0" data-w="0">3</button>
 		</div>
 		<p class="labels h" id="cslLabel"></p>
 		<div id="hexw">
 			<i class="icons sel-icon" onclick="tglRgb()">&#xe22d;</i>
-			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
+			<input id="hexc" tooltip="Hex RGB" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
+		</div>
+		<div style="padding: 8px 0;">
+			<button class="btn btn-xs" tooltip="Pixel Magic Tool" type="button" id="pxmb" onclick="window.location.href=getURL('/pxmagic.htm')"><i class="icons btn-icon">&#xe410;</i></button>
+			<button class="btn btn-xs" tooltip="Add custom palette" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
+			<button class="btn btn-xs" tooltip="Remove custom palette" type="button" id="rmPal" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
 		</div>
 		<p class="labels" id="pall"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div id="palw" class="il">
@@ -189,7 +182,7 @@
 			</div>
 			<div id="pallist" class="list">
 				<div class="lstI">
-					<label class="radio schkl" onclick="loadPalettes()"> 
+					<label class="radio schkl" onclick="loadPalettes()">
 						<div class="lstIcontent">
 							<span class="lstIname">
 								Loading...
@@ -198,10 +191,6 @@
 					</label>
 				</div>
 			</div>
-			<div style="padding-bottom: 10px;">
-				<button class="btn btn-xs" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
-				<button class="btn btn-xs" type="button" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
-			</div>
 		</div>
 	</div>
 
@@ -209,13 +198,39 @@
 		<div id="fx">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
 			<div class="staytop fnd" id="fxFind">
-				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist');gId('filters').classList.add('fade');" onblur="gId('filters').classList.remove('fade')"/>
+				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="filterFocus(event);search(this,'fxlist');" onblur="filterFocus(event);" />
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
-				<i class="icons search-icon" onclick="gId('filters').classList.toggle('hide');" style="cursor:pointer;">&#xe0a1;</i>
+				<i class="icons search-icon" style="cursor:pointer;">&#xe0a1;</i>
+				<div id="filters" class="filter fade">
+					<label id="filterPal" tooltip="Uses palette" class="check fchkl">&#x1F3A8;
+						<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx(this);">
+						<span class="checkmark"></span>
+					</label>
+					<label id="filter0D" tooltip="Single pixel" class="check fchkl">&#8226;
+						<input type="checkbox" data-flt="&#8226;" onchange="filterFx(this);">
+						<span class="checkmark"></span>
+					</label>
+					<label id="filter1D" tooltip="1D" class="check fchkl">&#8942;
+						<input type="checkbox" data-flt="&#8942;" onchange="filterFx(this);">
+						<span class="checkmark"></span>
+					</label>
+					<label id="filter2D" tooltip="2D" class="check fchkl">&#9638;
+						<input type="checkbox" data-flt="&#9638;" onchange="filterFx(this);">
+						<span class="checkmark"></span>
+					</label>
+					<label id="filterVol" tooltip="Volume" class="check fchkl">&#9834;
+						<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this);">
+						<span class="checkmark"></span>
+					</label>
+					<label id="filterFreq" tooltip="Frequency" class="check fchkl">&#9835;
+						<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this);">
+						<span class="checkmark"></span>
+					</label>
+				</div>
 			</div>
 			<div id="fxlist" class="list">
 				<div class="lstI">
-					<label class="radio schkl" onclick="loadFX()"> 
+					<label class="radio schkl" onclick="loadFX()">
 						<div class="lstIcontent">
 							<span class="lstIname">
 								Loading...
@@ -226,87 +241,56 @@
 			</div>
 		</div>
 		<div id="sliders">
-			<div id="filters" class="filter">
-				<label id="filterPal" class="check fchkl">&#x1F3A8;
-					<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx(this)">
-					<span class="checkmark"></span>
-				</label>
-				<label id="filter0D" class="check fchkl hide">&#8226;
-					<input type="checkbox" data-flt="&#8226;" onchange="filterFx(this)">
-					<span class="checkmark"></span>
-				</label>
-				<label id="filter1D" class="check fchkl">&#8942;
-					<input type="checkbox" data-flt="&#8942;" onchange="filterFx(this)">
-					<span class="checkmark"></span>
-				</label>
-				<label id="filter2D" class="check fchkl">&#9638;
-					<input type="checkbox" data-flt="&#9638;" onchange="filterFx(this)">
-					<span class="checkmark"></span>
-				</label>
-				<label id="filterVol" class="check fchkl">&#9834;
-					<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this)">
-					<span class="checkmark"></span>
-				</label>
-				<label id="filterFreq" class="check fchkl">&#9835;
-					<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this)">
-					<span class="checkmark"></span>
-				</label>
-			</div>
 			<div id="slider0" class="slider">
 				<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
-				<div class="sliderwrap il">
+				<div tooltip="Effect speed" class="sliderwrap il">
 					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span id="sliderLabel0" class="tooltiptext">Effect speed</span>
 			</div>
 			<div id="slider1" class="slider">
 				<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
-				<div class="sliderwrap il">
+				<div tooltip="Effect intensity" class="sliderwrap il">
 					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel1">Effect intensity</span>
 			</div>
 			<div id="slider2" class="slider hide">
 				<i class="icons slider-icon">&#xe410;</i>
-				<div class="sliderwrap il">
+				<div tooltip="Custom 1" class="sliderwrap il">
 					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel2">Custom 1</span>
 			</div>
 			<div id="slider3" class="slider hide">
 				<i class="icons slider-icon">&#xe0a2;</i>
-				<div class="sliderwrap il">
+				<div tooltip="Custom 2" class="sliderwrap il">
 					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel3">Custom 2</span>
 			</div>
 			<div id="slider4" class="slider hide">
 				<i class="icons slider-icon">&#xe0e8;</i>
-				<div class="sliderwrap il">
+				<div tooltip="Custom 3" class="sliderwrap il">
 					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="31" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
-				<span class="tooltiptext" id="sliderLabel4">Custom 3</span>
 			</div>
 			<div id="fxopt" class="option fade">
-				<label id="opt0" class="check ochkl hide"><i class="icons">&#xe2b3;</i><span class="tooltiptext" id="optLabel0">Check 1</span>
+				<label id="opt0" tooltip="Check 1" class="check ochkl hide"><i class="icons">&#xe2b3;</i>
 					<input id="checkO1" type="checkbox" onchange="setOption(1, this.checked)">
 					<span class="checkmark"></span>
 				</label>
-				<label id="opt1" class="check ochkl hide"><i class="icons">&#xe34b;</i><span class="tooltiptext" id="optLabel1">Check 2</span>
+				<label id="opt1" tooltip="Check 2" class="check ochkl hide"><i class="icons">&#xe34b;</i>
 					<input id="checkO2" type="checkbox" onchange="setOption(2, this.checked)">
 					<span class="checkmark"></span>
 				</label>
-				<label id="opt2" class="check ochkl hide"><i class="icons">&#xe04c;</i><span class="tooltiptext" id="optLabel2">Check 3</span>
+				<label id="opt2" tooltip="Check 3" class="check ochkl hide"><i class="icons">&#xe04c;</i>
 					<input id="checkO3" type="checkbox" onchange="setOption(3, this.checked)">
 					<span class="checkmark"></span>
 				</label>
@@ -376,7 +360,7 @@
 	<div id="kn">Loading...</div>
 	<div style="position:sticky;bottom:0;">
 		<button class="btn infobtn" onclick="loadNodes()">Refresh</button>
-	</div>	
+	</div>
 </div>
 
 <div id="mlv2D" class="modal">
@@ -392,6 +376,7 @@
 	<button class="btn" onclick="setLor(2)">Override until reboot</button><br>
 	<span class="h">For best performance, it is recommended to turn off the streaming source when not in use.</span>
 </div>
+
 <i id="roverstar" class="icons huge" onclick="setLor(0)">&#xe410;</i><br>
 <script src="index.js"></script>
 </body>

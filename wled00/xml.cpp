@@ -31,7 +31,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend(SET_F("<ns>"));
   oappendi(notifyDirect);
   oappend(SET_F("</ns><nr>"));
-  oappendi(receiveNotifications);
+  oappendi(receiveGroups!=0);
   oappend(SET_F("</nr><nl>"));
   oappendi(nightlightActive);
   oappend(SET_F("</nl><nf>"));
@@ -280,11 +280,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("WS"),noWifiSleep);
 
     #ifndef WLED_DISABLE_ESPNOW
-    sappend('c',SET_F("RE"),enable_espnow_remote);
+    sappend('c',SET_F("RE"),enableESPNow);
     sappends('s',SET_F("RMAC"),linked_remote);
     #else
     //hide remote settings if not compiled
-    oappend(SET_F("document.getElementById('remd').style.display='none';"));
+    oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
     #endif
 
     #ifdef WLED_USE_ETHERNET
@@ -321,14 +321,11 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     #ifndef WLED_DISABLE_ESPNOW
-    if (last_signal_src[0] != 0) //Have seen an ESP-NOW Remote
-    {
+    if (strlen(last_signal_src) > 0) { //Have seen an ESP-NOW Remote
       sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
-    } else if (!enable_espnow_remote)
-    {
-      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable remote to listen)"));
-    } else
-    {
+    } else if (!enableESPNow) {
+      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable ESP-NOW to listen)"));
+    } else {
       sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
     }
     #endif
@@ -357,6 +354,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
     sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
+    uint16_t sumMa = 0;
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
       if (bus == nullptr) continue;
@@ -371,6 +369,8 @@ void getSettingsJS(byte subPage, char* dest)
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
       char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed
+      char la[4] = "LA"; la[2] = 48+s; la[3] = 0; //LED current
+      char ma[4] = "MA"; ma[2] = 48+s; ma[3] = 0; //max per-port PSU current
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -408,8 +408,13 @@ void getSettingsJS(byte subPage, char* dest)
         }
       }
       sappend('v',sp,speed);
+      sappend('v',la,bus->getLEDCurrent());
+      sappend('v',ma,bus->getMaxCurrent());
+      sumMa += bus->getMaxCurrent();
     }
+    sappend('c',SET_F("PPL"),(sumMa>0 && abs(sumMa - strip.ablMilliampsMax)>2)); // approxiamte detection if per-output limiter is enabled
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
+/*
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
@@ -418,7 +423,7 @@ void getSettingsJS(byte subPage, char* dest)
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));
     }
-
+*/
     oappend(SET_F("resetCOM("));
     oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
@@ -441,6 +446,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("GC"),gammaCorrectCol);
     dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
+    sappend('c',SET_F("EB"),modeBlending);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
     sappend('v',SET_F("TP"),randomPaletteChangeTime);
@@ -468,7 +474,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == SUBPAGE_UI)
   {
     sappends('s',SET_F("DS"),serverDescription);
-    sappend('c',SET_F("ST"),syncToggleReceive);
+    //sappend('c',SET_F("ST"),syncToggleReceive);
   #ifdef WLED_ENABLE_SIMPLE_UI
     sappend('c',SET_F("SU"),simplifiedUI);
   #else
@@ -478,9 +484,15 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_SYNC)
   {
-    char nS[32];
+    [[maybe_unused]] char nS[32];
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
+  #ifndef WLED_DISABLE_ESPNOW
+    if (enableESPNow) sappend('c',SET_F("EN"),useESPNowSync);
+    else              oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+  #else
+    oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+  #endif
     sappend('v',SET_F("GS"),syncGroups);
     sappend('v',SET_F("GR"),receiveGroups);
 
@@ -489,10 +501,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RX"),receiveNotificationEffects);
     sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SG"),receiveSegmentBounds);
-    sappend('c',SET_F("SD"),notifyDirectDefault);
+    sappend('c',SET_F("SS"),sendNotifications);
+    sappend('c',SET_F("SD"),notifyDirect);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
-    sappend('c',SET_F("SM"),notifyMacro);
+//    sappend('c',SET_F("SM"),notifyMacro);
     sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);

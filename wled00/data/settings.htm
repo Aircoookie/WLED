@@ -40,9 +40,10 @@
 				let path = l.pathname;
 				let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
 				if (paths.length > 1) {
+					paths.pop(); // remove "settings"
 					locproto = l.protocol;
 					loc = true;
-					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
 				}
 			}
 			loadJS(getURL('/settings/s.js?p=0'), false);	// If we set async false, file is loaded and executed, then next statement is processed

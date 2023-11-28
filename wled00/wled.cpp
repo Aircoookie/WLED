@@ -54,9 +54,6 @@ void WLED::loop()
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   #endif
   handleConnection();
-  #ifndef WLED_DISABLE_ESPNOW
-  handleRemote();
-  #endif
   handleSerial();
   handleImprovWifiScan();
   handleNotifications();
@@ -64,11 +61,11 @@ void WLED::loop()
 #ifdef WLED_ENABLE_DMX
   handleDMX();
 #endif
-  userLoop();
 
   #ifdef WLED_DEBUG
   unsigned long usermodMillis = millis();
   #endif
+  userLoop();
   usermods.loop();
   #ifdef WLED_DEBUG
   usermodMillis = millis() - usermodMillis;
@@ -189,7 +186,9 @@ void WLED::loop()
 
   yield();
   handleWs();
+#if defined(STATUSLED)
   handleStatusLED();
+#endif
 
   toki.resetTick();
 
@@ -259,9 +258,9 @@ void WLED::loop()
 #endif        // WLED_DEBUG
 }
 
-void WLED::enableWatchdog() {
 #if WLED_WATCHDOG_TIMEOUT > 0
-#ifdef ARDUINO_ARCH_ESP32
+void WLED::enableWatchdog() {
+  #ifdef ARDUINO_ARCH_ESP32
   esp_err_t watchdog = esp_task_wdt_init(WLED_WATCHDOG_TIMEOUT, true);
   DEBUG_PRINT(F("Watchdog enabled: "));
   if (watchdog == ESP_OK) {
@@ -271,22 +270,20 @@ void WLED::enableWatchdog() {
     return;
   }
   esp_task_wdt_add(NULL);
-#else
+  #else
   ESP.wdtEnable(WLED_WATCHDOG_TIMEOUT * 1000);
-#endif
-#endif
+  #endif
 }
 
 void WLED::disableWatchdog() {
-#if WLED_WATCHDOG_TIMEOUT > 0
-DEBUG_PRINTLN(F("Watchdog: disabled"));
-#ifdef ARDUINO_ARCH_ESP32
+  DEBUG_PRINTLN(F("Watchdog: disabled"));
+  #ifdef ARDUINO_ARCH_ESP32
   esp_task_wdt_delete(NULL);
-#else
+  #else
   ESP.wdtDisable();
-#endif
-#endif
+  #endif
 }
+#endif
 
 void WLED::setup()
 {
@@ -467,15 +464,19 @@ void WLED::setup()
 #ifndef WLED_DISABLE_OTA
   if (aOtaEnabled) {
     ArduinoOTA.onStart([]() {
-#ifdef ESP8266
+      #ifdef ESP8266
       wifi_set_sleep_type(NONE_SLEEP_T);
-#endif
+      #endif
+      #if WLED_WATCHDOG_TIMEOUT > 0
       WLED::instance().disableWatchdog();
+      #endif
       DEBUG_PRINTLN(F("Start ArduinoOTA"));
     });
     ArduinoOTA.onError([](ota_error_t error) {
+      #if WLED_WATCHDOG_TIMEOUT > 0
       // reenable watchdog on failed update
       WLED::instance().enableWatchdog();
+      #endif
     });
     if (strlen(cmDNS) > 0)
       ArduinoOTA.setHostname(cmDNS);
@@ -494,7 +495,9 @@ void WLED::setup()
   initServer();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
+  #if WLED_WATCHDOG_TIMEOUT > 0
   enableWatchdog();
+  #endif
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
@@ -676,6 +679,14 @@ void WLED::initConnection()
   ws.onEvent(wsEvent);
   #endif
 
+#ifndef WLED_DISABLE_ESPNOW
+  if (statusESPNow == ESP_NOW_STATE_ON) {
+    DEBUG_PRINTLN(F("ESP-NOW stopping."));
+    quickEspNow.stop();
+    statusESPNow = ESP_NOW_STATE_UNINIT;
+  }
+#endif
+
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(WIFI_PHY_MODE_11N);
@@ -692,7 +703,6 @@ void WLED::initConnection()
   if (!WLED_WIFI_CONFIGURED) {
     DEBUG_PRINTLN(F("No connection configured."));
     if (!apActive) initAP();        // instantly go to ap mode
-    return;
   } else if (!apActive) {
     if (apBehavior == AP_BEHAVIOR_ALWAYS) {
       DEBUG_PRINTLN(F("Access point ALWAYS enabled."));
@@ -705,27 +715,43 @@ void WLED::initConnection()
   }
   showWelcomePage = false;
 
-  DEBUG_PRINT(F("Connecting to "));
-  DEBUG_PRINT(clientSSID);
-  DEBUG_PRINTLN("...");
+  if (WLED_WIFI_CONFIGURED) {
+    DEBUG_PRINT(F("Connecting to "));
+    DEBUG_PRINT(clientSSID);
+    DEBUG_PRINTLN("...");
 
-  // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
-  char hostname[25];
-  prepareHostname(hostname);
-
-#ifdef ESP8266
-  WiFi.hostname(hostname);
-#endif
-
-  WiFi.begin(clientSSID, clientPass);
+    // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
+    char hostname[25];
+    prepareHostname(hostname);
+    WiFi.begin(clientSSID, clientPass);
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);
   #endif
-  WiFi.setSleep(!noWifiSleep);
-  WiFi.setHostname(hostname);
+    WiFi.setSleep(!noWifiSleep);
+    WiFi.setHostname(hostname);
 #else
-  wifi_set_sleep_type((noWifiSleep) ? NONE_SLEEP_T : MODEM_SLEEP_T);
+    wifi_set_sleep_type((noWifiSleep) ? NONE_SLEEP_T : MODEM_SLEEP_T);
+    WiFi.hostname(hostname);
+#endif
+  }
+
+#ifndef WLED_DISABLE_ESPNOW
+  if (enableESPNow) {
+    quickEspNow.onDataRcvd(espNowReceiveCB);
+    bool espNowOK;
+    if (apActive) {
+      DEBUG_PRINTLN(F("ESP-NOW initing in AP mode."));
+      #ifdef ESP32
+      quickEspNow.setWiFiBandwidth(WIFI_IF_AP, WIFI_BW_HT20); // Only needed for ESP32 in case you need coexistence with ESP8266 in the same network
+      #endif //ESP32
+      espNowOK = quickEspNow.begin(apChannel, WIFI_IF_AP);  // Same channel must be used for both AP and ESP-NOW
+    } else {
+      DEBUG_PRINTLN(F("ESP-NOW initing in STA mode."));
+      espNowOK = quickEspNow.begin(); // Use no parameters to start ESP-NOW on same channel as WiFi, in STA mode
+    }
+    statusESPNow = espNowOK ? ESP_NOW_STATE_ON : ESP_NOW_STATE_ERROR;
+  }
 #endif
 }
 
@@ -850,8 +876,8 @@ void WLED::handleConnection()
   if (!Network.isConnected()) {
     if (interfacesInited) {
       DEBUG_PRINTLN(F("Disconnected!"));
-      interfacesInited = false;
       initConnection();
+      interfacesInited = false;
     }
     //send improv failed 6 seconds after second init attempt (24 sec. after provisioning)
     if (improvActive > 2 && now - lastReconnectAttempt > 6000) {
@@ -895,9 +921,9 @@ void WLED::handleConnection()
 // else blink at 1Hz when WLED_CONNECTED is false (no WiFi, ?? no Ethernet ??)
 // else blink at 2Hz when MQTT is enabled but not connected
 // else turn the status LED off
+#if defined(STATUSLED)
 void WLED::handleStatusLED()
 {
-  #if defined(STATUSLED)
   uint32_t c = 0;
 
   #if STATUSLED>=0
@@ -937,5 +963,5 @@ void WLED::handleStatusLED()
       busses.setStatusPixel(0);
     #endif
   }
-  #endif
 }
+#endif

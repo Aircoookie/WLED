@@ -19,27 +19,41 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == SUBPAGE_WIFI)
   {
-    strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
+    char oldSSID[sizeof(clientSSID)];
 
-    if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
+    strcpy(oldSSID, clientSSID);
+    strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
+    if (!strcmp(oldSSID, clientSSID)) forceReconnect = true;
+
+    if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) {
+      strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
+      forceReconnect = true;
+    }
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
 
     apBehavior = request->arg(F("AB")).toInt();
+    strcpy(oldSSID, apSSID);
     strlcpy(apSSID, request->arg(F("AS")).c_str(), 33);
+    if (!strcmp(oldSSID, apSSID) && apActive) forceReconnect = true;
     apHide = request->hasArg(F("AH"));
     int passlen = request->arg(F("AP")).length();
-    if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg(F("AP")).c_str(), 65))) strlcpy(apPass, request->arg(F("AP")).c_str(), 65);
-    int t = request->arg(F("AC")).toInt(); if (t > 0 && t < 14) apChannel = t;
+    if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg(F("AP")).c_str(), 65))) {
+      strlcpy(apPass, request->arg(F("AP")).c_str(), 65);
+      forceReconnect = true;
+    }
+    int t = request->arg(F("AC")).toInt();
+    if (t != apChannel) forceReconnect = true;
+    if (t > 0 && t < 14) apChannel = t;
 
     noWifiSleep = request->hasArg(F("WS"));
 
     #ifndef WLED_DISABLE_ESPNOW
-    enable_espnow_remote = request->hasArg(F("RE"));
-    strlcpy(linked_remote,request->arg(F("RMAC")).c_str(), 13);
-
-    //Normalize MAC format to lowercase
-    strlcpy(linked_remote,strlwr(linked_remote), 13);
+    bool oldESPNow = enableESPNow;
+    enableESPNow = request->hasArg(F("RE"));
+    if (oldESPNow != enableESPNow) forceReconnect = true;
+    strlcpy(linked_remote, request->arg(F("RMAC")).c_str(), 13);
+    strlwr(linked_remote);  //Normalize MAC format to lowercase
     #endif
 
     #ifdef WLED_USE_ETHERNET
@@ -80,9 +94,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip, awmode, channelSwap;
-    uint16_t length, start;
+    uint8_t colorOrder, type, skip, awmode, channelSwap, maPerLed;
+    uint16_t length, start, maMax;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
+
+    strip.ablMilliampsMax = request->arg(F("MA")).toInt();
+    //strip.milliampsPerLed = request->arg(F("LA")).toInt();
 
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
@@ -106,6 +123,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
       char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed (DotStar & PWM)
+      char la[4] = "LA"; la[2] = 48+s; la[3] = 0; //LED mA
+      char ma[4] = "MA"; ma[2] = 48+s; ma[3] = 0; //max mA
       if (!request->hasArg(lp)) {
         DEBUG_PRINT(F("No data for "));
         DEBUG_PRINTLN(s);
@@ -150,10 +169,17 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         freqHz = 0;
       }
       channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
+      if ((type > TYPE_TM1814 && type < TYPE_WS2801) || type >= TYPE_NET_DDP_RGB) { // analog and virtual
+        maPerLed = 0;
+        maMax = 0;
+      } else {
+        maPerLed = request->arg(la).toInt();
+        maMax = request->arg(ma).toInt(); // if ABL is disabled this will be 0
+      }
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freqHz, useGlobalLedBuffer);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freqHz, useGlobalLedBuffer, maPerLed, maMax);
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
@@ -227,9 +253,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     touchThreshold = request->arg(F("TT")).toInt();
 
-    strip.ablMilliampsMax = request->arg(F("MA")).toInt();
-    strip.milliampsPerLed = request->arg(F("LA")).toInt();
-
     briS = request->arg(F("CA")).toInt();
 
     turnOnAtBoot = request->hasArg(F("BO"));
@@ -247,6 +270,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     fadeTransition = request->hasArg(F("TF"));
+    modeBlending = request->hasArg(F("EB"));
     t = request->arg(F("TD")).toInt();
     if (t >= 0) transitionDelayDefault = t;
     strip.paletteFade = request->hasArg(F("PF"));
@@ -271,7 +295,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == SUBPAGE_UI)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
-    syncToggleReceive = request->hasArg(F("ST"));
+    //syncToggleReceive = request->hasArg(F("ST"));
   #ifdef WLED_ENABLE_SIMPLE_UI
     if (simplifiedUI ^ request->hasArg(F("SU"))) {
       // UI selection changed, invalidate browser cache
@@ -293,6 +317,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("U2")).toInt();
     if (t > 0) udpPort2 = t;
 
+    #ifndef WLED_DISABLE_ESPNOW
+    useESPNowSync = request->hasArg(F("EN"));
+    #endif
+
     syncGroups = request->arg(F("GS")).toInt();
     receiveGroups = request->arg(F("GR")).toInt();
 
@@ -301,9 +329,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveNotificationEffects = request->hasArg(F("RX"));
     receiveSegmentOptions = request->hasArg(F("SO"));
     receiveSegmentBounds = request->hasArg(F("SG"));
-    receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
-    notifyDirectDefault = request->hasArg(F("SD"));
-    notifyDirect = notifyDirectDefault;
+    sendNotifications = request->hasArg(F("SS"));
+    notifyDirect = request->hasArg(F("SD"));
     notifyButton = request->hasArg(F("SB"));
     notifyAlexa = request->hasArg(F("SA"));
     notifyHue = request->hasArg(F("SH"));
@@ -317,7 +344,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!nodeListEnabled) Nodes.clear();
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
-    receiveDirect = request->hasArg(F("RD"));
+    receiveDirect = request->hasArg(F("RD")); // UDP realtime
     useMainSegmentOnly = request->hasArg(F("MO"));
     realtimeRespectLedMaps = request->hasArg(F("RLM"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
@@ -1004,7 +1031,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //toggle receive UDP direct notifications
   pos = req.indexOf(F("RN="));
-  if (pos > 0) receiveNotifications = (req.charAt(pos+3) != '0');
+  if (pos > 0) receiveGroups = (req.charAt(pos+3) != '0') ? receiveGroups | 1 : receiveGroups & 0xFE;
 
   //receive live data via UDP/Hyperion
   pos = req.indexOf(F("RD="));
@@ -1067,6 +1094,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
+  if (fadeTransition) strip.setTransition(transitionDelay);
 
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));

@@ -297,7 +297,7 @@ class Animated_Staircase : public Usermod {
         offIndex = maxSegmentId = strip.getLastActiveSegmentId() + 1;
 
         // shorten the strip transition time to be equal or shorter than segment delay
-        transitionDelayTemp = transitionDelay = segment_delay_ms;
+        transitionDelay = segment_delay_ms;
         strip.setTransition(segment_delay_ms/100);
         strip.trigger();
       } else {
