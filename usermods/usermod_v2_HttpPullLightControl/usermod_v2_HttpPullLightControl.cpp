@@ -133,6 +133,9 @@ void HttpPullLightControl::addToConfig(JsonObject& root) {
 
   // Write the configuration parameters to the nested object
   top[FPSTR(_enabled)] = enabled;
+  if (enabled==false)
+    // To make it a bit more user-friendly, we unfreeze the main segment after disabling the module. Because individual light control (like for a christmas card) might have been done.
+    strip.getMainSegment().freeze=false;
   top["checkInterval"] = checkInterval;
   #ifndef HTTP_PULL_LIGHT_CONTROL_HIDE_URL
     top["url"] = url;
@@ -281,25 +284,26 @@ void HttpPullLightControl::handleResponse(String& responseStr) {
     DEBUG_PRINTLN("Response: ");
     DEBUG_PRINTLN(jsonStr);
 
-    // Attempt to deserialize the JSON response
-    DeserializationError error = deserializeJson(doc, jsonStr);
-    if (error) {
-      // If there is an error in deserialization, exit the function
-      DEBUG_PRINT(F("DeserializationError: "));
-      DEBUG_PRINTLN(error.c_str());
-      return;
+    // Check for valid JSON, otherwise we brick the program runtime
+    if (jsonStr[0] == '{' || jsonStr[0] == '[') {
+      // Attempt to deserialize the JSON response
+      DeserializationError error = deserializeJson(doc, jsonStr);
+      if (error == DeserializationError::Ok) {
+        // Get JSON object from th doc
+        JsonObject obj = doc.as<JsonObject>();
+        // Parse the object throuhg deserializeState  (use CALL_MODE_NO_NOTIFY or OR CALL_MODE_DIRECT_CHANGE)
+        deserializeState(obj, CALL_MODE_NO_NOTIFY);
+      } else {
+        // If there is an error in deserialization, exit the function
+        DEBUG_PRINT(F("DeserializationError: "));
+        DEBUG_PRINTLN(error.c_str());
+      }
+    } else {
+      DEBUG_PRINTLN(F("Invalid JSON response"));
     }
   } else {
     DEBUG_PRINTLN(F("No body found in the response"));
-    return;
   }
-
-  // Get JSON object from th doc
-  JsonObject obj = doc.as<JsonObject>();
-
-  // Parse the object throuhg deserializeState  (use CALL_MODE_NO_NOTIFY or OR CALL_MODE_DIRECT_CHANGE)
-  deserializeState(obj, CALL_MODE_NO_NOTIFY);
-
   // Release the BufferLock again
   releaseJSONBufferLock();
 }
