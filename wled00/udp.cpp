@@ -323,6 +323,14 @@ void handleNotifications()
 
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 
+    // set transition time before making any segment changes
+    if (version > 3) {
+      if (fadeTransition) {
+        jsonTransitionOnce = true;
+        strip.setTransition(((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00));
+      }
+    }
+
     //apply colors from notification to main segment, only if not syncing full segments
     if ((receiveNotificationColor || !someSel) && (version < 11 || !receiveSegmentOptions)) {
       // primary color, only apply white if intented (version > 0)
@@ -449,11 +457,6 @@ void handleNotifications()
           strip.timebase -= diff;
         }
       }
-    }
-
-    if (version > 3)
-    {
-      transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
     }
 
     nightlightActive = udpIn[6];
