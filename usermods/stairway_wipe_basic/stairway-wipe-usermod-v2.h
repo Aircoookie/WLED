@@ -91,6 +91,7 @@ class StairwayWipeUsermod : public Usermod {
     void startWipe()
     {
     bri = briLast; //turn on
+    jsonTransitionOnce = true;
     strip.setTransition(0); //no transition
     effectCurrent = FX_MODE_COLOR_WIPE;
     resetTimebase(); //make sure wipe starts from beginning
@@ -105,6 +106,7 @@ class StairwayWipeUsermod : public Usermod {
 
     void turnOff()
     {
+    jsonTransitionOnce = true;
     #ifdef STAIRCASE_WIPE_OFF
     strip.setTransition(0); //turn off immediately after wipe completed
     #else
