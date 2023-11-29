@@ -116,7 +116,9 @@ static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of pe
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
 static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same time as samplePeak, but reset by transmitAudioData
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
-static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
+static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. channel result table to be used by effects
+static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
+static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
@@ -285,8 +287,6 @@ static float sampleTime = 0;        // avg (blocked) time for reading I2S sample
 
 // FFT Task variables (filtering and post-processing)
 static float   lastFftCalc[NUM_GEQ_CHANNELS] = {0.0f};                // backup of last FFT channels (before postprocessing)
-static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f};                    // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
-static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
 #if !defined(CONFIG_IDF_TARGET_ESP32C3)
 // audio source parameters and constant
@@ -1435,6 +1435,39 @@ class AudioReactive : public Usermod {
       last_time = millis();
     }
 
+    // MM experimental: limiter to smooth GEQ samples (only for UDP sound receiver mode)
+    //   target value (if gotNewSample) : fftCalc
+    //   last filtered value: fftAvg
+    void limitGEQDynamics(bool gotNewSample) {
+      constexpr float bigChange = 202;                  // just a representative number - a large, expected sample value
+      constexpr float smooth = 0.8f;                    // a bit of filtering
+      static unsigned long last_time = 0;
+
+      if (limiterOn == false) return;
+
+      if (gotNewSample) { // take new FFT samples as target values
+        for(unsigned i=0; i < NUM_GEQ_CHANNELS; i++) {
+          fftCalc[i] = fftResult[i];
+          fftResult[i] = fftAvg[i];
+        }
+      }
+
+      long delta_time = millis() - last_time;
+      delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> silly lil hick-up        
+      float maxAttack = (attackTime <= 0) ?  255.0f : (bigChange * float(delta_time) / float(attackTime));
+      float maxDecay  = (decayTime <= 0)  ? -255.0f : (-bigChange * float(delta_time) / float(decayTime));
+
+      for(unsigned i=0; i < NUM_GEQ_CHANNELS; i++) {
+        float deltaSample = fftCalc[i] - fftAvg[i];
+        if (deltaSample > maxAttack) deltaSample = maxAttack;
+        if (deltaSample < maxDecay) deltaSample = maxDecay;
+        deltaSample = deltaSample * smooth;
+        fftAvg[i] = fmaxf(0.0f, fminf(255.0f, fftAvg[i] + deltaSample));
+        fftResult[i] = fftAvg[i];
+      }
+      last_time = millis();
+    }
+
     //////////////////////
     // UDP Sound Sync   //
     //////////////////////
@@ -2008,6 +2041,7 @@ class AudioReactive : public Usermod {
           if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
           else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
           limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
+          limitGEQDynamics(have_new_sample);                  // WLEDMM experimental: smooth FFT (GEQ) samples
       } else {
           receivedFormat = 0;
       }
