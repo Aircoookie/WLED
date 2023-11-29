@@ -1700,9 +1700,10 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   return true;
 }
 
-uint16_t WS2812FX::getMappedPixelIndex(uint16_t index) {
-  if ((realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)
-    && index < customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) {
+  // convert logical address to physical
+  if (index < customMappingSize
+    && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
 
   return index;
 }
