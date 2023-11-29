@@ -495,6 +495,16 @@ void WLED::setup()
   initServer();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
+  // Seed FastLED random functions with an esp random value, which already works properly at this point.
+#if defined(ARDUINO_ARCH_ESP32)
+  const uint32_t seed32 = esp_random();
+#elif defined(ARDUINO_ARCH_ESP8266)
+  const uint32_t seed32 = RANDOM_REG32;
+#else
+  const uint32_t seed32 = random(std::numeric_limits<long>::max());
+#endif
+  random16_set_seed((uint16_t)((seed32 & 0xFFFF) ^ (seed32 >> 16)));
+
   #if WLED_WATCHDOG_TIMEOUT > 0
   enableWatchdog();
   #endif
