@@ -298,7 +298,7 @@ class Animated_Staircase : public Usermod {
 
         // shorten the strip transition time to be equal or shorter than segment delay
         transitionDelay = segment_delay_ms;
-        strip.setTransition(segment_delay_ms/100);
+        strip.setTransition(segment_delay_ms);
         strip.trigger();
       } else {
         if (togglePower && !on && offMode) toggleOnOff(); // toggle power on if off

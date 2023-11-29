@@ -197,33 +197,33 @@
 	<div id="Effects" class="tabcontent">
 		<div id="fx">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
-			<div class="staytop fnd" id="fxFind">
-				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="filterFocus(event);search(this,'fxlist');" onblur="filterFocus(event);" />
+			<div class="staytop fnd" id="fxFind" onmousedown="preventBlur(event);">
+				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="filterFocus(event);search(this,'fxlist');" onblur="filterFocus(event);">
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
 				<i class="icons search-icon" style="cursor:pointer;">&#xe0a1;</i>
 				<div id="filters" class="filter fade">
 					<label id="filterPal" tooltip="Uses palette" class="check fchkl">&#x1F3A8;
-						<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx(this);">
+						<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx();">
 						<span class="checkmark"></span>
 					</label>
 					<label id="filter0D" tooltip="Single pixel" class="check fchkl">&#8226;
-						<input type="checkbox" data-flt="&#8226;" onchange="filterFx(this);">
+						<input type="checkbox" data-flt="&#8226;" onchange="filterFx();">
 						<span class="checkmark"></span>
 					</label>
 					<label id="filter1D" tooltip="1D" class="check fchkl">&#8942;
-						<input type="checkbox" data-flt="&#8942;" onchange="filterFx(this);">
+						<input type="checkbox" data-flt="&#8942;" onchange="filterFx();">
 						<span class="checkmark"></span>
 					</label>
 					<label id="filter2D" tooltip="2D" class="check fchkl">&#9638;
-						<input type="checkbox" data-flt="&#9638;" onchange="filterFx(this);">
+						<input type="checkbox" data-flt="&#9638;" onchange="filterFx();">
 						<span class="checkmark"></span>
 					</label>
 					<label id="filterVol" tooltip="Volume" class="check fchkl">&#9834;
-						<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this);">
+						<input type="checkbox" data-flt="&#9834;" onchange="filterFx();">
 						<span class="checkmark"></span>
 					</label>
 					<label id="filterFreq" tooltip="Frequency" class="check fchkl">&#9835;
-						<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this);">
+						<input type="checkbox" data-flt="&#9835;" onchange="filterFx();">
 						<span class="checkmark"></span>
 					</label>
 				</div>

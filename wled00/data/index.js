@@ -232,6 +232,7 @@ function onLoad()
 
 	tooltip();
 	resetPUtil();
+	initFilters();
 
 	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
 	applyCfg();
@@ -2716,58 +2717,94 @@ function hideModes(txt)
 	}
 }
 */
-function search(f,l=null)
-{
-	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
-	if (!l) return;
-	var el = gId(l).querySelectorAll('.lstI');
+function search(field, listId = null) {
+	field.nextElementSibling.style.display = (field.value !== '') ? 'block' : 'none';
+	if (!listId) return;
+
+	// clear filter if searching in fxlist
+	if (listId === 'fxlist' && field.value !== '') {
+		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
+	}
+
+	// do not search if filter is active
+	if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
+
+	const listItems = gId(listId).querySelectorAll('.lstI');
 	// filter list items but leave (Default & Solid) always visible
-	for (i = (l==='pcont'?0:1); i < el.length; i++) {
-		var it = el[i];
-		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
-		it.style.display = (itT.indexOf(f.value.toUpperCase())<0) ? 'none' : '';
+	for (i = (listId === 'pcont' ? 0 : 1); i < listItems.length; i++) {
+		const listItem = listItems[i];
+		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
+		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
+		listItem.style.display = (searchIndex < 0) ? 'none' : '';
+		listItem.dataset.searchIndex = searchIndex;
 	}
+
+	// sort list items by search index and name
+	const sortedListItems = Array.from(listItems).sort((a, b) => {
+		const aSearchIndex = parseInt(a.dataset.searchIndex);
+		const bSearchIndex = parseInt(b.dataset.searchIndex);
+
+		if (aSearchIndex !== bSearchIndex) {
+			return aSearchIndex - bSearchIndex;
+		}
+
+		const aName = a.querySelector('.lstIname').innerText.toUpperCase();
+		const bName = b.querySelector('.lstIname').innerText.toUpperCase();
+
+		return aName.localeCompare(bName);
+	});
+	sortedListItems.forEach(item => {
+		gId(listId).append(item);
+	});
 }
 
-function clean(c)
-{
-	c.style.display='none';
-	var i=c.previousElementSibling;
-	i.value='';
-	i.focus();
-	i.dispatchEvent(new Event('input'));
-	if (i.parentElement.id=='fxFind') {
-		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{e.checked=false;});
-	}
+function clean(clearButton) {
+	clearButton.style.display = 'none';
+	const inputField = clearButton.previousElementSibling;
+	inputField.value = '';
+	search(inputField, clearButton.parentElement.nextElementSibling.id);
 }
 
-function filterFocus(e)
-{
-	let f = gId("filters");
+function initFilters() {
+	gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
+}
+
+function filterFocus(e) {
+	const f = gId("filters");
 	if (e.type === "focus") f.classList.remove('fade');	// immediately show (still has transition)
 	// compute sticky top (with delay for transition)
-	setTimeout(()=>{
-		let sti = parseInt(getComputedStyle(d.documentElement).getPropertyValue('--sti')) + (e.type === "focus" ? 1 : -1) * f.offsetHeight;
-		sCol('--sti', sti+"px");
+	setTimeout(() => {
+		const sti = parseInt(getComputedStyle(d.documentElement).getPropertyValue('--sti')) + (e.type === "focus" ? 1 : -1) * f.offsetHeight;
+		sCol('--sti', sti + "px");
 	}, 252);
 	if (e.type === "blur") {
-		let t = e.relatedTarget ? e.relatedTarget : e.explicitOriginalTarget;
-		do {
-			if (t.id && (t.id === "fxFind")) { setTimeout(()=>{t.firstElementChild.focus();},150); return; }
-			t = t.parentElement;
-		} while (t.tagName !== "BODY");
-		setTimeout(()=>{f.classList.add('fade');},255);	// wait with hiding
+		setTimeout(() => {
+			if (e.target === document.activeElement && document.hasFocus()) return;
+			// do not hide if filter is active
+			if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
+			f.classList.add('fade');
+		}, 255);	// wait with hiding
 	}
 }
 
-function filterFx(o)
-{
-	if (!o) return;
-	let i = gId('fxFind').children[0];
-	i.value=!o.checked?'':o.dataset.flt;
-	i.focus();
-	i.dispatchEvent(new Event('input'));
-	gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{if(e!==o)e.checked=false;});
+function filterFx() {
+	const inputField = gId('fxFind').children[0];
+	inputField.value = '';
+	inputField.focus();
+	clean(inputField.nextElementSibling);
+	const listItems = gId("fxlist").querySelectorAll('.lstI');
+	for (let i = 1; i < listItems.length; i++) {
+		const listItem = listItems[i];
+		const listItemName = listItem.querySelector('.lstIname').innerText;
+		let hide = false;
+		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { if (e.checked && !listItemName.includes(e.dataset.flt)) hide = true; });
+		listItem.style.display = hide ? 'none' : '';
+	}
+}
+
+function preventBlur(e) {
+	if (e.target === gId("fxFind").children[0] || e.target === gId("filters")) return;
+	e.preventDefault();
 }
 
 // make sure "dur" and "transition" are arrays with at least the length of "ps"

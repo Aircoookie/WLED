@@ -52,51 +52,55 @@
 			maxB = b; maxV = v; maxM = m; maxPB = p; maxL = l;
 		}
 		function pinsOK() {
-			var LCs = d.Sf.querySelectorAll("#mLC input[name^=L]"); // input fields
-			for (i=0; i<LCs.length; i++) {
-				var nm = LCs[i].name.substring(0,2);
+			var ok = true;
+			var nList = d.Sf.querySelectorAll("#mLC input[name^=L]");
+			nList.forEach((LC,i)=>{
+				if (!ok) return; // prevent iteration after conflict
+				let nm = LC.name.substring(0,2);
+				let n = LC.name.substring(2);
+				let t = parseInt(d.Sf["LT"+n].value, 10); // LED type SELECT
 				// ignore IP address
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-					var n = LCs[i].name.substring(2);
-					var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
-					if (t>=80) continue;
+					if (t>=80) return;
 				}
 				//check for pin conflicts
-				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4"/* || nm=="RL" || nm=="BT" || nm=="IR"*/)
-					if (LCs[i].value!="" && LCs[i].value!="-1") {
-						var p = d.rsvd.concat(d.um_p); // used pin array
+				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4")
+					if (LC.value!="" && LC.value!="-1") {
+						let p = d.rsvd.concat(d.um_p); // used pin array
 						d.Sf.querySelectorAll("select.pin").forEach((e)=>{if(e.value>-1)p.push(parseInt(e.value));}) // buttons, IR & relay
-						if (p.some((e)=>e==parseInt(LCs[i].value))) {
+						if (p.some((e)=>e==parseInt(LC.value))) {
 							alert(`Sorry, pins ${JSON.stringify(p)} can't be used.`);
-							LCs[i].value="";
-							LCs[i].focus();
-							return false;
-						}
-						else if (/*!(nm == "IR" || nm=="BT") &&*/ d.ro_gpio.some((e)=>e==parseInt(LCs[i].value))) {
+							LC.value="";
+							LC.focus();
+							ok = false;
+							return;
+						} else if (d.ro_gpio.some((e)=>e==parseInt(LC.value))) {
 							alert(`Sorry, pins ${JSON.stringify(d.ro_gpio)} are input only.`);
-							LCs[i].value="";
-							LCs[i].focus();
-							return false;
+							LC.value="";
+							LC.focus();
+							ok = false;
+							return;
 						}
-						for (j=i+1; j<LCs.length; j++) {
-							var n2 = LCs[j].name.substring(0,2);
-							if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4"/* || n2=="RL" || n2=="BT" || n2=="IR"*/) {
+						for (j=i+1; j<nList.length; j++) {
+							let n2 = nList[j].name.substring(0,2);
+							if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4") {
 								if (n2.substring(0,1)==="L") {
-									var m  = LCs[j].name.substring(2);
-									var t2 = parseInt(d.getElementsByName("LT"+m)[0].value, 10);
+									var m  = nList[j].name.substring(2);
+									var t2 = parseInt(d.Sf["LT"+m].value, 10);
 									if (t2>=80) continue;
 								}
-								if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {
-									alert(`Pin conflict between ${LCs[i].name}/${LCs[j].name}!`);
-									LCs[j].value="";
-									LCs[j].focus();
-									return false;
+								if (nList[j].value!="" && nList[i].value==nList[j].value) {
+									alert(`Pin conflict between ${LC.name}/${nList[j].name}!`);
+									nList[j].value="";
+									nList[j].focus();
+									ok = false;
+									return;
 								}
 							}
 						}
 					}
-			}
-			return true;
+			});
+			return ok;
 		}
 		function trySubmit(e) {
 			d.Sf.data.value = '';
@@ -206,7 +210,7 @@
 
 				// enumerate pins
 				for (p=1; p<5; p++) {
-					var LK = d.getElementsByName("L"+p+n)[0]; // secondary pins
+					var LK = d.Sf["L"+p+n]; // secondary pins
 					if (!LK) continue;
 					if (((t>=80 && t<96) && p<4) || (t>49 && p==1) || (t>41 && t < 50 && (p+40 < t))) // TYPE_xxxx values from const.h
 					{
@@ -222,7 +226,7 @@
 				}
 				if (change) {
 					gId("rf"+n).checked = (gId("rf"+n).checked || t == 31); // LEDs require data in off state
-					if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
+					if (t > 31 && t < 48) d.Sf["LC"+n].value = 1; // for sanity change analog count just to 1 LED
 					d.Sf["LA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 1;
 					d.Sf["MA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 250;
 				}
@@ -230,7 +234,7 @@
 				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 				gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
 				gId("dig"+n+"w").style.display = (t > 28 && t < 32) ? "inline":"none";  // show swap channels dropdown
-				if (!(t > 28 && t < 32)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
+				if (!(t > 28 && t < 32)) d.Sf["WO"+n].value = 0; // reset swapping
 				gId("dig"+n+"c").style.display = (t >= 40 && t < 48) ? "none":"inline";  // hide count for analog
 				gId("dig"+n+"r").style.display = (t >= 80 && t < 96) ? "none":"inline";  // hide reversed for virtual
 				gId("dig"+n+"s").style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
@@ -249,75 +253,69 @@
 				d.Sf.AW.selectedIndex = 0;
 				d.Sf.CR.checked = false;
 			}
-			// check for pin conflicts
-			var LCs = d.Sf.querySelectorAll("#mLC input[name^=L]"); // input fields
-			for (i=0; i<LCs.length; i++) {
-				var nm = LCs[i].name.substring(0,2);  // field name
-				var n  = LCs[i].name.substring(2);    // bus number
+			// update start indexes, max values, calculate current, etc
+			var nList = d.Sf.querySelectorAll("#mLC input[name^=L]");
+			nList.forEach((LC,i)=>{
+				let nm = LC.name.substring(0,2);  // field name
+				let n  = LC.name.substring(2);    // bus number
+				let t  = parseInt(d.Sf["LT"+n].value); // LED type SELECT
 				// do we have a led count field
 				if (nm=="LC") {
-					var c=parseInt(LCs[i].value,10); //get LED count
+					let c = parseInt(LC.value,10); //get LED count
 					if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
 					gId("ls"+n).disabled = !customStarts; //enable/disable field editing
-					if(c){
-						var s = parseInt(gId("ls"+n).value); //start value
+					if (c) {
+						let s = parseInt(gId("ls"+n).value); //start value
 						if (s+c > sLC) sLC = s+c; //update total count
-						if(c>maxLC)maxLC=c; //max per output
-						var t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
-						if (t<80) sPC+=c; //virtual out busses do not count towards physical LEDs
-						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) sDI+=c;
+						if (c > maxLC) maxLC = c; //max per output
+						if (t < 80) sPC += c; //virtual out busses do not count towards physical LEDs
+						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) sDI += c;
 						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) {
 							let maPL = parseInt(d.Sf["LA"+n].value);
-							if (maPL==255) maPL = 12;
+							if (maPL == 255) maPL = 12;
 							busMA += maPL*c;
 						}
 					} // increase led count
-					continue;
+					return;
 				}
 				// do we have led pins for digital leds
 				if (nm=="L0" || nm=="L1") {
-					var lc=d.Sf["LC"+n];
-					lc.max=maxPB; // update max led count value
+					d.Sf["LC"+n].max = maxPB; // update max led count value
 				}
 				// ignore IP address (stored in pins for virtual busses)
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-					var t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
 					if (t>=80) {
-						LCs[i].max = 255;
-						LCs[i].min = 0;
-						LCs[i].style.color="#fff";
-						continue; // do not check conflicts
+						LC.max = 255;
+						LC.min = 0;
+						LC.style.color="#fff";
+						return; // do not check conflicts
 					} else {
-						LCs[i].max = d.max_gpio;
-						LCs[i].min = -1;
+						LC.max = d.max_gpio;
+						LC.min = -1;
 					}
 				}
-				// check for pin conflicts
-				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4"/* || nm=="RL" || nm=="BT" || nm=="IR"*/)
-					if (LCs[i].value!="" && LCs[i].value!="-1") {
-						var p = d.rsvd.concat(d.um_p); // used pin array
+				// check for pin conflicts & color fields
+				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4")
+					if (LC.value!="" && LC.value!="-1") {
+						let p = d.rsvd.concat(d.um_p); // used pin array
 						d.Sf.querySelectorAll("select.pin").forEach((e)=>{if(e.value>-1)p.push(parseInt(e.value));}) // buttons, IR & relay
-						for (j=0; j<LCs.length; j++) {
+						for (j=0; j<nList.length; j++) {
 							if (i==j) continue;
-							var n2 = LCs[j].name.substring(0,2);
-							if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4"/* || n2=="RL" || n2=="BT" || n2=="IR"*/) {
+							let n2 = nList[j].name.substring(0,2);
+							if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4") {
 								if (n2.substring(0,1)==="L") {
-									var m  = LCs[j].name.substring(2);
-									var t2 = parseInt(d.Sf["LT"+m].value, 10);
-									if (t2>=80) continue;
+									let m  = nList[j].name.substring(2);
+									let t2 = parseInt(d.Sf["LT"+m].value, 10);
+									if (t2 >= 80) continue;
 								}
-								if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));  // add current pin
+								if (nList[j].value!="" && nList[j].value!="-1") p.push(parseInt(nList[j].value,10));  // add current pin
 							}
 						}
 						// now check for conflicts
-						if (p.some((e)=>e==parseInt(LCs[i].value))) LCs[i].style.color="red"; else LCs[i].style.color=d.ro_gpio.some((e)=>e==parseInt(LCs[i].value))?"orange":"#fff";
+						if (p.some((e)=>e==parseInt(LC.value))) LC.style.color = "red";
+						else LC.style.color = d.ro_gpio.some((e)=>e==parseInt(LC.value)) ? "orange" : "#fff";
 					}
-				// check buttons, IR & relay
-				//if (nm=="IR" || nm=="BT" || nm=="RL") {
-				//	LCs[i].max = d.max_gpio;
-				//	LCs[i].min = -1;
-				//}
-			}
+			});
 			d.Sf.querySelectorAll("#mLC input[name^=LC]").forEach((s,n)=>{
 				let c = parseInt(s.value,10); //get LED count
 				let t = parseInt(d.Sf["LT"+n].value);
