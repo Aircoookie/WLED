@@ -735,7 +735,20 @@ void WLED::setup()
   DEBUG_PRINT(pcTaskGetTaskName(NULL)); DEBUG_PRINT(F(" free stack ")); DEBUG_PRINTLN(uxTaskGetStackHighWaterMark(NULL));
   #endif
 
+  // Seed FastLED random functions with an esp random value, which already works properly at this point.
+#if defined(ARDUINO_ARCH_ESP32)
+  uint32_t seed32 = esp_random();
+  seed32 ^= random();  // WLEDMM some extra entropy (for older frameworks where esp_ramdom alone might be too predictable after startup)
+#elif defined(ARDUINO_ARCH_ESP8266)
+  const uint32_t seed32 = RANDOM_REG32;
+#else
+  const uint32_t seed32 = random(std::numeric_limits<long>::max());
+#endif
+  random16_set_seed((uint16_t)((seed32 & 0xFFFF) ^ (seed32 >> 16)));
+
+  #if WLED_WATCHDOG_TIMEOUT > 0
   enableWatchdog();
+  #endif
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
