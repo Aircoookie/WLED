@@ -116,6 +116,8 @@ static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of pe
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
 static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same time as samplePeak, but reset by transmitAudioData
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
+volatile bool haveNewFFTResult = false; // flag to directly inform UDP sound sender when new FFT results are availeable (to reduce latency). Flag is reset at next UDP send
+
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. channel result table to be used by effects
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
@@ -746,6 +748,9 @@ void FFTcode(void * parameter)
     autoResetPeak();
     detectSamplePeak();
     
+    // we have new results - notify UDP sound send
+    haveNewFFTResult = true;
+    
     #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
     if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
     #endif
@@ -1008,7 +1013,11 @@ class AudioReactive : public Usermod {
     // variables  for UDP sound sync
     WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!)
     unsigned long lastTime = 0;   // last time of running UDP Microphone Sync
+#if defined(WLEDMM_FASTPATH)
+    const uint16_t delayMs = 5;   // I don't want to sample too often and overload WLED
+#else
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
+#endif
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
 
     bool updateIsRunning = false; // true during OTA.
@@ -2092,7 +2101,12 @@ class AudioReactive : public Usermod {
 
 #ifdef ARDUINO_ARCH_ESP32
       //UDP Microphone Sync  - transmit mode
-      if ((audioSyncEnabled & 0x01) && (millis() - lastTime > 20)) {
+    #if defined(WLEDMM_FASTPATH)
+      if ((audioSyncEnabled & 0x01) && (haveNewFFTResult || (millis() - lastTime > 24))) {  // fastpath: send data once results are ready, or each 25ms as fallback (max sampling time is 23ms)
+    #else
+      if ((audioSyncEnabled & 0x01) && (millis() - lastTime > 20)) {                        // standard: send data each 20ms
+    #endif
+        haveNewFFTResult = false; // reset notification
         // Only run the transmit code IF we're in Transmit mode
         transmitAudioData();
         lastTime = millis();
