@@ -1334,7 +1334,7 @@ TD .checkmark, TD .radiomark {
 	top: calc(var(--sti) + 42px);
 }
 
-.dialog:not(.hideD)::before {
+.dialog:not(.hide)::before {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -1360,19 +1360,7 @@ TD .checkmark, TD .radiomark {
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 }
 
-.hideD {
-	top: -9999999999px;
-}
-
-#pallist.simplified {
-	overflow: scroll;
-	height: 500px;
-	/* Fix shadow */
-	margin: 0px -16px;
-	padding: 0px 16px 0px 16px;
-}
-
-#pallist.simplified .lstI.selected {
+#pallist .lstI.sticky {
 	top: 42px;
 }
 

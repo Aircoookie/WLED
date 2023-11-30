@@ -2275,7 +2275,7 @@ function setPalette(paletteId = null)
 	}
 
 	if (simplifiedUI) {
-		gId("palw").lastChild.classList.toggle("hideD");
+		gId("palw").lastChild.classList.toggle("hide");
 	}
 
 	var obj = {"seg": {"pal": paletteId}};
@@ -3050,13 +3050,13 @@ function simplifyUI() {
 	while (gId("palw").firstChild) {
 		div.appendChild(gId("palw").firstChild);
 	}
-	div.classList.add("hideD", "dialog");
+	div.classList.add("hide", "dialog");
 	let btn = document.createElement("button");
 	btn.classList.add("btn");
 	btn.innerText = "Change palette";
 	let togglePal = (e) => {
 		if (e.target != btn && e.target != div) return
-		gId("palw").lastChild.classList.toggle("hideD");
+		gId("palw").lastChild.classList.toggle("hide");
 	};
 	btn.addEventListener("click", togglePal);
 	div.addEventListener("click", togglePal);
