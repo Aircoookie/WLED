@@ -3058,6 +3058,7 @@ function simplifyUI() {
 		if (e.target != btn && e.target != div) return;
 		gId("palw").lastElementChild.classList.toggle("hide");
 		clean(gId("palw").lastElementChild.firstElementChild.children[1]);
+		gId("palw").lastElementChild.scrollTop = 0;
 	};
 	btn.addEventListener("click", togglePal);
 	div.addEventListener("click", togglePal);
