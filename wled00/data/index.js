@@ -3054,8 +3054,8 @@ function simplifyUI() {
 	let btn = document.createElement("button");
 	btn.classList.add("btn");
 	btn.innerText = "Change palette";
-	let togglePal = (e) => {
-		if (e.target != btn && e.target != div) return
+	function togglePal(e) {
+		if (e.target != btn && e.target != div) return;
 		gId("palw").lastChild.classList.toggle("hide");
 	};
 	btn.addEventListener("click", togglePal);
