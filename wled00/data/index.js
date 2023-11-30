@@ -2970,7 +2970,7 @@ function togglePcMode(fromB = false)
 	gId('buttonPcm').className = (pcMode) ? "active":"";
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
-	_C.style.width = (pcMode)?'100%':'400%';
+	_C.style.width = (pcMode || simplifiedUI)?'100%':'400%';
 }
 
 function mergeDeep(target, ...sources)
@@ -3029,6 +3029,7 @@ function tooltip()
 function simplifyUI() {
 	// Disable PC Mode as it does not exist in simple UI
 	if (pcMode) togglePcMode(true);
+	_C.style.width = '100%'
 	_C.style.setProperty('--n', 1);
 
 	// Put effects below palett list
