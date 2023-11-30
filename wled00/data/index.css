@@ -1353,7 +1353,7 @@ TD .checkmark, TD .radiomark {
 	max-width: 280px;
 	max-height: 70%;
 	margin: auto;
-	padding: 24px;
+	padding: 12px 24px;
 	border-radius: 10px;
 	background-color: var(--c-5);
 	overflow: scroll;
