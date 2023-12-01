@@ -1598,6 +1598,10 @@ function setEffectParameters(idx)
 		// disable palette list
 		text += ' not used';
 		palw.style.display = "none";
+		// hide palette dialog if not available
+		if (gId("palw").lastElementChild.classList.contains("dialog")) {
+			gId("palw").lastElementChild.classList.add("hide");
+		}
 	}
 	pall.innerHTML = icon + text;
 	// not all color selectors shown, hide palettes created from color selectors
@@ -2275,7 +2279,7 @@ function setPalette(paletteId = null)
 	}
 
 	if (simplifiedUI) {
-		gId("palw").lastChild.classList.toggle("hide");
+		gId("palw").lastElementChild.classList.toggle("hide");
 	}
 
 	var obj = {"seg": {"pal": paletteId}};
@@ -3056,9 +3060,9 @@ function simplifyUI() {
 	btn.innerText = "Change palette";
 	function togglePal(e) {
 		if (e.target != btn && e.target != div) return;
-		gId("palw").lastElementChild.classList.toggle("hide");
-		clean(gId("palw").lastElementChild.firstElementChild.children[1]);
-		gId("palw").lastElementChild.scrollTop = 0;
+		div.classList.toggle("hide");
+		clean(div.firstElementChild.children[1]);
+		div.scrollTop = 0;
 	};
 	btn.addEventListener("click", togglePal);
 	div.addEventListener("click", togglePal);
