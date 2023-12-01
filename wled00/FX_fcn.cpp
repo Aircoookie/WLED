@@ -290,7 +290,7 @@ void Segment::startTransition(uint16_t dur) {
   _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
 
-  //DEBUG_PRINTF("-- Started transition: %p\n", this);
+  //DEBUG_PRINTF("-- Started transition: %p (%p)\n", this, _t);
   loadPalette(_t->_palT, palette);
   _t->_briT           = on ? opacity : 0;
   _t->_cctT           = cct;
@@ -317,8 +317,8 @@ void Segment::startTransition(uint16_t dur) {
 }
 
 void Segment::stopTransition() {
-  //DEBUG_PRINTF("-- Stopping transition: %p\n", this);
   if (isInTransition()) {
+    //DEBUG_PRINTF("-- Stopping transition: %p\n", this);
     #ifndef WLED_DISABLE_MODE_BLEND
     if (_t->_segT._dataT && _t->_segT._dataLenT > 0) {
       //DEBUG_PRINTF("--  Released duplicate data (%d) for %p: %p\n", _t->_segT._dataLenT, this, _t->_segT._dataT);
@@ -348,7 +348,7 @@ uint16_t IRAM_ATTR Segment::progress() {
 
 #ifndef WLED_DISABLE_MODE_BLEND
 void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
-  //DEBUG_PRINTF("--  Saving temp seg: %p (%p)\n", this, tmpSeg);
+  //DEBUG_PRINTF("--  Saving temp seg: %p->(%p) [%d->%p]\n", this, &tmpSeg, _dataLen, data);
   tmpSeg._optionsT   = options;
   for (size_t i=0; i<NUM_COLORS; i++) tmpSeg._colorT[i] = colors[i];
   tmpSeg._speedT     = speed;
@@ -384,11 +384,10 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
     data      = _t->_segT._dataT;
     _dataLen  = _t->_segT._dataLenT;
   }
-  //DEBUG_PRINTF("--   temp seg data: %p (%d,%p)\n", this, _dataLen, data);
 }
 
 void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
-  //DEBUG_PRINTF("--  Restoring temp seg: %p (%p)\n", this, tmpSeg);
+  //DEBUG_PRINTF("--  Restoring temp seg: %p->(%p) [%d->%p]\n", &tmpSeg, this, _dataLen, data);
   if (_t && &(_t->_segT) != &tmpSeg) {
     // update possibly changed variables to keep old effect running correctly
     _t->_segT._aux0T = aux0;
@@ -415,7 +414,6 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
   call      = tmpSeg._callT;
   data      = tmpSeg._dataT;
   _dataLen  = tmpSeg._dataLenT;
-  //DEBUG_PRINTF("--   temp seg data: %p (%d,%p)\n", this, _dataLen, data);
 }
 #endif
 
@@ -578,7 +576,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "o1");   check1    = (sOpt >= 0) ? (bool)sOpt : false;
         sOpt = extractModeDefaults(fx, "o2");   check2    = (sOpt >= 0) ? (bool)sOpt : false;
         sOpt = extractModeDefaults(fx, "o3");   check3    = (sOpt >= 0) ? (bool)sOpt : false;
-        sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7); else map1D2D = M12_Pixels;  // reset mapping if not defined (2D FX may not work)
         sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 3);
         sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) reverse   = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
@@ -1159,15 +1157,12 @@ void WS2812FX::service() {
       uint16_t delay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen
-        _virtualSegmentLength = seg.virtualLength();
-        _colors_t[0] = seg.currentColor(0);
-        _colors_t[1] = seg.currentColor(1);
-        _colors_t[2] = seg.currentColor(2);
+        _virtualSegmentLength = seg.virtualLength(); //SEGLEN
+        _colors_t[0] = gamma32(seg.currentColor(0));
+        _colors_t[1] = gamma32(seg.currentColor(1));
+        _colors_t[2] = gamma32(seg.currentColor(2));
         seg.currentPalette(_currentPalette, seg.palette); // we need to pass reference
-
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(seg.currentBri(true), correctWB);
-        for (int c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
-
         // Effect blending
         // When two effects are being blended, each may have different segment data, this
         // data needs to be saved first and then restored before running previous mode.
@@ -1181,6 +1176,7 @@ void WS2812FX::service() {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
+          _virtualSegmentLength = seg.virtualLength(); // update SEGLEN (mapping may have changed)
           uint16_t d2 = (*_mode[tmpMode])();  // run old mode
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay

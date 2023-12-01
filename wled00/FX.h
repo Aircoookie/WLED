@@ -493,9 +493,9 @@ typedef struct Segment {
 
     ~Segment() {
       #ifdef WLED_DEBUG
-      //Serial.printf("-- Destroying segment: %p\n", this);
+      //Serial.printf("-- Destroying segment: %p", this);
       //if (name) Serial.printf(" %s (%p)", name, name);
-      //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      //if (data) Serial.printf(" %d->(%p)", (int)_dataLen, data);
       //Serial.println();
       #endif
       if (name) { delete[] name; name = nullptr; }
