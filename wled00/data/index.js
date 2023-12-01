@@ -1506,6 +1506,8 @@ function setEffectParameters(idx)
 		let text = slider.getAttribute("tooltip");
 		if ((!controlDefined && i<((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i]!="")) {
 			if (slOnOff.length>i && slOnOff[i]!="!") text = slOnOff[i];
+			// restore overwritten default tooltips
+			if (i<2 && slOnOff[i]==="!") text = i==0 ? "Effect speed" : "Effect intensity";
 			slider.setAttribute("tooltip", text);
 			slider.parentElement.classList.remove('hide');
 		} else
@@ -1540,7 +1542,6 @@ function setEffectParameters(idx)
 	var cslLabel = '';
 	var sep = '';
 	var cslCnt = 0, oCsel = csel;
-//	for (let i=0; i<gId("csl").querySelectorAll("button"); i++) {
 	d.querySelectorAll("#csl button").forEach((e,i)=>{
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
