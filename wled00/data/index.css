@@ -1360,10 +1360,6 @@ TD .checkmark, TD .radiomark {
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 }
 
-#pallist .lstI.sticky {
-	top: 42px;
-}
-
 #fxlist .lstI.sticky,
 #pallist .lstI.sticky {
 	top: var(--sti);
