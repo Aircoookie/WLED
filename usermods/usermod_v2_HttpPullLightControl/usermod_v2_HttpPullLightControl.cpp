@@ -150,11 +150,18 @@ void HttpPullLightControl::addToConfig(JsonObject& root) {
 // Do the http request here. Note that we can not do https requests with the AsyncTCP library
 // We do everything Asynchronous, so all callbacks are defined here
 void HttpPullLightControl::checkUrl() {
+  // Extra Inactivity check to see if AsyncCLient hangs
+  if (client != nullptr && ( millis() - lastActivityTime > inactivityTimeout ) ) {
+      DEBUG_PRINTLN(F("Inactivity detected, deleting client."));
+      delete client;
+      client = nullptr;
+  }
   if (client != nullptr && client->connected()) {
       DEBUG_PRINTLN(F("We are still connected, do nothing"));
       // Do nothing, Client is still connected
       return;
   }
+
   if (client != nullptr) {
     // Delete previous client instance if exists, just to prevent any memory leaks
     DEBUG_PRINTLN(F("Delete previous instances"));
@@ -169,6 +176,7 @@ void HttpPullLightControl::checkUrl() {
       DEBUG_PRINTLN(F("Data received."));
       // Cast arg back to the usermod class instance
       HttpPullLightControl *instance = (HttpPullLightControl *)arg;
+      instance->lastActivityTime = millis(); // Update lastactivity time when data is received
       // Convertert to Safe-String
       char *strData = new char[len + 1];
       strncpy(strData, (char*)data, len);
@@ -185,19 +193,18 @@ void HttpPullLightControl::checkUrl() {
       //Set the class-own client pointer to nullptr if its the current client
       HttpPullLightControl *instance = static_cast<HttpPullLightControl*>(arg);
       if (instance->client == c) {
+        delete instance->client; // Delete the client instance
         instance->client = nullptr;
       }
-      // Do not remove client here, it is maintained by AsyncClient
     }, this);
     client->onTimeout([](void *arg, AsyncClient *c, uint32_t time) {
       DEBUG_PRINTLN(F("Timeout"));
       //Set the class-own client pointer to nullptr if its the current client
       HttpPullLightControl *instance = static_cast<HttpPullLightControl*>(arg);
       if (instance->client == c) {
-        delete instance->client;
+        delete instance->client; // Delete the client instance
         instance->client = nullptr;
       }
-      // Do not remove client here, it is maintained by AsyncClient
     }, this);
     client->onError([](void *arg, AsyncClient *c, int8_t error) {
       DEBUG_PRINTLN("Connection error occurred!");
@@ -222,6 +229,8 @@ void HttpPullLightControl::checkUrl() {
     DEBUG_PRINT(host);
     DEBUG_PRINT(F(" via port "));
     DEBUG_PRINTLN((url.startsWith("https")) ? 443 : 80);
+    // Update lastActivityTime just before sending the request
+    lastActivityTime = millis();
     //Try to connect
     if (!client->connect(host.c_str(), (url.startsWith("https")) ? 443 : 80)) {
       DEBUG_PRINTLN(F("Failed to initiate connection."));
@@ -272,6 +281,7 @@ void HttpPullLightControl::handleResponse(String& responseStr) {
   if (!requestJSONBufferLock(myLockId)) {
     DEBUG_PRINT(F("ERROR: Can not request JSON Buffer Lock, number: "));
       DEBUG_PRINTLN(myLockId);
+      releaseJSONBufferLock(); // Just release in any case, maybe there was already a buffer lock
     return;
   }
 

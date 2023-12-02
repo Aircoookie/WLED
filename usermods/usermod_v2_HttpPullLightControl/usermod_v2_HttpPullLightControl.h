@@ -60,12 +60,14 @@ private:
 
   // Define constants
   static const uint8_t myLockId = USERMOD_ID_HTTP_PULL_LIGHT_CONTROL ; // Used for the requestJSONBufferLock(id) function
-  static const int16_t ackTimeout = 10000;  // ACK timeout in milliseconds when doing the URL request
-  static const uint16_t rxTimeout = 10000;  // RX timeout in milliseconds when doing the URL request
+  static const int16_t ackTimeout = 9000;  // ACK timeout in milliseconds when doing the URL request
+  static const uint16_t rxTimeout = 9000;  // RX timeout in milliseconds when doing the URL request
   static const unsigned long FNV_offset_basis = 2166136261;
   static const unsigned long FNV_prime = 16777619;
+  static const unsigned long inactivityTimeout = 30000; // When the AsyncClient is inactive (hanging) for this many milliseconds, we kill it
 
   unsigned long lastCheck = 0;    // Timestamp of last check
+  unsigned long lastActivityTime = 0; // Time of last activity of AsyncClient
   String host;                    // Host extracted from the URL
   String path;                    // Path extracted from the URL
   String uniqueId;                // Cached unique ID
@@ -96,6 +98,7 @@ public:
       client->onConnect(nullptr);
       // Now it is safe to delete the client.
       delete client; // This is safe even if client is nullptr.
+      client = nullptr;
     }
   }
 };
