@@ -41,6 +41,9 @@ var ctx = null; // WLEDMM
 var ledmapNr = -1; //WLEDMM
 var ledmapFileNames = []; //WLEDMM
 let nodesData = []; //WLEDMM
+let ibtglChecked = true; //WLEDMM
+let sbtglChecked = true; //WLEDMM
+let sbchkChecked = false; //WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -694,6 +697,7 @@ ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.
 ${theap>0?inforow("Heap ☾",((i.totalheap-i.freeheap)/1000).toFixed(0)+"/"+theap.toFixed(0)+" kB"," ("+Math.round((i.totalheap-i.freeheap)/(10*theap))+"%)"):""}
 ${i.minfreeheap?inforow("Max used heap ☾",((i.totalheap-i.minfreeheap)/1000).toFixed(1)+" kB"," ("+Math.round((i.totalheap-i.minfreeheap)/(10*theap))+"%)"):""}
 ${inforow("Free heap",heap," kB")}
+${i.freestack?inforow("Free stack ☾",i.freestack," kB"):""} <!--WLEDMM-->
 ${inforow("Flash Size ☾",flashsize," kB")}  <!--WLEDMM and Athom-->
 ${i.tpram?inforow("PSRAM ☾",(i.tpram/1024).toFixed(1)," kB"):""}
 ${i.psram?((i.tpram-i.psram)>16383?inforow("Used PSRAM ☾",((i.tpram-i.psram)/1024).toFixed(1)," kB"):inforow("Used PSRAM ☾",(i.tpram-i.psram)," B")):""}
@@ -2459,21 +2463,21 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<span class="lstIname">
 	Include brightness
 	</span>
-	<input type="checkbox" id="p${i}ibtgl" checked>
+	<input type="checkbox" id="p${i}ibtgl" ${ibtglChecked?"checked":""}> <!--WLEDMM-->
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
 	<span class="lstIname">
 	Save segment bounds
 	</span>
-	<input type="checkbox" id="p${i}sbtgl" checked>
+	<input type="checkbox" id="p${i}sbtgl" ${sbtglChecked?"checked":""}> <!--WLEDMM-->
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
 	<span class="lstIname">
 	Checked segments only
 	</span>
-	<input type="checkbox" id="p${i}sbchk">
+	<input type="checkbox" id="p${i}sbchk" ${sbchkChecked?"checked":""}> <!--WLEDMM-->
 	<span class="checkmark"></span>
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
@@ -2514,7 +2518,15 @@ function makePUtil()
 	p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
 	let pTx = gId('p0txt');
 	pTx.focus();
-	pTx.value = eJson.find((o)=>{return o.id==selectedFx}).name;
+	//WLEDMM: take the name PLUS the icons as default name
+	let fxName = eJson.find((o)=>{return o.id==selectedFx}).name;
+
+	let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
+	if (sE) {
+		fxName = sE.querySelector(".lstIname").innerText;
+	}
+
+	pTx.value = fxName;
 	pTx.select();
 	p.scrollIntoView({
 		behavior: 'smooth',
@@ -2902,8 +2914,11 @@ function saveP(i,pl)
 			obj.o = true;
 		} else {
 			obj.ib = gId(`p${i}ibtgl`).checked;
+			ibtglChecked = obj.ib; //WLEDMM
 			obj.sb = gId(`p${i}sbtgl`).checked;
+			sbtglChecked = obj.sb; //WLEDMM
 			obj.sc = gId(`p${i}sbchk`).checked;
+			sbchkChecked = obj.sc; //WLEDMM
 			if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
 		}
 	}
@@ -3235,7 +3250,7 @@ function genPresets()
 				addToPlaylist("All", ef.id);
 				if (m.includes("1")) addToPlaylist("All1", ef.id);
 				if (m.includes("2")) addToPlaylist("All2", ef.id);
-			} //fxData is array
+			} //fxdata is array
 		} //not RSVD
 	} //all effects
 

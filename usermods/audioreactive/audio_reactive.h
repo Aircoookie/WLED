@@ -25,9 +25,14 @@
 //#define SR_STATS
 
 #if !defined(FFTTASK_PRIORITY)
+#if defined(WLEDMM_FASTPATH) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && defined(ARDUINO_ARCH_ESP32)
+// FASTPATH: use higher priority, to avoid that webserver (ws, json, etc) delays sample processing
+//#define FFTTASK_PRIORITY 3 // competing with async_tcp
+#define FFTTASK_PRIORITY 4   // above async_tcp
+#else
 #define FFTTASK_PRIORITY 1 // standard: looptask prio
 //#define FFTTASK_PRIORITY 2 // above looptask, below async_tcp
-//#define FFTTASK_PRIORITY 4 // above async_tcp
+#endif
 #endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
@@ -111,7 +116,11 @@ static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of pe
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
 static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same time as samplePeak, but reset by transmitAudioData
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
-static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
+volatile bool haveNewFFTResult = false; // flag to directly inform UDP sound sender when new FFT results are availeable (to reduce latency). Flag is reset at next UDP send
+
+static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. channel result table to be used by effects
+static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
+static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
@@ -280,8 +289,6 @@ static float sampleTime = 0;        // avg (blocked) time for reading I2S sample
 
 // FFT Task variables (filtering and post-processing)
 static float   lastFftCalc[NUM_GEQ_CHANNELS] = {0.0f};                // backup of last FFT channels (before postprocessing)
-static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f};                    // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
-static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
 #if !defined(CONFIG_IDF_TARGET_ESP32C3)
 // audio source parameters and constant
@@ -497,6 +504,11 @@ void FFTcode(void * parameter)
       }
       datAvg +=  vReal[i];
     }
+#endif
+
+#if defined(WLEDMM_FASTPATH) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && defined(ARDUINO_ARCH_ESP32)
+    // experimental - be nice to LED update task (trying to avoid flickering) - dual core only
+    if (strip.isServicing()) delay(2);
 #endif
 
     // band pass filter - can reduce noise floor by a factor of 50
@@ -735,6 +747,9 @@ void FFTcode(void * parameter)
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
+    
+    // we have new results - notify UDP sound send
+    haveNewFFTResult = true;
     
     #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
     if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
@@ -998,7 +1013,11 @@ class AudioReactive : public Usermod {
     // variables  for UDP sound sync
     WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!)
     unsigned long lastTime = 0;   // last time of running UDP Microphone Sync
+#if defined(WLEDMM_FASTPATH)
+    const uint16_t delayMs = 5;   // I don't want to sample too often and overload WLED
+#else
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
+#endif
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
 
     bool updateIsRunning = false; // true during OTA.
@@ -1422,6 +1441,39 @@ class AudioReactive : public Usermod {
       volumeSmth = last_volumeSmth + deltaSample; 
 
       last_volumeSmth = volumeSmth;
+      last_time = millis();
+    }
+
+    // MM experimental: limiter to smooth GEQ samples (only for UDP sound receiver mode)
+    //   target value (if gotNewSample) : fftCalc
+    //   last filtered value: fftAvg
+    void limitGEQDynamics(bool gotNewSample) {
+      constexpr float bigChange = 202;                  // just a representative number - a large, expected sample value
+      constexpr float smooth = 0.8f;                    // a bit of filtering
+      static unsigned long last_time = 0;
+
+      if (limiterOn == false) return;
+
+      if (gotNewSample) { // take new FFT samples as target values
+        for(unsigned i=0; i < NUM_GEQ_CHANNELS; i++) {
+          fftCalc[i] = fftResult[i];
+          fftResult[i] = fftAvg[i];
+        }
+      }
+
+      long delta_time = millis() - last_time;
+      delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> silly lil hick-up        
+      float maxAttack = (attackTime <= 0) ?  255.0f : (bigChange * float(delta_time) / float(attackTime));
+      float maxDecay  = (decayTime <= 0)  ? -255.0f : (-bigChange * float(delta_time) / float(decayTime));
+
+      for(unsigned i=0; i < NUM_GEQ_CHANNELS; i++) {
+        float deltaSample = fftCalc[i] - fftAvg[i];
+        if (deltaSample > maxAttack) deltaSample = maxAttack;
+        if (deltaSample < maxDecay) deltaSample = maxDecay;
+        deltaSample = deltaSample * smooth;
+        fftAvg[i] = fmaxf(0.0f, fminf(255.0f, fftAvg[i] + deltaSample));
+        fftResult[i] = fftAvg[i];
+      }
       last_time = millis();
     }
 
@@ -1881,7 +1933,7 @@ class AudioReactive : public Usermod {
         return;
       }
       // We cannot wait indefinitely before processing audio data
-      if (strip.isUpdating() && (millis() - lastUMRun < 2)) return;   // be nice, but not too nice
+      if (strip.isServicing() && (millis() - lastUMRun < 2)) return;   // WLEDMM isServicing() is the critical part (be nice, but not too nice)
 
       // suspend local sound processing when "real time mode" is active (E131, UDP, ADALIGHT, ARTNET)
       if (  (realtimeOverride == REALTIME_OVERRIDE_NONE)  // please add other overrides here if needed
@@ -1998,6 +2050,7 @@ class AudioReactive : public Usermod {
           if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
           else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
           limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
+          limitGEQDynamics(have_new_sample);                  // WLEDMM experimental: smooth FFT (GEQ) samples
       } else {
           receivedFormat = 0;
       }
@@ -2048,7 +2101,12 @@ class AudioReactive : public Usermod {
 
 #ifdef ARDUINO_ARCH_ESP32
       //UDP Microphone Sync  - transmit mode
-      if ((audioSyncEnabled & 0x01) && (millis() - lastTime > 20)) {
+    #if defined(WLEDMM_FASTPATH)
+      if ((audioSyncEnabled & 0x01) && (haveNewFFTResult || (millis() - lastTime > 24))) {  // fastpath: send data once results are ready, or each 25ms as fallback (max sampling time is 23ms)
+    #else
+      if ((audioSyncEnabled & 0x01) && (millis() - lastTime > 20)) {                        // standard: send data each 20ms
+    #endif
+        haveNewFFTResult = false; // reset notification
         // Only run the transmit code IF we're in Transmit mode
         transmitAudioData();
         lastTime = millis();
