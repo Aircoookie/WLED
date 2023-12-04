@@ -1346,7 +1346,7 @@ TD .checkmark, TD .radiomark {
 .dialog {
 	position: fixed;
 	z-index: 5;
-	top: 50px;
+	top: 10%;
 	left: 0;
 	right: 0;
 	width: 100%;
