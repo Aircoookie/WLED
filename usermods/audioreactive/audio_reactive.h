@@ -91,11 +91,12 @@
   #define PLOT_FLUSH()
 #endif
 
-// audiosync modes
-#define AUDIOSYNC_NONE 0x00  // UDP sound sync off
-#define AUDIOSYNC_SEND 0x01  // UDP sound sync - send mode
-#define AUDIOSYNC_REC  0x02  // UDP sound sync - receiver mode
-#define AUDIOSYNC_REC_PLUS  0x06  // UDP sound sync - receiver + local mode (uses local input if no receiving udp sound)
+// audiosync constants
+#define AUDIOSYNC_NONE 0x00      // UDP sound sync off
+#define AUDIOSYNC_SEND 0x01      // UDP sound sync - send mode
+#define AUDIOSYNC_REC  0x02      // UDP sound sync - receiver mode
+#define AUDIOSYNC_REC_PLUS 0x06  // UDP sound sync - receiver + local mode (uses local input if no receiving udp sound)
+#define AUDIOSYNC_IDLE_MS  2500  // timeout for "receiver idle" (milliseconds) 
 
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 static uint8_t audioSyncEnabled = AUDIOSYNC_NONE;         // bit field: bit 0 - send, bit 1 - receive, bit 2 - use local if not receiving
@@ -925,7 +926,7 @@ static void autoResetPeak(void) {
   uint16_t MinShowDelay = MAX(50, strip.getMinShowDelay());  // Fixes private class variable compiler error. Unsure if this is the correct way of fixing the root problem. -THATDONFC
   if (millis() - timeOfPeak > MinShowDelay) {          // Auto-reset of samplePeak after a complete frame has passed.
     samplePeak = false;
-    if (audioSyncEnabled == 0) udpSamplePeak = false;  // this is normally reset by transmitAudioData
+    if (audioSyncEnabled == AUDIOSYNC_NONE) udpSamplePeak = false;  // this is normally reset by transmitAudioData
   }
 }
 
@@ -1493,7 +1494,7 @@ class AudioReactive : public Usermod {
       // necessary as we also want to transmit in "AP Mode", but the standard "connected()" callback only reacts on STA connection
       static unsigned long last_connection_attempt = 0;
 
-      if ((audioSyncPort <= 0) || ((audioSyncEnabled & 0x03) == 0)) return;  // Sound Sync not enabled
+      if ((audioSyncPort <= 0) || (audioSyncEnabled == AUDIOSYNC_NONE)) return;  // Sound Sync not enabled
       if (!(apActive || WLED_CONNECTED || interfacesInited))  {
         if (udpSyncConnected) {
           udpSyncConnected = false;
@@ -1898,7 +1899,7 @@ class AudioReactive : public Usermod {
         DEBUGSR_PRINTLN(F("AR connected(): old UDP connection closed."));
       }
       
-      if (audioSyncPort > 0 && (audioSyncEnabled & 0x03)) {
+      if ((audioSyncPort > 0) && (audioSyncEnabled > AUDIOSYNC_NONE)) {
       #ifdef ARDUINO_ARCH_ESP32
         udpSyncConnected = fftUdp.beginMulticast(IPAddress(239, 0, 0, 1), audioSyncPort);
       #else
@@ -1941,6 +1942,17 @@ class AudioReactive : public Usermod {
       // We cannot wait indefinitely before processing audio data
       if (strip.isServicing() && (millis() - lastUMRun < 2)) return;   // WLEDMM isServicing() is the critical part (be nice, but not too nice)
 
+      // sound sync "receive or local"
+      bool useNetworkAudio = false;
+      if (audioSyncEnabled > AUDIOSYNC_SEND) {  // we are in "receive" or "receive+local" mode
+        if (udpSyncConnected && ((millis() - last_UDPTime) <= AUDIOSYNC_IDLE_MS))
+          useNetworkAudio = true;
+        else
+          useNetworkAudio = false;
+        if (audioSyncEnabled == AUDIOSYNC_REC)
+          useNetworkAudio = true;  // don't fall back to local audio in standard "receive mode"
+      }
+
       // suspend local sound processing when "real time mode" is active (E131, UDP, ADALIGHT, ARTNET)
       if (  (realtimeOverride == REALTIME_OVERRIDE_NONE)  // please add other overrides here if needed
           &&( (realtimeMode == REALTIME_MODE_GENERIC)
@@ -1950,27 +1962,32 @@ class AudioReactive : public Usermod {
             ||(realtimeMode == REALTIME_MODE_ARTNET) ) )  // please add other modes here if needed
       {
         #ifdef WLED_DEBUG
-        if ((disableSoundProcessing == false) && (audioSyncEnabled == 0)) {  // we just switched to "disabled"
+        if ((disableSoundProcessing == false) && (audioSyncEnabled < AUDIOSYNC_REC)) {  // we just switched to "disabled"
           DEBUG_PRINTLN("[AR userLoop]  realtime mode active - audio processing suspended.");
           DEBUG_PRINTF( "               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
         }
         #endif
         disableSoundProcessing = true;
+        useNetworkAudio = false;
       } else {
         #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DEBUG)
-        if ((disableSoundProcessing == true) && (audioSyncEnabled == 0) && audioSource->isInitialized()) {    // we just switched to "enabled"
+        if ((disableSoundProcessing == true) && (audioSyncEnabled < AUDIOSYNC_REC) && audioSource->isInitialized()) {    // we just switched to "enabled"
           DEBUG_PRINTLN("[AR userLoop]  realtime mode ended - audio processing resumed.");
           DEBUG_PRINTF( "               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
         }
         #endif
-        if ((disableSoundProcessing == true) && (audioSyncEnabled == 0)) lastUMRun = millis();  // just left "realtime mode" - update timekeeping
+        if ((disableSoundProcessing == true) && (audioSyncEnabled < AUDIOSYNC_REC)) lastUMRun = millis();  // just left "realtime mode" - update timekeeping
         disableSoundProcessing = false;
       }
 
-      if (audioSyncEnabled == AUDIOSYNC_REC)  disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
+      if (audioSyncEnabled == AUDIOSYNC_REC) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
       if (audioSyncEnabled & AUDIOSYNC_SEND) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
 #ifdef ARDUINO_ARCH_ESP32
-      if (!audioSource->isInitialized()) disableSoundProcessing = true;  // no audio source
+      if (!audioSource->isInitialized()) {                                                               // no audio source
+        disableSoundProcessing = true;
+        if (audioSyncEnabled > AUDIOSYNC_SEND) useNetworkAudio = true;
+      }
+      if ((audioSyncEnabled == AUDIOSYNC_REC_PLUS) && useNetworkAudio) disableSoundProcessing = true;   // UDP sound receiving - disable local audio
 
       #ifdef SR_DEBUG
       // debug info in case that task stack usage changes
@@ -1983,7 +2000,7 @@ class AudioReactive : public Usermod {
       #endif
 
       // Only run the sampling code IF we're not in Receive mode or realtime mode
-      if (!(audioSyncEnabled & AUDIOSYNC_REC) && !disableSoundProcessing) {
+      if ((audioSyncEnabled != AUDIOSYNC_REC) && !disableSoundProcessing && !useNetworkAudio) {
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
 
         unsigned long t_now = millis();      // remember current time
@@ -1993,7 +2010,7 @@ class AudioReactive : public Usermod {
         #if defined(SR_DEBUG)
           // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second.
           // softhack007 disabled temporarily - avoid serial console spam with MANY LEDs and low FPS
-          //if ((userloopDelay > /*23*/ 65) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+          //if ((userloopDelay > /*23*/ 65) && !disableSoundProcessing && (audioSyncEnabled == AUDIOSYNC_NONE)) {
             //DEBUG_PRINTF("[AR userLoop] hiccup detected -> was inactive for last %d millis!\n", userloopDelay);
           //}
         #endif
@@ -2046,17 +2063,22 @@ class AudioReactive : public Usermod {
           bool have_new_sample = false;
           if (millis() - lastTime > delayMs) {
             have_new_sample = receiveAudioData();
-            if (have_new_sample) last_UDPTime = millis();
+            if (have_new_sample) {
+              last_UDPTime = millis();
+              useNetworkAudio = true;  // UDP input arrived - use it
+            }
             lastTime = millis();
           } else {
 #ifdef ARDUINO_ARCH_ESP32
             fftUdp.flush(); // WLEDMM: Flush this if we haven't read it. Does not work on 8266.
 #endif
           }
-          if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
-          else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
-          limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
-          limitGEQDynamics(have_new_sample);                  // WLEDMM experimental: smooth FFT (GEQ) samples
+          if (useNetworkAudio) {
+            if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
+            else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
+            limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
+            limitGEQDynamics(have_new_sample);                  // WLEDMM experimental: smooth FFT (GEQ) samples
+          }
       } else {
           receivedFormat = 0;
       }
@@ -2262,7 +2284,15 @@ class AudioReactive : public Usermod {
       infoArr.add(uiDomString);
 
       if (enabled) {
+        bool audioSyncIDLE = false; // true if sound sync is not receiving
+
 #ifdef ARDUINO_ARCH_ESP32
+        // audio sync status
+        if ((audioSyncEnabled & AUDIOSYNC_REC) && (!udpSyncConnected || (millis() - last_UDPTime > AUDIOSYNC_IDLE_MS))) // connected and nothing received in 2.5sec
+          audioSyncIDLE = true;
+        if ((audioSource == nullptr) || (!audioSource->isInitialized()))                                   // local audio not configured
+          audioSyncIDLE = false;
+
         // Input Level Slider
         if (disableSoundProcessing == false) {                                 // only show slider when audio processing is running
           if (soundAgc > 0) {
@@ -2289,11 +2319,11 @@ class AudioReactive : public Usermod {
         // The following can be used for troubleshooting user errors and is so not enclosed in #ifdef WLED_DEBUG
         // current Audio input
         infoArr = user.createNestedArray(F("Audio Source"));
-        if (audioSyncEnabled & AUDIOSYNC_REC) {
+        if ((audioSyncEnabled == AUDIOSYNC_REC) || (!audioSyncIDLE && (audioSyncEnabled == AUDIOSYNC_REC_PLUS))){
           // UDP sound sync - receive mode
           infoArr.add(F("UDP sound sync"));
           if (udpSyncConnected) {
-            if (millis() - last_UDPTime < 2500)
+            if (millis() - last_UDPTime < AUDIOSYNC_IDLE_MS)
               infoArr.add(F(" - receiving"));
             else
               infoArr.add(F(" - idle"));
@@ -2358,14 +2388,16 @@ class AudioReactive : public Usermod {
         if (audioSyncEnabled) {
           if (audioSyncEnabled & AUDIOSYNC_SEND) {
             infoArr.add(F("send mode"));
-            if ((udpSyncConnected) && (millis() - lastTime < 2500)) infoArr.add(F(" v2"));
-          } else if (audioSyncEnabled & AUDIOSYNC_REC) {
+            if ((udpSyncConnected) && (millis() - lastTime < AUDIOSYNC_IDLE_MS)) infoArr.add(F(" v2"));
+          } else if (audioSyncEnabled == AUDIOSYNC_REC) {
               infoArr.add(F("receive mode"));
+          } else if (audioSyncEnabled == AUDIOSYNC_REC_PLUS) {
+              infoArr.add(F("receive+local mode"));
           }
         } else
           infoArr.add("off");
         if (audioSyncEnabled && !udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
-        if (audioSyncEnabled && udpSyncConnected && (millis() - last_UDPTime < 2500)) {
+        if (audioSyncEnabled && udpSyncConnected && (millis() - last_UDPTime < AUDIOSYNC_IDLE_MS)) {
             if (receivedFormat == 1) infoArr.add(F(" v1"));
             if (receivedFormat == 2) infoArr.add(F(" v2"));
         }
