@@ -1037,10 +1037,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("RD="));
   if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
 
-  // Respect LED maps when receiving realtime data
-  pos = req.indexOf(F("RLM="));
-  if (pos > 0) realtimeRespectLedMaps = (req.charAt(pos+4) != '0');
-
   //main toggle on/off (parse before nightlight, #1214)
   pos = req.indexOf(F("&T="));
   if (pos > 0) {
