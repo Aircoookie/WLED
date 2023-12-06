@@ -166,7 +166,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
-      ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
       uint8_t maPerLed = elm[F("ledma")] | strip.milliampsPerLed; // replace with 55 when removing strip.milliampsPerLed
       uint16_t maMax = elm[F("maxpwr")] | (strip.ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
@@ -175,6 +174,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         maPerLed = 0;
         maMax = 0;
       }
+      ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
         mem += BusManager::memUsage(bc);
