@@ -3073,6 +3073,9 @@ function simplifyUI() {
 		gId(id).append(dialog);
 	}
 
+	// Check if the UI was already simplified
+	if (gId("Colors").classList.contains("simplified")) return;
+
 	// Disable PC Mode as it does not exist in simple UI
 	if (pcMode) togglePcMode(true);
 	_C.style.width = '100%'
