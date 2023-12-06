@@ -376,7 +376,7 @@ button {
 }
 
 /* Button margin for simplified UI */
-#fx .btn, #palw .btn {
+.simplified #fx .btn, .simplified #palw .btn {
 	margin-top: 0;
 }
 
@@ -772,8 +772,8 @@ input[type=range]::-moz-range-thumb {
 .hd {
 	display: var(--bhd);
 }
-/* Do not hide labels when in simplified mode */
-.simplified .hd {
+/* Do not hide labels in simplified mode on small screen widths */
+.simplified > .hd {
 	display: var(--bhd) !important;
 }
 
@@ -1299,7 +1299,8 @@ TD .checkmark, TD .radiomark {
 	margin-top: 0;
 }
 
-#segcont.simple .lstI {
+/* Simplify segments */
+.simplified #segcont .lstI {
 	margin-top: 4px;
 	min-height: unset;
 }

@@ -1531,6 +1531,7 @@ function setEffectParameters(idx)
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	function setSelectedEffectPosition() {
+		if (simplifiedUI) return;
 		let top = parseInt(getComputedStyle(gId("sliders")).height);
 		top += 5;
 		let sel = d.querySelector('#fxlist .selected');
@@ -3077,6 +3078,7 @@ function simplifyUI() {
 	_C.style.width = '100%'
 	_C.style.setProperty('--n', 1);
 
+	gId("Colors").classList.add("simplified");
 	// Put effects below palett list
 	gId("Colors").append(gId("fx"));
 	gId("Colors").append(gId("sliders"));
@@ -3112,12 +3114,6 @@ function simplifyUI() {
 	gId("Effects").style.display = "none";
 	gId("Segments").style.display = "none";
 	gId("Presets").style.display = "none";
-
-	// We only want Effect Search to stay on top
-	gId("palw").firstElementChild.classList.remove("staytop");
-
-	// Simplify segments
-	gId("segcont").classList.add("simple");
 
 	// Hide filter options
 	gId("filters").style.display = "none";
