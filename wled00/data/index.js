@@ -2266,6 +2266,12 @@ function setFX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
+
+	// Hide effect dialog in simplified UI
+	if (simplifiedUI) {
+		gId("fx").lastElementChild.classList.add("hide");
+	}
+
 	var obj = {"seg": {"fx": parseInt(ind), "fxdef": cfg.comp.fxdef}}; // fxdef sets effect parameters to default values
 	requestJson(obj);
 }
@@ -2278,8 +2284,9 @@ function setPalette(paletteId = null)
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
 
+	// Hide palette dialog in simplified UI
 	if (simplifiedUI) {
-		gId("palw").lastElementChild.classList.toggle("hide");
+		gId("palw").lastElementChild.classList.add("hide");
 	}
 
 	var obj = {"seg": {"pal": paletteId}};
@@ -3031,6 +3038,40 @@ function tooltip()
 
 // Transforms the default UI into the simple UI
 function simplifyUI() {
+	// Create dropdown dialog
+	function createDropdown(id, buttonText, dialogElements = null) {
+		// Create dropdown dialog
+		const dialog = document.createElement("div");
+		// Move every dialogElement to the dropdown dialog or if none are given, move all children of the element with the given id
+		if (dialogElements) {
+			dialogElements.forEach((e) => {
+				dialog.appendChild(e);
+			});
+		} else {
+			while (gId(id).firstChild) {
+				dialog.appendChild(gId(id).firstChild);
+			}
+		}
+		dialog.classList.add("hide", "dialog");
+
+		// Create button for the dropdown
+		const btn = document.createElement("button");
+		btn.classList.add("btn");
+		btn.innerText = buttonText;
+		function toggleDialog(e) {
+			if (e.target != btn && e.target != dialog) return;
+			dialog.classList.toggle("hide");
+			clean(dialog.firstElementChild.children[1]);
+			dialog.scrollTop = 0;
+		};
+		btn.addEventListener("click", toggleDialog);
+		dialog.addEventListener("click", toggleDialog);
+
+		// Add the dialog and button to the element with the given id
+		gId(id).append(btn);
+		gId(id).append(dialog);
+	}
+
 	// Disable PC Mode as it does not exist in simple UI
 	if (pcMode) togglePcMode(true);
 	_C.style.width = '100%'
@@ -3039,7 +3080,6 @@ function simplifyUI() {
 	// Put effects below palett list
 	gId("Colors").append(gId("fx"));
 	gId("Colors").append(gId("sliders"));
-	gId("fx").classList.add("simplified");
 	// Put segments before palette list if there are multiple segments
 	if (lastinfo.leds.seglc.length > 1) {
 		gId("Colors").insertBefore(gId("segcont"), gId("pall"));
@@ -3049,25 +3089,14 @@ function simplifyUI() {
 	gId("pql").classList.add("simplified");
 
 	// Create dropdown for palette list
-	let div = document.createElement("div");
-	// Move every child of palw to div
-	while (gId("palw").firstChild) {
-		div.appendChild(gId("palw").firstChild);
-	}
-	div.classList.add("hide", "dialog");
-	let btn = document.createElement("button");
-	btn.classList.add("btn");
-	btn.innerText = "Change palette";
-	function togglePal(e) {
-		if (e.target != btn && e.target != div) return;
-		div.classList.toggle("hide");
-		clean(div.firstElementChild.children[1]);
-		div.scrollTop = 0;
-	};
-	btn.addEventListener("click", togglePal);
-	div.addEventListener("click", togglePal);
-	gId("palw").prepend(div);
-	gId("palw").prepend(btn);
+	createDropdown("palw", "Change palette");
+	createDropdown("fx", "Change effect", [gId("fxFind"), gId("fxlist")]);
+
+	// Hide pallete label
+	gId("pall").classList.add("hide");
+	gId("Colors").insertBefore(document.createElement("br"), gId("pall"));
+	// Hide effect label
+	gId("modeLabel").classList.add("hide");
 
 	// Hide buttons in top bar
 	gId("buttonNl").style.display = "none";
@@ -3084,13 +3113,11 @@ function simplifyUI() {
 	gId("Segments").style.display = "none";
 	gId("Presets").style.display = "none";
 
-	// Simplify palette list
-	gId("pallist").classList.add("simplified");
 	// We only want Effect Search to stay on top
 	gId("palw").firstElementChild.classList.remove("staytop");
 
 	// Simplify segments
-	gId('segcont').classList.add("simple");
+	gId("segcont").classList.add("simple");
 
 	// Hide filter options
 	gId("filters").style.display = "none";

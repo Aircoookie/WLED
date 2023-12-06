@@ -370,6 +370,16 @@ button {
 	padding: 5px 0 0;
 }
 
+/* Quick load magin for simplified UI */
+#pql.simplified {
+	margin-bottom: 8px;
+}
+
+/* Button margin for simplified UI */
+#fx .btn, #palw .btn {
+	margin-top: 0;
+}
+
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
 
 .tab-label {
