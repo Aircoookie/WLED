@@ -2371,13 +2371,13 @@ class AudioReactive : public Usermod {
         }
 
         // AGC or manual Gain
-        if ((soundAgc==0) && (disableSoundProcessing == false) && !(audioSyncEnabled & AUDIOSYNC_REC)) {
+        if ((soundAgc == 0) && (disableSoundProcessing == false) && !(audioSyncEnabled == AUDIOSYNC_REC)) {
           infoArr = user.createNestedArray(F("Manual Gain"));
           float myGain = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;     // non-AGC gain from presets
           infoArr.add(roundf(myGain*100.0f) / 100.0f);
           infoArr.add("x");
         }
-        if (soundAgc && (disableSoundProcessing == false) && !(audioSyncEnabled & AUDIOSYNC_REC)) {
+        if ((soundAgc > 0) && (disableSoundProcessing == false) && !(audioSyncEnabled == AUDIOSYNC_REC)) {
           infoArr = user.createNestedArray(F("AGC Gain"));
           infoArr.add(roundf(multAgc*100.0f) / 100.0f);
           infoArr.add("x");
