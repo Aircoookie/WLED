@@ -3120,6 +3120,9 @@ function simplifyUI() {
 
 	// Hide filter options
 	gId("filters").style.display = "none";
+
+	// Hide buttons for pixel art and custom palettes (add / delete)
+	gId("btns").style.display = "none";
 }
 
 size();
