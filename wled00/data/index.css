@@ -1345,14 +1345,15 @@ TD .checkmark, TD .radiomark {
 	top: calc(var(--sti) + 42px);
 }
 
-.dialog:not(.hide)::before {
+.dialog:not(.hide)::after {
 	position: fixed;
 	top: 0;
 	left: 0;
 	width: 100%;
 	height: 100%;
 	background-color: var(--c-o);
-	content: " ";
+	content: "";
+	z-index: -1;
 }
 .dialog {
 	position: fixed;
@@ -1360,7 +1361,6 @@ TD .checkmark, TD .radiomark {
 	top: 10%;
 	left: 0;
 	right: 0;
-	width: 100%;
 	max-width: 280px;
 	max-height: 70%;
 	margin: auto;
