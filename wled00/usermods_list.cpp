@@ -77,6 +77,10 @@
   #include "../usermods/usermod_v2_auto_save/usermod_v2_auto_save.h"
 #endif
 
+#ifdef USERMOD_WIFI_STATUS
+  #include "../usermods/WifiStatus/wifi_status.h"
+#endif
+
 #ifdef USERMOD_DHT
   #include "../usermods/DHT/usermod_dht.h"
 #endif
@@ -256,6 +260,10 @@ void registerUsermods()
 
   #ifdef USERMOD_AUTO_SAVE
   usermods.add(new AutoSaveUsermod());  // can use USERMOD_FOUR_LINE_DISPLAY
+  #endif
+
+  #ifdef USERMOD_WIFI_STATUS
+  usermods.add(new WifiStatusUsermod()); 
   #endif
 
   #ifdef USERMOD_DHT
