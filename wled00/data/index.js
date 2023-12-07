@@ -1261,6 +1261,12 @@ function updateSelectedPalette(s)
 	var selectedPalette = parent.querySelector(`.lstI[data-id="${s}"]`);
 	if (selectedPalette)  parent.querySelector(`.lstI[data-id="${s}"]`).classList.add('selected');
 
+	// Display selected palette name on button in simplified UI
+	let selectedName = selectedPalette.querySelector(".lstIname").innerText;
+	if (simplifiedUI) {
+		gId("palwbtn").innerText = "Palette: " + selectedName;
+	}
+
 	// in case of special palettes (* Colors...), force show color selectors (if hidden by effect data)
 	let cd = gId('csl').children; // color selectors
 	if (s > 1 && s < 6) {
@@ -1302,8 +1308,15 @@ function updateSelectedFx()
 				}
 			}
 		});
-		// hide 2D mapping and/or sound simulation options
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
+
+		// Display selected effect name on button in simplified UI
+		let selectedNameOnlyAscii = selectedName.replace(/[^\x00-\x7F]/g, "");
+		if (simplifiedUI) {
+			gId("fxbtn").innerText = "Effect: " + selectedNameOnlyAscii;
+		}
+
+		// hide 2D mapping and/or sound simulation options
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
 		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove('hide'); else seg.classList.add('hide');
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="si"]`);
@@ -3057,6 +3070,7 @@ function simplifyUI() {
 
 		// Create button for the dropdown
 		const btn = document.createElement("button");
+		btn.id = id + "btn";
 		btn.classList.add("btn");
 		btn.innerText = buttonText;
 		function toggleDialog(e) {
