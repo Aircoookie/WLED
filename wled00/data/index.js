@@ -837,6 +837,7 @@ function populateSegments(s)
 	}
 
 	gId('segcont').innerHTML = cn;
+	gId("segcont").classList.remove("hide");
 	let noNewSegs = (lowestUnused >= maxSeg);
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
@@ -850,6 +851,8 @@ function populateSegments(s)
 	if (segCount < 2) {
 		gId(`segd${lSeg}`).classList.add("hide");
 		if (parseInt(gId("seg0bri").value)==255) gId(`segp0`).classList.add("hide");
+		// hide segment controls if there is only one segment in simplified UI
+		if (simplifiedUI) gId("segcont").classList.add("hide");
 	}
 	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).classList.remove("hide");
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
@@ -3099,10 +3102,8 @@ function simplifyUI() {
 	// Put effects below palett list
 	gId("Colors").append(gId("fx"));
 	gId("Colors").append(gId("sliders"));
-	// Put segments before palette list if there are multiple segments
-	if (lastinfo.leds.seglc.length > 1) {
-		gId("Colors").insertBefore(gId("segcont"), gId("pall"));
-	}
+	// Put segments before palette list
+	gId("Colors").insertBefore(gId("segcont"), gId("pall"));
 	// Put preset quick load before palette list and segemts
 	gId("Colors").insertBefore(gId("pql"), gId("pall"));
 
