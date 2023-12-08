@@ -3105,17 +3105,16 @@ function simplifyUI() {
 	}
 	// Put preset quick load before palette list and segemts
 	gId("Colors").insertBefore(gId("pql"), gId("pall"));
-	gId("pql").classList.add("simplified");
 
 	// Create dropdown for palette list
 	createDropdown("palw", "Change palette");
 	createDropdown("fx", "Change effect", [gId("fxFind"), gId("fxlist")]);
 
 	// Hide pallete label
-	gId("pall").classList.add("hide");
+	gId("pall").style.display = "none";
 	gId("Colors").insertBefore(document.createElement("br"), gId("pall"));
 	// Hide effect label
-	gId("modeLabel").classList.add("hide");
+	gId("modeLabel").style.display = "none";
 
 	// Hide buttons in top bar
 	gId("buttonNl").style.display = "none";

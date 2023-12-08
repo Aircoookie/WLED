@@ -371,7 +371,7 @@ button {
 }
 
 /* Quick load magin for simplified UI */
-#pql.simplified {
+.simplified #pql {
 	margin-bottom: 8px;
 }
 
@@ -772,8 +772,8 @@ input[type=range]::-moz-range-thumb {
 .hd {
 	display: var(--bhd);
 }
-/* Do not hide labels in simplified mode on small screen widths */
-.simplified > .hd {
+/* Do not hide quick load label in simplified mode on small screen widths */
+.simplified #pql .hd {
 	display: var(--bhd) !important;
 }
 
