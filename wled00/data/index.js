@@ -625,12 +625,12 @@ function parseInfo(i) {
 	if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)"; // Minecraft easter egg
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
-	d.title     = name;
-	simplifiedUI    = i.simplifiedui;
-	ledCount    = i.leds.count;
-	//syncTglRecv = i.str;
-	maxSeg      = i.leds.maxseg;
-	pmt         = i.fs.pmt;
+	d.title      = name;
+	simplifiedUI = i.simplifiedui;
+	ledCount     = i.leds.count;
+	//syncTglRecv   = i.str;
+	maxSeg       = i.leds.maxseg;
+	pmt          = i.fs.pmt;
 	gId('buttonNodes').style.display = lastinfo.ndc > 0 ? null:"none";
 	// do we have a matrix set-up
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
