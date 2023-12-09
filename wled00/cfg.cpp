@@ -31,16 +31,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
+#ifdef WLED_ENABLE_SIMPLE_UI
   CJSON(simplifiedUI, id[F("sui")]);
-
-  JsonObject nw = doc["nw"];
-#ifndef WLED_DISABLE_ESPNOW
-  CJSON(enableESPNow, nw[F("espnow")]);
-  getStringFromJson(linked_remote, nw[F("linked_remote")], 13);
-  linked_remote[12] = '\0';
 #endif
 
-  JsonObject nw_ins_0 = nw["ins"][0];
+  JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
   //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
   //The WiFi PSK is normally not contained in the regular file for security reasons.
@@ -79,16 +74,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   noWifiSleep = doc[F("wifi")][F("sleep")] | !noWifiSleep; // inverted
   noWifiSleep = !noWifiSleep;
-  force802_3g = doc[F("wifi")][F("phy")] | force802_3g; //force phy mode g?
+  //int wifi_phy = doc[F("wifi")][F("phy")]; //force phy mode n?
 
   JsonObject hw = doc[F("hw")];
 
   // initialize LED pins and lengths prior to other HW (except for ethernet)
   JsonObject hw_led = hw["led"];
 
-  uint16_t total = hw_led[F("total")] | strip.getLengthTotal();
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
-  CJSON(strip.milliampsPerLed, hw_led[F("ledma")]); // no longer used
+  CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | AW_GLOBAL_DISABLED);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
@@ -163,17 +157,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
-      uint8_t AWmode = elm[F("rgbwm")] | RGBW_MODE_MANUAL_ONLY;
-      uint8_t maPerLed = elm[F("ledma")] | strip.milliampsPerLed; // replace with 55 when removing strip.milliampsPerLed
-      uint16_t maMax = elm[F("maxpwr")] | (strip.ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
-      // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
-      if ((ledType > TYPE_TM1814 && ledType < TYPE_WS2801) || ledType >= TYPE_NET_DDP_RGB) { // analog and virtual
-        maPerLed = 0;
-        maMax = 0;
-      }
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
+      uint8_t AWmode = elm[F("rgbwm")] | RGBW_MODE_MANUAL_ONLY;
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer);
         mem += BusManager::memUsage(bc);
         if (useGlobalLedBuffer && start + length > maxlen) {
           maxlen = start + length;
@@ -182,7 +169,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         if (mem + globalBufMem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
-        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
+        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer);
         busesChanged = true;
       }
       s++;
@@ -398,10 +385,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(udpPort, if_sync[F("port0")]); // 21324
   CJSON(udpPort2, if_sync[F("port1")]); // 65506
 
-#ifndef WLED_DISABLE_ESPNOW
-  CJSON(useESPNowSync, if_sync[F("espnow")]);
-#endif
-
   JsonObject if_sync_recv = if_sync["recv"];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
@@ -409,15 +392,17 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveGroups, if_sync_recv["grp"]);
   CJSON(receiveSegmentOptions, if_sync_recv["seg"]);
   CJSON(receiveSegmentBounds, if_sync_recv["sb"]);
+  //! following line might be a problem if called after boot
+  receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
 
   JsonObject if_sync_send = if_sync["send"];
-  CJSON(sendNotifications, if_sync_send["en"]);
-  sendNotificationsRT = sendNotifications;
-  CJSON(notifyDirect, if_sync_send[F("dir")]);
+  prev = notifyDirectDefault;
+  CJSON(notifyDirectDefault, if_sync_send[F("dir")]);
+  if (notifyDirectDefault != prev) notifyDirect = notifyDirectDefault;
   CJSON(notifyButton, if_sync_send["btn"]);
   CJSON(notifyAlexa, if_sync_send["va"]);
   CJSON(notifyHue, if_sync_send["hue"]);
-//  CJSON(notifyMacro, if_sync_send["macro"]);
+  CJSON(notifyMacro, if_sync_send["macro"]);
   CJSON(syncGroups, if_sync_send["grp"]);
   if (if_sync_send[F("twice")]) udpNumRetries = 1; // import setting from 0.13 and earlier
   CJSON(udpNumRetries, if_sync_send["ret"]);
@@ -427,7 +412,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(nodeBroadcastEnabled, if_nodes[F("bcast")]);
 
   JsonObject if_live = interfaces["live"];
-  CJSON(receiveDirect, if_live["en"]);  // UDP/Hyperion realtime
+  CJSON(receiveDirect, if_live["en"]);
   CJSON(useMainSegmentOnly, if_live[F("mso")]);
   CJSON(e131Port, if_live["port"]); // 5568
   if (e131Port == DDP_DEFAULT_PORT) e131Port = E131_DEFAULT_PORT; // prevent double DDP port allocation
@@ -470,6 +455,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], MQTT_MAX_TOPIC_LEN+1); // ""
   CJSON(retainMqttMsg, if_mqtt[F("rtn")]);
 #endif
+
+#ifndef WLED_DISABLE_ESPNOW
+  JsonObject remote = doc["remote"];
+  CJSON(enable_espnow_remote, remote[F("remote_enabled")]);
+  getStringFromJson(linked_remote, remote[F("linked_remote")], 13);
+#endif
+
 
 #ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces["hue"];
@@ -653,13 +645,11 @@ void serializeConfig() {
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
   id[F("inv")] = alexaInvocationName;
+#ifdef WLED_ENABLE_SIMPLE_UI
   id[F("sui")] = simplifiedUI;
+#endif
 
   JsonObject nw = doc.createNestedObject("nw");
-#ifndef WLED_DISABLE_ESPNOW
-  nw[F("espnow")] = enableESPNow;
-  nw[F("linked_remote")] = linked_remote;
-#endif
 
   JsonArray nw_ins = nw.createNestedArray("ins");
 
@@ -692,7 +682,7 @@ void serializeConfig() {
 
   JsonObject wifi = doc.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
-  wifi[F("phy")] = (int)force802_3g;
+  //wifi[F("phy")] = 1;
 
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc.createNestedObject("eth");
@@ -721,9 +711,9 @@ void serializeConfig() {
   JsonObject hw = doc.createNestedObject("hw");
 
   JsonObject hw_led = hw.createNestedObject("led");
-  hw_led[F("total")] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
+  hw_led[F("total")] = strip.getLengthTotal(); //no longer read, but provided for compatibility on downgrade
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
-  hw_led[F("ledma")] = strip.milliampsPerLed; // no longer used
+  hw_led[F("ledma")] = strip.milliampsPerLed;
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
@@ -770,8 +760,6 @@ void serializeConfig() {
     ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbwm")] = bus->getAutoWhiteMode();
     ins[F("freq")] = bus->getFrequency();
-    ins[F("maxpwr")] = bus->getMaxCurrent();
-    ins[F("ledma")] = bus->getLEDCurrent();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
@@ -864,10 +852,6 @@ void serializeConfig() {
   if_sync[F("port0")] = udpPort;
   if_sync[F("port1")] = udpPort2;
 
-#ifndef WLED_DISABLE_ESPNOW
-  if_sync[F("espnow")] = useESPNowSync;
-#endif
-
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
@@ -877,12 +861,11 @@ void serializeConfig() {
   if_sync_recv["sb"]  = receiveSegmentBounds;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
-  if_sync_send["en"] = sendNotifications;
   if_sync_send[F("dir")] = notifyDirect;
   if_sync_send["btn"] = notifyButton;
   if_sync_send["va"] = notifyAlexa;
   if_sync_send["hue"] = notifyHue;
-//  if_sync_send["macro"] = notifyMacro;
+  if_sync_send["macro"] = notifyMacro;
   if_sync_send["grp"] = syncGroups;
   if_sync_send["ret"] = udpNumRetries;
 
@@ -891,7 +874,7 @@ void serializeConfig() {
   if_nodes[F("bcast")] = nodeBroadcastEnabled;
 
   JsonObject if_live = interfaces.createNestedObject("live");
-  if_live["en"] = receiveDirect; // UDP/Hyperion realtime
+  if_live["en"] = receiveDirect;
   if_live[F("mso")] = useMainSegmentOnly;
   if_live["port"] = e131Port;
   if_live[F("mc")] = e131Multicast;
@@ -934,6 +917,13 @@ void serializeConfig() {
   if_mqtt_topics[F("device")] = mqttDeviceTopic;
   if_mqtt_topics[F("group")] = mqttGroupTopic;
 #endif
+
+#ifndef WLED_DISABLE_ESPNOW
+  JsonObject remote = doc.createNestedObject(F("remote"));
+  remote[F("remote_enabled")] = enable_espnow_remote;
+  remote[F("linked_remote")] = linked_remote;
+#endif
+
 
 #ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces.createNestedObject("hue");
