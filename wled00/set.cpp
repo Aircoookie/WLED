@@ -136,7 +136,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->arg(sl).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
@@ -168,7 +167,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       } else {
         freqHz = 0;
       }
-      channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
+      channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
       if ((type > TYPE_TM1814 && type < TYPE_WS2801) || type >= TYPE_NET_DDP_RGB) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
@@ -176,6 +175,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         maPerLed = request->arg(la).toInt();
         maMax = request->arg(ma).toInt(); // if ABL is disabled this will be 0
       }
+      type |= request->hasArg(rf) << 7; // off refresh override
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
