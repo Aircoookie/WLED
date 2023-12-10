@@ -1,50 +1,29 @@
 ## WLED changelog
 
 #### Build 2310010, build 2310130
--   Release of WLED version 0.14.0 "Hoshi"
 -   Bugfixes for #3400, #3403, #3405
 -   minor HTML optimizations
 -   audioreactive: bugfix for UDP sound sync (partly initialized packets)
 
 #### Build 2309240
--   Release of WLED beta version 0.14.0-b6 "Hoshi"
 -   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
 -   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
 
-#### Build 2309100
--   Release of WLED beta version 0.14.0-b5 "Hoshi"
--   New standard esp32 build with audioreactive
--   Effect blending bugfixes, and minor optimizations
-
 #### Build 2309050
--   Effect blending (#3311) (finally effect transitions!)
-    *WARNING*: May not work well with ESP8266, with plenty of segments or usermods (low RAM condition)!!!
 -   Added receive and send sync groups to JSON API (#3317) (you can change sync groups using preset)
 -   Internal temperature usermod (#3246)
--   MQTT server and topic length overrides (#3354) (new build flags)
--   Animated Staircase usermod enhancement (#3348) (on/off toggle/relay control)
--   Added local time info to Info page (#3351)
 -   New effect: Rolling Balls (a.k.a. linear bounce) (#1039)
 -   Various bug fixes and enhancements.
 
-#### Build 2308110
--   Release of WLED beta version 0.14.0-b4 "Hoshi"
--   Reset effect data immediately upon mode change
-
 #### Build 2308030
--   Improved random palette handling and blending
--   Soap bugfix
 -   Fix ESP-NOW crash with AP mode Always
 
 #### Build 2307180
--   Bus-level global buffering (#3280)
--   Removed per-segment LED buffer (SEGMENT.leds)
 -   various fixes and improvements (ESP variants platform 5.3.0, effect optimizations, /json/cfg pin allocation)
 
 #### Build 2307130
 -   larger `oappend()` stack buffer (3.5k) for ESP32
 -   Preset cycle bugfix (#3262)
--   Rotary encoder ALT fix for large LED count (#3276)
 -   effect updates (2D Plasmaball), `blur()` speedup
 -   On/Off toggle from nodes view (may show unknown device type on older versions) (#3291)
 -   various fixes and improvements (ABL, crashes when changing presets with different segments)
@@ -52,14 +31,11 @@
 #### Build 2306270
 -   ESP-NOW remote support (#3237)
 -   Pixel Magic tool (display pixel art) (#3249)
--   Websocket (peek) fallback when connection cannot be established, WS retries (#3267)
 -   Add WiFi network scan RPC command to Improv Serial (#3271)
--   Longer (custom option available) segment name for ESP32
 -   various fixes and improvements
 
 #### Build 2306210
 -   0.14.0-b3 release
--   respect global I2C in all usermods (no local initialization of I2C bus)
 -   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
 
 #### Build 2306180
@@ -74,15 +50,6 @@
 #### Build 2306140
 -   Add settings PIN (un)locking to JSON post API
 
-#### Build 2306130
--   Bumped version to 0.14-b3 (beta 3)
--   added pin dropdowns in LED preferences (not for LED pins) and usermods
--   introduced (unused ATM) NeoGammaWLEDMethod class
--   Reverse proxy support
--   PCF8754 support for Rotary encoder (requires wiring INT pin to ESP GPIO)
--   Rely on global I2C pins for usermods (breaking change)
--   various fixes and enhancements
-
 #### Build 2306020
 
 -   Support for segment sets (PR #3171)
@@ -92,7 +59,6 @@
 
 #### Build 2305280
 -   DDP protocol update (#3193)
--   added PCF8574 I2C port expander support for Multi relay usermod
 -   MQTT multipacket (fragmented) message fix
 -   added option to retain MQTT brightness and color messages
 -   new ethernet board: @srg74 Ethernet Shield
