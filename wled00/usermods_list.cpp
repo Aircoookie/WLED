@@ -225,7 +225,7 @@ void registerUsermods()
    */
   //usermods.add(new MyExampleUsermod());
 #ifdef USERMOD_BATTERY
-  usermods.add(new UsermodBattery("Battery", true));
+  usermods.add(new UsermodBattery("Battery", false));  // WLEDMM
 #endif
 
 #ifdef USERMOD_DALLASTEMPERATURE
@@ -293,7 +293,7 @@ void registerUsermods()
 #endif
 
 #ifdef USERMOD_RTC
-  usermods.add(new RTCUsermod("RTC", true));
+  usermods.add(new RTCUsermod("RTC", false));  //WLEDMM
 #endif
 
 #ifdef USERMOD_ELEKSTUBE_IPS
@@ -385,7 +385,7 @@ void registerUsermods()
 #endif
 
 #ifdef USERMOD_MCUTEMP
-  usermods.add(new mcuTemp("MCUTemp", true));
+  usermods.add(new mcuTemp("MCUTemp", false));
 #endif
 
 //#ifdef USERMOD_INTERNAL_TEMPERATURE

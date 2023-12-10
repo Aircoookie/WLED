@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2311290
+#define VERSION 2312050
 
 //WLEDMM + Moustachauve/Wled-Native 
 // You can define custom product info from build flags.

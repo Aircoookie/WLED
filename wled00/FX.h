@@ -334,8 +334,9 @@ void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
 #define FX_MODE_ARTIFX                 187 //WLEDMM ARTIFX
+#define FX_MODE_PARTYJERK              188
 
-#define MODE_COUNT                     188
+#define MODE_COUNT                     189
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -397,7 +398,7 @@ typedef struct Segment {
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
     byte* data = nullptr;     // effect data pointer // WLEDMM initialize to nullptr
-    CRGB* ledsrgb = nullptr;     // local leds[] array (may be a pointer to global) //WLEDMM rename to ledsrgb to search on them (temp?), and initialilize to nullptr
+    CRGB* ledsrgb = nullptr;     // local leds[] array (may be a pointer to global) //WLEDMM rename to ledsrgb to search on them (temp?), and initialize to nullptr
     size_t ledsrgbSize; //WLEDMM 
     static CRGB *_globalLeds;             // global leds[] array
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
