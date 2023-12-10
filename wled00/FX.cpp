@@ -1921,6 +1921,84 @@ uint16_t mode_pride_2015(void) {
 }
 static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 
+//////////////////////
+//       PARTYJERK        //
+//////////////////////
+
+
+
+uint16_t mode_partyjerk() {
+
+  if (SEGENV.call == 0) {
+    SEGMENT.fill(BLACK);    // clear LEDs
+    SEGENV.aux0 = 0;
+    SEGENV.aux1 = 0;
+    SEGENV.step = 0;
+  }
+
+  /*
+  * use of persistent variables:
+  * aux0: hueDelay
+  * aux1: hue
+  * step: pos
+  */
+
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    // add support for no audio
+    um_data = simulateSound(SEGMENT.soundSim);
+  }
+  uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
+  uint8_t *maxVol    =  (uint8_t*)um_data->u_data[6];
+  uint8_t *binNum    =  (uint8_t*)um_data->u_data[7];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
+
+  SEGENV.aux0++;
+
+  if (SEGENV.aux1 > 254) {
+    SEGENV.aux1 = 0;
+  }
+
+  if (SEGENV.aux0 > map(SEGMENT.custom1, 0, 255, 0, 14)) {
+    SEGENV.aux0 = 0;
+    SEGENV.aux1++;
+  }
+
+  uint_fast32_t speed = 0;
+
+  uint16_t counter = 0;
+
+  if (volumeSmth * 2 > (255 - SEGMENT.intensity)) {
+    speed = SEGMENT.speed * map(SEGMENT.custom2, 0, 255, 0, 100);
+  } else {
+    speed = SEGMENT.speed;
+  };
+
+  SEGENV.step += speed;
+
+  counter = SEGENV.step >> 8;
+
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+
+    uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
+
+    uint32_t paletteColor = SEGMENT.color_from_palette(colorIndex, false, true, 255);
+
+    uint8_t r = R(paletteColor);
+    uint8_t g = G(paletteColor);
+    uint8_t b = B(paletteColor);
+
+    uint8_t activeColor = max(r, max(g, b));
+
+    CRGB rgb(CHSV(SEGENV.aux1, 255, activeColor));
+
+    SEGMENT.setPixelColor(i, rgb.r, rgb.g, rgb.b);
+  };
+
+  return FRAMETIME;
+} // mode_partyjerk()
+
+static const char _data_FX_MODE_PARTYJERK[] PROGMEM = "Party jerk@Effect speed,Sensivity,Color change speed,Effect speed active multiplier;!,!;!;1v;c1=8,c2=48,m12=0,si=0";
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
@@ -1947,7 +2025,7 @@ static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;;!;;sx=64,ix=
 
 
 uint16_t mode_palette() {
-  uint16_t counter = 0;
+      uint16_t counter = 0;
   if (SEGMENT.speed != 0)
   {
     counter = (strip.now * ((SEGMENT.speed >> 3) +1)) & 0xFFFF;
@@ -8235,6 +8313,7 @@ void WS2812FX::setupEffectData() {
   // --- 1D audio effects ---
   addEffect(FX_MODE_PIXELS, &mode_pixels, _data_FX_MODE_PIXELS);
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
+  addEffect(FX_MODE_PARTYJERK, &mode_partyjerk, _data_FX_MODE_PARTYJERK);
   addEffect(FX_MODE_JUGGLES, &mode_juggles, _data_FX_MODE_JUGGLES);
   addEffect(FX_MODE_MATRIPIX, &mode_matripix, _data_FX_MODE_MATRIPIX);
   addEffect(FX_MODE_GRAVIMETER, &mode_gravimeter, _data_FX_MODE_GRAVIMETER);
