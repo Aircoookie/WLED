@@ -64,7 +64,7 @@
 // WLEDMM end
 
 
-#if defined(ARDUINO_ARCH_ESP32) && (defined(WLED_DEBUG) || defined(WLED_DEBUG_HEAP))
+#if INCLUDE_xTaskGetHandle && defined(ARDUINO_ARCH_ESP32) && (defined(WLED_DEBUG) || defined(WLED_DEBUG_HEAP))
 // WLEDMM stack debug tool - find async_tcp task, and queries it's free stack
 static int wledmm_get_tcp_stacksize(void) {
   static TaskHandle_t tcp_taskHandle = NULL;                   // to store the task handle for later calls
@@ -364,7 +364,9 @@ void WLED::loop()
     DEBUG_PRINT(F("*** Free heap: "));     DEBUG_PRINT(heap_caps_get_free_size(0x1800));
     DEBUG_PRINT(F("\tLargest free block: "));     DEBUG_PRINT(heap_caps_get_largest_free_block(0x1800));
     DEBUG_PRINT(F(" *** \t\tArduino min free stack: ")); DEBUG_PRINT(uxTaskGetStackHighWaterMark(NULL));
+#if INCLUDE_xTaskGetHandle
     DEBUG_PRINT(F("   TCP min free stack: ")); DEBUG_PRINT(wledmm_get_tcp_stacksize());
+#endif
     DEBUG_PRINTLN(F(" ***"));    
     debugTime = millis();
   }
