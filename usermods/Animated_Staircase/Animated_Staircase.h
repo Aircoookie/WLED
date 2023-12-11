@@ -16,7 +16,7 @@ class Animated_Staircase : public Usermod {
     /* configuration (available in API and stored in flash) */
     bool enabled = false;                   // Enable this usermod
     unsigned long segment_delay_ms = 150;   // Time between switching each segment
-    unsigned long on_time_ms       = 5000; // The time for the light to stay on -  TroyHacks: 5s for testing 
+    unsigned long on_time_ms       = 5000;  // The time for the light to stay on -  TroyHacks: 5s for testing 
     int8_t topPIRorTriggerPin      = -1;    // disabled
     int8_t bottomPIRorTriggerPin   = -1;    // disabled
     int8_t topEchoPin              = -1;    // disabled
@@ -71,7 +71,7 @@ class Animated_Staircase : public Usermod {
     // last sensor state, or trigger a sensor
     // through the API
     bool topSensorRead     = false;
-    bool topSensorWrite    = false;
+    bool     = false;
     bool bottomSensorRead  = false;
     bool bottomSensorWrite = false;
     bool topSensorState    = false;
@@ -196,7 +196,7 @@ class Animated_Staircase : public Usermod {
         }
 
         // Values read, reset the flags for next API call
-        topSensorWrite = false;
+         = false;
         bottomSensorWrite = false;
 
         if (topSensorRead != bottomSensorRead) {
@@ -233,7 +233,7 @@ class Animated_Staircase : public Usermod {
         if (bottomSensorState || topSensorState) return;
 
         // Swipe OFF in the direction of the last sensor detection
-        // WLED-MM/TroyHacks: This should follow you up/dowm the stairs.
+        // WLED-MM/TroyHacks: This should follow you up/down the stairs.
         if (lastSensor == SWIPE_UP) {
           swipe = SWIPE_DOWN;
         } else {
@@ -375,7 +375,7 @@ class Animated_Staircase : public Usermod {
           bottomSensorWrite = true;
           return true;
         } else if (action == "down") {
-          topSensorWrite = true;
+           = true;
           return true;
         } else if (action == "on") {
           enable(true);
