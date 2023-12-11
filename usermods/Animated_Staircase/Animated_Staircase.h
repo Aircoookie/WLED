@@ -71,7 +71,7 @@ class Animated_Staircase : public Usermod {
     // last sensor state, or trigger a sensor
     // through the API
     bool topSensorRead     = false;
-    bool     = false;
+    bool topSensorWrite    = false;
     bool bottomSensorRead  = false;
     bool bottomSensorWrite = false;
     bool topSensorState    = false;
