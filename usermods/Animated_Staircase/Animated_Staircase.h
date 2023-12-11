@@ -196,7 +196,7 @@ class Animated_Staircase : public Usermod {
         }
 
         // Values read, reset the flags for next API call
-         = false;
+        topSensorWrite = false;
         bottomSensorWrite = false;
 
         if (topSensorRead != bottomSensorRead) {
