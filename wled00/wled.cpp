@@ -64,6 +64,22 @@
 // WLEDMM end
 
 
+#if defined(ARDUINO_ARCH_ESP32) && (defined(WLED_DEBUG) || defined(WLED_DEBUG_HEAP))
+// WLEDMM stack debug tool - find async_tcp task, and queries it's free stack
+static int wledmm_get_tcp_stacksize(void) {
+  static TaskHandle_t tcp_taskHandle = NULL;                   // to store the task handle for later calls
+  char * tcp_taskname = pcTaskGetTaskName(tcp_taskHandle);     // ask for name of the known task (to make sure we are still looking at the right one)
+
+  if ((tcp_taskHandle == NULL) || (tcp_taskname == NULL) || (strncmp(tcp_taskname, "async_tcp", 9) != 0)) {
+    tcp_taskHandle = xTaskGetHandle("async_tcp");              // need to look for the task by name. FreeRTOS docs say this is very slow, so we store the result for next time
+    //DEBUG_PRINT(F("async_tcp task ")); DEBUG_PRINTLN( (tcp_taskHandle != NULL) ? F("found") : F("not found"));
+  }
+
+  if (tcp_taskHandle != NULL) return uxTaskGetStackHighWaterMark(tcp_taskHandle); // got it !!
+  else return -1;
+}
+#endif
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
@@ -347,6 +363,8 @@ void WLED::loop()
   if (millis() - debugTime > 4999 ) { // WLEDMM: Special case for debugging heap faster
     DEBUG_PRINT(F("*** Free heap: "));     DEBUG_PRINT(heap_caps_get_free_size(0x1800));
     DEBUG_PRINT(F("\tLargest free block: "));     DEBUG_PRINT(heap_caps_get_largest_free_block(0x1800));
+    DEBUG_PRINT(F(" *** \t\tArduino min free stack: ")); DEBUG_PRINT(uxTaskGetStackHighWaterMark(NULL));
+    DEBUG_PRINT(F("   TCP min free stack: ")); DEBUG_PRINT(wledmm_get_tcp_stacksize());
     DEBUG_PRINTLN(F(" ***"));    
     debugTime = millis();
   }
@@ -531,7 +549,7 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 #ifdef ARDUINO_ARCH_ESP32
-  #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)  // unfortunately not availeable in older framework versions
+  #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)  // unfortunately not available in older framework versions
   DEBUG_PRINT(F("\nArduino  max stack  ")); DEBUG_PRINTLN(getArduinoLoopTaskStackSize());
   #endif
   DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
@@ -568,7 +586,7 @@ void WLED::setup()
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
-  USER_FLUSH();  // WLEDMM flush buffer now, before anything time-critial is started.
+  USER_FLUSH();  // WLEDMM flush buffer now, before anything time-critical is started.
 
   pinManager.manageDebugTXPin();
 

@@ -697,7 +697,7 @@ ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.
 ${theap>0?inforow("Heap ☾",((i.totalheap-i.freeheap)/1000).toFixed(0)+"/"+theap.toFixed(0)+" kB"," ("+Math.round((i.totalheap-i.freeheap)/(10*theap))+"%)"):""}
 ${i.minfreeheap?inforow("Max used heap ☾",((i.totalheap-i.minfreeheap)/1000).toFixed(1)+" kB"," ("+Math.round((i.totalheap-i.minfreeheap)/(10*theap))+"%)"):""}
 ${inforow("Free heap",heap," kB")}
-${i.freestack?inforow("Free stack ☾",i.freestack," kB"):""} <!--WLEDMM-->
+${i.freestack?inforow("Free stack ☾",(i.freestack/1024).toFixed(3)," kB"):""} <!--WLEDMM-->
 ${inforow("Flash Size ☾",flashsize," kB")}  <!--WLEDMM and Athom-->
 ${i.tpram?inforow("PSRAM ☾",(i.tpram/1024).toFixed(1)," kB"):""}
 ${i.psram?((i.tpram-i.psram)>16383?inforow("Used PSRAM ☾",((i.tpram-i.psram)/1024).toFixed(1)," kB"):inforow("Used PSRAM ☾",(i.tpram-i.psram)," B")):""}
