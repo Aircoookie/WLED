@@ -1616,9 +1616,9 @@ function setEffectParameters(idx)
 		// disable palette list
 		text += ' not used';
 		palw.style.display = "none";
-		// hide palette dialog if not available
-		if (gId("palw").lastElementChild.classList.contains("dialog")) {
-			gId("palw").lastElementChild.classList.add("hide");
+		// Close palette dialog if not available
+		if (gId("palw").lastElementChild.tagName == "DIALOG") {
+			gId("palw").lastElementChild.close();
 		}
 	}
 	pall.innerHTML = icon + text;
@@ -2285,9 +2285,9 @@ function setFX(ind = null)
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
 
-	// Hide effect dialog in simplified UI
+	// Close effect dialog in simplified UI
 	if (simplifiedUI) {
-		gId("fx").lastElementChild.classList.add("hide");
+		gId("fx").lastElementChild.close();
 	}
 
 	var obj = {"seg": {"fx": parseInt(ind), "fxdef": cfg.comp.fxdef}}; // fxdef sets effect parameters to default values
@@ -2302,9 +2302,9 @@ function setPalette(paletteId = null)
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
 
-	// Hide palette dialog in simplified UI
+	// Close palette dialog in simplified UI
 	if (simplifiedUI) {
-		gId("palw").lastElementChild.classList.add("hide");
+		gId("palw").lastElementChild.close();
 	}
 
 	var obj = {"seg": {"pal": paletteId}};
@@ -3059,7 +3059,7 @@ function simplifyUI() {
 	// Create dropdown dialog
 	function createDropdown(id, buttonText, dialogElements = null) {
 		// Create dropdown dialog
-		const dialog = document.createElement("div");
+		const dialog = document.createElement("dialog");
 		// Move every dialogElement to the dropdown dialog or if none are given, move all children of the element with the given id
 		if (dialogElements) {
 			dialogElements.forEach((e) => {
@@ -3070,7 +3070,6 @@ function simplifyUI() {
 				dialog.appendChild(gId(id).firstChild);
 			}
 		}
-		dialog.classList.add("hide", "dialog");
 
 		// Create button for the dropdown
 		const btn = document.createElement("button");
@@ -3079,7 +3078,14 @@ function simplifyUI() {
 		btn.innerText = buttonText;
 		function toggleDialog(e) {
 			if (e.target != btn && e.target != dialog) return;
-			dialog.classList.toggle("hide");
+			if (dialog.open) {
+				dialog.close();
+				return;
+			}
+			// Prevent autofocus on dialog open
+			dialog.inert = true;
+			dialog.showModal();
+			dialog.inert = false;
 			clean(dialog.firstElementChild.children[1]);
 			dialog.scrollTop = 0;
 		};

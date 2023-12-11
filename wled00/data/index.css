@@ -1345,30 +1345,16 @@ TD .checkmark, TD .radiomark {
 	top: calc(var(--sti) + 42px);
 }
 
-.dialog:not(.hide)::after {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: var(--c-o);
-	content: "";
-	z-index: -1;
+dialog::backdrop {
+	backdrop-filter: blur(5px);
 }
-.dialog {
-	position: fixed;
-	z-index: 5;
-	top: 10%;
-	left: 0;
-	right: 0;
-	max-width: 280px;
+dialog {
 	max-height: 70%;
-	margin: auto;
-	padding: 12px 24px;
+	border: 0;
 	border-radius: 10px;
-	background-color: var(--c-5);
-	overflow: scroll;
+	background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.1)), var(--c-3);
 	box-shadow: 4px 4px 10px 4px var(--c-1);
+	color: var(--c-f);
 }
 
 #fxlist .lstI.sticky,
