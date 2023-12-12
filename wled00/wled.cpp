@@ -738,7 +738,7 @@ void WLED::setup()
   // Seed FastLED random functions with an esp random value, which already works properly at this point.
 #if defined(ARDUINO_ARCH_ESP32)
   uint32_t seed32 = esp_random();
-  seed32 ^= random();  // WLEDMM some extra entropy (for older frameworks where esp_ramdom alone might be too predictable after startup)
+  seed32 ^= random(0, INT32_MAX);  // WLEDMM some extra entropy (for older frameworks where esp_ramdom alone might be too predictable after startup)
 #elif defined(ARDUINO_ARCH_ESP8266)
   const uint32_t seed32 = RANDOM_REG32;
 #else
