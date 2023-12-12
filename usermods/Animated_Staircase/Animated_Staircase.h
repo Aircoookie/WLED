@@ -131,7 +131,7 @@ class Animated_Staircase : public Usermod {
     *            received within this time, an object is detected
     *            and the function will return true.
     *
-    * The speed of sound is 343 meters per second at 20 degress Celcius.
+    * The speed of sound is 343 meters per second at 20 degrees Celsius.
     * Since the sound has to travel back and forth, the detection
     * distance for the sensor in cm is (0.0343 * maxTimeUs) / 2.
     *
@@ -191,7 +191,7 @@ class Animated_Staircase : public Usermod {
           sensorChanged = true;
           #ifndef WLED_DISABLE_MQTT
             publishMqtt(false, topSensorState ? "on" : "off");
-          #endif#endif
+          #endif
           DEBUG_PRINTLN(F("Top sensor changed."));
         }
 
@@ -268,7 +268,7 @@ class Animated_Staircase : public Usermod {
       }
     }
 
-    // send sesnor values to JSON API
+    // send sensor values to JSON API
     void writeSensorsToJson(JsonObject& staircase) {
       staircase[F("top-sensor")]    = topSensorRead;
       staircase[F("bottom-sensor")] = bottomSensorRead;
@@ -375,7 +375,7 @@ class Animated_Staircase : public Usermod {
           bottomSensorWrite = true;
           return true;
         } else if (action == "down") {
-           = true;
+           // = true;  // ?????
           return true;
         } else if (action == "on") {
           enable(true);
