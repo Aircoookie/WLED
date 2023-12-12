@@ -375,7 +375,7 @@ class Animated_Staircase : public Usermod {
           bottomSensorWrite = true;
           return true;
         } else if (action == "down") {
-           // = true;  // ?????
+          topSensorWrite = true;
           return true;
         } else if (action == "on") {
           enable(true);
