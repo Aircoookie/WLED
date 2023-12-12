@@ -1347,6 +1347,7 @@ TD .checkmark, TD .radiomark {
 
 dialog::backdrop {
 	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
 }
 dialog {
 	max-height: 70%;
