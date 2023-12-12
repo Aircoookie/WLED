@@ -1012,7 +1012,7 @@ static volatile bool servingClient = false;
 void serveJson(AsyncWebServerRequest* request)
 {
   if (servingClient) {
-    request->send(503, "application/json", F("{\"error\":2}")); // ERR_CONCURENCY
+    serveJsonError(request, 503, ERR_CONCURRENCY);
     return;
   }
   servingClient = true;
@@ -1044,13 +1044,13 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(501, "application/json", F("{\"error\":\"Not implemented\"}"));
+    serveJsonError(request, 501, ERR_NOT_IMPL);
     servingClient = false;
     return;
   }
 
   if (!requestJSONBufferLock(17)) {
-    request->send(503, "application/json", F("{\"error\":3}"));
+    serveJsonError(request, 503, ERR_NOBUF);
     servingClient = false;
     return;
   }

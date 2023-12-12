@@ -183,7 +183,7 @@ void initServer()
     JsonObject root = doc.as<JsonObject>();
     if (error || root.isNull()) {
       releaseJSONBufferLock();
-      request->send(400, "application/json", F("{\"error\":9}")); // ERR_JSON
+      serveJsonError(request, 400, ERR_JSON);
       return;
     }
     if (root.containsKey("pin")) checkSettingsPIN(root["pin"].as<const char*>());
@@ -201,8 +201,8 @@ void initServer()
       verboseResponse = deserializeState(root);
     } else {
       if (!correctPIN && strlen(settingsPIN)>0) {
-        request->send(401, "application/json", F("{\"error\":1}")); // ERR_DENIED
         releaseJSONBufferLock();
+        serveJsonError(request, 401, ERR_DENIED);
         return;
       }
       verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
@@ -508,6 +508,18 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   request->send_P(code, "text/html", PAGE_msg, msgProcessor);
 }
 
+
+void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error)
+{
+    AsyncJsonResponse *response = new AsyncJsonResponse(64);
+    if (error < ERR_NOT_IMPL) response->addHeader("Retry-After", "1");
+    response->setContentType("application/json");
+    response->setCode(code);
+    JsonObject obj = response->getRoot();
+    obj[F("error")] = error;
+    response->setLength();
+    request->send(response);
+}
 
 #ifdef WLED_ENABLE_DMX
 String dmxProcessor(const String& var)
