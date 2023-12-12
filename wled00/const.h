@@ -401,7 +401,11 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3834   // WLEDMM added 696+32 bytes of margin (was 3096) for audioreactive UI
+  #if !defined(USERMOD_AUDIOREACTIVE)
+    #define SETTINGS_STACK_BUF_SIZE 3834   // WLEDMM added 696+32 bytes of margin (was 3096)
+  #else
+    #define SETTINGS_STACK_BUF_SIZE 3904   // WLEDMM more buffer for audioreactive UI (add '-D CONFIG_ASYNC_TCP_TASK_STACK_SIZE=9216' to your build_flags)
+  #endif
 #endif
 
 #ifdef WLED_USE_ETHERNET
@@ -442,12 +446,12 @@
  #if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
   #if defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
     #if defined(ARDUINO_ARCH_ESP32C3)
-      #define JSON_BUFFER_SIZE 46000 // WLEDMM - max 46KB on -C3 with PSRAM (chip has 400kb RAM)
+      #define JSON_BUFFER_SIZE 44000 // WLEDMM - max 44KB on -C3 with PSRAM (chip has 400kb RAM)
     #else
-      #define JSON_BUFFER_SIZE 36000 // WLEDMM - max 36KB on -S2 with PSRAM (chip has 320kb RAM)
+      #define JSON_BUFFER_SIZE 32000 // WLEDMM - max 32KB on -S2 with PSRAM (chip has 320kb RAM)
     #endif
   #else
-  #define JSON_BUFFER_SIZE 56000 // WLEDMM (was 60000) slightly reduced to avoid build error "region dram0_0_seg overflowed"
+  #define JSON_BUFFER_SIZE 54000 // WLEDMM (was 60000) slightly reduced to avoid build error "region dram0_0_seg overflowed"
   #endif
  #else
   #define JSON_BUFFER_SIZE 24576
