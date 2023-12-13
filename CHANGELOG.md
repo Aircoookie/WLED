@@ -1,15 +1,64 @@
 ## WLED changelog
 
+#### Build 2310010, build 2310130
+-   Bugfixes for #3400, #3403, #3405
+-   minor HTML optimizations
+-   audioreactive: bugfix for UDP sound sync (partly initialized packets)
+
+#### Build 2309240
+-   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
+-   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
+
+#### Build 2309050
+-   Added receive and send sync groups to JSON API (#3317) (you can change sync groups using preset)
+-   Internal temperature usermod (#3246)
+-   New effect: Rolling Balls (a.k.a. linear bounce) (#1039)
+-   Various bug fixes and enhancements.
+
+#### Build 2308030
+-   Fix ESP-NOW crash with AP mode Always
+
+#### Build 2307180
+-   various fixes and improvements (ESP variants platform 5.3.0, effect optimizations, /json/cfg pin allocation)
+
+#### Build 2307130
+-   larger `oappend()` stack buffer (3.5k) for ESP32
+-   Preset cycle bugfix (#3262)
+-   effect updates (2D Plasmaball), `blur()` speedup
+-   On/Off toggle from nodes view (may show unknown device type on older versions) (#3291)
+-   various fixes and improvements (ABL, crashes when changing presets with different segments)
+
+#### Build 2306270
+-   ESP-NOW remote support (#3237)
+-   Pixel Magic tool (display pixel art) (#3249)
+-   Add WiFi network scan RPC command to Improv Serial (#3271)
+-   various fixes and improvements
+
+#### Build 2306210
+-   0.14.0-b3 release
+-   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
+
+#### Build 2306180
+-   Added client-side option for applying effect defaults from metadata
+-   Improved ESP8266 stability by reducing WebSocket response resends
+-   Updated ESP8266 core to 3.1.2
+
+#### Build 2306141
+-   Lissajous improvements
+-   Scrolling Text improvements (leading 0)
+
+#### Build 2306140
+-   Add settings PIN (un)locking to JSON post API
+
 #### Build 2306020
 
 -   Support for segment sets (PR #3171)
--   Reduce sound simulation modes to 2 to facilitiate segment sets
+-   Reduce sound simulation modes to 2 to facilitate segment sets
 -   Trigger button immediately on press if all configured presets are the same (PR #3226)
 -   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
 
 #### Build 2305280
 -   DDP protocol update (#3193)
--   added PCF8574 I2C port expander support for Multi relay usermod
 -   MQTT multipacket (fragmented) message fix
 -   added option to retain MQTT brightness and color messages
 -   new ethernet board: @srg74 Ethernet Shield

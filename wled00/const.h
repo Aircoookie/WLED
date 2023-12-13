@@ -158,7 +158,7 @@
 #define CALL_MODE_NO_NOTIFY      5
 #define CALL_MODE_FX_CHANGED     6     //no longer used
 #define CALL_MODE_HUE            7
-#define CALL_MODE_PRESET_CYCLE   8
+#define CALL_MODE_PRESET_CYCLE   8     //no longer used
 #define CALL_MODE_BLYNK          9     //no longer used
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
@@ -331,24 +331,43 @@
 
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
-#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
+#define ERR_DENIED       1  // Permission denied
+#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?) OBSOLETE
 #define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_IRLOAD   13  // It was attempted to load an IR JSON cmd, but the "ir.json" file does not exist
+#define ERR_FS_RMLOAD   14  // It was attempted to load an remote JSON cmd, but the "remote.json" file does not exist
 #define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
 #define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
 #define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
 
-//Timer mode types
+// Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness
 #define NL_MODE_FADE              1            //Fade to target brightness gradually
 #define NL_MODE_COLORFADE         2            //Fade to target brightness and secondary color gradually
 #define NL_MODE_SUN               3            //Sunrise/sunset. Target brightness is set immediately, then Sunrise effect is started. Max 60 min.
 
+// Settings sub page IDs
+#define SUBPAGE_MENU              0
+#define SUBPAGE_WIFI              1
+#define SUBPAGE_LEDS              2
+#define SUBPAGE_UI                3
+#define SUBPAGE_SYNC              4
+#define SUBPAGE_TIME              5
+#define SUBPAGE_SEC               6
+#define SUBPAGE_DMX               7
+#define SUBPAGE_UM                8
+#define SUBPAGE_UPDATE            9
+#define SUBPAGE_2D               10
+#define SUBPAGE_LOCK            251
+#define SUBPAGE_PINREQ          252
+#define SUBPAGE_CSS             253
+#define SUBPAGE_JS              254
+#define SUBPAGE_WELCOME         255
 
 #define NTP_PACKET_SIZE 48       // size of NTP recive buffer
 #define NTP_MIN_PACKET_SIZE 48   // min expected size - NTP v4 allows for "extended information" appended to the standard fields
