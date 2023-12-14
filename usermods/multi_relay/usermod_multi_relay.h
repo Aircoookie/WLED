@@ -803,13 +803,6 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
     _relay[i].external = top[parName][FPSTR(_external)]   | _relay[i].external;
     _relay[i].delay    = top[parName][FPSTR(_delay_str)]  | _relay[i].delay;
     _relay[i].button   = top[parName][FPSTR(_button)]     | _relay[i].button;
-    // begin backwards compatibility (beta) remove when 0.13 is released
-    parName += '-';
-    _relay[i].pin      = top[parName+"pin"] | _relay[i].pin;
-    _relay[i].invert   = top[parName+FPSTR(_activeHigh)] | _relay[i].invert;
-    _relay[i].external = top[parName+FPSTR(_external)]   | _relay[i].external;
-    _relay[i].delay    = top[parName+FPSTR(_delay_str)]  | _relay[i].delay;
-    // end compatibility
     _relay[i].delay    = min(600,max(0,abs((int)_relay[i].delay))); // bounds checking max 10min
   }
 
