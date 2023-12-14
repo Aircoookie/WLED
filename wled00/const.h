@@ -471,7 +471,7 @@
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
 
-#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(ARDUINO_ESP32_PICO)
+#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(ARDUINO_ESP32_PICO)  //WLEDMM
   #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, and on boards where GPIO16 is not available
 #else
   #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
