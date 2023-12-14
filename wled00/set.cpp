@@ -221,15 +221,22 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
       char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
       int hw_btn_pin = request->arg(bt).toInt();
-      if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
+      if (hw_btn_pin >= 0 && pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
         buttonType[i] = request->arg(be).toInt();
       #ifdef ARDUINO_ARCH_ESP32
-        // ESP32 only: check that analog button pin is a valid ADC gpio
+        // ESP32 only: check that button pin is a valid gpio
         if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
         {
           // not an ADC analog pin
-          if (btnPin[i] >= 0) DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          btnPin[i] = -1;
+          pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+        }
+        else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH) && digitalPinToTouchChannel(btnPin[i]) < 0)
+        {
+          // not a touch pin
+          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n", btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
