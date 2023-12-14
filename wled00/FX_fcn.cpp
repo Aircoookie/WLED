@@ -251,7 +251,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       CRGB sec  = gamma32(colors[1]);
       CRGB ter  = gamma32(colors[2]);
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
-    case 5: {//primary + secondary (+tert if not off), more distinct
+    case 5: {//primary + secondary (+tertiary if not off), more distinct
       CRGB prim = gamma32(colors[0]);
       CRGB sec  = gamma32(colors[1]);
       if (colors[2]) {
@@ -290,7 +290,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
 
 void Segment::startTransition(uint16_t dur) {
   if (dur == 0) {
-    if (isInTransition()) _t->_dur = dur; // this will stop transition in next handleTransisiton()
+    if (isInTransition()) _t->_dur = dur; // this will stop transition in next handleTransition()
     return;
   }
   if (isInTransition()) return; // already in transition no need to store anything
@@ -1339,7 +1339,7 @@ uint8_t WS2812FX::estimateCurrentAndLimitBri() {
 }
 
 void WS2812FX::show(void) {
-  // avoid race condition, caputre _callback value
+  // avoid race condition, capture _callback value
   show_callback callback = _callback;
   if (callback) callback();
 
@@ -1374,7 +1374,7 @@ bool WS2812FX::isUpdating() {
 
 /**
  * Returns the refresh rate of the LED strip. Useful for finding out whether a given setup is fast enough.
- * Only updates on show() or is set to 0 fps if last show is more than 2 secs ago, so accurary varies
+ * Only updates on show() or is set to 0 fps if last show is more than 2 secs ago, so accuracy varies
  */
 uint16_t WS2812FX::getFps() {
   if (millis() - _lastShow > 2000) return 0;
