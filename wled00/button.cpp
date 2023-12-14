@@ -188,7 +188,6 @@ void handleAnalog(uint8_t b)
   //while(strip.isUpdating() && (millis() - wait_started < STRIP_WAIT_TIME)) {
   //  delay(1);
   //}
-  //if (strip.isUpdating()) return; // give up
 
   oldRead[b] = aRead;
 
