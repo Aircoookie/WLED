@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2312130
+#define VERSION 2312150
 
 //WLEDMM + Moustachauve/Wled-Native 
 // You can define custom product info from build flags.
@@ -555,7 +555,7 @@ WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random co
 
 // transitions
 WLED_GLOBAL bool          transitionActive        _INIT(false);
-WLED_GLOBAL uint16_t      transitionDelayDefault  _INIT(transitionDelay); // default transition time (storec in cfg.json)
+WLED_GLOBAL uint16_t      transitionDelayDefault  _INIT(transitionDelay); // default transition time (stored in cfg.json)
 WLED_GLOBAL uint16_t      transitionDelayTemp     _INIT(transitionDelay); // actual transition duration (overrides transitionDelay in certain cases)
 WLED_GLOBAL unsigned long transitionStartTime;
 WLED_GLOBAL float         tperLast                _INIT(0.0f);            // crossfade transition progress, 0.0f - 1.0f
@@ -733,7 +733,7 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
-// WLEDMM a few "poor man's" mutal exclusion (mutex) flags, because there are not mutex objects on 8266.
+// WLEDMM a few "poor man's" mutual exclusion (mutex) flags, because there are not mutex objects on 8266.
 WLED_GLOBAL volatile bool doInitBusses _INIT(false);        // WLEDMM "volatile" added - needed as we want to sync parallel tasks
 WLED_GLOBAL volatile bool loadLedmap _INIT(false);          // WLEDMM use as bool and use loadedLedmap for Nr
 WLED_GLOBAL volatile uint8_t loadedLedmap _INIT(0);         // WLEDMM default 0

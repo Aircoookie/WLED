@@ -733,7 +733,7 @@
 #### Build 2101040
 
 -   Replaced Red & Blue effect with Aurora effect (PR #1589)
--   Fixed HTTP changing segments uncommanded (#1618)
+-   Fixed HTTP changing segments un-commanded (#1618)
 -   Updated copyright year and contributor page link
 
 #### Build 2012311

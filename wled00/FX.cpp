@@ -48,7 +48,7 @@ static uint16_t triwave16(uint16_t in) {
 }
 
 /*
- * Generates a tristate square wave w/ attac & decay
+ * Generates a tristate square wave w/ attack & decay
  * @param x input value 0-255
  * @param pulsewidth 0-127
  * @param attdec attack & decay, max. pulsewidth / 2
@@ -3016,7 +3016,7 @@ static uint16_t rolling_balls(void) {
     if (SEGMENT.check1) {
       for (int j = i+1; j < numBalls; j++) {
         if (balls[j].velocity != balls[i].velocity) {
-          //  tcollided + balls[j].lastBounceUpdate is acutal time of collision (this keeps precision with long to float conversions)
+          //  tcollided + balls[j].lastBounceUpdate is actual time of collision (this keeps precision with long to float conversions)
           float tcollided = (cfac*(balls[i].height - balls[j].height) +
                 balls[i].velocity*float(balls[j].lastBounceUpdate - balls[i].lastBounceUpdate))/(balls[j].velocity - balls[i].velocity);
 
@@ -5148,7 +5148,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   bool repetition = false;
   for (int i=0; i<crcBufferLen && !repetition; i++) repetition = (crc == crcBuffer[i]); // (Ewowi)
   // same CRC would mean image did not change or was repeating itself
-  // -> softhack007: not exacly. Different CRC means diferent image; same CRC means nothing (could be same or slightly different).
+  // -> softhack007: not exacly. Different CRC means different image; same CRC means nothing (could be same or slightly different).
   if (!repetition) SEGENV.step = strip.now; //if no repetition avoid reset
   // remember CRCs across frames
   crcBuffer[SEGENV.aux0] = crc;

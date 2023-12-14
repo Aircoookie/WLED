@@ -365,7 +365,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject light = doc[F("light")];
   byte prev; //WLEDMM
   int tdd; //WLEDMM
-  if (!light.isNull()) { //WLEDMM: in case cfg string does not contain light! (solves issue that somethimes gamma correction dissappears)
+  if (!light.isNull()) { //WLEDMM: in case cfg string does not contain light! (solves issue that sometimes gamma correction dissappears)
     CJSON(briMultiplier, light[F("scale-bri")]);
     CJSON(strip.paletteBlend, light[F("pal-mode")]);
     CJSON(autoSegments, light[F("aseg")]);

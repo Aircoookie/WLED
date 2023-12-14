@@ -149,13 +149,13 @@ bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
   if ((obuf == nullptr) || (olen + len >= SETTINGS_STACK_BUF_SIZE)) { // sanity checks
-	if (obuf == nullptr) { USER_PRINTLN(F("oappend() error: obuf == nullptr."));
-	} else {
-	  USER_PRINT(F("oappend() error: buffer full. Increase SETTINGS_STACK_BUF_SIZE for "));
+	  if (obuf == nullptr) { USER_PRINTLN(F("oappend() error: obuf == nullptr."));
+	  } else {
+	    USER_PRINT(F("oappend() error: buffer full. Increase SETTINGS_STACK_BUF_SIZE for "));
       USER_PRINTF("%2u bytes \t\"", len /*1 + olen + len - SETTINGS_STACK_BUF_SIZE*/);
       USER_PRINT(txt);
       USER_PRINTLN(F("\""));
-	}
+	  }
     return false;        // buffer full
   }
   strcpy(obuf + olen, txt);

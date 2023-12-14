@@ -436,7 +436,7 @@ void RotaryEncoderUIUsermod::setup()
     //      tracking the owner tags....
     pinA = pinB = pinC = -1;
     enabled = false;
-    DEBUG_PRINTLN(F("Failed to alocate GPIO pins for Usermod Rotary Encoder (ALT)."));   //WLEDMM add debug info
+    DEBUG_PRINTLN(F("Failed to allocate GPIO pins for Usermod Rotary Encoder (ALT)."));   //WLEDMM add debug info
     return;
   }
 

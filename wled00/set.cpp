@@ -609,7 +609,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       i2c_scl = hw_scl_pin;
       DEBUG_PRINTF("handleSettingsSet(): reserved I2C pins SDA=%d SCL=%d.\n", i2c_sda, i2c_scl);
       #ifdef ESP32
-      Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
+      Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initialised (Wire.begin() called)
       #endif
       // Wire.begin(); // WLEDMM moved into pinManager
     } else {

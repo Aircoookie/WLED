@@ -46,7 +46,7 @@ String PinManagerClass::getOwnerText(PinOwner tag) {
     case PinOwner::HW_I2C     : return(F("I2C (hw)")); break;            // 'I2C'  == hardware I2C pins (4&5 on ESP8266, 21&22 on ESP32)
     case PinOwner::HW_SPI     : return(F("SPI (hw)")); break;            // 'SPI'  == hardware (V)SPI pins (13,14&15 on ESP8266, 5,18&23 on ESP32)
 
-    case PinOwner::UM_Audioreactive     : return(F("AudioReactive (UM)")); break;     // audioreative usermod - analog or digital audio input
+    case PinOwner::UM_Audioreactive     : return(F("AudioReactive (UM)")); break;     // audioreactive usermod - analog or digital audio input
     case PinOwner::UM_Temperature       : return(F("Temperature (UM)")); break;       // "usermod_temperature.h"
     case PinOwner::UM_PIR               : return(F("PIR (UM)")); break;               // "usermod_PIR_sensor_switch.h"
     case PinOwner::UM_IMU               : return(F("IMU mpu6050 (UM)")); break;       // "usermod_mpu6050_imu.h"
@@ -72,7 +72,7 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   if ((gpio == 0xFF) || (gpio < 0)) return(F(""));      // explicitly allow -1 as a no-op
 
 #ifdef USERMOD_AUDIOREACTIVE
-  // audioreactive settings - unfortunately, these are hiddden inside usermod now :-(
+  // audioreactive settings - unfortunately, these are hidden inside usermod now :-(
   // if((gpio == audioPin) && (dmType == 0)) return(F("analog audio in"));
   // if((gpio == i2ssdPin) && (dmType > 0)) return(F("I2S SD"));
   // if((gpio == i2swsPin) && (dmType > 0)) return(F("I2S WS"));
@@ -272,7 +272,7 @@ String PinManagerClass::getPinConflicts(int gpio) {
 
   if ((ownerConflict[gpio] == PinOwner::None) || (ownerTag[gpio] == ownerConflict[gpio])) { // no conflict, or "fake" conflict with current owner
     return(F(""));             // no conflict fot this GPIO
-  } else {                     // found previous conflic!
+  } else {                     // found previous conflict!
     return String("!! Conflict with ") + getOwnerText(ownerConflict[gpio]) + String(" !!");
   }
 }

@@ -1384,7 +1384,7 @@ function toggleBubble(e)
 }
 
 // updates segment length upon input of segment values
-function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
+function updateLen(s, draw=true) //WLEDMM conditionally draw segment view
 {
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);

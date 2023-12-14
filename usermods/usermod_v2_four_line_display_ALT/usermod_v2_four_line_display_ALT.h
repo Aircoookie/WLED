@@ -671,7 +671,7 @@ void FourLineDisplayUsermod::setup() {
     }
     // start SPI now!
 #ifdef ARDUINO_ARCH_ESP32
-    if (isHW) SPI.begin(spi_sclk, spi_miso, spi_mosi);   // ESP32 - will silently fail if SPI alread active.
+    if (isHW) SPI.begin(spi_sclk, spi_miso, spi_mosi);   // ESP32 - will silently fail if SPI already active.
 #else
     if (isHW) SPI.begin();                               // ESP8266 - SPI pins are fixed
 #endif

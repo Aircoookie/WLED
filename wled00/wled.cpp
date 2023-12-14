@@ -212,7 +212,7 @@ void WLED::loop()
     #endif
     if (!offMode || strip.isOffRefreshRequired()) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_PROTECT_SERVICE)  // WLEDMM experimental 
-      static unsigned long lastTimeService = 0; // WLEMM needed to remove stale lock
+      static unsigned long lastTimeService = 0; // WLEDMM needed to remove stale lock
       if (!suspendStripService && !doInitBusses && !loadLedmap) { // WLEDMM prevent effect drawing while strip or segments are being updated
 #endif
         strip.service();
