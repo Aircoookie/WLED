@@ -309,7 +309,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
-  getVal(elem["c3"], &cust3); // we can't pass reference to bifield
+  getVal(elem["c3"], &cust3); // we can't pass reference to bitfield
   seg.custom3 = constrain(cust3, 0, 31);
 
   seg.check1 = elem["o1"] | seg.check1;
@@ -1206,7 +1206,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         curPalette.add("c2");
         curPalette.add("c1");
         break;
-      case 5: //primary + secondary (+tert if not off), more distinct
+      case 5: //primary + secondary (+tertiary if not off), more distinct
         curPalette.add("c1");
         curPalette.add("c1");
         curPalette.add("c1");

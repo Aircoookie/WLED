@@ -199,8 +199,8 @@
 #define DMX_MODE_MULTIPLE_RGB     4            //every LED is addressed with its own RGB (ledCount * 3 channels)
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
-#define DMX_MODE_EFFECT_SEGMENT   8            //trigger standalone effects of WLED (15 channels per segement)
-#define DMX_MODE_EFFECT_SEGMENT_W 9            //trigger standalone effects of WLED (18 channels per segement)
+#define DMX_MODE_EFFECT_SEGMENT   8            //trigger standalone effects of WLED (15 channels per segment)
+#define DMX_MODE_EFFECT_SEGMENT_W 9            //trigger standalone effects of WLED (18 channels per segment)
 #define DMX_MODE_PRESET           10           //apply presets (1 channel)
 
 //Light capability byte (unused) 0bRCCCTTTT
@@ -317,7 +317,7 @@
 #define SEG_DIFFERS_OPT        0x02 // all segment options except: selected, reset & transitional
 #define SEG_DIFFERS_COL        0x04 // colors
 #define SEG_DIFFERS_FX         0x08 // effect/mode parameters
-#define SEG_DIFFERS_BOUNDS     0x10 // segment start/stop ounds
+#define SEG_DIFFERS_BOUNDS     0x10 // segment start/stop bounds
 #define SEG_DIFFERS_GSO        0x20 // grouping, spacing & offset
 #define SEG_DIFFERS_SEL        0x80 // selected
 
@@ -340,7 +340,7 @@
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_IRLOAD   13  // It was attempted to load an IR JSON cmd, but the "ir.json" file does not exist
 #define ERR_FS_RMLOAD   14  // It was attempted to load an remote JSON cmd, but the "remote.json" file does not exist
-#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occurred
 #define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
 #define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
@@ -369,7 +369,7 @@
 #define SUBPAGE_JS              254
 #define SUBPAGE_WELCOME         255
 
-#define NTP_PACKET_SIZE 48       // size of NTP recive buffer
+#define NTP_PACKET_SIZE 48       // size of NTP receive buffer
 #define NTP_MIN_PACKET_SIZE 48   // min expected size - NTP v4 allows for "extended information" appended to the standard fields
 
 //maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
@@ -471,7 +471,7 @@
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
 #if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3)
-  #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
+  #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards
 #else
   #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
 #endif
@@ -492,7 +492,7 @@
 #define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
 
 // HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
-// which GPIO pins are actually used in a hardwarea layout (controller board)
+// which GPIO pins are actually used in a hardware layout (controller board)
 //WLEDMM: unchangeable pins are not treated here by undef them, but elsewhere in the code 
 // defaults for 1st I2C on ESP32 (Wire global)
 #ifndef HW_PIN_SCL
@@ -503,7 +503,7 @@
 #endif
 
 // HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
-// which GPIO pins are actually used in a hardwarea layout (controller board)
+// which GPIO pins are actually used in a hardware layout (controller board)
 //WLEDMM: unchangeable pins are not treated here by undef them, but elsewhere in the code 
 // defaults for VSPI on ESP32 (SPI global, SPI.cpp) as HSPI is used by WLED (bus_wrapper.h)
 #ifndef HW_PIN_CLOCKSPI
