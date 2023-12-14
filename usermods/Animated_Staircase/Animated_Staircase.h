@@ -317,7 +317,7 @@ class Animated_Staircase : public Usermod {
           seg.setOption(SEG_OPTION_ON, true);
         }
         strip.trigger();  // force strip update
-        stateChanged = true;  // inform external dvices/UI of change
+        stateChanged = true;  // inform external devices/UI of change
         colorUpdated(CALL_MODE_DIRECT_CHANGE);
         DEBUG_PRINTLN(F("Animated Staircase disabled."));
       }
@@ -501,7 +501,7 @@ class Animated_Staircase : public Usermod {
       bottomEchoPin         = top[FPSTR(_bottomEcho_pin)] | bottomEchoPin;
 
       topMaxDist    = top[FPSTR(_topEchoCm)] | topMaxDist;
-      topMaxDist    = min(150,max(30,(int)topMaxDist));     // max distnace ~1.5m (a lag of 9ms may be expected)
+      topMaxDist    = min(150,max(30,(int)topMaxDist));     // max distance ~1.5m (a lag of 9ms may be expected)
       bottomMaxDist = top[FPSTR(_bottomEchoCm)] | bottomMaxDist;
       bottomMaxDist = min(150,max(30,(int)bottomMaxDist));  // max distance ~1.5m (a lag of 9ms may be expected)
 

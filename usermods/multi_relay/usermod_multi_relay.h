@@ -196,7 +196,7 @@ class MultiRelay : public Usermod {
 };
 
 
-// class implementetion
+// class implementation
 
 void MultiRelay::publishMqtt(int relay) {
 #ifndef WLED_DISABLE_MQTT

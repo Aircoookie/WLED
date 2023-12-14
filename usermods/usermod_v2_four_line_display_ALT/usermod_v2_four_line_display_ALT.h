@@ -11,7 +11,7 @@
 #include "4LD_wled_fonts.c"
 
 #ifndef FLD_ESP32_NO_THREADS
-#define FLD_ESP32_USE_THREADS    // comment out to use 0.13.x behaviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
+  #define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behaviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
 #endif
 
 //#define OLD_4LD_FONTS          // comment out if you prefer the "classic" look with blocky fonts (saves 1K flash)
@@ -1339,7 +1339,7 @@ void FourLineDisplayUsermod::sleepOrClock(bool sleepEnable) {
 bool FourLineDisplayUsermod::handleButton(uint8_t b) {
   yield();
   if (!enabled
-    || b // butto 0 only
+    || b // button 0 only
     || buttonType[b] == BTN_TYPE_SWITCH
     || buttonType[b] == BTN_TYPE_NONE
     || buttonType[b] == BTN_TYPE_RESERVED
