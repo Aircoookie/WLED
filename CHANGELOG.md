@@ -466,7 +466,7 @@
 
 -   Added application level pong websockets reply (#2139)
 -   Use AsyncTCP 1.0.3 as it mitigates the flickering issue from 0.13.0-b2
--   Fixed transition manually updated in preset overriden by field value
+-   Fixed transition manually updated in preset overridden by field value
 
 #### Build 2108050
 
@@ -995,7 +995,7 @@
 
 #### Build 2011040
 
--   Inversed Rain direction (fixes #1147)
+-   Inverted Rain direction (fixes #1147)
 
 #### Build 2011010
 
@@ -1206,7 +1206,7 @@
 
 -   Added module info page to web UI
 -   Added realtime override functionality to web UI
--   Added individial segment power and brightness to web UI
+-   Added individual segment power and brightness to web UI
 -   Added feature to one-click select single segment only by tapping segment name
 -   Removed palette jumping to default if color is changed
 

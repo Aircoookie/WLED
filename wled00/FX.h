@@ -432,7 +432,7 @@ typedef struct Segment {
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
-      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 belnds possible)
+      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 blends possible)
       unsigned long _start;       // must accommodate millis()
       uint16_t      _dur;
       Transition(uint16_t dur=750)
