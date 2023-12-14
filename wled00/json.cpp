@@ -945,11 +945,11 @@ void serializeNetworks(JsonObject root)
 
   for (int i = 0; i < status; i++) {
     JsonObject node = networks.createNestedObject();
-    node["ssid"]    = WiFi.SSID(i);
-    node["rssi"]    = WiFi.RSSI(i);
-    node["bssid"]   = WiFi.BSSIDstr(i);
-    node["channel"] = WiFi.channel(i);
-    node["enc"]     = WiFi.encryptionType(i);
+    node[F("ssid")]    = WiFi.SSID(i);
+    node[F("rssi")]    = WiFi.RSSI(i);
+    node[F("bssid")]   = WiFi.BSSIDstr(i);
+    node[F("channel")] = WiFi.channel(i);
+    node[F("enc")]     = WiFi.encryptionType(i);
   }
 
   WiFi.scanDelete();
