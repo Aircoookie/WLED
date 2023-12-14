@@ -33,7 +33,7 @@
 				).reduce(
 					// Filter out duplicate SSIDs. Since it is sorted by signal
 					// strength, the strongest signal will be kept in the
-					// order it orginally appeared in the array.
+					// order it as originally appeared in the array.
 					(unique, other) => {
 						if(!unique.some(obj => obj.ssid === other.ssid)) {
 							unique.push(other);
