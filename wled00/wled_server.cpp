@@ -149,11 +149,9 @@ void initServer()
     request->send(response);
   });
 
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    if(!handleFileRead(request, "/favicon.ico"))
-    {
-      request->send_P(200, "image/x-icon", favicon, 156);
-    }
+  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (handleFileRead(request, "/favicon.ico")) return;
+    request->send_P(200, "image/x-icon", favicon, 156);
   });
 
   server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -265,6 +263,7 @@ void initServer()
 #endif
 
   server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
@@ -272,6 +271,7 @@ void initServer()
   });
 
   server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
@@ -420,29 +420,29 @@ void initServer()
   });
 }
 
-bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
-{
-  AsyncWebHeader* header = request->getHeader("If-None-Match");
-  if (header && header->value() == String(VERSION)) {
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request) {
+  AsyncWebHeader *header = request->getHeader("If-None-Match");
+  char etag[11];
+  sprintf_P(etag, PSTR("%7d-%02x"), VERSION, cacheInvalidate);
+  if (header && header->value() == etag) {
     request->send(304);
     return true;
   }
   return false;
 }
 
-void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
-{
-  char tmp[12];
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response) {
   // https://medium.com/@codebyamir/a-web-developers-guide-to-browser-caching-cc41f3b73e7c
   #ifndef WLED_DEBUG
-  //this header name is misleading, "no-cache" will not disable cache,
-  //it just revalidates on every load using the "If-None-Match" header with the last ETag value
-  response->addHeader(F("Cache-Control"),"no-cache");
+  // this header name is misleading, "no-cache" will not disable cache,
+  // it just revalidates on every load using the "If-None-Match" header with the last ETag value
+  response->addHeader(F("Cache-Control"), "no-cache");
   #else
-  response->addHeader(F("Cache-Control"),"no-store,max-age=0"); // prevent caching if debug build
+  response->addHeader(F("Cache-Control"), "no-store,max-age=0");  // prevent caching if debug build
   #endif
-  sprintf_P(tmp, PSTR("%8d-%02x"), VERSION, cacheInvalidate);
-  response->addHeader(F("ETag"), tmp);
+  char etag[11];
+  sprintf_P(etag, PSTR("%7d-%02x"), VERSION, cacheInvalidate);
+  response->addHeader(F("ETag"), etag);
 }
 
 void serveIndex(AsyncWebServerRequest* request)
