@@ -64,7 +64,7 @@ void ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
 
 uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
   if (_count == 0) return defaultColorOrder;
-  // upper nibble containd W swap information
+  // upper nibble contains W swap information
   uint8_t swapW = defaultColorOrder >> 4;
   for (uint8_t i = 0; i < _count; i++) {
     if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
