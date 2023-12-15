@@ -1,6 +1,11 @@
 #pragma once
 #include "wled.h"
 
+#ifndef ARDUINO_ARCH_ESP32
+  // 8266 does not support analogRead on user selectable pins 
+  #error only ESP32 is supported by usermod LDR_DUSK_DAWN
+#endif
+
 class LDR_Dusk_Dawn_v2 : public Usermod {
   private:
     // Defaults
@@ -12,22 +17,30 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
     int ldrOffPreset = 2; // Default "Off" Preset
 
     // Variables
+    bool initDone = false;
     bool ldrEnabledPreviously = false; // Was LDR enabled for the previous check? First check is always no.
     int ldrOffCount; // Number of readings above the threshold
     int ldrOnCount; // Number of readings below the threshold
-    int ldrReading; // Last LDR reading
+    int ldrReading = 0; // Last LDR reading
     int ldrLEDState; // Current LED on/off state
     unsigned long lastMillis = 0;
     static const char _name[];
 
   public:
     void setup() {
+      // register ldrPin
+      if ((ldrPin >= 0) && (digitalPinToAnalogChannel(ldrPin) >= 0)) {
+        if(!pinManager.allocatePin(ldrPin, false, PinOwner::UM_LDR_DUSK_DAWN)) ldrEnabled = false; // pin already in use -> disable usermod
+        else pinMode(ldrPin, INPUT);                                                               // alloc success -> configure pin for input
+      } else ldrEnabled = false;                                                                   // invalid pin -> disable usermod
+      initDone = true;
     }
 
     void loop() {
       // Only update every 10 seconds
       if (millis() - lastMillis > 10000) {      
-        if (ldrEnabled == true) {
+        if (  (ldrEnabled == true)
+           && (ldrPin >= 0) && (digitalPinToAnalogChannel(ldrPin) >= 0) ) { // make sure that pin is valid for analogread()
           // Default state is off
           if (ldrEnabledPreviously == false) {
               applyPreset(ldrOffPreset);
@@ -85,6 +98,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
   }
 
   bool readFromConfig(JsonObject& root) {
+      int8_t oldLdrPin = ldrPin;
       JsonObject top = root[FPSTR(_name)];
       bool configComplete = !top.isNull();
       configComplete &= getJsonValue(top["Enabled"], ldrEnabled);
@@ -93,6 +107,12 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
       configComplete &= getJsonValue(top["Threshold"], ldrThreshold);
       configComplete &= getJsonValue(top["On Preset"], ldrOnPreset);
       configComplete &= getJsonValue(top["Off Preset"], ldrOffPreset);
+
+      if (initDone && (ldrPin != oldLdrPin)) {
+         // pin changed - un-register previous pin, register new pin
+        if (oldLdrPin >= 0) pinManager.deallocatePin(oldLdrPin, PinOwner::UM_LDR_DUSK_DAWN);
+        setup();             // setup new pin
+      }
       return configComplete;
   }
 
@@ -102,7 +122,8 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray LDR_Enabled = user.createNestedArray("LDR dusk/dawn enabled");
-      LDR_Enabled.add(ldrEnabled);      
+      LDR_Enabled.add(ldrEnabled);
+      if (!ldrEnabled) return; // do not add more if usermod is disabled
 
       JsonArray LDR_Reading = user.createNestedArray("LDR reading");
       LDR_Reading.add(ldrReading);
@@ -116,6 +137,12 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
 
       //JsonArray LDR_Off_Count = user.createNestedArray("LDR off count");
       //LDR_Off_Count.add(ldrOffCount);
+
+      //bool pinValid = ((ldrPin >= 0) && (digitalPinToAnalogChannel(ldrPin) >= 0));
+      //if (pinManager.getPinOwner(ldrPin) != PinOwner::UM_LDR_DUSK_DAWN) pinValid = false;
+      //JsonArray LDR_valid = user.createNestedArray(F("LDR pin"));
+      //LDR_valid.add(ldrPin);
+      //LDR_valid.add(pinValid ? F(" OK"): F(" invalid"));
   }
 
   uint16_t getId() {
