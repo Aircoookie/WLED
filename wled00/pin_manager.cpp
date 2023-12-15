@@ -61,6 +61,7 @@ String PinManagerClass::getOwnerText(PinOwner tag) {
     case PinOwner::UM_SdCard            : return(F("SD-Card (UM)")); break;           // "usermod_sd_card.h" -- Uses SPI pins
     case PinOwner::UM_PWM_OUTPUTS       : return(F("PWM Output (UM)")); break;        // "usermod_pwm_outputs.h"
     case PinOwner::UM_Battery           : return(F("Battery (UM)")); break;           // "usermod_battery.h"
+    case PinOwner::UM_LDR_DUSK_DAWN     : return(F("LDR dusk/dawn (UM)")); break;     // "usermod_LDR_Dusk_Dawn_v2.h"
 
     case PinOwner::UM_Example      : return(F("example (UM)")); break;            // unspecified usermod
     case PinOwner::UM_Unspecified  : return(F("usermod (UM)")); break;            // unspecified usermod
