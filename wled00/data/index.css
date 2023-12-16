@@ -370,6 +370,16 @@ button {
 	padding: 5px 0 0;
 }
 
+/* Quick load magin for simplified UI */
+.simplified #pql {
+	margin-bottom: 8px;
+}
+
+/* Button margin for simplified UI */
+.simplified #fx .btn, .simplified #palw .btn {
+	margin-top: 0;
+}
+
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
 
 .tab-label {
@@ -413,6 +423,7 @@ button {
 	position: sticky;
 	bottom: 0;
 	max-width: 300px;
+	z-index: 2;
 }
 
 #sliders .labels {
@@ -754,12 +765,16 @@ input[type=range]::-moz-range-thumb {
 }
 
 #Colors .sliderwrap {
-	margin: 4px 0 0;
+	margin: 2px 0 0;
 }
 
-/* Dynamically hide brightness slider label */
+/* Dynamically hide labels */
 .hd {
 	display: var(--bhd);
+}
+/* Do not hide quick load label in simplified mode on small screen widths */
+.simplified #pql .hd {
+	display: var(--bhd) !important;
 }
 
 #briwrap {
@@ -1284,6 +1299,12 @@ TD .checkmark, TD .radiomark {
 	margin-top: 0;
 }
 
+/* Simplify segments */
+.simplified #segcont .lstI {
+	margin-top: 4px;
+	min-height: unset;
+}
+
 /* selected item/element */
 .selected { /* has to be after .lstI since !important is not ok */
 	background: var(--c-4);
@@ -1322,6 +1343,19 @@ TD .checkmark, TD .radiomark {
 #fxlist .lstI.selected,
 #pallist .lstI.selected {
 	top: calc(var(--sti) + 42px);
+}
+
+dialog::backdrop {
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+dialog {
+	max-height: 70%;
+	border: 0;
+	border-radius: 10px;
+	background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.1)), var(--c-3);
+	box-shadow: 4px 4px 10px 4px var(--c-1);
+	color: var(--c-f);
 }
 
 #fxlist .lstI.sticky,

@@ -168,7 +168,7 @@
 			<input id="hexc" tooltip="Hex RGB" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
 		</div>
-		<div style="padding: 8px 0;">
+		<div style="padding: 8px 0;" id="btns">
 			<button class="btn btn-xs" tooltip="Pixel Magic Tool" type="button" id="pxmb" onclick="window.location.href=getURL('/pxmagic.htm')"><i class="icons btn-icon">&#xe410;</i></button>
 			<button class="btn btn-xs" tooltip="Add custom palette" type="button" onclick="window.location.href=getURL('/cpal.htm')"><i class="icons btn-icon">&#xe18a;</i></button>
 			<button class="btn btn-xs" tooltip="Remove custom palette" type="button" id="rmPal" onclick="palettesData=null;localStorage.removeItem('wledPalx');requestJson({rmcpal:true});setTimeout(loadPalettes,250,loadPalettesData);"><i class="icons btn-icon">&#xe037;</i></button>
@@ -351,7 +351,7 @@
 		<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button>
 	</div>
 	<br>
-	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>
+	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by <a href="https://github.com/Aircoookie/" target="_blank">Aircoookie</a> and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>
 </div>
 
 <div id="nodes" class="modal">

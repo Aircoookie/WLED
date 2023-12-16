@@ -219,36 +219,10 @@ function writeChunks(srcDir, specs, resultFile) {
 }
 
 writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h", 'index');
-writeHtmlGzipped("wled00/data/simple.htm", "wled00/html_simple.h", 'simple');
 writeHtmlGzipped("wled00/data/pixart/pixart.htm", "wled00/html_pixart.h", 'pixart');
 writeHtmlGzipped("wled00/data/cpal/cpal.htm", "wled00/html_cpal.h", 'cpal');
 writeHtmlGzipped("wled00/data/pxmagic/pxmagic.htm", "wled00/html_pxmagic.h", 'pxmagic');
-/*
-writeChunks(
-  "wled00/data",
-  [
-    {
-      file: "simple.css",
-      name: "PAGE_simpleCss",
-      method: "gzip",
-      filter: "css-minify",
-    },
-    {
-      file: "simple.js",
-      name: "PAGE_simpleJs",
-      method: "gzip",
-      filter: "js-minify",
-    },
-    {
-      file: "simple.htm",
-      name: "PAGE_simple",
-      method: "gzip",
-      filter: "html-minify-ui",
-    }
-  ],
-  "wled00/html_simplex.h"
-);
-*/
+
 writeChunks(
   "wled00/data",
   [
