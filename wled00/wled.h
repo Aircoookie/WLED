@@ -191,6 +191,7 @@ struct PSRAM_Allocator {
   }
 };
 using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
+//#define DynamicJsonDocument PSRAMDynamicJsonDocument  // WLEDMM experiment
 #else
 #define PSRAMDynamicJsonDocument DynamicJsonDocument
 #endif
@@ -784,7 +785,17 @@ WLED_GLOBAL int8_t spi_sclk  _INIT(HW_PIN_CLOCKSPI);
 #endif
 
 // global ArduinoJson buffer
+#if 0 && defined(WLED_USE_PSRAM_JSON)
+// WLEDMM experimental : always use dynamic JSON
+  #warning experimental - trying to always use dynamic JSON
+  #ifndef WLED_DEFINE_GLOBAL_VARS
+  WLED_GLOBAL PSRAMDynamicJsonDocument doc;
+  #else
+  WLED_GLOBAL PSRAMDynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #endif
+#else
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
+#endif // WLEDMM end
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output

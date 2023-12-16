@@ -606,6 +606,10 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   if(dmxEnablePin > 0) pinManager.allocatePin(dmxEnablePin, true, PinOwner::DMX);
 #endif
 
+#if 0 && defined(WLED_USE_PSRAM_JSON)
+  doc.garbageCollect();   // WLEDMM experimental - this seems to move the complete doc[] into PSRAM
+#endif
+
 // WLEDMM experimental: support for single neoPixel on Adafruit boards
 #if 0
   //#ifdef PIN_NEOPIXEL
