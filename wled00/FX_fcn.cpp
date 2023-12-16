@@ -144,10 +144,13 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 }
 
 bool IRAM_ATTR Segment::allocateData(size_t len) {
-  if (data && _dataLen == len) return true; //already allocated
+  if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
+    if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
+    return true;
+  }
   //DEBUG_PRINTF("--   Allocating data (%d): %p\n", len, this);
   deallocateData();
-  if (len == 0) return(false); // nothing to do
+  if (len == 0) return false; // nothing to do
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
     // not enough memory
     DEBUG_PRINT(F("!!! Effect RAM depleted: "));
@@ -156,7 +159,7 @@ bool IRAM_ATTR Segment::allocateData(size_t len) {
   }
   // do not use SPI RAM on ESP32 since it is slow
   data = (byte*) malloc(len);
-  if (!data) { DEBUG_PRINTLN(F("!!! Allocation failed. !!!")); return false; } //allocation failed
+  if (!data) { DEBUG_PRINTLN(F("!!! Allocation failed. !!!")); return false; } // allocation failed
   Segment::addUsedSegmentData(len);
   //DEBUG_PRINTF("---  Allocated data (%p): %d/%d -> %p\n", this, len, Segment::getUsedSegmentData(), data);
   _dataLen = len;
