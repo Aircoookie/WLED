@@ -286,6 +286,7 @@
 #define BTN_TYPE_TOUCH            6
 #define BTN_TYPE_ANALOG           7
 #define BTN_TYPE_ANALOG_INVERTED  8
+#define BTN_TYPE_TOUCH_SWITCH     9
 
 //Ethernet board types
 #define WLED_NUM_ETH_TYPES       11
@@ -342,8 +343,9 @@
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_DENIED       1  // Permission denied
-#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?) OBSOLETE
+#define ERR_CONCURRENCY  2  // Conurrency (client active)
 #define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
+#define ERR_NOT_IMPL     4  // Not implemented
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached

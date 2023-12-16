@@ -493,9 +493,9 @@ typedef struct Segment {
 
     ~Segment() {
       #ifdef WLED_DEBUG
-      //Serial.printf("-- Destroying segment: %p\n", this);
+      //Serial.printf("-- Destroying segment: %p", this);
       //if (name) Serial.printf(" %s (%p)", name, name);
-      //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      //if (data) Serial.printf(" %d->(%p)", (int)_dataLen, data);
       //Serial.println();
       #endif
       if (name) { delete[] name; name = nullptr; }
@@ -779,6 +779,7 @@ class WS2812FX {  // 96 bytes
     inline void appendSegment(const Segment &seg = Segment()) { if (_segments.size() < getMaxSegments()) _segments.push_back(seg); }
 
     bool
+      paletteFade,
       checkSegmentAlignment(void),
       hasRGBWBus(void),
       hasCCTBus(void),
@@ -791,7 +792,6 @@ class WS2812FX {  // 96 bytes
     inline bool isOffRefreshRequired(void) {return _isOffRefreshRequired;}
 
     uint8_t
-      paletteFade,
       paletteBlend,
       milliampsPerLed,
       cctBlending,

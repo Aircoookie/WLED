@@ -70,6 +70,7 @@ private:
 
   // Home Assistant
   bool HomeAssistantDiscovery = false;        // is HA discovery turned on
+  int16_t idx = -1; // Domoticz virtual switch idx
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
@@ -83,6 +84,7 @@ private:
   static const char _haDiscovery[];
   static const char _notify[];
   static const char _override[];
+  static const char _domoticzIDX[];
 
   /**
    * check if it is daytime
@@ -196,6 +198,7 @@ const char PIRsensorSwitch::_offOnly[]        PROGMEM = "off-only";
 const char PIRsensorSwitch::_haDiscovery[]    PROGMEM = "HA-discovery";
 const char PIRsensorSwitch::_notify[]         PROGMEM = "notifications";
 const char PIRsensorSwitch::_override[]       PROGMEM = "override";
+const char PIRsensorSwitch::_domoticzIDX[]    PROGMEM = "domoticz-idx";
 
 bool PIRsensorSwitch::isDayTime() {
   updateLocalTime();
@@ -271,9 +274,20 @@ void PIRsensorSwitch::publishMqtt(const char* state)
 #ifndef WLED_DISABLE_MQTT
   //Check if MQTT Connected, otherwise it will crash the 8266
   if (WLED_MQTT_CONNECTED) {
-    char buf[64];
+    char buf[128];
     sprintf_P(buf, PSTR("%s/motion"), mqttDeviceTopic);   //max length: 33 + 7 = 40
     mqtt->publish(buf, 0, false, state);
+    // Domoticz formatted message
+    if (idx > 0) {
+      StaticJsonDocument <128> msg;
+      msg[F("idx")]       = idx;
+      msg[F("RSSI")]      = WiFi.RSSI();
+      msg[F("command")]   = F("switchlight");
+      strcpy(buf, state); buf[0] = toupper(buf[0]);
+      msg[F("switchcmd")] = (const char *)buf;
+      serializeJson(msg, buf, 127);
+      mqtt->publish("domoticz/in", 0, false, buf);
+    }
   }
 #endif
 }
@@ -482,6 +496,7 @@ void PIRsensorSwitch::addToConfig(JsonObject &root)
   top[FPSTR(_offOnly)]        = m_offOnly;
   top[FPSTR(_override)]       = m_override;
   top[FPSTR(_haDiscovery)]    = HomeAssistantDiscovery;
+  top[FPSTR(_domoticzIDX)]    = idx;
   top[FPSTR(_notify)]         = (NotifyUpdateMode != CALL_MODE_NO_NOTIFY);
   DEBUG_PRINTLN(F("PIR config saved."));
 }
@@ -521,6 +536,7 @@ bool PIRsensorSwitch::readFromConfig(JsonObject &root)
   m_offOnly       = top[FPSTR(_offOnly)] | m_offOnly;
   m_override      = top[FPSTR(_override)] | m_override;
   HomeAssistantDiscovery = top[FPSTR(_haDiscovery)] | HomeAssistantDiscovery;
+  idx             = top[FPSTR(_domoticzIDX)] | idx;
 
   NotifyUpdateMode = top[FPSTR(_notify)] ? CALL_MODE_DIRECT_CHANGE : CALL_MODE_NO_NOTIFY;
 
@@ -549,5 +565,5 @@ bool PIRsensorSwitch::readFromConfig(JsonObject &root)
     DEBUG_PRINTLN(F(" config (re)loaded."));
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-  return !top[FPSTR(_override)].isNull();
+  return !top[FPSTR(_domoticzIDX)].isNull();
 }

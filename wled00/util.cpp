@@ -373,7 +373,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 }
 
 
-// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;sx=16,ix=240,1d")
+// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;012;sx=16,ix=240")
 int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {

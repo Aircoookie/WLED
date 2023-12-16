@@ -136,7 +136,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->arg(sl).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
@@ -168,7 +167,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       } else {
         freqHz = 0;
       }
-      channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
+      channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
       if ((type > TYPE_TM1814 && type < TYPE_WS2801) || type >= TYPE_NET_DDP_RGB) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
@@ -176,6 +175,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         maPerLed = request->arg(la).toInt();
         maMax = request->arg(ma).toInt(); // if ABL is disabled this will be 0
       }
+      type |= request->hasArg(rf) << 7; // off refresh override
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
@@ -221,15 +221,22 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
       char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
       int hw_btn_pin = request->arg(bt).toInt();
-      if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
+      if (hw_btn_pin >= 0 && pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
         buttonType[i] = request->arg(be).toInt();
       #ifdef ARDUINO_ARCH_ESP32
-        // ESP32 only: check that analog button pin is a valid ADC gpio
+        // ESP32 only: check that button pin is a valid gpio
         if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
         {
           // not an ADC analog pin
-          if (btnPin[i] >= 0) DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          btnPin[i] = -1;
+          pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+        }
+        else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH) && digitalPinToTouchChannel(btnPin[i]) < 0)
+        {
+          // not a touch pin
+          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n", btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
@@ -1089,6 +1096,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
+  if (fadeTransition) strip.setTransition(transitionDelay);
 
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));

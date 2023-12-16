@@ -144,10 +144,13 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 }
 
 bool IRAM_ATTR Segment::allocateData(size_t len) {
-  if (data && _dataLen == len) return true; //already allocated
+  if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
+    if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
+    return true;
+  }
   //DEBUG_PRINTF("--   Allocating data (%d): %p\n", len, this);
   deallocateData();
-  if (len == 0) return(false); // nothing to do
+  if (len == 0) return false; // nothing to do
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
     // not enough memory
     DEBUG_PRINT(F("!!! Effect RAM depleted: "));
@@ -156,7 +159,7 @@ bool IRAM_ATTR Segment::allocateData(size_t len) {
   }
   // do not use SPI RAM on ESP32 since it is slow
   data = (byte*) malloc(len);
-  if (!data) { DEBUG_PRINTLN(F("!!! Allocation failed. !!!")); return false; } //allocation failed
+  if (!data) { DEBUG_PRINTLN(F("!!! Allocation failed. !!!")); return false; } // allocation failed
   Segment::addUsedSegmentData(len);
   //DEBUG_PRINTF("---  Allocated data (%p): %d/%d -> %p\n", this, len, Segment::getUsedSegmentData(), data);
   _dataLen = len;
@@ -290,7 +293,7 @@ void Segment::startTransition(uint16_t dur) {
   _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
 
-  //DEBUG_PRINTF("-- Started transition: %p\n", this);
+  //DEBUG_PRINTF("-- Started transition: %p (%p)\n", this, _t);
   loadPalette(_t->_palT, palette);
   _t->_briT           = on ? opacity : 0;
   _t->_cctT           = cct;
@@ -317,8 +320,8 @@ void Segment::startTransition(uint16_t dur) {
 }
 
 void Segment::stopTransition() {
-  //DEBUG_PRINTF("-- Stopping transition: %p\n", this);
   if (isInTransition()) {
+    //DEBUG_PRINTF("-- Stopping transition: %p\n", this);
     #ifndef WLED_DISABLE_MODE_BLEND
     if (_t->_segT._dataT && _t->_segT._dataLenT > 0) {
       //DEBUG_PRINTF("--  Released duplicate data (%d) for %p: %p\n", _t->_segT._dataLenT, this, _t->_segT._dataT);
@@ -348,7 +351,7 @@ uint16_t IRAM_ATTR Segment::progress() {
 
 #ifndef WLED_DISABLE_MODE_BLEND
 void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
-  //DEBUG_PRINTF("--  Saving temp seg: %p (%p)\n", this, tmpSeg);
+  //DEBUG_PRINTF("--  Saving temp seg: %p->(%p) [%d->%p]\n", this, &tmpSeg, _dataLen, data);
   tmpSeg._optionsT   = options;
   for (size_t i=0; i<NUM_COLORS; i++) tmpSeg._colorT[i] = colors[i];
   tmpSeg._speedT     = speed;
@@ -384,11 +387,10 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
     data      = _t->_segT._dataT;
     _dataLen  = _t->_segT._dataLenT;
   }
-  //DEBUG_PRINTF("--   temp seg data: %p (%d,%p)\n", this, _dataLen, data);
 }
 
 void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
-  //DEBUG_PRINTF("--  Restoring temp seg: %p (%p)\n", this, tmpSeg);
+  //DEBUG_PRINTF("--  Restoring temp seg: %p->(%p) [%d->%p]\n", &tmpSeg, this, _dataLen, data);
   if (_t && &(_t->_segT) != &tmpSeg) {
     // update possibly changed variables to keep old effect running correctly
     _t->_segT._aux0T = aux0;
@@ -415,7 +417,6 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
   call      = tmpSeg._callT;
   data      = tmpSeg._dataT;
   _dataLen  = tmpSeg._dataLenT;
-  //DEBUG_PRINTF("--   temp seg data: %p (%d,%p)\n", this, _dataLen, data);
 }
 #endif
 
@@ -578,7 +579,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "o1");   check1    = (sOpt >= 0) ? (bool)sOpt : false;
         sOpt = extractModeDefaults(fx, "o2");   check2    = (sOpt >= 0) ? (bool)sOpt : false;
         sOpt = extractModeDefaults(fx, "o3");   check3    = (sOpt >= 0) ? (bool)sOpt : false;
-        sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7); else map1D2D = M12_Pixels;  // reset mapping if not defined (2D FX may not work)
         sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 3);
         sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) reverse   = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
@@ -1024,15 +1025,16 @@ void Segment::blur(uint8_t blur_amount) {
  */
 uint32_t Segment::color_wheel(uint8_t pos) {
   if (palette) return color_from_palette(pos, false, true, 0);
+  uint8_t w = W(currentColor(0));
   pos = 255 - pos;
   if (pos < 85) {
-    return ((uint32_t)(255 - pos * 3) << 16) | ((uint32_t)(0) << 8) | (pos * 3);
+    return RGBW32((255 - pos * 3), 0, (pos * 3), w);
   } else if(pos < 170) {
     pos -= 85;
-    return ((uint32_t)(0) << 16) | ((uint32_t)(pos * 3) << 8) | (255 - pos * 3);
+    return RGBW32(0, (pos * 3), (255 - pos * 3), w);
   } else {
     pos -= 170;
-    return ((uint32_t)(pos * 3) << 16) | ((uint32_t)(255 - pos * 3) << 8) | (0);
+    return RGBW32((pos * 3), (255 - pos * 3), 0, w);
   }
 }
 
@@ -1046,13 +1048,10 @@ uint32_t Segment::color_wheel(uint8_t pos) {
  * @returns Single color from palette
  */
 uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri) {
+  uint32_t color = gamma32(currentColor(mcol));
+
   // default palette or no RGB support on segment
-  if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) {
-    uint32_t color = currentColor(mcol);
-    color = gamma32(color);
-    if (pbri == 255) return color;
-    return color_fade(color, pbri, true);
-  }
+  if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) return (pbri == 255) ? color : color_fade(color, pbri, true);
 
   uint8_t paletteIndex = i;
   if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
@@ -1061,7 +1060,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
   curPal = currentPalette(curPal, palette);
   CRGB fastled_col = ColorFromPalette(curPal, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
 
-  return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, 0);
+  return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, W(color));
 }
 
 
@@ -1159,15 +1158,12 @@ void WS2812FX::service() {
       uint16_t delay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen
-        _virtualSegmentLength = seg.virtualLength();
-        _colors_t[0] = seg.currentColor(0);
-        _colors_t[1] = seg.currentColor(1);
-        _colors_t[2] = seg.currentColor(2);
+        _virtualSegmentLength = seg.virtualLength(); //SEGLEN
+        _colors_t[0] = gamma32(seg.currentColor(0));
+        _colors_t[1] = gamma32(seg.currentColor(1));
+        _colors_t[2] = gamma32(seg.currentColor(2));
         seg.currentPalette(_currentPalette, seg.palette); // we need to pass reference
-
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(seg.currentBri(true), correctWB);
-        for (int c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
-
         // Effect blending
         // When two effects are being blended, each may have different segment data, this
         // data needs to be saved first and then restored before running previous mode.
@@ -1181,6 +1177,7 @@ void WS2812FX::service() {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
+          _virtualSegmentLength = seg.virtualLength(); // update SEGLEN (mapping may have changed)
           uint16_t d2 = (*_mode[tmpMode])();  // run old mode
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay
