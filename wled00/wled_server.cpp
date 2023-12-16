@@ -146,6 +146,12 @@ void initServer()
     request->send(response);
   });
 
+  server.on("/skin.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (handleFileRead(request, "/skin.css")) return;
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/css");
+    request->send(response);
+  });
+
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
     if(!handleFileRead(request, "/favicon.ico"))
     {
