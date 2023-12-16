@@ -31,9 +31,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
-#ifdef WLED_ENABLE_SIMPLE_UI
   CJSON(simplifiedUI, id[F("sui")]);
-#endif
 
   JsonObject nw = doc["nw"];
 #ifndef WLED_DISABLE_ESPNOW
@@ -655,9 +653,7 @@ void serializeConfig() {
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
   id[F("inv")] = alexaInvocationName;
-#ifdef WLED_ENABLE_SIMPLE_UI
   id[F("sui")] = simplifiedUI;
-#endif
 
   JsonObject nw = doc.createNestedObject("nw");
 #ifndef WLED_DISABLE_ESPNOW

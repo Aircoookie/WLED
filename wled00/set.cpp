@@ -303,13 +303,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
     //syncToggleReceive = request->hasArg(F("ST"));
-  #ifdef WLED_ENABLE_SIMPLE_UI
-    if (simplifiedUI ^ request->hasArg(F("SU"))) {
-      // UI selection changed, invalidate browser cache
-      cacheInvalidate++;
-    }
     simplifiedUI = request->hasArg(F("SU"));
-  #endif
     DEBUG_PRINTLN(F("Enumerating ledmaps"));
     enumerateLedmaps();
     DEBUG_PRINTLN(F("Loading custom palettes"));

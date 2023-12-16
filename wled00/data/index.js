@@ -12,6 +12,7 @@ var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0, wW;
+var simplifiedUI = false;
 var tr = 7;
 var d = document;
 var palettesData;
@@ -624,11 +625,12 @@ function parseInfo(i) {
 	if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)"; // Minecraft easter egg
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
-	d.title     = name;
-	ledCount    = i.leds.count;
-	//syncTglRecv = i.str;
-	maxSeg      = i.leds.maxseg;
-	pmt         = i.fs.pmt;
+	d.title      = name;
+	simplifiedUI = i.simplifiedui;
+	ledCount     = i.leds.count;
+	//syncTglRecv   = i.str;
+	maxSeg       = i.leds.maxseg;
+	pmt          = i.fs.pmt;
 	gId('buttonNodes').style.display = lastinfo.ndc > 0 ? null:"none";
 	// do we have a matrix set-up
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
@@ -750,6 +752,7 @@ function populateSegments(s)
 		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark"></span></label>`;
 		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark"></span></label>`;
 		let rvYck = "", miYck ="";
+		let smpl = simplifiedUI ? 'hide' : '';
 		if (isMSeg) {
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
@@ -768,23 +771,23 @@ function populateSegments(s)
 							`<option value="1" ${inst.si==1?' selected':''}>WeWillRockYou</option>`+
 						`</select></div>`+
 					`</div>`;
-		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-set="${inst.set}">`+
-				`<label class="check schkl">`+
+		cn += `<div class="seg lstI ${i==s.mainseg && !simplifiedUI ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-set="${inst.set}">`+
+				`<label class="check schkl ${smpl}">`+
 					`<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>`+
 					`<span class="checkmark"></span>`+
 				`</label>`+
-				`<div class="segname" onclick="selSegEx(${i})">`+
+				`<div class="segname ${smpl}" onclick="selSegEx(${i})">`+
 					`<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>`+
 					(inst.n ? inst.n : "Segment "+i) +
 					`<div class="pop hide" onclick="event.preventDefault();event.stopPropagation();">`+
 						`<i class="icons g-icon" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.set+"A".charCodeAt(0))};</i>`+
 						`<div class="pop-c hide"><span style="color:var(--c-f);" onclick="setGrp(${i},0);">&#x278A;</span><span style="color:var(--c-r);" onclick="setGrp(${i},1);">&#x278B;</span><span style="color:var(--c-g);" onclick="setGrp(${i},2);">&#x278C;</span><span style="color:var(--c-l);" onclick="setGrp(${i},3);">&#x278D;</span></div>`+
 					`</div> `+
-					`<i class="icons edit-icon flr" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
+					`<i class="icons edit-icon flr ${smpl}" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
 				`</div>`+
-				`<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
+				`<i class="icons e-icon flr ${smpl}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
 				(cfg.comp.segpwr ? segp : '') +
-				`<div class="segin" id="seg${i}in">`+
+				`<div class="segin ${smpl}" id="seg${i}in">`+
 					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=${li.arch=="esp8266"?32:64} value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
 					`<table class="infot segt">`+
 					`<tr>`+
@@ -834,6 +837,7 @@ function populateSegments(s)
 	}
 
 	gId('segcont').innerHTML = cn;
+	gId("segcont").classList.remove("hide");
 	let noNewSegs = (lowestUnused >= maxSeg);
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
@@ -847,6 +851,8 @@ function populateSegments(s)
 	if (segCount < 2) {
 		gId(`segd${lSeg}`).classList.add("hide");
 		if (parseInt(gId("seg0bri").value)==255) gId(`segp0`).classList.add("hide");
+		// hide segment controls if there is only one segment in simplified UI
+		if (simplifiedUI) gId("segcont").classList.add("hide");
 	}
 	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).classList.remove("hide");
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
@@ -1258,6 +1264,12 @@ function updateSelectedPalette(s)
 	var selectedPalette = parent.querySelector(`.lstI[data-id="${s}"]`);
 	if (selectedPalette)  parent.querySelector(`.lstI[data-id="${s}"]`).classList.add('selected');
 
+	// Display selected palette name on button in simplified UI
+	let selectedName = selectedPalette.querySelector(".lstIname").innerText;
+	if (simplifiedUI) {
+		gId("palwbtn").innerText = "Palette: " + selectedName;
+	}
+
 	// in case of special palettes (* Colors...), force show color selectors (if hidden by effect data)
 	let cd = gId('csl').children; // color selectors
 	if (s > 1 && s < 6) {
@@ -1299,8 +1311,15 @@ function updateSelectedFx()
 				}
 			}
 		});
-		// hide 2D mapping and/or sound simulation options
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
+
+		// Display selected effect name on button in simplified UI
+		let selectedNameOnlyAscii = selectedName.replace(/[^\x00-\x7F]/g, "");
+		if (simplifiedUI) {
+			gId("fxbtn").innerText = "Effect: " + selectedNameOnlyAscii;
+		}
+
+		// hide 2D mapping and/or sound simulation options
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
 		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove('hide'); else seg.classList.add('hide');
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="si"]`);
@@ -1530,6 +1549,7 @@ function setEffectParameters(idx)
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	function setSelectedEffectPosition() {
+		if (simplifiedUI) return;
 		let top = parseInt(getComputedStyle(gId("sliders")).height);
 		top += 5;
 		let sel = d.querySelector('#fxlist .selected');
@@ -1596,6 +1616,10 @@ function setEffectParameters(idx)
 		// disable palette list
 		text += ' not used';
 		palw.style.display = "none";
+		// Close palette dialog if not available
+		if (gId("palw").lastElementChild.tagName == "DIALOG") {
+			gId("palw").lastElementChild.close();
+		}
 	}
 	pall.innerHTML = icon + text;
 	// not all color selectors shown, hide palettes created from color selectors
@@ -1661,6 +1685,7 @@ function requestJson(command=null)
 			parseInfo(i);
 			populatePalettes(i);
 			if (isInfo) populateInfo(i);
+			if (simplifiedUI) simplifyUI();
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
@@ -2259,6 +2284,12 @@ function setFX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
+
+	// Close effect dialog in simplified UI
+	if (simplifiedUI) {
+		gId("fx").lastElementChild.close();
+	}
+
 	var obj = {"seg": {"fx": parseInt(ind), "fxdef": cfg.comp.fxdef}}; // fxdef sets effect parameters to default values
 	requestJson(obj);
 }
@@ -2269,6 +2300,11 @@ function setPalette(paletteId = null)
 		paletteId = parseInt(d.querySelector('#pallist input[name="palette"]:checked').value);
 	} else {
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
+	}
+
+	// Close palette dialog in simplified UI
+	if (simplifiedUI) {
+		gId("palw").lastElementChild.close();
 	}
 
 	var obj = {"seg": {"pal": paletteId}};
@@ -2903,7 +2939,7 @@ function hasIroClass(classList)
 //required by rangetouch.js
 function lock(e)
 {
-	if (pcMode) return;
+	if (pcMode || simplifiedUI) return;
 	var l = e.target.classList;
 	var pl = e.target.parentElement.classList;
 
@@ -2917,7 +2953,7 @@ function lock(e)
 //required by rangetouch.js
 function move(e)
 {
-	if(!locked || pcMode) return;
+	if(!locked || pcMode || simplifiedUI) return;
 	var clientX = unify(e).clientX;
 	var dx = clientX - x0;
 	var s = Math.sign(dx);
@@ -2963,7 +2999,7 @@ function togglePcMode(fromB = false)
 	gId('buttonPcm').className = (pcMode) ? "active":"";
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
-	_C.style.width = (pcMode)?'100%':'400%';
+	_C.style.width = (pcMode || simplifiedUI)?'100%':'400%';
 }
 
 function mergeDeep(target, ...sources)
@@ -3017,6 +3053,98 @@ function tooltip()
 		});
 	});
 };
+
+// Transforms the default UI into the simple UI
+function simplifyUI() {
+	// Create dropdown dialog
+	function createDropdown(id, buttonText, dialogElements = null) {
+		// Create dropdown dialog
+		const dialog = document.createElement("dialog");
+		// Move every dialogElement to the dropdown dialog or if none are given, move all children of the element with the given id
+		if (dialogElements) {
+			dialogElements.forEach((e) => {
+				dialog.appendChild(e);
+			});
+		} else {
+			while (gId(id).firstChild) {
+				dialog.appendChild(gId(id).firstChild);
+			}
+		}
+
+		// Create button for the dropdown
+		const btn = document.createElement("button");
+		btn.id = id + "btn";
+		btn.classList.add("btn");
+		btn.innerText = buttonText;
+		function toggleDialog(e) {
+			if (e.target != btn && e.target != dialog) return;
+			if (dialog.open) {
+				dialog.close();
+				return;
+			}
+			// Prevent autofocus on dialog open
+			dialog.inert = true;
+			dialog.showModal();
+			dialog.inert = false;
+			clean(dialog.firstElementChild.children[1]);
+			dialog.scrollTop = 0;
+		};
+		btn.addEventListener("click", toggleDialog);
+		dialog.addEventListener("click", toggleDialog);
+
+		// Add the dialog and button to the element with the given id
+		gId(id).append(btn);
+		gId(id).append(dialog);
+	}
+
+	// Check if the UI was already simplified
+	if (gId("Colors").classList.contains("simplified")) return;
+
+	// Disable PC Mode as it does not exist in simple UI
+	if (pcMode) togglePcMode(true);
+	_C.style.width = '100%'
+	_C.style.setProperty('--n', 1);
+
+	gId("Colors").classList.add("simplified");
+	// Put effects below palett list
+	gId("Colors").append(gId("fx"));
+	gId("Colors").append(gId("sliders"));
+	// Put segments before palette list
+	gId("Colors").insertBefore(gId("segcont"), gId("pall"));
+	// Put preset quick load before palette list and segemts
+	gId("Colors").insertBefore(gId("pql"), gId("pall"));
+
+	// Create dropdown for palette list
+	createDropdown("palw", "Change palette");
+	createDropdown("fx", "Change effect", [gId("fxFind"), gId("fxlist")]);
+
+	// Hide pallete label
+	gId("pall").style.display = "none";
+	gId("Colors").insertBefore(document.createElement("br"), gId("pall"));
+	// Hide effect label
+	gId("modeLabel").style.display = "none";
+
+	// Hide buttons in top bar
+	gId("buttonNl").style.display = "none";
+	gId("buttonSync").style.display = "none";
+	gId("buttonSr").style.display = "none";
+	gId("buttonPcm").style.display = "none";
+
+	// Hide bottom bar 
+	gId("bot").style.display = "none";
+	document.documentElement.style.setProperty('--bh', '0px');
+
+	// Hide other tabs
+	gId("Effects").style.display = "none";
+	gId("Segments").style.display = "none";
+	gId("Presets").style.display = "none";
+
+	// Hide filter options
+	gId("filters").style.display = "none";
+
+	// Hide buttons for pixel art and custom palettes (add / delete)
+	gId("btns").style.display = "none";
+}
 
 size();
 _C.style.setProperty('--n', N);
