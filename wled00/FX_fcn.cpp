@@ -271,7 +271,7 @@ void Segment::setUpLeds() {
 }
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
-  static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
+  static unsigned long _lastPaletteChange = millis() - 990000; // perhaps it should be per segment //WLEDMM changed init value to avoid pure orange after startup
   static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
   static CRGBPalette16 prevRandomPalette = CRGBPalette16(CRGB(BLACK));
   byte tcp[76] = { 255 };   //WLEDMM: prevent out-of-range access in loadDynamicGradientPalette()
