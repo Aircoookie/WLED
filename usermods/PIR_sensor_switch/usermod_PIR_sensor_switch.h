@@ -96,7 +96,7 @@ private:
    * switch strip on/off
    */
   void switchStrip(bool switchOn);
-  void publishMqtt(const char* state);
+  void publishMqtt(bool switchOn);
 
   // Create an MQTT Binary Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void publishHomeAssistantAutodiscovery();
@@ -226,6 +226,7 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
   if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
   PIRtriggered = switchOn;
   DEBUG_PRINT(F("PIR: strip=")); DEBUG_PRINTLN(switchOn?"on":"off");
+  publishMqtt(switchOn);
   if (switchOn) {
     if (m_onPreset) {
       if (currentPlaylist>0 && !offMode) {
@@ -269,23 +270,22 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
   }
 }
 
-void PIRsensorSwitch::publishMqtt(const char* state)
+void PIRsensorSwitch::publishMqtt(bool switchOn)
 {
 #ifndef WLED_DISABLE_MQTT
   //Check if MQTT Connected, otherwise it will crash the 8266
   if (WLED_MQTT_CONNECTED) {
     char buf[128];
     sprintf_P(buf, PSTR("%s/motion"), mqttDeviceTopic);   //max length: 33 + 7 = 40
-    mqtt->publish(buf, 0, false, state);
+    mqtt->publish(buf, 0, false, switchOn?"on":"off");
     // Domoticz formatted message
     if (idx > 0) {
       StaticJsonDocument <128> msg;
       msg[F("idx")]       = idx;
       msg[F("RSSI")]      = WiFi.RSSI();
       msg[F("command")]   = F("switchlight");
-      strcpy(buf, state); buf[0] = toupper(buf[0]);
-      msg[F("switchcmd")] = (const char *)buf;
-      serializeJson(msg, buf, 127);
+      msg[F("switchcmd")] = switchOn ? F("On") : F("Off");
+      serializeJson(msg, buf, 128);
       mqtt->publish("domoticz/in", 0, false, buf);
     }
   }
@@ -337,7 +337,7 @@ bool PIRsensorSwitch::updatePIRsensorState()
       offTimerStart = 0;
       if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
       else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      publishMqtt("on");
+      //publishMqtt("on");
     } else {
       // start switch off timer
       offTimerStart = millis();
@@ -355,7 +355,7 @@ bool PIRsensorSwitch::handleOffTimer()
     if (enabled == true) {
       if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
       else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      publishMqtt("off");
+      //publishMqtt("off");
     }
     return true;
   }

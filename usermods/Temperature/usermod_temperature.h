@@ -283,7 +283,6 @@ void UsermodTemperature::loop() {
           msg[F("nvalue")] = 0;
           msg[F("svalue")] = String(getTemperatureC());
           serializeJson(msg, subuf, 127);
-          DEBUG_PRINTLN(subuf);
           mqtt->publish("domoticz/in", 0, false, subuf);
         }
       } else {
