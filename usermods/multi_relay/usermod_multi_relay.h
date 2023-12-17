@@ -534,10 +534,10 @@ void MultiRelay::setup() {
  * loop() is called continuously. Here you can check for events, read sensors, etc.
  */
 void MultiRelay::loop() {
-  yield();
-  if (!enabled || strip.isUpdating()) return;
-
   static unsigned long lastUpdate = 0;
+  yield();
+  if (!enabled || (strip.isUpdating() && millis() - lastUpdate < 100)) return;
+
   if (millis() - lastUpdate < 100) return;  // update only 10 times/s
   lastUpdate = millis();
 
