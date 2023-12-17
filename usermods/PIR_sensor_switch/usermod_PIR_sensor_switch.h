@@ -226,7 +226,6 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
   if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
   PIRtriggered = switchOn;
   DEBUG_PRINT(F("PIR: strip=")); DEBUG_PRINTLN(switchOn?"on":"off");
-  publishMqtt(switchOn);
   if (switchOn) {
     if (m_onPreset) {
       if (currentPlaylist>0 && !offMode) {
@@ -337,11 +336,12 @@ bool PIRsensorSwitch::updatePIRsensorState()
       offTimerStart = 0;
       if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
       else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      //publishMqtt("on");
+      publishMqtt(true);
     } else {
       // start switch off timer
       offTimerStart = millis();
       if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
+      publishMqtt(false);
     }
     return true;
   }
@@ -352,11 +352,8 @@ bool PIRsensorSwitch::handleOffTimer()
 {
   if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay) {
     offTimerStart = 0;
-    if (enabled == true) {
-      if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
-      else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      //publishMqtt("off");
-    }
+    if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
+    else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND); // update countdown timer
     return true;
   }
   return false;
