@@ -50,8 +50,7 @@ private:
 
   volatile unsigned long offTimerStart = 0;     // off timer start time
   volatile bool PIRtriggered           = false; // did PIR trigger?
-  byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for stateUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
-  byte sensorPinState    = LOW;                 // current PIR sensor pin state
+  bool sensorPinState    = LOW;                 // current PIR sensor pin state
   bool initDone          = false;               // status of initialization
   unsigned long lastLoop = 0;
 
@@ -82,7 +81,6 @@ private:
   static const char _mqttOnly[];
   static const char _offOnly[];
   static const char _haDiscovery[];
-  static const char _notify[];
   static const char _override[];
   static const char _domoticzIDX[];
 
@@ -196,7 +194,6 @@ const char PIRsensorSwitch::_nightTime[]      PROGMEM = "nighttime-only";
 const char PIRsensorSwitch::_mqttOnly[]       PROGMEM = "mqtt-only";
 const char PIRsensorSwitch::_offOnly[]        PROGMEM = "off-only";
 const char PIRsensorSwitch::_haDiscovery[]    PROGMEM = "HA-discovery";
-const char PIRsensorSwitch::_notify[]         PROGMEM = "notifications";
 const char PIRsensorSwitch::_override[]       PROGMEM = "override";
 const char PIRsensorSwitch::_domoticzIDX[]    PROGMEM = "domoticz-idx";
 
@@ -238,24 +235,24 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
         prevPlaylist = 0;
         prevPreset   = 255;
       }
-      applyPreset(m_onPreset, NotifyUpdateMode);
+      applyPreset(m_onPreset, CALL_MODE_BUTTON_PRESET);
       return;
     }
     // preset not assigned
     if (bri == 0) {
       bri = briLast;
-      stateUpdated(NotifyUpdateMode);
+      stateUpdated(CALL_MODE_BUTTON);
     }
   } else {
     if (m_offPreset) {
-      applyPreset(m_offPreset, NotifyUpdateMode);
+      applyPreset(m_offPreset, CALL_MODE_BUTTON_PRESET);
       return;
     } else if (prevPlaylist) {
-      if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPlaylist, NotifyUpdateMode);
+      if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPlaylist, CALL_MODE_BUTTON_PRESET);
       prevPlaylist = 0;
       return;
     } else if (prevPreset) {
-      if (prevPreset<255) { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPreset, NotifyUpdateMode); }
+      if (prevPreset<255) { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPreset, CALL_MODE_BUTTON_PRESET); }
       else                { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyTemporaryPreset(); }
       prevPreset = 0;
       return;
@@ -264,7 +261,7 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
     if (bri != 0) {
       briLast = bri;
       bri = 0;
-      stateUpdated(NotifyUpdateMode);
+      stateUpdated(CALL_MODE_BUTTON);
     }
   }
 }
@@ -335,14 +332,11 @@ bool PIRsensorSwitch::updatePIRsensorState()
     if (sensorPinState == HIGH) {
       offTimerStart = 0;
       if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
-      else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      publishMqtt(true);
     } else {
       // start switch off timer
       offTimerStart = millis();
-      if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      publishMqtt(false);
     }
+    publishMqtt(sensorPinState == HIGH);
     return true;
   }
   return false;
@@ -353,7 +347,6 @@ bool PIRsensorSwitch::handleOffTimer()
   if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay) {
     offTimerStart = 0;
     if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
-    else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND); // update countdown timer
     return true;
   }
   return false;
@@ -494,14 +487,12 @@ void PIRsensorSwitch::addToConfig(JsonObject &root)
   top[FPSTR(_override)]       = m_override;
   top[FPSTR(_haDiscovery)]    = HomeAssistantDiscovery;
   top[FPSTR(_domoticzIDX)]    = idx;
-  top[FPSTR(_notify)]         = (NotifyUpdateMode != CALL_MODE_NO_NOTIFY);
   DEBUG_PRINTLN(F("PIR config saved."));
 }
 
 void PIRsensorSwitch::appendConfigData()
 {
   oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
-  oappend(SET_F("addInfo('PIRsensorSwitch:notifications',1,'Periodic WS updates');"));  // 0 is field type, 1 is actual field
   oappend(SET_F("addInfo('PIRsensorSwitch:override',1,'Cancel timer on change');"));    // 0 is field type, 1 is actual field
 }
 
@@ -534,8 +525,6 @@ bool PIRsensorSwitch::readFromConfig(JsonObject &root)
   m_override      = top[FPSTR(_override)] | m_override;
   HomeAssistantDiscovery = top[FPSTR(_haDiscovery)] | HomeAssistantDiscovery;
   idx             = top[FPSTR(_domoticzIDX)] | idx;
-
-  NotifyUpdateMode = top[FPSTR(_notify)] ? CALL_MODE_DIRECT_CHANGE : CALL_MODE_NO_NOTIFY;
 
   if (!initDone) {
     // reading config prior to setup()
