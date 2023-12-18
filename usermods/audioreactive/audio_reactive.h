@@ -1569,6 +1569,10 @@ class AudioReactive : public Usermod {
 
       // validate sequence, discard out-of-sequence packets
       static uint8_t lastFrameCounter = 0;
+      // add info for UI
+      if ((receivedPacket->frameCounter > 0) && (lastFrameCounter > 0)) receivedFormat = 3; // v2+
+      else receivedFormat = 2; // v2
+      // check sequence
       bool sequenceOK = false;
       if(receivedPacket->frameCounter > lastFrameCounter) sequenceOK = true;                  // sequence OK
       if((lastFrameCounter < 12) && (receivedPacket->frameCounter > 248)) sequenceOK = false; // prevent sequence "roll-back" due to late packets (1->254)
@@ -1668,15 +1672,15 @@ class AudioReactive : public Usermod {
 
         // VERIFY THAT THIS IS A COMPATIBLE PACKET
         if (packetSize == sizeof(audioSyncPacket) && (isValidUdpSyncVersion((const char *)fftUdpBuffer))) {
+          receivedFormat = 2;
           haveFreshData = decodeAudioData(packetSize, fftUdpBuffer);
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v2");
-          receivedFormat = 2;
         } else {
           if (packetSize == sizeof(audioSyncPacket_v1) && (isValidUdpSyncVersion_v1((const char *)fftUdpBuffer))) {
             decodeAudioData_v1(packetSize, fftUdpBuffer);
+            receivedFormat = 1;
             //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v1");
             haveFreshData = true;
-            receivedFormat = 1;
           } else receivedFormat = 0; // unknown format
         }
       }
@@ -2399,7 +2403,7 @@ class AudioReactive : public Usermod {
         if (audioSyncEnabled) {
           if (audioSyncEnabled & AUDIOSYNC_SEND) {
             infoArr.add(F("send mode"));
-            if ((udpSyncConnected) && (millis() - lastTime < AUDIOSYNC_IDLE_MS)) infoArr.add(F(" v2"));
+            if ((udpSyncConnected) && (millis() - lastTime < AUDIOSYNC_IDLE_MS)) infoArr.add(F(" v2+"));
           } else if (audioSyncEnabled == AUDIOSYNC_REC) {
               infoArr.add(F("receive mode"));
           } else if (audioSyncEnabled == AUDIOSYNC_REC_PLUS) {
@@ -2411,6 +2415,7 @@ class AudioReactive : public Usermod {
         if (audioSyncEnabled && udpSyncConnected && (millis() - last_UDPTime < AUDIOSYNC_IDLE_MS)) {
             if (receivedFormat == 1) infoArr.add(F(" v1"));
             if (receivedFormat == 2) infoArr.add(F(" v2"));
+            if (receivedFormat == 3) infoArr.add(F(" v2+"));
         }
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
