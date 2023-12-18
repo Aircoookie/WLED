@@ -1180,16 +1180,19 @@ void WLED::handleConnection()
   #ifdef ARDUINO_ARCH_ESP32 
   // reconnect WiFi to clear stale allocations if heap gets too low
   if (now - heapTime > 5000) { // WLEDMM: updated with better logic for small heap available by block, not total.
-    // uint32_t heap = ESP.getFreeHeap();
+#if defined(ARDUINO_ARCH_ESP32S2)
+    uint32_t heap = ESP.getFreeHeap(); // WLEDMM works better on -S2
+#else
     uint32_t heap = heap_caps_get_largest_free_block(0x1800); // WLEDMM: This is a better metric for free heap.
+#endif
     if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! (step 2, force reconnect): "));
-      DEBUG_PRINTLN(heap);
+      USER_PRINT(F("Heap too low! (step 2, force reconnect): "));
+      USER_PRINTLN(heap);
       forceReconnect = true;
       strip.purgeSegments(true); // remove all but one segments from memory
     } else if (heap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! (step 1, flush unread UDP): "));
-      DEBUG_PRINTLN(heap);      
+      USER_PRINT(F("Heap too low! (step 1, flush unread UDP): "));
+      USER_PRINTLN(heap);      
       strip.purgeSegments();
       notifierUdp.flush();
       rgbUdp.flush();

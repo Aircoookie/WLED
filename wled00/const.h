@@ -448,7 +448,7 @@
     #if defined(ARDUINO_ARCH_ESP32C3)
       #define JSON_BUFFER_SIZE 44000 // WLEDMM - max 44KB on -C3 with PSRAM (chip has 400kb RAM)
     #else
-      #define JSON_BUFFER_SIZE 32000 // WLEDMM - max 32KB on -S2 with PSRAM (chip has 320kb RAM)
+      #define JSON_BUFFER_SIZE 28000 // WLEDMM - max 28KB on -S2 with PSRAM (chip has 320kb RAM)
     #endif
   #else
   #define JSON_BUFFER_SIZE 54000 // WLEDMM (was 60000) slightly reduced to avoid build error "region dram0_0_seg overflowed"
