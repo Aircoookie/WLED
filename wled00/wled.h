@@ -788,13 +788,13 @@ WLED_GLOBAL int8_t spi_sclk  _INIT(HW_PIN_CLOCKSPI);
 #endif
 
 // global ArduinoJson buffer
-#if 0 && defined(WLED_USE_PSRAM_JSON)
+#if defined(ALL_JSON_TO_PSRAM) && defined(WLED_USE_PSRAM_JSON)
 // WLEDMM experimental : always use dynamic JSON
-  #warning experimental - trying to always use dynamic JSON
   #ifndef WLED_DEFINE_GLOBAL_VARS
   WLED_GLOBAL PSRAMDynamicJsonDocument doc;
   #else
   WLED_GLOBAL PSRAMDynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #warning experimental - trying to always use dynamic JSON
   #endif
 #else
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
