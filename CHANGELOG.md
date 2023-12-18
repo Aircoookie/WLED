@@ -1,38 +1,8 @@
 ## WLED changelog
 
-#### Build 2309120 till build 2311120
--   WLED version 0.15.0-a0
--   Spookier Halloween Eyes (#3501)
--   Compile time options for Multi Relay usermod (#3498)
--   Fix for Dissolve (#3502)
--   Better reverse proxy support (nested paths)
--   Implement global JSON API boolean toggle (i.e. instead of "var":true or "var":false -> "var":"t").
--   Sort presets by ID
--   Fix #3496
--   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
--   Audio palettes (Audioreactive usermod, credit @netmindz)
--   Better UI tooltips (@ajotnac, #3464)
--   Better effect filters (filter dropdown)
--   Fix udp sync (fix for #3487)
--   Power button override (solves #3431)
--   Additional HTTP request throttling (ESP8266)
--   Additional UI/UX improvements
--   Segment class optimisations (internal)
--   ESP-NOW sync
--   ESP-NOW Wiz remote JSON overrides (similar to IR JSON) & bugfixes
--   Gamma correction for custom palettes (#3399).
--   Restore presets from browser local storage
--   Optional effect blending
--   Restructured UDP Sync (internal)
-    -   Remove sync receive
-    -   Sync clarification
--   Disallow 2D effects on non-2D segments
--   Return of 2 audio simulations
--   Bugfix in sync #3344 (internal)
-    -   remove excessive segments
-    -   ignore inactive segments if not syncing bounds
-    -   send UDP/WS on segment change
-    -   pop_back() when removing last segment
+#### Build 2312180
+-   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3515, #3522, #3533, #3508)
+-   Various other internal cleanups and optimisations
 
 #### Build 2311160
 -   Version bump: 0.14.1-b1
