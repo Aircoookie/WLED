@@ -1,4 +1,14 @@
-## WLED changelog
+## [WLED upstream](https://github.com/Aircoookie/WLED/tree/0_14_1) changelog
+
+
+#### Build 2312180
+-   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3522, #3533, #3508)
+
+#### Build 2311160
+-   Bugfixes (#3496, #3487)
+-   New usermod: LDR sensor (#3490 by @JeffWDH)
+-   Effect: Twinklefox & Tinklecat metadata fix
+-   Effect: separate #HH and #MM for Scrolling Text (#3480)
 
 #### Build 2310010, build 2310130
 -   Bugfixes for #3400, #3403, #3405
