@@ -15,6 +15,7 @@ var pcMode = false, pcModeA = false, lastw = 0, wW;
 var simplifiedUI = false;
 var tr = 7;
 var d = document;
+const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
 var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
@@ -23,7 +24,7 @@ var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var isM = false, mw = 0, mh=0;
-var ws, cpick, ranges, wsRpt=0;
+var ws, cpick, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:"", rnd: false, rndGrayscale: false, rndBlur: false}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
@@ -38,6 +39,19 @@ var hol = [
 	[0,6,4,1,"https://images.alphacoders.com/516/516792.jpg"], // 4th of July
 	[0,0,1,1,"https://images.alphacoders.com/119/1198800.jpg"] // new year
 ];
+
+cpick = new iro.ColorPicker("#picker", {
+	width: 260,
+	wheelLightness: false,
+	wheelAngle: 270,
+	wheelDirection: "clockwise",
+	layout: [{
+		component: iro.ui.Wheel,
+		options: {}
+	}]
+});
+cpick.on("input:end", () => {setColor(1);});
+cpick.on("color:change", () => {updatePSliders()});
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
