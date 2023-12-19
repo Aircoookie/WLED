@@ -383,14 +383,18 @@ void WLED::loop()
   #endif
 #endif
 
-#if 0
-// MM experiment - JSON garbagecollect once per minute. Warning: may crash at random
+#if 0 && defined(ALL_JSON_TO_PSRAM) && defined(WLED_USE_PSRAM_JSON)
+// WLEDMM experiment - JSON garbagecollect once per minute. Warning: may crash at random
   static unsigned long last_gc_time = 0;
-  if ((millis() - last_gc_time) > 60000) {                                                 // once in 60 seconds
-    if (!suspendStripService && !doInitBusses && !loadLedmap && !presetsActionPending()) { // make sure no strip or segments are being updated atm
-      if ((jsonBufferLock == 0) && (fileDoc == nullptr)) {                                 // make sure JSON buffer is availeable
+  // try once in 60 seconds
+  if ((millis() - last_gc_time) > 60000) {
+    // look for a perfect moment -> make sure no strip or segments or presets activity, no configs being updated, no realtime external control
+    if (!suspendStripService && !doInitBusses && !doReboot && !doCloseFile && !realtimeMode && !loadLedmap && !presetsActionPending()) {
+      // make sure JSON buffer is not in use
+      if ( (doSerializeConfig == false) && (jsonBufferLock == 0) && (fileDoc == nullptr)) {
         USER_PRINTLN(F("JSON gabage collection (regular)."));
         doc.garbageCollect();                   // WLEDMM experimental - trigger garbage collection on JSON doc memory pool.
+                                                // this will make any pending reference to JSON objects _invalid_
         last_gc_time = millis();
   } } }
 #endif
@@ -1334,7 +1338,15 @@ void WLED::handleStatusLED()
   if (ledStatusType) {
     if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
       ledStatusLastMillis = millis();
-      ledStatusState = !ledStatusState;
+#if 0
+      // WLEDMM un-comment this to stop the blinking
+      if ((ledStatusType != 2) && (ledStatusType != 4))
+        ledStatusState = !ledStatusState;
+      else
+        ledStatusState = HIGH;
+#else
+        ledStatusState = !ledStatusState;
+#endif
       #if STATUSLED>=0
       digitalWrite(STATUSLED, ledStatusState);
       #else
