@@ -16,13 +16,12 @@ class ShtUsermod : public Usermod
   private:
     bool enabled = false; // Is usermod enabled or not
     bool firstRunDone = false; // Remembers if the first config load run had been done
-    bool pinAllocDone = true; // Remembers if we have allocated pins
     bool initDone = false; // Remembers if the mod has been completely initialised
     bool haMqttDiscovery = false; // Is MQTT discovery enabled or not
     bool haMqttDiscoveryDone = false; // Remembers if we already published the HA discovery topics
 
     // SHT vars
-    SHT *shtTempHumidSensor; // Instance of SHT lib
+    SHT *shtTempHumidSensor = nullptr; // Instance of SHT lib
     byte shtType = 0; // SHT sensor type to be used. Default: SHT30
     byte unitOfTemp = 0; // Temperature unit to be used. Default: Celsius (0 = Celsius, 1 = Fahrenheit)
     bool shtInitDone = false; // Remembers if SHT sensor has been initialised
@@ -37,7 +36,7 @@ class ShtUsermod : public Usermod
     void initShtTempHumiditySensor();
     void cleanupShtTempHumiditySensor();
     void cleanup();
-    bool isShtReady();
+    inline bool isShtReady() { return shtInitDone; } // Checks if the SHT sensor has been initialised.
 
     void publishTemperatureAndHumidityViaMqtt();
     void publishHomeAssistantAutodiscovery();
@@ -94,7 +93,7 @@ void ShtUsermod::initShtTempHumiditySensor()
     case USERMOD_SHT_TYPE_SHT85: shtTempHumidSensor = (SHT *) new SHT85(); break;
   }
 
-  shtTempHumidSensor->begin(shtI2cAddress, i2c_sda, i2c_scl);
+  shtTempHumidSensor->begin(shtI2cAddress); // uses &Wire
   if (shtTempHumidSensor->readStatus() == 0xFFFF) {
     DEBUG_PRINTF("[%s] SHT init failed!\n", _name);
     cleanup();
@@ -113,8 +112,11 @@ void ShtUsermod::initShtTempHumiditySensor()
  */
 void ShtUsermod::cleanupShtTempHumiditySensor()
 {
-  if (isShtReady()) shtTempHumidSensor->reset();
-  delete shtTempHumidSensor;
+  if (isShtReady()) {
+    shtTempHumidSensor->reset();
+    delete shtTempHumidSensor;
+    shtTempHumidSensor = nullptr;
+  }
   shtInitDone = false;
 }
 
@@ -129,24 +131,7 @@ void ShtUsermod::cleanupShtTempHumiditySensor()
 void ShtUsermod::cleanup()
 {
   cleanupShtTempHumiditySensor();
-
-  if (pinAllocDone) {
-    PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
-    pinManager.deallocateMultiplePins(pins, 2, PinOwner::HW_I2C);
-    pinAllocDone = false;
-  }
-
   enabled = false;
-}
-
-/**
- * Checks if the SHT sensor has been initialised.
-  *
- * @return bool
- */
-bool ShtUsermod::isShtReady()
-{
-  return shtInitDone;
 }
 
 /**
@@ -244,14 +229,12 @@ void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
 void ShtUsermod::setup()
 {
   if (enabled) {
-    PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
-    // GPIOs can be set to -1 and allocateMultiplePins() will return true, so check they're gt zero
-    if (i2c_sda < 0 || i2c_scl < 0 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
-      DEBUG_PRINTF("[%s] SHT pin allocation failed!\n", _name);
+    // GPIOs can be set to -1 , so check they're gt zero
+    if (i2c_sda < 0 || i2c_scl < 0) {
+      DEBUG_PRINTF("[%s] I2C bus not initialised!\n", _name);
       cleanup();
       return;
     }
-    pinAllocDone = true;
 
     initShtTempHumiditySensor();
 
@@ -463,7 +446,19 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
   jsonHumidity.add(F(" RH"));
 
   jsonTemp.add(getTemperature());
-  jsonTemp.add(unitOfTemp ? "°F" : "°C");
+  jsonTemp.add(getUnitString());
+
+  // sensor object
+  JsonObject sensor = root[F("sensor")];
+  if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+
+  jsonTemp = sensor.createNestedArray(F("temp"));
+  jsonTemp.add(getTemperature());
+  jsonTemp.add(getUnitString());
+
+  jsonHumidity = sensor.createNestedArray(F("humidity"));
+  jsonHumidity.add(getHumidity());
+  jsonHumidity.add(F(" RH"));
 }
 
 /**

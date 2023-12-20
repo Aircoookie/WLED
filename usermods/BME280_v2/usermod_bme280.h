@@ -9,7 +9,6 @@
 
 #include "wled.h"
 #include <Arduino.h>
-#include <Wire.h>
 #include <BME280I2C.h>               // BME280 sensor
 #include <EnvironmentCalculations.h> // BME280 extended measurements
 
@@ -34,7 +33,6 @@ private:
   #ifdef ESP8266
     //uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
   #endif
-  int8_t ioPin[2] = {i2c_scl, i2c_sda};   // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
   bool initDone = false;
 
   // BME280 sensor settings
@@ -186,14 +184,8 @@ private:
 public:
   void setup()
   {
-    bool HW_Pins_Used = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda); // note whether architecture-based hardware SCL/SDA pins used
-    PinOwner po = PinOwner::UM_BME280; // defaults to being pinowner for SCL/SDA pins
-    PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };  // allocate pins
-    if (HW_Pins_Used) po = PinOwner::HW_I2C; // allow multiple allocations of HW I2C bus pins
-    if (!pinManager.allocateMultiplePins(pins, 2, po)) { sensorType=0; return; }
+    if (i2c_scl<0 || i2c_sda<0) { enabled = false; sensorType = 0; return; }
     
-    Wire.begin(ioPin[1], ioPin[0]);
-
     if (!bme.begin())
     {
       sensorType = 0;
@@ -415,9 +407,6 @@ public:
     top[F("PublishAlways")] = PublishAlways;
     top[F("UseCelsius")] = UseCelsius;
     top[F("HomeAssistantDiscovery")] = HomeAssistantDiscovery;
-    JsonArray io_pin = top.createNestedArray(F("pin"));
-    for (byte i=0; i<2; i++) io_pin.add(ioPin[i]);
-    top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
     DEBUG_PRINTLN(F("BME280 config saved."));
   }
 
@@ -426,8 +415,6 @@ public:
   {
     // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
     // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
-
-    int8_t newPin[2]; for (byte i=0; i<2; i++) newPin[i] = ioPin[i]; // prepare to note changed pins
 
     JsonObject top = root[FPSTR(_name)];
     if (top.isNull()) {
@@ -447,27 +434,14 @@ public:
     configComplete &= getJsonValue(top[F("PublishAlways")], PublishAlways, false);
     configComplete &= getJsonValue(top[F("UseCelsius")], UseCelsius, true);
     configComplete &= getJsonValue(top[F("HomeAssistantDiscovery")], HomeAssistantDiscovery, false);
-    for (byte i=0; i<2; i++) configComplete &= getJsonValue(top[F("pin")][i], newPin[i], ioPin[i]);
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
       // first run: reading from cfg.json
-      for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
       DEBUG_PRINTLN(F(" config loaded."));
     } else {
       DEBUG_PRINTLN(F(" config (re)loaded."));
       // changing parameters from settings page
-      bool pinsChanged = false;
-      for (byte i=0; i<2; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; } // check if any pins changed
-      if (pinsChanged) { //if pins changed, deallocate old pins and allocate new ones
-        PinOwner po = PinOwner::UM_BME280;
-        if (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-        pinManager.deallocateMultiplePins((const uint8_t *)ioPin, 2, po);  // deallocate pins
-        for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
-        setup();
-      }
-      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[F("pin")].isNull();
     }
 
     return configComplete;
