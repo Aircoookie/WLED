@@ -714,7 +714,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #endif
 
   // Clock
-  if (subPage == 11) {
+  if (subPage == SUBPAGE_CLOCK) {
     LedClockSettings* settings = dynamic_cast<LedClockSettings *>(usermods.lookup(USERMOD_ID_LEDCLOCK));
 
     // booleans

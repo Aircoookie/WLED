@@ -759,7 +759,7 @@ void getSettingsJS(byte subPage, char* dest)
     #endif
   }
 
-  if (subPage == 11) //clock
+  if (subPage == SUBPAGE_CLOCK) //clock
   {
     oappend(SET_F("initBeepSelects("));
     oappend(PSTR(JSON_ledclock_beeps));

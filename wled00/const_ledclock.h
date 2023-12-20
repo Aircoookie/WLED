@@ -211,6 +211,12 @@ const char JSON_ledclock_beeps[] PROGMEM = R"=====([
 "Tadaaa"
 ])=====";
 
+// custom effects
+
+#define FX_MODE_LC_2SOFIX     187
+#define FX_MODE_LC_VORTEX     188
+#define FX_MODE_LC_CONCENTRIC 189
+
 // forward declarations
 
 void ledClockTimeUpdated();

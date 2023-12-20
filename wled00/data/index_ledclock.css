@@ -1,18 +1,6 @@
 #buttonNl,
-#imgw,
-#imgw + br {
+#imgw {
 	display: none;
-}
-
-.icons {
-    position: relative;
-    top: 0.125rem;
-}
-
-.search-icon,
-.search-cancel-icon {
-    position: absolute;
-    top: 12px;
 }
 
 #lc-clock {
@@ -134,13 +122,13 @@
     transition: background-color .5s, opacity .4s, border-color .5s;
 }
 
-.fader {
+.lc-fader {
     position: relative;
     overflow: hidden;
 }
 
-.fader::before,
-.fader::after {
+.lc-fader::before,
+.lc-fader::after {
     content: '';
     display: block;
     position: absolute;
@@ -149,12 +137,12 @@
     height: 1rem;
 }
 
-.fader::before {
+.lc-fader::before {
     top: 0;
     background: linear-gradient(180deg, var(--c-2) 0%, rgba(0,0,0,0) 100%)
 }
 
-.fader::after {
+.lc-fader::after {
     bottom: 0;
     background: linear-gradient(0deg, var(--c-2) 0%, rgba(0,0,0,0) 100%)
 }

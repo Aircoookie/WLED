@@ -4,6 +4,227 @@
 #include "7segmdisp.h"
 #include "beeper.h"
 
+// effect helpers
+
+float _lc_map8f(uint8_t factor, float min, float max) {
+    return min + (factor / (float)255) * (max - min);
+}
+
+float _lc_random_float(float min, float max) {
+    return min + (random16(UINT16_MAX) / (float)UINT16_MAX) * (max - min);
+}
+
+// 2sofix effect
+
+#define _LC_2SX_VMIN .05
+#define _LC_2SX_VMAX .5
+#define _LC_2SX_RMIN .5
+#define _LC_2SX_RMAX 3
+
+typedef struct {
+    bool inited = false;
+    uint8_t hue;
+    uint8_t width;
+    uint8_t height;
+    float x;
+    float y;
+    float vx;
+    float vy;
+} _lc2sofixData;
+
+uint16_t mode_lc2sofix() {
+    if (!SEGENV.allocateData(sizeof(_lc2sofixData))) {
+        SEGMENT.fill(SEGCOLOR(0));
+        return FRAMETIME;
+    }
+
+    _lc2sofixData *d = reinterpret_cast<_lc2sofixData *>(SEGENV.data);
+
+    if (!d->inited) {
+        d->inited = true;
+
+        d->width = SEGMENT.virtualWidth();
+        d->height = SEGMENT.virtualHeight();
+
+        d->x = _lc_random_float(0, d->width);
+        d->y = _lc_random_float(0, d->height);
+
+        d->vx = _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
+        d->vy = _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
+    }
+
+    d->x = constrain(d->x + d->vx, 0, d->width);
+    d->y = constrain(d->y + d->vy, 0, d->height);
+
+    if (d->x <= 0 || d->x >= d->width) {
+        d->vx = d->vx < 0 ? _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX) : -_lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
+    }
+
+    if (d->y <= 0 || d->y >= d->height) {
+        d->vy = d->vy < 0 ? _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX) : -_lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
+    }
+
+    d->hue += 1;
+
+    for (uint8_t x = 0; x < d->width; ++x) {
+        for (uint8_t y = 0; y < d->height; ++y) {
+            float dist = sqrtf(powf(x - d->x, 2) + powf(y - d->y, 2));
+
+            float radius = sqrtf(powf(d->width, 2) + powf(d->height, 2)) * _lc_map8f(255 - SEGMENT.intensity, _LC_2SX_RMIN, _LC_2SX_RMAX);
+
+            float dNorm = dist / radius;
+            uint8_t hueOffset = fmod(dNorm, 1) * 255;
+            uint8_t hue = (d->hue + hueOffset) % 256;
+
+            SEGMENT.setPixelColorXY(x, y, CHSV(hue, 255, 255));
+        }
+    }
+
+    return FRAMETIME;
+}
+
+static const char _data_FX_MODE_LC_2SOFIX[] PROGMEM = "2sofix@Speed,Scale;;;2";
+
+// vortex effect
+
+#define _LC_VTX_INC_MIN 0.5
+#define _LC_VTX_INC_MAX 20
+#define _LC_VTX_INT_MIN 0
+#define _LC_VTX_INT_MAX 360
+
+typedef struct {
+    bool inited = false;
+    uint8_t width;
+    uint8_t height;
+    float maxRadius;
+    float rotation;
+} _lcVortexData;
+
+uint16_t mode_lcVortex() {
+    if (!SEGENV.allocateData(sizeof(_lcVortexData))) {
+        SEGMENT.fill(SEGCOLOR(0));
+        return FRAMETIME;
+    }
+
+    _lcVortexData *d = reinterpret_cast<_lcVortexData *>(SEGENV.data);
+
+    if (!d->inited) {
+        d->inited = true;
+
+        d->width = SEGMENT.virtualWidth();
+        d->height = SEGMENT.virtualHeight();
+
+        d->maxRadius = sqrtf(powf(d->width / (float)2, 2) + powf(d->height / (float)2, 2));
+
+        d->rotation = 0;
+    }
+
+    d->rotation += _lc_map8f(SEGMENT.speed, _LC_VTX_INC_MIN, _LC_VTX_INC_MAX);
+    d->rotation = fmodf(d->rotation, 360);
+
+    for (uint8_t x = 0; x < d->width; ++x) {
+        for (uint8_t y = 0; y < d->height; ++y) {
+            float _x = x - d->width / (float)2;
+            float _y = -(y - d->height / (float)2);
+
+            float absX = abs(_x);
+            float absY = abs(_y);
+
+            float deg = _x == 0 || _y == 0 ? 0 : atan(absX / absY) * (180 / PI);
+
+            if (_x > 0 && _y <= 0) {
+                deg = 90 + (deg == 0 ? 0 : 90 - deg);
+            } else if (_y < 0 && _x <= 0) {
+                deg += 180;
+            } else if (_x < 0 && _y >= 0) {
+                deg = 270 + (deg == 0 ? 0 : 90 - deg);
+            }
+
+            deg += d->rotation;
+
+            float radius = (absX == 0 || absY == 0)
+                               ? (absX == 0 ? absY : absX)
+                               : sqrtf(powf(absX, 2) + powf(absY, 2));
+
+            deg += (radius / d->maxRadius) * _lc_map8f(SEGMENT.intensity, _LC_VTX_INT_MIN, _LC_VTX_INT_MAX);
+            deg = fmodf(deg, 360);
+
+            uint16_t palIdx = (deg / 360) * 255; // map [0-360]f to [0-255]i
+            uint32_t color = SEGMENT.color_from_palette(palIdx, false, true, 3, 255);
+
+            SEGMENT.setPixelColorXY(x, y, color);
+        }
+    }
+
+    return FRAMETIME;
+}
+
+static const char _data_FX_MODE_LC_VORTEX[] PROGMEM = "Vortex@Speed,Strength;;!;2";
+
+// concentric effect
+
+#define _LC_CON_INC_MIN .003
+#define _LC_CON_INC_MAX .05
+#define _LC_CON_SCALE_MIN .5
+#define _LC_CON_SCALE_MAX 3
+
+typedef struct {
+    bool inited = false;
+    uint8_t width;
+    uint8_t height;
+    float radius;
+    float offset;
+} _lcConcentricData;
+
+uint16_t mode_lcConcentric() {
+    if (!SEGENV.allocateData(sizeof(_lcConcentricData))) {
+        SEGMENT.fill(SEGCOLOR(0));
+        return FRAMETIME;
+    }
+
+    _lcConcentricData *d = reinterpret_cast<_lcConcentricData *>(SEGENV.data);
+
+    if (!d->inited) {
+        d->inited = true;
+
+        d->width = SEGMENT.virtualWidth();
+        d->height = SEGMENT.virtualHeight();
+
+        d->radius = sqrtf(powf(d->width / (float)2, 2) + powf(d->height / (float)2, 2));
+
+        d->offset = 0;
+    }
+
+    d->offset += _lc_map8f(SEGMENT.speed, _LC_CON_INC_MIN, _LC_CON_INC_MAX);
+    d->offset = fmodf(d->offset, 1);
+
+    for (uint8_t x = 0; x < d->width; ++x) {
+        for (uint8_t y = 0; y < d->height; ++y) {
+            float _x = x - d->width / (float)2;
+            float _y = -(y - d->height / (float)2);
+
+            float absX = abs(_x);
+            float absY = abs(_y);
+
+            float radius = (absX == 0 || absY == 0)
+                               ? (absX == 0 ? absY : absX)
+                               : sqrtf(powf(absX, 2) + powf(absY, 2));
+
+            float scaledRadius = d->radius * _lc_map8f(SEGMENT.intensity, _LC_CON_SCALE_MIN, _LC_CON_SCALE_MAX);
+            float idx = fmodf((1 - d->offset) + radius / scaledRadius, 1);
+            uint32_t color = SEGMENT.color_from_palette(idx * 255, false, true, 3, 255);
+
+            SEGMENT.setPixelColorXY(x, y, color);
+        }
+    }
+
+    return FRAMETIME;
+}
+
+static const char _data_FX_LC_CONCENTRIC[] PROGMEM = "Concentric@Speed,Scale;;!;2";
+
+// usermod
+
 const char
 
     *LedClockSettingsKeys::root = "ledclock",
@@ -172,7 +393,7 @@ uint8_t LedClockSettings::constrainBeep(uint8_t beep) {
 static CRGB selfTestColors[] = { CRGB::Red, CRGB::Green, CRGB::Blue };
 static uint8_t selfTestColorCount = sizeof(selfTestColors) / sizeof(CRGB);
 
-static uint16_t normalizedSensorRading;
+static uint16_t normalizedSensorReading;
 
 static uint8_t brightness(uint8_t minBrightness, uint8_t maxBrightness) {
     static uint16_t values[BRIGHTNESS_SAMPLES];
@@ -187,9 +408,9 @@ static uint8_t brightness(uint8_t minBrightness, uint8_t maxBrightness) {
     i++;
     i %= BRIGHTNESS_SAMPLES;
 
-    normalizedSensorRading = total / BRIGHTNESS_SAMPLES;
+    normalizedSensorReading = total / BRIGHTNESS_SAMPLES;
 
-    uint8_t target = map(normalizedSensorRading, 0, ADC_MAX_VALUE, minBrightness, maxBrightness);
+    uint8_t target = map(normalizedSensorReading, 0, ADC_MAX_VALUE, minBrightness, maxBrightness);
 
     if (abs(target - current) > BRIGHTNESS_THRESHOLD) {
         current = target;
@@ -342,6 +563,10 @@ public:
     }
 
     void setup() {
+        strip.addEffect(FX_MODE_LC_2SOFIX, &mode_lc2sofix, _data_FX_MODE_LC_2SOFIX);
+        strip.addEffect(FX_MODE_LC_VORTEX, &mode_lcVortex, _data_FX_MODE_LC_VORTEX);
+        strip.addEffect(FX_MODE_LC_CONCENTRIC, &mode_lcConcentric, _data_FX_LC_CONCENTRIC);
+
         dHoursT.setShowZero(!hideZero);
 
         // addLed must be called LC_SEP_LEDS times
@@ -531,7 +756,7 @@ public:
         JsonObject user = root["u"];
         if (user.isNull()) user = root.createNestedObject("u");
         JsonArray lightArr = user.createNestedArray("Light sensor");
-        double reading = normalizedSensorRading;
+        double reading = normalizedSensorReading;
         lightArr.add((reading / ADC_MAX_VALUE) * ADC_MAX_VOLTAGE);
         lightArr.add("V");
     }

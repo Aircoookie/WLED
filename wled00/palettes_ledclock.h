@@ -1,8 +1,6 @@
 #ifndef PalettesLedClock_h
 #define PalettesLedClock_h
 
-#define GRADIENT_PALETTE_COUNT 58
-
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
    94,   0,107, 64,

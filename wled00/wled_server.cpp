@@ -550,7 +550,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
 
   if (url.indexOf("sett") >= 0)
   {
-    if      (url.indexOf("style_ledclock.css")  > 0) subPage = 250;
+    if      (url.indexOf("style_ledclock.css")  > 0) subPage = SUBPAGE_LEDCLOCK_CSS;
+    else if (url.indexOf("ledclock")  > 0) subPage = SUBPAGE_CLOCK;
     else if (url.indexOf(".js")  > 0) subPage = SUBPAGE_JS;
     else if (url.indexOf(".css") > 0) subPage = SUBPAGE_CSS;
     else if (url.indexOf("wifi") > 0) subPage = SUBPAGE_WIFI;
@@ -563,7 +564,6 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("um")   > 0) subPage = SUBPAGE_UM;
     else if (url.indexOf("2D")   > 0) subPage = SUBPAGE_2D;
     else if (url.indexOf("lock") > 0) subPage = SUBPAGE_LOCK;
-    else if (url.indexOf("ledclock")  > 0) subPage = 11;
   }
   else if (url.indexOf("/update") >= 0) subPage = SUBPAGE_UPDATE; // update page, for PIN check
   //else if (url.indexOf("/edit")   >= 0) subPage = 10;
@@ -597,7 +597,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case SUBPAGE_UM     : strcpy_P(s, PSTR("Usermods")); break;
       case SUBPAGE_2D     : strcpy_P(s, PSTR("2D")); break;
       case SUBPAGE_PINREQ : strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
-      case 11: strcpy_P(s, PSTR("Clock")); break;
+      case SUBPAGE_CLOCK  : strcpy_P(s, PSTR("Clock")); break;
     }
 
     if (subPage != SUBPAGE_PINREQ) strcat_P(s, PSTR(" settings saved."));
@@ -640,8 +640,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case SUBPAGE_CSS     : response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
     case SUBPAGE_JS      : serveSettingsJS(request); return;
     case SUBPAGE_WELCOME : response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
-    case 11:  response = request->beginResponse_P(200, "text/html", PAGE_settings_ledclock, PAGE_settings_ledclock_length); break;
-    case 250: response = request->beginResponse_P(200, "text/css",  PAGE_ledClockSettingsCss, PAGE_ledClockSettingsCss_length); break;
+    case SUBPAGE_CLOCK   : response = request->beginResponse_P(200, "text/html", PAGE_settings_ledclock, PAGE_settings_ledclock_length); break;
+    case SUBPAGE_LEDCLOCK_CSS: response = request->beginResponse_P(200, "text/css",  PAGE_ledClockSettingsCss, PAGE_ledClockSettingsCss_length); break;
     default:  response = request->beginResponse_P(200, "text/html", PAGE_settings,      PAGE_settings_length);      break;
   }
   response->addHeader(FPSTR(s_content_enc),"gzip");

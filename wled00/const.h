@@ -372,6 +372,8 @@
 #define SUBPAGE_UM                8
 #define SUBPAGE_UPDATE            9
 #define SUBPAGE_2D               10
+#define SUBPAGE_CLOCK            11
+#define SUBPAGE_LEDCLOCK_CSS    250
 #define SUBPAGE_LOCK            251
 #define SUBPAGE_PINREQ          252
 #define SUBPAGE_CSS             253

@@ -1,8 +1,145 @@
 ## WLED changelog
 
+#### Build 2310010, build 2310130
+-   Release of WLED version 0.14.0 "Hoshi"
+-   Bugfixes for #3400, #3403, #3405
+-   minor HTML optimizations
+-   audioreactive: bugfix for UDP sound sync (partly initialized packets)
+
+#### Build 2309240
+-   Release of WLED beta version 0.14.0-b6 "Hoshi"
+-   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
+-   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
+
+#### Build 2309100
+-   Release of WLED beta version 0.14.0-b5 "Hoshi"
+-   New standard esp32 build with audioreactive
+-   Effect blending bugfixes, and minor optimizations
+
+#### Build 2309050
+-   Effect blending (#3311) (finally effect transitions!)
+    *WARNING*: May not work well with ESP8266, with plenty of segments or usermods (low RAM condition)!!!
+-   Added receive and send sync groups to JSON API (#3317) (you can change sync groups using preset)
+-   Internal temperature usermod (#3246)
+-   MQTT server and topic length overrides (#3354) (new build flags)
+-   Animated Staircase usermod enhancement (#3348) (on/off toggle/relay control)
+-   Added local time info to Info page (#3351)
+-   New effect: Rolling Balls (a.k.a. linear bounce) (#1039)
+-   Various bug fixes and enhancements.
+
+#### Build 2308110
+-   Release of WLED beta version 0.14.0-b4 "Hoshi"
+-   Reset effect data immediately upon mode change
+
+#### Build 2308030
+-   Improved random palette handling and blending
+-   Soap bugfix
+-   Fix ESP-NOW crash with AP mode Always
+
+#### Build 2307180
+-   Bus-level global buffering (#3280)
+-   Removed per-segment LED buffer (SEGMENT.leds)
+-   various fixes and improvements (ESP variants platform 5.3.0, effect optimizations, /json/cfg pin allocation)
+
+#### Build 2307130
+-   larger `oappend()` stack buffer (3.5k) for ESP32
+-   Preset cycle bugfix (#3262)
+-   Rotary encoder ALT fix for large LED count (#3276)
+-   effect updates (2D Plasmaball), `blur()` speedup
+-   On/Off toggle from nodes view (may show unknown device type on older versions) (#3291)
+-   various fixes and improvements (ABL, crashes when changing presets with different segments)
+
+#### Build 2306270
+-   ESP-NOW remote support (#3237)
+-   Pixel Magic tool (display pixel art) (#3249)
+-   Websocket (peek) fallback when connection cannot be established, WS retries (#3267)
+-   Add WiFi network scan RPC command to Improv Serial (#3271)
+-   Longer (custom option available) segment name for ESP32
+-   various fixes and improvements
+
+#### Build 2306210
+-   0.14.0-b3 release
+-   respect global I2C in all usermods (no local initialization of I2C bus)
+-   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
+
+#### Build 2306180
+-   Added client-side option for applying effect defaults from metadata
+-   Improved ESP8266 stability by reducing WebSocket response resends
+-   Updated ESP8266 core to 3.1.2
+
+#### Build 2306141
+-   Lissajous improvements
+-   Scrolling Text improvements (leading 0)
+
+#### Build 2306140
+-   Add settings PIN (un)locking to JSON post API
+
+#### Build 2306130
+-   Bumped version to 0.14-b3 (beta 3)
+-   added pin dropdowns in LED preferences (not for LED pins) and usermods
+-   introduced (unused ATM) NeoGammaWLEDMethod class
+-   Reverse proxy support
+-   PCF8754 support for Rotary encoder (requires wiring INT pin to ESP GPIO)
+-   Rely on global I2C pins for usermods (breaking change)
+-   various fixes and enhancements
+
+#### Build 2306020
+-   Support for segment sets (PR #3171)
+-   Reduce sound simulation modes to 2 to facilitate segment sets
+-   Trigger button immediately on press if all configured presets are the same (PR #3226)
+-   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
+
+#### Build 2305280
+-   DDP protocol update (#3193)
+-   added PCF8574 I2C port expander support for Multi relay usermod
+-   MQTT multipacket (fragmented) message fix
+-   added option to retain MQTT brightness and color messages
+-   new ethernet board: @srg74 Ethernet Shield
+-   new 2D effects: Soap (#3184) & Octopus & Waving cell (credit @St3P40 https://github.com/80Stepko08)
+-   various fixes and enhancements
+
+#### Build 2305090
+-   new ethernet board: @Wladi ABC! WLED Eth
+-   Battery usermod voltage calculation (#3116)
+-   custom palette editor (#3164)
+-   improvements in Dancing Shadows and Tartan effects
+-   UCS389x support
+-   switched to NeoPixelBus 2.7.5 (replaced NeoPixelBrightnessBus with NeoPixelBusLg)
+-   SPI bus clock selection (for LEDs) (#3173)
+-   DMX mode preset fix (#3134)
+-   iOS fix for scroll (#3182)
+-   Wordclock "Norddeutsch" fix (#3161)
+-   various fixes and enhancements
+
+#### Build 2304090
+-   updated Arduino ESP8266 core to 4.1.0 (newer compiler)
+-   updated NeoPixelBus to 2.7.3 (with support for UCS890x chipset)
+-   better support for ESP32-C3, ESP32-S2 and ESP32-S3 (Arduino ESP32 core 5.2.0)
+-   iPad/tablet with 1024 pixels width in landscape orientation PC mode support (#3153)
+-   fix for Pixel Art Converter (#3155)
+
+#### Build 2303240
+-   Peek scaling of large 2D matrices
+-   Added 0D (1 pixel) metadata for effects & enhance 0D (analog strip) UI handling
+-   Added ability to disable ADAlight (-D WLED_DISABLE_ADALIGHT)
+-   Fixed APA102 output on Ethernet enabled controllers
+-   Added ArtNet virtual/network output (#3121)
+-   Klipper usermod (#3106)
+-   Remove DST from CST timezone
+-   various fixes and enhancements
+
 #### Build 2302180
 
 -   Removed Blynk support (servers shut down on 31st Dec 2022)
+-   Added `ledgap.json` to complement ledmaps for 2D matrices
+-   Added support for white addressable strips (#3073)
+-   Ability to use SHT temperature usermod with PWM fan usermod
+-   Added `onStateChange()` callback to usermods (#3081)
+-   Refactored `bus_manager` [internal]
+-   Dual 1D & 2D mode (add 1D strip after the matrix)
+-   Removed 1D -> 2D mapping for individual pixel control
+-   effect tweak: Fireworks 1D
+-   various bugfixes
 
 #### Build 2301240
 
@@ -132,7 +269,7 @@
 #### Build 2203080
 
 -   Disabled auto white mode in segments with no RGB bus
--   Fixed hostname string not 0-terminated 
+-   Fixed hostname string not 0-terminated
 -   Fixed Popcorn mode not lighting first LED on pop
 
 #### Build 2203060
@@ -185,7 +322,7 @@
 
 -   Initial ESP32-C3 and ESP32-S2 support (PRs #2452, #2454, #2502)
 -   Full segment sync (PR #2427)
--   Allow overriding of color order by ranges (PR #2463) 
+-   Allow overriding of color order by ranges (PR #2463)
 -   Added white channel to Peek
 
 #### Build 2112080
@@ -682,7 +819,7 @@
 
 -   Added Preset ID quick display option (PR #1462)
 -   Fixed LEDs not turning on when using gamma correct brightness and LEDPIN 2 (default)
--   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled 
+-   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled
 
 #### Build 2012130
 
@@ -758,7 +895,7 @@
 -   Added HEX color receiving to JSON API with `"col":["RRGGBBWW"]` format
 -   Moved Kelvin color receiving in JSON API from `"col":[[val]]` to `"col":[val]` format
     _Notice:_ This is technically a breaking change. Since no release was made since the introduction and the Kelvin property was not previously documented in the wiki,
-    impact should be minimal. 
+    impact should be minimal.
 -   BTNPIN can now be disabled by setting to -1 (fixes #1237)
 
 #### Build 2011180
@@ -834,7 +971,7 @@
 #### Build 2010020
 
 -   Fixed interaction of `T` and `NL` HTTP API commands (#1214)
--   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously 
+-   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously
 
 #### Build 2009291
 
