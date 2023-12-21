@@ -6,13 +6,6 @@
 // #define YA_WEATHER_DEBUG                // Show debug message with [YandexWeatherUsermod] prefix 
 // #define YA_WEATHER_ALLOW_ALL_TIMEOUT    // Allows you to set UpdateInterval to less than 30
 // #define YA_WEATHER_HIDE_REMAINING       // Hide the remaining time to update in Info 
-// #define YA_WEATHER_DRAW                 // Enable support of Four Line Display
-
-#ifdef YA_WEATHER_DRAW
-#ifndef USERMOD_FOUR_LINE_DISPLAY
-#undef YA_WEATHER_DRAW
-#endif
-#endif
 
 class YandexWeatherUsermod: public Usermod 
 {
@@ -46,10 +39,6 @@ private:
     bool isConnected = false;
     char errorMessage[100] = "";
     WeatherInfo *_weatherInfo;
-
-    #ifdef YA_WEATHER_DRAW
-    FourLineDisplayUsermod* display;
-    #endif
 
     // configurable parameters
     String _apiKey          = "";
@@ -108,25 +97,22 @@ private:
 
     inline String firstWeatherLine() {
         if (_weatherInfo == nullptr) return String(F(""));
-        String res = "";
-        res += _weatherInfo->tempReal;
-        res += F("°C\n(like ");
-        res += _weatherInfo->tempFeels;
-        res += F("°C)");
-        return res;
+        char r[20];
+        sprintf_P(r, "%d (like %d)", _weatherInfo->tempReal, _weatherInfo->tempFeels);
+        return String(r);
     }
 
     inline String secondWeatherLine() {
         if (_weatherInfo == nullptr) return String(F(""));
-        String res = "";
-        res += _weatherInfo->windSpeed;
-        res += F(" m/s");
+        char r[15];
+        sprintf(r, "%.2f m/s", _weatherInfo->windSpeed);
+
         if (!_weatherInfo->windDir.isEmpty()) {
-            res += F(" (");
-            res += String(windCharByString(_weatherInfo->windDir.c_str()).c_str());
-            res += F(")");
+            char wd[4];
+            sprintf(wd, "(%s)", windCharByString(_weatherInfo->windDir.c_str()).c_str());
+            strcat(r, wd);
         }
-        return res;
+        return String(r);
     }
 
     // Helping functions
@@ -369,35 +355,9 @@ public:
         return apiGetWeather(errorMessage);
     }
 
-    /**
-     * Show weather (if exists) on Four line Display
-     * @param howLong Display time in milliseconds
-     * @return `true` – If displayed successfully, otherwise – `false`
-    */
-    inline bool drawWeatherOnDisplay(long howLong) {
-        #ifdef YA_WEATHER_DRAW
-        if (display != nullptr) {
-            display->wakeDisplay();
-            #if defined(USE_ALT_DISPLAY) || defined(USE_ALT_DISPlAY)
-            if (display->canDraw()) display->overlay(firstWeatherLine().c_str(), secondWeatherLine().c_str(), howLong);   // WLEDMM bugfix
-            #else
-            display->overlay(firstWeatherLine().c_str(), secondWeatherLine().c_str(), howLong);
-            #endif
-            return true;
-        } else {
-            return false;
-        }
-        #else
-        return false;
-        #endif
-    }
-
     // WLED lyfecycle
 
     void setup() {
-        #ifdef YA_WEATHER_DRAW    
-        display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
-        #endif
         initDone = true;
     }
 

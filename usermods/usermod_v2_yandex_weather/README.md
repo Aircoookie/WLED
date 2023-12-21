@@ -21,8 +21,6 @@ build_flags = ${env:esp32dev.build_flags}
 - `void setEnable(bool enable)` – To change enable state
 - `bool isEnable()` – To query enable state
 - `WeatherInfo *currentWeather()` – To query current weather struct
-- `inline bool drawWeatherOnDisplay(long howLong)` – Show current weather (if available) on four line display for _howLong_ milliseconds. 
-See _YA_WEATHER_DRAW_ in __Additional Build Flags__ section
 
 ### Access from other Usermod
 
@@ -98,7 +96,6 @@ Enable post weather data to MQTT topic (/yandexWeather)
 | YA_WEATHER_DEBUG              | Show debug message with _[YandexWeatherUsermod]_ prefix                                       |
 | YA_WEATHER_ALLOW_ALL_TIMEOUT  | Allows you to set UpdateInterval to less than 30 (Use for tests or if you have a paid ApiKey) |
 | YA_WEATHER_HIDE_REMAINING     | Hide the remaining time to update in Info                                                     |
-| YA_WEATHER_DRAW               | Enable support of [Four Line Display](https://mm.kno.wled.ge/usermods/4LineDisplay)           |
 
 -----
 Author:
