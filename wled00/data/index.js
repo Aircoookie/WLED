@@ -16,6 +16,7 @@ var simplifiedUI = false;
 var tr = 7;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
+var retry = false;
 var palettesData;
 var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
@@ -277,21 +278,25 @@ function onLoad()
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
+	// Once we figure out why ESP8266 sometimes corrupts JSON responses if they are made in quick succession
+	// we can remove all setTimeout() throttling
 	loadPalettes(()=>{
-		// fill effect extra data array
-		loadFXData(()=>{
-			setTimeout(()=>{ // ESP8266 can't handle quick requests
-				// load and populate effects
-				loadFX(()=>{
-					setTimeout(()=>{ // ESP8266 can't handle quick requests
-						loadPalettesData(()=>{
-							requestJson();// will load presets and create WS
-							if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
-						});
-					},100);
-				});
-			},100);
-		});
+		setTimeout(()=>{ // ESP8266 can't handle quick requests
+			// fill effect extra data array
+			loadFXData(()=>{
+				setTimeout(()=>{ // ESP8266 can't handle quick requests
+					// load and populate effects
+					loadFX(()=>{
+						setTimeout(()=>{ // ESP8266 can't handle quick requests
+							loadPalettesData(()=>{
+								requestJson();// will load presets and create WS
+								if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
+							});
+						},50);
+					});
+				},50);
+			});
+		},50);
 	});
 	resetUtil();
 
@@ -515,8 +520,13 @@ function loadPalettes(callback = null)
 	.then((json)=>{
 		lJson = Object.entries(json);
 		populatePalettes();
+		retry = false;
 	})
 	.catch((e)=>{
+		if (!retry) {
+			retry = true;
+			setTimeout(loadPalettes, 500); // retry
+		}
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -537,9 +547,13 @@ function loadFX(callback = null)
 	.then((json)=>{
 		eJson = Object.entries(json);
 		populateEffects();
+		retry = false;
 	})
 	.catch((e)=>{
-		//setTimeout(loadFX, 250); // retry
+		if (!retry) {
+			retry = true;
+			setTimeout(loadFX, 500); // retry
+		}
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -562,10 +576,14 @@ function loadFXData(callback = null)
 		// add default value for Solid
 		fxdata.shift()
 		fxdata.unshift(";!;");
+		retry = false;
 	})
 	.catch((e)=>{
 		fxdata = [];
-		//setTimeout(loadFXData, 250); // retry
+		if (!retry) {
+			retry = true;
+			setTimeout(loadFXData, 500); // retry
+		}
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -1712,8 +1730,13 @@ function requestJson(command=null)
 			});
 		},25);
 		reqsLegal = true;
+		retry = false;
 	})
 	.catch((e)=>{
+		if (!retry) {
+			retry = true;
+			setTimeout(requestJson,500);
+		}
 		showToast(e, true);
 	});
 }
