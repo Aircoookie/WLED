@@ -1794,7 +1794,7 @@ void WS2812FX::loadCustomPalettes() {
 
       if (readObjectFromFile(fileName, nullptr, &pDoc)) {
         JsonArray pal = pDoc[F("palette")];
-        if (!pal.isNull() && pal.size()>4) { // not an empty palette (at least 2 entries)
+        if (!pal.isNull() && pal.size()>3) { // not an empty palette (at least 2 entries)
           if (pal[0].is<int>() && pal[1].is<const char *>()) {
             // we have an array of index & hex strings
             size_t palSize = MIN(pal.size(), 36);
