@@ -26,7 +26,7 @@
 // Some pixels of this 2D matrix are missing, others are present. To get the layout
 // where the pixels are missing or present, first decide on how many LEDs you want per segment.
 //
-// For example,  if you have only one LED per segment,  the layout is the following:
+// For example,  if you have only one LED per segment, the layout is the following:
 //
 //  -#--#---#--#-
 //  #-##-###-##-#
@@ -66,9 +66,7 @@
 // the first number then continues with the leftmost segments from the bottom to the top. I added extra spaces
 // between the numbers and the separator column just for better clarity.
 
-#define LC_LEDS_PER_SEGM 2                         // LEDs per segment
-#define LC_COLS (((LC_LEDS_PER_SEGM + 2) * 4) + 1) // number of columns 
-#define LC_ROWS ((LC_LEDS_PER_SEGM * 2) + 3)       // number of rows
+#define LC_LEDS_PER_SEGM 2 // LEDs per segment
 
 #define LC_LEDMAP \
 -1,  6,  7, -1,    -1, 20, 21, -1,    -1,    -1, 36, 37, -1,    -1, 50, 51, -1, \
@@ -79,15 +77,35 @@
  2, -1, -1, 13,    16, -1, -1, 27,    -1,    32, -1, -1, 43,    46, -1, -1, 57, \
 -1,  1,  0, -1,    -1, 15, 14, -1,    -1,    -1, 31, 30, -1,    -1, 45, 44, -1  \
 
-// Below you can change how many LEDs you would like to have in the separator.
+// Next configure the separator LEDs by first defining how many of them you have:
+#define LC_SEP_LEDS 2
 
-#define LC_SEP_LEDS 2 // number of separator LEDs
-
-// Check the `setup()` method of the `UsermodLedClock` class in file `um_ledclock.h` to adjust the position
-// of the separator LEDs.
+// Then write their row indices separated by commas below (notice the separator LEDs #28 and #29 having row indices 2 and 4 in the above LED map):
+#define LC_SEP_LED_ROWS 2, 4
 
 // Finally, don't forget to change the total number of LEDs (DEFAULT_LED_COUNT) in `platformio_override.ini`,
-// set it to the REAL number of LEDs you have!
+// set it to the total size of the LED matrix you have. This number is calculated below and a compiler warning
+// is emitted if it does not match with DEFAULT_LED_COUNT.
+
+#define LC_COLS     (((LC_LEDS_PER_SEGM + 2) * 4) + 1)
+#define LC_ROWS      ((LC_LEDS_PER_SEGM * 2) + 3)
+#define LC_TOTAL_LEDS (LC_COLS * LC_ROWS) // DEFAULT_LED_COUNT should be set to this value
+
+#if !defined(DEFAULT_LED_COUNT) || DEFAULT_LED_COUNT != LC_TOTAL_LEDS
+#define LC_XSTR(x) LC_STR(x)
+#define LC_STR(x) #x
+#pragma message "Macro DEFAULT_LED_COUNT is not defined or is not equal to the calculated number of total LEDs: " LC_XSTR(LC_TOTAL_LEDS)
+#endif
+
+// Your display still does not work properly? Verify all the steps above, and if everything looks right, follow these steps:
+//   1. navigate your browser http://wled-ip/edit
+//   2. right click on /ledmap.json
+//   3. choose 'Delete'
+//   4. reboot WLED
+// The file ledmap.json should now be regenerated with the correct settings and your display should now work properly.
+
+
+#define LC_PHYSICAL_LEDS (LC_SEP_LEDS + 4 * 7 * LC_LEDS_PER_SEGM)
 
 #define LC_R(c) (byte((c) >> 16))
 #define LC_G(c) (byte((c) >> 8))

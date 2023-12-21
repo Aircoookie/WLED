@@ -430,6 +430,7 @@ void WLED::setup()
 #endif
 
   { // generate default led map
+    uint16_t gapIdx = LC_PHYSICAL_LEDS;
     const char fileName[] = "/ledmap.json";
     if (!WLED_FS.exists(fileName)) {
       int16_t map[] = { LC_LEDMAP };
@@ -437,7 +438,7 @@ void WLED::setup()
       File f = WLED_FS.open(fileName, "w+");
       f.print(F("{\"map\":["));
       for (size_t i = 0; i < len; ++i) {
-        f.printf("%d", map[i]);
+        f.printf("%d", map[i] == -1 ? gapIdx++ : map[i]);
         if (i < len - 1) {
           f.print(',');
         }

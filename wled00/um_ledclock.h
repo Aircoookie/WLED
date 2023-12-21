@@ -569,9 +569,10 @@ public:
 
         dHoursT.setShowZero(!hideZero);
 
-        // addLed must be called LC_SEP_LEDS times
-        sep.addLed(2, 0);
-        sep.addLed(4, 0);
+        uint8_t sepLedRowIndices[] = { LC_SEP_LED_ROWS };
+        for (uint8_t i = 0; i < LC_SEP_LEDS; ++i) {
+            sep.addLed(sepLedRowIndices[i], 0);
+        }
 
         display.setColor(false, CRGB::Black);
         display.setMode(LedBasedDisplayMode::SET_OFF_LEDS);
