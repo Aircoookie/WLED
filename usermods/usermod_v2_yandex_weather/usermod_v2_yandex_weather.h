@@ -38,6 +38,11 @@ public:
 
 private:
     // Internal
+    #ifndef _MoonModules_WLED_
+    bool initDone = false;
+    bool enabled = false;
+    unsigned long lastTime = 0;
+    #endif
     bool isConnected = false;
     char errorMessage[100] = "";
     WeatherInfo *_weatherInfo;
@@ -57,7 +62,7 @@ private:
     float _apiLon           = 0;
 
     // Const chars
-    static const char _json_enabled[];
+    static const char _cfg_key_enabled[];
     static const char _cfg_key_apiKey[];
     static const char _cfg_key_updateInterval[];
     static const char _cfg_key_apiLang[];
@@ -66,6 +71,9 @@ private:
     static const char _cfg_key_apiLon[];
     static const char _cfg_key_showInfo[];
     static const char _cfg_key_postMQTT[];
+    #ifndef _MoonModules_WLED_
+    static const char _name[];
+    #endif
     
     // Inlines
     inline bool isValidCoordinate(float lat, float lon) { return fabs(lat) > __FLT_EPSILON__ && fabs(lon) > __FLT_EPSILON__; }
@@ -297,9 +305,15 @@ private:
 
 public:
     // Class Constructor/Destructor
+    #ifdef _MoonModules_WLED_
     YandexWeatherUsermod(const char *name, bool enabled) : Usermod(name, enabled), _weatherInfo(nullptr) {
         lastTime = 0;
     }
+    #else
+    YandexWeatherUsermod() : _weatherInfo(nullptr) {
+        lastTime = 0;
+    }
+    #endif
 
     ~YandexWeatherUsermod() {
         if (_weatherInfo) { delete _weatherInfo; _weatherInfo = nullptr; }
@@ -476,10 +490,10 @@ public:
 
         JsonObject um = root[FPSTR(_name)];
         if (!um.isNull()) {
-            if (um[FPSTR(_json_enabled)].is<bool>()) {
-                en = um[FPSTR(_json_enabled)].as<bool>();
+            if (um[FPSTR(_cfg_key_enabled)].is<bool>()) {
+                en = um[FPSTR(_cfg_key_enabled)].as<bool>();
             } else {
-                String str = um[FPSTR(_json_enabled)];
+                String str = um[FPSTR(_cfg_key_enabled)];
                 en = (bool)(str!="off");
             }
         }
@@ -493,9 +507,14 @@ public:
 
     void addToConfig(JsonObject &root)
     {
+        #ifdef _MoonModules_WLED_
         Usermod::addToConfig(root);
-
         JsonObject top = root[FPSTR(_name)];
+        #else
+        JsonObject top = root.createNestedObject(FPSTR(_name));                 // WLEDMM: set enabled and _name
+        top[FPSTR("enabled")] = enabled;
+        #endif
+        
         top[FPSTR(_cfg_key_apiKey)] = _apiKey;
         top[FPSTR(_cfg_key_updateInterval)] = _updateInterval;
         top[FPSTR(_cfg_key_apiLang)] = _apiLanguage;
@@ -538,6 +557,21 @@ public:
 
     virtual bool readFromConfig(JsonObject &root)
     {
+        #ifdef _MoonModules_WLED_
+        bool configComplete = Usermod::readFromConfig(root);
+        JsonObject top = root[FPSTR(_name)];
+        #else
+        bool configComplete = true;
+        JsonObject top = root[FPSTR(_name)];
+        if (!top.isNull()) {
+            configComplete &= getJsonValue(top[FPSTR("enabled")], enabled);
+        }  
+        #endif
+        
+        if (top.isNull()) {
+            return false;
+        }
+
         // Old values (for re-call api for case when something changed)
         bool oldEnabledState = enabled;
         String oldAPIKey = _apiKey;
@@ -546,12 +580,6 @@ public:
         std::pair<float, float> oldCoords { _apiLat, _apiLon};
 
         // Config logic
-        bool configComplete = Usermod::readFromConfig(root);
-        JsonObject top = root[FPSTR(_name)];
-        if (top.isNull()) {
-            return false;
-        }
-
         configComplete &= getJsonValue(top[FPSTR(_cfg_key_updateInterval)], _updateInterval);
         #ifdef YA_WEATHER_ALLOW_ALL_TIMEOUT
         _updateInterval = max(1, _updateInterval);
@@ -594,7 +622,7 @@ public:
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char YandexWeatherUsermod::_json_enabled[]            PROGMEM = "enabled";
+const char YandexWeatherUsermod::_cfg_key_enabled[]         PROGMEM = "enabled";
 const char YandexWeatherUsermod::_cfg_key_apiKey[]          PROGMEM = "apiKey";
 const char YandexWeatherUsermod::_cfg_key_updateInterval[]  PROGMEM = "updateInterval";
 const char YandexWeatherUsermod::_cfg_key_apiLang[]         PROGMEM = "apiLanguage";
@@ -603,3 +631,6 @@ const char YandexWeatherUsermod::_cfg_key_apiLat[]          PROGMEM = "cityLatit
 const char YandexWeatherUsermod::_cfg_key_apiLon[]          PROGMEM = "cityLongitude";
 const char YandexWeatherUsermod::_cfg_key_showInfo[]        PROGMEM = "showInInfo";
 const char YandexWeatherUsermod::_cfg_key_postMQTT[]        PROGMEM = "postToMQTT";
+#ifndef _MoonModules_WLED_
+const char YandexWeatherUsermod::_name[]                    PROGMEM = "YandexWeather";
+#endif
