@@ -2772,8 +2772,10 @@ function search(field, listId = null) {
 	field.nextElementSibling.style.display = (field.value !== '') ? 'block' : 'none';
 	if (!listId) return;
 
+	const search = field.value !== '';
+
 	// clear filter if searching in fxlist
-	if (listId === 'fxlist' && field.value !== '') {
+	if (listId === 'fxlist' && search) {
 		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
 	}
 
@@ -2807,6 +2809,12 @@ function search(field, listId = null) {
 	sortedListItems.forEach(item => {
 		gId(listId).append(item);
 	});
+
+	// scroll to first search result
+	const firstVisibleItem = sortedListItems.find(item => item.style.display !== 'none' && !item.classList.contains('sticky') && !item.classList.contains('selected'));
+	if (firstVisibleItem && search) {
+		firstVisibleItem.scrollIntoView({ behavior: "instant", block: "center" });
+	}
 }
 
 function clean(clearButton) {
