@@ -643,8 +643,8 @@ void decodeIRJson(uint32_t code)
   // this may fail for two reasons: ir.json does not exist or IR code not found
   // if the IR code is not found readObjectFromFile() will clean() doc JSON document
   // so we can differentiate between the two
-  readObjectFromFile("/ir.json", objKey, &doc);
-  fdo = doc.as<JsonObject>();
+  readObjectFromFile("/ir.json", objKey, pDoc);
+  fdo = pDoc->as<JsonObject>();
   lastValidCode = 0;
   if (fdo.isNull()) {
     //the received code does not exist

@@ -346,6 +346,11 @@ void WLED::setup()
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
+/*
+ * The following code is obsolete as PinManager::isPinOK() will return false for reserved GPIO.
+ * Additionally xml.cpp will inform UI about reserved GPIO.
+ *
+
   #if defined(CONFIG_IDF_TARGET_ESP32S3)
   // S3: reserve GPIO 33-37 for "octal" PSRAM
   managed_pin_type pins[] = { {33, true}, {34, true}, {35, true}, {36, true}, {37, true} };
@@ -363,12 +368,17 @@ void WLED::setup()
   managed_pin_type pins[] = { {16, true}, {17, true} };
   pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
   #endif
+*/
   #if defined(WLED_USE_PSRAM)
+  pDoc = new PSRAMDynamicJsonDocument(2*JSON_BUFFER_SIZE);
+  if (!pDoc) pDoc = new PSRAMDynamicJsonDocument(JSON_BUFFER_SIZE); // falback if double sized buffer could not be allocated
+  // if the above still fails requestJsonBufferLock() will always return false preventing crashes
   if (psramFound()) {
     DEBUG_PRINT(F("Total PSRAM: ")); DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
     DEBUG_PRINT(F("Free PSRAM : ")); DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
   }
   #else
+    if (!pDoc) pDoc = &gDoc; // just in case ... (it should be globally assigned)
     DEBUG_PRINTLN(F("PSRAM not used."));
   #endif
 #endif

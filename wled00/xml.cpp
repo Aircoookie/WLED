@@ -133,7 +133,7 @@ void appendGPIOinfo() {
   // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
-    JsonObject mods = doc.createNestedObject(F("um"));
+    JsonObject mods = pDoc->createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
     releaseJSONBufferLock();

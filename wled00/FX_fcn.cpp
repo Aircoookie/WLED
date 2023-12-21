@@ -1670,7 +1670,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!requestJSONBufferLock(7)) return false;
 
-  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+  if (!readObjectFromFile(fileName, nullptr, pDoc)) {
     releaseJSONBufferLock();
     return false; //if file does not exist just exit
   }
@@ -1685,7 +1685,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     customMappingTable = nullptr;
   }
 
-  JsonArray map = doc[F("map")];
+  JsonObject root = pDoc->as<JsonObject>();
+  JsonArray map = root[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
     customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];

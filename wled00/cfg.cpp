@@ -609,7 +609,7 @@ void deserializeConfigFromFS() {
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
-  success = readObjectFromFile("/cfg.json", nullptr, &doc);
+  success = readObjectFromFile("/cfg.json", nullptr, pDoc);
   if (!success) { // if file does not exist, optionally try reading from EEPROM and then save defaults to FS
     releaseJSONBufferLock();
     #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -630,7 +630,8 @@ void deserializeConfigFromFS() {
 
   // NOTE: This routine deserializes *and* applies the configuration
   //       Therefore, must also initialize ethernet from this function
-  bool needsSave = deserializeConfig(doc.as<JsonObject>(), true);
+  JsonObject root = pDoc->as<JsonObject>();
+  bool needsSave = deserializeConfig(root, true);
   releaseJSONBufferLock();
 
   if (needsSave) serializeConfig(); // usermods required new parameters
@@ -643,19 +644,21 @@ void serializeConfig() {
 
   if (!requestJSONBufferLock(2)) return;
 
-  JsonArray rev = doc.createNestedArray("rev");
+  JsonObject root = pDoc->as<JsonObject>();
+
+  JsonArray rev = root.createNestedArray("rev");
   rev.add(1); //major settings revision
   rev.add(0); //minor settings revision
 
-  doc[F("vid")] = VERSION;
+  root[F("vid")] = VERSION;
 
-  JsonObject id = doc.createNestedObject("id");
+  JsonObject id = root.createNestedObject("id");
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
   id[F("inv")] = alexaInvocationName;
   id[F("sui")] = simplifiedUI;
 
-  JsonObject nw = doc.createNestedObject("nw");
+  JsonObject nw = root.createNestedObject("nw");
 #ifndef WLED_DISABLE_ESPNOW
   nw[F("espnow")] = enableESPNow;
   nw[F("linked_remote")] = linked_remote;
@@ -677,7 +680,7 @@ void serializeConfig() {
     nw_ins_0_sn.add(staticSubnet[i]);
   }
 
-  JsonObject ap = doc.createNestedObject("ap");
+  JsonObject ap = root.createNestedObject("ap");
   ap[F("ssid")] = apSSID;
   ap[F("pskl")] = strlen(apPass);
   ap[F("chan")] = apChannel;
@@ -690,12 +693,12 @@ void serializeConfig() {
   ap_ip.add(2);
   ap_ip.add(1);
 
-  JsonObject wifi = doc.createNestedObject("wifi");
+  JsonObject wifi = root.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
   //wifi[F("phy")] = 1;
 
   #ifdef WLED_USE_ETHERNET
-  JsonObject ethernet = doc.createNestedObject("eth");
+  JsonObject ethernet = root.createNestedObject("eth");
   ethernet["type"] = ethernetType;
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     JsonArray pins = ethernet.createNestedArray("pin");
@@ -718,7 +721,7 @@ void serializeConfig() {
   }
   #endif
 
-  JsonObject hw = doc.createNestedObject("hw");
+  JsonObject hw = root.createNestedObject("hw");
 
   JsonObject hw_led = hw.createNestedObject("led");
   hw_led[F("total")] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
@@ -830,7 +833,7 @@ void serializeConfig() {
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;
 
-  JsonObject light = doc.createNestedObject(F("light"));
+  JsonObject light = root.createNestedObject(F("light"));
   light[F("scale-bri")] = briMultiplier;
   light[F("pal-mode")] = strip.paletteBlend;
   light[F("aseg")] = autoSegments;
@@ -853,12 +856,12 @@ void serializeConfig() {
   light_nl[F("tbri")] = nightlightTargetBri;
   light_nl["macro"] = macroNl;
 
-  JsonObject def = doc.createNestedObject("def");
+  JsonObject def = root.createNestedObject("def");
   def["ps"] = bootPreset;
   def["on"] = turnOnAtBoot;
   def["bri"] = briS;
 
-  JsonObject interfaces = doc.createNestedObject("if");
+  JsonObject interfaces = root.createNestedObject("if");
 
   JsonObject if_sync = interfaces.createNestedObject("sync");
   if_sync[F("port0")] = udpPort;
@@ -961,7 +964,7 @@ void serializeConfig() {
   if_ntp[F("ln")] = longitude;
   if_ntp[F("lt")] = latitude;
 
-  JsonObject ol = doc.createNestedObject("ol");
+  JsonObject ol = root.createNestedObject("ol");
   ol[F("clock")] = overlayCurrent;
   ol[F("cntdwn")] = countdownMode;
 
@@ -971,7 +974,7 @@ void serializeConfig() {
   ol[F("o5m")] = analogClock5MinuteMarks;
   ol[F("osec")] = analogClockSecondsTrail;
 
-  JsonObject timers = doc.createNestedObject(F("timers"));
+  JsonObject timers = root.createNestedObject(F("timers"));
 
   JsonObject cntdwn = timers.createNestedObject(F("cntdwn"));
   JsonArray goal = cntdwn.createNestedArray(F("goal"));
@@ -999,14 +1002,14 @@ void serializeConfig() {
     }
   }
 
-  JsonObject ota = doc.createNestedObject("ota");
+  JsonObject ota = root.createNestedObject("ota");
   ota[F("lock")] = otaLock;
   ota[F("lock-wifi")] = wifiLock;
   ota[F("pskl")] = strlen(otaPass);
   ota[F("aota")] = aOtaEnabled;
 
   #ifdef WLED_ENABLE_DMX
-  JsonObject dmx = doc.createNestedObject("dmx");
+  JsonObject dmx = root.createNestedObject("dmx");
   dmx[F("chan")] = DMXChannels;
   dmx[F("gap")] = DMXGap;
   dmx["start"] = DMXStart;
@@ -1020,11 +1023,11 @@ void serializeConfig() {
   dmx[F("e131proxy")] = e131ProxyUniverse;
   #endif
 
-  JsonObject usermods_settings = doc.createNestedObject("um");
+  JsonObject usermods_settings = root.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
 
   File f = WLED_FS.open("/cfg.json", "w");
-  if (f) serializeJson(doc, f);
+  if (f) serializeJson(*pDoc, f);
   f.close();
   releaseJSONBufferLock();
 
@@ -1037,19 +1040,21 @@ bool deserializeConfigSec() {
 
   if (!requestJSONBufferLock(3)) return false;
 
-  bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
+  bool success = readObjectFromFile("/wsec.json", nullptr, pDoc);
   if (!success) {
     releaseJSONBufferLock();
     return false;
   }
 
-  JsonObject nw_ins_0 = doc["nw"]["ins"][0];
+  JsonObject root = pDoc->as<JsonObject>();
+
+  JsonObject nw_ins_0 = root["nw"]["ins"][0];
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
 
-  JsonObject ap = doc["ap"];
+  JsonObject ap = root["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
 
-  [[maybe_unused]] JsonObject interfaces = doc["if"];
+  [[maybe_unused]] JsonObject interfaces = root["if"];
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
@@ -1060,10 +1065,10 @@ bool deserializeConfigSec() {
   getStringFromJson(hueApiKey, interfaces["hue"][F("key")], 47);
 #endif
 
-  getStringFromJson(settingsPIN, doc["pin"], 5);
+  getStringFromJson(settingsPIN, root["pin"], 5);
   correctPIN = !strlen(settingsPIN);
 
-  JsonObject ota = doc["ota"];
+  JsonObject ota = root["ota"];
   getStringFromJson(otaPass, ota[F("pwd")], 33);
   CJSON(otaLock, ota[F("lock")]);
   CJSON(wifiLock, ota[F("lock-wifi")]);
@@ -1078,17 +1083,19 @@ void serializeConfigSec() {
 
   if (!requestJSONBufferLock(4)) return;
 
-  JsonObject nw = doc.createNestedObject("nw");
+  JsonObject root = pDoc->as<JsonObject>();
+
+  JsonObject nw = root.createNestedObject("nw");
 
   JsonArray nw_ins = nw.createNestedArray("ins");
 
   JsonObject nw_ins_0 = nw_ins.createNestedObject();
   nw_ins_0["psk"] = clientPass;
 
-  JsonObject ap = doc.createNestedObject("ap");
+  JsonObject ap = root.createNestedObject("ap");
   ap["psk"] = apPass;
 
-  [[maybe_unused]] JsonObject interfaces = doc.createNestedObject("if");
+  [[maybe_unused]] JsonObject interfaces = root.createNestedObject("if");
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;
@@ -1098,16 +1105,16 @@ void serializeConfigSec() {
   if_hue[F("key")] = hueApiKey;
 #endif
 
-  doc["pin"] = settingsPIN;
+  root["pin"] = settingsPIN;
 
-  JsonObject ota = doc.createNestedObject("ota");
+  JsonObject ota = root.createNestedObject("ota");
   ota[F("pwd")] = otaPass;
   ota[F("lock")] = otaLock;
   ota[F("lock-wifi")] = wifiLock;
   ota[F("aota")] = aOtaEnabled;
 
   File f = WLED_FS.open("/wsec.json", "w");
-  if (f) serializeJson(doc, f);
+  if (f) serializeJson(*pDoc, f);
   f.close();
   releaseJSONBufferLock();
 }
