@@ -380,16 +380,6 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       file: "favicon.ico",
       name: "favicon",
       method: "binary",
-    },
-    {
-      file: "iro.js",
-      name: "iroJs",
-      method: "gzip"
-    },
-    {
-      file: "rangetouch.js",
-      name: "rangetouchJs",
-      method: "gzip"
     }
   ],
   "wled00/html_other.h"

@@ -7,52 +7,9 @@
 	<meta content="yes" name="apple-mobile-web-app-capable">
 	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
 	<title>WLED</title>
-	<script>
-	function feedback(){}
-	// instead of including [script src="iro.js"][/script] and [script src="rangetouch.js"][/script]
-	// (which would be inlined by nodeJS inliner during minimization and compression) we need to load them dynamically
-	// the following is needed to load iro.js and rangetouch.js as consecutive requests to allow ESP8266
-	// to keep up with requests (if requests happent too fast some may not get processed)
-	// it will also call onLoad() after last is loaded (it was removed from [body onload="onLoad()"]).
-	var h  = document.getElementsByTagName('head')[0];
-	var l  = document.createElement('script');
-	l.type = 'application/javascript';
-	l.src = 'iro.js';
-	l.addEventListener('load', (e) => {
-		// after iro is loaded initialize global variable
-		cpick = new iro.ColorPicker("#picker", {
-			width: 260,
-			wheelLightness: false,
-			wheelAngle: 270,
-			wheelDirection: "clockwise",
-			layout: [{
-				component: iro.ui.Wheel,
-				options: {}
-			}]
-		});
-		cpick.on("input:end", () => {setColor(1);});
-		cpick.on("color:change", () => {updatePSliders()});
-		var l  = document.createElement('script');
-		l.type = 'application/javascript';
-		l.src = 'rangetouch.js';
-		l.addEventListener('load', (e) => {
-			// after rangetouch is loaded initialize global variable
-			ranges = RangeTouch.setup('input[type="range"]', {});
-			let stateCheck = setInterval(() => {
-				if (document.readyState === 'complete') {
-					clearInterval(stateCheck);
-					// document ready, start processing UI
-					onLoad();
-				}
-			}, 100);
-		});
-		setTimeout(()=>{h.appendChild(l)},100);
-	});
-	setTimeout(()=>{h.appendChild(l)},200);
-	</script>
 	<link rel="stylesheet" href="index.css">
 </head>
-<body>
+<body onload="onLoad()">
 
 <div id="cv" class="overlay">Loading WLED UI...</div>
 <noscript><div class="overlay" style="opacity:1;">Sorry, WLED UI needs JavaScript!</div></noscript>
@@ -378,6 +335,13 @@
 </div>
 
 <i id="roverstar" class="icons huge" onclick="setLor(0)">&#xe410;</i><br>
+
+<!-- 
+	If you want to load iro.js and rangetouch.js as consecutive requests, you can do it like it was done in 0.14.0:
+	https://github.com/Aircoookie/WLED/blob/v0.14.0/wled00/data/index.htm
+-->
+<script src="iro.js"></script>
+<script src="rangetouch.js"></script>
 <script src="index.js"></script>
 </body>
 </html>
