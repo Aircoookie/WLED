@@ -723,9 +723,10 @@ void WLED::initConnection()
       WiFi.mode(WIFI_STA);
     }
   }
-  showWelcomePage = false;
 
   if (WLED_WIFI_CONFIGURED) {
+    showWelcomePage = false;
+    
     DEBUG_PRINT(F("Connecting to "));
     DEBUG_PRINT(clientSSID);
     DEBUG_PRINTLN("...");
