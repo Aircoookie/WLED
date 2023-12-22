@@ -448,7 +448,7 @@ void checkTimers()
 
 #define ZENITH -0.83
 // get sunrise (or sunset) time (in minutes) for a given day at a given geo location
-int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false) {
+static int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false) {
   //1. first calculate the day of the year
   float N1 = 275 * month / 9;
   float N2 = (month + 9) / 12;
@@ -509,7 +509,18 @@ void calculateSunriseAndSunset() {
     tim_0.tm_sec = 0;
     tim_0.tm_isdst = 0;
 
-    int minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude);
+    // Due to math instability, its possible to get a bad sunrise/sunset = 00:00 (see issue #3601)
+    // So in case we get 00:00, try to use the sunset/sunrise of previous day. Max 3 days back, this worked well in all cases I tried.
+    // When latitude = 66,6 (N or S), the functions sometimes returns 2147483647, so "unexpected large" is another condition for retry
+    int minUTC = 0;
+    int retryCount = 0;
+    do {
+      time_t theDay = localTime - retryCount * 86400; // one day back = 86400 seconds
+      minUTC = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, false);
+      DEBUG_PRINT(F("* sunrise (minutes from UTC) = ")); DEBUG_PRINTLN(minUTC);
+      retryCount ++;
+    } while ((minUTC == 0 || abs(minUTC) > 2*24*60)  && (retryCount <= 3));
+
     if (minUTC) {
       // there is a sunrise
       if (minUTC < 0) minUTC += 24*60; // add a day if negative
@@ -521,7 +532,14 @@ void calculateSunriseAndSunset() {
       sunrise = 0;
     }
 
-    minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude, true);
+    retryCount = 0;
+    do {
+      time_t theDay = localTime - retryCount * 86400; // one day back = 86400 seconds
+      minUTC = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, true);
+      DEBUG_PRINT(F("* sunset  (minutes from UTC) = ")); DEBUG_PRINTLN(minUTC);
+      retryCount ++;
+    } while ((minUTC == 0 || abs(minUTC) > 2*24*60) && (retryCount <= 3));
+
     if (minUTC) {
       // there is a sunset
       if (minUTC < 0) minUTC += 24*60; // add a day if negative
