@@ -1,8 +1,11 @@
 ## WLED changelog
 
-#### Build 2312180
+#### Build 2312220
+-   Version bump: 0.14.1-b2
+-   Fix for Pixel Magic button
+
+#### Build 2311280
 -   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3515, #3522, #3533, #3508)
--   Various other internal cleanups and optimisations
 
 #### Build 2311160
 -   Version bump: 0.14.1-b1
