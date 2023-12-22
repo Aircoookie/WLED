@@ -531,7 +531,7 @@ typedef struct Segment {
     #endif
     static void     handleRandomPalette();
 
-    void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, uint8_t segId = 255);
+    void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
     void    setCCT(uint16_t k);
     void    setOpacity(uint8_t o);
@@ -697,6 +697,7 @@ class WS2812FX {  // 96 bytes
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
       // true private variables
+      _suspend(false),
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
       _transitionDur(750),
@@ -754,7 +755,7 @@ class WS2812FX {  // 96 bytes
       setCCT(uint16_t k),
       setBrightness(uint8_t b, bool direct = false),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
-      purgeSegments(bool force = false),
+      purgeSegments(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 1, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=1),
       setMainSegmentId(uint8_t n),
       resetSegments(),
@@ -777,6 +778,8 @@ class WS2812FX {  // 96 bytes
     inline void setShowCallback(show_callback cb) { _callback = cb; }
     inline void setTransition(uint16_t t) { _transitionDur = t; }
     inline void appendSegment(const Segment &seg = Segment()) { if (_segments.size() < getMaxSegments()) _segments.push_back(seg); }
+    inline void suspend(void) { _suspend = true; }
+    inline void resume(void) { _suspend = false; }
 
     bool
       paletteFade,
@@ -790,6 +793,7 @@ class WS2812FX {  // 96 bytes
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
     inline bool isOffRefreshRequired(void) {return _isOffRefreshRequired;}
+    inline bool isSuspended(void) { return _suspend; }
 
     uint8_t
       paletteBlend,
@@ -899,6 +903,8 @@ class WS2812FX {  // 96 bytes
     friend class Segment;
 
   private:
+    volatile bool _suspend;
+
     uint16_t _length;
     uint8_t  _brightness;
     uint16_t _transitionDur;
@@ -932,9 +938,10 @@ class WS2812FX {  // 96 bytes
     uint16_t _qStart, _qStop, _qStartY, _qStopY;
     uint8_t _qGrouping, _qSpacing;
     uint16_t _qOffset;
-
+/*
     void
       setUpSegmentFromQueuedChanges(void);
+*/
 };
 
 extern const char JSON_mode_names[];

@@ -286,10 +286,10 @@ void parseNotifyPacket(uint8_t *udpIn) {
       uint16_t stopY  = version > 11 ? (udpIn[34+ofs] << 8 | udpIn[35+ofs]) : 1;
       uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
       if (!receiveSegmentOptions) {
-        //selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
-        // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
         DEBUG_PRINTF("Set segment w/o options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
-        strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+        strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
+        selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+        strip.resume();
         continue; // we do receive bounds, but not options
       }
       selseg.options = (selseg.options & 0x0071U) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
@@ -326,12 +326,14 @@ void parseNotifyPacket(uint8_t *udpIn) {
       }
       if (receiveSegmentBounds) {
         DEBUG_PRINTF("Set segment w/ options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
-        // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
-        strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+        strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
+        selseg.setUp(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+        strip.resume();
       } else {
-        // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
         DEBUG_PRINTF("Set segment grouping: %d [%d,%d]\n", id, (int)udpIn[5+ofs], (int)udpIn[6+ofs]);
-        strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+        strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
+        selseg.setUp(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+        strip.resume();
       }
     }
     stateChanged = true;

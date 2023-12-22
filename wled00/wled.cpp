@@ -846,7 +846,7 @@ void WLED::handleConnection()
       DEBUG_PRINT(F("Heap too low! "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
-      strip.purgeSegments(true); // remove all but one segments from memory
+      strip.resetSegments();
     } else if (heap < MIN_HEAP_SIZE) {
       strip.purgeSegments();
     }
