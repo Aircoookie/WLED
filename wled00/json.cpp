@@ -650,6 +650,7 @@ void serializeInfo(JsonObject root)
 
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
+  root[F("simplifiedui")] = simplifiedUI;
   root["live"] = (bool)realtimeMode;
   root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
 
@@ -945,11 +946,11 @@ void serializeNetworks(JsonObject root)
 
   for (int i = 0; i < status; i++) {
     JsonObject node = networks.createNestedObject();
-    node["ssid"]    = WiFi.SSID(i);
-    node["rssi"]    = WiFi.RSSI(i);
-    node["bssid"]   = WiFi.BSSIDstr(i);
-    node["channel"] = WiFi.channel(i);
-    node["enc"]     = WiFi.encryptionType(i);
+    node[F("ssid")]    = WiFi.SSID(i);
+    node[F("rssi")]    = WiFi.RSSI(i);
+    node[F("bssid")]   = WiFi.BSSIDstr(i);
+    node[F("channel")] = WiFi.channel(i);
+    node[F("enc")]     = WiFi.encryptionType(i);
   }
 
   WiFi.scanDelete();
@@ -1012,7 +1013,7 @@ static volatile bool servingClient = false;
 void serveJson(AsyncWebServerRequest* request)
 {
   if (servingClient) {
-    request->send(503, "application/json", F("{\"error\":2}")); // ERR_CONCURENCY
+    serveJsonError(request, 503, ERR_CONCURRENCY);
     return;
   }
   servingClient = true;
@@ -1044,13 +1045,13 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(501, "application/json", F("{\"error\":\"Not implemented\"}"));
+    serveJsonError(request, 501, ERR_NOT_IMPL);
     servingClient = false;
     return;
   }
 
   if (!requestJSONBufferLock(17)) {
-    request->send(503, "application/json", F("{\"error\":3}"));
+    serveJsonError(request, 503, ERR_NOBUF);
     servingClient = false;
     return;
   }

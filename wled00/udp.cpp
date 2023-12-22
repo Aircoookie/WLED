@@ -139,9 +139,9 @@ void notify(byte callMode, bool followUp)
     udpOut[29+ofs] = selseg.custom1;
     udpOut[30+ofs] = selseg.custom2;
     udpOut[31+ofs] = selseg.custom3 | (selseg.check1<<5) | (selseg.check2<<6) | (selseg.check3<<7);
-    udpOut[32+ofs] = selseg.startY >> 8;
+    udpOut[32+ofs] = selseg.startY >> 8;    // ATM always 0 as Segment::startY is 8-bit
     udpOut[33+ofs] = selseg.startY & 0xFF;
-    udpOut[34+ofs] = selseg.stopY >> 8;
+    udpOut[34+ofs] = selseg.stopY >> 8;     // ATM always 0 as Segment::stopY is 8-bit
     udpOut[35+ofs] = selseg.stopY & 0xFF;
     ++s;
   }
@@ -272,6 +272,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
       if (!receiveSegmentBounds) {
         if (!selseg.isActive()) {
           inactiveSegs++;
+          DEBUG_PRINTLN(F("Inactive segment."));
           continue;
         } else {
           id += inactiveSegs; // adjust id
@@ -279,24 +280,29 @@ void parseNotifyPacket(uint8_t *udpIn) {
       }
       DEBUG_PRINT(F("UDP segment processing: ")); DEBUG_PRINTLN(id);
 
-      uint16_t startY = 0, start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
-      uint16_t stopY  = 1, stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
+      uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
+      uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
+      uint16_t startY = version > 11 ? (udpIn[32+ofs] << 8 | udpIn[33+ofs]) : 0;
+      uint16_t stopY  = version > 11 ? (udpIn[34+ofs] << 8 | udpIn[35+ofs]) : 1;
       uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
       if (!receiveSegmentOptions) {
         //selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
         // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
+        DEBUG_PRINTF("Set segment w/o options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
         strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
         continue; // we do receive bounds, but not options
       }
       selseg.options = (selseg.options & 0x0071U) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
       selseg.setOpacity(udpIn[10+ofs]);
       if (applyEffects) {
+        DEBUG_PRINT(F("Apply effect: ")); DEBUG_PRINTLN(id);
         selseg.setMode(udpIn[11+ofs]);
         selseg.speed     = udpIn[12+ofs];
         selseg.intensity = udpIn[13+ofs];
         selseg.palette   = udpIn[14+ofs];
       }
       if (receiveNotificationColor || !someSel) {
+        DEBUG_PRINT(F("Apply color: ")); DEBUG_PRINTLN(id);
         selseg.setColor(0, RGBW32(udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs],udpIn[18+ofs]));
         selseg.setColor(1, RGBW32(udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs],udpIn[22+ofs]));
         selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]));
@@ -306,8 +312,10 @@ void parseNotifyPacket(uint8_t *udpIn) {
         // when applying synced options ignore selected as it may be used as indicator of which segments to sync
         // freeze, reset should never be synced
         // LSB to MSB: select, reverse, on, mirror, freeze, reset, reverse_y, mirror_y, transpose, map1d2d (3), ssim (2), set (2)
+        DEBUG_PRINT(F("Apply options: ")); DEBUG_PRINTLN(id);
         selseg.options = (selseg.options & 0b0000000000110001U) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0b11001110U); // ignore selected, freeze, reset
         if (applyEffects) {
+          DEBUG_PRINT(F("Apply sliders: ")); DEBUG_PRINTLN(id);
           selseg.custom1 = udpIn[29+ofs];
           selseg.custom2 = udpIn[30+ofs];
           selseg.custom3 = udpIn[31+ofs] & 0x1F;
@@ -315,14 +323,14 @@ void parseNotifyPacket(uint8_t *udpIn) {
           selseg.check1  = (udpIn[31+ofs]>>6) & 0x1;
           selseg.check1  = (udpIn[31+ofs]>>7) & 0x1;
         }
-        startY = (udpIn[32+ofs] << 8 | udpIn[33+ofs]);
-        stopY  = (udpIn[34+ofs] << 8 | udpIn[35+ofs]);
       }
       if (receiveSegmentBounds) {
+        DEBUG_PRINTF("Set segment w/ options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
         // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
         strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
       } else {
         // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
+        DEBUG_PRINTF("Set segment grouping: %d [%d,%d]\n", id, (int)udpIn[5+ofs], (int)udpIn[6+ofs]);
         strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
       }
     }

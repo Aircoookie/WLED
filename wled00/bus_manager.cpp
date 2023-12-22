@@ -77,7 +77,7 @@ uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaul
 
 uint32_t Bus::autoWhiteCalc(uint32_t c) {
   uint8_t aWM = _autoWhiteMode;
-  if (_gAWM < 255) aWM = _gAWM;
+  if (_gAWM < AW_GLOBAL_DISABLED) aWM = _gAWM;
   if (aWM == RGBW_MODE_MANUAL_ONLY) return c;
   uint8_t w = W(c);
   //ignore auto-white calculation if w>0 and mode DUAL (DUAL behaves as BRIGHTER if w==0)
