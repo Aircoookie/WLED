@@ -447,7 +447,7 @@ void checkTimers()
 }
 
 #define ZENITH -0.83
-// get sunrise (or sunset) time (in minutes) for a given day at a given geo location
+// get sunrise (or sunset) time (in minutes) for a given day at a given geo location. Returns >= INT16_MAX in case of "no sunset"
 static int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false) {
   //1. first calculate the day of the year
   float N1 = 275 * month / 9;
@@ -482,8 +482,8 @@ static int getSunriseUTC(int year, int month, int day, float lat, float lon, boo
 
   //7a. calculate the Sun's local hour angle
   float cosH = (sinf(DEG_TO_RAD*ZENITH) - (sinDec * sinf(DEG_TO_RAD*lat))) / (cosDec * cosf(DEG_TO_RAD*lat));
-  if ((cosH > 1.0f) && !sunset) return 0;  // the sun never rises on this location (on the specified date)
-  if ((cosH < -1.0f) && sunset) return 0;  // the sun never sets on this location (on the specified date)
+  if ((cosH > 1.0f) && !sunset) return INT16_MAX;  // the sun never rises on this location (on the specified date)
+  if ((cosH < -1.0f) && sunset) return INT16_MAX;  // the sun never sets on this location (on the specified date)
 
   //7b. finish calculating H and convert into hours
   float H = sunset ? RAD_TO_DEG*acosf(cosH) : 360 - RAD_TO_DEG*acosf(cosH);
@@ -499,6 +499,7 @@ static int getSunriseUTC(int year, int month, int day, float lat, float lon, boo
 	return UT*60;
 }
 
+#define SUNSET_MAX (24*60) // 1day = max expected absolute value for sun offset in minutes 
 // calculate sunrise and sunset (if longitude and latitude are set)
 void calculateSunriseAndSunset() {
   if ((int)(longitude*10.) || (int)(latitude*10.)) {
@@ -509,9 +510,9 @@ void calculateSunriseAndSunset() {
     tim_0.tm_sec = 0;
     tim_0.tm_isdst = 0;
 
-    // Due to math instability, its possible to get a bad sunrise/sunset = 00:00 (see issue #3601)
-    // So in case we get 00:00, try to use the sunset/sunrise of previous day. Max 3 days back, this worked well in all cases I tried.
-    // When latitude = 66,6 (N or S), the functions sometimes returns 2147483647, so "unexpected large" is another condition for retry
+    // Due to limited accuracy, its possible to get a bad sunrise/sunset displayed as "00:00" (see issue #3601)
+    // So in case of invalid result, we try to use the sunset/sunrise of previous day. Max 3 days back, this worked well in all cases I tried.
+    // When latitude = 66,6 (N or S), the functions sometimes returns 2147483647, so this "unexpected large" is another condition for retry
     int minUTC = 0;
     int retryCount = 0;
     do {
@@ -519,9 +520,9 @@ void calculateSunriseAndSunset() {
       minUTC = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, false);
       DEBUG_PRINT(F("* sunrise (minutes from UTC) = ")); DEBUG_PRINTLN(minUTC);
       retryCount ++;
-    } while ((minUTC == 0 || abs(minUTC) > 2*24*60)  && (retryCount <= 3));
+    } while ((abs(minUTC) > SUNSET_MAX)  && (retryCount <= 3));
 
-    if (minUTC) {
+    if (abs(minUTC) <= SUNSET_MAX) {
       // there is a sunrise
       if (minUTC < 0) minUTC += 24*60; // add a day if negative
       tim_0.tm_hour = minUTC / 60;
@@ -538,9 +539,9 @@ void calculateSunriseAndSunset() {
       minUTC = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, true);
       DEBUG_PRINT(F("* sunset  (minutes from UTC) = ")); DEBUG_PRINTLN(minUTC);
       retryCount ++;
-    } while ((minUTC == 0 || abs(minUTC) > 2*24*60) && (retryCount <= 3));
+    } while ((abs(minUTC) > SUNSET_MAX)  && (retryCount <= 3));
 
-    if (minUTC) {
+    if (abs(minUTC) <= SUNSET_MAX) {
       // there is a sunset
       if (minUTC < 0) minUTC += 24*60; // add a day if negative
       tim_0.tm_hour = minUTC / 60;
