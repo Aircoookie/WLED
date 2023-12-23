@@ -644,7 +644,7 @@ void serializeConfig() {
 
   if (!requestJSONBufferLock(2)) return;
 
-  JsonObject root = pDoc->as<JsonObject>();
+  JsonObject root = pDoc->to<JsonObject>();
 
   JsonArray rev = root.createNestedArray("rev");
   rev.add(1); //major settings revision
@@ -1027,7 +1027,7 @@ void serializeConfig() {
   usermods.addToConfig(usermods_settings);
 
   File f = WLED_FS.open("/cfg.json", "w");
-  if (f) serializeJson(*pDoc, f);
+  if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();
 
@@ -1083,7 +1083,7 @@ void serializeConfigSec() {
 
   if (!requestJSONBufferLock(4)) return;
 
-  JsonObject root = pDoc->as<JsonObject>();
+  JsonObject root = pDoc->to<JsonObject>();
 
   JsonObject nw = root.createNestedObject("nw");
 
@@ -1114,7 +1114,7 @@ void serializeConfigSec() {
   ota[F("aota")] = aOtaEnabled;
 
   File f = WLED_FS.open("/wsec.json", "w");
-  if (f) serializeJson(*pDoc, f);
+  if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();
 }
