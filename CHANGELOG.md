@@ -1,5 +1,11 @@
 ## WLED changelog
 
+#### Build 2312230
+-   Version bump: 0.14.1-b2
+-   Fix for Pixel Magic button
+-   Fix for #2922 (option to force WiFi PHY mode to G on ESP8266)
+-   Fix for #3601, #3400 (incorrect sunrise/sunset, #3612 by @softhack007)
+
 #### Build 2312180
 -   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3515, #3522, #3533, #3508)
 -   Various other internal cleanups and optimisations
