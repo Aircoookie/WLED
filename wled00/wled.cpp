@@ -133,7 +133,7 @@ void WLED::loop()
   if (lastMqttReconnectAttempt > millis()) {
     rolloverMillis++;
     lastMqttReconnectAttempt = 0;
-    ntpLastSyncTime = 0;
+    ntpLastSyncTime = NTP_NEVER;  // force new NTP query
     strip.restartRuntime();
   }
   if (millis() - lastMqttReconnectAttempt > 30000 || lastMqttReconnectAttempt == 0) { // lastMqttReconnectAttempt==0 forces immediate broadcast
@@ -374,6 +374,11 @@ void WLED::setup()
   #else
     DEBUG_PRINTLN(F("PSRAM not used."));
   #endif
+#endif
+#if defined(ARDUINO_ESP32_PICO)
+// special handling for PICO-D4: gpio16+17 are in use for onboard SPI FLASH (not PSRAM)
+managed_pin_type pins[] = { {16, true}, {17, true} };
+pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
 #endif
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));

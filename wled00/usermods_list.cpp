@@ -201,6 +201,9 @@
   #include "../usermods/usermod_v2_HttpPullLightControl/usermod_v2_HttpPullLightControl.h"
 #endif
 
+#ifdef USERMOD_LDR_DUSK_DAWN
+#include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+#endif
 
 void registerUsermods()
 {
@@ -380,5 +383,9 @@ void registerUsermods()
 
   #ifdef USERMOD_HTTP_PULL_LIGHT_CONTROL
   usermods.add(new HttpPullLightControl());
+  #endif
+
+  #ifdef USERMOD_LDR_DUSK_DAWN
+  usermods.add(new LDR_Dusk_Dawn_v2());
   #endif
 }
