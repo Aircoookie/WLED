@@ -74,7 +74,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   noWifiSleep = doc[F("wifi")][F("sleep")] | !noWifiSleep; // inverted
   noWifiSleep = !noWifiSleep;
-  //int wifi_phy = doc[F("wifi")][F("phy")]; //force phy mode n?
+  force802_3g = doc[F("wifi")][F("phy")] | force802_3g; //force phy mode g?
 
   JsonObject hw = doc[F("hw")];
 
@@ -682,7 +682,7 @@ void serializeConfig() {
 
   JsonObject wifi = doc.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
-  //wifi[F("phy")] = 1;
+  wifi[F("phy")] = (int)force802_3g;
 
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc.createNestedObject("eth");
