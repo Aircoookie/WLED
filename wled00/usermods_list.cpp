@@ -216,10 +216,6 @@
 #include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
 #endif
 
-#ifdef USERMOD_YA_WEATHER
-#include "../usermods/usermod_v2_yandex_weather/usermod_v2_yandex_weather.h"
-#endif
-
 void registerUsermods()
 {
   /*
@@ -420,10 +416,6 @@ void registerUsermods()
 #endif
 #ifdef USERMOD_ANIMARTRIX
   usermods.add(new AnimartrixUsermod("Animartrix", false));
-#endif
-
-#ifdef USERMOD_YA_WEATHER
-  usermods.add(new YandexWeatherUsermod("YandexWeather", false));
 #endif
 
 }
