@@ -225,11 +225,17 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           if (e131_data[dataOffset+3]   != seg.intensity) seg.intensity = e131_data[dataOffset+3];
           if (e131_data[dataOffset+4]   != seg.palette)   seg.setPalette(e131_data[dataOffset+4]);
 
-          uint8_t segOption = (uint8_t)floor(e131_data[dataOffset+5]/64.0);
-          if (segOption == 0 && (seg.mirror  || seg.reverse )) {seg.setOption(SEG_OPTION_MIRROR, false); seg.setOption(SEG_OPTION_REVERSED, false);}
-          if (segOption == 1 && (seg.mirror  || !seg.reverse)) {seg.setOption(SEG_OPTION_MIRROR, false); seg.setOption(SEG_OPTION_REVERSED,  true);}
-          if (segOption == 2 && (!seg.mirror || seg.reverse )) {seg.setOption(SEG_OPTION_MIRROR,  true); seg.setOption(SEG_OPTION_REVERSED, false);}
-          if (segOption == 3 && (!seg.mirror || !seg.reverse)) {seg.setOption(SEG_OPTION_MIRROR,  true); seg.setOption(SEG_OPTION_REVERSED,  true);}
+          uint8_t segOption = (uint8_t)floor(e131_data[dataOffset+5]);
+          if ((segOption & (1 << 0)) != seg.reverse_y) { seg.setOption(SEG_OPTION_REVERSED_Y, segOption & (1 << 0)); }
+          if ((segOption & (1 << 1)) != seg.mirror_y) { seg.setOption(SEG_OPTION_MIRROR_Y, segOption & (1 << 1)); }
+          if ((segOption & (1 << 2)) != seg.transpose) { seg.setOption(SEG_OPTION_TRANSPOSED, segOption & (1 << 2)); }
+          if ((segOption & ((1 << 3) | (1 << 4))) >> 3 != seg.map1D2D) {
+            seg.map1D2D = (segOption & ((1 << 3) | (1 << 4))) >> 3;
+          }
+          // To maintain backwards compatibility with prior e1.31 values, reverse is fixed to mask 0x01000000
+          if ((segOption & (1 << 6)) != seg.reverse) { seg.setOption(SEG_OPTION_REVERSED, segOption & (1 << 6)); }
+          // To maintain backwards compatibility with prior e1.31 values, mirror is fixed to mask 0x10000000
+          if ((segOption & (1 << 7)) != seg.mirror) { seg.setOption(SEG_OPTION_MIRROR, segOption & (1 << 7)); }
 
           uint32_t colors[3];
           byte whites[3] = {0,0,0};
