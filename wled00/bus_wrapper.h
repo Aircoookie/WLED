@@ -121,6 +121,22 @@
 #define I_HS_LPO_3 47
 #define I_SS_LPO_3 48
 
+//Adafruit Pixie (RGB)
+//ESP8266 has two UARTs
+//UART0 is generally used for USB communications
+//UART1 is TX only and is on GPIO2 (Can't be changed)
+
+//ESP32 has three UARTs and can be mapped to any pin, by default UART1 TX GPIO10, UART2 TX GPIO17
+//UART0 is generally used for USB communications
+//UART1 defaults to GPIO9(RX) and GPIO10 (TX) which are commonly used for SPI flash memory, so need to remap to use
+//UART2 defaults are GPIO16(RX) and GPIO17(TX)
+
+//Startegy always use UART1, but for ESP32 remap to GPIO2, Pixie will be locked to GPIO2 for both boards.
+
+//#define I_SER0_Pixie_3 49 //Hardware UART0, do we even want this option?
+#define I_SER1_Pixie_3 50 //Hardware UART1, will always be used for ESP8266
+//#define I_SER2_Pixie_3 51 //Hardware UART2, available only on ESP32
+//#define I_SERS_Pixie_3 52 //SoftwareUART not implemented yet
 
 // In the following NeoGammaNullMethod can be replaced with NeoGammaWLEDMethod to perform Gamma correction implicitly
 // unfortunately that may apply Gamma correction to pre-calculated palettes which is undesired
@@ -261,6 +277,9 @@
 #define B_HS_P98_3 NeoPixelBusLg<P9813BgrFeature, P9813SpiHzMethod, NeoGammaNullMethod>
 #define B_SS_P98_3 NeoPixelBusLg<P9813BgrFeature, P9813Method, NeoGammaNullMethod>
 
+//Adafruit Pixie
+#define B_PIXIE_3 NeoPixelBusLg<NeoRgbFeature, PixieStreamMethod, NeoGammaNullMethod>
+
 // 48bit & 64bit to 24bit & 32bit RGB(W) conversion
 #define toRGBW32(c) (RGBW32((c>>40)&0xFF, (c>>24)&0xFF, (c>>8)&0xFF, (c>>56)&0xFF))
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
@@ -288,6 +307,31 @@ class PolyBus {
     tm1814_strip->Begin();
     // Max current for each LED (22.5 mA).
     tm1814_strip->SetPixelSettings(NeoTm1814Settings(/*R*/225, /*G*/225, /*B*/225, /*W*/225));
+  }
+
+  // Begin & initialize the UART for Adafruit Pixie.
+  template <class T>
+  static void beginPixie(void* busPtr) {
+    T pixie_strip = static_cast<T>(busPtr);
+    // Pixie requires 115200 buard rate and 8N1. 
+    #ifdef ESP8266
+      //TX is GPIO2
+      Serial1.begin(115200, SERIAL_8N1);
+    #endif
+    #ifdef ARDUINO_ARCH_ESP32
+      //reassign Serial1 TX to match ESP8266
+      Serial1.begin(115200, SERIAL_8N1, 4, 2);
+    #endif
+    pixie_strip->Begin();
+  }
+
+  // Begin & initialize the UART for Adafruit Pixie.
+  template <class T>
+  static void cleanupPixie(void* busPtr) {
+    T pixie_strip = static_cast<T>(busPtr);
+    Serial1.end();
+    //delay(100);
+    delete pixie_strip;
   }
 
   static void begin(void* busPtr, uint8_t busType, uint8_t* pins, uint16_t clock_kHz = 0U) {
@@ -391,6 +435,8 @@ class PolyBus {
       case I_SS_LPO_3: (static_cast<B_SS_LPO_3*>(busPtr))->Begin(); break;
       case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->Begin(); break;
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->Begin(); break;
+      //Pixie call beginPixie to setup UART
+      case I_SER1_Pixie_3: beginPixie<B_PIXIE_3*>(busPtr); break;
     }
   }
 
@@ -491,6 +537,9 @@ class PolyBus {
       case I_SS_WS1_3: busPtr = new B_SS_WS1_3(len, pins[1], pins[0]); break;
       case I_HS_P98_3: busPtr = new B_HS_P98_3(len, pins[1], pins[0]); break;
       case I_SS_P98_3: busPtr = new B_SS_P98_3(len, pins[1], pins[0]); break;
+
+      //Adafruit Pixie
+      case I_SER1_Pixie_3: busPtr = new B_PIXIE_3(len, &Serial1); break;
     }
     begin(busPtr, busType, pins, clock_kHz);
     return busPtr;
@@ -591,6 +640,7 @@ class PolyBus {
       case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->Show(consistent); break;
       case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Show(consistent); break;
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->Show(consistent); break;
+      case I_SER1_Pixie_3: (static_cast<B_PIXIE_3*>(busPtr))->Show(consistent); break;
     }
   }
 
@@ -688,6 +738,7 @@ class PolyBus {
       case I_SS_WS1_3: return (static_cast<B_SS_WS1_3*>(busPtr))->CanShow(); break;
       case I_HS_P98_3: return (static_cast<B_HS_P98_3*>(busPtr))->CanShow(); break;
       case I_SS_P98_3: return (static_cast<B_SS_P98_3*>(busPtr))->CanShow(); break;
+      case I_SER1_Pixie_3: (static_cast<B_PIXIE_3*>(busPtr))->CanShow(); break;
     }
     return true;
   }
@@ -810,6 +861,7 @@ class PolyBus {
       case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_SER1_Pixie_3: (static_cast<B_PIXIE_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
     }
   }
 
@@ -908,6 +960,7 @@ class PolyBus {
       case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetLuminance(b); break;
       case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetLuminance(b); break;
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetLuminance(b); break;
+      case I_SER1_Pixie_3: (static_cast<B_PIXIE_3*>(busPtr))->SetLuminance(b); break;
     }
   }
 
@@ -1007,6 +1060,7 @@ class PolyBus {
       case I_SS_WS1_3: col = (static_cast<B_SS_WS1_3*>(busPtr))->GetPixelColor(pix); break;
       case I_HS_P98_3: col = (static_cast<B_HS_P98_3*>(busPtr))->GetPixelColor(pix); break;
       case I_SS_P98_3: col = (static_cast<B_SS_P98_3*>(busPtr))->GetPixelColor(pix); break;
+      case I_SER1_Pixie_3: (static_cast<B_PIXIE_3*>(busPtr))->GetPixelColor(pix); break;
     }
 
     // upper nibble contains W swap information
@@ -1124,6 +1178,7 @@ class PolyBus {
       case I_SS_WS1_3: delete (static_cast<B_SS_WS1_3*>(busPtr)); break;
       case I_HS_P98_3: delete (static_cast<B_HS_P98_3*>(busPtr)); break;
       case I_SS_P98_3: delete (static_cast<B_SS_P98_3*>(busPtr)); break;
+      case I_SER1_Pixie_3: cleanupPixie<B_PIXIE_3*>(busPtr); break;
     }
   }
 
@@ -1150,6 +1205,9 @@ class PolyBus {
       }
       if (t > I_NONE && isHSPI) t--; //hardware SPI has one smaller ID than software
       return t;
+    } else if (busType == TYPE_AdaFruit_Pixie ) {
+        //if we want to give option for which UART or Pin numer, add logic here.
+        return I_SER1_Pixie_3;
     } else {
       #ifdef ESP8266
       uint8_t offset = pins[0] -1; //for driver: 0 = uart0, 1 = uart1, 2 = dma, 3 = bitbang

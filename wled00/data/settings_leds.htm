@@ -200,13 +200,15 @@
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
 				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
-				gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
+				gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48) || (t == 17)) ? "none":"inline";  // hide color order for PWM and Adafruit Pixie
 				gId("dig"+n+"w").style.display = (t > 28 && t < 32) ? "inline":"none";  // show swap channels dropdown
 				if (!(t > 28 && t < 32)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
+				if (t == 17) d.getElementsByName("L0"+n)[0].value = 2; //for Adafruit Pixie set GPIO 2
+				d.getElementsByName("L0"+n)[0].readOnly = (t == 17) ? true : false; //for Adafruit Pixie set GPIO to read only
 				gId("dig"+n+"c").style.display = (t >= 40 && t < 48) ? "none":"inline";  // hide count for analog
 				gId("dig"+n+"r").style.display = (t >= 80 && t < 96) ? "none":"inline";  // hide reversed for virtual
 				gId("dig"+n+"s").style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
-				gId("dig"+n+"f").style.display = ((t >= 16 && t < 32) || (t >= 50 && t < 64)) ? "inline":"none";  // hide refresh
+				gId("dig"+n+"f").style.display = ((t >= 16 && t < 32 && t !=17) || (t >= 50 && t < 64)) ? "inline":"none";  // hide refresh
 				gId("dig"+n+"a").style.display = (isRGBW && t != 40) ? "inline":"none";  // auto calculate white
 				gId("dig"+n+"l").style.display = (t > 48 && t < 64) ? "inline":"none";  // bus clock speed
 				gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
@@ -352,6 +354,7 @@ ${i+1}:
 <option value="54">LPD6803</option>\
 <option value="53">P9813</option>\
 <option value="19">WS2811 White</option>\
+<option value="17">Adafruit Pixie</option>\
 <option value="40">On/Off</option>\
 <option value="41">PWM White</option>\
 <option value="42">PWM CCT</option>\
