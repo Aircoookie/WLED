@@ -25,7 +25,7 @@ static void doSaveState() {
   const char *filename = getFileName(persist);
 
   unsigned long start = millis();
-  while (strip.isUpdating() && millis()-start > (2*FRAMETIME_FIXED)+1) yield(); // wait 2 frames
+  while (strip.isUpdating() && millis()-start < (2*FRAMETIME_FIXED)+1) yield(); // wait 2 frames
   if (strip.isUpdating() || !requestJSONBufferLock(10)) return; // will set fileDoc
 
   initPresetsFile(); // just in case if someone deleted presets.json using /edit
