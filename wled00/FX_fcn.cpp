@@ -201,12 +201,14 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 }
 
 bool Segment::allocateData(size_t len) {
-  if (data && _dataLen >= len) {
-    if (call == 0) memset(data, 0, len); // WLEDMM: clear data when SEGENV.call==0
-    return true; //already allocated
+  // WLEDMM
+  if (data && _dataLen >= len) {                          // already allocated enough (reduce fragmentation)
+    if ((call == 0) && (len > 0)) memset(data, 0, len);   // erase buffer if called during effect initialisation
+    return true;
   }
   //DEBUG_PRINTF("allocateData(%u) start %d, stop %d, vlen %d\n", len, start, stop, virtualLength());
   deallocateData();
+  if (len == 0) return false; // nothing to do
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
   // do not use SPI RAM on ESP32 since it is slow
   //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
