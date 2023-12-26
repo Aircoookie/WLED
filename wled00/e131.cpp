@@ -225,17 +225,16 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           if (e131_data[dataOffset+3]   != seg.intensity) seg.intensity = e131_data[dataOffset+3];
           if (e131_data[dataOffset+4]   != seg.palette)   seg.setPalette(e131_data[dataOffset+4]);
 
-          uint8_t segOption = e131_data[dataOffset+5];
-          if ((segOption & (1 << 0)) != seg.reverse_y) { seg.setOption(SEG_OPTION_REVERSED_Y, segOption & (1 << 0)); }
-          if ((segOption & (1 << 1)) != seg.mirror_y) { seg.setOption(SEG_OPTION_MIRROR_Y, segOption & (1 << 1)); }
-          if ((segOption & (1 << 2)) != seg.transpose) { seg.setOption(SEG_OPTION_TRANSPOSED, segOption & (1 << 2)); }
-          if ((segOption & ((1 << 3) | (1 << 4))) >> 3 != seg.map1D2D) {
-            seg.map1D2D = (segOption & ((1 << 3) | (1 << 4))) >> 3;
+          if ((e131_data[dataOffset+5] & 0b00000001) != seg.reverse_y) { seg.setOption(SEG_OPTION_REVERSED_Y, e131_data[dataOffset+5] & 0b00000001); }
+          if ((e131_data[dataOffset+5] & 0b00000010) != seg.mirror_y) { seg.setOption(SEG_OPTION_MIRROR_Y, e131_data[dataOffset+5] & 0b00000010); }
+          if ((e131_data[dataOffset+5] & 0b00000100) != seg.transpose) { seg.setOption(SEG_OPTION_TRANSPOSED, e131_data[dataOffset+5] & 0b00000100); }
+          if ((e131_data[dataOffset+5] & 0b00011000) / 8 != seg.map1D2D) {
+            seg.map1D2D = (e131_data[dataOffset+5] & 0b00011000) / 8;
           }
           // To maintain backwards compatibility with prior e1.31 values, reverse is fixed to mask 0x01000000
-          if ((segOption & (1 << 6)) != seg.reverse) { seg.setOption(SEG_OPTION_REVERSED, segOption & (1 << 6)); }
+          if ((e131_data[dataOffset+5] & 0b01000000) != seg.reverse) { seg.setOption(SEG_OPTION_REVERSED, e131_data[dataOffset+5] & 0b01000000); }
           // To maintain backwards compatibility with prior e1.31 values, mirror is fixed to mask 0x10000000
-          if ((segOption & (1 << 7)) != seg.mirror) { seg.setOption(SEG_OPTION_MIRROR, segOption & (1 << 7)); }
+          if ((e131_data[dataOffset+5] & 0b10000000) != seg.mirror) { seg.setOption(SEG_OPTION_MIRROR, e131_data[dataOffset+5] & 0b10000000); }
 
           uint32_t colors[3];
           byte whites[3] = {0,0,0};
