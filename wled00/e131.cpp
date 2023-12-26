@@ -225,7 +225,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           if (e131_data[dataOffset+3]   != seg.intensity) seg.intensity = e131_data[dataOffset+3];
           if (e131_data[dataOffset+4]   != seg.palette)   seg.setPalette(e131_data[dataOffset+4]);
 
-          uint8_t segOption = (uint8_t)floor(e131_data[dataOffset+5]);
+          uint8_t segOption = e131_data[dataOffset+5];
           if ((segOption & (1 << 0)) != seg.reverse_y) { seg.setOption(SEG_OPTION_REVERSED_Y, segOption & (1 << 0)); }
           if ((segOption & (1 << 1)) != seg.mirror_y) { seg.setOption(SEG_OPTION_MIRROR_Y, segOption & (1 << 1)); }
           if ((segOption & (1 << 2)) != seg.transpose) { seg.setOption(SEG_OPTION_TRANSPOSED, segOption & (1 << 2)); }
