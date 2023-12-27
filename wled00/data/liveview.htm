@@ -36,16 +36,15 @@
         return res.json();
       })
       .then(json => {
-        var str = "linear-gradient(90deg,";
-        var len = json.leds.length;
+        const canv = document.getElementById("canv"), context = canv.getContext("2d"), len = json.leds.length, w = document.documentElement.clientWidth, h = canv.height;
+        canv.width=w;
+        context.clearRect(0, 0, w, h);
         for (i = 0; i < len; i++) {
           var leddata = json.leds[i];
           if (leddata.length > 6) leddata = leddata.substring(2);
-          str += "#" + leddata;
-          if (i < len -1) str += ","
+          context.fillStyle = "#" + leddata;
+          context.fillRect ( i * w / len, 0, w, h)
         }
-        str += ")";
-        document.getElementById("canv").style.background = str;
         clearTimeout(tmout);
         tmout = setTimeout(update, 40);
       })
@@ -104,6 +103,6 @@
   </script>
 </head>
 <body onload="S()">
-  <div id="canv"></div>
+  <canvas id="canv"></div>
 </body>
 </html>
