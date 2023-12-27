@@ -5292,7 +5292,6 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
   if (SEGENV.call == 0) {
-    memset(SEGMENT.data, 0, dataSize); // no falling spawns
     SEGMENT.fill(BLACK);
     SEGENV.step = 0;
   }

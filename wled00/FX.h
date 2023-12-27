@@ -543,9 +543,9 @@ typedef struct Segment {
 
     // runtime data functions
     inline uint16_t dataSize(void) const { return _dataLen; }
-    bool allocateData(size_t len);
-    void deallocateData(void);
-    void resetIfRequired(void);
+    bool allocateData(size_t len);  // allocates effect data buffer in heap and clears it
+    void deallocateData(void);      // deallocates (frees) effect data buffer from heap
+    void resetIfRequired(void);     // sets all SEGENV variables to 0 and clears data buffer
     /**
       * Flags that before the next effect is calculated,
       * the internal segment state should be reset.
@@ -559,10 +559,10 @@ typedef struct Segment {
     void     stopTransition(void);
     void     handleTransition(void);
     #ifndef WLED_DISABLE_MODE_BLEND
-    void     swapSegenv(tmpsegd_t &tmpSegD);
-    void     restoreSegenv(tmpsegd_t &tmpSegD);
+    void     swapSegenv(tmpsegd_t &tmpSegD);    // copies segment data into specifed buffer, if buffer is not a transition buffer, segment data is overwritten from transition buffer
+    void     restoreSegenv(tmpsegd_t &tmpSegD); // restores segment data from buffer, if buffer is not transition buffer, changed values are copied to transition buffer
     #endif
-    uint16_t progress(void); //transition progression between 0-65535
+    uint16_t progress(void); // transition progression between 0-65535
     uint8_t  currentBri(bool useCct = false);
     uint8_t  currentMode(void);
     uint32_t currentColor(uint8_t slot);
