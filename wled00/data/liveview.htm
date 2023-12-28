@@ -24,13 +24,7 @@
   </style>
   <script>
     var ws;
-    var c = document.getElementById('canvas');
-    var ctx = c.getContext('2d');
     var tmout = null;
-    function setCanvas() {
-      c.width  = document.documentElement.clientWidth;
-    }
-    setCanvas();
     function update() // via HTTP (/json/live)
     {
       if (document.hidden) {
@@ -50,14 +44,16 @@
         var leddata = (data) => "#" + ((data.length > 6) ? data.substring(2) : data);
         var str = "linear-gradient(90deg,";
         var len = json.leds.length;
-        if (typeof ctx === "object") { //canvas support
-          setCanvas();
+        try { //canvas support
+          var c = document.getElementById('canvas');
+          var ctx = c.getContext('2d');
+          c.width  = document.documentElement.clientWidth;
           ctx.clearRect(0, 0, c.width, c.height);
           for (i = 0; i < len; i++) {
             ctx.fillStyle = leddata(json.leds[i]);
             ctx.fillRect ( i * c.width / len, 0, c.width, c.height);
           }
-        } else { //fallback to gradient method
+        } catch (e) { //fallback to gradient method
           for (i = 0; i < len; i++) {
             str += leddata(json.leds[i]) + ((i < len -1) ? "," : "");
           }
@@ -108,14 +104,16 @@
             let len = leds.length;
             let start = leds[1]==2 ? 4 : 2; // 1 = 1D, 2 = 1D/2D (leds[2]=w, leds[3]=h)
             let rgb = (i) => `rgb(${leds[i]},${leds[i+1]},${leds[i+2]})`;
-            if (typeof ctx === "object") { //canvas support
-              setCanvas();
+            try { //canvas support
+              var c = document.getElementById('canvas');
+              var ctx = c.getContext('2d');
+              c.width  = document.documentElement.clientWidth;
               ctx.clearRect(0, 0, c.width, c.height);
               for (i = start; i < len; i+=3) {
                 ctx.fillStyle = rgb(i);
                 ctx.fillRect ( (i - start) * c.width / (len - start), 0, c.width, c.height);
               }
-            } else { //fallback to gradient method
+            } catch (e) { //fallback to gradient method
               let str = "linear-gradient(90deg,";
               for (i = start; i < len; i+=3) {
                 str += rgb(i) + ((i < len -3) ? "," : "");
