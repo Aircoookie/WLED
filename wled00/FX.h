@@ -887,6 +887,7 @@ class WS2812FX {  // 96 bytes
 
   // end 2D support
 
+    bool loadCustomPalette(CRGBPalette16 &targetPalette, int pal, bool gammaCorrection); // load a custom palette, returns true if the file exists
     void loadCustomPalettes(void); // loads custom palettes from JSON
     CRGBPalette16 _currentPalette; // palette used for current effect (includes transition)
     std::vector<CRGBPalette16> customPalettes; // TODO: move custom palettes out of WS2812FX class

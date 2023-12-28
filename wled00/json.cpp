@@ -924,7 +924,9 @@ void serializePalettes(JsonObject root, int page)
       default:
         {
         if (i>=palettesCount) {
-          setPaletteColors(curPalette, strip.customPalettes[i - palettesCount]);
+          CRGBPalette16 pal;
+          strip.loadCustomPalette(pal, i - palettesCount, false);
+          setPaletteColors(curPalette, pal);
         } else {
           memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
           setPaletteColors(curPalette, tcp);
