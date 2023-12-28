@@ -178,7 +178,7 @@ void WLED::loop()
     doSerializeConfig = true;
   }
   if (loadLedmap >= 0) {
-    if (!strip.deserializeMap(loadLedmap) && strip.isMatrix && loadLedmap == 0) strip.setUpMatrix();
+    strip.deserializeMap(loadLedmap);
     loadLedmap = -1;
   }
   yield();
