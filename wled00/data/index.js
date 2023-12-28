@@ -329,7 +329,6 @@ function openTab(tabI, force = false)
 var timeout;
 function showToast(text, error = false)
 {
-	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
 	var x = gId('toast');
 	//if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
 	x.innerHTML = text;
@@ -342,6 +341,7 @@ function showToast(text, error = false)
 
 function showErrorToast()
 {
+	gId('connind').style.backgroundColor = "var(--c-r)";
 	showToast('Connection to light failed!', true);
 }
 
@@ -1492,25 +1492,31 @@ function readState(s,command=false)
 	gId('checkO3').checked = !(!i.o3);
 
 	if (s.error && s.error != 0) {
-	  var errstr = "";
-	  switch (s.error) {
-		case 10:
-		  errstr = "Could not mount filesystem!";
-		  break;
-		case 11:
-		  errstr = "Not enough space to save preset!";
-		  break;
-		case 12:
-		  errstr = "Preset not found.";
-		  break;
-		case 13:
-		  errstr = "Missing ir.json.";
-		  break;
-		case 19:
-		  errstr = "A filesystem error has occured.";
-		  break;
+		var errstr = "";
+		switch (s.error) {
+			case  8:
+				errstr = "Effect RAM depleted!";
+				break;
+			case  9:
+				errstr = "JSON parsing error!";
+				break;
+			case 10:
+				errstr = "Could not mount filesystem!";
+				break;
+			case 11:
+				errstr = "Not enough space to save preset!";
+				break;
+			case 12:
+				errstr = "Preset not found.";
+				break;
+			case 13:
+				errstr = "Missing ir.json.";
+				break;
+			case 19:
+				errstr = "A filesystem error has occured.";
+				break;
 		}
-	  showToast('Error ' + s.error + ": " + errstr, true);
+		showToast('Error ' + s.error + ": " + errstr, true);
 	}
 
 	selectedPal = i.pal;
