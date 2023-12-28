@@ -23,11 +23,12 @@
   }
   </style>
   <script>
+    var d = document;
     var ws;
     var tmout = null;
     function update() // via HTTP (/json/live)
     {
-      if (document.hidden) {
+      if (d.hidden) {
         clearTimeout(tmout);
         tmout = setTimeout(update, 250);
         return;
@@ -42,28 +43,28 @@
       })
       .then(json => {
         var leddata = (data) => "#" + ((data.length > 6) ? data.substring(2) : data);
-        var str = "linear-gradient(90deg,";
         var len = json.leds.length;
         try { //canvas support
-          var c = document.getElementById('canvas');
+          var c = d.getElementById('canvas');
           var ctx = c.getContext('2d');
-          c.width  = document.documentElement.clientWidth;
+          c.width = d.documentElement.clientWidth;
           ctx.clearRect(0, 0, c.width, c.height);
           for (i = 0; i < len; i++) {
             ctx.fillStyle = leddata(json.leds[i]);
-            ctx.fillRect ( i * c.width / len, 0, c.width, c.height);
+            ctx.fillRect(i * c.width / len, 0, c.width, c.height);
           }
         } catch (e) { //fallback to gradient method
+          var str = "linear-gradient(90deg,";
           for (i = 0; i < len; i++) {
             str += leddata(json.leds[i]) + ((i < len -1) ? "," : "");
           }
           str += ")";
-          document.getElementById("canv").style.background = str;
+          d.getElementById("canv").style.background = str;
         }
         clearTimeout(tmout);
         tmout = setTimeout(update, 40);
       })
-      .catch(function (error) {
+      .catch((error)=>{
         console.error("Peek HTTP error:",error);
         clearTimeout(tmout);
         tmout = setTimeout(update, 2500);
@@ -105,13 +106,13 @@
             let start = leds[1]==2 ? 4 : 2; // 1 = 1D, 2 = 1D/2D (leds[2]=w, leds[3]=h)
             let rgb = (i) => `rgb(${leds[i]},${leds[i+1]},${leds[i+2]})`;
             try { //canvas support
-              var c = document.getElementById('canvas');
+              var c = d.getElementById('canvas');
               var ctx = c.getContext('2d');
-              c.width  = document.documentElement.clientWidth;
+              c.width = d.documentElement.clientWidth;
               ctx.clearRect(0, 0, c.width, c.height);
               for (i = start; i < len; i+=3) {
                 ctx.fillStyle = rgb(i);
-                ctx.fillRect ( (i - start) * c.width / (len - start), 0, c.width, c.height);
+                ctx.fillRect((i - start) * c.width / (len - start), 0, c.width, c.height);
               }
             } catch (e) { //fallback to gradient method
               let str = "linear-gradient(90deg,";
@@ -119,7 +120,7 @@
                 str += rgb(i) + ((i < len -3) ? "," : "");
               }
               str += ")";
-              document.getElementById("canv").style.background = str;
+              d.getElementById("canv").style.background = str;
             }
           }
         } catch (err) {
