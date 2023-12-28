@@ -258,23 +258,8 @@ void BusDigital::setBrightness(uint8_t b) {
     if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) reinit();
   }
   #endif
-  uint8_t prevBri = _bri;
   Bus::setBrightness(b);
   PolyBus::setBrightness(_busPtr, _iType, b);
-/*
-  if (_data) return; // use _buffering this causes ~20% FPS drop
-
-  // must update/repaint every LED in the NeoPixelBus buffer to the new brightness
-  // the only case where repainting is unnecessary is when all pixels are set after the brightness change but before the next show
-  // (which we can't rely on)
-  uint16_t hwLen = _len;
-  if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
-  for (unsigned i = 0; i < hwLen; i++) {
-    // use 0 as color order, actual order does not matter here as we just update the channel values as-is
-    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0), prevBri);
-    PolyBus::setPixelColor(_busPtr, _iType, i, c, 0);
-  }
-*/
 }
 
 //If LEDs are skipped, it is possible to use the first as a status LED.

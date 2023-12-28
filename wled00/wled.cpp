@@ -178,7 +178,7 @@ void WLED::loop()
     doSerializeConfig = true;
   }
   if (loadLedmap >= 0) {
-    if (!strip.deserializeMap(loadLedmap) && strip.isMatrix && loadLedmap == 0) strip.setUpMatrix();
+    strip.deserializeMap(loadLedmap);
     loadLedmap = -1;
   }
   yield();
@@ -699,7 +699,7 @@ void WLED::initConnection()
 
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
-  WiFi.setPhyMode(WIFI_PHY_MODE_11N);
+  WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
 #endif
 
   if (staticIP[0] != 0 && staticGateway[0] != 0) {
@@ -723,9 +723,10 @@ void WLED::initConnection()
       WiFi.mode(WIFI_STA);
     }
   }
-  showWelcomePage = false;
 
   if (WLED_WIFI_CONFIGURED) {
+    showWelcomePage = false;
+    
     DEBUG_PRINT(F("Connecting to "));
     DEBUG_PRINT(clientSSID);
     DEBUG_PRINTLN("...");

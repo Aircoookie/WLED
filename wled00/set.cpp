@@ -46,6 +46,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t != apChannel) forceReconnect = true;
     if (t > 0 && t < 14) apChannel = t;
 
+    force802_3g = request->hasArg(F("FG"));
     noWifiSleep = request->hasArg(F("WS"));
 
     #ifndef WLED_DISABLE_ESPNOW
