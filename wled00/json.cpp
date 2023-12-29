@@ -685,6 +685,27 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     // USER_PRINTF("serializeState %d\n", netDebugEnabled);
     #endif
 
+    // WLEDMM print error message to netDebug - esp32 only, as 8266 flash is very limited
+#ifdef ARDUINO_ARCH_ESP32
+    String errPrefix = F("\nWLED error: ");
+    String warnPrefix = F("WLED warning: ");
+    switch(errorFlag) {
+      case ERR_NONE: break;
+      case ERR_DENIED:    USER_PRINTLN(errPrefix + F("Permission denied.")); break;
+      case ERR_NOBUF:     USER_PRINTLN(warnPrefix + F("JSON buffer was not released in time, request timeout.")); break;
+      case ERR_JSON:      USER_PRINTLN(errPrefix + F("JSON parsing failed (input too large?).")); break;
+      case ERR_FS_BEGIN:  USER_PRINTLN(errPrefix + F("Could not init filesystem (no partition?).")); break;
+      case ERR_FS_QUOTA:  USER_PRINTLN(errPrefix + F("FS is full or the maximum file size is reached.")); break;
+      case ERR_FS_PLOAD:  USER_PRINTLN(warnPrefix + F("Tried loading a preset that does not exist.")); break;
+      case ERR_FS_IRLOAD: USER_PRINTLN(warnPrefix + F("Tried loading an IR JSON cmd, but \"ir.json\" file does not exist.")); break;
+      case ERR_FS_RMLOAD: USER_PRINTLN(warnPrefix + F("Tried loading a remote JSON cmd, but \"remote.json\" file does not exist.")); break;
+      case ERR_FS_GENERAL: USER_PRINTLN(errPrefix + F("general unspecified filesystem error.")); break;
+      default: USER_PRINT(errPrefix + F("error code = ")); USER_PRINTLN(errorFlag); break;
+    }
+#else
+    if (errorFlag) { USER_PRINT(F("\nWLED error code = ")); USER_PRINTLN(errorFlag); }
+#endif
+
     if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;} //prevent error message to persist on screen
 
     root["ps"] = (currentPreset > 0) ? currentPreset : -1;

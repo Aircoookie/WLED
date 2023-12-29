@@ -657,7 +657,7 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
   bool fsinit = false;
-  USER_PRINTLN(F("Mount FS"));
+  USER_PRINTLN(F("Mounting FS ..."));
 #ifdef ARDUINO_ARCH_ESP32
   fsinit = WLED_FS.begin(true);
 #else
@@ -666,6 +666,8 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   if (!fsinit) {
     USER_PRINTLN(F("Mount FS failed!"));  // WLEDMM
     errorFlag = ERR_FS_BEGIN;
+  } else {
+      USER_PRINTLN(F("Mount FS succeeded.")); // WLEDMM
   }
 #ifdef WLED_ADD_EEPROM_SUPPORT
   else deEEP();
