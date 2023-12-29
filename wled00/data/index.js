@@ -1107,7 +1107,7 @@ function ddpAll() {
 	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}}); //self
 }
 
-//curl -s -F "update=@/Users/ewoudwijma/Developer/GitHub/MoonModules/WLED/build_output/release/WLEDMM_0.14.0-b28.34_esp32_4MB_M.bin" 192.168.8.105/update >nul &
+//curl -s -F "update=@/Users/ewoudwijma/Developer/GitHub/MoonModules/WLED/build_output/release/WLEDMM_0.14.0-b28.35_esp32_4MB_M.bin" 192.168.8.105/update >nul &
 
 //WLEDMM
 function SuperSync() {
