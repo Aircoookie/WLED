@@ -347,10 +347,10 @@ void handleButton()
 void esp32RMTInvertIdle()
 {
   bool idle_out;
-  for (uint8_t u = 0; u < busses.getNumBusses(); u++)
+  for (uint8_t u = 0; u < BusManager::getNumBusses(); u++)
   {
     if (u > 7) return; // only 8 RMT channels, TODO: ESP32 variants have less RMT channels
-    Bus *bus = busses.getBus(u);
+    Bus *bus = BusManager::getBus(u);
     if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType())) continue;
     //assumes that bus number to rmt channel mapping stays 1:1
     rmt_channel_t ch = static_cast<rmt_channel_t>(u);

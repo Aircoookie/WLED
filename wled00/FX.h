@@ -682,10 +682,7 @@ class WS2812FX {  // 96 bytes
     WS2812FX() :
       paletteFade(0),
       paletteBlend(0),
-      milliampsPerLed(55),
       cctBlending(0),
-      ablMilliampsMax(ABL_MILLIAMPS_DEFAULT),
-      currentMilliamps(0),
       now(millis()),
       timebase(0),
       isMatrix(false),
@@ -793,7 +790,6 @@ class WS2812FX {  // 96 bytes
 
     uint8_t
       paletteBlend,
-      milliampsPerLed,
       cctBlending,
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
@@ -811,8 +807,6 @@ class WS2812FX {  // 96 bytes
     inline uint8_t getModeCount() { return _modeCount; }
 
     uint16_t
-      ablMilliampsMax,
-      currentMilliamps,
       getLengthPhysical(void),
       getLengthTotal(void), // will include virtual/nonexistent pixels in matrix
       getFps();

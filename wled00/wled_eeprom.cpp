@@ -99,7 +99,7 @@ void loadSettingsFromEEPROM()
   bool skipFirst = EEPROM.read(2204);
   bool reversed = EEPROM.read(252);
   BusConfig bc = BusConfig(EEPROM.read(372) ? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, length, colorOrder, reversed, skipFirst);
-  busses.add(bc);
+  BusManager::add(bc);
 
   notifyButton = EEPROM.read(230);
   if (EEPROM.read(231)) udpNumRetries = 1;

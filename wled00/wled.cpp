@@ -157,7 +157,7 @@ void WLED::loop()
     doInitBusses = false;
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
-    busses.removeAll();
+    BusManager::removeAll();
     uint32_t mem = 0, globalBufMem = 0;
     uint16_t maxlen = 0;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
@@ -168,7 +168,7 @@ void WLED::loop()
           globalBufMem = maxlen * 4;
       }
       if (mem + globalBufMem <= MAX_LED_MEMORY) {
-        busses.add(*busConfigs[i]);
+        BusManager::add(*busConfigs[i]);
       }
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
@@ -960,7 +960,7 @@ void WLED::handleStatusLED()
       #if STATUSLED>=0
       digitalWrite(STATUSLED, ledStatusState);
       #else
-      busses.setStatusPixel(ledStatusState ? c : 0);
+      BusManager::setStatusPixel(ledStatusState ? c : 0);
       #endif
     }
   } else {
@@ -971,7 +971,7 @@ void WLED::handleStatusLED()
       digitalWrite(STATUSLED, LOW);
       #endif
     #else
-      busses.setStatusPixel(0);
+      BusManager::setStatusPixel(0);
     #endif
   }
 }

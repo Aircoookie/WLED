@@ -87,8 +87,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject hw_led = hw["led"];
 
   uint16_t total = hw_led[F("total")] | strip.getLengthTotal();
-  CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
-  CJSON(strip.milliampsPerLed, hw_led[F("ledma")]); // no longer used
+  uint16_t ablMilliampsMax = hw_led[F("maxpwr")] | BusManager::ablMilliampsMax();
+  BusManager::setMilliampsMax(ablMilliampsMax);
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | AW_GLOBAL_DISABLED);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
@@ -138,7 +138,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0;  // bus iterator
-    if (fromFS) busses.removeAll(); // can't safely manipulate busses directly in network callback
+    if (fromFS) BusManager::removeAll(); // can't safely manipulate busses directly in network callback
     uint32_t mem = 0, globalBufMem = 0;
     uint16_t maxlen = 0;
     bool busesChanged = false;
@@ -164,8 +164,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool refresh = elm["ref"] | false;
       uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
       uint8_t AWmode = elm[F("rgbwm")] | RGBW_MODE_MANUAL_ONLY;
-      uint8_t maPerLed = elm[F("ledma")] | strip.milliampsPerLed; // replace with 55 when removing strip.milliampsPerLed
-      uint16_t maMax = elm[F("maxpwr")] | (strip.ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
+      uint8_t maPerLed = elm[F("ledma")] | 55;
+      uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
       if ((ledType > TYPE_TM1814 && ledType < TYPE_WS2801) || ledType >= TYPE_NET_DDP_RGB) { // analog and virtual
         maPerLed = 0;
@@ -179,7 +179,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
           maxlen = start + length;
           globalBufMem = maxlen * 4;
         }
-        if (mem + globalBufMem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
+        if (mem + globalBufMem <= MAX_LED_MEMORY) if (BusManager::add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
@@ -190,7 +190,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     doInitBusses = busesChanged;
     // finalization done in beginStrip()
   }
-  if (hw_led["rev"]) busses.getBus(0)->setReversed(true); //set 0.11 global reversed setting for first bus
+  if (hw_led["rev"]) BusManager::getBus(0)->setReversed(true); //set 0.11 global reversed setting for first bus
 
   // read color order map configuration
   JsonArray hw_com = hw[F("com")];
@@ -205,7 +205,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       com.add(start, len, colorOrder);
       s++;
     }
-    busses.updateColorOrderMap(com);
+    BusManager::updateColorOrderMap(com);
   }
 
   // read multiple button configuration
@@ -722,8 +722,8 @@ void serializeConfig() {
 
   JsonObject hw_led = hw.createNestedObject("led");
   hw_led[F("total")] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
-  hw_led[F("maxpwr")] = strip.ablMilliampsMax;
-  hw_led[F("ledma")] = strip.milliampsPerLed; // no longer used
+  hw_led[F("maxpwr")] = BusManager::ablMilliampsMax();
+  hw_led[F("ledma")] = 0; // no longer used
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
@@ -753,8 +753,8 @@ void serializeConfig() {
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
-  for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
-    Bus *bus = busses.getBus(s);
+  for (uint8_t s = 0; s < BusManager::getNumBusses(); s++) {
+    Bus *bus = BusManager::getBus(s);
     if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
     ins["start"] = bus->getStart();
@@ -775,7 +775,7 @@ void serializeConfig() {
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
-  const ColorOrderMap& com = busses.getColorOrderMap();
+  const ColorOrderMap& com = BusManager::getColorOrderMap();
   for (uint8_t s = 0; s < com.count(); s++) {
     const ColorOrderMapEntry *entry = com.get(s);
     if (!entry) break;
