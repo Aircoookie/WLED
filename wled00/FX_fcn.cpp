@@ -760,14 +760,14 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexMir), col, 0xFFFFU - progress(), true);
+        if (_modeBlend) tmpCol = transitionColor(i, strip.getPixelColor(indexMir), col);
 #endif
         strip.setPixelColor(indexMir, tmpCol);
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-      if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexSet), col, 0xFFFFU - progress(), true);
+      if (_modeBlend) tmpCol = transitionColor(i, strip.getPixelColor(indexSet), col);
 #endif
       strip.setPixelColor(indexSet, tmpCol);
     }
@@ -844,6 +844,38 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
   i += offset;
   if ((i >= stop) && (stop>0)) i -= length(); // avoids negative pixel index (stop = 0 is a possible value)
   return strip.getPixelColor(i);
+}
+
+uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
+  switch (transitionStyle) {
+    case TRANSITION_STYLE_FADE: {
+      return color_blend(oldCol, newCol, 0xFFFFU - progress(), true);
+    }
+    case TRANSITION_STYLE_SWIPE_RIGHT: {
+      uint16_t pos = (float(n) / float(length())) * 0xFFFFU;
+      if (progress() > pos) return oldCol;
+      return newCol;
+    }
+    case TRANSITION_STYLE_SWIPE_LEFT: {
+      uint16_t pos = 0xFFFFU - (float(n) / float(length())) * 0xFFFFU;
+      if (progress() > pos) return oldCol;
+      return newCol;
+    }
+    case TRANSITION_STYLE_OUTSIDE_IN: {
+      uint16_t len = length();
+      uint16_t halfLen = len >> 1;
+      uint16_t pos = (float(n < halfLen ? n : len - n) / float(halfLen)) * 0xFFFFU;
+      if (progress() > pos) return oldCol;
+      return newCol;
+    }
+    case TRANSITION_STYLE_INSIDE_OUT: {
+      uint16_t len = length();
+      uint16_t halfLen = len >> 1;
+      uint16_t pos = 0xFFFFU - (float(n < halfLen ? n : len - n) / float(halfLen)) * 0xFFFFU;
+      if (progress() > pos) return oldCol;
+      return newCol;
+    }
+  }
 }
 
 uint8_t Segment::differs(Segment& b) const {
