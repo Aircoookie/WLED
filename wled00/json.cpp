@@ -334,8 +334,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
-  int ts = root[F("ts")] | 0;
-  transitionStyle = ts;
+  int ts = root[F("ts")] | -1;
+  if (ts >= 0) {
+    transitionStyle = ts;
+  }
 
   // temporary transition (applies only once)
   tr = root[F("tt")] | -1;
