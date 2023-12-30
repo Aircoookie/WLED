@@ -1211,7 +1211,7 @@ static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!,!;!"
 /*
  * Fireworks function.
  */
-uint16_t mode_fireworks() {
+static uint16_t mode_fireworks_core(bool useaudio) {
   if (SEGLEN == 1) return mode_static();
   const uint16_t width  = SEGMENT.is2D() ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
   const uint16_t height = SEGMENT.virtualHeight();
@@ -1227,17 +1227,44 @@ uint16_t mode_fireworks() {
   bool valid1 = (SEGENV.aux0 < width*height);
   bool valid2 = (SEGENV.aux1 < width*height);
   uint32_t sv1 = 0, sv2 = 0;
+
+  // WLEDMM begin
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    useaudio = false;            // no audio - fallback to standard behaviour (don't use soundSim)
+  }
+  bool addPixels = true;                                 // false -> inhibit new pixels in silence
+  unsigned myIntensity = 129 - (SEGMENT.intensity >> 1); // make parameter explicit, so we can work with it
+  int soundColor = -1;                                   // -1 = random color; 0..255 = use as palette index
+
+  if (useaudio) {
+    float   volumeSmth  = *(float*)  um_data->u_data[0];
+    float FFT_MajorPeak = *(float*)  um_data->u_data[4];
+    uint8_t samplePeak  = *(uint8_t*)um_data->u_data[3];
+    if ((volumeSmth > 1.0f) && (FFT_MajorPeak > 60.0f)) { // we have sound - select color based on major frequency
+        float musicIndex = logf(FFT_MajorPeak);             // log scaling of peak freq
+        soundColor = mapf(musicIndex, 4.6f, 9.06f, 0, 255); // pick color from frequency (4.6 = ln(100), 9.06 = ln(8600))
+        soundColor = constrain(soundColor, 0, 255);         // remove over-shoot
+        if (samplePeak > 0) myIntensity -= myIntensity / 4; // increase effect intensity at peaks
+    } else {                                              // silence -> fade away
+      valid1 = valid2 = false;   // do not copy last pixels
+      addPixels = false;         // don't add new pixels
+    }
+  }
+  // WLEDMM end
+
   if (valid1) sv1 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(SEGENV.aux0%width, SEGENV.aux0/width) : SEGMENT.getPixelColor(SEGENV.aux0); // get spark color
   if (valid2) sv2 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(SEGENV.aux1%width, SEGENV.aux1/width) : SEGMENT.getPixelColor(SEGENV.aux1);
   if (!SEGENV.step) SEGMENT.blur(16);
   if (valid1) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(SEGENV.aux0%width, SEGENV.aux0/width, sv1); else SEGMENT.setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
   if (valid2) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(SEGENV.aux1%width, SEGENV.aux1/width, sv2); else SEGMENT.setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
 
+  if (addPixels) // WLEDMM
   for (int i=0; i<max(1, width/20); i++) {
-    if (random8(129 - (SEGMENT.intensity >> 1)) == 0) {
+    if (random8(myIntensity) == 0) { // WLEDMM
       uint16_t index = random16(width*height);
       uint16_t j = index % width, k = index / width;
-      uint32_t col = SEGMENT.color_from_palette(random8(), false, false, 0);
+      uint32_t col = SEGMENT.color_from_palette((soundColor > 0) ? soundColor + random8(24) : random8(), false, false, 0); // WLEDMM
       if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(j, k, col);
       else                SEGMENT.setPixelColor(index, col);
       SEGENV.aux1 = SEGENV.aux0;  // old spark
@@ -1246,8 +1273,12 @@ uint16_t mode_fireworks() {
   }
   return FRAMETIME;
 }
+
+uint16_t mode_fireworks(void) { return mode_fireworks_core(false); }
 static const char _data_FX_MODE_FIREWORKS[] PROGMEM = "Fireworks@,Frequency;!,!;!;12;ix=192,pal=11";
 
+uint16_t mode_fireworks_audio(void) { return mode_fireworks_core(true); }
+static const char _data_FX_MODE_FIREWORKS_AR[] PROGMEM = "🎉 audio Fireworks@,Frequency;!,!;!;12;ix=192,pal=11";
 
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
 uint16_t mode_rain() {
@@ -3157,7 +3188,7 @@ typedef struct Spark {
 *  POPCORN
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
-uint16_t mode_popcorn(void) {
+static uint16_t mode_popcorn_core(bool useaudio) {
   if (SEGLEN == 1) return mode_static();
   //allocate segment data
   uint16_t strips = SEGMENT.nrOfVStrips();
@@ -3169,20 +3200,44 @@ uint16_t mode_popcorn(void) {
   bool hasCol2 = SEGCOLOR(2);
   if (!SEGMENT.check2) SEGMENT.fill(hasCol2 ? BLACK : SEGCOLOR(1));
 
+  // WLEDMM init um_data
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    // no audio - fallback to standard behaviour
+    useaudio = false;
+    um_data = simulateSound(SEGMENT.soundSim); // dummy
+  }
+
   struct virtualStrip {
-    static void runStrip(uint16_t stripNr, Spark* popcorn) {
+    static void runStrip(uint16_t stripNr, Spark* popcorn, bool useaudio, um_data_t *um_data) {  // WLEDMM added useaudio and um_data
       float gravity = -0.0001 - (SEGMENT.speed/200000.0); // m/s/s
       gravity *= SEGLEN;
 
       uint8_t numPopcorn = SEGMENT.intensity*maxNumPopcorn/255;
       if (numPopcorn == 0) numPopcorn = 1;
+      // WLEDMM audioreactive vars
+      float   volumeSmth  = *(float*)   um_data->u_data[0];
+      int16_t volumeRaw   = *(int16_t*) um_data->u_data[1];
+      uint8_t samplePeak  = *(uint8_t*) um_data->u_data[3];
 
       for(int i = 0; i < numPopcorn; i++) {
         if (popcorn[i].pos >= 0.0f) { // if kernel is active, update its position
           popcorn[i].pos += popcorn[i].vel;
           popcorn[i].vel += gravity;
         } else { // if kernel is inactive, randomly pop it
-          if (random8() < 2) { // POP!!!
+          bool doPopCorn = false;  // WLEDMM allows to inhibit new pops
+          // WLEDMM begin
+          if (useaudio) {
+            if (  (volumeSmth > 1.0f)                      // no pops in silence
+                &&((samplePeak > 0) || (volumeRaw > 128))  // try to pop at onsets (our peek detector still sucks)
+                &&(random8() < 4) )                        // stay somewhat random
+              doPopCorn = true;
+          } else {         
+            if (random8() < 2) doPopCorn = true; // default POP!!!
+          }
+          // WLEDMM end
+
+          if (doPopCorn) { // POP!!!
             popcorn[i].pos = 0.01f;
 
             uint16_t peakHeight = 128 + random8(128); //0-255
@@ -3210,12 +3265,16 @@ uint16_t mode_popcorn(void) {
   };
 
   for (int stripNr=0; stripNr<strips; stripNr++)
-    virtualStrip::runStrip(stripNr, &popcorn[stripNr * maxNumPopcorn]);
+    virtualStrip::runStrip(stripNr, &popcorn[stripNr * maxNumPopcorn], useaudio, um_data); // WLEDMM added useaudio and um_data
 
   return FRAMETIME;
 }
+
+uint16_t mode_popcorn(void) { return mode_popcorn_core(false); }
 static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,Overlay;!,!,!;!;1.5d;m12=1"; //bar WLEDMM 1.5d
 
+uint16_t mode_popcorn_audio(void) { return mode_popcorn_core(true); }
+static const char _data_FX_MODE_POPCORN_AR[] PROGMEM = "🎉 audio Popcorn@!,!,,,,,Overlay;!,!,!;!;1.5d;m12=1"; //bar WLEDMM 1.5d
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
 //Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
@@ -3331,7 +3390,7 @@ typedef struct particle {
   float    fragment[STARBURST_MAX_FRAG];
 } star;
 
-uint16_t mode_starburst(void) {
+static uint16_t mode_starburst_core(bool useaudio) {
   if (SEGLEN == 1) return mode_static();
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
   uint8_t segs = strip.getActiveSegmentsNum();
@@ -3353,10 +3412,36 @@ uint16_t mode_starburst(void) {
   float          particleIgnition        = 250.0f;  // How long to "flash"
   float          particleFadeTime        = 1500.0f; // Fade out time
 
+  // WLEDMM init um_data
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    // no audio - fallback to standard behaviour
+    useaudio = false;
+    um_data = simulateSound(SEGMENT.soundSim); // dummy
+  }
+  float   volumeSmth  = *(float*)   um_data->u_data[0];
+  int16_t volumeRaw   = *(int16_t*) um_data->u_data[1];
+  uint8_t samplePeak  = *(uint8_t*) um_data->u_data[3];
+
   for (int j = 0; j < numStars; j++)
   {
     // speed to adjust chance of a burst, max is nearly always.
-    if (random8((144-(SEGMENT.speed >> 1))) == 0 && stars[j].birth == 0)
+    bool doNewStar = random8((144-(SEGMENT.speed >> 1))) == 0; // WLEDMM original spawning trigger
+    // WLEDMM begin
+    if (useaudio) {
+      doNewStar = false;
+      int burstplus = (volumeSmth > 159)? 128:0;                // high volume -> more stars
+      if (volumeRaw <= 56) burstplus = -64;                     // low volume  -> fewer stars
+      int birthrate = (144-(SEGMENT.speed >> 1)) - burstplus;
+      birthrate = constrain(birthrate, 0, 144);
+      if (   (volumeSmth > 1.0f)                          // no bursts in silence
+          && ((samplePeak > 0) || (volumeRaw > 48))       // try to burst with sound
+          && (random8(birthrate) == 0) )                  // original random rate
+        doNewStar = true;
+    }
+    // WLEDMM end
+
+    if (doNewStar && stars[j].birth == 0)                      // WLEDMM
     {
       // Pick a random color and location.
       uint16_t startPos = (SEGLEN > 1) ? random16(SEGLEN-1) : 0;
@@ -3364,7 +3449,7 @@ uint16_t mode_starburst(void) {
 
       stars[j].color = CRGB(SEGMENT.color_wheel(random8()));
       stars[j].pos = startPos;
-      stars[j].vel = maxSpeed * (float)(random8())/255.0 * multiplier;
+      stars[j].vel = maxSpeed * (float)(random8())/255.0f * multiplier;
       stars[j].birth = it;
       stars[j].last = it;
       // more fragments means larger burst effect
@@ -3442,8 +3527,12 @@ uint16_t mode_starburst(void) {
   return FRAMETIME;
 }
 #undef STARBURST_MAX_FRAG
+
+uint16_t mode_starburst(void) { return mode_starburst_core(false); }
 static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments,,,,,Overlay;,!;!;;pal=11,m12=0";
 
+uint16_t mode_starburst_audio(void) { return mode_starburst_core(true); }
+static const char _data_FX_MODE_STARBURST_AR[] PROGMEM = "🔨 audio Fw Starburst@Chance,Fragments,,,,,Overlay;,!;!;;pal=11,m12=0";
 
 /*
  * Exploding fireworks effect
@@ -8335,6 +8424,11 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_WAVESINS, &mode_wavesins, _data_FX_MODE_WAVESINS);
   addEffect(FX_MODE_ROCKTAVES, &mode_rocktaves, _data_FX_MODE_ROCKTAVES);
+
+  // --- WLEDSR experimental 1D audio enhanced
+  addEffect(FX_MODE_POPCORN_AR, &mode_popcorn_audio, _data_FX_MODE_POPCORN_AR);
+  addEffect(FX_MODE_STARBURST_AR, &mode_starburst_audio, _data_FX_MODE_STARBURST_AR);
+  addEffect(FX_MODE_FIREWORKS_AR, &mode_fireworks_audio, _data_FX_MODE_FIREWORKS_AR);
 
   // --- 2D  effects ---
 #ifndef WLED_DISABLE_2D
