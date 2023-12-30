@@ -1,19 +1,37 @@
 ## WLED changelog
 
-#### Build 2309120 till build 2311120
+#### Build 2309120 till build 2312290
 -   WLED version 0.15.0-a0
+-   Per port Auto Brightness Limiter (ABL)
+-   Use PSRAM for JSON buffer (double size, larger ledmaps, up to 2k)
+-   Reduced heap fragmentation by allocating ledmap array only once and not deallocating effect buffer
+-   HTTP retries on failed UI load
+-   UI Search: scroll to top (#3587 by @WoodyLetsCode)
+-   Return to inline iro.js and rangetouch.js (#3597 by @WoodyLetsCode)
+-   Better caching (#3591 by @WoodyLetsCode)
+-   Do not send 404 for missing `skin.css` (#3590 by @WoodyLetsCode)
+-   Simplified UI rework (#3511 by @WoodyLetsCode)
+-   Domoticz device ID for PIR and Temperature usermods
+-   Bugfix for UCS8904 `hasWhite()`
+-   Better search in UI (#3540 by @WoodyLetsCode)
+-   Seeding FastLED PRNG (#3552 by @TripleWhy)
+-   WIZ Smart Button support (#3547 by @micw)
+-   New button type (button switch, fix for #3537)
+-   Pixel Magic Tool update (#3483 by @ajotanc)
+-   Effect: 2D Matrix fix for gaps
+-   Bugfix #3526, #3533, #3561
 -   Spookier Halloween Eyes (#3501)
 -   Compile time options for Multi Relay usermod (#3498)
--   Fix for Dissolve (#3502)
+-   Effect: Fix for Dissolve (#3502)
 -   Better reverse proxy support (nested paths)
 -   Implement global JSON API boolean toggle (i.e. instead of "var":true or "var":false -> "var":"t").
 -   Sort presets by ID
--   Fix #3496
+-   Fix for #3496, #2922, #3593, #3514, #3522, #3578 (partial), #3606 (@WoodyLetsCode)
 -   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
 -   Audio palettes (Audioreactive usermod, credit @netmindz)
 -   Better UI tooltips (@ajotnac, #3464)
 -   Better effect filters (filter dropdown)
--   Fix udp sync (fix for #3487)
+-   UDP sync fix (for #3487)
 -   Power button override (solves #3431)
 -   Additional HTTP request throttling (ESP8266)
 -   Additional UI/UX improvements
