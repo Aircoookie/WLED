@@ -371,7 +371,7 @@ void deEEP() {
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
   if (!requestJSONBufferLock(8)) return;
 
-  JsonObject sObj = doc.to<JsonObject>();
+  JsonObject sObj = pDoc->to<JsonObject>();
   sObj.createNestedObject("0");
 
   EEPROM.begin(EEPSIZE);
@@ -448,7 +448,7 @@ void deEEP() {
     releaseJSONBufferLock();
     return;
   }
-  serializeJson(doc, f);
+  serializeJson(*pDoc, f);
   f.close();
 
   releaseJSONBufferLock();

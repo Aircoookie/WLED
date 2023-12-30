@@ -664,8 +664,8 @@ void handleNotifications()
       apireq += (char*)udpIn;
       handleSet(nullptr, apireq);
     } else if (udpIn[0] == '{') { //JSON API
-      DeserializationError error = deserializeJson(doc, udpIn);
-      JsonObject root = doc.as<JsonObject>();
+      DeserializationError error = deserializeJson(*pDoc, udpIn);
+      JsonObject root = pDoc->as<JsonObject>();
       if (!error && !root.isNull()) deserializeState(root);
     }
     releaseJSONBufferLock();

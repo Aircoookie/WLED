@@ -626,7 +626,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    JsonObject um = doc.createNestedObject("um");
+    JsonObject um = pDoc->createNestedObject("um");
 
     size_t args = request->args();
     uint16_t j=0;

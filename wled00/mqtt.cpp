@@ -109,8 +109,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       return;
     }
     if (payloadStr[0] == '{') { //JSON API
-      deserializeJson(doc, payloadStr);
-      deserializeState(doc.as<JsonObject>());
+      deserializeJson(*pDoc, payloadStr);
+      deserializeState(pDoc->as<JsonObject>());
     } else { //HTTP API
       String apireq = "win"; apireq += '&'; // reduce flash string usage
       apireq += payloadStr;

@@ -1055,7 +1055,7 @@ void serveJson(AsyncWebServerRequest* request)
     servingClient = false;
     return;
   }
-  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
+  AsyncJsonResponse *response = new AsyncJsonResponse(pDoc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 

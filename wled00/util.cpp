@@ -209,6 +209,10 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 //threading/network callback details: https://github.com/Aircoookie/WLED/pull/2336#discussion_r762276994
 bool requestJSONBufferLock(uint8_t module)
 {
+  if (pDoc == nullptr) {
+    DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
+    return false;
+  }
   unsigned long now = millis();
 
   while (jsonBufferLock && millis()-now < 1000) delay(1); // wait for a second for buffer lock
@@ -224,8 +228,8 @@ bool requestJSONBufferLock(uint8_t module)
   DEBUG_PRINT(F("JSON buffer locked. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = &doc;  // used for applying presets (presets.cpp)
-  doc.clear();
+  fileDoc = pDoc;  // used for applying presets (presets.cpp)
+  pDoc->clear();
   return true;
 }
 
@@ -556,11 +560,12 @@ void enumerateLedmaps() {
 
       #ifndef ESP8266
       if (requestJSONBufferLock(21)) {
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        if (readObjectFromFile(fileName, nullptr, pDoc)) {
           size_t len = 0;
-          if (!doc["n"].isNull()) {
+          JsonObject root = pDoc->as<JsonObject>();
+          if (!root["n"].isNull()) {
             // name field exists
-            const char *name = doc["n"].as<const char*>();
+            const char *name = root["n"].as<const char*>();
             if (name != nullptr) len = strlen(name);
             if (len > 0 && len < 33) {
               ledmapNames[i-1] = new char[len+1];

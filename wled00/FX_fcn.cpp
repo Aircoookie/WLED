@@ -1666,7 +1666,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!isFile || !requestJSONBufferLock(7)) return false; // this will trigger setUpMatrix() when called from wled.cpp
 
-  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+  if (!readObjectFromFile(fileName, nullptr, pDoc)) {
     DEBUG_PRINT(F("ERROR Invalid ledmap in ")); DEBUG_PRINTLN(fileName);
     releaseJSONBufferLock();
     return false; // if file does not load properly then exit
@@ -1676,7 +1676,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (customMappingTable == nullptr) customMappingTable = new uint16_t[getLengthTotal()];
 
-  JsonArray map = doc[F("map")];
+  JsonObject root = pDoc->as<JsonObject>();
+  JsonArray map = root[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
     customMappingSize = min((unsigned)map.size(), (unsigned)getLengthTotal());
     for (unsigned i=0; i<customMappingSize; i++) customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
