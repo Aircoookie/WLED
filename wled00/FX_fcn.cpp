@@ -423,11 +423,13 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 #endif
 
 uint8_t Segment::currentBri(bool useCct) {
-  uint32_t prog = progress();
-  if (prog < 0xFFFFU) {
-    uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
-    curBri += (useCct ? _t->_cctT : (on ? _t->_briT : 0)) * (0xFFFFU - prog);
-    return curBri / 0xFFFFU;
+  if (transitionStyle == TRANSITION_STYLE_FADE) {
+    uint32_t prog = progress();
+    if (prog < 0xFFFFU) {
+      uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
+      curBri += (useCct ? _t->_cctT : (on ? _t->_briT : 0)) * (0xFFFFU - prog);
+      return curBri / 0xFFFFU;
+    }
   }
   return (useCct ? cct : (on ? opacity : 0));
 }
@@ -442,7 +444,14 @@ uint8_t Segment::currentMode() {
 
 uint32_t Segment::currentColor(uint8_t slot) {
 #ifndef WLED_DISABLE_MODE_BLEND
-  return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];
+  if (transitionStyle == TRANSITION_STYLE_FADE) {
+    return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];
+  }
+  if (_modeBlend && progress() < 0xFFFFU) {
+    return _t->_segT._colorT[slot];
+  } else {
+    return colors[slot];
+  }
 #else
   return isInTransition() ? color_blend(_t->_colorT[slot], colors[slot], progress(), true) : colors[slot];
 #endif
@@ -848,9 +857,6 @@ uint32_t Segment::getPixelColor(int i)
 
 uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
   switch (transitionStyle) {
-    case TRANSITION_STYLE_FADE: {
-      return color_blend(oldCol, newCol, 0xFFFFU - progress(), true);
-    }
     case TRANSITION_STYLE_SWIPE_RIGHT: {
       uint16_t pos = (float(n) / float(length())) * 0xFFFFU;
       if (progress() > pos) return oldCol;
@@ -874,6 +880,10 @@ uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
       uint16_t pos = 0xFFFFU - (float(n < halfLen ? n : len - n) / float(halfLen)) * 0xFFFFU;
       if (progress() > pos) return oldCol;
       return newCol;
+    }
+    case TRANSITION_STYLE_FADE:
+    default: {
+      return color_blend(oldCol, newCol, 0xFFFFU - progress(), true);
     }
   }
 }
@@ -1233,11 +1243,15 @@ void WS2812FX::service() {
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
         delay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (modeBlending && seg.mode != tmpMode) {
+        if (modeBlending && (seg.mode != tmpMode || transitionStyle != TRANSITION_STYLE_FADE)) {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
           _virtualSegmentLength = seg.virtualLength(); // update SEGLEN (mapping may have changed)
+          _colors_t[0] = seg.currentColor(0); // update colors to allow for color transitions
+          _colors_t[1] = seg.currentColor(1);
+          _colors_t[2] = seg.currentColor(2);
+          for (int c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
           uint16_t d2 = (*_mode[tmpMode])();  // run old mode
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay
