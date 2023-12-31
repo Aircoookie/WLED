@@ -450,7 +450,11 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
-  #define JSON_BUFFER_SIZE 24576
+  #if defined(ARDUINO_ARCH_ESP32S2)
+    #define JSON_BUFFER_SIZE 24576
+  #else
+    #define JSON_BUFFER_SIZE 32767
+  #endif
 #endif
 
 //#define MIN_HEAP_SIZE (8k for AsyncWebServer)

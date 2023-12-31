@@ -62,10 +62,10 @@
 //#define FRAMETIME        _frametime
 #define FRAMETIME        strip.getFrameTime()
 
-/* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
+/* each segment uses 82 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #ifdef ESP8266
-  #define MAX_NUM_SEGMENTS    16
+  #define MAX_NUM_SEGMENTS    12
   /* How much data bytes all segments combined may allocate */
   #define MAX_SEGMENT_DATA  5120
 #else
@@ -73,9 +73,13 @@
     #define MAX_NUM_SEGMENTS  32
   #endif
   #if defined(ARDUINO_ARCH_ESP32S2)
-    #define MAX_SEGMENT_DATA  24576
+    #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+      #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*1024 // 32k by default
+    #else
+      #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*768  // 24k by default
+    #endif
   #else
-    #define MAX_SEGMENT_DATA  32767
+    #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*1280 // 40k by default
   #endif
 #endif
 
