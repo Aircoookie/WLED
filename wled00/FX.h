@@ -336,7 +336,15 @@ void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.
 #define FX_MODE_ARTIFX                 187 //WLEDMM ARTIFX
 #define FX_MODE_PARTYJERK              188
 
-#define MODE_COUNT                     189
+// Experimental Audioresponsive modes from WLED-SR
+// #define FX_MODE_3DSphereMove           189 // experimental WLED-SR "cube" mode
+#define FX_MODE_POPCORN_AR             190 // WLED-SR audioreactive popcorn
+// #define FX_MODE_MULTI_COMET_AR         191 // WLED-SR audioreactive multi-comet
+#define FX_MODE_STARBURST_AR           192 // WLED-SR audioreactive fireworks starburst
+// #define FX_MODE_PALETTE_AR             193 // WLED-SR audioreactive palette
+#define FX_MODE_FIREWORKS_AR           194 // WLED-SR audioreactive fireworks 1D
+
+#define MODE_COUNT                     195
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
