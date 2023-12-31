@@ -342,7 +342,7 @@ void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.
 // #define FX_MODE_MULTI_COMET_AR         191 // WLED-SR audioreactive multi-comet
 #define FX_MODE_STARBURST_AR           192 // WLED-SR audioreactive fireworks starburst
 // #define FX_MODE_PALETTE_AR             193 // WLED-SR audioreactive palette
-#define FX_MODE_FIREWORKS_AR           194 // WLED-SR audioreactive fireworks 1D
+#define FX_MODE_FIREWORKS_AR           194 // WLED-SR audioreactive fireworks
 
 #define MODE_COUNT                     195
 
