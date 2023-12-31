@@ -1245,7 +1245,9 @@ static uint16_t mode_fireworks_core(bool useaudio) {
         float musicIndex = logf(FFT_MajorPeak);             // log scaling of peak freq
         soundColor = mapf(musicIndex, 4.6f, 9.06f, 0, 255); // pick color from frequency (4.6 = ln(100), 9.06 = ln(8600))
         soundColor = constrain(soundColor, 0, 255);         // remove over-shoot
-        if (samplePeak > 0) myIntensity -= myIntensity / 4; // increase effect intensity at peaks
+        if (samplePeak > 0) myIntensity -= myIntensity / 2; // increase effect intensity at peaks
+        else if (volumeSmth > 96.0f) myIntensity -= myIntensity / 4; // increase effect intensity slightly when music plays
+        myIntensity = constrain(myIntensity, 0, 129);
     } else {                                              // silence -> fade away
       valid1 = valid2 = false;   // do not copy last pixels
       addPixels = false;         // don't add new pixels
@@ -3430,10 +3432,10 @@ static uint16_t mode_starburst_core(bool useaudio) {
     // WLEDMM begin
     if (useaudio) {
       doNewStar = false;
-      int burstplus = (volumeSmth > 159)? 128:0;                // high volume -> more stars
+      int burstplus = (volumeSmth > 159)? 96:0;                // high volume -> more stars
       if (volumeRaw <= 56) burstplus = -64;                     // low volume  -> fewer stars
       int birthrate = (144-(SEGMENT.speed >> 1)) - burstplus;
-      birthrate = constrain(birthrate, 0, 144);
+      birthrate = constrain(birthrate, 4, 144);
       if (   (volumeSmth > 1.0f)                          // no bursts in silence
           && ((samplePeak > 0) || (volumeRaw > 48))       // try to burst with sound
           && (random8(birthrate) == 0) )                  // original random rate
