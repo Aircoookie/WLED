@@ -326,6 +326,7 @@
 #define TRANSITION_STYLE_SWIPE_LEFT      2
 #define TRANSITION_STYLE_OUTSIDE_IN      3
 #define TRANSITION_STYLE_INSIDE_OUT      4
+#define TRANSITION_STYLE_FAIRY_DUST      5
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
