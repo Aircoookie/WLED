@@ -882,6 +882,14 @@ uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
       if (progress() > pos) return oldCol;
       return newCol;
     }
+    case TRANSITION_STYLE_FAIRY_DUST: {
+      uint32_t len = length();
+      uint32_t primeNumber = 103357;
+      uint32_t shuffled = (n * primeNumber) % len;
+      uint16_t pos = (float(shuffled) / float(len)) * 0xFFFFU;
+      if (progress() > pos) return oldCol;
+      return newCol;
+    }
     case TRANSITION_STYLE_FADE:
     default: {
       return color_blend(oldCol, newCol, 0xFFFFU - progress(), true);
