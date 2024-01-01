@@ -422,12 +422,18 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 #endif
 
 uint8_t IRAM_ATTR Segment::currentBri(bool useCct) {
-  if (transitionStyle == TRANSITION_STYLE_FADE) {
-    uint32_t prog = progress();
-    if (prog < 0xFFFFU) {
-      uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
-      curBri += (useCct ? _t->_cctT : (on ? _t->_briT : 0)) * (0xFFFFU - prog);
-      return curBri / 0xFFFFU;
+  if (isInTransition()) {
+    if (transitionStyle == TRANSITION_STYLE_FADE) {
+      uint32_t prog = progress();
+      if (prog < 0xFFFFU) {
+        uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
+        curBri += (useCct ? _t->_cctT : (on ? _t->_briT : 0)) * (0xFFFFU - prog);
+        return curBri / 0xFFFFU;
+      }
+    } else {
+      if (_modeBlend && progress() < 0xFFFFU) {
+        return (useCct ? _t->_cctT : (on ? _t->_briT : 0));
+      }
     }
   }
   return (useCct ? cct : (on ? opacity : 0));
