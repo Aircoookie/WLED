@@ -26,8 +26,8 @@
 			// success event 
 			scE.addEventListener("load", () => {
 				GetV();
-				setABL();
 				checkSi();
+				setABL();
 				d.Sf.addEventListener("submit", trySubmit);
 				if (d.um_p[0]==-1) d.um_p.shift();
 				pinDropdowns();
@@ -107,7 +107,7 @@
 			e.preventDefault();
 			if (!pinsOK()) {e.stopPropagation();return false;} // Prevent form submission and contact with server
 			if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
-			if (d.Sf.PPL.checked) d.Sf.MA.value = 0; // submit 0 as ABL (PPL will handle it)
+			if (!d.Sf.ABL.checked || d.Sf.PPL.checked) d.Sf.MA.value = 0; // submit 0 as ABL (PPL will handle it)
 			if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
 		}
 		function enABL()
