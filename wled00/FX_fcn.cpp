@@ -443,14 +443,15 @@ uint8_t IRAM_ATTR Segment::currentMode() {
 
 uint32_t IRAM_ATTR Segment::currentColor(uint8_t slot) {
 #ifndef WLED_DISABLE_MODE_BLEND
-  if (transitionStyle == TRANSITION_STYLE_FADE) {
-    return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];
+  if (isInTransition()) {
+    if (transitionStyle == TRANSITION_STYLE_FADE) {
+      return color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true);
+    }
+    if (_modeBlend && progress() < 0xFFFFU) {
+      return _t->_segT._colorT[slot];
+    }
   }
-  if (_modeBlend && progress() < 0xFFFFU) {
-    return _t->_segT._colorT[slot];
-  } else {
-    return colors[slot];
-  }
+  return colors[slot];
 #else
   return isInTransition() ? color_blend(_t->_colorT[slot], colors[slot], progress(), true) : colors[slot];
 #endif
@@ -1214,7 +1215,7 @@ void WS2812FX::service() {
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
         delay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (modeBlending && (seg.mode != tmpMode || transitionStyle != TRANSITION_STYLE_FADE)) {
+        if (modeBlending && seg.isInTransition() && (seg.mode != tmpMode || transitionStyle != TRANSITION_STYLE_FADE)) {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
