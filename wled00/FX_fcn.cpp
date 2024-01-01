@@ -857,6 +857,8 @@ uint32_t Segment::getPixelColor(int i)
 }
 
 uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
+  n -= start;
+
   switch (transitionStyle) {
     case TRANSITION_STYLE_SWIPE_RIGHT: {
       uint16_t pos = (float(n) / float(length())) * 0xFFFFU;
