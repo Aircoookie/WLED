@@ -82,7 +82,10 @@ void strip_wait_until_idle(String whoCalledMe) {
   }
 #endif
 }
-
+// WLEDMM another helper for segment class
+bool strip_uses_global_leds(void) {
+  return strip.useLedsArray;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation

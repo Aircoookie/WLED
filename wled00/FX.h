@@ -33,6 +33,7 @@
 
 bool canUseSerial(void);                        // WLEDMM implemented in wled_serial.cpp
 void strip_wait_until_idle(String whoCalledMe); // WLEDMM implemented in FX_fcn.cpp
+bool strip_uses_global_leds(void);              // WLEDMM implemented in FX_fcn.cpp
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #define USE_GET_MILLISECOND_TIMER
@@ -516,7 +517,11 @@ typedef struct Segment {
         if (name) Serial.printf(" name=%s (%p)", name, name);
         if (data) Serial.printf(" dataLen=%d (%p)", (int)_dataLen, data);
         if (ledsrgb) Serial.printf(" [%sledsrgb %u bytes]", Segment::_globalLeds ? "global ":"",length()*sizeof(CRGB));
+        if (strip_uses_global_leds() == true) Serial.println((Segment::_globalLeds != nullptr) ? F(" using global buffer.") : F(", using global buffer but Segment::_globalLeds is NULL!!"));
         Serial.println();
+        #ifdef ARDUINO_ARCH_ESP32
+        Serial.flush();
+        #endif
       }
       #endif
 
@@ -525,7 +530,7 @@ typedef struct Segment {
       strip_wait_until_idle("~Segment()");
       #endif
 
-      if (!Segment::_globalLeds && (ledsrgb != nullptr)) {free(ledsrgb); ledsrgb = nullptr;}
+      if ((Segment::_globalLeds == nullptr) && !strip_uses_global_leds() && (ledsrgb != nullptr)) {free(ledsrgb); ledsrgb = nullptr;}  // WLEDMM we need "!strip_uses_global_leds()" to avoid crashes (#104)
       if (name) { delete[] name; name = nullptr; }
       if (_t)   { transitional = false; delete _t; _t = nullptr; }
       deallocateData();
