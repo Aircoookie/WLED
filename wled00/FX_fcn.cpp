@@ -925,31 +925,31 @@ void Segment::blendTransition() {
 uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
   switch (transitionStyle) {
     case TRANSITION_STYLE_SWIPE_RIGHT: {
-      uint16_t pos = (float(n) / float(length())) * 0xFFFFU;
+      uint16_t pos = (float(n) / float(virtualLength())) * 0xFFFFU;
       if (progress() > pos) return oldCol;
       return newCol;
     }
     case TRANSITION_STYLE_SWIPE_LEFT: {
-      uint16_t pos = 0xFFFFU - (float(n) / float(length())) * 0xFFFFU;
+      uint16_t pos = 0xFFFFU - (float(n) / float(virtualLength())) * 0xFFFFU;
       if (progress() > pos) return oldCol;
       return newCol;
     }
     case TRANSITION_STYLE_OUTSIDE_IN: {
-      uint16_t len = length();
+      uint16_t len = virtualLength();
       uint16_t halfLen = len >> 1;
       uint16_t pos = (float(n < halfLen ? n : len - n) / float(halfLen)) * 0xFFFFU;
       if (progress() > pos) return oldCol;
       return newCol;
     }
     case TRANSITION_STYLE_INSIDE_OUT: {
-      uint16_t len = length();
+      uint16_t len = virtualLength();
       uint16_t halfLen = len >> 1;
       uint16_t pos = 0xFFFFU - (float(n < halfLen ? n : len - n) / float(halfLen)) * 0xFFFFU;
       if (progress() > pos) return oldCol;
       return newCol;
     }
     case TRANSITION_STYLE_FAIRY_DUST: {
-      uint32_t len = length();
+      uint32_t len = virtualLength();
       uint32_t primeNumber = 103357;
       uint32_t shuffled = (n * primeNumber) % len;
       uint16_t pos = (float(shuffled) / float(len)) * 0xFFFFU;
