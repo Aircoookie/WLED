@@ -15,9 +15,9 @@
  * Integrated HTTP web server page declarations
  */
 
-bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request, int code, const String &eTagSuffix = "");
-void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, const String &eTagSuffix = "");
-void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip = true, const String &eTagSuffix = "");
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request, int code, uint16_t eTagSuffix = 0);
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, uint16_t eTagSuffix = 0);
+void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip = true, uint16_t eTagSuffix = 0);
 
 // define flash strings once (saves flash memory)
 static const char s_redirecting[] PROGMEM = "Redirecting...";
@@ -361,18 +361,16 @@ void initServer()
   });
 }
 
-void generateEtag(char *etag, const String &eTagSuffix) {
-  char eTagSuffixBuf[eTagSuffix.length() + 1];
-  eTagSuffix.toCharArray(eTagSuffixBuf, eTagSuffix.length() + 1);
-  sprintf_P(etag, PSTR("%7d-%02x-%s"), VERSION, cacheInvalidate, eTagSuffixBuf);
+void generateEtag(char *etag, uint16_t eTagSuffix) {
+  sprintf_P(etag, PSTR("%7d-%02x-%04x"), VERSION, cacheInvalidate, eTagSuffix);
 }
 
-bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request, int code, const String &eTagSuffix) {
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request, int code, uint16_t eTagSuffix) {
   // Only send 304 (Not Modified) if response code is 200 (OK)
   if (code != 200) return false;
 
   AsyncWebHeader *header = request->getHeader("If-None-Match");
-  char etag[12 + eTagSuffix.length()];
+  char etag[14];
   generateEtag(etag, eTagSuffix);
   if (header && header->value() == etag) {
     AsyncWebServerResponse *response = request->beginResponse(304);
@@ -383,7 +381,7 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request, int code, cons
   return false;
 }
 
-void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, const String &eTagSuffix) {
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, uint16_t eTagSuffix) {
   // Only send ETag for 200 (OK) responses
   if (code != 200) return;
 
@@ -395,7 +393,7 @@ void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, co
   #else
   response->addHeader(F("Cache-Control"), "no-store,max-age=0");  // prevent caching if debug build
   #endif
-  char etag[12 + eTagSuffix.length()];
+  char etag[14];
   generateEtag(etag, eTagSuffix);
   response->addHeader(F("ETag"), etag);
 }
@@ -413,9 +411,9 @@ void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, co
  * @param content Content of the web page
  * @param len Length of the content
  * @param gzip Optional. Defaults to true. If false, the gzip header will not be added.
- * @param eTagSuffix Optional. Defaults to "". A suffix that will be added to the ETag header. This can be used to invalidate the cache for a specific page.
+ * @param eTagSuffix Optional. Defaults to 0. A suffix that will be added to the ETag header. This can be used to invalidate the cache for a specific page.
  */
-void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip, const String &eTagSuffix) {
+void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip, uint16_t eTagSuffix) {
   if (path != "" && handleFileRead(request, path)) return;
   if (handleIfNoneMatchCacheHeader(request, code, eTagSuffix)) return;
   AsyncWebServerResponse *response = request->beginResponse_P(code, contentType, content, len);
