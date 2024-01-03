@@ -589,7 +589,10 @@ typedef struct Segment {
     void setPixelColor(float i, uint32_t c, bool aa = true);
     inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
+    void setPixelColorAbsolute(int i, uint32_t c);
     uint32_t getPixelColor(int i);
+    uint16_t getPixelIndex(int i);
+    void blendTransition();
     uint32_t transitionColor(int n, uint32_t oldCol, uint32_t newCol);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
@@ -908,6 +911,7 @@ class WS2812FX {  // 96 bytes
     uint16_t _length;
     uint8_t  _brightness;
     uint16_t _transitionDur;
+    std::vector<uint32_t> _buffer;
 
     uint8_t  _targetFps;
     uint16_t _frametime;

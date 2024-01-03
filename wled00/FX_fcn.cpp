@@ -745,7 +745,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
-  uint16_t len = length();
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
@@ -755,7 +754,12 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     col = RGBW32(r, g, b, w);
   }
 
+  setPixelColorAbsolute(i, col);
+}
+
+void Segment::setPixelColorAbsolute(int i, uint32_t col) {
   // expand pixel (taking into account start, grouping, spacing [and offset])
+  uint16_t len = length();
   i = i * groupLength();
   if (reverse) { // is segment reversed?
     if (mirror) { // is segment mirrored?
@@ -766,7 +770,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
   i += start; // starting pixel in a group
 
-  uint32_t tmpCol = col;
   // set all the pixels in the group
   for (int j = 0; j < grouping; j++) {
     unsigned indexSet = i + ((reverse) ? -j : j);
@@ -776,16 +779,26 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (_modeBlend) tmpCol = transitionColor(i, strip.getPixelColor(indexMir), col);
+        if (_modeBlend) {
+          strip._buffer[indexMir] = col;
+        } else {
+          strip.setPixelColor(indexMir, col);
+        }
+#else
+        strip.setPixelColor(indexMir, col);
 #endif
-        strip.setPixelColor(indexMir, tmpCol);
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-      if (_modeBlend) tmpCol = transitionColor(i, strip.getPixelColor(indexSet), col);
+      if (_modeBlend) {
+        strip._buffer[indexSet] = col;
+      } else {
+        strip.setPixelColor(indexSet, col);
+      }
+#else
+      strip.setPixelColor(indexSet, col);
 #endif
-      strip.setPixelColor(indexSet, tmpCol);
     }
   }
 }
@@ -853,18 +866,31 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
   }
 #endif
 
+  return strip.getPixelColor(getPixelIndex(i));
+}
+
+uint16_t Segment::getPixelIndex(int i) {
+  i &= 0xFFFF;
   if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();
   i += start;
   /* offset/phase */
   i += offset;
   if ((i >= stop) && (stop>0)) i -= length(); // avoids negative pixel index (stop = 0 is a possible value)
-  return strip.getPixelColor(i);
+  return i;
+}
+
+void Segment::blendTransition() {
+  for (int i = 0; i != virtualLength(); ++i) {
+    uint16_t index = getPixelIndex(i);
+    uint32_t oldCol = strip.getPixelColor(index);
+    uint32_t newCol = strip._buffer[index];
+
+    setPixelColorAbsolute(i, transitionColor(i, oldCol, newCol));
+  }
 }
 
 uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
-  n -= start;
-
   switch (transitionStyle) {
     case TRANSITION_STYLE_SWIPE_RIGHT: {
       uint16_t pos = (float(n) / float(length())) * 0xFFFFU;
@@ -1181,6 +1207,7 @@ void WS2812FX::finalizeInit(void) {
     if (pins[0] == 3) bd->reinit();
     #endif
   }
+  _buffer.resize(_length);
 
   Segment::maxWidth  = _length;
   Segment::maxHeight = 1;
@@ -1231,7 +1258,7 @@ void WS2812FX::service() {
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
         delay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (modeBlending && seg.isInTransition() && (seg.mode != tmpMode || transitionStyle != TRANSITION_STYLE_FADE)) {
+        if (modeBlending && seg.isInTransition()) {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
@@ -1244,6 +1271,7 @@ void WS2812FX::service() {
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay
           Segment::modeBlend(false);          // unset semaphore
+          seg.blendTransition();
         }
 #endif
         seg.call++;
