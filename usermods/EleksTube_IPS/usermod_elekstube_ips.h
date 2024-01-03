@@ -14,6 +14,7 @@ class ElekstubeIPSUsermod : public Usermod {
     char cronixieDisplay[7] = "HHMMSS";
 
     TFTs tfts;
+    
     void updateClockDisplay(TFTs::show_t show=TFTs::yes) {
       bool set[6] = {false}; 
       for (uint8_t i = 0; i<6; i++) {
