@@ -754,10 +754,10 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     col = RGBW32(r, g, b, w);
   }
 
-  setPixelColorAbsolute(i, col);
+  setPixelColorExact(i, col);
 }
 
-void Segment::setPixelColorAbsolute(int i, uint32_t col) {
+void Segment::setPixelColorExact(int i, uint32_t col) {
   // expand pixel (taking into account start, grouping, spacing [and offset])
   uint16_t len = length();
   i = i * groupLength();
@@ -869,6 +869,10 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
   return strip.getPixelColor(getPixelIndex(i));
 }
 
+uint32_t Segment::getBufferColor(int i) {
+  return strip._buffer[getPixelIndex(i)];
+}
+
 uint16_t Segment::getPixelIndex(int i) {
   i &= 0xFFFF;
   if (reverse) i = virtualLength() - i - 1;
@@ -881,12 +885,40 @@ uint16_t Segment::getPixelIndex(int i) {
 }
 
 void Segment::blendTransition() {
-  for (int i = 0; i != virtualLength(); ++i) {
-    uint16_t index = getPixelIndex(i);
-    uint32_t oldCol = strip.getPixelColor(index);
-    uint32_t newCol = strip._buffer[index];
+  switch (transitionStyle) {
+    case TRANSITION_STYLE_PUSH_RIGHT: {
+      uint16_t len = virtualLength();
+      uint16_t pos = (float(progress()) / float(0xFFFFU)) * len;
+      for (int i = 0; i != pos; i++) {
+        setPixelColorExact(i, getPixelColor(len - pos + i));
+      }
+      for (int i = len - pos; i != 0; i--) {
+        setPixelColorExact(i + pos, getBufferColor(i));
+      }
+      break;
+    }
+    case TRANSITION_STYLE_PUSH_LEFT: {
+      uint16_t len = virtualLength();
+      uint16_t pos = (float(progress()) / float(0xFFFFU)) * len;
+      for (int i = len - pos; i != len; i++) {
+        setPixelColorExact(i, getPixelColor(i - len + pos));
+      }
+      for (int i = pos; i != len; i++) {
+        setPixelColorExact(i - pos, getBufferColor(i));
+      }
+      break;
+    }
+    default: {
+      // All other transition styles use the same pixel indexes from the strip and the buffer
+      for (int i = 0; i != virtualLength(); ++i) {
+        uint16_t index = getPixelIndex(i);
+        uint32_t oldCol = strip.getPixelColor(index);
+        uint32_t newCol = strip._buffer[index];
 
-    setPixelColorAbsolute(i, transitionColor(i, oldCol, newCol));
+        setPixelColorExact(i, transitionColor(i, oldCol, newCol));
+      }
+      break;
+    }
   }
 }
 

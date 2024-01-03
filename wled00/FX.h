@@ -324,9 +324,11 @@
 #define TRANSITION_STYLE_FADE            0
 #define TRANSITION_STYLE_SWIPE_RIGHT     1
 #define TRANSITION_STYLE_SWIPE_LEFT      2
-#define TRANSITION_STYLE_OUTSIDE_IN      3
-#define TRANSITION_STYLE_INSIDE_OUT      4
-#define TRANSITION_STYLE_FAIRY_DUST      5
+#define TRANSITION_STYLE_PUSH_RIGHT      3
+#define TRANSITION_STYLE_PUSH_LEFT       4
+#define TRANSITION_STYLE_OUTSIDE_IN      5
+#define TRANSITION_STYLE_INSIDE_OUT      6
+#define TRANSITION_STYLE_FAIRY_DUST      7
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -589,8 +591,9 @@ typedef struct Segment {
     void setPixelColor(float i, uint32_t c, bool aa = true);
     inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
-    void setPixelColorAbsolute(int i, uint32_t c);
+    void setPixelColorExact(int i, uint32_t c);
     uint32_t getPixelColor(int i);
+    uint32_t getBufferColor(int i);
     uint16_t getPixelIndex(int i);
     void blendTransition();
     uint32_t transitionColor(int n, uint32_t oldCol, uint32_t newCol);
