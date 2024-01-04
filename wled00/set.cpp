@@ -99,8 +99,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint16_t length, start, maMax;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
-    strip.ablMilliampsMax = request->arg(F("MA")).toInt();
-    //strip.milliampsPerLed = request->arg(F("LA")).toInt();
+    uint16_t ablMilliampsMax = request->arg(F("MA")).toInt();
+    BusManager::setMilliampsMax(ablMilliampsMax);
 
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
@@ -197,7 +197,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         com.add(start, length, colorOrder);
       }
     }
-    busses.updateColorOrderMap(com);
+    BusManager::updateColorOrderMap(com);
 
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
@@ -626,7 +626,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    JsonObject um = doc.createNestedObject("um");
+    JsonObject um = pDoc->createNestedObject("um");
 
     size_t args = request->args();
     uint16_t j=0;

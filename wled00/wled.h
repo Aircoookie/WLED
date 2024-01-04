@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2312270
+#define VERSION 2401010
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -759,7 +759,12 @@ WLED_GLOBAL int8_t spi_sclk  _INIT(SPISCLKPIN);
 #endif
 
 // global ArduinoJson buffer
-WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
+#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+WLED_GLOBAL JsonDocument *pDoc _INIT(nullptr);
+#else
+WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> gDoc;
+WLED_GLOBAL JsonDocument *pDoc _INIT(&gDoc);
+#endif
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output

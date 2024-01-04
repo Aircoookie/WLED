@@ -133,7 +133,7 @@ void appendGPIOinfo() {
   // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
-    JsonObject mods = doc.createNestedObject(F("um"));
+    JsonObject mods = pDoc->createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
     releaseJSONBufferLock();
@@ -356,8 +356,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
     uint16_t sumMa = 0;
-    for (uint8_t s=0; s < busses.getNumBusses(); s++) {
-      Bus* bus = busses.getBus(s);
+    for (uint8_t s=0; s < BusManager::getNumBusses(); s++) {
+      Bus* bus = BusManager::getBus(s);
       if (bus == nullptr) continue;
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
@@ -413,22 +413,13 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',ma,bus->getMaxCurrent());
       sumMa += bus->getMaxCurrent();
     }
-    sappend('c',SET_F("PPL"),(sumMa>0 && abs(sumMa - strip.ablMilliampsMax)>2)); // approxiamte detection if per-output limiter is enabled
-    sappend('v',SET_F("MA"),strip.ablMilliampsMax);
-/*
-    sappend('v',SET_F("LA"),strip.milliampsPerLed);
-    if (strip.currentMilliamps)
-    {
-      sappends('m',SET_F("(\"pow\")[0]"),(char*)"");
-      olen -= 2; //delete ";
-      oappendi(strip.currentMilliamps);
-      oappend(SET_F("mA\";"));
-    }
-*/
+    sappend('v',SET_F("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
+    sappend('c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
+
     oappend(SET_F("resetCOM("));
     oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
-    const ColorOrderMap& com = busses.getColorOrderMap();
+    const ColorOrderMap& com = BusManager::getColorOrderMap();
     for (uint8_t s=0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;

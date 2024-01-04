@@ -123,8 +123,8 @@ static bool remoteJson(int button)
   sprintf_P(objKey, PSTR("\"%d\":"), button);
 
   // attempt to read command from remote.json
-  readObjectFromFile("/remote.json", objKey, &doc);
-  JsonObject fdo = doc.as<JsonObject>();
+  readObjectFromFile("/remote.json", objKey, pDoc);
+  JsonObject fdo = pDoc->as<JsonObject>();
   if (fdo.isNull()) {
     // the received button does not exist
     if (!WLED_FS.exists("/remote.json")) errorFlag = ERR_FS_RMLOAD; //warn if file itself doesn't exist

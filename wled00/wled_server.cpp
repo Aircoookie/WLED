@@ -180,8 +180,8 @@ void initServer()
 
     if (!requestJSONBufferLock(14)) return;
 
-    DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
-    JsonObject root = doc.as<JsonObject>();
+    DeserializationError error = deserializeJson(*pDoc, (uint8_t*)(request->_tempObject));
+    JsonObject root = pDoc->as<JsonObject>();
     if (error || root.isNull()) {
       releaseJSONBufferLock();
       serveJsonError(request, 400, ERR_JSON);

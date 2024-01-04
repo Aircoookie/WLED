@@ -238,7 +238,7 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
 // Check if supplied GPIO is ok to use
 bool PinManagerClass::isPinOk(byte gpio, bool output)
 {
-#ifdef ESP32
+#ifdef ARDUINO_ARCH_ESP32
   if (digitalPinIsValid(gpio)) {
   #if defined(CONFIG_IDF_TARGET_ESP32C3)
     // strapping pins: 2, 8, & 9
@@ -257,6 +257,9 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
     // GPIO46 is input only and pulled down
   #else
     if (gpio > 5 && gpio < 12) return false;      //SPI flash pins
+    #ifdef BOARD_HAS_PSRAM
+    if (gpio == 16 || gpio == 17) return false;   //PSRAM pins
+    #endif
   #endif
     if (output) return digitalPinCanOutput(gpio);
     else        return true;

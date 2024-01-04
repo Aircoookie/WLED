@@ -26,8 +26,8 @@
 			// success event 
 			scE.addEventListener("load", () => {
 				GetV();
-				setABL();
 				checkSi();
+				setABL();
 				d.Sf.addEventListener("submit", trySubmit);
 				if (d.um_p[0]==-1) d.um_p.shift();
 				pinDropdowns();
@@ -107,30 +107,36 @@
 			e.preventDefault();
 			if (!pinsOK()) {e.stopPropagation();return false;} // Prevent form submission and contact with server
 			if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
+			if (!d.Sf.ABL.checked || d.Sf.PPL.checked) d.Sf.MA.value = 0; // submit 0 as ABL (PPL will handle it)
 			if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
 		}
 		function enABL()
 		{
-			var en = d.Sf["ABL"].checked;
-			d.Sf["MA"].min = en ? 250 : 0;
+			var en = d.Sf.ABL.checked;
 			gId('abl').style.display = (en) ? 'inline':'none';
 			gId('psu2').style.display = (en) ? 'inline':'none';
-			if (!en) d.Sf["PPL"].checked = false;
+			if (!en) d.Sf.PPL.checked = false;
 			enPPL();
 			UI();
 		}
 		function enPPL()
 		{
-			const abl = d.Sf["ABL"].checked;
-			const en = d.Sf["PPL"].checked;
-			d.Sf["MA"].readonly = en;
-			gId("ppldis").style.display = en ? 'inline' : 'none';
+			const abl = d.Sf.ABL.checked;
+			const ppl = d.Sf.PPL.checked;
+			let sumMA = 0;
+			d.Sf.MA.readonly = ppl;
+			d.Sf.MA.min = abl && !ppl ? 250 : 0;
+			gId("psuMA").style.display = ppl ? 'none' : 'inline';
+			gId("ppldis").style.display = ppl ? 'inline' : 'none';
+			// set PPL minimum value and clear actual PPL limit if ABL disabled
 			d.Sf.querySelectorAll("#mLC input[name^=MA]").forEach((i,n)=>{
-				gId("PSU"+n).style.display = en ? "inline" : "none";
+				gId("PSU"+n).style.display = ppl ? "inline" : "none";
 				const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
-				i.min = en && !((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 250 : 0;
+				i.min = ppl && !((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 250 : 0;
 				if (!abl) i.value = 0;
+				else if (ppl) sumMA += parseInt(i.value,10);
 			});
+			if (ppl) d.Sf.MA.value = sumMA; // populate UI ABL value if PPL used
 		}
 		function enLA(s,n)
 		{
@@ -141,10 +147,11 @@
 		}
 		function setABL()
 		{
-			d.Sf["ABL"].checked = false;
+			console.log(d.Sf.MA.value);
+			d.Sf.ABL.checked = parseInt(d.Sf.MA.value) > 0;
 			// check if ABL is enabled (max mA entered per output)
 			d.Sf.querySelectorAll("#mLC input[name^=MA]").forEach((i,n)=>{
-				if (parseInt(i.value) > 0) d.Sf["ABL"].checked = true;
+				if (parseInt(i.value) > 0) d.Sf.ABL.checked = true;
 			});
 			// select appropriate LED current
 			d.Sf.querySelectorAll("#mLC select[name^=LAsel]").forEach((sel,n)=>{
@@ -190,8 +197,8 @@
 			let isRGBW = false, gRGBW = false, memu = 0;
 			let sumMA = 0, busMA = 0;
 			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
-			const ablEN = d.Sf["ABL"].checked;
-			const pplEN = d.Sf["PPL"].checked;
+			const ablEN = d.Sf.ABL.checked;
+			const pplEN = d.Sf.PPL.checked;
 
 			// enable/disable LED fields
 			d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((s)=>{
@@ -244,7 +251,7 @@
 				gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
 				gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
 				if (ablEN && pplEN && !((t >= 80 && t < 96) || (t >= 40 && t < 48))) {
-					sumMA += parseInt(d.Sf["MA"+n].value);
+					sumMA += parseInt(d.Sf["MA"+n].value); // summarize PPL ABL limit (fields)
 				}
 			});
 			// display global white channel overrides
@@ -269,11 +276,12 @@
 						if (s+c > sLC) sLC = s+c; //update total count
 						if (c > maxLC) maxLC = c; //max per output
 						if (t < 80) sPC += c; //virtual out busses do not count towards physical LEDs
-						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) sDI += c;
+						//if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) sDI += c;
 						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) {
+							sDI += c; // summarize digital LED count
 							let maPL = parseInt(d.Sf["LA"+n].value);
 							if (maPL == 255) maPL = 12;
-							busMA += maPL*c;
+							busMA += maPL*c; // summarize maximum bus current (calculated)
 						}
 					} // increase led count
 					return;
@@ -316,14 +324,18 @@
 						else LC.style.color = d.ro_gpio.some((e)=>e==parseInt(LC.value)) ? "orange" : "#fff";
 					}
 			});
+			// distribute ABL current if not using PPL, otherwise sumMA contains summarized ABL limit
 			d.Sf.querySelectorAll("#mLC input[name^=LC]").forEach((s,n)=>{
 				let c = parseInt(s.value,10); //get LED count
-				let t = parseInt(d.Sf["LT"+n].value);
-				if (ablEN) {
-					let v = Math.round(parseInt(d.Sf["MA"].value,10)*c/sDI);
-					if (!pplEN && !((t >= 80 && t < 96) || (t >= 40 && t < 48))) d.Sf["MA"+n].value = v;
-				} else d.Sf["MA"+n].value = 0;
+				let t = parseInt(d.Sf["LT"+n].value); //get LED type
+				if (!ablEN || (t >= 80 && t < 96) || (t >= 40 && t < 48)) {
+					// virtual and analog LEDs have no limiter
+					d.Sf["MA"+n].value = 0;
+					return;
+				}
+				if (!pplEN) d.Sf["MA"+n].value = Math.round(parseInt(d.Sf.MA.value,10)*c/sDI);
 			});
+			if (pplEN) d.Sf.MA.value = sumMA; // update global ABL if using PPL
 			// update total led count
 			gId("lc").textContent = sLC;
 			gId("pc").textContent = (sLC == sPC) ? "":"(" + sPC + " physical)";
@@ -336,7 +348,6 @@
 			gId('ledwarning').style.color = (maxLC > Math.max(maxPB,800) || bquot > 100) ? 'red':'orange';
 			gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
 			// calculate power
-			if (pplEN) d.Sf.MA.value = sumMA;
 			gId('ampwarning').style.display = (parseInt(d.Sf.MA.value,10) > 7200) ? 'inline':'none';
 			var val = Math.ceil((100 + busMA)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
@@ -409,7 +420,7 @@ mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">
 <option value="0">Custom</option>
 </select><br>
 <div id="LAdis${i}" style="display: none;">max. mA/LED: <input name="LA${i}" type="number" min="1" max="254" oninput="UI()"> mA<br></div>
-<div id="PSU${i}">PSU: <input name="MA${i}" type="number" class="xl" min="250" max="65000" oninput="UI()"> mA<br></div>
+<div id="PSU${i}">PSU: <input name="MA${i}" type="number" class="xl" min="250" max="65000" oninput="UI()" value="250"> mA<br></div>
 </div>
 <div id="co${i}" style="display:inline">Color Order:
 <select name="CO${i}">
@@ -445,7 +456,10 @@ mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">
 			gId("+").style.display = (i<maxB+maxV-1) ? "inline":"none";
 			gId("-").style.display = (i>0) ? "inline":"none";
 
-			if (!init) UI();
+			if (!init) {
+				enPPL();
+				UI();
+			}
 		}
 
 		function addCOM(start=0,len=1,co=0) {
@@ -750,7 +764,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 			<i>Automatically limits brightness to stay close to the limit.<br>
 				Keep at &lt;1A if poweing LEDs directly from the ESP 5V pin!<br>
 				Analog (PWM) and virtual LEDs cannot use automatic brightness limiter.<br></i>
-			Maximum PSU Current: <input name="MA" type="number" class="xl" min="250" max="65000" oninput="UI()" required> mA<br>
+			<div id="psuMA">Maximum PSU Current: <input name="MA" type="number" class="xl" min="250" max="65000" oninput="UI()" required> mA<br></div>
 			Use per-output limiter: <input type="checkbox" name="PPL" onchange="enPPL()"><br>
 			<div id="ppldis" style="display:none;">
 				<i>Make sure you enter correct values in each LED output.<br>
