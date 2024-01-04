@@ -1143,7 +1143,7 @@ void WS2812FX::service() {
   _segment_index = 0;
   Segment::handleRandomPalette(); // move it into for loop when each segment has individual random palette
   for (segment &seg : _segments) {
-    if (_suspend) break; // immediately stop processing segments if suspend requested during service()
+    if (_suspend) return; // immediately stop processing segments if suspend requested during service()
 
     // process transition (mode changes in the middle of transition)
     seg.handleTransition();
