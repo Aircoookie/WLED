@@ -683,6 +683,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 #endif
   i &= 0xFFFF;
 
+  i = pixelIndexForTransition(i);
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
 
 #ifndef WLED_DISABLE_2D
@@ -754,10 +755,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     col = RGBW32(r, g, b, w);
   }
 
-  setPixelColorExact(i, col);
-}
-
-void Segment::setPixelColorExact(int i, uint32_t col) {
   // expand pixel (taking into account start, grouping, spacing [and offset])
   uint16_t len = length();
   i = i * groupLength();
@@ -780,7 +777,7 @@ void Segment::setPixelColorExact(int i, uint32_t col) {
         if (indexMir >= stop) indexMir -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
         if (_modeBlend) {
-          strip._buffer[indexMir] = col;
+          maybeSetStripPixelColorForTransition(indexMir, col);
         } else {
           strip.setPixelColor(indexMir, col);
         }
@@ -792,7 +789,7 @@ void Segment::setPixelColorExact(int i, uint32_t col) {
       if (indexSet >= stop) indexSet -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
       if (_modeBlend) {
-        strip._buffer[indexSet] = col;
+        maybeSetStripPixelColorForTransition(indexSet, col);
       } else {
         strip.setPixelColor(indexSet, col);
       }
@@ -800,6 +797,76 @@ void Segment::setPixelColorExact(int i, uint32_t col) {
       strip.setPixelColor(indexSet, col);
 #endif
     }
+  }
+}
+
+void Segment::maybeSetStripPixelColorForTransition(int n, uint32_t c) {
+  switch (transitionStyle) {
+    case TRANSITION_STYLE_PUSH_RIGHT:
+    case TRANSITION_STYLE_PUSH_LEFT: {
+      strip.setPixelColor(n, c);
+      break;
+    }
+    case TRANSITION_STYLE_SWIPE_RIGHT: {
+      uint16_t pos = (n * 0xFFFFU) / length();
+      if (progress() < pos) strip.setPixelColor(n, c);
+      break;
+    }
+    case TRANSITION_STYLE_SWIPE_LEFT: {
+      uint16_t pos = 0xFFFFU - (n * 0xFFFFU) / virtualLength();
+      if (progress() < pos) strip.setPixelColor(n, c);
+      break;
+    }
+    case TRANSITION_STYLE_OUTSIDE_IN: {
+      uint16_t len = virtualLength();
+      uint16_t halfLen = len >> 1;
+      uint16_t pos = ((n < halfLen ? n : len - n) * 0xFFFFU) / halfLen;
+      if (progress() < pos) strip.setPixelColor(n, c);
+      break;
+    }
+    case TRANSITION_STYLE_INSIDE_OUT: {
+      uint16_t len = virtualLength();
+      uint16_t halfLen = len >> 1;
+      uint16_t pos = 0xFFFFU - ((n < halfLen ? n : len - n) * 0xFFFFU) / halfLen;
+      if (progress() < pos) strip.setPixelColor(n, c);
+      break;
+    }
+    case TRANSITION_STYLE_FAIRY_DUST: {
+      uint32_t len = virtualLength();
+      uint32_t primeNumber = 103357;
+      uint32_t shuffled = (n * primeNumber) % len;
+      uint16_t pos = (shuffled * 0xFFFFU) / len;
+      if (progress() < pos) strip.setPixelColor(n, c);
+      break;
+    }
+    case TRANSITION_STYLE_FADE:
+    default: {
+      strip.setPixelColor(n, color_blend(strip.getPixelColor(n), c, 0xFFFFU - progress(), true));
+      break;
+    }
+  }
+}
+
+int Segment::pixelIndexForTransition(int originalIndex) {
+  switch (transitionStyle) {
+    case TRANSITION_STYLE_PUSH_RIGHT: {
+      uint16_t len = virtualLength();
+      uint16_t pos = (uint32_t(progress()) * uint32_t(len)) / 0xFFFFU;
+      if (_modeBlend) {
+        return originalIndex + pos;
+      }
+      return originalIndex - len + pos;
+    }
+    case TRANSITION_STYLE_PUSH_LEFT: {
+      uint16_t len = virtualLength();
+      uint16_t pos = (uint32_t(progress()) * uint32_t(len)) / 0xFFFFU;
+      if (_modeBlend) {
+        return originalIndex + len - pos;
+      }
+      return originalIndex - pos;
+    }
+    default:
+      return originalIndex;
   }
 }
 
@@ -869,10 +936,6 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
   return strip.getPixelColor(getPixelIndex(i));
 }
 
-uint32_t Segment::getBufferColor(int i) {
-  return strip._buffer[getPixelIndex(i)];
-}
-
 uint16_t Segment::getPixelIndex(int i) {
   i &= 0xFFFF;
   if (reverse) i = virtualLength() - i - 1;
@@ -882,85 +945,6 @@ uint16_t Segment::getPixelIndex(int i) {
   i += offset;
   if ((i >= stop) && (stop>0)) i -= length(); // avoids negative pixel index (stop = 0 is a possible value)
   return i;
-}
-
-void Segment::blendTransition() {
-  switch (transitionStyle) {
-    case TRANSITION_STYLE_PUSH_RIGHT: {
-      uint16_t len = virtualLength();
-      uint16_t pos = (uint32_t(progress()) * uint32_t(len)) / 0xFFFFU;
-      for (int i = 0; i != pos; i++) {
-        setPixelColorExact(i, getPixelColor(len - pos + i));
-      }
-      for (int i = len - pos; i != 0; i--) {
-        setPixelColorExact(i + pos, getBufferColor(i));
-      }
-      break;
-    }
-    case TRANSITION_STYLE_PUSH_LEFT: {
-      uint16_t len = virtualLength();
-      uint16_t pos = (uint32_t(progress()) * uint32_t(len)) / 0xFFFFU;
-      for (int i = len - pos; i != len; i++) {
-        setPixelColorExact(i, getPixelColor(i - len + pos));
-      }
-      for (int i = pos; i != len; i++) {
-        setPixelColorExact(i - pos, getBufferColor(i));
-      }
-      break;
-    }
-    default: {
-      // All other transition styles use the same pixel indexes from the strip and the buffer
-      for (int i = 0; i != virtualLength(); ++i) {
-        uint16_t index = getPixelIndex(i);
-        uint32_t oldCol = strip.getPixelColor(index);
-        uint32_t newCol = strip._buffer[index];
-
-        setPixelColorExact(i, transitionColor(i, oldCol, newCol));
-      }
-      break;
-    }
-  }
-}
-
-uint32_t Segment::transitionColor(int n, uint32_t oldCol, uint32_t newCol) {
-  switch (transitionStyle) {
-    case TRANSITION_STYLE_SWIPE_RIGHT: {
-      uint16_t pos = (n * 0xFFFFU) / virtualLength();
-      if (progress() > pos) return oldCol;
-      return newCol;
-    }
-    case TRANSITION_STYLE_SWIPE_LEFT: {
-      uint16_t pos = 0xFFFFU - (n * 0xFFFFU) / virtualLength();
-      if (progress() > pos) return oldCol;
-      return newCol;
-    }
-    case TRANSITION_STYLE_OUTSIDE_IN: {
-      uint16_t len = virtualLength();
-      uint16_t halfLen = len >> 1;
-      uint16_t pos = ((n < halfLen ? n : len - n) * 0xFFFFU) / halfLen;
-      if (progress() > pos) return oldCol;
-      return newCol;
-    }
-    case TRANSITION_STYLE_INSIDE_OUT: {
-      uint16_t len = virtualLength();
-      uint16_t halfLen = len >> 1;
-      uint16_t pos = 0xFFFFU - ((n < halfLen ? n : len - n) * 0xFFFFU) / halfLen;
-      if (progress() > pos) return oldCol;
-      return newCol;
-    }
-    case TRANSITION_STYLE_FAIRY_DUST: {
-      uint32_t len = virtualLength();
-      uint32_t primeNumber = 103357;
-      uint32_t shuffled = (n * primeNumber) % len;
-      uint16_t pos = (shuffled * 0xFFFFU) / len;
-      if (progress() > pos) return oldCol;
-      return newCol;
-    }
-    case TRANSITION_STYLE_FADE:
-    default: {
-      return color_blend(oldCol, newCol, 0xFFFFU - progress(), true);
-    }
-  }
 }
 
 uint8_t Segment::differs(Segment& b) const {
@@ -1239,7 +1223,6 @@ void WS2812FX::finalizeInit(void) {
     if (pins[0] == 3) bd->reinit();
     #endif
   }
-  _buffer.resize(_length);
 
   Segment::maxWidth  = _length;
   Segment::maxHeight = 1;
@@ -1303,7 +1286,6 @@ void WS2812FX::service() {
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay
           Segment::modeBlend(false);          // unset semaphore
-          seg.blendTransition();
         }
 #endif
         seg.call++;
