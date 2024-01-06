@@ -1,7 +1,12 @@
 ## WLED changelog
 
-#### Build 2309120 till build 2312290
+#### Build 2309120 till build 2201060
 -   WLED version 0.15.0-a0
+-   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
+-   Effect: Fireworks 1D (fix for matrix trailing strip)
+-   BREAKING: Reduced number of segments (12) on ESP8266 due to less available RAM
+-   Increased available effect data buffer (increases more if board has PSRAM)
+-   Custom palette editor mobile UI enhancement (by @imeszaros)
 -   Per port Auto Brightness Limiter (ABL)
 -   Use PSRAM for JSON buffer (double size, larger ledmaps, up to 2k)
 -   Reduced heap fragmentation by allocating ledmap array only once and not deallocating effect buffer
@@ -26,7 +31,7 @@
 -   Better reverse proxy support (nested paths)
 -   Implement global JSON API boolean toggle (i.e. instead of "var":true or "var":false -> "var":"t").
 -   Sort presets by ID
--   Fix for #3496, #2922, #3593, #3514, #3522, #3578 (partial), #3606 (@WoodyLetsCode)
+-   Fix for #3641, #3312, #3367, #3637, #3646, #3447, #3632, #3496, #2922, #3593, #3514, #3522, #3578 (partial), #3606 (@WoodyLetsCode)
 -   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
 -   Audio palettes (Audioreactive usermod, credit @netmindz)
 -   Better UI tooltips (@ajotnac, #3464)
