@@ -1065,6 +1065,7 @@ void serveJson(AsyncWebServerRequest* request)
   if (!response->owns_lock()) {
     serveJsonError(request, 503, ERR_NOBUF);
     servingClient = false;
+    delete response;
     return;
   }
 
