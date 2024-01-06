@@ -933,10 +933,6 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
   }
 #endif
 
-  return strip.getPixelColor(getPixelIndex(i));
-}
-
-uint16_t Segment::getPixelIndex(int i) {
   i &= 0xFFFF;
   if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();
