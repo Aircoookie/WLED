@@ -373,6 +373,22 @@ um_data_t* simulateSound(uint8_t simulationId);
 CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal); //WLEDMM netmindz ar palette
 char *cleanUpName(char *in); // to clean up a name that was read from file
 
+// RAII guard class for the JSON Buffer lock
+// Modeled after std::lock_guard
+class JSONBufferGuard {
+  bool holding_lock;
+  public:
+    inline JSONBufferGuard(uint8_t module=255) : holding_lock(requestJSONBufferLock(module)) {};
+    inline ~JSONBufferGuard() { if (holding_lock) releaseJSONBufferLock(); };
+    inline JSONBufferGuard(const JSONBufferGuard&) = delete; // Noncopyable
+    inline JSONBufferGuard& operator=(const JSONBufferGuard&) = delete;
+    inline JSONBufferGuard(JSONBufferGuard&& r) : holding_lock(r.holding_lock) { r.holding_lock = false; };  // but movable
+    inline JSONBufferGuard& operator=(JSONBufferGuard&& r) { holding_lock |= r.holding_lock; r.holding_lock = false; return *this; };
+    inline bool owns_lock() const { return holding_lock; }
+    explicit inline operator bool() const { return owns_lock(); };
+    inline void release() { if (holding_lock) releaseJSONBufferLock(); holding_lock = false; }
+};
+
 #ifdef WLED_ADD_EEPROM_SUPPORT
 //wled_eeprom.cpp
 void applyMacro(byte index);

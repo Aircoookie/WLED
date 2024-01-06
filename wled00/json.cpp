@@ -9,6 +9,7 @@
 #define JSON_PATH_PALETTES   5
 #define JSON_PATH_FXDATA     6
 #define JSON_PATH_NETWORKS   7
+#define JSON_PATH_EFFECTS    8
 
 // begin WLEDMM
 #ifdef ARDUINO_ARCH_ESP32
@@ -1392,6 +1393,17 @@ void serializeModeNames(JsonArray arr) {
   }
 }
 
+
+// Global buffer locking response helper class
+class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
+  public:
+  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(&doc, isArray) {};
+  virtual ~GlobalBufferAsyncJsonResponse() {};
+
+  // Other members are inherited
+};
+
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -1400,6 +1412,7 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf("info")  > 0) subJson = JSON_PATH_INFO;
   else if (url.indexOf("si")    > 0) subJson = JSON_PATH_STATE_INFO;
   else if (url.indexOf("nodes") > 0) subJson = JSON_PATH_NODES;
+  else if (url.indexOf("eff")   > 0) subJson = JSON_PATH_EFFECTS;
   else if (url.indexOf("palx")  > 0) subJson = JSON_PATH_PALETTES;
   else if (url.indexOf("fxda")  > 0) subJson = JSON_PATH_FXDATA;
   else if (url.indexOf("net") > 0) subJson = JSON_PATH_NETWORKS;
@@ -1435,11 +1448,12 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  if (!requestJSONBufferLock(17)) {
+  GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
+  if (!response->owns_lock()) {
     request->send(503, "application/json", F("{\"error\":3}"));
+    delete response;
     return;
   }
-  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
 
   JsonVariant lDoc = response->getRoot();
 
@@ -1453,6 +1467,9 @@ void serveJson(AsyncWebServerRequest* request)
       serializeNodes(lDoc); break;
     case JSON_PATH_PALETTES:
       serializePalettes(lDoc, request); break;
+      //serializePalettes(lDoc, request->hasParam("page") ? request->getParam("page")->value().toInt() : 0); break;
+    case JSON_PATH_EFFECTS:
+      serializeModeNames(lDoc); break;
     case JSON_PATH_FXDATA:
       serializeModeData(lDoc.as<JsonArray>()); break;
     case JSON_PATH_NETWORKS:
@@ -1475,7 +1492,6 @@ void serveJson(AsyncWebServerRequest* request)
 
   response->setLength();
   request->send(response);
-  releaseJSONBufferLock();
 }
 
 #ifdef WLED_ENABLE_JSONLIVE
