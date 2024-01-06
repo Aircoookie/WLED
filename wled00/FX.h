@@ -589,7 +589,6 @@ typedef struct Segment {
     void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     void maybeSetStripPixelColorForTransition(int n, uint32_t c);
     uint32_t getPixelColor(int i);
-    uint16_t getPixelIndex(int i);
     int pixelIndexForTransition(int originalIndex);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
@@ -618,7 +617,10 @@ typedef struct Segment {
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
+    uint32_t pixelColorXYForTransition(int x, int y, uint32_t oldCol, uint32_t newCol);
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
+    int xCoordinateForTransition(int originalX);
+    int yCoordinateForTransition(int originalY);
     // 2D support functions
     void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend);
     void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), blend); }
@@ -652,7 +654,10 @@ typedef struct Segment {
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true)     { setPixelColor(x, c, aa); }
     void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColor(x, RGBW32(r,g,b,w), aa); }
     void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
+    void maybeSetStripPixelColorXYForTransition(int x, int y, uint32_t c)  { maybeSetPixelColorForTransition(x, c); }
     uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
+    int xCoordinateForTransition(int originalX)                            { return pixelIndexForTransition(originalX); }
+    int yCoordinateForTransition(int originalY)                            { return originalY; }
     void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }
     void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColor(x, RGBW32(c.r,c.g,c.b,0), blend); }
     void addPixelColorXY(int x, int y, uint32_t color, bool fast = false)  { addPixelColor(x, color, fast); }
