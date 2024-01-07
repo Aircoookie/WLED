@@ -220,6 +220,14 @@ void Segment::render2DTransition() {
   uint16_t width = virtualWidth();
   uint16_t height = virtualHeight();
 
+  // Sometimes the timing works out such that "pos" calculated below doesn't hit
+  // all the possible coordinates. This can happen e.g. when the frame rate is low.
+  // As a result, there can be some pixels left in a transitional state. This is a
+  // problem if the target effect doesn't update all the pixels. In order to ensure
+  // there are no artifacts left from the transition, we need to clear the segment
+  // before we render the transition.
+  fill(BLACK);
+
   switch (transitionStyle) {
     case TRANSITION_STYLE_PUSH_RIGHT: {
       uint16_t pos = (uint32_t(progress()) * uint32_t(width)) / 0xFFFFU;
