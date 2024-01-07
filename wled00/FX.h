@@ -459,6 +459,8 @@ typedef struct Segment {
       {}
     } *_t;
 
+    uint16_t _bufferSize;
+
   public:
     Segment(uint16_t sStart=0, uint16_t sStop=30) :
       start(sStart),
@@ -493,7 +495,8 @@ typedef struct Segment {
       buffer2(nullptr),
       _capabilities(0),
       _dataLen(0),
-      _t(nullptr)
+      _t(nullptr),
+      _bufferSize(0)
     {
       #ifdef WLED_DEBUG
       //Serial.printf("-- Creating segment: %p\n", this);
@@ -524,6 +527,8 @@ typedef struct Segment {
 
     Segment& operator= (const Segment &orig); // copy assignment
     Segment& operator= (Segment &&orig) noexcept; // move assignment
+
+    void allocateBuffers();
 
 #ifdef WLED_DEBUG
     size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0); }

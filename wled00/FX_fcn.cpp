@@ -99,7 +99,7 @@ Segment::Segment(const Segment &orig) {
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
 
-  uint16_t len = virtualLength();
+  uint16_t len = orig._bufferSize;
   if (orig.buffer1) { buffer1 = new uint32_t[len]; if (buffer1) memcpy(buffer1, orig.buffer1, len * sizeof(uint32_t)); }
   if (orig.buffer2) { buffer2 = new uint32_t[len]; if (buffer2) memcpy(buffer2, orig.buffer2, len * sizeof(uint32_t)); }
 }
@@ -111,6 +111,7 @@ Segment::Segment(Segment &&orig) noexcept {
   orig._t   = nullptr; // old segment cannot be in transition any more
   orig.name = nullptr;
   orig.data = nullptr;
+  orig._bufferSize = 0;
   orig.buffer1 = nullptr;
   orig.buffer2 = nullptr;
   orig._dataLen = 0;
@@ -152,7 +153,21 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
   return *this;
 }
 
-// allocates effect data buffer on heap and initialises (erases) it
+// allocate and/or resize effect buffers if necessary
+void Segment::allocateBuffers() {
+  uint16_t len = virtualLength();
+  if (buffer1 && buffer2 && _bufferSize >= len) return;
+
+  if (_bufferSize < len) {
+    if (buffer1) { delete [] buffer1; buffer1 = nullptr; }
+    if (buffer2) { delete [] buffer2; buffer2 = nullptr; }
+    _bufferSize = len;
+  }
+
+  if (!buffer1) buffer1 = new uint32_t[len]{};
+  if (!buffer2) buffer2 = new uint32_t[len]{};
+}
+
 bool IRAM_ATTR Segment::allocateData(size_t len) {
   if (len == 0) return false; // nothing to do
   if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
@@ -309,12 +324,7 @@ void Segment::startTransition(uint16_t dur) {
   _t->_cctT           = cct;
 #ifndef WLED_DISABLE_MODE_BLEND
   if (modeBlending) {
-    uint16_t len = virtualLength();
-    if (!buffer1) buffer1 = new uint32_t[len];
-    if (!buffer2) buffer2 = new uint32_t[len];
-    if (buffer1) memset(buffer1, 0, len * sizeof(*buffer1));
-    if (buffer2) memset(buffer2, 0, len * sizeof(*buffer2));
-
+    allocateBuffers();  // set up and resize effect buffers if necessary
     swapSegenv(_t->_segT);
     _t->_modeT          = mode;
     _t->_segT._dataLenT = 0;
