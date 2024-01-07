@@ -197,6 +197,10 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_MPU6050_IMU
+#include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
+#endif
+
 
 void registerUsermods()
 {
@@ -373,4 +377,9 @@ void registerUsermods()
   #ifdef USERMOD_INTERNAL_TEMPERATURE
   usermods.add(new InternalTemperatureUsermod());
   #endif
+
+  #ifdef USERMOD_MPU6050_IMU
+  static MPU6050Driver mpu6050; usermods.add(&mpu6050);
+  #endif
+
 }
