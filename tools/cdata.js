@@ -50,10 +50,7 @@ function isCached(file) {
   }
   const stat = fs.statSync(file);
   const cached = cache[file];
-  if (cached && cached.mtime >= stat.mtimeMs && cached.size == stat.size) {
-    return true;
-  }
-  return false;
+  return cached && cached.mtime == stat.mtimeMs && cached.size == stat.size;
 }
 
 /**
