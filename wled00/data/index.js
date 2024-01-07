@@ -32,13 +32,14 @@ var cfg = {
 		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
 		  css:true, hdays:false, fxdef:true, on:0, off:0, idsort: false}
 };
+// [year, month (0 -> January, 11 -> December), day, duration in days, image url]
 var hol = [
-	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
-	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
-	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
-	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
-	[0,6,4,1,"https://images.alphacoders.com/516/516792.jpg"], // 4th of July
-	[0,0,1,1,"https://images.alphacoders.com/119/1198800.jpg"] // new year
+	[0, 11, 24, 4, "https://aircoookie.github.io/xmas.png"],		// christmas
+	[0, 2, 17, 1, "https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
+	[2025, 3, 20, 2, "https://aircoookie.github.io/easter.png"],	// easter 2025
+	[2024, 2, 31, 2, "https://aircoookie.github.io/easter.png"],	// easter 2024
+	[0, 6, 4, 1, "https://images.alphacoders.com/516/516792.jpg"],	// 4th of July
+	[0, 0, 1, 1, "https://images.alphacoders.com/119/1198800.jpg"]	// new year
 ];
 
 var cpick = new iro.ColorPicker("#picker", {
@@ -175,19 +176,19 @@ function cTheme(light) {
 	}
 }
 
-function loadBg(iUrl)
-{
-	let bg = gId('bg');
-	let img = d.createElement("img");
+function loadBg() {
+	const { url: iUrl, rnd: iRnd } = cfg.theme.bg;
+	const bg = gId('bg');
+	const img = d.createElement("img");
 	img.src = iUrl;
-	if (iUrl == "" || iUrl==="https://picsum.photos/1920/1080") {
-		var today = new Date();
-		for (var h of (hol||[])) {
-			var yr = h[0]==0 ? today.getFullYear() : h[0];
-			var hs = new Date(yr,h[1],h[2]);
-			var he = new Date(hs);
-			he.setDate(he.getDate() + h[3]);
-			if (today>=hs && today<=he)	img.src = h[4];
+	if (!iUrl || iRnd) {
+		const today = new Date();
+		for (const holiday of (hol || [])) {
+			const year = holiday[0] == 0 ? today.getFullYear() : holiday[0];
+			const holidayStart = new Date(year, holiday[1], holiday[2]);
+			const holidayEnd = new Date(holidayStart);
+			holidayEnd.setDate(holidayEnd.getDate() + holiday[3]);
+			if (today >= holidayStart && today <= holidayEnd) img.src = holiday[4];
 		}
 	}
 	img.addEventListener('load', (e) => {
@@ -195,7 +196,6 @@ function loadBg(iUrl)
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
 		bg.style.backgroundImage = `url(${img.src})`;
-		img = null;
 		gId('namelabel').style.color = "var(--c-c)"; // improve namelabel legibility on background image
 	});
 }
@@ -266,10 +266,10 @@ function onLoad()
 			console.log("No array of holidays in holidays.json. Defaults loaded.");
 		})
 		.finally(()=>{
-			loadBg(cfg.theme.bg.url);
+			loadBg();
 		});
 	} else
-		loadBg(cfg.theme.bg.url);
+		loadBg();
 
 	selectSlot(0);
 	updateTablinks(0);
