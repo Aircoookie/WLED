@@ -72,9 +72,11 @@ SDA_PIN = 4;
 3. And add to `lib_deps` in platformio.ini:
 
 ```
-  adafruit/Adafruit BMP280 Library @ 2.1.0
-  adafruit/Adafruit CCS811 Library @ 1.0.4
-  adafruit/Adafruit Si7021 Library @ 1.4.0
+    adafruit/Adafruit BusIO @ 1.14.5
+    adafruit/Adafruit Unified Sensor @ 1.1.14
+    adafruit/Adafruit BMP280 Library @ 2.6.8
+    adafruit/Adafruit CCS811 Library @ 1.1.3
+    adafruit/Adafruit Si7021 Library @ 1.5.3
 ```
 
 The #ifdefs in `usermods_list.cpp` should do the rest
