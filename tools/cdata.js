@@ -44,6 +44,10 @@ function saveCache(file) {
 }
 
 function isCached(file) {
+  // If command line argument is set, always rebuild
+  if (process.argv[2] == "--force" || process.argv[2] == "-f") {
+    return false;
+  }
   const stat = fs.statSync(file);
   const cached = cache[file];
   if (cached && cached.mtime >= stat.mtimeMs && cached.size == stat.size) {
