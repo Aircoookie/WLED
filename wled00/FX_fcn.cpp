@@ -83,6 +83,7 @@ unsigned long Segment::_lastPaletteChange = 0; // perhaps it should be per segme
 
 #ifndef WLED_DISABLE_MODE_BLEND
 bool Segment::_modeBlend = false;
+uint32_t *Segment::_activeBuffer = 0;
 #endif
 
 // copy constructor
@@ -92,9 +93,15 @@ Segment::Segment(const Segment &orig) {
   _t = nullptr; // copied segment cannot be in transition
   name = nullptr;
   data = nullptr;
+  buffer1 = nullptr;
+  buffer2 = nullptr;
   _dataLen = 0;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
+
+  uint16_t len = virtualLength();
+  if (orig.buffer1) { buffer1 = new uint32_t[len]; if (buffer1) memcpy(buffer1, orig.buffer1, len * sizeof(uint32_t)); }
+  if (orig.buffer2) { buffer2 = new uint32_t[len]; if (buffer2) memcpy(buffer2, orig.buffer2, len * sizeof(uint32_t)); }
 }
 
 // move constructor
@@ -104,6 +111,8 @@ Segment::Segment(Segment &&orig) noexcept {
   orig._t   = nullptr; // old segment cannot be in transition any more
   orig.name = nullptr;
   orig.data = nullptr;
+  orig.buffer1 = nullptr;
+  orig.buffer2 = nullptr;
   orig._dataLen = 0;
 }
 
@@ -299,6 +308,12 @@ void Segment::startTransition(uint16_t dur) {
   _t->_cctT           = cct;
 #ifndef WLED_DISABLE_MODE_BLEND
   if (modeBlending) {
+    uint16_t len = virtualLength();
+    if (!buffer1) buffer1 = new uint32_t[len];
+    if (!buffer2) buffer2 = new uint32_t[len];
+    if (buffer1) memset(buffer1, 0, len * sizeof(*buffer1));
+    if (buffer2) memset(buffer2, 0, len * sizeof(*buffer2));
+
     swapSegenv(_t->_segT);
     _t->_modeT          = mode;
     _t->_segT._dataLenT = 0;
@@ -338,6 +353,80 @@ void Segment::stopTransition() {
 void Segment::handleTransition() {
   uint16_t _progress = progress();
   if (_progress == 0xFFFFU) stopTransition();
+}
+
+void Segment::renderTransition() {
+  uint16_t len = virtualLength();
+
+  switch (transitionStyle) {
+    case TRANSITION_STYLE_PUSH_RIGHT: {
+      uint16_t pos = (uint32_t(progress()) * uint32_t(len)) / 0xFFFFU;
+      // old mode
+      for (int i = pos; i != len; ++i) {
+        setPixelColor(i, buffer2[i - pos]);
+      }
+      // new mode
+      for (int i = 0; i != pos; ++i) {
+        setPixelColor(i, buffer1[i - pos + len]);
+      }
+      return;
+    }
+    case TRANSITION_STYLE_PUSH_LEFT: {
+      uint16_t pos = (uint32_t(0xFFFFU - progress()) * uint32_t(len)) / 0xFFFFU;
+      // old mode
+      for (int i = 0; i != pos; ++i) {
+        setPixelColor(i, buffer2[i - pos + len]);
+      }
+      // new mode
+      for (int i = pos; i != len; ++i) {
+        setPixelColor(i, buffer1[i - pos]);
+      }
+      return;
+    }
+  }
+
+  // Transitions where both buffers are aligned
+  for (int i = 0; i != len; ++i) {
+    switch (transitionStyle) {
+      case TRANSITION_STYLE_SWIPE_RIGHT: {
+        uint16_t pos = (i * 0xFFFFU) / length();
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_SWIPE_LEFT: {
+        uint16_t pos = 0xFFFFU - (i * 0xFFFFU) / virtualLength();
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_OUTSIDE_IN: {
+        uint16_t len = virtualLength();
+        uint16_t halfLen = len >> 1;
+        uint16_t pos = ((i < halfLen ? i : len - i) * 0xFFFFU) / halfLen;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_INSIDE_OUT: {
+        uint16_t len = virtualLength();
+        uint16_t halfLen = len >> 1;
+        uint16_t pos = 0xFFFFU - ((i < halfLen ? i : len - i) * 0xFFFFU) / halfLen;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_FAIRY_DUST: {
+        uint32_t len = virtualLength();
+        uint32_t primeNumber = 103357;
+        uint32_t shuffled = (i * primeNumber) % len;
+        uint16_t pos = (shuffled * 0xFFFFU) / len;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_FADE:
+      default: {
+        setPixelColor(i, color_blend(buffer1[i], buffer2[i], 0xFFFFU - progress(), true));
+        break;
+      }
+    }
+  }
 }
 
 // transition progression between 0-65535
@@ -424,17 +513,8 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 
 uint8_t Segment::currentBri(bool useCct) {
   if (isInTransition()) {
-    if (transitionStyle == TRANSITION_STYLE_FADE) {
-      uint32_t prog = progress();
-      if (prog < 0xFFFFU) {
-        uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
-        curBri += (useCct ? _t->_cctT : (on ? _t->_briT : 0)) * (0xFFFFU - prog);
-        return curBri / 0xFFFFU;
-      }
-    } else {
-      if (_modeBlend && progress() < 0xFFFFU) {
-        return (useCct ? _t->_cctT : (on ? _t->_briT : 0));
-      }
+    if (_modeBlend && progress() < 0xFFFFU) {
+      return (useCct ? _t->_cctT : (on ? _t->_briT : 0));
     }
   }
   return (useCct ? cct : (on ? opacity : 0));
@@ -451,9 +531,6 @@ uint8_t Segment::currentMode() {
 uint32_t Segment::currentColor(uint8_t slot) {
 #ifndef WLED_DISABLE_MODE_BLEND
   if (isInTransition()) {
-    if (transitionStyle == TRANSITION_STYLE_FADE) {
-      return color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true);
-    }
     if (_modeBlend && progress() < 0xFFFFU) {
       return _t->_segT._colorT[slot];
     }
@@ -683,7 +760,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 #endif
   i &= 0xFFFF;
 
-  i = pixelIndexForTransition(i);
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
 
 #ifndef WLED_DISABLE_2D
@@ -755,6 +831,11 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     col = RGBW32(r, g, b, w);
   }
 
+  if (_activeBuffer) {
+    _activeBuffer[i] = col;
+    return;
+  }
+
   // expand pixel (taking into account start, grouping, spacing [and offset])
   uint16_t len = length();
   i = i * groupLength();
@@ -775,98 +856,12 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         uint16_t indexMir = stop - indexSet + start - 1;
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
-#ifndef WLED_DISABLE_MODE_BLEND
-        if (_modeBlend) {
-          maybeSetStripPixelColorForTransition(indexMir, col);
-        } else {
-          strip.setPixelColor(indexMir, col);
-        }
-#else
         strip.setPixelColor(indexMir, col);
-#endif
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
-#ifndef WLED_DISABLE_MODE_BLEND
-      if (_modeBlend) {
-        maybeSetStripPixelColorForTransition(indexSet, col);
-      } else {
-        strip.setPixelColor(indexSet, col);
-      }
-#else
       strip.setPixelColor(indexSet, col);
-#endif
     }
-  }
-}
-
-void Segment::maybeSetStripPixelColorForTransition(int n, uint32_t c) {
-  switch (transitionStyle) {
-    case TRANSITION_STYLE_PUSH_RIGHT:
-    case TRANSITION_STYLE_PUSH_LEFT: {
-      strip.setPixelColor(n, c);
-      break;
-    }
-    case TRANSITION_STYLE_SWIPE_RIGHT: {
-      uint16_t pos = (n * 0xFFFFU) / length();
-      if (progress() < pos) strip.setPixelColor(n, c);
-      break;
-    }
-    case TRANSITION_STYLE_SWIPE_LEFT: {
-      uint16_t pos = 0xFFFFU - (n * 0xFFFFU) / virtualLength();
-      if (progress() < pos) strip.setPixelColor(n, c);
-      break;
-    }
-    case TRANSITION_STYLE_OUTSIDE_IN: {
-      uint16_t len = virtualLength();
-      uint16_t halfLen = len >> 1;
-      uint16_t pos = ((n < halfLen ? n : len - n) * 0xFFFFU) / halfLen;
-      if (progress() < pos) strip.setPixelColor(n, c);
-      break;
-    }
-    case TRANSITION_STYLE_INSIDE_OUT: {
-      uint16_t len = virtualLength();
-      uint16_t halfLen = len >> 1;
-      uint16_t pos = 0xFFFFU - ((n < halfLen ? n : len - n) * 0xFFFFU) / halfLen;
-      if (progress() < pos) strip.setPixelColor(n, c);
-      break;
-    }
-    case TRANSITION_STYLE_FAIRY_DUST: {
-      uint32_t len = virtualLength();
-      uint32_t primeNumber = 103357;
-      uint32_t shuffled = (n * primeNumber) % len;
-      uint16_t pos = (shuffled * 0xFFFFU) / len;
-      if (progress() < pos) strip.setPixelColor(n, c);
-      break;
-    }
-    case TRANSITION_STYLE_FADE:
-    default: {
-      strip.setPixelColor(n, color_blend(strip.getPixelColor(n), c, 0xFFFFU - progress(), true));
-      break;
-    }
-  }
-}
-
-int Segment::pixelIndexForTransition(int originalIndex) {
-  switch (transitionStyle) {
-    case TRANSITION_STYLE_PUSH_RIGHT: {
-      uint16_t len = virtualLength();
-      uint16_t pos = (uint32_t(progress()) * uint32_t(len)) / 0xFFFFU;
-      if (_modeBlend) {
-        return originalIndex + pos;
-      }
-      return originalIndex - len + pos;
-    }
-    case TRANSITION_STYLE_PUSH_LEFT: {
-      uint16_t len = virtualLength();
-      uint16_t pos = (uint32_t(progress()) * uint32_t(len)) / 0xFFFFU;
-      if (_modeBlend) {
-        return originalIndex + len - pos;
-      }
-      return originalIndex - pos;
-    }
-    default:
-      return originalIndex;
   }
 }
 
@@ -911,6 +906,10 @@ uint32_t Segment::getPixelColor(int i)
 #endif
   i &= 0xFFFF;
 
+  if (_activeBuffer) {
+    return _activeBuffer[i];
+  }
+
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     uint16_t vH = virtualHeight();  // segment height in logical pixels
@@ -933,6 +932,10 @@ uint32_t Segment::getPixelColor(int i)
   }
 #endif
 
+  return strip.getPixelColor(getPixelIndex(i));
+}
+
+int Segment::getPixelIndex(int i) {
   i &= 0xFFFF;
   if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();
@@ -1296,9 +1299,13 @@ void WS2812FX::service() {
         // overwritten by later effect. To enable seamless blending for every effect, additional LED buffer
         // would need to be allocated for each effect and then blended together for each pixel.
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
-        delay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
         if (modeBlending && seg.isInTransition()) {
+          // Run new mode first
+          Segment::renderToBuffer(seg.buffer1);
+          delay = (*_mode[seg.mode])();       // render mode into buffer
+
+          // Run old mode into buffer
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
@@ -1307,11 +1314,27 @@ void WS2812FX::service() {
           _colors_t[1] = seg.currentColor(1);
           _colors_t[2] = seg.currentColor(2);
           for (int c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
-          uint16_t d2 = (*_mode[tmpMode])();  // run old mode
+
+          Segment::renderToBuffer(seg.buffer2);
+          uint16_t d2 = (*_mode[tmpMode])();  // render old mode into buffer
+
+          // Clean up
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay
           Segment::modeBlend(false);          // unset semaphore
+          Segment::renderToBuffer(0);
+
+          // Mix everything together
+          if (seg.is2D()) {
+            seg.render2DTransition();
+          } else {
+            seg.renderTransition();
+          }
+        } else {
+          delay = (*_mode[seg.mode])();         // run current mode
         }
+#else
+        delay = (*_mode[seg.mode])();         // run current mode
 #endif
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
         if (seg.isInTransition() && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition

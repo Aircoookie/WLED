@@ -383,6 +383,8 @@ typedef struct Segment {
     uint16_t aux1;  // custom var
     byte     *data; // effect data pointer
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
+    uint32_t *buffer1;
+    uint32_t *buffer2;
 
     typedef struct TemporarySegmentData {
       uint16_t _optionsT;
@@ -428,6 +430,7 @@ typedef struct Segment {
     static unsigned long _lastPaletteChange;  // last random palette change time in millis()
     #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
+    static uint32_t*     _activeBuffer;       // pointer to the buffer where the mode should be rendered to
     #endif
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
@@ -453,7 +456,6 @@ typedef struct Segment {
     } *_t;
 
   public:
-
     Segment(uint16_t sStart=0, uint16_t sStop=30) :
       start(sStart),
       stop(sStop),
@@ -483,6 +485,8 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
+      buffer1(nullptr),
+      buffer2(nullptr),
       _capabilities(0),
       _dataLen(0),
       _t(nullptr)
@@ -508,6 +512,8 @@ typedef struct Segment {
       //Serial.println();
       #endif
       if (name) { delete[] name; name = nullptr; }
+      if (buffer1) { delete[] buffer1; buffer1 = nullptr; }
+      if (buffer2) { delete[] buffer2; buffer2 = nullptr; }
       stopTransition();
       deallocateData();
     }
@@ -537,6 +543,7 @@ typedef struct Segment {
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
     #ifndef WLED_DISABLE_MODE_BLEND
     static void     modeBlend(bool blend)       { _modeBlend = blend; }
+    static void     renderToBuffer(uint32_t* buffer) { _activeBuffer = buffer; }
     #endif
     static void     handleRandomPalette();
 
@@ -587,9 +594,9 @@ typedef struct Segment {
     void setPixelColor(float i, uint32_t c, bool aa = true);
     void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
-    void maybeSetStripPixelColorForTransition(int n, uint32_t c);
     uint32_t getPixelColor(int i);
-    int pixelIndexForTransition(int originalIndex);
+    int getPixelIndex(int i);
+    void renderTransition();
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
     void fill(uint32_t c);
@@ -617,10 +624,8 @@ typedef struct Segment {
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
-    uint32_t pixelColorXYForTransition(int x, int y, uint32_t oldCol, uint32_t newCol);
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
-    int xCoordinateForTransition(int originalX);
-    int yCoordinateForTransition(int originalY);
+    void render2DTransition();
     // 2D support functions
     void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend);
     void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), blend); }
@@ -656,8 +661,7 @@ typedef struct Segment {
     void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
     void maybeSetStripPixelColorXYForTransition(int x, int y, uint32_t c)  { maybeSetPixelColorForTransition(x, c); }
     uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
-    int xCoordinateForTransition(int originalX)                            { return pixelIndexForTransition(originalX); }
-    int yCoordinateForTransition(int originalY)                            { return originalY; }
+    void render2DTransition()                                              { renderTransition(); }
     void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }
     void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColor(x, RGBW32(c.r,c.g,c.b,0), blend); }
     void addPixelColorXY(int x, int y, uint32_t color, bool fast = false)  { addPixelColor(x, color, fast); }

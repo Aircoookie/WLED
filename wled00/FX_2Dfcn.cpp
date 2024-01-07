@@ -173,8 +173,6 @@ uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y)
 void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
-  x = xCoordinateForTransition(x);
-  y = yCoordinateForTransition(y);
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
   uint8_t _bri_t = currentBri();
@@ -186,6 +184,11 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
     col = RGBW32(r, g, b, w);
   }
 
+  if (_activeBuffer) {
+    _activeBuffer[y * virtualWidth() + x] = col;
+    return;
+  }
+
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
   if (transpose) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
@@ -194,77 +197,106 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return;  // if pixel would fall out of segment just exit
 
-  uint32_t tmpCol = col;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
     for (int g = 0; g < grouping; g++) { // groupping horizontally
       uint16_t xX = (x+g), yY = (y+j);
       if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
-#ifndef WLED_DISABLE_MODE_BLEND
-      // if blending modes, blend with underlying pixel
-      if (_modeBlend) {
-        tmpCol = pixelColorXYForTransition(start + xX, startY + yY, strip.getPixelColorXY(start + xX, startY + yY), col);
-      }
-#endif
-
-      strip.setPixelColorXY(start + xX, startY + yY, tmpCol);
+      strip.setPixelColorXY(start + xX, startY + yY, col);
 
       if (mirror) { //set the corresponding horizontally mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
-        else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, tmpCol);
+        if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
+        else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
       }
       if (mirror_y) { //set the corresponding vertically mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, tmpCol);
-        else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
+        if (transpose) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
+        else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, tmpCol);
+        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, col);
       }
     }
   }
 }
 
-uint32_t Segment::pixelColorXYForTransition(int x, int y, uint32_t oldCol, uint32_t newCol) {
+void Segment::render2DTransition() {
+  uint16_t width = virtualWidth();
+  uint16_t height = virtualHeight();
+
   switch (transitionStyle) {
-    case TRANSITION_STYLE_PUSH_RIGHT:
+    case TRANSITION_STYLE_PUSH_RIGHT: {
+      uint16_t pos = (uint32_t(progress()) * uint32_t(width)) / 0xFFFFU;
+      // old mode
+      for (int x = pos; x != width; ++x) {
+        for (int y = 0; y != height; ++y) {
+          setPixelColorXY(x, y, buffer2[y * width + (x - pos)]);
+        }
+      }
+      // new mode
+      for (int x = 0; x != pos; ++x) {
+        for (int y = 0; y != height; ++y) {
+          setPixelColorXY(x, y, buffer1[y * width + (x - pos + width)]);
+        }
+      }
+      return;
+    }
     case TRANSITION_STYLE_PUSH_LEFT: {
-      return newCol;
+      uint16_t pos = (uint32_t(0xFFFFU - progress()) * uint32_t(width)) / 0xFFFFU;
+      // old mode
+      for (int x = 0; x != pos; ++x) {
+        for (int y = 0; y != height; ++y) {
+          setPixelColorXY(x, y, buffer2[y * width + (x - pos + width)]);
+        }
+      }
+      // new mode
+      for (int x = pos; x != width; ++x) {
+        for (int y = 0; y != height; ++y) {
+          setPixelColorXY(x, y, buffer1[y * width + (x - pos)]);
+        }
+      }
+      return;
     }
-    case TRANSITION_STYLE_SWIPE_RIGHT: {
-      uint16_t pos = (x * 0xFFFFU) / virtualWidth();
-      if (progress() < pos) return newCol;
-      return oldCol;
-    }
-    case TRANSITION_STYLE_SWIPE_LEFT: {
-      uint16_t pos = 0xFFFFU - (x * 0xFFFFU) / virtualWidth();
-      if (progress() < pos) return newCol;
-      return oldCol;
-    }
-    case TRANSITION_STYLE_OUTSIDE_IN: {
-      uint16_t width = virtualWidth();
-      uint16_t halfWidth = width >> 1;
-      uint16_t pos = ((x < halfWidth ? x : width - x) * 0xFFFFU) / halfWidth;
-      if (progress() < pos) return newCol;
-      return oldCol;
-    }
-    case TRANSITION_STYLE_INSIDE_OUT: {
-      uint16_t width = virtualWidth();
-      uint16_t halfWidth = width >> 1;
-      uint16_t pos = 0xFFFFU - ((x < halfWidth ? x : width - x) * 0xFFFFU) / halfWidth;
-      if (progress() < pos) return newCol;
-      return oldCol;
-    }
-    case TRANSITION_STYLE_FAIRY_DUST: {
-      uint32_t len = virtualLength();
-      uint32_t primeNumber = 103357;
-      uint32_t shuffled = ((x * virtualWidth() + y) * primeNumber) % len;
-      uint16_t pos = (shuffled * 0xFFFFU) / len;
-      if (progress() < pos) return newCol;
-      return oldCol;
-    }
-    case TRANSITION_STYLE_FADE:
-    default: {
-      return color_blend(oldCol, newCol, 0xFFFFU - progress(), true);
+  }
+
+  // Transitions where both buffers are aligned
+  for (int x = 0; x != width; ++x) for (int y = 0; y != height; ++y) {
+    int i = y * width + x;
+
+    switch (transitionStyle) {
+      case TRANSITION_STYLE_SWIPE_RIGHT: {
+        uint16_t pos = (x * 0xFFFFU) / width;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_SWIPE_LEFT: {
+        uint16_t pos = 0xFFFFU - (x * 0xFFFFU) / width;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_OUTSIDE_IN: {
+        uint16_t halfWidth = width >> 1;
+        uint16_t pos = ((x < halfWidth ? x : width - x) * 0xFFFFU) / halfWidth;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_INSIDE_OUT: {
+        uint16_t halfWidth = width >> 1;
+        uint16_t pos = 0xFFFFU - ((x < halfWidth ? x : width - x) * 0xFFFFU) / halfWidth;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_FAIRY_DUST: {
+        uint32_t len = virtualLength();
+        uint32_t primeNumber = 103357;
+        uint32_t shuffled = ((x * width + y) * primeNumber) % len;
+        uint16_t pos = (shuffled * 0xFFFFU) / len;
+        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_FADE:
+      default: {
+        setPixelColor(i, color_blend(buffer1[i], buffer2[i], 0xFFFFU - progress(), true));
+      }
     }
   }
 }
@@ -317,6 +349,10 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   if (!isActive()) return 0; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
+  if (_activeBuffer) {
+    return _activeBuffer[y * virtualWidth() + x];
+  }
+
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
   if (transpose) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
@@ -324,34 +360,6 @@ uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
   return strip.getPixelColorXY(start + x, startY + y);
-}
-
-int Segment::xCoordinateForTransition(int originalX) {
-  switch (transitionStyle) {
-    case TRANSITION_STYLE_PUSH_RIGHT: {
-      uint16_t width = virtualWidth();
-      uint16_t pos = (uint32_t(progress()) * uint32_t(width)) / 0xFFFFU;
-      if (_modeBlend) {
-        return originalX + pos;
-      }
-      return originalX - width + pos;
-    }
-    case TRANSITION_STYLE_PUSH_LEFT: {
-      uint16_t width = virtualWidth();
-      uint16_t pos = (uint32_t(progress()) * uint32_t(width)) / 0xFFFFU;
-      if (_modeBlend) {
-        return originalX + width - pos;
-      }
-      return originalX - pos;
-    }
-    default: {
-      return originalX;
-    }
-  }
-}
-
-int Segment::yCoordinateForTransition(int originalY) {
-  return originalY;
 }
 
 // Blends the specified color with the existing pixel color.
