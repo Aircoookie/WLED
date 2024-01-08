@@ -179,6 +179,7 @@ class Animated_Staircase : public Usermod {
           sensorChanged = true;
           publishMqtt(true, bottomSensorState ? "on" : "off");
           DEBUG_PRINTLN(F("Bottom sensor changed."));
+          if (bottomSensorRead) lastSensor = LOWER;  
         }
 
         if (topSensorRead != topSensorState) {
@@ -186,6 +187,7 @@ class Animated_Staircase : public Usermod {
           sensorChanged = true;
           publishMqtt(false, topSensorState ? "on" : "off");
           DEBUG_PRINTLN(F("Top sensor changed."));
+          if (topSensorRead) lastSensor = UPPER;
         }
 
         // Values read, reset the flags for next API call
@@ -195,9 +197,7 @@ class Animated_Staircase : public Usermod {
         if (topSensorRead != bottomSensorRead) {
           lastSwitchTime = millis();
 
-          if (on) {
-            lastSensor = topSensorRead;
-          } else {
+          if (!on) {
             if (togglePower && onIndex == offIndex && offMode) toggleOnOff(); // toggle power on if off
             // If the bottom sensor triggered, we need to swipe up, ON
             swipe = bottomSensorRead;
@@ -227,7 +227,16 @@ class Animated_Staircase : public Usermod {
         if (bottomSensorState || topSensorState) return;
 
         // Swipe OFF in the direction of the last sensor detection
-        swipe = lastSensor;
+        // swipe = lastSensor;
+        // Determine the swipe direction based on the last sensor that was triggered
+        if (lastSensor == LOWER) {
+          // If the last sensor was the bottom one, swipe up
+          swipe = SWIPE_UP;
+        } else {
+          // If the last sensor was the top one, swipe down
+          swipe = SWIPE_DOWN;
+        }
+
         on = false;
 
         DEBUG_PRINT(F("OFF -> Swipe "));
