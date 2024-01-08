@@ -292,8 +292,7 @@ void Segment::render2DTransition() {
       }
       case TRANSITION_STYLE_FAIRY_DUST: {
         uint32_t len = virtualLength();
-        uint32_t primeNumber = 103357;
-        uint32_t shuffled = ((x * width + y) * primeNumber) % len;
+        uint32_t shuffled = hashInt(i) % len;
         uint16_t pos = (shuffled * 0xFFFFU) / len;
         setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
         break;
