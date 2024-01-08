@@ -410,33 +410,33 @@ void Segment::renderTransition() {
     switch (transitionStyle) {
       case TRANSITION_STYLE_SWIPE_RIGHT: {
         uint16_t pos = (i * 0xFFFFU) / length();
-        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        setPixelColor(i, progress() <= pos ? buffer2[i] : buffer1[i]);
         break;
       }
       case TRANSITION_STYLE_SWIPE_LEFT: {
         uint16_t pos = 0xFFFFU - (i * 0xFFFFU) / virtualLength();
-        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        setPixelColor(i, progress() <= pos ? buffer2[i] : buffer1[i]);
         break;
       }
       case TRANSITION_STYLE_OUTSIDE_IN: {
         uint16_t len = virtualLength();
         uint16_t halfLen = len >> 1;
         uint16_t pos = ((i < halfLen ? i : len - i) * 0xFFFFU) / halfLen;
-        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        setPixelColor(i, progress() <= pos ? buffer2[i] : buffer1[i]);
         break;
       }
       case TRANSITION_STYLE_INSIDE_OUT: {
         uint16_t len = virtualLength();
         uint16_t halfLen = len >> 1;
         uint16_t pos = 0xFFFFU - ((i < halfLen ? i : len - i) * 0xFFFFU) / halfLen;
-        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        setPixelColor(i, progress() <= pos ? buffer2[i] : buffer1[i]);
         break;
       }
       case TRANSITION_STYLE_FAIRY_DUST: {
         uint32_t len = virtualLength();
         uint32_t shuffled = hashInt(i) % len;
         uint16_t pos = (shuffled * 0xFFFFU) / len;
-        setPixelColor(i, progress() < pos ? buffer2[i] : buffer1[i]);
+        setPixelColor(i, progress() <= pos ? buffer2[i] : buffer1[i]);
         break;
       }
       case TRANSITION_STYLE_FADE:
