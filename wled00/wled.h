@@ -530,7 +530,9 @@ WLED_GLOBAL bool          fadeTransition          _INIT(true);    // enable cros
 WLED_GLOBAL bool          modeBlending            _INIT(true);    // enable effect blending
 WLED_GLOBAL bool          transitionActive        _INIT(false);
 WLED_GLOBAL uint16_t      transitionDelay         _INIT(750);     // global transition duration
+#ifndef WLED_DISABLE_MODE_BLEND
 WLED_GLOBAL uint16_t      transitionStyle         _INIT(0);       // global transition style
+#endif
 WLED_GLOBAL uint16_t      transitionDelayDefault  _INIT(750);     // default transition time (stored in cfg.json)
 WLED_GLOBAL unsigned long transitionStartTime;
 WLED_GLOBAL float         tperLast                _INIT(0.0f);    // crossfade transition progress, 0.0f - 1.0f
