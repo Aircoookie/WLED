@@ -162,7 +162,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 #ifndef WLED_DISABLE_MODE_BLEND
 // allocate and/or resize effect buffers if necessary
 void Segment::allocateBuffers() {
-  uint16_t len = virtualLength();
+  uint16_t len = length();
   if (buffer1 && buffer2 && _bufferSize >= len) return;
 
   if (_bufferSize < len) {
