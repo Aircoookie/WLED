@@ -261,6 +261,38 @@ void Segment::render2DTransition() {
       }
       return;
     }
+    case TRANSITION_STYLE_PUSH_UP: {
+      uint16_t pos = (uint32_t(0xFFFFU - progress()) * uint32_t(height)) / 0xFFFFU;
+      // old mode
+      for (int x = 0; x != width; ++x) {
+        for (int y = 0; y != pos; ++y) {
+          setPixelColorXY(x, y, buffer2[(y - pos + height) * width + x]);
+        }
+      }
+      // new mode
+      for (int x = 0; x != width; ++x) {
+        for (int y = pos; y != height; ++y) {
+          setPixelColorXY(x, y, buffer1[(y - pos) * width + x]);
+        }
+      }
+      return;
+    }
+    case TRANSITION_STYLE_PUSH_DOWN: {
+      uint16_t pos = (uint32_t(progress()) * uint32_t(height)) / 0xFFFFU;
+      // old mode
+      for (int x = 0; x != width; ++x) {
+        for (int y = pos; y != height; ++y) {
+          setPixelColorXY(x, y, buffer2[(y - pos) * width + x]);
+        }
+      }
+      // new mode
+      for (int x = 0; x != width; ++x) {
+        for (int y = 0; y != pos; ++y) {
+          setPixelColorXY(x, y, buffer1[(y - pos + height) * width + x]);
+        }
+      }
+      return;
+    }
   }
 
   // Transitions where both buffers are aligned
@@ -275,6 +307,16 @@ void Segment::render2DTransition() {
       }
       case TRANSITION_STYLE_SWIPE_LEFT: {
         uint16_t pos = 0xFFFFU - (x * 0xFFFFU) / width;
+        setPixelColorXY(x, y, progress() <= pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_SWIPE_UP: {
+        uint16_t pos = 0xFFFFU - (y * 0xFFFFU) / height;
+        setPixelColorXY(x, y, progress() <= pos ? buffer2[i] : buffer1[i]);
+        break;
+      }
+      case TRANSITION_STYLE_SWIPE_DOWN: {
+        uint16_t pos = (y * 0xFFFFU) / height;
         setPixelColorXY(x, y, progress() <= pos ? buffer2[i] : buffer1[i]);
         break;
       }
