@@ -988,7 +988,7 @@ class WS2812FX {  // 96 bytes
     uint8_t                  _transitionStyleCount;
 
     struct TransitionStyleData {
-      TransitionStyleData() : _name(nullptr), _only2D(false) {}
+      TransitionStyleData() : _name("RSVD"), _only2D(false) {}
       TransitionStyleData(const char* name, bool only2D) : _name(name), _only2D(only2D) {}
 
       const char* _name;

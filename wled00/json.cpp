@@ -1029,11 +1029,10 @@ void serializeTransitionStyles(JsonArray arr) {
   if (!modeBlending) return;
 
   for (size_t i = 0; i < strip.getTransitionStyleCount(); i++) {
-#ifndef WLED_DISABLE_2D
     if (!strip.isMatrix && strip.isTransitionStyle2DOnly(i)) {
+      arr.add("RSVD");
       continue;
     }
-#endif
     arr.add(strip.getTransitionStyleName(i));
   }
 #endif

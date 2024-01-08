@@ -16,6 +16,7 @@ var tr = 7;
 var d = document;
 var palettesData;
 var fxdata = [];
+var transitionStyles = [];
 var pJson = {}, eJson = {}, lJson = {};
 var plJson = {}; // array of playlists
 var pN = "", pI = 0, pNum = 0;
@@ -266,11 +267,14 @@ function onLoad()
 		loadFXData(()=>{
 			// load and populate effects
 			loadFX(()=>{
-				setTimeout(()=>{ // ESP8266 can't handle quick requests
-					loadPalettesData(()=>{
-						requestJson();// will load presets and create WS
-					});
-				},100);
+				// load and populate transition styles
+				loadTransitionStyles(()=>{
+					setTimeout(()=>{ // ESP8266 can't handle quick requests
+						loadPalettesData(()=>{
+							requestJson();// will load presets and create WS
+						});
+					},100);
+				});
 			});
 		});
 	});
@@ -518,6 +522,29 @@ function loadFX(callback = null)
 	});
 }
 
+function loadTransitionStyles(callback = null)
+{
+	fetch(getURL('/json/tra'), {
+		method: 'get'
+	})
+	.then((res)=>{
+		if (!res.ok) showErrorToast();
+		return res.json();
+	})
+	.then((json)=>{
+		transitionStyles = json||[];
+		populateTransitionStyles();
+	})
+	.catch((e)=>{
+		transitionStyles = [];
+		showToast(e, true);
+	})
+	.finally(()=>{
+		if (callback) callback();
+		updateUI();
+	});
+}
+
 function loadFXData(callback = null)
 {
 	fetch(getURL('/json/fxdata'), {
@@ -543,6 +570,7 @@ function loadFXData(callback = null)
 		updateUI();
 	});
 }
+
 
 var pQL = [];
 function populateQL()
@@ -895,6 +923,24 @@ function populateEffects()
 	}
 
 	gId('fxlist').innerHTML=html;
+}
+
+function populateTransitionStyles() {
+	if (transitionStyles.length != 0) {
+		gId('tsp').style.display = "block";
+	}
+
+	var html = "";
+	var index = 0;
+
+	for (let ts of transitionStyles) {
+		if (ts.indexOf("RSVD") < 0) {
+			html += `<option value="` + index + `">` + ts + `</option>`
+		}
+		index++;
+	}
+
+    gId("ts").innerHTML = html;
 }
 
 function populatePalettes()
