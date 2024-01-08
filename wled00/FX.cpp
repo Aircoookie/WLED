@@ -7777,6 +7777,14 @@ void WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) {
   }
 }
 
+#ifndef WLED_DISABLE_MODE_BLEND
+void WS2812FX::addTransitionStyle(uint8_t id, const char *name, bool only2D = false) {
+  if (id < _transitionStyles.size()) {
+    _transitionStyles[id] = TransitionStyleData(name, only2D);
+  }
+}
+#endif
+
 void WS2812FX::setupEffectData() {
   // Solid must be first! (assuming vector is empty upon call to setup)
   _mode.push_back(&mode_static);
@@ -7993,4 +8001,20 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 #endif // WLED_DISABLE_2D
 
+#ifndef WLED_DISABLE_MODE_BLEND
+  _transitionStyles.resize(_transitionStyleCount);
+
+  addTransitionStyle(TRANSITION_STYLE_FADE, "Fade");
+  addTransitionStyle(TRANSITION_STYLE_SWIPE_RIGHT, "Swipe Right");
+  addTransitionStyle(TRANSITION_STYLE_SWIPE_LEFT, "Swipe Left");
+  addTransitionStyle(TRANSITION_STYLE_SWIPE_UP, "Swipe Up", true);
+  addTransitionStyle(TRANSITION_STYLE_SWIPE_DOWN, "Swipe Down", true);
+  addTransitionStyle(TRANSITION_STYLE_PUSH_RIGHT, "Push Right");
+  addTransitionStyle(TRANSITION_STYLE_PUSH_LEFT, "Push Left");
+  addTransitionStyle(TRANSITION_STYLE_PUSH_UP, "Push Up", true);
+  addTransitionStyle(TRANSITION_STYLE_PUSH_DOWN, "Push Down", true);
+  addTransitionStyle(TRANSITION_STYLE_OUTSIDE_IN, "Outside In");
+  addTransitionStyle(TRANSITION_STYLE_INSIDE_OUT, "Inside Out");
+  addTransitionStyle(TRANSITION_STYLE_FAIRY_DUST, "Fairy Dust");
+#endif
 }
