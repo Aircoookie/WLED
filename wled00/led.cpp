@@ -137,6 +137,8 @@ void stateUpdated(byte callMode) {
     if (strip.getTransition() == 0) {
       jsonTransitionOnce = false;
       transitionActive = false;
+      applyFinalBri();
+      strip.trigger();
       return;
     }
 
@@ -160,7 +162,7 @@ void updateInterfaces(uint8_t callMode)
 
   sendDataWs();
   lastInterfaceUpdate = millis();
-  interfaceUpdateCallMode = 0; //disable
+  interfaceUpdateCallMode = 0; //disable further updates
 
   if (callMode == CALL_MODE_WS_SEND) return;
 
@@ -223,7 +225,7 @@ void handleNightlight()
     if (!nightlightActiveOld) //init
     {
       nightlightStartTime = millis();
-      nightlightDelayMs = (int)(nightlightDelayMins*60000);
+      nightlightDelayMs = (unsigned)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
       for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color

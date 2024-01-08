@@ -35,8 +35,10 @@ struct BusConfig {
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   uint16_t frequency;
   bool doubleBuffer;
+  uint8_t milliAmpsPerLed;
+  uint16_t milliAmpsMax;
 
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false)
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false, uint8_t maPerLed=55, uint16_t maMax=ABL_MILLIAMPS_DEFAULT)
   : count(len)
   , start(pstart)
   , colorOrder(pcolorOrder)
@@ -45,6 +47,8 @@ struct BusConfig {
   , autoWhite(aw)
   , frequency(clock_kHz)
   , doubleBuffer(dblBfr)
+  , milliAmpsPerLed(maPerLed)
+  , milliAmpsMax(maMax)
   {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
@@ -132,6 +136,9 @@ class Bus {
     virtual uint8_t  getColorOrder()             { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds()               { return 0; }
     virtual uint16_t getFrequency()              { return 0U; }
+    virtual uint16_t getLEDCurrent()             { return 0; }
+    virtual uint16_t getUsedCurrent()            { return 0; }
+    virtual uint16_t getMaxCurrent()             { return 0; }
     inline  void     setReversed(bool reversed)  { _reversed = reversed; }
     inline  uint16_t getStart()                  { return _start; }
     inline  void     setStart(uint16_t start)    { _start = start; }
@@ -211,6 +218,10 @@ class BusDigital : public Bus {
     uint8_t  getPins(uint8_t* pinArray);
     uint8_t  skippedLeds()   { return _skip; }
     uint16_t getFrequency()  { return _frequencykHz; }
+    uint8_t  estimateCurrentAndLimitBri();
+    uint16_t getLEDCurrent() { return _milliAmpsPerLed; }
+    uint16_t getUsedCurrent() { return _milliAmpsTotal; }
+    uint16_t getMaxCurrent() { return _milliAmpsMax; }
     void reinit();
     void cleanup();
 
@@ -220,9 +231,12 @@ class BusDigital : public Bus {
     uint8_t _pins[2];
     uint8_t _iType;
     uint16_t _frequencykHz;
+    uint8_t _milliAmpsPerLed;
+    uint16_t _milliAmpsMax;
     void * _busPtr;
     const ColorOrderMap &_colorOrderMap;
-    bool _buffering; // temporary until we figure out why comparison "_data != nullptr" causes severe FPS drop
+
+    static uint16_t _milliAmpsTotal; // is overwitten/recalculated on each show()
 
     inline uint32_t restoreColorLossy(uint32_t c, uint8_t restoreBri) {
       if (restoreBri < 255) {
@@ -303,39 +317,44 @@ class BusNetwork : public Bus {
 
 class BusManager {
   public:
-    BusManager() : numBusses(0) {};
+    BusManager() {};
 
     //utility to get the approx. memory usage of a given BusConfig
     static uint32_t memUsage(BusConfig &bc);
+    static uint16_t currentMilliamps(void) { return _milliAmpsUsed; }
+    static uint16_t ablMilliampsMax(void)  { return _milliAmpsMax; }
 
-    int add(BusConfig &bc);
+    static int add(BusConfig &bc);
 
     //do not call this method from system context (network callback)
-    void removeAll();
+    static void removeAll();
 
-    void show();
-    bool canAllShow();
-    void setStatusPixel(uint32_t c);
-    void setPixelColor(uint16_t pix, uint32_t c);
-    void setBrightness(uint8_t b);
-    void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
-    uint32_t getPixelColor(uint16_t pix);
+    static void show();
+    static bool canAllShow();
+    static void setStatusPixel(uint32_t c);
+    static void setPixelColor(uint16_t pix, uint32_t c);
+    static void setBrightness(uint8_t b);
+    static void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
+    static void setMilliampsMax(uint16_t max) { _milliAmpsMax = max;}
+    static uint32_t getPixelColor(uint16_t pix);
 
-    Bus* getBus(uint8_t busNr);
+    static Bus* getBus(uint8_t busNr);
 
     //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
-    uint16_t getTotalLength();
-    inline uint8_t getNumBusses() const { return numBusses; }
+    static uint16_t getTotalLength();
+    static uint8_t getNumBusses() { return numBusses; }
 
-    inline void                 updateColorOrderMap(const ColorOrderMap &com) { memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap)); }
-    inline const ColorOrderMap& getColorOrderMap() const { return colorOrderMap; }
+    static void                 updateColorOrderMap(const ColorOrderMap &com) { memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap)); }
+    static const ColorOrderMap& getColorOrderMap() { return colorOrderMap; }
 
   private:
-    uint8_t numBusses;
-    Bus* busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
-    ColorOrderMap colorOrderMap;
+    static uint8_t numBusses;
+    static Bus* busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
+    static ColorOrderMap colorOrderMap;
+    static uint16_t _milliAmpsUsed;
+    static uint16_t _milliAmpsMax;
 
-    inline uint8_t getNumVirtualBusses() {
+    static uint8_t getNumVirtualBusses() {
       int j = 0;
       for (int i=0; i<numBusses; i++) if (busses[i]->getType() >= TYPE_NET_DDP_RGB && busses[i]->getType() < 96) j++;
       return j;

@@ -1,26 +1,61 @@
 ## WLED changelog
 
-#### Build 2401060
--   Version bump: 0.14.1-b3
+#### Build 2309120 till build 2201060
+-   WLED version 0.15.0-a0
 -   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
--   Fix for #3632
--   Custom palette editor mobile UI enhancement (#3617 by @imeszaros)
--   changelog update
-
-#### Build 2312290
--   Fix for #3622, #3613, #3609
--   Various tweaks and fixes
--   changelog update
-
-#### Build 2312230
--   Version bump: 0.14.1-b2
--   Fix for Pixel Magic button
--   Fix for #2922 (option to force WiFi PHY mode to G on ESP8266)
--   Fix for #3601, #3400 (incorrect sunrise/sunset, #3612 by @softhack007)
-
-#### Build 2312180
--   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3515, #3522, #3533, #3508)
--   Various other internal cleanups and optimisations
+-   Effect: Fireworks 1D (fix for matrix trailing strip)
+-   BREAKING: Reduced number of segments (12) on ESP8266 due to less available RAM
+-   Increased available effect data buffer (increases more if board has PSRAM)
+-   Custom palette editor mobile UI enhancement (by @imeszaros)
+-   Per port Auto Brightness Limiter (ABL)
+-   Use PSRAM for JSON buffer (double size, larger ledmaps, up to 2k)
+-   Reduced heap fragmentation by allocating ledmap array only once and not deallocating effect buffer
+-   HTTP retries on failed UI load
+-   UI Search: scroll to top (#3587 by @WoodyLetsCode)
+-   Return to inline iro.js and rangetouch.js (#3597 by @WoodyLetsCode)
+-   Better caching (#3591 by @WoodyLetsCode)
+-   Do not send 404 for missing `skin.css` (#3590 by @WoodyLetsCode)
+-   Simplified UI rework (#3511 by @WoodyLetsCode)
+-   Domoticz device ID for PIR and Temperature usermods
+-   Bugfix for UCS8904 `hasWhite()`
+-   Better search in UI (#3540 by @WoodyLetsCode)
+-   Seeding FastLED PRNG (#3552 by @TripleWhy)
+-   WIZ Smart Button support (#3547 by @micw)
+-   New button type (button switch, fix for #3537)
+-   Pixel Magic Tool update (#3483 by @ajotanc)
+-   Effect: 2D Matrix fix for gaps
+-   Bugfix #3526, #3533, #3561
+-   Spookier Halloween Eyes (#3501)
+-   Compile time options for Multi Relay usermod (#3498)
+-   Effect: Fix for Dissolve (#3502)
+-   Better reverse proxy support (nested paths)
+-   Implement global JSON API boolean toggle (i.e. instead of "var":true or "var":false -> "var":"t").
+-   Sort presets by ID
+-   Fix for #3641, #3312, #3367, #3637, #3646, #3447, #3632, #3496, #2922, #3593, #3514, #3522, #3578 (partial), #3606 (@WoodyLetsCode)
+-   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
+-   Audio palettes (Audioreactive usermod, credit @netmindz)
+-   Better UI tooltips (@ajotnac, #3464)
+-   Better effect filters (filter dropdown)
+-   UDP sync fix (for #3487)
+-   Power button override (solves #3431)
+-   Additional HTTP request throttling (ESP8266)
+-   Additional UI/UX improvements
+-   Segment class optimisations (internal)
+-   ESP-NOW sync
+-   ESP-NOW Wiz remote JSON overrides (similar to IR JSON) & bugfixes
+-   Gamma correction for custom palettes (#3399).
+-   Restore presets from browser local storage
+-   Optional effect blending
+-   Restructured UDP Sync (internal)
+    -   Remove sync receive
+    -   Sync clarification
+-   Disallow 2D effects on non-2D segments
+-   Return of 2 audio simulations
+-   Bugfix in sync #3344 (internal)
+    -   remove excessive segments
+    -   ignore inactive segments if not syncing bounds
+    -   send UDP/WS on segment change
+    -   pop_back() when removing last segment
 
 #### Build 2311160
 -   Version bump: 0.14.1-b1

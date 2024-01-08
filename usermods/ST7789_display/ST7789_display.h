@@ -307,7 +307,7 @@ class St7789DisplayUsermod : public Usermod {
         // Print estimated milliamp usage (must specify the LED type in LED prefs for this to be a reasonable estimate).
         tft.print("Current: ");
         tft.setTextColor(TFT_ORANGE);
-        tft.print(strip.currentMilliamps);
+        tft.print(BusManager::currentMilliamps());
         tft.print("mA");
     }
 

@@ -219,7 +219,7 @@ void deletePreset(byte index);
 bool getPresetName(byte index, String& name);
 
 //remote.cpp
-void handleRemote();
+void handleRemote(uint8_t *data, size_t len);
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
@@ -235,6 +235,9 @@ void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
+#ifndef WLED_DISABLE_ESPNOW
+void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast);
+#endif
 
 //network.cpp
 int getSignalQuality(int rssi);
@@ -338,6 +341,7 @@ void userLoop();
 int getNumVal(const String* req, uint16_t pos);
 void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
+bool getBoolVal(JsonVariant elem, bool dflt);
 bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 bool oappend(const char* txt); // append new c string to temp buffer efficiently
 bool oappendi(int i);          // append new number to temp buffer efficiently
@@ -414,10 +418,10 @@ bool isIp(String str);
 void createEditHandler(bool enable);
 bool captivePortal(AsyncWebServerRequest *request);
 void initServer();
-void serveIndexOrWelcome(AsyncWebServerRequest *request);
 void serveIndex(AsyncWebServerRequest* request);
 String msgProcessor(const String& var);
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
+void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error);
 String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
 void serveSettingsJS(AsyncWebServerRequest* request);

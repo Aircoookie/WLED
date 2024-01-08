@@ -15,11 +15,11 @@ void _overlayAnalogClock()
   float minuteP = ((float)minute(localTime))/60.0f;
   hourP = hourP + minuteP/12.0f;
   float secondP = ((float)second(localTime))/60.0f;
-  int hourPixel = floorf(analogClock12pixel + overlaySize*hourP);
+  unsigned hourPixel = floorf(analogClock12pixel + overlaySize*hourP);
   if (hourPixel > overlayMax) hourPixel = overlayMin -1 + hourPixel - overlayMax;
-  int minutePixel = floorf(analogClock12pixel + overlaySize*minuteP);
+  unsigned minutePixel = floorf(analogClock12pixel + overlaySize*minuteP);
   if (minutePixel > overlayMax) minutePixel = overlayMin -1 + minutePixel - overlayMax;
-  int secondPixel = floorf(analogClock12pixel + overlaySize*secondP);
+  unsigned secondPixel = floorf(analogClock12pixel + overlaySize*secondP);
   if (secondPixel > overlayMax) secondPixel = overlayMin -1 + secondPixel - overlayMax;
   if (analogClockSecondsTrail)
   {
@@ -36,7 +36,7 @@ void _overlayAnalogClock()
   {
     for (byte i = 0; i <= 12; i++)
     {
-      int pix = analogClock12pixel + roundf((overlaySize / 12.0f) *i);
+      unsigned pix = analogClock12pixel + roundf((overlaySize / 12.0f) *i);
       if (pix > overlayMax) pix -= overlaySize;
       strip.setPixelColor(pix, 0x00FFAA);
     }

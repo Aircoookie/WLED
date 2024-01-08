@@ -27,7 +27,7 @@ static void doSaveState() {
   if (!requestJSONBufferLock(10)) return; // will set fileDoc
 
   initPresetsFile(); // just in case if someone deleted presets.json using /edit
-  JsonObject sObj = doc.to<JsonObject>();
+  JsonObject sObj = pDoc->to<JsonObject>();
 
   DEBUG_PRINTLN(F("Serialize current state"));
   if (playlistSave) {
@@ -42,7 +42,7 @@ static void doSaveState() {
 /*
   #ifdef WLED_DEBUG
     DEBUG_PRINTLN(F("Serialized preset"));
-    serializeJson(doc,Serial);
+    serializeJson(*pDoc,Serial);
     DEBUG_PRINTLN();
   #endif
 */
@@ -83,9 +83,9 @@ bool getPresetName(byte index, String& name)
 {
   if (!requestJSONBufferLock(9)) return false;
   bool presetExists = false;
-  if (readObjectFromFileUsingId(getFileName(), index, &doc))
+  if (readObjectFromFileUsingId(getFileName(), index, pDoc))
   {
-    JsonObject fdo = doc.as<JsonObject>();
+    JsonObject fdo = pDoc->as<JsonObject>();
     if (fdo["n"]) {
       name = (const char*)(fdo["n"]);
       presetExists = true;

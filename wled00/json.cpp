@@ -34,9 +34,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //DEBUG_PRINTLN("-- JSON deserialize segment.");
   Segment& seg = strip.getSegment(id);
-  //DEBUG_PRINTF("--  Original segment: %p\n", &seg);
-  Segment prev = seg; //make a backup so we can tell if something changed
-  //DEBUG_PRINTF("--  Duplicate segment: %p\n", &prev);
+  //DEBUG_PRINTF("--  Original segment: %p (%p)\n", &seg, seg.data);
+  Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
+  //DEBUG_PRINTF("--  Duplicate segment: %p (%p)\n", &prev, prev.data);
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
@@ -101,7 +101,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
   seg.map1D2D  = constrain(map1D2D, 0, 7);
-  seg.soundSim = constrain(soundSim, 0, 1);
+  seg.soundSim = constrain(soundSim, 0, 3);
 
   uint8_t set = elem[F("set")] | seg.set;
   seg.set = constrain(set, 0, 3);
@@ -134,12 +134,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     seg.setOption(SEG_OPTION_ON, segbri); // use transition
   }
 
-  bool on = elem["on"] | seg.on;
-  if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
-  seg.setOption(SEG_OPTION_ON, on); // use transition
-  bool frz = elem["frz"] | seg.freeze;
-  if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.freeze;
-  seg.freeze = frz;
+  seg.setOption(SEG_OPTION_ON, getBoolVal(elem["on"], seg.on)); // use transition
+  seg.freeze = getBoolVal(elem["frz"], seg.freeze);
 
   seg.setCCT(elem["cct"] | seg.cct);
 
@@ -202,15 +198,15 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   bool reverse  = seg.reverse;
   bool mirror   = seg.mirror;
   #endif
-  seg.selected  = elem["sel"] | seg.selected;
-  seg.reverse   = elem["rev"] | seg.reverse;
-  seg.mirror    = elem["mi"]  | seg.mirror;
+  seg.selected  = getBoolVal(elem["sel"], seg.selected);
+  seg.reverse   = getBoolVal(elem["rev"], seg.reverse);
+  seg.mirror    = getBoolVal(elem["mi"] , seg.mirror);
   #ifndef WLED_DISABLE_2D
   bool reverse_y = seg.reverse_y;
   bool mirror_y  = seg.mirror_y;
-  seg.reverse_y  = elem["rY"]  | seg.reverse_y;
-  seg.mirror_y   = elem["mY"]  | seg.mirror_y;
-  seg.transpose  = elem[F("tp")] | seg.transpose;
+  seg.reverse_y  = getBoolVal(elem["rY"]   , seg.reverse_y);
+  seg.mirror_y   = getBoolVal(elem["mY"]   , seg.mirror_y);
+  seg.transpose  = getBoolVal(elem[F("tp")], seg.transpose);
   if (seg.is2D() && seg.map1D2D == M12_pArc && (reverse != seg.reverse || reverse_y != seg.reverse_y || mirror != seg.mirror || mirror_y != seg.mirror_y)) seg.fill(BLACK); // clear entire segment (in case of Arc 1D to 2D expansion)
   #endif
 
@@ -235,9 +231,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["c3"], &cust3); // we can't pass reference to bitfield
   seg.custom3 = constrain(cust3, 0, 31);
 
-  seg.check1 = elem["o1"] | seg.check1;
-  seg.check2 = elem["o2"] | seg.check2;
-  seg.check3 = elem["o3"] | seg.check3;
+  seg.check1 = getBoolVal(elem["o1"], seg.check1);
+  seg.check2 = getBoolVal(elem["o2"], seg.check2);
+  seg.check3 = getBoolVal(elem["o3"], seg.check3);
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -353,15 +349,14 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
 
   JsonObject nl       = root["nl"];
-  nightlightActive    = nl["on"]      | nightlightActive;
+  nightlightActive    = getBoolVal(nl["on"], nightlightActive);
   nightlightDelayMins = nl["dur"]     | nightlightDelayMins;
   nightlightMode      = nl["mode"]    | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
-  notifyDirect         = udpn["send"] | notifyDirect;
+  sendNotificationsRT  = getBoolVal(udpn["send"], sendNotificationsRT);
   syncGroups           = udpn["sgrp"] | syncGroups;
-  receiveNotifications = udpn["recv"] | receiveNotifications;
   receiveGroups        = udpn["rgrp"] | receiveGroups;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
@@ -581,8 +576,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     }
 
     JsonObject udpn = root.createNestedObject("udpn");
-    udpn["send"] = notifyDirect;
-    udpn["recv"] = receiveNotifications;
+    udpn["send"] = sendNotificationsRT;
+    udpn["recv"] = receiveGroups != 0;
     udpn["sgrp"] = syncGroups;
     udpn["rgrp"] = receiveGroups;
 
@@ -617,13 +612,13 @@ void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
   root[F("vid")] = VERSION;
-  //root[F("cn")] = WLED_CODENAME;
+  root[F("cn")] = F(WLED_CODENAME);
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("pwr")] = strip.currentMilliamps;
+  leds[F("pwr")] = BusManager::currentMilliamps();
   leds["fps"] = strip.getFps();
-  leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
+  leds[F("maxpwr")] = BusManager::currentMilliamps()>0 ? BusManager::ablMilliampsMax() : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
@@ -662,10 +657,11 @@ void serializeInfo(JsonObject root)
   spi.add(spi_miso);
   #endif
 
-  root[F("str")] = syncToggleReceive;
+  root[F("str")] = false; //syncToggleReceive;
 
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
+  root[F("simplifiedui")] = simplifiedUI;
   root["live"] = (bool)realtimeMode;
   root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
 
@@ -961,11 +957,11 @@ void serializeNetworks(JsonObject root)
 
   for (int i = 0; i < status; i++) {
     JsonObject node = networks.createNestedObject();
-    node["ssid"]    = WiFi.SSID(i);
-    node["rssi"]    = WiFi.RSSI(i);
-    node["bssid"]   = WiFi.BSSIDstr(i);
-    node["channel"] = WiFi.channel(i);
-    node["enc"]     = WiFi.encryptionType(i);
+    node[F("ssid")]    = WiFi.SSID(i);
+    node[F("rssi")]    = WiFi.RSSI(i);
+    node[F("bssid")]   = WiFi.BSSIDstr(i);
+    node[F("channel")] = WiFi.channel(i);
+    node[F("enc")]     = WiFi.encryptionType(i);
   }
 
   WiFi.scanDelete();
@@ -1038,10 +1034,11 @@ void serializeTransitionStyles(JsonArray arr) {
 #endif
 }
 
+
 // Global buffer locking response helper class
 class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
   public:
-  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(&doc, isArray) {};
+  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(pDoc, isArray) {};
   virtual ~GlobalBufferAsyncJsonResponse() {};
 
   // Other members are inherited
@@ -1075,13 +1072,13 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(501, "application/json", F("{\"error\":\"Not implemented\"}"));
+    serveJsonError(request, 501, ERR_NOT_IMPL);
     return;
   }
 
   GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS || subJson==JSON_PATH_TRANSITION_STYLES); // will clear and convert JsonDocument into JsonArray if necessary
   if (!response->owns_lock()) {
-    request->send(503, "application/json", F("{\"error\":3}"));
+    serveJsonError(request, 503, ERR_NOBUF);
     delete response;
     return;
   }
@@ -1132,7 +1129,7 @@ void serveJson(AsyncWebServerRequest* request)
 }
 
 #ifdef WLED_ENABLE_JSONLIVE
-#define MAX_LIVE_LEDS 180
+#define MAX_LIVE_LEDS 256
 
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 {
@@ -1146,13 +1143,26 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 
   uint16_t used = strip.getLengthTotal();
   uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
-  char buffer[2000];
+#ifndef WLED_DISABLE_2D
+  if (strip.isMatrix) {
+    // ignore anything behid matrix (i.e. extra strip)
+    used = Segment::maxWidth*Segment::maxHeight; // always the size of matrix (more or less than strip.getLengthTotal())
+    n = 1;
+    if (used > MAX_LIVE_LEDS) n = 2;
+    if (used > MAX_LIVE_LEDS*4) n = 4;
+  }
+#endif
+
+  char buffer[2048];  // shoud be enough for 256 LEDs [RRGGBB] + all other text (9+25)
   strcpy_P(buffer, PSTR("{\"leds\":["));
-  obuf = buffer;
+  obuf = buffer;      // assign buffer for oappnd() functions
   olen = 9;
 
-  for (size_t i= 0; i < used; i += n)
+  for (size_t i = 0; i < used; i += n)
   {
+#ifndef WLED_DISABLE_2D
+    if (strip.isMatrix && n>1 && (i/Segment::maxWidth)%n) i += Segment::maxWidth * (n-1);
+#endif
     uint32_t c = strip.getPixelColor(i);
     uint8_t r = R(c);
     uint8_t g = G(c);
@@ -1161,11 +1171,19 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
     r = scale8(qadd8(w, r), strip.getBrightness()); //R, add white channel to RGB channels as a simple RGBW -> RGB map
     g = scale8(qadd8(w, g), strip.getBrightness()); //G
     b = scale8(qadd8(w, b), strip.getBrightness()); //B
-    olen += sprintf(obuf + olen, "\"%06X\",", RGBW32(r,g,b,0));
+    olen += sprintf_P(obuf + olen, PSTR("\"%06X\","), RGBW32(r,g,b,0));
   }
   olen -= 1;
   oappend((const char*)F("],\"n\":"));
   oappendi(n);
+#ifndef WLED_DISABLE_2D
+  if (strip.isMatrix) {
+    oappend((const char*)F(",\"w\":"));
+    oappendi(Segment::maxWidth/n);
+    oappend((const char*)F(",\"h\":"));
+    oappendi(Segment::maxHeight/n);
+  }
+#endif
   oappend("}");
   if (request) {
     request->send(200, "application/json", buffer);
@@ -1175,6 +1193,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
     wsc->text(obuf, olen);
   }
   #endif
+  obuf = nullptr;
   return true;
 }
 #endif

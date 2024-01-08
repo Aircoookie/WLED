@@ -51,6 +51,8 @@
   #define PLOT_PRINTF(x...)
 #endif
 
+#define MAX_PALETTES 3
+
 // use audio source class (ESP32 specific)
 #include "audio_source.h"
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;       // I2S port to use (do not change !)
@@ -614,6 +616,8 @@ class AudioReactive : public Usermod {
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
     bool     enabled = false;
     bool     initDone = false;
+    bool     addPalettes = false;
+    int8_t   palettes = 0;
 
     // variables  for UDP sound sync
     WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!) 
@@ -652,10 +656,15 @@ class AudioReactive : public Usermod {
     static const char _inputLvl[];
     static const char _analogmic[];
     static const char _digitalmic[];
+    static const char _addPalettes[];
     static const char UDP_SYNC_HEADER[];
     static const char UDP_SYNC_HEADER_v1[];
 
     // private methods
+    void removeAudioPalettes(void);
+    void createAudioPalettes(void);
+    CRGB getCRGBForBand(int x, int pal);
+    void fillAudioPalettes(void);
 
     ////////////////////
     // Debug support  //
@@ -1199,6 +1208,7 @@ class AudioReactive : public Usermod {
       }
 
       if (enabled) connectUDPSoundSync();
+      if (enabled && addPalettes) createAudioPalettes();
       initDone = true;
     }
 
@@ -1361,6 +1371,7 @@ class AudioReactive : public Usermod {
         lastTime = millis();
       }
 
+      fillAudioPalettes();
     }
 
 
@@ -1613,13 +1624,28 @@ class AudioReactive : public Usermod {
         if (usermod[FPSTR(_enabled)].is<bool>()) {
           enabled = usermod[FPSTR(_enabled)].as<bool>();
           if (prevEnabled != enabled) onUpdateBegin(!enabled);
+          if (addPalettes) {
+            // add/remove custom/audioreactive palettes
+            if (prevEnabled && !enabled) removeAudioPalettes();
+            if (!prevEnabled && enabled) createAudioPalettes();
+          }
         }
         if (usermod[FPSTR(_inputLvl)].is<int>()) {
           inputLevel = min(255,max(0,usermod[FPSTR(_inputLvl)].as<int>()));
         }
       }
+      if (root.containsKey(F("rmcpal")) && root[F("rmcpal")].as<bool>()) {
+        // handle removal of custom palettes from JSON call so we don't break things
+        removeAudioPalettes();
+      }
     }
 
+    void onStateChange(uint8_t callMode) {
+      if (initDone && enabled && addPalettes && palettes==0 && strip.customPalettes.size()<10) {
+        // if palettes were removed during JSON call re-add them
+        createAudioPalettes();
+      }
+    }
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -1660,6 +1686,7 @@ class AudioReactive : public Usermod {
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)] = enabled;
+      top[FPSTR(_addPalettes)] = addPalettes;
 
     #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       JsonObject amic = top.createNestedObject(FPSTR(_analogmic));
@@ -1712,8 +1739,11 @@ class AudioReactive : public Usermod {
     {
       JsonObject top = root[FPSTR(_name)];
       bool configComplete = !top.isNull();
+      bool oldEnabled = enabled;
+      bool oldAddPalettes = addPalettes;
 
       configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
+      configComplete &= getJsonValue(top[FPSTR(_addPalettes)], addPalettes);
 
     #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       configComplete &= getJsonValue(top[FPSTR(_analogmic)]["pin"], audioPin);
@@ -1747,6 +1777,11 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
 
+      if (initDone) {
+        // add/remove custom/audioreactive palettes
+        if ((oldAddPalettes && !addPalettes) || (oldAddPalettes && !enabled)) removeAudioPalettes();
+        if ((addPalettes && !oldAddPalettes && enabled) || (addPalettes && !oldEnabled && enabled)) createAudioPalettes();
+      } // else setup() will create palettes
       return configComplete;
     }
 
@@ -1822,6 +1857,92 @@ class AudioReactive : public Usermod {
     }
 };
 
+void AudioReactive::removeAudioPalettes(void) {
+  DEBUG_PRINTLN(F("Removing audio palettes."));
+  while (palettes>0) {
+    strip.customPalettes.pop_back();
+    DEBUG_PRINTLN(palettes);
+    palettes--;
+  }
+  DEBUG_PRINT(F("Total # of palettes: ")); DEBUG_PRINTLN(strip.customPalettes.size());
+}
+
+void AudioReactive::createAudioPalettes(void) {
+  DEBUG_PRINT(F("Total # of palettes: ")); DEBUG_PRINTLN(strip.customPalettes.size());
+  if (palettes) return;
+  DEBUG_PRINTLN(F("Adding audio palettes."));
+  for (int i=0; i<MAX_PALETTES; i++)
+    if (strip.customPalettes.size() < 10) {
+      strip.customPalettes.push_back(CRGBPalette16(CRGB(BLACK)));
+      palettes++;
+      DEBUG_PRINTLN(palettes);
+    } else break;
+}
+
+// credit @netmindz ar palette, adapted for usermod @blazoncek
+CRGB AudioReactive::getCRGBForBand(int x, int pal) {
+  CRGB value;
+  CHSV hsv;
+  int b;
+  switch (pal) {
+    case 2:
+      b = map(x, 0, 255, 0, NUM_GEQ_CHANNELS/2); // convert palette position to lower half of freq band
+      hsv = CHSV(fftResult[b], 255, x);
+      hsv2rgb_rainbow(hsv, value);  // convert to R,G,B
+      break;
+    case 1:
+      b = map(x, 1, 255, 0, 10); // convert palette position to lower half of freq band
+      hsv = CHSV(fftResult[b], 255, map(fftResult[b], 0, 255, 30, 255));  // pick hue
+      hsv2rgb_rainbow(hsv, value);  // convert to R,G,B
+      break;
+    default:
+      if (x == 1) {
+        value = CRGB(fftResult[10]/2, fftResult[4]/2, fftResult[0]/2);
+      } else if(x == 255) {
+        value = CRGB(fftResult[10]/2, fftResult[0]/2, fftResult[4]/2);
+      } else {
+        value = CRGB(fftResult[0]/2, fftResult[4]/2, fftResult[10]/2);
+      }
+      break;
+  }
+  return value;
+}
+
+void AudioReactive::fillAudioPalettes() {
+  if (!palettes) return;
+  size_t lastCustPalette = strip.customPalettes.size();
+  if (lastCustPalette >= palettes) lastCustPalette -= palettes;
+  for (size_t pal=0; pal<palettes; pal++) {
+    uint8_t tcp[16];  // Needs to be 4 times however many colors are being used.
+                      // 3 colors = 12, 4 colors = 16, etc.
+
+    tcp[0] = 0;  // anchor of first color - must be zero
+    tcp[1] = 0;
+    tcp[2] = 0;
+    tcp[3] = 0;
+    
+    CRGB rgb = getCRGBForBand(1, pal);
+    tcp[4] = 1;  // anchor of first color
+    tcp[5] = rgb.r;
+    tcp[6] = rgb.g;
+    tcp[7] = rgb.b;
+    
+    rgb = getCRGBForBand(128, pal);
+    tcp[8] = 128;
+    tcp[9] = rgb.r;
+    tcp[10] = rgb.g;
+    tcp[11] = rgb.b;
+    
+    rgb = getCRGBForBand(255, pal);
+    tcp[12] = 255;  // anchor of last color - must be 255
+    tcp[13] = rgb.r;
+    tcp[14] = rgb.g;
+    tcp[15] = rgb.b;
+
+    strip.customPalettes[lastCustPalette+pal].loadDynamicGradientPalette(tcp);
+  }
+}
+
 // strings to reduce flash memory usage (used more than twice)
 const char AudioReactive::_name[]       PROGMEM = "AudioReactive";
 const char AudioReactive::_enabled[]    PROGMEM = "enabled";
@@ -1830,5 +1951,6 @@ const char AudioReactive::_inputLvl[]   PROGMEM = "inputLevel";
 const char AudioReactive::_analogmic[]  PROGMEM = "analogmic";
 #endif
 const char AudioReactive::_digitalmic[] PROGMEM = "digitalmic";
+const char AudioReactive::_addPalettes[]       PROGMEM = "add-palettes";
 const char AudioReactive::UDP_SYNC_HEADER[]    PROGMEM = "00002"; // new sync header version, as format no longer compatible with previous structure
 const char AudioReactive::UDP_SYNC_HEADER_v1[] PROGMEM = "00001"; // old sync header version - need to add backwards-compatibility feature
