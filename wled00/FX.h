@@ -897,8 +897,8 @@ class WS2812FX {  // 96 bytes
     const char **
       getModeDataSrc(void) { return &(_modeData[0]); } // vectors use arrays for underlying data
     
+#ifndef WLED_DISABLE_MODE_BLEND
     const char* getTransitionStyleName(uint8_t id) { return (id && id<_transitionStyleCount) ? _transitionStyles[id]._name : PSTR("Fade"); }
-#ifndef WLED_DISABLE_2D
     bool isTransitionStyle2DOnly(uint8_t id) { return (id && id<_transitionStyleCount) ? _transitionStyles[id]._only2D : false; }
 #endif
 
