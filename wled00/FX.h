@@ -330,6 +330,8 @@
 #define TRANSITION_STYLE_INSIDE_OUT      10
 #define TRANSITION_STYLE_FAIRY_DUST      11
 
+#define TRANSITION_STYLE_COUNT           12
+
 typedef enum mapping1D2D {
   M12_Pixels = 0,
   M12_pBar = 1,
@@ -751,6 +753,9 @@ class WS2812FX {  // 96 bytes
       _hasWhiteChannel(false),
       _triggered(false),
       _modeCount(MODE_COUNT),
+#ifndef WLED_DISABLE_MODE_BLEND
+      _transitionStyleCount(TRANSITION_STYLE_COUNT),
+#endif
       _callback(nullptr),
       customMappingTable(nullptr),
       customMappingSize(0),
@@ -769,6 +774,9 @@ class WS2812FX {  // 96 bytes
       WS2812FX::instance = this;
       _mode.reserve(_modeCount);     // allocate memory to prevent initial fragmentation (does not increase size())
       _modeData.reserve(_modeCount); // allocate memory to prevent initial fragmentation (does not increase size())
+#ifndef WLED_DISABLE_MODE_BLEND
+      _transitionStyles.reserve(_transitionStyleCount); // allocate memory to prevent initial fragmentation (does not increase size())
+#endif
       if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _modeCount = 1; // memory allocation failed only show Solid
       else setupEffectData();
     }
@@ -777,6 +785,9 @@ class WS2812FX {  // 96 bytes
       if (customMappingTable) delete[] customMappingTable;
       _mode.clear();
       _modeData.clear();
+#ifndef WLED_DISABLE_MODE_BLEND
+      _transitionStyles.clear();
+#endif
       _segments.clear();
 #ifndef WLED_DISABLE_2D
       panel.clear();
@@ -812,6 +823,9 @@ class WS2812FX {  // 96 bytes
     void setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) { setColor(slot, RGBW32(r,g,b,w)); }
     void fill(uint32_t c) { for (int i = 0; i < getLengthTotal(); i++) setPixelColor(i, c); } // fill whole strip with color (inline)
     void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name); // add effect to the list; defined in FX.cpp
+#ifndef WLED_DISABLE_MODE_BLEND
+    void addTransitionStyle(uint8_t id, const char *name, bool only2D); // add transition style to the list
+#endif
     void setupEffectData(void); // add default effects to the list; defined in FX.cpp
 
     // outsmart the compiler :) by correctly overloading
@@ -853,6 +867,9 @@ class WS2812FX {  // 96 bytes
     inline uint8_t getPaletteCount() { return 13 + GRADIENT_PALETTE_COUNT; }  // will only return built-in palette count
     inline uint8_t getTargetFps() { return _targetFps; }
     inline uint8_t getModeCount() { return _modeCount; }
+#ifndef WLED_DISABLE_MODE_BLEND
+    inline uint8_t getTransitionStyleCount() { return _transitionStyleCount; }
+#endif
 
     uint16_t
       ablMilliampsMax,
@@ -879,6 +896,11 @@ class WS2812FX {  // 96 bytes
 
     const char **
       getModeDataSrc(void) { return &(_modeData[0]); } // vectors use arrays for underlying data
+    
+    const char* getTransitionStyleName(uint8_t id) { return (id && id<_transitionStyleCount) ? _transitionStyles[id]._name : PSTR("Fade"); }
+#ifndef WLED_DISABLE_2D
+    bool isTransitionStyle2DOnly(uint8_t id) { return (id && id<_transitionStyleCount) ? _transitionStyles[id]._only2D : false; }
+#endif
 
     Segment&        getSegment(uint8_t id);
     inline Segment& getFirstSelectedSeg(void) { return _segments[getFirstSelectedSegId()]; }
@@ -962,6 +984,18 @@ class WS2812FX {  // 96 bytes
     uint8_t                  _modeCount;
     std::vector<mode_ptr>    _mode;     // SRAM footprint: 4 bytes per element
     std::vector<const char*> _modeData; // mode (effect) name and its slider control data array
+#ifndef WLED_DISABLE_MODE_BLEND
+    uint8_t                  _transitionStyleCount;
+
+    struct TransitionStyleData {
+      TransitionStyleData() : _name(nullptr), _only2D(false) {}
+      TransitionStyleData(const char* name, bool only2D) : _name(name), _only2D(only2D) {}
+
+      const char* _name;
+      bool _only2D;
+    };
+    std::vector<TransitionStyleData> _transitionStyles; // transition style names
+#endif
 
     show_callback _callback;
 

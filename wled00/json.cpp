@@ -10,6 +10,7 @@
 #define JSON_PATH_FXDATA     6
 #define JSON_PATH_NETWORKS   7
 #define JSON_PATH_EFFECTS    8
+#define JSON_PATH_TRANSITION_STYLES 9
 
 /*
  * JSON API (De)serialization
@@ -1023,6 +1024,21 @@ void serializeModeNames(JsonArray arr)
   }
 }
 
+void serializeTransitionStyles(JsonArray arr) {
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (!modeBlending) return;
+
+  for (size_t i = 0; i < strip.getTransitionStyleCount(); i++) {
+#ifndef WLED_DISABLE_2D
+    if (!strip.isMatrix && strip.isTransitionStyle2DOnly(i)) {
+      continue;
+    }
+#endif
+    arr.add(strip.getTransitionStyleName(i));
+  }
+#endif
+}
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -1034,6 +1050,7 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf("eff")   > 0) subJson = JSON_PATH_EFFECTS;
   else if (url.indexOf("palx")  > 0) subJson = JSON_PATH_PALETTES;
   else if (url.indexOf("fxda")  > 0) subJson = JSON_PATH_FXDATA;
+  else if (url.indexOf("tra")   > 0) subJson = JSON_PATH_TRANSITION_STYLES;
   else if (url.indexOf("net")   > 0) subJson = JSON_PATH_NETWORKS;
   #ifdef WLED_ENABLE_JSONLIVE
   else if (url.indexOf("live")  > 0) {
@@ -1057,7 +1074,7 @@ void serveJson(AsyncWebServerRequest* request)
     request->send(503, "application/json", F("{\"error\":3}"));
     return;
   }
-  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
+  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS || subJson==JSON_PATH_TRANSITION_STYLES); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
@@ -1075,6 +1092,8 @@ void serveJson(AsyncWebServerRequest* request)
       serializeModeNames(lDoc); break;
     case JSON_PATH_FXDATA:
       serializeModeData(lDoc); break;
+    case JSON_PATH_TRANSITION_STYLES:
+      serializeTransitionStyles(lDoc); break;
     case JSON_PATH_NETWORKS:
       serializeNetworks(lDoc); break;
     default: //all
