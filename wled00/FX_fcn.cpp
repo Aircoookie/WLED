@@ -561,8 +561,13 @@ uint32_t Segment::currentColor(uint8_t slot) {
 }
 
 CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
-  loadPalette(targetPalette, pal);
   uint16_t prog = progress();
+  if (_modeBlend && prog < 0xFFFFU) {
+    targetPalette = _t->_palT;
+    return targetPalette;
+  }
+  
+  loadPalette(targetPalette, pal);
   if (strip.paletteFade && prog < 0xFFFFU) {
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
@@ -711,6 +716,9 @@ void Segment::setPalette(uint8_t pal) {
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0; // built in palettes
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // custom palettes
   if (pal != palette) {
+#ifndef WLED_DISABLE_MODE_BLEND
+    if (modeBlending) startTransition(strip.getTransition());
+#endif
     if (strip.paletteFade) startTransition(strip.getTransition());
     palette = pal;
     stateChanged = true; // send UDP/WS broadcast
@@ -1332,6 +1340,7 @@ void WS2812FX::service() {
           _colors_t[0] = seg.currentColor(0); // update colors to allow for color transitions
           _colors_t[1] = seg.currentColor(1);
           _colors_t[2] = seg.currentColor(2);
+          seg.currentPalette(_currentPalette, seg.palette);
           for (int c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
 
           Segment::renderToBuffer(seg.buffer2);
