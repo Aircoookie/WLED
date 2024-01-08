@@ -391,8 +391,10 @@ typedef struct Segment {
     uint16_t aux1;  // custom var
     byte     *data; // effect data pointer
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
+    #ifndef WLED_DISABLE_MODE_BLEND
     uint32_t *buffer1;
     uint32_t *buffer2;
+    #endif
 
     typedef struct TemporarySegmentData {
       uint16_t _optionsT;
@@ -439,6 +441,7 @@ typedef struct Segment {
     #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
     static uint32_t*     _activeBuffer;       // pointer to the buffer where the mode should be rendered to
+    uint16_t             _bufferSize;
     #endif
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
@@ -462,8 +465,6 @@ typedef struct Segment {
         , _dur(dur)
       {}
     } *_t;
-
-    uint16_t _bufferSize;
 
   public:
     Segment(uint16_t sStart=0, uint16_t sStop=30) :
@@ -495,12 +496,16 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
+#ifndef WLED_DISABLE_MODE_BLEND
       buffer1(nullptr),
       buffer2(nullptr),
+#endif
       _capabilities(0),
       _dataLen(0),
-      _t(nullptr),
-      _bufferSize(0)
+#ifndef WLED_DISABLE_MODE_BLEND
+      _bufferSize(0),
+#endif
+      _t(nullptr)
     {
       #ifdef WLED_DEBUG
       //Serial.printf("-- Creating segment: %p\n", this);
@@ -523,8 +528,10 @@ typedef struct Segment {
       //Serial.println();
       #endif
       if (name) { delete[] name; name = nullptr; }
+      #ifndef WLED_DISABLE_MODE_BLEND
       if (buffer1) { delete[] buffer1; buffer1 = nullptr; }
       if (buffer2) { delete[] buffer2; buffer2 = nullptr; }
+      #endif
       stopTransition();
       deallocateData();
     }
@@ -532,8 +539,10 @@ typedef struct Segment {
     Segment& operator= (const Segment &orig); // copy assignment
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
+#ifndef WLED_DISABLE_MODE_BLEND
     void allocateBuffers();
     void savePixelsToBuffer(uint32_t* buffer);
+#endif
 
 #ifdef WLED_DEBUG
     size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0); }
@@ -610,7 +619,9 @@ typedef struct Segment {
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     uint32_t getPixelColor(int i);
     int getPixelIndex(int i);
+    #ifndef WLED_DISABLE_MODE_BLEND
     void renderTransition();
+    #endif
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
     void fill(uint32_t c);
@@ -639,7 +650,9 @@ typedef struct Segment {
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
+    #ifndef WLED_DISABLE_MODE_BLEND
     void render2DTransition();
+    #endif
     // 2D support functions
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) { setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend)); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)         { blendPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), blend); }
@@ -673,7 +686,6 @@ typedef struct Segment {
     inline void setPixelColorXY(float x, float y, uint32_t c, bool aa = true)     { setPixelColor(x, c, aa); }
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColor(x, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
-    inline void maybeSetStripPixelColorXYForTransition(int x, int y, uint32_t c)  { maybeSetPixelColorForTransition(x, c); }
     inline uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
     inline void render2DTransition()                                              { renderTransition(); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }
@@ -966,12 +978,14 @@ class WS2812FX {  // 96 bytes
       setUpSegmentFromQueuedChanges(void);
 };
 
+#ifndef WLED_DISABLE_MODE_BLEND
 inline uint32_t hashInt(uint32_t s) {
   // borrowed from https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
   s = ((s >> 16) ^ s) * 0x45d9f3b;
   s = ((s >> 16) ^ s) * 0x45d9f3b;
   return (s >> 16) ^ s;
 }
+#endif
 
 extern const char JSON_mode_names[];
 extern const char JSON_palette_names[];

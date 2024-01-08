@@ -93,15 +93,19 @@ Segment::Segment(const Segment &orig) {
   _t = nullptr; // copied segment cannot be in transition
   name = nullptr;
   data = nullptr;
+  #ifndef WLED_DISABLE_MODE_BLEND
   buffer1 = nullptr;
   buffer2 = nullptr;
+  #endif
   _dataLen = 0;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
 
+  #ifndef WLED_DISABLE_MODE_BLEND
   uint16_t len = orig._bufferSize;
   if (orig.buffer1) { buffer1 = new uint32_t[len]; if (buffer1) memcpy(buffer1, orig.buffer1, len * sizeof(uint32_t)); }
   if (orig.buffer2) { buffer2 = new uint32_t[len]; if (buffer2) memcpy(buffer2, orig.buffer2, len * sizeof(uint32_t)); }
+  #endif
 }
 
 // move constructor
@@ -111,9 +115,11 @@ Segment::Segment(Segment &&orig) noexcept {
   orig._t   = nullptr; // old segment cannot be in transition any more
   orig.name = nullptr;
   orig.data = nullptr;
+  #ifndef WLED_DISABLE_MODE_BLEND
   orig._bufferSize = 0;
   orig.buffer1 = nullptr;
   orig.buffer2 = nullptr;
+  #endif
   orig._dataLen = 0;
 }
 
@@ -153,6 +159,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
   return *this;
 }
 
+#ifndef WLED_DISABLE_MODE_BLEND
 // allocate and/or resize effect buffers if necessary
 void Segment::allocateBuffers() {
   uint16_t len = virtualLength();
@@ -173,6 +180,7 @@ void Segment::savePixelsToBuffer(uint32_t* buffer) {
     buffer[i] = strip.getPixelColor(getPixelIndex(i));
   }
 }
+#endif
 
 bool IRAM_ATTR Segment::allocateData(size_t len) {
   if (len == 0) return false; // nothing to do
@@ -375,6 +383,7 @@ void Segment::handleTransition() {
   if (_progress == 0xFFFFU) stopTransition();
 }
 
+#ifndef WLED_DISABLE_MODE_BLEND
 void Segment::renderTransition() {
   uint16_t len = virtualLength();
 
@@ -447,6 +456,7 @@ void Segment::renderTransition() {
     }
   }
 }
+#endif
 
 // transition progression between 0-65535
 uint16_t IRAM_ATTR Segment::progress() {
@@ -529,11 +539,20 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 #endif
 
 uint8_t IRAM_ATTR Segment::currentBri(bool useCct) {
+#ifndef WLED_DISABLE_MODE_BLEND
   if (isInTransition()) {
     if (_modeBlend && progress() < 0xFFFFU) {
       return (useCct ? _t->_cctT : (on ? _t->_briT : 0));
     }
   }
+#else
+  uint32_t prog = progress();
+  if (prog < 0xFFFFU) {
+    uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
+    curBri += (useCct ? _t->_cctT : (on ? _t->_briT : 0)) * (0xFFFFU - prog);
+    return curBri / 0xFFFFU;
+  }
+#endif
   return (useCct ? cct : (on ? opacity : 0));
 }
 
@@ -560,10 +579,12 @@ uint32_t IRAM_ATTR Segment::currentColor(uint8_t slot) {
 
 CRGBPalette16 IRAM_ATTR &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   uint16_t prog = progress();
+#ifndef WLED_DISABLE_MODE_BLEND
   if (_modeBlend && prog < 0xFFFFU) {
     targetPalette = _t->_palT;
     return targetPalette;
   }
+#endif
   
   loadPalette(targetPalette, pal);
   if (strip.paletteFade && prog < 0xFFFFU) {
@@ -857,10 +878,12 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     col = RGBW32(r, g, b, w);
   }
 
+#ifndef WLED_DISABLE_MODE_BLEND
   if (_activeBuffer) {
     _activeBuffer[i] = col;
     return;
   }
+#endif
 
   // expand pixel (taking into account start, grouping, spacing [and offset])
   uint16_t len = length();
@@ -932,9 +955,11 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
 #endif
   i &= 0xFFFF;
 
+#ifndef WLED_DISABLE_MODE_BLEND
   if (_activeBuffer) {
     return _activeBuffer[i];
   }
+#endif
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
@@ -1295,8 +1320,8 @@ void WS2812FX::service() {
         // The blending will largely depend on the effect behaviour since actual output (LEDs) may be
         // overwritten by later effect. To enable seamless blending for every effect, additional LED buffer
         // would need to be allocated for each effect and then blended together for each pixel.
-        [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
 #ifndef WLED_DISABLE_MODE_BLEND
+        [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
         if (modeBlending && seg.isInTransition()) {
           // Run new mode first
           Segment::renderToBuffer(seg.buffer1);
