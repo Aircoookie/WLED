@@ -168,6 +168,12 @@ void Segment::allocateBuffers() {
   if (!buffer2) buffer2 = new uint32_t[len]{};
 }
 
+void Segment::savePixelsToBuffer(uint32_t* buffer) {
+  for (int i = 0; i != virtualLength(); ++i) {
+    buffer[i] = strip.getPixelColor(getPixelIndex(i));
+  }
+}
+
 bool Segment::allocateData(size_t len) {
   if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
     if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
@@ -325,6 +331,9 @@ void Segment::startTransition(uint16_t dur) {
 #ifndef WLED_DISABLE_MODE_BLEND
   if (modeBlending) {
     allocateBuffers();  // set up and resize effect buffers if necessary
+    savePixelsToBuffer(buffer1);
+    savePixelsToBuffer(buffer2);
+
     swapSegenv(_t->_segT);
     _t->_modeT          = mode;
     _t->_segT._dataLenT = 0;
