@@ -1017,15 +1017,6 @@ class WS2812FX {  // 96 bytes
       setUpSegmentFromQueuedChanges(void);
 };
 
-#ifndef WLED_DISABLE_MODE_BLEND
-inline uint32_t hashInt(uint32_t s) {
-  // borrowed from https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
-  s = ((s >> 16) ^ s) * 0x45d9f3b;
-  s = ((s >> 16) ^ s) * 0x45d9f3b;
-  return (s >> 16) ^ s;
-}
-#endif
-
 extern const char JSON_mode_names[];
 extern const char JSON_palette_names[];
 
