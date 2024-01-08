@@ -529,6 +529,7 @@ typedef struct Segment {
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
     void allocateBuffers();
+    void savePixelsToBuffer(uint32_t* buffer);
 
 #ifdef WLED_DEBUG
     size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0); }
