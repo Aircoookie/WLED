@@ -16,6 +16,11 @@
 		function B(){window.open(getURL("/settings"),"_self");}
 		function gId(n){return d.getElementById(n);}
 		function off(n){d.getElementsByName(n)[0].value = -1;}
+		function isPWM(t) { return t > 40 && t < 46; }    // is PWM type
+		function isAna(t) { return t == 40 || isPWM(t); } // is analog type
+		function isDig(t) { return t < 80 && (t & 0x10); }// is digital type
+		function isD2P(t) { return t > 47 && t < 64; }    // is digital 2 pin type
+		function isVir(t) { return t >= 80; }             // is virtual type
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -132,7 +137,7 @@
 			d.Sf.querySelectorAll("#mLC input[name^=MA]").forEach((i,n)=>{
 				gId("PSU"+n).style.display = ppl ? "inline" : "none";
 				const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
-				i.min = ppl && !((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 250 : 0;
+				i.min = ppl && !(isVir(t) || isAna(t)) ? 250 : 0;
 				if (!abl) i.value = 0;
 				else if (ppl) sumMA += parseInt(i.value,10);
 			});
@@ -143,11 +148,10 @@
 			const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
 			gId('LAdis'+n).style.display = s.selectedIndex==5 ? "inline" : "none";
 			d.Sf["LA"+n].value = s.value==="0" ? 55 : s.value;
-			d.Sf["LA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 1;
+			d.Sf["LA"+n].min = (isVir(t) || isAna(t)) ? 0 : 1;
 		}
 		function setABL()
 		{
-			console.log(d.Sf.MA.value);
 			d.Sf.ABL.checked = parseInt(d.Sf.MA.value) > 0;
 			// check if ABL is enabled (max mA entered per output)
 			d.Sf.querySelectorAll("#mLC input[name^=MA]").forEach((i,n)=>{
@@ -205,12 +209,9 @@
 				// is the field a LED type?
 				var n = s.name.substring(2);
 				var t = parseInt(s.value);
-				let isDig =  ((t >= 16 && t < 32) || (t >= 50 && t < 64));
-				let isVir = (t >= 80 && t < 96);
-				let isPwm = (t >= 40 && t < 48);
-				gId("p0d"+n).innerHTML = (t>=80 && t<96) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
-				gId("p1d"+n).innerHTML = (t> 49 && t<64) ? "Clk GPIO:" : "";
-				gId("abl"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none" : "inline";
+				gId("p0d"+n).innerHTML = isVir(t) ? "IP address:" : isD2P(t) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
+				gId("p1d"+n).innerHTML = isD2P(t) ? "Clk GPIO:" : "";
+				gId("abl"+n).style.display = (!ablEN || isVir(t) || isAna(t)) ? "none" : "inline";
 				//var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
 				memu += getMem(t, n); // calc memory
@@ -219,7 +220,7 @@
 				for (p=1; p<5; p++) {
 					var LK = d.Sf["L"+p+n]; // secondary pins
 					if (!LK) continue;
-					if (((t>=80 && t<96) && p<4) || (t>49 && p==1) || (t>41 && t < 50 && (p+40 < t))) // TYPE_xxxx values from const.h
+					if ((isVir(t) && p<4) || (isD2P(t) && p==1) || (isPWM(t) && (p+40 < t))) // TYPE_xxxx values from const.h
 					{
 						// display pin field
 						LK.style.display = "inline";
@@ -233,24 +234,24 @@
 				}
 				if (change) {
 					gId("rf"+n).checked = (gId("rf"+n).checked || t == 31); // LEDs require data in off state
-					if (t > 31 && t < 48) d.Sf["LC"+n].value = 1; // for sanity change analog count just to 1 LED
-					d.Sf["LA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 1;
-					d.Sf["MA"+n].min = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? 0 : 250;
+					if (isAna(t)) d.Sf["LC"+n].value = 1; // for sanity change analog count just to 1 LED
+					d.Sf["LA"+n].min = (isVir(t) || isAna(t)) ? 0 : 1;
+					d.Sf["MA"+n].min = (isVir(t) || isAna(t)) ? 0 : 250;
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
 				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
-				gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
-				gId("dig"+n+"w").style.display = (t > 28 && t < 32) ? "inline":"none";  // show swap channels dropdown
-				if (!(t > 28 && t < 32)) d.Sf["WO"+n].value = 0; // reset swapping
-				gId("dig"+n+"c").style.display = (t >= 40 && t < 48) ? "none":"inline";  // hide count for analog
-				gId("dig"+n+"r").style.display = (t >= 80 && t < 96) ? "none":"inline";  // hide reversed for virtual
-				gId("dig"+n+"s").style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
-				gId("dig"+n+"f").style.display = ((t >= 16 && t < 32) || (t >= 50 && t < 64)) ? "inline":"none";  // hide refresh
-				gId("dig"+n+"a").style.display = (isRGBW && t != 40) ? "inline":"none";  // auto calculate white
-				gId("dig"+n+"l").style.display = (t > 48 && t < 64) ? "inline":"none";  // bus clock speed
-				gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
-				gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
-				if (ablEN && pplEN && !((t >= 80 && t < 96) || (t >= 40 && t < 48))) {
+				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide color order for PWM
+				gId("dig"+n+"w").style.display = (isDig(t) && isRGBW) ? "inline":"none";  // show swap channels dropdown
+				if (!(isDig(t) && isRGBW)) d.Sf["WO"+n].value = 0; // reset swapping
+				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";  // hide count for analog
+				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";  // hide reversed for virtual
+				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
+				gId("dig"+n+"f").style.display = (isDig(t)) ? "inline":"none";  // hide refresh
+				gId("dig"+n+"a").style.display = (isRGBW) ? "inline":"none";  // auto calculate white
+				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
+				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
+				//gId("psd"+n).innerHTML = isAna(t) ? "Index:":"Start:";    // change analog start description
+				if (ablEN && pplEN && !(isVir(t) || isAna(t))) {
 					sumMA += parseInt(d.Sf["MA"+n].value); // summarize PPL ABL limit (fields)
 				}
 			});
@@ -275,9 +276,9 @@
 						let s = parseInt(gId("ls"+n).value); //start value
 						if (s+c > sLC) sLC = s+c; //update total count
 						if (c > maxLC) maxLC = c; //max per output
-						if (t < 80) sPC += c; //virtual out busses do not count towards physical LEDs
-						//if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) sDI += c;
-						if (!((t >= 80 && t < 96) || (t >= 40 && t < 48))) {
+						if (!isVir(t)) sPC += c; //virtual out busses do not count towards physical LEDs
+						//if (!(isVir(t) || isPWM(t))) sDI += c;
+						if (!(isVir(t) || isAna(t))) {
 							sDI += c; // summarize digital LED count
 							let maPL = parseInt(d.Sf["LA"+n].value);
 							if (maPL == 255) maPL = 12;
@@ -292,7 +293,7 @@
 				}
 				// ignore IP address (stored in pins for virtual busses)
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-					if (t>=80) {
+					if (isVir(t)) {
 						LC.max = 255;
 						LC.min = 0;
 						LC.style.color="#fff";
@@ -314,7 +315,7 @@
 								if (n2.substring(0,1)==="L") {
 									let m  = nList[j].name.substring(2);
 									let t2 = parseInt(d.Sf["LT"+m].value, 10);
-									if (t2 >= 80) continue;
+									if (isVir(t2)) continue;
 								}
 								if (nList[j].value!="" && nList[j].value!="-1") p.push(parseInt(nList[j].value,10));  // add current pin
 							}
@@ -328,7 +329,7 @@
 			d.Sf.querySelectorAll("#mLC input[name^=LC]").forEach((s,n)=>{
 				let c = parseInt(s.value,10); //get LED count
 				let t = parseInt(d.Sf["LT"+n].value); //get LED type
-				if (!ablEN || (t >= 80 && t < 96) || (t >= 40 && t < 48)) {
+				if (!ablEN || isVir(t) || isAna(t)) {
 					// virtual and analog LEDs have no limiter
 					d.Sf["MA"+n].value = 0;
 					return;

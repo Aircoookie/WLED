@@ -256,10 +256,11 @@
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 
-#define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
-#define IS_PWM(t)     ((t) > 40 && (t) < 46)
-#define NUM_PWM_PINS(t) ((t) - 40) //for analog PWM 41-45 only
+#define IS_DIGITAL(t)   ((t) < 80 && ((t) & 0x10)) //digital are 16-31 and 48-63
+#define IS_PWM(t)       ((t) > 40 && (t) < 46)
+#define NUM_PWM_PINS(t) ((t) - 40)             //for analog PWM 41-45 only
 #define IS_2PIN(t)      ((t) > 47)
+#define IS_VIRTUAL(t)   ((t) >= 80)
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
