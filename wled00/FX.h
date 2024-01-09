@@ -282,7 +282,7 @@
 #define FX_MODE_RIPPLEPEAK             148
 #define FX_MODE_2DFIRENOISE            149
 #define FX_MODE_2DSQUAREDSWIRL         150
-#define FX_MODE_2DFIRE2012             151
+// #define FX_MODE_2DFIRE2012             151
 #define FX_MODE_2DDNA                  152
 #define FX_MODE_2DMATRIX               153
 #define FX_MODE_2DMETABALLS            154
@@ -292,7 +292,7 @@
 #define FX_MODE_GRAVFREQ               158
 #define FX_MODE_DJLIGHT                159
 #define FX_MODE_2DFUNKYPLANK           160
-#define FX_MODE_2DCENTERBARS           161
+//#define FX_MODE_2DCENTERBARS           161
 #define FX_MODE_2DPULSER               162
 #define FX_MODE_BLURZ                  163
 #define FX_MODE_2DDRIFT                164

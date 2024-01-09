@@ -209,7 +209,14 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   #endif
 
   byte fx = seg.mode;
-  if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
+  byte last = strip.getModeCount();
+  // partial fix for #3605
+  if (!elem["fx"].isNull() && elem["fx"].is<const char*>()) {
+    const char *tmp = elem["fx"].as<const char *>();
+    if (strlen(tmp) > 3 && (strchr(tmp,'r') || strchr(tmp,'~') != strrchr(tmp,'~'))) last = 0; // we have "X~Y(r|[w]~[-])" form
+  }
+  // end fix
+  if (getVal(elem["fx"], &fx, 0, last)) { //load effect ('r' random, '~' inc/dec, 0-255 exact value, 5~10r pick random between 5 & 10)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
     if (fx != seg.mode) seg.setMode(fx, elem[F("fxdef")]);
   }
@@ -1010,15 +1017,19 @@ void serializeModeNames(JsonArray arr)
   }
 }
 
-static volatile bool servingClient = false;
+
+// Global buffer locking response helper class
+class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
+  public:
+  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(pDoc, isArray) {};
+  virtual ~GlobalBufferAsyncJsonResponse() {};
+
+  // Other members are inherited
+};
+
+
 void serveJson(AsyncWebServerRequest* request)
 {
-  if (servingClient) {
-    serveJsonError(request, 503, ERR_CONCURRENCY);
-    return;
-  }
-  servingClient = true;
-
   byte subJson = 0;
   const String& url = request->url();
   if      (url.indexOf("state") > 0) subJson = JSON_PATH_STATE;
@@ -1032,31 +1043,27 @@ void serveJson(AsyncWebServerRequest* request)
   #ifdef WLED_ENABLE_JSONLIVE
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
-    servingClient = false;
     return;
   }
   #endif
   else if (url.indexOf("pal") > 0) {
     request->send_P(200, "application/json", JSON_palette_names);
-    servingClient = false;
     return;
   }
   else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
-    servingClient = false;
     return;
   }
   else if (url.length() > 6) { //not just /json
     serveJsonError(request, 501, ERR_NOT_IMPL);
-    servingClient = false;
     return;
   }
 
-  if (!requestJSONBufferLock(17)) {
+  GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
+  if (!response->owns_lock()) {
     serveJsonError(request, 503, ERR_NOBUF);
-    servingClient = false;
+    delete response;
     return;
   }
-  AsyncJsonResponse *response = new AsyncJsonResponse(pDoc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
@@ -1099,8 +1106,6 @@ void serveJson(AsyncWebServerRequest* request)
   DEBUG_PRINT(F("JSON content length: ")); DEBUG_PRINTLN(len);
 
   request->send(response);
-  releaseJSONBufferLock();
-  servingClient = false;
 }
 
 #ifdef WLED_ENABLE_JSONLIVE
