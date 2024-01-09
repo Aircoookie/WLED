@@ -22,6 +22,37 @@ const CleanCSS = require("clean-css");
 const MinifyHTML = require("html-minifier-terser").minify;
 const packageJson = require("../package.json");
 
+const CACHE_FILE = __dirname + "/cdataCache.json";
+const cache = loadCache();
+cache.version = 1;
+
+function loadCache() {
+  try {
+    return JSON.parse(fs.readFileSync(CACHE_FILE));
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveCache(file) {
+  const stat = fs.statSync(file);
+  cache[file] = {
+    mtime: stat.mtimeMs,
+    size: stat.size,
+  };
+  fs.writeFileSync(CACHE_FILE, JSON.stringify(cache));
+}
+
+function isCached(file) {
+  // If command line argument is set, always rebuild
+  if (process.argv[2] == "--force" || process.argv[2] == "-f") {
+    return false;
+  }
+  const stat = fs.statSync(file);
+  const cached = cache[file];
+  return cached && cached.mtime == stat.mtimeMs && cached.size == stat.size;
+}
+
 /**
  *
  */
@@ -110,6 +141,10 @@ function filter(str, type) {
 }
 
 function writeHtmlGzipped(sourceFile, resultFile, page) {
+  if (isCached(sourceFile)) {
+    console.info(`Skipping ${resultFile} as it is cached`);
+    return;
+  }
   console.info("Reading " + sourceFile);
   new inliner(sourceFile, function (error, html) {
     console.info("Inlined " + html.length + " characters");
@@ -146,6 +181,7 @@ ${array}
 `;
       console.info("Writing " + resultFile);
       fs.writeFileSync(resultFile, src);
+      saveCache(sourceFile);
     });
   });
 }
@@ -196,6 +232,11 @@ ${result}
 }
 
 function writeChunks(srcDir, specs, resultFile) {
+  if (specs.every(s => isCached(srcDir + "/" + s.file))) {
+    console.info(`Skipping ${resultFile} as all files are cached`);
+    return;
+  }
+
   let src = `/*
  * More web UI HTML source arrays.
  * This file is auto generated, please don't make any changes manually.
@@ -204,12 +245,14 @@ function writeChunks(srcDir, specs, resultFile) {
  */ 
 `;
   specs.forEach((s) => {
+    const file = srcDir + "/" + s.file;
     try {
-      console.info("Reading " + srcDir + "/" + s.file + " as " + s.name);
+      console.info("Reading " + file + " as " + s.name);
       src += specToChunk(srcDir, s);
+      saveCache(file);
     } catch (e) {
       console.warn(
-        "Failed " + s.name + " from " + srcDir + "/" + s.file,
+        "Failed " + s.name + " from " + file,
         e.message.length > 60 ? e.message.substring(0, 60) : e.message
       );
     }
