@@ -43,13 +43,13 @@ function saveCache(file) {
   fs.writeFileSync(CACHE_FILE, JSON.stringify(cache));
 }
 
-function isCached(file) {
+function isCached(sourceFile, resultFile) {
   // If command line argument is set, always rebuild
-  if (process.argv[2] == "--force" || process.argv[2] == "-f") {
-    return false;
-  }
-  const stat = fs.statSync(file);
-  const cached = cache[file];
+  if (process.argv[2] == "--force" || process.argv[2] == "-f") return false;
+  // If result file does not exist, rebuild
+  if (!fs.existsSync(resultFile)) return false;
+  const stat = fs.statSync(sourceFile);
+  const cached = cache[sourceFile];
   return cached && cached.mtime == stat.mtimeMs && cached.size == stat.size;
 }
 
@@ -141,7 +141,7 @@ function filter(str, type) {
 }
 
 function writeHtmlGzipped(sourceFile, resultFile, page) {
-  if (isCached(sourceFile)) {
+  if (isCached(sourceFile, resultFile)) {
     console.info(`Skipping ${resultFile} as it is cached`);
     return;
   }
@@ -232,7 +232,7 @@ ${result}
 }
 
 function writeChunks(srcDir, specs, resultFile) {
-  if (specs.every(s => isCached(srcDir + "/" + s.file))) {
+  if (specs.every(s => isCached(srcDir + "/" + s.file, resultFile))) {
     console.info(`Skipping ${resultFile} as all files are cached`);
     return;
   }
