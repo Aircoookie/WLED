@@ -823,8 +823,6 @@ class WS2812FX {  // 96 bytes
       addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name), // add effect to the list; defined in FX.cpp
       setupEffectData(void); // add default effects to the list; defined in FX.cpp
 
-    void setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) { setColor(slot, RGBW32(r,g,b,w)); }
-    void fill(uint32_t c) { for (int i = 0; i < getLengthTotal(); i++) setPixelColor(i, c); } // fill whole strip with color (inline)
 #ifndef WLED_DISABLE_MODE_BLEND
     void addTransitionStyle(uint8_t id, const char *name, bool only2D); // add transition style to the list
 #endif

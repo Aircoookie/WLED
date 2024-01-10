@@ -282,7 +282,6 @@ function onLoad()
 	// Once we figure out why ESP8266 sometimes corrupts JSON responses if they are made in quick succession
 	// we can remove all setTimeout() throttling
 	loadPalettes(()=>{
-<<<<<<< HEAD
 		setTimeout(()=>{ // ESP8266 can't handle quick requests
 			// fill effect extra data array
 			loadFXData(()=>{
@@ -290,27 +289,17 @@ function onLoad()
 					// load and populate effects
 					loadFX(()=>{
 						setTimeout(()=>{ // ESP8266 can't handle quick requests
-							loadPalettesData(()=>{
-								requestJson();// will load presets and create WS
-								if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
+							loadTransitionStyles(()=>{
+								setTimeout(()=>{
+									loadPalettesData(()=>{
+										requestJson();// will load presets and create WS
+										if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
+									});
+								},50);
 							});
 						},50);
 					});
 				},50);
-=======
-		// fill effect extra data array
-		loadFXData(()=>{
-			// load and populate effects
-			loadFX(()=>{
-				// load and populate transition styles
-				loadTransitionStyles(()=>{
-					setTimeout(()=>{ // ESP8266 can't handle quick requests
-						loadPalettesData(()=>{
-							requestJson();// will load presets and create WS
-						});
-					},100);
-				});
->>>>>>> 96c8862b (Dynamically load transition styles from the UI)
 			});
 		},50);
 	});
