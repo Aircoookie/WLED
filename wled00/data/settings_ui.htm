@@ -118,10 +118,10 @@
 	function genForm(s) {
 		var str = "";
 		str = addRec(s,"",l);
+		oldUrl = "";
 		
 		gId('gen').innerHTML = str;
 		if (gId('theme_bg_rnd').checked) {
-			oldUrl = "";
 			toggle("Image");
 		} else if (gId('theme_bg_url').value.startsWith('data:')) {
 			gId("bg_url").classList.add("hide");
