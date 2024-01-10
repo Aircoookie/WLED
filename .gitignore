@@ -2,7 +2,6 @@
 .clang-format
 .direnv
 .DS_Store
-.gitignore
 .idea
 .pio
 .pioenvs
