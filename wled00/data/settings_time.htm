@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta name="viewport" content="width=500">
-	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<meta charset="utf-8">
 	<title>Time Settings</title>
 	<script>
 	var d=document;
-	var loc = false, locip;
+	var loc = false, locip, locproto = "http:";
 	var el=false;
 	var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 	function H() { window.open("https://kno.wled.ge/features/settings/#time-settings"); }
-	function B() { window.open("/settings","_self"); }
+	function B() { window.open(getURL("/settings"),"_self"); }
 	function gId(s) { return d.getElementById(s); }
 	function gN(s) { return d.getElementsByName(s)[0]; }
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -33,16 +32,29 @@
 		});
 	}
 	function S() {
-		if (window.location.protocol == "file:") {
+		let l = window.location;
+		if (l.protocol == "file:") {
 			loc = true;
 			locip = localStorage.getItem('locIp');
 			if (!locip) {
 				locip = prompt("File Mode. Please enter WLED IP!");
 				localStorage.setItem('locIp', locip);
 			}
+		} else {
+			// detect reverse proxy
+			let path = l.pathname;
+			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			if (paths.length > 2) {
+				locproto = l.protocol;
+				loc = true;
+				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+			}
 		}
-		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=5';
-		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		loadJS(getURL('/settings/s.js?p=5'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+		if (loc) d.Sf.action = getURL('/settings/time');
+	}
+	function getURL(path) {
+		return (loc ? locproto + "//" + locip : "") + path;
 	}
 	function expand(o,i)
 	{
@@ -169,8 +181,8 @@
 			<option value="6">US-MST/MDT</option>
 			<option value="7">US-AZ</option>
 			<option value="8">US-PST/PDT</option>
-			<option value="9">CST(AWST)</option>
-			<option value="10">JST(KST)</option>
+			<option value="9">CST (AWST, PHST)</option>
+			<option value="10">JST (KST)</option>
 			<option value="11">AEST/AEDT</option>
 			<option value="12">NZST/NZDT</option>
 			<option value="13">North Korea</option>

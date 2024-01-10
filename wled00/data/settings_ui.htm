@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html>
-<head lang="en">
+<html lang="en">
+<head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=500">
-	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>UI Settings</title>
 	<script>
 	var d = document;
-	var loc = false, locip;
+	var loc = false, locip, locproto = "http:";
 	var initial_ds, initial_st, initial_su;
 	var sett = null;
 	var l = {
@@ -26,7 +25,9 @@
 			"segpwr": "Hide segment power &amp; brightness",
 			"segexp" : "Always expand first segment",
 			"css": "Enable custom CSS",
-			"hdays": "Enable custom Holidays list"
+			"hdays": "Enable custom Holidays list",
+			"fxdef": "Use effect default parameters",
+			"idsort": "Sort presets by ID"
 		},
 		"theme":{
 			"alpha": {
@@ -185,21 +186,33 @@
 			alert("Loading of configuration script failed.\nIncomplete page data!");
 		});
 	}
-	function S()
-	{
-		if (window.location.protocol == "file:") {
+	function S() {
+		let l = window.location;
+		if (l.protocol == "file:") {
 			loc = true;
 			locip = localStorage.getItem('locIp');
 			if (!locip) {
 				locip = prompt("File Mode. Please enter WLED IP!");
 				localStorage.setItem('locIp', locip);
 			}
+		} else {
+			// detect reverse proxy
+			let path = l.pathname;
+			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			if (paths.length > 2) {
+				locproto = l.protocol;
+				loc = true;
+				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+			}
 		}
-		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=3';
-		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		loadJS(getURL('/settings/s.js?p=3'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+		if (loc) d.Sf.action = getURL('/settings/ui');
+	}
+	function getURL(path) {
+		return (loc ? locproto + "//" + locip : "") + path;
 	}
 	function H() { window.open("https://kno.wled.ge/features/settings/#user-interface-settings"); }
-	function B() { window.open("/settings","_self"); }
+	function B() { window.open(getURL("/settings"),"_self"); }
 	function UI()
 	{
 		gId('idonthateyou').style.display = (gId('dm').checked) ? 'inline':'none';
@@ -249,7 +262,7 @@
 		Server description: <input type="text" name="DS" maxlength="32"><br>
 		Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
 		<div id="NoSimple" class="hide">
-			<em style="color:#fa0;">This firmware build does not include simplified UI support.<br></em>
+			<i class="warn">This firmware build does not include simplified UI support.<br></i>
 		</div>
 		<div id="Simple">Enable simplified UI: <input type="checkbox" name="SU"><br></div>
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
@@ -265,6 +278,8 @@
 		<span class="l"></span>: <input type="checkbox" id="comp_seglen" class="agi cb"><br>
 		<span class="l"></span>: <input type="checkbox" id="comp_segpwr" class="agi cb"><br>
 		<span class="l"></span>: <input type="checkbox" id="comp_segexp" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_fxdef" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_idsort" class="agi cb"><br>
 		I hate dark mode: <input type="checkbox" id="dm" onchange="UI()"><br>
 		<span id="idonthateyou" style="display:none"><i>Why would you? </i>&#x1F97A;<br></span>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>

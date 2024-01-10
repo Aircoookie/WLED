@@ -7,19 +7,17 @@
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
-  // PIN code request
-  if (subPage == 252)
+  if (subPage == SUBPAGE_PINREQ)
   {
-    correctPIN = (strlen(settingsPIN)==0 || strncmp(settingsPIN, request->arg(F("PIN")).c_str(), 4)==0);
-    lastEditTime = millis();
+    checkSettingsPIN(request->arg(F("PIN")).c_str());
     return;
   }
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D
-  if (subPage <1 || subPage >10 || !correctPIN) return;
+  if (subPage < 1 || subPage > 10 || !correctPIN) return;
 
   //WIFI SETTINGS
-  if (subPage == 1)
+  if (subPage == SUBPAGE_WIFI)
   {
     strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
 
@@ -34,7 +32,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg(F("AP")).c_str(), 65))) strlcpy(apPass, request->arg(F("AP")).c_str(), 65);
     int t = request->arg(F("AC")).toInt(); if (t > 0 && t < 14) apChannel = t;
 
+    force802_3g = request->hasArg(F("FG"));
     noWifiSleep = request->hasArg(F("WS"));
+
+    #ifndef WLED_DISABLE_ESPNOW
+    enable_espnow_remote = request->hasArg(F("RE"));
+    strlcpy(linked_remote,request->arg(F("RMAC")).c_str(), 13);
+
+    //Normalize MAC format to lowercase
+    strlcpy(linked_remote,strlwr(linked_remote), 13);
+    #endif
 
     #ifdef WLED_USE_ETHERNET
     ethernetType = request->arg(F("ETH")).toInt();
@@ -58,7 +65,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //LED SETTINGS
-  if (subPage == 2)
+  if (subPage == SUBPAGE_LEDS)
   {
     int t = 0;
 
@@ -85,7 +92,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     Bus::setCCTBlend(strip.cctBlending);
     Bus::setGlobalAWMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
-    strip.useLedsArray = request->hasArg(F("LD"));
+    useGlobalLedBuffer = request->hasArg(F("LD"));
 
     bool busesChanged = false;
     for (uint8_t s = 0; s < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; s++) {
@@ -111,7 +118,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->arg(sl).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
@@ -143,11 +149,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       } else {
         freqHz = 0;
       }
-      channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
+      channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
+      type |= request->hasArg(rf) << 7; // off refresh override
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freqHz);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freqHz, useGlobalLedBuffer);
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
@@ -166,7 +173,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     busses.updateColorOrderMap(com);
 
-    // upate other pins
+    // update other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
@@ -233,7 +240,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     gammaCorrectCol = request->hasArg(F("GC"));
     gammaCorrectVal = request->arg(F("GV")).toFloat();
     if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3)
-      calcGammaTable(gammaCorrectVal);
+      NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal);
     else {
       gammaCorrectVal = 1.0f; // no gamma correction
       gammaCorrectBri = false;
@@ -241,6 +248,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     fadeTransition = request->hasArg(F("TF"));
+    modeBlending = request->hasArg(F("EB"));
     t = request->arg(F("TD")).toInt();
     if (t >= 0) transitionDelayDefault = t;
     strip.paletteFade = request->hasArg(F("PF"));
@@ -262,7 +270,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //UI
-  if (subPage == 3)
+  if (subPage == SUBPAGE_UI)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
     syncToggleReceive = request->hasArg(F("ST"));
@@ -280,7 +288,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //SYNC
-  if (subPage == 4)
+  if (subPage == SUBPAGE_SYNC)
   {
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
@@ -341,15 +349,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     #ifdef WLED_ENABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
-    strlcpy(mqttServer, request->arg(F("MS")).c_str(), 33);
+    strlcpy(mqttServer, request->arg(F("MS")).c_str(), MQTT_MAX_SERVER_LEN+1);
     t = request->arg(F("MQPORT")).toInt();
     if (t > 0) mqttPort = t;
     strlcpy(mqttUser, request->arg(F("MQUSER")).c_str(), 41);
     if (!isAsterisksOnly(request->arg(F("MQPASS")).c_str(), 41)) strlcpy(mqttPass, request->arg(F("MQPASS")).c_str(), 65);
     strlcpy(mqttClientID, request->arg(F("MQCID")).c_str(), 41);
-    strlcpy(mqttDeviceTopic, request->arg(F("MD")).c_str(), 33);
-    strlcpy(mqttGroupTopic, request->arg(F("MG")).c_str(), 33);
+    strlcpy(mqttDeviceTopic, request->arg(F("MD")).c_str(), MQTT_MAX_TOPIC_LEN+1);
+    strlcpy(mqttGroupTopic, request->arg(F("MG")).c_str(), MQTT_MAX_TOPIC_LEN+1);
     buttonPublishMqtt = request->hasArg(F("BM"));
+    retainMqttMsg = request->hasArg(F("RT"));
     #endif
 
     #ifndef WLED_DISABLE_HUESYNC
@@ -378,7 +387,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //TIME
-  if (subPage == 5)
+  if (subPage == SUBPAGE_TIME)
   {
     ntpEnabled = request->hasArg(F("NT"));
     strlcpy(ntpServerName, request->arg(F("NS")).c_str(), 33);
@@ -388,7 +397,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     //start ntp if not already connected
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
-    ntpLastSyncTime = 0; // force new NTP query
+    ntpLastSyncTime = NTP_NEVER; // force new NTP query
 
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
@@ -452,7 +461,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //SECURITY
-  if (subPage == 6)
+  if (subPage == SUBPAGE_SEC)
   {
     if (request->hasArg(F("RS"))) //complete factory reset
     {
@@ -461,7 +470,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       clearEEPROM();
       #endif
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
-      doReboot = true;
+      doReboot = true; // may reboot immediately on dual-core system (race condition) which is desireable in this case
     }
 
     if (request->hasArg(F("PIN"))) {
@@ -483,7 +492,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (otaLock && strcmp(otaPass,request->arg(F("OP")).c_str()) == 0)
       {
         // brute force protection: do not unlock even if correct if last save was less than 3 seconds ago
-        if (millis() - lastEditTime > 3000) pwdCorrect = true;
+        if (millis() - lastEditTime > PIN_RETRY_COOLDOWN) pwdCorrect = true;
       }
       if (!otaLock && request->arg(F("OP")).length() > 0)
       {
@@ -501,7 +510,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
-  if (subPage == 7)
+  if (subPage == SUBPAGE_DMX)
   {
     int t = request->arg(F("PU")).toInt();
     if (t >= 0  && t <= 63999) e131ProxyUniverse = t;
@@ -531,33 +540,30 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #endif
 
   //USERMODS
-  if (subPage == 8)
+  if (subPage == SUBPAGE_UM)
   {
     if (!requestJSONBufferLock(5)) return;
 
     // global I2C & SPI pins
     int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : (int)request->arg(F("SDA")).toInt();
     int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : (int)request->arg(F("SCL")).toInt();
-    #ifdef ESP8266
-    // cannot change pins on ESP8266
-    if (hw_sda_pin >= 0 && hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
-    if (hw_scl_pin >= 0 && hw_scl_pin != HW_PIN_SCL) hw_scl_pin = HW_PIN_SCL;
-    #endif
-    PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
-    if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
-      i2c_sda = hw_sda_pin;
-      i2c_scl = hw_scl_pin;
-      #ifdef ESP32
-      Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
-      #endif
-      Wire.begin();
-    } else {
-      // there is no Wire.end()
-      DEBUG_PRINTLN(F("Could not allocate I2C pins."));
-      uint8_t i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
-      pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
-      i2c_sda = -1;
-      i2c_scl = -1;
+    if (i2c_sda != hw_sda_pin || i2c_scl != hw_scl_pin) {
+      // only if pins changed
+      uint8_t old_i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
+      pinManager.deallocateMultiplePins(old_i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
+
+      PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
+      if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+        i2c_sda = hw_sda_pin;
+        i2c_scl = hw_scl_pin;
+        // no bus re-initialisation as usermods do not get any notification
+        //Wire.begin(i2c_sda, i2c_scl);
+      } else {
+        // there is no Wire.end()
+        DEBUG_PRINTLN(F("Could not allocate I2C pins."));
+        i2c_sda = -1;
+        i2c_scl = -1;
+      }
     }
     int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : (int)request->arg(F("MOSI")).toInt();
     int8_t hw_miso_pin = !request->arg(F("MISO")).length() ? -1 : (int)request->arg(F("MISO")).toInt();
@@ -568,26 +574,29 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (hw_miso_pin >= 0 && hw_miso_pin != HW_PIN_MISOSPI)  hw_mosi_pin = HW_PIN_MISOSPI;
     if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
     #endif
-    PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_miso_pin, true }, { hw_sclk_pin, true } };
-    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
-      spi_mosi = hw_mosi_pin;
-      spi_miso = hw_miso_pin;
-      spi_sclk = hw_sclk_pin;
-      // no bus re-initialisation as usermods do not get any notification
-      //SPI.end();
-      #ifdef ESP32
-      //SPI.begin(spi_sclk, spi_miso, spi_mosi);
-      #else
-      //SPI.begin();
-      #endif
-    } else {
-      //SPI.end();
-      DEBUG_PRINTLN(F("Could not allocate SPI pins."));
-      uint8_t spi[3] = { static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso), static_cast<uint8_t>(spi_sclk) };
-      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
-      spi_mosi = -1;
-      spi_miso = -1;
-      spi_sclk = -1;
+    if (spi_mosi != hw_mosi_pin || spi_miso != hw_miso_pin || spi_sclk != hw_sclk_pin) {
+      // only if pins changed
+      uint8_t old_spi[3] = { static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso), static_cast<uint8_t>(spi_sclk) };
+      pinManager.deallocateMultiplePins(old_spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
+      PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_miso_pin, true }, { hw_sclk_pin, true } };
+      if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+        spi_mosi = hw_mosi_pin;
+        spi_miso = hw_miso_pin;
+        spi_sclk = hw_sclk_pin;
+        // no bus re-initialisation as usermods do not get any notification
+        //SPI.end();
+        #ifdef ESP32
+        //SPI.begin(spi_sclk, spi_miso, spi_mosi);
+        #else
+        //SPI.begin();
+        #endif
+      } else {
+        //SPI.end();
+        DEBUG_PRINTLN(F("Could not allocate SPI pins."));
+        spi_mosi = -1;
+        spi_miso = -1;
+        spi_sclk = -1;
+      }
     }
 
     JsonObject um = doc.createNestedObject("um");
@@ -644,10 +653,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         DEBUG_PRINTLN(value);
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
-        // to describe the type of parameter (text,float,int), for boolean patameters the first field contains "off"
+        // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
         // so checkboxes have one or two fields (first is always "false", existence of second depends on checkmark and may be "true")
         if (subObj[name].isNull()) {
-          // the first occurence of the field describes the parameter type (used in next loop)
+          // the first occurrence of the field describes the parameter type (used in next loop)
           if (value == "false") subObj[name] = false; // checkboxes may have only one field
           else                  subObj[name] = value;
         } else {
@@ -671,7 +680,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
   #ifndef WLED_DISABLE_2D
   //2D panels
-  if (subPage == 10)
+  if (subPage == SUBPAGE_2D)
   {
     strip.isMatrix = request->arg(F("SOMP")).toInt();
     strip.panel.clear(); // release memory if allocated
@@ -707,9 +716,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #endif
 
   lastEditTime = millis();
-  if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  // do not save if factory reset or LED settings (which are saved after LED re-init)
+  doSerializeConfig = subPage != SUBPAGE_LEDS && !(subPage == SUBPAGE_SEC && doReboot);
+  if (subPage == SUBPAGE_UM) doReboot = request->hasArg(F("RBT")); // prevent race condition on dual core system (set reboot here, after doSerializeConfig has been set)
   #ifndef WLED_DISABLE_ALEXA
-  if (subPage == 4) alexaInit();
+  if (subPage == SUBPAGE_SYNC) alexaInit();
   #endif
 }
 
@@ -788,7 +799,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     spcI = getNumVal(&req, pos);
   }
-  selseg.set(startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
+  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
   if (pos > 0) selseg.reverse = req.charAt(pos+3) != '0';
@@ -1053,6 +1064,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
+  if (fadeTransition) strip.setTransition(transitionDelay);
 
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));

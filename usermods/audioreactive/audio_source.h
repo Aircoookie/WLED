@@ -1,6 +1,5 @@
 #pragma once
-
-#include <Wire.h>
+#ifdef ARDUINO_ARCH_ESP32
 #include "wled.h"
 #include <driver/i2s.h>
 #include <driver/adc.h>
@@ -23,14 +22,14 @@
 
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
 // and https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2s.html#overview-of-all-modes
-#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(ESP8266) || defined(ESP8265)
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(ESP8266) || defined(ESP8265)
   // there are two things in these MCUs that could lead to problems with audio processing:
   // * no floating point hardware (FPU) support - FFT uses float calculations. If done in software, a strong slow-down can be expected (between 8x and 20x)
   // * single core, so FFT task might slow down other things like LED updates
   #if !defined(SOC_I2S_NUM) || (SOC_I2S_NUM < 1)
-  #error This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #error This audio reactive usermod does not support ESP32-C2 or ESP32-C3.
   #else
-  #warning This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #warning This audio reactive usermod does not support ESP32-C2 and ESP32-C3.
   #endif
 #endif
 
@@ -45,7 +44,7 @@
 // benefit: analog mic inputs will be sampled contiously -> better response times and less "glitches"
 // WARNING: this option WILL lock-up your device in case that any other analogRead() operation is performed; 
 //          for example if you want to read "analog buttons"
-//#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continously sample analog ADC microphone. WARNING will cause analogRead() lock-up
+//#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continuously sample analog ADC microphone. WARNING will cause analogRead() lock-up
 
 // data type requested from the I2S driver - currently we always use 32bit
 //#define I2S_USE_16BIT_SAMPLES   // (experimental) define this to request 16bit - more efficient but possibly less compatible
@@ -72,7 +71,7 @@
  * if you want to receive two channels, one is the actual data from microphone and another channel is suppose to receive 0, it's different data in two channels, you need to choose I2S_CHANNEL_FMT_RIGHT_LEFT in this case.
 */
 
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)) && (ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(4, 4, 3))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)) && (ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(4, 4, 4))
 // espressif bug: only_left has no sound, left and right are swapped 
 // https://github.com/espressif/esp-idf/issues/9635  I2S mic not working since 4.4 (IDFGH-8138)
 // https://github.com/espressif/esp-idf/issues/8538  I2S channel selection issue? (IDFGH-6918)
@@ -123,7 +122,7 @@ class AudioSource {
        This function needs to take care of anything that needs to be done
        before samples can be obtained from the microphone.
     */
-    virtual void initialize(int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) = 0;
+    virtual void initialize(int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) = 0;
 
     /* Deinitialize
        Release all resources and deactivate any functionality that is used
@@ -192,7 +191,8 @@ class I2SSource : public AudioSource {
       };
     }
 
-    virtual void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t mclkPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+    virtual void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t mclkPin = I2S_PIN_NO_CHANGE) {
+      DEBUGSR_PRINTLN("I2SSource:: initialize().");
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
             !pinManager.allocatePin(i2ssdPin, false, PinOwner::UM_Audioreactive)) { // #206
@@ -378,26 +378,17 @@ class I2SSource : public AudioSource {
 };
 
 /* ES7243 Microphone
-   This is an I2S microphone that requires ininitialization over
+   This is an I2S microphone that requires initialization over
    I2C before I2S data can be received
 */
 class ES7243 : public I2SSource {
   private:
-    // I2C initialization functions for ES7243
-    void _es7243I2cBegin() {
-      bool i2c_initialized = Wire.begin(pin_ES7243_SDA, pin_ES7243_SCL, 100000U);
-      if (i2c_initialized == false) {
-        DEBUGSR_PRINTLN(F("AR: ES7243 failed to initialize I2C bus driver."));
-      }
-    }
 
     void _es7243I2cWrite(uint8_t reg, uint8_t val) {
-#ifndef ES7243_ADDR
-      Wire.beginTransmission(0x13);
-      #define ES7243_ADDR 0x13   // default address
-#else
+      #ifndef ES7243_ADDR
+        #define ES7243_ADDR 0x13   // default address
+      #endif
       Wire.beginTransmission(ES7243_ADDR);
-#endif
       Wire.write((uint8_t)reg);
       Wire.write((uint8_t)val);
       uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
@@ -407,7 +398,6 @@ class ES7243 : public I2SSource {
     }
 
     void _es7243InitAdc() {
-      _es7243I2cBegin();
       _es7243I2cWrite(0x00, 0x01);
       _es7243I2cWrite(0x06, 0x00);
       _es7243I2cWrite(0x05, 0x1B);
@@ -422,28 +412,12 @@ public:
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
     };
 
-    void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
-      // check that pins are valid
-      if ((sdaPin < 0) || (sclPin < 0)) {
-        DEBUGSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
-        return;
-      }
-
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      DEBUGSR_PRINTLN("ES7243:: initialize();");
       if ((i2sckPin < 0) || (mclkPin < 0)) {
         DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
         return;
       }
-
-      // Reserve SDA and SCL pins of the I2C interface
-      PinManagerPinType es7243Pins[2] = { { sdaPin, true }, { sclPin, true } };
-      if (!pinManager.allocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C)) {
-        pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
-        DEBUGSR_PRINTF("\nAR: Failed to allocate ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
-        return;
-      }
-
-      pin_ES7243_SDA = sdaPin;
-      pin_ES7243_SCL = sclPin;
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es7243InitAdc();
@@ -451,17 +425,126 @@ public:
     }
 
     void deinitialize() {
-      // Release SDA and SCL pins of the I2C interface
-      PinManagerPinType es7243Pins[2] = { { pin_ES7243_SDA, true }, { pin_ES7243_SCL, true } };
-      pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
+      I2SSource::deinitialize();
+    }
+};
+
+/* ES8388 Sound Module
+   This is an I2S sound processing unit that requires initialization over
+   I2C before I2S data can be received. 
+*/
+class ES8388Source : public I2SSource {
+  private:
+
+    void _es8388I2cWrite(uint8_t reg, uint8_t val) {
+#ifndef ES8388_ADDR
+      Wire.beginTransmission(0x10);
+      #define ES8388_ADDR 0x10   // default address
+#else
+      Wire.beginTransmission(ES8388_ADDR);
+#endif
+      Wire.write((uint8_t)reg);
+      Wire.write((uint8_t)val);
+      uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
+      if (i2cErr != 0) {
+        DEBUGSR_PRINTF("AR: ES8388 I2C write failed with error=%d  (addr=0x%X, reg 0x%X, val 0x%X).\n", i2cErr, ES8388_ADDR, reg, val);
+      }
+    }
+
+    void _es8388InitAdc() {
+      // https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf Section 10.1
+      // http://www.everest-semi.com/pdf/ES8388%20DS.pdf Better spec sheet, more clear. 
+      // https://docs.google.com/spreadsheets/d/1CN3MvhkcPVESuxKyx1xRYqfUit5hOdsG45St9BCUm-g/edit#gid=0 generally
+      // Sets ADC to around what AudioReactive expects, and loops line-in to line-out/headphone for monitoring.
+      // Registries are decimal, settings are binary as that's how everything is listed in the docs
+      // ...which makes it easier to reference the docs.
+      //
+      _es8388I2cWrite( 8,0b00000000); // I2S to slave
+      _es8388I2cWrite( 2,0b11110011); // Power down DEM and STM
+      _es8388I2cWrite(43,0b10000000); // Set same LRCK
+      _es8388I2cWrite( 0,0b00000101); // Set chip to Play & Record Mode
+      _es8388I2cWrite(13,0b00000010); // Set MCLK/LRCK ratio to 256
+      _es8388I2cWrite( 1,0b01000000); // Power up analog and lbias
+      _es8388I2cWrite( 3,0b00000000); // Power up ADC, Analog Input, and Mic Bias
+      _es8388I2cWrite( 4,0b11111100); // Power down DAC, Turn on LOUT1 and ROUT1 and LOUT2 and ROUT2 power
+      _es8388I2cWrite( 2,0b01000000); // Power up DEM and STM and undocumented bit for "turn on line-out amp"
+
+      // #define use_es8388_mic
+
+    #ifdef use_es8388_mic
+      // The mics *and* line-in are BOTH connected to LIN2/RIN2 on the AudioKit
+      // so there's no way to completely eliminate the mics. It's also hella noisy. 
+      // Line-in works OK on the AudioKit, generally speaking, as the mics really need
+      // amplification to be noticeable in a quiet room. If you're in a very loud room, 
+      // the mics on the AudioKit WILL pick up sound even in line-in mode. 
+      // TL;DR: Don't use the AudioKit for anything, use the LyraT. 
+      //
+      // The LyraT does a reasonable job with mic input as configured below.
+
+      // Pick one of these. If you have to use the mics, use a LyraT over an AudioKit if you can:
+      _es8388I2cWrite(10,0b00000000); // Use Lin1/Rin1 for ADC input (mic on LyraT)
+      //_es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input (mic *and* line-in on AudioKit)
+      
+      _es8388I2cWrite( 9,0b10001000); // Select Analog Input PGA Gain for ADC to +24dB (L+R)
+      _es8388I2cWrite(16,0b00000000); // Set ADC digital volume attenuation to 0dB (left)
+      _es8388I2cWrite(17,0b00000000); // Set ADC digital volume attenuation to 0dB (right)
+      _es8388I2cWrite(38,0b00011011); // Mixer - route LIN1/RIN1 to output after mic gain
+
+      _es8388I2cWrite(39,0b01000000); // Mixer - route LIN to mixL, +6dB gain
+      _es8388I2cWrite(42,0b01000000); // Mixer - route RIN to mixR, +6dB gain
+      _es8388I2cWrite(46,0b00100001); // LOUT1VOL - 0b00100001 = +4.5dB
+      _es8388I2cWrite(47,0b00100001); // ROUT1VOL - 0b00100001 = +4.5dB
+      _es8388I2cWrite(48,0b00100001); // LOUT2VOL - 0b00100001 = +4.5dB
+      _es8388I2cWrite(49,0b00100001); // ROUT2VOL - 0b00100001 = +4.5dB
+
+      // Music ALC - the mics like Auto Level Control
+      // You can also use this for line-in, but it's not really needed.
+      //
+      _es8388I2cWrite(18,0b11111000); // ALC: stereo, max gain +35.5dB, min gain -12dB 
+      _es8388I2cWrite(19,0b00110000); // ALC: target -1.5dB, 0ms hold time
+      _es8388I2cWrite(20,0b10100110); // ALC: gain ramp up = 420ms/93ms, gain ramp down = check manual for calc
+      _es8388I2cWrite(21,0b00000110); // ALC: use "ALC" mode, no zero-cross, window 96 samples
+      _es8388I2cWrite(22,0b01011001); // ALC: noise gate threshold, PGA gain constant, noise gate enabled 
+    #else
+      _es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input ("line-in")
+      _es8388I2cWrite( 9,0b00000000); // Select Analog Input PGA Gain for ADC to 0dB (L+R)
+      _es8388I2cWrite(16,0b01000000); // Set ADC digital volume attenuation to -32dB (left)
+      _es8388I2cWrite(17,0b01000000); // Set ADC digital volume attenuation to -32dB (right)
+      _es8388I2cWrite(38,0b00001001); // Mixer - route LIN2/RIN2 to output
+
+      _es8388I2cWrite(39,0b01010000); // Mixer - route LIN to mixL, 0dB gain
+      _es8388I2cWrite(42,0b01010000); // Mixer - route RIN to mixR, 0dB gain
+      _es8388I2cWrite(46,0b00011011); // LOUT1VOL - 0b00011110 = +0dB, 0b00011011 = LyraT balance fix
+      _es8388I2cWrite(47,0b00011110); // ROUT1VOL - 0b00011110 = +0dB
+      _es8388I2cWrite(48,0b00011110); // LOUT2VOL - 0b00011110 = +0dB
+      _es8388I2cWrite(49,0b00011110); // ROUT2VOL - 0b00011110 = +0dB
+    #endif
+
+    }
+
+  public:
+    ES8388Source(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
+      I2SSource(sampleRate, blockSize, sampleScale) {
+      _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    };
+
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      DEBUGSR_PRINTLN("ES8388Source:: initialize();");
+      if ((i2sckPin < 0) || (mclkPin < 0)) {
+        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        return;
+      }
+
+      // First route mclk, then configure ADC over I2C, then configure I2S
+      _es8388InitAdc();
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+    }
+
+    void deinitialize() {
       I2SSource::deinitialize();
     }
 
-  private:
-    int8_t pin_ES7243_SDA;
-    int8_t pin_ES7243_SCL;
 };
-
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
 #if !defined(SOC_I2S_SUPPORTS_ADC) && !defined(SOC_I2S_SUPPORTS_ADC_DAC)
@@ -503,7 +586,8 @@ class I2SAdcSource : public I2SSource {
     /* identify Audiosource type - I2S-ADC*/
     AudioSourceType getType(void) {return(Type_I2SAdc);}
 
-    void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+    void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+      DEBUGSR_PRINTLN("I2SAdcSource:: initialize().");
       _myADCchannel = 0x0F;
       if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
          DEBUGSR_PRINTF("failed to allocate GPIO for audio analog input: %d\n", audioPin);
@@ -674,7 +758,8 @@ class SPH0654 : public I2SSource {
       I2SSource(sampleRate, blockSize, sampleScale)
     {}
 
-    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE) {
+      DEBUGSR_PRINTLN("SPH0654:: initialize();");
       I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 // these registers are only existing in "classic" ESP32
@@ -685,3 +770,4 @@ class SPH0654 : public I2SSource {
 #endif
     }
 };
+#endif

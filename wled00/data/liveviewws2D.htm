@@ -33,7 +33,14 @@
 			if (ws && ws.readyState === WebSocket.OPEN) {
 				ws.send("{'lv':true}");
 			} else {
-				ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+"://"+document.location.host+"/ws");
+				let l = window.location;
+				let pathn = l.pathname;
+				let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
+				let url = l.origin.replace("http","ws");
+				if (paths.length > 1) {
+					url +=  "/" + paths[0];
+				}
+				ws = new WebSocket(url+"/ws");
 				ws.onopen = ()=>{
 					ws.send("{'lv':true}");
 				}
@@ -47,7 +54,7 @@
 						let mW = leds[2]; // matrix width
 						let mH = leds[3]; // matrix height
 						let pPL = Math.min(c.width / mW, c.height / mH); // pixels per LED (width of circle)
-						let lOf = Math.floor((c.width - pPL*mW)/2); //left offeset (to center matrix)
+						let lOf = Math.floor((c.width - pPL*mW)/2); //left offset (to center matrix)
 						var i = 4;
 						for (y=0.5;y<mH;y++) for (x=0.5; x<mW; x++) {
 							ctx.fillStyle = `rgb(${leds[i]},${leds[i+1]},${leds[i+2]})`;

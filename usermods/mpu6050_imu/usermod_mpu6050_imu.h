@@ -85,12 +85,9 @@ class MPU6050Driver : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      */
     void setup() {
-      PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
-      // join I2C bus (I2Cdev library doesn't do this automatically)
+      if (i2c_scl<0 || i2c_sda<0) { enabled = false; return; }
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-        Wire.begin();
-        Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
+        Wire.setClock(400000U); // 400kHz I2C clock. Comment this line if having compilation difficulties
       #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
         Fastwire::setup(400, true);
       #endif
