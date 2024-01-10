@@ -38,8 +38,8 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         bool verboseResponse = false;
         if (!requestJSONBufferLock(11)) return;
 
-        DeserializationError error = deserializeJson(doc, data, len);
-        JsonObject root = doc.as<JsonObject>();
+        DeserializationError error = deserializeJson(*pDoc, data, len);
+        JsonObject root = pDoc->as<JsonObject>();
         if (error || root.isNull()) {
           releaseJSONBufferLock();
           return;
@@ -103,13 +103,13 @@ void sendDataWs(AsyncWebSocketClient * client)
 
   if (!requestJSONBufferLock(12)) return;
 
-  JsonObject state = doc.createNestedObject("state");
+  JsonObject state = pDoc->createNestedObject("state");
   serializeState(state);
-  JsonObject info  = doc.createNestedObject("info");
+  JsonObject info  = pDoc->createNestedObject("info");
   serializeInfo(info);
 
-  size_t len = measureJson(doc);
-  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
+  size_t len = measureJson(*pDoc);
+  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", pDoc->memoryUsage(), len);
 
   size_t heap1 = ESP.getFreeHeap();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
@@ -136,7 +136,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   }
 
   buffer->lock();
-  serializeJson(doc, (char *)buffer->get(), len);
+  serializeJson(*pDoc, (char *)buffer->get(), len);
 
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {

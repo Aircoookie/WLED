@@ -133,7 +133,7 @@ void appendGPIOinfo() {
   // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
-    JsonObject mods = doc.createNestedObject(F("um"));
+    JsonObject mods = pDoc->createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
     releaseJSONBufferLock();
@@ -277,6 +277,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AP"),fapass);
 
     sappend('v',SET_F("AC"),apChannel);
+    sappend('c',SET_F("FG"),force802_3g);
     sappend('c',SET_F("WS"),noWifiSleep);
 
     #ifndef WLED_DISABLE_ESPNOW
@@ -355,8 +356,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
     uint16_t sumMa = 0;
-    for (uint8_t s=0; s < busses.getNumBusses(); s++) {
-      Bus* bus = busses.getBus(s);
+    for (uint8_t s=0; s < BusManager::getNumBusses(); s++) {
+      Bus* bus = BusManager::getBus(s);
       if (bus == nullptr) continue;
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
@@ -376,7 +377,7 @@ void getSettingsJS(byte subPage, char* dest)
       uint8_t nPins = bus->getPins(pins);
       for (uint8_t i = 0; i < nPins; i++) {
         lp[1] = 48+i;
-        if (pinManager.isPinOk(pins[i]) || bus->getType()>=TYPE_NET_DDP_RGB) sappend('v',lp,pins[i]);
+        if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
@@ -388,16 +389,16 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
       uint16_t speed = bus->getFrequency();
-      if (bus->getType() > TYPE_ONOFF && bus->getType() < 48) {
+      if (IS_PWM(bus->getType())) {
         switch (speed) {
-          case WLED_PWM_FREQ/3 : speed = 0; break;
-          case WLED_PWM_FREQ/2 : speed = 1; break;
+          case WLED_PWM_FREQ/3   : speed = 0; break;
+          case WLED_PWM_FREQ/2   : speed = 1; break;
           default:
-          case WLED_PWM_FREQ   : speed = 2; break;
-          case WLED_PWM_FREQ*2 : speed = 3; break;
-          case WLED_PWM_FREQ*3 : speed = 4; break;
+          case WLED_PWM_FREQ     : speed = 2; break;
+          case WLED_PWM_FREQ*4/3 : speed = 3; break;
+          case WLED_PWM_FREQ*2   : speed = 4; break;
         }
-      } else {
+      } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
         switch (speed) {
           case  1000 : speed = 0; break;
           case  2000 : speed = 1; break;
@@ -412,22 +413,13 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',ma,bus->getMaxCurrent());
       sumMa += bus->getMaxCurrent();
     }
-    sappend('c',SET_F("PPL"),(sumMa>0 && abs(sumMa - strip.ablMilliampsMax)>2)); // approxiamte detection if per-output limiter is enabled
-    sappend('v',SET_F("MA"),strip.ablMilliampsMax);
-/*
-    sappend('v',SET_F("LA"),strip.milliampsPerLed);
-    if (strip.currentMilliamps)
-    {
-      sappends('m',SET_F("(\"pow\")[0]"),(char*)"");
-      olen -= 2; //delete ";
-      oappendi(strip.currentMilliamps);
-      oappend(SET_F("mA\";"));
-    }
-*/
+    sappend('v',SET_F("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
+    sappend('c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
+
     oappend(SET_F("resetCOM("));
     oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
-    const ColorOrderMap& com = busses.getColorOrderMap();
+    const ColorOrderMap& com = BusManager::getColorOrderMap();
     for (uint8_t s=0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;

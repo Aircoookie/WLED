@@ -15,8 +15,9 @@
  * Integrated HTTP web server page declarations
  */
 
-bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request);
-void setStaticContentCacheHeaders(AsyncWebServerResponse *response);
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request, int code, uint16_t eTagSuffix = 0);
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, uint16_t eTagSuffix = 0);
+void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip = true, uint16_t eTagSuffix = 0);
 
 // define flash strings once (saves flash memory)
 static const char s_redirecting[] PROGMEM = "Redirecting...";
@@ -113,22 +114,14 @@ void initServer()
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
 #ifdef WLED_ENABLE_WEBSOCKETS
-  #ifndef WLED_DISABLE_2D
-  server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws2D, PAGE_liveviewws2D_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+  #ifndef WLED_DISABLE_2D 
+  server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "", 200, "text/html", PAGE_liveviewws2D, PAGE_liveviewws2D_length);
   });
   #endif
 #endif
-  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveview, PAGE_liveview_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "", 200, "text/html", PAGE_liveview, PAGE_liveview_length);
   });
 
   //settings page
@@ -138,17 +131,12 @@ void initServer()
 
   // "/settings/settings.js&p=x" request also handled by serveSettings()
 
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "/style.css", 200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (handleFileRead(request, "/favicon.ico")) return;
-    request->send_P(200, "image/x-icon", favicon, 156);
+    handleStaticContent(request, "/favicon.ico", 200, "image/x-icon", favicon, favicon_length, false);
   });
 
   server.on("/skin.css", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -180,8 +168,8 @@ void initServer()
 
     if (!requestJSONBufferLock(14)) return;
 
-    DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
-    JsonObject root = doc.as<JsonObject>();
+    DeserializationError error = deserializeJson(*pDoc, (uint8_t*)(request->_tempObject));
+    JsonObject root = pDoc->as<JsonObject>();
     if (error || root.isNull()) {
       releaseJSONBufferLock();
       serveJsonError(request, 400, ERR_JSON);
@@ -236,12 +224,8 @@ void initServer()
   });
 
 #ifdef WLED_ENABLE_USERMOD_PAGE
-  server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+  server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "", 200, "text/html", PAGE_usermod, PAGE_usermod_length);
   });
 #endif
 
@@ -289,8 +273,9 @@ void initServer()
       #endif
       usermods.onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
       lastEditTime = millis(); // make sure PIN does not lock during update
+      strip.suspend();
       #ifdef ESP8266
-      strip.purgeSegments(true);  // free as much memory as you can
+      strip.resetSegments();  // free as much memory as you can
       Update.runAsync(true);
       #endif
       Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
@@ -301,6 +286,7 @@ void initServer()
         DEBUG_PRINTLN(F("Update Success"));
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
+        strip.resume();
         usermods.onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
         #if WLED_WATCHDOG_TIMEOUT > 0
         WLED::instance().enableWatchdog();
@@ -325,44 +311,29 @@ void initServer()
   });
   #endif
 
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (captivePortal(request)) return;
-    if (!showWelcomePage || request->hasArg(F("sliders"))){
-      serveIndex(request);
+    if (!showWelcomePage || request->hasArg(F("sliders"))) {
+      handleStaticContent(request, "/index.htm", 200, "text/html", PAGE_index, PAGE_index_L);
     } else {
       serveSettings(request);
     }
   });
 
-  #ifdef WLED_ENABLE_PIXART
-  server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleFileRead(request, "/pixart.htm")) return;
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_pixart, PAGE_pixart_L);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+#ifdef WLED_ENABLE_PIXART
+  server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "/pixart.htm", 200, "text/html", PAGE_pixart, PAGE_pixart_L);
   });
   #endif
 
-  #ifndef WLED_DISABLE_PXMAGIC
-  server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleFileRead(request, "/pxmagic.htm")) return;
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_pxmagic, PAGE_pxmagic_L);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+#ifndef WLED_DISABLE_PXMAGIC
+  server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "/pxmagic.htm", 200, "text/html", PAGE_pxmagic, PAGE_pxmagic_L);
   });
-  #endif
+#endif
 
-  server.on("/cpal.htm", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleFileRead(request, "/cpal.htm")) return;
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_cpal, PAGE_cpal_L);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+  server.on("/cpal.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "/cpal.htm", 200, "text/html", PAGE_cpal, PAGE_cpal_L);
   });
 
   #ifdef WLED_ENABLE_WEBSOCKETS
@@ -388,26 +359,34 @@ void initServer()
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
-    if(handleFileRead(request, request->url())) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(404, "text/html", PAGE_404, PAGE_404_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
+    handleStaticContent(request, request->url(), 404, "text/html", PAGE_404, PAGE_404_length);
   });
 }
 
-bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request) {
+void generateEtag(char *etag, uint16_t eTagSuffix) {
+  sprintf_P(etag, PSTR("%7d-%02x-%04x"), VERSION, cacheInvalidate, eTagSuffix);
+}
+
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request, int code, uint16_t eTagSuffix) {
+  // Only send 304 (Not Modified) if response code is 200 (OK)
+  if (code != 200) return false;
+
   AsyncWebHeader *header = request->getHeader("If-None-Match");
-  char etag[11];
-  sprintf_P(etag, PSTR("%7d-%02x"), VERSION, cacheInvalidate);
+  char etag[14];
+  generateEtag(etag, eTagSuffix);
   if (header && header->value() == etag) {
-    request->send(304);
+    AsyncWebServerResponse *response = request->beginResponse(304);
+    setStaticContentCacheHeaders(response, code, eTagSuffix);
+    request->send(response);
     return true;
   }
   return false;
 }
 
-void setStaticContentCacheHeaders(AsyncWebServerResponse *response) {
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, uint16_t eTagSuffix) {
+  // Only send ETag for 200 (OK) responses
+  if (code != 200) return;
+
   // https://medium.com/@codebyamir/a-web-developers-guide-to-browser-caching-cc41f3b73e7c
   #ifndef WLED_DEBUG
   // this header name is misleading, "no-cache" will not disable cache,
@@ -416,23 +395,35 @@ void setStaticContentCacheHeaders(AsyncWebServerResponse *response) {
   #else
   response->addHeader(F("Cache-Control"), "no-store,max-age=0");  // prevent caching if debug build
   #endif
-  char etag[11];
-  sprintf_P(etag, PSTR("%7d-%02x"), VERSION, cacheInvalidate);
+  char etag[14];
+  generateEtag(etag, eTagSuffix);
   response->addHeader(F("ETag"), etag);
 }
 
-void serveIndex(AsyncWebServerRequest* request)
-{
-  if (handleFileRead(request, "/index.htm")) return;
-
-  if (handleIfNoneMatchCacheHeader(request)) return;
-
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
-
-  response->addHeader(FPSTR(s_content_enc),"gzip");
-  setStaticContentCacheHeaders(response);
+/**
+ * Handels the request for a static file.
+ * If the file was found in the filesystem, it will be sent to the client.
+ * Otherwise it will be checked if the browser cached the file and if so, a 304 response will be sent.
+ * If the file was not found in the filesystem and not in the browser cache, the request will be handled as a 200 response with the content of the page.
+ *
+ * @param request The request object
+ * @param path If a file with this path exists in the filesystem, it will be sent to the client. Set to "" to skip this check.
+ * @param code The HTTP status code
+ * @param contentType The content type of the web page
+ * @param content Content of the web page
+ * @param len Length of the content
+ * @param gzip Optional. Defaults to true. If false, the gzip header will not be added.
+ * @param eTagSuffix Optional. Defaults to 0. A suffix that will be added to the ETag header. This can be used to invalidate the cache for a specific page.
+ */
+void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip, uint16_t eTagSuffix) {
+  if (path != "" && handleFileRead(request, path)) return;
+  if (handleIfNoneMatchCacheHeader(request, code, eTagSuffix)) return;
+  AsyncWebServerResponse *response = request->beginResponse_P(code, contentType, content, len);
+  if (gzip) response->addHeader(FPSTR(s_content_enc), "gzip");
+  setStaticContentCacheHeaders(response, code, eTagSuffix);
   request->send(response);
 }
+
 
 
 String msgProcessor(const String& var)
@@ -536,13 +527,11 @@ void serveSettingsJS(AsyncWebServerRequest* request)
 }
 
 
-void serveSettings(AsyncWebServerRequest* request, bool post)
-{
+void serveSettings(AsyncWebServerRequest* request, bool post) {
   byte subPage = 0, originalSubPage = 0;
   const String& url = request->url();
 
-  if (url.indexOf("sett") >= 0)
-  {
+  if (url.indexOf("sett") >= 0) {
     if      (url.indexOf(".js")  > 0) subPage = SUBPAGE_JS;
     else if (url.indexOf(".css") > 0) subPage = SUBPAGE_CSS;
     else if (url.indexOf("wifi") > 0) subPage = SUBPAGE_WIFI;
@@ -603,22 +592,25 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     }
   }
 
-  AsyncWebServerResponse *response;
-  switch (subPage)
-  {
-    case SUBPAGE_WIFI    : response = request->beginResponse_P(200, "text/html", PAGE_settings_wifi, PAGE_settings_wifi_length); break;
-    case SUBPAGE_LEDS    : response = request->beginResponse_P(200, "text/html", PAGE_settings_leds, PAGE_settings_leds_length); break;
-    case SUBPAGE_UI      : response = request->beginResponse_P(200, "text/html", PAGE_settings_ui,   PAGE_settings_ui_length);   break;
-    case SUBPAGE_SYNC    : response = request->beginResponse_P(200, "text/html", PAGE_settings_sync, PAGE_settings_sync_length); break;
-    case SUBPAGE_TIME    : response = request->beginResponse_P(200, "text/html", PAGE_settings_time, PAGE_settings_time_length); break;
-    case SUBPAGE_SEC     : response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
+  int code = 200;
+  String contentType = "text/html";
+  const uint8_t* content;
+  size_t len;
+
+  switch (subPage) {
+    case SUBPAGE_WIFI    :  content = PAGE_settings_wifi; len = PAGE_settings_wifi_length; break;
+    case SUBPAGE_LEDS    :  content = PAGE_settings_leds; len = PAGE_settings_leds_length; break;
+    case SUBPAGE_UI      :  content = PAGE_settings_ui;   len = PAGE_settings_ui_length;   break;
+    case SUBPAGE_SYNC    :  content = PAGE_settings_sync; len = PAGE_settings_sync_length; break;
+    case SUBPAGE_TIME    :  content = PAGE_settings_time; len = PAGE_settings_time_length; break;
+    case SUBPAGE_SEC     :  content = PAGE_settings_sec;  len = PAGE_settings_sec_length;  break;
 #ifdef WLED_ENABLE_DMX
-    case SUBPAGE_DMX     : response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
+    case SUBPAGE_DMX     :  content = PAGE_settings_dmx;  len = PAGE_settings_dmx_length;  break;
 #endif
-    case SUBPAGE_UM      : response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
-    case SUBPAGE_UPDATE  : response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
+    case SUBPAGE_UM      :  content = PAGE_settings_um;   len = PAGE_settings_um_length;   break;
+    case SUBPAGE_UPDATE  :  content = PAGE_update;        len = PAGE_update_length;        break;
 #ifndef WLED_DISABLE_2D
-    case SUBPAGE_2D      : response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
+    case SUBPAGE_2D      :  content = PAGE_settings_2D;   len = PAGE_settings_2D_length;   break;
 #endif
     case SUBPAGE_LOCK    : {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
@@ -626,13 +618,11 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
       return;
     }
-    case SUBPAGE_PINREQ  : response = request->beginResponse_P(401, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
-    case SUBPAGE_CSS     : response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
-    case SUBPAGE_JS      : serveSettingsJS(request); return;
-    case SUBPAGE_WELCOME : response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
-    default:  response = request->beginResponse_P(200, "text/html", PAGE_settings,      PAGE_settings_length);      break;
+    case SUBPAGE_PINREQ  :  content = PAGE_settings_pin;  len = PAGE_settings_pin_length; code = 401;               break;
+    case SUBPAGE_CSS     :  content = PAGE_settingsCss;   len = PAGE_settingsCss_length;  contentType = "text/css"; break;
+    case SUBPAGE_JS      :  serveSettingsJS(request); return;
+    case SUBPAGE_WELCOME :  content = PAGE_welcome;       len = PAGE_welcome_length;       break;
+    default:                content = PAGE_settings;      len = PAGE_settings_length;      break;
   }
-  response->addHeader(FPSTR(s_content_enc),"gzip");
-  setStaticContentCacheHeaders(response);
-  request->send(response);
+  handleStaticContent(request, "", code, contentType, content, len);
 }

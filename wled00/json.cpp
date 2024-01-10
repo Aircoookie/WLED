@@ -117,9 +117,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (stop > start && of > len -1) of = len -1;
 
   // update segment (delete if necessary)
-  // do not call seg.setUp() here, as it may cause a crash due to concurrent access if the segment is currently drawing effects
-  // WS2812FX handles queueing of the change
-  strip.setSegment(id, start, stop, grp, spc, of, startY, stopY);
+  seg.setUp(start, stop, grp, spc, of, startY, stopY); // strip needs to be suspended for this to work without issues
+
   if (newSeg) seg.refreshLightCapabilities(); // fix for #3403
 
   if (seg.reset && seg.stop == 0) {
@@ -210,7 +209,14 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   #endif
 
   byte fx = seg.mode;
-  if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
+  byte last = strip.getModeCount();
+  // partial fix for #3605
+  if (!elem["fx"].isNull() && elem["fx"].is<const char*>()) {
+    const char *tmp = elem["fx"].as<const char *>();
+    if (strlen(tmp) > 3 && (strchr(tmp,'r') || strchr(tmp,'~') != strrchr(tmp,'~'))) last = 0; // we have "X~Y(r|[w]~[-])" form
+  }
+  // end fix
+  if (getVal(elem["fx"], &fx, 0, last)) { //load effect ('r' random, '~' inc/dec, 0-255 exact value, 5~10r pick random between 5 & 10)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
     if (fx != seg.mode) seg.setMode(fx, elem[F("fxdef")]);
   }
@@ -381,6 +387,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   int it = 0;
   JsonVariant segVar = root["seg"];
+  if (!segVar.isNull()) strip.suspend();
   if (segVar.is<JsonObject>())
   {
     int id = segVar["id"] | -1;
@@ -408,6 +415,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
     if (strip.getSegmentsNum() > 3 && deleted >= strip.getSegmentsNum()/2U) strip.purgeSegments(); // batch deleting more than half segments
   }
+  strip.resume();
 
   usermods.readFromJsonState(root);
 
@@ -605,9 +613,9 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("pwr")] = strip.currentMilliamps;
+  leds[F("pwr")] = BusManager::currentMilliamps();
   leds["fps"] = strip.getFps();
-  leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
+  leds[F("maxpwr")] = BusManager::currentMilliamps()>0 ? BusManager::ablMilliampsMax() : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
@@ -1009,15 +1017,19 @@ void serializeModeNames(JsonArray arr)
   }
 }
 
-static volatile bool servingClient = false;
+
+// Global buffer locking response helper class
+class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
+  public:
+  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(pDoc, isArray) {};
+  virtual ~GlobalBufferAsyncJsonResponse() {};
+
+  // Other members are inherited
+};
+
+
 void serveJson(AsyncWebServerRequest* request)
 {
-  if (servingClient) {
-    serveJsonError(request, 503, ERR_CONCURRENCY);
-    return;
-  }
-  servingClient = true;
-
   byte subJson = 0;
   const String& url = request->url();
   if      (url.indexOf("state") > 0) subJson = JSON_PATH_STATE;
@@ -1031,31 +1043,27 @@ void serveJson(AsyncWebServerRequest* request)
   #ifdef WLED_ENABLE_JSONLIVE
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
-    servingClient = false;
     return;
   }
   #endif
   else if (url.indexOf("pal") > 0) {
     request->send_P(200, "application/json", JSON_palette_names);
-    servingClient = false;
     return;
   }
   else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
-    servingClient = false;
     return;
   }
   else if (url.length() > 6) { //not just /json
     serveJsonError(request, 501, ERR_NOT_IMPL);
-    servingClient = false;
     return;
   }
 
-  if (!requestJSONBufferLock(17)) {
+  GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
+  if (!response->owns_lock()) {
     serveJsonError(request, 503, ERR_NOBUF);
-    servingClient = false;
+    delete response;
     return;
   }
-  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
@@ -1098,8 +1106,6 @@ void serveJson(AsyncWebServerRequest* request)
   DEBUG_PRINT(F("JSON content length: ")); DEBUG_PRINTLN(len);
 
   request->send(response);
-  releaseJSONBufferLock();
-  servingClient = false;
 }
 
 #ifdef WLED_ENABLE_JSONLIVE

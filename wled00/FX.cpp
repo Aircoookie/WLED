@@ -3444,8 +3444,8 @@ static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chanc
 uint16_t mode_exploding_fireworks(void)
 {
   if (SEGLEN == 1) return mode_static();
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint16_t cols = SEGMENT.is2D() ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = SEGMENT.is2D() ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   //allocate segment data
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
@@ -3476,11 +3476,11 @@ uint16_t mode_exploding_fireworks(void)
   if (SEGENV.aux0 < 2) { //FLARE
     if (SEGENV.aux0 == 0) { //init flare
       flare->pos = 0;
-      flare->posX = strip.isMatrix ? random16(2,cols-3) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
+      flare->posX = SEGMENT.is2D() ? random16(2,cols-3) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
       uint16_t peakHeight = 75 + random8(180); //0-255
       peakHeight = (peakHeight * (rows -1)) >> 8;
       flare->vel = sqrtf(-2.0f * gravity * peakHeight);
-      flare->velX = strip.isMatrix ? (random8(9)-4)/32.f : 0; // no X velocity on 1D
+      flare->velX = SEGMENT.is2D() ? (random8(9)-4)/64.0f : 0; // no X velocity on 1D
       flare->col = 255; //brightness
       SEGENV.aux0 = 1;
     }
@@ -3488,12 +3488,14 @@ uint16_t mode_exploding_fireworks(void)
     // launch
     if (flare->vel > 12 * gravity) {
       // flare
-      if (strip.isMatrix) SEGMENT.setPixelColorXY(int(flare->posX), rows - uint16_t(flare->pos) - 1, flare->col, flare->col, flare->col);
-      else                SEGMENT.setPixelColor(int(flare->posX) ? rows - int(flare->pos) - 1 : int(flare->pos), flare->col, flare->col, flare->col);
+      if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(int(flare->posX), rows - uint16_t(flare->pos) - 1, flare->col, flare->col, flare->col);
+      else                SEGMENT.setPixelColor((flare->posX > 0.0f) ? rows - int(flare->pos) - 1 : int(flare->pos), flare->col, flare->col, flare->col);
       flare->pos  += flare->vel;
-      flare->posX += flare->velX;
       flare->pos  = constrain(flare->pos, 0, rows-1);
-      flare->posX = constrain(flare->posX, 0, cols-strip.isMatrix);
+      if (SEGMENT.is2D()) {
+        flare->posX += flare->velX;
+        flare->posX = constrain(flare->posX, 0, cols-1);
+      }
       flare->vel  += gravity;
       flare->col  -= 2;
     } else {
@@ -3516,12 +3518,12 @@ uint16_t mode_exploding_fireworks(void)
         sparks[i].posX = flare->posX;
         sparks[i].vel  = (float(random16(20001)) / 10000.0f) - 0.9f; // from -0.9 to 1.1
         sparks[i].vel *= rows<32 ? 0.5f : 1; // reduce velocity for smaller strips
-        sparks[i].velX = strip.isMatrix ? (float(random16(10001)) / 10000.0f) - 0.5f : 0; // from -0.5 to 0.5
+        sparks[i].velX = SEGMENT.is2D() ? (float(random16(20001)) / 10000.0f) - 1.0f : 0; // from -1 to 1
         sparks[i].col  = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright
         //sparks[i].col = constrain(sparks[i].col, 0, 345);
         sparks[i].colIndex = random8();
         sparks[i].vel  *= flare->pos/rows; // proportional to height
-        sparks[i].velX *= strip.isMatrix ? flare->posX/cols : 0; // proportional to width
+        sparks[i].velX *= SEGMENT.is2D() ? flare->posX/cols : 0; // proportional to width
         sparks[i].vel  *= -gravity *50;
       }
       //sparks[1].col = 345; // this will be our known spark
@@ -3534,11 +3536,11 @@ uint16_t mode_exploding_fireworks(void)
         sparks[i].pos  += sparks[i].vel;
         sparks[i].posX += sparks[i].velX;
         sparks[i].vel  += *dying_gravity;
-        sparks[i].velX += strip.isMatrix ? *dying_gravity : 0;
+        sparks[i].velX += SEGMENT.is2D() ? *dying_gravity : 0;
         if (sparks[i].col > 3) sparks[i].col -= 4;
 
         if (sparks[i].pos > 0 && sparks[i].pos < rows) {
-          if (strip.isMatrix && !(sparks[i].posX >= 0 && sparks[i].posX < cols)) continue;
+          if (SEGMENT.is2D() && !(sparks[i].posX >= 0 && sparks[i].posX < cols)) continue;
           uint16_t prog = sparks[i].col;
           uint32_t spColor = (SEGMENT.palette) ? SEGMENT.color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
           CRGB c = CRGB::Black; //HeatColor(sparks[i].col);
@@ -3550,7 +3552,7 @@ uint16_t mode_exploding_fireworks(void)
             c.g = qsub8(c.g, cooling);
             c.b = qsub8(c.b, cooling * 2);
           }
-          if (strip.isMatrix) SEGMENT.setPixelColorXY(int(sparks[i].posX), rows - int(sparks[i].pos) - 1, c.red, c.green, c.blue);
+          if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(int(sparks[i].posX), rows - int(sparks[i].pos) - 1, c.red, c.green, c.blue);
           else                SEGMENT.setPixelColor(int(sparks[i].posX) ? rows - int(sparks[i].pos) - 1 : int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
@@ -5292,7 +5294,6 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
   if (SEGENV.call == 0) {
-    memset(SEGMENT.data, 0, dataSize); // no falling spawns
     SEGMENT.fill(BLACK);
     SEGENV.step = 0;
   }

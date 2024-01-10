@@ -125,7 +125,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
-  DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], _pins[1], _iType);
+  DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n", _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], _pins[1], _iType, _milliAmpsPerLed, _milliAmpsMax);
 }
 
 //fine tune power estimation constants for your setup
@@ -150,7 +150,7 @@ uint8_t BusDigital::estimateCurrentAndLimitBri() {
   bool useWackyWS2815PowerModel = false;
   byte actualMilliampsPerLed = _milliAmpsPerLed;
 
-  if (_milliAmpsMax < MA_FOR_ESP || actualMilliampsPerLed == 0) { //0 mA per LED and too low numbers turn off calculation
+  if (_milliAmpsMax < MA_FOR_ESP/BusManager::getNumBusses() || actualMilliampsPerLed == 0) { //0 mA per LED and too low numbers turn off calculation
     return _bri;
   }
 
@@ -159,7 +159,12 @@ uint8_t BusDigital::estimateCurrentAndLimitBri() {
     actualMilliampsPerLed = 12; // from testing an actual strip
   }
 
-  size_t powerBudget = (_milliAmpsMax - MA_FOR_ESP); //100mA for ESP power
+  size_t powerBudget = (_milliAmpsMax - MA_FOR_ESP/BusManager::getNumBusses()); //80/120mA for ESP power
+  if (powerBudget > getLength()) { //each LED uses about 1mA in standby, exclude that from power budget
+    powerBudget -= getLength();
+  } else {
+    powerBudget = 0;
+  }
 
   uint32_t busPowerSum = 0;
   for (unsigned i = 0; i < getLength(); i++) {  //sum up the usage of each LED
@@ -178,29 +183,26 @@ uint8_t BusDigital::estimateCurrentAndLimitBri() {
     busPowerSum >>= 2; //same as /= 4
   }
 
-  if (powerBudget > getLength()) { //each LED uses about 1mA in standby, exclude that from power budget
-    powerBudget -= getLength();
-  } else {
-    powerBudget = 0;
-  }
-
   // powerSum has all the values of channels summed (max would be getLength()*765 as white is excluded) so convert to milliAmps
   busPowerSum = (busPowerSum * actualMilliampsPerLed) / 765;
+  _milliAmpsTotal = busPowerSum * _bri / 255;
 
   uint8_t newBri = _bri;
   if (busPowerSum * _bri / 255 > powerBudget) { //scale brightness down to stay in current limit
     float scale = (float)(powerBudget * 255) / (float)(busPowerSum * _bri);
-    uint16_t scaleI = scale * 255;
-    uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
+    if (scale >= 1.0f) return _bri;
+    _milliAmpsTotal = ceilf((float)_milliAmpsTotal * scale);
+    uint8_t scaleB = min((int)(scale * 255), 255);
     newBri = unsigned(_bri * scaleB) / 256 + 1;
   }
   return newBri;
 }
 
 void BusDigital::show() {
+  _milliAmpsTotal = 0;
   if (!_valid) return;
 
-  uint8_t newBri = estimateCurrentAndLimitBri();
+  uint8_t newBri = estimateCurrentAndLimitBri();  // will fill _milliAmpsTotal
   if (newBri < _bri) PolyBus::setBrightness(_busPtr, _iType, newBri); // limit brightness to stay within current limits
 
   if (_data) { // use _buffering this causes ~20% FPS drop
@@ -258,23 +260,8 @@ void BusDigital::setBrightness(uint8_t b) {
     if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) reinit();
   }
   #endif
-  uint8_t prevBri = _bri;
   Bus::setBrightness(b);
   PolyBus::setBrightness(_busPtr, _iType, b);
-/*
-  if (_data) return; // use _buffering this causes ~20% FPS drop
-
-  // must update/repaint every LED in the NeoPixelBus buffer to the new brightness
-  // the only case where repainting is unnecessary is when all pixels are set after the brightness change but before the next show
-  // (which we can't rely on)
-  uint16_t hwLen = _len;
-  if (_type == TYPE_WS2812_1CH_X3) hwLen = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus
-  for (unsigned i = 0; i < hwLen; i++) {
-    // use 0 as color order, actual order does not matter here as we just update the channel values as-is
-    uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0), prevBri);
-    PolyBus::setPixelColor(_busPtr, _iType, i, c, 0);
-  }
-*/
 }
 
 //If LEDs are skipped, it is possible to use the first as a status LED.
@@ -661,9 +648,12 @@ void BusManager::removeAll() {
 }
 
 void BusManager::show() {
+  _milliAmpsUsed = 0;
   for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->show();
+    _milliAmpsUsed += busses[i]->getUsedCurrent();
   }
+  if (_milliAmpsUsed) _milliAmpsUsed += MA_FOR_ESP;
 }
 
 void BusManager::setStatusPixel(uint32_t c) {
@@ -729,3 +719,11 @@ uint16_t BusManager::getTotalLength() {
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
 uint8_t Bus::_gAWM = 255;
+
+uint16_t BusDigital::_milliAmpsTotal = 0;
+
+uint8_t       BusManager::numBusses = 0;
+Bus*          BusManager::busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
+ColorOrderMap BusManager::colorOrderMap = {};
+uint16_t      BusManager::_milliAmpsUsed = 0;
+uint16_t      BusManager::_milliAmpsMax = ABL_MILLIAMPS_DEFAULT;
