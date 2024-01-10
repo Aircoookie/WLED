@@ -886,8 +886,7 @@ void Segment::refreshLightCapabilities() {
   if (start < Segment::maxWidth * Segment::maxHeight) {
     // we are withing 2D matrix (includes 1D segments)
     for (int y = startY; y < stopY; y++) for (int x = start; x < stop; x++) {
-      uint16_t index = x + Segment::maxWidth * y;
-      if (index < strip.customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+      uint16_t index = strip.getMappedPixelIndex(x + Segment::maxWidth * y); // convert logical address to physical
       if (index < 0xFFFFU) {
         if (segStartIdx > index) segStartIdx = index;
         if (segStopIdx  < index) segStopIdx  = index;
@@ -1212,13 +1211,13 @@ void WS2812FX::service() {
 }
 
 void IRAM_ATTR WS2812FX::setPixelColor(unsigned i, uint32_t col) {
-  if (i < customMappingSize) i = customMappingTable[i];
+  i = getMappedPixelIndex(i);
   if (i >= _length) return;
   BusManager::setPixelColor(i, col);
 }
 
 uint32_t IRAM_ATTR WS2812FX::getPixelColor(uint16_t i) {
-  if (i < customMappingSize) i = customMappingTable[i];
+  i = getMappedPixelIndex(i);
   if (i >= _length) return 0;
   return BusManager::getPixelColor(i);
 }
@@ -1689,6 +1688,14 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   releaseJSONBufferLock();
   return true;
+}
+
+uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) {
+  // convert logical address to physical
+  if (index < customMappingSize
+    && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
+
+  return index;
 }
 
 

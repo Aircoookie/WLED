@@ -501,6 +501,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('c',SET_F("MO"),useMainSegmentOnly);
+    sappend('c',SET_F("RLM"),realtimeRespectLedMaps);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);

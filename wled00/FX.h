@@ -817,7 +817,8 @@ class WS2812FX {  // 96 bytes
     uint16_t
       getLengthPhysical(void),
       getLengthTotal(void), // will include virtual/nonexistent pixels in matrix
-      getFps();
+      getFps(),
+      getMappedPixelIndex(uint16_t index);
 
     inline uint16_t getFrameTime(void)    { return _frametime; }        // returns amount of time a frame should take (in ms)
     inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }    // returns minimum amount of time strip.service() can be delayed (constant)
