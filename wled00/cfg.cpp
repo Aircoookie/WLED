@@ -417,7 +417,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(notifyButton, if_sync_send["btn"]);
   CJSON(notifyAlexa, if_sync_send["va"]);
   CJSON(notifyHue, if_sync_send["hue"]);
-//  CJSON(notifyMacro, if_sync_send["macro"]);
   CJSON(syncGroups, if_sync_send["grp"]);
   if (if_sync_send[F("twice")]) udpNumRetries = 1; // import setting from 0.13 and earlier
   CJSON(udpNumRetries, if_sync_send["ret"]);
@@ -886,7 +885,6 @@ void serializeConfig() {
   if_sync_send["btn"] = notifyButton;
   if_sync_send["va"] = notifyAlexa;
   if_sync_send["hue"] = notifyHue;
-//  if_sync_send["macro"] = notifyMacro;
   if_sync_send["grp"] = syncGroups;
   if_sync_send["ret"] = udpNumRetries;
 

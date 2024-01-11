@@ -53,7 +53,8 @@ void ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
   if (len == 0) {
     return;
   }
-  if (colorOrder > COL_ORDER_MAX) {
+  // upper nibble contains W swap information
+  if ((colorOrder & 0x0F) > COL_ORDER_MAX) {
     return;
   }
   _mappings[_count].start = start;
@@ -63,12 +64,13 @@ void ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
 }
 
 uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
-  if (_count == 0) return defaultColorOrder;
-  // upper nibble containd W swap information
-  uint8_t swapW = defaultColorOrder >> 4;
-  for (unsigned i = 0; i < _count; i++) {
-    if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
-      return _mappings[i].colorOrder | (swapW << 4);
+  if (_count > 0) {
+    // upper nibble contains W swap information
+    // when ColorOrderMap's upper nibble contains value >0 then swap information is used from it, otherwise global swap is used
+    for (unsigned i = 0; i < _count; i++) {
+      if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
+        return _mappings[i].colorOrder | ((_mappings[i].colorOrder >> 4) ? 0 : (defaultColorOrder & 0xF0));
+      }
     }
   }
   return defaultColorOrder;

@@ -471,7 +471,7 @@ mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">
 <hr class="sml">
 ${i+1}: Start: <input type="number" name="XS${i}" id="xs${i}" class="l starts" min="0" max="65535" value="${start}" oninput="UI();" required="">&nbsp;
 Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65535" value="${len}" required="" oninput="UI()">
-<div style="display:inline">Color Order:
+<div>Color Order:
 <select id="xo${i}" name="XO${i}">
 <option value="0">GRB</option>
 <option value="1">RGB</option>
@@ -480,9 +480,16 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 <option value="4">BGR</option>
 <option value="5">GBR</option>
 </select>
-</div><br></div>`;
+Swap: <select id="xw${i}" name="XW${i}">
+<option value="0">Use global</option>
+<option value="1">W & B</option>
+<option value="2">W & G</option>
+<option value="3">W & R</option>
+</select>
+</div></div>`;
 			gId("com_entries").insertAdjacentHTML("beforeend", b);
-			gId("xo"+i).value = co;
+			gId("xo"+i).value = co & 0x0F;
+			gId("xw"+i).value = co >> 4;
 			btnCOM(i+1);
 			UI();
 		}

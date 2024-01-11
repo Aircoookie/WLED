@@ -190,10 +190,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char xs[4] = "XS"; xs[2] = 48+s; xs[3] = 0; //start LED
       char xc[4] = "XC"; xc[2] = 48+s; xc[3] = 0; //strip length
       char xo[4] = "XO"; xo[2] = 48+s; xo[3] = 0; //color order
+      char xw[4] = "XW"; xw[2] = 48+s; xw[3] = 0; //W swap
       if (request->hasArg(xs)) {
         start = request->arg(xs).toInt();
         length = request->arg(xc).toInt();
-        colorOrder = request->arg(xo).toInt();
+        colorOrder = request->arg(xo).toInt() & 0x0F;
+        colorOrder |= (request->arg(xw).toInt() & 0x0F) << 4; // add W swap information
         com.add(start, length, colorOrder);
       }
     }
@@ -336,7 +338,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyButton = request->hasArg(F("SB"));
     notifyAlexa = request->hasArg(F("SA"));
     notifyHue = request->hasArg(F("SH"));
-    notifyMacro = request->hasArg(F("SM"));
 
     t = request->arg(F("UR")).toInt();
     if ((t>=0) && (t<30)) udpNumRetries = t;

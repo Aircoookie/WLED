@@ -424,9 +424,9 @@ void getSettingsJS(byte subPage, char* dest)
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;
       oappend(SET_F("addCOM("));
-      oappend(itoa(entry->start,nS,10));  oappend(",");
-      oappend(itoa(entry->len,nS,10));  oappend(",");
-      oappend(itoa(entry->colorOrder,nS,10));  oappend(");");
+      oappend(itoa(entry->start,nS,10)); oappend(",");
+      oappend(itoa(entry->len,nS,10)); oappend(",");
+      oappend(itoa(entry->colorOrder,nS,10)); oappend(");");
     }
 
     sappend('v',SET_F("CA"),briS);
@@ -451,7 +451,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RM"),rlyMde);
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addBtn("));
-      oappend(itoa(i,nS,10));  oappend(",");
+      oappend(itoa(i,nS,10)); oappend(",");
       oappend(itoa(btnPin[i],nS,10)); oappend(",");
       oappend(itoa(buttonType[i],nS,10));
       oappend(SET_F(");"));
@@ -466,7 +466,6 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == SUBPAGE_UI)
   {
     sappends('s',SET_F("DS"),serverDescription);
-    //sappend('c',SET_F("ST"),syncToggleReceive);
     sappend('c',SET_F("SU"),simplifiedUI);
   }
 
@@ -493,7 +492,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SD"),notifyDirect);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
-//    sappend('c',SET_F("SM"),notifyMacro);
     sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);
