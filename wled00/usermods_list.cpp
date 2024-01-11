@@ -177,6 +177,10 @@
   #include "../usermods/boblight/boblight.h"
 #endif
 
+#ifdef USERMOD_ANIMARTRIX
+#include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
+#endif
+
 #ifdef USERMOD_INTERNAL_TEMPERATURE
   #include "../usermods/Internal_Temperature_v2/usermod_internal_temperature.h"
 #endif
@@ -376,6 +380,10 @@ void registerUsermods()
 
   #ifdef USERMOD_SHT
   usermods.add(new ShtUsermod());
+  #endif
+
+  #ifdef USERMOD_ANIMARTRIX
+  usermods.add(new AnimartrixUsermod("Animartrix", false));
   #endif
 
   #ifdef USERMOD_INTERNAL_TEMPERATURE
