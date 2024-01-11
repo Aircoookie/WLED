@@ -627,7 +627,7 @@ void handleNotifications()
 
         id++; if (id >= totalLen) break;
       }
-    } else if (udpIn[0] == 3 && packetSize > 6) //drgbw
+    } else if (udpIn[0] == 3) //drgbw
     {
       uint16_t id = 0;
       for (size_t i = 2; i < packetSize -3; i += 4)
