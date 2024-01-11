@@ -25,10 +25,10 @@
     var ctx;
     function draw(start, skip, leds, fill) {
       c.width = d.documentElement.clientWidth;
-      w = c.width / (leds.length - start);
-      for (i = start; i < leds.length; i += skip) {
+      let w = (c.width * skip) / (leds.length - start);
+      for (let i = start; i < leds.length; i += skip) {
         ctx.fillStyle = fill(leds,i);
-        ctx.fillRect((i - start) * w, 0, 4 * w, c.height);
+        ctx.fillRect(Math.round((i - start) * w / skip), 0, Math.ceil(w), c.height);
       }
     }
     function update() { // via HTTP (/json/live)
@@ -51,7 +51,7 @@
         tmout = setTimeout(update, 40);
       })
       .catch((error)=>{
-        console.error("Peek HTTP error:",error);
+        //console.error("Peek HTTP error:",error);
         clearTimeout(tmout);
         tmout = setTimeout(update, 2500);
       })
