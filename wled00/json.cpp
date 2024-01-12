@@ -1024,13 +1024,20 @@ void serializeTransitionStyles(JsonArray arr) {
 #ifndef WLED_DISABLE_MODE_BLEND
   if (!modeBlending) return;
 
+  char lineBuffer[256];
   for (size_t i = 0; i < strip.getTransitionStyleCount(); i++) {
     if (!strip.isMatrix && strip.isTransitionStyle2DOnly(i)) {
       arr.add("RSVD");
       continue;
     }
-    arr.add(strip.getTransitionStyleName(i));
+
+    strncpy_P(lineBuffer, strip.getTransitionStyleName(i), sizeof(lineBuffer)/sizeof(char)-1);
+    lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
+    if (lineBuffer[0] != 0) {
+      arr.add(lineBuffer);
+    }
   }
+
 #endif
 }
 
