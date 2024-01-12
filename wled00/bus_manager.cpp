@@ -464,6 +464,41 @@ void BusNetwork::cleanup() {
 
 BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
+  mxconfig.double_buff = false; // <------------- Turn on double buffer
+  mxconfig.mx_width = 32;
+  mxconfig.mx_height = 32;
+
+  /*
+  Matrix SS Portal
+  uint8_t rgbPins[]  = {42, 41, 40, 38, 39, 37};
+uint8_t addrPins[] = {45, 36, 48, 35, 21};
+uint8_t clockPin   = 2;
+uint8_t latchPin   = 47;
+uint8_t oePin      = 14;
+*/
+#if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3) // MatrixPortal ESP32-S3
+
+  USER_PRINTLN("MatrixPanel_I2S_DMA - Martrix Poral S3 config");
+
+  mxconfig.gpio.r1 = 42;
+  mxconfig.gpio.g1 = 41;
+  mxconfig.gpio.b1 = 40;
+  mxconfig.gpio.r2 = 38;
+  mxconfig.gpio.g2 = 39;
+  mxconfig.gpio.b2 = 37; 
+
+  mxconfig.gpio.lat = 47;
+  mxconfig.gpio.oe  = 14;
+  mxconfig.gpio.clk = 2;
+
+  mxconfig.gpio.a = 45;
+  mxconfig.gpio.b = 36;
+  mxconfig.gpio.c = 48;
+  mxconfig.gpio.d = 35;
+  mxconfig.gpio.e = 21;
+
+#else
+
 /*
     #define R1_PIN  GPIO_NUM_2
     #define G1_PIN  GPIO_NUM_15
@@ -483,10 +518,7 @@ BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
     #define CLK_PIN GPIO_NUM_22
 */
 
-  HUB75_I2S_CFG mxconfig;
-  mxconfig.double_buff = false; // <------------- Turn on double buffer
-  mxconfig.mx_width = 64;
-  mxconfig.mx_height = 64;
+  USER_PRINTLN("MatrixPanel_I2S_DMA - ESP32 config");
 
   mxconfig.gpio.r1 = 2;
   mxconfig.gpio.g1 = 15;
@@ -505,6 +537,8 @@ BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   mxconfig.gpio.d = 21;
   mxconfig.gpio.e = 12;
 
+#endif
+
   this->_len = (mxconfig.mx_width * mxconfig.mx_height);
 
   USER_PRINTLN("MatrixPanel_I2S_DMA config");
@@ -514,20 +548,30 @@ BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   USER_PRINTLN("MatrixPanel_I2S_DMA created");
   // let's adjust default brightness
-  display->setBrightness8(125);    // range is 0-255, 0 - 0%, 255 - 100%
+  display->setBrightness8(25);    // range is 0-255, 0 - 0%, 255 - 100%
 
   // Allocate memory and start DMA display
   if( not display->begin() ) {
       Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
   }
 
+  USER_PRINTLN("MatrixPanel_I2S_DMA started");
 }
 
 void BusSmartMatrix::setPixelColor(uint16_t pix, uint32_t c) {
   uint8_t r = R(c);
   uint8_t g = G(c);
   uint8_t b = B(c);
-  display->drawPixelRGB888(1, 1, r, g, b);
+  uint8_t x = pix % mxconfig.mx_width;
+  uint8_t y = floor(pix / mxconfig.mx_width);
+  // display->drawPixelRGB888(x, y, r, g, b);
+  
+  display->drawPixelRGB888(1, 31, 0, 255, 0 );
+
+  display->drawPixelRGB888(31, 31, 255, 0, 0 );
+
+  display->drawPixelRGB888(1, 31, 0, 0, 255 );
+
 }
 
 void BusSmartMatrix::setBrightness(uint8_t b, bool immediate) {

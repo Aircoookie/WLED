@@ -369,6 +369,7 @@ class BusSmartMatrix : public Bus {
 
   private:
     MatrixPanel_I2S_DMA *display = nullptr;
+    HUB75_I2S_CFG mxconfig;
     
 };
 #endif
