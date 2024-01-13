@@ -460,9 +460,9 @@ void BusNetwork::cleanup() {
 
 // ***************************************************************************
 
-#ifdef WLED_ENABLE_SMARTMATRIX
+#ifdef WLED_ENABLE_HUB75MATRIX
 
-BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
   mxconfig.double_buff = false; // <------------- Turn on double buffer
   mxconfig.mx_width = 64;
@@ -562,7 +562,7 @@ uint8_t oePin      = 14;
   USER_PRINTLN("MatrixPanel_I2S_DMA started");
 }
 
-void BusSmartMatrix::setPixelColor(uint16_t pix, uint32_t c) {
+void BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
   r = R(c);
   g = G(c);
   b = B(c);
@@ -571,7 +571,7 @@ void BusSmartMatrix::setPixelColor(uint16_t pix, uint32_t c) {
   display->drawPixelRGB888(x, y, r, g, b);
 }
 
-void BusSmartMatrix::setBrightness(uint8_t b, bool immediate) {
+void BusHub75Matrix::setBrightness(uint8_t b, bool immediate) {
   this->display->setBrightness(b);
 }
 #endif
@@ -604,10 +604,10 @@ int BusManager::add(BusConfig &bc) {
   USER_PRINTF("BusManager::add(bc.type=%u)\n", bc.type);
   if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
     busses[numBusses] = new BusNetwork(bc);
-#ifdef WLED_ENABLE_SMARTMATRIX
-  } else if (bc.type == TYPE_SMARTMATRIX) {
-    USER_PRINTLN("BusManager::add - Adding BusSmartMatrix");
-    busses[numBusses] = new BusSmartMatrix(bc);
+#ifdef WLED_ENABLE_HUB75MATRIX
+  } else if (bc.type >= TYPE_HUB75MATRIX && bc.type <= (TYPE_HUB75MATRIX + 10)) {
+    USER_PRINTLN("BusManager::add - Adding BusHub75Matrix");
+    busses[numBusses] = new BusHub75Matrix(bc);
 #endif
   } else if (IS_DIGITAL(bc.type)) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);

@@ -1,7 +1,7 @@
 #ifndef BusManager_h
 #define BusManager_h
 
-#ifdef WLED_ENABLE_SMARTMATRIX
+#ifdef WLED_ENABLE_HUB75MATRIX
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #endif
 /*
@@ -41,7 +41,7 @@ struct BusConfig {
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
-    else if (type == TYPE_SMARTMATRIX) nPins = 0;
+    else if (type == TYPE_HUB75MATRIX) nPins = 0;
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
@@ -330,10 +330,10 @@ class BusNetwork : public Bus {
     byte     *_data;
 };
 
-#ifdef WLED_ENABLE_SMARTMATRIX
-class BusSmartMatrix : public Bus {
+#ifdef WLED_ENABLE_HUB75MATRIX
+class BusHub75Matrix : public Bus {
   public:
-    BusSmartMatrix(BusConfig &bc);
+    BusHub75Matrix(BusConfig &bc);
 
     bool hasRGB() { return true; }
     bool hasWhite() { return false; }
@@ -347,18 +347,13 @@ class BusSmartMatrix : public Bus {
       }
     }
 
-    bool canShow() {
-      // busy swapping still
-      return true; // return !backgroundLayer->isSwapPending();
-    }
-    
     void setBrightness(uint8_t b, bool immediate);
 
     // uint8_t getPins(uint8_t* pinArray) {} // todo
 
     void cleanup() {}
 
-    ~BusSmartMatrix() {
+    ~BusHub75Matrix() {
       cleanup();
     }
 

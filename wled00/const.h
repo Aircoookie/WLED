@@ -241,7 +241,7 @@
 #define TYPE_P9813               53
 #define TYPE_LPD6803             54
 
-#define TYPE_SMARTMATRIX         100
+#define TYPE_HUB75MATRIX         100 // 100 - 110
 
 //Network types (master broadcast) (80-95)
 #define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
