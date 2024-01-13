@@ -556,26 +556,19 @@ uint8_t oePin      = 14;
 
   // Allocate memory and start DMA display
   if( not display->begin() ) {
-      Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
+      USER_PRINTLN("****** !KABOOM! I2S memory allocation failed ***********");
   }
 
   USER_PRINTLN("MatrixPanel_I2S_DMA started");
 }
 
 void BusSmartMatrix::setPixelColor(uint16_t pix, uint32_t c) {
-  uint8_t r = R(c);
-  uint8_t g = G(c);
-  uint8_t b = B(c);
-  uint8_t x = pix % mxconfig.mx_width;
-  uint8_t y = floor(pix / mxconfig.mx_width);
+  r = R(c);
+  g = G(c);
+  b = B(c);
+  x = pix % mxconfig.mx_width;
+  y = floor(pix / mxconfig.mx_width);
   display->drawPixelRGB888(x, y, r, g, b);
-  
-  //display->drawPixelRGB888(1, 31, 0, 0, 255 );
-
-  // display->drawPixelRGB888(31, 31, 255, 255, 0 );
-
-  // display->drawPixelRGB888(1, 31, 0, 0, 255 );
-
 }
 
 void BusSmartMatrix::setBrightness(uint8_t b, bool immediate) {
