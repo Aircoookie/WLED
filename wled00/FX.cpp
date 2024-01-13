@@ -1929,22 +1929,89 @@ static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;;!;;sx=64,ix=
 
 
 uint16_t mode_palette() {
-  uint16_t counter = 0;
-  if (SEGMENT.speed != 0)
-  {
-    counter = (strip.now * ((SEGMENT.speed >> 3) +1)) & 0xFFFF;
-    counter = counter >> 8;
+#ifdef ESP8266
+  using mathType = int32_t;
+  using wideMathType = int64_t;
+  using angleType = uint16_t;
+  constexpr mathType sInt16Scale = 0x7FFF;
+  constexpr mathType maxAngle = 0xFFFF;
+  constexpr mathType staticRotationScale = 256;
+  constexpr mathType animatedRotationScale = 1;
+  constexpr int16_t (*sinFunction)(uint16_t) = &sin16;
+  constexpr int16_t (*cosFunction)(uint16_t) = &cos16;
+#else
+  using mathType = float;
+  using wideMathType = float;
+  using angleType = float;
+  constexpr mathType sInt16Scale = 1.0f;
+  constexpr mathType maxAngle = M_TWOPI / 256.0;
+  constexpr mathType staticRotationScale = 1.0f;
+  constexpr mathType animatedRotationScale = M_TWOPI / double(0xFFFF);
+  constexpr float (*sinFunction)(float) = &sin_t;
+  constexpr float (*cosFunction)(float) = &cos_t;
+#endif
+  const bool isMatrix = strip.isMatrix;
+  const int cols = SEGMENT.virtualWidth();
+  const int rows = isMatrix ? SEGMENT.virtualHeight() : strip.getSegmentsNum();
+
+  const int inputShift = SEGMENT.speed;
+  const int inputSize = SEGMENT.intensity;
+  const int inputRotation = SEGMENT.custom1;
+  const bool inputAnimateShift = SEGMENT.check1;
+  const bool inputAnimateRotation = SEGMENT.check2;
+  const bool inputAssumeSquare = SEGMENT.check3;
+
+  const int paletteOffset = (!inputAnimateShift) ? (inputShift) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
+
+  mathType sinTheta;
+  mathType cosTheta;
+  if (rows <= 1) {
+    sinTheta = 0;
+    cosTheta = sInt16Scale;
+  } else if (cols <= 1) {
+    sinTheta = sInt16Scale;
+    cosTheta = 0;
+  } else {
+    const angleType theta = (!inputAnimateRotation) ? (inputRotation * maxAngle / staticRotationScale) : (((strip.now * ((inputRotation >> 4) +1)) & 0xFFFF) * animatedRotationScale);
+    sinTheta = sinFunction(theta);
+    cosTheta = cosFunction(theta);
   }
 
-  for (int i = 0; i < SEGLEN; i++)
-  {
-    uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, PALETTE_MOVING_WRAP, 255));
+  const mathType maxX = std::max(1, cols-1);
+  const mathType maxY = std::max(1, rows-1);
+  const mathType maxXIn  =  inputAssumeSquare ? maxX : mathType(1);
+  const mathType maxYIn  =  inputAssumeSquare ? maxY : mathType(1);
+  const mathType maxXOut = !inputAssumeSquare ? maxX : mathType(1);
+  const mathType maxYOut = !inputAssumeSquare ? maxY : mathType(1);
+  const mathType centerX = sInt16Scale * maxXOut / mathType(2);
+  const mathType centerY = sInt16Scale * maxYOut / mathType(2);
+  const mathType scale   = std::abs(cosTheta) + (std::abs(sinTheta) * maxYOut / maxXOut);
+  const int yFrom = isMatrix ? 0 : strip.getCurrSegmentId();
+  const int yTo = isMatrix ? maxY : yFrom;
+  for (int y = yFrom; y <= yTo; ++y) {
+    const mathType ytSinTheta = mathType((wideMathType(sinTheta) * wideMathType(y * sInt16Scale - centerY * maxYIn))/wideMathType(maxYIn * scale));
+    for (int x = 0; x < cols; ++x) {
+      const mathType xtCosTheta = mathType((wideMathType(cosTheta) * wideMathType(x * sInt16Scale - centerX * maxXIn))/wideMathType(maxXIn * scale));
+      const mathType sourceX = xtCosTheta + ytSinTheta + centerX;
+      int colorIndex = (std::min(std::max(sourceX, mathType(0)), maxXOut * sInt16Scale) * 255) / (sInt16Scale * maxXOut);
+      if (inputSize <= 128) {
+        colorIndex = (colorIndex * inputSize) / 128;
+      } else {
+        // Linear function that maps colorIndex 128=>1, 256=>9
+        colorIndex = ((inputSize - 112) * colorIndex) / 16;
+      }
+      colorIndex += paletteOffset;
+      const uint32_t color = SEGMENT.color_wheel((uint8_t)colorIndex);
+      if (isMatrix) {
+        SEGMENT.setPixelColorXY(x, y, color);
+      } else {
+        SEGMENT.setPixelColor(x, color);
+      }
+    }
   }
-
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Cycle speed;;!;;c3=0,o2=0";
+static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Physical Square;;!;12;o1=1,o2=1";
 
 
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
