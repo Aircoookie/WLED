@@ -356,10 +356,6 @@ class BusSmartMatrix : public Bus {
 
     // uint8_t getPins(uint8_t* pinArray) {} // todo
 
-    uint16_t getLength() {
-      return _len;
-    }
-
     void cleanup() {}
 
     ~BusSmartMatrix() {
