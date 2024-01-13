@@ -465,8 +465,10 @@ void BusNetwork::cleanup() {
 BusSmartMatrix::BusSmartMatrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
   mxconfig.double_buff = false; // <------------- Turn on double buffer
-  mxconfig.mx_width = 32;
+  mxconfig.mx_width = 64;
   mxconfig.mx_height = 32;
+
+  // mxconfig.driver   = HUB75_I2S_CFG::SHIFTREG;
 
   /*
   Matrix SS Portal
@@ -546,6 +548,8 @@ uint8_t oePin      = 14;
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
 
+  // display->setLatBlanking(4);
+
   USER_PRINTLN("MatrixPanel_I2S_DMA created");
   // let's adjust default brightness
   display->setBrightness8(25);    // range is 0-255, 0 - 0%, 255 - 100%
@@ -564,13 +568,13 @@ void BusSmartMatrix::setPixelColor(uint16_t pix, uint32_t c) {
   uint8_t b = B(c);
   uint8_t x = pix % mxconfig.mx_width;
   uint8_t y = floor(pix / mxconfig.mx_width);
-  // display->drawPixelRGB888(x, y, r, g, b);
+  display->drawPixelRGB888(x, y, r, g, b);
   
-  display->drawPixelRGB888(1, 31, 0, 255, 0 );
+  //display->drawPixelRGB888(1, 31, 0, 0, 255 );
 
-  display->drawPixelRGB888(31, 31, 255, 0, 0 );
+  // display->drawPixelRGB888(31, 31, 255, 255, 0 );
 
-  display->drawPixelRGB888(1, 31, 0, 0, 255 );
+  // display->drawPixelRGB888(1, 31, 0, 0, 255 );
 
 }
 

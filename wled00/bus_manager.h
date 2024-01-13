@@ -1,8 +1,6 @@
 #ifndef BusManager_h
 #define BusManager_h
 
-#define WLED_ENABLE_SMARTMATRIX
-
 #ifdef WLED_ENABLE_SMARTMATRIX
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #endif
@@ -343,9 +341,10 @@ class BusSmartMatrix : public Bus {
     void setPixelColor(uint16_t pix, uint32_t c);
 
     void show() {
-      // Serial.println("SmartMatrix: show()");
-      display->flipDMABuffer(); // Show the back buffer, set currently output buffer to the back (i.e. no longer being sent to LED panels)
-      display->clearScreen();   // Now clear the back-buffer
+      if(mxconfig.double_buff) {
+        display->flipDMABuffer(); // Show the back buffer, set currently output buffer to the back (i.e. no longer being sent to LED panels)
+        display->clearScreen();   // Now clear the back-buffer
+      }
     }
 
     bool canShow() {
