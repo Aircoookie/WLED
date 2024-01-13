@@ -465,8 +465,20 @@ void BusNetwork::cleanup() {
 BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
   mxconfig.double_buff = false; // <------------- Turn on double buffer
-  mxconfig.mx_width = 64;
-  mxconfig.mx_height = 32;
+  switch(bc.type) {
+    case 101:
+      mxconfig.mx_width = 32;
+      mxconfig.mx_height = 32;
+      break;
+    case 102:
+      mxconfig.mx_width = 64;
+      mxconfig.mx_height = 32;
+      break;
+    case 103:
+      mxconfig.mx_width = 64;
+      mxconfig.mx_height = 64;
+      break;
+  }
 
   // mxconfig.driver   = HUB75_I2S_CFG::SHIFTREG;
 
