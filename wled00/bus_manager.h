@@ -279,10 +279,10 @@ class BusOnOff : public Bus {
     BusOnOff(BusConfig &bc);
     ~BusOnOff() { cleanup(); }
 
-    void setPixelColor(uint16_t pix, uint32_t c);
-    uint32_t getPixelColor(uint16_t pix);
-    uint8_t  getPins(uint8_t* pinArray);
-    void show();
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    uint32_t getPixelColor(uint16_t pix) override;
+    uint8_t  getPins(uint8_t* pinArray) override;
+    void show() override;
     void cleanup() { pinManager.deallocatePin(_pin, PinOwner::BusOnOff); }
 
   private:
