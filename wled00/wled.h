@@ -533,7 +533,11 @@ WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random co
 
 // transitions
 WLED_GLOBAL bool          fadeTransition          _INIT(true);    // enable crossfading brightness/color
+#ifdef ESP8266
+WLED_GLOBAL bool          modeBlending            _INIT(false);   // disable effect blending by default on ESP8266
+#else
 WLED_GLOBAL bool          modeBlending            _INIT(true);    // enable effect blending
+#endif
 WLED_GLOBAL bool          transitionActive        _INIT(false);
 WLED_GLOBAL uint16_t      transitionDelay         _INIT(750);     // global transition duration
 #ifndef WLED_DISABLE_MODE_BLEND
