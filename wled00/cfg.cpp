@@ -417,7 +417,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(notifyButton, if_sync_send["btn"]);
   CJSON(notifyAlexa, if_sync_send["va"]);
   CJSON(notifyHue, if_sync_send["hue"]);
-//  CJSON(notifyMacro, if_sync_send["macro"]);
   CJSON(syncGroups, if_sync_send["grp"]);
   if (if_sync_send[F("twice")]) udpNumRetries = 1; // import setting from 0.13 and earlier
   CJSON(udpNumRetries, if_sync_send["ret"]);
@@ -429,6 +428,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_live = interfaces["live"];
   CJSON(receiveDirect, if_live["en"]);  // UDP/Hyperion realtime
   CJSON(useMainSegmentOnly, if_live[F("mso")]);
+  CJSON(realtimeRespectLedMaps, if_live[F("rlm")]);
   CJSON(e131Port, if_live["port"]); // 5568
   if (e131Port == DDP_DEFAULT_PORT) e131Port = E131_DEFAULT_PORT; // prevent double DDP port allocation
   CJSON(e131Multicast, if_live[F("mc")]);
@@ -695,7 +695,7 @@ void serializeConfig() {
 
   JsonObject wifi = root.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
-  wifi[F("phy")] = (int)force802_3g;
+  wifi[F("phy")] = force802_3g;
 
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = root.createNestedObject("eth");
@@ -885,7 +885,6 @@ void serializeConfig() {
   if_sync_send["btn"] = notifyButton;
   if_sync_send["va"] = notifyAlexa;
   if_sync_send["hue"] = notifyHue;
-//  if_sync_send["macro"] = notifyMacro;
   if_sync_send["grp"] = syncGroups;
   if_sync_send["ret"] = udpNumRetries;
 
@@ -896,6 +895,7 @@ void serializeConfig() {
   JsonObject if_live = interfaces.createNestedObject("live");
   if_live["en"] = receiveDirect; // UDP/Hyperion realtime
   if_live[F("mso")] = useMainSegmentOnly;
+  if_live[F("rlm")] = realtimeRespectLedMaps;
   if_live["port"] = e131Port;
   if_live[F("mc")] = e131Multicast;
 

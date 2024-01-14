@@ -117,7 +117,7 @@ public:
    * setup() is called once at boot. WiFi is not yet connected at this point.
    * You can use it to initialize variables, sensors or similar.
    */
-  void setup();
+  void setup() override;
 
   /**
    * connected() is called every time the WiFi is (re)connected
@@ -128,24 +128,24 @@ public:
   /**
    * onMqttConnect() is called when MQTT connection is established
    */
-  void onMqttConnect(bool sessionPresent);
+  void onMqttConnect(bool sessionPresent) override;
 
   /**
    * loop() is called continuously. Here you can check for events, read sensors, etc.
    */
-  void loop();
+  void loop() override;
 
   /**
    * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
    * 
    * Add PIR sensor state and switch off timer duration to jsoninfo
    */
-  void addToJsonInfo(JsonObject &root);
+  void addToJsonInfo(JsonObject &root) override;
 
   /**
    * onStateChanged() is used to detect WLED state change
    */
-  void onStateChange(uint8_t mode);
+  void onStateChange(uint8_t mode) override;
 
   /**
    * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
@@ -157,17 +157,17 @@ public:
    * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
    * Values in the state object may be modified by connected clients
    */
-  void readFromJsonState(JsonObject &root);
+  void readFromJsonState(JsonObject &root) override;
 
   /**
    * provide the changeable values
    */
-  void addToConfig(JsonObject &root);
+  void addToConfig(JsonObject &root) override;
 
   /**
    * provide UI information and allow extending UI options
    */
-  void appendConfigData();
+  void appendConfigData() override;
 
   /**
    * restore the changeable values
@@ -175,13 +175,13 @@ public:
    *
    * The function should return true if configuration was successfully loaded or false if there was no configuration.
    */
-  bool readFromConfig(JsonObject &root);
+  bool readFromConfig(JsonObject &root) override;
 
   /**
    * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
    * This could be used in the future for the system to determine whether your usermod is installed.
    */
-  uint16_t getId() { return USERMOD_ID_PIRSWITCH; }
+  uint16_t getId() override { return USERMOD_ID_PIRSWITCH; }
 };
 
 // strings to reduce flash memory usage (used more than twice)

@@ -39,6 +39,11 @@ jobs:
         environment: ${{ fromJSON(needs.get_default_envs.outputs.environments) }}
     steps:
     - uses: actions/checkout@v3
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        cache: 'npm'
+    - run: npm install
     - name: Cache pip
       uses: actions/cache@v3
       with:

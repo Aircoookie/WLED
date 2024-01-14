@@ -211,16 +211,16 @@ class FourLineDisplayUsermod : public Usermod {
 
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
-    void setup();
+    void setup() override;
 
     // gets called every time WiFi is (re-)connected. Initialize own network
     // interfaces here
-    void connected();
+    void connected() override;
 
     /**
      * Da loop.
      */
-    void loop();
+    void loop() override;
 
     //function to update lastredraw
     inline void updateRedrawTime() { lastRedraw = millis(); }
@@ -287,28 +287,28 @@ class FourLineDisplayUsermod : public Usermod {
      */
     bool handleButton(uint8_t b);
 
-    void onUpdateBegin(bool init);
+    void onUpdateBegin(bool init) override;
 
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    //void addToJsonInfo(JsonObject& root);
+    //void addToJsonInfo(JsonObject& root) override;
 
     /*
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void addToJsonState(JsonObject& root);
+    //void addToJsonState(JsonObject& root) override;
 
     /*
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void readFromJsonState(JsonObject& root);
+    //void readFromJsonState(JsonObject& root) override;
 
-    void appendConfigData();
+    void appendConfigData() override;
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -324,7 +324,7 @@ class FourLineDisplayUsermod : public Usermod {
      * 
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
-    void addToConfig(JsonObject& root);
+    void addToConfig(JsonObject& root) override;
 
     /*
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
@@ -334,13 +334,13 @@ class FourLineDisplayUsermod : public Usermod {
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
-    bool readFromConfig(JsonObject& root);
+    bool readFromConfig(JsonObject& root) override;
 
     /*
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    uint16_t getId() {
+    uint16_t getId() override {
       return USERMOD_ID_FOUR_LINE_DISP;
     }
 };

@@ -785,7 +785,7 @@ input[type=range]::-moz-range-thumb {
 
 #picker {
 	margin-top: 8px !important;
-	max-width: 260px;
+	max-width: max-content;
 }
 
 /* buttons */
@@ -1565,9 +1565,6 @@ dialog {
 		width: 100%;
 		max-width: 280px;
 		font-size: 18px;
-	}
-	#picker {
-		width: 230px;
 	}
 	#putil .btn-s {
 		width: 114px;

@@ -108,7 +108,7 @@ void WLED::loop()
     handlePresets();
     yield();
 
-    if (!offMode || strip.isOffRefreshRequired())
+    if (!offMode || strip.isOffRefreshRequired() || strip.needsUpdate())
       strip.service();
     #ifdef ESP8266
     else if (!noWifiSleep)
@@ -537,6 +537,13 @@ void WLED::beginStrip()
     else if (bri == 0) bri = 128;
   } else {
     // fix for #3196
+    if (bootPreset > 0) {
+      bool oldTransition = fadeTransition;    // workaround if transitions are enabled
+      fadeTransition = false;                 // ignore transitions temporarily
+      strip.setColor(0, BLACK);               // set all segments black
+      fadeTransition = oldTransition;         // restore transitions
+      col[0] = col[1] = col[2] = col[3] = 0;  // needed for colorUpdated()
+    }
     briLast = briS; bri = 0;
     strip.fill(BLACK);
     strip.show();
@@ -857,7 +864,7 @@ void WLED::handleConnection()
       DEBUG_PRINT(F("Heap too low! "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
-      strip.purgeSegments(true); // remove all but one segments from memory
+      strip.resetSegments();
     } else if (heap < MIN_HEAP_SIZE) {
       strip.purgeSegments();
     }

@@ -143,7 +143,7 @@ class MultiRelay : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    inline uint16_t getId() { return USERMOD_ID_MULTI_RELAY; }
+    inline uint16_t getId() override { return USERMOD_ID_MULTI_RELAY; }
 
     /**
      * switch relay on/off
@@ -161,22 +161,22 @@ class MultiRelay : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup();
+    void setup() override;
 
     /**
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    inline void connected() { InitHtmlAPIHandle(); }
+    inline void connected() override { InitHtmlAPIHandle(); }
 
     /**
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
-    void loop();
+    void loop() override;
 
 #ifndef WLED_DISABLE_MQTT
-    bool onMqttMessage(char* topic, char* payload);
-    void onMqttConnect(bool sessionPresent);
+    bool onMqttMessage(char* topic, char* payload) override;
+    void onMqttConnect(bool sessionPresent) override;
 #endif
 
     /**
@@ -184,31 +184,31 @@ class MultiRelay : public Usermod {
      * will prevent button working in a default way.
      * Replicating button.cpp
      */
-    bool handleButton(uint8_t b);
+    bool handleButton(uint8_t b) override;
 
     /**
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      */
-    void addToJsonInfo(JsonObject &root);
+    void addToJsonInfo(JsonObject &root) override;
 
     /**
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject &root);
+    void addToJsonState(JsonObject &root) override;
 
     /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject &root);
+    void readFromJsonState(JsonObject &root) override;
 
     /**
      * provide the changeable values
      */
-    void addToConfig(JsonObject &root);
+    void addToConfig(JsonObject &root) override;
 
-    void appendConfigData();
+    void appendConfigData() override;
 
     /**
      * restore the changeable values
@@ -216,7 +216,7 @@ class MultiRelay : public Usermod {
      * 
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
-    bool readFromConfig(JsonObject &root);
+    bool readFromConfig(JsonObject &root) override;
 };
 
 

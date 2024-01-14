@@ -606,7 +606,7 @@ void Segment::handleRandomPalette() {
 }
 
 // segId is given when called from network callback, changes are queued if that segment is currently in its effect function
-void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y, uint8_t segId) {
+void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
   // return if neither bounds nor grouping have changed
   bool boundsUnchanged = (start == i1 && stop == i2);
   #ifndef WLED_DISABLE_2D
@@ -1037,8 +1037,7 @@ void Segment::refreshLightCapabilities() {
   if (start < Segment::maxWidth * Segment::maxHeight) {
     // we are withing 2D matrix (includes 1D segments)
     for (int y = startY; y < stopY; y++) for (int x = start; x < stop; x++) {
-      uint16_t index = x + Segment::maxWidth * y;
-      if (index < strip.customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+      uint16_t index = strip.getMappedPixelIndex(x + Segment::maxWidth * y); // convert logical address to physical
       if (index < 0xFFFFU) {
         if (segStartIdx > index) segStartIdx = index;
         if (segStopIdx  < index) segStopIdx  = index;
@@ -1287,13 +1286,15 @@ void WS2812FX::finalizeInit(void) {
 void WS2812FX::service() {
   unsigned long nowUp = millis(); // Be aware, millis() rolls over every 49 days
   now = nowUp + timebase;
-  if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
+  if (nowUp - _lastShow < MIN_SHOW_DELAY || _suspend) return;
   bool doShow = false;
 
   _isServicing = true;
   _segment_index = 0;
   Segment::handleRandomPalette(); // move it into for loop when each segment has individual random palette
   for (segment &seg : _segments) {
+    if (_suspend) return; // immediately stop processing segments if suspend requested during service()
+
     // process transition (mode changes in the middle of transition)
     seg.handleTransition();
     // reset the segment runtime data if needed
@@ -1365,7 +1366,7 @@ void WS2812FX::service() {
 
       seg.next_time = nowUp + delay;
     }
-    if (_segment_index == _queuedChangesSegId) setUpSegmentFromQueuedChanges();
+//    if (_segment_index == _queuedChangesSegId) setUpSegmentFromQueuedChanges();
     _segment_index++;
   }
   _virtualSegmentLength = 0;
@@ -1386,13 +1387,13 @@ void WS2812FX::service() {
 }
 
 void IRAM_ATTR WS2812FX::setPixelColor(unsigned i, uint32_t col) {
-  if (i < customMappingSize) i = customMappingTable[i];
+  i = getMappedPixelIndex(i);
   if (i >= _length) return;
   BusManager::setPixelColor(i, col);
 }
 
 uint32_t IRAM_ATTR WS2812FX::getPixelColor(uint16_t i) {
-  if (i < customMappingSize) i = customMappingTable[i];
+  i = getMappedPixelIndex(i);
   if (i >= _length) return 0;
   return BusManager::getPixelColor(i);
 }
@@ -1569,18 +1570,18 @@ bool WS2812FX::hasCCTBus(void) {
   return false;
 }
 
-void WS2812FX::purgeSegments(bool force) {
+void WS2812FX::purgeSegments() {
   // remove all inactive segments (from the back)
   int deleted = 0;
   if (_segments.size() <= 1) return;
   for (size_t i = _segments.size()-1; i > 0; i--)
-    if (_segments[i].stop == 0 || force) {
+    if (_segments[i].stop == 0) {
       deleted++;
       _segments.erase(_segments.begin() + i);
     }
   if (deleted) {
     _segments.shrink_to_fit();
-    /*if (_mainSegment >= _segments.size())*/ setMainSegmentId(0);
+    setMainSegmentId(0);
   }
 }
 
@@ -1595,7 +1596,7 @@ void WS2812FX::setSegment(uint8_t segId, uint16_t i1, uint16_t i2, uint8_t group
     appendSegment(Segment(0, strip.getLengthTotal()));
     segId = getSegmentsNum()-1; // segments are added at the end of list
   }
-
+/*
   if (_queuedChangesSegId == segId) _queuedChangesSegId = 255; // cancel queued change if already queued for this segment
 
   if (segId < getMaxSegments() && segId == getCurrSegmentId() && isServicing()) { // queue change to prevent concurrent access
@@ -1607,17 +1608,19 @@ void WS2812FX::setSegment(uint8_t segId, uint16_t i1, uint16_t i2, uint8_t group
     DEBUG_PRINT(F("Segment queued: ")); DEBUG_PRINTLN(segId);
     return; // queued changes are applied immediately after effect function returns
   }
-  
+*/
+  suspend();
   _segments[segId].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
+  resume();
   if (segId > 0 && segId == getSegmentsNum()-1 && i2 <= i1) _segments.pop_back(); // if last segment was deleted remove it from vector
 }
-
+/*
 void WS2812FX::setUpSegmentFromQueuedChanges() {
   if (_queuedChangesSegId >= getSegmentsNum()) return;
-  getSegment(_queuedChangesSegId).setUp(_qStart, _qStop, _qGrouping, _qSpacing, _qOffset, _qStartY, _qStopY);
+  _segments[_queuedChangesSegId].setUp(_qStart, _qStop, _qGrouping, _qSpacing, _qOffset, _qStartY, _qStopY);
   _queuedChangesSegId = 255;
 }
-
+*/
 void WS2812FX::resetSegments() {
   _segments.clear(); // destructs all Segment as part of clearing
   #ifndef WLED_DISABLE_2D
@@ -1861,6 +1864,14 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   releaseJSONBufferLock();
   return true;
+}
+
+uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) {
+  // convert logical address to physical
+  if (index < customMappingSize
+    && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
+
+  return index;
 }
 
 

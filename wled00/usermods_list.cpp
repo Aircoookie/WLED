@@ -177,6 +177,10 @@
   #include "../usermods/boblight/boblight.h"
 #endif
 
+#ifdef USERMOD_ANIMARTRIX
+#include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
+#endif
+
 #ifdef USERMOD_INTERNAL_TEMPERATURE
   #include "../usermods/Internal_Temperature_v2/usermod_internal_temperature.h"
 #endif
@@ -197,6 +201,13 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_MPU6050_IMU
+#include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
+#endif
+
+#ifdef USERMOD_MPU6050_IMU
+#include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
+#endif
 
 void registerUsermods()
 {
@@ -206,6 +217,7 @@ void registerUsermods()
    * \/ \/ \/
    */
   //usermods.add(new MyExampleUsermod());
+
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
   #endif
@@ -370,7 +382,19 @@ void registerUsermods()
   usermods.add(new ShtUsermod());
   #endif
 
+  #ifdef USERMOD_ANIMARTRIX
+  usermods.add(new AnimartrixUsermod("Animartrix", false));
+  #endif
+
   #ifdef USERMOD_INTERNAL_TEMPERATURE
   usermods.add(new InternalTemperatureUsermod());
+  #endif
+
+  #ifdef USERMOD_MPU6050_IMU
+  static MPU6050Driver mpu6050; usermods.add(&mpu6050);
+  #endif
+
+  #ifdef USERMOD_GYRO_SURGE
+  static GyroSurge gyro_surge; usermods.add(&gyro_surge);
   #endif
 }
