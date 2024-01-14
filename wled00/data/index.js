@@ -1,5 +1,5 @@
 //page js
-const jsonH = {"Content-type": "application/json; charset=UTF-8"};
+const jsonH = {"Content-Type": "application/json; charset=UTF-8"};
 var loc = false, locip, locproto = "http:";
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false/*, syncTglRecv = true*/;
 var hasWhite = false, hasRGB = false, hasCCT = false;
