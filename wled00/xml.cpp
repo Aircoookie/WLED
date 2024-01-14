@@ -377,7 +377,7 @@ void getSettingsJS(byte subPage, char* dest)
       uint8_t nPins = bus->getPins(pins);
       for (uint8_t i = 0; i < nPins; i++) {
         lp[1] = 48+i;
-        if (pinManager.isPinOk(pins[i]) || bus->getType()>=TYPE_NET_DDP_RGB) sappend('v',lp,pins[i]);
+        if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
@@ -389,16 +389,16 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
       uint16_t speed = bus->getFrequency();
-      if (bus->getType() > TYPE_ONOFF && bus->getType() < 48) {
+      if (IS_PWM(bus->getType())) {
         switch (speed) {
-          case WLED_PWM_FREQ/3 : speed = 0; break;
-          case WLED_PWM_FREQ/2 : speed = 1; break;
+          case WLED_PWM_FREQ/3   : speed = 0; break;
+          case WLED_PWM_FREQ/2   : speed = 1; break;
           default:
-          case WLED_PWM_FREQ   : speed = 2; break;
-          case WLED_PWM_FREQ*2 : speed = 3; break;
-          case WLED_PWM_FREQ*3 : speed = 4; break;
+          case WLED_PWM_FREQ     : speed = 2; break;
+          case WLED_PWM_FREQ*4/3 : speed = 3; break;
+          case WLED_PWM_FREQ*2   : speed = 4; break;
         }
-      } else {
+      } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
         switch (speed) {
           case  1000 : speed = 0; break;
           case  2000 : speed = 1; break;
@@ -424,9 +424,9 @@ void getSettingsJS(byte subPage, char* dest)
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;
       oappend(SET_F("addCOM("));
-      oappend(itoa(entry->start,nS,10));  oappend(",");
-      oappend(itoa(entry->len,nS,10));  oappend(",");
-      oappend(itoa(entry->colorOrder,nS,10));  oappend(");");
+      oappend(itoa(entry->start,nS,10)); oappend(",");
+      oappend(itoa(entry->len,nS,10)); oappend(",");
+      oappend(itoa(entry->colorOrder,nS,10)); oappend(");");
     }
 
     sappend('v',SET_F("CA"),briS);
@@ -451,7 +451,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RM"),rlyMde);
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addBtn("));
-      oappend(itoa(i,nS,10));  oappend(",");
+      oappend(itoa(i,nS,10)); oappend(",");
       oappend(itoa(btnPin[i],nS,10)); oappend(",");
       oappend(itoa(buttonType[i],nS,10));
       oappend(SET_F(");"));
@@ -466,7 +466,6 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == SUBPAGE_UI)
   {
     sappends('s',SET_F("DS"),serverDescription);
-    //sappend('c',SET_F("ST"),syncToggleReceive);
     sappend('c',SET_F("SU"),simplifiedUI);
   }
 
@@ -493,7 +492,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SD"),notifyDirect);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
-//    sappend('c',SET_F("SM"),notifyMacro);
     sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);
@@ -501,6 +499,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('c',SET_F("MO"),useMainSegmentOnly);
+    sappend('c',SET_F("RLM"),realtimeRespectLedMaps);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);

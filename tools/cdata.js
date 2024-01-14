@@ -16,42 +16,14 @@
  */
 
 const fs = require("fs");
+const path = require('path');
 const inliner = require("inliner");
 const zlib = require("zlib");
 const CleanCSS = require("clean-css");
 const MinifyHTML = require("html-minifier-terser").minify;
 const packageJson = require("../package.json");
 
-const CACHE_FILE = __dirname + "/cdataCache.json";
-const cache = loadCache();
-cache.version = 1;
-
-function loadCache() {
-  try {
-    return JSON.parse(fs.readFileSync(CACHE_FILE));
-  } catch (e) {
-    return {};
-  }
-}
-
-function saveCache(file) {
-  const stat = fs.statSync(file);
-  cache[file] = {
-    mtime: stat.mtimeMs,
-    size: stat.size,
-  };
-  fs.writeFileSync(CACHE_FILE, JSON.stringify(cache));
-}
-
-function isCached(file) {
-  // If command line argument is set, always rebuild
-  if (process.argv[2] == "--force" || process.argv[2] == "-f") {
-    return false;
-  }
-  const stat = fs.statSync(file);
-  const cached = cache[file];
-  return cached && cached.mtime == stat.mtimeMs && cached.size == stat.size;
-}
+const output = ["wled00/html_ui.h", "wled00/html_pixart.h", "wled00/html_cpal.h", "wled00/html_pxmagic.h", "wled00/html_settings.h", "wled00/html_other.h"]
 
 /**
  *
@@ -141,10 +113,6 @@ function filter(str, type) {
 }
 
 function writeHtmlGzipped(sourceFile, resultFile, page) {
-  if (isCached(sourceFile)) {
-    console.info(`Skipping ${resultFile} as it is cached`);
-    return;
-  }
   console.info("Reading " + sourceFile);
   new inliner(sourceFile, function (error, html) {
     console.info("Inlined " + html.length + " characters");
@@ -181,7 +149,6 @@ ${array}
 `;
       console.info("Writing " + resultFile);
       fs.writeFileSync(resultFile, src);
-      saveCache(sourceFile);
     });
   });
 }
@@ -232,11 +199,6 @@ ${result}
 }
 
 function writeChunks(srcDir, specs, resultFile) {
-  if (specs.every(s => isCached(srcDir + "/" + s.file))) {
-    console.info(`Skipping ${resultFile} as all files are cached`);
-    return;
-  }
-
   let src = `/*
  * More web UI HTML source arrays.
  * This file is auto generated, please don't make any changes manually.
@@ -249,7 +211,6 @@ function writeChunks(srcDir, specs, resultFile) {
     try {
       console.info("Reading " + file + " as " + s.name);
       src += specToChunk(srcDir, s);
-      saveCache(file);
     } catch (e) {
       console.warn(
         "Failed " + s.name + " from " + file,
@@ -259,6 +220,52 @@ function writeChunks(srcDir, specs, resultFile) {
   });
   console.info("Writing " + src.length + " characters into " + resultFile);
   fs.writeFileSync(resultFile, src);
+}
+
+// Check if a file is newer than a given time
+function isFileNewerThan(filePath, time) {
+  try {
+    const stats = fs.statSync(filePath);
+    return stats.mtimeMs > time;
+  } catch (e) {
+    console.error(`Failed to get stats for file ${filePath}:`, e);
+    return false;
+  }
+}
+
+// Check if any file in a folder (or its subfolders) is newer than a given time
+function isAnyFileInFolderNewerThan(folderPath, time) {
+  const files = fs.readdirSync(folderPath, { withFileTypes: true });
+  for (const file of files) {
+    const filePath = path.join(folderPath, file.name);
+    if (isFileNewerThan(filePath, time)) {
+      return true;
+    }
+    if (file.isDirectory() && isAnyFileInFolderNewerThan(filePath, time)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isAlreadyBuilt(folderPath) {
+  let lastBuildTime = Infinity;
+
+  for (const file of output) {
+    try {
+      lastBuildTime = Math.min(lastBuildTime, fs.statSync(file).mtimeMs);
+    }
+    catch (e) {
+      return false;
+    }
+  }
+
+  return !isAnyFileInFolderNewerThan(folderPath, lastBuildTime);
+}
+
+if (isAlreadyBuilt("wled00/data") && process.argv[2] !== '--force' && process.argv[2] !== '-f') {
+  console.info("Web UI is already built");
+  return;
 }
 
 writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h", 'index');
