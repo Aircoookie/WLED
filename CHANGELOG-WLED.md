@@ -1,5 +1,28 @@
 ## WLED changelog
 
+#### Build 2401141
+-   Official release of WLED 0.14.1
+-   Fix for #3566, #3665, #3672
+-   Sorting of palettes in custom palette editor (#3674 by @WoodyLetsCode)
+
+#### Build 2401060
+-   Version bump: 0.14.1-b3
+-   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
+-   Fix for #3632
+-   Custom palette editor mobile UI enhancement (#3617 by @imeszaros)
+-   changelog update
+
+#### Build 2312290
+-   Fix for #3622, #3613, #3609
+-   Various tweaks and fixes
+-   changelog update
+
+#### Build 2312230
+-   Version bump: 0.14.1-b2
+-   Fix for Pixel Magic button
+-   Fix for #2922 (option to force WiFi PHY mode to G on ESP8266)
+-   Fix for #3601, #3400 (incorrect sunrise/sunset, #3612 by @softhack007)
+
 #### Build 2312180
 -   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3515, #3522, #3533, #3508)
 -   Various other internal cleanups and optimisations
@@ -283,7 +306,7 @@
 #### Build 2203080
 
 -   Disabled auto white mode in segments with no RGB bus
--   Fixed hostname string not 0-terminated
+-   Fixed hostname string not 0-terminated 
 -   Fixed Popcorn mode not lighting first LED on pop
 
 #### Build 2203060
@@ -336,7 +359,7 @@
 
 -   Initial ESP32-C3 and ESP32-S2 support (PRs #2452, #2454, #2502)
 -   Full segment sync (PR #2427)
--   Allow overriding of color order by ranges (PR #2463)
+-   Allow overriding of color order by ranges (PR #2463) 
 -   Added white channel to Peek
 
 #### Build 2112080
@@ -833,7 +856,7 @@
 
 -   Added Preset ID quick display option (PR #1462)
 -   Fixed LEDs not turning on when using gamma correct brightness and LEDPIN 2 (default)
--   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled
+-   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled 
 
 #### Build 2012130
 
@@ -909,7 +932,7 @@
 -   Added HEX color receiving to JSON API with `"col":["RRGGBBWW"]` format
 -   Moved Kelvin color receiving in JSON API from `"col":[[val]]` to `"col":[val]` format
     _Notice:_ This is technically a breaking change. Since no release was made since the introduction and the Kelvin property was not previously documented in the wiki,
-    impact should be minimal.
+    impact should be minimal. 
 -   BTNPIN can now be disabled by setting to -1 (fixes #1237)
 
 #### Build 2011180
@@ -985,7 +1008,7 @@
 #### Build 2010020
 
 -   Fixed interaction of `T` and `NL` HTTP API commands (#1214)
--   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously
+-   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously 
 
 #### Build 2009291
 
