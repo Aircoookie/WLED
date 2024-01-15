@@ -94,3 +94,16 @@ jobs:
           *.bin
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  Test-cdata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test

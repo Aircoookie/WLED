@@ -233,6 +233,7 @@ function isAnyFileInFolderNewerThan(folderPath, time) {
   return false;
 }
 
+// Check if the web UI is already built
 function isAlreadyBuilt(folderPath) {
   let lastBuildTime = Infinity;
 
@@ -246,6 +247,11 @@ function isAlreadyBuilt(folderPath) {
   }
 
   return !isAnyFileInFolderNewerThan(folderPath, lastBuildTime);
+}
+
+// Don't run this script if we're in a test environment
+if (process.env.NODE_ENV === 'test') {
+  return;
 }
 
 if (isAlreadyBuilt("wled00/data") && process.argv[2] !== '--force' && process.argv[2] !== '-f') {
