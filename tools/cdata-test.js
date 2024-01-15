@@ -10,7 +10,7 @@ const execPromise = util.promisify(child_process.exec);
 process.env.NODE_ENV = 'test'; // Set the environment to testing
 const cdata = require('./cdata.js');
 
-describe('Caching', () => {
+describe('Functions', () => {
   const testFolderPath = path.join(__dirname, 'testFolder');
   const oldFilePath = path.join(testFolderPath, 'oldFile.txt');
   const newFilePath = path.join(testFolderPath, 'newFile.txt');
@@ -76,10 +76,22 @@ describe('Caching', () => {
 });
 
 describe('General functionality', () => {
+  const folderPath = 'wled00';
+  const dataPath = path.join(folderPath, 'data');
+
+  before(() => {
+    process.env.NODE_ENV = 'production';
+    fs.cpSync("wled00/data", "wled00Backup", {recursive: true});
+  });
+  after(() => {
+    // Restore backup
+    fs.rmSync("wled00/data", { recursive: true });
+    fs.renameSync("wled00Backup", "wled00/data");
+  });
+
   describe('Script', () => {
     it('should create html_*.h files if they are missing', async () => {
       // delete all html_*.h files
-      const folderPath = 'wled00';
       let files = await fs.promises.readdir(folderPath);
       await Promise.all(files.map(file => {
         if (file.startsWith('html_') && path.extname(file) === '.h') {
@@ -88,13 +100,75 @@ describe('General functionality', () => {
       }));
 
       // run script cdata.js and wait for it to finish
-      process.env.NODE_ENV = 'production';
       await execPromise('node tools/cdata.js');
 
       // check if html_*.h files were created
       files = await fs.promises.readdir(folderPath);
       const htmlFiles = files.filter(file => file.startsWith('html_') && path.extname(file) === '.h');
       assert(htmlFiles.length > 0, 'html_*.h files were not created');
+    });
+
+    it('should rebuild if 1 or more html_*.h files are missing', async () => {
+      // run script cdata.js and wait for it to finish
+      await execPromise('node tools/cdata.js');
+
+      // delete a random html_*.h file
+      let files = await fs.promises.readdir(folderPath);
+      let htmlFiles = files.filter(file => file.startsWith('html_') && path.extname(file) === '.h');
+      if (htmlFiles.length > 0) {
+        const randomFile = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
+        await fs.promises.unlink(path.join(folderPath, randomFile));
+      }
+
+      // run script cdata.js and wait for it to finish
+      
+      await execPromise('node tools/cdata.js');
+
+      // check if html_*.h files were created
+      files = await fs.promises.readdir(folderPath);
+      htmlFiles = files.filter(file => file.startsWith('html_') && path.extname(file) === '.h');
+      assert(htmlFiles.length > 0, 'html_*.h files were not created');
+    });
+
+    it('should not rebuild if the files are already built', async () => {
+      // delete all html_*.h files
+      let files = await fs.promises.readdir(folderPath);
+      await Promise.all(files.map(file => {
+        if (file.startsWith('html_') && path.extname(file) === '.h') {
+          return fs.promises.unlink(path.join(folderPath, file));
+        }
+      }));
+
+      // run script cdata.js and wait for it to finish
+      let startTime = Date.now();
+      await execPromise('node tools/cdata.js');
+      const firstRunTime = Date.now() - startTime;
+
+      // run script cdata.js and wait for it to finish
+      startTime = Date.now();
+      await execPromise('node tools/cdata.js');
+      const secondRunTime = Date.now() - startTime;
+
+      // check if second run was faster than the first (must be at least 2x faster)
+      assert(secondRunTime < firstRunTime / 2, 'html_*.h files were rebuilt');
+    });
+
+    it('should rebuild if a file changes', async () => {
+      // run script cdata.js and wait for it to finish
+      await execPromise('node tools/cdata.js');
+
+      // modify index.htm
+      fs.appendFileSync(path.join(dataPath, 'index.htm'), ' ');
+
+
+      // run script cdata.js and wait for it to finish
+      await execPromise('node tools/cdata.js');
+
+      // check if html_ui.h was modified
+      const stats = fs.statSync(path.join(folderPath, 'html_ui.h'));
+      const modifiedTime = stats.mtimeMs;
+      const currentTime = Date.now();
+      assert(currentTime - modifiedTime < 100, 'html_ui.h was not modified');
     });
   });
 });
