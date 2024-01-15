@@ -860,7 +860,7 @@ void serializePalettes(JsonObject root, int page)
     JsonArray curPalette = palettes.createNestedArray(String(i>=palettesCount ? 255 - i + palettesCount : i));
     switch (i) {
       case 0: //default palette
-        setPaletteColors(curPalette, PartyColors_p);
+        LC_SERIALIZE_FL_PAL(flPartyColors_gp);
         break;
       case 1: //random
           curPalette.add("r");
@@ -924,7 +924,9 @@ void serializePalettes(JsonObject root, int page)
       default:
         {
         if (i>=palettesCount) {
-          setPaletteColors(curPalette, strip.customPalettes[i - palettesCount]);
+          CRGBPalette16 pal;
+          strip.loadCustomPalette(pal, i - palettesCount, false);
+          setPaletteColors(curPalette, pal);
         } else {
           memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
           setPaletteColors(curPalette, tcp);
