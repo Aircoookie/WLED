@@ -542,7 +542,7 @@ uint8_t IRAM_ATTR Segment::currentBri(bool useCct) {
 #ifndef WLED_DISABLE_MODE_BLEND
   if (isInTransition()) {
     if (_modeBlend && progress() < 0xFFFFU) {
-      return (useCct ? _t->_cctT : (on ? _t->_briT : 0));
+      return (useCct ? _t->_cctT : _t->_briT);
     }
   }
 #else
@@ -869,14 +869,20 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
-  uint8_t _bri_t = currentBri();
-  if (_bri_t < 255) {
-    byte r = scale8(R(col), _bri_t);
-    byte g = scale8(G(col), _bri_t);
-    byte b = scale8(B(col), _bri_t);
-    byte w = scale8(W(col), _bri_t);
-    col = RGBW32(r, g, b, w);
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (!isInTransition() || _activeBuffer) {
+#endif
+    uint8_t _bri_t = currentBri();
+    if (_bri_t < 255) {
+      byte r = scale8(R(col), _bri_t);
+      byte g = scale8(G(col), _bri_t);
+      byte b = scale8(B(col), _bri_t);
+      byte w = scale8(W(col), _bri_t);
+      col = RGBW32(r, g, b, w);
+    }
+#ifndef WLED_DISABLE_MODE_BLEND
   }
+#endif
 
 #ifndef WLED_DISABLE_MODE_BLEND
   if (_activeBuffer) {
