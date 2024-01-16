@@ -25,10 +25,11 @@
     var ctx;
     function draw(start, skip, leds, fill) {
       c.width = d.documentElement.clientWidth;
-      let w = (c.width * skip) / (leds.length - start);
-      for (let i = start; i < leds.length; i += skip) {
-        ctx.fillStyle = fill(leds,i);
-        ctx.fillRect(Math.round((i - start) * w / skip), 0, Math.ceil(w), c.height);
+      var len = Math.min((leds.length - start) / skip, c.width) //limit LEDs to pixel width of canvas
+      var w = c.width / len;
+      for (i = 0; i < len; i++) {
+        ctx.fillStyle = fill(leds, (i * skip) + start);
+        ctx.fillRect(i * w, 0, w + 1, c.height); // Make each strip overlap by 1 pixel to avoid round-off errors
       }
     }
     function update() { // via HTTP (/json/live)
