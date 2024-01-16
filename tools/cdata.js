@@ -122,8 +122,6 @@ async function minify(str, type = "plain") {
     return await minifyHtml('<script>' + str + '</script>', options).replace(/<[\/]*script>/g, '');
   } else if (type == "html-minify") {
     return await minifyHtml(str, options);
-  } else if (type == "html-minify-ui") {
-    return await minifyHtml(str, options);
   }
 
   throw new Error("Unknown filter: " + type);
@@ -136,7 +134,7 @@ async function writeHtmlGzipped(sourceFile, resultFile, page) {
 
     html = adoptVersionAndRepo(html);
     console.info("Inlined " + html.length + " characters");
-    html = await minify(html, "html-minify-ui");
+    html = await minify(html, "html-minify");
     console.info("Minified to " + html.length + " characters");
     const result = zlib.gzipSync(html, { level: zlib.constants.Z_BEST_COMPRESSION });
     console.info("Compressed " + result.length + " bytes");
