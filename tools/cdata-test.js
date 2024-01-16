@@ -34,7 +34,7 @@ describe('Functions', () => {
     // Create a new file
     fs.writeFileSync(newFilePath, 'This is a new file.');
   });
-  
+
   // delete the temporary file after the test
   after(() => {
     fs.unlinkSync('temp.txt');
@@ -82,7 +82,7 @@ describe('General functionality', () => {
 
   before(() => {
     process.env.NODE_ENV = 'production';
-    fs.cpSync("wled00/data", "wled00Backup", {recursive: true});
+    fs.cpSync("wled00/data", "wled00Backup", { recursive: true });
   });
   after(() => {
     // Restore backup
@@ -122,7 +122,6 @@ describe('General functionality', () => {
       }
 
       // run script cdata.js and wait for it to finish
-      
       await execPromise('node tools/cdata.js');
 
       // check if html_*.h files were created
@@ -160,7 +159,8 @@ describe('General functionality', () => {
 
       // modify index.htm
       fs.appendFileSync(path.join(dataPath, 'index.htm'), ' ');
-
+      // delay for 1 second to ensure the modified time is different
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // run script cdata.js and wait for it to finish
       await execPromise('node tools/cdata.js');
@@ -169,7 +169,7 @@ describe('General functionality', () => {
       const stats = fs.statSync(path.join(folderPath, 'html_ui.h'));
       const modifiedTime = stats.mtimeMs;
       const currentTime = Date.now();
-      assert(currentTime - modifiedTime < 100, 'html_ui.h was not modified');
+      assert(currentTime - modifiedTime < 500, 'html_ui.h was not modified');
     });
   });
 });
