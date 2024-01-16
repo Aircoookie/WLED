@@ -34,6 +34,7 @@ describe('Functions', () => {
     // Create a new file
     fs.writeFileSync(newFilePath, 'This is a new file.');
   });
+  
   // delete the temporary file after the test
   after(() => {
     fs.unlinkSync('temp.txt');
