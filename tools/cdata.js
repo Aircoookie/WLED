@@ -104,12 +104,14 @@ function adoptVersionAndRepo(html) {
 async function minify(str, type = "plain") {
   const options = {
     collapseWhitespace: true,
-    conservativeCollapse: true,
-    maxLineLength: 80,
+    collapseBooleanAttributes: true,
+    collapseInlineTagWhitespace: true,
     minifyCSS: true,
     minifyJS: true,
-    continueOnParseError: false,
-    removeComments: true
+    removeAttributeQuotes: true,
+    removeComments: true,
+    sortAttributes: true,
+    sortClassName: true,
   };
 
   if (type == "plain") {
@@ -140,7 +142,7 @@ async function writeHtmlGzipped(sourceFile, resultFile, page) {
     console.info("Compressed " + result.length + " bytes");
     const array = hexdump(result);
     let src = singleHeader;
-    src += `const uint16_t PAGE_${page}_L = ${result.length};`;
+    src += `const uint16_t PAGE_${page}_L = ${result.length};\n`;
     src += `const uint8_t PAGE_${page}[] PROGMEM = {\n${array}\n};\n\n`;
     console.info("Writing " + resultFile);
     fs.writeFileSync(resultFile, src);
