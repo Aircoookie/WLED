@@ -83,11 +83,14 @@ describe('General functionality', () => {
   before(() => {
     process.env.NODE_ENV = 'production';
     fs.cpSync("wled00/data", "wled00Backup", { recursive: true });
+    fs.cpSync("tools/cdata.js", "cdata.bak.js");
   });
   after(() => {
     // Restore backup
     fs.rmSync("wled00/data", { recursive: true });
     fs.renameSync("wled00Backup", "wled00/data");
+    fs.rmSync("tools/cdata.js");
+    fs.renameSync("cdata.bak.js", "tools/cdata.js");
   });
 
   describe('Script', () => {
@@ -178,6 +181,25 @@ describe('General functionality', () => {
 
       // modify index.htm
       fs.appendFileSync(path.join(dataPath, 'index.js'), ' ');
+      // delay for 1 second to ensure the modified time is different
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // run script cdata.js and wait for it to finish
+      await execPromise('node tools/cdata.js');
+
+      // check if html_ui.h was modified
+      const stats = fs.statSync(path.join(folderPath, 'html_ui.h'));
+      const modifiedTime = stats.mtimeMs;
+      const currentTime = Date.now();
+      assert(currentTime - modifiedTime < 500, 'html_ui.h was not modified');
+    });
+
+    it('should rebuild if a cdata.js has been modified', async () => {
+      // run script cdata.js and wait for it to finish
+      await execPromise('node tools/cdata.js');
+
+      // modify index.htm
+      fs.appendFileSync('tools/cdata.js', ' ');
       // delay for 1 second to ensure the modified time is different
       await new Promise(resolve => setTimeout(resolve, 1000));
 

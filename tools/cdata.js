@@ -227,7 +227,7 @@ function isAlreadyBuilt(folderPath) {
     }
   }
 
-  return !isAnyFileInFolderNewerThan(folderPath, lastBuildTime);
+  return !isAnyFileInFolderNewerThan(folderPath, lastBuildTime) && !isFileNewerThan("tools/cdata.js", lastBuildTime);
 }
 
 // Don't run this script if we're in a test environment
