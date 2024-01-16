@@ -171,5 +171,24 @@ describe('General functionality', () => {
       const currentTime = Date.now();
       assert(currentTime - modifiedTime < 500, 'html_ui.h was not modified');
     });
+
+    it('should rebuild if a inlined file changes', async () => {
+      // run script cdata.js and wait for it to finish
+      await execPromise('node tools/cdata.js');
+
+      // modify index.htm
+      fs.appendFileSync(path.join(dataPath, 'index.js'), ' ');
+      // delay for 1 second to ensure the modified time is different
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // run script cdata.js and wait for it to finish
+      await execPromise('node tools/cdata.js');
+
+      // check if html_ui.h was modified
+      const stats = fs.statSync(path.join(folderPath, 'html_ui.h'));
+      const modifiedTime = stats.mtimeMs;
+      const currentTime = Date.now();
+      assert(currentTime - modifiedTime < 500, 'html_ui.h was not modified');
+    });
   });
 });
