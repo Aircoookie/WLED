@@ -1,11 +1,119 @@
 ## WLED changelog
 
+#### Build 2309120 till build 2201060
+-   WLED version 0.15.0-a0
+-   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
+-   Effect: Fireworks 1D (fix for matrix trailing strip)
+-   BREAKING: Reduced number of segments (12) on ESP8266 due to less available RAM
+-   Increased available effect data buffer (increases more if board has PSRAM)
+-   Custom palette editor mobile UI enhancement (by @imeszaros)
+-   Per port Auto Brightness Limiter (ABL)
+-   Use PSRAM for JSON buffer (double size, larger ledmaps, up to 2k)
+-   Reduced heap fragmentation by allocating ledmap array only once and not deallocating effect buffer
+-   HTTP retries on failed UI load
+-   UI Search: scroll to top (#3587 by @WoodyLetsCode)
+-   Return to inline iro.js and rangetouch.js (#3597 by @WoodyLetsCode)
+-   Better caching (#3591 by @WoodyLetsCode)
+-   Do not send 404 for missing `skin.css` (#3590 by @WoodyLetsCode)
+-   Simplified UI rework (#3511 by @WoodyLetsCode)
+-   Domoticz device ID for PIR and Temperature usermods
+-   Bugfix for UCS8904 `hasWhite()`
+-   Better search in UI (#3540 by @WoodyLetsCode)
+-   Seeding FastLED PRNG (#3552 by @TripleWhy)
+-   WIZ Smart Button support (#3547 by @micw)
+-   New button type (button switch, fix for #3537)
+-   Pixel Magic Tool update (#3483 by @ajotanc)
+-   Effect: 2D Matrix fix for gaps
+-   Bugfix #3526, #3533, #3561
+-   Spookier Halloween Eyes (#3501)
+-   Compile time options for Multi Relay usermod (#3498)
+-   Effect: Fix for Dissolve (#3502)
+-   Better reverse proxy support (nested paths)
+-   Implement global JSON API boolean toggle (i.e. instead of "var":true or "var":false -> "var":"t").
+-   Sort presets by ID
+-   Fix for #3641, #3312, #3367, #3637, #3646, #3447, #3632, #3496, #2922, #3593, #3514, #3522, #3578 (partial), #3606 (@WoodyLetsCode)
+-   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
+-   Audio palettes (Audioreactive usermod, credit @netmindz)
+-   Better UI tooltips (@ajotnac, #3464)
+-   Better effect filters (filter dropdown)
+-   UDP sync fix (for #3487)
+-   Power button override (solves #3431)
+-   Additional HTTP request throttling (ESP8266)
+-   Additional UI/UX improvements
+-   Segment class optimisations (internal)
+-   ESP-NOW sync
+-   ESP-NOW Wiz remote JSON overrides (similar to IR JSON) & bugfixes
+-   Gamma correction for custom palettes (#3399).
+-   Restore presets from browser local storage
+-   Optional effect blending
+-   Restructured UDP Sync (internal)
+    -   Remove sync receive
+    -   Sync clarification
+-   Disallow 2D effects on non-2D segments
+-   Return of 2 audio simulations
+-   Bugfix in sync #3344 (internal)
+    -   remove excessive segments
+    -   ignore inactive segments if not syncing bounds
+    -   send UDP/WS on segment change
+    -   pop_back() when removing last segment
+
+#### Build 2311160
+-   Version bump: 0.14.1-b1
+-   Bugfixes (#3526, #3502, #3496, #3484, #3487, #3445, #3466, #3296, #3382, #3312)
+-   New feature: Sort presets by ID
+-   New usermod: LDR sensor (#3490 by @JeffWDH)
+-   Effect: Twinklefox & Tinklecat metadata fix
+-   Effect: separate #HH and #MM for Scrolling Text (#3480)
+-   SSDR usermod enhancements (#3368)
+-   PWM fan usermod enhancements (#3414)
+
+#### Build 2310010, build 2310130
+-   Release of WLED version 0.14.0 "Hoshi"
+-   Bugfixes for #3400, #3403, #3405
+-   minor HTML optimizations
+-   audioreactive: bugfix for UDP sound sync (partly initialized packets)
+
+#### Build 2309240
+-   Release of WLED beta version 0.14.0-b6 "Hoshi"
+-   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
+-   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
+
+#### Build 2309100
+-   Release of WLED beta version 0.14.0-b5 "Hoshi"
+-   New standard esp32 build with audioreactive
+-   Effect blending bugfixes, and minor optimizations
+
+#### Build 2309050
+-   Effect blending (#3311) (finally effect transitions!)
+    *WARNING*: May not work well with ESP8266, with plenty of segments or usermods (low RAM condition)!!!
+-   Added receive and send sync groups to JSON API (#3317) (you can change sync groups using preset)
+-   Internal temperature usermod (#3246)
+-   MQTT server and topic length overrides (#3354) (new build flags)
+-   Animated Staircase usermod enhancement (#3348) (on/off toggle/relay control)
+-   Added local time info to Info page (#3351)
+-   New effect: Rolling Balls (a.k.a. linear bounce) (#1039)
+-   Various bug fixes and enhancements.
+
+#### Build 2308110
+-   Release of WLED beta version 0.14.0-b4 "Hoshi"
+-   Reset effect data immediately upon mode change
+
+#### Build 2308030
+-   Improved random palette handling and blending
+-   Soap bugfix
+-   Fix ESP-NOW crash with AP mode Always
+
+#### Build 2307180
+-   Bus-level global buffering (#3280)
+-   Removed per-segment LED buffer (SEGMENT.leds)
+-   various fixes and improvements (ESP variants platform 5.3.0, effect optimizations, /json/cfg pin allocation)
+
 #### Build 2307130
 -   larger `oappend()` stack buffer (3.5k) for ESP32
 -   Preset cycle bugfix (#3262)
 -   Rotary encoder ALT fix for large LED count (#3276)
 -   effect updates (2D Plasmaball), `blur()` speedup
--   On/Off toggle from nodes view (may show unknow device type on older versions) (#3291)
+-   On/Off toggle from nodes view (may show unknown device type on older versions) (#3291)
 -   various fixes and improvements (ABL, crashes when changing presets with different segments)
 
 #### Build 2306270
@@ -18,7 +126,7 @@
 
 #### Build 2306210
 -   0.14.0-b3 release
--   respect global I2C in all usermods (no local initilaisation of I2C bus)
+-   respect global I2C in all usermods (no local initialization of I2C bus)
 -   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
 
 #### Build 2306180
@@ -44,7 +152,7 @@
 
 #### Build 2306020
 -   Support for segment sets (PR #3171)
--   Reduce sound simulation modes to 2 to facilitiate segment sets
+-   Reduce sound simulation modes to 2 to facilitate segment sets
 -   Trigger button immediately on press if all configured presets are the same (PR #3226)
 -   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
 

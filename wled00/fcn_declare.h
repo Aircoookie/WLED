@@ -65,7 +65,8 @@ class NeoGammaWLEDMethod {
 #define gamma32(c) NeoGammaWLEDMethod::Correct32(c)
 #define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
 uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
-uint32_t color_add(uint32_t,uint32_t);
+uint32_t color_add(uint32_t,uint32_t, bool fast=false);
+uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
@@ -229,7 +230,7 @@ void deletePreset(byte index);
 bool getPresetName(byte index, String& name);
 
 //remote.cpp
-void handleRemote();
+void handleRemote(uint8_t *data, size_t len);
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
@@ -245,6 +246,9 @@ void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
+#ifndef WLED_DISABLE_ESPNOW
+void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast);
+#endif
 
 //network.cpp
 int getSignalQuality(int rssi);
@@ -348,6 +352,7 @@ void userLoop();
 int getNumVal(const String* req, uint16_t pos);
 void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
+bool getBoolVal(JsonVariant elem, bool dflt);
 bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 bool oappend(const char* txt); // append new c string to temp buffer efficiently
 bool oappendi(int i);          // append new number to temp buffer efficiently
@@ -364,6 +369,23 @@ void checkSettingsPIN(const char *pin);
 uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
+uint8_t get_random_wheel_index(uint8_t pos);
+
+// RAII guard class for the JSON Buffer lock
+// Modeled after std::lock_guard
+class JSONBufferGuard {
+  bool holding_lock;
+  public:
+    inline JSONBufferGuard(uint8_t module=255) : holding_lock(requestJSONBufferLock(module)) {};
+    inline ~JSONBufferGuard() { if (holding_lock) releaseJSONBufferLock(); };
+    inline JSONBufferGuard(const JSONBufferGuard&) = delete; // Noncopyable
+    inline JSONBufferGuard& operator=(const JSONBufferGuard&) = delete;
+    inline JSONBufferGuard(JSONBufferGuard&& r) : holding_lock(r.holding_lock) { r.holding_lock = false; };  // but movable
+    inline JSONBufferGuard& operator=(JSONBufferGuard&& r) { holding_lock |= r.holding_lock; r.holding_lock = false; return *this; };
+    inline bool owns_lock() const { return holding_lock; }
+    explicit inline operator bool() const { return owns_lock(); };
+    inline void release() { if (holding_lock) releaseJSONBufferLock(); holding_lock = false; }
+};
 
 #ifdef WLED_ADD_EEPROM_SUPPORT
 //wled_eeprom.cpp
@@ -404,10 +426,10 @@ bool isIp(String str);
 void createEditHandler(bool enable);
 bool captivePortal(AsyncWebServerRequest *request);
 void initServer();
-void serveIndexOrWelcome(AsyncWebServerRequest *request);
 void serveIndex(AsyncWebServerRequest* request);
 String msgProcessor(const String& var);
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
+void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error);
 String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
 void serveSettingsJS(AsyncWebServerRequest* request);

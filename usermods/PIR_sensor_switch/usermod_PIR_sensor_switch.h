@@ -50,8 +50,7 @@ private:
 
   volatile unsigned long offTimerStart = 0;     // off timer start time
   volatile bool PIRtriggered           = false; // did PIR trigger?
-  byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for stateUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
-  byte sensorPinState    = LOW;                 // current PIR sensor pin state
+  bool sensorPinState    = LOW;                 // current PIR sensor pin state
   bool initDone          = false;               // status of initialization
   unsigned long lastLoop = 0;
 
@@ -70,6 +69,7 @@ private:
 
   // Home Assistant
   bool HomeAssistantDiscovery = false;        // is HA discovery turned on
+  int16_t idx = -1; // Domoticz virtual switch idx
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
@@ -81,8 +81,8 @@ private:
   static const char _mqttOnly[];
   static const char _offOnly[];
   static const char _haDiscovery[];
-  static const char _notify[];
   static const char _override[];
+  static const char _domoticzIDX[];
 
   /**
    * check if it is daytime
@@ -94,7 +94,7 @@ private:
    * switch strip on/off
    */
   void switchStrip(bool switchOn);
-  void publishMqtt(const char* state);
+  void publishMqtt(bool switchOn);
 
   // Create an MQTT Binary Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void publishHomeAssistantAutodiscovery();
@@ -117,7 +117,7 @@ public:
    * setup() is called once at boot. WiFi is not yet connected at this point.
    * You can use it to initialize variables, sensors or similar.
    */
-  void setup();
+  void setup() override;
 
   /**
    * connected() is called every time the WiFi is (re)connected
@@ -128,24 +128,24 @@ public:
   /**
    * onMqttConnect() is called when MQTT connection is established
    */
-  void onMqttConnect(bool sessionPresent);
+  void onMqttConnect(bool sessionPresent) override;
 
   /**
    * loop() is called continuously. Here you can check for events, read sensors, etc.
    */
-  void loop();
+  void loop() override;
 
   /**
    * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
    * 
    * Add PIR sensor state and switch off timer duration to jsoninfo
    */
-  void addToJsonInfo(JsonObject &root);
+  void addToJsonInfo(JsonObject &root) override;
 
   /**
    * onStateChanged() is used to detect WLED state change
    */
-  void onStateChange(uint8_t mode);
+  void onStateChange(uint8_t mode) override;
 
   /**
    * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
@@ -157,17 +157,17 @@ public:
    * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
    * Values in the state object may be modified by connected clients
    */
-  void readFromJsonState(JsonObject &root);
+  void readFromJsonState(JsonObject &root) override;
 
   /**
    * provide the changeable values
    */
-  void addToConfig(JsonObject &root);
+  void addToConfig(JsonObject &root) override;
 
   /**
    * provide UI information and allow extending UI options
    */
-  void appendConfigData();
+  void appendConfigData() override;
 
   /**
    * restore the changeable values
@@ -175,13 +175,13 @@ public:
    *
    * The function should return true if configuration was successfully loaded or false if there was no configuration.
    */
-  bool readFromConfig(JsonObject &root);
+  bool readFromConfig(JsonObject &root) override;
 
   /**
    * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
    * This could be used in the future for the system to determine whether your usermod is installed.
    */
-  uint16_t getId() { return USERMOD_ID_PIRSWITCH; }
+  uint16_t getId() override { return USERMOD_ID_PIRSWITCH; }
 };
 
 // strings to reduce flash memory usage (used more than twice)
@@ -194,8 +194,8 @@ const char PIRsensorSwitch::_nightTime[]      PROGMEM = "nighttime-only";
 const char PIRsensorSwitch::_mqttOnly[]       PROGMEM = "mqtt-only";
 const char PIRsensorSwitch::_offOnly[]        PROGMEM = "off-only";
 const char PIRsensorSwitch::_haDiscovery[]    PROGMEM = "HA-discovery";
-const char PIRsensorSwitch::_notify[]         PROGMEM = "notifications";
 const char PIRsensorSwitch::_override[]       PROGMEM = "override";
+const char PIRsensorSwitch::_domoticzIDX[]    PROGMEM = "domoticz-idx";
 
 bool PIRsensorSwitch::isDayTime() {
   updateLocalTime();
@@ -235,24 +235,24 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
         prevPlaylist = 0;
         prevPreset   = 255;
       }
-      applyPreset(m_onPreset, NotifyUpdateMode);
+      applyPreset(m_onPreset, CALL_MODE_BUTTON_PRESET);
       return;
     }
     // preset not assigned
     if (bri == 0) {
       bri = briLast;
-      stateUpdated(NotifyUpdateMode);
+      stateUpdated(CALL_MODE_BUTTON);
     }
   } else {
     if (m_offPreset) {
-      applyPreset(m_offPreset, NotifyUpdateMode);
+      applyPreset(m_offPreset, CALL_MODE_BUTTON_PRESET);
       return;
     } else if (prevPlaylist) {
-      if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPlaylist, NotifyUpdateMode);
+      if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPlaylist, CALL_MODE_BUTTON_PRESET);
       prevPlaylist = 0;
       return;
     } else if (prevPreset) {
-      if (prevPreset<255) { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPreset, NotifyUpdateMode); }
+      if (prevPreset<255) { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPreset, CALL_MODE_BUTTON_PRESET); }
       else                { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyTemporaryPreset(); }
       prevPreset = 0;
       return;
@@ -261,19 +261,29 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
     if (bri != 0) {
       briLast = bri;
       bri = 0;
-      stateUpdated(NotifyUpdateMode);
+      stateUpdated(CALL_MODE_BUTTON);
     }
   }
 }
 
-void PIRsensorSwitch::publishMqtt(const char* state)
+void PIRsensorSwitch::publishMqtt(bool switchOn)
 {
 #ifndef WLED_DISABLE_MQTT
   //Check if MQTT Connected, otherwise it will crash the 8266
   if (WLED_MQTT_CONNECTED) {
-    char buf[64];
+    char buf[128];
     sprintf_P(buf, PSTR("%s/motion"), mqttDeviceTopic);   //max length: 33 + 7 = 40
-    mqtt->publish(buf, 0, false, state);
+    mqtt->publish(buf, 0, false, switchOn?"on":"off");
+    // Domoticz formatted message
+    if (idx > 0) {
+      StaticJsonDocument <128> msg;
+      msg[F("idx")]       = idx;
+      msg[F("RSSI")]      = WiFi.RSSI();
+      msg[F("command")]   = F("switchlight");
+      msg[F("switchcmd")] = switchOn ? F("On") : F("Off");
+      serializeJson(msg, buf, 128);
+      mqtt->publish("domoticz/in", 0, false, buf);
+    }
   }
 #endif
 }
@@ -322,13 +332,11 @@ bool PIRsensorSwitch::updatePIRsensorState()
     if (sensorPinState == HIGH) {
       offTimerStart = 0;
       if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
-      else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      publishMqtt("on");
     } else {
       // start switch off timer
       offTimerStart = millis();
-      if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
     }
+    publishMqtt(sensorPinState == HIGH);
     return true;
   }
   return false;
@@ -338,11 +346,7 @@ bool PIRsensorSwitch::handleOffTimer()
 {
   if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay) {
     offTimerStart = 0;
-    if (enabled == true) {
-      if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
-      else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
-      publishMqtt("off");
-    }
+    if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
     return true;
   }
   return false;
@@ -482,14 +486,13 @@ void PIRsensorSwitch::addToConfig(JsonObject &root)
   top[FPSTR(_offOnly)]        = m_offOnly;
   top[FPSTR(_override)]       = m_override;
   top[FPSTR(_haDiscovery)]    = HomeAssistantDiscovery;
-  top[FPSTR(_notify)]         = (NotifyUpdateMode != CALL_MODE_NO_NOTIFY);
+  top[FPSTR(_domoticzIDX)]    = idx;
   DEBUG_PRINTLN(F("PIR config saved."));
 }
 
 void PIRsensorSwitch::appendConfigData()
 {
   oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
-  oappend(SET_F("addInfo('PIRsensorSwitch:notifications',1,'Periodic WS updates');"));  // 0 is field type, 1 is actual field
   oappend(SET_F("addInfo('PIRsensorSwitch:override',1,'Cancel timer on change');"));    // 0 is field type, 1 is actual field
 }
 
@@ -521,8 +524,7 @@ bool PIRsensorSwitch::readFromConfig(JsonObject &root)
   m_offOnly       = top[FPSTR(_offOnly)] | m_offOnly;
   m_override      = top[FPSTR(_override)] | m_override;
   HomeAssistantDiscovery = top[FPSTR(_haDiscovery)] | HomeAssistantDiscovery;
-
-  NotifyUpdateMode = top[FPSTR(_notify)] ? CALL_MODE_DIRECT_CHANGE : CALL_MODE_NO_NOTIFY;
+  idx             = top[FPSTR(_domoticzIDX)] | idx;
 
   if (!initDone) {
     // reading config prior to setup()
@@ -549,5 +551,5 @@ bool PIRsensorSwitch::readFromConfig(JsonObject &root)
     DEBUG_PRINTLN(F(" config (re)loaded."));
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-  return !top[FPSTR(_override)].isNull();
+  return !top[FPSTR(_domoticzIDX)].isNull();
 }

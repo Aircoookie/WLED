@@ -21,6 +21,7 @@ void shortPressAction(uint8_t b)
       case 1: ++effectCurrent %= strip.getModeCount(); stateChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
+    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -42,6 +43,7 @@ void longPressAction(uint8_t b)
       case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
     }
   } else {
+    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -63,6 +65,7 @@ void doublePressAction(uint8_t b)
       case 1: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
+    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -94,8 +97,9 @@ bool isButtonPressed(uint8_t i)
       if (digitalRead(pin) == HIGH) return true;
       break;
     case BTN_TYPE_TOUCH:
+    case BTN_TYPE_TOUCH_SWITCH:
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-      if (touchRead(pin) <= touchThreshold) return true;
+      if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
       #endif
       break;
   }
@@ -106,6 +110,7 @@ void handleSwitch(uint8_t b)
 {
   // isButtonPressed() handles inverted/noninverted logic
   if (buttonPressedBefore[b] != isButtonPressed(b)) {
+    DEBUG_PRINT(F("Switch: State changed ")); DEBUG_PRINTLN(b);
     buttonPressedTime[b] = millis();
     buttonPressedBefore[b] = !buttonPressedBefore[b];
   }
@@ -113,12 +118,15 @@ void handleSwitch(uint8_t b)
   if (buttonLongPressed[b] == buttonPressedBefore[b]) return;
 
   if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
+    DEBUG_PRINT(F("Switch: Activating ")); DEBUG_PRINTLN(b);
     if (!buttonPressedBefore[b]) { // on -> off
+      DEBUG_PRINT(F("Switch: On -> Off ")); DEBUG_PRINTLN(b);
       if (macroButton[b]) applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
       else { //turn on
         if (!bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
       }
     } else {  // off -> on
+      DEBUG_PRINT(F("Switch: Off -> On ")); DEBUG_PRINTLN(b);
       if (macroLongPress[b]) applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
       else { //turn off
         if (bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
@@ -150,12 +158,17 @@ void handleAnalog(uint8_t b)
   static float filteredReading[WLED_MAX_BUTTONS] = {0.0f};
   uint16_t rawReading;    // raw value from analogRead, scaled to 12bit
 
+  DEBUG_PRINT(F("Analog: Reading button ")); DEBUG_PRINTLN(b);
+
   #ifdef ESP8266
   rawReading = analogRead(A0) << 2;   // convert 10bit read to 12bit
   #else
+  if ((btnPin[b] < 0) || (digitalPinToAnalogChannel(btnPin[b]) < 0)) return; // pin must support analog ADC - newer esp32 frameworks throw lots of warnings otherwise
   rawReading = analogRead(btnPin[b]); // collect at full 12bit resolution
   #endif
   yield();                            // keep WiFi task running - analog read may take several millis on ESP8266
+
+  DEBUG_PRINT(F("Analog: Raw read = ")); DEBUG_PRINTLN(rawReading);
 
   filteredReading[b] += POT_SMOOTHING * ((float(rawReading) / 16.0f) - filteredReading[b]); // filter raw input, and scale to [0..255]
   uint16_t aRead = max(min(int(filteredReading[b]), 255), 0);                               // squash into 8bit
@@ -166,6 +179,8 @@ void handleAnalog(uint8_t b)
 
   // remove noise & reduce frequency of UI updates
   if (abs(int(aRead) - int(oldRead[b])) <= POT_SENSITIVITY) return;  // no significant change in reading
+
+  DEBUG_PRINT(F("Analog: Filtered read = ")); DEBUG_PRINTLN(aRead);
 
   // Unomment the next lines if you still see flickering related to potentiometer
   // This waits until strip finishes updating (why: strip was not updating at the start of handleButton() but may have started during analogRead()?)
@@ -179,13 +194,14 @@ void handleAnalog(uint8_t b)
 
   // if no macro for "short press" and "long press" is defined use brightness control
   if (!macroButton[b] && !macroLongPress[b]) {
+    DEBUG_PRINT(F("Analog: Action = ")); DEBUG_PRINTLN(macroDoublePress[b]);
     // if "double press" macro defines which option to change
     if (macroDoublePress[b] >= 250) {
       // global brightness
       if (aRead == 0) {
         briLast = bri;
         bri = 0;
-      } else{
+      } else {
         bri = aRead;
       }
     } else if (macroDoublePress[b] == 249) {
@@ -214,6 +230,7 @@ void handleAnalog(uint8_t b)
       updateInterfaces(CALL_MODE_BUTTON);
     }
   } else {
+    DEBUG_PRINTLN(F("Analog: No action"));
     //TODO:
     // we can either trigger a preset depending on the level (between short and long entries)
     // or use it for RGBW direct control
@@ -248,7 +265,7 @@ void handleButton()
     }
 
     // button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
-    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
+    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_TOUCH_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
       handleSwitch(b);
       continue;
     }
@@ -262,7 +279,7 @@ void handleButton()
           shortPressAction(b);
         buttonPressedBefore[b] = true;
         buttonPressedTime[b] = now; // continually update (for debouncing to work in release handler)
-        return;
+        continue;
       }
 
       if (!buttonPressedBefore[b]) buttonPressedTime[b] = now;
@@ -283,7 +300,7 @@ void handleButton()
       // released after rising-edge short press action
       if (macroButton[b] && macroButton[b] == macroLongPress[b] && macroButton[b] == macroDoublePress[b]) {
         if (dur > WLED_DEBOUNCE_THRESHOLD) buttonPressedBefore[b] = false; // debounce, blocks button for 50 ms once it has been released
-        return;
+        continue;
       }
 
       if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} // too short "press", debounce
@@ -330,10 +347,10 @@ void handleButton()
 void esp32RMTInvertIdle()
 {
   bool idle_out;
-  for (uint8_t u = 0; u < busses.getNumBusses(); u++)
+  for (uint8_t u = 0; u < BusManager::getNumBusses(); u++)
   {
     if (u > 7) return; // only 8 RMT channels, TODO: ESP32 variants have less RMT channels
-    Bus *bus = busses.getBus(u);
+    Bus *bus = BusManager::getBus(u);
     if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType())) continue;
     //assumes that bus number to rmt channel mapping stays 1:1
     rmt_channel_t ch = static_cast<rmt_channel_t>(u);
