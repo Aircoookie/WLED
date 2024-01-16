@@ -1,4 +1,4 @@
-name: PlatformIO CI
+name: WLED CI
 
 on: [push, pull_request]
 
@@ -96,7 +96,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
-  Test-cdata:
+  testCdata:
+    name: Test cdata.js
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
