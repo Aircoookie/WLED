@@ -133,11 +133,10 @@ async function writeHtmlGzipped(sourceFile, resultFile, page) {
     if (error) throw error;
 
     html = adoptVersionAndRepo(html);
-    console.info("Inlined " + html.length + " characters");
+    const originalLength = html.length;
     html = await minify(html, "html-minify");
-    console.info("Minified to " + html.length + " characters");
     const result = zlib.gzipSync(html, { level: zlib.constants.Z_BEST_COMPRESSION });
-    console.info("Compressed " + result.length + " bytes");
+    console.info("Minified and compressed " + sourceFile + " from " + originalLength + " to " + result.length + " bytes");
     const array = hexdump(result);
     let src = singleHeader;
     src += `const uint16_t PAGE_${page}_L = ${result.length};\n`;
@@ -154,15 +153,19 @@ async function specToChunk(srcDir, s) {
   if (s.method == "plaintext" || s.method == "gzip") {
     let str = buf.toString("utf-8");
     str = adoptVersionAndRepo(str);
+    const originalLength = str.length;
     if (s.method == "gzip") {
       if (s.mangle) str = s.mangle(str);
       const zip = zlib.gzipSync(await minify(str, s.filter), { level: zlib.constants.Z_BEST_COMPRESSION });
+      console.info("Minified and compressed " + s.file + " from " + originalLength + " to " + zip.length + " bytes");
       const result = hexdump(zip);
       chunk += `const uint16_t ${s.name}_length = ${zip.length};\n`;
       chunk += `const uint8_t ${s.name}[] PROGMEM = {\n${result}\n};\n\n`;
       return chunk;
     } else {
-      chunk += `const char ${s.name}[] PROGMEM = R"${s.prepend || ""}${await minify(str, s.filter)}${s.append || ""}";\n\n`;
+      const minified = await minify(str, s.filter);
+      console.info("Minified " + s.file + " from " + originalLength + " to " + minified.length + " bytes");
+      chunk += `const char ${s.name}[] PROGMEM = R"${s.prepend || ""}${minified}${s.append || ""}";\n\n`;
       return s.mangle ? s.mangle(chunk) : chunk;
     }
   } else if (s.method == "binary") {
@@ -178,8 +181,7 @@ async function specToChunk(srcDir, s) {
 async function writeChunks(srcDir, specs, resultFile) {
   let src = multiHeader;
   for (const s of specs) {
-    const file = srcDir + "/" + s.file;
-    console.info("Reading " + file + " as " + s.name);
+    console.info("Reading " + srcDir + "/" + s.file + " as " + s.name);
     src += await specToChunk(srcDir, s);
   }
   console.info("Writing " + src.length + " characters into " + resultFile);
