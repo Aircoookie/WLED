@@ -140,17 +140,15 @@ describe('Script', () => {
       await runAndCheckIfBuiltFilesExist();
     });
 
-    it('1 or more html_*.h files are missing', async () => {
+    it('only one html_*.h file is missing', async () => {
       // run script cdata.js and wait for it to finish
       await execPromise('node tools/cdata.js');
 
       // delete a random html_*.h file
       let files = await fs.promises.readdir(folderPath);
       let htmlFiles = files.filter(file => file.startsWith('html_') && path.extname(file) === '.h');
-      if (htmlFiles.length > 0) {
-        const randomFile = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
-        await fs.promises.unlink(path.join(folderPath, randomFile));
-      }
+      const randomFile = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
+      await fs.promises.unlink(path.join(folderPath, randomFile));
 
       await runAndCheckIfBuiltFilesExist();
     });
