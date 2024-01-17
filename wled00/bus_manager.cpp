@@ -619,7 +619,7 @@ uint32_t BusManager::memUsage(BusConfig &bc) {
         multiplier = 5;
       }
     #else //ESP32 RMT uses double buffer, I2S uses 5x buffer
-      if (type > 28) channels = 4; //RGBW
+      if (bc.type > 28) channels = 4; //RGBW
       multiplier = 2;
     #endif
   }
