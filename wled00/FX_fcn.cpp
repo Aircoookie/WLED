@@ -426,7 +426,7 @@ uint8_t Segment::currentBri(bool useCct) {
   uint32_t prog = progress();
   if (prog < 0xFFFFU) {
     uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
-    curBri += (useCct ? _t->_cctT : (on ? _t->_briT : 0)) * (0xFFFFU - prog);
+    curBri += (useCct ? _t->_cctT : _t->_briT) * (0xFFFFU - prog);
     return curBri / 0xFFFFU;
   }
   return (useCct ? cct : (on ? opacity : 0));
