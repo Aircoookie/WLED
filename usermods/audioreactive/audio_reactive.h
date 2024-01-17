@@ -91,6 +91,17 @@
   #define PLOT_FLUSH()
 #endif
 
+// sanity checks
+#ifdef ARDUINO_ARCH_ESP32
+  // we need more space in for oappend() stack buffer -> SETTINGS_STACK_BUF_SIZE and CONFIG_ASYNC_TCP_TASK_STACK_SIZE
+  #if SETTINGS_STACK_BUF_SIZE < 3904    // 3904 is required for WLEDMM-0.14.0-b28
+    #warning please increase SETTINGS_STACK_BUF_SIZE >= 3904
+  #endif
+  #if (CONFIG_ASYNC_TCP_TASK_STACK_SIZE - SETTINGS_STACK_BUF_SIZE) < 4352 // at least 4096+256 words of free task stack is needed by async_tcp alone
+    #error remaining async_tcp stack will be too low - please increase CONFIG_ASYNC_TCP_TASK_STACK_SIZE
+  #endif
+#endif
+
 // audiosync constants
 #define AUDIOSYNC_NONE 0x00      // UDP sound sync off
 #define AUDIOSYNC_SEND 0x01      // UDP sound sync - send mode
@@ -100,6 +111,7 @@
 
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 static uint8_t audioSyncEnabled = AUDIOSYNC_NONE;         // bit field: bit 0 - send, bit 1 - receive, bit 2 - use local if not receiving
+static bool audioSyncSequence = true;                     // if true, the receiver will drop out-of-sequence packets
 static bool udpSyncConnected = false;         // UDP connection status -> true if connected to multicast group
 
 #define NUM_GEQ_CHANNELS 16                                           // number of frequency channels. Don't change !!
@@ -1558,10 +1570,15 @@ class AudioReactive : public Usermod {
 
       // validate sequence, discard out-of-sequence packets
       static uint8_t lastFrameCounter = 0;
+      // add info for UI
+      if ((receivedPacket->frameCounter > 0) && (lastFrameCounter > 0)) receivedFormat = 3; // v2+
+      else receivedFormat = 2; // v2
+      // check sequence
       bool sequenceOK = false;
       if(receivedPacket->frameCounter > lastFrameCounter) sequenceOK = true;                  // sequence OK
       if((lastFrameCounter < 12) && (receivedPacket->frameCounter > 248)) sequenceOK = false; // prevent sequence "roll-back" due to late packets (1->254)
       if((lastFrameCounter > 248) && (receivedPacket->frameCounter < 12)) sequenceOK = true;  // handle roll-over (255 -> 0)
+      if(audioSyncSequence == false) sequenceOK = true;                                       // sequence checking disabled by user
       if((sequenceOK == false) && (receivedPacket->frameCounter != 0)) {                      // always accept "0" - its the legacy value
         DEBUGSR_PRINTF("Skipping audio frame out of order or duplicated - %u vs %u\n", lastFrameCounter, receivedPacket->frameCounter);
         return false;   // reject out-of sequence frame
@@ -1657,15 +1674,15 @@ class AudioReactive : public Usermod {
 
         // VERIFY THAT THIS IS A COMPATIBLE PACKET
         if (packetSize == sizeof(audioSyncPacket) && (isValidUdpSyncVersion((const char *)fftUdpBuffer))) {
+          receivedFormat = 2;
           haveFreshData = decodeAudioData(packetSize, fftUdpBuffer);
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v2");
-          receivedFormat = 2;
         } else {
           if (packetSize == sizeof(audioSyncPacket_v1) && (isValidUdpSyncVersion_v1((const char *)fftUdpBuffer))) {
             decodeAudioData_v1(packetSize, fftUdpBuffer);
+            receivedFormat = 1;
             //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v1");
             haveFreshData = true;
-            receivedFormat = 1;
           } else receivedFormat = 0; // unknown format
         }
       }
@@ -2388,7 +2405,7 @@ class AudioReactive : public Usermod {
         if (audioSyncEnabled) {
           if (audioSyncEnabled & AUDIOSYNC_SEND) {
             infoArr.add(F("send mode"));
-            if ((udpSyncConnected) && (millis() - lastTime < AUDIOSYNC_IDLE_MS)) infoArr.add(F(" v2"));
+            if ((udpSyncConnected) && (millis() - lastTime < AUDIOSYNC_IDLE_MS)) infoArr.add(F(" v2+"));
           } else if (audioSyncEnabled == AUDIOSYNC_REC) {
               infoArr.add(F("receive mode"));
           } else if (audioSyncEnabled == AUDIOSYNC_REC_PLUS) {
@@ -2400,6 +2417,10 @@ class AudioReactive : public Usermod {
         if (audioSyncEnabled && udpSyncConnected && (millis() - last_UDPTime < AUDIOSYNC_IDLE_MS)) {
             if (receivedFormat == 1) infoArr.add(F(" v1"));
             if (receivedFormat == 2) infoArr.add(F(" v2"));
+            if (receivedFormat == 3) {
+              if (audioSyncSequence) infoArr.add(F(" v2+")); // Sequence checking enabled
+              else infoArr.add(F(" v2"));
+            }
         }
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
@@ -2551,6 +2572,7 @@ class AudioReactive : public Usermod {
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
       sync[F("mode")] = audioSyncEnabled;
+      sync[F("check_sequence")] = audioSyncSequence;
     }
 
 
@@ -2619,6 +2641,7 @@ class AudioReactive : public Usermod {
 
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
+      configComplete &= getJsonValue(top["sync"][F("check_sequence")], audioSyncSequence);
 
       return configComplete;
     }
@@ -2797,7 +2820,12 @@ class AudioReactive : public Usermod {
 #ifdef ARDUINO_ARCH_ESP32
       oappend(SET_F("addOption(dd,'Receive or Local',6);"));  // AUDIOSYNC_REC_PLUS
 #endif
-      oappend(SET_F("addInfo('AudioReactive:sync:mode',1,'<br> Sync audio data with other WLEDs');"));
+      // check_sequence: Receiver skips out-of-sequence packets when enabled
+      oappend(SET_F("dd=addDropdown('AudioReactive','sync:check_sequence');"));
+      oappend(SET_F("addOption(dd,'Off',0);"));
+      oappend(SET_F("addOption(dd,'On',1);"));
+
+      oappend(SET_F("addInfo('AudioReactive:sync:check_sequence',1,'<i>when receiving</i> ☾<br> Sync audio data with other WLEDs');"));  // must append this to the last field of 'sync'
 
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
 #ifdef ARDUINO_ARCH_ESP32
@@ -2840,7 +2868,7 @@ class AudioReactive : public Usermod {
         oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
       #endif
       oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',5);")); // disable read only pins
-#endif      
+#endif
     }
 
 

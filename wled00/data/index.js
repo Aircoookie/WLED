@@ -697,7 +697,7 @@ ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.
 ${theap>0?inforow("Heap ☾",((i.totalheap-i.freeheap)/1000).toFixed(0)+"/"+theap.toFixed(0)+" kB"," ("+Math.round((i.totalheap-i.freeheap)/(10*theap))+"%)"):""}
 ${i.minfreeheap?inforow("Max used heap ☾",((i.totalheap-i.minfreeheap)/1000).toFixed(1)+" kB"," ("+Math.round((i.totalheap-i.minfreeheap)/(10*theap))+"%)"):""}
 ${inforow("Free heap",heap," kB")}
-${i.freestack?inforow("Free stack ☾",i.freestack," kB"):""} <!--WLEDMM-->
+${i.freestack?inforow("Free stack ☾",(i.freestack/1024).toFixed(3)," kB"):""} <!--WLEDMM-->
 ${inforow("Flash Size ☾",flashsize," kB")}  <!--WLEDMM and Athom-->
 ${i.tpram?inforow("PSRAM ☾",(i.tpram/1024).toFixed(1)," kB"):""}
 ${i.psram?((i.tpram-i.psram)>16383?inforow("Used PSRAM ☾",((i.tpram-i.psram)/1024).toFixed(1)," kB"):inforow("Used PSRAM ☾",(i.tpram-i.psram)," B")):""}
@@ -1107,7 +1107,7 @@ function ddpAll() {
 	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}}); //self
 }
 
-//curl -s -F "update=@/Users/ewoudwijma/Developer/GitHub/MoonModules/WLED/build_output/release/WLEDMM_0.14.0-b27.31_esp32_4MB_M.bin" 192.168.8.105/update >nul &
+//curl -s -F "update=@/Users/ewoudwijma/Developer/GitHub/MoonModules/WLED/build_output/release/WLEDMM_0.14.0-b28.35_esp32_4MB_M.bin" 192.168.8.105/update >nul &
 
 //WLEDMM
 function SuperSync() {
@@ -1384,7 +1384,7 @@ function toggleBubble(e)
 }
 
 // updates segment length upon input of segment values
-function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
+function updateLen(s, draw=true) //WLEDMM conditionally draw segment view
 {
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);
@@ -1978,9 +1978,9 @@ function readState(s,command=false)
 //      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
 //      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
 // If effective (@)
-//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - a ; separates slider controls (left) from color controls (middle) and palette control (right)
 //      - if left, middle or right is empty no controls are shown
-//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a , separates slider controls (max 5) or color controls (max 3). Palette has only one value
 //      - a ! means that the default is used.
 //             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
 //             - For colors: Fx color, Background color, Custom
