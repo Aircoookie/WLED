@@ -188,13 +188,8 @@ async function writeChunks(srcDir, specs, resultFile) {
 
 // Check if a file is newer than a given time
 function isFileNewerThan(filePath, time) {
-  try {
-    const stats = fs.statSync(filePath);
-    return stats.mtimeMs > time;
-  } catch (e) {
-    console.error(`Failed to get stats for file ${filePath}:`, e);
-    return false;
-  }
+  const stats = fs.statSync(filePath);
+  return stats.mtimeMs > time;
 }
 
 // Check if any file in a folder (or its subfolders) is newer than a given time
@@ -219,8 +214,9 @@ function isAlreadyBuilt(folderPath) {
   for (const file of output) {
     try {
       lastBuildTime = Math.min(lastBuildTime, fs.statSync(file).mtimeMs);
-    }
-    catch (e) {
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+      console.info("File " + file + " does not exist. Rebuilding...");
       return false;
     }
   }
