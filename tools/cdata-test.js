@@ -114,6 +114,11 @@ describe('Script', () => {
     await checkIfBuiltFilesExist();
   }
 
+  async function checkIfFileWasNewlyCreated(file) {
+    const modifiedTime = fs.statSync(file).mtimeMs;
+    assert(Date.now() - modifiedTime < 500, file + ' was not modified');
+  }
+
   async function testFileModification(sourceFilePath, resultFile) {
     // run cdata.js to ensure html_*.h files are created
     await execPromise('node tools/cdata.js');
@@ -126,11 +131,7 @@ describe('Script', () => {
     // run script cdata.js again and wait for it to finish
     await execPromise('node tools/cdata.js');
 
-    // check if web ui was rebuilt
-    const stats = fs.statSync(path.join(folderPath, resultFile));
-    const modifiedTime = stats.mtimeMs;
-    const currentTime = Date.now();
-    assert(currentTime - modifiedTime < 500, resultFile + ' was not modified');
+    checkIfFileWasNewlyCreated(path.join(folderPath, resultFile));
   }
 
   describe('should build if', () => {
@@ -152,6 +153,16 @@ describe('Script', () => {
       }
 
       await runAndCheckIfBuiltFilesExist();
+    });
+
+    it('script was executed with -f or --force', async () => {
+      await execPromise('node tools/cdata.js');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await execPromise('node tools/cdata.js --force');
+      await checkIfFileWasNewlyCreated(path.join(folderPath, 'html_ui.h'));
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await execPromise('node tools/cdata.js -f');
+      await checkIfFileWasNewlyCreated(path.join(folderPath, 'html_ui.h'));
     });
 
     it('a file changes', async () => {
