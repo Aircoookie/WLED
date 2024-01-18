@@ -315,7 +315,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (serialBaud < 96 || serialBaud > 15000) serialBaud = 1152;
   updateBaudRate(serialBaud *100);
 
-  JsonArray hw_if_i2c = hw[F("if")][F("i2c-pin")];
+  JsonArray hw_if_i2c = hw["if"][F("i2c-pin")];
   CJSON(i2c_sda, hw_if_i2c[0]);
   CJSON(i2c_scl, hw_if_i2c[1]);
   PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
@@ -330,7 +330,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     i2c_sda = -1;
     i2c_scl = -1;
   }
-  JsonArray hw_if_spi = hw[F("if")][F("spi-pin")];
+  JsonArray hw_if_spi = hw["if"][F("spi-pin")];
   CJSON(spi_mosi, hw_if_spi[0]);
   CJSON(spi_sclk, hw_if_spi[1]);
   CJSON(spi_miso, hw_if_spi[2]);
@@ -353,6 +353,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(briMultiplier, light[F("scale-bri")]);
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
   CJSON(autoSegments, light[F("aseg")]);
+  CJSON(useAltWheel, light[F("alt-wheel")]);
 
   CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.8
   float light_gc_bri = light["gc"]["bri"];
@@ -821,7 +822,7 @@ void serializeConfig() {
 
   hw[F("baud")] = serialBaud;
 
-  JsonObject hw_if = hw.createNestedObject(F("if"));
+  JsonObject hw_if = hw.createNestedObject("if");
   JsonArray hw_if_i2c = hw_if.createNestedArray("i2c-pin");
   hw_if_i2c.add(i2c_sda);
   hw_if_i2c.add(i2c_scl);
@@ -837,6 +838,7 @@ void serializeConfig() {
   light[F("scale-bri")] = briMultiplier;
   light[F("pal-mode")] = strip.paletteBlend;
   light[F("aseg")] = autoSegments;
+  light[F("alt-wheel")] = useAltWheel;
 
   JsonObject light_gc = light.createNestedObject("gc");
   light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
