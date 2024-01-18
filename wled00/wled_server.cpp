@@ -520,8 +520,14 @@ void serveSettingsJS(AsyncWebServerRequest* request)
     request->send(401, "application/javascript", buf);
     return;
   }
-  strcat_P(buf,PSTR("function GetV(){var d=document;"));
-  getSettingsJS(subPage, buf+strlen(buf));  // this may overflow by 35bytes!!!
+
+  byte subSettings = request->arg(F("s")).toInt();
+  if (subSettings == 0) {
+    strcat_P(buf,PSTR("function GetV(){var d=document;"));
+  } else {
+    strcat_P(buf,PSTR("function GetW(){var d=document;"));
+  }
+  getSettingsJS(subPage, buf+strlen(buf), subSettings);  // this may overflow by 35bytes!!!
   strcat_P(buf,PSTR("}"));
   
   AsyncWebServerResponse *response;

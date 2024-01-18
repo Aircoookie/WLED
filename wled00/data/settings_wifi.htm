@@ -8,6 +8,8 @@
 		var d = document;
 		var loc = false, locip, locproto = "http:";
 		var scanLoops = 0, preScanSSID = "";
+		let wCount = 0;
+		let maxNetworks = 5;
 
 		function gId(e) { return d.getElementById(e); }
 		function cE(e) { return d.createElement(e); }
@@ -52,13 +54,13 @@
 				}
 				scanLoops = 0;
 
-				let cs = gId("CS");
-				if (cs) {
+				let ns = gId("NS");
+				if (ns) {
 					let select = cE("select");
-					select.setAttribute("id", "CS");
-					select.setAttribute("name", "CS");
+					select.setAttribute("id", "NS");
+					select.setAttribute("name", "NS");
 					select.setAttribute("onchange", "T()");
-					preScanSSID = cs.value;
+					preScanSSID = ns.value;
 
 					for (let i = 0; i < select.children.length; i++) {
 						select.removeChild(select.children[i]);
@@ -70,7 +72,7 @@
 						option.setAttribute("value", networks[i].ssid);
 						option.textContent = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
 
-						if (networks[i].ssid === cs.value) {
+						if (networks[i].ssid === ns.value) {
 							option.setAttribute("selected", "selected");
 						}
 
@@ -78,31 +80,109 @@
 					}
 					const option = cE("option");
 
-					option.setAttribute("value", "!Cs");
+					option.setAttribute("value", "!Ns");
 					option.textContent = `Other network...`;
 					select.appendChild(option);
 
-					cs.replaceWith(select);
+					let nd = gId("ND");
+					if (nd) {
+						nd.removeAttribute("hidden");
+					}
+					ns.replaceWith(select);
 				}
 
 				button.disabled = false;
 				button.textContent = "Scan";
 			});
 		}
+		function NA() {
+			const ns = gId("NS");
+			const np = gId("NP");
+			if (!ns || !np || ns.value == "") return;
+			for (let i = 0; i < wCount; i++) {
+				let iE = gId(`CS${i}`);
+				if (iE && iE.value == ns.value) {
+					iE = gId(`CP${i}`);
+					if (iE) iE.value = np.value;
+					return;
+				}
+			}
+			if (wCount >= maxNetworks)
+			{
+				alert(`You can only add up to ${maxNetworks} networks. Delete an old one before adding a new one.`)
+				return;
+			}
+			addWiFiItem(wCount, ns.value, np.value);
+			wCount++;
+			U();
+		}
+		function addWiFiItem(item_id, ssid, pass) {
+			const cd = gId("CD");
+			let iE = cE("input");
+			iE.setAttribute("type", "text");
+			iE.setAttribute("id", `CS${item_id}`);
+			iE.setAttribute("name", `CS${item_id}`);
+			iE.setAttribute("placeholder", "Network name");
+			iE.setAttribute("maxlength", 32);
+			iE.setAttribute("value", ssid);
+			cd.appendChild(iE);
+			
+			iE = cE("input");
+			iE.setAttribute("type", "password");
+			iE.setAttribute("id", `CP${item_id}`);
+			iE.setAttribute("name", `CP${item_id}`);
+			iE.setAttribute("placeholder", "Password");
+			iE.setAttribute("maxlength", 63);
+			iE.setAttribute("value", pass);
+			cd.appendChild(iE);
+
+			iE = cE("button");
+			iE.setAttribute("type", "button");
+			iE.setAttribute("id", `CR${item_id}`);
+			iE.innerHTML = "Delete"
+			iE.addEventListener("click", function() {
+				let oE = gId(`CS${item_id}`);
+				if (oE) oE.remove();
+				oE = gId(`CP${item_id}`);
+				if (oE) oE.remove();
+				oE = gId(`CR${item_id}`);
+				if (oE) oE.remove();
+				for (let o = item_id + 1; o < wCount; o++) {
+					oE = gId(`CS${o}`);
+					if (oE) {
+						oE.setAttribute("id", `CS${o - 1}`);
+						oE.setAttribute("name", `CS${o - 1}`);
+					}
+					oE = gId(`CP${o}`);
+					if (oE) {
+						oE.setAttribute("id", `CP${o - 1}`);
+						oE.setAttribute("name", `CP${o - 1}`);
+					}
+				}
+				wCount--;
+			});
+			cd.appendChild(iE);
+
+			iE = cE("br");
+			cd.appendChild(iE);
+		}
+		function U() {
+			gId("CC").innerHTML = `${wCount} of ${maxNetworks} networks`;
+		}
 		// replace WiFi select with custom SSID input field again
 		function T() {
-			let cs = gId("CS");
-			if (!cs || cs.value != "!Cs") return;
+			let ns = gId("NS");
+			if (!ns || ns.value != "!Ns") return;
 			let input = cE("input");
 			input.type = "text";
-			input.id = "CS";
-			input.name ="CS";
+			input.id = "NS";
+			input.name ="NS";
 			input.setAttribute("maxlength",32);
 			input.value = preScanSSID;
-			cs.replaceWith(input);
+			ns.replaceWith(input);
 		}
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
-		function loadJS(FILE_URL, async = true) {
+		function loadJS(FILE_URL, FUNC_NAME = "GetV", async = true) {
 			let scE = cE("script");
 			scE.setAttribute("src", FILE_URL);
 			scE.setAttribute("type", "text/javascript");
@@ -111,7 +191,7 @@
 			// success event
 			scE.addEventListener("load", () => {
 				//console.log("File loaded");
-				GetV();
+				window[FUNC_NAME]();
 			});
 			// error event
 			scE.addEventListener("error", (ev) => {
@@ -140,8 +220,47 @@
 					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
 				}
 			}
-			loadJS(getURL('/settings/s.js?p=1'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+			loadJS(getURL('/settings/s.js?p=1'), "GetV", false);	// If we set async false, file is loaded and executed, then next statement is processed
 			if (loc) d.Sf.action = getURL('/settings/wifi');
+			loadJS(getURL('/settings/s.js?p=1&s=1'), "LW", false);	// If we set async false, file is loaded and executed, then next statement is processed
+		}
+		function LW() {
+			let [count,maxW,wifis] = GetW();
+			wCount = count;
+			maxNetworks = maxW;
+			const cd = gId("CD");
+  			cd.innerHTML = "";
+			for (let i = 0; i < wCount; i++) {
+				addWiFiItem(i, wifis[i][0], wifis[i][1]);
+			}
+			U();
+		}
+		function PreS() {
+			for (let i = 0; i < wCount; i++) {
+				let oE = gId(`CS${i}`);
+				if (!oE || !oE.value || oE.value.trim().length == 0) {
+					oE.remove();
+					if (oE) oE.remove();
+					oE = gId(`CP${i}`);
+					if (oE) oE.remove();
+					oE = gId(`CR${i}`);
+					if (oE) oE.remove();
+
+					for (let o = i + 1; o < wCount; o++) {
+						oE = gId(`CS${o}`);
+						if (oE) {
+							oE.setAttribute("id", `CS${o - 1}`);
+							oE.setAttribute("name", `CS${o - 1}`);
+						}
+						oE = gId(`CP${o}`);
+						if (oE) {
+							oE.setAttribute("id", `CP${o - 1}`);
+							oE.setAttribute("name", `CP${o - 1}`);
+						}
+					}
+					wCount--;
+				}
+			}
 		}
 		function getURL(path) {
 			return (loc ? locproto + "//" + locip : "") + path;
@@ -150,17 +269,27 @@
 	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
-	<form id="form_s" name="Sf" method="post">
+	<form id="form_s" name="Sf" method="post" onsubmit="PreS()">
 		<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button><hr>
 		</div>
 		<h2>WiFi setup</h2>
-		<h3>Connect to existing network</h3>
+		<h3>Connect to a new network</h3>
 		<button type="button" id="scan" onclick="N()">Scan</button><br>
-		Network name (SSID, empty to not connect):<br>
-		<input type="text" id="CS" name="CS" maxlength="32"><br>
-		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
+		<div id="ND" hidden>
+		Network name:<br>
+		<input type="text" id="NS" name="NS" maxlength="32"><br>
+		Network password:<br>
+		<input type="password" id="NP" name="NP" maxlength="63"><br>
+		<button type="button" onclick="NA()">Add</button>
+		</div>
+		<h3>Saved networks</h3>
+		<div id="CD">
+		</div><br>
+		<span id="CC"></span>
+		<h3>Addresses settings</h3>
+		(Affects to all networks)<br>
 		Static IP (leave at 0.0.0.0 for DHCP):<br>
 		<input name="I0" type="number" class="s" min="0" max="255" required> .
 		<input name="I1" type="number" class="s" min="0" max="255" required> .

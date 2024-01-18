@@ -73,12 +73,14 @@ void loadSettingsFromEEPROM()
   }
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
 
-
-  readStringFromEEPROM(  0, clientSSID, 32);
-  readStringFromEEPROM( 32, clientPass, 64);
-  readStringFromEEPROM( 96,      cmDNS, 32);
-  readStringFromEEPROM(128,     apSSID, 32);
-  readStringFromEEPROM(160,     apPass, 64);
+  //This will set the first saved network.
+  //We could set any other "slot", but this would have a backward compatibility I think
+  readStringFromEEPROM(  0, clientNetsSSID[0], 32);
+  readStringFromEEPROM( 32, clientNetsPass[0], 64);
+  readStringFromEEPROM( 96,             cmDNS, 32);
+  readStringFromEEPROM(128,            apSSID, 32);
+  readStringFromEEPROM(160,            apPass, 64);
+  if (clientSavedNets == 0 && strlen(clientNetsSSID[0]) > 0) clientSavedNets++;
 
   nightlightDelayMinsDefault = EEPROM.read(224);
   nightlightDelayMins = nightlightDelayMinsDefault;

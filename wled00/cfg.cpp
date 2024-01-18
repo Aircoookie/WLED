@@ -667,8 +667,13 @@ void serializeConfig() {
   JsonArray nw_ins = nw.createNestedArray("ins");
 
   JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  nw_ins_0[F("ssid")] = clientSSID;
-  nw_ins_0[F("pskl")] = strlen(clientPass);
+  char tmp[6];
+  for(byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+    sprintf_P(tmp, PSTR("ssid%d"), i);
+    nw_ins_0[tmp] = clientNetsSSID[i];
+    sprintf_P(tmp, PSTR("pskl%d"), i);
+    nw_ins_0[tmp] = strlen(clientNetsPass[i]);
+  }
 
   JsonArray nw_ins_0_ip = nw_ins_0.createNestedArray("ip");
   JsonArray nw_ins_0_gw = nw_ins_0.createNestedArray("gw");
@@ -1090,7 +1095,11 @@ void serializeConfigSec() {
   JsonArray nw_ins = nw.createNestedArray("ins");
 
   JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  nw_ins_0["psk"] = clientPass;
+  char tmp[6];
+  for(byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+    sprintf_P(tmp, PSTR("psk%d"), i);
+    nw_ins_0[tmp] = clientNetsPass[i];
+  }
 
   JsonObject ap = root.createNestedObject("ap");
   ap["psk"] = apPass;

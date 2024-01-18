@@ -106,6 +106,15 @@
   #endif
 #endif
 
+//This max was selected arbitrarily. Should be adjusted for real-world cases
+#ifndef WLED_MAX_SAVED_NETWORKS
+  #ifdef ESP8266
+    #define WLED_MAX_SAVED_NETWORKS 3
+  #else
+    #define WLED_MAX_SAVED_NETWORKS 5
+  #endif
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
@@ -384,6 +393,10 @@
 #define SUBPAGE_CSS             253
 #define SUBPAGE_JS              254
 #define SUBPAGE_WELCOME         255
+
+// Sub settings IDs
+#define SUBPAGE_MAIN_SETTINGS     0
+#define SUBPAGE_WIFI_NETWORKS     1
 
 #define NTP_PACKET_SIZE 48       // size of NTP receive buffer
 #define NTP_MIN_PACKET_SIZE 48   // min expected size - NTP v4 allows for "extended information" appended to the standard fields
