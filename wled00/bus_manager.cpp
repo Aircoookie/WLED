@@ -606,29 +606,34 @@ void BusNetwork::cleanup() {
 
 //utility to get the approx. memory usage of a given BusConfig
 uint32_t BusManager::memUsage(BusConfig &bc) {
-  uint8_t type = bc.type;
+  if (bc.type == TYPE_ONOFF || IS_PWM(bc.type)) return 5;
+
   uint16_t len = bc.count + bc.skipAmount;
-  if (type > 15 && type < 32) { // digital types
-    if (type == TYPE_UCS8903 || type == TYPE_UCS8904) len *= 2; // 16-bit LEDs
+  uint16_t channels = 3;
+  uint16_t multiplier = 1;
+  if (IS_DIGITAL(bc.type)) { // digital types
+    if (IS_16BIT(bc.type)) len *= 2; // 16-bit LEDs
     #ifdef ESP8266
+      if (bc.type > 28) channels = 4; //RGBW
       if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
-        if (type > 28) return len*20; //RGBW
-        return len*15;
+        multiplier = 5;
       }
-      if (type > 28) return len*4; //RGBW
-      return len*3;
-    #else //ESP32 RMT uses double buffer?
-      if (type > 28) return len*8; //RGBW
-      return len*6;
+    #else //ESP32 RMT uses double buffer, I2S uses 5x buffer
+      if (bc.type > 28) channels = 4; //RGBW
+      multiplier = 2;
     #endif
   }
-  if (type > 31 && type < 48) return 5;
-  return len*3; //RGB
+  if (IS_VIRTUAL(bc.type)) {
+    switch (bc.type) {
+      case TYPE_NET_DDP_RGBW: channels = 4; break;
+    }
+  }
+  return len * channels * multiplier; //RGB
 }
 
 int BusManager::add(BusConfig &bc) {
   if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
-  if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
+  if (IS_VIRTUAL(bc.type)) {
     busses[numBusses] = new BusNetwork(bc);
   } else if (IS_DIGITAL(bc.type)) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);

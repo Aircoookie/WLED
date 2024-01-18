@@ -129,10 +129,9 @@ class Bus {
     virtual void     setPixelColor(uint16_t pix, uint32_t c) = 0;
     virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
     virtual void     setBrightness(uint8_t b)    { _bri = b; };
-    virtual void     cleanup() = 0;
     virtual uint8_t  getPins(uint8_t* pinArray)  { return 0; }
     virtual uint16_t getLength()                 { return _len; }
-    virtual void     setColorOrder()             {}
+    virtual void     setColorOrder(uint8_t co)   {}
     virtual uint8_t  getColorOrder()             { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds()               { return 0; }
     virtual uint16_t getFrequency()              { return 0U; }
@@ -207,21 +206,21 @@ class BusDigital : public Bus {
     BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com);
     ~BusDigital() { cleanup(); }
 
-    void show();
-    bool canShow();
-    void setBrightness(uint8_t b);
-    void setStatusPixel(uint32_t c);
-    void setPixelColor(uint16_t pix, uint32_t c);
-    void setColorOrder(uint8_t colorOrder);
-    uint32_t getPixelColor(uint16_t pix);
-    uint8_t  getColorOrder() { return _colorOrder; }
-    uint8_t  getPins(uint8_t* pinArray);
-    uint8_t  skippedLeds()   { return _skip; }
-    uint16_t getFrequency()  { return _frequencykHz; }
+    void show() override;
+    bool canShow() override;
+    void setBrightness(uint8_t b) override;
+    void setStatusPixel(uint32_t c) override;
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    void setColorOrder(uint8_t colorOrder) override;
+    uint32_t getPixelColor(uint16_t pix) override;
+    uint8_t  getColorOrder() override  { return _colorOrder; }
+    uint8_t  getPins(uint8_t* pinArray) override;
+    uint8_t  skippedLeds() override    { return _skip; }
+    uint16_t getFrequency() override   { return _frequencykHz; }
     uint8_t  estimateCurrentAndLimitBri();
-    uint16_t getLEDCurrent() { return _milliAmpsPerLed; }
-    uint16_t getUsedCurrent() { return _milliAmpsTotal; }
-    uint16_t getMaxCurrent() { return _milliAmpsMax; }
+    uint16_t getLEDCurrent() override  { return _milliAmpsPerLed; }
+    uint16_t getUsedCurrent() override { return _milliAmpsTotal; }
+    uint16_t getMaxCurrent() override  { return _milliAmpsMax; }
     void reinit();
     void cleanup();
 
@@ -256,11 +255,11 @@ class BusPwm : public Bus {
     BusPwm(BusConfig &bc);
     ~BusPwm() { cleanup(); }
 
-    void setPixelColor(uint16_t pix, uint32_t c);
-    uint32_t getPixelColor(uint16_t pix); //does no index check
-    uint8_t  getPins(uint8_t* pinArray);
-    uint16_t getFrequency() { return _frequency; }
-    void show();
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    uint32_t getPixelColor(uint16_t pix) override; //does no index check
+    uint8_t  getPins(uint8_t* pinArray) override;
+    uint16_t getFrequency() override { return _frequency; }
+    void show() override;
     void cleanup() { deallocatePins(); }
 
   private:
@@ -280,10 +279,10 @@ class BusOnOff : public Bus {
     BusOnOff(BusConfig &bc);
     ~BusOnOff() { cleanup(); }
 
-    void setPixelColor(uint16_t pix, uint32_t c);
-    uint32_t getPixelColor(uint16_t pix);
-    uint8_t  getPins(uint8_t* pinArray);
-    void show();
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    uint32_t getPixelColor(uint16_t pix) override;
+    uint8_t  getPins(uint8_t* pinArray) override;
+    void show() override;
     void cleanup() { pinManager.deallocatePin(_pin, PinOwner::BusOnOff); }
 
   private:
@@ -297,13 +296,13 @@ class BusNetwork : public Bus {
     BusNetwork(BusConfig &bc);
     ~BusNetwork() { cleanup(); }
 
-    bool hasRGB()   { return true; }
-    bool hasWhite() { return _rgbw; }
-    bool canShow()  { return !_broadcastLock; } // this should be a return value from UDP routine if it is still sending data out
-    void setPixelColor(uint16_t pix, uint32_t c);
-    uint32_t getPixelColor(uint16_t pix);
-    uint8_t  getPins(uint8_t* pinArray);
-    void show();
+    bool hasRGB() override   { return true; }
+    bool hasWhite() override { return _rgbw; }
+    bool canShow() override  { return !_broadcastLock; } // this should be a return value from UDP routine if it is still sending data out
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    uint32_t getPixelColor(uint16_t pix) override;
+    uint8_t  getPins(uint8_t* pinArray) override;
+    void show() override;
     void cleanup();
 
   private:

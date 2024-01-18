@@ -16,11 +16,13 @@
 		function B(){window.open(getURL("/settings"),"_self");}
 		function gId(n){return d.getElementById(n);}
 		function off(n){d.getElementsByName(n)[0].value = -1;}
-		function isPWM(t) { return t > 40 && t < 46; }    // is PWM type
-		function isAna(t) { return t == 40 || isPWM(t); } // is analog type
-		function isDig(t) { return t < 80 && (t & 0x10); }// is digital type
-		function isD2P(t) { return t > 47 && t < 64; }    // is digital 2 pin type
-		function isVir(t) { return t >= 80; }             // is virtual type
+		// these functions correspond to C macros found in const.h
+		function isPWM(t) { return t > 40 && t < 46; }                      // is PWM type
+		function isAna(t) { return t == 40 || isPWM(t); }                   // is analog type
+		function isDig(t) { return (t > 15 && t < 40) || isD2P(t); }        // is digital type
+		function isD2P(t) { return t > 47 && t < 64; }                      // is digital 2 pin type
+		function is16b(t) { return t == 26 || t == 29 }                     // is digital 16 bit type
+		function isVir(t) { return t >= 80 && t < 96; }                     // is virtual type
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -175,25 +177,25 @@
 		}
 		//returns mem usage
 		function getMem(t, n) {
+			if (isAna(t)) return 5;	// analog
 			let len = parseInt(d.getElementsByName("LC"+n)[0].value);
 			len += parseInt(d.getElementsByName("SL"+n)[0].value); // skipped LEDs are allocated too
 			let dbl = 0;
-			if (d.Sf.LD.checked) dbl = len * 4;	// double buffering
-			if (t < 32) {
-				if (t==26 || t==29) len *= 2; // 16 bit LEDs
+			let ch = 3;
+			let mul = 1;
+			if (isDig(t)) {
+				if (is16b(t)) len *= 2; // 16 bit LEDs
+				if (t > 28 && t < 40) ch = 4; //RGBW
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
-					if (t > 28) return len*20 + dbl; //RGBW
-					return len*15 + dbl;
-				} else if (maxM >= 10000) //ESP32 RMT uses double buffer?
-				{
-					if (t > 28) return len*8 + dbl; //RGBW
-					return len*6 + dbl;
+					mul = 5;
 				}
-				if (t > 28) return len*4 + dbl; //RGBW
-				return len*3 + dbl;
+				if (maxM >= 10000) { //ESP32 RMT uses double buffer?
+					mul = 2;
+				}
+				if (d.Sf.LD.checked) dbl = len * ch; // double buffering
 			}
-			if (t > 31 && t < 48) return 5;	// analog
-			return len*3 + dbl;
+			if (isVir(t) && t == 88) ch = 4;
+			return len * ch * mul + dbl;
 		}
 
 		function UI(change=false)
