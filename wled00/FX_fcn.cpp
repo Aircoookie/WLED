@@ -1022,13 +1022,13 @@ void Segment::blur(uint8_t blur_amount) {
 /*
  * Put a value 0 to 255 in to get a color value.
  * The colours are a transition r -> g -> b -> back to r
- * Rotates the color in HSV space, where pos is H. (0=0deg, 256=360deg)
  */
 uint32_t Segment::color_wheel(uint8_t pos) {
   if (palette) return color_from_palette(pos, false, true, 0);
   uint8_t w = W(currentColor(0));
   if (useAltWheel) {
     // by @TripleWhy https://github.com/Aircoookie/WLED/pull/3681 (https://github.com/TripleWhy)
+    // Rotates the color in HSV space, where pos is H. (0=0deg, 256=360deg)
     // These h and f values are the same h and f you have in the regular HSV to RGB conversion.
     // The whole funciton really is just a HSV conversion, but assuming H=pos, S=1 and V=1.
     const uint32_t h = (pos * 3) / 128;
@@ -1043,6 +1043,7 @@ uint32_t Segment::color_wheel(uint8_t pos) {
       default: return 0;
     }
   } else {
+    // Inspired by the Adafruit examples.
     pos = 255 - pos;
     if (pos < 85) {
       return RGBW32((255 - pos * 3), 0, (pos * 3), w);
