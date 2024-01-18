@@ -6,26 +6,57 @@
  */
 
 #include "const.h"
-#include "pin_manager.h"
-#include "bus_wrapper.h"
-#include <Arduino.h>
+
+#define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
+#define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
+#define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
+
+#define NUM_ICS_WS2812_1CH_3X(len) (((len)+2)/3)   // 1 WS2811 IC controls 3 zones (each zone has 1 LED, W)
+#define IC_INDEX_WS2812_1CH_3X(i)  ((i)/3)
+
+#define NUM_ICS_WS2812_2CH_3X(len) (((len)+1)*2/3) // 2 WS2811 ICs control 3 zones (each zone has 2 LEDs, CW and WW)
+#define IC_INDEX_WS2812_2CH_3X(i)  ((i)*2/3)
+#define WS2812_2CH_3X_SPANS_2_ICS(i) ((i)&0x01)    // every other LED zone is on two different ICs
+
+// flag for using double buffering in BusDigital
+extern bool useGlobalLedBuffer;
+
 
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
-  uint8_t type = TYPE_WS2812_RGB;
-  uint16_t count = 1;
-  uint16_t start = 0;
-  uint8_t colorOrder = COL_ORDER_GRB;
-  bool reversed = false;
+  uint8_t type;
+  uint16_t count;
+  uint16_t start;
+  uint8_t colorOrder;
+  bool reversed;
   uint8_t skipAmount;
+  bool refreshReq;
+  uint8_t autoWhite;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip=0) {
-    type = busType; count = len; start = pstart;
-    colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
-    uint8_t nPins = 1;
-    if (type > 47) nPins = 2;
+  uint16_t frequency;
+  bool doubleBuffer;
+  uint8_t milliAmpsPerLed;
+  uint16_t milliAmpsMax;
+
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false, uint8_t maPerLed=55, uint16_t maMax=ABL_MILLIAMPS_DEFAULT)
+  : count(len)
+  , start(pstart)
+  , colorOrder(pcolorOrder)
+  , reversed(rev)
+  , skipAmount(skip)
+  , autoWhite(aw)
+  , frequency(clock_kHz)
+  , doubleBuffer(dblBfr)
+  , milliAmpsPerLed(maPerLed)
+  , milliAmpsMax(maMax)
+  {
+    refreshReq = (bool) GET_BIT(busType,7);
+    type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
+    size_t nPins = 1;
+    if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
+    else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
-    for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
+    for (size_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
   //validates start and length and extends total if needed
@@ -41,420 +72,291 @@ struct BusConfig {
   }
 };
 
-//parent class of BusDigital and BusPwm
+
+// Defines an LED Strip and its color ordering.
+struct ColorOrderMapEntry {
+  uint16_t start;
+  uint16_t len;
+  uint8_t colorOrder;
+};
+
+struct ColorOrderMap {
+    void add(uint16_t start, uint16_t len, uint8_t colorOrder);
+
+    uint8_t count() const { return _count; }
+
+    void reset() {
+      _count = 0;
+      memset(_mappings, 0, sizeof(_mappings));
+    }
+
+    const ColorOrderMapEntry* get(uint8_t n) const {
+      if (n > _count) {
+        return nullptr;
+      }
+      return &(_mappings[n]);
+    }
+
+    uint8_t getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const;
+
+  private:
+    uint8_t _count;
+    ColorOrderMapEntry _mappings[WLED_MAX_COLOR_ORDER_MAPPINGS];
+};
+
+
+//parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
   public:
-  Bus(uint8_t type, uint16_t start) {
-    _type = type;
-    _start = start;
-  };
-  
-  virtual void show() {}
-  virtual bool canShow() { return true; }
+    Bus(uint8_t type, uint16_t start, uint8_t aw, uint16_t len = 1, bool reversed = false, bool refresh = false)
+    : _type(type)
+    , _bri(255)
+    , _start(start)
+    , _len(len)
+    , _reversed(reversed)
+    , _valid(false)
+    , _needsRefresh(refresh)
+    , _data(nullptr) // keep data access consistent across all types of buses
+    {
+      _autoWhiteMode = Bus::hasWhite(type) ? aw : RGBW_MODE_MANUAL_ONLY;
+    };
 
-  virtual void setPixelColor(uint16_t pix, uint32_t c) {};
+    virtual ~Bus() {} //throw the bus under the bus
 
-  virtual void setBrightness(uint8_t b) {};
+    virtual void     show() = 0;
+    virtual bool     canShow()                   { return true; }
+    virtual void     setStatusPixel(uint32_t c)  {}
+    virtual void     setPixelColor(uint16_t pix, uint32_t c) = 0;
+    virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
+    virtual void     setBrightness(uint8_t b)    { _bri = b; };
+    virtual uint8_t  getPins(uint8_t* pinArray)  { return 0; }
+    virtual uint16_t getLength()                 { return _len; }
+    virtual void     setColorOrder(uint8_t co)   {}
+    virtual uint8_t  getColorOrder()             { return COL_ORDER_RGB; }
+    virtual uint8_t  skippedLeds()               { return 0; }
+    virtual uint16_t getFrequency()              { return 0U; }
+    virtual uint16_t getLEDCurrent()             { return 0; }
+    virtual uint16_t getUsedCurrent()            { return 0; }
+    virtual uint16_t getMaxCurrent()             { return 0; }
+    inline  void     setReversed(bool reversed)  { _reversed = reversed; }
+    inline  uint16_t getStart()                  { return _start; }
+    inline  void     setStart(uint16_t start)    { _start = start; }
+    inline  uint8_t  getType()                   { return _type; }
+    inline  bool     isOk()                      { return _valid; }
+    inline  bool     isReversed()                { return _reversed; }
+    inline  bool     isOffRefreshRequired()      { return _needsRefresh; }
+            bool     containsPixel(uint16_t pix) { return pix >= _start && pix < _start+_len; }
 
-  virtual uint32_t getPixelColor(uint16_t pix) { return 0; };
-
-  virtual void cleanup() {};
-
-  virtual ~Bus() { //throw the bus under the bus
-  }
-
-  virtual uint8_t getPins(uint8_t* pinArray) { return 0; }
-
-  inline uint16_t getStart() {
-    return _start;
-  }
-
-  inline void setStart(uint16_t start) {
-    _start = start;
-  }
-
-  virtual uint16_t getLength() {
-    return 1;
-  }
-
-  virtual void setColorOrder() {}
-
-  virtual uint8_t getColorOrder() {
-    return COL_ORDER_RGB;
-  }
-
-  virtual bool isRgbw() {
-    return false;
-  }
-
-  virtual uint8_t skippedLeds() {
-    return 0;
-  }
-
-  inline uint8_t getType() {
-    return _type;
-  }
-
-  inline bool isOk() {
-    return _valid;
-  }
-
-  static bool isRgbw(uint8_t type) {
-    if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
-    if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
-    return false;
-  }
-
-  bool reversed = false;
+    virtual bool hasRGB(void) { return Bus::hasRGB(_type); }
+    static  bool hasRGB(uint8_t type) {
+      if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_ANALOG_1CH || type == TYPE_ANALOG_2CH || type == TYPE_ONOFF) return false;
+      return true;
+    }
+    virtual bool hasWhite(void) { return Bus::hasWhite(_type); }
+    static  bool hasWhite(uint8_t type) {
+      if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_SK6812_RGBW || type == TYPE_TM1814 || type == TYPE_UCS8904) return true; // digital types with white channel
+      if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true; // analog types with white channel
+      if (type == TYPE_NET_DDP_RGBW) return true; // network types with white channel
+      return false;
+    }
+    virtual bool hasCCT(void) { return Bus::hasCCT(_type); }
+    static  bool hasCCT(uint8_t type) {
+      if (type == TYPE_WS2812_2CH_X3 || type == TYPE_WS2812_WWA ||
+          type == TYPE_ANALOG_2CH    || type == TYPE_ANALOG_5CH) return true;
+      return false;
+    }
+    static void setCCT(uint16_t cct) {
+      _cct = cct;
+    }
+    static void setCCTBlend(uint8_t b) {
+      if (b > 100) b = 100;
+      _cctBlend = (b * 127) / 100;
+      //compile-time limiter for hardware that can't power both white channels at max
+      #ifdef WLED_MAX_CCT_BLEND
+        if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
+      #endif
+    }
+    inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
+    inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
+    inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
+    inline static uint8_t getGlobalAWMode()           { return _gAWM; }
 
   protected:
-  uint8_t _type = TYPE_NONE;
-  uint8_t _bri = 255;
-  uint16_t _start = 0;
-  bool _valid = false;
+    uint8_t  _type;
+    uint8_t  _bri;
+    uint16_t _start;
+    uint16_t _len;
+    bool     _reversed;
+    bool     _valid;
+    bool     _needsRefresh;
+    uint8_t  _autoWhiteMode;
+    uint8_t  *_data;
+    static uint8_t _gAWM;
+    static int16_t _cct;
+    static uint8_t _cctBlend;
+
+    uint32_t autoWhiteCalc(uint32_t c);
+    uint8_t *allocData(size_t size = 1);
+    void     freeData() { if (_data != nullptr) free(_data); _data = nullptr; }
 };
 
 
 class BusDigital : public Bus {
   public:
-  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
-    if (!IS_DIGITAL(bc.type) || !bc.count) return;
-    if (!pinManager.allocatePin(bc.pins[0])) return;
-    _pins[0] = bc.pins[0];
-    if (IS_2PIN(bc.type)) {
-      if (!pinManager.allocatePin(bc.pins[1])) {
-        cleanup(); return;
+    BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com);
+    ~BusDigital() { cleanup(); }
+
+    void show() override;
+    bool canShow() override;
+    void setBrightness(uint8_t b) override;
+    void setStatusPixel(uint32_t c) override;
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    void setColorOrder(uint8_t colorOrder) override;
+    uint32_t getPixelColor(uint16_t pix) override;
+    uint8_t  getColorOrder() override  { return _colorOrder; }
+    uint8_t  getPins(uint8_t* pinArray) override;
+    uint8_t  skippedLeds() override    { return _skip; }
+    uint16_t getFrequency() override   { return _frequencykHz; }
+    uint8_t  estimateCurrentAndLimitBri();
+    uint16_t getLEDCurrent() override  { return _milliAmpsPerLed; }
+    uint16_t getUsedCurrent() override { return _milliAmpsTotal; }
+    uint16_t getMaxCurrent() override  { return _milliAmpsMax; }
+    void reinit();
+    void cleanup();
+
+  private:
+    uint8_t _skip;
+    uint8_t _colorOrder;
+    uint8_t _pins[2];
+    uint8_t _iType;
+    uint16_t _frequencykHz;
+    uint8_t _milliAmpsPerLed;
+    uint16_t _milliAmpsMax;
+    void * _busPtr;
+    const ColorOrderMap &_colorOrderMap;
+
+    static uint16_t _milliAmpsTotal; // is overwitten/recalculated on each show()
+
+    inline uint32_t restoreColorLossy(uint32_t c, uint8_t restoreBri) {
+      if (restoreBri < 255) {
+        uint8_t* chan = (uint8_t*) &c;
+        for (uint_fast8_t i=0; i<4; i++) {
+          uint_fast16_t val = chan[i];
+          chan[i] = ((val << 8) + restoreBri) / (restoreBri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
+        }
       }
-      _pins[1] = bc.pins[1];
+      return c;
     }
-    reversed = bc.reversed;
-    _skip = bc.skipAmount;    //sacrificial pixels
-    _len = bc.count + _skip;
-    _iType = PolyBus::getI(bc.type, _pins, nr);
-    if (_iType == I_NONE) return;
-    _busPtr = PolyBus::create(_iType, _pins, _len, nr);
-    _valid = (_busPtr != nullptr);
-    _colorOrder = bc.colorOrder;
-    //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
-  };
-
-  inline void show() {
-    PolyBus::show(_busPtr, _iType);
-  }
-
-  inline bool canShow() {
-    return PolyBus::canShow(_busPtr, _iType);
-  }
-
-  void setBrightness(uint8_t b) {
-    //Fix for turning off onboard LED breaking bus
-    #ifdef LED_BUILTIN
-    if (_bri == 0 && b > 0) {
-      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins); 
-    }
-    #endif
-    _bri = b;
-    PolyBus::setBrightness(_busPtr, _iType, b);
-  }
-
-  void setPixelColor(uint16_t pix, uint32_t c) {
-    if (reversed) pix = _len - pix -1;
-    else pix += _skip;
-    PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
-  }
-
-  uint32_t getPixelColor(uint16_t pix) {
-    if (reversed) pix = _len - pix -1;
-    else pix += _skip;
-    return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
-  }
-
-  inline uint8_t getColorOrder() {
-    return _colorOrder;
-  }
-
-  inline uint16_t getLength() {
-    return _len - _skip;
-  }
-
-  uint8_t getPins(uint8_t* pinArray) {
-    uint8_t numPins = IS_2PIN(_type) ? 2 : 1;
-    for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
-    return numPins;
-  }
-
-  void setColorOrder(uint8_t colorOrder) {
-    if (colorOrder > 5) return;
-    _colorOrder = colorOrder;
-  }
-
-  inline bool isRgbw() {
-    return (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814);
-  }
-
-  inline uint8_t skippedLeds() {
-    return _skip;
-  }
-
-  inline void reinit() {
-    PolyBus::begin(_busPtr, _iType, _pins);
-  }
-
-  void cleanup() {
-    //Serial.println("Digital Cleanup");
-    PolyBus::cleanup(_busPtr, _iType);
-    _iType = I_NONE;
-    _valid = false;
-    _busPtr = nullptr;
-    pinManager.deallocatePin(_pins[0]);
-    pinManager.deallocatePin(_pins[1]);
-  }
-
-  ~BusDigital() {
-    cleanup();
-  }
-
-  private: 
-  uint8_t _colorOrder = COL_ORDER_GRB;
-  uint8_t _pins[2] = {255, 255};
-  uint8_t _iType = I_NONE;
-  uint16_t _len = 0;
-  uint8_t _skip = 0;
-  void * _busPtr = nullptr;
 };
 
 
 class BusPwm : public Bus {
   public:
-  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
-    if (!IS_PWM(bc.type)) return;
-    uint8_t numPins = NUM_PWM_PINS(bc.type);
+    BusPwm(BusConfig &bc);
+    ~BusPwm() { cleanup(); }
 
-    #ifdef ESP8266
-    analogWriteRange(255);  //same range as one RGB channel
-    analogWriteFreq(WLED_PWM_FREQ);
-    #else
-    _ledcStart = pinManager.allocateLedc(numPins);
-    if (_ledcStart == 255) { //no more free LEDC channels
-      deallocatePins(); return;
-    }
-    #endif
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    uint32_t getPixelColor(uint16_t pix) override; //does no index check
+    uint8_t  getPins(uint8_t* pinArray) override;
+    uint16_t getFrequency() override { return _frequency; }
+    void show() override;
+    void cleanup() { deallocatePins(); }
 
-    for (uint8_t i = 0; i < numPins; i++) {
-      uint8_t currentPin = bc.pins[i];
-      if (!pinManager.allocatePin(currentPin)) {
-        deallocatePins(); return;
-      }
-      _pins[i] = currentPin; // store only after allocatePin() succeeds
-      #ifdef ESP8266
-      pinMode(_pins[i], OUTPUT);
-      #else
-      ledcSetup(_ledcStart + i, WLED_PWM_FREQ, 8);
-      ledcAttachPin(_pins[i], _ledcStart + i);
-      #endif
-    }
-    reversed = bc.reversed;
-    _valid = true;
-  };
-
-  void setPixelColor(uint16_t pix, uint32_t c) {
-    if (pix != 0 || !_valid) return; //only react to first pixel
-    uint8_t r = c >> 16;
-    uint8_t g = c >>  8;
-    uint8_t b = c      ;
-    uint8_t w = c >> 24;
-
-    switch (_type) {
-      case TYPE_ANALOG_1CH: //one channel (white), use highest RGBW value
-        _data[0] = max(r, max(g, max(b, w))); break;
-      
-      case TYPE_ANALOG_2CH: //warm white + cold white, we'll need some nice handling here, for now just R+G channels
-      case TYPE_ANALOG_3CH: //standard dumb RGB
-      case TYPE_ANALOG_4CH: //RGBW
-      case TYPE_ANALOG_5CH: //we'll want the white handling from 2CH here + RGB
-        _data[0] = r; _data[1] = g; _data[2] = b; _data[3] = w; _data[4] = 0; break;
-
-      default: return;
-    }
-  }
-
-  //does no index check
-  uint32_t getPixelColor(uint16_t pix) {
-    return ((_data[3] << 24) | (_data[0] << 16) | (_data[1] << 8) | (_data[2]));
-  }
-
-  void show() {
-    uint8_t numPins = NUM_PWM_PINS(_type);
-    for (uint8_t i = 0; i < numPins; i++) {
-      uint8_t scaled = (_data[i] * _bri) / 255;
-      if (reversed) scaled = 255 - scaled;
-      #ifdef ESP8266
-      analogWrite(_pins[i], scaled);
-      #else
-      ledcWrite(_ledcStart + i, scaled);
-      #endif
-    }
-  }
-
-  inline void setBrightness(uint8_t b) {
-    _bri = b;
-  }
-
-  uint8_t getPins(uint8_t* pinArray) {
-    uint8_t numPins = NUM_PWM_PINS(_type);
-    for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
-    return numPins;
-  }
-
-  bool isRgbw() {
-    return (_type > TYPE_ONOFF && _type <= TYPE_ANALOG_5CH && _type != TYPE_ANALOG_3CH);
-  }
-
-  inline void cleanup() {
-    deallocatePins();
-  }
-
-  ~BusPwm() {
-    cleanup();
-  }
-
-  private: 
-  uint8_t _pins[5] = {255, 255, 255, 255, 255};
-  uint8_t _data[5] = {255, 255, 255, 255, 255};
-  #ifdef ARDUINO_ARCH_ESP32
-  uint8_t _ledcStart = 255;
-  #endif
-
-  void deallocatePins() {
-    uint8_t numPins = NUM_PWM_PINS(_type);
-    for (uint8_t i = 0; i < numPins; i++) {
-      if (!pinManager.isPinOk(_pins[i])) continue;
-      #ifdef ESP8266
-      digitalWrite(_pins[i], LOW); //turn off PWM interrupt
-      #else
-      if (_ledcStart < 16) ledcDetachPin(_pins[i]);
-      #endif
-      pinManager.deallocatePin(_pins[i]);
-    }
+  private:
+    uint8_t _pins[5];
+    uint8_t _pwmdata[5];
     #ifdef ARDUINO_ARCH_ESP32
-    pinManager.deallocateLedc(_ledcStart, numPins);
+    uint8_t _ledcStart;
     #endif
-  }
+    uint16_t _frequency;
+
+    void deallocatePins();
 };
+
+
+class BusOnOff : public Bus {
+  public:
+    BusOnOff(BusConfig &bc);
+    ~BusOnOff() { cleanup(); }
+
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    uint32_t getPixelColor(uint16_t pix) override;
+    uint8_t  getPins(uint8_t* pinArray) override;
+    void show() override;
+    void cleanup() { pinManager.deallocatePin(_pin, PinOwner::BusOnOff); }
+
+  private:
+    uint8_t _pin;
+    uint8_t _onoffdata;
+};
+
+
+class BusNetwork : public Bus {
+  public:
+    BusNetwork(BusConfig &bc);
+    ~BusNetwork() { cleanup(); }
+
+    bool hasRGB() override   { return true; }
+    bool hasWhite() override { return _rgbw; }
+    bool canShow() override  { return !_broadcastLock; } // this should be a return value from UDP routine if it is still sending data out
+    void setPixelColor(uint16_t pix, uint32_t c) override;
+    uint32_t getPixelColor(uint16_t pix) override;
+    uint8_t  getPins(uint8_t* pinArray) override;
+    void show() override;
+    void cleanup();
+
+  private:
+    IPAddress _client;
+    uint8_t   _UDPtype;
+    uint8_t   _UDPchannels;
+    bool      _rgbw;
+    bool      _broadcastLock;
+};
+
 
 class BusManager {
   public:
-  BusManager() {
+    BusManager() {};
 
-  };
+    //utility to get the approx. memory usage of a given BusConfig
+    static uint32_t memUsage(BusConfig &bc);
+    static uint16_t currentMilliamps(void) { return _milliAmpsUsed; }
+    static uint16_t ablMilliampsMax(void)  { return _milliAmpsMax; }
 
-  //utility to get the approx. memory usage of a given BusConfig
-  static uint32_t memUsage(BusConfig &bc) {
-    uint8_t type = bc.type;
-    uint16_t len = bc.count;
-    if (type < 32) {
-      #ifdef ESP8266
-        if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
-          if (type > 29) return len*20; //RGBW
-          return len*15;
-        }
-        if (type > 29) return len*4; //RGBW
-        return len*3;
-      #else //ESP32 RMT uses double buffer?
-        if (type > 29) return len*8; //RGBW
-        return len*6;
-      #endif
-    }
+    static int add(BusConfig &bc);
 
-    if (type > 31 && type < 48) return 5;
-    if (type == 44 || type == 45) return len*4; //RGBW
-    return len*3;
-  }
-  
-  int add(BusConfig &bc) {
-    if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(bc.type)) {
-      busses[numBusses] = new BusDigital(bc, numBusses);
-    } else {
-      busses[numBusses] = new BusPwm(bc);
-    }
-    return numBusses++;
-  }
+    //do not call this method from system context (network callback)
+    static void removeAll();
 
-  //do not call this method from system context (network callback)
-  void removeAll() {
-    //Serial.println("Removing all.");
-    //prevents crashes due to deleting busses while in use. 
-    while (!canAllShow()) yield();
-    for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
-    numBusses = 0;
-  }
+    static void show();
+    static bool canAllShow();
+    static void setStatusPixel(uint32_t c);
+    static void setPixelColor(uint16_t pix, uint32_t c);
+    static void setBrightness(uint8_t b);
+    static void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
+    static void setMilliampsMax(uint16_t max) { _milliAmpsMax = max;}
+    static uint32_t getPixelColor(uint16_t pix);
 
-  void show() {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      busses[i]->show();
-    }
-  }
+    static Bus* getBus(uint8_t busNr);
 
-  void setPixelColor(uint16_t pix, uint32_t c) {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      Bus* b = busses[i];
-      uint16_t bstart = b->getStart();
-      if (pix < bstart || pix >= bstart + b->getLength()) continue;
-      busses[i]->setPixelColor(pix - bstart, c);
-      break;
-    }
-  }
+    //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
+    static uint16_t getTotalLength();
+    static uint8_t getNumBusses() { return numBusses; }
 
-  void setBrightness(uint8_t b) {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      busses[i]->setBrightness(b);
-    }
-  }
-
-  uint32_t getPixelColor(uint16_t pix) {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      Bus* b = busses[i];
-      uint16_t bstart = b->getStart();
-      if (pix < bstart || pix >= bstart + b->getLength()) continue;
-      return b->getPixelColor(pix - bstart);
-    }
-    return 0;
-  }
-
-  bool canAllShow() {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      if (!busses[i]->canShow()) return false;
-    }
-    return true;
-  }
-
-  Bus* getBus(uint8_t busNr) {
-    if (busNr >= numBusses) return nullptr;
-    return busses[busNr];
-  }
-
-  inline uint8_t getNumBusses() {
-    return numBusses;
-  }
-
-  uint16_t getTotalLength() {
-    uint16_t len = 0;
-    for (uint8_t i=0; i<numBusses; i++ ) len += busses[i]->getLength();
-    return len;
-  }
-
-  static inline bool isRgbw(uint8_t type) {
-    return Bus::isRgbw(type);
-  }
-
-  //Return true if the strip requires a refresh to stay off.
-  static bool isOffRefreshRequred(uint8_t type) {
-    return type == TYPE_TM1814;
-  }
+    static void                 updateColorOrderMap(const ColorOrderMap &com) { memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap)); }
+    static const ColorOrderMap& getColorOrderMap() { return colorOrderMap; }
 
   private:
-  uint8_t numBusses = 0;
-  Bus* busses[WLED_MAX_BUSSES];
+    static uint8_t numBusses;
+    static Bus* busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
+    static ColorOrderMap colorOrderMap;
+    static uint16_t _milliAmpsUsed;
+    static uint16_t _milliAmpsMax;
+
+    static uint8_t getNumVirtualBusses() {
+      int j = 0;
+      for (int i=0; i<numBusses; i++) if (busses[i]->getType() >= TYPE_NET_DDP_RGB && busses[i]->getType() < 96) j++;
+      return j;
+    }
 };
 #endif

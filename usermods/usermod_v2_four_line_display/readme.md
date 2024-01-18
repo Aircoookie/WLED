@@ -2,9 +2,9 @@
 
 First, thanks to the authors of the ssd11306_i2c_oled_u8g2 mod.
 
-This usermod provides a four line display using either
+Provides a four line display using either
 128x32 or 128x64 OLED displays.
-It's can operate independently, but starts to provide
+It can operate independently, but starts to provide
 a relatively complete on-device UI when paired with the 
 Rotary Encoder UI usermod. I strongly encourage you to use 
 them together.
@@ -19,11 +19,11 @@ This file should be placed in the same directory as `platformio.ini`.
 
 ### Define Your Options
 
-* `USERMOD_FOUR_LINE_DISPLAY`  - define this to have this the Four Line Display mod included wled00\usermods_list.cpp - also tells Rotary Encoder usermod, if installed, that the display is available
+* `USERMOD_FOUR_LINE_DISPLAY`  - define this to have this mod included wled00\usermods_list.cpp - also tells Rotary Encoder usermod, if installed, the display is available
 * `FLD_PIN_SCL`                - The display SCL pin, defaults to 5
 * `FLD_PIN_SDA`                - The display SDA pin, defaults to 4
 
-All of the parameters can be configured using Usermods settings page, inluding GPIO pins.
+All of the parameters can be configured via the Usermods settings page, inluding GPIO pins.
 
 ### PlatformIO requirements
 
@@ -31,9 +31,33 @@ This usermod requires the `U8g2` and `Wire` libraries. See the
 `platformio_override.ini.sample` found in the Rotary Encoder
 UI usermod folder for how to include these using `platformio_override.ini`.
 
+## Configuration
+
+* `enabled` - enable/disable usermod
+* `pin` - GPIO pins used for display; I2C displays use Clk & Data; SPI displays can use SCK, MOSI, CS, DC & RST
+* `type` - display type in numeric format
+    * 1 = I2C SSD1306 128x32
+    * 2 = I2C SH1106 128x32
+    * 3 = I2C SSD1306 128x64 (4 double-height lines)
+    * 4 = I2C SSD1305 128x32
+    * 5 = I2C SSD1305 128x64 (4 double-height lines)
+    * 6 = SPI SSD1306 128x32
+    * 7 = SPI SSD1306 128x64 (4 double-height lines)
+* `contrast` - set display contrast (higher contrast may reduce display lifetime)
+* `refreshRateSec` - display refresh time in seconds
+* `screenTimeOutSec` - screen saver time-out in seconds
+* `flip` - flip/rotate display 180°
+* `sleepMode` - enable/disable screen saver
+* `clockMode` - enable/disable clock display in screen saver mode
+* `i2c-freq-kHz` - I2C clock frequency in kHz (may help reduce dropped frames, range: 400-3400)
+
 ## Change Log
 
 2021-02
 * First public release
+
 2021-04
 * Adaptation for runtime configuration.
+
+2021-11
+* Added configuration option description.

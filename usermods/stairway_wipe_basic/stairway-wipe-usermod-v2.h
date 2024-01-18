@@ -91,12 +91,13 @@ class StairwayWipeUsermod : public Usermod {
     void startWipe()
     {
     bri = briLast; //turn on
-    transitionDelayTemp = 0; //no transition
+    jsonTransitionOnce = true;
+    strip.setTransition(0); //no transition
     effectCurrent = FX_MODE_COLOR_WIPE;
     resetTimebase(); //make sure wipe starts from beginning
 
     //set wipe direction
-    WS2812FX::Segment& seg = strip.getSegment(0);
+    Segment& seg = strip.getSegment(0);
     bool doReverse = (userVar0 == 2);
     seg.setOption(1, doReverse);
 
@@ -105,13 +106,14 @@ class StairwayWipeUsermod : public Usermod {
 
     void turnOff()
     {
+    jsonTransitionOnce = true;
     #ifdef STAIRCASE_WIPE_OFF
-    transitionDelayTemp = 0; //turn off immediately after wipe completed
+    strip.setTransition(0); //turn off immediately after wipe completed
     #else
-    transitionDelayTemp = 4000; //fade out slowly
+    strip.setTransition(4000); //fade out slowly
     #endif
     bri = 0;
-    colorUpdated(CALL_MODE_NOTIFICATION);
+    stateUpdated(CALL_MODE_NOTIFICATION);
     wipeState = 0;
     userVar0 = 0;
     previousUserVar0 = 0;

@@ -55,7 +55,7 @@ void unloadPlaylist() {
 
 int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
   unloadPlaylist();
-  
+
   JsonArray presets = playlistObj["ps"];
   playlistLen = presets.size();
   if (playlistLen == 0) return -1;
@@ -107,9 +107,12 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
 
   playlistRepeat = rep;
   if (playlistRepeat > 0) playlistRepeat++; //add one extra repetition immediately since it will be deducted on first start
-  playlistEndPreset = playlistObj[F("end")] | 0;
+  playlistEndPreset = playlistObj["end"] | 0;
+  // if end preset is 255 restore original preset (if any running) upon playlist end
+  if (playlistEndPreset == 255 && currentPreset > 0) playlistEndPreset = currentPreset;
+  if (playlistEndPreset > 250) playlistEndPreset = 0;
   shuffle = shuffle || playlistObj["r"];
-  if (shuffle) playlistOptions += PL_OPTION_SHUFFLE;
+  if (shuffle) playlistOptions |= PL_OPTION_SHUFFLE;
 
   currentPlaylist = presetId;
   DEBUG_PRINTLN(F("Playlist loaded."));
@@ -118,7 +121,9 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
 
 
 void handlePlaylist() {
-  if (currentPlaylist < 0 || playlistEntries == nullptr) return;
+  static unsigned long presetCycledTime = 0;
+  // if fileDoc is not null JSON buffer is in use so just quit
+  if (currentPlaylist < 0 || playlistEntries == nullptr || fileDoc != nullptr) return;
 
   if (millis() - presetCycledTime > (100*playlistEntryDur)) {
     presetCycledTime = millis();
@@ -139,8 +144,24 @@ void handlePlaylist() {
     }
 
     jsonTransitionOnce = true;
-    transitionDelayTemp = playlistEntries[playlistIndex].tr * 100;
+    strip.setTransition(fadeTransition ? playlistEntries[playlistIndex].tr * 100 : 0);
     playlistEntryDur = playlistEntries[playlistIndex].dur;
     applyPreset(playlistEntries[playlistIndex].preset);
+  }
+}
+
+
+void serializePlaylist(JsonObject sObj) {
+  JsonObject playlist = sObj.createNestedObject(F("playlist"));
+  JsonArray ps = playlist.createNestedArray("ps");
+  JsonArray dur = playlist.createNestedArray("dur");
+  JsonArray transition = playlist.createNestedArray(F("transition"));
+  playlist[F("repeat")] = (playlistIndex < 0 && playlistRepeat > 0) ? playlistRepeat - 1 : playlistRepeat; // remove added repetition count (if not yet running)
+  playlist["end"] = playlistEndPreset;
+  playlist["r"] = playlistOptions & PL_OPTION_SHUFFLE;
+  for (int i=0; i<playlistLen; i++) {
+    ps.add(playlistEntries[i].preset);
+    dur.add(playlistEntries[i].dur);
+    transition.add(playlistEntries[i].tr);
   }
 }

@@ -1,8 +1,22 @@
 #ifndef WLED_ETHERNET_H
 #define WLED_ETHERNET_H
 
+#include "pin_manager.h"
+
 #ifdef WLED_USE_ETHERNET
-// settings for various ethernet boards
+
+// For ESP32, the remaining five pins are at least somewhat configurable.
+// eth_address  is in range [0..31], indicates which PHY (MAC?) address should be allocated to the interface
+// eth_power    is an output GPIO pin used to enable/disable the ethernet port (and/or external oscillator)
+// eth_mdc      is an output GPIO pin used to provide the clock for the management data
+// eth_mdio     is an input/output GPIO pin used to transfer management data
+// eth_type     is the physical ethernet module's type (ETH_PHY_LAN8720, ETH_PHY_TLK110)
+// eth_clk_mode defines the GPIO pin and GPIO mode for the clock signal
+//              However, there are really only four configurable options on ESP32:
+//              ETH_CLOCK_GPIO0_IN    == External oscillator, clock input  via GPIO0
+//              ETH_CLOCK_GPIO0_OUT   == ESP32 provides 50MHz clock output via GPIO0
+//              ETH_CLOCK_GPIO16_OUT  == ESP32 provides 50MHz clock output via GPIO16
+//              ETH_CLOCK_GPIO17_OUT  == ESP32 provides 50MHz clock output via GPIO17
 typedef struct EthernetSettings {
   uint8_t        eth_address;
   int            eth_power;
@@ -12,83 +26,10 @@ typedef struct EthernetSettings {
   eth_clock_mode_t eth_clk_mode;
 } ethernet_settings;
 
-ethernet_settings ethernetBoards[] = {
-  // None
-  {
-  },
-  
-  // WT32-EHT01
-  // Please note, from my testing only these pins work for LED outputs:
-  //   IO2, IO4, IO12, IO14, IO15
-  // Pins IO34 through IO39 are input-only on ESP32, so
-  // the following exposed pins won't work to drive WLEDs
-  //   IO35(*), IO36, IO39
-  // The following pins are also exposed via the headers,
-  // and likely can be used as general purpose IO:
-  //   IO05(*), IO32 (CFG), IO33 (485_EN), IO33 (TXD)
-  //
-  //   (*) silkscreen on board revision v1.2 may be wrong:
-  //       IO5 silkscreen on v1.2 says IO35
-  //       IO35 silkscreen on v1.2 says RXD
-  {
-    1,                 // eth_address, 
-    16,                // eth_power, 
-    23,                // eth_mdc, 
-    18,                // eth_mdio, 
-    ETH_PHY_LAN8720,   // eth_type,
-    ETH_CLOCK_GPIO0_IN // eth_clk_mode
-  },
+extern const ethernet_settings ethernetBoards[];
 
-  // ESP32-POE
-  {
-     0,                  // eth_address, 
-    12,                  // eth_power, 
-    23,                  // eth_mdc, 
-    18,                  // eth_mdio, 
-    ETH_PHY_LAN8720,     // eth_type,
-    ETH_CLOCK_GPIO17_OUT // eth_clk_mode
-  },
-
-   // WESP32
-  {
-    0,			              // eth_address,
-    -1,			              // eth_power,
-    16,			              // eth_mdc,
-    17,			              // eth_mdio,
-    ETH_PHY_LAN8720,      // eth_type,
-    ETH_CLOCK_GPIO0_IN	  // eth_clk_mode
-  },
-
-  // QuinLed-ESP32-Ethernet
-  {
-    0,			              // eth_address,
-    5,			              // eth_power,
-    23,			              // eth_mdc,
-    18,			              // eth_mdio,
-    ETH_PHY_LAN8720,      // eth_type,
-    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
-  },
-
-  // TwilightLord-ESP32 Ethernet Shield
-  {
-    0,			              // eth_address,
-    5,			              // eth_power,
-    23,			              // eth_mdc,
-    18,			              // eth_mdio,
-    ETH_PHY_LAN8720,      // eth_type,
-    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
-  },
-
-  // ESP3DEUXQuattro
-  {
-    1,                 // eth_address, 
-    -1,                // eth_power, 
-    23,                // eth_mdc, 
-    18,                // eth_mdio, 
-    ETH_PHY_LAN8720,   // eth_type,
-    ETH_CLOCK_GPIO17_OUT // eth_clk_mode
-  }
-};
+#define WLED_ETH_RSVD_PINS_COUNT 6
+extern const managed_pin_type esp32_nonconfigurable_ethernet_pins[WLED_ETH_RSVD_PINS_COUNT];
 #endif
 
 #endif
