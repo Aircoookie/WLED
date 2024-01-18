@@ -445,7 +445,7 @@ void WLED::setup()
   usermods.setup();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
+  if (strcmp(clientNetsSSID[0], DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
   #ifdef WLED_USE_ETHERNET
@@ -743,15 +743,44 @@ void WLED::initConnection()
 
   if (WLED_WIFI_CONFIGURED) {
     showWelcomePage = false;
-    
-    DEBUG_PRINT(F("Connecting to "));
-    DEBUG_PRINT(clientSSID);
-    DEBUG_PRINTLN("...");
 
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];
     prepareHostname(hostname);
-    WiFi.begin(clientSSID, clientPass);
+    
+    bool found_network = false;
+    int16_t nets = WiFi.scanNetworks();
+    if (nets > 0) {
+      for (byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+        for (int16_t o = 0; o < nets; o++) {
+          if (strcmp(WiFi.SSID(o).c_str(), clientNetsSSID[i]) == 0) {
+            found_network = true;
+
+            DEBUG_PRINT(F("Connecting to "));
+            DEBUG_PRINT(clientNetsSSID[i]);
+            DEBUG_PRINT("... ");
+
+            WiFi.begin(clientNetsSSID[i], clientNetsPass[i]);
+            int delay_count = 0;
+            // I was thinking about 10 seconds, but "Last reconnect too old" message was being fired immediately
+            while (WiFi.status() == WL_IDLE_STATUS && delay_count++ < 50) {
+                delay(100);
+            }
+
+            if (WiFi.isConnected()) {
+              DEBUG_PRINTLN("Connected!");
+              break;
+            } else {
+              DEBUG_PRINT(F("Failed to connect after 5 seconds with result "));
+              DEBUG_PRINTLN(WiFi.status());
+            }
+          }
+        }
+        if (WiFi.isConnected()) break;
+      }
+    }
+    if (!found_network) DEBUG_PRINTLN(F("No known network was found"));
+
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
     WiFi.setTxPower(WIFI_POWER_8_5dBm);

@@ -431,6 +431,6 @@ void sendDataWs(AsyncWebSocketClient * client = nullptr);
 //xml.cpp
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
 void URL_response(AsyncWebServerRequest *request);
-void getSettingsJS(byte subPage, char* dest);
+void getSettingsJS(byte subPage, char* dest, byte subSettings);
 
 #endif

@@ -19,20 +19,24 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == SUBPAGE_WIFI)
   {
-    char oldSSID[sizeof(clientSSID)];
+    char tmp[4];
+    byte i;
+    for (i = 0; i < WLED_MAX_SAVED_NETWORKS; i++) {
+      sprintf_P(tmp, PSTR("CS%d"), i);
+      if (request->arg(tmp).isEmpty()) break;
+      strlcpy(clientNetsSSID[i], request->arg(tmp).c_str(), 33);
 
-    strcpy(oldSSID, clientSSID);
-    strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
-    if (!strcmp(oldSSID, clientSSID)) forceReconnect = true;
-
-    if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) {
-      strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
-      forceReconnect = true;
+      sprintf_P(tmp, PSTR("CP%d"), i);
+      if (!isAsterisksOnly(request->arg(tmp).c_str(), 65)) {
+        strlcpy(clientNetsPass[i], request->arg(tmp).c_str(), 65);
+      }
     }
+    clientSavedNets = i;
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
 
     apBehavior = request->arg(F("AB")).toInt();
+    char oldSSID[sizeof(apSSID)];
     strcpy(oldSSID, apSSID);
     strlcpy(apSSID, request->arg(F("AS")).c_str(), 33);
     if (!strcmp(oldSSID, apSSID) && apActive) forceReconnect = true;

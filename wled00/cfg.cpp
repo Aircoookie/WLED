@@ -41,11 +41,32 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 #endif
 
   JsonObject nw_ins_0 = nw["ins"][0];
-  getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
-  //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
-  //The WiFi PSK is normally not contained in the regular file for security reasons.
-  //If it is present however, we will use it
-  getStringFromJson(clientPass, nw_ins_0["psk"], 65);
+  if (nw_ins_0.containsKey(F("ssid"))) {
+    //This is for backward compatibility only.
+    getStringFromJson(clientNetsSSID[0], nw_ins_0[F("ssid")], 33);
+    if (nw_ins_0.containsKey(F("psk"))) {
+      getStringFromJson(clientNetsPass[0], nw_ins_0[F("psk")], 65);
+    }
+    if (WLED_WIFI_CONFIGURED) clientSavedNets = 1;
+    needsSave = true;
+  } else {
+    char tmp[6];
+    byte i;
+    for (i = 0; i < WLED_MAX_SAVED_NETWORKS; i++)
+    {
+      sprintf_P(tmp, PSTR("ssid%d"), i);
+      if (!nw_ins_0.containsKey(tmp)) break;
+      getStringFromJson(clientNetsSSID[i], nw_ins_0[tmp], 33);
+      //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
+      //The WiFi PSK is normally not contained in the regular file for security reasons.
+      //If it is present however, we will use it
+      sprintf_P(tmp, PSTR("psk%d"), i);
+      if (nw_ins_0.containsKey(tmp)) {
+        getStringFromJson(clientNetsPass[i], nw_ins_0[tmp], 65);
+      }
+    }
+    clientSavedNets = i;
+  }
 
   JsonArray nw_ins_0_ip = nw_ins_0["ip"];
   JsonArray nw_ins_0_gw = nw_ins_0["gw"];
@@ -667,8 +688,13 @@ void serializeConfig() {
   JsonArray nw_ins = nw.createNestedArray("ins");
 
   JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  nw_ins_0[F("ssid")] = clientSSID;
-  nw_ins_0[F("pskl")] = strlen(clientPass);
+  char tmp[6];
+  for(byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+    sprintf_P(tmp, PSTR("ssid%d"), i);
+    nw_ins_0[tmp] = clientNetsSSID[i];
+    sprintf_P(tmp, PSTR("pskl%d"), i);
+    nw_ins_0[tmp] = strlen(clientNetsPass[i]);
+  }
 
   JsonArray nw_ins_0_ip = nw_ins_0.createNestedArray("ip");
   JsonArray nw_ins_0_gw = nw_ins_0.createNestedArray("gw");
@@ -1049,7 +1075,18 @@ bool deserializeConfigSec() {
   JsonObject root = pDoc->as<JsonObject>();
 
   JsonObject nw_ins_0 = root["nw"]["ins"][0];
-  getStringFromJson(clientPass, nw_ins_0["psk"], 65);
+  if (nw_ins_0.containsKey(F("psk"))) {
+    //This is for backward compatibility only.
+    getStringFromJson(clientNetsPass[0], nw_ins_0[F("psk")], 65);
+  } else {
+    char tmp[6];
+    for (byte i = 0; i < WLED_MAX_SAVED_NETWORKS; i++) {
+      sprintf_P(tmp, PSTR("psk%d"), i);
+      if (nw_ins_0.containsKey(tmp)) {
+        getStringFromJson(clientNetsPass[i], nw_ins_0[tmp], 65);
+      }
+    }
+  }
 
   JsonObject ap = root["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
@@ -1090,7 +1127,11 @@ void serializeConfigSec() {
   JsonArray nw_ins = nw.createNestedArray("ins");
 
   JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  nw_ins_0["psk"] = clientPass;
+  char tmp[6];
+  for(byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+    sprintf_P(tmp, PSTR("psk%d"), i);
+    nw_ins_0[tmp] = clientNetsPass[i];
+  }
 
   JsonObject ap = root.createNestedObject("ap");
   ap["psk"] = apPass;

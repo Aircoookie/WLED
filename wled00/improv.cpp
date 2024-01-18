@@ -259,15 +259,18 @@ void parseWiFiCommand(char* rpcData) {
 
   uint8_t ssidLen = rpcData[1];
   if (ssidLen > len -1 || ssidLen > 32) return;
-  memset(clientSSID, 0, 32);
-  memcpy(clientSSID, rpcData+2, ssidLen);
+  //This will set the first saved network.
+  //We could set any other "slot", but this would have a backward compatibility I think
+  memset(clientNetsSSID[0], 0, 32);
+  memcpy(clientNetsSSID[0], rpcData+2, ssidLen);
 
-  memset(clientPass, 0, 64);
+  memset(clientNetsPass[0], 0, 64);
   if (len > ssidLen +1) {
     uint8_t passLen = rpcData[2+ssidLen];
-    memset(clientPass, 0, 64);
-    memcpy(clientPass, rpcData+3+ssidLen, passLen);
+    memset(clientNetsPass[0], 0, 64);
+    memcpy(clientNetsPass[0], rpcData+3+ssidLen, passLen);
   }
+  if (clientSavedNets == 0 && strlen(clientNetsSSID[0]) > 0) clientSavedNets++;
 
   sendImprovStateResponse(0x03); //provisioning
   improvActive = 2;

@@ -226,11 +226,13 @@ void appendGPIOinfo() {
 }
 
 //get values for settings form in javascript
-void getSettingsJS(byte subPage, char* dest)
+void getSettingsJS(byte subPage, char* dest, byte subSettings)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT(F("settings resp"));
-  DEBUG_PRINTLN(subPage);
+  DEBUG_PRINT(subPage);
+  DEBUG_PRINT(F(" sub"));
+  DEBUG_PRINTLN(subSettings);
   obuf = dest;
   olen = 0;
 
@@ -248,88 +250,101 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_WIFI)
   {
-    sappends('s',SET_F("CS"),clientSSID);
+    if (subSettings == SUBPAGE_MAIN_SETTINGS) {
+      char k[3]; k[2] = 0; //IP addresses
+      for (int i = 0; i<4; i++)
+      {
+        k[1] = 48+i; //ascii 0,1,2,3
+        k[0] = 'I'; sappend('v',k,staticIP[i]);
+        k[0] = 'G'; sappend('v',k,staticGateway[i]);
+        k[0] = 'S'; sappend('v',k,staticSubnet[i]);
+      }
 
-    byte l = strlen(clientPass);
-    char fpass[l+1]; //fill password field with ***
-    fpass[l] = 0;
-    memset(fpass,'*',l);
-    sappends('s',SET_F("CP"),fpass);
+      sappends('s',SET_F("CM"),cmDNS);
+      sappend('i',SET_F("AB"),apBehavior);
+      sappends('s',SET_F("AS"),apSSID);
+      sappend('c',SET_F("AH"),apHide);
 
-    char k[3]; k[2] = 0; //IP addresses
-    for (int i = 0; i<4; i++)
-    {
-      k[1] = 48+i; //ascii 0,1,2,3
-      k[0] = 'I'; sappend('v',k,staticIP[i]);
-      k[0] = 'G'; sappend('v',k,staticGateway[i]);
-      k[0] = 'S'; sappend('v',k,staticSubnet[i]);
-    }
+      byte l = strlen(apPass);
+      char fapass[l+1]; //fill password field with ***
+      fapass[l] = 0;
+      memset(fapass,'*',l);
+      sappends('s',SET_F("AP"),fapass);
 
-    sappends('s',SET_F("CM"),cmDNS);
-    sappend('i',SET_F("AB"),apBehavior);
-    sappends('s',SET_F("AS"),apSSID);
-    sappend('c',SET_F("AH"),apHide);
+      sappend('v',SET_F("AC"),apChannel);
+      sappend('c',SET_F("FG"),force802_3g);
+      sappend('c',SET_F("WS"),noWifiSleep);
 
-    l = strlen(apPass);
-    char fapass[l+1]; //fill password field with ***
-    fapass[l] = 0;
-    memset(fapass,'*',l);
-    sappends('s',SET_F("AP"),fapass);
-
-    sappend('v',SET_F("AC"),apChannel);
-    sappend('c',SET_F("FG"),force802_3g);
-    sappend('c',SET_F("WS"),noWifiSleep);
-
-    #ifndef WLED_DISABLE_ESPNOW
-    sappend('c',SET_F("RE"),enableESPNow);
-    sappends('s',SET_F("RMAC"),linked_remote);
-    #else
-    //hide remote settings if not compiled
-    oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
-    #endif
-
-    #ifdef WLED_USE_ETHERNET
-    sappend('v',SET_F("ETH"),ethernetType);
-    #else
-    //hide ethernet setting if not compiled in
-    oappend(SET_F("document.getElementById('ethd').style.display='none';"));
-    #endif
-
-    if (Network.isConnected()) //is connected
-    {
-      char s[32];
-      IPAddress localIP = Network.localIP();
-      sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
-
-      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-      if (Network.isEthernet()) strcat_P(s ,SET_F(" (Ethernet)"));
+      #ifndef WLED_DISABLE_ESPNOW
+      sappend('c',SET_F("RE"),enableESPNow);
+      sappends('s',SET_F("RMAC"),linked_remote);
+      #else
+      //hide remote settings if not compiled
+      oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
       #endif
-      sappends('m',SET_F("(\"sip\")[0]"),s);
-    } else
-    {
-      sappends('m',SET_F("(\"sip\")[0]"),(char*)F("Not connected"));
-    }
 
-    if (WiFi.softAPIP()[0] != 0) //is active
-    {
-      char s[16];
-      IPAddress apIP = WiFi.softAPIP();
-      sprintf(s, "%d.%d.%d.%d", apIP[0], apIP[1], apIP[2], apIP[3]);
-      sappends('m',SET_F("(\"sip\")[1]"),s);
-    } else
-    {
-      sappends('m',SET_F("(\"sip\")[1]"),(char*)F("Not active"));
-    }
+      #ifdef WLED_USE_ETHERNET
+      sappend('v',SET_F("ETH"),ethernetType);
+      #else
+      //hide ethernet setting if not compiled in
+      oappend(SET_F("document.getElementById('ethd').style.display='none';"));
+      #endif
 
-    #ifndef WLED_DISABLE_ESPNOW
-    if (strlen(last_signal_src) > 0) { //Have seen an ESP-NOW Remote
-      sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
-    } else if (!enableESPNow) {
-      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable ESP-NOW to listen)"));
-    } else {
-      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
+      if (Network.isConnected()) //is connected
+      {
+        char s[32];
+        IPAddress localIP = Network.localIP();
+        sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+
+        #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+        if (Network.isEthernet()) strcat_P(s ,SET_F(" (Ethernet)"));
+        #endif
+        sappends('m',SET_F("(\"sip\")[0]"),s);
+      } else
+      {
+        sappends('m',SET_F("(\"sip\")[0]"),(char*)F("Not connected"));
+      }
+
+      if (WiFi.softAPIP()[0] != 0) //is active
+      {
+        char s[16];
+        IPAddress apIP = WiFi.softAPIP();
+        sprintf(s, "%d.%d.%d.%d", apIP[0], apIP[1], apIP[2], apIP[3]);
+        sappends('m',SET_F("(\"sip\")[1]"),s);
+      } else
+      {
+        sappends('m',SET_F("(\"sip\")[1]"),(char*)F("Not active"));
+      }
+
+      #ifndef WLED_DISABLE_ESPNOW
+      if (strlen(last_signal_src) > 0) { //Have seen an ESP-NOW Remote
+        sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
+      } else if (!enableESPNow) {
+        sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable ESP-NOW to listen)"));
+      } else {
+        sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
+      }
+      #endif
+    } else if (SUBPAGE_WIFI_NETWORKS) {
+      oappend(SET_F("return ["));
+      oappendi(clientSavedNets);
+      oappend(SET_F(","));
+      oappendi(WLED_MAX_SAVED_NETWORKS);
+      oappend(SET_F(",["));
+      byte i,l;
+      for(i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+        oappend(SET_F("[\""));
+        oappend(clientNetsSSID[i]);
+        oappend(SET_F("\",\""));
+        l = strlen(clientNetsPass[i]);
+        char fpass[l+1]; //fill password field with ***
+        fpass[l] = 0;
+        memset(fpass,'*',l);
+        oappend(fpass);
+        oappend(SET_F("\"],"));
+      }
+      oappend(SET_F("]];"));
     }
-    #endif
   }
 
   if (subPage == SUBPAGE_LEDS)
