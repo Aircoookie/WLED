@@ -114,6 +114,9 @@
 			}
 			addWiFiItem(ns.value, np.value);
 			U();
+
+			ns.value = np.value = "";
+			ns.selectedIndex = 0
 		}
 		function addWiFiItem(ssid, pass) {
 			if (wCount >= getMaxNetworks()) return;
