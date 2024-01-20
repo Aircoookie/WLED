@@ -305,6 +305,7 @@ WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
 WLED_GLOBAL cfg_wifi_network_t *savedWiFiNetworks _INIT(nullptr);
+WLED_GLOBAL cfg_wifi_network_t *lastWiFiConnected _INIT(nullptr);
 WLED_GLOBAL char cmDNS[33] _INIT(MDNS_NAME);                       // mDNS address (*.local, replaced by wledXXXXXX if default is used)
 WLED_GLOBAL char apSSID[33] _INIT("");                             // AP off by default (unless setup)
 WLED_GLOBAL byte apChannel _INIT(1);                               // 2.4GHz WiFi AP channel (1-13)

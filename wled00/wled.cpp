@@ -700,6 +700,32 @@ bool WLED::initEthernet()
 
 }
 
+void tryNextWiFi(cfg_wifi_network_t *wifi) {
+  lastWiFiConnected = wifi;
+  if (wifi == nullptr) return;
+  int16_t nets = WiFi.scanNetworks();
+  bool netFound = false;
+  if (nets > 0) {
+    for (int16_t o = 0; o < nets; o++) {
+      if (strcmp(WiFi.SSID(o).c_str(), wifi->SSID) == 0) {
+        netFound = true;
+        WiFi.begin(wifi->SSID, wifi->Pass);
+        lastReconnectAttempt = wifi->Last_Attempt = millis();
+        if (WiFi.isConnected()) {
+          DEBUG_PRINT(F("Connected to "));
+          DEBUG_PRINT(wifi->SSID);
+          DEBUG_PRINTLN(F("!"));
+        }
+        break;
+      }
+    }
+  }
+  if (!netFound) {
+    // We ignore this WiFi and let's try the next one
+    wifi->Last_Attempt = millis() - 5000;
+  }
+}
+
 void WLED::initConnection()
 {
   #ifdef WLED_ENABLE_WEBSOCKETS
@@ -725,8 +751,6 @@ void WLED::initConnection()
     WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
   }
 
-  lastReconnectAttempt = millis();
-
   if (!WLED_WIFI_CONFIGURED) {
     DEBUG_PRINTLN(F("No connection configured."));
     if (!apActive) initAP();        // instantly go to ap mode
@@ -748,40 +772,10 @@ void WLED::initConnection()
     char hostname[25];
     prepareHostname(hostname);
     
-    bool found_network = false;
-    int16_t nets = WiFi.scanNetworks();
-    if (nets > 0) {
-      cfg_wifi_network_t *tmp_item = savedWiFiNetworks;
-      while (tmp_item != nullptr) {
-        for (int16_t o = 0; o < nets; o++) {
-          if (strcmp(WiFi.SSID(o).c_str(), tmp_item->SSID) == 0) {
-            found_network = true;
-
-            DEBUG_PRINT(F("Connecting to "));
-            DEBUG_PRINT(tmp_item->SSID);
-            DEBUG_PRINT("... ");
-
-            WiFi.begin(tmp_item->SSID, tmp_item->Pass);
-            int delay_count = 0;
-            // I was thinking about 10 seconds, but "Last reconnect too old" message was being fired immediately
-            while (WiFi.status() == WL_IDLE_STATUS && delay_count++ < 50) {
-                delay(100);
-            }
-
-            if (WiFi.isConnected()) {
-              DEBUG_PRINTLN("Connected!");
-              break;
-            } else {
-              DEBUG_PRINT(F("Failed to connect after 5 seconds with result "));
-              DEBUG_PRINTLN(WiFi.status());
-            }
-          }
-        }
-        if (WiFi.isConnected()) break;
-        tmp_item = tmp_item->Next;
-      }
-    }
-    if (!found_network) DEBUG_PRINTLN(F("No known network was found"));
+    DEBUG_PRINT(F("Connecting to "));
+    DEBUG_PRINT(savedWiFiNetworks->SSID);
+    DEBUG_PRINTLN(F("..."));
+    tryNextWiFi(savedWiFiNetworks);
 
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
@@ -943,11 +937,28 @@ void WLED::handleConnection()
       sendImprovStateResponse(0x03, true);
       improvActive = 2;
     }
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
-      if (improvActive == 2) improvActive = 3;
-      DEBUG_PRINTLN(F("Last reconnect too old."));
-      initConnection();
+
+    if (WLED_WIFI_CONFIGURED)
+    {
+      if (lastWiFiConnected == nullptr) {
+        DEBUG_PRINTLN(F("Never tried to connect to WiFi."));
+        initConnection();
+      } else if (now - lastWiFiConnected->Last_Attempt < 5000) {
+        // Still trying to connect
+      } else if (lastWiFiConnected->Next != nullptr) {
+        // There are more WiFis network to try
+        DEBUG_PRINT(F("Connecting to "));
+        DEBUG_PRINT(lastWiFiConnected->Next->SSID);
+        DEBUG_PRINTLN(F("..."));
+        tryNextWiFi(lastWiFiConnected->Next);
+      } else if (now - lastWiFiConnected->Last_Attempt > ((stac) ? 300000 : 18000)) {
+        // We're at the end of the list, anor has passed (300|18) seconds
+        if (improvActive == 2) improvActive = 3;
+        DEBUG_PRINTLN(F("Last reconnect too old."));
+        initConnection();
+      }
     }
+    
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
       DEBUG_PRINTLN(F("Not connected AP."));
       initAP();

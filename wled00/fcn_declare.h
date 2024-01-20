@@ -54,6 +54,7 @@ typedef struct CFG_WiFi_Network {
   char                   *Pass;
   byte             SSID_Length;
   byte             Pass_Length;
+  unsigned long   Last_Attempt;
   CFG_WiFi_Network       *Next;
 
   static CFG_WiFi_Network *createItem(const char *ssid, const char *pass) {
