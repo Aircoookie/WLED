@@ -424,6 +424,7 @@ void WLED::setup()
   escapedMac.toLowerCase();
 
   WLED_SET_AP_SSID(); // otherwise it is empty on first boot until config is saved
+  multiWiFi.push_back(WiFiConfig(CLIENT_SSID,CLIENT_PASS)); // initialise vector with default WiFi
 
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
@@ -445,7 +446,7 @@ void WLED::setup()
   usermods.setup();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
+  if (strcmp(multiWiFi[0].clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
   #ifdef WLED_USE_ETHERNET
@@ -719,8 +720,8 @@ void WLED::initConnection()
   WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
 #endif
 
-  if (staticIP[0] != 0 && staticGateway[0] != 0) {
-    WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(1, 1, 1, 1));
+  if (multiWiFi[selectedWiFi].staticIP != 0U && multiWiFi[selectedWiFi].staticGW != 0U) {
+    WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN, dnsAddress);
   } else {
     WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
   }
@@ -745,13 +746,13 @@ void WLED::initConnection()
     showWelcomePage = false;
     
     DEBUG_PRINT(F("Connecting to "));
-    DEBUG_PRINT(clientSSID);
+    DEBUG_PRINT(multiWiFi[selectedWiFi].clientSSID);
     DEBUG_PRINTLN("...");
 
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];
     prepareHostname(hostname);
-    WiFi.begin(clientSSID, clientPass);
+    WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass);
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
@@ -851,8 +852,9 @@ void WLED::handleConnection()
   if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
     return;
 
-  if (lastReconnectAttempt == 0) {
-    DEBUG_PRINTLN(F("lastReconnectAttempt == 0"));
+  if (lastReconnectAttempt == 0 || forceReconnect) {
+    DEBUG_PRINTLN(F("Initial connect or forced reconnect."));
+    if (forceReconnect) selectedWiFi = 0;
     initConnection();
     return;
   }
@@ -915,6 +917,7 @@ void WLED::handleConnection()
     if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
       if (improvActive == 2) improvActive = 3;
       DEBUG_PRINTLN(F("Last reconnect too old."));
+      if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0;
       initConnection();
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {

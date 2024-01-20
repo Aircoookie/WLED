@@ -19,15 +19,40 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == SUBPAGE_WIFI)
   {
-    char oldSSID[sizeof(clientSSID)];
+    char oldSSID[33];
+    strlcpy(oldSSID, multiWiFi[0].clientSSID, 33);
+    for (size_t n = 0; n < WLED_MAX_WIFI_COUNT; n++) {
+      char cs[4] = "CS"; cs[2] = 48+n; cs[3] = 0; //client SSID
+      char pw[4] = "PW"; pw[2] = 48+n; pw[3] = 0; //client password
+      char ip[5] = "IP"; ip[2] = 48+n; ip[4] = 0; //IP address
+      char gw[5] = "GW"; gw[2] = 48+n; gw[4] = 0; //GW address
+      char sn[5] = "SN"; sn[2] = 48+n; sn[4] = 0; //subnet mask
+      if (request->hasArg(cs)) {
+        if (n >= multiWiFi.size()) multiWiFi.push_back(WiFiConfig());
+        char oldSSID[33]; strcpy(oldSSID, multiWiFi[n].clientSSID);
+        char oldPass[65]; strcpy(oldPass, multiWiFi[n].clientPass);
+        if (!strncmp(request->arg(cs).c_str(), oldSSID, 32)) {
+          strlcpy(multiWiFi[n].clientSSID, request->arg(cs).c_str(), 33);
+          forceReconnect = true;
+        }
+        if (!isAsterisksOnly(request->arg(pw).c_str(), 65)) {
+          strlcpy(multiWiFi[n].clientPass, request->arg(pw).c_str(), 65);
+          forceReconnect = true;
+        }
+        for (size_t i = 0; i < 4; i++) {
+          ip[3] = 48+i;
+          gw[3] = 48+i;
+          sn[3] = 48+i;
+          multiWiFi[n].staticIP[i] = request->arg(ip).toInt();
+          multiWiFi[n].staticGW[i] = request->arg(gw).toInt();
+          multiWiFi[n].staticSN[i] = request->arg(sn).toInt();
+        }
+      }
+    }
 
-    strcpy(oldSSID, clientSSID);
-    strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
-    if (!strcmp(oldSSID, clientSSID)) forceReconnect = true;
-
-    if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) {
-      strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
-      forceReconnect = true;
+    if (request->hasArg(F("D0"))) {
+      dnsAddress = IPAddress(request->arg(F("D0")).toInt(),request->arg(F("D1")).toInt(),request->arg(F("D2")).toInt(),request->arg(F("D3")).toInt());
+      DEBUG_PRINTLN(dnsAddress);
     }
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
@@ -61,21 +86,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     ethernetType = request->arg(F("ETH")).toInt();
     WLED::instance().initEthernet();
     #endif
-
-    char k[3]; k[2] = 0;
-    for (int i = 0; i<4; i++)
-    {
-      k[1] = i+48;//ascii 0,1,2,3
-
-      k[0] = 'I'; //static IP
-      staticIP[i] = request->arg(k).toInt();
-
-      k[0] = 'G'; //gateway
-      staticGateway[i] = request->arg(k).toInt();
-
-      k[0] = 'S'; //subnet
-      staticSubnet[i] = request->arg(k).toInt();
-    }
   }
 
   //LED SETTINGS

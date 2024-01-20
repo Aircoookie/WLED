@@ -15,6 +15,10 @@
 #define DEFAULT_MDNS_NAME   "x"
 
 //increase if you need more
+#ifndef WLED_MAX_WIFI_COUNT
+  #define WLED_MAX_WIFI_COUNT 3
+#endif
+
 #ifndef WLED_MAX_USERMODS
   #ifdef ESP8266
     #define WLED_MAX_USERMODS 4
