@@ -1094,6 +1094,7 @@ bool deserializeConfigSec() {
     char tmp_pass[WIFI_MAX_PASS_LENGTH + 1];
     cfg_wifi_network_t *last_item = savedWiFiNetworks;
     for (JsonObject wifi : nw_ins) {
+      if (last_item == nullptr) break;
       if (wifi.containsKey(F("psk")))
       {
         getStringFromJson(tmp_pass, wifi[F("psk")], WIFI_MAX_PASS_LENGTH + 1);
