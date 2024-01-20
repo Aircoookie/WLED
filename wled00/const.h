@@ -108,11 +108,7 @@
 
 // This max was selected arbitrarily. Should be adjusted for real-world cases
 #ifndef WLED_MAX_SAVED_NETWORKS
-  #ifdef ESP8266
-    #define WLED_MAX_SAVED_NETWORKS 3
-  #else
-    #define WLED_MAX_SAVED_NETWORKS 5
-  #endif
+  #define WLED_MAX_SAVED_NETWORKS 3
 #endif
 
 //Usermod IDs
