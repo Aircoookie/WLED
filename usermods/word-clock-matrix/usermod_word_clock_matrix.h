@@ -325,8 +325,8 @@ public:
     void addToConfig(JsonObject& root)
     {
       JsonObject modName = root.createNestedObject("id");
-      modName["mdns"] = "wled-word-clock";
-      modName["name"] = "WLED WORD CLOCK";
+      modName[F("mdns")] = "wled-word-clock";
+      modName[F("name")] = "WLED WORD CLOCK";
     }
 
     uint16_t getId()

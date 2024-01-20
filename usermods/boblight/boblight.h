@@ -445,7 +445,7 @@ void BobLightUsermod::pollBob() {
           //strip.setPixelColor(light_id, RGBW32(red, green, blue, 0));
           setRealtimePixel(light_id, red, green, blue, 0);
         } // currently no support for interpolation or speed, we just ignore this
-      } else if (input.startsWith(F("sync"))) {
+      } else if (input.startsWith("sync")) {
         BobSync();
       } else {
         // Client sent gibberish

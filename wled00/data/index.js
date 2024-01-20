@@ -2161,7 +2161,7 @@ function selGrp(g)
 	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
-	if (sel) for (let s of sel||[]) {
+	for (let s of (sel||[])) {
 		let i = parseInt(s.id.substring(3));
 		obj.seg[i] = {"id":i,"sel":true};
 	}

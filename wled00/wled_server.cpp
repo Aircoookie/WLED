@@ -532,18 +532,18 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
   const String& url = request->url();
 
   if (url.indexOf("sett") >= 0) {
-    if      (url.indexOf(".js")  > 0) subPage = SUBPAGE_JS;
-    else if (url.indexOf(".css") > 0) subPage = SUBPAGE_CSS;
-    else if (url.indexOf("wifi") > 0) subPage = SUBPAGE_WIFI;
-    else if (url.indexOf("leds") > 0) subPage = SUBPAGE_LEDS;
-    else if (url.indexOf("ui")   > 0) subPage = SUBPAGE_UI;
-    else if (url.indexOf("sync") > 0) subPage = SUBPAGE_SYNC;
-    else if (url.indexOf("time") > 0) subPage = SUBPAGE_TIME;
-    else if (url.indexOf("sec")  > 0) subPage = SUBPAGE_SEC;
-    else if (url.indexOf("dmx")  > 0) subPage = SUBPAGE_DMX;
-    else if (url.indexOf("um")   > 0) subPage = SUBPAGE_UM;
-    else if (url.indexOf("2D")   > 0) subPage = SUBPAGE_2D;
-    else if (url.indexOf("lock") > 0) subPage = SUBPAGE_LOCK;
+    if      (url.indexOf(F(".js"))  > 0) subPage = SUBPAGE_JS;
+    else if (url.indexOf(F(".css")) > 0) subPage = SUBPAGE_CSS;
+    else if (url.indexOf(F("wifi")) > 0) subPage = SUBPAGE_WIFI;
+    else if (url.indexOf(F("leds")) > 0) subPage = SUBPAGE_LEDS;
+    else if (url.indexOf(F("ui"))   > 0) subPage = SUBPAGE_UI;
+    else if (url.indexOf(  "sync")  > 0) subPage = SUBPAGE_SYNC;
+    else if (url.indexOf(  "time")  > 0) subPage = SUBPAGE_TIME;
+    else if (url.indexOf(F("sec"))  > 0) subPage = SUBPAGE_SEC;
+    else if (url.indexOf(  "dmx")   > 0) subPage = SUBPAGE_DMX;
+    else if (url.indexOf(  "um")    > 0) subPage = SUBPAGE_UM;
+    else if (url.indexOf(  "2D")    > 0) subPage = SUBPAGE_2D;
+    else if (url.indexOf(F("lock")) > 0) subPage = SUBPAGE_LOCK;
   }
   else if (url.indexOf("/update") >= 0) subPage = SUBPAGE_UPDATE; // update page, for PIN check
   //else if (url.indexOf("/edit")   >= 0) subPage = 10;
