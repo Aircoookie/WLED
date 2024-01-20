@@ -106,6 +106,9 @@
   #endif
 #endif
 
+#define WIFI_MAX_SSID_LENGTH 32
+#define WIFI_MAX_PASS_LENGTH 64
+
 // This max was selected arbitrarily. Should be adjusted for real-world cases
 #ifndef WLED_MAX_SAVED_NETWORKS
   #define WLED_MAX_SAVED_NETWORKS 3

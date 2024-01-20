@@ -259,18 +259,23 @@ void parseWiFiCommand(char* rpcData) {
 
   uint8_t ssidLen = rpcData[1];
   if (ssidLen > len -1 || ssidLen > 32) return;
-  //This will set the first saved network.
-  //We could set any other "slot", but this would have a backward compatibility I think
-  memset(clientNetsSSID[0], 0, 32);
-  memcpy(clientNetsSSID[0], rpcData+2, ssidLen);
-
-  memset(clientNetsPass[0], 0, 64);
+  char tmp_ssid[WIFI_MAX_SSID_LENGTH + 1];
+  char tmp_pass[WIFI_MAX_PASS_LENGTH + 1];
+  memcpy(tmp_ssid, rpcData+2, ssidLen);
   if (len > ssidLen +1) {
     uint8_t passLen = rpcData[2+ssidLen];
-    memset(clientNetsPass[0], 0, 64);
-    memcpy(clientNetsPass[0], rpcData+3+ssidLen, passLen);
+    memcpy(tmp_pass, rpcData+3+ssidLen, passLen);
   }
-  if (clientSavedNets == 0 && strlen(clientNetsSSID[0]) > 0) clientSavedNets++;
+  //This will set the first saved network.
+  //We could set any other "slot", but this would have a backward compatibility I think
+  if (savedWiFiNetworks == nullptr) {
+    savedWiFiNetworks = cfg_wifi_network_t::createItem(tmp_ssid, tmp_pass);
+  } else {
+    cfg_wifi_network_t *tmp_item = savedWiFiNetworks;
+    savedWiFiNetworks = cfg_wifi_network_t::createItem(tmp_ssid, tmp_pass);
+    savedWiFiNetworks->Next = tmp_item->Next;
+    free(tmp_item);
+  }
 
   sendImprovStateResponse(0x03); //provisioning
   improvActive = 2;

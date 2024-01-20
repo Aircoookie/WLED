@@ -310,9 +310,7 @@ WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
-WLED_GLOBAL byte clientSavedNets _INIT(CLIENT_SAVED_NETS);
-WLED_GLOBAL char clientNetsSSID[WLED_MAX_SAVED_NETWORKS][33] _INIT_N(({CLIENT_SSID}));
-WLED_GLOBAL char clientNetsPass[WLED_MAX_SAVED_NETWORKS][65] _INIT_N(({CLIENT_PASS}));
+WLED_GLOBAL cfg_wifi_network_t *savedWiFiNetworks _INIT(nullptr);
 WLED_GLOBAL char cmDNS[33] _INIT(MDNS_NAME);                       // mDNS address (*.local, replaced by wledXXXXXX if default is used)
 WLED_GLOBAL char apSSID[33] _INIT("");                             // AP off by default (unless setup)
 WLED_GLOBAL byte apChannel _INIT(1);                               // 2.4GHz WiFi AP channel (1-13)
@@ -840,7 +838,7 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #else
   #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #endif
-#define WLED_WIFI_CONFIGURED ((strlen(clientNetsSSID[0]) >= 1 && strcmp(clientNetsSSID[0], DEFAULT_CLIENT_SSID) != 0) || clientSavedNets > 0)
+#define WLED_WIFI_CONFIGURED (savedWiFiNetworks != nullptr)
 
 #ifndef WLED_AP_SSID_UNIQUE
   #define WLED_SET_AP_SSID() do { \

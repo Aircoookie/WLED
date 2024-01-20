@@ -19,19 +19,45 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == SUBPAGE_WIFI)
   {
-    char tmp[4];
+    cfg_wifi_network_t *new_list = nullptr;
+    cfg_wifi_network_t *tmp_new_item = nullptr;
+    cfg_wifi_network_t *tmp_item = nullptr;
+    char tmp_ssid[WIFI_MAX_SSID_LENGTH + 1];
+    char tmp_pass[WIFI_MAX_PASS_LENGTH + 1];
+    char tmp_key[4];
     byte i;
     for (i = 0; i < WLED_MAX_SAVED_NETWORKS; i++) {
-      sprintf_P(tmp, PSTR("CS%d"), i);
-      if (request->arg(tmp).isEmpty()) break;
-      strlcpy(clientNetsSSID[i], request->arg(tmp).c_str(), 33);
+      sprintf_P(tmp_key, PSTR("CS%d"), i);
+      if (request->arg(tmp_key).isEmpty()) break;
+      strlcpy(tmp_ssid, request->arg(tmp_key).c_str(), WIFI_MAX_SSID_LENGTH + 1);
+      sprintf_P(tmp_key, PSTR("CP%d"), i);
+      strlcpy(tmp_pass, request->arg(tmp_key).c_str(), WIFI_MAX_PASS_LENGTH + 1);
 
-      sprintf_P(tmp, PSTR("CP%d"), i);
-      if (!isAsterisksOnly(request->arg(tmp).c_str(), 65)) {
-        strlcpy(clientNetsPass[i], request->arg(tmp).c_str(), 65);
+      if (isAsterisksOnly(tmp_pass, WIFI_MAX_PASS_LENGTH + 1)) {
+        tmp_item = savedWiFiNetworks;
+        while (tmp_item != nullptr) {
+          if (!strcmp(tmp_item->SSID, tmp_ssid)) {
+            strlcpy(tmp_pass, tmp_item->Pass, WIFI_MAX_PASS_LENGTH + 1);
+            break;
+          }
+          tmp_item = tmp_item->Next;
+        }
       }
+
+      if (new_list == nullptr) {
+        new_list = cfg_wifi_network_t::createItem(tmp_ssid, tmp_pass);
+        tmp_new_item = new_list;
+      } else {
+        //NOTE: The following line may warn about tmp_new_item not being uninitialized.
+        //      It's safe to ignore it.
+        tmp_new_item->Next = cfg_wifi_network_t::createItem(tmp_ssid, tmp_pass);
+        tmp_new_item = tmp_new_item->Next;
+      }
+      memset(tmp_ssid, 0, WIFI_MAX_SSID_LENGTH + 1);
+      memset(tmp_pass, 0, WIFI_MAX_PASS_LENGTH + 1);
     }
-    clientSavedNets = i;
+    clearSavedWiFiNetworks();
+    savedWiFiNetworks = new_list;
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
 

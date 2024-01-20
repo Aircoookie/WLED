@@ -445,7 +445,7 @@ void WLED::setup()
   usermods.setup();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  if (strcmp(clientNetsSSID[0], DEFAULT_CLIENT_SSID) == 0)
+  if (savedWiFiNetworks != nullptr && strcmp(savedWiFiNetworks->SSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
   #ifdef WLED_USE_ETHERNET
@@ -751,16 +751,17 @@ void WLED::initConnection()
     bool found_network = false;
     int16_t nets = WiFi.scanNetworks();
     if (nets > 0) {
-      for (byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+      cfg_wifi_network_t *tmp_item = savedWiFiNetworks;
+      while (tmp_item != nullptr) {
         for (int16_t o = 0; o < nets; o++) {
-          if (strcmp(WiFi.SSID(o).c_str(), clientNetsSSID[i]) == 0) {
+          if (strcmp(WiFi.SSID(o).c_str(), tmp_item->SSID) == 0) {
             found_network = true;
 
             DEBUG_PRINT(F("Connecting to "));
-            DEBUG_PRINT(clientNetsSSID[i]);
+            DEBUG_PRINT(tmp_item->SSID);
             DEBUG_PRINT("... ");
 
-            WiFi.begin(clientNetsSSID[i], clientNetsPass[i]);
+            WiFi.begin(tmp_item->SSID, tmp_item->Pass);
             int delay_count = 0;
             // I was thinking about 10 seconds, but "Last reconnect too old" message was being fired immediately
             while (WiFi.status() == WL_IDLE_STATUS && delay_count++ < 50) {
@@ -777,6 +778,7 @@ void WLED::initConnection()
           }
         }
         if (WiFi.isConnected()) break;
+        tmp_item = tmp_item->Next;
       }
     }
     if (!found_network) DEBUG_PRINTLN(F("No known network was found"));

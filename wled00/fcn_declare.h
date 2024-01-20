@@ -22,6 +22,7 @@ void handleButton();
 void handleIO();
 
 //cfg.cpp
+void clearSavedWiFiNetworks();
 bool deserializeConfig(JsonObject doc, bool fromFS = false);
 void deserializeConfigFromFS();
 bool deserializeConfigSec();
@@ -47,6 +48,34 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
   return true;
 }
+
+typedef struct CFG_WiFi_Network {
+  char                   *SSID;
+  char                   *Pass;
+  byte             SSID_Length;
+  byte             Pass_Length;
+  CFG_WiFi_Network       *Next;
+
+  static CFG_WiFi_Network *createItem(const char *ssid, const char *pass) {
+    CFG_WiFi_Network *item = (CFG_WiFi_Network*)calloc(1, sizeof(CFG_WiFi_Network));
+    item->SSID_Length = strlen(ssid);
+    item->Pass_Length = strlen(pass);
+
+    if (item->SSID_Length > WIFI_MAX_SSID_LENGTH) item->SSID_Length = WIFI_MAX_SSID_LENGTH;
+    if (item->Pass_Length > WIFI_MAX_PASS_LENGTH) item->Pass_Length = WIFI_MAX_PASS_LENGTH;
+    
+    item->SSID = (char*)calloc(item->SSID_Length + 1, sizeof(char));
+    item->Pass = (char*)calloc(item->Pass_Length + 1, sizeof(char));
+
+    strncpy(item->SSID, ssid, item->SSID_Length);
+    strncpy(item->Pass, pass, item->Pass_Length);
+
+    item->Next = nullptr;
+    
+    return item;
+  }
+} cfg_wifi_network_t;
+const unsigned int cfg_wifi_network_size = sizeof(cfg_wifi_network_t);  // 14 bytes (up to 104 bytes in memory)
 
 
 //colors.cpp

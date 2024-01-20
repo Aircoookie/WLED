@@ -229,13 +229,14 @@
 		}
 		// Loads saved networks from device
 		function LW() {
-			let [count,maxW,wifis] = GetW();
-			wCount = count;
+			let [maxW,wifis] = GetW();
+			wCount = 0;
 			maxNetworks = maxW;
 			const cd = gId("CD");
   			cd.innerHTML = "";
-			for (let i = 0; i < wCount; i++) {
+			for (let i = 0; i < wifis.length; i++) {
 				addWiFiItem(i, wifis[i][0], wifis[i][1]);
+				wCount++;
 			}
 			U();
  		}

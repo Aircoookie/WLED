@@ -9,6 +9,15 @@
 //simple macro for ArduinoJSON's or syntax
 #define CJSON(a,b) a = b | a
 
+void clearSavedWiFiNetworks() {
+  cfg_wifi_network_t *tmp_item;
+  while (savedWiFiNetworks != nullptr) {
+    tmp_item = savedWiFiNetworks;
+    savedWiFiNetworks = tmp_item->Next;
+    free(tmp_item);
+  }
+}
+
 void getStringFromJson(char* dest, const char* src, size_t len) {
   if (src != nullptr) strlcpy(dest, src, len);
 }
@@ -40,42 +49,49 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   linked_remote[12] = '\0';
 #endif
 
-  JsonObject nw_ins_0 = nw["ins"][0];
-  if (nw_ins_0.containsKey(F("ssid"))) {
-    //This is for backward compatibility only.
-    getStringFromJson(clientNetsSSID[0], nw_ins_0[F("ssid")], 33);
-    if (nw_ins_0.containsKey(F("psk"))) {
-      getStringFromJson(clientNetsPass[0], nw_ins_0[F("psk")], 65);
-    }
-    if (WLED_WIFI_CONFIGURED) clientSavedNets = 1;
+  JsonArray nw_ins = nw["ins"];
+  clearSavedWiFiNetworks();
+  if (nw_ins.isNull()) {
+    savedWiFiNetworks = cfg_wifi_network_t::createItem(CLIENT_SSID, CLIENT_PASS);
     needsSave = true;
   } else {
-    char tmp[6];
-    byte i;
-    for (i = 0; i < WLED_MAX_SAVED_NETWORKS; i++)
-    {
-      sprintf_P(tmp, PSTR("ssid%d"), i);
-      if (!nw_ins_0.containsKey(tmp)) break;
-      getStringFromJson(clientNetsSSID[i], nw_ins_0[tmp], 33);
+    char tmp_ssid[WIFI_MAX_SSID_LENGTH + 1];
+    char tmp_pass[WIFI_MAX_PASS_LENGTH + 1];
+    cfg_wifi_network_t *last_item;
+    for (JsonObject wifi : nw_ins) {
+      if (!wifi.containsKey(F("ssid")))
+        continue;
+      getStringFromJson(tmp_ssid, wifi[F("ssid")], WIFI_MAX_SSID_LENGTH + 1);
       //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
       //The WiFi PSK is normally not contained in the regular file for security reasons.
       //If it is present however, we will use it
-      sprintf_P(tmp, PSTR("psk%d"), i);
-      if (nw_ins_0.containsKey(tmp)) {
-        getStringFromJson(clientNetsPass[i], nw_ins_0[tmp], 65);
+      if (wifi.containsKey(F("psk")))
+        getStringFromJson(tmp_pass, wifi[F("psk")], WIFI_MAX_PASS_LENGTH + 1);
+      
+      cfg_wifi_network_t *new_wifi = cfg_wifi_network_t::createItem(tmp_ssid, tmp_pass);
+      if (savedWiFiNetworks == nullptr) {
+        savedWiFiNetworks = new_wifi;
+      } else {
+        //NOTE: The following line may warn about last_itme not being uninitialized.
+        //      It's safe to ignore it.
+        last_item->Next = new_wifi;
       }
+      last_item = new_wifi;
+
+      memset(tmp_ssid, 0, WIFI_MAX_SSID_LENGTH + 1);
+      memset(tmp_pass, 0, WIFI_MAX_PASS_LENGTH + 1);
     }
-    clientSavedNets = i;
   }
 
-  JsonArray nw_ins_0_ip = nw_ins_0["ip"];
-  JsonArray nw_ins_0_gw = nw_ins_0["gw"];
-  JsonArray nw_ins_0_sn = nw_ins_0["sn"];
+  JsonObject nw_net_0 = nw["net"][0];
+  JsonArray nw_net_0_ip = nw_net_0["ip"];
+  JsonArray nw_net_0_gw = nw_net_0["gw"];
+  JsonArray nw_net_0_sn = nw_net_0["sn"];
 
   for (byte i = 0; i < 4; i++) {
-    CJSON(staticIP[i], nw_ins_0_ip[i]);
-    CJSON(staticGateway[i], nw_ins_0_gw[i]);
-    CJSON(staticSubnet[i], nw_ins_0_sn[i]);
+    CJSON(staticIP[i], nw_net_0_ip[i]);
+    CJSON(staticGateway[i], nw_net_0_gw[i]);
+    CJSON(staticSubnet[i], nw_net_0_sn[i]);
   }
 
   JsonObject ap = doc["ap"];
@@ -618,19 +634,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 }
 
 void deserializeConfigFromFS() {
-  bool success = deserializeConfigSec();
-  if (!success) { //if file does not exist, try reading from EEPROM
-    #ifdef WLED_ADD_EEPROM_SUPPORT
-    deEEPSettings();
-    return;
-    #endif
-  }
-
   if (!requestJSONBufferLock(1)) return;
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
-  success = readObjectFromFile("/cfg.json", nullptr, pDoc);
+  bool success = readObjectFromFile("/cfg.json", nullptr, pDoc);
   if (!success) { // if file does not exist, optionally try reading from EEPROM and then save defaults to FS
     releaseJSONBufferLock();
     #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -654,6 +662,13 @@ void deserializeConfigFromFS() {
   JsonObject root = pDoc->as<JsonObject>();
   bool needsSave = deserializeConfig(root, true);
   releaseJSONBufferLock();
+
+  success = deserializeConfigSec();
+  if (!success) { //if file does not exist, try reading from EEPROM
+    #ifdef WLED_ADD_EEPROM_SUPPORT
+    deEEPSettings();
+    #endif
+  }
 
   if (needsSave) serializeConfig(); // usermods required new parameters
 }
@@ -686,24 +701,24 @@ void serializeConfig() {
 #endif
 
   JsonArray nw_ins = nw.createNestedArray("ins");
-
-  JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  char tmp[6];
-  for(byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
-    sprintf_P(tmp, PSTR("ssid%d"), i);
-    nw_ins_0[tmp] = clientNetsSSID[i];
-    sprintf_P(tmp, PSTR("pskl%d"), i);
-    nw_ins_0[tmp] = strlen(clientNetsPass[i]);
+  cfg_wifi_network_t *tmp_item = savedWiFiNetworks;
+  JsonObject tmp_json;
+  while (tmp_item != nullptr) {
+    tmp_json = nw_ins.createNestedObject();
+    tmp_json["ssid"] = tmp_item->SSID;
+    tmp_json["pskl"] = strlen(tmp_item->Pass);
+    tmp_item = tmp_item->Next;
   }
 
-  JsonArray nw_ins_0_ip = nw_ins_0.createNestedArray("ip");
-  JsonArray nw_ins_0_gw = nw_ins_0.createNestedArray("gw");
-  JsonArray nw_ins_0_sn = nw_ins_0.createNestedArray("sn");
+  JsonObject nw_net_0 = nw.createNestedArray("net").createNestedObject();
+  JsonArray nw_net_0_ip = nw_net_0.createNestedArray("ip");
+  JsonArray nw_net_0_gw = nw_net_0.createNestedArray("gw");
+  JsonArray nw_net_0_sn = nw_net_0.createNestedArray("sn");
 
   for (byte i = 0; i < 4; i++) {
-    nw_ins_0_ip.add(staticIP[i]);
-    nw_ins_0_gw.add(staticGateway[i]);
-    nw_ins_0_sn.add(staticSubnet[i]);
+    nw_net_0_ip.add(staticIP[i]);
+    nw_net_0_gw.add(staticGateway[i]);
+    nw_net_0_sn.add(staticSubnet[i]);
   }
 
   JsonObject ap = root.createNestedObject("ap");
@@ -1074,17 +1089,23 @@ bool deserializeConfigSec() {
 
   JsonObject root = pDoc->as<JsonObject>();
 
-  JsonObject nw_ins_0 = root["nw"]["ins"][0];
-  if (nw_ins_0.containsKey(F("psk"))) {
-    //This is for backward compatibility only.
-    getStringFromJson(clientNetsPass[0], nw_ins_0[F("psk")], 65);
-  } else {
-    char tmp[6];
-    for (byte i = 0; i < WLED_MAX_SAVED_NETWORKS; i++) {
-      sprintf_P(tmp, PSTR("psk%d"), i);
-      if (nw_ins_0.containsKey(tmp)) {
-        getStringFromJson(clientNetsPass[i], nw_ins_0[tmp], 65);
+  JsonArray nw_ins = root["nw"]["ins"];
+  if (!nw_ins.isNull()) {
+    char tmp_pass[WIFI_MAX_PASS_LENGTH + 1];
+    cfg_wifi_network_t *last_item = savedWiFiNetworks;
+    for (JsonObject wifi : nw_ins) {
+      if (wifi.containsKey(F("psk")))
+      {
+        getStringFromJson(tmp_pass, wifi[F("psk")], WIFI_MAX_PASS_LENGTH + 1);
+        if (last_item->Pass != nullptr) free(last_item->Pass);
+        last_item->Pass_Length = strlen(tmp_pass);
+        if (last_item->Pass_Length > WIFI_MAX_PASS_LENGTH) last_item->Pass_Length = WIFI_MAX_PASS_LENGTH;
+        last_item->Pass = (char*)calloc(last_item->Pass_Length + 1, sizeof(char));
+        strncpy(last_item->Pass, tmp_pass, last_item->Pass_Length + 1);
       }
+      last_item = last_item->Next;
+
+      memset(tmp_pass, 0, WIFI_MAX_PASS_LENGTH + 1);
     }
   }
 
@@ -1125,12 +1146,12 @@ void serializeConfigSec() {
   JsonObject nw = root.createNestedObject("nw");
 
   JsonArray nw_ins = nw.createNestedArray("ins");
-
-  JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  char tmp[6];
-  for(byte i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
-    sprintf_P(tmp, PSTR("psk%d"), i);
-    nw_ins_0[tmp] = clientNetsPass[i];
+  cfg_wifi_network_t *tmp_item = savedWiFiNetworks;
+  JsonObject tmp_json;
+  while (tmp_item != nullptr) {
+    tmp_json = nw_ins.createNestedObject();
+    tmp_json["psk"] = tmp_item->Pass;
+    tmp_item = tmp_item->Next;
   }
 
   JsonObject ap = root.createNestedObject("ap");

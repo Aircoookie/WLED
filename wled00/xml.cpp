@@ -327,21 +327,19 @@ void getSettingsJS(byte subPage, char* dest, byte subSettings)
       #endif
     } else if (SUBPAGE_WIFI_NETWORKS) {
       oappend(SET_F("return ["));
-      oappendi(clientSavedNets);
-      oappend(SET_F(","));
       oappendi(WLED_MAX_SAVED_NETWORKS);
       oappend(SET_F(",["));
-      byte i,l;
-      for(i = 0; i < clientSavedNets && i < WLED_MAX_SAVED_NETWORKS; i++) {
+      cfg_wifi_network_t *tmp_item = savedWiFiNetworks;
+      while (tmp_item != nullptr) {
         oappend(SET_F("[\""));
-        oappend(clientNetsSSID[i]);
+        oappend(tmp_item->SSID);
         oappend(SET_F("\",\""));
-        l = strlen(clientNetsPass[i]);
-        char fpass[l+1]; //fill password field with ***
-        fpass[l] = 0;
-        memset(fpass,'*',l);
+        char fpass[tmp_item->Pass_Length + 1]; //fill password field with ***
+        fpass[tmp_item->Pass_Length] = 0;
+        memset(fpass,'*',tmp_item->Pass_Length);
         oappend(fpass);
         oappend(SET_F("\"],"));
+        tmp_item = tmp_item->Next;
       }
       oappend(SET_F("]];"));
     }
