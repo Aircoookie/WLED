@@ -139,36 +139,47 @@
 			iE.setAttribute("value", pass);
 			cd.appendChild(iE);
 
-			iE = cE("button");
-			iE.setAttribute("type", "button");
-			iE.setAttribute("id", `CR${item_id}`);
-			iE.innerHTML = "Delete"
-			iE.addEventListener("click", function() {
-				let oE = gId(`CS${item_id}`);
-				if (oE) oE.remove();
-				oE = gId(`CP${item_id}`);
-				if (oE) oE.remove();
-				oE = gId(`CR${item_id}`);
-				if (oE) oE.remove();
-				for (let o = item_id + 1; o < wCount; o++) {
-					oE = gId(`CS${o}`);
-					if (oE) {
-						oE.setAttribute("id", `CS${o - 1}`);
-						oE.setAttribute("name", `CS${o - 1}`);
-					}
-					oE = gId(`CP${o}`);
-					if (oE) {
-						oE.setAttribute("id", `CP${o - 1}`);
-						oE.setAttribute("name", `CP${o - 1}`);
-					}
-				}
-				wCount--;
+			const bE = cE("button");
+			bE.setAttribute("type", "button");
+			bE.setAttribute("id", `CR${item_id}`);
+			bE.setAttribute("data-id", item_id);
+			bE.innerHTML = "Delete"
+			bE.addEventListener("click", function() {
+				deleteWiFiItem(bE);
 			});
-			cd.appendChild(iE);
+			cd.appendChild(bE);
 
 			iE = cE("br");
+			iE.setAttribute("id", `CB${item_id}`);
 			cd.appendChild(iE);
 			wCount++;
+			U();
+		}
+		function deleteWiFiItem(button) {
+			const id = button.getAttribute("data-id");
+			let oE = gId(`CS${id}`);
+			if (oE) oE.remove();
+			oE = gId(`CP${id}`);
+			if (oE) oE.remove();
+			oE = gId(`CR${id}`);
+			if (oE) oE.remove();
+			oE = gId(`CB${id}`);
+			if (oE) oE.remove();
+			for (let o = id + 1; o < wCount; o++) {
+				oE = gId(`CS${o}`);
+				if (oE) {
+					oE.setAttribute("id", `CS${o - 1}`);
+					oE.setAttribute("name", `CS${o - 1}`);
+				}
+				oE = gId(`CP${o}`);
+				if (oE) {
+					oE.setAttribute("id", `CP${o - 1}`);
+					oE.setAttribute("name", `CP${o - 1}`);
+				}
+				oE = gId(`CB${o}`);
+				if (oE) oE.setAttribute("id", `CB${o - 1}`);
+			}
+			wCount--;
 			U();
 		}
 		// Updates networks counter
