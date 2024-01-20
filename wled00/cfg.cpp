@@ -51,6 +51,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonArray nw_ins = nw["ins"];
   clearSavedWiFiNetworks();
+  bool needLoadIPs = true;
   if (nw_ins.isNull()) {
     savedWiFiNetworks = cfg_wifi_network_t::createItem(CLIENT_SSID, CLIENT_PASS);
     needsSave = true;
@@ -59,6 +60,21 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     char tmp_pass[WIFI_MAX_PASS_LENGTH + 1];
     cfg_wifi_network_t *last_item;
     for (JsonObject wifi : nw_ins) {
+      if (wifi.containsKey(F("ip")) || wifi.containsKey(F("gw")) || wifi.containsKey(F("sn"))) {
+        JsonArray wifi_ip = wifi["ip"];
+        JsonArray wifi_gw = wifi["gw"];
+        JsonArray wifi_sn = wifi["sn"];
+
+        for (byte i = 0; i < 4; i++) {
+          CJSON(staticIP[i], wifi_ip[i]);
+          CJSON(staticGateway[i], wifi_gw[i]);
+          CJSON(staticSubnet[i], wifi_sn[i]);
+        }
+
+        needLoadIPs = false;
+        needsSave = true;
+      }
+
       if (!wifi.containsKey(F("ssid")))
         continue;
       getStringFromJson(tmp_ssid, wifi[F("ssid")], WIFI_MAX_SSID_LENGTH + 1);
@@ -83,15 +99,17 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   }
 
-  JsonObject nw_net_0 = nw["net"][0];
-  JsonArray nw_net_0_ip = nw_net_0["ip"];
-  JsonArray nw_net_0_gw = nw_net_0["gw"];
-  JsonArray nw_net_0_sn = nw_net_0["sn"];
+  if (needLoadIPs) {
+    JsonObject nw_net_0 = nw["net"][0];
+    JsonArray nw_net_0_ip = nw_net_0["ip"];
+    JsonArray nw_net_0_gw = nw_net_0["gw"];
+    JsonArray nw_net_0_sn = nw_net_0["sn"];
 
-  for (byte i = 0; i < 4; i++) {
-    CJSON(staticIP[i], nw_net_0_ip[i]);
-    CJSON(staticGateway[i], nw_net_0_gw[i]);
-    CJSON(staticSubnet[i], nw_net_0_sn[i]);
+    for (byte i = 0; i < 4; i++) {
+      CJSON(staticIP[i], nw_net_0_ip[i]);
+      CJSON(staticGateway[i], nw_net_0_gw[i]);
+      CJSON(staticSubnet[i], nw_net_0_sn[i]);
+    }
   }
 
   JsonObject ap = doc["ap"];
