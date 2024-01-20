@@ -86,9 +86,17 @@ Depending on your selection, you can specify either 1, 2, or three custom colors
 
 ![Colors](images/screenshot-colorwheel.png)
 
-Displaying numbers or symbols works by masking out the output colors. Since masking means setting the appropriate LEDs to *black*, choosing black or very dark colors will interfere with the masking and therefore prevents the proper displaying of numbers or symbols on the display.
+You can also create completely customized palettes by clicking on the `(+)` button at the bottom of the palette list:
 
-To change the effect, go to the second tab (Effects) and choose the desired effect. Each effect has a *speed* setting, and most of the effects have an *intensity* setting as well. What the intensity means is specific to the effect. Note that not all effects are using the current palette. Some effects are using the first and/or second color, or the current palette AND the first and/or second color, etc.
+![Custom Palettes](images/screenshot-blending.png)
+
+This will open a new screen where you can specify the colors and positions of the custom palette.
+
+Displaying numbers or symbols works by masking out the output colors. Since masking means setting the appropriate LEDs to *black*, choosing black or very dark colors, or using certain effects would interfere with the masking and therefore prevent the proper displaying of numbers or symbols on the display.
+
+To fix this, the clock has a special feature called *blending*, also notable on the screenshot above. When blending is enabled, the clock will automatically blend the output colors with a *canvas color* to get a non-black resulting color. This way the masking will work properly and the numbers or symbols will be displayed correctly. Experiment by changing the canvas color and blending modes and see how they affect the output.
+
+To change the effect, go to the second tab (Effects) and choose the desired effect. Most effects have certain settings you can change using the sliders at the bottom of the screen. Note that not all effects are using the current palette. Some effects are using the first and/or second color, or the current palette AND the first and/or second color, etc.
 
 ![Effects](images/screenshot-effects.png)
 

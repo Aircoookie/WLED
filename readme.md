@@ -49,10 +49,10 @@ YouTube video:
 
 See a couple of shots from the ui (click to enlarge):
 
-[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-palette.png?raw=true" width="200"/>](ledclock/images/screenshot-palette.png)
-[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-clock.png?raw=true" width="200"/>](ledclock/images/screenshot-clock.png)
-[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-timer.png?raw=true" width="200"/>](ledclock/images/screenshot-timer.png)
-[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-stopwatch.png?raw=true" width="200"/>](ledclock/images/screenshot-stopwatch.png)
+[<img src="https://raw.githubusercontent.com/imeszaros/ledclock/main/ledclock/images/screenshot-palette.png" width="200"/>](ledclock/images/screenshot-palette.png)
+[<img src="https://raw.githubusercontent.com/imeszaros/ledclock/main/ledclock/images/screenshot-clock.png" width="200"/>](ledclock/images/screenshot-clock.png)
+[<img src="https://raw.githubusercontent.com/imeszaros/ledclock/main/ledclock/images/screenshot-timer.png" width="200"/>](ledclock/images/screenshot-timer.png)
+[<img src="https://raw.githubusercontent.com/imeszaros/ledclock/main/ledclock/images/screenshot-stopwatch.png" width="200"/>](ledclock/images/screenshot-stopwatch.png)
 
 ## How to use
 
