@@ -184,12 +184,6 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #include "bus_manager.h"
 #include "FX.h"
 
-#if defined(CLIENT_SSID) && defined(CLIENT_PASS)
-  #define CLIENT_SAVED_NETS 1
-#else
-  #define CLIENT_SAVED_NETS 0
-#endif
-
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
 #endif
