@@ -65,21 +65,21 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
       //The WiFi PSK is normally not contained in the regular file for security reasons.
       //If it is present however, we will use it
-      if (wifi.containsKey(F("psk")))
+      if (wifi.containsKey(F("psk"))) {
         getStringFromJson(tmp_pass, wifi[F("psk")], WIFI_MAX_PASS_LENGTH + 1);
-      
+      } else {
+        memset(tmp_pass, 0, WIFI_MAX_PASS_LENGTH + 1);
+      }
+
       cfg_wifi_network_t *new_wifi = cfg_wifi_network_t::createItem(tmp_ssid, tmp_pass);
       if (savedWiFiNetworks == nullptr) {
         savedWiFiNetworks = new_wifi;
       } else {
-        //NOTE: The following line may warn about last_itme not being uninitialized.
+        //NOTE: The following line may warn about last_item not being uninitialized.
         //      It's safe to ignore it.
         last_item->Next = new_wifi;
       }
       last_item = new_wifi;
-
-      memset(tmp_ssid, 0, WIFI_MAX_SSID_LENGTH + 1);
-      memset(tmp_pass, 0, WIFI_MAX_PASS_LENGTH + 1);
     }
   }
 
@@ -1104,8 +1104,6 @@ bool deserializeConfigSec() {
         strncpy(last_item->Pass, tmp_pass, last_item->Pass_Length + 1);
       }
       last_item = last_item->Next;
-
-      memset(tmp_pass, 0, WIFI_MAX_PASS_LENGTH + 1);
     }
   }
 
