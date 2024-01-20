@@ -9,7 +9,6 @@
 		var loc = false, locip, locproto = "http:";
 		var scanLoops = 0, preScanSSID = "";
 		let wCount = 0;
-		let maxNetworks = 5;
 
 		function gId(e) { return d.getElementById(e); }
 		function cE(e) { return d.createElement(e); }
@@ -108,17 +107,19 @@
 					return;
 				}
 			}
-			if (wCount >= maxNetworks)
+			if (wCount >= getMaxNetworks())
 			{
-				alert(`You can only add up to ${maxNetworks} networks. Delete an old one before adding a new one.`)
+				alert(`You can only add up to ${getMaxNetworks()} networks. Delete an old one before adding a new one.`)
 				return;
 			}
-			addWiFiItem(wCount, ns.value, np.value);
-			wCount++;
+			addWiFiItem(ns.value, np.value);
 			U();
 		}
-		function addWiFiItem(item_id, ssid, pass) {
+		function addWiFiItem(ssid, pass) {
+			if (wCount >= getMaxNetworks()) return;
+
 			const cd = gId("CD");
+			const item_id = wCount;
 			let iE = cE("input");
 			iE.setAttribute("type", "text");
 			iE.setAttribute("id", `CS${item_id}`);
@@ -167,10 +168,12 @@
 
 			iE = cE("br");
 			cd.appendChild(iE);
+			wCount++;
+			U();
 		}
 		// Updates networks counter
 		function U() {
-			gId("CC").innerHTML = `${wCount} of ${maxNetworks} networks`;
+			gId("CC").innerHTML = `${wCount} of ${getMaxNetworks()} networks`;
 		}
 		// replace WiFi select with custom SSID input field again
 		function T() {
@@ -185,7 +188,7 @@
 			ns.replaceWith(input);
 		}
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
-		function loadJS(FILE_URL, FUNC_NAME = "GetV", async = true) {
+		function loadJS(FILE_URL, async = true) {
 			let scE = cE("script");
 			scE.setAttribute("src", FILE_URL);
 			scE.setAttribute("type", "text/javascript");
@@ -194,7 +197,7 @@
 			// success event
 			scE.addEventListener("load", () => {
 				//console.log("File loaded");
-				window[FUNC_NAME]();
+				GetV();
 			});
 			// error event
 			scE.addEventListener("error", (ev) => {
@@ -223,23 +226,12 @@
 					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
 				}
 			}
-			loadJS(getURL('/settings/s.js?p=1'), "GetV", false);	// If we set async false, file is loaded and executed, then next statement is processed
-			if (loc) d.Sf.action = getURL('/settings/wifi');
-			loadJS(getURL('/settings/s.js?p=1&s=1'), "LW", false);	// If we set async false, file is loaded and executed, then next statement is processed
-		}
-		// Loads saved networks from device
-		function LW() {
-			let [maxW,wifis] = GetW();
 			wCount = 0;
-			maxNetworks = maxW;
 			const cd = gId("CD");
-  			cd.innerHTML = "";
-			for (let i = 0; i < wifis.length; i++) {
-				addWiFiItem(i, wifis[i][0], wifis[i][1]);
-				wCount++;
-			}
-			U();
- 		}
+			if (cd) cd.innerHTML = "";
+			loadJS(getURL('/settings/s.js?p=1'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+			if (loc) d.Sf.action = getURL('/settings/wifi');
+		}
 		// Checks for empty SSIDs before submitting
 		function PreS() {
 			for (let i = 0; i < wCount; i++) {
@@ -268,6 +260,11 @@
 				}
 			}
 		}
+		function getMaxNetworks() {
+			const mw = gId("MW");
+			if (mw) return mw.value;
+			return 3;
+		}
 		function getURL(path) {
 			return (loc ? locproto + "//" + locip : "") + path;
 		}
@@ -276,6 +273,7 @@
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post" onsubmit="PreS()">
+		<input type="hidden" id="MW" name="MW" value="3">
 		<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button><hr>

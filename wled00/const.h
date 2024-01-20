@@ -393,10 +393,6 @@
 #define SUBPAGE_JS              254
 #define SUBPAGE_WELCOME         255
 
-// Sub settings IDs
-#define SUBPAGE_MAIN_SETTINGS     0
-#define SUBPAGE_WIFI_NETWORKS     1
-
 #define NTP_PACKET_SIZE 48
 
 //maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
