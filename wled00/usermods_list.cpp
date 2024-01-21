@@ -209,6 +209,10 @@
 #include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
 #endif
 
+#ifdef USERMOD_TETRISAI
+#include "../usermods/TetrisAI_v2/usermod_v2_tetrisai.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -396,5 +400,9 @@ void registerUsermods()
 
   #ifdef USERMOD_GYRO_SURGE
   static GyroSurge gyro_surge; usermods.add(&gyro_surge);
+  #endif
+
+  #ifdef USERMOD_TETRISAI
+  usermods.add(new TetrisAIUsermod());
   #endif
 }
