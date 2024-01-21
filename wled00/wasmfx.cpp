@@ -5,11 +5,11 @@ uint32_t WASMFX::now() {
 }
 
 uint32_t WASMFX::speed() {
-  return strip._segments[strip._segment_index].speed;
+  return SEGMENT.speed;
 }
 
 uint32_t WASMFX::intensity() {
-  return strip._segments[strip._segment_index].intensity;
+  return SEGMENT.intensity;
 }
 
 uint32_t WASMFX::len() {

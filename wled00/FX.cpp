@@ -88,15 +88,16 @@ static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 /*
  * Custom mode. Executes WebAssembly fx() function
  */
-uint16_t WS2812FX::mode_custom(void) {
+uint16_t mode_custom(void) {
   if (SEGENV.call == 0) wasmfx.init();
   wasmfx.run();
   return 1;
 }
+static const char _data_FX_MODE_CUSTOM[] PROGMEM = "Custom"; // TODO special case dependant on values actually used in FX
 
 
 //testing TEMP
-uint16_t WS2812FX::mode_benchmark(void) {
+/*uint16_t mode_benchmark(void) {
   uint32_t i=(now/4);
   uint32_t c=0;
   while(c<SEGLEN){
@@ -107,7 +108,7 @@ uint16_t WS2812FX::mode_benchmark(void) {
   }
 
   return 1;
-}
+}*/
 
 
 
@@ -7867,7 +7868,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
   addEffect(FX_MODE_FAIRYTWINKLE, &mode_fairytwinkle, _data_FX_MODE_FAIRYTWINKLE);
   addEffect(FX_MODE_RUNNING_DUAL, &mode_running_dual, _data_FX_MODE_RUNNING_DUAL);
-
+  addEffect(FX_MODE_CUSTOM, &mode_custom, _data_FX_MODE_CUSTOM);
   addEffect(FX_MODE_TRICOLOR_CHASE, &mode_tricolor_chase, _data_FX_MODE_TRICOLOR_CHASE);
   addEffect(FX_MODE_TRICOLOR_WIPE, &mode_tricolor_wipe, _data_FX_MODE_TRICOLOR_WIPE);
   addEffect(FX_MODE_TRICOLOR_FADE, &mode_tricolor_fade, _data_FX_MODE_TRICOLOR_FADE);

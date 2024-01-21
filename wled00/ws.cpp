@@ -83,7 +83,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           //lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500); // ESP8266 does not like this
         }
       } 
-    } else 
+    } else {
       //message is comprised of multiple frames or the frame is split into multiple packets
       //if(info->index == 0){
         //if (!wsFrameBuffer && len < 4096) wsFrameBuffer = new uint8_t[4096];
