@@ -1088,7 +1088,7 @@ function populateNodes(i,n)
 		for (var o of n.nodes) {
 			if (o.name) {
 				let onoff = `<i class="icons e-icon flr ${o.type&0x80?'':'off'}" onclick="rmtTgl('${o.ip}',this);"">&#xe08f;</i>`;
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');"><div class="bname">${bname(o)}</div>${o.vid<2307130?'':onoff}</button>`;
+				var url = `<a class="btn" title="${o.ip}" href="http://${o.ip}">${bname(o)}${o.vid<2307130?'':onoff}</a>`;
 				urows += inforow(url,`${btype(o.type&0x7F)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
