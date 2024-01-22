@@ -24,8 +24,10 @@ void LedBasedDisplay::setColor(bool state, CRGB color) {
 
 SevenSegmentDisplay::SevenSegmentDisplay(LedBasedDisplayOutput output, uint8_t ledsPerSegment):
     _output(output),
+    _backgroundColor(CRGB::Black),
     _ledsPerSegment(ledsPerSegment),
     _value(_7SEG_SYM_EMPTY),
+    _paintBackground(false),
     _mode(LedBasedDisplayMode::SET_ALL_LEDS) {
 
     _offColors = (CRGB*) malloc(7 * _ledsPerSegment * sizeof(CRGB));
@@ -45,6 +47,14 @@ uint8_t SevenSegmentDisplay::rowCount() {
 
 uint8_t SevenSegmentDisplay::columnCount() {
     return _ledsPerSegment + 2;
+}
+
+CRGB SevenSegmentDisplay::getBackgroundColor() {
+    return _backgroundColor;
+}
+
+void SevenSegmentDisplay::setBackgroundColor(CRGB color) {
+    _backgroundColor = color;
 }
 
 CRGB* SevenSegmentDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
@@ -67,9 +77,9 @@ void SevenSegmentDisplay::setLedColor(uint8_t row, uint8_t column, bool state, C
     (state ? _onColors : _offColors)[idx] = color;
 }
 
-void SevenSegmentDisplay::update(uint8_t rowOffset, uint8_t columnOffset) {
-    for (uint8_t r = 0, rc = rowCount(); r < rc; ++r) {
-        for (uint8_t c = 0, cc = columnCount(); c < cc; ++c) {
+void SevenSegmentDisplay::update(uint8_t rowOffset, uint8_t columnOffset, uint8_t width, uint8_t height) {
+    for (uint8_t r = 0; r < height; ++r) {
+        for (uint8_t c = 0; c < width; ++c) {
             uint8_t segment = segmentOfCoords(r, c);
             if (segment != _7SEG_UNDEF) {
                 bool on = _value & _7SEG_MASK(segment);
@@ -77,9 +87,15 @@ void SevenSegmentDisplay::update(uint8_t rowOffset, uint8_t columnOffset) {
                     CRGB crgb = (on ? _onColors : _offColors)[_internalIndex(segment, r, c)];
                     (*_output)(c + columnOffset, r + rowOffset, crgb.red, crgb.green, crgb.blue);
                 }
+            } else if (_paintBackground) {
+                (*_output)(c + columnOffset, r + rowOffset, _backgroundColor.red, _backgroundColor.green, _backgroundColor.blue);
             }
         }
     }
+}
+
+void SevenSegmentDisplay::setPaintBackground(bool paint) {
+    _paintBackground = paint;
 }
 
 void SevenSegmentDisplay::setMode(LedBasedDisplayMode mode) {
@@ -185,7 +201,7 @@ void SevenSegmentDisplay::setCharacter(char charcter) {
     }
 }
 
-void SevenSegmentDisplay::setShowZero(boolean showZero) {
+void SevenSegmentDisplay::setShowZero(bool showZero) {
     _showZero = showZero;
 }
 
@@ -207,6 +223,8 @@ SeparatorDisplay::SeparatorDisplay(LedBasedDisplayOutput output, uint8_t ledCoun
     _maxLeds(ledCount),
     _ledCount(0),
     _mappings(NULL),
+    _backgroundColor(CRGB::Black),
+    _paintBackground(false),
     _state(false),
     _mode(LedBasedDisplayMode::SET_ALL_LEDS) {
 
@@ -237,6 +255,14 @@ uint8_t SeparatorDisplay::columnCount() {
     return max + 1;
 }
 
+CRGB SeparatorDisplay::getBackgroundColor() {
+    return _backgroundColor;
+}
+
+void SeparatorDisplay::setBackgroundColor(CRGB color) {
+    _backgroundColor = color;
+}
+
 CRGB* SeparatorDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
     for (uint8_t i = 0; i < _ledCount; ++i) {
         if (_mappings[i].row == row && _mappings[i].column == column) {
@@ -263,13 +289,29 @@ void SeparatorDisplay::setLedColor(uint8_t row, uint8_t column, bool state, CRGB
     }
 }
 
-void SeparatorDisplay::update(uint8_t rowOffset, uint8_t columnOffset) {
-    if (_7SEG_MODE(_mode, _state)) {
-        for (uint8_t i = 0; i < _ledCount; ++i) {
-            CRGB crgb = _state ? _mappings[i].onColor : _mappings[i].offColor;
-            (*_output)(_mappings[i].column + columnOffset, _mappings[i].row + rowOffset, crgb.red, crgb.green, crgb.blue);
+void SeparatorDisplay::update(uint8_t rowOffset, uint8_t columnOffset, uint8_t width, uint8_t height) {
+    for (uint8_t r = 0; r < height; ++r) {
+        for (uint8_t c = 0; c < width; ++c) {
+            bool found = false;
+            for (uint8_t i = 0; i < _ledCount; ++i) {
+                if (_mappings[i].row == r && _mappings[i].column == c) {
+                    if (_7SEG_MODE(_mode, _state)) {
+                        CRGB crgb = _state ? _mappings[i].onColor : _mappings[i].offColor;
+                        (*_output)(c + columnOffset, r + rowOffset, crgb.red, crgb.green, crgb.blue);
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && _paintBackground) {
+                (*_output)(c + columnOffset, r + rowOffset, _backgroundColor.red, _backgroundColor.green, _backgroundColor.blue);
+            }
         }
     }
+}
+
+void SeparatorDisplay::setPaintBackground(bool paint) {
+    _paintBackground = paint;
 }
 
 void SeparatorDisplay::setMode(LedBasedDisplayMode mode) {
@@ -320,6 +362,20 @@ uint8_t LedBasedRowDisplay::columnCount() {
     return columnCount;
 }
 
+CRGB LedBasedRowDisplay::getBackgroundColor() {
+    if (_displayCount > 0) {
+        return _displays[0]->getBackgroundColor();
+    } else {
+        return CRGB::Black;
+    }
+}
+
+void LedBasedRowDisplay::setBackgroundColor(CRGB color) {
+    for (uint8_t i = 0; i < _displayCount; i++) {
+        _displays[i]->setBackgroundColor(color);
+    }
+}
+
 CRGB* LedBasedRowDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
     uint8_t c = column;
     for (uint8_t i = 0; i < _displayCount; i++) {
@@ -346,10 +402,18 @@ void LedBasedRowDisplay::setLedColor(uint8_t row, uint8_t column, bool state, CR
     }
 }
 
-void LedBasedRowDisplay::update(uint8_t rowOffset, uint8_t columnOffset) {
+void LedBasedRowDisplay::update(uint8_t rowOffset, uint8_t columnOffset, uint8_t width, uint8_t height) {
+    uint8_t h = rowCount();
     for (uint8_t i = 0; i < _displayCount; i++) {
-        _displays[i]->update(rowOffset, columnOffset);
-        columnOffset += _displays[i]->columnCount();
+        uint8_t cc = _displays[i]->columnCount();
+        _displays[i]->update(rowOffset, columnOffset, cc, h);
+        columnOffset += cc;
+    }
+}
+
+void LedBasedRowDisplay::setPaintBackground(bool paint) {
+    for (uint8_t i = 0; i < _displayCount; i++) {
+        _displays[i]->setPaintBackground(paint);
     }
 }
 

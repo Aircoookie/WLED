@@ -574,6 +574,9 @@ public:
             sep.addLed(sepLedRowIndices[i], 0);
         }
 
+        display.setBackgroundColor(CRGB::Black);
+        display.setPaintBackground(true);
+
         display.setColor(false, CRGB::Black);
         display.setMode(LedBasedDisplayMode::SET_OFF_LEDS);
 

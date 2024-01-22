@@ -103,11 +103,15 @@ class LedBasedDisplay {
         virtual uint8_t rowCount() = 0;
         virtual uint8_t columnCount() = 0;
 
+        virtual CRGB getBackgroundColor() = 0;
+        virtual void setBackgroundColor(CRGB color) = 0;
+
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) = 0;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) = 0;
 
-        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) = 0;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0, uint8_t width = 0, uint8_t height = 0) = 0;
 
+        virtual void setPaintBackground(bool paint) = 0;
         virtual void setMode(LedBasedDisplayMode mode) = 0;
 
         void setRowColor(uint8_t row, bool state, CRGB color);
@@ -125,11 +129,15 @@ class SevenSegmentDisplay : public LedBasedDisplay {
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
+        virtual CRGB getBackgroundColor() override;
+        virtual void setBackgroundColor(CRGB color) override;
+
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
 
-        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) override;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0, uint8_t width = 0, uint8_t height = 0) override;
 
+        virtual void setPaintBackground(bool paint) override;
         virtual void setMode(LedBasedDisplayMode mode) override;
 
         uint8_t segmentOfCoords(uint8_t row, uint8_t column);
@@ -137,17 +145,19 @@ class SevenSegmentDisplay : public LedBasedDisplay {
         void setSymbol(uint8_t symbol);
         void setDigit(uint8_t digit);
         void setCharacter(char charcter);
-        void setShowZero(boolean showZero);
+        void setShowZero(bool showZero);
 
     private:
         LedBasedDisplayOutput _output;
+        CRGB _backgroundColor;
         CRGB* _offColors;
         CRGB* _onColors;
 
         uint8_t _ledsPerSegment;
         uint8_t _value;
 
-        boolean _showZero;
+        bool _paintBackground;
+        bool _showZero;
 
         LedBasedDisplayMode _mode;
 
@@ -164,11 +174,15 @@ class SeparatorDisplay : public LedBasedDisplay {
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
+        virtual CRGB getBackgroundColor() override;
+        virtual void setBackgroundColor(CRGB color) override;
+
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
 
-        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) override;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0, uint8_t width = 0, uint8_t height = 0) override;
 
+        virtual void setPaintBackground(bool paint) override;
         virtual void setMode(LedBasedDisplayMode mode) override;
 
         void addLed(uint8_t row, uint8_t column);
@@ -186,6 +200,8 @@ class SeparatorDisplay : public LedBasedDisplay {
         uint8_t _maxLeds;
         uint8_t _ledCount;
         struct _Mapping* _mappings;
+        CRGB _backgroundColor;
+        bool _paintBackground;
         bool _state;
         LedBasedDisplayMode _mode;
 };
@@ -200,11 +216,15 @@ class LedBasedRowDisplay : public LedBasedDisplay {
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
+        virtual CRGB getBackgroundColor() override;
+        virtual void setBackgroundColor(CRGB color) override;
+
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
 
-        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) override;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0, uint8_t width = 0, uint8_t height = 0) override;
 
+        virtual void setPaintBackground(bool paint) override;
         virtual void setMode(LedBasedDisplayMode mode) override;
 
     private:
