@@ -386,7 +386,7 @@ void WLED::setup()
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
   pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
 #endif
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin

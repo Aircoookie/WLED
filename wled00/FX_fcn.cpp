@@ -440,6 +440,7 @@ uint8_t IRAM_ATTR Segment::currentMode() {
 }
 
 uint32_t IRAM_ATTR Segment::currentColor(uint8_t slot) {
+  if (slot >= NUM_COLORS) slot = 0;
 #ifndef WLED_DISABLE_MODE_BLEND
   return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];
 #else
@@ -1025,7 +1026,7 @@ void Segment::blur(uint8_t blur_amount) {
  * Inspired by the Adafruit examples.
  */
 uint32_t Segment::color_wheel(uint8_t pos) {
-  if (palette) return color_from_palette(pos, false, true, 0);
+  if (palette) return color_from_palette(pos, false, true, 0); // perhaps "strip.paletteBlend < 2" should be better instead of "true"
   uint8_t w = W(currentColor(0));
   pos = 255 - pos;
   if (pos < 85) {
@@ -1056,6 +1057,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
 
   uint8_t paletteIndex = i;
   if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
+  // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
   if (!wrap && strip.paletteBlend != 3) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGBPalette16 curPal;
   curPal = currentPalette(curPal, palette);
@@ -1571,18 +1573,7 @@ bool WS2812FX::checkSegmentAlignment() {
   return true;
 }
 
-//After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
-//Note: If called in an interrupt (e.g. JSON API), original segment must be restored,
-//otherwise it can lead to a crash on ESP32 because _segment_index is modified while in use by the main thread
-uint8_t WS2812FX::setPixelSegment(uint8_t n) {
-  uint8_t prevSegId = _segment_index;
-  if (n < _segments.size()) {
-    _segment_index = n;
-    _virtualSegmentLength = _segments[_segment_index].virtualLength();
-  }
-  return prevSegId;
-}
-
+// used by analog clock overlay
 void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col) {
   if (i2 < i) std::swap(i,i2);
   for (unsigned x = i; x <= i2; x++) setPixelColor(x, col);

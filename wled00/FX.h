@@ -802,8 +802,7 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
-      getActiveSegsLightCapabilities(bool selectedOnly = false),
-      setPixelSegment(uint8_t n);
+      getActiveSegsLightCapabilities(bool selectedOnly = false);
 
     inline uint8_t getBrightness(void)    { return _brightness; }       // returns current strip brightness
     inline uint8_t getMaxSegments(void)   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
