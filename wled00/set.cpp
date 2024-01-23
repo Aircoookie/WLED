@@ -19,8 +19,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == SUBPAGE_WIFI)
   {
-    char oldSSID[33];
-    strlcpy(oldSSID, multiWiFi[0].clientSSID, 33);
+    unsigned cnt = 0;
     for (size_t n = 0; n < WLED_MAX_WIFI_COUNT; n++) {
       char cs[4] = "CS"; cs[2] = 48+n; cs[3] = 0; //client SSID
       char pw[4] = "PW"; pw[2] = 48+n; pw[3] = 0; //client password
@@ -28,10 +27,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char gw[5] = "GW"; gw[2] = 48+n; gw[4] = 0; //GW address
       char sn[5] = "SN"; sn[2] = 48+n; sn[4] = 0; //subnet mask
       if (request->hasArg(cs)) {
-        if (n >= multiWiFi.size()) multiWiFi.push_back(WiFiConfig());
+        if (n >= multiWiFi.size()) multiWiFi.push_back(WiFiConfig()); // expand vector by one
         char oldSSID[33]; strcpy(oldSSID, multiWiFi[n].clientSSID);
         char oldPass[65]; strcpy(oldPass, multiWiFi[n].clientPass);
-        if (!strncmp(request->arg(cs).c_str(), oldSSID, 32)) {
+
+        if (strlen(oldSSID) == 0 || !strncmp(request->arg(cs).c_str(), oldSSID, 32)) {
           strlcpy(multiWiFi[n].clientSSID, request->arg(cs).c_str(), 33);
           forceReconnect = true;
         }
@@ -47,18 +47,24 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           multiWiFi[n].staticGW[i] = request->arg(gw).toInt();
           multiWiFi[n].staticSN[i] = request->arg(sn).toInt();
         }
+        cnt++;
       }
+    }
+    // remove unused
+    if (cnt < multiWiFi.size()) {
+      cnt = multiWiFi.size() - cnt;
+      while (cnt--) multiWiFi.pop_back();
+      multiWiFi.shrink_to_fit(); // release memory
     }
 
     if (request->hasArg(F("D0"))) {
       dnsAddress = IPAddress(request->arg(F("D0")).toInt(),request->arg(F("D1")).toInt(),request->arg(F("D2")).toInt(),request->arg(F("D3")).toInt());
-      DEBUG_PRINTLN(dnsAddress);
     }
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
 
     apBehavior = request->arg(F("AB")).toInt();
-    strcpy(oldSSID, apSSID);
+    char oldSSID[33]; strcpy(oldSSID, apSSID);
     strlcpy(apSSID, request->arg(F("AS")).c_str(), 33);
     if (!strcmp(oldSSID, apSSID) && apActive) forceReconnect = true;
     apHide = request->hasArg(F("AH"));

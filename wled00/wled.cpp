@@ -453,6 +453,8 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
+  findWiFi(true); // start scanning for available WiFi-s
+
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
   //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
@@ -698,7 +700,48 @@ bool WLED::initEthernet()
 #else
   return false; // Ethernet not enabled for build
 #endif
+}
 
+// performs asynchronous scan for available networks (which may take couple of seconds to finish)
+// returns true if only one wifi is configured or scan completed
+bool WLED::findWiFi(bool doScan) {
+  if (multiWiFi.size() <= 1) {
+    DEBUG_PRINTLN(F("Defaulf WiFi used."));
+    selectedWiFi = 0;
+    return true;
+  }
+
+  if (doScan) WiFi.scanDelete();  // restart scan
+
+  int status = WiFi.scanComplete();
+
+  if (status == WIFI_SCAN_FAILED) {
+    DEBUG_PRINTLN(F("WiFi scan started."));
+    WiFi.scanNetworks(true);  // start scanning in asynchronous mode
+    return false;
+  }
+  if (status > 0) { // status contains number of found networks
+    DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
+    int rssi = -9999;
+    for (int o = 0; o < status; o++) {
+      DEBUG_PRINT(F(" WiFi available: ")); DEBUG_PRINT(WiFi.SSID(o));
+      DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(WiFi.RSSI(o)); DEBUG_PRINTLN(F("dB"));
+      for (unsigned n = 0; n < multiWiFi.size(); n++)
+        if (!strcmp(WiFi.SSID(o).c_str(), multiWiFi[n].clientSSID)) {
+          // find the WiFi with the strongest signal (but keep priority of entry if signal difference is not big)
+          if ((n < selectedWiFi && WiFi.RSSI(o) > rssi-10) || WiFi.RSSI(o) > rssi) {
+            rssi = WiFi.RSSI(o);
+            selectedWiFi = n;
+          }
+          break;
+        }
+    }
+    DEBUG_PRINT(F("Selected: ")); DEBUG_PRINT(multiWiFi[selectedWiFi].clientSSID);
+    DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(rssi); DEBUG_PRINTLN(F("dB"));
+    return true;
+  }
+  //DEBUG_PRINT(F("WiFi scan running."));
+  return false; // scan is still running or there was an error
 }
 
 void WLED::initConnection()
@@ -715,7 +758,7 @@ void WLED::initConnection()
   }
 #endif
 
-  WiFi.disconnect(true);        // close old connections
+  if (findWiFi()) WiFi.disconnect(true); // close old connections (only if scan completed and found networks)
 #ifdef ESP8266
   WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
 #endif
@@ -752,7 +795,7 @@ void WLED::initConnection()
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];
     prepareHostname(hostname);
-    WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass);
+    WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass); // no harm if called multiple times
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
@@ -907,6 +950,7 @@ void WLED::handleConnection()
     if (interfacesInited) {
       DEBUG_PRINTLN(F("Disconnected!"));
       initConnection();
+      findWiFi(true); // reinit scan
       interfacesInited = false;
     }
     //send improv failed 6 seconds after second init attempt (24 sec. after provisioning)
@@ -917,15 +961,15 @@ void WLED::handleConnection()
     if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
       if (improvActive == 2) improvActive = 3;
       DEBUG_PRINTLN(F("Last reconnect too old."));
-      if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0;
       initConnection();
+      findWiFi(true); // reinit scan
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
       DEBUG_PRINTLN(F("Not connected AP."));
       initAP();
     }
   } else if (!interfacesInited) { //newly connected
-    DEBUG_PRINTLN("");
+    DEBUG_PRINTLN();
     DEBUG_PRINT(F("Connected! IP address: "));
     DEBUG_PRINTLN(Network.localIP());
     if (improvActive) {

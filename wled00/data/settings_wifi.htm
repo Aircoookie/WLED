@@ -52,8 +52,9 @@
 				}
 				scanLoops = 0;
 
-				let cs = d.querySelectorAll("#wifi_entries input[type=text]#CS0");
+				let cs = d.querySelectorAll("#wifi_entries input[type=text]");
 				for (let input of (cs||[])) {
+					let found = false;
 					let select = cE("select");
 					select.id = input.id;
 					select.name = input.name;
@@ -72,6 +73,7 @@
 
 						if (networks[i].ssid === input.value) {
 							option.setAttribute("selected", "selected");
+							found = true;
 						}
 
 						select.appendChild(option);
@@ -82,7 +84,8 @@
 					option.textContent = "Other network...";
 					select.appendChild(option);
 
-					input.replaceWith(select);
+					if (input.value === "" || found) input.replaceWith(select);
+					else select.remove(); 
 				}
 
 				button.disabled = false;
