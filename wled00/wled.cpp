@@ -752,7 +752,22 @@ void WLED::initConnection()
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];
     prepareHostname(hostname);
-    WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass);
+    int16_t nets = WiFi.scanNetworks();
+    bool netFound = false;
+    for (int wifi = 0; wifi < nets; wifi++) {
+      for (int i = 0; i < multiWiFi.size(); i++) {
+        // We check the current selected WiFi just in case it still in range
+        // and maybe it's the nearest. 
+        if (!strcmp(multiWiFi[selectedWiFi].clientSSID, WiFi.SSID(wifi).c_str())) {
+          WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass);
+          netFound = true;
+          break;
+        }
+        if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0;
+      }
+      if (netFound) break;
+    }
+
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
