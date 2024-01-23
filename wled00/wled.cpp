@@ -869,7 +869,8 @@ void WLED::handleConnection()
 
   if (lastReconnectAttempt == 0 || forceReconnect) {
     DEBUG_PRINTLN(F("Initial connect or forced reconnect."));
-    if (forceReconnect) selectedWiFi = 0;
+    selectedWiFi = 0;
+    forceReconnect = false;
     initConnection();
     return;
   }
