@@ -752,20 +752,32 @@ void WLED::initConnection()
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];
     prepareHostname(hostname);
-    int16_t nets = WiFi.scanNetworks();
-    bool netFound = false;
-    for (int wifi = 0; wifi < nets; wifi++) {
-      for (int i = 0; i < multiWiFi.size(); i++) {
-        // We check the current selected WiFi just in case it still in range
-        // and maybe it's the nearest. 
-        if (!strcmp(multiWiFi[selectedWiFi].clientSSID, WiFi.SSID(wifi).c_str())) {
-          WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass);
-          netFound = true;
-          break;
+    int16_t scanResult = WiFi.scanComplete();
+    if (scanResult == WIFI_SCAN_FAILED) {
+      WiFi.scanNetworks(true); // Making it async. We've to check scanComplete() for results
+    } else if (scanResult != WIFI_SCAN_RUNNING) {
+      bool netFound = false;
+      bool resetScan = false;
+      for (int wifi = 0; wifi < scanResult; wifi++) {
+        for (int i = 0; i < multiWiFi.size(); i++) {
+          // We check the current selected WiFi just in case it still in range
+          // and maybe it's the nearest. 
+          if (!strcmp(multiWiFi[selectedWiFi].clientSSID, WiFi.SSID(wifi).c_str())) {
+            WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass);
+            netFound = true;
+            break;
+          }
+          if (++selectedWiFi >= multiWiFi.size()) {
+            selectedWiFi = 0;
+            resetScan = true;
+          }
         }
-        if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0;
+        if (netFound) break;
       }
-      if (netFound) break;
+      // We should delete the scan to free memory and to refresh the near networks.
+      // This is made every time we go back to the first WiFi, or every time we
+      // find a network to connect to.
+      if (resetScan || netFound) WiFi.scanDelete();
     }
 
 #ifdef ARDUINO_ARCH_ESP32
