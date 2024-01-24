@@ -714,7 +714,7 @@ bool WLED::findWiFi(bool doScan) {
 
   if (doScan) WiFi.scanDelete();  // restart scan
 
-  int status = WiFi.scanComplete();
+  int status = WiFi.scanComplete(); // complete scan may take as much as several seconds (usually <3s with not very crowded air)
 
   if (status == WIFI_SCAN_FAILED) {
     DEBUG_PRINTLN(F("WiFi scan started."));
@@ -747,6 +747,8 @@ bool WLED::findWiFi(bool doScan) {
 
 void WLED::initConnection()
 {
+  DEBUG_PRINTLN(F("initConnection() called."));
+
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
@@ -759,10 +761,12 @@ void WLED::initConnection()
   }
 #endif
 
-  if (findWiFi()) WiFi.disconnect(); // close old connections (only if scan completed and found networks)
+  WiFi.disconnect(true); // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
 #endif
+
+  findWiFi(); // update selectedWiFi, initConnection() is called when scan is finished
 
   if (multiWiFi[selectedWiFi].staticIP != 0U && multiWiFi[selectedWiFi].staticGW != 0U) {
     WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN, dnsAddress);
@@ -893,13 +897,13 @@ void WLED::handleConnection()
   static uint32_t lastHeap = UINT32_MAX;
   static unsigned long heapTime = 0;
   unsigned long now = millis();
+  const bool wifiConfigured = WLED_WIFI_CONFIGURED;
 
-  if ((now < 500 && WLED_WIFI_CONFIGURED) || (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS)))
+  if ((wifiConfigured && WiFi.scanComplete() < 0) || (now < 2000 && (!wifiConfigured || apBehavior == AP_BEHAVIOR_ALWAYS)))
     return;
 
   if (lastReconnectAttempt == 0 || forceReconnect) {
     DEBUG_PRINTLN(F("Initial connect or forced reconnect."));
-    findWiFi();
     initConnection();
     interfacesInited = false;
     forceReconnect = false;
@@ -935,7 +939,7 @@ void WLED::handleConnection()
       stacO = stac;
       DEBUG_PRINT(F("Connected AP clients: "));
       DEBUG_PRINTLN(stac);
-      if (!WLED_CONNECTED && WLED_WIFI_CONFIGURED) {        // trying to connect, but not connected
+      if (!WLED_CONNECTED && wifiConfigured) {        // trying to connect, but not connected
         if (stac)
           WiFi.disconnect();        // disable search so that AP can work
         else
@@ -956,7 +960,7 @@ void WLED::handleConnection()
       sendImprovStateResponse(0x03, true);
       improvActive = 2;
     }
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && wifiConfigured) {
       if (improvActive == 2) improvActive = 3;
       DEBUG_PRINTLN(F("Last reconnect too old."));
       initConnection();
