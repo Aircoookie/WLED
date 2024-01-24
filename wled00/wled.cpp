@@ -453,7 +453,8 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
-  findWiFi(true); // start scanning for available WiFi-s
+  WiFi.mode(WIFI_STA); // enable scanning
+  findWiFi(true);      // start scanning for available WiFi-s
 
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
@@ -720,7 +721,7 @@ bool WLED::findWiFi(bool doScan) {
     WiFi.scanNetworks(true);  // start scanning in asynchronous mode
     return false;
   }
-  if (status > 0) { // status contains number of found networks
+  if (status >= 0) { // status contains number of found networks
     DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
     int rssi = -9999;
     for (int o = 0; o < status; o++) {
@@ -758,7 +759,7 @@ void WLED::initConnection()
   }
 #endif
 
-  if (findWiFi()) WiFi.disconnect(true); // close old connections (only if scan completed and found networks)
+  if (findWiFi()) WiFi.disconnect(); // close old connections (only if scan completed and found networks)
 #ifdef ESP8266
   WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
 #endif
@@ -796,6 +797,7 @@ void WLED::initConnection()
     char hostname[25];
     prepareHostname(hostname);
     WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass); // no harm if called multiple times
+
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
@@ -892,13 +894,16 @@ void WLED::handleConnection()
   static unsigned long heapTime = 0;
   unsigned long now = millis();
 
-  if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
+  if ((now < 500 && WLED_WIFI_CONFIGURED) || (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS)))
     return;
 
   if (lastReconnectAttempt == 0 || forceReconnect) {
     DEBUG_PRINTLN(F("Initial connect or forced reconnect."));
-    if (forceReconnect) selectedWiFi = 0;
+    findWiFi();
     initConnection();
+    interfacesInited = false;
+    forceReconnect = false;
+    wasConnected = false;
     return;
   }
 
@@ -938,14 +943,7 @@ void WLED::handleConnection()
       }
     }
   }
-  if (forceReconnect) {
-    DEBUG_PRINTLN(F("Forcing reconnect."));
-    initConnection();
-    interfacesInited = false;
-    forceReconnect = false;
-    wasConnected = false;
-    return;
-  }
+
   if (!Network.isConnected()) {
     if (interfacesInited) {
       DEBUG_PRINTLN(F("Disconnected!"));

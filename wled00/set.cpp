@@ -31,8 +31,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         char oldSSID[33]; strcpy(oldSSID, multiWiFi[n].clientSSID);
         char oldPass[65]; strcpy(oldPass, multiWiFi[n].clientPass);
 
-        if (strlen(oldSSID) == 0 || !strncmp(request->arg(cs).c_str(), oldSSID, 32)) {
-          strlcpy(multiWiFi[n].clientSSID, request->arg(cs).c_str(), 33);
+        strlcpy(multiWiFi[n].clientSSID, request->arg(cs).c_str(), 33);
+        if (strlen(oldSSID) == 0 || !strncmp(multiWiFi[n].clientSSID, oldSSID, 32)) {
           forceReconnect = true;
         }
         if (!isAsterisksOnly(request->arg(pw).c_str(), 65)) {
