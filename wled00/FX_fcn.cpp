@@ -1455,6 +1455,7 @@ void WS2812FX::resetSegments() {
   segment seg = Segment(0, _length);
   #endif
   _segments.push_back(seg);
+  _segments.shrink_to_fit(); // just in case ...
   _mainSegment = 0;
 }
 
