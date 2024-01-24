@@ -286,10 +286,10 @@ void parseNotifyPacket(uint8_t *udpIn) {
       uint16_t stopY  = version > 11 ? (udpIn[34+ofs] << 8 | udpIn[35+ofs]) : 1;
       uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
       if (!receiveSegmentOptions) {
-        //selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
-        // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
         DEBUG_PRINTF("Set segment w/o options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
-        strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+        strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
+        selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+        strip.resume();
         continue; // we do receive bounds, but not options
       }
       selseg.options = (selseg.options & 0x0071U) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
@@ -326,12 +326,14 @@ void parseNotifyPacket(uint8_t *udpIn) {
       }
       if (receiveSegmentBounds) {
         DEBUG_PRINTF("Set segment w/ options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
-        // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
-        strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+        strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
+        selseg.setUp(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+        strip.resume();
       } else {
-        // we have to use strip.setSegment() instead of selseg.setUp() to prevent crash if segment would change during drawing 
         DEBUG_PRINTF("Set segment grouping: %d [%d,%d]\n", id, (int)udpIn[5+ofs], (int)udpIn[6+ofs]);
-        strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+        strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
+        selseg.setUp(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+        strip.resume();
       }
     }
     stateChanged = true;
@@ -434,6 +436,8 @@ void exitRealtime() {
   realtimeIP[0] = 0;
   if (useMainSegmentOnly) { // unfreeze live segment again
     strip.getMainSegment().freeze = false;
+  } else {
+    strip.show(); // possible fix for #3589
   }
   updateInterfaces(CALL_MODE_WS_SEND);
 }
@@ -608,13 +612,13 @@ void handleNotifications()
     if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     uint16_t totalLen = strip.getLengthTotal();
-    if (udpIn[0] == 1) //warls
+    if (udpIn[0] == 1 && packetSize > 5) //warls
     {
       for (size_t i = 2; i < packetSize -3; i += 4)
       {
         setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
       }
-    } else if (udpIn[0] == 2) //drgb
+    } else if (udpIn[0] == 2 && packetSize > 4) //drgb
     {
       uint16_t id = 0;
       for (size_t i = 2; i < packetSize -2; i += 3)
@@ -623,7 +627,7 @@ void handleNotifications()
 
         id++; if (id >= totalLen) break;
       }
-    } else if (udpIn[0] == 3) //drgbw
+    } else if (udpIn[0] == 3 && packetSize > 6) //drgbw
     {
       uint16_t id = 0;
       for (size_t i = 2; i < packetSize -3; i += 4)
@@ -632,7 +636,7 @@ void handleNotifications()
 
         id++; if (id >= totalLen) break;
       }
-    } else if (udpIn[0] == 4) //dnrgb
+    } else if (udpIn[0] == 4 && packetSize > 7) //dnrgb
     {
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (size_t i = 4; i < packetSize -2; i += 3)
@@ -641,7 +645,7 @@ void handleNotifications()
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
       }
-    } else if (udpIn[0] == 5) //dnrgbw
+    } else if (udpIn[0] == 5 && packetSize > 8) //dnrgbw
     {
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (size_t i = 4; i < packetSize -2; i += 4)
@@ -664,8 +668,8 @@ void handleNotifications()
       apireq += (char*)udpIn;
       handleSet(nullptr, apireq);
     } else if (udpIn[0] == '{') { //JSON API
-      DeserializationError error = deserializeJson(doc, udpIn);
-      JsonObject root = doc.as<JsonObject>();
+      DeserializationError error = deserializeJson(*pDoc, udpIn);
+      JsonObject root = pDoc->as<JsonObject>();
       if (!error && !root.isNull()) deserializeState(root);
     }
     releaseJSONBufferLock();

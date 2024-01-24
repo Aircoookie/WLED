@@ -12,8 +12,11 @@ var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0, wW;
+var simplifiedUI = false;
 var tr = 7;
 var d = document;
+const ranges = RangeTouch.setup('input[type="range"]', {});
+var retry = false;
 var palettesData;
 var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
@@ -22,21 +25,33 @@ var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var isM = false, mw = 0, mh=0;
-var ws, cpick, ranges, wsRpt=0;
+var ws, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:"", rnd: false, rndGrayscale: false, rndBlur: false}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
 		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
 		  css:true, hdays:false, fxdef:true, on:0, off:0, idsort: false}
 };
+// [year, month (0 -> January, 11 -> December), day, duration in days, image url]
 var hol = [
-	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
-	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
-	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
-	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
-	[0,6,4,1,"https://images.alphacoders.com/516/516792.jpg"], // 4th of July
-	[0,0,1,1,"https://images.alphacoders.com/119/1198800.jpg"] // new year
+	[0, 11, 24, 4, "https://aircoookie.github.io/xmas.png"],		// christmas
+	[0, 2, 17, 1, "https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
+	[2025, 3, 20, 2, "https://aircoookie.github.io/easter.png"],	// easter 2025
+	[2024, 2, 31, 2, "https://aircoookie.github.io/easter.png"],	// easter 2024
+	[0, 6, 4, 1, "https://images.alphacoders.com/516/516792.jpg"],	// 4th of July
+	[0, 0, 1, 1, "https://images.alphacoders.com/119/1198800.jpg"]	// new year
 ];
+
+var cpick = new iro.ColorPicker("#picker", {
+	width: 260,
+	wheelLightness: false,
+	wheelAngle: 270,
+	wheelDirection: "clockwise",
+	layout: [{
+		component: iro.ui.Wheel,
+		options: {}
+	}]
+});
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -161,19 +176,19 @@ function cTheme(light) {
 	}
 }
 
-function loadBg(iUrl)
-{
-	let bg = gId('bg');
-	let img = d.createElement("img");
+function loadBg() {
+	const { url: iUrl, rnd: iRnd } = cfg.theme.bg;
+	const bg = gId('bg');
+	const img = d.createElement("img");
 	img.src = iUrl;
-	if (iUrl == "" || iUrl==="https://picsum.photos/1920/1080") {
-		var today = new Date();
-		for (var h of (hol||[])) {
-			var yr = h[0]==0 ? today.getFullYear() : h[0];
-			var hs = new Date(yr,h[1],h[2]);
-			var he = new Date(hs);
-			he.setDate(he.getDate() + h[3]);
-			if (today>=hs && today<=he)	img.src = h[4];
+	if (!iUrl || iRnd) {
+		const today = new Date();
+		for (const holiday of (hol || [])) {
+			const year = holiday[0] == 0 ? today.getFullYear() : holiday[0];
+			const holidayStart = new Date(year, holiday[1], holiday[2]);
+			const holidayEnd = new Date(holidayStart);
+			holidayEnd.setDate(holidayEnd.getDate() + holiday[3]);
+			if (today >= holidayStart && today <= holidayEnd) img.src = holiday[4];
 		}
 	}
 	img.addEventListener('load', (e) => {
@@ -181,7 +196,6 @@ function loadBg(iUrl)
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
 		bg.style.backgroundImage = `url(${img.src})`;
-		img = null;
 		gId('namelabel').style.color = "var(--c-c)"; // improve namelabel legibility on background image
 	});
 }
@@ -252,31 +266,37 @@ function onLoad()
 			console.log("No array of holidays in holidays.json. Defaults loaded.");
 		})
 		.finally(()=>{
-			loadBg(cfg.theme.bg.url);
+			loadBg();
 		});
 	} else
-		loadBg(cfg.theme.bg.url);
+		loadBg();
 
 	selectSlot(0);
 	updateTablinks(0);
+	cpick.on("input:end", () => {setColor(1);});
+	cpick.on("color:change", () => {updatePSliders()});
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
+	// Once we figure out why ESP8266 sometimes corrupts JSON responses if they are made in quick succession
+	// we can remove all setTimeout() throttling
 	loadPalettes(()=>{
-		// fill effect extra data array
-		loadFXData(()=>{
-			setTimeout(()=>{ // ESP8266 can't handle quick requests
-				// load and populate effects
-				loadFX(()=>{
-					setTimeout(()=>{ // ESP8266 can't handle quick requests
-						loadPalettesData(()=>{
-							requestJson();// will load presets and create WS
-							if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
-						});
-					},100);
-				});
-			},100);
-		});
+		setTimeout(()=>{ // ESP8266 can't handle quick requests
+			// fill effect extra data array
+			loadFXData(()=>{
+				setTimeout(()=>{ // ESP8266 can't handle quick requests
+					// load and populate effects
+					loadFX(()=>{
+						setTimeout(()=>{ // ESP8266 can't handle quick requests
+							loadPalettesData(()=>{
+								requestJson();// will load presets and create WS
+								if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
+							});
+						},50);
+					});
+				},50);
+			});
+		},50);
 	});
 	resetUtil();
 
@@ -309,7 +329,6 @@ function openTab(tabI, force = false)
 var timeout;
 function showToast(text, error = false)
 {
-	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
 	var x = gId('toast');
 	//if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
 	x.innerHTML = text;
@@ -322,6 +341,7 @@ function showToast(text, error = false)
 
 function showErrorToast()
 {
+	gId('connind').style.backgroundColor = "var(--c-r)";
 	showToast('Connection to light failed!', true);
 }
 
@@ -500,8 +520,13 @@ function loadPalettes(callback = null)
 	.then((json)=>{
 		lJson = Object.entries(json);
 		populatePalettes();
+		retry = false;
 	})
 	.catch((e)=>{
+		if (!retry) {
+			retry = true;
+			setTimeout(loadPalettes, 500); // retry
+		}
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -522,9 +547,13 @@ function loadFX(callback = null)
 	.then((json)=>{
 		eJson = Object.entries(json);
 		populateEffects();
+		retry = false;
 	})
 	.catch((e)=>{
-		//setTimeout(loadFX, 250); // retry
+		if (!retry) {
+			retry = true;
+			setTimeout(loadFX, 500); // retry
+		}
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -547,10 +576,14 @@ function loadFXData(callback = null)
 		// add default value for Solid
 		fxdata.shift()
 		fxdata.unshift(";!;");
+		retry = false;
 	})
 	.catch((e)=>{
 		fxdata = [];
-		//setTimeout(loadFXData, 250); // retry
+		if (!retry) {
+			retry = true;
+			setTimeout(loadFXData, 500); // retry
+		}
 		showToast(e, true);
 	})
 	.finally(()=>{
@@ -624,11 +657,12 @@ function parseInfo(i) {
 	if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)"; // Minecraft easter egg
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
-	d.title     = name;
-	ledCount    = i.leds.count;
-	//syncTglRecv = i.str;
-	maxSeg      = i.leds.maxseg;
-	pmt         = i.fs.pmt;
+	d.title      = name;
+	simplifiedUI = i.simplifiedui;
+	ledCount     = i.leds.count;
+	//syncTglRecv   = i.str;
+	maxSeg       = i.leds.maxseg;
+	pmt          = i.fs.pmt;
 	gId('buttonNodes').style.display = lastinfo.ndc > 0 ? null:"none";
 	// do we have a matrix set-up
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
@@ -750,6 +784,7 @@ function populateSegments(s)
 		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark"></span></label>`;
 		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark"></span></label>`;
 		let rvYck = "", miYck ="";
+		let smpl = simplifiedUI ? 'hide' : '';
 		if (isMSeg) {
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
@@ -768,23 +803,23 @@ function populateSegments(s)
 							`<option value="1" ${inst.si==1?' selected':''}>WeWillRockYou</option>`+
 						`</select></div>`+
 					`</div>`;
-		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-set="${inst.set}">`+
-				`<label class="check schkl">`+
+		cn += `<div class="seg lstI ${i==s.mainseg && !simplifiedUI ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-set="${inst.set}">`+
+				`<label class="check schkl ${smpl}">`+
 					`<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>`+
 					`<span class="checkmark"></span>`+
 				`</label>`+
-				`<div class="segname" onclick="selSegEx(${i})">`+
+				`<div class="segname ${smpl}" onclick="selSegEx(${i})">`+
 					`<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>`+
 					(inst.n ? inst.n : "Segment "+i) +
 					`<div class="pop hide" onclick="event.preventDefault();event.stopPropagation();">`+
 						`<i class="icons g-icon" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.set+"A".charCodeAt(0))};</i>`+
 						`<div class="pop-c hide"><span style="color:var(--c-f);" onclick="setGrp(${i},0);">&#x278A;</span><span style="color:var(--c-r);" onclick="setGrp(${i},1);">&#x278B;</span><span style="color:var(--c-g);" onclick="setGrp(${i},2);">&#x278C;</span><span style="color:var(--c-l);" onclick="setGrp(${i},3);">&#x278D;</span></div>`+
 					`</div> `+
-					`<i class="icons edit-icon flr" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
+					`<i class="icons edit-icon flr ${smpl}" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
 				`</div>`+
-				`<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
+				`<i class="icons e-icon flr ${smpl}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
 				(cfg.comp.segpwr ? segp : '') +
-				`<div class="segin" id="seg${i}in">`+
+				`<div class="segin ${smpl}" id="seg${i}in">`+
 					`<input type="text" class="ptxt" id="seg${i}t" autocomplete="off" maxlength=${li.arch=="esp8266"?32:64} value="${inst.n?inst.n:""}" placeholder="Enter name..."/>`+
 					`<table class="infot segt">`+
 					`<tr>`+
@@ -834,6 +869,7 @@ function populateSegments(s)
 	}
 
 	gId('segcont').innerHTML = cn;
+	gId("segcont").classList.remove("hide");
 	let noNewSegs = (lowestUnused >= maxSeg);
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
@@ -847,6 +883,8 @@ function populateSegments(s)
 	if (segCount < 2) {
 		gId(`segd${lSeg}`).classList.add("hide");
 		if (parseInt(gId("seg0bri").value)==255) gId(`segp0`).classList.add("hide");
+		// hide segment controls if there is only one segment in simplified UI
+		if (simplifiedUI) gId("segcont").classList.add("hide");
 	}
 	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).classList.remove("hide");
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
@@ -1258,6 +1296,12 @@ function updateSelectedPalette(s)
 	var selectedPalette = parent.querySelector(`.lstI[data-id="${s}"]`);
 	if (selectedPalette)  parent.querySelector(`.lstI[data-id="${s}"]`).classList.add('selected');
 
+	// Display selected palette name on button in simplified UI
+	let selectedName = selectedPalette.querySelector(".lstIname").innerText;
+	if (simplifiedUI) {
+		gId("palwbtn").innerText = "Palette: " + selectedName;
+	}
+
 	// in case of special palettes (* Colors...), force show color selectors (if hidden by effect data)
 	let cd = gId('csl').children; // color selectors
 	if (s > 1 && s < 6) {
@@ -1299,8 +1343,15 @@ function updateSelectedFx()
 				}
 			}
 		});
-		// hide 2D mapping and/or sound simulation options
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
+
+		// Display selected effect name on button in simplified UI
+		let selectedNameOnlyAscii = selectedName.replace(/[^\x00-\x7F]/g, "");
+		if (simplifiedUI) {
+			gId("fxbtn").innerText = "Effect: " + selectedNameOnlyAscii;
+		}
+
+		// hide 2D mapping and/or sound simulation options
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
 		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove('hide'); else seg.classList.add('hide');
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="si"]`);
@@ -1441,25 +1492,31 @@ function readState(s,command=false)
 	gId('checkO3').checked = !(!i.o3);
 
 	if (s.error && s.error != 0) {
-	  var errstr = "";
-	  switch (s.error) {
-		case 10:
-		  errstr = "Could not mount filesystem!";
-		  break;
-		case 11:
-		  errstr = "Not enough space to save preset!";
-		  break;
-		case 12:
-		  errstr = "Preset not found.";
-		  break;
-		case 13:
-		  errstr = "Missing ir.json.";
-		  break;
-		case 19:
-		  errstr = "A filesystem error has occured.";
-		  break;
+		var errstr = "";
+		switch (s.error) {
+			case  8:
+				errstr = "Effect RAM depleted!";
+				break;
+			case  9:
+				errstr = "JSON parsing error!";
+				break;
+			case 10:
+				errstr = "Could not mount filesystem!";
+				break;
+			case 11:
+				errstr = "Not enough space to save preset!";
+				break;
+			case 12:
+				errstr = "Preset not found.";
+				break;
+			case 13:
+				errstr = "Missing ir.json.";
+				break;
+			case 19:
+				errstr = "A filesystem error has occured.";
+				break;
 		}
-	  showToast('Error ' + s.error + ": " + errstr, true);
+		showToast('Error ' + s.error + ": " + errstr, true);
 	}
 
 	selectedPal = i.pal;
@@ -1530,6 +1587,7 @@ function setEffectParameters(idx)
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	function setSelectedEffectPosition() {
+		if (simplifiedUI) return;
 		let top = parseInt(getComputedStyle(gId("sliders")).height);
 		top += 5;
 		let sel = d.querySelector('#fxlist .selected');
@@ -1596,6 +1654,10 @@ function setEffectParameters(idx)
 		// disable palette list
 		text += ' not used';
 		palw.style.display = "none";
+		// Close palette dialog if not available
+		if (gId("palw").lastElementChild.tagName == "DIALOG") {
+			gId("palw").lastElementChild.close();
+		}
 	}
 	pall.innerHTML = icon + text;
 	// not all color selectors shown, hide palettes created from color selectors
@@ -1661,6 +1723,7 @@ function requestJson(command=null)
 			parseInfo(i);
 			populatePalettes(i);
 			if (isInfo) populateInfo(i);
+			if (simplifiedUI) simplifyUI();
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
@@ -1673,8 +1736,13 @@ function requestJson(command=null)
 			});
 		},25);
 		reqsLegal = true;
+		retry = false;
 	})
 	.catch((e)=>{
+		if (!retry) {
+			retry = true;
+			setTimeout(requestJson,500);
+		}
 		showToast(e, true);
 	});
 }
@@ -2093,7 +2161,7 @@ function selGrp(g)
 	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
-	if (sel) for (let s of sel||[]) {
+	for (let s of (sel||[])) {
 		let i = parseInt(s.id.substring(3));
 		obj.seg[i] = {"id":i,"sel":true};
 	}
@@ -2259,6 +2327,12 @@ function setFX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
+
+	// Close effect dialog in simplified UI
+	if (simplifiedUI) {
+		gId("fx").lastElementChild.close();
+	}
+
 	var obj = {"seg": {"fx": parseInt(ind), "fxdef": cfg.comp.fxdef}}; // fxdef sets effect parameters to default values
 	requestJson(obj);
 }
@@ -2269,6 +2343,11 @@ function setPalette(paletteId = null)
 		paletteId = parseInt(d.querySelector('#pallist input[name="palette"]:checked').value);
 	} else {
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
+	}
+
+	// Close palette dialog in simplified UI
+	if (simplifiedUI) {
+		gId("palw").lastElementChild.close();
 	}
 
 	var obj = {"seg": {"pal": paletteId}};
@@ -2722,8 +2801,10 @@ function search(field, listId = null) {
 	field.nextElementSibling.style.display = (field.value !== '') ? 'block' : 'none';
 	if (!listId) return;
 
+	const search = field.value !== '';
+
 	// clear filter if searching in fxlist
-	if (listId === 'fxlist' && field.value !== '') {
+	if (listId === 'fxlist' && search) {
 		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
 	}
 
@@ -2757,6 +2838,12 @@ function search(field, listId = null) {
 	sortedListItems.forEach(item => {
 		gId(listId).append(item);
 	});
+
+	// scroll to first search result
+	const firstVisibleItem = sortedListItems.find(item => item.style.display !== 'none' && !item.classList.contains('sticky') && !item.classList.contains('selected'));
+	if (firstVisibleItem && search) {
+		firstVisibleItem.scrollIntoView({ behavior: "instant", block: "center" });
+	}
 }
 
 function clean(clearButton) {
@@ -2903,7 +2990,7 @@ function hasIroClass(classList)
 //required by rangetouch.js
 function lock(e)
 {
-	if (pcMode) return;
+	if (pcMode || simplifiedUI) return;
 	var l = e.target.classList;
 	var pl = e.target.parentElement.classList;
 
@@ -2917,7 +3004,7 @@ function lock(e)
 //required by rangetouch.js
 function move(e)
 {
-	if(!locked || pcMode) return;
+	if(!locked || pcMode || simplifiedUI) return;
 	var clientX = unify(e).clientX;
 	var dx = clientX - x0;
 	var s = Math.sign(dx);
@@ -2963,7 +3050,7 @@ function togglePcMode(fromB = false)
 	gId('buttonPcm').className = (pcMode) ? "active":"";
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
-	_C.style.width = (pcMode)?'100%':'400%';
+	_C.style.width = (pcMode || simplifiedUI)?'100%':'400%';
 }
 
 function mergeDeep(target, ...sources)
@@ -3017,6 +3104,98 @@ function tooltip()
 		});
 	});
 };
+
+// Transforms the default UI into the simple UI
+function simplifyUI() {
+	// Create dropdown dialog
+	function createDropdown(id, buttonText, dialogElements = null) {
+		// Create dropdown dialog
+		const dialog = document.createElement("dialog");
+		// Move every dialogElement to the dropdown dialog or if none are given, move all children of the element with the given id
+		if (dialogElements) {
+			dialogElements.forEach((e) => {
+				dialog.appendChild(e);
+			});
+		} else {
+			while (gId(id).firstChild) {
+				dialog.appendChild(gId(id).firstChild);
+			}
+		}
+
+		// Create button for the dropdown
+		const btn = document.createElement("button");
+		btn.id = id + "btn";
+		btn.classList.add("btn");
+		btn.innerText = buttonText;
+		function toggleDialog(e) {
+			if (e.target != btn && e.target != dialog) return;
+			if (dialog.open) {
+				dialog.close();
+				return;
+			}
+			// Prevent autofocus on dialog open
+			dialog.inert = true;
+			dialog.showModal();
+			dialog.inert = false;
+			clean(dialog.firstElementChild.children[1]);
+			dialog.scrollTop = 0;
+		};
+		btn.addEventListener("click", toggleDialog);
+		dialog.addEventListener("click", toggleDialog);
+
+		// Add the dialog and button to the element with the given id
+		gId(id).append(btn);
+		gId(id).append(dialog);
+	}
+
+	// Check if the UI was already simplified
+	if (gId("Colors").classList.contains("simplified")) return;
+
+	// Disable PC Mode as it does not exist in simple UI
+	if (pcMode) togglePcMode(true);
+	_C.style.width = '100%'
+	_C.style.setProperty('--n', 1);
+
+	gId("Colors").classList.add("simplified");
+	// Put effects below palett list
+	gId("Colors").append(gId("fx"));
+	gId("Colors").append(gId("sliders"));
+	// Put segments before palette list
+	gId("Colors").insertBefore(gId("segcont"), gId("pall"));
+	// Put preset quick load before palette list and segemts
+	gId("Colors").insertBefore(gId("pql"), gId("pall"));
+
+	// Create dropdown for palette list
+	createDropdown("palw", "Change palette");
+	createDropdown("fx", "Change effect", [gId("fxFind"), gId("fxlist")]);
+
+	// Hide pallete label
+	gId("pall").style.display = "none";
+	gId("Colors").insertBefore(document.createElement("br"), gId("pall"));
+	// Hide effect label
+	gId("modeLabel").style.display = "none";
+
+	// Hide buttons in top bar
+	gId("buttonNl").style.display = "none";
+	gId("buttonSync").style.display = "none";
+	gId("buttonSr").style.display = "none";
+	gId("buttonPcm").style.display = "none";
+
+	// Hide bottom bar 
+	gId("bot").style.display = "none";
+	document.documentElement.style.setProperty('--bh', '0px');
+
+	// Hide other tabs
+	gId("Effects").style.display = "none";
+	gId("Segments").style.display = "none";
+	gId("Presets").style.display = "none";
+
+	// Hide filter options
+	gId("filters").style.display = "none";
+
+	// Hide buttons for pixel art and custom palettes (add / delete)
+	gId("btns").style.display = "none";
+}
 
 size();
 _C.style.setProperty('--n', N);

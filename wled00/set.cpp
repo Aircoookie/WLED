@@ -46,6 +46,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t != apChannel) forceReconnect = true;
     if (t > 0 && t < 14) apChannel = t;
 
+    force802_3g = request->hasArg(F("FG"));
     noWifiSleep = request->hasArg(F("WS"));
 
     #ifndef WLED_DISABLE_ESPNOW
@@ -98,8 +99,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint16_t length, start, maMax;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
-    strip.ablMilliampsMax = request->arg(F("MA")).toInt();
-    //strip.milliampsPerLed = request->arg(F("LA")).toInt();
+    uint16_t ablMilliampsMax = request->arg(F("MA")).toInt();
+    BusManager::setMilliampsMax(ablMilliampsMax);
 
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
@@ -145,30 +146,30 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         break;  // no parameter
       }
       awmode = request->arg(aw).toInt();
-      uint16_t freqHz = request->arg(sp).toInt();
-      if (type > TYPE_ONOFF && type < 49) {
-        switch (freqHz) {
-          case 0 : freqHz = WLED_PWM_FREQ/3; break;
-          case 1 : freqHz = WLED_PWM_FREQ/2; break;
+      uint16_t freq = request->arg(sp).toInt();
+      if (IS_PWM(type)) {
+        switch (freq) {
+          case 0 : freq = WLED_PWM_FREQ/3;   break;
+          case 1 : freq = WLED_PWM_FREQ/2;   break;
           default:
-          case 2 : freqHz = WLED_PWM_FREQ;   break;
-          case 3 : freqHz = WLED_PWM_FREQ*2; break;
-          case 4 : freqHz = WLED_PWM_FREQ*3; break;
+          case 2 : freq = WLED_PWM_FREQ;     break;
+          case 3 : freq = WLED_PWM_FREQ*4/3; break;
+          case 4 : freq = WLED_PWM_FREQ*2;   break;
         }
-      } else if (type > 48 && type < 64) {
-        switch (freqHz) {
+      } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
+        switch (freq) {
           default:
-          case 0 : freqHz =  1000; break;
-          case 1 : freqHz =  2000; break;
-          case 2 : freqHz =  5000; break;
-          case 3 : freqHz = 10000; break;
-          case 4 : freqHz = 20000; break;
+          case 0 : freq =  1000; break;
+          case 1 : freq =  2000; break;
+          case 2 : freq =  5000; break;
+          case 3 : freq = 10000; break;
+          case 4 : freq = 20000; break;
         }
       } else {
-        freqHz = 0;
+        freq = 0;
       }
       channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
-      if ((type > TYPE_TM1814 && type < TYPE_WS2801) || type >= TYPE_NET_DDP_RGB) { // analog and virtual
+      if (type == TYPE_ONOFF || IS_PWM(type) || IS_VIRTUAL(type)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       } else {
@@ -179,7 +180,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freqHz, useGlobalLedBuffer, maPerLed, maMax);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freq, useGlobalLedBuffer, maPerLed, maMax);
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
@@ -189,14 +190,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char xs[4] = "XS"; xs[2] = 48+s; xs[3] = 0; //start LED
       char xc[4] = "XC"; xc[2] = 48+s; xc[3] = 0; //strip length
       char xo[4] = "XO"; xo[2] = 48+s; xo[3] = 0; //color order
+      char xw[4] = "XW"; xw[2] = 48+s; xw[3] = 0; //W swap
       if (request->hasArg(xs)) {
         start = request->arg(xs).toInt();
         length = request->arg(xc).toInt();
-        colorOrder = request->arg(xo).toInt();
+        colorOrder = request->arg(xo).toInt() & 0x0F;
+        colorOrder |= (request->arg(xw).toInt() & 0x0F) << 4; // add W swap information
         com.add(start, length, colorOrder);
       }
     }
-    busses.updateColorOrderMap(com);
+    BusManager::updateColorOrderMap(com);
 
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
@@ -303,13 +306,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
     //syncToggleReceive = request->hasArg(F("ST"));
-  #ifdef WLED_ENABLE_SIMPLE_UI
-    if (simplifiedUI ^ request->hasArg(F("SU"))) {
-      // UI selection changed, invalidate browser cache
-      cacheInvalidate++;
-    }
     simplifiedUI = request->hasArg(F("SU"));
-  #endif
     DEBUG_PRINTLN(F("Enumerating ledmaps"));
     enumerateLedmaps();
     DEBUG_PRINTLN(F("Loading custom palettes"));
@@ -341,7 +338,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyButton = request->hasArg(F("SB"));
     notifyAlexa = request->hasArg(F("SA"));
     notifyHue = request->hasArg(F("SH"));
-    notifyMacro = request->hasArg(F("SM"));
 
     t = request->arg(F("UR")).toInt();
     if ((t>=0) && (t<30)) udpNumRetries = t;
@@ -353,6 +349,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     receiveDirect = request->hasArg(F("RD")); // UDP realtime
     useMainSegmentOnly = request->hasArg(F("MO"));
+    realtimeRespectLedMaps = request->hasArg(F("RLM"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
     t = request->arg(F("EP")).toInt();
@@ -631,7 +628,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    JsonObject um = doc.createNestedObject("um");
+    JsonObject um = pDoc->createNestedObject("um");
 
     size_t args = request->args();
     uint16_t j=0;

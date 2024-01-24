@@ -150,6 +150,7 @@
 #define USERMOD_ID_KLIPPER               40     //Usermod Klipper percentage
 #define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
 #define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
+#define USERMOD_ID_ANIMARTRIX            44     //Usermod "usermod_v2_animartrix.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -225,7 +226,7 @@
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
-//Digital types (data pin only) (16-31)
+//Digital types (data pin only) (16-39)
 #define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
 #define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
 #define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
@@ -235,11 +236,11 @@
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
 #define TYPE_TM1829              25
 #define TYPE_UCS8903             26
-#define TYPE_UCS8904             29
+#define TYPE_UCS8904             29            //first RGBW digital type (hardcoded in busmanager.cpp, memUsage())
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
-//"Analog" types (PWM) (32-47)
-#define TYPE_ONOFF               40            //binary output (relays etc.)
+//"Analog" types (40-47)
+#define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
 #define TYPE_ANALOG_2CH          42            //analog WW + CW
 #define TYPE_ANALOG_3CH          43            //analog RGB
@@ -257,10 +258,13 @@
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 
-#define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
-#define IS_PWM(t)     ((t) > 40 && (t) < 46)
-#define NUM_PWM_PINS(t) ((t) - 40) //for analog PWM 41-45 only
-#define IS_2PIN(t)      ((t) > 47)
+#define IS_TYPE_VALID(t) ((t) > 15 && (t) < 128)
+#define IS_DIGITAL(t)    (((t) > 15 && (t) < 40) || ((t) > 47 && (t) < 64)) //digital are 16-39 and 48-63
+#define IS_2PIN(t)       ((t) > 47 && (t) < 64)
+#define IS_16BIT(t)      ((t) == TYPE_UCS8903 || (t) == TYPE_UCS8904)
+#define IS_PWM(t)        ((t) > 40 && (t) < 46)     //does not include on/Off type
+#define NUM_PWM_PINS(t)  ((t) - 40)                 //for analog PWM 41-45 only
+#define IS_VIRTUAL(t)    ((t) >= 80 && (t) < 96)    //this was a poor choice a better would be 96-111
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
@@ -346,6 +350,7 @@
 #define ERR_CONCURRENCY  2  // Conurrency (client active)
 #define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
 #define ERR_NOT_IMPL     4  // Not implemented
+#define ERR_NORAM        8  // effect RAM depleted
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
@@ -450,7 +455,11 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
-  #define JSON_BUFFER_SIZE 24576
+  #if defined(ARDUINO_ARCH_ESP32S2)
+    #define JSON_BUFFER_SIZE 24576
+  #else
+    #define JSON_BUFFER_SIZE 32767
+  #endif
 #endif
 
 //#define MIN_HEAP_SIZE (8k for AsyncWebServer)

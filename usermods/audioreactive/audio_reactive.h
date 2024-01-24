@@ -1094,7 +1094,7 @@ class AudioReactive : public Usermod {
      * You can use it to initialize variables, sensors or similar.
      * It is called *AFTER* readFromConfig()
      */
-    void setup()
+    void setup() override
     {
       disableSoundProcessing = true; // just to be sure
       if (!initDone) {
@@ -1217,7 +1217,7 @@ class AudioReactive : public Usermod {
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected()
+    void connected() override
     {
       if (udpSyncConnected) {   // clean-up: if open, close old UDP sync connection
         udpSyncConnected = false;
@@ -1244,7 +1244,7 @@ class AudioReactive : public Usermod {
      * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
      *    Instead, use a timer check as shown here.
      */
-    void loop()
+    void loop() override
     {
       static unsigned long lastUMRun = millis();
 
@@ -1375,7 +1375,7 @@ class AudioReactive : public Usermod {
     }
 
 
-    bool getUMData(um_data_t **data)
+    bool getUMData(um_data_t **data) override
     {
       if (!data || !enabled) return false; // no pointer provided by caller or not enabled -> exit
       *data = um_data;
@@ -1383,7 +1383,7 @@ class AudioReactive : public Usermod {
     }
 
 
-    void onUpdateBegin(bool init)
+    void onUpdateBegin(bool init) override
     {
 #ifdef WLED_DEBUG
       fftTime = sampleTime = 0;
@@ -1438,7 +1438,7 @@ class AudioReactive : public Usermod {
      * handleButton() can be used to override default button behaviour. Returning true
      * will prevent button working in a default way.
      */
-    bool handleButton(uint8_t b) {
+    bool handleButton(uint8_t b) override {
       yield();
       // crude way of determining if audio input is analog
       // better would be for AudioSource to implement getType()
@@ -1461,7 +1461,7 @@ class AudioReactive : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    void addToJsonInfo(JsonObject& root)
+    void addToJsonInfo(JsonObject& root) override
     {
       char myStringBuffer[16]; // buffer for snprintf()
       JsonObject user = root["u"];
@@ -1600,7 +1600,7 @@ class AudioReactive : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject& root)
+    void addToJsonState(JsonObject& root) override
     {
       if (!initDone) return;  // prevent crash on boot applyPreset()
       JsonObject usermod = root[FPSTR(_name)];
@@ -1615,7 +1615,7 @@ class AudioReactive : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root)
+    void readFromJsonState(JsonObject& root) override
     {
       if (!initDone) return;  // prevent crash on boot applyPreset()
       bool prevEnabled = enabled;
@@ -1640,7 +1640,7 @@ class AudioReactive : public Usermod {
       }
     }
 
-    void onStateChange(uint8_t callMode) {
+    void onStateChange(uint8_t callMode) override {
       if (initDone && enabled && addPalettes && palettes==0 && strip.customPalettes.size()<10) {
         // if palettes were removed during JSON call re-add them
         createAudioPalettes();
@@ -1682,7 +1682,7 @@ class AudioReactive : public Usermod {
      * 
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
-    void addToConfig(JsonObject& root)
+    void addToConfig(JsonObject& root) override
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)] = enabled;
@@ -1735,7 +1735,7 @@ class AudioReactive : public Usermod {
      * 
      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
-    bool readFromConfig(JsonObject& root)
+    bool readFromConfig(JsonObject& root) override
     {
       JsonObject top = root[FPSTR(_name)];
       bool configComplete = !top.isNull();
@@ -1786,7 +1786,7 @@ class AudioReactive : public Usermod {
     }
 
 
-    void appendConfigData()
+    void appendConfigData() override
     {
       oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -1841,7 +1841,7 @@ class AudioReactive : public Usermod {
      * Use this to blank out some LEDs or set them to a different color regardless of the set effect mode.
      * Commonly used for custom clocks (Cronixie, 7 segment)
      */
-    //void handleOverlayDraw()
+    //void handleOverlayDraw() override
     //{
       //strip.setPixelColor(0, RGBW32(0,0,0,0)) // set the first pixel to black
     //}
@@ -1851,7 +1851,7 @@ class AudioReactive : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    uint16_t getId()
+    uint16_t getId() override
     {
       return USERMOD_ID_AUDIOREACTIVE;
     }
