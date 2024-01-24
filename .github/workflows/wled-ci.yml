@@ -59,7 +59,9 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: firmware-${{ matrix.environment }}
-        path: build_output/release/*.bin
+        path: |
+          build_output/release/*.bin
+          build_output/release/*_ESP02.bin.gz
   release:
     name: Create Release
     runs-on: ubuntu-latest
@@ -75,3 +77,4 @@ jobs:
         draft: True
         files: |
           *.bin
+          *.bin.gz
