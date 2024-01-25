@@ -112,7 +112,7 @@
   #include "my_config.h"
 #endif
 
-#include <ESPAsyncWebServer.h>
+#include <PsychicHttp.h>
 #ifdef WLED_ADD_EEPROM_SUPPORT
   #include <EEPROM.h>
 #endif
