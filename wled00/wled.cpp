@@ -708,8 +708,7 @@ bool WLED::initEthernet()
 int8_t WLED::findWiFi(bool doScan) {
   if (multiWiFi.size() <= 1) {
     DEBUG_PRINTLN(F("Defaulf WiFi used."));
-    selectedWiFi = 0;
-    return true;
+    return 0;
   }
 
   if (doScan) WiFi.scanDelete();  // restart scan
