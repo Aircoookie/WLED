@@ -66,8 +66,8 @@ class Espalexa {
 private:
   //private member vars
   #ifdef ESPALEXA_ASYNC
-  AsyncWebServer* serverAsync;
-  AsyncWebServerRequest* server; //this saves many #defines
+  PsychicHttpServer* serverAsync;
+  PsychicRequest* server; //this saves many #defines
   String body = "";
   #elif defined ARDUINO_ARCH_ESP32
   WebServer* server;
