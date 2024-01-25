@@ -143,6 +143,7 @@ void WLED::loop()
     refreshNodeList();
     if (nodeBroadcastEnabled) sendSysInfoUDP();
     yield();
+    if (!Network.isConnected() && WiFi.scanComplete() > 0) selectedWiFi = findWiFi();
   }
 
   // 15min PIN time-out
@@ -704,8 +705,8 @@ bool WLED::initEthernet()
 }
 
 // performs asynchronous scan for available networks (which may take couple of seconds to finish)
-// returns true if only one wifi is configured or scan completed
-bool WLED::findWiFi(bool doScan) {
+// returns configured WiFi ID with the strongest signal (or default if no configured networks available)
+int8_t WLED::findWiFi(bool doScan) {
   if (multiWiFi.size() <= 1) {
     DEBUG_PRINTLN(F("Defaulf WiFi used."));
     selectedWiFi = 0;
@@ -719,30 +720,29 @@ bool WLED::findWiFi(bool doScan) {
   if (status == WIFI_SCAN_FAILED) {
     DEBUG_PRINTLN(F("WiFi scan started."));
     WiFi.scanNetworks(true);  // start scanning in asynchronous mode
-    return false;
-  }
-  if (status >= 0) { // status contains number of found networks
+  } else if (status >= 0) {   // status contains number of found networks
     DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
     int rssi = -9999;
+    int selected = selectedWiFi;
     for (int o = 0; o < status; o++) {
       DEBUG_PRINT(F(" WiFi available: ")); DEBUG_PRINT(WiFi.SSID(o));
       DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(WiFi.RSSI(o)); DEBUG_PRINTLN(F("dB"));
       for (unsigned n = 0; n < multiWiFi.size(); n++)
         if (!strcmp(WiFi.SSID(o).c_str(), multiWiFi[n].clientSSID)) {
           // find the WiFi with the strongest signal (but keep priority of entry if signal difference is not big)
-          if ((n < selectedWiFi && WiFi.RSSI(o) > rssi-10) || WiFi.RSSI(o) > rssi) {
+          if ((n < selected && WiFi.RSSI(o) > rssi-10) || WiFi.RSSI(o) > rssi) {
             rssi = WiFi.RSSI(o);
-            selectedWiFi = n;
+            selected = n;
           }
           break;
         }
     }
-    DEBUG_PRINT(F("Selected: ")); DEBUG_PRINT(multiWiFi[selectedWiFi].clientSSID);
+    DEBUG_PRINT(F("Selected: ")); DEBUG_PRINT(multiWiFi[selected].clientSSID);
     DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(rssi); DEBUG_PRINTLN(F("dB"));
-    return true;
+    return selected;
   }
   //DEBUG_PRINT(F("WiFi scan running."));
-  return false; // scan is still running or there was an error
+  return status; // scan is still running or there was an error
 }
 
 void WLED::initConnection()
@@ -765,8 +765,6 @@ void WLED::initConnection()
 #ifdef ESP8266
   WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
 #endif
-
-  findWiFi(); // update selectedWiFi, initConnection() is called when scan is finished
 
   if (multiWiFi[selectedWiFi].staticIP != 0U && multiWiFi[selectedWiFi].staticGW != 0U) {
     WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN, dnsAddress);
@@ -899,11 +897,14 @@ void WLED::handleConnection()
   unsigned long now = millis();
   const bool wifiConfigured = WLED_WIFI_CONFIGURED;
 
+  // ignore connection handling if WiFi is configured and scan still running
+  // or within first 2s if WiFi is not configured or AP is always active
   if ((wifiConfigured && WiFi.scanComplete() < 0) || (now < 2000 && (!wifiConfigured || apBehavior == AP_BEHAVIOR_ALWAYS)))
     return;
 
   if (lastReconnectAttempt == 0 || forceReconnect) {
     DEBUG_PRINTLN(F("Initial connect or forced reconnect."));
+    selectedWiFi = findWiFi(); // find strongest WiFi
     initConnection();
     interfacesInited = false;
     forceReconnect = false;
@@ -963,8 +964,8 @@ void WLED::handleConnection()
     if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && wifiConfigured) {
       if (improvActive == 2) improvActive = 3;
       DEBUG_PRINTLN(F("Last reconnect too old."));
+      if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // we couldn't connect, try with another network from the list
       initConnection();
-      findWiFi(true); // reinit scan
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
       DEBUG_PRINTLN(F("Not connected AP."));

@@ -881,7 +881,7 @@ public:
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
-  bool findWiFi(bool doScan = false);
+  int8_t findWiFi(bool doScan = false);
   #if defined(STATUSLED)
   void handleStatusLED();
   #endif
