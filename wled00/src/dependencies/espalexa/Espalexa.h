@@ -321,7 +321,7 @@ public:
 
   //initialize interfaces
   #ifdef ESPALEXA_ASYNC
-  bool begin(AsyncWebServer* externalServer = nullptr)
+  bool begin(PsychicHttpServer* externalServer = nullptr)
   #elif defined ARDUINO_ARCH_ESP32
   bool begin(WebServer* externalServer = nullptr)
   #else

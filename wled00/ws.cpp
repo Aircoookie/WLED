@@ -11,7 +11,7 @@ unsigned long wsLastLiveTime = 0;
 
 #define WS_LIVE_INTERVAL 40
 
-void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
+void wsEvent(PsychicHttpServer * server, PsychicWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
   if(type == WS_EVT_CONNECT){
     //client connected
@@ -96,7 +96,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   }
 }
 
-void sendDataWs(AsyncWebSocketClient * client)
+void sendDataWs(PsychicWebSocketClient * client)
 {
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;

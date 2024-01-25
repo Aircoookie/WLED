@@ -88,7 +88,7 @@ void prepareArtnetPollReply(ArtPollReply* reply);
 void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress);
 
 //file.cpp
-bool handleFileRead(AsyncWebServerRequest*, String path);
+bool handleFileRead(PsychicRequest*, String path);
 bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content);
 bool writeObjectToFile(const char* file, const char* key, JsonDocument* content);
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest);
@@ -150,9 +150,9 @@ void serializeState(JsonObject root, bool forPreset = false, bool includeBri = t
 void serializeInfo(JsonObject root);
 void serializeModeNames(JsonArray root);
 void serializeModeData(JsonArray root);
-void serveJson(AsyncWebServerRequest* request);
+void serveJson(PsychicRequest* request);
 #ifdef WLED_ENABLE_JSONLIVE
-bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
+bool serveLiveLeds(PsychicRequest* request, uint32_t wsClient = 0);
 #endif
 
 //led.cpp
@@ -223,8 +223,8 @@ void handleRemote(uint8_t *data, size_t len);
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
-void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
-bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=true);
+void handleSettingsSet(PsychicRequest *request, byte subPage);
+bool handleSet(PsychicRequest *request, const String& req, bool apply=true);
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
@@ -413,24 +413,24 @@ void updateBaudRate(uint32_t rate);
 //wled_server.cpp
 bool isIp(String str);
 void createEditHandler(bool enable);
-bool captivePortal(AsyncWebServerRequest *request);
+bool captivePortal(PsychicRequest *request);
 void initServer();
-void serveIndex(AsyncWebServerRequest* request);
+void serveIndex(PsychicRequest* request);
 String msgProcessor(const String& var);
-void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
-void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error);
+void serveMessage(PsychicRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
+void serveJsonError(PsychicRequest* request, uint16_t code, uint16_t error);
 String dmxProcessor(const String& var);
-void serveSettings(AsyncWebServerRequest* request, bool post = false);
-void serveSettingsJS(AsyncWebServerRequest* request);
+void serveSettings(PsychicRequest* request, bool post = false);
+void serveSettingsJS(PsychicRequest* request);
 
 //ws.cpp
 void handleWs();
-void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
-void sendDataWs(AsyncWebSocketClient * client = nullptr);
+void wsEvent(PsychicHttpServer * server, PsychicWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
+void sendDataWs(PsychicWebSocketClient * client = nullptr);
 
 //xml.cpp
-void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
-void URL_response(AsyncWebServerRequest *request);
+void XML_response(PsychicRequest *request, char* dest = nullptr);
+void URL_response(PsychicRequest *request);
 void getSettingsJS(byte subPage, char* dest);
 
 #endif
