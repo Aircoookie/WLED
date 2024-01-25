@@ -143,7 +143,6 @@ void WLED::loop()
     refreshNodeList();
     if (nodeBroadcastEnabled) sendSysInfoUDP();
     yield();
-    if (!Network.isConnected() && WiFi.scanComplete() > 0) selectedWiFi = findWiFi();
   }
 
   // 15min PIN time-out
