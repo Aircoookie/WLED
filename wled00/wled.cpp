@@ -913,17 +913,18 @@ void WLED::handleConnection()
       initConnection();
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
-      if (!(apBehavior == AP_BEHAVIOR_BOOT_NO_CONN_5MIN && now > 300000)) {
+      if (!(apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT)) {
         DEBUG_PRINTLN(F("Not connected AP."));
         initAP();  // start AP only within first 5min
       }
-    } if (apActive && apBehavior == AP_BEHAVIOR_BOOT_NO_CONN_5MIN && now > 300000 && stac == 0) { // disconnect AP after 5min if no clients connected
+    }
+    if (apActive && apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT && stac == 0) { // disconnect AP after 5min if no clients connected
       // if AP was enabled more than 10min after boot or if client was connected more than 10min after boot do not disconnect AP mode
-      if (now < 600000) {
+      if (now < 2*WLED_AP_TIMEOUT) {
         dnsServer.stop();
         WiFi.softAPdisconnect(true);
         apActive = false;
-        DEBUG_PRINTLN(F("Access point disabled (after 5min)."));
+        DEBUG_PRINTLN(F("Temporary AP disabled."));
       }
     }
   } else if (!interfacesInited) { //newly connected
