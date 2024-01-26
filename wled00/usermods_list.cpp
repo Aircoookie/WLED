@@ -166,7 +166,7 @@
 #endif
 
 #ifdef USERMOD_KLIPPER_PERCENTAGE
-#include "..\usermods\usermod_v2_klipper_percentage\usermod_v2_klipper_percentage.h"
+  #include "../usermods/usermod_v2_klipper_percentage/usermod_v2_klipper_percentage.h"
 #endif
 
 #ifdef USERMOD_BOBLIGHT
