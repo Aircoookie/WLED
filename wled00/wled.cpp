@@ -889,6 +889,7 @@ void WLED::initInterfaces()
 
 void WLED::handleConnection()
 {
+  static bool scanDone = true;
   static byte stacO = 0;
   static uint32_t lastHeap = UINT32_MAX;
   static unsigned long heapTime = 0;
@@ -949,10 +950,17 @@ void WLED::handleConnection()
 
   if (!Network.isConnected()) {
     if (interfacesInited) {
+      if (scanDone) {
+        DEBUG_PRINTLN(F("WiFi scan initiated on disconnect."));
+        findWiFi(true); // reinit scan
+        scanDone = false;
+        return;         // try to connect in next iteration
+      }
       DEBUG_PRINTLN(F("Disconnected!"));
+      selectedWiFi = findWiFi();
       initConnection();
-      findWiFi(true); // reinit scan
       interfacesInited = false;
+      scanDone = true;
     }
     //send improv failed 6 seconds after second init attempt (24 sec. after provisioning)
     if (improvActive > 2 && now - lastReconnectAttempt > 6000) {
