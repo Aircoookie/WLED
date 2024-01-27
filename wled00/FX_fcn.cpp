@@ -498,8 +498,8 @@ CRGBPalette16 Segment::generateRandomPalette(){
   }
 
   //do not make the currently picked color too dark or too desaturated
-  if(palettecolors[keepcolorposition].saturation < 200) palettecolors[keepcolorposition].saturation = 200;
-  if(palettecolors[keepcolorposition].value < 200) palettecolors[keepcolorposition].value = 200;
+  //if(palettecolors[keepcolorposition].saturation < 200) palettecolors[keepcolorposition].saturation = 200;
+  //if(palettecolors[keepcolorposition].value < 200) palettecolors[keepcolorposition].value = 200;
 
   //now generate three new hues based off of the hue of the chosen current color
   uint8_t basehue = palettecolors[keepcolorposition].hue;
