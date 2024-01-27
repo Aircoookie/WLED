@@ -77,7 +77,7 @@ uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for t
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
 
-CRGBPalette16 Segment::_randomPalette = CRGBPalette16(DEFAULT_COLOR);
+CRGBPalette16 Segment::_randomPalette = generateRandomPalette(&_randomPalette);
 CRGBPalette16 Segment::_newRandomPalette = CRGBPalette16(DEFAULT_COLOR);
 unsigned long Segment::_lastPaletteChange = 0; // perhaps it should be per segment
 
