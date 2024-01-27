@@ -1,7 +1,27 @@
 ## WLED changelog
 
-#### Build 2309120 till build 2201060
+#### Build 2309120 till build 2401270
 -   WLED version 0.15.0-a0
+-   BREAKING: Effect: updated Palette effect to support 2D (#3683 by @TripleWhy)
+-   "SuperSync" from WLED MM (by @MoonModules)
+-   Effect: DNA Spiral Effect Speed Fix (#3723 by @Derek4aty1)
+-   Fix for #3693
+-   Orange flash fix (#3196) for transitions
+-   Add own background image upload (#3596 by @WoodyLetsCode)
+-   WLED time overrides (`WLED_NTP_ENABLED`, `WLED_TIMEZONE`, `WLED_UTC_OFFSET`, `WLED_LAT` and `WLED_LON`)
+-   Better sorting and naming of static palettes (by @WoodyLetsCode)
+-   ANIMartRIX usermod and effects (#3673 by @netmindz)
+-   Use canvas instead of CSS gradient for liveview (#3621 by @zanhecht)
+-   Fix for #3672
+-   ColoOrderMap W channel swap (color order overrides now have W swap)
+-   En-/disable LED maps when receiving realtime data (#3554 by @ezcGman)
+-   Added PWM frequency selection to UI (Settings)
+-   Automatically build UI before compiling (#3598, #3666 by @WoodyLetsCode)
+-   Internal: Added *suspend* API to `strip` (`WS2812FX class`)
+-   Possible fix for #3589 & partial fix for #3605
+-   MPU6050 upgrade (#3654 by @willmmiles)
+-   UI internals (#3656 by @WoodyLetsCode)
+-   ColorPicker fix (#3658 by @WoodyLetsCode)
 -   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
 -   Effect: Fireworks 1D (fix for matrix trailing strip)
 -   BREAKING: Reduced number of segments (12) on ESP8266 due to less available RAM
