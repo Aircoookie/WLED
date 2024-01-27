@@ -177,6 +177,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #define PSRAMDynamicJsonDocument DynamicJsonDocument
 #endif
 
+#include "FastLED.h"
 #include "const.h"
 #include "fcn_declare.h"
 #include "NodeStruct.h"

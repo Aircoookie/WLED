@@ -1,7 +1,6 @@
 #ifndef WLED_FCN_DECLARE_H
 #define WLED_FCN_DECLARE_H
 
-#include "FastLED.h"
 /*
  * All globally accessible functions are declared here
  */

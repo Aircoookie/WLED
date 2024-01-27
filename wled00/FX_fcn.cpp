@@ -223,7 +223,7 @@ CRGBPalette16 IRAM_ATTR &Segment::loadPalette(CRGBPalette16 &targetPalette, uint
     case 1: {//periodically replace palette with a random one
       unsigned long timeSinceLastChange = millis() - _lastPaletteChange;
       if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
-        _randomPalette = _newRandomPalette;
+        //_randomPalette = _newRandomPalette;
         _newRandomPalette = generateRandomPalette(&_randomPalette);
         _lastPaletteChange = millis();
         handleRandomPalette(); // do a 1st pass of blend
