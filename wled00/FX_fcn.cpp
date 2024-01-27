@@ -224,11 +224,7 @@ CRGBPalette16 IRAM_ATTR &Segment::loadPalette(CRGBPalette16 &targetPalette, uint
       unsigned long timeSinceLastChange = millis() - _lastPaletteChange;
       if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
         _randomPalette = _newRandomPalette;
-        _newRandomPalette = CRGBPalette16(
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)));
+        _newRandomPalette = generateRandomPalette(&_randomPalette);
         _lastPaletteChange = millis();
         handleRandomPalette(); // do a 1st pass of blend
       }
