@@ -1613,6 +1613,9 @@ class AudioReactive : public Usermod {
       my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
       FFT_Magnitude = my_magnitude;
       FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
+      soundPressure = volumeSmth; // substitute - V2 format does not (yet) include this value
+      agcSensitivity = 128.0f; // substitute - V2 format does not (yet) include this value
+
       return true;
     }
 
@@ -1642,6 +1645,8 @@ class AudioReactive : public Usermod {
       my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0);
       FFT_Magnitude = my_magnitude;
       FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0, 11025.0);  // restrict value to range expected by effects
+      soundPressure = volumeSmth; // substitute - V1 format does not include this value
+      agcSensitivity = 128.0f; // substitute - V1 format does not include this value
     }
 
     bool receiveAudioData()   // check & process new data. return TRUE in case that new audio data was received. 
@@ -2015,12 +2020,12 @@ class AudioReactive : public Usermod {
           DEBUG_PRINTF( "               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
         }
         #endif
-        if ((disableSoundProcessing == true) && (audioSyncEnabled < AUDIOSYNC_REC)) lastUMRun = millis();  // just left "realtime mode" - update timekeeping
+        if ((disableSoundProcessing == true) && (audioSyncEnabled != AUDIOSYNC_REC)) lastUMRun = millis();  // just left "realtime mode" - update timekeeping
         disableSoundProcessing = false;
       }
 
       if (audioSyncEnabled == AUDIOSYNC_REC) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
-      if (audioSyncEnabled & AUDIOSYNC_SEND) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
+      if (audioSyncEnabled == AUDIOSYNC_SEND) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
 #ifdef ARDUINO_ARCH_ESP32
       if (!audioSource->isInitialized()) {                                                               // no audio source
         disableSoundProcessing = true;
@@ -2132,6 +2137,8 @@ class AudioReactive : public Usermod {
         volumeSmth =0.0f;
         volumeRaw =0;
         my_magnitude = 0.1; FFT_Magnitude = 0.01; FFT_MajorPeak = 2;
+	soundPressure = 1.0f;
+        agcSensitivity = 64.0f;
 #ifdef ARDUINO_ARCH_ESP32
         multAgc = 1;
 #endif
