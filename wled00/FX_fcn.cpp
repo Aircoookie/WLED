@@ -223,11 +223,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       unsigned long timeSinceLastChange = millis() - _lastPaletteChange;
       if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
         _randomPalette = _newRandomPalette;
-        _newRandomPalette = CRGBPalette16(
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)));
+        _newRandomPalette = generateRandomPalette();
         _lastPaletteChange = millis();
         handleRandomPalette(); // do a 1st pass of blend
       }
@@ -460,6 +456,110 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
     targetPalette = _t->_palT; // copy transitioning/temporary palette
   }
   return targetPalette;
+}
+
+CRGBPalette16 Segment::generateRandomPalette(){
+  /*  
+	generates a random palette based on color theory
+  */
+
+  CHSV palettecolors[4]; //array of colors for the new palette
+  uint8_t keepcolorposition = random8(4); //color position of current random palette to keep
+  palettecolors[keepcolorposition] = rgb2hsv_approximate(_randomPalette.entries[keepcolorposition*5]); //read one of the base colors of the current palette
+  palettecolors[keepcolorposition].hue += random8(20)-10; // +/- 10 randomness
+  //generate 4 saturation and brightness value numbers
+  //only one saturation is allowed to be below 200 creating mostly vibrant colors
+  //only one brigthness value number is allowed to below 200, creating mostly bright palettes  
+
+  for(uint8_t i = 0; i<3; i++) //generate three high values
+  {
+    palettecolors[i].saturation = random8(180,255);
+    palettecolors[i].value = random8(180,255);
+  }
+  //allow one to be lower
+  palettecolors[3].saturation = random8(80,255);
+  palettecolors[3].value = random8(50,255);
+
+  //shuffle the arrays using Fisher-Yates algorithm
+  for (uint8_t i = 3; i > 0; i--) {
+    uint8_t j = random8(0, i + 1);
+    //swap [i] and [j]
+    uint8_t temp = palettecolors[i].saturation;
+    palettecolors[i].saturation = palettecolors[j].saturation;
+    palettecolors[j].saturation = temp;
+  }
+
+  for (uint8_t i = 3; i > 0; i--) {
+    uint8_t j = random8(0, i + 1);
+    //swap [i] and [j]
+    uint8_t temp = palettecolors[i].value;
+    palettecolors[i].value = palettecolors[j].value;
+    palettecolors[j].value = temp;
+  }
+
+  //do not make the currently picked color too dark or too desaturated
+  if(palettecolors[keepcolorposition].saturation < 200) palettecolors[keepcolorposition].saturation = 200;
+  if(palettecolors[keepcolorposition].value < 200) palettecolors[keepcolorposition].value = 200;
+
+  //now generate three new hues based off of the hue of the chosen current color
+  uint8_t basehue = palettecolors[keepcolorposition].hue;
+  uint8_t harmonics[3]; //hues that are harmonic but still a littl random
+  uint8_t type = random8(5); //choose a harmony type
+
+  switch (type) {
+    case 0: // analogous
+      harmonics[0] = basehue + random8(30, 50);
+      harmonics[1] = basehue + random8(10, 30);
+      harmonics[2] = basehue - random8(10, 30);
+      break;
+
+    case 1: // triadic
+      harmonics[0] = basehue + 110 + random8(20);
+      harmonics[1] = basehue + 230 + random8(20);
+      harmonics[2] = basehue + random8(30)-15;
+      break;
+
+    case 2: // split-complementary
+      harmonics[0] = basehue + 140 + random8(20);
+      harmonics[1] = basehue + 200 + random8(20);
+      harmonics[2] = basehue + random8(30)-15;
+      break;
+
+    case 3: // tetradic
+      harmonics[0] = basehue + 80 + random8(20);
+      harmonics[1] = basehue + 170 + random8(20);
+      harmonics[2] = basehue + random8(30)-15;
+      break;
+
+    case 4: // square
+      harmonics[0] = basehue + 80 + random8(20);
+      harmonics[1] = basehue + 170 + random8(20);
+      harmonics[2] = basehue + 260 + random8(20);
+      break;
+  }
+
+  //shuffle the hues:
+  for (uint8_t i = 2; i > 0; i--) {
+    uint8_t j = random8(0, i + 1);
+    //swap [i] and [j]
+    uint8_t temp = harmonics[i];
+    harmonics[i] = harmonics[j];
+    harmonics[j] = temp;
+  }
+
+  //now set the hues
+  uint8_t j=0;
+  for(uint8_t i = 0; i<4; i++) {
+    if(i==keepcolorposition) continue; //skip the base color
+    palettecolors[i].hue = harmonics[j];
+    j++;
+   }
+
+  return CRGBPalette16( palettecolors[0],
+                        palettecolors[1],
+                        palettecolors[2],
+                        palettecolors[3]);
+
 }
 
 // relies on WS2812FX::service() to call it max every 8ms or more (MIN_SHOW_DELAY)

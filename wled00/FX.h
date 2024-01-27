@@ -534,6 +534,7 @@ typedef struct Segment {
     static void     modeBlend(bool blend)       { _modeBlend = blend; }
     #endif
     static void     handleRandomPalette();
+    static CRGBPalette16 generateRandomPalette();
 
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
