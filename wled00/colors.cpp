@@ -103,7 +103,7 @@ CRGBPalette16 generateRandomPalette(CRGBPalette16 &basepalette)
   palettecolors[keepcolorposition].hue += random8(20)-10; // +/- 10 randomness
   //generate 4 saturation and brightness value numbers
   //only one saturation is allowed to be below 200 creating mostly vibrant colors
-  //only one brigthness value number is allowed to below 200, creating mostly bright palettes  
+  //only one brightness value number is allowed below 200, creating mostly bright palettes  
 
   for (int i = 0; i<3; i++) { //generate three high values
     palettecolors[i].saturation = random8(180,255);
@@ -132,7 +132,7 @@ CRGBPalette16 generateRandomPalette(CRGBPalette16 &basepalette)
 
   //now generate three new hues based off of the hue of the chosen current color
   uint8_t basehue = palettecolors[keepcolorposition].hue;
-  uint8_t harmonics[3]; //hues that are harmonic but still a littl random
+  uint8_t harmonics[3]; //hues that are harmonic but still a little random
   uint8_t type = random8(5); //choose a harmony type
 
   switch (type) {
