@@ -177,6 +177,8 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #define PSRAMDynamicJsonDocument DynamicJsonDocument
 #endif
 
+#define FASTLED_INTERNAL //remove annoying pragma messages
+#define USE_GET_MILLISECOND_TIMER
 #include "FastLED.h"
 #include "const.h"
 #include "fcn_declare.h"

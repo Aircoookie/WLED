@@ -77,8 +77,8 @@ uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for t
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
 
-CRGBPalette16 Segment::_randomPalette = generateRandomPalette(&_randomPalette);
-CRGBPalette16 Segment::_newRandomPalette = generateRandomPalette(&_randomPalette);
+CRGBPalette16 Segment::_randomPalette = generateRandomPalette(_randomPalette);
+CRGBPalette16 Segment::_newRandomPalette = generateRandomPalette(_randomPalette);
 unsigned long Segment::_lastPaletteChange = 0; // perhaps it should be per segment
 
 #ifndef WLED_DISABLE_MODE_BLEND
@@ -223,7 +223,7 @@ CRGBPalette16 IRAM_ATTR &Segment::loadPalette(CRGBPalette16 &targetPalette, uint
     case 1: {//periodically replace palette with a random one
       unsigned long timeSinceLastChange = millis() - _lastPaletteChange;
       if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
-        _newRandomPalette = generateRandomPalette(&_randomPalette);
+        _newRandomPalette = generateRandomPalette(_randomPalette);
         _lastPaletteChange = millis();
         handleRandomPalette(); // do a 1st pass of blend
       }

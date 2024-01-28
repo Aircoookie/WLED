@@ -95,11 +95,11 @@ void setRandomColor(byte* rgb)
  *generates a random palette based on color theory
  */
 
-CRGBPalette16 generateRandomPalette(CRGBPalette16* basepalette) 
+CRGBPalette16 generateRandomPalette(CRGBPalette16 &basepalette) 
 {
   CHSV palettecolors[4]; //array of colors for the new palette
   uint8_t keepcolorposition = random8(4); //color position of current random palette to keep
-  palettecolors[keepcolorposition] = rgb2hsv_approximate(basepalette->entries[keepcolorposition*5]); //read one of the base colors of the current palette
+  palettecolors[keepcolorposition] = rgb2hsv_approximate(basepalette.entries[keepcolorposition*5]); //read one of the base colors of the current palette
   palettecolors[keepcolorposition].hue += random8(20)-10; // +/- 10 randomness
   //generate 4 saturation and brightness value numbers
   //only one saturation is allowed to be below 200 creating mostly vibrant colors
@@ -184,10 +184,17 @@ CRGBPalette16 generateRandomPalette(CRGBPalette16* basepalette)
     j++;
    }
 
-  return CRGBPalette16( palettecolors[0],
-                        palettecolors[1],
-                        palettecolors[2],
-                        palettecolors[3]);
+   //apply gamma correction
+  CRGB RGBpalettecolors[4];
+  for (int i = 0; i<4; i++) {
+    RGBpalettecolors[i] = (CRGB)palettecolors[i]; //convert to RGB
+    RGBpalettecolors[i] = gamma32((uint32_t)RGBpalettecolors[i]);
+  }
+
+  return CRGBPalette16( RGBpalettecolors[0],
+                        RGBpalettecolors[1],
+                        RGBpalettecolors[2],
+                        RGBpalettecolors[3]);
 
 }
 
