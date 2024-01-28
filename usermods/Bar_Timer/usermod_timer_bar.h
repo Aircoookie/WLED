@@ -5,6 +5,28 @@
 #define RUNNING 1
 #define STOPPED 0
 
+/**
+ * This class create a timer using the connected strip. When the timer starts, the strip is filled with the color of the solid effect.
+ * Led are turned off according to the remaining time of the timer.
+ * MQTT messages to use the timer are:
+ * 
+ * 1) (device topic)/timerbar with payload "+X" -> X is the duration of the timer in seconds. If there's no active timer, with this command 
+ * the timer starts with a duration of X. If there is already a running timer, the same command adds X seconds to timer. In this case the strip is
+ * not filled again, but leds will start to turn off slower and the already turned off leds will remain off
+ * 
+ * 2) (device topic)/timerbar with payload "STOP" -> This message ends the timer and the strip.
+ * 
+ * The strip will answer with this messages:
+ * 
+ * 1) (device topic)/timerbar/status with payload "START" -> Feedback to know the timer actually started
+ * 2) (device topic)/timerbar/status with payload "END" -> To let know the timer has ended
+ * 
+ * Everytime the timer ends, the strip returns in the state before the timer start command (effect, palette...)
+*/
+
+
+
+
 class UsermodTimerBar : public Usermod {
 
     private:
@@ -20,15 +42,18 @@ class UsermodTimerBar : public Usermod {
 
         void stop_timer() {
 
-          timer_status = STOPPED;
           led_turn_off = 0;
           
+          //Restore previous strip settings
           effectSpeed = settings[1];
           effectPalette = settings[2];
           strip.setMode(0, effectCurrent);
 
           publishMqtt("END", true);
+
+          timer_status = STOPPED;
         }
+
 
         void check_timer() {
             
@@ -45,6 +70,8 @@ class UsermodTimerBar : public Usermod {
             }
           }         
         }        
+
+
 
     public:
 
@@ -81,7 +108,7 @@ class UsermodTimerBar : public Usermod {
          */
         void handleOverlayDraw()
         {
-          if (helper == 0 && timer_status == 1) {
+          if (helper == 0 && timer_status == RUNNING) {
           
             for (int y = number_of_leds - 1; y >= number_of_leds - 1 - led_turn_off; y--) {
             
@@ -111,9 +138,6 @@ class UsermodTimerBar : public Usermod {
             else if (payload[0] == '+') {
 
               uint16_t add_time = atoi(payload + 1);
-              Serial.print("Aggiunti ");
-              Serial.print(add_time);
-              Serial.print(" secondi");
 
               switch(timer_status) {
 
@@ -124,10 +148,11 @@ class UsermodTimerBar : public Usermod {
                   millis_wait_time = (add_time / (float) (number_of_leds-1)) * 1000;
                   Serial.print(millis_wait_time);
 
-                  timer_status = RUNNING;
+                  
 
                   main = strip.getSegment(0);
 
+                  //Save current strip configuration
                   settings[0] = effectCurrent;
                   settings[1] = effectSpeed;
                   settings[2] = effectPalette;
@@ -135,13 +160,17 @@ class UsermodTimerBar : public Usermod {
                   strip.setMode(0, FX_MODE_STATIC);
                   main.fill(SEGCOLOR(0));
 
-                  start_time = millis();
-
                   publishMqtt("START", true);
+
+                  timer_status = RUNNING;
+
+                  start_time = millis();
 
                   break;
 
                 case RUNNING:
+
+                  //If the timer is running, add the received time to the timer
 
                   millis_wait_time = millis_wait_time + (add_time / (float) (number_of_leds - 1 - led_turn_off)) * 1000;
 
@@ -164,21 +193,18 @@ class UsermodTimerBar : public Usermod {
 
     }
 
-void publishMqtt(const char* state, bool retain)
-{
-#ifndef WLED_DISABLE_MQTT
-  //Check if MQTT Connected, otherwise it will crash the 8266
-  if (WLED_MQTT_CONNECTED) {
-    char subuf[64];
-    strcpy(subuf, mqttDeviceTopic);
-    strcat_P(subuf, PSTR("/timerbar/status"));
-    mqtt->publish(subuf, 0, retain, state);
-  }
-#endif
-}
-
-
-
+    void publishMqtt(const char* state, bool retain)
+    {
+    #ifndef WLED_DISABLE_MQTT
+      //Check if MQTT Connected, otherwise it will crash the 8266
+      if (WLED_MQTT_CONNECTED) {
+        char subuf[64];
+        strcpy(subuf, mqttDeviceTopic);
+        strcat_P(subuf, PSTR("/timerbar/status"));
+        mqtt->publish(subuf, 0, retain, state);
+      }
+    #endif
+    }
 
 };
 
