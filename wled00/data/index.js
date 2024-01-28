@@ -977,6 +977,11 @@ function redrawPalPrev()
 	}
 }
 
+// WLEDMM experimental - revert gamma correction in the browser (for palette preview)
+function unGamma(val, gamma){
+	return Math.round(Math.pow(val / 255.0, 1.0/gamma) * 255.0);
+}
+
 function genPalPrevCss(id)
 {
 	if (!palettesData) return;
@@ -999,15 +1004,17 @@ function genPalPrevCss(id)
 		let r, g, b;
 		let index = false;
 		if (Array.isArray(e)) {
+			// fastLED palettes, with gammas (2.6, 2.2, 2.5) - we revert with slightly reduced values, to better preserve contrast
 			index = Math.round(e[0]/255*100);
-			r = e[1];
-			g = e[2];
-			b = e[3];
+			r = unGamma(e[1], 2.5);
+			g = unGamma(e[2], 2.3);
+			b = unGamma(e[3], 2.4);
 		} else if (e == 'r') {
 			r = Math.random() * 255;
 			g = Math.random() * 255;
 			b = Math.random() * 255;
 		} else {
+			// gradient palettes have custom gamma ~2.6 - don't revert, so their look matches the custom colors display
 			let i = e[1] - 1;
 			var cd = gId('csl').children;
 			r = parseInt(cd[i].dataset.r);
