@@ -1,4 +1,5 @@
 #include "wled.h"
+//#include "../usermods/Bar_Timer/usermod_timer_bar.h"
 /*
  * Register your v2 usermods here!
  *   (for v1 usermods using just usermod.cpp, you can ignore this file)
@@ -10,6 +11,11 @@
  * \/ \/ \/
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
+
+
+  #ifdef USERMOD_TIMER_BAR
+  #include "../usermods/Bar_Timer/usermod_timer_bar.h"
+  #endif
 
 #ifdef USERMOD_BATTERY
   #include "../usermods/Battery/usermod_v2_Battery.h"
@@ -170,7 +176,7 @@
 #endif
 
 #ifdef USERMOD_KLIPPER_PERCENTAGE
-  #include "../usermods/usermod_v2_klipper_percentage/usermod_v2_klipper_percentage.h"
+  #include "..\usermods\usermod_v2_klipper_percentage\usermod_v2_klipper_percentage.h"
 #endif
 
 #ifdef USERMOD_BOBLIGHT
@@ -208,7 +214,17 @@ void registerUsermods()
    * || || ||
    * \/ \/ \/
    */
-  //usermods.add(new MyExampleUsermod());
+ // usermods.add(new MyExampleUsermod());
+
+  
+
+  //usermods.add(new UsermodBattery());
+
+  #ifdef USERMOD_TIMER_BAR
+  usermods.add(new UsermodTimerBar());
+  #endif
+
+
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
   #endif
