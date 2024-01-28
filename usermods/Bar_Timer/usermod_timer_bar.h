@@ -49,7 +49,7 @@ class UsermodTimerBar : public Usermod {
           effectPalette = settings[2];
           strip.setMode(0, effectCurrent);
 
-          publishMqtt("END", true);
+          publishMqtt("END", false);
 
           timer_status = STOPPED;
         }
@@ -160,7 +160,7 @@ class UsermodTimerBar : public Usermod {
                   strip.setMode(0, FX_MODE_STATIC);
                   main.fill(SEGCOLOR(0));
 
-                  publishMqtt("START", true);
+                  publishMqtt("START", false);
 
                   timer_status = RUNNING;
 
