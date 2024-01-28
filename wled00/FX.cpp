@@ -6208,6 +6208,51 @@ uint16_t mode_2Ddriftrose(void) {
 }
 static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;2";
 
+/////////////////////////////
+//  2D PLASMA ROTOZOOMER   //
+/////////////////////////////
+// Plasma Rotozoomer by ldirko (c)2020 [https://editor.soulmatelights.com/gallery/457-plasma-rotozoomer], adapted for WLED by Blaz Kristan (AKA blazoncek)
+uint16_t mode_2Dplasmarotozoom() {
+  if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  uint16_t dataSize = SEGMENT.length() + sizeof(float);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  float *a = reinterpret_cast<float*>(SEGENV.data);
+  byte *plasma = reinterpret_cast<byte*>(SEGENV.data+sizeof(float));
+
+  uint16_t ms = strip.now/15;  
+
+  // plasma
+  for (int j = 0; j < rows; j++) {
+    int index = j*cols;
+    for (int i = 0; i < cols; i++) {
+      if (SEGMENT.check1) plasma[index+i] = (i * 4 ^ j * 4) + ms / 6;
+      else                plasma[index+i] = inoise8(i * 40, j * 40, ms);
+    }
+  }
+
+  // rotozoom
+  float f       = (sin_t(*a/2)+((128-SEGMENT.intensity)/128.0f)+1.1f)/1.5f;  // scale factor
+  float kosinus = cos_t(*a) * f;
+  float sinus   = sin_t(*a) * f;
+  for (int i = 0; i < cols; i++) {
+    float u1 = i * kosinus;
+    float v1 = i * sinus;
+    for (int j = 0; j < rows; j++) {
+        byte u = abs8(u1 - j * sinus) % cols;
+        byte v = abs8(v1 + j * kosinus) % rows;
+        SEGMENT.setPixelColorXY(i, j, SEGMENT.color_from_palette(plasma[v*cols+u], false, PALETTE_SOLID_WRAP, 0));
+    }
+  }
+  *a -= 0.03f + float(SEGENV.speed-128)*0.0002f;  // rotation speed
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_2DPLASMAROTOZOOM[] PROGMEM = "Rotozoomer@!,Scale,,,,Alt;;!;2;pal=54";
+
 #endif // WLED_DISABLE_2D
 
 
@@ -8022,6 +8067,7 @@ void WS2812FX::setupEffectData() {
 
   // --- 2D  effects ---
 #ifndef WLED_DISABLE_2D
+  addEffect(FX_MODE_2DPLASMAROTOZOOM, &mode_2Dplasmarotozoom, _data_FX_MODE_2DPLASMAROTOZOOM);
   addEffect(FX_MODE_2DSPACESHIPS, &mode_2Dspaceships, _data_FX_MODE_2DSPACESHIPS);
   addEffect(FX_MODE_2DCRAZYBEES, &mode_2Dcrazybees, _data_FX_MODE_2DCRAZYBEES);
   addEffect(FX_MODE_2DGHOSTRIDER, &mode_2Dghostrider, _data_FX_MODE_2DGHOSTRIDER);
