@@ -79,7 +79,8 @@ uint16_t Segment::maxHeight = 1;
 
 CRGBPalette16 Segment::_randomPalette = generateRandomPalette(_randomPalette);
 CRGBPalette16 Segment::_newRandomPalette = generateRandomPalette(_randomPalette);
-unsigned long Segment::_lastPaletteChange = 0; // perhaps it should be per segment
+uint16_t Segment::_lastPaletteChange = 0; // perhaps it should be per segment
+uint16_t Segment::_lastPaletteBlend = 0; //in millis (lowest 16 bits only)
 
 #ifndef WLED_DISABLE_MODE_BLEND
 bool Segment::_modeBlend = false;
@@ -220,11 +221,11 @@ CRGBPalette16 IRAM_ATTR &Segment::loadPalette(CRGBPalette16 &targetPalette, uint
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
-    case 1: {//periodically replace palette with a random one
-      unsigned long timeSinceLastChange = millis() - _lastPaletteChange;
-      if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
+    case 1: {//periodically replace palette with a random one      
+      if ((millis()/1000U) - _lastPaletteChange > randomPaletteChangeTime) {
         _newRandomPalette = generateRandomPalette(_randomPalette);
-        _lastPaletteChange = millis();
+        _lastPaletteChange = millis()/1000U;
+        _lastPaletteBlend = (uint16_t)(millis()&0xFFFF)-512; //starts blending immediately
         handleRandomPalette(); // do a 1st pass of blend
       }
       targetPalette = _randomPalette;
@@ -461,6 +462,15 @@ CRGBPalette16 IRAM_ATTR &Segment::currentPalette(CRGBPalette16 &targetPalette, u
 void Segment::handleRandomPalette() {
   // just do a blend; if the palettes are identical it will just compare 48 bytes (same as _randomPalette == _newRandomPalette)
   // this will slowly blend _newRandomPalette into _randomPalette every 15ms or 8ms (depending on MIN_SHOW_DELAY)
+  // if palette transitions is enabled, blend it according to Transition Time (if longer than minimum given by service calls) 
+  if(strip.paletteFade)
+  {
+    if((millis()&0xFFFF) - _lastPaletteBlend < strip.getTransition()>>7) //assumes that 128 updates are needed to blend a palette, so shift by 7 (can be more, can be less)
+    {
+      return; //not time to fade yet
+    }
+    _lastPaletteBlend = millis();    
+  }
   nblendPaletteTowardPalette(_randomPalette, _newRandomPalette, 48);
 }
 
