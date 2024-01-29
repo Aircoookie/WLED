@@ -1142,7 +1142,7 @@ void WS2812FX::service() {
 
   _isServicing = true;
   _segment_index = 0;
-  Segment::handleRandomPalette(); // move it into for loop when each segment has individual random palette
+
   for (segment &seg : _segments) {
     if (_suspend) return; // immediately stop processing segments if suspend requested during service()
 
@@ -1205,6 +1205,7 @@ void WS2812FX::service() {
   #endif
   if (doShow) {
     yield();
+    Segment::handleRandomPalette(); // slowly transtion random palette; move it into for loop when each segment has individual random palette
     show();
   }
   #ifdef WLED_DEBUG
