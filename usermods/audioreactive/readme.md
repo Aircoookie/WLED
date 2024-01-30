@@ -57,7 +57,7 @@ If you want to define default GPIOs during compile time, use the following (defa
 
 Other options:
 
-- `-D UM_AUDIOREACTIVE_ENABLE` : makes msermod default enabled
+- `-D UM_AUDIOREACTIVE_ENABLE` : makes usermod default enabled (not the same as include into build option!)
 - `-D UM_AUDIOREACTIVE_RISE_FALL_LIMITER_OFF` : disables rise/fall limiter default
 
 **NOTE** I2S is used for analog audio sampling. Hence, the analog *buttons* (i.e. potentiometers) are disabled when running this usermod with an analog microphone.
