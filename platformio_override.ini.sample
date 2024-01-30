@@ -5,17 +5,19 @@
 # Please visit documentation: https://docs.platformio.org/page/projectconf.html
 
 [platformio]
-default_envs = WLED_tasmota_1M
+default_envs = WLED_tasmota_1M  # define as many as you need
 
 #----------
 # SAMPLE
 #----------
 [env:WLED_tasmota_1M]
-board = esp01_1m
-platform = ${common.platform_wled_default}
-platform_packages = ${common.platform_packages}
-board_build.ldscript = ${common.ldscript_1m128k}
-; Sample libraries used for various usermods. Uncomment when using particular usermod.
+extends = env:esp01_1m_full  # when you want to extend the existing environment (define only updated options)
+; board = esp01_1m  # uncomment when ou need different board
+; platform = ${common.platform_wled_default}  # uncomment and change when you want particular platform
+; platform_packages = ${common.platform_packages}
+; board_build.ldscript = ${common.ldscript_1m128k}
+; upload_speed = 921600 # fast upload speed (remove ';' if your board supports fast upload speed)
+# Sample libraries used for various usermods. Uncomment when using particular usermod.
 lib_deps = ${esp8266.lib_deps}
 ;  olikraus/U8g2 # @~2.33.15
 ;  paulstoffregen/OneWire@~2.3.8
@@ -27,7 +29,7 @@ lib_deps = ${esp8266.lib_deps}
 ;  gmag11/QuickESPNow ;@ 0.6.2
 ;  https://github.com/blazoncek/QuickESPNow.git#optional-debug  ;; exludes debug library
 ;  https://github.com/kosme/arduinoFFT#develop @ 1.9.2+sha.419d7b0 ;; used for USERMOD_AUDIOREACTIVE - using "known working" hash
-build_unflags = ${common.build_unflags}
+; build_unflags = ${common.build_unflags}
 build_flags = ${common.build_flags_esp8266}
 ;
 ; *** To use the below defines/overrides, copy and paste each onto it's own line just below build_flags in the section above.
