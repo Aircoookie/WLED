@@ -73,7 +73,7 @@ static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 
 static bool udpSyncConnected = false;         // UDP connection status -> true if connected to multicast group
 
 // user settable parameters for limitSoundDynamics()
-#ifdef UM_AUDIOREACTIVE_RISE_FALL_LIMITER_OFF
+#ifdef UM_AUDIOREACTIVE_DYNAMICS_LIMITER_OFF
 static bool limiterOn = false;                 // bool: enable / disable dynamics limiter
 #else
 static bool limiterOn = true;
