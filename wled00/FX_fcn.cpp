@@ -817,9 +817,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     }
 #ifndef WLED_DISABLE_TRANSITION_STYLES
   }
-#endif
 
-#ifndef WLED_DISABLE_TRANSITION_STYLES
   if (_activeBuffer) {
     _activeBuffer[i] = col;
     return;
@@ -847,14 +845,14 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         unsigned indexMir = stop - indexSet + start - 1;
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
-#if !defined(WLED_DISABLE_MODE_BLEND) && defined(WLED_DISABLE_TRANSITION_STYLES)
+#if ! defined(WLED_DISABLE_MODE_BLEND) && defined(WLED_DISABLE_TRANSITION_STYLES)
         if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexMir), col, 0xFFFFU - progress(), true);
 #endif
         strip.setPixelColor(indexMir, tmpCol);
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
-#if !defined(WLED_DISABLE_MODE_BLEND) && defined(WLED_DISABLE_TRANSITION_STYLES)
+#if ! defined(WLED_DISABLE_MODE_BLEND) && defined(WLED_DISABLE_TRANSITION_STYLES)
       if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexSet), col, 0xFFFFU - progress(), true);
 #endif
       strip.setPixelColor(indexSet, tmpCol);

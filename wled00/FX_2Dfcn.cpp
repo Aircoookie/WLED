@@ -207,7 +207,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
       if (_modeBlend) tmpCol = color_blend(strip.getPixelColorXY(start + xX, startY + yY), col, 0xFFFFU - progress(), true);
 #endif
 
-      strip.setPixelColorXY(start + xX, startY + yY, col);
+      strip.setPixelColorXY(start + xX, startY + yY, tmpCol);
 
       if (mirror) { //set the corresponding horizontally mirrored pixel
         if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
