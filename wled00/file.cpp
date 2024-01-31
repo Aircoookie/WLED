@@ -377,27 +377,27 @@ void updateFSInfo() {
 
 //Un-comment any file types you need
 static String getContentType(AsyncWebServerRequest* request, String filename){
-  if(request->hasArg("download")) return "application/octet-stream";
-  else if(filename.endsWith(".htm")) return "text/html";
-  else if(filename.endsWith(".html")) return "text/html";
-  else if(filename.endsWith(".css")) return "text/css";
-  else if(filename.endsWith(".js")) return "application/javascript";
-  else if(filename.endsWith(".json")) return "application/json";
-  else if(filename.endsWith(".png")) return "image/png";
-  else if(filename.endsWith(".gif")) return "image/gif";
-  else if(filename.endsWith(".jpg")) return "image/jpeg";
-  else if(filename.endsWith(".ico")) return "image/x-icon";
-//  else if(filename.endsWith(".xml")) return "text/xml";
-//  else if(filename.endsWith(".pdf")) return "application/x-pdf";
-//  else if(filename.endsWith(".zip")) return "application/x-zip";
-//  else if(filename.endsWith(".gz")) return "application/x-gzip";
+  if(request->hasArg(F("download")))     return SET_F("application/octet-stream");
+  else if(filename.endsWith(F(".htm")))  return SET_F("text/html");
+  else if(filename.endsWith(F(".html"))) return SET_F("text/html");
+  else if(filename.endsWith(F(".css")))  return SET_F("text/css");
+  else if(filename.endsWith(F(".js")))   return SET_F("application/javascript");
+  else if(filename.endsWith(F(".json"))) return SET_F("application/json");
+  else if(filename.endsWith(F(".png")))  return SET_F("image/png");
+  else if(filename.endsWith(F(".gif")))  return SET_F("image/gif");
+  else if(filename.endsWith(F(".jpg")))  return SET_F("image/jpeg");
+  else if(filename.endsWith(F(".ico")))  return SET_F("image/x-icon");
+//  else if(filename.endsWith(F(".xml")))   return SET_F("text/xml");
+//  else if(filename.endsWith(F(".pdf")))   return SET_F("application/x-pdf");
+//  else if(filename.endsWith(F(".zip")))   return SET_F("application/x-zip");
+//  else if(filename.endsWith(F(".gz")))    return SET_F("application/x-gzip");
   return "text/plain";
 }
 
 bool handleFileRead(AsyncWebServerRequest* request, String path){
   DEBUG_PRINTLN("WS FileRead: " + path);
   if(path.endsWith("/")) path += "index.htm";
-  if(path.indexOf("sec") > -1) return false;
+  if(path.indexOf(F("sec")) > -1) return false;
   String contentType = getContentType(request, path);
   /*String pathWithGz = path + ".gz";
   if(WLED_FS.exists(pathWithGz)){

@@ -241,7 +241,7 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-// #define FX_MODE_CANDY_CANE             114  // removed in 0.14!
+#define FX_MODE_2DPLASMAROTOZOOM       114 // was Candy Cane prior to 0.14 (use Chase 2)
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117 // candidate for removal (check3 in dynamic)
@@ -802,8 +802,7 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
-      getActiveSegsLightCapabilities(bool selectedOnly = false),
-      setPixelSegment(uint8_t n);
+      getActiveSegsLightCapabilities(bool selectedOnly = false);
 
     inline uint8_t getBrightness(void)    { return _brightness; }       // returns current strip brightness
     inline uint8_t getMaxSegments(void)   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)

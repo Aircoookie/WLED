@@ -386,7 +386,7 @@ void WLED::setup()
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
   pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
 #endif
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
@@ -537,6 +537,13 @@ void WLED::beginStrip()
     else if (bri == 0) bri = 128;
   } else {
     // fix for #3196
+    if (bootPreset > 0) {
+      bool oldTransition = fadeTransition;    // workaround if transitions are enabled
+      fadeTransition = false;                 // ignore transitions temporarily
+      strip.setColor(0, BLACK);               // set all segments black
+      fadeTransition = oldTransition;         // restore transitions
+      col[0] = col[1] = col[2] = col[3] = 0;  // needed for colorUpdated()
+    }
     briLast = briS; bri = 0;
     strip.fill(BLACK);
     strip.show();
