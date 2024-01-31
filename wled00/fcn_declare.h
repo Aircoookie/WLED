@@ -359,7 +359,7 @@ uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
 uint8_t get_random_wheel_index(uint8_t pos);
-#ifndef WLED_DISABLE_MODE_BLEND
+#ifndef WLED_DISABLE_TRANSITION_STYLES
 uint32_t hashInt(uint32_t s);
 #endif
 

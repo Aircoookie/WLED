@@ -337,7 +337,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
-#ifndef WLED_DISABLE_MODE_BLEND
+#ifndef WLED_DISABLE_TRANSITION_STYLES
   int ts = root[F("ts")] | -1;
   if (ts >= 0) {
     transitionStyle = ts;
@@ -559,7 +559,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
-#ifndef WLED_DISABLE_MODE_BLEND
+#ifndef WLED_DISABLE_TRANSITION_STYLES
     root[F("ts")] = transitionStyle;
 #endif
   }
@@ -1029,7 +1029,7 @@ void serializeModeNames(JsonArray arr)
 }
 
 void serializeTransitionStyles(JsonArray arr) {
-#ifndef WLED_DISABLE_MODE_BLEND
+#ifndef WLED_DISABLE_TRANSITION_STYLES
   if (!modeBlending) return;
 
   char lineBuffer[256];

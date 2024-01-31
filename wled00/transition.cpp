@@ -1,9 +1,8 @@
 #include "wled.h"
 #include "FX.h"
 
-#ifndef WLED_DISABLE_MODE_BLEND
+#ifndef WLED_DISABLE_TRANSITION_STYLES
 void transition_fade() {
-
   if (SEGMENT.is2D()) {
     uint16_t width = SEGMENT.virtualWidth();
     uint16_t height = SEGMENT.virtualHeight();

@@ -602,7 +602,7 @@ uint8_t get_random_wheel_index(uint8_t pos) {
   return r;
 }
 
-#ifndef WLED_DISABLE_MODE_BLEND
+#ifndef WLED_DISABLE_TRANSITION_STYLES
 uint32_t hashInt(uint32_t s) {
   // borrowed from https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
   s = ((s >> 16) ^ s) * 0x45d9f3b;
