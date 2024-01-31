@@ -7777,27 +7777,6 @@ void WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) {
   }
 }
 
-#ifndef WLED_DISABLE_MODE_BLEND
-void WS2812FX::addTransitionStyle(uint8_t id, const char *name, bool only2D = false) {
-  if (id < _transitionStyles.size()) {
-    _transitionStyles[id] = TransitionStyleData(name, only2D);
-  }
-}
-
-static const char _data_TRANSITION_STYLE_FADE[] PROGMEM = "Fade";
-static const char _data_TRANSITION_STYLE_SWIPE_RIGHT[] PROGMEM = "Swipe Right";
-static const char _data_TRANSITION_STYLE_SWIPE_LEFT[] PROGMEM = "Swipe Left";
-static const char _data_TRANSITION_STYLE_SWIPE_UP[] PROGMEM = "Swipe Up";
-static const char _data_TRANSITION_STYLE_SWIPE_DOWN[] PROGMEM = "Swipe Down";
-static const char _data_TRANSITION_STYLE_PUSH_RIGHT[] PROGMEM = "Push Right";
-static const char _data_TRANSITION_STYLE_PUSH_LEFT[] PROGMEM = "Push Left";
-static const char _data_TRANSITION_STYLE_PUSH_UP[] PROGMEM = "Push Up";
-static const char _data_TRANSITION_STYLE_PUSH_DOWN[] PROGMEM = "Push Down";
-static const char _data_TRANSITION_STYLE_OUTSIDE_IN[] PROGMEM = "Outside In";
-static const char _data_TRANSITION_STYLE_INSIDE_OUT[] PROGMEM = "Inside Out";
-static const char _data_TRANSITION_STYLE_FAIRY_DUST[] PROGMEM = "Fairy Dust";
-#endif
-
 void WS2812FX::setupEffectData() {
   // Solid must be first! (assuming vector is empty upon call to setup)
   _mode.push_back(&mode_static);
@@ -8013,21 +7992,4 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 #endif // WLED_DISABLE_2D
-
-#ifndef WLED_DISABLE_MODE_BLEND
-  _transitionStyles.resize(_transitionStyleCount);
-
-  addTransitionStyle(TRANSITION_STYLE_FADE, _data_TRANSITION_STYLE_FADE);
-  addTransitionStyle(TRANSITION_STYLE_SWIPE_RIGHT, _data_TRANSITION_STYLE_SWIPE_RIGHT);
-  addTransitionStyle(TRANSITION_STYLE_SWIPE_LEFT, _data_TRANSITION_STYLE_SWIPE_LEFT);
-  addTransitionStyle(TRANSITION_STYLE_SWIPE_UP, _data_TRANSITION_STYLE_SWIPE_UP, true); // 2D only
-  addTransitionStyle(TRANSITION_STYLE_SWIPE_DOWN, _data_TRANSITION_STYLE_SWIPE_DOWN, true); // 2D only
-  addTransitionStyle(TRANSITION_STYLE_PUSH_RIGHT, _data_TRANSITION_STYLE_PUSH_RIGHT);
-  addTransitionStyle(TRANSITION_STYLE_PUSH_LEFT, _data_TRANSITION_STYLE_PUSH_LEFT);
-  addTransitionStyle(TRANSITION_STYLE_PUSH_UP, _data_TRANSITION_STYLE_PUSH_UP, true); // 2D only
-  addTransitionStyle(TRANSITION_STYLE_PUSH_DOWN, _data_TRANSITION_STYLE_PUSH_DOWN, true); // 2D only
-  addTransitionStyle(TRANSITION_STYLE_OUTSIDE_IN, _data_TRANSITION_STYLE_OUTSIDE_IN);
-  addTransitionStyle(TRANSITION_STYLE_INSIDE_OUT, _data_TRANSITION_STYLE_INSIDE_OUT);
-  addTransitionStyle(TRANSITION_STYLE_FAIRY_DUST, _data_TRANSITION_STYLE_FAIRY_DUST);
-#endif
 }

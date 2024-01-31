@@ -621,9 +621,6 @@ typedef struct Segment {
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     uint32_t getPixelColor(int i);
     int getPixelIndex(int i);
-    #ifndef WLED_DISABLE_MODE_BLEND
-    void renderTransition();
-    #endif
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
     void fill(uint32_t c);
@@ -652,9 +649,6 @@ typedef struct Segment {
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
-    #ifndef WLED_DISABLE_MODE_BLEND
-    void render2DTransition();
-    #endif
     // 2D support functions
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) { setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend)); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)         { blendPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), blend); }
@@ -689,9 +683,6 @@ typedef struct Segment {
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColor(x, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
     inline uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
-    #ifndef WLED_DISABLE_MODE_BLEND
-    inline void render2DTransition()                                              { renderTransition(); }
-    #endif
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColor(x, RGBW32(c.r,c.g,c.b,0), blend); }
     inline void addPixelColorXY(int x, int y, uint32_t color, bool fast = false)  { addPixelColor(x, color, fast); }
@@ -725,6 +716,10 @@ class WS2812FX {  // 96 bytes
     const char *_data; // mode (effect) name and its UI control data
     ModeData(uint8_t id, uint16_t (*fcn)(void), const char *data) : _id(id), _fcn(fcn), _data(data) {}
   } mode_data_t;
+
+#ifndef WLED_DISABLE_MODE_BLEND
+  typedef void (*transition_ptr)(void); // pointer to transition function
+#endif
 
   static WS2812FX* instance;
 
@@ -783,6 +778,10 @@ class WS2812FX {  // 96 bytes
 #endif
       if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _modeCount = 1; // memory allocation failed only show Solid
       else setupEffectData();
+#ifndef WLED_DISABLE_MODE_BLEND
+      if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _transitionStyleCount = 0; // memory allocation failed, disable transition styles
+      else setupTransitionStyleData();
+#endif
     }
 
     ~WS2812FX() {
@@ -825,7 +824,8 @@ class WS2812FX {  // 96 bytes
       setupEffectData(void);                      // add default effects to the list; defined in FX.cpp
 
 #ifndef WLED_DISABLE_MODE_BLEND
-    void addTransitionStyle(uint8_t id, const char *name, bool only2D); // add transition style to the list
+    void setupTransitionStyleData();
+    void addTransitionStyle(uint8_t id, transition_ptr func, const char *name, bool only2D); // add transition style to the list
 #endif
 
     inline void restartRuntime()          { for (Segment &seg : _segments) seg.markForReset(); }
@@ -996,8 +996,12 @@ class WS2812FX {  // 96 bytes
 
     struct TransitionStyleData {
       TransitionStyleData() : _name("RSVD"), _only2D(false) {}
-      TransitionStyleData(const char* name, bool only2D) : _name(name), _only2D(only2D) {}
+      TransitionStyleData(transition_ptr func, const char* name, bool only2D)
+        : _func(func),
+          _name(name),
+          _only2D(only2D) {}
 
+      transition_ptr _func;
       const char* _name;
       bool _only2D;
     };

@@ -1280,11 +1280,8 @@ void WS2812FX::service() {
           Segment::renderToBuffer(0);
 
           // Mix everything together
-          if (seg.is2D()) {
-            seg.render2DTransition();
-          } else {
-            seg.renderTransition();
-          }
+          seg.fill(BLACK);
+          (*_transitionStyles[transitionStyle]._func)();
         } else {
           delay = (*_mode[seg.mode])();         // run current mode
         }
