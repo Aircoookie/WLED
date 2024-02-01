@@ -3073,12 +3073,17 @@ function mergeDeep(target, ...sources)
 
 function tooltip()
 {
-	const elements = d.querySelectorAll("[tooltip]");
+	const elements = d.querySelectorAll("[title]");
 	elements.forEach((element)=>{
 		element.addEventListener("mouseover", ()=>{
+			// save title
+			element.setAttribute("data-title", element.getAttribute("title"));
 			const tooltip = d.createElement("span");
 			tooltip.className = "tooltip";
-			tooltip.textContent = element.getAttribute("tooltip");
+			tooltip.textContent = element.getAttribute("title");
+
+			// prevent default title popup
+			element.removeAttribute("title");
 
 			let { top, left, width } = element.getBoundingClientRect();
 
@@ -3101,6 +3106,8 @@ function tooltip()
 				tooltip.classList.remove("visible");
 				d.body.removeChild(tooltip);
 			});
+			// restore title
+			element.setAttribute("title", element.getAttribute("data-title"));
 		});
 	});
 };
