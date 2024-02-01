@@ -212,10 +212,12 @@ Static subnet mask:<br>
 		Access Point WiFi channel: <input name="AC" type="number" class="xs" min="1" max="13" required><br>
 		AP opens:
 		<select name="AB">
-		<option value="0">No connection after boot</option>
-		<option value="1">Disconnected</option>
-		<option value="2">Always</option>
-		<option value="3">Never (not recommended)</option></select><br>
+			<option value="0">No connection after boot</option>
+			<option value="1">Disconnected</option>
+			<option value="2">Always</option>
+			<option value="3">Never (not recommended)</option>
+			<option value="4">Temporary (no connection after boot)</option>
+		</select><br>
 		AP IP: <span class="sip"> Not active </span><br>
 		<h3>Experimental</h3>
 		Force 802.11g mode (ESP8266 only): <input type="checkbox" name="FG"><br>
@@ -241,6 +243,7 @@ Static subnet mask:<br>
 				<option value="0">None</option>
 				<option value="9">ABC! WLED V43 & compatible</option>
 				<option value="2">ESP32-POE</option>
+				<option value="11">ESP32-POE-WROVER</option>
 				<option value="6">ESP32Deux</option>
 				<option value="7">KIT-VE</option>
 				<option value="8">QuinLED-Dig-Octa & T-ETH-POE</option>

@@ -157,8 +157,8 @@ void appendGPIOinfo() {
   oappend(SET_F(",2")); // DMX hardcoded pin
   #endif
 
-  #ifdef WLED_DEBUG
-  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
+  #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
+  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10)); // debug output (TX) pin
   #endif
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
