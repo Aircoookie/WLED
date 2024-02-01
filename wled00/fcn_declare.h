@@ -48,6 +48,21 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
   return true;
 }
 
+typedef struct WiFiConfig {
+  char clientSSID[33];
+  char clientPass[65];
+  IPAddress staticIP;
+  IPAddress staticGW;
+  IPAddress staticSN;
+  WiFiConfig(const char *ssid="", const char *pass="", uint32_t ip=0, uint32_t gw=0, uint32_t subnet=0x00FFFFFF) // little endian
+  : staticIP(ip)
+  , staticGW(gw)
+  , staticSN(subnet)
+  {
+    strncpy(clientSSID, ssid, 32); clientSSID[32] = 0;
+    strncpy(clientPass, pass, 64); clientPass[64] = 0;
+  }
+} wifi_config;
 
 //colors.cpp
 // similar to NeoPixelBus NeoGammaTableMethod but allows dynamic changes (superseded by NPB::NeoGammaDynamicTableMethod)
