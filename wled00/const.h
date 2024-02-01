@@ -157,6 +157,10 @@
 #define AP_BEHAVIOR_NO_CONN               1     //Open when no connection (either after boot or if connection is lost)
 #define AP_BEHAVIOR_ALWAYS                2     //Always open
 #define AP_BEHAVIOR_BUTTON_ONLY           3     //Only when button pressed for 6 sec
+#define AP_BEHAVIOR_TEMPORARY             4     //Open AP when no connection after boot but only temporary
+#ifndef WLED_AP_TIMEOUT
+  #define WLED_AP_TIMEOUT            300000     //Temporary AP timeout
+#endif
 
 //Notifier callMode
 #define CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
