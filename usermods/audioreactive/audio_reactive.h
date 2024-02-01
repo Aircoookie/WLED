@@ -145,7 +145,11 @@ static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency chann
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
 
 // user settable parameters for limitSoundDynamics()
-static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
+#ifdef UM_AUDIOREACTIVE_DYNAMICS_LIMITER_OFF
+static bool limiterOn = false;                 // bool: enable / disable dynamics limiter
+#else
+static bool limiterOn = true;
+#endif
 static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
 static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 
@@ -1024,7 +1028,7 @@ class AudioReactive : public Usermod {
     #define UDPSOUND_MAX_PACKET 96 // max packet size for audiosync, with a bit of "headroom"
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-  #ifdef SR_ENABLE_DEFAULT
+  #if defined(SR_ENABLE_DEFAULT) || defined(UM_AUDIOREACTIVE_ENABLE)
     bool     enabled = true;        // WLEDMM
   #else
     bool     enabled = false;
