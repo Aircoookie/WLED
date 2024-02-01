@@ -89,6 +89,16 @@ void _overlayAnalogCountdown()
 
 void handleOverlayDraw() {
   usermods.handleOverlayDraw();
+  if (analogClockSolidBlack) {
+    const Segment* segments = strip.getSegments();
+    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+      const Segment& segment = segments[i];
+      if (!segment.isActive()) continue;
+      if (segment.mode > 0 || segment.colors[0] > 0) {
+        return;
+      }
+    }
+  }
   if (overlayCurrent == 1) _overlayAnalogClock();
 }
 

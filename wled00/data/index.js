@@ -1088,7 +1088,7 @@ function populateNodes(i,n)
 		for (var o of n.nodes) {
 			if (o.name) {
 				let onoff = `<i class="icons e-icon flr ${o.type&0x80?'':'off'}" onclick="rmtTgl('${o.ip}',this);"">&#xe08f;</i>`;
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');"><div class="bname">${bname(o)}</div>${o.vid<2307130?'':onoff}</button>`;
+				var url = `<a class="btn" title="${o.ip}" href="http://${o.ip}">${bname(o)}${o.vid<2307130?'':onoff}</a>`;
 				urows += inforow(url,`${btype(o.type&0x7F)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
@@ -2161,7 +2161,7 @@ function selGrp(g)
 	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
-	if (sel) for (let s of sel||[]) {
+	for (let s of (sel||[])) {
 		let i = parseInt(s.id.substring(3));
 		obj.seg[i] = {"id":i,"sel":true};
 	}
@@ -3073,12 +3073,17 @@ function mergeDeep(target, ...sources)
 
 function tooltip()
 {
-	const elements = d.querySelectorAll("[tooltip]");
+	const elements = d.querySelectorAll("[title]");
 	elements.forEach((element)=>{
 		element.addEventListener("mouseover", ()=>{
+			// save title
+			element.setAttribute("data-title", element.getAttribute("title"));
 			const tooltip = d.createElement("span");
 			tooltip.className = "tooltip";
-			tooltip.textContent = element.getAttribute("tooltip");
+			tooltip.textContent = element.getAttribute("title");
+
+			// prevent default title popup
+			element.removeAttribute("title");
 
 			let { top, left, width } = element.getBoundingClientRect();
 
@@ -3101,6 +3106,8 @@ function tooltip()
 				tooltip.classList.remove("visible");
 				d.body.removeChild(tooltip);
 			});
+			// restore title
+			element.setAttribute("title", element.getAttribute("data-title"));
 		});
 	});
 };

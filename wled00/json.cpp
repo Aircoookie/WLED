@@ -470,6 +470,19 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+  JsonObject wifi = root[F("wifi")];
+  if (!wifi.isNull()) {
+    bool apMode = getBoolVal(wifi[F("ap")], apActive);
+    if (!apActive && apMode) WLED::instance().initAP();  // start AP mode immediately
+    else if (apActive && !apMode) { // stop AP mode immediately
+      dnsServer.stop();
+      WiFi.softAPdisconnect(true);
+      apActive = false;
+    }
+    //bool restart = wifi[F("restart")] | false;
+    //if (restart) forceReconnect = true;
+  }
+
   stateUpdated(callMode);
   if (presetToRestore) currentPreset = presetToRestore;
 
@@ -611,7 +624,7 @@ void serializeInfo(JsonObject root)
   root[F("vid")] = VERSION;
   root[F("cn")] = F(WLED_CODENAME);
 
-  JsonObject leds = root.createNestedObject("leds");
+  JsonObject leds = root.createNestedObject(F("leds"));
   leds[F("count")] = strip.getLengthTotal();
   leds[F("pwr")] = BusManager::currentMilliamps();
   leds["fps"] = strip.getFps();
@@ -622,7 +635,7 @@ void serializeInfo(JsonObject root)
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
-    JsonObject matrix = leds.createNestedObject("matrix");
+    JsonObject matrix = leds.createNestedObject(F("matrix"));
     matrix["w"] = Segment::maxWidth;
     matrix["h"] = Segment::maxHeight;
   }
@@ -702,7 +715,7 @@ void serializeInfo(JsonObject root)
     }
   }
 
-  JsonObject wifi_info = root.createNestedObject("wifi");
+  JsonObject wifi_info = root.createNestedObject(F("wifi"));
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
   int qrssi = WiFi.RSSI();
   wifi_info[F("rssi")] = qrssi;

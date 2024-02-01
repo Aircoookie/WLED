@@ -15,6 +15,10 @@
 #define DEFAULT_MDNS_NAME   "x"
 
 //increase if you need more
+#ifndef WLED_MAX_WIFI_COUNT
+  #define WLED_MAX_WIFI_COUNT 3
+#endif
+
 #ifndef WLED_MAX_USERMODS
   #ifdef ESP8266
     #define WLED_MAX_USERMODS 4
@@ -157,6 +161,10 @@
 #define AP_BEHAVIOR_NO_CONN               1     //Open when no connection (either after boot or if connection is lost)
 #define AP_BEHAVIOR_ALWAYS                2     //Always open
 #define AP_BEHAVIOR_BUTTON_ONLY           3     //Only when button pressed for 6 sec
+#define AP_BEHAVIOR_TEMPORARY             4     //Open AP when no connection after boot but only temporary
+#ifndef WLED_AP_TIMEOUT
+  #define WLED_AP_TIMEOUT            300000     //Temporary AP timeout
+#endif
 
 //Notifier callMode
 #define CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
@@ -235,6 +243,7 @@
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
 #define TYPE_TM1829              25
 #define TYPE_UCS8903             26
+#define TYPE_APA106              27
 #define TYPE_UCS8904             29            //first RGBW digital type (hardcoded in busmanager.cpp, memUsage())
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
@@ -292,19 +301,20 @@
 #define BTN_TYPE_TOUCH_SWITCH     9
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES       11
+#define WLED_NUM_ETH_TYPES        12
 
-#define WLED_ETH_NONE             0
-#define WLED_ETH_WT32_ETH01       1
-#define WLED_ETH_ESP32_POE        2
-#define WLED_ETH_WESP32           3
-#define WLED_ETH_QUINLED          4
-#define WLED_ETH_TWILIGHTLORD     5
-#define WLED_ETH_ESP32DEUX        6
-#define WLED_ETH_ESP32ETHKITVE    7
-#define WLED_ETH_QUINLED_OCTA     8
-#define WLED_ETH_ABCWLEDV43ETH    9
-#define WLED_ETH_SERG74          10
+#define WLED_ETH_NONE              0
+#define WLED_ETH_WT32_ETH01        1
+#define WLED_ETH_ESP32_POE         2
+#define WLED_ETH_WESP32            3
+#define WLED_ETH_QUINLED           4
+#define WLED_ETH_TWILIGHTLORD      5
+#define WLED_ETH_ESP32DEUX         6
+#define WLED_ETH_ESP32ETHKITVE     7
+#define WLED_ETH_QUINLED_OCTA      8
+#define WLED_ETH_ABCWLEDV43ETH     9
+#define WLED_ETH_SERG74           10
+#define WLED_ETH_ESP32_POE_WROVER 11
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0

@@ -74,11 +74,11 @@ void loadSettingsFromEEPROM()
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
 
 
-  readStringFromEEPROM(  0, clientSSID, 32);
-  readStringFromEEPROM( 32, clientPass, 64);
-  readStringFromEEPROM( 96,      cmDNS, 32);
-  readStringFromEEPROM(128,     apSSID, 32);
-  readStringFromEEPROM(160,     apPass, 64);
+  readStringFromEEPROM(  0, multiWiFi[0].clientSSID, 32);
+  readStringFromEEPROM( 32, multiWiFi[0].clientPass, 64);
+  readStringFromEEPROM( 96, cmDNS, 32);
+  readStringFromEEPROM(128, apSSID, 32);
+  readStringFromEEPROM(160, apPass, 64);
 
   nightlightDelayMinsDefault = EEPROM.read(224);
   nightlightDelayMins = nightlightDelayMinsDefault;

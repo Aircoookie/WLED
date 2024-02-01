@@ -863,6 +863,15 @@ input[type=range]::-moz-range-thumb {
 	margin: 0;
 	white-space: nowrap;
 }
+a.btn {
+	display: block;
+	white-space: nowrap;
+	text-align: center;
+	padding: 8px 32px;
+	position: relative;
+	box-sizing: border-box;
+	line-height: 24px;
+}
 
 /* Quick color select wrapper div */
 #qcs-w {
@@ -1018,7 +1027,7 @@ textarea {
 	width: 50px !important;
 }
 
-.segname, .pname, .bname {
+.segname, .pname {
 	white-space: nowrap;
 	text-align: center;
 	overflow: hidden;
@@ -1027,9 +1036,6 @@ textarea {
 	padding: 8px 24px;
 	max-width: 170px;
 	position: relative;
-}
-.bname {
-	padding: 0 24px;
 }
 
 .segname .flr, .pname .flr {
@@ -1520,7 +1526,7 @@ dialog {
 	#info .infobtn, #nodes .infobtn {
 		width: 145px;
 	}
-	#info div, #nodes div {
+	#info div, #nodes div, #nodes a.btn {
 		max-width: 320px;
 	}
 }

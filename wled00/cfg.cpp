@@ -40,21 +40,39 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   linked_remote[12] = '\0';
 #endif
 
-  JsonObject nw_ins_0 = nw["ins"][0];
-  getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
-  //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
-  //The WiFi PSK is normally not contained in the regular file for security reasons.
-  //If it is present however, we will use it
-  getStringFromJson(clientPass, nw_ins_0["psk"], 65);
+  size_t n = 0;
+  JsonArray nw_ins = nw["ins"];
+  if (!nw_ins.isNull()) {
+    // as password are stored separately in wsec.json when reading configuration vector resize happens there, but for dynamic config we need to resize if necessary
+    if (nw_ins.size() > 1 && nw_ins.size() > multiWiFi.size()) multiWiFi.resize(nw_ins.size()); // resize constructs objects while resizing
+    for (JsonObject wifi : nw_ins) {
+      JsonArray ip = wifi["ip"];
+      JsonArray gw = wifi["gw"];
+      JsonArray sn = wifi["sn"];
+      char ssid[33] = "";
+      char pass[65] = "";
+      IPAddress nIP = (uint32_t)0U, nGW = (uint32_t)0U, nSN = (uint32_t)0x00FFFFFF; // little endian
+      getStringFromJson(ssid, wifi[F("ssid")], 33);
+      getStringFromJson(pass, wifi["psk"], 65); // password is not normally present but if it is, use it
+      for (size_t i = 0; i < 4; i++) {
+        CJSON(nIP[i], ip[i]);
+        CJSON(nGW[i], gw[i]);
+        CJSON(nSN[i], sn[i]);
+      }
+      if (strlen(ssid) > 0) strlcpy(multiWiFi[n].clientSSID, ssid, 33); // this will keep old SSID intact if not present in JSON
+      if (strlen(pass) > 0) strlcpy(multiWiFi[n].clientPass, pass, 65); // this will keep old password intact if not present in JSON
+      multiWiFi[n].staticIP = nIP;
+      multiWiFi[n].staticGW = nGW;
+      multiWiFi[n].staticSN = nSN;
+      if (++n >= WLED_MAX_WIFI_COUNT) break;
+    }
+  }
 
-  JsonArray nw_ins_0_ip = nw_ins_0["ip"];
-  JsonArray nw_ins_0_gw = nw_ins_0["gw"];
-  JsonArray nw_ins_0_sn = nw_ins_0["sn"];
-
-  for (byte i = 0; i < 4; i++) {
-    CJSON(staticIP[i], nw_ins_0_ip[i]);
-    CJSON(staticGateway[i], nw_ins_0_gw[i]);
-    CJSON(staticSubnet[i], nw_ins_0_sn[i]);
+  JsonArray dns = nw[F("dns")];
+  if (!dns.isNull()) {
+    for (size_t i = 0; i < 4; i++) {
+      CJSON(dnsAddress[i], dns[i]);
+    }
   }
 
   JsonObject ap = doc["ap"];
@@ -212,7 +230,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject btn_obj = hw["btn"];
   bool pull = btn_obj[F("pull")] | (!disablePullUp); // if true, pullup is enabled
   disablePullUp = !pull;
-  JsonArray hw_btn_ins = btn_obj[F("ins")];
+  JsonArray hw_btn_ins = btn_obj["ins"];
   if (!hw_btn_ins.isNull()) {
     for (uint8_t b = 0; b < WLED_MAX_BUTTONS; b++) { // deallocate existing button pins
       pinManager.deallocatePin(btnPin[b], PinOwner::Button); // does nothing if trying to deallocate a pin with PinOwner != Button
@@ -433,7 +451,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (e131Port == DDP_DEFAULT_PORT) e131Port = E131_DEFAULT_PORT; // prevent double DDP port allocation
   CJSON(e131Multicast, if_live[F("mc")]);
 
-  JsonObject if_live_dmx = if_live[F("dmx")];
+  JsonObject if_live_dmx = if_live["dmx"];
   CJSON(e131Universe, if_live_dmx[F("uni")]);
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
@@ -507,6 +525,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(analogClock12pixel, ol[F("o12pix")]);
   CJSON(analogClock5MinuteMarks, ol[F("o5m")]);
   CJSON(analogClockSecondsTrail, ol[F("osec")]);
+  CJSON(analogClockSolidBlack, ol[F("osb")]);
 
   //timed macro rules
   JsonObject tm = doc[F("timers")];
@@ -665,19 +684,23 @@ void serializeConfig() {
 #endif
 
   JsonArray nw_ins = nw.createNestedArray("ins");
+  for (size_t n = 0; n < multiWiFi.size(); n++) {
+    JsonObject wifi = nw_ins.createNestedObject();
+    wifi[F("ssid")] = multiWiFi[n].clientSSID;
+    wifi[F("pskl")] = strlen(multiWiFi[n].clientPass);
+    JsonArray wifi_ip = wifi.createNestedArray("ip");
+    JsonArray wifi_gw = wifi.createNestedArray("gw");
+    JsonArray wifi_sn = wifi.createNestedArray("sn");
+    for (size_t i = 0; i < 4; i++) {
+      wifi_ip.add(multiWiFi[n].staticIP[i]);
+      wifi_gw.add(multiWiFi[n].staticGW[i]);
+      wifi_sn.add(multiWiFi[n].staticSN[i]);
+    }
+  }
 
-  JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  nw_ins_0[F("ssid")] = clientSSID;
-  nw_ins_0[F("pskl")] = strlen(clientPass);
-
-  JsonArray nw_ins_0_ip = nw_ins_0.createNestedArray("ip");
-  JsonArray nw_ins_0_gw = nw_ins_0.createNestedArray("gw");
-  JsonArray nw_ins_0_sn = nw_ins_0.createNestedArray("sn");
-
-  for (byte i = 0; i < 4; i++) {
-    nw_ins_0_ip.add(staticIP[i]);
-    nw_ins_0_gw.add(staticGateway[i]);
-    nw_ins_0_sn.add(staticSubnet[i]);
+  JsonArray dns = nw.createNestedArray(F("dns"));
+  for (size_t i = 0; i < 4; i++) {
+    dns.add(dnsAddress[i]);
   }
 
   JsonObject ap = root.createNestedObject("ap");
@@ -693,7 +716,7 @@ void serializeConfig() {
   ap_ip.add(2);
   ap_ip.add(1);
 
-  JsonObject wifi = root.createNestedObject("wifi");
+  JsonObject wifi = root.createNestedObject(F("wifi"));
   wifi[F("sleep")] = !noWifiSleep;
   wifi[F("phy")] = force802_3g;
 
@@ -721,7 +744,7 @@ void serializeConfig() {
   }
   #endif
 
-  JsonObject hw = root.createNestedObject("hw");
+  JsonObject hw = root.createNestedObject(F("hw"));
 
   JsonObject hw_led = hw.createNestedObject("led");
   hw_led[F("total")] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
@@ -973,6 +996,7 @@ void serializeConfig() {
   ol[F("o12pix")] = analogClock12pixel;
   ol[F("o5m")] = analogClock5MinuteMarks;
   ol[F("osec")] = analogClockSecondsTrail;
+  ol[F("osb")] = analogClockSolidBlack;
 
   JsonObject timers = root.createNestedObject(F("timers"));
 
@@ -1048,8 +1072,17 @@ bool deserializeConfigSec() {
 
   JsonObject root = pDoc->as<JsonObject>();
 
-  JsonObject nw_ins_0 = root["nw"]["ins"][0];
-  getStringFromJson(clientPass, nw_ins_0["psk"], 65);
+  size_t n = 0;
+  JsonArray nw_ins = root["nw"]["ins"];
+  if (!nw_ins.isNull()) {
+    if (nw_ins.size() > 1 && nw_ins.size() > multiWiFi.size()) multiWiFi.resize(nw_ins.size()); // resize constructs objects while resizing
+    for (JsonObject wifi : nw_ins) {
+      char pw[65] = "";
+      getStringFromJson(pw, wifi["psk"], 65);
+      strlcpy(multiWiFi[n].clientPass, pw, 65);
+      if (++n >= WLED_MAX_WIFI_COUNT) break;
+    }
+  }
 
   JsonObject ap = root["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
@@ -1088,9 +1121,10 @@ void serializeConfigSec() {
   JsonObject nw = root.createNestedObject("nw");
 
   JsonArray nw_ins = nw.createNestedArray("ins");
-
-  JsonObject nw_ins_0 = nw_ins.createNestedObject();
-  nw_ins_0["psk"] = clientPass;
+  for (size_t i = 0; i < multiWiFi.size(); i++) {
+    JsonObject wifi = nw_ins.createNestedObject();
+    wifi[F("psk")] = multiWiFi[i].clientPass;
+  }
 
   JsonObject ap = root.createNestedObject("ap");
   ap["psk"] = apPass;

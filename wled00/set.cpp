@@ -19,21 +19,52 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == SUBPAGE_WIFI)
   {
-    char oldSSID[sizeof(clientSSID)];
+    unsigned cnt = 0;
+    for (size_t n = 0; n < WLED_MAX_WIFI_COUNT; n++) {
+      char cs[4] = "CS"; cs[2] = 48+n; cs[3] = 0; //client SSID
+      char pw[4] = "PW"; pw[2] = 48+n; pw[3] = 0; //client password
+      char ip[5] = "IP"; ip[2] = 48+n; ip[4] = 0; //IP address
+      char gw[5] = "GW"; gw[2] = 48+n; gw[4] = 0; //GW address
+      char sn[5] = "SN"; sn[2] = 48+n; sn[4] = 0; //subnet mask
+      if (request->hasArg(cs)) {
+        if (n >= multiWiFi.size()) multiWiFi.push_back(WiFiConfig()); // expand vector by one
+        char oldSSID[33]; strcpy(oldSSID, multiWiFi[n].clientSSID);
+        char oldPass[65]; strcpy(oldPass, multiWiFi[n].clientPass);
 
-    strcpy(oldSSID, clientSSID);
-    strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
-    if (!strcmp(oldSSID, clientSSID)) forceReconnect = true;
+        strlcpy(multiWiFi[n].clientSSID, request->arg(cs).c_str(), 33);
+        if (strlen(oldSSID) == 0 || !strncmp(multiWiFi[n].clientSSID, oldSSID, 32)) {
+          forceReconnect = true;
+        }
+        if (!isAsterisksOnly(request->arg(pw).c_str(), 65)) {
+          strlcpy(multiWiFi[n].clientPass, request->arg(pw).c_str(), 65);
+          forceReconnect = true;
+        }
+        for (size_t i = 0; i < 4; i++) {
+          ip[3] = 48+i;
+          gw[3] = 48+i;
+          sn[3] = 48+i;
+          multiWiFi[n].staticIP[i] = request->arg(ip).toInt();
+          multiWiFi[n].staticGW[i] = request->arg(gw).toInt();
+          multiWiFi[n].staticSN[i] = request->arg(sn).toInt();
+        }
+        cnt++;
+      }
+    }
+    // remove unused
+    if (cnt < multiWiFi.size()) {
+      cnt = multiWiFi.size() - cnt;
+      while (cnt--) multiWiFi.pop_back();
+      multiWiFi.shrink_to_fit(); // release memory
+    }
 
-    if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) {
-      strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
-      forceReconnect = true;
+    if (request->hasArg(F("D0"))) {
+      dnsAddress = IPAddress(request->arg(F("D0")).toInt(),request->arg(F("D1")).toInt(),request->arg(F("D2")).toInt(),request->arg(F("D3")).toInt());
     }
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
 
     apBehavior = request->arg(F("AB")).toInt();
-    strcpy(oldSSID, apSSID);
+    char oldSSID[33]; strcpy(oldSSID, apSSID);
     strlcpy(apSSID, request->arg(F("AS")).c_str(), 33);
     if (!strcmp(oldSSID, apSSID) && apActive) forceReconnect = true;
     apHide = request->hasArg(F("AH"));
@@ -61,21 +92,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     ethernetType = request->arg(F("ETH")).toInt();
     WLED::instance().initEthernet();
     #endif
-
-    char k[3]; k[2] = 0;
-    for (int i = 0; i<4; i++)
-    {
-      k[1] = i+48;//ascii 0,1,2,3
-
-      k[0] = 'I'; //static IP
-      staticIP[i] = request->arg(k).toInt();
-
-      k[0] = 'G'; //gateway
-      staticGateway[i] = request->arg(k).toInt();
-
-      k[0] = 'S'; //subnet
-      staticSubnet[i] = request->arg(k).toInt();
-    }
   }
 
   //LED SETTINGS
@@ -440,6 +456,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClock12pixel = request->arg(F("OM")).toInt();
     analogClock5MinuteMarks = request->hasArg(F("O5"));
     analogClockSecondsTrail = request->hasArg(F("OS"));
+    analogClockSolidBlack = request->hasArg(F("OB"));
 
     countdownMode = request->hasArg(F("CE"));
     countdownYear = request->arg(F("CY")).toInt();
