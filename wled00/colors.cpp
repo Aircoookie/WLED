@@ -111,7 +111,7 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
     palettecolors[i].value = random8(220,255);
   }
   //allow one to be lower
-  palettecolors[3].saturation = random8(80,255);
+  palettecolors[3].saturation = random8(20,255);
   palettecolors[3].value = random8(80,255);
 
 
@@ -198,13 +198,11 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
 
 CRGBPalette16 generateRandomPalette(void)  //generate fully random palette
 {
-  CRGBPalette16 random = CRGBPalette16(
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)),
-                        CHSV(random8(), random8(160, 255), random8(128, 255)));
-
-  return generateHarmonicRandomPalette(random);
+  return CRGBPalette16(
+                       CHSV(random8(), random8(160, 255), random8(128, 255)),
+                       CHSV(random8(), random8(160, 255), random8(128, 255)),
+                       CHSV(random8(), random8(160, 255), random8(128, 255)),
+                       CHSV(random8(), random8(160, 255), random8(128, 255)));
 }
 
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
