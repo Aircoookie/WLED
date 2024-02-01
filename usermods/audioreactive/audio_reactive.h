@@ -73,7 +73,11 @@ static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 
 static bool udpSyncConnected = false;         // UDP connection status -> true if connected to multicast group
 
 // user settable parameters for limitSoundDynamics()
-static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
+#ifdef UM_AUDIOREACTIVE_DYNAMICS_LIMITER_OFF
+static bool limiterOn = false;                 // bool: enable / disable dynamics limiter
+#else
+static bool limiterOn = true;
+#endif
 static uint16_t attackTime =  80;             // int: attack time in milliseconds. Default 0.08sec
 static uint16_t decayTime = 1400;             // int: decay time in milliseconds.  Default 1.40sec
 // user settable options for FFTResult scaling
@@ -612,7 +616,12 @@ class AudioReactive : public Usermod {
     };
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
+    #ifdef UM_AUDIOREACTIVE_ENABLE
+    bool     enabled = true;
+    #else
     bool     enabled = false;
+    #endif
+
     bool     initDone = false;
 
     // variables  for UDP sound sync
