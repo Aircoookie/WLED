@@ -94,47 +94,23 @@
 		function getURL(path) {
 			return (loc ? locproto + "//" + locip : "") + path;
 		}
-		function getFormattedDebugInformation(json) {
-			var debugInfo = "## Debug information ##\n\n";
-			debugInfo += "WLED version: " + json.ver + " (build " + json.vid + ")\n";
-			debugInfo += "LEDs:\n";
-			debugInfo += "\tCount: " + json.leds.count + "\n";
-			debugInfo += "\tPower: " + json.leds.pwr + "\n";
-			debugInfo += "\tFPS: " + json.leds.fps + "\n";
-			debugInfo += "\tMax power: " + json.leds.maxpwr + "\n";
-			debugInfo += "\tMax segment: " + json.leds.maxseg + "\n";
-			debugInfo += "UDP Port: " + json.udpport + "\n";
-			debugInfo += "WiFi:\n";
-			debugInfo += "\tRSSI: "+json.wifi.rssi+"\n";
-			debugInfo += "\tSignal: "+json.wifi.signal+"\n";
-			debugInfo += "\tChannel: "+json.wifi.channel+"\n";
-			debugInfo += "Architecture: " + json.arch + "\n";
-			debugInfo += "Core version: " + json.core + "\n";
-			debugInfo += "Free heap: " + json.freeheap + "\n";
-			debugInfo += "Uptime: " + json.uptime + "\n";
-			debugInfo += "Time: " + json.time + "\n";
-			debugInfo += "Opt: " + json.opt + "\n";
-			debugInfo += "Brand: " + json.brand + "\n";
-			debugInfo += "Product: " + json.product + "\n";
-			debugInfo += "MAC Address: " + json.mac + "\n";
-			debugInfo += "IP Address: " + json.ip + "\n";
+		async function getFormattedDebugInformation() {
+			const [cfg, info] = await Promise.all([fetch(getURL('/cfg.json')), fetch(getURL('/json/info'))]);
+			const [cfgJson, infoJson] = await Promise.all([cfg.json(), info.json()]);
+			let debugInfo = "WLED version: " + infoJson.ver + " (build " + infoJson.vid + ")\n";
+			debugInfo += "Architecture: " + infoJson.arch + "\n";
+			debugInfo += "Core: " + infoJson.core + "\n";
+			debugInfo += "Free heap: " + infoJson.freeheap + "\n";
+			debugInfo += "\n\n\ncfg.json:\n" + JSON.stringify(cfgJson);
 			return debugInfo;
 		}
-		function submitBugReport() {
-			fetch(getURL('/json/info'), {
-				method: 'get'
-			})
-			.then(res => res.json())
-			.then(json => {
-				var githubNewIssue = "https://github.com/Aircoookie/WLED/issues/new?assignees=&labels=bug&projects=&template=bug.yml";
-				var version = "&version=" + encodeURIComponent("WLED " + json.ver + " (build " + json.vid + ")");
-				var logs = "&logs=" + encodeURIComponent(getFormattedDebugInformation(json));
-				var url = githubNewIssue + version + logs;
-				window.open(url);
-			})
-			.catch((e)=>{
-				showToast(e, true);
-			});
+		async function submitBugReport() {
+			const debugInfo = await getFormattedDebugInformation();
+			const githubNewIssue = "https://github.com/Aircoookie/WLED/issues/new?assignees=&labels=bug&projects=&template=bug.yml";
+			const version = "&version=" + encodeURIComponent("WLED " + debugInfo.split("\n")[0].replace("WLED version: ", ""));
+			const logs = "&logs=" + encodeURIComponent(debugInfo);
+			const url = githubNewIssue + version + logs;
+			window.open(url);
 		}
 		// Using this function instead of navigator.clipboard.writeText() because it is not supported on insecure origins
 		function copyToClipboard(text) {
@@ -150,19 +126,9 @@
 			}
 			document.body.removeChild(textArea);
 		}
-		function copyDebugInformation() {
-			fetch(getURL('/json/info'), {
-				method: 'get'
-			})
-			.then(res => res.json())
-			.then(json => {
-				var debugInfo = getFormattedDebugInformation(json);
-				copyToClipboard(debugInfo);
-				showToast("Debug information copied to clipboard!");
-			})
-			.catch((e)=>{
-				showToast(e, true);
-			});
+		async function copyDebugInformation() {
+			copyToClipboard(await getFormattedDebugInformation());
+			showToast("Debug information copied to clipboard!");
 		}
 	</script>
 	<style>
