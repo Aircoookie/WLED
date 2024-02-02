@@ -24,12 +24,15 @@ def _create_dirs(dirs=["firmware", "map"]):
 
 def create_release(source):
     release_name = _get_cpp_define_value(env, "WLED_RELEASE_NAME")
+    # get file extension of source file (.bin or .bin.gz)
+    ext = source.split(".", 1)[1]
     if release_name:
-        _create_dirs(["release"])
+        folder = "release"
+        if ext == "bin.gz":
+            folder = "release_gz"
+        _create_dirs([folder])
         version = _get_cpp_define_value(env, "WLED_VERSION")
-        # get file extension of source file (.bin or .bin.gz)
-        ext = source.split(".", 1)[1]
-        release_file = "{}release{}WLED_{}_{}.{}".format(OUTPUT_DIR, os.path.sep, version, release_name, ext)
+        release_file = "{}{}{}WLED_{}_{}.{}".format(OUTPUT_DIR, folder, os.path.sep, version, release_name, ext)
         shutil.copy(source, release_file)
 
 def bin_rename_copy(source, target, env):
