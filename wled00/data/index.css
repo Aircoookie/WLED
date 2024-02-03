@@ -346,10 +346,14 @@ button {
 	-webkit-overflow-scrolling: touch;
 }
 
+#Segments, #Presets, #Effects, #Colors {
+	font-size: 19px;
+	padding: 4px 0 0;
+}
+
 #segutil, #segutil2, #segcont, #putil, #pcont, #pql, #fx, #palw,
 .fnd {
 	max-width: 280px;
-	font-size: 19px;
 }
 
 #putil, #segutil, #segutil2 {
@@ -361,7 +365,7 @@ button {
 	padding-top: 12px;
 }
 
-#fx, #pql, #segcont, #pcont, #sliders, #picker, #qcs-w, #hexw, #pall, #ledmap,
+#fx, #pql, #segcont, #pcont, #sliders, #qcs-w, #hexw, #pall, #ledmap,
 .slider, .filter, .option, .segname, .pname, .fnd {
 	margin: 0 auto;
 }
@@ -371,13 +375,8 @@ button {
 }
 
 /* Quick load magin for simplified UI */
-.simplified #pql {
+.simplified #pql, .simplified #palw, .simplified #fx {
 	margin-bottom: 8px;
-}
-
-/* Button margin for simplified UI */
-.simplified #fx .btn, .simplified #palw .btn {
-	margin-top: 0;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -624,12 +623,10 @@ button {
   padding-bottom: 8px;
 }
 
-#info .btn {
+.infobtn {
 	margin: 5px;
 }
-#info table .btn, #nodes table .btn {
-	margin: 0;
-}
+
 #info div, #nodes div {
 	max-width: 490px;
 	margin: 0 auto;
@@ -784,14 +781,14 @@ input[type=range]::-moz-range-thumb {
 }
 
 #picker {
-	margin-top: 8px !important;
+	margin: 4px auto 0 !important;
 	max-width: max-content;
 }
 
 /* buttons */
 .btn {
 	padding: 8px;
-	margin: 10px 4px;
+	/*margin: 10px 4px;*/
 	width: 230px;
 	font-size: 19px;
 	color: var(--c-d);
@@ -837,13 +834,13 @@ input[type=range]::-moz-range-thumb {
 	text-overflow: clip;
 }
 .btn-xs {
-	margin: 2px 0 0 0;
-}
-#putil .btn-xs {
 	margin: 0;
 }
 #info .btn-xs {
 	border: 1px solid var(--c-4);
+}
+#btns .btn-xs {
+	margin: 0 4px;
 }
 
 #putil .btn-s {
@@ -867,7 +864,7 @@ a.btn {
 	display: block;
 	white-space: nowrap;
 	text-align: center;
-	padding: 8px 32px;
+	padding: 9px 32px 7px 24px;
 	position: relative;
 	box-sizing: border-box;
 	line-height: 24px;
@@ -921,9 +918,6 @@ select {
 }
 #tt {
 	text-align: center;
-}
-.cl {
-	background-color: #000;
 }
 select.sel-p, select.sel-pl, select.sel-ple {
 	margin: 5px 0;
@@ -1071,27 +1065,24 @@ textarea {
 .newseg {
 	cursor: default;
 }
-
+/*
 .ic {
 	padding: 6px 0 0 0;
 }
-
-.xxs {
+*/
+/* color selector */
+#csl button {
 	width: 44px;
 	height: 44px;
 	margin: 5px;
+	border: 2px solid var(--c-d) !important;
+	background-color: #000;
 }
-
-.xxs-w {
+/* selected color selector */
+#csl .sl {
 	margin: 2px;
 	width: 50px;
 	height: 50px;
-}
-
-#csl .xxs {
-	border: 2px solid var(--c-d) !important;
-}
-#csl .xxs-w {
 	border-width: 5px !important;
 }
 
@@ -1296,13 +1287,9 @@ TD .checkmark, TD .radiomark {
 	position: -webkit-sticky;
 	position: sticky;
 	border-radius: 21px;
-	margin: 13px auto 0;
+	margin: 0 auto 12px;
 	min-height: 40px;
 	border: 1px solid var(--c-2);
-}
-
-#segutil .lstI {
-	margin-top: 0;
 }
 
 /* Simplify segments */
@@ -1403,7 +1390,7 @@ dialog {
 	width: 100%;
 	box-sizing: border-box;
 	padding: 8px 40px 8px 44px;
-	margin: 5px auto 0;
+	margin: 4px auto 12px;
 	text-align: left;
 	border-radius: 21px;
 	background: var(--c-2);
@@ -1419,6 +1406,13 @@ dialog {
 .fnd input[type="text"]:not(:placeholder-shown),
 .fnd input[type="text"]:hover {
 	background-color: var(--c-3);
+}
+
+#fxFind.fnd input[type="text"] {
+	margin-bottom: 0;
+}
+#fxFind {
+	margin-bottom: 12px;
 }
 
 /* segment & preset inner/expanded content */
