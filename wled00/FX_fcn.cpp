@@ -11,6 +11,7 @@
 */
 #include "wled.h"
 #include "FX.h"
+#include "FXparticleSystem.h"  // TODO: better define the required function (mem service) in FX.h?
 #include "palettes.h"
 
 /*
@@ -258,6 +259,7 @@ void Segment::startTransition(uint16_t dur) {
 
   //DEBUG_PRINTF_P(PSTR("-- Started transition: %p (%p)\n"), this, _t);
   loadPalette(_t->_palT, palette);
+  _t->_palette        = palette;
   _t->_briT           = on ? opacity : 0;
   _t->_cctT           = cct;
 #ifndef WLED_DISABLE_MODE_BLEND
@@ -423,13 +425,22 @@ void Segment::beginDraw() {
     _currentColors[i] = gamma32(col);
   }
   // load palette into _currentPalette
+  setCurrentPalette();
+}
+
+void Segment::setCurrentPalette(bool loadOldPalette) {
+  if(loadOldPalette && isInTransition()) {
+    loadPalette(_currentPalette, _t->_palette); // load palette of old effect, used in particle system
+    return;
+  }
   loadPalette(_currentPalette, palette);
-  if (strip.paletteFade && prog < 0xFFFFU) {
+
+  if(strip.paletteFade && isInTransition() && progress() < 0xFFFFU) {
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
     // minimum blend time is 100ms maximum is 65535ms
-    unsigned noOfBlends = ((255U * prog) / 0xFFFFU) - _t->_prevPaletteBlends;
-    for (unsigned i = 0; i < noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, _currentPalette, 48);
+    int noOfBlends = ((255U * progress()) / 0xFFFFU) - _t->_prevPaletteBlends;
+    for (int i = 0; i < noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, _currentPalette, 48);
     _currentPalette = _t->_palT; // copy transitioning/temporary palette
   }
 }
@@ -1397,6 +1408,9 @@ void WS2812FX::service() {
     }
     _segment_index++;
   }
+  #if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D))
+  servicePSmem(); // handle segment particle system memory
+  #endif
   _isServicing = false;
   _triggered = false;
 
