@@ -215,9 +215,7 @@ void registerUsermods()
    */
  // usermods.add(new MyExampleUsermod());
 
-  
 
-  //usermods.add(new UsermodBattery());
 
   #ifdef USERMOD_TIMER_BAR
   usermods.add(new UsermodTimerBar());
