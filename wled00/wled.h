@@ -689,7 +689,7 @@ WLED_GLOBAL bool ledStatusState _INIT(false); // the current LED state
 #endif
 
 // server library objects
-WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
+WLED_GLOBAL AsyncWebServer server _INIT_N(((80, WLED_MAX_CONCURRENT_REQUESTS, WLED_MAX_QUEUED_REQUESTS)));
 #ifdef WLED_ENABLE_WEBSOCKETS
 WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 #endif

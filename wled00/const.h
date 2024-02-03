@@ -448,8 +448,17 @@
   #define JSON_BUFFER_SIZE 24576
 #endif
 
-//#define MIN_HEAP_SIZE (8k for AsyncWebServer)
-#define MIN_HEAP_SIZE 8192
+//#define MIN_HEAP_SIZE
+#define MIN_HEAP_SIZE 2048
+
+// Web server limits
+#ifdef ESP8266
+  #define WLED_MAX_CONCURRENT_REQUESTS 2
+  #define WLED_MAX_QUEUED_REQUESTS 6
+#else
+  #define WLED_MAX_CONCURRENT_REQUESTS 6
+  #define WLED_MAX_QUEUED_REQUESTS 12
+#endif
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
