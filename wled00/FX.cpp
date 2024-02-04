@@ -8006,15 +8006,21 @@ uint16_t mode_particlefireworks(void)
   const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
   const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
-  const uint16_t numParticles = 450;
-  const uint8_t numRockets = 3;
+#ifdef ESP8266
+  const uint16_t numParticles = 250;
+  const uint8_t MaxNumRockets = 4; 
+#else
+  const uint16_t numParticles = 650;
+  const uint8_t MaxNumRockets = 8; 
+#endif
+
 
   PSparticle *particles;
   PSpointsource *rockets;
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numRockets);
+  dataSize += sizeof(PSpointsource) * (MaxNumRockets);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
@@ -8023,10 +8029,11 @@ uint16_t mode_particlefireworks(void)
 
   rockets = reinterpret_cast<PSpointsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle *>(rockets + numRockets); // cast the data array into a particle pointer
+  particles = reinterpret_cast<PSparticle *>(rockets + MaxNumRockets); // cast the data array into a particle pointer
 
   uint16_t i = 0;
   uint16_t j = 0;
+  uint8_t numRockets = (SEGMENT.custom3+1) >> 2; //1 to 8
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8059,7 +8066,7 @@ uint16_t mode_particlefireworks(void)
     }
     else
     {                                   // speed is zero, explode!
-      emitparticles = random8(80) + 10; // defines the size of the explosion
+      emitparticles = random8(SEGMENT.intensity>>1) + 10; // defines the size of the explosion
       rockets[j].source.vy = -1;        // set speed negative so it will emit no more particles after this explosion until relaunch
     }
 
@@ -8083,7 +8090,7 @@ uint16_t mode_particlefireworks(void)
   {
     if (particles[i].ttl)
     {
-      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, (uint8_t)255);
+      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, SEGMENT.custom2);
     }
   }
 
@@ -8102,9 +8109,9 @@ uint16_t mode_particlefireworks(void)
     {                                    // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
       rockets[i].source.vy = 0;          // set speed to zero so code above will recognize this as an exploding rocket
       rockets[i].source.hue = random8(); // random color
-      rockets[i].maxLife = 250;
-      rockets[i].minLife = 100;
-      rockets[i].source.ttl = random8(120) + 50; // standby time til next launch (in frames, so about 2-5 seconds at 30fps)
+      rockets[i].maxLife = 200;
+      rockets[i].minLife = 50;
+      rockets[i].source.ttl = random8((255 - SEGMENT.speed))+10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
       rockets[i].vx = 0;                         // emitting speed
       rockets[i].vy = 0;                         // emitting speed
       rockets[i].var = 30;                       // speed variation around vx,vy (+/- var/2)
@@ -8114,11 +8121,11 @@ uint16_t mode_particlefireworks(void)
       // reinitialize rocket
       rockets[i].source.y = 1;                                            // start from bottom
       rockets[i].source.x = (rand() % (PS_MAX_X >> 1)) + (PS_MAX_Y >> 2); // centered half
-      rockets[i].source.vy = random8(10) + 5;
+      rockets[i].source.vy = random8(SEGMENT.custom1>>3) + 5; //rocket speed depends also on rocket height
       rockets[i].source.vx = random8(5) - 2;
       rockets[i].source.hue = 30; // rocket exhaust = orange (if using rainbow palette)
-      rockets[i].source.ttl = random8(80) + 40;
-      rockets[i].maxLife = 40;
+      rockets[i].source.ttl = random8(SEGMENT.custom1) + (SEGMENT.custom1>>1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
+      rockets[i].maxLife = 40; //exhaust particle life
       rockets[i].minLife = 10;
       rockets[i].vx = 0;  // emitting speed
       rockets[i].vy = 0;  // emitting speed
@@ -8132,7 +8139,7 @@ uint16_t mode_particlefireworks(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Fireworks@Moving Speed,Intensity,Particle Speed,Spray Angle,Nozzle Size,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=200,c1=190,c2=128,c3=8,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Fireworks@Launches,Explosion Size,Height,Bounce Strength,Rockts,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
 
 /*
  * Particle gravity spray
@@ -8771,17 +8778,17 @@ uint16_t mode_particlebox(void)
     if (SEGMENT.check1)
     {                                                                // if random is set, use perlin noise for force vector generation
       SEGMENT.aux0 += (SEGMENT.speed >> 6) + 1;                      // update position in noise
-      uint8_t angle = (((uint16_t)inoise8(SEGMENT.aux0)) << 1) - 64; // noise avg. value is 127 scale to 255 (to increase the noise range) and subtract 64 (=90°) to make the average direction downwards (270°), overflow means modulo, so is ok
+      //uint8_t angle = (((uint16_t)inoise8(SEGMENT.aux0)) << 1) - 64; // noise avg. value is 127 scale to 256 (to increase the range) and subtract 64 (=90°) to make the average direction downwards (270°), overflow means modulo, so is ok
       // calculate x and y vectors from angle:
-      xgravity = ((int16_t)cos8(angle)) - 128; // gravity direction +/- 127
-      ygravity = ((int16_t)sin8(angle)) - 128;
+      //xgravity = ((int16_t)cos8(angle)) - 128; // gravity direction +/- 127
+      //ygravity = ((int16_t)sin8(angle)) - 128;
       // scale the vectors using another inoise value:
-      scale = inoise8(SEGMENT.aux0 + 4096); // use a offset in the noise for scale value
-      // scale the force, if scale is small, make it zero (scale is applied below)
-      if (scale > (SEGMENT.custom1 >> 1) + 64)
-        scale = (SEGMENT.custom1 >> 1) + 64; // max is 192
-      if (scale < 64)
-        scale = 0;
+      //scale = inoise8(SEGMENT.aux0 + 4096); // use a offset in the noise for scale value
+ 
+      //scale = ((uint16_t)scale * SEGMENT.custom1)>>8; //apply rescaling with user input
+      //not using angles but x and y tilt from inoise:
+      xgravity = ((int16_t)inoise8(SEGMENT.aux0)-127);
+      ygravity = ((int16_t)inoise8(SEGMENT.aux0+10000) - 127);
     }
     else
     { // use sinusoidal motion
@@ -8799,15 +8806,19 @@ uint16_t mode_particlebox(void)
       // now calculate the force vectors
       xgravity = ((int16_t)cos8((uint8_t)angle)) - 128; // gravity direction +/- 127
       ygravity = ((int16_t)sin8((uint8_t)angle)) - 128;
+
+      // scale gravity force
+      xgravity = ((int16_t)xgravity * scale) >> 8;
+      ygravity = ((int16_t)ygravity * scale) >> 8;
+      //todo: check with console output to see if scaling is applied correctly.
     }
 
-    // scale gravity force
-    xgravity = ((int16_t)xgravity * scale) >> 8;
-    ygravity = ((int16_t)ygravity * scale) >> 8;
-
-    // scale the gravity force down even more
+    
+    // scale the gravity force down 
     xgravity = xgravity >> 4;
     ygravity = ygravity >> 4;
+    //Serial.print(xgravity);
+    //Serial.println(" ");
 
     for (i = 0; i < numParticles; i++)
     {
