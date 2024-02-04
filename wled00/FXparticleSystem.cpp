@@ -105,9 +105,6 @@ void Particle_Bounce_update(PSparticle *part) //bounces a particle on the matrix
 		//age
 		part->ttl--;
 
-		//apply acceleration
-		//  vx = min(vx + ax, PS_MAX_X);
-		//  vy = min(vy + ay, PS_MAX_Y);
 
 		//apply velocity
 		int16_t newX, newY;
@@ -203,11 +200,6 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX) //particle moves, dec
 		else
 			part->outofbounds = 0;
 
-		
-		//newX = max(newX, (int16_t)-PS_MAX_X); //limit to double matrix size
-		//newY = max(newY, (int16_t)-PS_MAX_Y);
-		//part->x = min(newX, (int16_t)(PS_MAX_X<<1)); //limit to double the space boundaries
-		//part->y = min(newY, (int16_t)(PS_MAX_Y<<1));
 		part->x = newX;
 		part->y = newY;
 	}

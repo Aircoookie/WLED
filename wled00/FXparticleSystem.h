@@ -31,10 +31,7 @@
 
 //particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement
-<<<<<<< Updated upstream
-=======
 #define PS_P_HARDRADIUS 100 //hard surface radius of a particle, in collisions, this is forbidden to be entered by another particle (for stacking) 
->>>>>>> Stashed changes
 #define PS_P_SURFACE 12  //shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 
 
@@ -75,13 +72,6 @@ typedef struct {
 
 #define GRAVITYCOUNTER 2 //the higher the value the lower the gravity (speed is increased every n'th particle update call), values of 2 to 4 give good results
 #define MAXGRAVITYSPEED 40 //particle terminal velocity
-
-/*
-//todo: make these local variables
-uint8_t vortexspeed; //speed around vortex
-uint8_t vortexdirection; //1 or 0
-int8_t vortexpull; //if positive, vortex pushes, if negative it pulls
-*/
 
 void Emitter_Flame_emit(PSpointsource *emitter, PSsimpleparticle *part);
 void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part);
