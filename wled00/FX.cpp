@@ -7889,16 +7889,14 @@ uint16_t mode_particlespray(void)
  
  if (SEGLEN == 1) return mode_static();
 
-<<<<<<< Updated upstream
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   const uint16_t numParticles = 250;
-=======
-  const uint16_t numParticles = 450;
->>>>>>> Stashed changes
   const uint8_t numSprays = 1;
   uint8_t percycle = numSprays; //maximum number of particles emitted per cycle
+
+//todo: for ESP8266 only about 250 particles are possible, for ESP32 450 or even more
 
   //test, use static particles
 
@@ -8045,13 +8043,9 @@ uint16_t mode_particlefire(void)
   const uint16_t PS_MAX_X (cols*PS_P_RADIUS-1); 
   //const uint16_t PS_MAX_Y (rows*PS_P_RADIUS-1); 
 
-<<<<<<< Updated upstream
-  const uint16_t numParticles = 550;
-  const uint8_t numFlames = (cols-2)<<1; //number of flames: depends on fire width. for a fire width of 16 pixels total, about 25-30 flames give good results 
-  uint8_t percycle = numFlames/2; //maximum number of particles emitted per cycle
-=======
 //test for ESP8266 as it will not run with that many flames (not enough ram)
   const uint16_t numFlames = cols; //number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results, add a few for the base flames
+  //for ESP32: (cols-2)<<1  TODO: need to fix this by using ifdef
   const uint16_t numParticles = numFlames*20;
 
 //  const uint16_t numFlames = (cols<<1); //number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results, add a few for the base flames
@@ -8076,7 +8070,6 @@ uint16_t mode_particlefire(void)
   //calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle*>(flames+numFlames); //cast the data array into a particle pointer
 
->>>>>>> Stashed changes
   uint16_t i;
 /*
 #ifdef FIRELAMP
@@ -8230,46 +8223,47 @@ static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,In
 
 
 <<<<<<< Updated upstream
-=======
-/*
-particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
-sliders control falling speed, intensity (number of particles spawned), WIND OR SPEED RANDOMNESS?, inter-particle collision hardness (0 means no particle collisions) and render saturation
-this is quite versatile, can be made to look like rain or snow or confetti, flying sparks etc.
-Uses palette for particle color
-by DedeHai (Damian Schneider)
-*/
+== == == =
+             /*
+             particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
+             sliders control falling speed, intensity (number of particles spawned), WIND OR SPEED RANDOMNESS?, inter-particle collision hardness (0 means no particle collisions) and render saturation
+             this is quite versatile, can be made to look like rain or snow or confetti, flying sparks etc.
+             Uses palette for particle color
+             by DedeHai (Damian Schneider)
+             */
 
-uint16_t mode_particlefall(void){
- 
- if (SEGLEN == 1) return mode_static();
+    uint16_t mode_particlefall(void)
+{
+
+  if (SEGLEN == 1)
+    return mode_static();
 
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   const uint16_t numParticles = 500;
-  
-  PSparticle* particles;
 
-  //allocate memory and divide it into proper pointers, max is 32k for all segments.
-  uint32_t dataSize = sizeof(PSparticle) * numParticles;  
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed; //allocation failed
+  PSparticle *particles;
 
-  //calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle*>(SEGENV.data); //cast the data array into a particle pointer
+  // allocate memory and divide it into proper pointers, max is 32k for all segments.
+  uint32_t dataSize = sizeof(PSparticle) * numParticles;
+  if (!SEGENV.allocateData(dataSize))
+    return mode_static(); // allocation failed; //allocation failed
 
+  // calculate the end of the spray data and assign it as the data pointer for the particles:
+  particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
 
-  uint16_t i =0;
-  uint16_t j =0;
-  
-  if (SEGMENT.call == 0) //initialization
+  uint16_t i = 0;
+  uint16_t j = 0;
+
+  if (SEGMENT.call == 0) // initialization
   {
-    for(i=0; i<numParticles; i++)
+    for (i = 0; i < numParticles; i++)
     {
       particles[i].ttl=0;
     }
   }
 
- 
   if(SEGMENT.call % (64-(SEGMENT.intensity>>2)) == 0 && SEGMENT.intensity>1) //every nth frame emit particles, stop emitting if zero
   {
     while(i<numParticles) //emit particles
@@ -8341,7 +8335,7 @@ uint16_t mode_particlefall(void){
   //render the particles
   ParticleSys_render(particles, numParticles,((SEGMENT.custom3)<<3)+7,SEGMENT.check1,false); //custom3 slider is saturation, from 7 to 255, 7 is close enough to white (for snow for example)
 
-  return FRAMETIME; 
+  return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=0,c3=31,o1=0,o2=0,o3=1";
 
