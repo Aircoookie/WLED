@@ -1017,7 +1017,10 @@ void serializeModeNames(JsonArray arr)
 // Global buffer locking response helper class
 class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
   public:
-  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(&doc, isArray) {};
+  // This is safe if and only if the guard owns the lock.
+  inline GlobalBufferAsyncJsonResponse(JSONBufferGuard&& guard, bool isArray) : JSONBufferGuard(std::move(guard)), AsyncJsonResponse(owns_lock() ? &doc : nullptr, isArray) {
+    assert(owns_lock());
+  };
   virtual ~GlobalBufferAsyncJsonResponse() {};
 
   // Other members are inherited
@@ -1054,12 +1057,12 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
-  if (!response->owns_lock()) {
+  JSONBufferGuard guard(17);
+  if (!guard.owns_lock()) {
     request->send(503, "application/json", F("{\"error\":3}"));
-    delete response;
     return;
   }
+  GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(std::move(guard), subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
