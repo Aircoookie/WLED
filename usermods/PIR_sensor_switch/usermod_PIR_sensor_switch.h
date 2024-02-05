@@ -374,7 +374,7 @@ void PIRsensorSwitch::setup()
     if (pinManager.allocatePin(PIRsensorPin[i], false, PinOwner::UM_PIR)) {
       // PIR Sensor mode INPUT_PULLDOWN
       #ifdef ESP8266
-      pinMode(PIRsensorPin[i], PIRsensorPin[i]==16 ? INPUT_PULLDOWN : INPUT_PULLUP); // ESP8266 has INPUT_PULLDOWN on GPIO16 only
+      pinMode(PIRsensorPin[i], PIRsensorPin[i]==16 ? INPUT_PULLDOWN_16 : INPUT_PULLUP); // ESP8266 has INPUT_PULLDOWN on GPIO16 only
       #else
       pinMode(PIRsensorPin[i], INPUT_PULLDOWN);
       #endif
