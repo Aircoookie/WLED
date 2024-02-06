@@ -1,5 +1,17 @@
 ## WLED changelog
 
+#### Build 2401141
+-   Official release of WLED 0.14.1
+-   Fix for #3566, #3665, #3672
+-   Sorting of palettes in custom palette editor (#3674 by @WoodyLetsCode)
+
+#### Build 2401060
+-   Version bump: 0.14.1-b3
+-   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
+-   Fix for #3632
+-   Custom palette editor mobile UI enhancement (#3617 by @imeszaros)
+-   changelog update
+
 #### Build 2312290
 -   Fix for #3622, #3613, #3609
 -   Various tweaks and fixes

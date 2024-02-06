@@ -525,7 +525,7 @@ void handleNotifications()
     if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     uint16_t totalLen = strip.getLengthTotal();
-    if (udpIn[0] == 1) //warls
+    if ((udpIn[0] == 1) && (packetSize > 5)) //warls - avoiding infinite "for" loop (unsigned underflow)    
     {
       for (size_t i = 2; i < packetSize -3; i += 4)
       {
@@ -540,7 +540,7 @@ void handleNotifications()
 
         id++; if (id >= totalLen) break;
       }
-    } else if (udpIn[0] == 3) //drgbw
+    } else if ((udpIn[0] == 3) && (packetSize > 5)) //drgbw - avoiding infinite "for" loop (unsigned underflow)
     {
       uint16_t id = 0;
       for (size_t i = 2; i < packetSize -3; i += 4)
