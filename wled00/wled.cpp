@@ -738,7 +738,7 @@ int8_t WLED::findWiFi(bool doScan) {
   } else if (status >= 0) {   // status contains number of found networks
     DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
     int rssi = -9999;
-    int selected = selectedWiFi;
+    unsigned selected = selectedWiFi;
     for (int o = 0; o < status; o++) {
       DEBUG_PRINT(F(" WiFi available: ")); DEBUG_PRINT(WiFi.SSID(o));
       DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(WiFi.RSSI(o)); DEBUG_PRINTLN(F("dB"));
