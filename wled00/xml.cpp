@@ -248,22 +248,33 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_WIFI)
   {
-    sappends('s',SET_F("CS"),clientSSID);
-
-    byte l = strlen(clientPass);
-    char fpass[l+1]; //fill password field with ***
-    fpass[l] = 0;
-    memset(fpass,'*',l);
-    sappends('s',SET_F("CP"),fpass);
-
-    char k[3]; k[2] = 0; //IP addresses
-    for (int i = 0; i<4; i++)
-    {
-      k[1] = 48+i; //ascii 0,1,2,3
-      k[0] = 'I'; sappend('v',k,staticIP[i]);
-      k[0] = 'G'; sappend('v',k,staticGateway[i]);
-      k[0] = 'S'; sappend('v',k,staticSubnet[i]);
+    char nS[10];
+    size_t l;
+    oappend(SET_F("resetWiFi("));
+    oappend(itoa(WLED_MAX_WIFI_COUNT,nS,10));
+    oappend(SET_F(");"));
+    for (size_t n = 0; n < multiWiFi.size(); n++) {
+      l = strlen(multiWiFi[n].clientPass);
+      char fpass[l+1]; //fill password field with ***
+      fpass[l] = 0;
+      memset(fpass,'*',l);
+      oappend(SET_F("addWiFi(\""));
+      oappend(multiWiFi[n].clientSSID);
+      oappend(SET_F("\",\""));
+      oappend(fpass);
+      oappend(SET_F("\",0x"));
+      oappend(itoa(multiWiFi[n].staticIP,nS,16));
+      oappend(SET_F(",0x"));
+      oappend(itoa(multiWiFi[n].staticGW,nS,16));
+      oappend(SET_F(",0x"));
+      oappend(itoa(multiWiFi[n].staticSN,nS,16));
+      oappend(SET_F(");"));
     }
+
+    sappend('v',SET_F("D0"),dnsAddress[0]);
+    sappend('v',SET_F("D1"),dnsAddress[1]);
+    sappend('v',SET_F("D2"),dnsAddress[2]);
+    sappend('v',SET_F("D3"),dnsAddress[3]);
 
     sappends('s',SET_F("CM"),cmDNS);
     sappend('i',SET_F("AB"),apBehavior);
@@ -597,6 +608,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("OM"),analogClock12pixel);
     sappend('c',SET_F("OS"),analogClockSecondsTrail);
     sappend('c',SET_F("O5"),analogClock5MinuteMarks);
+    sappend('c',SET_F("OB"),analogClockSolidBlack);
 
     sappend('c',SET_F("CE"),countdownMode);
     sappend('v',SET_F("CY"),countdownYear);

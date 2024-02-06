@@ -34,6 +34,8 @@ void WLED::reset()
 
 void WLED::loop()
 {
+  static uint32_t      lastHeap = UINT32_MAX;
+  static unsigned long heapTime = 0;
   #ifdef WLED_DEBUG
   static unsigned long lastRun = 0;
   unsigned long        loopMillis = millis();
@@ -149,6 +151,21 @@ void WLED::loop()
   if (strlen(settingsPIN)>0 && correctPIN && millis() - lastEditTime > PIN_TIMEOUT) {
     correctPIN = false;
     createEditHandler(false);
+  }
+
+  // reconnect WiFi to clear stale allocations if heap gets too low
+  if (millis() - heapTime > 15000) {
+    uint32_t heap = ESP.getFreeHeap();
+    if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
+      DEBUG_PRINT(F("Heap too low! ")); DEBUG_PRINTLN(heap);
+      forceReconnect = true;
+      strip.resetSegments(); // remove all but one segments from memory
+    } else if (heap < MIN_HEAP_SIZE) {
+      DEBUG_PRINTLN(F("Heap low, purging segments."));
+      strip.purgeSegments();
+    }
+    lastHeap = heap;
+    heapTime = millis();
   }
 
   //LED settings have been saved, re-init busses
@@ -424,6 +441,7 @@ void WLED::setup()
   escapedMac.toLowerCase();
 
   WLED_SET_AP_SSID(); // otherwise it is empty on first boot until config is saved
+  multiWiFi.push_back(WiFiConfig(CLIENT_SSID,CLIENT_PASS)); // initialise vector with default WiFi
 
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
@@ -445,12 +463,15 @@ void WLED::setup()
   usermods.setup();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
+  if (strcmp(multiWiFi[0].clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
   #ifdef WLED_USE_ETHERNET
   WiFi.onEvent(WiFiEvent);
   #endif
+
+  WiFi.mode(WIFI_STA); // enable scanning
+  findWiFi(true);      // start scanning for available WiFi-s
 
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
@@ -697,11 +718,52 @@ bool WLED::initEthernet()
 #else
   return false; // Ethernet not enabled for build
 #endif
+}
 
+// performs asynchronous scan for available networks (which may take couple of seconds to finish)
+// returns configured WiFi ID with the strongest signal (or default if no configured networks available)
+int8_t WLED::findWiFi(bool doScan) {
+  if (multiWiFi.size() <= 1) {
+    DEBUG_PRINTLN(F("Defaulf WiFi used."));
+    return 0;
+  }
+
+  if (doScan) WiFi.scanDelete();  // restart scan
+
+  int status = WiFi.scanComplete(); // complete scan may take as much as several seconds (usually <3s with not very crowded air)
+
+  if (status == WIFI_SCAN_FAILED) {
+    DEBUG_PRINTLN(F("WiFi scan started."));
+    WiFi.scanNetworks(true);  // start scanning in asynchronous mode
+  } else if (status >= 0) {   // status contains number of found networks
+    DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
+    int rssi = -9999;
+    int selected = selectedWiFi;
+    for (int o = 0; o < status; o++) {
+      DEBUG_PRINT(F(" WiFi available: ")); DEBUG_PRINT(WiFi.SSID(o));
+      DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(WiFi.RSSI(o)); DEBUG_PRINTLN(F("dB"));
+      for (unsigned n = 0; n < multiWiFi.size(); n++)
+        if (!strcmp(WiFi.SSID(o).c_str(), multiWiFi[n].clientSSID)) {
+          // find the WiFi with the strongest signal (but keep priority of entry if signal difference is not big)
+          if ((n < selected && WiFi.RSSI(o) > rssi-10) || WiFi.RSSI(o) > rssi) {
+            rssi = WiFi.RSSI(o);
+            selected = n;
+          }
+          break;
+        }
+    }
+    DEBUG_PRINT(F("Selected: ")); DEBUG_PRINT(multiWiFi[selected].clientSSID);
+    DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(rssi); DEBUG_PRINTLN(F("dB"));
+    return selected;
+  }
+  //DEBUG_PRINT(F("WiFi scan running."));
+  return status; // scan is still running or there was an error
 }
 
 void WLED::initConnection()
 {
+  DEBUG_PRINTLN(F("initConnection() called."));
+
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
@@ -714,13 +776,13 @@ void WLED::initConnection()
   }
 #endif
 
-  WiFi.disconnect(true);        // close old connections
+  WiFi.disconnect(true); // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(force802_3g ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N);
 #endif
 
-  if (staticIP[0] != 0 && staticGateway[0] != 0) {
-    WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(1, 1, 1, 1));
+  if (multiWiFi[selectedWiFi].staticIP != 0U && multiWiFi[selectedWiFi].staticGW != 0U) {
+    WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN, dnsAddress);
   } else {
     WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
   }
@@ -745,13 +807,14 @@ void WLED::initConnection()
     showWelcomePage = false;
     
     DEBUG_PRINT(F("Connecting to "));
-    DEBUG_PRINT(clientSSID);
+    DEBUG_PRINT(multiWiFi[selectedWiFi].clientSSID);
     DEBUG_PRINTLN("...");
 
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];
     prepareHostname(hostname);
-    WiFi.begin(clientSSID, clientPass);
+    WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass); // no harm if called multiple times
+
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
@@ -843,33 +906,24 @@ void WLED::initInterfaces()
 
 void WLED::handleConnection()
 {
+  static bool scanDone = true;
   static byte stacO = 0;
-  static uint32_t lastHeap = UINT32_MAX;
-  static unsigned long heapTime = 0;
   unsigned long now = millis();
+  const bool wifiConfigured = WLED_WIFI_CONFIGURED;
 
-  if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
+  // ignore connection handling if WiFi is configured and scan still running
+  // or within first 2s if WiFi is not configured or AP is always active
+  if ((wifiConfigured && multiWiFi.size() > 1 && WiFi.scanComplete() < 0) || (now < 2000 && (!wifiConfigured || apBehavior == AP_BEHAVIOR_ALWAYS)))
     return;
 
-  if (lastReconnectAttempt == 0) {
-    DEBUG_PRINTLN(F("lastReconnectAttempt == 0"));
+  if (lastReconnectAttempt == 0 || forceReconnect) {
+    DEBUG_PRINTLN(F("Initial connect or forced reconnect."));
+    selectedWiFi = findWiFi(); // find strongest WiFi
     initConnection();
+    interfacesInited = false;
+    forceReconnect = false;
+    wasConnected = false;
     return;
-  }
-
-  // reconnect WiFi to clear stale allocations if heap gets too low
-  if (now - heapTime > 5000) {
-    uint32_t heap = ESP.getFreeHeap();
-    if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! "));
-      DEBUG_PRINTLN(heap);
-      forceReconnect = true;
-      strip.resetSegments();
-    } else if (heap < MIN_HEAP_SIZE) {
-      strip.purgeSegments();
-    }
-    lastHeap = heap;
-    heapTime = now;
   }
 
   byte stac = 0;
@@ -885,7 +939,7 @@ void WLED::handleConnection()
       stacO = stac;
       DEBUG_PRINT(F("Connected AP clients: "));
       DEBUG_PRINTLN(stac);
-      if (!WLED_CONNECTED && WLED_WIFI_CONFIGURED) {        // trying to connect, but not connected
+      if (!WLED_CONNECTED && wifiConfigured) {        // trying to connect, but not connected
         if (stac)
           WiFi.disconnect();        // disable search so that AP can work
         else
@@ -893,36 +947,49 @@ void WLED::handleConnection()
       }
     }
   }
-  if (forceReconnect) {
-    DEBUG_PRINTLN(F("Forcing reconnect."));
-    initConnection();
-    interfacesInited = false;
-    forceReconnect = false;
-    wasConnected = false;
-    return;
-  }
+
   if (!Network.isConnected()) {
     if (interfacesInited) {
+      if (scanDone && multiWiFi.size() > 1) {
+        DEBUG_PRINTLN(F("WiFi scan initiated on disconnect."));
+        findWiFi(true); // reinit scan
+        scanDone = false;
+        return;         // try to connect in next iteration
+      }
       DEBUG_PRINTLN(F("Disconnected!"));
+      selectedWiFi = findWiFi();
       initConnection();
       interfacesInited = false;
+      scanDone = true;
     }
     //send improv failed 6 seconds after second init attempt (24 sec. after provisioning)
     if (improvActive > 2 && now - lastReconnectAttempt > 6000) {
       sendImprovStateResponse(0x03, true);
       improvActive = 2;
     }
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && wifiConfigured) {
       if (improvActive == 2) improvActive = 3;
       DEBUG_PRINTLN(F("Last reconnect too old."));
+      if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // we couldn't connect, try with another network from the list
       initConnection();
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
-      DEBUG_PRINTLN(F("Not connected AP."));
-      initAP();
+      if (!(apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT)) {
+        DEBUG_PRINTLN(F("Not connected AP."));
+        initAP();  // start AP only within first 5min
+      }
+    }
+    if (apActive && apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT && stac == 0) { // disconnect AP after 5min if no clients connected
+      // if AP was enabled more than 10min after boot or if client was connected more than 10min after boot do not disconnect AP mode
+      if (now < 2*WLED_AP_TIMEOUT) {
+        dnsServer.stop();
+        WiFi.softAPdisconnect(true);
+        apActive = false;
+        DEBUG_PRINTLN(F("Temporary AP disabled."));
+      }
     }
   } else if (!interfacesInited) { //newly connected
-    DEBUG_PRINTLN("");
+    DEBUG_PRINTLN();
     DEBUG_PRINT(F("Connected! IP address: "));
     DEBUG_PRINTLN(Network.localIP());
     if (improvActive) {
@@ -940,7 +1007,7 @@ void WLED::handleConnection()
       dnsServer.stop();
       WiFi.softAPdisconnect(true);
       apActive = false;
-      DEBUG_PRINTLN(F("Access point disabled (handle)."));
+      DEBUG_PRINTLN(F("Access point disabled (connected)."));
     }
   }
 }

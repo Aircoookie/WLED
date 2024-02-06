@@ -1,7 +1,14 @@
 ## WLED changelog
 
-#### Build 2309120 till build 2401270
+#### Build 2309120 till build 2402010
 -   WLED version 0.15.0-a0
+-   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to
+-   Temporary AP. Use your WLED in public with temporary AP.
+-   Github CI build system enhancements (#3718 by @WoodyLetsCode)
+-   Accessibility: Node list ( #3715 by @WoodyLetsCode)
+-   Analog clock overlay enhancement (#3489 by @WoodyLetsCode)
+-   ESP32-POE-WROVER from Olimex ethernet support (#3625 by @m-wachter)
+-   APA106 support (#3580 by @itstefanjanos)
 -   BREAKING: Effect: updated Palette effect to support 2D (#3683 by @TripleWhy)
 -   "SuperSync" from WLED MM (by @MoonModules)
 -   Effect: DNA Spiral Effect Speed Fix (#3723 by @Derek4aty1)

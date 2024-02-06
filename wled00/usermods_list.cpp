@@ -44,10 +44,6 @@
   #include "../usermods/PIR_sensor_switch/usermod_PIR_sensor_switch.h"
 #endif
 
-#ifdef USERMOD_MODE_SORT
-  #include "../usermods/usermod_v2_mode_sort/usermod_v2_mode_sort.h"
-#endif
-
 #ifdef USERMOD_BH1750
   #include "../usermods/BH1750_v2/usermod_BH1750.h"
 #endif
@@ -58,19 +54,11 @@
 #endif
 
 #ifdef USERMOD_FOUR_LINE_DISPLAY
-  #ifdef USE_ALT_DISPlAY
-    #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
-  #else
-    #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
-  #endif
+  #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
 #endif
 
 #ifdef USERMOD_ROTARY_ENCODER_UI
-  #ifdef USE_ALT_DISPlAY
-    #include "../usermods/usermod_v2_rotary_encoder_ui_ALT/usermod_v2_rotary_encoder_ui_ALT.h"
-  #else
-    #include "../usermods/usermod_v2_rotary_encoder_ui/usermod_v2_rotary_encoder_ui.h"
-  #endif
+  #include "../usermods/usermod_v2_rotary_encoder_ui_ALT/usermod_v2_rotary_encoder_ui_ALT.h"
 #endif
 
 #ifdef USERMOD_AUTO_SAVE
@@ -252,10 +240,6 @@ void registerUsermods()
 
   #ifdef USERMOD_PIRSWITCH
   usermods.add(new PIRsensorSwitch());
-  #endif
-
-  #ifdef USERMOD_MODE_SORT
-  usermods.add(new ModeSortUsermod());
   #endif
 
   #ifdef USERMOD_FOUR_LINE_DISPLAY

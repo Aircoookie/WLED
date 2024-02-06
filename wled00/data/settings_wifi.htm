@@ -8,7 +8,7 @@
 		var d = document;
 		var loc = false, locip, locproto = "http:";
 		var scanLoops = 0, preScanSSID = "";
-
+		var maxNetworks = 3;
 		function gId(e) { return d.getElementById(e); }
 		function cE(e) { return d.createElement(e); }
 		function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
@@ -52,13 +52,14 @@
 				}
 				scanLoops = 0;
 
-				let cs = gId("CS");
-				if (cs) {
+				let cs = d.querySelectorAll("#wifi_entries input[type=text]");
+				for (let input of (cs||[])) {
+					let found = false;
 					let select = cE("select");
-					select.setAttribute("id", "CS");
-					select.setAttribute("name", "CS");
-					select.setAttribute("onchange", "T()");
-					preScanSSID = cs.value;
+					select.id = input.id;
+					select.name = input.name;
+					select.setAttribute("onchange", "T(this)");
+					preScanSSID = input.value;
 
 					for (let i = 0; i < select.children.length; i++) {
 						select.removeChild(select.children[i]);
@@ -70,8 +71,9 @@
 						option.setAttribute("value", networks[i].ssid);
 						option.textContent = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
 
-						if (networks[i].ssid === cs.value) {
+						if (networks[i].ssid === input.value) {
 							option.setAttribute("selected", "selected");
+							found = true;
 						}
 
 						select.appendChild(option);
@@ -79,10 +81,11 @@
 					const option = cE("option");
 
 					option.setAttribute("value", "!Cs");
-					option.textContent = `Other network...`;
+					option.textContent = "Other network...";
 					select.appendChild(option);
 
-					cs.replaceWith(select);
+					if (input.value === "" || found) input.replaceWith(select);
+					else select.remove(); 
 				}
 
 				button.disabled = false;
@@ -90,16 +93,47 @@
 			});
 		}
 		// replace WiFi select with custom SSID input field again
-		function T() {
-			let cs = gId("CS");
+		function T(cs) {
 			if (!cs || cs.value != "!Cs") return;
 			let input = cE("input");
 			input.type = "text";
-			input.id = "CS";
-			input.name ="CS";
+			input.id = cs.id;
+			input.name = cs.name;
 			input.setAttribute("maxlength",32);
 			input.value = preScanSSID;
 			cs.replaceWith(input);
+		}
+		function resetWiFi(maxN = undefined) {
+			if (maxN) maxNetworks = maxN;
+			let entries = gId("wifi_entries").children
+			for (let i = entries.length; i > 0; i--) entries[i-1].remove();
+			btnWiFi(0);
+		}
+		function btnWiFi(i) {
+			gId("wifi_add").style.display = (i<maxNetworks) ? "inline":"none";
+			gId("wifi_rem").style.display = (i>1) ? "inline":"none";
+		}
+		function addWiFi(ssid="",pass="",ip=0,gw=0,sn=0x00ffffff) { // little endian
+			var i = gId("wifi_entries").childNodes.length;
+			if (i >= maxNetworks) return;
+			var b = `<div id="net${i}"><hr class="sml">
+Network name (SSID${i==0?", empty to not connect":""}):<br><input type="text" id="CS${i}" name="CS${i}" maxlength="32" value="${ssid}" ${i>0?"required":""}><br>
+Network password:<br><input type="password" name="PW${i}" maxlength="64" value="${pass}"><br>
+Static IP (leave at 0.0.0.0 for DHCP)${i==0?"<br>Also used by Ethernet":""}:<br>
+<input name="IP${i}0" type="number" class="s" min="0" max="255" value="${ip&0xFF}" required>.<input name="IP${i}1" type="number" class="s" min="0" max="255" value="${(ip>>8)&0xFF}" required>.<input name="IP${i}2" type="number" class="s" min="0" max="255" value="${(ip>>16)&0xFF}" required>.<input name="IP${i}3" type="number" class="s" min="0" max="255" value="${(ip>>24)&0xFF}" required><br>
+Static gateway:<br>
+<input name="GW${i}0" type="number" class="s" min="0" max="255" value="${gw&0xFF}" required>.<input name="GW${i}1" type="number" class="s" min="0" max="255" value="${(gw>>8)&0xFF}" required>.<input name="GW${i}2" type="number" class="s" min="0" max="255" value="${(gw>>16)&0xFF}" required>.<input name="GW${i}3" type="number" class="s" min="0" max="255" value="${(gw>>24)&0xFF}" required><br>
+Static subnet mask:<br>
+<input name="SN${i}0" type="number" class="s" min="0" max="255" value="${sn&0xFF}" required>.<input name="SN${i}1" type="number" class="s" min="0" max="255" value="${(sn>>8)&0xFF}" required>.<input name="SN${i}2" type="number" class="s" min="0" max="255" value="${(sn>>16)&0xFF}" required>.<input name="SN${i}3" type="number" class="s" min="0" max="255" value="${(sn>>24)&0xFF}" required></div>`;
+			gId("wifi_entries").insertAdjacentHTML("beforeend", b);
+			btnWiFi(i+1);
+		}
+		function remWiFi() {
+			const entries = gId("wifi_entries").children;
+			const i = entries.length;
+			if (i < 2) return;
+			entries[i-1].remove();
+			btnWiFi(i-1);
 		}
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
@@ -158,24 +192,16 @@
 		<h2>WiFi setup</h2>
 		<h3>Connect to existing network</h3>
 		<button type="button" id="scan" onclick="N()">Scan</button><br>
-		Network name (SSID, empty to not connect):<br>
-		<input type="text" id="CS" name="CS" maxlength="32"><br>
-		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
-		Static IP (leave at 0.0.0.0 for DHCP):<br>
-		<input name="I0" type="number" class="s" min="0" max="255" required> .
-		<input name="I1" type="number" class="s" min="0" max="255" required> .
-		<input name="I2" type="number" class="s" min="0" max="255" required> .
-		<input name="I3" type="number" class="s" min="0" max="255" required><br>
-		Static gateway:<br>
-		<input name="G0" type="number" class="s" min="0" max="255" required> .
-		<input name="G1" type="number" class="s" min="0" max="255" required> .
-		<input name="G2" type="number" class="s" min="0" max="255" required> .
-		<input name="G3" type="number" class="s" min="0" max="255" required><br>
-		Static subnet mask:<br>
-		<input name="S0" type="number" class="s" min="0" max="255" required> .
-		<input name="S1" type="number" class="s" min="0" max="255" required> .
-		<input name="S2" type="number" class="s" min="0" max="255" required> .
-		<input name="S3" type="number" class="s" min="0" max="255" required><br>
+		<div id="wifi">
+			Wireless networks
+			<div id="wifi_entries"></div>
+			<hr class="sml">
+			<button type="button" id="wifi_add" onclick="addWiFi()">+</button>
+			<button type="button" id="wifi_rem" onclick="remWiFi()">-</button><br>
+		</div>
+		DNS server address:<br>
+		<input name="D0" type="number" class="s" min="0" max="255" required>.<input name="D1" type="number" class="s" min="0" max="255" required>.<input name="D2" type="number" class="s" min="0" max="255" required>.<input name="D3" type="number" class="s" min="0" max="255" required><br>
+		<br>
 		mDNS address (leave empty for no mDNS):<br>
 		http:// <input type="text" name="CM" maxlength="32"> .local<br>
 		Client IP: <span class="sip"> Not connected </span> <br>
@@ -186,10 +212,12 @@
 		Access Point WiFi channel: <input name="AC" type="number" class="xs" min="1" max="13" required><br>
 		AP opens:
 		<select name="AB">
-		<option value="0">No connection after boot</option>
-		<option value="1">Disconnected</option>
-		<option value="2">Always</option>
-		<option value="3">Never (not recommended)</option></select><br>
+			<option value="0">No connection after boot</option>
+			<option value="1">Disconnected</option>
+			<option value="2">Always</option>
+			<option value="3">Never (not recommended)</option>
+			<option value="4">Temporary (no connection after boot)</option>
+		</select><br>
 		AP IP: <span class="sip"> Not active </span><br>
 		<h3>Experimental</h3>
 		Force 802.11g mode (ESP8266 only): <input type="checkbox" name="FG"><br>
@@ -215,6 +243,7 @@
 				<option value="0">None</option>
 				<option value="9">ABC! WLED V43 & compatible</option>
 				<option value="2">ESP32-POE</option>
+				<option value="11">ESP32-POE-WROVER</option>
 				<option value="6">ESP32Deux</option>
 				<option value="7">KIT-VE</option>
 				<option value="8">QuinLED-Dig-Octa & T-ETH-POE</option>
