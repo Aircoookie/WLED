@@ -35,13 +35,14 @@
 #define PS_P_SURFACE 12  //shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 
 
-//struct for a single particle with gravity (12 bytes)
+//struct for a single particle
 typedef struct {
     int16_t x;   //x position in particle system
     int16_t y;   //y position in particle system
     uint16_t ttl; //time to live
     uint8_t outofbounds; //set to 1 if outside of matrix
-    uint8_t hue; //hue
+    uint8_t hue; //color hue
+    uint8_t sat; //color saturation
     int8_t vx;  //horizontal velocity
     int8_t vy;  //vertical velocity
 } PSparticle;

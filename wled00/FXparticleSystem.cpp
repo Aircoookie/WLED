@@ -53,9 +53,81 @@ void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part)
 	part->hue = emitter->source.hue;
 }
 
-// TODO: could solve all update functions in a single function with parameters and handle gravity acceleration in a separte function (uses more cpu time but that is not a huge issue)
+//attracts a particle to an attractor particle using the inverse square-law 
+void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t* counter, uint8_t strength) //todo: add a parameter 'swallow' so the attractor can 'suck up' particles that are very close
+{
+	// Calculate the distance between the particle and the attractor
+	int16_t dx = attractor->x - particle->x;
+	int16_t dy = attractor->y - particle->y;
 
-void Particle_Move_update(PSparticle *part) // particle moves, decays and dies (age or out of matrix)
+	// Calculate the force based on inverse square law
+	int32_t distanceSquared = dx * dx + dy * dy; 
+	//check if distance is small enough to even cause a force (for that strength<<10 must be bigger than the distance squared
+	int32_t shiftedstrength = (int32_t)strength << 16;
+	if (shiftedstrength > distanceSquared) //if too far away, no force is applied (force < 1)
+	{
+		int32_t force = shiftedstrength / distanceSquared;
+		int32_t xforce = (force * dx)>>12; //scale so that at force starts to increase at about 10 pixels away
+		int32_t yforce = (force * dy)>>12;
+
+		uint8_t xcounter = *counter & 0xF; //lower four bits
+		uint8_t ycounter = *counter>>4; // upper four bits
+		*counter = 0; //reset counter, is set back to correct values below
+
+		//man muss die jetzt noch schlau shiften, dazu ein excel machen
+		//for small forces, need to use a delay timer (counter)
+		if(xforce < 16)
+		{
+			xcounter += force;
+			if (xcounter > 16)
+			{
+				xcounter -= 16;
+				*counter |= xcounter; // write lower four bits
+				   					// apply force in x direction
+				if (dx < 0)			  
+				{
+					particle->vx -= 1;
+				}
+				else
+				{
+					particle->vx += 1;
+				}
+			}
+			
+		}
+		else{
+				particle->vx += xforce/16;
+		}
+
+		if(yforce < 16)
+		{
+			ycounter += yforce;
+			if(ycounter > 16)
+			{
+				ycounter -= 16;
+				*counter |= (ycounter<<4); //write upper four bits
+
+				if (dy < 0)
+				{
+					particle->vy -= 1;
+				}
+				else
+				{
+					particle->vy += 1;
+				}
+			}
+
+		}
+		else{
+			particle->vy += yforce / 16;
+		}
+
+	}
+}
+
+// TODO: could solve all update functions in a single function with parameters and handle gravity acceleration in a separte function (uses more cpu time but that is not a huge issue) or maybe not, like this, different preferences can be set
+
+void Particle_Move_update(PSparticle *part) // particle moves, decays and dies  
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -67,26 +139,24 @@ void Particle_Move_update(PSparticle *part) // particle moves, decays and dies (
 
 	if (part->ttl > 0)
 	{
-		// age
-		part->ttl--;
+			// age
+			part->ttl--;
+			
+			// apply velocity
+			part->x += (int16_t)part->vx;
+			part->y += (int16_t)part->vy;
 
-		// apply velocity
-		part->x += (int16_t)part->vx;
-		part->y += (int16_t)part->vy;
+			part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
 
-		// check if particle is out of bounds
-		if ((part->y <= 0) || (part->y >= PS_MAX_Y))
-		{
-			part->ttl = 0;
-		}
-		if ((part->x <= 0) || (part->x >= PS_MAX_X))
-		{
-			part->ttl = 0;
-		}
-		if (part->vx == 0 && part->vy == 0)
-		{
-			part->ttl = 0;
-		}
+			// check if particle is out of bounds
+			if ((part->y <= 0) || (part->y >= PS_MAX_Y))
+			{
+				part->outofbounds = 1;
+			}
+			if ((part->x <= 0) || (part->x >= PS_MAX_X))
+			{
+				part->outofbounds = 1;
+			}
 	}
 }
 

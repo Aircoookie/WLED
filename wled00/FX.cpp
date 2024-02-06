@@ -8103,7 +8103,7 @@ uint16_t mode_particlefireworks(void)
   {
     if (rockets[i].source.ttl)
     {
-      Particle_Move_update(&rockets[i].source); // move the rocket, age the rocket (ttl--)
+      Particle_Move_update(&rockets[i].source); // move the rocket, age the rocket (ttl--)      
     }
     else if (rockets[i].source.vy > 0)
     {                                    // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
@@ -8114,7 +8114,7 @@ uint16_t mode_particlefireworks(void)
       rockets[i].source.ttl = random8((255 - SEGMENT.speed))+10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
       rockets[i].vx = 0;                         // emitting speed
       rockets[i].vy = 0;                         // emitting speed
-      rockets[i].var = 30;                       // speed variation around vx,vy (+/- var/2)
+      rockets[i].var = (SEGMENT.intensity >> 2) + 10; // speed variation around vx,vy (+/- var/2)
     }
     else if (rockets[i].source.vy < 0) // rocket is exploded and time is up (ttl=0 and negative speed), relaunch it
     {
@@ -8125,7 +8125,7 @@ uint16_t mode_particlefireworks(void)
       rockets[i].source.vx = random8(5) - 2;
       rockets[i].source.hue = 30; // rocket exhaust = orange (if using rainbow palette)
       rockets[i].source.ttl = random8(SEGMENT.custom1) + (SEGMENT.custom1>>1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
-      rockets[i].maxLife = 40; //exhaust particle life
+      rockets[i].maxLife = 30; //exhaust particle life
       rockets[i].minLife = 10;
       rockets[i].vx = 0;  // emitting speed
       rockets[i].vy = 0;  // emitting speed
@@ -8139,7 +8139,7 @@ uint16_t mode_particlefireworks(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Fireworks@Launches,Explosion Size,Height,Bounce Strength,Rockts,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Fireworks@Launches,Explosion Size,Height,Bounce,Rockets,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
 
 /*
  * Particle gravity spray
@@ -8563,7 +8563,7 @@ uint16_t mode_particlefall(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=0,c3=10,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=0,c3=20,o1=0,o2=0,o3=1";
 
 /*
  * Particle pile up test
@@ -8573,7 +8573,7 @@ static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Spee
 
 uint16_t mode_particlepile(void)
 {
-
+/*
   if (SEGLEN == 1)
     return mode_static();
 
@@ -8720,9 +8720,161 @@ uint16_t mode_particlepile(void)
   // render the particles
   ParticleSys_render(particles, numParticles, 255, SEGMENT.check1, false);
 
+  return FRAMETIME;*/
+
+/*
+ * Particle smashing down like meteorites, maybe call it particle impact or something like that
+ * by DedeHai (Damian Schneider)
+ */
+
+
+  if (SEGLEN == 1)
+    return mode_static();
+
+  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+
+  // particle system box dimensions
+  const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
+  const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+
+#ifdef ESP8266
+  const uint16_t numParticles = 250;
+  const uint8_t MaxNumRockets = 4;
+#else
+  const uint16_t numParticles = 650;
+  const uint8_t MaxNumRockets = 8;
+#endif
+
+  PSparticle *particles;
+  PSpointsource *rockets;
+
+  // allocate memory and divide it into proper pointers, max is 32k for all segments.
+  uint32_t dataSize = sizeof(PSparticle) * numParticles;
+  dataSize += sizeof(PSpointsource) * (MaxNumRockets);
+  if (!SEGENV.allocateData(dataSize))
+    return mode_static(); // allocation failed; //allocation failed
+
+  // DEBUG_PRINT(F("particle datasize = "));
+  // DEBUG_PRINTLN(dataSize);
+
+  rockets = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  // calculate the end of the spray data and assign it as the data pointer for the particles:
+  particles = reinterpret_cast<PSparticle *>(rockets + MaxNumRockets); // cast the data array into a particle pointer
+
+  uint16_t i = 0;
+  uint16_t j = 0;
+  uint8_t numRockets = map(SEGMENT.custom3, 0, 31, 1, MaxNumRockets); //number of rockets to use for animation
+
+  if (SEGMENT.call == 0) // initialization
+  {
+    for (i = 0; i < numParticles; i++)
+    {
+      particles[i].ttl = 0;
+    }
+    for (i = 0; i < numRockets; i++)
+    {
+      rockets[i].source.ttl = random8(20 * i); // set initial delay for rockets
+      rockets[i].source.vy = 10;               // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
+    }
+  }
+
+  // update particles, create particles
+
+  // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
+  uint16_t emitparticles; // number of particles to emit for each rocket's state
+  i = 0;
+  for (j = 0; j < numRockets; j++)
+  {
+    // determine rocket state by its speed:
+    if (rockets[j].source.vy < 0) // moving down, emit sparks
+    { 
+      emitparticles = 2;
+    }
+    else if (rockets[j].source.vy > 0) // moving up means standby
+    { 
+      emitparticles = 0;
+    }
+    else   // speed is zero, explode!
+    {                                                    
+      rockets[j].source.vy = 2;                           // set source speed positive so it goes into timeout and launches again
+      emitparticles = random8(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion            
+    }
+
+    for (i; i < numParticles; i++)
+    {
+      if (particles[i].ttl == 0)
+      { // particle is dead
+        if (emitparticles > 0)
+        {
+          Emitter_Fountain_emit(&rockets[j], &particles[i]);
+          emitparticles--;
+        }
+        else
+          break; // done emitting for this rocket
+      }
+    }
+  }
+
+  // update particles
+  for (i = 0; i < numParticles; i++)
+  {
+    if (particles[i].ttl)
+    {
+      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, SEGMENT.custom2);
+    }
+  }
+
+  // update the meteors, set the speed state
+  for (i = 0; i < numRockets; i++)
+  {
+    Serial.print(rockets[i].source.vy);
+    Serial.print(" ");
+    if (rockets[i].source.ttl)
+    {
+      Particle_Move_update(&rockets[i].source); // move the rocket, age the rocket (ttl--)
+      // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
+      if ((rockets[i].source.y < PS_P_RADIUS) && (rockets[i].source.vy < 0)) // reached the bottom pixel on its way down
+      {
+        rockets[i].source.vy = 0;          // set speed zero so it will explode
+        rockets[i].source.vx = 0;          
+        rockets[i].source.y = 5;           // offset from ground so explosion happens not out of frame (if moving fast, this can happen)
+        rockets[i].source.hue = random8(); // random color of explosion 
+        rockets[i].maxLife = 200;
+        rockets[i].minLife = 50;
+        rockets[i].source.ttl = random8((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
+        rockets[i].vx = 0;                                           // emitting speed x
+        rockets[i].vy = 8;                                           // emitting speed y
+        rockets[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
+      }
+    }
+    else if (rockets[i].source.vy > 0) // rocket is exploded and time is up (ttl==0 and positive speed), relaunch it
+    {
+      // reinitialize rocket
+      rockets[i].source.y = PS_MAX_Y-2;                                     // start from top
+      rockets[i].source.x = random16(PS_MAX_X); 
+      rockets[i].source.vy = -30 -random(30)-10;           //TODO: need to make this user selectable?
+      rockets[i].source.vx = random8(30) - 15;
+      rockets[i].source.hue = 220;                                                // rocket exhaust = orange (if using fire palette)
+      rockets[i].source.ttl = 1000; //long live, will explode at bottom
+      rockets[i].maxLife = 60;   // spark particle life
+      rockets[i].minLife = 20;
+      rockets[i].vx = 0;  // emitting speed
+      rockets[i].vy = -10;  // emitting speed
+      rockets[i].var = 5; // speed variation around vx,vy (+/- var/2)
+    }
+  }
+  SEGMENT.fill(BLACK); // clear the matrix
+  // render the particles
+  ParticleSys_render(particles, numParticles, 255, false, false);
+
   return FRAMETIME;
+
 }
-static const char _data_FX_MODE_PARTICLEPILE[] PROGMEM = "Particle Pile Test@Moving Speed,Intensity,Particle Speed,Spray Angle,Bouncyness,Wrap X,Bounce X,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=190,c2=128,c3=28,o1=0,o2=0,o3=1";
+
+static const char _data_FX_MODE_PARTICLEPILE[] PROGMEM = "Particle Pile Test@Launches,Explosion Size,Explosion Force,Bounce,Rockets,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
+
+//static const char _data_FX_MODE_PARTICLEPILE[] PROGMEM = "Particle Pile Test@Moving Speed,Intensity,Particle Speed,Spray Angle,Bouncyness,Wrap X,Bounce X,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=190,c2=128,c3=28,o1=0,o2=0,o3=1";
 
 /*
 Particle Box, applies gravity to particles in either a random direction or in a rocking motion
@@ -8875,7 +9027,7 @@ uint16_t mode_particlebox(void)
       applyFriction(&particles[i], 1);
     }
     // Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, (uint8_t)200);
-    Particle_Bounce_update(&particles[i], (uint8_t)200);
+    Particle_Bounce_update(&particles[i], hardness);
   }
 
   SEGMENT.fill(BLACK); // clear the matrix
