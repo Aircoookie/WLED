@@ -302,6 +302,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.paletteFade = request->hasArg(F("PF"));
     t = request->arg(F("TP")).toInt();
     randomPaletteChangeTime = MIN(255,MAX(1,t));
+    useHarmonicRandomPalette = request->hasArg(F("TH"));
 
     nightlightTargetBri = request->arg(F("TB")).toInt();
     t = request->arg(F("TL")).toInt();

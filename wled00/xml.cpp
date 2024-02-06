@@ -453,6 +453,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
     sappend('v',SET_F("TP"),randomPaletteChangeTime);
+    sappend('c',SET_F("TH"),useHarmonicRandomPalette);
     sappend('v',SET_F("BF"),briMultiplier);
     sappend('v',SET_F("TB"),nightlightTargetBri);
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
