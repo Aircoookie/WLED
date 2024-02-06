@@ -91,12 +91,11 @@ void setRandomColor(byte* rgb)
   colorHStoRGB(lastRandomIndex*256,255,rgb);
 }
 
-/*  
- *generates a random palette based on harmonic color theory
- *takes a base palette as the input, it will choose one color of the base palette and keep it
+/*
+ * generates a random palette based on harmonic color theory
+ * takes a base palette as the input, it will choose one color of the base palette and keep it
  */
-
-CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette) 
+CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
 {
   CHSV palettecolors[4]; //array of colors for the new palette
   uint8_t keepcolorposition = random8(4); //color position of current random palette to keep
@@ -104,7 +103,7 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
   palettecolors[keepcolorposition].hue += random8(10)-5; // +/- 5 randomness of base color
   //generate 4 saturation and brightness value numbers
   //only one saturation is allowed to be below 200 creating mostly vibrant colors
-  //only one brightness value number is allowed below 200, creating mostly bright palettes  
+  //only one brightness value number is allowed below 200, creating mostly bright palettes
 
   for (int i = 0; i < 3; i++) { //generate three high values
     palettecolors[i].saturation = random8(200,255);
@@ -114,8 +113,7 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
   palettecolors[3].saturation = random8(20,255);
   palettecolors[3].value = random8(80,255);
 
-
-  //shuffle the arrays 
+  //shuffle the arrays
   for (int i = 3; i > 0; i--) {
     std::swap(palettecolors[i].saturation, palettecolors[random8(i + 1)].saturation);
     std::swap(palettecolors[i].value, palettecolors[random8(i + 1)].value);
@@ -151,17 +149,15 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
       harmonics[2] = basehue + 265 + random8(10);
      break;
 
-    case 4: // tetradic 
+    case 4: // tetradic
       harmonics[0] = basehue + 80 + random8(20);
       harmonics[1] = basehue + 170 + random8(20);
       harmonics[2] = basehue + random8(30)-15;
      break;
   }
 
-
-  if (random8() < 128) //50:50 chance of shuffeling hues or keep the color order
-  {
-    //shuffle the hues:
+  if (random8() < 128) {
+    //50:50 chance of shuffling hues or keep the color order
     for (int i = 2; i > 0; i--) {
       std::swap(harmonics[i], harmonics[random8(i + 1)]);
     }
@@ -170,36 +166,35 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
   //now set the hues
   int j = 0;
   for (int i = 0; i < 4; i++) {
-    if(i==keepcolorposition) continue; //skip the base color
+    if (i==keepcolorposition) continue; //skip the base color
     palettecolors[i].hue = harmonics[j];
     j++;
-   }
+  }
 
   bool makepastelpalette = false;
-  if (random8() < 25) {//~10% chance of desaturated 'pastel' colors
-     makepastelpalette = true;
+  if (random8() < 25) { //~10% chance of desaturated 'pastel' colors
+    makepastelpalette = true;
   }
 
   //apply saturation & gamma correction
   CRGB RGBpalettecolors[4];
   for (int i = 0; i < 4; i++) {
-    if(makepastelpalette && palettecolors[i].saturation > 180) { 
+    if (makepastelpalette && palettecolors[i].saturation > 180) { 
       palettecolors[i].saturation -= 160; //desaturate all four colors
     }    
     RGBpalettecolors[i] = (CRGB)palettecolors[i]; //convert to RGB
-    RGBpalettecolors[i] = gamma32((uint32_t)RGBpalettecolors[i]);
+    RGBpalettecolors[i] = gamma32(((uint32_t)RGBpalettecolors[i]) & 0x00FFFFFFU); //strip alpha from CRGB
   }
 
-  return CRGBPalette16( RGBpalettecolors[0],
-                        RGBpalettecolors[1],
-                        RGBpalettecolors[2],
-                        RGBpalettecolors[3]);
+  return CRGBPalette16(RGBpalettecolors[0],
+                       RGBpalettecolors[1],
+                       RGBpalettecolors[2],
+                       RGBpalettecolors[3]);
 }
 
 CRGBPalette16 generateRandomPalette(void)  //generate fully random palette
 {
-  return CRGBPalette16(
-                       CHSV(random8(), random8(160, 255), random8(128, 255)),
+  return CRGBPalette16(CHSV(random8(), random8(160, 255), random8(128, 255)),
                        CHSV(random8(), random8(160, 255), random8(128, 255)),
                        CHSV(random8(), random8(160, 255), random8(128, 255)),
                        CHSV(random8(), random8(160, 255), random8(128, 255)));

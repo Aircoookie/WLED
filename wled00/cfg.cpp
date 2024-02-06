@@ -395,6 +395,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   strip.setTransition(fadeTransition ? transitionDelayDefault : 0);
   CJSON(strip.paletteFade, light_tr["pal"]);
   CJSON(randomPaletteChangeTime, light_tr[F("rpc")]);
+  CJSON(useHarmonicRandomPalette, light_tr[F("hrp")]);
 
   JsonObject light_nl = light["nl"];
   CJSON(nightlightMode, light_nl["mode"]);
@@ -872,6 +873,7 @@ void serializeConfig() {
   light_tr["dur"] = transitionDelayDefault / 100;
   light_tr["pal"] = strip.paletteFade;
   light_tr[F("rpc")] = randomPaletteChangeTime;
+  light_tr[F("hrp")] = useHarmonicRandomPalette;
 
   JsonObject light_nl = light.createNestedObject("nl");
   light_nl["mode"] = nightlightMode;

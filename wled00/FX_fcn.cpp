@@ -77,10 +77,10 @@ uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for t
 uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
 uint16_t Segment::maxHeight = 1;
 
-CRGBPalette16 Segment::_randomPalette = generateRandomPalette();
-CRGBPalette16 Segment::_newRandomPalette = generateRandomPalette();
-uint16_t Segment::_lastPaletteChange = 0; // perhaps it should be per segment
-uint16_t Segment::_lastPaletteBlend = 0; //in millis (lowest 16 bits only)
+CRGBPalette16 Segment::_randomPalette     = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
+CRGBPalette16 Segment::_newRandomPalette  = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
+uint16_t      Segment::_lastPaletteChange = 0; // perhaps it should be per segment
+uint16_t      Segment::_lastPaletteBlend  = 0; //in millis (lowest 16 bits only)
 
 #ifndef WLED_DISABLE_MODE_BLEND
 bool Segment::_modeBlend = false;
@@ -221,9 +221,9 @@ CRGBPalette16 IRAM_ATTR &Segment::loadPalette(CRGBPalette16 &targetPalette, uint
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
-    case 1: {//periodically replace palette with a random one      
+    case 1: //randomly generated palette
       targetPalette = _randomPalette; //random palette is generated at intervals in handleRandomPalette() 
-      break;}
+      break;
     case 2: {//primary color only
       CRGB prim = gamma32(colors[0]);
       targetPalette = CRGBPalette16(prim); break;}
@@ -452,24 +452,21 @@ CRGBPalette16 IRAM_ATTR &Segment::currentPalette(CRGBPalette16 &targetPalette, u
   return targetPalette;
 }
 
-// relies on WS2812FX::service() to call it max every 8ms or more (MIN_SHOW_DELAY)
+// relies on WS2812FX::service() to call it for each frame
 void Segment::handleRandomPalette() {
-  // just do a blend; if the palettes are identical it will just compare 48 bytes (same as _randomPalette == _newRandomPalette)
-  // this will slowly blend _newRandomPalette into _randomPalette every 15ms or 8ms (depending on MIN_SHOW_DELAY)
-  // if palette transitions is enabled, blend it according to Transition Time (if longer than minimum given by service calls) 
-  
+  // is it time to generate a new palette?
   if ((millis()/1000U) - _lastPaletteChange > randomPaletteChangeTime) {
-        _newRandomPalette = generateHarmonicRandomPalette(_randomPalette);
+        _newRandomPalette = useHarmonicRandomPalette ? generateHarmonicRandomPalette(_randomPalette) : generateRandomPalette();
         _lastPaletteChange = millis()/1000U;
-        _lastPaletteBlend = (uint16_t)(millis()&0xFFFF)-512; //starts blending immediately       
+        _lastPaletteBlend = (uint16_t)(millis() & 0xFFFF)-512; // starts blending immediately
   }
 
-  if (strip.paletteFade)
-  {
-    if ((millis() & 0xFFFF) - _lastPaletteBlend < strip.getTransition() >> 7) {//assumes that 128 updates are needed to blend a palette, so shift by 7 (can be more, can be less)    
-      return; //not time to fade yet, delay the update
-    }
-    _lastPaletteBlend = millis();    
+  // if palette transitions is enabled, blend it according to Transition Time (if longer than minimum given by service calls)
+  if (strip.paletteFade) {
+    // assumes that 128 updates are sufficient to blend a palette, so shift by 7 (can be more, can be less)
+    // in reality there need to be 255 blends to fully blend two entirely different palettes
+    if ((millis() & 0xFFFF) - _lastPaletteBlend < strip.getTransition() >> 7) return; // not yet time to fade, delay the update
+    _lastPaletteBlend = millis();
   }
   nblendPaletteTowardPalette(_randomPalette, _newRandomPalette, 48);
 }
