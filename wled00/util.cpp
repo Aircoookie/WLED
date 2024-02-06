@@ -157,9 +157,9 @@ bool oappendi(int i)
 bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
-  if (olen + len >= SETTINGS_STACK_BUF_SIZE) {
+  if ((obuf == nullptr) || (olen + len >= SETTINGS_STACK_BUF_SIZE)) { // sanity checks
 #ifdef WLED_DEBUG
-    DEBUG_PRINT(F("oappend() buffer overflow. Cannnot append "));
+    DEBUG_PRINT(F("oappend() buffer overflow. Cannot append "));
     DEBUG_PRINT(len); DEBUG_PRINT(F(" bytes \t\""));
     DEBUG_PRINT(txt); DEBUG_PRINTLN(F("\""));
 #endif
@@ -245,7 +245,7 @@ void releaseJSONBufferLock()
 
 
 // extracts effect mode (or palette) name from names serialized string
-// caller must provide large enough buffer for name (incluing SR extensions)!
+// caller must provide large enough buffer for name (including SR extensions)!
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
 {
   if (src == JSON_mode_names || src == nullptr) {

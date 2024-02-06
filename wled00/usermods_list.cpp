@@ -197,6 +197,10 @@
 #include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
 #endif
 
+#ifdef USERMOD_LDR_DUSK_DAWN
+#include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -380,5 +384,9 @@ void registerUsermods()
 
   #ifdef USERMOD_GYRO_SURGE
   static GyroSurge gyro_surge; usermods.add(&gyro_surge);
+  #endif
+
+  #ifdef USERMOD_LDR_DUSK_DAWN
+  usermods.add(new LDR_Dusk_Dawn_v2());
   #endif
 }

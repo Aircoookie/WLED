@@ -217,7 +217,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     BusManager::updateColorOrderMap(com);
 
-    // upate other pins
+    // update other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
@@ -443,7 +443,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     //start ntp if not already connected
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
-    ntpLastSyncTime = 0; // force new NTP query
+    ntpLastSyncTime = NTP_NEVER; // force new NTP query
 
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
@@ -700,10 +700,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         DEBUG_PRINTLN(value);
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
-        // to describe the type of parameter (text,float,int), for boolean patameters the first field contains "off"
+        // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
         // so checkboxes have one or two fields (first is always "false", existence of second depends on checkmark and may be "true")
         if (subObj[name].isNull()) {
-          // the first occurence of the field describes the parameter type (used in next loop)
+          // the first occurrence of the field describes the parameter type (used in next loop)
           if (value == "false") subObj[name] = false; // checkboxes may have only one field
           else                  subObj[name] = value;
         } else {
