@@ -8166,7 +8166,7 @@ uint16_t mode_particlespray(void)
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numSprays + 1); //+1 to avoid crashes due to memory alignment, makes sure there is a little more memory allocated than needed
+  dataSize += sizeof(PSpointsource) * (numSprays); 
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
@@ -8573,7 +8573,7 @@ static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Spee
 
 uint16_t mode_particlepile(void)
 {
-/*
+
   if (SEGLEN == 1)
     return mode_static();
 
@@ -8720,161 +8720,9 @@ uint16_t mode_particlepile(void)
   // render the particles
   ParticleSys_render(particles, numParticles, 255, SEGMENT.check1, false);
 
-  return FRAMETIME;*/
-
-/*
- * Particle smashing down like meteorites, maybe call it particle impact or something like that
- * by DedeHai (Damian Schneider)
- */
-
-
-  if (SEGLEN == 1)
-    return mode_static();
-
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
-  // particle system box dimensions
-  const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-  const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
-
-#ifdef ESP8266
-  const uint16_t numParticles = 250;
-  const uint8_t MaxNumRockets = 4;
-#else
-  const uint16_t numParticles = 650;
-  const uint8_t MaxNumRockets = 8;
-#endif
-
-  PSparticle *particles;
-  PSpointsource *rockets;
-
-  // allocate memory and divide it into proper pointers, max is 32k for all segments.
-  uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (MaxNumRockets);
-  if (!SEGENV.allocateData(dataSize))
-    return mode_static(); // allocation failed; //allocation failed
-
-  // DEBUG_PRINT(F("particle datasize = "));
-  // DEBUG_PRINTLN(dataSize);
-
-  rockets = reinterpret_cast<PSpointsource *>(SEGENV.data);
-  // calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle *>(rockets + MaxNumRockets); // cast the data array into a particle pointer
-
-  uint16_t i = 0;
-  uint16_t j = 0;
-  uint8_t numRockets = map(SEGMENT.custom3, 0, 31, 1, MaxNumRockets); //number of rockets to use for animation
-
-  if (SEGMENT.call == 0) // initialization
-  {
-    for (i = 0; i < numParticles; i++)
-    {
-      particles[i].ttl = 0;
-    }
-    for (i = 0; i < numRockets; i++)
-    {
-      rockets[i].source.ttl = random8(20 * i); // set initial delay for rockets
-      rockets[i].source.vy = 10;               // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
-    }
-  }
-
-  // update particles, create particles
-
-  // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
-  uint16_t emitparticles; // number of particles to emit for each rocket's state
-  i = 0;
-  for (j = 0; j < numRockets; j++)
-  {
-    // determine rocket state by its speed:
-    if (rockets[j].source.vy < 0) // moving down, emit sparks
-    { 
-      emitparticles = 2;
-    }
-    else if (rockets[j].source.vy > 0) // moving up means standby
-    { 
-      emitparticles = 0;
-    }
-    else   // speed is zero, explode!
-    {                                                    
-      rockets[j].source.vy = 2;                           // set source speed positive so it goes into timeout and launches again
-      emitparticles = random8(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion            
-    }
-
-    for (i; i < numParticles; i++)
-    {
-      if (particles[i].ttl == 0)
-      { // particle is dead
-        if (emitparticles > 0)
-        {
-          Emitter_Fountain_emit(&rockets[j], &particles[i]);
-          emitparticles--;
-        }
-        else
-          break; // done emitting for this rocket
-      }
-    }
-  }
-
-  // update particles
-  for (i = 0; i < numParticles; i++)
-  {
-    if (particles[i].ttl)
-    {
-      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, SEGMENT.custom2);
-    }
-  }
-
-  // update the meteors, set the speed state
-  for (i = 0; i < numRockets; i++)
-  {
-    Serial.print(rockets[i].source.vy);
-    Serial.print(" ");
-    if (rockets[i].source.ttl)
-    {
-      Particle_Move_update(&rockets[i].source); // move the rocket, age the rocket (ttl--)
-      // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
-      if ((rockets[i].source.y < PS_P_RADIUS) && (rockets[i].source.vy < 0)) // reached the bottom pixel on its way down
-      {
-        rockets[i].source.vy = 0;          // set speed zero so it will explode
-        rockets[i].source.vx = 0;          
-        rockets[i].source.y = 5;           // offset from ground so explosion happens not out of frame (if moving fast, this can happen)
-        rockets[i].source.hue = random8(); // random color of explosion 
-        rockets[i].maxLife = 200;
-        rockets[i].minLife = 50;
-        rockets[i].source.ttl = random8((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
-        rockets[i].vx = 0;                                           // emitting speed x
-        rockets[i].vy = 8;                                           // emitting speed y
-        rockets[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
-      }
-    }
-    else if (rockets[i].source.vy > 0) // rocket is exploded and time is up (ttl==0 and positive speed), relaunch it
-    {
-      // reinitialize rocket
-      rockets[i].source.y = PS_MAX_Y-2;                                     // start from top
-      rockets[i].source.x = random16(PS_MAX_X); 
-      rockets[i].source.vy = -30 -random(30)-10;           //TODO: need to make this user selectable?
-      rockets[i].source.vx = random8(30) - 15;
-      rockets[i].source.hue = 220;                                                // rocket exhaust = orange (if using fire palette)
-      rockets[i].source.ttl = 1000; //long live, will explode at bottom
-      rockets[i].maxLife = 60;   // spark particle life
-      rockets[i].minLife = 20;
-      rockets[i].vx = 0;  // emitting speed
-      rockets[i].vy = -10;  // emitting speed
-      rockets[i].var = 5; // speed variation around vx,vy (+/- var/2)
-    }
-  }
-  SEGMENT.fill(BLACK); // clear the matrix
-  // render the particles
-  ParticleSys_render(particles, numParticles, 255, false, false);
-
   return FRAMETIME;
-
 }
-
-static const char _data_FX_MODE_PARTICLEPILE[] PROGMEM = "Particle Pile Test@Launches,Explosion Size,Explosion Force,Bounce,Rockets,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
-
-//static const char _data_FX_MODE_PARTICLEPILE[] PROGMEM = "Particle Pile Test@Moving Speed,Intensity,Particle Speed,Spray Angle,Bouncyness,Wrap X,Bounce X,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=190,c2=128,c3=28,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEPILE[] PROGMEM = "Particle Pile Test@Moving Speed,Intensity,Particle Speed,Spray Angle,Bouncyness,Wrap X,Bounce X,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=190,c2=128,c3=28,o1=0,o2=0,o3=1";
 
 /*
 Particle Box, applies gravity to particles in either a random direction or in a rocking motion
@@ -8927,20 +8775,20 @@ uint16_t mode_particlebox(void)
     int8_t ygravity;
     uint8_t scale;
 
-    if (SEGMENT.check1)
-    {                                                                // if random is set, use perlin noise for force vector generation
-      SEGMENT.aux0 += (SEGMENT.speed >> 6) + 1;                      // update position in noise
-      //uint8_t angle = (((uint16_t)inoise8(SEGMENT.aux0)) << 1) - 64; // noise avg. value is 127 scale to 256 (to increase the range) and subtract 64 (=90°) to make the average direction downwards (270°), overflow means modulo, so is ok
-      // calculate x and y vectors from angle:
-      //xgravity = ((int16_t)cos8(angle)) - 128; // gravity direction +/- 127
-      //ygravity = ((int16_t)sin8(angle)) - 128;
-      // scale the vectors using another inoise value:
-      //scale = inoise8(SEGMENT.aux0 + 4096); // use a offset in the noise for scale value
- 
-      //scale = ((uint16_t)scale * SEGMENT.custom1)>>8; //apply rescaling with user input
-      //not using angles but x and y tilt from inoise:
-      xgravity = ((int16_t)inoise8(SEGMENT.aux0)-127);
-      ygravity = ((int16_t)inoise8(SEGMENT.aux0+10000) - 127);
+    if (SEGMENT.check1 == 0) // if rocking boat is not set, use perlin noise for force vector generation
+    {
+      SEGMENT.aux0 += (SEGMENT.speed >> 6) + 1; // update position in noise
+      // uint8_t angle = (((uint16_t)inoise8(SEGMENT.aux0)) << 1) - 64; // noise avg. value is 127 scale to 256 (to increase the range) and subtract 64 (=90°) to make the average direction downwards (270°), overflow means modulo, so is ok
+      //  calculate x and y vectors from angle:
+      // xgravity = ((int16_t)cos8(angle)) - 128; // gravity direction +/- 127
+      // ygravity = ((int16_t)sin8(angle)) - 128;
+      //  scale the vectors using another inoise value:
+      // scale = inoise8(SEGMENT.aux0 + 4096); // use a offset in the noise for scale value
+
+      // scale = ((uint16_t)scale * SEGMENT.custom1)>>8; //apply rescaling with user input
+      // not using angles but x and y tilt from inoise:
+      xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127);
+      ygravity = ((int16_t)inoise8(SEGMENT.aux0 + 10000) - 127);
     }
     else
     { // use sinusoidal motion
@@ -8962,15 +8810,14 @@ uint16_t mode_particlebox(void)
       // scale gravity force
       xgravity = ((int16_t)xgravity * scale) >> 8;
       ygravity = ((int16_t)ygravity * scale) >> 8;
-      //todo: check with console output to see if scaling is applied correctly.
+      // todo: check with console output to see if scaling is applied correctly.
     }
 
-    
-    // scale the gravity force down 
+    // scale the gravity force down
     xgravity = xgravity >> 4;
     ygravity = ygravity >> 4;
-    //Serial.print(xgravity);
-    //Serial.println(" ");
+    // Serial.print(xgravity);
+    // Serial.println(" ");
 
     for (i = 0; i < numParticles; i++)
     {
@@ -9037,7 +8884,7 @@ uint16_t mode_particlebox(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Random;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=1";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0";
 
 /*
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
@@ -9127,6 +8974,307 @@ uint16_t mode_particleperlin(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Noise@,Particles,;;!;012;pal=1,ix=100";
+
+/*
+* Particle smashing down like meteorites and exploding as they hit the ground, like inverted fireworks
+* has many parameters to play with
+* by DedeHai (Damian Schneider)
+*/
+
+// TODO: clean up the comments
+//TODO: maybe add collisions?
+
+uint16_t mode_particleimpact(void) 
+{
+  if (SEGLEN == 1)
+    return mode_static();
+
+  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+
+  // particle system box dimensions
+  const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
+  const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+
+#ifdef ESP8266
+  const uint16_t numParticles = 250;
+  const uint8_t MaxNumRockets = 4;
+#else
+  const uint16_t numParticles = 550;
+  const uint8_t MaxNumMeteors = 8;
+#endif
+
+  PSparticle *particles;
+  PSpointsource *meteors;
+
+  // allocate memory and divide it into proper pointers, max is 32k for all segments.
+  uint32_t dataSize = sizeof(PSparticle) * numParticles;
+  dataSize += sizeof(PSpointsource) * (MaxNumMeteors);
+  if (!SEGENV.allocateData(dataSize))
+    return mode_static(); // allocation failed; //allocation failed
+
+  // DEBUG_PRINT(F("particle datasize = "));
+  // DEBUG_PRINTLN(dataSize);
+
+  meteors = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  // calculate the end of the spray data and assign it as the data pointer for the particles:
+  particles = reinterpret_cast<PSparticle *>(meteors + MaxNumMeteors); // cast the data array into a particle pointer
+
+  uint16_t i = 0;
+  uint16_t j = 0;
+  uint8_t numMeteors = map(SEGMENT.custom3, 0, 31, 1, MaxNumMeteors); // number of meteors to use for animation
+
+  if (SEGMENT.call == 0) // initialization
+  {
+    for (i = 0; i < numParticles; i++)
+    {
+      particles[i].ttl = 0;
+    }
+    for (i = 0; i < numMeteors; i++)
+    {
+      meteors[i].source.ttl = random8(20 * i); // set initial delay for meteors
+      meteors[i].source.vy = 10;               // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
+    }
+  }
+
+  // update particles, create particles
+
+  // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
+  uint16_t emitparticles; // number of particles to emit for each rocket's state
+  i = 0;
+  for (j = 0; j < numMeteors; j++)
+  {
+    // determine rocket state by its speed:
+    if (meteors[j].source.vy < 0) // moving down, emit sparks
+    {
+      emitparticles = 2;
+    }
+    else if (meteors[j].source.vy > 0) // moving up means standby
+    {
+      emitparticles = 0;
+    }
+    else // speed is zero, explode!
+    {
+      meteors[j].source.vy = 2;                             // set source speed positive so it goes into timeout and launches again
+      emitparticles = random8(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion
+    }
+
+    for (i; i < numParticles; i++)
+    {
+      if (particles[i].ttl == 0)
+      { // particle is dead
+        if (emitparticles > 0)
+        {
+          Emitter_Fountain_emit(&meteors[j], &particles[i]);
+          emitparticles--;
+        }
+        else
+          break; // done emitting for this meteor
+      }
+    }
+  }
+
+  // update particles
+  for (i = 0; i < numParticles; i++)
+  {
+    if (particles[i].ttl)
+    {
+      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, SEGMENT.custom2);
+    }
+  }
+
+  // update the meteors, set the speed state
+  for (i = 0; i < numMeteors; i++)
+  {
+    Serial.print(meteors[i].source.vy);
+    Serial.print(" ");
+    if (meteors[i].source.ttl)
+    {
+      Particle_Move_update(&meteors[i].source); // move the meteor, age the meteor (ttl--)
+      // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
+      if ((meteors[i].source.y < PS_P_RADIUS) && (meteors[i].source.vy < 0)) // reached the bottom pixel on its way down
+      {
+        meteors[i].source.vy = 0; // set speed zero so it will explode
+        meteors[i].source.vx = 0;
+        meteors[i].source.y = 5;           // offset from ground so explosion happens not out of frame (if moving fast, this can happen)
+        meteors[i].source.hue = random8(); // random color of explosion
+        meteors[i].maxLife = 200;
+        meteors[i].minLife = 50;
+        meteors[i].source.ttl = random8((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
+        meteors[i].vx = 0;                                           // emitting speed x
+        meteors[i].vy = 8;                                           // emitting speed y
+        meteors[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
+      }
+    }
+    else if (meteors[i].source.vy > 0) // rocket is exploded and time is up (ttl==0 and positive speed), relaunch it
+    {
+      // reinitialize rocket
+      meteors[i].source.y = PS_MAX_Y - 2; // start from top
+      meteors[i].source.x = random16(PS_MAX_X);
+      meteors[i].source.vy = -30 - random(30) - 10; // TODO: need to make this user selectable?
+      meteors[i].source.vx = random8(30) - 15;
+      meteors[i].source.hue = 220;  // rocket exhaust = orange (if using fire palette)
+      meteors[i].source.ttl = 1000; // long live, will explode at bottom
+      meteors[i].maxLife = 60;      // spark particle life
+      meteors[i].minLife = 20;
+      meteors[i].vx = 0;   // emitting speed
+      meteors[i].vy = -10; // emitting speed
+      meteors[i].var = 5;  // speed variation around vx,vy (+/- var/2)
+    }
+  }
+  SEGMENT.fill(BLACK); // clear the matrix
+  // render the particles
+  ParticleSys_render(particles, numParticles, 255, false, false);
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "Particle Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Wrap X,Bounce X,Bounce Y;;!;012;pal=8,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
+
+/*
+Particle Attractor, currently just a demo function for the particle attractor
+Attractor sits in the matrix center, a spray bounces around and seeds particles.
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particleattractor(void)
+{
+  if (SEGLEN == 1)  return mode_static();
+
+  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  // particle system box dimensions
+  const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
+  const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+
+  const uint16_t numParticles = 255; // maximum number of particles
+
+  PSparticle *particles;
+  PSparticle *attractor;
+  PSpointsource *spray;
+  uint8_t *counters; //counters for the applied force
+
+
+  // allocate memory and divide it into proper pointers, max is 32k for all segments.
+  uint32_t dataSize = sizeof(PSparticle) * (numParticles + 1);
+  dataSize  += sizeof(uint8_t) *numParticles;
+  dataSize += sizeof(PSpointsource);
+  Serial.println("*************");
+  Serial.println(dataSize);
+  if (!SEGENV.allocateData(dataSize))
+    return mode_static();                                  // allocation failed; //allocation failed
+  // divide and cast the data array into correct pointers
+  particles = reinterpret_cast<PSparticle *>(SEGENV.data); 
+  attractor = reinterpret_cast<PSparticle *>(particles + 1);
+  spray = reinterpret_cast<PSpointsource *>(attractor + 1);
+  counters = reinterpret_cast<uint8_t *>(spray + 1);
+  Serial.println((uintptr_t)particles);
+  Serial.println((uintptr_t)attractor);
+  Serial.println((uintptr_t)spray);
+  Serial.println((uintptr_t)counters);
+
+  uint16_t i = 0;
+  uint16_t j = 0;
+
+  if (SEGMENT.call == 0) // initialization
+  {
+    attractor->vx = 0;
+    attractor->vy = 0;
+    attractor->x = PS_MAX_X >> 1; // center
+    attractor->y = PS_MAX_Y >> 1;
+
+    for (i = 0; i < numParticles; i++)
+    {
+      particles[i].ttl = 0;
+    }
+
+    spray->source.hue = random8();
+    spray->source.x = 0;
+    spray->source.y = 0; // just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
+    spray->source.vx = random8(5) + 6;
+    spray->source.vy = random8(4) + 3;
+    spray->source.ttl = 100;
+    spray->maxLife = 300; // seeded particle lifetime in frames
+    spray->minLife = 30;
+    spray->vx = 0; // emitting speed
+    spray->vy = 0; // emitting speed
+    spray->var = 6; //emitting speed variation    
+  }
+
+  uint16_t displayparticles = SEGMENT.intensity;
+  uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
+  i = 0;
+  j = 0;
+  
+  if (hardness > 1) // enable collisions
+  {
+    // detect and handle collisions
+    int16_t startparticle = 0;
+    int16_t endparticle = displayparticles >> 1; // do half the particles
+
+    if (SEGMENT.call % 2 == 0)
+    { // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
+      startparticle = endparticle;
+      endparticle = displayparticles;
+    }
+
+    for (i = startparticle; i < endparticle; i++)
+    {
+      // go though all 'higher number' particles and see if any of those are in close proximity
+      // if they are, make them collide
+      if (particles[i].ttl > 0) // if particle is alive
+      {
+        int32_t dx, dy; // distance to other particles
+        for (j = i + 1; j < displayparticles; j++)
+        { // check against higher number particles
+          if (particles[j].ttl > 0)
+          { // if target particle is alive
+            dx = particles[i].x - particles[j].x;
+            dy = particles[i].y - particles[j].y;
+            if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS)) && (dy < (PS_P_HARDRADIUS)) && (dy > (-PS_P_HARDRADIUS)))
+            { // particles are close
+              handleCollision(&particles[i], &particles[j], hardness);
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+
+  if (SEGMENT.call % 5 == 0)
+  {
+    spray->source.hue++;
+    spray->source.ttl = 100; //spray never dies
+  }
+  
+  uint8_t emit = 1; //number of particles emitted per frame  
+  Particle_Bounce_update(&spray->source, 255); //bounce the spray around
+
+  // now move the particles
+  for (i = 0; i < displayparticles; i++)
+  {
+
+    if (particles[i].ttl == 0 && emit--) // find a dead particle
+    {
+      Emitter_Fountain_emit(spray, &particles[i]);
+    }
+
+    Particle_attractor(&particles[i], attractor, &counters[i], SEGMENT.speed, SEGMENT.check3);
+         
+    // Particle_Bounce_update(&particles[i], hardness);
+    Particle_Move_update(&particles[i]);
+  }
+
+  SEGMENT.fill(BLACK);                               // clear the matrix
+  //ParticleSys_render(&attract, 1, 30, false, false); // render attractor
+  // render the particles
+  ParticleSys_render(particles, displayparticles, 255, false, false);
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,,Collision Strength,,,,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0,o2=0,o3=0";
 
 #endif // WLED_DISABLE_2D
 
@@ -9377,9 +9525,12 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLEPERLIN, &mode_particleperlin, _data_FX_MODE_PARTICLEPERLIN);
   addEffect(FX_MODE_PARTICLEFALL, &mode_particlefall, _data_FX_MODE_PARTICLEFALL);
   addEffect(FX_MODE_PARTICLEBOX, &mode_particlebox, _data_FX_MODE_PARTICLEBOX);
-  
+
+//experimental
   addEffect(FX_MODE_PARTICLEPILE, &mode_particlepile, _data_FX_MODE_PARTICLEPILE); //particle sandbox used for testing new stuff
-  
+  addEffect(FX_MODE_PARTICLEIMPACT, &mode_particleimpact, _data_FX_MODE_PARTICLEIMPACT);
+  addEffect(FX_MODE_PARTICLEATTRACTOR, &mode_particleattractor, _data_FX_MODE_PARTICLEATTRACTOR); 
+
 #endif // WLED_DISABLE_2D
 
 }

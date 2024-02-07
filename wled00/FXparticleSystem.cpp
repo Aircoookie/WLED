@@ -53,76 +53,103 @@ void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part)
 	part->hue = emitter->source.hue;
 }
 
-//attracts a particle to an attractor particle using the inverse square-law 
-void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t* counter, uint8_t strength) //todo: add a parameter 'swallow' so the attractor can 'suck up' particles that are very close
+// attracts a particle to an attractor particle using the inverse square-law
+void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow) // todo: add a parameter 'swallow' so the attractor can 'suck up' particles that are very close, also could use hue of attractor particle for strength
 {
 	// Calculate the distance between the particle and the attractor
 	int16_t dx = attractor->x - particle->x;
 	int16_t dy = attractor->y - particle->y;
 
 	// Calculate the force based on inverse square law
-	int32_t distanceSquared = dx * dx + dy * dy; 
-	//check if distance is small enough to even cause a force (for that strength<<10 must be bigger than the distance squared
-	int32_t shiftedstrength = (int32_t)strength << 16;
-	if (shiftedstrength > distanceSquared) //if too far away, no force is applied (force < 1)
+	int32_t distanceSquared = dx * dx + dy * dy + 1;
+	if (distanceSquared < 4096)
 	{
-		int32_t force = shiftedstrength / distanceSquared;
-		int32_t xforce = (force * dx)>>12; //scale so that at force starts to increase at about 10 pixels away
-		int32_t yforce = (force * dy)>>12;
-
-		uint8_t xcounter = *counter & 0xF; //lower four bits
-		uint8_t ycounter = *counter>>4; // upper four bits
-		*counter = 0; //reset counter, is set back to correct values below
-
-		//man muss die jetzt noch schlau shiften, dazu ein excel machen
-		//for small forces, need to use a delay timer (counter)
-		if(xforce < 16)
+		if (swallow) // particle is close, kill it
 		{
-			xcounter += force;
-			if (xcounter > 16)
-			{
-				xcounter -= 16;
-				*counter |= xcounter; // write lower four bits
-				   					// apply force in x direction
-				if (dx < 0)			  
-				{
-					particle->vx -= 1;
-				}
-				else
-				{
-					particle->vx += 1;
-				}
-			}
-			
+			particle->ttl = 0;
+			return;
 		}
-		else{
-				particle->vx += xforce/16;
-		}
-
-		if(yforce < 16)
-		{
-			ycounter += yforce;
-			if(ycounter > 16)
-			{
-				ycounter -= 16;
-				*counter |= (ycounter<<4); //write upper four bits
-
-				if (dy < 0)
-				{
-					particle->vy -= 1;
-				}
-				else
-				{
-					particle->vy += 1;
-				}
-			}
-
-		}
-		else{
-			particle->vy += yforce / 16;
-		}
-
+		distanceSquared = 4096; // limit the distance to 64 (=size of a particle) to avoid very high forces.TODO: could make this depending on the #define for particle size
 	}
+	// check if distance is small enough to even cause a force (for that strength<<10 must be bigger than the distance squared)
+	int32_t shiftedstrength = (int32_t)strength << 16;
+	int32_t force;
+	int32_t xforce;
+	int32_t yforce;
+	int32_t xforce_abs; // absolute value
+	int32_t yforce_abs;
+
+	if (shiftedstrength < distanceSquared) // if far away, set the force to 1 so it still attracts and does not leave particles just sitting outside its influence radius
+	{
+		// force calculation above is zero
+		//give some force in both directions (x and y) to avoid further calculations as this is just to get things moving a little		
+		xforce_abs = 1;
+		yforce_abs = 1;
+	}
+	else
+	{
+		force = shiftedstrength / distanceSquared;
+		xforce = (force * dx) >> 10; // scale to a lower value, found by experimenting
+		yforce = (force * dy) >> 10;
+		xforce_abs = abs(xforce); // absolute value
+		yforce_abs = abs(yforce);
+	}
+	uint8_t xcounter = (*counter) & 0x0F; // lower four bits
+	uint8_t ycounter = (*counter) >> 4;	  // upper four bits
+
+	*counter = 0; // reset counter, is set back to correct values below
+
+	// for small forces, need to use a delay timer (counter)
+	if (xforce_abs < 16)
+	{
+		xcounter += xforce_abs;
+		if (xcounter > 15)
+		{
+			xcounter -= 15;
+			*counter |= xcounter & 0x0F; // write lower four bits, make sure not to write more than 4 bits
+										 // apply force in x direction
+			if (dx < 0)
+			{
+				particle->vx -= 1;
+			}
+			else
+			{
+				particle->vx += 1;
+			}
+		}
+	}
+	else
+	{
+		particle->vx += xforce >> 4; // divide by 16
+	}
+
+	if (yforce_abs < 16)
+	{
+		ycounter += yforce_abs;
+
+		if (ycounter > 15)
+		{
+
+			ycounter -= 15;
+			*counter |= (ycounter << 4) & 0xF0; // write upper four bits
+
+			if (dy < 0)
+			{
+				Serial.println("A");
+				particle->vy -= 1;
+			}
+			else
+			{
+				Serial.println("B");
+				particle->vy += 1;
+			}
+		}
+	}
+	else
+	{
+		particle->vy += yforce >> 4; // divide by 16
+	}
+	// TODO: need to limit the max speed?
 }
 
 // TODO: could solve all update functions in a single function with parameters and handle gravity acceleration in a separte function (uses more cpu time but that is not a huge issue) or maybe not, like this, different preferences can be set
@@ -185,13 +212,13 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) // bounces
 		if ((newX <= 0) || (newX >= PS_MAX_X))
 		{															   // reached an edge
 			part->vx = -part->vx;									   // invert speed
-			part->vx = (((int16_t)part->vx) * (int16_t)hardness) >> 8; // reduce speed as energy is lost on non-hard surface
+			part->vx = (((int16_t)part->vx) * ((int16_t)hardness+1)) >> 8; // reduce speed as energy is lost on non-hard surface
 		}
 
 		if ((newY <= 0) || (newY >= PS_MAX_Y))
 		{															   // reached an edge
 			part->vy = -part->vy;									   // invert speed
-			part->vy = (((int16_t)part->vy) * (int16_t)hardness) >> 8; // reduce speed as energy is lost on non-hard surface
+			part->vy = (((int16_t)part->vy) * ((int16_t)hardness+1)) >> 8; // reduce speed as energy is lost on non-hard surface
 		}
 
 		newX = max(newX, (int16_t)0); // limit to positive

@@ -40,7 +40,7 @@ typedef struct {
     int16_t x;   //x position in particle system
     int16_t y;   //y position in particle system
     uint16_t ttl; //time to live
-    uint8_t outofbounds; //set to 1 if outside of matrix
+    uint8_t outofbounds; //set to 1 if outside of matrix TODO: could make this a union and add more flags instead of wasting a whole byte on this
     uint8_t hue; //color hue
     uint8_t sat; //color saturation
     int8_t vx;  //horizontal velocity
@@ -69,6 +69,7 @@ int8_t vortexpull; //if positive, vortex pushes, if negative it pulls
 
 void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part);
 void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part);
+void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow); 
 void Particle_Move_update(PSparticle *part);
 void Particle_Bounce_update(PSparticle *part, const uint8_t hardness);
 void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness);

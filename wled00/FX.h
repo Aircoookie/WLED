@@ -325,8 +325,10 @@
 #define FX_MODE_PARTICLEPERLIN         191
 #define FX_MODE_PARTICLEFALL           192
 #define FX_MODE_PARTICLEBOX            193
-#define FX_MODE_PARTICLEPILE           194
-#define MODE_COUNT                     195
+#define FX_MODE_PARTICLEATTRACTOR      194
+#define FX_MODE_PARTICLEIMPACT         195
+#define FX_MODE_PARTICLEPILE           196
+#define MODE_COUNT                     197
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
