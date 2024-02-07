@@ -1015,15 +1015,98 @@ void serializeModeNames(JsonArray arr)
 
 
 // Global buffer locking response helper class
-class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
-  public:
-  // This is safe if and only if the guard owns the lock.
-  inline GlobalBufferAsyncJsonResponse(JSONBufferGuard&& guard, bool isArray) : JSONBufferGuard(std::move(guard)), AsyncJsonResponse(owns_lock() ? &doc : nullptr, isArray) {
-    assert(owns_lock());
-  };
-  virtual ~GlobalBufferAsyncJsonResponse() {};
+// Like AsyncJsonResponse, but efficiently uses the global JSON buffer
+// Serializes the Json string completely and releases the lock on the first _fillBuffer() call
+class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncAbstractResponse {  
+  JsonVariant _root;
+  uint8_t* _buffer;
+  size_t _bufferOffset;
 
-  // Other members are inherited
+  // Helper class
+  class SplitPrint : public Print {
+    private:
+      uint8_t* _d1;
+      size_t _size1;
+      uint8_t* _d2;
+      size_t _size2;
+      size_t _pos;
+    public:
+      SplitPrint(uint8_t* d1, size_t size1, uint8_t* d2, size_t size2)
+        : _d1(d1), _size1(size1), _d2(d2), _size2(size2), _pos(0) {};
+      virtual ~SplitPrint(){}
+      size_t write(const uint8_t *buffer, size_t size)
+      {
+        size_t written = 0;
+        // If there's space left in the first buffer, write there
+        if (_pos < _size1) {
+          written = std::min(_size1 - _pos, size);
+          memcpy(_d1+_pos, buffer, written);
+          _pos += written;
+          if (written == size) return written;
+          // Advance buffer
+          size -= written;
+          buffer += written;
+        }
+        // If we got here, we need to write to the second buffer
+        size_t written2 = std::min(_size2 - (_pos - _size1), size);
+        memcpy(_d2 + (_pos - _size1), buffer, written2);
+        _pos += written2;
+        return written + written2;
+      }
+
+      size_t write(uint8_t c) {
+        return this->write(&c, 1);
+      }
+  };
+
+  public:
+
+  inline GlobalBufferAsyncJsonResponse(JSONBufferGuard&& guard, bool isArray) : JSONBufferGuard(std::move(guard)), _buffer(nullptr), _bufferOffset(0) {
+    _contentLength = 0;
+    _contentType = JSON_MIMETYPE;
+      if (owns_lock()) {
+        _code = 200;        
+        if(isArray)
+          _root = doc.to<JsonArray>();
+        else
+          _root = doc.to<JsonObject>();
+      } else {
+        _code = 503;
+        // TODO
+      }
+  };
+  virtual ~GlobalBufferAsyncJsonResponse() {
+    
+    if (_buffer) {
+      DEBUG_PRINT(F("Freeing buffer ")); DEBUG_PRINTLN((intptr_t)_buffer);
+      free(_buffer);
+    }
+  };
+
+  // Carry forward AsyncJsonResponse API
+  JsonVariant & getRoot() { return _root; }
+  bool _sourceValid() const { return (_code != 200) || (_contentLength > 0); }
+  size_t setLength() {
+    _contentLength = measureJson(_root);
+    return _contentLength;
+  } 
+
+  size_t _fillBuffer(uint8_t *data, size_t len){
+    // This needs to be a lot more robust with its checking
+    if (_bufferOffset == 0) {
+      _bufferOffset = len;
+      _buffer = (uint8_t*) malloc(_contentLength - len);
+      DEBUG_PRINT(F("Allocated buffer ")); DEBUG_PRINT((intptr_t)_buffer);  DEBUG_PRINT(F(" size ")); DEBUG_PRINT(len); DEBUG_PRINT(F(" , ")); DEBUG_PRINTLN(_contentLength - len);
+      assert(_buffer);  // TODO: error handling without exploding
+      // Serialize the reply to the destination buffer and the secondary buffer
+      SplitPrint dest(data, len, _buffer, _contentLength - len);
+      serializeJson(_root, dest);
+      release();  // we're done with the global buffer, now
+    } else {
+      memcpy(data, _buffer + _sentLength - _bufferOffset, len);
+    }
+    return len;
+  }
 };
 
 
