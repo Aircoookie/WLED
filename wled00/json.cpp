@@ -1030,16 +1030,17 @@ void serializeModeNames(JsonArray arr)
   }
 }
 
-
-// Global buffer locking response helper class
-class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
+// Global buffer locking response helper class (to make sure lock is released when AsyncJsonResponse is destroyed)
+class LockedJsonResponse: public AsyncJsonResponse {
   public:
-  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(pDoc, isArray) {};
-  virtual ~GlobalBufferAsyncJsonResponse() {};
-
-  // Other members are inherited
+  // WARNING: constructor assumes requestJSONBufferLock() was successfully acquired externally/prior to constructing the instance
+  // Not a good practice with C++. Unfortunately AsyncJsonResponse only has 2 constructors - for dynamic buffer or existing buffer,
+  // with existing buffer it clears its content during construction
+  // if the lock was not acquired (using JSONBufferGuard class) previous implementation still cleared existing buffer
+  inline LockedJsonResponse(JsonDocument *doc, bool isArray) : AsyncJsonResponse(doc, isArray) {};
+  // destructor will remove JSON buffer lock when response is destroyed in AsyncWebServer
+  virtual ~LockedJsonResponse() { releaseJSONBufferLock(); };
 };
-
 
 void serveJson(AsyncWebServerRequest* request)
 {
@@ -1071,12 +1072,13 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
-  if (!response->owns_lock()) {
+  if (!requestJSONBufferLock(17)) {
     serveJsonError(request, 503, ERR_NOBUF);
-    delete response;
     return;
   }
+  // releaseJSONBufferLock() will be called when "response" is destroyed (from AsyncWebServer)
+  // make sure you delete "response" if no "request->send(response);" is made
+  LockedJsonResponse *response = new LockedJsonResponse(pDoc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
