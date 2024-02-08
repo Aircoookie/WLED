@@ -24,6 +24,13 @@ static const char s_redirecting[] PROGMEM = "Redirecting...";
 static const char s_content_enc[] PROGMEM = "Content-Encoding";
 static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security settings!";
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
+static const char s_notimplemented[] PROGMEM = "Not implemented";
+static const char s_accessdenied[]   PROGMEM = "Access Denied";
+static const char s_javascript[]     PROGMEM = "application/javascript";
+static const char s_json[]           PROGMEM = "application/json";
+static const char s_html[]           PROGMEM = "text/html";
+static const char s_plain[]          PROGMEM = "text/plain";
+static const char s_css[]            PROGMEM = "text/css";
 
 //Is this an IP?
 bool isIp(String str) {
@@ -38,7 +45,7 @@ bool isIp(String str) {
 
 void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (!correctPIN) {
-    if (final) request->send(401, "text/plain", FPSTR(s_unlock_cfg));
+    if (final) request->send(401, FPSTR(s_plain), FPSTR(s_unlock_cfg));
     return;
   }
   if (!index) {
@@ -50,7 +57,7 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
-    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();
+    if (finalname.equals(F("/presets.json"))) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
@@ -59,10 +66,10 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile.close();
     if (filename.indexOf(F("cfg.json")) >= 0) { // check for filename with or without slash
       doReboot = true;
-      request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
+      request->send(200, FPSTR(s_plain), F("Configuration restore successful.\nRebooting..."));
     } else {
       if (filename.indexOf(F("palette")) >= 0 && filename.indexOf(F(".json")) >= 0) strip.loadCustomPalettes();
-      request->send(200, "text/plain", F("File Uploaded!"));
+      request->send(200, FPSTR(s_plain), F("File Uploaded!"));
     }
     cacheInvalidate++;
   }
@@ -79,25 +86,24 @@ void createEditHandler(bool enable) {
       #endif
     #else
       editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-        serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
+        serveMessage(request, 501, FPSTR(s_notimplemented), F("The FS editor is disabled in this build."), 254);
       });
     #endif
   } else {
     editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
-      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_cfg), 254);
+      serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_cfg), 254);
     });
   }
 }
 
 bool captivePortal(AsyncWebServerRequest *request)
 {
-  if (ON_STA_FILTER(request)) return false; //only serve captive in AP mode
-  String hostH;
+  if (!apActive) return false; //only serve captive in AP mode
   if (!request->hasHeader("Host")) return false;
-  hostH = request->getHeader("Host")->value();
 
-  if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
-    DEBUG_PRINTLN("Captive portal");
+  String hostH = request->getHeader("Host")->value();
+  if (!isIp(hostH) && hostH.indexOf(F("wled.me")) < 0 && hostH.indexOf(cmDNS) < 0 && hostH.indexOf(':') < 0) {
+    DEBUG_PRINTLN(F("Captive portal"));
     AsyncWebServerResponse *response = request->beginResponse(302);
     response->addHeader(F("Location"), F("http://4.3.2.1"));
     request->send(response);
@@ -116,12 +122,12 @@ void initServer()
 #ifdef WLED_ENABLE_WEBSOCKETS
   #ifndef WLED_DISABLE_2D 
   server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, "text/html", PAGE_liveviewws2D, PAGE_liveviewws2D_length);
+    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveviewws2D, PAGE_liveviewws2D_length);
   });
   #endif
 #endif
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, "text/html", PAGE_liveview, PAGE_liveview_length);
+    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveview, PAGE_liveview_length);
   });
 
   //settings page
@@ -132,7 +138,7 @@ void initServer()
   // "/settings/settings.js&p=x" request also handled by serveSettings()
 
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/style.css", 200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
+    handleStaticContent(request, "/style.css", 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -141,7 +147,7 @@ void initServer()
 
   server.on("/skin.css", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (handleFileRead(request, "/skin.css")) return;
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/css");
+    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(s_css));
     request->send(response);
   });
 
@@ -207,25 +213,25 @@ void initServer()
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
     }
-    request->send(200, "application/json", F("{\"success\":true}"));
+    request->send(200, FPSTR(s_json), F("{\"success\":true}"));
   }, JSON_BUFFER_SIZE);
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)VERSION);
+    request->send(200, FPSTR(s_plain), (String)VERSION);
   });
 
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)millis());
+    request->send(200, FPSTR(s_plain), (String)millis());
   });
 
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)ESP.getFreeHeap());
+    request->send(200, FPSTR(s_plain), (String)ESP.getFreeHeap());
   });
 
 #ifdef WLED_ENABLE_USERMOD_PAGE
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, "text/html", PAGE_usermod, PAGE_usermod_length);
+    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_usermod, PAGE_usermod_length);
   });
 #endif
 
@@ -244,7 +250,7 @@ void initServer()
   //init ota page
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
     if (otaLock) {
-      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254);
+      serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254);
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
@@ -255,7 +261,7 @@ void initServer()
       return;
     }
     if (otaLock) {
-      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254);
+      serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254);
       return;
     }
     if (Update.hasError()) {
@@ -296,25 +302,25 @@ void initServer()
   });
 #else
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 501, "Not implemented", F("OTA updating is disabled in this build."), 254);
+    serveMessage(request, 501, FPSTR(s_notimplemented), F("OTA updating is disabled in this build."), 254);
   });
 #endif
 
 
-  #ifdef WLED_ENABLE_DMX
+#ifdef WLED_ENABLE_DMX
   server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
+    request->send_P(200, FPSTR(s_html), PAGE_dmxmap     , dmxProcessor);
   });
-  #else
+#else
   server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
+    serveMessage(request, 501, FPSTR(s_notimplemented), F("DMX support is not enabled in this build."), 254);
   });
-  #endif
+#endif
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (captivePortal(request)) return;
     if (!showWelcomePage || request->hasArg(F("sliders"))) {
-      handleStaticContent(request, "/index.htm", 200, "text/html", PAGE_index, PAGE_index_L);
+      handleStaticContent(request, "/index.htm", 200, FPSTR(s_html), PAGE_index, PAGE_index_L);
     } else {
       serveSettings(request);
     }
@@ -322,28 +328,27 @@ void initServer()
 
 #ifdef WLED_ENABLE_PIXART
   server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pixart.htm", 200, "text/html", PAGE_pixart, PAGE_pixart_L);
+    handleStaticContent(request, "/pixart.htm", 200, FPSTR(s_html), PAGE_pixart, PAGE_pixart_L);
   });
-  #endif
+#endif
 
 #ifndef WLED_DISABLE_PXMAGIC
   server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pxmagic.htm", 200, "text/html", PAGE_pxmagic, PAGE_pxmagic_L);
+    handleStaticContent(request, "/pxmagic.htm", 200, FPSTR(s_html), PAGE_pxmagic, PAGE_pxmagic_L);
   });
 #endif
 
   server.on("/cpal.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/cpal.htm", 200, "text/html", PAGE_cpal, PAGE_cpal_L);
+    handleStaticContent(request, "/cpal.htm", 200, FPSTR(s_html), PAGE_cpal, PAGE_cpal_L);
   });
 
-  #ifdef WLED_ENABLE_WEBSOCKETS
+#ifdef WLED_ENABLE_WEBSOCKETS
   server.addHandler(&ws);
-  #endif
+#endif
 
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
-    DEBUG_PRINTLN("Not-Found HTTP call:");
-    DEBUG_PRINTLN("URI: " + request->url());
+    DEBUG_PRINT(F("Not-Found HTTP call: ")); DEBUG_PRINTLN(request->url());
     if (captivePortal(request)) return;
 
     //make API CORS compatible
@@ -359,7 +364,7 @@ void initServer()
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
-    handleStaticContent(request, request->url(), 404, "text/html", PAGE_404, PAGE_404_length);
+    handleStaticContent(request, request->url(), 404, FPSTR(s_html), PAGE_404, PAGE_404_length);
   });
 }
 
@@ -371,8 +376,8 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request, int code, uint
   // Only send 304 (Not Modified) if response code is 200 (OK)
   if (code != 200) return false;
 
-  AsyncWebHeader *header = request->getHeader("If-None-Match");
-  char etag[14];
+  AsyncWebHeader *header = request->getHeader(F("If-None-Match"));
+  char etag[32];
   generateEtag(etag, eTagSuffix);
   if (header && header->value() == etag) {
     AsyncWebServerResponse *response = request->beginResponse(304);
@@ -391,11 +396,11 @@ void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, ui
   #ifndef WLED_DEBUG
   // this header name is misleading, "no-cache" will not disable cache,
   // it just revalidates on every load using the "If-None-Match" header with the last ETag value
-  response->addHeader(F("Cache-Control"), "no-cache");
+  response->addHeader(F("Cache-Control"), F("no-cache"));
   #else
-  response->addHeader(F("Cache-Control"), "no-store,max-age=0");  // prevent caching if debug build
+  response->addHeader(F("Cache-Control"), F("no-store,max-age=0"));  // prevent caching if debug build
   #endif
-  char etag[14];
+  char etag[32];
   generateEtag(etag, eTagSuffix);
   response->addHeader(F("ETag"), etag);
 }
@@ -419,7 +424,7 @@ void handleStaticContent(AsyncWebServerRequest *request, const String &path, int
   if (path != "" && handleFileRead(request, path)) return;
   if (handleIfNoneMatchCacheHeader(request, code, eTagSuffix)) return;
   AsyncWebServerResponse *response = request->beginResponse_P(code, contentType, content, len);
-  if (gzip) response->addHeader(FPSTR(s_content_enc), "gzip");
+  if (gzip) response->addHeader(FPSTR(s_content_enc), F("gzip"));
   setStaticContentCacheHeaders(response, code, eTagSuffix);
   request->send(response);
 }
@@ -466,15 +471,15 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageSub = subl;
   optionType = optionT;
 
-  request->send_P(code, "text/html", PAGE_msg, msgProcessor);
+  request->send_P(code, FPSTR(s_html), PAGE_msg, msgProcessor);
 }
 
 
 void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error)
 {
     AsyncJsonResponse *response = new AsyncJsonResponse(64);
-    if (error < ERR_NOT_IMPL) response->addHeader("Retry-After", "1");
-    response->setContentType("application/json");
+    if (error < ERR_NOT_IMPL) response->addHeader(F("Retry-After"), F("1"));
+    response->setContentType(FPSTR(s_json));
     response->setCode(code);
     JsonObject obj = response->getRoot();
     obj[F("error")] = error;
@@ -487,16 +492,16 @@ String dmxProcessor(const String& var)
 {
   String mapJS;
   #ifdef WLED_ENABLE_DMX
-    if (var == "DMXVARS") {
-      mapJS += "\nCN=" + String(DMXChannels) + ";\n";
-      mapJS += "CS=" + String(DMXStart) + ";\n";
-      mapJS += "CG=" + String(DMXGap) + ";\n";
-      mapJS += "LC=" + String(strip.getLengthTotal()) + ";\n";
-      mapJS += "var CH=[";
+    if (var == F("DMXVARS")) {
+      mapJS += F("\nCN=") + String(DMXChannels) + ";\n";
+      mapJS += F("CS=" )+ String(DMXStart) + ";\n";
+      mapJS += F("CG=") + String(DMXGap) + ";\n";
+      mapJS += F("LC=") + String(strip.getLengthTotal()) + ";\n";
+      mapJS += F("var CH=[");
       for (int i=0;i<15;i++) {
-        mapJS += String(DMXFixtureMap[i]) + ",";
+        mapJS += String(DMXFixtureMap[i]) + ',';
       }
-      mapJS += "0];";
+      mapJS += F("0];");
     }
   #endif
 
@@ -512,12 +517,12 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   byte subPage = request->arg(F("p")).toInt();
   if (subPage > 10) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
-    request->send(501, "application/javascript", buf);
+    request->send(501, FPSTR(s_javascript), buf);
     return;
   }
   if (subPage > 0 && !correctPIN && strlen(settingsPIN)>0) {
     strcpy_P(buf, PSTR("alert('PIN incorrect.');"));
-    request->send(401, "application/javascript", buf);
+    request->send(401, FPSTR(s_javascript), buf);
     return;
   }
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
@@ -525,9 +530,9 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   strcat_P(buf,PSTR("}"));
   
   AsyncWebServerResponse *response;
-  response = request->beginResponse(200, "application/javascript", buf);
-  response->addHeader(F("Cache-Control"),"no-store");
-  response->addHeader(F("Expires"),"0");
+  response = request->beginResponse(200, FPSTR(s_javascript), buf);
+  response->addHeader(F("Cache-Control"), F("no-store"));
+  response->addHeader(F("Expires"), F("0"));
   request->send(response);
 }
 
@@ -562,7 +567,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
   // if OTA locked or too frequent PIN entry requests fail hard
   if ((subPage == SUBPAGE_WIFI && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < PIN_RETRY_COOLDOWN))
   {
-    serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254); return;
+    serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254); return;
   }
 
   if (post) { //settings/set POST request, saving
@@ -598,7 +603,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
   }
 
   int code = 200;
-  String contentType = "text/html";
+  String contentType = FPSTR(s_html);
   const uint8_t* content;
   size_t len;
 
@@ -623,8 +628,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
       serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
       return;
     }
-    case SUBPAGE_PINREQ  :  content = PAGE_settings_pin;  len = PAGE_settings_pin_length; code = 401;               break;
-    case SUBPAGE_CSS     :  content = PAGE_settingsCss;   len = PAGE_settingsCss_length;  contentType = "text/css"; break;
+    case SUBPAGE_PINREQ  :  content = PAGE_settings_pin;  len = PAGE_settings_pin_length; code = 401;                 break;
+    case SUBPAGE_CSS     :  content = PAGE_settingsCss;   len = PAGE_settingsCss_length;  contentType = FPSTR(s_css); break;
     case SUBPAGE_JS      :  serveSettingsJS(request); return;
     case SUBPAGE_WELCOME :  content = PAGE_welcome;       len = PAGE_welcome_length;       break;
     default:                content = PAGE_settings;      len = PAGE_settings_length;      break;
