@@ -69,7 +69,8 @@ int8_t vortexpull; //if positive, vortex pushes, if negative it pulls
 
 void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part);
 void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part);
-void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow); 
+void Emitter_Angle_emit(PSpointsource *emitter, PSparticle *part, uint8_t angle, uint8_t speed);
+void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
 void Particle_Move_update(PSparticle *part);
 void Particle_Bounce_update(PSparticle *part, const uint8_t hardness);
 void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness);

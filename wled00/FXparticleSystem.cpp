@@ -45,14 +45,27 @@ void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part)
 // fountain style emitter
 void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part)
 {
-	part->x = emitter->source.x + random8(emitter->var) - (emitter->var >> 1);
-	part->y = emitter->source.y + random8(emitter->var) - (emitter->var >> 1);
+	part->x = emitter->source.x; // + random8(emitter->var) - (emitter->var >> 1); //randomness uses cpu cycles and is almost invisible, removed for now.
+	part->y = emitter->source.y; // + random8(emitter->var) - (emitter->var >> 1);
 	part->vx = emitter->vx + random8(emitter->var) - (emitter->var >> 1);
 	part->vy = emitter->vy + random8(emitter->var) - (emitter->var >> 1);
 	part->ttl = (rand() % (emitter->maxLife - emitter->minLife)) + emitter->minLife;
 	part->hue = emitter->source.hue;
 }
 
+// Emits a particle at given angle and speed, angle is from 0-255 (=0-360deg), speed is also affected by emitter->var
+void Emitter_Angle_emit(PSpointsource *emitter, PSparticle *part, uint8_t angle, uint8_t speed)
+{
+	emitter->vx = (((int16_t)cos8(angle)-127) * speed) >> 7; //cos is signed 8bit, so 1 is 127, -1 is -127, shift by 7
+	emitter->vy = (((int16_t)sin8(angle)-127) * speed) >> 7;
+	Serial.print(angle);
+	Serial.print(" ");
+	Serial.print(emitter->vx);
+	Serial.print(" ");
+	Serial.print(emitter->vy);
+	Serial.print(" ");
+	Emitter_Fountain_emit(emitter, part);
+}
 // attracts a particle to an attractor particle using the inverse square-law
 void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow) // todo: add a parameter 'swallow' so the attractor can 'suck up' particles that are very close, also could use hue of attractor particle for strength
 {

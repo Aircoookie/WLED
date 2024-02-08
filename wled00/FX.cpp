@@ -8033,7 +8033,7 @@ uint16_t mode_particlefireworks(void)
 
   uint16_t i = 0;
   uint16_t j = 0;
-  uint8_t numRockets = (SEGMENT.custom3+1) >> 2; //1 to 8
+  uint8_t numRockets = 1+ ((SEGMENT.custom3) >> 2); //1 to 8
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8068,13 +8068,36 @@ uint16_t mode_particlefireworks(void)
     {                                   // speed is zero, explode!
       emitparticles = random8(SEGMENT.intensity>>1) + 10; // defines the size of the explosion
       rockets[j].source.vy = -1;        // set speed negative so it will emit no more particles after this explosion until relaunch
+      if (j == 0)                       // first rocket, do an angle emit
+      {
+        emitparticles>>1; //emit less particles for circle-explosion
+        rockets[j].maxLife = 150;
+        rockets[j].minLife = 120;        
+        rockets[j].var = 0;              // speed variation around vx,vy (+/- var/2)
+      }
     }
+
+    uint8_t speed = 5;
+    uint8_t angle = 0;
 
     for (i; i < numParticles; i++)
     {
       if (particles[i].ttl == 0)
       { // particle is dead
-        if (emitparticles > 0)
+
+        if (j == 0 && emitparticles > 2) // first rocket, do angle emit
+        {
+          Emitter_Angle_emit(&rockets[j], &particles[i],angle,speed);
+          emitparticles--;
+          //set angle for next particle          
+          angle += 21; //about 30°
+          if(angle > 250) //full circle completed, increase speed and reset angle
+          {
+              angle = 0;
+              speed += 8;
+          }
+        }
+        else if (emitparticles > 0)
         {
           Emitter_Fountain_emit(&rockets[j], &particles[i]);
           emitparticles--;
@@ -8114,7 +8137,7 @@ uint16_t mode_particlefireworks(void)
       rockets[i].source.ttl = random8((255 - SEGMENT.speed))+10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
       rockets[i].vx = 0;                         // emitting speed
       rockets[i].vy = 0;                         // emitting speed
-      rockets[i].var = (SEGMENT.intensity >> 2) + 10; // speed variation around vx,vy (+/- var/2)
+      rockets[i].var = (SEGMENT.intensity >> 3) + 10; // speed variation around vx,vy (+/- var/2)
     }
     else if (rockets[i].source.vy < 0) // rocket is exploded and time is up (ttl=0 and negative speed), relaunch it
     {
