@@ -220,7 +220,7 @@ class MultiRelay : public Usermod {
 };
 
 
-// class implementetion
+// class implementation
 
 void MultiRelay::publishMqtt(int relay) {
 #ifndef WLED_DISABLE_MQTT
@@ -388,7 +388,7 @@ void MultiRelay::switchRelay(uint8_t relay, bool mode) {
   if (relay>=MULTI_RELAY_MAX_RELAYS || _relay[relay].pin<0) return;
   _relay[relay].state = mode;
   if (usePcf8574 && _relay[relay].pin >= 100) {
-    // we need to send all ouputs at the same time
+    // we need to send all outputs at the same time
     uint8_t state = 0;
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
       if (_relay[i].pin < 100) continue;

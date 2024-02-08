@@ -339,7 +339,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
   if (i2c_scl >= 0 && i2c_sda >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
     #ifdef ESP32
-    if (!Wire.setPins(i2c_sda, i2c_scl)) { i2c_scl = i2c_sda = -1; } // this will fail if Wire is initilised (Wire.begin() called prior)
+    if (!Wire.setPins(i2c_sda, i2c_scl)) { i2c_scl = i2c_sda = -1; } // this will fail if Wire is initialised (Wire.begin() called prior)
     else Wire.begin();
     #else
     Wire.begin(i2c_sda, i2c_scl);
@@ -395,6 +395,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   strip.setTransition(fadeTransition ? transitionDelayDefault : 0);
   CJSON(strip.paletteFade, light_tr["pal"]);
   CJSON(randomPaletteChangeTime, light_tr[F("rpc")]);
+  CJSON(useHarmonicRandomPalette, light_tr[F("hrp")]);
 
   JsonObject light_nl = light["nl"];
   CJSON(nightlightMode, light_nl["mode"]);
@@ -872,6 +873,7 @@ void serializeConfig() {
   light_tr["dur"] = transitionDelayDefault / 100;
   light_tr["pal"] = strip.paletteFade;
   light_tr[F("rpc")] = randomPaletteChangeTime;
+  light_tr[F("hrp")] = useHarmonicRandomPalette;
 
   JsonObject light_nl = light.createNestedObject("nl");
   light_nl["mode"] = nightlightMode;

@@ -389,7 +389,7 @@
 ${i+1}:
 <select name="LT${i}" onchange="UI(true)">${i>=maxB ? '' :
 '<option value="22" selected>WS281x</option>\
-<option value="30">SK6812 RGBW</option>\
+<option value="30">SK6812/WS2814 RGBW</option>\
 <option value="31">TM1814</option>\
 <option value="24">400kHz</option>\
 <option value="25">TM1829</option>\
@@ -848,6 +848,7 @@ Swap: <select id="xw${i}" name="XW${i}">
 			Palette transitions: <input type="checkbox" name="PF"><br>
 		</span>
 		<i>Random Cycle</i> Palette Time: <input name="TP" type="number" class="m" min="1" max="255"> s<br>
+		Use harmonic <i>Random Cycle</i> Palette: <input type="checkbox" name="TH"><br>
 		<h3>Timed light</h3>
 		Default Duration: <input name="TL" type="number" class="m" min="1" max="255" required> min<br>
 		Default Target brightness: <input name="TB" type="number" class="m" min="0" max="255" required><br>

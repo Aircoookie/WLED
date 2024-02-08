@@ -132,7 +132,7 @@ void WLED::loop()
   if (lastMqttReconnectAttempt > millis()) {
     rolloverMillis++;
     lastMqttReconnectAttempt = 0;
-    ntpLastSyncTime = 0;
+    ntpLastSyncTime = NTP_NEVER;  // force new NTP query
     strip.restartRuntime();
   }
   if (millis() - lastMqttReconnectAttempt > 30000 || lastMqttReconnectAttempt == 0) { // lastMqttReconnectAttempt==0 forces immediate broadcast
@@ -398,6 +398,11 @@ void WLED::setup()
     if (!pDoc) pDoc = &gDoc; // just in case ... (it should be globally assigned)
     DEBUG_PRINTLN(F("PSRAM not used."));
   #endif
+#endif
+#if defined(ARDUINO_ESP32_PICO)
+  // special handling for PICO-D4: gpio16+17 are in use for onboard SPI FLASH (not PSRAM)
+  managed_pin_type pins[] = { {16, true}, {17, true} };
+  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
 #endif
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
@@ -738,7 +743,7 @@ int8_t WLED::findWiFi(bool doScan) {
   } else if (status >= 0) {   // status contains number of found networks
     DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
     int rssi = -9999;
-    int selected = selectedWiFi;
+    unsigned selected = selectedWiFi;
     for (int o = 0; o < status; o++) {
       DEBUG_PRINT(F(" WiFi available: ")); DEBUG_PRINT(WiFi.SSID(o));
       DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(WiFi.RSSI(o)); DEBUG_PRINTLN(F("dB"));

@@ -523,7 +523,12 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
   getSettingsJS(subPage, buf+strlen(buf));  // this may overflow by 35bytes!!!
   strcat_P(buf,PSTR("}"));
-  request->send(200, "application/javascript", buf);
+  
+  AsyncWebServerResponse *response;
+  response = request->beginResponse(200, "application/javascript", buf);
+  response->addHeader(F("Cache-Control"),"no-store");
+  response->addHeader(F("Expires"),"0");
+  request->send(response);
 }
 
 
