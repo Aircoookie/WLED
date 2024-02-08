@@ -56,11 +56,9 @@
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
 #endif
-#endif
 
 #ifdef USERMOD_ROTARY_ENCODER_UI
   #include "../usermods/usermod_v2_rotary_encoder_ui_ALT/usermod_v2_rotary_encoder_ui_ALT.h"
-#endif
 #endif
 
 #ifdef USERMOD_AUTO_SAVE

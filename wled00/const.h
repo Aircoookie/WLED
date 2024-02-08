@@ -103,7 +103,7 @@
 #define USERMOD_ID_ROTARY_ENC_UI          8     //Usermod "usermod_v2_rotary_encoder_ui.h"
 #define USERMOD_ID_AUTO_SAVE              9     //Usermod "usermod_v2_auto_save.h"
 #define USERMOD_ID_DHT                   10     //Usermod "usermod_dht.h"
-#define USERMOD_ID_MODE_SORT             11     //Usermod "usermod_v2_mode_sort.h"
+// #define USERMOD_ID_MODE_SORT             11     //Usermod "usermod_v2_mode_sort.h"
 #define USERMOD_ID_VL53L0X               12     //Usermod "usermod_vl53l0x_gestures.h"
 #define USERMOD_ID_MULTI_RELAY           13     //Usermod "usermod_multi_relay.h"
 #define USERMOD_ID_ANIMATED_STAIRCASE    14     //Usermod "Animated_Staircase.h"
