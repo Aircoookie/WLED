@@ -335,7 +335,7 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
 // saturation is color saturation, if not set to 255, hsv instead of palette is used (palette does not support saturation)
-void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX, bool wrapY)
+void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX, bool wrapY, bool fastcoloradd)
 {
 
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -351,6 +351,7 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 	CRGB baseRGB;
 	uint16_t i;
 	uint8_t brightess; // particle brightness, fades if dying
+	
 
 	// go over particles and update matrix cells on the way
 	for (i = 0; i < numParticles; i++)
@@ -388,7 +389,7 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 			x--; // shift x to next pixel left, will overflow to 255 if 0
 			dx = dx + (PS_P_RADIUS >> 1);
 		}
-		else // if jump has ocurred, fade pixel out
+		else // if jump has ocurred
 		{
 			dx = dx - (PS_P_RADIUS >> 1); // adjust dx so pixel fades
 		}
@@ -400,7 +401,6 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 		}
 		else
 		{
-			// adjust dy so pixel fades
 			dy = dy - (PS_P_RADIUS >> 1);
 		}
 
@@ -429,7 +429,7 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 			// calculate the intensity with linear interpolation
 			intensity = ((uint32_t)((PS_P_RADIUS)-dx) * ((PS_P_RADIUS)-dy) * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
 			// scale the particle base color by the intensity and add it to the pixel
-			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity));
+			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
 		}
 		// bottom right;
 		x++;
@@ -441,7 +441,7 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 		if (x < cols && y < rows)
 		{
 			intensity = ((uint32_t)dx * ((PS_P_RADIUS)-dy) * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
-			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity));
+			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
 		}
 		// top right
 		y++;
@@ -453,7 +453,7 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 		if (x < cols && y < rows)
 		{
 			intensity = ((uint32_t)dx * dy * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
-			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity));
+			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
 		}
 		// top left
 		x--;
@@ -467,7 +467,7 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 		if (x < cols && y < rows)
 		{
 			intensity = ((uint32_t)((PS_P_RADIUS)-dx) * dy * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
-			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity));
+			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
 		}
 	}
 }
@@ -665,7 +665,7 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 		// check if there is heat left over
 		if (newcolorvalue == 255)
 		{										   // there cannot be a leftover if it is not full
-			heat = heat - (255 - currentcolor[i]); // heat added is difference from current red value to full red value, subtract it from the inital heat value so heat is the remaining heat not added yet
+			heat = heat - (255 - currentcolor[i]); // heat added is difference from current value to full value, subtract it from the inital heat value so heat is the remaining heat not added yet
 			// this cannot produce an underflow since we never add more than the initial heat value
 		}
 		else

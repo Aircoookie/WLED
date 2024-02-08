@@ -8387,19 +8387,22 @@ uint16_t mode_particlefire(void)
       // initialize new flame: set properties of source
       // from time to time, chang the flame position
       // make some of the flames small and slow to add a bright base
+
+      if (random8(40) == 0) //from time to time, change flame position (about once per second)
+      {
+        if (SEGMENT.check1)
+        { // wrap around in X direction, distribute randomly
+          flames[i].source.x = random16(PS_MAX_X);
+        }
+        else
+        {                                                                                // no wrapping
+          flames[i].source.x = PS_P_RADIUS * 3 + random16(PS_MAX_X - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
+        }
+      }
+
       if (i < (numFlames - (cols >> 1)))
       { // all but the last few are normal flames
-        if (random8(40) == 0)
-        {
-          if (SEGMENT.check1)
-          { // wrap around in X direction, distribute randomly
-            flames[i].source.x = random16(PS_MAX_X);
-          }
-          else
-          {                                                                                // no wrapping
-            flames[i].source.x = PS_P_RADIUS * 3 + random16(PS_MAX_X - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
-          }
-        }
+
         flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame so particles alredy spread a little when the appear
         flames[i].source.vx = 0;               // (rand() % 3) - 1;
         flames[i].source.vy = 0;
@@ -8459,7 +8462,7 @@ uint16_t mode_particlefire(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,Intensity,Base Flames,Wind Speed, Color Mode, WrapX;;!;012;sx=100,ix=120,c1=16,c2=128,c3=0,o1=0";
+static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,Intensity,Base Flames,Wind Speed, Color Scheme, WrapX;;!;012;sx=100,ix=120,c1=16,c2=128,c3=0,o1=0";
 /*syntax for json configuration string:
 @A,B,C,D,E,F,G,H;I,J,K;L;M;N mark commas and semicolons
 A - speed
