@@ -493,10 +493,10 @@ String dmxProcessor(const String& var)
   String mapJS;
   #ifdef WLED_ENABLE_DMX
     if (var == F("DMXVARS")) {
-      mapJS += F("\nCN=") + String(DMXChannels) + ";\n";
-      mapJS += F("CS=" )+ String(DMXStart) + ";\n";
-      mapJS += F("CG=") + String(DMXGap) + ";\n";
-      mapJS += F("LC=") + String(strip.getLengthTotal()) + ";\n";
+      mapJS += "\nCN=" + String(DMXChannels) + ";\n";
+      mapJS += "CS="+ String(DMXStart) + ";\n";
+      mapJS += "CG=" + String(DMXGap) + ";\n";
+      mapJS += "LC=" + String(strip.getLengthTotal()) + ";\n";
       mapJS += F("var CH=[");
       for (int i=0;i<15;i++) {
         mapJS += String(DMXFixtureMap[i]) + ',';
