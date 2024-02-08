@@ -9062,7 +9062,7 @@ uint16_t mode_particleimpact(void)
     {
       particles[i].ttl = 0;
     }
-    for (i = 0; i < numMeteors; i++)
+    for (i = 0; i < MaxNumMeteors; i++)
     {
       meteors[i].source.ttl = random8(20 * i); // set initial delay for meteors
       meteors[i].source.vy = 10;               // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
@@ -9129,8 +9129,7 @@ uint16_t mode_particleimpact(void)
       {
         meteors[i].source.vy = 0; // set speed zero so it will explode
         meteors[i].source.vx = 0;
-        meteors[i].source.y = 5;           // offset from ground so explosion happens not out of frame (if moving fast, this can happen)
-        meteors[i].source.hue = random8(); // random color of explosion
+        meteors[i].source.y = 5;           // offset from ground so explosion happens not out of frame (if moving fast, this can happen)        
         meteors[i].maxLife = 200;
         meteors[i].minLife = 50;
         meteors[i].source.ttl = random8((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
@@ -9142,11 +9141,11 @@ uint16_t mode_particleimpact(void)
     else if (meteors[i].source.vy > 0) // rocket is exploded and time is up (ttl==0 and positive speed), relaunch it
     {
       // reinitialize rocket
-      meteors[i].source.y = PS_MAX_Y - 2; // start from top
+      meteors[i].source.y = PS_MAX_Y +  PS_P_RADIUS<<2; // start 4 pixels above the top
       meteors[i].source.x = random16(PS_MAX_X);
       meteors[i].source.vy = -30 - random(30) - 10; // TODO: need to make this user selectable?
       meteors[i].source.vx = random8(30) - 15;
-      meteors[i].source.hue = 220;  // rocket exhaust = orange (if using fire palette)
+      meteors[i].source.hue = random8(); // random color 
       meteors[i].source.ttl = 1000; // long live, will explode at bottom
       meteors[i].maxLife = 60;      // spark particle life
       meteors[i].minLife = 20;
