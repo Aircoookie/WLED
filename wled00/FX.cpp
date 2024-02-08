@@ -7915,11 +7915,12 @@ uint16_t mode_particlerotatingspray(void)
     SEGMENT.aux0 = 0; // starting angle
     for (i = 0; i < numParticles; i++)
     {
-      particles[i].ttl = 0;
+      particles[i].ttl = 0;      
     }
     for (i = 0; i < numSprays; i++)
     {
       spray[i].source.hue = random8();
+      spray[i].source.sat = 255; // set saturation
       spray[i].source.x = (cols * PS_P_RADIUS) / 2; // center
       spray[i].source.y = (cols * PS_P_RADIUS) / 2; // center
       spray[i].source.vx = 0;
@@ -7980,7 +7981,7 @@ uint16_t mode_particlerotatingspray(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, numParticles, 255, false, false);
+  ParticleSys_render(particles, numParticles, false, false);
 
   return FRAMETIME;
 }
@@ -8070,7 +8071,7 @@ uint16_t mode_particlefireworks(void)
       rockets[j].source.vy = -1;        // set speed negative so it will emit no more particles after this explosion until relaunch
       if (j == 0)                       // first rocket, do an angle emit
       {
-        emitparticles>>1; //emit less particles for circle-explosion
+        emitparticles>>2; //emit less particles for circle-explosion
         rockets[j].maxLife = 150;
         rockets[j].minLife = 120;        
         rockets[j].var = 0;              // speed variation around vx,vy (+/- var/2)
@@ -8095,6 +8096,8 @@ uint16_t mode_particlefireworks(void)
           {
               angle = 0;
               speed += 8;
+              rockets[j].source.hue = random8(); //new color for next row
+              rockets[j].source.sat = random8();
           }
         }
         else if (emitparticles > 0)
@@ -8132,6 +8135,7 @@ uint16_t mode_particlefireworks(void)
     {                                    // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
       rockets[i].source.vy = 0;          // set speed to zero so code above will recognize this as an exploding rocket
       rockets[i].source.hue = random8(); // random color
+      rockets[i].source.sat = random8(100)+155;
       rockets[i].maxLife = 200;
       rockets[i].minLife = 50;
       rockets[i].source.ttl = random8((255 - SEGMENT.speed))+10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
@@ -8147,6 +8151,7 @@ uint16_t mode_particlefireworks(void)
       rockets[i].source.vy = random8(SEGMENT.custom1>>3) + 5; //rocket speed depends also on rocket height
       rockets[i].source.vx = random8(5) - 2;
       rockets[i].source.hue = 30; // rocket exhaust = orange (if using rainbow palette)
+      rockets[i].source.sat = 250; 
       rockets[i].source.ttl = random8(SEGMENT.custom1) + (SEGMENT.custom1>>1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
       rockets[i].maxLife = 30; //exhaust particle life
       rockets[i].minLife = 10;
@@ -8158,7 +8163,7 @@ uint16_t mode_particlefireworks(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, numParticles, 255, false, false);
+  ParticleSys_render(particles, numParticles, false, false);
 
   return FRAMETIME;
 }
@@ -8207,11 +8212,12 @@ uint16_t mode_particlespray(void)
   {
     for (i = 0; i < numParticles; i++)
     {
-      particles[i].ttl = 0;
+      particles[i].ttl = 0;      
     }
     for (i = 0; i < numSprays; i++)
     {
       spray[i].source.hue = random8();
+      spray[i].source.sat = 255; // set full saturation
       spray[i].source.x = 4 * PS_P_RADIUS * (i + 1);
       spray[i].source.y = 5; // just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
       spray[i].source.vx = 10;
@@ -8283,7 +8289,7 @@ uint16_t mode_particlespray(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, numParticles, 255, SEGMENT.check1, false);
+  ParticleSys_render(particles, numParticles, SEGMENT.check1, false);
   // CRGB c = PURPLE;
   // SEGMENT.setPixelColorXY(0, 0, c);
 
@@ -8507,7 +8513,7 @@ uint16_t mode_particlefall(void)
       particles[i].ttl = 0;
     }
   }
-
+  particles[i].sat = ((SEGMENT.custom3) << 3) + 7;                                  // set saturation
   if (SEGMENT.call % (64 - (SEGMENT.intensity >> 2)) == 0 && SEGMENT.intensity > 1) // every nth frame emit particles, stop emitting if zero
   {
     while (i < numParticles) // emit particles
@@ -8526,6 +8532,7 @@ uint16_t mode_particlefall(void)
         particles[i].vx = (((int16_t)random8(SEGMENT.custom1)) - (SEGMENT.custom1 >> 1)) >> 1; // side speed is +/- a quarter of the custom1 slider
         particles[i].vy = -(SEGMENT.speed >> 1);
         particles[i].hue = random8(); // set random color
+        particles[i].sat = ((SEGMENT.custom3) << 3) + 7; // set saturation
         break;                        // quit loop if all particles of this round emitted
       }
       i++;
@@ -8581,8 +8588,10 @@ uint16_t mode_particlefall(void)
 
   SEGMENT.fill(BLACK); // clear the matrix
 
+  
+
   // render the particles
-  ParticleSys_render(particles, numParticles, ((SEGMENT.custom3) << 3) + 7, SEGMENT.check1, false); // custom3 slider is saturation, from 7 to 255, 7 is close enough to white (for snow for example)
+  ParticleSys_render(particles, numParticles, SEGMENT.check1, false); // custom3 slider is saturation, from 7 to 255, 7 is close enough to white (for snow for example)
 
   return FRAMETIME;
 }
@@ -8627,11 +8636,12 @@ uint16_t mode_particlepile(void)
   {
     for (i = 0; i < numParticles; i++)
     {
-      particles[i].ttl = 0;
+      particles[i].ttl = 0;    
     }
     for (i = 0; i < numSprays; i++)
     {
       spray[i].source.hue = random8();
+      spray[i].source.sat = 255; // set full saturation
       spray[i].source.x = 2 * PS_P_RADIUS * (i + 1);
       spray[i].source.y = 14 * PS_P_RADIUS; // source y position, fixed at 14pixel height
       spray[i].source.vx = 10;
@@ -8741,7 +8751,7 @@ uint16_t mode_particlepile(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, numParticles, 255, SEGMENT.check1, false);
+  ParticleSys_render(particles, numParticles, SEGMENT.check1, false);
 
   return FRAMETIME;
 }
@@ -8779,8 +8789,9 @@ uint16_t mode_particlebox(void)
     SEGMENT.aux0 = rand(); // position (either in noise or in sine function)
     for (i = 0; i < numParticles; i++)
     {
-      particles[i].ttl = 500;                                 // all particles are alive (but not all are calculated/rendered)
+      particles[i].ttl = 500;                                 // all particles are alive (but not all are calculated/rendered)      
       particles[i].hue = i * 3;                               // full color range (goes over palette colors three times so it is also colorful when using fewer particles)
+      particles[i].sat = 255;                                 // set full saturation (lets palette choose the color)
       particles[i].x = map(i, 0, 255, 1, cols * PS_P_RADIUS); // distribute along x according to color
       particles[i].y = random16((rows >> 2) * PS_P_RADIUS);   // in the bottom quarder
     }
@@ -8903,7 +8914,7 @@ uint16_t mode_particlebox(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, displayparticles, 255, false, false);
+  ParticleSys_render(particles, displayparticles, false, false);
 
   return FRAMETIME;
 }
@@ -8947,6 +8958,7 @@ uint16_t mode_particleperlin(void)
       particles[i].ttl = random16(500) + 200;
       particles[i].x = random16(cols * PS_P_RADIUS);
       particles[i].y = random16(rows * PS_P_RADIUS);
+      particles[i].sat = 255; //full saturation, color set by palette
     }
   }
 
@@ -8992,7 +9004,7 @@ uint16_t mode_particleperlin(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, displayparticles, 255, false, false);
+  ParticleSys_render(particles, displayparticles, false, false);
 
   return FRAMETIME;
 }
@@ -9036,9 +9048,6 @@ uint16_t mode_particleimpact(void)
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  // DEBUG_PRINT(F("particle datasize = "));
-  // DEBUG_PRINTLN(dataSize);
-
   meteors = reinterpret_cast<PSpointsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(meteors + MaxNumMeteors); // cast the data array into a particle pointer
@@ -9057,6 +9066,7 @@ uint16_t mode_particleimpact(void)
     {
       meteors[i].source.ttl = random8(20 * i); // set initial delay for meteors
       meteors[i].source.vy = 10;               // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
+      meteors[i].source.sat = 255; //full saturation, color chosen by palette 
     }
   }
 
@@ -9147,7 +9157,7 @@ uint16_t mode_particleimpact(void)
   }
   SEGMENT.fill(BLACK); // clear the matrix
   // render the particles
-  ParticleSys_render(particles, numParticles, 255, false, false);
+  ParticleSys_render(particles, numParticles, false, false);
 
   return FRAMETIME;
 }
@@ -9207,6 +9217,7 @@ uint16_t mode_particleattractor(void)
     }
 
     spray->source.hue = random8();
+    spray->source.sat = 255; //full saturation, color by palette
     spray->source.x = 0;
     spray->source.y = 0; // just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
     spray->source.vx = random8(5) + 6;
@@ -9288,7 +9299,7 @@ uint16_t mode_particleattractor(void)
   SEGMENT.fill(BLACK);                               // clear the matrix
   //ParticleSys_render(&attract, 1, 30, false, false); // render attractor
   // render the particles
-  ParticleSys_render(particles, displayparticles, 255, false, false);
+  ParticleSys_render(particles, displayparticles, false, false);
 
   return FRAMETIME;
 }

@@ -31,7 +31,7 @@
 #include "FastLED.h"
 #include "FX.h"
 
-// Fountain style emitter for simple particles used for flames (particle TTL depends on source TTL)
+// Fountain style emitter for particles used for flames (particle TTL depends on source TTL)
 void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part)
 {
 	part->x = emitter->source.x + random8(emitter->var) - (emitter->var >> 1);
@@ -40,6 +40,7 @@ void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part)
 	part->vy = emitter->vy + random8(emitter->var) - (emitter->var >> 1);
 	part->ttl = (uint8_t)((rand() % (emitter->maxLife - emitter->minLife)) + emitter->minLife + emitter->source.ttl); // flame intensity dies down with emitter TTL
 	part->hue = emitter->source.hue;
+	part->sat = emitter->source.sat;
 }
 
 // fountain style emitter
@@ -51,6 +52,7 @@ void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part)
 	part->vy = emitter->vy + random8(emitter->var) - (emitter->var >> 1);
 	part->ttl = (rand() % (emitter->maxLife - emitter->minLife)) + emitter->minLife;
 	part->hue = emitter->source.hue;
+	part->sat = emitter->source.sat;
 }
 
 // Emits a particle at given angle and speed, angle is from 0-255 (=0-360deg), speed is also affected by emitter->var
@@ -333,7 +335,7 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
 // saturation is color saturation, if not set to 255, hsv instead of palette is used (palette does not support saturation)
-void ParticleSys_render(PSparticle *particles, uint16_t numParticles, uint8_t saturation, bool wrapX, bool wrapY)
+void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX, bool wrapY)
 {
 
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -360,10 +362,10 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, uint8_t sa
 		// generate RGB values for particle
 		brightess = min(particles[i].ttl, (uint16_t)255);
 
-		if (saturation < 255)
+		if (particles[i].sat < 255)
 		{
 			CHSV baseHSV = rgb2hsv_approximate(ColorFromPalette(SEGPALETTE, particles[i].hue, 255, LINEARBLEND));
-			baseHSV.s = saturation;
+			baseHSV.s = particles[i].sat;
 			baseRGB = (CRGB)baseHSV;
 		}
 		else
@@ -791,6 +793,9 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 // slow down particle by friction, the higher the speed, the higher the friction
 void applyFriction(PSparticle *particle, uint8_t coefficient)
 {
+	if(particle->ttl)
+	{
 	particle->vx = ((int16_t)particle->vx * (255 - coefficient)) >> 8;
 	particle->vy = ((int16_t)particle->vy * (255 - coefficient)) >> 8;
+	}
 }

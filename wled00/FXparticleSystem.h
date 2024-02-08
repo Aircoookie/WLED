@@ -74,7 +74,7 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 void Particle_Move_update(PSparticle *part);
 void Particle_Bounce_update(PSparticle *part, const uint8_t hardness);
 void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness);
-void ParticleSys_render(PSparticle *particles, uint16_t numParticles, uint8_t saturation, bool wrapX, bool wrapY);
+void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX, bool wrapY);
 void FireParticle_update(PSparticle *part, bool wrapX, bool WrapY);
 void ParticleSys_renderParticleFire(PSparticle *particles, uint16_t numParticles, bool wrapX);
 void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat);
