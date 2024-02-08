@@ -9147,7 +9147,7 @@ uint16_t mode_particleattractor(void)
   const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
   const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
-  const uint16_t numParticles = 255; // maximum number of particles
+  const uint16_t numParticles = 265; // maximum number of particles
 
   PSparticle *particles;
   PSparticle *attractor;
@@ -9159,19 +9159,14 @@ uint16_t mode_particleattractor(void)
   uint32_t dataSize = sizeof(PSparticle) * (numParticles + 1);
   dataSize  += sizeof(uint8_t) *numParticles;
   dataSize += sizeof(PSpointsource);
-  Serial.println("*************");
-  Serial.println(dataSize);
+
   if (!SEGENV.allocateData(dataSize))
     return mode_static();                                  // allocation failed; //allocation failed
   // divide and cast the data array into correct pointers
-  particles = reinterpret_cast<PSparticle *>(SEGENV.data); 
-  attractor = reinterpret_cast<PSparticle *>(particles + 1);
+  particles = reinterpret_cast<PSparticle *>(SEGENV.data);
+  attractor = reinterpret_cast<PSparticle *>(particles + numParticles + 1);
   spray = reinterpret_cast<PSpointsource *>(attractor + 1);
   counters = reinterpret_cast<uint8_t *>(spray + 1);
-  Serial.println((uintptr_t)particles);
-  Serial.println((uintptr_t)attractor);
-  Serial.println((uintptr_t)spray);
-  Serial.println((uintptr_t)counters);
 
   uint16_t i = 0;
   uint16_t j = 0;
@@ -9201,7 +9196,7 @@ uint16_t mode_particleattractor(void)
     spray->var = 6; //emitting speed variation    
   }
 
-  uint16_t displayparticles = SEGMENT.intensity;
+  uint16_t displayparticles = SEGMENT.intensity-1; //cannot go to 255 particles, it will crash if set above 250, why is unclear... maybe array is too small? at 260 it will still crash, if numparticles are set to 265 it does not crash...
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
   i = 0;
   j = 0;
@@ -9222,7 +9217,7 @@ uint16_t mode_particleattractor(void)
     {
       // go though all 'higher number' particles and see if any of those are in close proximity
       // if they are, make them collide
-      if (particles[i].ttl > 0) // if particle is alive
+      if (particles[i].ttl > 0 && particles[i].outofbounds==0) // if particle is alive and on screen
       {
         int32_t dx, dy; // distance to other particles
         for (j = i + 1; j < displayparticles; j++)

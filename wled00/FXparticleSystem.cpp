@@ -135,12 +135,10 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 
 			if (dy < 0)
 			{
-				Serial.println("A");
 				particle->vy -= 1;
 			}
 			else
 			{
-				Serial.println("B");
 				particle->vy += 1;
 			}
 		}
