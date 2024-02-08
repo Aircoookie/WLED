@@ -277,25 +277,17 @@ function onLoad()
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
-	// Once we figure out why ESP8266 sometimes corrupts JSON responses if they are made in quick succession
-	// we can remove all setTimeout() throttling
 	loadPalettes(()=>{
-		setTimeout(()=>{ // ESP8266 can't handle quick requests
-			// fill effect extra data array
-			loadFXData(()=>{
-				setTimeout(()=>{ // ESP8266 can't handle quick requests
-					// load and populate effects
-					loadFX(()=>{
-						setTimeout(()=>{ // ESP8266 can't handle quick requests
-							loadPalettesData(()=>{
-								requestJson();// will load presets and create WS
-								if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
-							});
-						},50);
-					});
-				},50);
+		// fill effect extra data array
+		loadFXData(()=>{
+			// load and populate effects
+			loadFX(()=>{
+				loadPalettesData(()=>{
+					requestJson();// will load presets and create WS
+					if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},50);
+				});
 			});
-		},50);
+		});
 	});
 	resetUtil();
 
