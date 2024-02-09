@@ -36,7 +36,7 @@ void WLED::loop()
 {
   static uint32_t      lastHeap = UINT32_MAX;
   static unsigned long heapTime = 0;
-  #ifdef WLED_DEBUG
+#ifdef WLED_DEBUG
   static unsigned long lastRun = 0;
   unsigned long        loopMillis = millis();
   size_t               loopDelay = loopMillis - lastRun;
@@ -49,12 +49,12 @@ void WLED::loop()
   static unsigned long maxStripMillis = 0;
   static size_t        avgStripMillis = 0;
   unsigned long        stripMillis;
-  #endif
+#endif
 
   handleTime();
-  #ifndef WLED_DISABLE_INFRARED
+#ifndef WLED_DISABLE_INFRARED
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
-  #endif
+#endif
   handleConnection();
   handleSerial();
   handleImprovWifiScan();
@@ -813,7 +813,7 @@ void WLED::initConnection()
     
     DEBUG_PRINT(F("Connecting to "));
     DEBUG_PRINT(multiWiFi[selectedWiFi].clientSSID);
-    DEBUG_PRINTLN("...");
+    DEBUG_PRINTLN(F("..."));
 
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];

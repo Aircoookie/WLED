@@ -226,7 +226,7 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
 
   if (pos == 0) //not found
   {
-    DEBUGFS_PRINTLN("not }");
+    DEBUGFS_PRINTLN(F("not }"));
     f.seek(0);
     while (bufferedFind("}",false)) //find last closing bracket in JSON if not last char
     {
@@ -395,7 +395,7 @@ static String getContentType(AsyncWebServerRequest* request, String filename){
 }
 
 bool handleFileRead(AsyncWebServerRequest* request, String path){
-  DEBUG_PRINTLN("WS FileRead: " + path);
+  DEBUG_PRINT(F("WS FileRead: ")); DEBUG_PRINTLN(path);
   if(path.endsWith("/")) path += "index.htm";
   if(path.indexOf(F("sec")) > -1) return false;
   String contentType = getContentType(request, path);

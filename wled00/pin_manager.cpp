@@ -109,7 +109,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: GPIO "));
       DEBUG_PRINT(gpio);
-      DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input");
+      DEBUG_PRINT(F(" as ")); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input");
       DEBUG_PRINTLN(F(""));
       #endif
       shouldFail = true;

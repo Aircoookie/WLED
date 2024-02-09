@@ -86,7 +86,7 @@ private:
     
     StaticJsonDocument<600> doc;
     
-    doc[F("name")] = String(serverDescription) + F(" ") + name;
+    doc[F("name")] = String(serverDescription) + " " + name;
     doc[F("state_topic")] = topic;
     doc[F("unique_id")] = String(mqttClientID) + name;
     if (unitOfMeasurement != "")

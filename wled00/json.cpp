@@ -31,7 +31,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     newSeg = true;
   }
 
-  //DEBUG_PRINTLN("-- JSON deserialize segment.");
+  //DEBUG_PRINTLN(F("-- JSON deserialize segment."));
   Segment& seg = strip.getSegment(id);
   //DEBUG_PRINTF("--  Original segment: %p (%p)\n", &seg, seg.data);
   Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
@@ -353,9 +353,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
-  sendNotificationsRT  = getBoolVal(udpn["send"], sendNotificationsRT);
-  syncGroups           = udpn["sgrp"] | syncGroups;
-  receiveGroups        = udpn["rgrp"] | receiveGroups;
+  sendNotificationsRT  = getBoolVal(udpn[F("send")], sendNotificationsRT);
+  syncGroups           = udpn[F("sgrp")] | syncGroups;
+  receiveGroups        = udpn[F("rgrp")] | receiveGroups;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
   unsigned long timein = root["time"] | UINT32_MAX; //backup time source if NTP not synced
@@ -438,7 +438,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // applying preset (2 cases: a) API call includes all preset values ("pd"), b) API only specifies preset ID ("ps"))
   byte presetToRestore = 0;
   // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
-  if (!root["pd"].isNull() && stateChanged) {
+  if (!root[F("pd")].isNull() && stateChanged) {
     currentPreset = root[F("pd")] | currentPreset;
     if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise it was set in handleSet() [set.cpp]
     presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
@@ -579,17 +579,13 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     nl["dur"] = nightlightDelayMins;
     nl["mode"] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
-    if (nightlightActive) {
-      nl[F("rem")] = (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000; // seconds remaining
-    } else {
-      nl[F("rem")] = -1;
-    }
+    nl[F("rem")] = nightlightActive ? (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000 : -1; // seconds remaining
 
     JsonObject udpn = root.createNestedObject("udpn");
-    udpn["send"] = sendNotificationsRT;
-    udpn["recv"] = receiveGroups != 0;
-    udpn["sgrp"] = syncGroups;
-    udpn["rgrp"] = receiveGroups;
+    udpn[F("send")] = sendNotificationsRT;
+    udpn[F("recv")] = receiveGroups != 0;
+    udpn[F("sgrp")] = syncGroups;
+    udpn[F("rgrp")] = receiveGroups;
 
     root[F("lor")] = realtimeOverride;
   }
@@ -687,12 +683,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_DDP:      root["lm"] = F("DDP"); break;
   }
 
-  if (realtimeIP[0] == 0)
-  {
-    root[F("lip")] = "";
-  } else {
-    root[F("lip")] = realtimeIP.toString();
-  }
+  root[F("lip")] = realtimeIP[0] == 0 ? "" : realtimeIP.toString();
 
   #ifdef WLED_ENABLE_WEBSOCKETS
   root[F("ws")] = ws.count();
@@ -729,7 +720,7 @@ void serializeInfo(JsonObject root)
 
   root[F("ndc")] = nodeListEnabled ? (int)Nodes.size() : -1;
 
-  #ifdef ARDUINO_ARCH_ESP32
+#ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
     wifi_info[F("sleep")] = (bool) WiFi.getSleep();
@@ -740,21 +731,21 @@ void serializeInfo(JsonObject root)
     root[F("arch")] = ESP.getChipModel();
   #endif
   root[F("core")] = ESP.getSdkVersion();
-  //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG
-    root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
-    root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
+  root[F("maxalloc")] = ESP.getMaxAllocHeap();
+  root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
+  root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
   root[F("lwip")] = 0; //deprecated
-  #else
+#else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
-  //root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
   #ifdef WLED_DEBUG
-    root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
+  root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
+  root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
   #endif
   root[F("lwip")] = LWIP_VERSION_MAJOR;
-  #endif
+#endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
   #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
@@ -983,7 +974,7 @@ void serializeNetworks(JsonObject root)
 
 void serializeNodes(JsonObject root)
 {
-  JsonArray nodes = root.createNestedArray("nodes");
+  JsonArray nodes = root.createNestedArray(F("nodes"));
 
   for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
   {

@@ -214,7 +214,6 @@ void colorUpdated(byte callMode) {
 
 void handleNightlight()
 {
-  static unsigned long lastNlUpdate;
   unsigned long now = millis();
   if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; // take care of millis() rollover
   if (now - lastNlUpdate < 100) return; // allow only 10 NL updates per second

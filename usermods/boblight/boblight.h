@@ -318,7 +318,7 @@ class BobLightUsermod : public Usermod {
     void addToConfig(JsonObject& root) override {
       JsonObject umData = root.createNestedObject(FPSTR(_name));
       umData[FPSTR(_enabled)] = enabled;
-      umData[F("port")]       = bobPort;
+      umData[  "port" ]       = bobPort;
       umData[F("top")]        = top;
       umData[F("bottom")]     = bottom;
       umData[F("left")]       = left;
@@ -334,7 +334,7 @@ class BobLightUsermod : public Usermod {
       configComplete &= getJsonValue(umData[FPSTR(_enabled)], en);
       enable(en);
 
-      configComplete &= getJsonValue(umData[F("port")],   bobPort);
+      configComplete &= getJsonValue(umData[  "port" ],   bobPort);
       configComplete &= getJsonValue(umData[F("bottom")], bottom,    16);
       configComplete &= getJsonValue(umData[F("top")],    top,       16);
       configComplete &= getJsonValue(umData[F("left")],   left,       9);
@@ -392,7 +392,7 @@ void BobLightUsermod::pollBob() {
     //get data from the client
     while (bobClient.available()) {
       String input = bobClient.readStringUntil('\n');
-      // DEBUG_PRINT("Client: "); DEBUG_PRINTLN(input); // may be to stressful on Serial
+      // DEBUG_PRINT(F("Client: ")); DEBUG_PRINTLN(input); // may be to stressful on Serial
       if (input.startsWith(F("hello"))) {
         DEBUG_PRINTLN(F("hello"));
         bobClient.print(F("hello\n"));

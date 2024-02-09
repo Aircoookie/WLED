@@ -173,7 +173,7 @@ bool oappend(const char* txt)
 
 void prepareHostname(char* hostname)
 {
-  sprintf_P(hostname, "wled-%*s", 6, escapedMac.c_str() + 6);
+  sprintf_P(hostname, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
   uint8_t pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length

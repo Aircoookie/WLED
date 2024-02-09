@@ -694,10 +694,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                         subObj[name].add(value.toInt());    // we may have an int
           j++;
         }
-        DEBUG_PRINT("[");
-        DEBUG_PRINT(j);
-        DEBUG_PRINT("] = ");
-        DEBUG_PRINTLN(value);
+        DEBUG_PRINT(F("[")); DEBUG_PRINT(j); DEBUG_PRINT(F("] = ")); DEBUG_PRINTLN(value);
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
         // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
@@ -716,8 +713,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           } else if (type == "int")      subObj[name] = value.toInt();
           else                           subObj[name] = value;  // text fields
         }
-        DEBUG_PRINT(" = ");
-        DEBUG_PRINTLN(value);
+        DEBUG_PRINT(F(" = ")); DEBUG_PRINTLN(value);
       }
     }
     usermods.readFromConfig(um);  // force change of usermod parameters

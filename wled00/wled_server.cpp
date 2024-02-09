@@ -491,20 +491,21 @@ void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t erro
 String dmxProcessor(const String& var)
 {
   String mapJS;
-  #ifdef WLED_ENABLE_DMX
-    if (var == F("DMXVARS")) {
-      mapJS += "\nCN=" + String(DMXChannels) + ";\n";
-      mapJS += "CS="+ String(DMXStart) + ";\n";
-      mapJS += "CG=" + String(DMXGap) + ";\n";
-      mapJS += "LC=" + String(strip.getLengthTotal()) + ";\n";
-      mapJS += F("var CH=[");
-      for (int i=0;i<15;i++) {
-        mapJS += String(DMXFixtureMap[i]) + ',';
-      }
-      mapJS += F("0];");
+  if (var == F("DMXVARS")) {
+    mapJS += F("\nCN=");
+    mapJS += String(DMXChannels);
+    mapJS += F(";\nCS=");
+    mapJS += String(DMXStart);
+    mapJS += F(";\nCG=");
+    mapJS += String(DMXGap);
+    mapJS += F(";\nLC=");
+    mapJS += String(strip.getLengthTotal());
+    mapJS += F(";\nvar CH=[");
+    for (int i=0; i<15; i++) {
+      mapJS += String(DMXFixtureMap[i]) + ',';
     }
-  #endif
-
+    mapJS += F("0];");
+  }
   return mapJS;
 }
 #endif
@@ -550,9 +551,13 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
     else if (url.indexOf(  "sync")  > 0) subPage = SUBPAGE_SYNC;
     else if (url.indexOf(  "time")  > 0) subPage = SUBPAGE_TIME;
     else if (url.indexOf(F("sec"))  > 0) subPage = SUBPAGE_SEC;
+#ifdef WLED_ENABLE_DMX
     else if (url.indexOf(  "dmx")   > 0) subPage = SUBPAGE_DMX;
+#endif
     else if (url.indexOf(  "um")    > 0) subPage = SUBPAGE_UM;
+#ifndef WLED_DISABLE_2D
     else if (url.indexOf(  "2D")    > 0) subPage = SUBPAGE_2D;
+#endif
     else if (url.indexOf(F("lock")) > 0) subPage = SUBPAGE_LOCK;
   }
   else if (url.indexOf("/update") >= 0) subPage = SUBPAGE_UPDATE; // update page, for PIN check
@@ -583,9 +588,13 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
       case SUBPAGE_SYNC   : strcpy_P(s, PSTR("Sync")); break;
       case SUBPAGE_TIME   : strcpy_P(s, PSTR("Time")); break;
       case SUBPAGE_SEC    : strcpy_P(s, PSTR("Security")); if (doReboot) strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
+#ifdef WLED_ENABLE_DMX
       case SUBPAGE_DMX    : strcpy_P(s, PSTR("DMX")); break;
+#endif
       case SUBPAGE_UM     : strcpy_P(s, PSTR("Usermods")); break;
+#ifndef WLED_DISABLE_2D
       case SUBPAGE_2D     : strcpy_P(s, PSTR("2D")); break;
+#endif
       case SUBPAGE_PINREQ : strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
