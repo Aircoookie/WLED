@@ -132,7 +132,7 @@ class St7789DisplayUsermod : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup()
+    void setup() override
     {
         PinManagerPinType spiPins[] = { { spi_mosi, true }, { spi_miso, false}, { spi_sclk, true } };
         if (!pinManager.allocateMultiplePins(spiPins, 3, PinOwner::HW_SPI)) { enabled = false; return; }
@@ -162,7 +162,7 @@ class St7789DisplayUsermod : public Usermod {
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() {
+    void connected() override {
       //Serial.println("Connected to WiFi!");
     }
 
@@ -176,7 +176,7 @@ class St7789DisplayUsermod : public Usermod {
      * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
      *    Instead, use a timer check as shown here.
      */
-    void loop() {
+    void loop() override {
         char buff[LINE_BUFFER_SIZE];
 
         // Check if we time interval for redrawing passes.
@@ -307,7 +307,7 @@ class St7789DisplayUsermod : public Usermod {
         // Print estimated milliamp usage (must specify the LED type in LED prefs for this to be a reasonable estimate).
         tft.print("Current: ");
         tft.setTextColor(TFT_ORANGE);
-        tft.print(strip.currentMilliamps);
+        tft.print(BusManager::currentMilliamps());
         tft.print("mA");
     }
 
@@ -316,7 +316,7 @@ class St7789DisplayUsermod : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    void addToJsonInfo(JsonObject& root)
+    void addToJsonInfo(JsonObject& root) override
     {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
@@ -330,7 +330,7 @@ class St7789DisplayUsermod : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject& root)
+    void addToJsonState(JsonObject& root) override
     {
       //root["user0"] = userVar0;
     }
@@ -340,7 +340,7 @@ class St7789DisplayUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root)
+    void readFromJsonState(JsonObject& root) override
     {
       //userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
       //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
@@ -361,7 +361,7 @@ class St7789DisplayUsermod : public Usermod {
      *
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
-    void addToConfig(JsonObject& root)
+    void addToConfig(JsonObject& root) override
     {
       JsonObject top = root.createNestedObject("ST7789");
       JsonArray pins = top.createNestedArray("pin");
@@ -373,7 +373,7 @@ class St7789DisplayUsermod : public Usermod {
     }
 
 
-    void appendConfigData() {
+    void appendConfigData() override {
       oappend(SET_F("addInfo('ST7789:pin[]',0,'','SPI CS');"));
       oappend(SET_F("addInfo('ST7789:pin[]',1,'','SPI DC');"));
       oappend(SET_F("addInfo('ST7789:pin[]',2,'','SPI RST');"));
@@ -388,7 +388,7 @@ class St7789DisplayUsermod : public Usermod {
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
-    bool readFromConfig(JsonObject& root)
+    bool readFromConfig(JsonObject& root) override
     {
       //JsonObject top = root["top"];
       //userVar0 = top["great"] | 42; //The value right of the pipe "|" is the default value in case your setting was not present in cfg.json (e.g. first boot)
@@ -400,7 +400,7 @@ class St7789DisplayUsermod : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    uint16_t getId()
+    uint16_t getId() override
     {
       return USERMOD_ID_ST7789_DISPLAY;
     }

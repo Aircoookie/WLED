@@ -490,7 +490,7 @@ void prepareArtnetPollReply(ArtPollReply *reply) {
   // Node is DHCP capable
   // Node supports 15 bit Port-Address (Art-Net 3 or 4)
   // Node is able to switch between ArtNet and sACN
-  reply->reply_status_2 = (staticIP[0] == 0) ? 0x1F : 0x1D;
+  reply->reply_status_2 = (multiWiFi[0].staticIP[0] == 0) ? 0x1F : 0x1D;
 
   // RDM is disabled
   // Output style is continuous

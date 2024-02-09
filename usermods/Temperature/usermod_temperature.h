@@ -48,6 +48,7 @@ class UsermodTemperature : public Usermod {
     bool enabled = true;
 
     bool HApublished = false;
+    int16_t idx = -1;   // Domoticz virtual sensor idx
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -55,6 +56,7 @@ class UsermodTemperature : public Usermod {
     static const char _readInterval[];
     static const char _parasite[];
     static const char _parasitePin[];
+    static const char _domoticzIDX[];
 
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     float readDallas();
@@ -74,26 +76,26 @@ class UsermodTemperature : public Usermod {
     inline float getTemperatureF() { return temperature * 1.8f + 32.0f; }
     float getTemperature();
     const char *getTemperatureUnit();
-    uint16_t getId() { return USERMOD_ID_TEMPERATURE; }
+    uint16_t getId() override { return USERMOD_ID_TEMPERATURE; }
 
-    void setup();
-    void loop();
-    //void connected();
+    void setup() override;
+    void loop() override;
+    //void connected() override;
 #ifndef WLED_DISABLE_MQTT
-    void onMqttConnect(bool sessionPresent);
+    void onMqttConnect(bool sessionPresent) override;
 #endif
-    //void onUpdateBegin(bool init);
+    //void onUpdateBegin(bool init) override;
 
-    //bool handleButton(uint8_t b);
-    //void handleOverlayDraw();
+    //bool handleButton(uint8_t b) override;
+    //void handleOverlayDraw() override;
 
-    void addToJsonInfo(JsonObject& root);
-    //void addToJsonState(JsonObject &root);
-    //void readFromJsonState(JsonObject &root);
-    void addToConfig(JsonObject &root);
-    bool readFromConfig(JsonObject &root);
+    void addToJsonInfo(JsonObject& root) override;
+    //void addToJsonState(JsonObject &root) override;
+    //void readFromJsonState(JsonObject &root) override;
+    void addToConfig(JsonObject &root) override;
+    bool readFromConfig(JsonObject &root) override;
 
-    void appendConfigData();
+    void appendConfigData() override;
 };
 
 //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
@@ -264,7 +266,7 @@ void UsermodTemperature::loop() {
 
 #ifndef WLED_DISABLE_MQTT
     if (WLED_MQTT_CONNECTED) {
-      char subuf[64];
+      char subuf[128];
       strcpy(subuf, mqttDeviceTopic);
       if (temperature > -100.0f) {
         // dont publish super low temperature as the graph will get messed up
@@ -274,6 +276,15 @@ void UsermodTemperature::loop() {
         mqtt->publish(subuf, 0, false, String(getTemperatureC()).c_str());
         strcat_P(subuf, PSTR("_f"));
         mqtt->publish(subuf, 0, false, String(getTemperatureF()).c_str());
+        if (idx > 0) {
+          StaticJsonDocument <128> msg;
+          msg[F("idx")]    = idx;
+          msg[F("RSSI")]   = WiFi.RSSI();
+          msg[F("nvalue")] = 0;
+          msg[F("svalue")] = String(getTemperatureC());
+          serializeJson(msg, subuf, 127);
+          mqtt->publish("domoticz/in", 0, false, subuf);
+        }
       } else {
         // publish something else to indicate status?
       }
@@ -360,6 +371,7 @@ void UsermodTemperature::addToConfig(JsonObject &root) {
   top[FPSTR(_readInterval)] = readingInterval / 1000;
   top[FPSTR(_parasite)] = parasite;
   top[FPSTR(_parasitePin)] = parasitePin;
+  top[FPSTR(_domoticzIDX)] = idx;
   DEBUG_PRINTLN(F("Temperature config saved."));
 }
 
@@ -386,6 +398,7 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
   readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
   parasite          = top[FPSTR(_parasite)] | parasite;
   parasitePin       = top[FPSTR(_parasitePin)] | parasitePin;
+  idx               = top[FPSTR(_domoticzIDX)] | idx;
 
   if (!initDone) {
     // first run: reading from cfg.json
@@ -406,7 +419,7 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
     }
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-  return !top[FPSTR(_parasitePin)].isNull();
+  return !top[FPSTR(_domoticzIDX)].isNull();
 }
 
 void UsermodTemperature::appendConfigData() {
@@ -430,3 +443,4 @@ const char UsermodTemperature::_enabled[]      PROGMEM = "enabled";
 const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";
 const char UsermodTemperature::_parasite[]     PROGMEM = "parasite-pwr";
 const char UsermodTemperature::_parasitePin[]  PROGMEM = "parasite-pwr-pin";
+const char UsermodTemperature::_domoticzIDX[]  PROGMEM = "domoticz-idx";

@@ -69,6 +69,15 @@ bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
 }
 
 
+bool getBoolVal(JsonVariant elem, bool dflt) {
+  if (elem.is<const char*>() && elem.as<const char*>()[0] == 't') {
+    return !dflt;
+  } else {
+    return elem | dflt;
+  }
+}
+
+
 bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv)
 {
   const char *v = strstr(req, key);
@@ -164,7 +173,7 @@ bool oappend(const char* txt)
 
 void prepareHostname(char* hostname)
 {
-  sprintf_P(hostname, "wled-%*s", 6, escapedMac.c_str() + 6);
+  sprintf_P(hostname, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
   uint8_t pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length
@@ -200,6 +209,10 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 //threading/network callback details: https://github.com/Aircoookie/WLED/pull/2336#discussion_r762276994
 bool requestJSONBufferLock(uint8_t module)
 {
+  if (pDoc == nullptr) {
+    DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
+    return false;
+  }
   unsigned long now = millis();
 
   while (jsonBufferLock && millis()-now < 1000) delay(1); // wait for a second for buffer lock
@@ -215,8 +228,8 @@ bool requestJSONBufferLock(uint8_t module)
   DEBUG_PRINT(F("JSON buffer locked. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = &doc;  // used for applying presets (presets.cpp)
-  doc.clear();
+  fileDoc = pDoc;  // used for applying presets (presets.cpp)
+  pDoc->clear();
   return true;
 }
 
@@ -364,7 +377,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 }
 
 
-// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;sx=16,ix=240,1d")
+// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;012;sx=16,ix=240")
 int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
@@ -547,11 +560,12 @@ void enumerateLedmaps() {
 
       #ifndef ESP8266
       if (requestJSONBufferLock(21)) {
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        if (readObjectFromFile(fileName, nullptr, pDoc)) {
           size_t len = 0;
-          if (!doc["n"].isNull()) {
+          JsonObject root = pDoc->as<JsonObject>();
+          if (!root["n"].isNull()) {
             // name field exists
-            const char *name = doc["n"].as<const char*>();
+            const char *name = root["n"].as<const char*>();
             if (name != nullptr) len = strlen(name);
             if (len > 0 && len < 33) {
               ledmapNames[i-1] = new char[len+1];

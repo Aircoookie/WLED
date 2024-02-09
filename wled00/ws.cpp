@@ -38,8 +38,8 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         bool verboseResponse = false;
         if (!requestJSONBufferLock(11)) return;
 
-        DeserializationError error = deserializeJson(doc, data, len);
-        JsonObject root = doc.as<JsonObject>();
+        DeserializationError error = deserializeJson(*pDoc, data, len);
+        JsonObject root = pDoc->as<JsonObject>();
         if (error || root.isNull()) {
           releaseJSONBufferLock();
           return;
@@ -103,13 +103,13 @@ void sendDataWs(AsyncWebSocketClient * client)
 
   if (!requestJSONBufferLock(12)) return;
 
-  JsonObject state = doc.createNestedObject("state");
+  JsonObject state = pDoc->createNestedObject("state");
   serializeState(state);
-  JsonObject info  = doc.createNestedObject("info");
+  JsonObject info  = pDoc->createNestedObject("info");
   serializeInfo(info);
 
-  size_t len = measureJson(doc);
-  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
+  size_t len = measureJson(*pDoc);
+  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", pDoc->memoryUsage(), len);
 
   size_t heap1 = ESP.getFreeHeap();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
@@ -136,7 +136,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   }
 
   buffer->lock();
-  serializeJson(doc, (char *)buffer->get(), len);
+  serializeJson(*pDoc, (char *)buffer->get(), len);
 
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {
@@ -164,39 +164,39 @@ bool sendLiveLedsWs(uint32_t wsClient)
   const size_t MAX_LIVE_LEDS_WS = 1024U;
 #endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  size_t pos = (strip.isMatrix ? 4 : 2);  // start of data
+  size_t pos = 2;  // start of data
+#ifndef WLED_DISABLE_2D
+  if (strip.isMatrix) {
+    // ignore anything behid matrix (i.e. extra strip)
+    used = Segment::maxWidth*Segment::maxHeight; // always the size of matrix (more or less than strip.getLengthTotal())
+    n = 1;
+    if (used > MAX_LIVE_LEDS_WS) n = 2;
+    if (used > MAX_LIVE_LEDS_WS*4) n = 4;
+    pos = 4;
+  }
+#endif
   size_t bufSize = pos + (used/n)*3;
 
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
+  if (!buffer) return false; //out of memory
+  wsBuf->lock();  // protect buffer from being cleaned by another WS instance
   buffer[0] = 'L';
   buffer[1] = 1; //version
 
 #ifndef WLED_DISABLE_2D
-  size_t skipLines = 0;
   if (strip.isMatrix) {
     buffer[1] = 2; //version
-    buffer[2] = Segment::maxWidth;
-    buffer[3] = Segment::maxHeight;
-    if (used > MAX_LIVE_LEDS_WS*4) {
-      buffer[2] = Segment::maxWidth/4;
-      buffer[3] = Segment::maxHeight/4;
-      skipLines = 3;
-    } else if (used > MAX_LIVE_LEDS_WS) {
-      buffer[2] = Segment::maxWidth/2;
-      buffer[3] = Segment::maxHeight/2;
-      skipLines = 1;
-    }
+    buffer[2] = Segment::maxWidth/n;
+    buffer[3] = Segment::maxHeight/n;
   }
 #endif
 
   for (size_t i = 0; pos < bufSize -2; i += n)
   {
 #ifndef WLED_DISABLE_2D
-    if (strip.isMatrix && skipLines) {
-      if ((i/Segment::maxWidth)%(skipLines+1)) i += Segment::maxWidth * skipLines;
-    }
+    if (strip.isMatrix && n>1 && (i/Segment::maxWidth)%n) i += Segment::maxWidth * (n-1);
 #endif
     uint32_t c = strip.getPixelColor(i);
     uint8_t r = R(c);
@@ -209,6 +209,8 @@ bool sendLiveLedsWs(uint32_t wsClient)
   }
 
   wsc->binary(wsBuf);
+  wsBuf->unlock();     // un-protect buffer
+  ws._cleanBuffers();
   return true;
 }
 

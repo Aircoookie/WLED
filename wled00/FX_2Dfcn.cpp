@@ -36,14 +36,9 @@
 // so matrix should disable regular ledmap processing
 void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
-  // erase old ledmap, just in case.
-  if (customMappingTable != nullptr) delete[] customMappingTable;
-  customMappingTable = nullptr;
-  customMappingSize = 0;
-
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
-    // calculate width dynamically because it will have gaps
+    // calculate width dynamically because it may have gaps
     Segment::maxWidth = 1;
     Segment::maxHeight = 1;
     for (size_t i = 0; i < panel.size(); i++) {
@@ -68,15 +63,17 @@ void WS2812FX::setUpMatrix() {
       return;
     }
 
-    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+    customMappingSize = 0; // prevent use of mapping if anything goes wrong
+
+    if (customMappingTable == nullptr) customMappingTable = new uint16_t[getLengthTotal()];
 
     if (customMappingTable != nullptr) {
-      customMappingSize = Segment::maxWidth * Segment::maxHeight;
+      customMappingSize = getLengthTotal();
 
       // fill with empty in case we don't fill the entire matrix
-      for (size_t i = 0; i< customMappingSize; i++) {
-        customMappingTable[i] = (uint16_t)-1;
-      }
+      unsigned matrixSize = Segment::maxWidth * Segment::maxHeight;
+      for (unsigned i = 0; i<matrixSize; i++) customMappingTable[i] = 0xFFFFU;
+      for (unsigned i = matrixSize; i<getLengthTotal(); i++) customMappingTable[i] = i; // trailing LEDs for ledmap (after matrix) if it exist
 
       // we will try to load a "gap" array (a JSON file)
       // the array has to have the same amount of values as mapping array (or larger)
@@ -94,14 +91,14 @@ void WS2812FX::setUpMatrix() {
         DEBUG_PRINT(F("Reading LED gap from "));
         DEBUG_PRINTLN(fileName);
         // read the array into global JSON buffer
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        if (readObjectFromFile(fileName, nullptr, pDoc)) {
           // the array is similar to ledmap, except it has only 3 values:
           // -1 ... missing pixel (do not increase pixel count)
           //  0 ... inactive pixel (it does count, but should be mapped out (-1))
           //  1 ... active pixel (it will count and will be mapped)
-          JsonArray map = doc.as<JsonArray>();
+          JsonArray map = pDoc->as<JsonArray>();
           gapSize = map.size();
-          if (!map.isNull() && gapSize >= customMappingSize) { // not an empty map
+          if (!map.isNull() && gapSize >= matrixSize) { // not an empty map
             gapTable = new int8_t[gapSize];
             if (gapTable) for (size_t i = 0; i < gapSize; i++) {
               gapTable[i] = constrain(map[i], -1, 1);
@@ -265,7 +262,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 }
 
 // returns RGBW values of pixel
-uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
+uint32_t IRAM_ATTR Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   if (!isActive()) return 0; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;
@@ -275,23 +272,6 @@ uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
   return strip.getPixelColorXY(start + x, startY + y);
-}
-
-// Blends the specified color with the existing pixel color.
-void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) {
-  setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend));
-}
-
-// Adds the specified color with the existing pixel color perserving color balance.
-void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
-  if (!isActive()) return; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
-  setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color, fast));
-}
-
-void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
-  if (!isActive()) return; // not active
-  setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), fade, true));
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix

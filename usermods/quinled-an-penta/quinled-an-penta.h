@@ -84,11 +84,11 @@ class QuinLEDAnPentaUsermod : public Usermod
     void getCurrentUsedLedPins()
     {
       for (int8_t lp = 0; lp <= 4; lp++) currentLedPins[lp] = 0;
-      byte numBusses = busses.getNumBusses();
+      byte numBusses = BusManager::getNumBusses();
       byte numUsedPins = 0;
 
       for (int8_t b = 0; b < numBusses; b++) {
-        Bus* curBus = busses.getBus(b);
+        Bus* curBus = BusManager::getBus(b);
         if (curBus != nullptr) {
           uint8_t pins[5] = {0, 0, 0, 0, 0};
           currentBussesNumPins[b] = curBus->getPins(pins);
@@ -104,11 +104,11 @@ class QuinLEDAnPentaUsermod : public Usermod
 
     void getCurrentLedcValues()
     {
-      byte numBusses = busses.getNumBusses();
+      byte numBusses = BusManager::getNumBusses();
       byte numLedc = 0;
 
       for (int8_t b = 0; b < numBusses; b++) {
-        Bus* curBus = busses.getBus(b);
+        Bus* curBus = BusManager::getBus(b);
         if (curBus != nullptr) {
           uint32_t curPixColor = curBus->getPixelColor(0);
           uint8_t _data[5] = {255, 255, 255, 255, 255};

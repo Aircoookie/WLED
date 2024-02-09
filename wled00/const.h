@@ -7,14 +7,35 @@
 
 #define GRADIENT_PALETTE_COUNT 58
 
+// You can define custom product info from build flags.
+// This is useful to allow API consumer to identify what type of WLED version
+// they are interacting with. Be aware that changing this might cause some third
+// party API consumers to consider this as a non-WLED device since the values
+// returned by the API and by MQTT will no longer be default. However, most
+// third party only uses mDNS to validate, so this is generally fine to change.
+// For example, Home Assistant will still work fine even with this value changed.
+// Use like this:
+// -D WLED_BRAND="\"Custom Brand\""
+// -D WLED_PRODUCT_NAME="\"Custom Product\""
+#ifndef WLED_BRAND
+  #define WLED_BRAND "WLED"
+#endif
+#ifndef WLED_PRODUCT_NAME
+  #define WLED_PRODUCT_NAME "FOSS"
+#endif
+
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
-#define DEFAULT_AP_SSID     "WLED-AP"
+#define DEFAULT_AP_SSID     WLED_BRAND "-AP"
 #define DEFAULT_AP_PASS     "wled1234"
 #define DEFAULT_OTA_PASS    "wledota"
 #define DEFAULT_MDNS_NAME   "x"
 
 //increase if you need more
+#ifndef WLED_MAX_WIFI_COUNT
+  #define WLED_MAX_WIFI_COUNT 3
+#endif
+
 #ifndef WLED_MAX_USERMODS
   #ifdef ESP8266
     #define WLED_MAX_USERMODS 4
@@ -150,14 +171,19 @@
 #define USERMOD_ID_KLIPPER               40     //Usermod Klipper percentage
 #define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
 #define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
-#define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 43   //usermod "usermod_v2_HttpPullLightControl.h"
-#define USERMOD_ID_LDR_DUSK_DAWN         44     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
+#define USERMOD_ID_LDR_DUSK_DAWN         43     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
+#define USERMOD_ID_ANIMARTRIX            44     //Usermod "usermod_v2_animartrix.h"
+#define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 45   //usermod "usermod_v2_HttpPullLightControl.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
 #define AP_BEHAVIOR_NO_CONN               1     //Open when no connection (either after boot or if connection is lost)
 #define AP_BEHAVIOR_ALWAYS                2     //Always open
 #define AP_BEHAVIOR_BUTTON_ONLY           3     //Only when button pressed for 6 sec
+#define AP_BEHAVIOR_TEMPORARY             4     //Open AP when no connection after boot but only temporary
+#ifndef WLED_AP_TIMEOUT
+  #define WLED_AP_TIMEOUT            300000     //Temporary AP timeout
+#endif
 
 //Notifier callMode
 #define CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
@@ -226,7 +252,7 @@
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
-//Digital types (data pin only) (16-31)
+//Digital types (data pin only) (16-39)
 #define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
 #define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
 #define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
@@ -236,11 +262,12 @@
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
 #define TYPE_TM1829              25
 #define TYPE_UCS8903             26
-#define TYPE_UCS8904             29
+#define TYPE_APA106              27
+#define TYPE_UCS8904             29            //first RGBW digital type (hardcoded in busmanager.cpp, memUsage())
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
-//"Analog" types (PWM) (32-47)
-#define TYPE_ONOFF               40            //binary output (relays etc.)
+//"Analog" types (40-47)
+#define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
 #define TYPE_ANALOG_2CH          42            //analog WW + CW
 #define TYPE_ANALOG_3CH          43            //analog RGB
@@ -258,10 +285,13 @@
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 
-#define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
-#define IS_PWM(t)     ((t) > 40 && (t) < 46)
-#define NUM_PWM_PINS(t) ((t) - 40) //for analog PWM 41-45 only
-#define IS_2PIN(t)      ((t) > 47)
+#define IS_TYPE_VALID(t) ((t) > 15 && (t) < 128)
+#define IS_DIGITAL(t)    (((t) > 15 && (t) < 40) || ((t) > 47 && (t) < 64)) //digital are 16-39 and 48-63
+#define IS_2PIN(t)       ((t) > 47 && (t) < 64)
+#define IS_16BIT(t)      ((t) == TYPE_UCS8903 || (t) == TYPE_UCS8904)
+#define IS_PWM(t)        ((t) > 40 && (t) < 46)     //does not include on/Off type
+#define NUM_PWM_PINS(t)  ((t) - 40)                 //for analog PWM 41-45 only
+#define IS_VIRTUAL(t)    ((t) >= 80 && (t) < 96)    //this was a poor choice a better would be 96-111
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
@@ -272,6 +302,10 @@
 #define COL_ORDER_GBR             5
 #define COL_ORDER_MAX             5
 
+//ESP-NOW
+#define ESP_NOW_STATE_UNINIT       0
+#define ESP_NOW_STATE_ON           1
+#define ESP_NOW_STATE_ERROR        2
 
 //Button type
 #define BTN_TYPE_NONE             0
@@ -283,21 +317,23 @@
 #define BTN_TYPE_TOUCH            6
 #define BTN_TYPE_ANALOG           7
 #define BTN_TYPE_ANALOG_INVERTED  8
+#define BTN_TYPE_TOUCH_SWITCH     9
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES       11
+#define WLED_NUM_ETH_TYPES        12
 
-#define WLED_ETH_NONE             0
-#define WLED_ETH_WT32_ETH01       1
-#define WLED_ETH_ESP32_POE        2
-#define WLED_ETH_WESP32           3
-#define WLED_ETH_QUINLED          4
-#define WLED_ETH_TWILIGHTLORD     5
-#define WLED_ETH_ESP32DEUX        6
-#define WLED_ETH_ESP32ETHKITVE    7
-#define WLED_ETH_QUINLED_OCTA     8
-#define WLED_ETH_ABCWLEDV43ETH    9
-#define WLED_ETH_SERG74          10
+#define WLED_ETH_NONE              0
+#define WLED_ETH_WT32_ETH01        1
+#define WLED_ETH_ESP32_POE         2
+#define WLED_ETH_WESP32            3
+#define WLED_ETH_QUINLED           4
+#define WLED_ETH_TWILIGHTLORD      5
+#define WLED_ETH_ESP32DEUX         6
+#define WLED_ETH_ESP32ETHKITVE     7
+#define WLED_ETH_QUINLED_OCTA      8
+#define WLED_ETH_ABCWLEDV43ETH     9
+#define WLED_ETH_SERG74           10
+#define WLED_ETH_ESP32_POE_WROVER 11
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
@@ -339,8 +375,10 @@
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_DENIED       1  // Permission denied
-#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?) OBSOLETE
+#define ERR_CONCURRENCY  2  // Conurrency (client active)
 #define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
+#define ERR_NOT_IMPL     4  // Not implemented
+#define ERR_NORAM        8  // effect RAM depleted
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
@@ -408,7 +446,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3608  // warning: quite a large value for stack
+#define SETTINGS_STACK_BUF_SIZE 3840  // warning: quite a large value for stack (640 * WLED_MAX_USERMODS)
 #endif
 
 #ifdef WLED_USE_ETHERNET
@@ -446,7 +484,11 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
-  #define JSON_BUFFER_SIZE 24576
+  #if defined(ARDUINO_ARCH_ESP32S2)
+    #define JSON_BUFFER_SIZE 24576
+  #else
+    #define JSON_BUFFER_SIZE 32767
+  #endif
 #endif
 
 //#define MIN_HEAP_SIZE (8k for AsyncWebServer)
