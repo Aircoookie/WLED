@@ -712,6 +712,45 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 	SEGMENT.setPixelColorXY(col, rows - row - 1, currentcolor);
 }
 
+/*detect collisions in an array of particles and handle them*/
+void detectCollisions(PSparticle* particles, uint16_t numparticles, uint8_t hardness)
+{
+	// detect and handle collisions
+	uint16_t i,j;
+	int16_t startparticle = 0;
+	int16_t endparticle = numparticles >> 1; // do half the particles
+
+	if (SEGMENT.call % 2 == 0)
+	{ // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
+		startparticle = endparticle;
+		endparticle = numparticles;
+	}
+	
+	for (i = startparticle; i < endparticle; i++)
+	{
+		// go though all 'higher number' particles and see if any of those are in close proximity
+		// if they are, make them collide
+		if (particles[i].ttl > 0) // if particle is alive
+		{
+			int32_t dx, dy; // distance to other particles
+			for (j = i + 1; j < numparticles; j++)
+			{							  // check against higher number particles
+				if (particles[j].ttl > 0) // if target particle is alive
+				{
+					dx = particles[i].x - particles[j].x;
+					if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS))) //check x direction, if close, check y direction
+					{
+						dy = particles[i].y - particles[j].y;
+						if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS)) && (dy < (PS_P_HARDRADIUS)) && (dy > (-PS_P_HARDRADIUS)))
+						{ // particles are close
+							handleCollision(&particles[i], &particles[j], hardness);
+						}
+					}
+				}
+			}
+		}
+	}
+}
 // handle a collision if close proximity is detected, i.e. dx and/or dy smaller than 2*PS_P_RADIUS
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision)
 void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness)

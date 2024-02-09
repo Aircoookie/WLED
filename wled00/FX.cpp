@@ -8542,41 +8542,8 @@ uint16_t mode_particlefall(void)
     }
   }
 
-  uint8_t hardness = SEGMENT.custom2; // how hard the particle collisions are, if set to zero, no particle collision is calculated
-
-  if (hardness > 0)
-  {
-    // detect and handle collisions
-    int16_t startparticle = 0;
-    int16_t endparticle = numParticles / 2; // do half the particles
-
-    if (SEGMENT.call % 2 == 0)
-    { // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
-      startparticle = endparticle;
-      endparticle = numParticles;
-    }
-    for (i = startparticle; i < endparticle; i++)
-    {
-      // go though all 'higher number' particles and see if any of those are in close proximity
-      // if they are, make them collide
-      if (particles[i].ttl > 0) // if particle is alive
-      {
-        int32_t dx, dy; // distance to other particles
-        for (j = i + 1; j < numParticles; j++)
-        { // check against higher number particles
-          if (particles[j].ttl > 0)
-          { // if target particle is alive
-            dx = particles[i].x - particles[j].x;
-            dy = particles[i].y - particles[j].y;
-            if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS)) && (dy < (PS_P_HARDRADIUS)) && (dy > (-PS_P_HARDRADIUS)))
-            { // particles are close
-              handleCollision(&particles[i], &particles[j], hardness);
-            }
-          }
-        }
-      }
-    }
-  }
+  uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
+  detectCollisions(particles, numParticles, hardness);
 
   // now move the particles
   for (i = 0; i < numParticles; i++)
@@ -8707,38 +8674,8 @@ uint16_t mode_particlepile(void)
 
   // detect and handle collisions
 
-  int16_t startparticle = 0;
-  int16_t endparticle = numParticles / 2; // do half the particles
-
-  if (SEGMENT.call % 2 == 0)
-  { // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
-    startparticle = endparticle;
-    endparticle = numParticles;
-  }
-
   uint8_t hardness = ((SEGMENT.custom3) << 3) + 6; // how hard the collisions are, 255 = full hard.
-  // hardness = 255;
-  for (i = startparticle; i < endparticle; i++)
-  {
-    // go though all 'higher number' particles and see if any of those are in close proximity
-    // if they are, make them collide
-    if (particles[i].ttl > 0) // if particle is alive
-    {
-      int32_t dx, dy; // distance to other particles
-      for (j = i + 1; j < numParticles; j++)
-      { // check against higher number particles
-        if (particles[j].ttl > 0)
-        { // if target particle is alive
-          dx = particles[i].x - particles[j].x;
-          dy = particles[i].y - particles[j].y;
-          if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS)) && (dy < (PS_P_HARDRADIUS)) && (dy > (-PS_P_HARDRADIUS)))
-          { // particles are close
-            handleCollision(&particles[i], &particles[j], hardness);
-          }
-        }
-      }
-    }
-  }
+  detectCollisions(particles, numParticles, hardness);
 
   // now move the particles
   for (i = 0; i < numParticles; i++)
@@ -8867,39 +8804,9 @@ uint16_t mode_particlebox(void)
     }
   }
 
-  // detect and handle collisions
-  int16_t startparticle = 0;
-  int16_t endparticle = displayparticles >> 1; // do half the particles
-
-  if (SEGMENT.call % 2 == 0)
-  { // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
-    startparticle = endparticle;
-    endparticle = displayparticles;
-  }
-
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
-  // hardness = 255;
-  for (i = startparticle; i < endparticle; i++)
-  {
-    // go though all 'higher number' particles and see if any of those are in close proximity
-    // if they are, make them collide
-    if (particles[i].ttl > 0) // if particle is alive
-    {
-      int32_t dx, dy; // distance to other particles
-      for (j = i + 1; j < displayparticles; j++)
-      { // check against higher number particles
-        if (particles[j].ttl > 0)
-        { // if target particle is alive
-          dx = particles[i].x - particles[j].x;
-          dy = particles[i].y - particles[j].y;
-          if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS)) && (dy < (PS_P_HARDRADIUS)) && (dy > (-PS_P_HARDRADIUS)))
-          { // particles are close
-            handleCollision(&particles[i], &particles[j], hardness);
-          }
-        }
-      }
-    }
-  }
+  detectCollisions(particles, displayparticles, hardness);
+
 
   // now move the particles
   for (i = 0; i < displayparticles; i++)
@@ -8917,11 +8824,11 @@ uint16_t mode_particlebox(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, displayparticles, false, false);
+  ParticleSys_render(particles, displayparticles, false, false, SEGMENT.check2);
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat,Fastcolors;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0";
 
 /*
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
@@ -9019,8 +8926,6 @@ static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Nois
 * by DedeHai (Damian Schneider)
 */
 
-// TODO: clean up the comments
-//TODO: maybe add collisions?
 
 uint16_t mode_particleimpact(void) 
 {
@@ -9110,17 +9015,23 @@ uint16_t mode_particleimpact(void)
     }
   }
 
-  // update particles
+  //add collision if option is set
+  if(SEGMENT.check3)
+  {
+    uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
+    detectCollisions(particles, numParticles, hardness);
+  }
+   // update particles
   for (i = 0; i < numParticles; i++)
   {
     if (particles[i].ttl)
     {
-      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, SEGMENT.custom2);
+      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, true, SEGMENT.custom2);
     }
   }
-
-  // update the meteors, set the speed state
-  for (i = 0; i < numMeteors; i++)
+  
+      // update the meteors, set the speed state
+      for (i = 0; i < numMeteors; i++)
   {
     Serial.print(meteors[i].source.vy);
     Serial.print(" ");
@@ -9163,7 +9074,7 @@ uint16_t mode_particleimpact(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "Particle Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Wrap X,Bounce X,Bounce Y;;!;012;pal=8,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "Particle Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Wrap X,Bounce X,Collisions;;!;012;pal=8,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
 
 /*
 Particle Attractor, currently just a demo function for the particle attractor
@@ -9232,44 +9143,14 @@ uint16_t mode_particleattractor(void)
     spray->var = 6; //emitting speed variation    
   }
 
-  uint16_t displayparticles = SEGMENT.intensity-1; //cannot go to 255 particles, it will crash if set above 250, why is unclear... maybe array is too small? at 260 it will still crash, if numparticles are set to 265 it does not crash...
+  uint16_t displayparticles = SEGMENT.intensity; //cannot go to 255 particles, it will crash if set above 250, why is unclear... maybe array is too small? at 260 it will still crash, if numparticles are set to 265 it does not crash...
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
   i = 0;
   j = 0;
   
   if (hardness > 1) // enable collisions
   {
-    // detect and handle collisions
-    int16_t startparticle = 0;
-    int16_t endparticle = displayparticles >> 1; // do half the particles
-
-    if (SEGMENT.call % 2 == 0)
-    { // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
-      startparticle = endparticle;
-      endparticle = displayparticles;
-    }
-
-    for (i = startparticle; i < endparticle; i++)
-    {
-      // go though all 'higher number' particles and see if any of those are in close proximity
-      // if they are, make them collide
-      if (particles[i].ttl > 0 && particles[i].outofbounds==0) // if particle is alive and on screen
-      {
-        int32_t dx, dy; // distance to other particles
-        for (j = i + 1; j < displayparticles; j++)
-        { // check against higher number particles
-          if (particles[j].ttl > 0)
-          { // if target particle is alive
-            dx = particles[i].x - particles[j].x;
-            dy = particles[i].y - particles[j].y;
-            if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS)) && (dy < (PS_P_HARDRADIUS)) && (dy > (-PS_P_HARDRADIUS)))
-            { // particles are close
-              handleCollision(&particles[i], &particles[j], hardness);
-            }
-          }
-        }
-      }
-    }
+    detectCollisions(particles, displayparticles, hardness);
   }
 
 
@@ -9289,7 +9170,17 @@ uint16_t mode_particleattractor(void)
 
     if (particles[i].ttl == 0 && emit--) // find a dead particle
     {
-      Emitter_Fountain_emit(spray, &particles[i]);
+      Emitter_Fountain_emit(spray, &particles[i]); //emit one if available
+    }
+
+    // every now and then, apply 'air friction' to smooth things out, slows down all particles a little
+    if (SEGMENT.custom3 > 0)
+    {
+      if (SEGMENT.call % (32 - SEGMENT.custom3) == 0)
+      {
+        if (SEGMENT.check2)
+          applyFriction(&particles[i], 1);
+      }
     }
 
     Particle_attractor(&particles[i], attractor, &counters[i], SEGMENT.speed, SEGMENT.check3);
@@ -9305,7 +9196,7 @@ uint16_t mode_particleattractor(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,,Collision Strength,,,,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,,Collision Strength,Friction,,,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0,o2=0,o3=0";
 
 #endif // WLED_DISABLE_2D
 

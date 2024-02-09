@@ -31,7 +31,7 @@
 
 //particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement
-#define PS_P_HARDRADIUS 92 //hard surface radius of a particle, in collisions, this is forbidden to be entered by another particle (for stacking) 
+#define PS_P_HARDRADIUS 100 //hard surface radius of a particle, used for collision detection proximity,also this is forbidden to be entered by another particle (for stacking) 
 #define PS_P_SURFACE 12  //shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 
 
@@ -78,5 +78,6 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 void FireParticle_update(PSparticle *part, bool wrapX, bool WrapY);
 void ParticleSys_renderParticleFire(PSparticle *particles, uint16_t numParticles, bool wrapX);
 void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat);
+void detectCollisions(PSparticle *particles, uint16_t numparticles, uint8_t hardness);
 void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness);
 void applyFriction(PSparticle *particle, uint8_t coefficient);
