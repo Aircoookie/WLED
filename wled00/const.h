@@ -173,6 +173,7 @@
 #define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
 #define USERMOD_ID_LDR_DUSK_DAWN         43     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
 #define USERMOD_ID_ANIMARTRIX            44     //Usermod "usermod_v2_animartrix.h"
+#define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 45   //usermod "usermod_v2_HttpPullLightControl.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
