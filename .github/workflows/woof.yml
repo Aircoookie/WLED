@@ -1,0 +1,3 @@
+[env:custom_build]
+extends = env:esp32s3dev_16MB_PSRAM_opi
+build_flags = ${env:esp32s3dev_16MB_PSRAM_opi.build_flags} -D WLED_ENABLE_MQTT -D WLED_ENABLE_WEBSOCKETS -D WLED_ENABLE_PIXART -D LEDPIN=13 -D DEFAULT_LED_COUNT=52 -D MAX_LED_MEMORY=64000 -D CLIENT_SSID='"fleas"' -D CLIENT_PASS='"Barkyou123"'
