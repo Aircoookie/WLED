@@ -1,5 +1,12 @@
 ## WLED changelog
 
+#### Build 2402090
+-   Added new Ethernet controller RGB2Go Tetra (duplicate of ESP3DEUXQuattro)
+-   Usermod: httpPullLightControl (#3560 by @roelbroersma)
+-   DMX: S2 & C3 support via modified ESPDMX
+-   Bugfix: prevent cleaning of JSON buffer after a failed lock attempt (BufferGuard)
+-   Product/Brand override (API & AP SSID) (#3750 by @moustachauve)
+
 #### Build 2402060
 -   WLED version 0.15.0-b1
 -   Harmonic Random Cycle palette (#3729 by @dedehai)
