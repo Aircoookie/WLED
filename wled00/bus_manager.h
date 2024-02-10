@@ -349,7 +349,7 @@ class BusHub75Matrix : public Bus {
 
     void setBrightness(uint8_t b, bool immediate);
 
-    // uint8_t getPins(uint8_t* pinArray) {} // todo
+    uint8_t getPins(uint8_t* pinArray) { return 1; } // Fake value due to keep finaliseInit happy
 
     void cleanup() {}
 
