@@ -581,9 +581,10 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     oappend(SET_F("hideDMXInput();"));  // WLEDMM hide "dmx input" settings
 #else
     oappend(SET_F("hideNoDMXInput();"));  // WLEDMM hide "not compiled in" message
-    sappend('v',SET_F("DMT"),dmxTransmitPin);
-    sappend('v',SET_F("DMR"),dmxReceivePin);
-    sappend('v',SET_F("DME"),dmxEnablePin);
+    sappend('v',SET_F("IDMT"),dmxInputTransmitPin);
+    sappend('v',SET_F("IDMR"),dmxInputReceivePin);
+    sappend('v',SET_F("IDME"),dmxInputEnablePin);
+    sappend('v',SET_F("IDMP"),dmxInputPort);
 #endif    
     sappend('v',SET_F("DA"),DMXAddress);
     sappend('v',SET_F("XX"),DMXSegmentSpacing);

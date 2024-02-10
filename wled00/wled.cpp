@@ -139,10 +139,10 @@ void WLED::loop()
   #endif
 
 #ifdef WLED_ENABLE_DMX
-  handleDMX();
+  handleDMXOutput();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
-  handleDMXInput();
+  dmxInput.update();
 #endif
   userLoop();
 
@@ -179,7 +179,11 @@ void WLED::loop()
   }
   #endif
 
-  if (doSerializeConfig) serializeConfig();
+  if (doSerializeConfig)
+  {   
+    serializeConfig();
+  } 
+    
 
   if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
     reset();
@@ -621,11 +625,6 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
-#ifdef WLED_ENABLE_DMX_INPUT
-  if(dmxTransmitPin > 0) pinManager.allocatePin(dmxTransmitPin, true, PinOwner::DMX);
-  if(dmxReceivePin > 0) pinManager.allocatePin(dmxReceivePin, true, PinOwner::DMX);
-  if(dmxEnablePin > 0) pinManager.allocatePin(dmxEnablePin, true, PinOwner::DMX);
-#endif
 
 #if defined(ALL_JSON_TO_PSRAM) && defined(WLED_USE_PSRAM_JSON)
   USER_PRINTLN(F("JSON gabage collection (initial)."));
@@ -752,8 +751,11 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
       ArduinoOTA.setHostname(cmDNS);
   }
 #endif
-#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
-  initDMX();
+#ifdef WLED_ENABLE_DMX
+  initDMXOutput();
+#endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  dmxInput.init(dmxInputReceivePin, dmxInputTransmitPin, dmxInputEnablePin, dmxInputPort);
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
