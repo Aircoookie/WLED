@@ -820,7 +820,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 		{
 			if (dx < 2 * PS_P_HARDRADIUS && dx > -2 * PS_P_HARDRADIUS)
 			{ // distance is too small
-				push = 1;
+				push = 1+random8(3); //make push distance a little random to avoid oscillations
 				if (dx < 0) // dx is negative
 				{
 					push = -push; // invert push direction
@@ -830,7 +830,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 			}
 			if (dy < 2 * PS_P_HARDRADIUS && dy > -2 * PS_P_HARDRADIUS)
 			{ // distance is too small (or negative)
-				push = 1;
+				push = 1+random8(3);	
 				if (dy < 0) // dy is negative
 				{
 					push = -push; // invert push direction
