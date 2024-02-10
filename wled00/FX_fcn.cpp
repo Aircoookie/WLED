@@ -416,22 +416,25 @@ void Segment::startTransition(uint16_t dur) {
 }
 
 // transition progression between 0-65535
-uint16_t Segment::progress() {
+uint16_t IRAM_ATTR_YN Segment::progress() {
   if (!transitional || !_t) return 0xFFFFU;
   unsigned long timeNow = millis();
   if (timeNow - _t->_start > _t->_dur || _t->_dur == 0) return 0xFFFFU;
   return (timeNow - _t->_start) * 0xFFFFU / _t->_dur;
 }
 
-uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
-  uint32_t prog = progress();
+// WLEDMM Segment::currentBri() is declared inline, see FX.h
+#if 0
+uint8_t IRAM_ATTR_YN Segment::currentBri(uint8_t briNew, bool useCct) {
+  uint32_t prog = (transitional && _t) ? progress() : 0xFFFFU;
   if (transitional && _t && prog < 0xFFFFU) {
     if (useCct) return ((briNew * prog) + _t->_cctT * (0xFFFFU - prog)) >> 16;
     else        return ((briNew * prog) + _t->_briT * (0xFFFFU - prog)) >> 16;
   } else {
-    return briNew;
+    return (useCct ? briNew : (on ? briNew : 0));  // WLEDMM aligned with upstream
   }
 }
+#endif
 
 uint8_t Segment::currentMode(uint8_t newMode) {
   return (progress()>32767U) ? newMode : _t->_modeP; // change effect in the middle of transition

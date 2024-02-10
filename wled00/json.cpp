@@ -369,7 +369,10 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     strip.trigger(); // force segment update
   }
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
-  if (seg.differs(prev) & 0x7F) stateChanged = true;
+  if (seg.differs(prev) & 0x7F) {
+    stateChanged = true;
+    if ((seg.on == false) && (prev.on == true) && (prev.freeze == false)) prev.fill(BLACK); // WLEDMM: force BLACK if segment was turned off
+  }
 
   if (iAmGroot) suspendStripService = false; // WLEDMM release lock
   return true;
