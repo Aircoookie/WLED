@@ -570,6 +570,9 @@ uint8_t oePin      = 14;
   if( not display->begin() ) {
       USER_PRINTLN("****** !KABOOM! I2S memory allocation failed ***********");
   }
+  else {
+    _valid = true;
+  }
 
   USER_PRINTLN("MatrixPanel_I2S_DMA started");
 }
