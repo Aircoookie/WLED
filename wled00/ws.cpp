@@ -35,7 +35,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       {
         if (len > 0 && len < 10 && data[0] == 'p') {
           // application layer ping/pong heartbeat.
-          // client-side socket layer ping packets are unresponded (investigate)
+          // client-side socket layer ping packets are unanswered (investigate)
           client->text(F("pong"));
           return;
         }
@@ -171,13 +171,13 @@ void sendDataWs(AsyncWebSocketClient * client)
   releaseJSONBufferLock();
 }
 
-// WLEDMM function to recover full-brigh pixel (based on code from upstream alt-buffer, which is based on code from NeoPixelBrightnessBus)
+// WLEDMM function to recover full-bright pixel (based on code from upstream alt-buffer, which is based on code from NeoPixelBrightnessBus)
 static uint32_t restoreColorLossy(uint32_t c, uint_fast8_t _restaurationBri) {
   if (_restaurationBri == 255) return c;
   uint8_t* chan = (uint8_t*) &c;
   for (uint_fast8_t i=0; i<4; i++) {
     uint_fast16_t val = chan[i];
-    chan[i] = ((val << 8) + _restaurationBri) / (_restaurationBri + 1); //adding _bri slighly improves recovery / stops degradation on re-scale
+    chan[i] = ((val << 8) + _restaurationBri) / (_restaurationBri + 1); //adding _bri slightly improves recovery / stops degradation on re-scale
   }
   return c;
 }
@@ -187,23 +187,30 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   AsyncWebSocketClient * wsc = ws.client(wsClient);
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
-  size_t used = strip.getLengthTotal();
-#ifdef ESP8266
-  constexpr size_t MAX_LIVE_LEDS_WS = 256U;
-#else
-  constexpr size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
-#endif
-  size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
+  #ifdef ESP8266
+    constexpr size_t MAX_LIVE_LEDS_WS = 256U;
+  #else
+    constexpr size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
+  #endif
+  size_t used;// = strip.getLengthTotal();
+  size_t n;// = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   //WLEDMM skipping lines done right 
   #ifndef WLED_DISABLE_2D
     if (strip.isMatrix) {
-      if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS*4)
+      used = Segment::maxWidth * Segment::maxHeight;
+      if (used > MAX_LIVE_LEDS_WS*4)
         n = 4;
-      else if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS)
+      else if (used > MAX_LIVE_LEDS_WS)
         n = 2;
       else
         n = 1;
+    } else {
+      used = strip.getLengthTotal();
+      n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
     }
+  #else
+    used = strip.getLengthTotal();
+    n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   #endif
   size_t pos = (strip.isMatrix ? 4 : 2);
   size_t bufSize = pos + (used/n)*3;

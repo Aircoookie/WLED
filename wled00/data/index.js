@@ -33,15 +33,17 @@ var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
 	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
 	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
-	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
-	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
-	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
+	[0,6,4,1,"https://images.alphacoders.com/516/516792.jpg"], // 4th of July
+	[0,0,1,1,"https://images.alphacoders.com/119/1198800.jpg"] // new year
 ];
 var ctx = null; // WLEDMM
 var ledmapNr = -1; //WLEDMM
 var ledmapFileNames = []; //WLEDMM
 let nodesData = []; //WLEDMM
+let ibtglChecked = true; //WLEDMM
+let sbtglChecked = true; //WLEDMM
+let sbchkChecked = false; //WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -673,11 +675,11 @@ function populateInfo(i)
 	if (i.cn) vcn = i.cn;
 
 	//WLEDMM: add total heap and total PSRAM, and build number, add bin name
-	if (i.ver.includes("0.14.1")) vcn = "Sitting Ducks"; // easter egg
 	if (i.ver.includes("0.14.0")) vcn = "Lupo";          // check for MM versioning scheme
 	if (i.ver.includes("0.14.0-b15")) vcn = "Sitting Ducks"; // late easter egg
 	if (i.ver.includes("0.14.0-b2")) vcn = "This is the way"; // recently watched The Mandalorian? I have spoken ;-)
 	if (i.ver.includes("0.14.0-b15.22")) vcn = "Lupo";
+	if (i.ver.includes("0.14.1-b3")) vcn = "Fried Chicken";  // final line of "One Vision" by Queen
 	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p>(WLEDMM_${i.ver} ${i.rel}.bin)</p><p><em>build ${i.vid}</em></p><table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:Seagreen"></td></tr>'}
@@ -695,6 +697,7 @@ ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.
 ${theap>0?inforow("Heap ☾",((i.totalheap-i.freeheap)/1000).toFixed(0)+"/"+theap.toFixed(0)+" kB"," ("+Math.round((i.totalheap-i.freeheap)/(10*theap))+"%)"):""}
 ${i.minfreeheap?inforow("Max used heap ☾",((i.totalheap-i.minfreeheap)/1000).toFixed(1)+" kB"," ("+Math.round((i.totalheap-i.minfreeheap)/(10*theap))+"%)"):""}
 ${inforow("Free heap",heap," kB")}
+${i.freestack?inforow("Free stack ☾",(i.freestack/1024).toFixed(3)," kB"):""} <!--WLEDMM-->
 ${inforow("Flash Size ☾",flashsize," kB")}  <!--WLEDMM and Athom-->
 ${i.tpram?inforow("PSRAM ☾",(i.tpram/1024).toFixed(1)," kB"):""}
 ${i.psram?((i.tpram-i.psram)>16383?inforow("Used PSRAM ☾",((i.tpram-i.psram)/1024).toFixed(1)," kB"):inforow("Used PSRAM ☾",(i.tpram-i.psram)," B")):""}
@@ -974,6 +977,11 @@ function redrawPalPrev()
 	}
 }
 
+// WLEDMM experimental - revert gamma correction in the browser (for palette preview)
+function unGamma(val, gamma){
+	return Math.round(Math.pow(val / 255.0, 1.0/gamma) * 255.0);
+}
+
 function genPalPrevCss(id)
 {
 	if (!palettesData) return;
@@ -996,15 +1004,17 @@ function genPalPrevCss(id)
 		let r, g, b;
 		let index = false;
 		if (Array.isArray(e)) {
+			// fastLED palettes, with gammas (2.6, 2.2, 2.5) - we revert with slightly reduced values, to better preserve contrast
 			index = Math.round(e[0]/255*100);
-			r = e[1];
-			g = e[2];
-			b = e[3];
+			r = unGamma(e[1], 2.5);
+			g = unGamma(e[2], 2.3);
+			b = unGamma(e[3], 2.4);
 		} else if (e == 'r') {
 			r = Math.random() * 255;
 			g = Math.random() * 255;
 			b = Math.random() * 255;
 		} else {
+			// gradient palettes have custom gamma ~2.6 - don't revert, so their look matches the custom colors display
 			let i = e[1] - 1;
 			var cd = gId('csl').children;
 			r = parseInt(cd[i].dataset.r);
@@ -1104,7 +1114,7 @@ function ddpAll() {
 	callNode(lastinfo.ip, "cfg", {"hw":{"led":{"ins":ins}}}); //self
 }
 
-//curl -s -F "update=@/Users/ewoudwijma/Developer/GitHub/MoonModules/WLED/build_output/release/WLEDMM_0.14.0-b27.31_esp32_4MB_M.bin" 192.168.8.105/update >nul &
+//curl -s -F "update=@/Users/ewoudwijma/Developer/GitHub/MoonModules/WLED/build_output/release/WLEDMM_0.14.0-b28.35_esp32_4MB_M.bin" 192.168.8.105/update >nul &
 
 //WLEDMM
 function SuperSync() {
@@ -1180,7 +1190,7 @@ function populateNodes(i,n)
 	}
 
 	//fetch both cfg.json and info from a node and store in nodesData array
-	function fetchInfoAndCfg(ip, nodeNr, parms, callback) {
+	function fetchInfoAndCfg(ip, nodeNr, callback) {
 		//add td placeholders
 		urows += `<tr>`;
 		for (let nm of ["ins", "pwr", "ip", "type", "rel", "ver", "vid", "fx", "scale-bri", "gcc", "fps", "fpsr", "lpc", "lvc", "mrx", "pnl0", "pnlC", "pnlX", "ssu"])
@@ -1188,22 +1198,24 @@ function populateNodes(i,n)
 		urows += `</tr>`;
 
 		//fetch info, state and effects
-		fetchAndExecute(`http://${ip}/`, "json", nodeNr, function(nodeNr, text) {
+		fetchAndExecute(`http://${ip}/`, "json/si", nodeNr, function(nodeNr, text) {
 			let info = JSON.parse(text)["info"];
 			let state = JSON.parse(text)["state"];
-			let effects = JSON.parse(text)["effects"];
 
 			//set values
+			let name =  n.nodes[nodeNr].name;
+			let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${name}</button>`;
+			gId(`ins${nodeNr}`).innerHTML = url;
+			gId(`ip${nodeNr}`).innerText = ip;
 			gId(`pwr${nodeNr}`).innerHTML = "<button class=\"btn btn-xs\" onclick=\"callNode('"+info.ip+"','state',{'on':"+(state.on?"false":"true")+"});\"><i class=\"icons "+(state.on?"on":"off")+"\">&#xe08f;</i></button>";
 			gId(`type${nodeNr}`).innerText = info.arch;
 			gId(`vid${nodeNr}`).innerText = info.vid;
-			gId(`ip${nodeNr}`).innerText = info.ip;
 			gId(`rel${nodeNr}`).innerText = info.rel;
 			gId(`ver${nodeNr}`).innerText = info.ver;
 			gId(`lvc${nodeNr}`).innerText = info.leds.count;
 			gId(`lpc${nodeNr}`).innerText = info.leds.countP;
 			gId(`fpsr${nodeNr}`).innerText = info.leds.fps;
-			gId(`fx${nodeNr}`).innerText = effects[state.seg[0].fx];
+			gId(`fx${nodeNr}`).innerText = eJson.find((o)=>{return o.id==state.seg[0].fx}).name;
 
 			//store data
 			if (!nodesData[nodeNr]) nodesData[nodeNr] = {};
@@ -1215,12 +1227,10 @@ function populateNodes(i,n)
 			}
 
 			//fetch cfg.json
-			fetchAndExecute(`http://${ip}/`, "cfg.json", nodeNr, function(nodeNr,text) {
+			fetchAndExecute(`http://${ip}/`, "cfg.json", nodeNr, function(nodeNr, text) {
 				let cfg = JSON.parse(text);
 
 				//set values
-				let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${cfg.id.name}</button>`;
-				gId(`ins${nodeNr}`).innerHTML = url;
 				gId(`scale-bri${nodeNr}`).innerText = cfg.light["scale-bri"];
 				gId(`gcc${nodeNr}`).innerText = cfg.light.gc.col  > 1;
 				gId(`fps${nodeNr}`).innerText = cfg.hw.led.fps;
@@ -1281,15 +1291,12 @@ function populateNodes(i,n)
 					}
 				}
 				callback(nodeNr);
-			}, function(nodeNr, text) {console.log("cfg error", nodeNr, n.nodes[nodeNr].name, text);callback(nodeNr);}); //also callback on error
+			}, function(nodeNr, text) {
+				console.log("cfg error", nodeNr, ip, n.nodes[nodeNr].name, text);
+				callback(nodeNr);
+			}); //also callback on error
 		}, function(nodeNr, text) {
-			//to show nodes which failed in providing json info
-			let ip = n.nodes[nodeNr].ip;
-			let name =  n.nodes[nodeNr].name;
-			let url = `<button class="btn" ${(ip == lastinfo.ip)?'style="background-color: red;"':''} title="${ip}" onclick="location.assign('http://${ip}');">${name}</button>`;
-			gId(`ins${nodeNr}`).innerHTML = url;
-			gId(`ip${nodeNr}`).innerText = ip;
-			console.log("json error", nodeNr, ip, name, text);
+			console.log("json error", nodeNr, ip, n.nodes[nodeNr].name, text);
 			callback(nodeNr); //also callback on error
 		}); 
 	} //fetchInfoAndCfg
@@ -1315,7 +1322,7 @@ function populateNodes(i,n)
 		for (let o of n.nodes) {
 			if (o.name) {
 				if (o.ip) { //in ap mode no ip...
-					fetchInfoAndCfg(o.ip, nnodes, -1, function(nodeNr) {
+					fetchInfoAndCfg(o.ip, nnodes, function(nodeNr) {
 						nodesDone++;
 						console.log("nodesDone", nodesDone, nodeNr, n.nodes.length, nnodes, n.nodes[nodeNr].name);
 						//if all done
@@ -1365,7 +1372,7 @@ function updateTrail(e)
 {
 	if (e==null) return;
 	let sd = e.parentNode.getElementsByClassName('sliderdisplay')[0];
-	if (sd && getComputedStyle(sd).getPropertyValue("--bg") !== "none") {
+	if (sd && getComputedStyle(sd).getPropertyValue("--bg").trim() !== "none") { // trim() for Safari
 		var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 		var perc = Math.round(e.value * 100 / max);
 		if (perc < 50) perc += 2;
@@ -1384,7 +1391,7 @@ function toggleBubble(e)
 }
 
 // updates segment length upon input of segment values
-function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
+function updateLen(s, draw=true) //WLEDMM conditionally draw segment view
 {
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);
@@ -1725,7 +1732,7 @@ function updateUI()
 	if (hasRGB) {
 		updateTrail(gId('sliderR'));
 		updateTrail(gId('sliderG'));
-		updateTrail(gId('sliderB'));	
+		updateTrail(gId('sliderB'));
 	}
 	if (hasWhite) updateTrail(gId('sliderW'));
 
@@ -1978,9 +1985,9 @@ function readState(s,command=false)
 //      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
 //      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
 // If effective (@)
-//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - a ; separates slider controls (left) from color controls (middle) and palette control (right)
 //      - if left, middle or right is empty no controls are shown
-//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a , separates slider controls (max 5) or color controls (max 3). Palette has only one value
 //      - a ! means that the default is used.
 //             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
 //             - For colors: Fx color, Background color, Custom
@@ -2438,7 +2445,7 @@ function makeP(i,pl)
 			end: 0
 		};
 		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
-		content = 
+		content =
 `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
 	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r||rep<0?"checked":""}>
 	<span class="checkmark"></span>
@@ -2463,21 +2470,21 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<span class="lstIname">
 	Include brightness
 	</span>
-	<input type="checkbox" id="p${i}ibtgl" checked>
+	<input type="checkbox" id="p${i}ibtgl" ${ibtglChecked?"checked":""}> <!--WLEDMM-->
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
 	<span class="lstIname">
 	Save segment bounds
 	</span>
-	<input type="checkbox" id="p${i}sbtgl" checked>
+	<input type="checkbox" id="p${i}sbtgl" ${sbtglChecked?"checked":""}> <!--WLEDMM-->
 	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
 	<span class="lstIname">
 	Checked segments only
 	</span>
-	<input type="checkbox" id="p${i}sbchk">
+	<input type="checkbox" id="p${i}sbchk" ${sbchkChecked?"checked":""}> <!--WLEDMM-->
 	<span class="checkmark"></span>
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
@@ -2518,7 +2525,15 @@ function makePUtil()
 	p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
 	let pTx = gId('p0txt');
 	pTx.focus();
-	pTx.value = eJson.find((o)=>{return o.id==selectedFx}).name;
+	//WLEDMM: take the name PLUS the icons as default name
+	let fxName = eJson.find((o)=>{return o.id==selectedFx}).name;
+
+	let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
+	if (sE) {
+		fxName = sE.querySelector(".lstIname").innerText;
+	}
+
+	pTx.value = fxName;
 	pTx.select();
 	p.scrollIntoView({
 		behavior: 'smooth',
@@ -2906,8 +2921,11 @@ function saveP(i,pl)
 			obj.o = true;
 		} else {
 			obj.ib = gId(`p${i}ibtgl`).checked;
+			ibtglChecked = obj.ib; //WLEDMM
 			obj.sb = gId(`p${i}sbtgl`).checked;
+			sbtglChecked = obj.sb; //WLEDMM
 			obj.sc = gId(`p${i}sbchk`).checked;
+			sbchkChecked = obj.sc; //WLEDMM
 			if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
 		}
 	}
@@ -3239,7 +3257,7 @@ function genPresets()
 				addToPlaylist("All", ef.id);
 				if (m.includes("1")) addToPlaylist("All1", ef.id);
 				if (m.includes("2")) addToPlaylist("All2", ef.id);
-			} //fxData is array
+			} //fxdata is array
 		} //not RSVD
 	} //all effects
 
@@ -3266,13 +3284,15 @@ function genPresets()
 //WLEDMM: utility function to load contents of file from FS (used in draw)
 function fetchAndExecute(url, name, parms, callback, callError = null)
 {
+	let errorCalled = false;
   fetch
   (url+name, {
     method: 'get'
   })
   .then(res => {
     if (!res.ok) {
-		callError("File " + name + " not found");
+		if (!errorCalled && callError) callError(parms, "File " + name + " not found");
+		errorCalled = true;
     	return "";
     }
     return res.text();
@@ -3281,7 +3301,8 @@ function fetchAndExecute(url, name, parms, callback, callError = null)
     callback(parms, text);
   })
   .catch(function (error) {
-	if (callError) callError(parms, "Error getting " + name);
+	if (!errorCalled && callError) callError(parms, "Error getting " + name);
+	errorCalled = true;
 	console.log(error);
   })
   .finally(() => {

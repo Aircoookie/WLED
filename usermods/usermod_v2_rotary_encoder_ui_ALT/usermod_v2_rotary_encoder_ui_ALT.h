@@ -4,7 +4,7 @@
 
 //
 // Inspired by the original v2 usermods
-// * usermod_v2_rotaty_encoder_ui
+// * usermod_v2_rotary_encoder_ui
 //
 // v2 usermod that provides a rotary encoder-based UI.
 //
@@ -28,10 +28,6 @@
 // * saturation of main color
 // * display network (long press buttion)
 //
-
-#ifdef USERMOD_MODE_SORT
-  #error "Usermod Mode Sort is no longer required. Remove -D USERMOD_MODE_SORT from platformio.ini"
-#endif
 
 #ifndef ENCODER_DT_PIN
 #define ENCODER_DT_PIN 18
@@ -79,7 +75,7 @@ static int re_qstringCmp(const void *ap, const void *bp) {
       // Lowercase
       bVal -= 32;
     }
-    // Relly we shouldn't ever get to '\0'
+    // Really we shouldn't ever get to '\0'
     if (aVal == '"' || bVal == '"' || aVal == '\0' || bVal == '\0') {
       // We're done. one is a substring of the other
       // or something happenend and the quote didn't stop us.
@@ -436,7 +432,7 @@ void RotaryEncoderUIUsermod::setup()
     //      tracking the owner tags....
     pinA = pinB = pinC = -1;
     enabled = false;
-    DEBUG_PRINTLN(F("Failed to alocate GPIO pins for Usermod Rotary Encoder (ALT)."));   //WLEDMM add debug info
+    DEBUG_PRINTLN(F("Failed to allocate GPIO pins for Usermod Rotary Encoder (ALT)."));   //WLEDMM add debug info
     return;
   }
 
@@ -542,7 +538,7 @@ void RotaryEncoderUIUsermod::loop()
       bool changedState = false;
       char lineBuffer[64] = { '\0' };
       do {
-        // finde new state
+        // find new state
         switch (newState) {
           case  0: strcpy_P(lineBuffer, PSTR("Brightness")); changedState = true; break;
           case  1: if (!extractModeSlider(effectCurrent, 0, lineBuffer, 63)) newState++; else changedState = true; break; // speed
