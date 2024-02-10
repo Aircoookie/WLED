@@ -168,8 +168,6 @@ void handleAnalog(uint8_t b)
   #endif
   yield();                            // keep WiFi task running - analog read may take several millis on ESP8266
 
-  DEBUG_PRINT(F("Analog: Raw read = ")); DEBUG_PRINTLN(rawReading);
-
   filteredReading[b] += POT_SMOOTHING * ((float(rawReading) / 16.0f) - filteredReading[b]); // filter raw input, and scale to [0..255]
   uint16_t aRead = max(min(int(filteredReading[b]), 255), 0);                               // squash into 8bit
   if(aRead <= POT_SENSITIVITY) aRead = 0;                                                   // make sure that 0 and 255 are used
@@ -180,7 +178,8 @@ void handleAnalog(uint8_t b)
   // remove noise & reduce frequency of UI updates
   if (abs(int(aRead) - int(oldRead[b])) <= POT_SENSITIVITY) return;  // no significant change in reading
 
-  DEBUG_PRINT(F("Analog: Filtered read = ")); DEBUG_PRINTLN(aRead);
+  DEBUG_PRINT(F("Analog: Raw = ")); DEBUG_PRINT(rawReading);
+  DEBUG_PRINT(F(" Filtered = ")); DEBUG_PRINTLN(aRead);
 
   // Unomment the next lines if you still see flickering related to potentiometer
   // This waits until strip finishes updating (why: strip was not updating at the start of handleButton() but may have started during analogRead()?)
@@ -239,11 +238,11 @@ void handleAnalog(uint8_t b)
 
 void handleButton()
 {
-  static unsigned long lastRead = 0UL;
+  static unsigned long lastAnalogRead = 0UL;
   static unsigned long lastRun = 0UL;
   unsigned long now = millis();
 
-  if (strip.isUpdating() && (now - lastRun < 400)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
+  if (strip.isUpdating() && (now - lastRun < ANALOG_BTN_READ_CYCLE+1)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
   lastRun = now;
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
@@ -256,9 +255,8 @@ void handleButton()
     if (usermods.handleButton(b)) continue; // did usermod handle buttons
 
     if (buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) { // button is not a button but a potentiometer
-      if (now - lastRead > ANALOG_BTN_READ_CYCLE) {
+      if (now - lastAnalogRead > ANALOG_BTN_READ_CYCLE) {
         handleAnalog(b);
-        lastRead = now;
       }
       continue;
     }
@@ -337,6 +335,9 @@ void handleButton()
       buttonWaitTime[b] = 0;
       shortPressAction(b);
     }
+  }
+  if (now - lastAnalogRead > ANALOG_BTN_READ_CYCLE) {
+    lastAnalogRead = now;
   }
 }
 
