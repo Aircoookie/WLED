@@ -201,6 +201,11 @@
 #include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
 #endif
 
+#ifdef USERMOD_KITT
+  #include "../usermods/usermod_v2_KITT/usermod_v2_KITT.h"
+#endif
+
+
 void registerUsermods()
 {
 /*
@@ -379,5 +384,9 @@ void registerUsermods()
 
   #ifdef USERMOD_LDR_DUSK_DAWN
   usermods.add(new LDR_Dusk_Dawn_v2());
+  #endif
+
+  #ifdef USERMOD_KITT
+  usermods.add(new KITTUsermod());
   #endif
 }
