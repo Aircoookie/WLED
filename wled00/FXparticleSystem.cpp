@@ -758,17 +758,32 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 
 	int16_t dx = particle2->x - particle1->x;
 	int16_t dy = particle2->y - particle1->y;
-	int32_t distanceSquared = dx * dx + dy * dy + 1; //+1 so it is never zero to avoid division by zero below
-	if (distanceSquared == 0)						 // add 'noise' in case particles exactly meet at center, prevents dotProduct=0 (this can only happen if they move towards each other)
-	{
-		dx++; //
-		distanceSquared++;
-	}
+	int32_t distanceSquared = dx * dx + dy * dy;
 
 	// Calculate relative velocity
 	int16_t relativeVx = (int16_t)particle2->vx - (int16_t)particle1->vx;
 	int16_t relativeVy = (int16_t)particle2->vy - (int16_t)particle1->vy;
 
+	if (distanceSquared == 0) // add distance in case particles exactly meet at center, prevents dotProduct=0 (this can only happen if they move towards each other)
+	{
+		// Adjust positions based on relative velocity direction
+	        if (relativeVx < 0) { //if true, particle2 is on the right side
+	            particle1->x--;
+	            particle2->x++;
+	        } else{
+	            particle1->x++;
+	            particle2->x--;
+	        }
+	
+	        if (relativeVy < 0) {
+	            particle1->y--;
+	            particle2->y++;
+	        } else{
+	            particle1->y++;
+	            particle2->y--;
+	        }
+		distanceSquared++;
+	}
 	// Calculate dot product of relative velocity and relative distance
 	int32_t dotProduct = (dx * relativeVx + dy * relativeVy);
 
@@ -798,35 +813,34 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 		}
 
 		// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
-		// move each particle by half of the amount they are overlapping, assumes square particles
-
-		if (dx < 2 * PS_P_HARDRADIUS && dx > -2 * PS_P_HARDRADIUS)
-		{ // distance is too small
-			int8_t push = 1;
-			if (dx < 0) // dx is negative
-			{
-				push = -push; // invert push direction
+		
+		int8_t push;
+		
+  		if (distanceSquared < (2 * PS_P_HARDRADIUS) * (2 * PS_P_HARDRADIUS)) 
+		{
+			if (dx < 2 * PS_P_HARDRADIUS && dx > -2 * PS_P_HARDRADIUS)
+			{ // distance is too small
+				push = 1;
+				if (dx < 0) // dx is negative
+				{
+					push = -push; // invert push direction
+				}
+				particle1->x -= push;
+				particle2->x += push;
 			}
-			particle1->x -= push;
-			particle2->x += push;
-		}
-		if (dy < 2 * PS_P_HARDRADIUS && dy > -2 * PS_P_HARDRADIUS)
-		{ // distance is too small (or negative)
-			int8_t push = 1;
-			if (dy < 0) // dy is negative
-			{
-				push = -push; // invert push direction
+			if (dy < 2 * PS_P_HARDRADIUS && dy > -2 * PS_P_HARDRADIUS)
+			{ // distance is too small (or negative)
+				push = 1;
+				if (dy < 0) // dy is negative
+				{
+					push = -push; // invert push direction
+				}
+				particle1->y -= push;
+				particle2->y += push;
 			}
-
-			particle1->y -= push;
-			particle2->y += push;
 		}
 	}
 
-	// particles are close, apply friction -> makes them slow down in mid air, is not a good idea to apply here
-	// const uint8_t frictioncoefficient=4;
-	// applyFriction(particle1, frictioncoefficient);
-	// applyFriction(particle2, frictioncoefficient);
 }
 
 // slow down particle by friction, the higher the speed, the higher the friction
