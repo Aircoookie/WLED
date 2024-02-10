@@ -31,23 +31,36 @@
 
 //particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement
-#define PS_P_HARDRADIUS 100 //hard surface radius of a particle, used for collision detection proximity,also this is forbidden to be entered by another particle (for stacking) 
+#define PS_P_HARDRADIUS 100 //hard surface radius of a particle, used for collision detection proximity
 #define PS_P_SURFACE 12  //shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 
 
-//todo: can add bitfields to add in more stuff
-//but when using bit fields, computation time increases as instructions are needed to mask the fields, only do it with variables that do not get updated too often
+//todo: can add bitfields to add in more stuff, but accessing bitfields is slower than direct memory access!
+//flags as bitfields is still very fast to access.
+
+union Flags {
+  struct  {
+
+  };
+  uint8_t flagsByte; 
+};
+
 
 //struct for a single particle
 typedef struct {
     int16_t x;   //x position in particle system
-    int16_t y;   //y position in particle system
-    uint16_t ttl; //time to live
-    uint8_t outofbounds; //set to 1 if outside of matrix TODO: could make this a union and add more flags instead of wasting a whole byte on this
-    uint8_t hue; //color hue
-    uint8_t sat; //color saturation
+    int16_t y;   //y position in particle system    
     int8_t vx;  //horizontal velocity
     int8_t vy;  //vertical velocity
+    uint16_t ttl; // time to live
+    uint8_t hue;  // color hue
+    uint8_t sat;  // color saturation
+    //add a one byte bit field:
+    bool outofbounds : 1; //out of bounds flag, set to true if particle is outside of display area
+    bool collide : 1; //if flag is set, particle will take part in collisions
+    bool flag2 : 1; // unused flags... could use one for collisions to make those selective.
+    bool flag3 : 1;
+    uint8_t counter : 4; //a 4 bit counter for particle control
 } PSparticle;
 
 //struct for a particle source

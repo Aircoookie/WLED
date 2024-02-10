@@ -46,7 +46,7 @@ void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part)
 	part->vy = emitter->vy + random8(emitter->var) - (emitter->var >> 1);
 	part->ttl = (uint8_t)((rand() % (emitter->maxLife - emitter->minLife)) + emitter->minLife + emitter->source.ttl); // flame intensity dies down with emitter TTL
 	part->hue = emitter->source.hue;
-	part->sat = emitter->source.sat;
+	//part->sat = emitter->source.sat; //flame does not use saturation
 }
 
 // fountain style emitter
@@ -56,9 +56,10 @@ void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part)
 	part->y = emitter->source.y; // + random8(emitter->var) - (emitter->var >> 1);
 	part->vx = emitter->vx + random8(emitter->var) - (emitter->var >> 1);
 	part->vy = emitter->vy + random8(emitter->var) - (emitter->var >> 1);
-	part->ttl = (rand() % (emitter->maxLife - emitter->minLife)) + emitter->minLife;
+	part->ttl = random16(emitter->maxLife - emitter->minLife) + emitter->minLife;
 	part->hue = emitter->source.hue;
 	part->sat = emitter->source.sat;
+	part->collide = emitter->source.collide;
 }
 
 // Emits a particle at given angle and speed, angle is from 0-255 (=0-360deg), speed is also affected by emitter->var
@@ -732,7 +733,7 @@ void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hard
 	{
 		// go though all 'higher number' particles and see if any of those are in close proximity
 		// if they are, make them collide
-		if (particles[i].ttl > 0) // if particle is alive
+		if (particles[i].ttl > 0 && particles[i].collide) // if particle is alive and does collide
 		{
 			int32_t dx, dy; // distance to other particles
 			for (j = i + 1; j < numparticles; j++)
@@ -769,7 +770,8 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 	if (distanceSquared == 0) // add distance in case particles exactly meet at center, prevents dotProduct=0 (this can only happen if they move towards each other)
 	{
 		// Adjust positions based on relative velocity direction
-	        if (relativeVx < 0) { //if true, particle2 is on the right side
+		
+	        if (relativeVx <= 0) { //if true, particle2 is on the right side
 	            particle1->x--;
 	            particle2->x++;
 	        } else{
@@ -777,7 +779,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 	            particle2->x--;
 	        }
 	
-	        if (relativeVy < 0) {
+	        if (relativeVy <= 0) {
 	            particle1->y--;
 	            particle2->y++;
 	        } else{
@@ -796,23 +798,22 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 
 		// Calculate new velocities after collision
 		int32_t impulse = (((dotProduct << (bitshift)) / (distanceSquared)) * hardness) >> 8;
-
-		particle1->vx += (impulse * dx) >> bitshift;
-		particle1->vy += (impulse * dy) >> bitshift;
-		particle2->vx -= (impulse * dx) >> bitshift;
-		particle2->vy -= (impulse * dy) >> bitshift;
-
+		int32_t ximpulse = (impulse * dx) >> bitshift;
+		int32_t yimpulse = (impulse * dy) >> bitshift;
+		particle1->vx += ximpulse;
+		particle1->vy += yimpulse;
+		particle2->vx -= ximpulse;
+		particle2->vy -= yimpulse;
+		
 		if (hardness < 50) // if particles are soft, they become 'sticky' i.e. no slow movements
 		{
-			if (particle1->vx < 2 && particle1->vx > -2)
-				particle1->vx = 0;
-			if (particle1->vy < 2 && particle1->vy > -2)
-				particle1->vy = 0;
-			if (particle2->vx < 2 && particle1->vx > -2)
-				particle1->vx = 0;
-			if (particle2->vy < 2 && particle1->vy > -2)
-				particle1->vy = 0;
+			particle1->vx = (particle1->vx < 2 && particle1->vx > -2) ? 0 : particle1->vx;
+			particle1->vy = (particle1->vy < 2 && particle1->vy > -2) ? 0 : particle1->vy;
+
+			particle2->vx = (particle2->vx < 2 && particle2->vx > -2) ? 0 : particle2->vx;
+			particle2->vy = (particle2->vy < 2 && particle2->vy > -2) ? 0 : particle2->vy;
 		}
+		
 	}
 
 	// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
@@ -820,31 +821,31 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 	// one problem remaining is, particles get squished if (external) force applied is higher than the pushback but this may also be desirable if particles are soft. also some oscillations cannot be avoided without addigng a counter
 	if (distanceSquared < 2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS)
 	{
-		int32_t push;
-		//uint8_t rndchoice = random8(2);
-		const uint32_t HARDDIAMETER = PS_P_HARDRADIUS <<1;
+		uint8_t rndchoice = random8(2);
+		const uint32_t HARDDIAMETER = 2*PS_P_HARDRADIUS;
+
 		if (dx < HARDDIAMETER && dx > -HARDDIAMETER)
 		{ // distance is too small, push them apart
-			push = 1;
+			int32_t push = 3;
 			if (dx < 0) // dx is negative
 				push =-push; // negative push direction
-			
-			//if (rndchoice) // randomly chose one of the particles to push, avoids oscillations
-			//	particle1->x -= push;			
-			//else
-				particle2->x += push; //only push one particle to avoid oscillations
+
+			if (rndchoice)		  // randomly chose one of the particles to push, avoids oscillations
+				particle1->x -= push;
+			else
+				particle2->x += push; // only push one particle to avoid oscillations
 		}
+
 		if (dy < HARDDIAMETER && dy > -HARDDIAMETER)
 		{ // distance is too small (or negative)
-			push = 1;
+			int32_t push = 3;
 			if (dy < 0) // dy is negative
 				push = -push;//negative push direction
 
-			
-			//if (rndchoice) // randomly chose one of the particles to push, avoids oscillations
-			//	particle1->y -= push;
-			//else
-			particle2->y += push; // only push one particle to avoid oscillations
+			if (rndchoice) // randomly chose one of the particles to push, avoids oscillations
+				particle1->y -= push;
+			else
+				particle2->y += push; // only push one particle to avoid oscillations
 		}
 		//note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame		
 	}
