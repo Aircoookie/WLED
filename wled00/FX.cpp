@@ -7890,7 +7890,7 @@ uint16_t mode_particlerotatingspray(void)
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint16_t numParticles = 400;
+  const uint32_t numParticles = 400;
   const uint8_t numSprays = 8; // maximum number of sprays
 
   PSparticle *particles;
@@ -7906,8 +7906,8 @@ uint16_t mode_particlerotatingspray(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
   uint8_t spraycount = 1 + (SEGMENT.custom2 >> 5); // number of sprays to display, 1-8
 
   if (SEGMENT.call == 0) // initialization
@@ -8008,10 +8008,10 @@ uint16_t mode_particlefireworks(void)
   const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
-  const uint16_t numParticles = 250;
+  const uint32_t numParticles = 250;
   const uint8_t MaxNumRockets = 4; 
 #else
-  const uint16_t numParticles = 650;
+  const uint32_t numParticles = 650;
   const uint8_t MaxNumRockets = 8; 
 #endif
 
@@ -8032,8 +8032,8 @@ uint16_t mode_particlefireworks(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(rockets + MaxNumRockets); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
   uint8_t numRockets = 1+ ((SEGMENT.custom3) >> 2); //1 to 8
 
   if (SEGMENT.call == 0) // initialization
@@ -8185,7 +8185,7 @@ uint16_t mode_particlespray(void)
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint16_t numParticles = 450;
+  const uint32_t numParticles = 450;
   const uint8_t numSprays = 1;
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
@@ -8205,8 +8205,8 @@ uint16_t mode_particlespray(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8330,8 +8330,8 @@ uint16_t mode_particlefire(void)
   const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
   const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
-  const uint16_t numFlames = (cols << 1); // number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results, add a few for the base flames
-  const uint16_t numParticles = numFlames * 25;
+  const uint32_t numFlames = (cols << 1); // number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results, add a few for the base flames
+  const uint32_t numParticles = numFlames * 25;
   uint8_t percycle = numFlames >> 1; // maximum number of particles emitted per cycle
   PSparticle *particles;
   PSpointsource *flames;
@@ -8353,7 +8353,7 @@ uint16_t mode_particlefire(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(flames + numFlames); // cast the data array into a particle pointer
 
-  uint16_t i;
+  uint32_t i;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8494,7 +8494,7 @@ uint16_t mode_particlefall(void)
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint16_t numParticles = 500;
+  const uint32_t numParticles = 500;
 
   PSparticle *particles;
 
@@ -8506,8 +8506,8 @@ uint16_t mode_particlefall(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8582,7 +8582,7 @@ uint16_t mode_particlepile(void)
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint16_t numParticles = 400;
+  const uint32_t numParticles = 400;
   const uint8_t numSprays = 1;
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
@@ -8599,8 +8599,8 @@ uint16_t mode_particlepile(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8711,7 +8711,7 @@ uint16_t mode_particlebox(void)
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint16_t numParticles = 255; // maximum number of particles
+  const uint32_t numParticles = 255; // maximum number of particles
 
   PSparticle *particles;
 
@@ -8721,8 +8721,8 @@ uint16_t mode_particlebox(void)
     return mode_static();                                  // allocation failed; //allocation failed
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8828,7 +8828,7 @@ uint16_t mode_particlebox(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat,Fastcolors;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat,Fastcolors;;!;012;pal=1,sx=100,ix=82,c1=190,c2=210,o1=0";
 
 /*
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
@@ -8847,7 +8847,7 @@ uint16_t mode_particleperlin(void)
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint16_t numParticles = 255;
+  const uint32_t numParticles = 255;
 
   PSparticle *particles;
 
@@ -8857,8 +8857,8 @@ uint16_t mode_particleperlin(void)
     return mode_static();                                  // allocation failed; //allocation failed
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8872,7 +8872,7 @@ uint16_t mode_particleperlin(void)
     }
   }
 
-  uint16_t displayparticles = SEGMENT.intensity;
+  uint32_t displayparticles = SEGMENT.intensity;
 
   // apply 'gravity' from a 2D perlin noise map
   SEGMENT.aux0 += SEGMENT.speed >> 4; // noise z-position;
@@ -8940,10 +8940,10 @@ uint16_t mode_particleimpact(void)
   const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
-  const uint16_t numParticles = 250;
-  const uint8_t MaxNumRockets = 4;
+  const uint32_t numParticles = 250;
+  const uint8_t MaxNumMeteors = 4;
 #else
-  const uint16_t numParticles = 550;
+  const uint32_t numParticles = 550;
   const uint8_t MaxNumMeteors = 8;
 #endif
 
@@ -8960,8 +8960,8 @@ uint16_t mode_particleimpact(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(meteors + MaxNumMeteors); // cast the data array into a particle pointer
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
   uint8_t numMeteors = map(SEGMENT.custom3, 0, 31, 1, MaxNumMeteors); // number of meteors to use for animation
 
   if (SEGMENT.call == 0) // initialization
@@ -8981,7 +8981,7 @@ uint16_t mode_particleimpact(void)
   // update particles, create particles
 
   // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
-  uint16_t emitparticles; // number of particles to emit for each rocket's state
+  uint32_t emitparticles; // number of particles to emit for each rocket's state
   i = 0;
   for (j = 0; j < numMeteors; j++)
   {
@@ -9031,7 +9031,7 @@ uint16_t mode_particleimpact(void)
   }
   
       // update the meteors, set the speed state
-      for (i = 0; i < numMeteors; i++)
+  for (i = 0; i < numMeteors; i++)
   {
     Serial.print(meteors[i].source.vy);
     Serial.print(" ");
@@ -9093,7 +9093,7 @@ uint16_t mode_particleattractor(void)
   const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
   const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
-  const uint16_t numParticles = 265; // maximum number of particles
+  const uint32_t numParticles = 265; // maximum number of particles
 
   PSparticle *particles;
   PSparticle *attractor;
@@ -9114,8 +9114,8 @@ uint16_t mode_particleattractor(void)
   spray = reinterpret_cast<PSpointsource *>(attractor + 1);
   counters = reinterpret_cast<uint8_t *>(spray + 1);
 
-  uint16_t i = 0;
-  uint16_t j = 0;
+  uint32_t i = 0;
+  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {

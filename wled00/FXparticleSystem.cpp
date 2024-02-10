@@ -26,6 +26,12 @@
 
 */
 
+/*
+Note: on ESP32 using 32bit integer is faster than 16bit or 8bit, each operation takes on less instruction, can be testen on https://godbolt.org/
+	  it does not matter if using int, unsigned int, uint32_t or int32_t, the compiler will make int into 32bit
+	  this should be used to optimize speed but not if memory is affected much
+*/
+
 #include "FXparticleSystem.h"
 #include "wled.h"
 #include "FastLED.h"
@@ -60,20 +66,14 @@ void Emitter_Angle_emit(PSpointsource *emitter, PSparticle *part, uint8_t angle,
 {
 	emitter->vx = (((int16_t)cos8(angle)-127) * speed) >> 7; //cos is signed 8bit, so 1 is 127, -1 is -127, shift by 7
 	emitter->vy = (((int16_t)sin8(angle)-127) * speed) >> 7;
-	Serial.print(angle);
-	Serial.print(" ");
-	Serial.print(emitter->vx);
-	Serial.print(" ");
-	Serial.print(emitter->vy);
-	Serial.print(" ");
 	Emitter_Fountain_emit(emitter, part);
 }
 // attracts a particle to an attractor particle using the inverse square-law
 void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow) // todo: add a parameter 'swallow' so the attractor can 'suck up' particles that are very close, also could use hue of attractor particle for strength
 {
 	// Calculate the distance between the particle and the attractor
-	int16_t dx = attractor->x - particle->x;
-	int16_t dy = attractor->y - particle->y;
+	int dx = attractor->x - particle->x;
+	int dy = attractor->y - particle->y;
 
 	// Calculate the force based on inverse square law
 	int32_t distanceSquared = dx * dx + dy * dy + 1;
@@ -84,7 +84,7 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 			particle->ttl = 0;
 			return;
 		}
-		distanceSquared = 4096; // limit the distance to 64 (=size of a particle) to avoid very high forces.TODO: could make this depending on the #define for particle size
+		distanceSquared = PS_P_RADIUS * PS_P_RADIUS + PS_P_RADIUS * PS_P_RADIUS; // limit the distance of particle size to avoid very high forces
 	}
 	// check if distance is small enough to even cause a force (for that strength<<10 must be bigger than the distance squared)
 	int32_t shiftedstrength = (int32_t)strength << 16;
@@ -319,9 +319,8 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 			if (bounceY)
 			{
 				part->vy = -part->vy;									   // invert speed
-				part->vy = (((int16_t)part->vy) * (int16_t)hardness) >> 8; // reduce speed as energy is lost on non-hard surface
-				part->y += (int16_t)part->vy;							   // move particle back to within boundaries so it does not disappear for one frame
-				newY = max(newY, (int16_t)0);							   // limit to positive
+				part->vy = (((int16_t)part->vy) * (int16_t)hardness) >> 8; // reduce speed as energy is lost on non-hard surface				
+				newY = max(newY, (int16_t)0);							   // limit to positive (helps with piling as that can push particles out of frame)
 				// newY = min(newY, (int16_t)PS_MAX_Y); //limit to matrix boundaries
 			}
 			else // not bouncing and out of matrix
@@ -335,7 +334,7 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
 // saturation is color saturation, if not set to 255, hsv instead of palette is used (palette does not support saturation)
-void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX, bool wrapY, bool fastcoloradd)
+void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY, bool fastcoloradd)
 {
 
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -349,7 +348,7 @@ void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX
 	uint8_t dx, dy;
 	uint32_t intensity; // todo: can this be an uint8_t or will it mess things up?
 	CRGB baseRGB;
-	uint16_t i;
+	uint32_t i;
 	uint8_t brightess; // particle brightness, fades if dying
 	
 
@@ -527,20 +526,17 @@ void FireParticle_update(PSparticle *part, bool wrapX = false, bool wrapY = fals
 
 // render simple particles to the LED buffer using heat to color
 // each particle adds heat according to its 'age' (ttl) which is then rendered to a fire color in the 'add heat' function
-void ParticleSys_renderParticleFire(PSparticle *particles, uint16_t numParticles, bool wrapX)
+void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles, bool wrapX)
 {
 
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-	// particle box dimensions
-	const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-	const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
-	int16_t x, y;
+	int32_t x, y;
 	uint8_t dx, dy;
 	uint32_t tempVal;
-	uint16_t i;
+	uint32_t i;
 
 	// go over particles and update matrix cells on the way
 	for (i = 0; i < numParticles; i++)
@@ -713,12 +709,12 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 }
 
 /*detect collisions in an array of particles and handle them*/
-void detectCollisions(PSparticle* particles, uint16_t numparticles, uint8_t hardness)
+void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hardness)
 {
 	// detect and handle collisions
-	uint16_t i,j;
-	int16_t startparticle = 0;
-	int16_t endparticle = numparticles >> 1; // do half the particles
+	uint32_t i,j;
+	int32_t startparticle = 0;
+	int32_t endparticle = numparticles >> 1; // do half the particles
 
 	if (SEGMENT.call % 2 == 0)
 	{ // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
@@ -756,13 +752,13 @@ void detectCollisions(PSparticle* particles, uint16_t numparticles, uint8_t hard
 void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness)
 {
 
-	int16_t dx = particle2->x - particle1->x;
-	int16_t dy = particle2->y - particle1->y;
+	int32_t dx = particle2->x - particle1->x;
+	int32_t dy = particle2->y - particle1->y;
 	int32_t distanceSquared = dx * dx + dy * dy;
 
 	// Calculate relative velocity
-	int16_t relativeVx = (int16_t)particle2->vx - (int16_t)particle1->vx;
-	int16_t relativeVy = (int16_t)particle2->vy - (int16_t)particle1->vy;
+	int32_t relativeVx = (int16_t)particle2->vx - (int16_t)particle1->vx;
+	int32_t relativeVy = (int16_t)particle2->vy - (int16_t)particle1->vy;
 
 	if (distanceSquared == 0) // add distance in case particles exactly meet at center, prevents dotProduct=0 (this can only happen if they move towards each other)
 	{
@@ -800,7 +796,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 		particle2->vx -= (impulse * dx) >> bitshift;
 		particle2->vy -= (impulse * dy) >> bitshift;
 
-		if (hardness < 150) // if particles are soft, they become 'sticky' i.e. no slow movements
+		if (hardness < 50) // if particles are soft, they become 'sticky' i.e. no slow movements
 		{
 			if (particle1->vx < 2 && particle1->vx > -2)
 				particle1->vx = 0;
@@ -811,35 +807,42 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 			if (particle2->vy < 2 && particle1->vy > -2)
 				particle1->vy = 0;
 		}
-
-		// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
-		
-		int8_t push;
-		
-  		if (distanceSquared < (2 * PS_P_HARDRADIUS) * (2 * PS_P_HARDRADIUS)) 
-		{
-			if (dx < 2 * PS_P_HARDRADIUS && dx > -2 * PS_P_HARDRADIUS)
-			{ // distance is too small
-				push = 1+random8(3); //make push distance a little random to avoid oscillations
-				if (dx < 0) // dx is negative
-				{
-					push = -push; // invert push direction
-				}
-				particle1->x -= push;
-				particle2->x += push;
-			}
-			if (dy < 2 * PS_P_HARDRADIUS && dy > -2 * PS_P_HARDRADIUS)
-			{ // distance is too small (or negative)
-				push = 1+random8(3);	
-				if (dy < 0) // dy is negative
-				{
-					push = -push; // invert push direction
-				}
-				particle1->y -= push;
-				particle2->y += push;
-			}
-		}
 	}
+
+	// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
+	// if pushing is made dependent on hardness, things start to oscillate much more, better to just add a fixed, small increment (tried lots of configurations, this one works best)
+	// one problem remaining is, particles get squished if (external) force applied is higher than the pushback but this may also be desirable if particles are soft. also some oscillations cannot be avoided without addigng a counter
+	if (distanceSquared < 2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS)
+	{
+		int32_t push;
+		//uint8_t rndchoice = random8(2);
+		const uint32_t HARDDIAMETER = PS_P_HARDRADIUS <<1;
+		if (dx < HARDDIAMETER && dx > -HARDDIAMETER)
+		{ // distance is too small, push them apart
+			push = 1;
+			if (dx < 0) // dx is negative
+				push =-push; // negative push direction
+			
+			//if (rndchoice) // randomly chose one of the particles to push, avoids oscillations
+			//	particle1->x -= push;			
+			//else
+				particle2->x += push; //only push one particle to avoid oscillations
+		}
+		if (dy < HARDDIAMETER && dy > -HARDDIAMETER)
+		{ // distance is too small (or negative)
+			push = 1;
+			if (dy < 0) // dy is negative
+				push = -push;//negative push direction
+
+			
+			//if (rndchoice) // randomly chose one of the particles to push, avoids oscillations
+			//	particle1->y -= push;
+			//else
+			particle2->y += push; // only push one particle to avoid oscillations
+		}
+		//note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame		
+	}
+	
 
 }
 

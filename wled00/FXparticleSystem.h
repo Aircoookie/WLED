@@ -35,6 +35,9 @@
 #define PS_P_SURFACE 12  //shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 
 
+//todo: can add bitfields to add in more stuff
+//but when using bit fields, computation time increases as instructions are needed to mask the fields, only do it with variables that do not get updated too often
+
 //struct for a single particle
 typedef struct {
     int16_t x;   //x position in particle system
@@ -74,10 +77,10 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 void Particle_Move_update(PSparticle *part);
 void Particle_Bounce_update(PSparticle *part, const uint8_t hardness);
 void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness);
-void ParticleSys_render(PSparticle *particles, uint16_t numParticles, bool wrapX, bool wrapY, bool fastcoloradd = false);
+void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY, bool fastcoloradd = false);
 void FireParticle_update(PSparticle *part, bool wrapX, bool WrapY);
-void ParticleSys_renderParticleFire(PSparticle *particles, uint16_t numParticles, bool wrapX);
+void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles, bool wrapX);
 void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat);
-void detectCollisions(PSparticle *particles, uint16_t numparticles, uint8_t hardness);
+void detectCollisions(PSparticle *particles, uint32_t numparticles, uint8_t hardness);
 void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness);
 void applyFriction(PSparticle *particle, uint8_t coefficient);
