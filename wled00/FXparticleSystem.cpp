@@ -334,9 +334,15 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
 // saturation is color saturation, if not set to 255, hsv instead of palette is used (palette does not support saturation)
-void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY, bool fastcoloradd)
+void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY)
 {
-
+#ifdef ESP8266
+	bool fastcoloradd = true; // on ESP8266, we need every bit of performance we can get
+#else
+	bool fastcoloradd = false; // on ESP32, there is little benefit from using fast add
+#endif
+	
+	
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 

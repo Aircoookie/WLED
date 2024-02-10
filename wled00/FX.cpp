@@ -8824,11 +8824,11 @@ uint16_t mode_particlebox(void)
   SEGMENT.fill(BLACK); // clear the matrix
 
   // render the particles
-  ParticleSys_render(particles, displayparticles, false, false, SEGMENT.check2);
+  ParticleSys_render(particles, displayparticles, false, false);
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat,Fastcolors;;!;012;pal=1,sx=100,ix=82,c1=190,c2=210,o1=0";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat,;;!;012;pal=1,sx=100,ix=82,c1=190,c2=210,o1=0";
 
 /*
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
