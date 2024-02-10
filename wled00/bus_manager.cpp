@@ -482,17 +482,11 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   // mxconfig.driver   = HUB75_I2S_CFG::SHIFTREG;
 
-  /*
-  Matrix SS Portal
-  uint8_t rgbPins[]  = {42, 41, 40, 38, 39, 37};
-uint8_t addrPins[] = {45, 36, 48, 35, 21};
-uint8_t clockPin   = 2;
-uint8_t latchPin   = 47;
-uint8_t oePin      = 14;
-*/
 #if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3) // MatrixPortal ESP32-S3
 
-  USER_PRINTLN("MatrixPanel_I2S_DMA - Martrix Poral S3 config");
+  // https://www.adafruit.com/product/5778
+
+  USER_PRINTLN("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
 
   mxconfig.gpio.r1 = 42;
   mxconfig.gpio.g1 = 41;
@@ -514,6 +508,13 @@ uint8_t oePin      = 14;
 #else
 
 /*
+
+    ESP32 with SmartMatrix's default pinout - ESP32_FORUM_PINOUT
+    
+    https://github.com/pixelmatix/SmartMatrix/blob/teensylc/src/MatrixHardware_ESP32_V0.h
+
+    Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
+
     #define R1_PIN  GPIO_NUM_2
     #define G1_PIN  GPIO_NUM_15
     #define B1_PIN  GPIO_NUM_4
