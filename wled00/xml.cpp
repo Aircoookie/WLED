@@ -534,6 +534,10 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     #if !defined(WLED_DISABLE_INFRARED)
     oappend(SET_F("hideNoIR();"));  // WLEDMM hide "not compiled in" message
     #endif
+    #ifndef WLED_ENABLE_HUB75MATRIX
+    oappend(SET_F("hideHub75();"));  // WLEDMM hide HUB75 LED types
+    #endif    
+
   }
 
   if (subPage == 3)

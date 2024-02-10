@@ -16,6 +16,19 @@
 		function B(){window.open("/settings","_self");}
 		function gId(n){return d.getElementById(n);}
 		function hideNoIR(){gId("irOnOff2").style.display="none";} //WLEDMM
+		function hideHub75() {
+			var s = d.getElementsByTagName("select");
+			for (i=0; i<s.length; i++) {
+				// is the field a LED type?
+				if (s[i].name.substring(0,2)=="LT") {
+					var selectobject = s[i];
+					for (var j=(selectobject.length - 1); j > 0; j--) {
+						var t = parseInt(selectobject.options[j].value);
+						if(t >= 100 && t <= 110) selectobject.remove(j);
+					}
+				}
+			}
+		}
  		function off(n){d.getElementsByName(n)[0].value = -1;}
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
