@@ -201,6 +201,10 @@
 #include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
 #endif
 
+#ifdef USERMOD_BUSSTATUS
+  #include "../usermods/usermod_v2_busstatus/usermod_v2_busstatus.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -379,5 +383,9 @@ void registerUsermods()
 
   #ifdef USERMOD_LDR_DUSK_DAWN
   usermods.add(new LDR_Dusk_Dawn_v2());
+  #endif
+
+  #ifdef USERMOD_BUSSTATUS
+  usermods.add(new BusStatusUsermod());
   #endif
 }
