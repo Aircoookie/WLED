@@ -1615,6 +1615,8 @@ void WS2812FX::waitUntilIdle(void) {
 
 void WS2812FX::service() {
   unsigned long nowUp = millis(); // Be aware, millis() rolls over every 49 days // WLEDMM avoid losing precision
+  if (OTAisRunning) return; // WLEDMM avoid flickering during OTA
+
   now = nowUp + timebase;
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_FASTPATH)
     if ((_frametime > 2) && (_frametime < 32) && (nowUp - _lastShow) < (_frametime/2)) return;  // WLEDMM experimental - stabilizes frametimes but increases CPU load
@@ -1776,6 +1778,8 @@ void WS2812FX::estimateCurrentAndLimitBri() {
 }
 
 void WS2812FX::show(void) {
+  if (OTAisRunning) return; // WLEDMM avoid flickering during OTA
+
   // avoid race condition, capture _callback value
   show_callback callback = _callback;
   if (callback) callback();
