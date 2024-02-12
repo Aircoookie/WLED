@@ -1,5 +1,13 @@
 ## WLED changelog
 
+#### Build 2402120
+-   Beta WLED 0.14.2-b1
+-   Possible fix for #3589 & partial fix for #3605
+-   Prevent JSON buffer clear after failed lock attempt
+-   Multiple analog button fix for #3549
+-   UM Audioreactive: add two compiler options (#3732 by @wled-install)
+-   Fix for #3693
+
 #### Build 2401141
 -   Official release of WLED 0.14.1
 -   Fix for #3566, #3665, #3672
