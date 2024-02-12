@@ -225,6 +225,7 @@ void WLED::loop()
       } else {
         if (suspendStripService && (millis() - lastTimeService > 1500)) { // WLEDMM remove stale lock after 1.5 seconds
           USER_PRINTLN("--> looptask: stale suspendStripService lock removed after 1500 ms."); // should not happen - check for missing "suspendStripService = false"
+          suspendStripService = false;
         }
       }
 #endif
@@ -679,7 +680,8 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
 #endif
   updateFSInfo();
 
-  USER_PRINTLN(F("done Mounting FS"));
+  USER_PRINT(F("done Mounting FS; "));
+  USER_PRINT(((fsBytesTotal-fsBytesUsed)/1024)); USER_PRINTLN(F(" kB free."));
 
   // generate module IDs must be done before AP setup
   escapedMac = WiFi.macAddress();
@@ -1233,11 +1235,13 @@ void WLED::handleConnection()
   if (now - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
     if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! "));
-      DEBUG_PRINTLN(heap);
+      USER_PRINT(F("Heap too low! (step 2, force reconnect): "));
+      USER_PRINTLN(heap);
       forceReconnect = true;
       strip.purgeSegments(true); // remove all but one segments from memory
     } else if (heap < MIN_HEAP_SIZE) {
+      USER_PRINT(F("Heap too low! (step 1, purge segments): "));
+      USER_PRINTLN(heap);      
       strip.purgeSegments();
     }
     lastHeap = heap;
