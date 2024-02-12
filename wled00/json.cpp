@@ -1405,14 +1405,26 @@ void serializeModeNames(JsonArray arr) {
 
 // Global buffer locking response helper class (to make sure lock is released when AsyncJsonResponse is destroyed)
 class LockedJsonResponse: public AsyncJsonResponse {
+  bool _holding_lock;
   public:
   // WARNING: constructor assumes requestJSONBufferLock() was successfully acquired externally/prior to constructing the instance
   // Not a good practice with C++. Unfortunately AsyncJsonResponse only has 2 constructors - for dynamic buffer or existing buffer,
   // with existing buffer it clears its content during construction
   // if the lock was not acquired (using JSONBufferGuard class) previous implementation still cleared existing buffer
-  inline LockedJsonResponse(JsonDocument *doc, bool isArray) : AsyncJsonResponse(doc, isArray) {};
+  inline LockedJsonResponse(JsonDocument* doc, bool isArray) : AsyncJsonResponse(doc, isArray), _holding_lock(true) {};
+
+  virtual size_t _fillBuffer(uint8_t *buf, size_t maxLen) { 
+    size_t result = AsyncJsonResponse::_fillBuffer(buf, maxLen);
+    // Release lock as soon as we're done filling content
+    if (((result + _sentLength) >= (_contentLength)) && _holding_lock) {
+      releaseJSONBufferLock();
+      _holding_lock = false;
+    }
+    return result;
+  }
+
   // destructor will remove JSON buffer lock when response is destroyed in AsyncWebServer
-  virtual ~LockedJsonResponse() { releaseJSONBufferLock(); };
+  virtual ~LockedJsonResponse() { if (_holding_lock) releaseJSONBufferLock(); };
 };
 
 void serveJson(AsyncWebServerRequest* request)
