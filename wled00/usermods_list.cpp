@@ -166,7 +166,7 @@
 #endif
 
 #ifdef USERMOD_ANIMARTRIX
-#include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
+  #include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
 #endif
 
 #ifdef USERMOD_INTERNAL_TEMPERATURE
@@ -194,15 +194,19 @@
 #endif
 
 #ifdef USERMOD_MPU6050_IMU
-#include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
+  #include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
 #endif
 
 #ifdef USERMOD_MPU6050_IMU
-#include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
+  #include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
 #endif
 
 #ifdef USERMOD_LDR_DUSK_DAWN
-#include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+  #include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+#endif
+
+#ifdef USERMOD_STAIRCASE_WIPE
+  #include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
 #endif
 
 void registerUsermods()
@@ -396,5 +400,9 @@ void registerUsermods()
 
   #ifdef USERMOD_LDR_DUSK_DAWN
   usermods.add(new LDR_Dusk_Dawn_v2());
+  #endif
+
+  #ifdef USERMOD_STAIRCASE_WIPE
+  usermods.add(new StairwayWipeUsermod());
   #endif
 }
