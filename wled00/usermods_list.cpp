@@ -201,6 +201,9 @@
 #include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
 #endif
 
+#ifdef USERMOD_STAIRCASE_WIPE
+#include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
+#endif
 void registerUsermods()
 {
 /*
@@ -379,5 +382,9 @@ void registerUsermods()
 
   #ifdef USERMOD_LDR_DUSK_DAWN
   usermods.add(new LDR_Dusk_Dawn_v2());
+  #endif
+
+  #ifdef USERMOD_STAIRCASE_WIPE
+  usermods.add(new StairwayWipeUsermod());
   #endif
 }
