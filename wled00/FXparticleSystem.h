@@ -31,7 +31,7 @@
 
 //particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement
-#define PS_P_HARDRADIUS 100 //hard surface radius of a particle, used for collision detection proximity
+#define PS_P_HARDRADIUS 80 //hard surface radius of a particle, used for collision detection proximity
 #define PS_P_SURFACE 12  //shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 
 

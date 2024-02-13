@@ -259,14 +259,14 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 		part->ttl--;
 
 		// check if particle is out of bounds or died
-		if ((part->y < -PS_P_RADIUS) || (part->y >= PS_MAX_Y << 1))
+		if ((part->y < -PS_P_RADIUS) || (part->y >= PS_MAX_Y << 2))
 		{ // if it moves more than 1 pixel below y=0, it will not come back. also remove particles that too far above
 			part->ttl = 0;
 			return; // particle died, we are done
 		}
 		if (wrapX == false)
 		{
-			if ((part->x < -PS_MAX_X) || (part->x >= PS_MAX_X << 1))
+			if ((part->x < -PS_MAX_X) || (part->x >= PS_MAX_X << 2))
 			{ // left and right: keep it alive as long as its not too far out (if adding more effects like wind, it may come back)
 				part->ttl = 0;
 				return; // particle died, we are done
@@ -733,7 +733,7 @@ void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hard
 	{
 		// go though all 'higher number' particles and see if any of those are in close proximity
 		// if they are, make them collide
-		if (particles[i].ttl > 0 && particles[i].collide) // if particle is alive and does collide
+		if (particles[i].ttl > 0 && particles[i].collide && particles[i].outofbounds==0) // if particle is alive and does collide and is not out of view
 		{
 			int32_t dx, dy; // distance to other particles
 			for (j = i + 1; j < numparticles; j++)
@@ -771,7 +771,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 	{
 		// Adjust positions based on relative velocity direction
 		
-	        if (relativeVx <= 0) { //if true, particle2 is on the right side
+	        if (relativeVx < 0) { //if true, particle2 is on the right side
 	            particle1->x--;
 	            particle2->x++;
 	        } else{
@@ -779,7 +779,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 	            particle2->x--;
 	        }
 	
-	        if (relativeVy <= 0) {
+	        if (relativeVy < 0) {
 	            particle1->y--;
 	            particle2->y++;
 	        } else{
@@ -805,7 +805,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 		particle2->vx -= ximpulse;
 		particle2->vy -= yimpulse;
 		
-		if (hardness < 50) // if particles are soft, they become 'sticky' i.e. no slow movements
+		if (hardness < 50) // if particles are soft, they become 'sticky' i.e. slow movements are stopped
 		{
 			particle1->vx = (particle1->vx < 2 && particle1->vx > -2) ? 0 : particle1->vx;
 			particle1->vy = (particle1->vy < 2 && particle1->vy > -2) ? 0 : particle1->vy;
@@ -814,38 +814,45 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 			particle2->vy = (particle2->vy < 2 && particle2->vy > -2) ? 0 : particle2->vy;
 		}
 		
-	}
-
+	}	
 	// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
 	// if pushing is made dependent on hardness, things start to oscillate much more, better to just add a fixed, small increment (tried lots of configurations, this one works best)
 	// one problem remaining is, particles get squished if (external) force applied is higher than the pushback but this may also be desirable if particles are soft. also some oscillations cannot be avoided without addigng a counter
-	if (distanceSquared < 2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS)
+	if (distanceSquared < (int32_t)2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS)
 	{
-		uint8_t rndchoice = random8(2);
-		const uint32_t HARDDIAMETER = 2*PS_P_HARDRADIUS;
+		uint8_t choice = random8(2);//randomly choose one particle to push, avoids oscillations
+		const int32_t HARDDIAMETER = (int32_t)2*PS_P_HARDRADIUS;
+
 
 		if (dx < HARDDIAMETER && dx > -HARDDIAMETER)
 		{ // distance is too small, push them apart
-			int32_t push = 3;
-			if (dx < 0) // dx is negative
-				push =-push; // negative push direction
 
-			if (rndchoice)		  // randomly chose one of the particles to push, avoids oscillations
+			int32_t push;
+			if (dx <= 0)
+				push = -1;//-(PS_P_HARDRADIUS + dx); // inverted push direction
+			else
+				push = 1;//PS_P_HARDRADIUS - dx;
+
+			if (choice) // chose one of the particles to push, avoids oscillations
 				particle1->x -= push;
 			else
-				particle2->x += push; // only push one particle to avoid oscillations
+				particle2->x += push; 
 		}
-
+		//Serial.print(" dy");
+		//Serial.println(dy);
 		if (dy < HARDDIAMETER && dy > -HARDDIAMETER)
-		{ // distance is too small (or negative)
-			int32_t push = 3;
-			if (dy < 0) // dy is negative
-				push = -push;//negative push direction
+		{
+			
+			int32_t push;
+			if (dy <= 0)
+				push = -1; //-(PS_P_HARDRADIUS + dy); // inverted push direction
+			else
+				push = 1; // PS_P_HARDRADIUS - dy;
 
-			if (rndchoice) // randomly chose one of the particles to push, avoids oscillations
+			if (choice) // chose one of the particles to push, avoids oscillations
 				particle1->y -= push;
 			else
-				particle2->y += push; // only push one particle to avoid oscillations
+				particle2->y += push; 
 		}
 		//note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame		
 	}
