@@ -394,6 +394,47 @@ static String getContentType(AsyncWebServerRequest* request, String filename){
   return "text/plain";
 }
 
+#if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+// caching presets in PSRAM may prevent occasional flashes seen when HomeAssitant polls WLED
+// original idea by @akaricchi (https://github.com/Akaricchi)
+// returns a pointer to the PSRAM buffer updates size parameter
+static const uint8_t *getPresetCache(size_t &size) {
+  static unsigned long presetsCachedTime;
+  static uint8_t *presetsCached;
+  static size_t presetsCachedSize;
+
+  if (!psramFound()) {
+    size = 0;
+    return nullptr;
+  }
+
+  if (presetsModifiedTime != presetsCachedTime) {
+    if (presetsCached) {
+      free(presetsCached);
+      presetsCached = nullptr;
+    }
+  }
+
+  if (!presetsCached) {
+    File file = WLED_FS.open("/presets.json", "r");
+    if (file) {
+      presetsCachedTime = presetsModifiedTime;
+      presetsCachedSize = 0;
+      presetsCached = (uint8_t*)ps_malloc(file.size() + 1);
+      if (presetsCached) {
+        presetsCachedSize = file.size();
+        file.read(presetsCached, presetsCachedSize);
+        presetsCached[presetsCachedSize] = 0;
+        file.close();
+      }
+    }
+  }
+
+  size = presetsCachedSize;
+  return presetsCached;
+}
+#endif
+
 bool handleFileRead(AsyncWebServerRequest* request, String path){
   DEBUG_PRINT(F("WS FileRead: ")); DEBUG_PRINTLN(path);
   if(path.endsWith("/")) path += "index.htm";
@@ -404,6 +445,17 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
     request->send(WLED_FS, pathWithGz, contentType);
     return true;
   }*/
+  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+  if (path.endsWith("/presets.json")) {
+    size_t psize;
+    const uint8_t *presets = getPresetCache(psize);
+    if (presets) {
+      AsyncWebServerResponse *response = request->beginResponse_P(200, contentType, presets, psize);
+      request->send(response);
+      return true;
+    }
+  }
+  #endif
   if(WLED_FS.exists(path)) {
     request->send(WLED_FS, path, contentType);
     return true;

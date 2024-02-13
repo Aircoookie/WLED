@@ -386,7 +386,7 @@ void WLED::setup()
   pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
   #endif
 */
-  #if defined(WLED_USE_PSRAM)
+  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
   pDoc = new PSRAMDynamicJsonDocument(2*JSON_BUFFER_SIZE);
   if (!pDoc) pDoc = new PSRAMDynamicJsonDocument(JSON_BUFFER_SIZE); // falback if double sized buffer could not be allocated
   // if the above still fails requestJsonBufferLock() will always return false preventing crashes
