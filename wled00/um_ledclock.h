@@ -6,7 +6,7 @@
 
 // effect helpers
 
-float _lc_map8f(uint8_t factor, float min, float max) {
+float _lc_map8f(uint16_t factor, float min, float max) {
     return min + (factor / (float)255) * (max - min);
 }
 
@@ -23,9 +23,9 @@ float _lc_random_float(float min, float max) {
 
 typedef struct {
     bool inited = false;
-    uint8_t hue;
-    uint8_t width;
-    uint8_t height;
+    uint16_t hue;
+    uint16_t width;
+    uint16_t height;
     float x;
     float y;
     float vx;
@@ -66,15 +66,15 @@ uint16_t mode_lc2sofix() {
 
     d->hue += 1;
 
-    for (uint8_t x = 0; x < d->width; ++x) {
-        for (uint8_t y = 0; y < d->height; ++y) {
+    for (uint16_t x = 0; x < d->width; ++x) {
+        for (uint16_t y = 0; y < d->height; ++y) {
             float dist = sqrtf(powf(x - d->x, 2) + powf(y - d->y, 2));
 
             float radius = sqrtf(powf(d->width, 2) + powf(d->height, 2)) * _lc_map8f(255 - SEGMENT.intensity, _LC_2SX_RMIN, _LC_2SX_RMAX);
 
             float dNorm = dist / radius;
-            uint8_t hueOffset = fmod(dNorm, 1) * 255;
-            uint8_t hue = (d->hue + hueOffset) % 256;
+            uint16_t hueOffset = fmod(dNorm, 1) * 255;
+            uint16_t hue = (d->hue + hueOffset) % 256;
 
             SEGMENT.setPixelColorXY(x, y, CHSV(hue, 255, 255));
         }
@@ -94,8 +94,8 @@ static const char _data_FX_MODE_LC_2SOFIX[] PROGMEM = "2sofix@Speed,Scale;;;2";
 
 typedef struct {
     bool inited = false;
-    uint8_t width;
-    uint8_t height;
+    uint16_t width;
+    uint16_t height;
     float maxRadius;
     float rotation;
 } _lcVortexData;
@@ -122,8 +122,8 @@ uint16_t mode_lcVortex() {
     d->rotation += _lc_map8f(SEGMENT.speed, _LC_VTX_INC_MIN, _LC_VTX_INC_MAX);
     d->rotation = fmodf(d->rotation, 360);
 
-    for (uint8_t x = 0; x < d->width; ++x) {
-        for (uint8_t y = 0; y < d->height; ++y) {
+    for (uint16_t x = 0; x < d->width; ++x) {
+        for (uint16_t y = 0; y < d->height; ++y) {
             float _x = x - d->width / (float)2;
             float _y = -(y - d->height / (float)2);
 
@@ -170,8 +170,8 @@ static const char _data_FX_MODE_LC_VORTEX[] PROGMEM = "Vortex@Speed,Strength;;!;
 
 typedef struct {
     bool inited = false;
-    uint8_t width;
-    uint8_t height;
+    uint16_t width;
+    uint16_t height;
     float radius;
     float offset;
 } _lcConcentricData;
@@ -198,8 +198,8 @@ uint16_t mode_lcConcentric() {
     d->offset += _lc_map8f(SEGMENT.speed, _LC_CON_INC_MIN, _LC_CON_INC_MAX);
     d->offset = fmodf(d->offset, 1);
 
-    for (uint8_t x = 0; x < d->width; ++x) {
-        for (uint8_t y = 0; y < d->height; ++y) {
+    for (uint16_t x = 0; x < d->width; ++x) {
+        for (uint16_t y = 0; y < d->height; ++y) {
             float _x = x - d->width / (float)2;
             float _y = -(y - d->height / (float)2);
 
@@ -457,11 +457,11 @@ static TimeChange timeChangeMillis(unsigned long millis, bool clear = false) {
     return c;
 }
 
-static void outputPixel(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b) {
+static void outputPixel(uint16_t x, uint16_t y, uint16_t r, uint16_t g, uint16_t b) {
     strip.setPixelColorXY(x, y, RGBW32(r, g, b, 0));
 }
 
-inline static uint8_t screen(uint8_t a, uint8_t b) {
+inline static uint16_t screen(uint16_t a, uint16_t b) {
     return 255 * (1.0f - ((1.0f - (a / 255.0f)) * (1.0f - (b / 255.0f))));
 }
 
@@ -514,11 +514,11 @@ private:
 
     time_t p;
 
-    uint8_t br;
+    uint16_t br;
 
     Timer selfTestTimer;
-    uint8_t selfTestCycle = 0;
-    uint8_t selfTestIdx = 0;
+    uint16_t selfTestCycle = 0;
+    uint16_t selfTestIdx = 0;
     bool selfTestDone = false;
 
     uint32_t* backup = 0;
@@ -532,7 +532,7 @@ private:
     unsigned long stopwatchElapsed = 0;
     unsigned long stopwatchPrevLapTime = 0;
     unsigned long stopwatchLapTimes[STOPWATCH_MAX_LAP_TIMES];
-    uint8_t stopwatchLapTimeIdx = 0;
+    uint16_t stopwatchLapTimeIdx = 0;
     uint32_t stopwatchLaptimeNr = 0;
 
     Timer timerTimer;
@@ -569,8 +569,8 @@ public:
 
         dHoursT.setShowZero(!hideZero);
 
-        uint8_t sepLedRowIndices[] = { LC_SEP_LED_ROWS };
-        for (uint8_t i = 0; i < LC_SEP_LEDS; ++i) {
+        uint16_t sepLedRowIndices[] = { LC_SEP_LED_ROWS };
+        for (uint16_t i = 0; i < LC_SEP_LEDS; ++i) {
             sep.addLed(sepLedRowIndices[i], 0);
         }
 
@@ -585,7 +585,7 @@ public:
         beep(beepStartup);
     }
 
-    void beep(uint8_t beep) {
+    void beep(uint16_t beep) {
         if (!muteBeeps && beep < beepCount) {
             beeper.play(beeps[beep]);
         }
@@ -789,11 +789,11 @@ public:
                 : 0;
 
             JsonArray arr = stopwatch.createNestedArray(LedClockStateKeys::Stopwatch::lapTimes);
-            for (uint8_t i = stopwatchLapTimeIdx; i > 0; --i) {
+            for (uint16_t i = stopwatchLapTimeIdx; i > 0; --i) {
                 arr.add(stopwatchLapTimes[i - 1]);
             }
             if (stopwatchLaptimeNr != stopwatchLapTimeIdx) {
-                for (uint8_t i = STOPWATCH_MAX_LAP_TIMES; i > stopwatchLapTimeIdx; --i) {
+                for (uint16_t i = STOPWATCH_MAX_LAP_TIMES; i > stopwatchLapTimeIdx; --i) {
                     arr.add(stopwatchLapTimes[i - 1]);
                 }
             }
@@ -838,7 +838,7 @@ public:
                 }
             }
 
-            uint8_t b = state[LedClockStateKeys::beep] | 255;
+            uint16_t b = state[LedClockStateKeys::beep] | 255;
             if (b < beepCount) {
                 beeper.play(beeps[b]);
             }
@@ -1076,7 +1076,7 @@ public:
             backupStrip();
 
             if (canvasColor && blendingMode > BlendingMode::Normal) { 
-                for (uint8_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
+                for (uint16_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
                     CRGB rgb = CRGB(busses.getPixelColor(i));
                     switch (blendingMode) {
                     case Lighten:
@@ -1110,7 +1110,7 @@ public:
                 stateUpdated(CALL_MODE_DIRECT_CHANGE);
             }
         } else {
-            for (uint8_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
+            for (uint16_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
                 CRGB color = i <= selfTestIdx
                     ? selfTestColors[selfTestCycle]
                     : (selfTestCycle > 0
