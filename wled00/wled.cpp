@@ -157,11 +157,11 @@ void WLED::loop()
   if (millis() - heapTime > 15000) {
     uint32_t heap = ESP.getFreeHeap();
     if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! ")); DEBUG_PRINTLN(heap);
+      DEBUG_PRINT(F("\n***** Heap too low, forcing reconnect! ")); DEBUG_PRINTLN(heap);
       forceReconnect = true;
       strip.resetSegments(); // remove all but one segments from memory
     } else if (heap < MIN_HEAP_SIZE) {
-      DEBUG_PRINTLN(F("Heap low, purging segments."));
+      DEBUG_PRINTLN(F("\n***** Heap low, purging segments."));
       strip.purgeSegments();
     }
     lastHeap = heap;
