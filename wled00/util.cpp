@@ -207,7 +207,7 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 
 
 //threading/network callback details: https://github.com/Aircoookie/WLED/pull/2336#discussion_r762276994
-bool requestJSONBufferLock(uint8_t module)
+bool requestJSONBufferLock(uint8_t module, bool yield_ok)
 {
   if (pDoc == nullptr) {
     DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
@@ -215,7 +215,7 @@ bool requestJSONBufferLock(uint8_t module)
   }
   unsigned long now = millis();
 
-  while (jsonBufferLock && millis()-now < 100) delay(1); // wait for fraction for buffer lock
+  while (jsonBufferLock && yield_ok && (millis()-now < 100)) delay(1); // wait for fraction for buffer lock
 
   if (jsonBufferLock) {
     DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
