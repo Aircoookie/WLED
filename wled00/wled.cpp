@@ -247,6 +247,9 @@ void WLED::loop()
     }
     #endif
     DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
+    #ifndef WLED_DISABLE_ESPNOW
+    DEBUG_PRINT(F("ESP-NOW state: "));   DEBUG_PRINTLN(statusESPNow);
+    #endif
 
     if (WiFi.status() != lastWifiState) {
       wifiStateChangedTime = millis();
@@ -834,7 +837,8 @@ void WLED::initConnection()
 
 #ifndef WLED_DISABLE_ESPNOW
   if (enableESPNow) {
-    quickEspNow.onDataRcvd(espNowReceiveCB);
+    quickEspNow.onDataSent(espNowSentCB);     // see udp.cpp
+    quickEspNow.onDataRcvd(espNowReceiveCB);  // see udp.cpp
     bool espNowOK;
     if (apActive) {
       DEBUG_PRINTLN(F("ESP-NOW initing in AP mode."));
