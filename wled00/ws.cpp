@@ -41,7 +41,10 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
 
         bool verboseResponse = false;
-        if (!requestJSONBufferLock(11)) return;
+        if (!requestJSONBufferLock(11)) {
+          client->text(F("{\"error\":3}")); // ERR_NOBUF
+          return;
+        }
 
         DeserializationError error = deserializeJson(doc, data, len);
         JsonObject root = doc.as<JsonObject>();
@@ -106,15 +109,22 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
-  if (!requestJSONBufferLock(12)) return;
+  if (!requestJSONBufferLock(12)) {
+    if (client) {
+      client->text(F("{\"error\":3}")); // ERR_NOBUF
+    } else {
+      ws.textAll(F("{\"error\":3}")); // ERR_NOBUF
+    }
+    return;
+  }
 
   JsonObject state = doc.createNestedObject("state");
   serializeState(state);
   JsonObject info  = doc.createNestedObject("info");
   serializeInfo(info);
 
-  size_t len = measureJson(doc);
-  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
+  size_t len = measureJson(*pDoc);
+  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", pDoc->memoryUsage(), len);
 
   #ifdef ESP8266
   size_t heap1 = ESP.getFreeHeap();  // WLEDMM moved into 8266 specific section
