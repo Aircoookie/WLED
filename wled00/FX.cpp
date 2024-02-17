@@ -8141,10 +8141,6 @@ uint16_t mode_particlefireworks(void)
   }
 
   // update the rockets, set the speed state
-
-  // todo: man kann für das timing auch die rakete selbst benutzen: dazu einfach vy verwenden: ist es >0, steigt die rakete auf. ist ttl=0 wird vy = -1 gesetzt und ttl als standbyzeit gesetzt.
-  // ist vy<0 so wird emit funkion nicht aufgerufen.
-  // ist vy>0 so wird genau ein partikel emittiert. ist vy>0 und
   for (i = 0; i < numRockets; i++)
   {
     if (rockets[i].source.ttl)
@@ -8924,8 +8920,6 @@ static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Part
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
 calculates slope gradient at the particle positions
 restults in a fuzzy perlin noise disply
-
-//TODO: add more parameters, like size and moving speed thorugh the noise
 */
 
 uint16_t mode_particleperlin(void)
