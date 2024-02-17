@@ -237,6 +237,55 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) // bounces
 	}
 }
 
+void Particle_Wrap_update(PSparticle *part, bool wrapX, bool wrapY) // particle moves, decays and dies (age or out of matrix), if wrap is set, pixels leaving the matrix reappear on other side
+{
+	// Matrix dimension
+	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+
+	// particle box dimensions
+	const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
+	const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+
+	if (part->ttl > 0)
+	{
+		// age
+		part->ttl--;
+
+		// apply velocity
+		int32_t newX, newY;
+		newX = part->x + (int16_t)part->vx;
+		newY = part->y + (int16_t)part->vy;
+
+		part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
+		// x direction, handle wraparound
+		if (wrapX)
+		{
+			newX = newX % (PS_MAX_X + 1);
+			if (newX < 0)
+				newX = PS_MAX_X - newX;
+		}
+		else if ((part->x <= 0) || (part->x >= PS_MAX_X)) // check if particle is out of bounds
+		{
+			part->outofbounds = 1;
+		}
+		part->x = newX; // set new position
+
+		if (wrapY)
+		{
+			newY = newY % (PS_MAX_Y + 1);
+			if (newY < 0)
+				newY = PS_MAX_Y - newY;
+		}
+		else if ((part->y <= 0) || (part->y >= PS_MAX_Y)) // check if particle is out of bounds
+		{
+			part->outofbounds = 1;
+		}
+		part->y = newY; // set new position
+	}
+
+}
+
 void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness) // particle moves, decays and dies (age or out of matrix), if wrapX is set, pixels leaving in x direction reappear on other side, hardness is surface hardness for bouncing (127 means 50% speed lost each bounce)
 {
 

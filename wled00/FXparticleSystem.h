@@ -89,6 +89,7 @@ void Emitter_Angle_emit(PSpointsource *emitter, PSparticle *part, uint8_t angle,
 void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
 void Particle_Move_update(PSparticle *part);
 void Particle_Bounce_update(PSparticle *part, const uint8_t hardness);
+void Particle_Wrap_update(PSparticle *part, bool wrapX, bool wrapY);
 void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness);
 void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY);
 void FireParticle_update(PSparticle *part, bool wrapX, bool WrapY);
