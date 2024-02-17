@@ -6271,7 +6271,7 @@ static const char _data_FX_MODE_2DPLASMAROTOZOOM[] PROGMEM = "Rotozoomer@!,Scale
   float    *fftBin = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    volumeSmth    = *(float*)   um_data->u_data[0];
+    volumeSmth    = *(float*)   um_data->u_data[0]; 
     volumeRaw     = *(float*)   um_data->u_data[1];
     fftResult     =  (uint8_t*) um_data->u_data[2];
     samplePeak    = *(uint8_t*) um_data->u_data[3];
@@ -8050,6 +8050,8 @@ uint16_t mode_particlefireworks(void)
   }
 
   // update particles, create particles
+  uint8_t circularexplosion = random8(numRockets + 2); //choose a rocket by random (but not every round one will be picked)
+  uint8_t spiralexplosion = random8(numRockets + 2);
 
   // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
   uint16_t emitparticles; // number of particles to emit for each rocket's state
@@ -8069,36 +8071,54 @@ uint16_t mode_particlefireworks(void)
     {                                   // speed is zero, explode!
       emitparticles = random8(SEGMENT.intensity>>1) + 10; // defines the size of the explosion
       rockets[j].source.vy = -1;        // set speed negative so it will emit no more particles after this explosion until relaunch
-      if (j == 0)                       // first rocket, do an angle emit
+      if (j == circularexplosion || j == spiralexplosion)       // chosen rocket, do an angle emit (creating a circle)
       {
-        emitparticles>>2; //emit less particles for circle-explosion
+        emitparticles>>3; //emit less particles for circle-explosions
         rockets[j].maxLife = 150;
         rockets[j].minLife = 120;        
-        rockets[j].var = 0;              // speed variation around vx,vy (+/- var/2)
+        rockets[j].var = 0;  // speed variation around vx,vy (+/- var/2)
       }
     }
 
-    uint8_t speed = 5;
+    uint8_t speed = 3;
     uint8_t angle = 0;
+    if (j == spiralexplosion) 
+      angle = random(8);
 
     for (i; i < numParticles; i++)
     {
       if (particles[i].ttl == 0)
       { // particle is dead
 
-        if (j == 0 && emitparticles > 2) // first rocket, do angle emit
+        if (j == circularexplosion && emitparticles > 2) //do circle emit
         {
           Emitter_Angle_emit(&rockets[j], &particles[i],angle,speed);
-          emitparticles--;
-          //set angle for next particle          
-          angle += 21; //about 30°
-          if(angle > 250) //full circle completed, increase speed and reset angle
+
+          if (angle > 242) // full circle completed, increase speed and reset angle
           {
-              angle = 0;
-              speed += 8;
-              rockets[j].source.hue = random8(); //new color for next row
-              rockets[j].source.sat = random8();
+            angle += 10;
+            speed += 6;
+            rockets[j].source.hue = random8(); // new color for next row
+            rockets[j].source.sat = random8();
+            if(emitparticles > 12) 
+              emitparticles-=12; //emitted about 12 particles for one circle, ensures no incomplete circles are done
+            else
+              emitparticles = 0;
           }
+
+          //set angle for next particle          
+          angle += 21; //about 30°          
+        }
+        else if (j == spiralexplosion && emitparticles > 2) // do spiral emit
+        {
+          Emitter_Angle_emit(&rockets[j], &particles[i], angle, speed);
+          emitparticles--;
+          emitparticles--;//only emit half as many particles as in circle explosion, it gets too huge otherwise
+          angle += 15;                    
+          speed++;
+          rockets[j].source.hue++; 
+          rockets[j].source.sat = random8(155)+100;        
+          
         }
         else if (emitparticles > 0)
         {
@@ -8138,7 +8158,7 @@ uint16_t mode_particlefireworks(void)
       rockets[i].source.sat = random8(100)+155;
       rockets[i].maxLife = 200;
       rockets[i].minLife = 50;
-      rockets[i].source.ttl = random8((255 - SEGMENT.speed))+10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
+      rockets[i].source.ttl = random8((255 - SEGMENT.speed))+50; // standby time til next launch (in frames at 42fps, max of 300 is about 7 seconds
       rockets[i].vx = 0;                         // emitting speed
       rockets[i].vy = 0;                         // emitting speed
       rockets[i].var = (SEGMENT.intensity >> 3) + 10; // speed variation around vx,vy (+/- var/2)
@@ -8167,7 +8187,7 @@ uint16_t mode_particlefireworks(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Fireworks@Launches,Explosion Size,Height,Bounce,Rockets,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Fireworks@Launches,Explosion Size,Height,Bounce,Rockets,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=0";
 
 /*
  * Particle Volcano (gravity spray)
@@ -8517,8 +8537,8 @@ uint16_t mode_particlefall(void)
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
 
+
   uint32_t i = 0;
-  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8527,7 +8547,7 @@ uint16_t mode_particlefall(void)
       particles[i].ttl = 0;
     }
   }
-  particles[i].sat = ((SEGMENT.custom3) << 3) + 7;                                  // set saturation
+  
   if (SEGMENT.call % (64 - (SEGMENT.intensity >> 2)) == 0 && SEGMENT.intensity > 1) // every nth frame emit particles, stop emitting if zero
   {
     while (i < numParticles) // emit particles
@@ -8535,7 +8555,7 @@ uint16_t mode_particlefall(void)
       if (particles[i].ttl == 0) // find a dead particle
       {
         // emit particle at random position just over the top of the matrix
-        particles[i].ttl = 3000 - (SEGMENT.speed << 3) + random16(500); // if speed is higher, make them die sooner
+        particles[i].ttl = 1500 - (SEGMENT.speed << 2) + random16(500); // if speed is higher, make them die sooner
 
         if (random8(5) == 0) // 16% of particles apper anywhere
           particles[i].x = random16(cols * PS_P_RADIUS - 1);
@@ -8565,7 +8585,7 @@ uint16_t mode_particlefall(void)
     {
       applyFriction(&particles[i], 50 - SEGMENT.speed);
     }
-    Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, 150); // surface hardness is fixed to 150
+    Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, min(hardness,(uint8_t)150)); // surface hardness max is 150
   }
 
   SEGMENT.fill(BLACK); // clear the matrix
@@ -8580,10 +8600,23 @@ uint16_t mode_particlefall(void)
 static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=0,c3=20,o1=0,o2=0,o3=1";
 
 /*
- * Particle pile up test
- * Uses palette for particle color
+ * Particle Waterfall
+ * Uses palette for particle color, spray source at top emitting particles, many config options
  * by DedeHai (Damian Schneider)
  */
+
+/*Audio Reactive test:
+
+    volumeSmth    = *(float*)   um_data->u_data[0];
+    volumeRaw     = *(float*)   um_data->u_data[1];
+    fftResult     =  (uint8_t*) um_data->u_data[2];
+    samplePeak    = *(uint8_t*) um_data->u_data[3];
+    FFT_MajorPeak = *(float*)   um_data->u_data[4];
+    my_magnitude  = *(float*)   um_data->u_data[5];
+    maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
+    binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
+    fftBin        =  (float*)   um_data->u_data[8];  //not sure what this pointer does... not used in any examples
+    */
 
 uint16_t mode_particlewaterfall(void)
 {
@@ -8591,6 +8624,45 @@ uint16_t mode_particlewaterfall(void)
   if (SEGLEN == 1)
     return mode_static();
 
+  
+/*
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+  {    
+    um_data = NULL; //no audio
+  }
+  //TODO: will crash if no umdata!
+  uint8_t volumeSmth = (uint8_t)(*(float *)um_data->u_data[0]); //volume, mapped 0-255
+  float volumeRaw = *(float *)um_data->u_data[1]; //always zero?
+  uint8_t* fftResult = (uint8_t *)um_data->u_data[2]; //16 bins with FFT data
+  uint8_t samplePeak = *(uint8_t *)um_data->u_data[3]; //0 or 1 if a sample peak is detected (not sure what the thresholds are)
+  float FFT_MajorPeak = *(float *)um_data->u_data[4];  //frequency in Hz of major peak 
+  float my_magnitude = *(float *)um_data->u_data[5];  //current volume, should fit a uint16_t (goes up to 20'000 or even higher?) but unclear what exactly the value is
+  //maxVol = (uint8_t *)um_data->u_data[6]; // requires UI element (SEGMENT.customX?), changes source element, see Ripple Peak for an example
+  //binNum = (uint8_t *)um_data->u_data[7]; // requires UI element (SEGMENT.customX?), changes source element
+  //float* fftBin = (float *)um_data->u_data[8]; //points to what exactly?
+  */
+/*
+  //print values as a test:
+  Serial.println("***");
+  Serial.print(volumeSmth);
+  Serial.print(", ");
+  Serial.print(volumeRaw); 
+  Serial.print(", ");
+  Serial.print(samplePeak);
+  Serial.print(", ");
+  Serial.print(FFT_MajorPeak);
+  Serial.print(", ");
+  Serial.println(my_magnitude);
+
+  for(int i = 0; i<16;i++)
+  {
+    Serial.print(fftResult[i]);
+    Serial.print(" ");
+  }
+
+  Serial.println("***");
+*/
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
@@ -8641,33 +8713,40 @@ uint16_t mode_particlewaterfall(void)
   {
     spray[i].source.hue++; //change hue of spray source
   }
-  if (SEGMENT.call % (9 - (SEGMENT.intensity>>5)) == 0 && SEGMENT.intensity > 0) // every nth frame, cycle color and emit particles, do not emit if intensity is zero
+
+  uint8_t intensity = SEGMENT.intensity;
+/*
+  if (um_data != NULL) //audio reactive data available
   {
-
-    for (i = 0; i < numSprays; i++)
-    {      
-      spray[i].vy = -SEGMENT.speed >> 3;                         // emitting speed, down
-      spray[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (cols - 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
-      spray[i].source.ttl = 255; // source never dies, replenish its lifespan
-      spray[i].var = SEGMENT.custom1 >> 3;          // emiting variation 0-32
-    }
-
-    i = 0;
-    j = 0;
-    while (i < numParticles)
+    intensity = map(volumeSmth,0,255,20,255);
+  }*/
+  if (SEGMENT.call % (9 - (intensity >> 5)) == 0 && intensity > 0) // every nth frame, cycle color and emit particles, do not emit if intensity is zero
     {
-      if (particles[i].ttl == 0) // find a dead particle
+
+      for (i = 0; i < numSprays; i++)
       {
-        Emitter_Fountain_emit(&spray[j], &particles[i]);
-        j = (j + 1) % numSprays;
-        if (percycle-- == 0)
-        {
-          break; // quit loop if all particles of this round emitted
-        }
+        spray[i].vy = -SEGMENT.speed >> 3;                                                                  // emitting speed, down
+        spray[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (cols - 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
+        spray[i].source.ttl = 255;                                                                          // source never dies, replenish its lifespan
+        spray[i].var = SEGMENT.custom1 >> 3;                                                                // emiting variation 0-32
       }
-      i++;
+
+      i = 0;
+      j = 0;
+      while (i < numParticles)
+      {
+        if (particles[i].ttl == 0) // find a dead particle
+        {
+          Emitter_Fountain_emit(&spray[j], &particles[i]);
+          j = (j + 1) % numSprays;
+          if (percycle-- == 0)
+          {
+            break; // quit loop if all particles of this round emitted
+          }
+        }
+        i++;
+      }
     }
-  }
 
 
   // detect and handle collisions
@@ -8724,6 +8803,8 @@ uint16_t mode_particlebox(void)
   if (!SEGENV.allocateData(dataSize))
     return mode_static();                                  // allocation failed; //allocation failed
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
+
+  
 
   uint32_t i = 0;
   uint32_t j = 0;
@@ -8837,7 +8918,7 @@ uint16_t mode_particlebox(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Bouncyness,,Rocking Boat,;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Hardness,,Rocking Boat,;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
 
 /*
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
@@ -8856,7 +8937,12 @@ uint16_t mode_particleperlin(void)
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint32_t numParticles = 255;
+
+#ifdef ESP8266
+  const uint32_t numParticles = 200;
+#else
+  const uint32_t numParticles = 350;
+#endif
 
   PSparticle *particles;
 
@@ -8881,7 +8967,7 @@ uint16_t mode_particleperlin(void)
     }
   }
 
-  uint32_t displayparticles = SEGMENT.intensity;
+  uint32_t displayparticles = map(SEGMENT.intensity,0,255,10,numParticles);
 
   // apply 'gravity' from a 2D perlin noise map
   SEGMENT.aux0 += SEGMENT.speed >> 4; // noise z-position;
@@ -8928,7 +9014,7 @@ uint16_t mode_particleperlin(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Noise@,Particles,;;!;012;pal=1,ix=100";
-
+//TODO: add zoom and maybe some other functions
 /*
 * Particle smashing down like meteorites and exploding as they hit the ground, like inverted fireworks
 * has many parameters to play with
@@ -9105,7 +9191,12 @@ uint16_t mode_particleattractor(void)
   const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
   const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
-  const uint32_t numParticles = 265; // maximum number of particles
+#ifdef ESP8266
+  const uint32_t numParticles = 150; // maximum number of particles
+#else
+  const uint32_t numParticles = 300; // maximum number of particles  
+#endif
+  
 
   PSparticle *particles;
   PSparticle *attractor;
@@ -9126,8 +9217,8 @@ uint16_t mode_particleattractor(void)
   spray = reinterpret_cast<PSpointsource *>(attractor + 1);
   counters = reinterpret_cast<uint8_t *>(spray + 1);
 
-  uint32_t i = 0;
-  uint32_t j = 0;
+  uint32_t i;
+  uint32_t j;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -9156,7 +9247,7 @@ uint16_t mode_particleattractor(void)
     spray->var = 6; //emitting speed variation    
   }
 
-  uint16_t displayparticles = SEGMENT.intensity; //cannot go to 255 particles, it will crash if set above 250, why is unclear... maybe array is too small? at 260 it will still crash, if numparticles are set to 265 it does not crash...
+  uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 1, numParticles);
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
   i = 0;
   j = 0;
