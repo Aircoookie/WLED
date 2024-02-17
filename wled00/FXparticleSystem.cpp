@@ -94,22 +94,13 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 	int32_t yforce;
 	int32_t xforce_abs; // absolute value
 	int32_t yforce_abs;
-	// check if distance is small enough to even cause a force (for that strength<<10 must be bigger than the distance squared)
-	//if ((shiftedstrength) < distanceSquared) // if far away, set the force to 2 so it still attracts and does not leave particles just sitting outside its influence radius
-	//{
-		// force calculation above is zero
-		//give some force in both directions (x and y) to avoid further calculations as this is just to get things moving a little		
-		//xforce_abs = 1;
-		//yforce_abs = 1;
-	//}
-	//else
-	//{
-		force = shiftedstrength / distanceSquared;
-		xforce = (force * dx) >> 10; // scale to a lower value, found by experimenting
-		yforce = (force * dy) >> 10;
-		xforce_abs = abs(xforce); // absolute value
-		yforce_abs = abs(yforce);
-	//}
+
+	force = shiftedstrength / distanceSquared;
+	xforce = (force * dx) >> 10; // scale to a lower value, found by experimenting
+	yforce = (force * dy) >> 10;
+	xforce_abs = abs(xforce); // absolute value
+	yforce_abs = abs(yforce);
+
 	uint8_t xcounter = (*counter) & 0x0F; // lower four bits
 	uint8_t ycounter = (*counter) >> 4;	  // upper four bits
 

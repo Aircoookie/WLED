@@ -8939,7 +8939,7 @@ uint16_t mode_particleperlin(void)
 
 
 #ifdef ESP8266
-  const uint32_t numParticles = 200;
+  const uint32_t numParticles = 150;
 #else
   const uint32_t numParticles = 350;
 #endif
@@ -8970,7 +8970,8 @@ uint16_t mode_particleperlin(void)
   uint32_t displayparticles = map(SEGMENT.intensity,0,255,10,numParticles);
 
   // apply 'gravity' from a 2D perlin noise map
-  SEGMENT.aux0 += SEGMENT.speed >> 4; // noise z-position;
+
+  SEGMENT.aux0 += 1+(SEGMENT.speed >> 5); // noise z-position
 
   // update position in noise
   for (i = 0; i < displayparticles; i++)
@@ -8982,28 +8983,34 @@ uint16_t mode_particleperlin(void)
       particles[i].x = random16(cols * PS_P_RADIUS);
       particles[i].y = random16(rows * PS_P_RADIUS);
     }
+    int32_t xnoise = particles[i].x / (1 + (SEGMENT.custom3>>1)); //position in perlin noise, scaled by slider
+    int32_t ynoise = particles[i].y / (1 + (SEGMENT.custom3>>1));
 
-    int16_t baseheight = inoise8((particles[i].x >> 1), (particles[i].y >> 1), SEGMENT.aux0); // noise value at particle position
+    int16_t baseheight = inoise8(xnoise, ynoise, SEGMENT.aux0);              // noise value at particle position
     particles[i].hue = baseheight;                                                            // color particles to perlin noise value
     if (SEGMENT.call % 6 == 0)                                                                // do not apply the force every frame, is too chaotic
     {
-      int16_t xslope = baseheight - (int16_t)inoise8((particles[i].x >> 1) + 10, (particles[i].y >> 1), SEGMENT.aux0);
-      int16_t yslope = baseheight - (int16_t)inoise8((particles[i].x >> 1), (particles[i].y >> 1) + 10, SEGMENT.aux0);
-      // Serial.println(xslope);
+      int16_t xslope = baseheight - (int16_t)inoise8(xnoise + 10, ynoise, SEGMENT.aux0);
+      int16_t yslope = baseheight - (int16_t)inoise8(xnoise, ynoise + 10, SEGMENT.aux0);
+
       particles[i].vx += xslope >> 1; // slope is about 0-8
       particles[i].vy += yslope >> 1;
     }
+  }
+  uint8_t hardness = SEGMENT.custom1; // how hard the collisions are, 255 = full hard.
+  if(SEGMENT.check1) //collisions enabled
+  {   
+    detectCollisions(particles, displayparticles, hardness);
   }
 
   // move particles
   for (i = 0; i < displayparticles; i++)
   {
-
     // apply a bit of friction so particles are less jittery
-    if (SEGMENT.call % 16 == 0) // need to apply friction very rarely or particles will clump
+    if (SEGMENT.call % (16-(SEGMENT.custom2>>4)) == 0) // need to apply friction very rarely or particles will clump
       applyFriction(&particles[i], 1);
 
-    Particle_Bounce_update(&particles[i], (uint8_t)200);
+    Particle_Bounce_update(&particles[i], hardness);
   }
 
   SEGMENT.fill(BLACK); // clear the matrix
@@ -9013,14 +9020,14 @@ uint16_t mode_particleperlin(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Noise@,Particles,;;!;012;pal=1,ix=100";
-//TODO: add zoom and maybe some other functions
+static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Noise@Speed,Particles,Collision Hardness,Friction,Scale,Collisions;;!;012;pal=54,sx=70;ix=200,c1=190,c2=120,c3=4,o1=0";
+
+
 /*
 * Particle smashing down like meteorites and exploding as they hit the ground, like inverted fireworks
 * has many parameters to play with
 * by DedeHai (Damian Schneider)
 */
-
 
 uint16_t mode_particleimpact(void) 
 {
@@ -9235,9 +9242,9 @@ uint16_t mode_particleattractor(void)
     spray->source.hue = random8();
     spray->source.sat = 255; //full saturation, color by palette
     spray->source.x = 0;
-    spray->source.y = 0; // just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
-    spray->source.vx = random8(5) + 6;
-    spray->source.vy = random8(4) + 3;
+    spray->source.y = 0; 
+    spray->source.vx = random8(5) + 2;
+    spray->source.vy = random8(4) + 1;
     spray->source.ttl = 100;
     spray->source.collide = true; //seeded particles will collide (if checked)
     spray->maxLife = 300; // seeded particle lifetime in frames
@@ -9257,8 +9264,6 @@ uint16_t mode_particleattractor(void)
     detectCollisions(particles, displayparticles, hardness);
   }
 
-
-
   if (SEGMENT.call % 5 == 0)
   {
     spray->source.hue++;
@@ -9268,39 +9273,51 @@ uint16_t mode_particleattractor(void)
   uint8_t emit = 1; //number of particles emitted per frame  
   Particle_Bounce_update(&spray->source, 255); //bounce the spray around
 
+  SEGMENT.aux0++; //emitting angle
+
   // now move the particles
   for (i = 0; i < displayparticles; i++)
   {
 
     if (particles[i].ttl == 0 && emit--) // find a dead particle
     {
-      Emitter_Fountain_emit(spray, &particles[i]); //emit one if available
+      //Emitter_Fountain_emit(spray, &particles[i]); //emit one if available
+      if(SEGMENT.call % 2 == 0) //alternate direction of emit
+        Emitter_Angle_emit(spray, &particles[i], SEGMENT.aux0, SEGMENT.custom1 >> 4);
+      else
+        Emitter_Angle_emit(spray, &particles[i], SEGMENT.aux0+128, SEGMENT.custom1 >> 4); //emit at 180° as well
     }
 
     // every now and then, apply 'air friction' to smooth things out, slows down all particles a little
     if (SEGMENT.custom3 > 0)
     {
       if (SEGMENT.call % (32 - SEGMENT.custom3) == 0)
-      {
-        if (SEGMENT.check2)
-          applyFriction(&particles[i], 1);
+      {        
+          applyFriction(&particles[i], 4);
       }
     }
 
     Particle_attractor(&particles[i], attractor, &counters[i], SEGMENT.speed, SEGMENT.check3);
-         
-    // Particle_Bounce_update(&particles[i], hardness);
-    Particle_Move_update(&particles[i]);
+    if(SEGMENT.check1)
+      Particle_Bounce_update(&particles[i], hardness);
+    else
+      Particle_Move_update(&particles[i]);
   }
 
-  SEGMENT.fill(BLACK);                               // clear the matrix
+  if (SEGMENT.check2)
+    SEGMENT.fadeToBlackBy(20); // fade the matrix
+  else
+    SEGMENT.fill(BLACK); // clear the matrix
+
+  
+
   //ParticleSys_render(&attract, 1, 30, false, false); // render attractor
   // render the particles
   ParticleSys_render(particles, displayparticles, false, false);
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,,Collision Strength,Friction,,,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,Emit Speed,Collision Strength,Friction,Bounce,Trails,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0,o2=0,o3=0";
 
 
 //TODO: animation idea: just one spray, sliders set x position, y position, speed, intensity and spray angle. ticks set wrap, bounce, gravity? evtl noch life time koppeln mit speed?
