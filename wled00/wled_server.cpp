@@ -18,11 +18,11 @@ static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security setti
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
 static const char s_notimplemented[] PROGMEM = "Not implemented";
 static const char s_accessdenied[]   PROGMEM = "Access Denied";
-static const char s_javascript[]     PROGMEM = "application/javascript";
-static const char s_json[]           PROGMEM = "application/json";
-static const char s_html[]           PROGMEM = "text/html";
-static const char s_plain[]          PROGMEM = "text/plain";
-static const char s_css[]            PROGMEM = "text/css";
+static const char* s_javascript = CONTENT_TYPE_JAVASCRIPT;
+static const char* s_json = CONTENT_TYPE_JSON;
+static const char* s_html = CONTENT_TYPE_HTML;
+static const char* s_plain = CONTENT_TYPE_PLAIN;
+static const char* s_css = CONTENT_TYPE_CSS;
 
 //Is this an IP?
 static bool isIp(String str) {
