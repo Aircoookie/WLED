@@ -33,9 +33,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //DEBUG_PRINTLN(F("-- JSON deserialize segment."));
   Segment& seg = strip.getSegment(id);
-  //DEBUG_PRINTF("--  Original segment: %p (%p)\n", &seg, seg.data);
+  //DEBUG_PRINTF_P(PSTR("--  Original segment: %p (%p)\n"), &seg, seg.data);
   Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
-  //DEBUG_PRINTF("--  Duplicate segment: %p (%p)\n", &prev, prev.data);
+  //DEBUG_PRINTF_P(PSTR("--  Duplicate segment: %p (%p)\n"), &prev, prev.data);
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
@@ -1103,7 +1103,7 @@ void serveJson(AsyncWebServerRequest* request)
       //lDoc["m"] = lDoc.memoryUsage(); // JSON buffer usage, for remote debugging
   }
 
-  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
+  DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for request: %d\n"), lDoc.memoryUsage(), subJson);
 
   #ifdef WLED_DEBUG
   size_t len =

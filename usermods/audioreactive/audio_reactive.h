@@ -1283,7 +1283,7 @@ class AudioReactive : public Usermod {
         #ifdef WLED_DEBUG
         if ((disableSoundProcessing == false) && (audioSyncEnabled == 0)) {  // we just switched to "disabled"
           DEBUG_PRINTLN(F("[AR userLoop]  realtime mode active - audio processing suspended."));
-          DEBUG_PRINTF("               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
+          DEBUG_PRINTF_P(PSTR("               RealtimeMode = %d; RealtimeOverride = %d\n"), int(realtimeMode), int(realtimeOverride));
         }
         #endif
         disableSoundProcessing = true;
@@ -1291,7 +1291,7 @@ class AudioReactive : public Usermod {
         #ifdef WLED_DEBUG
         if ((disableSoundProcessing == true) && (audioSyncEnabled == 0) && audioSource->isInitialized()) {    // we just switched to "enabled"
           DEBUG_PRINTLN(F("[AR userLoop]  realtime mode ended - audio processing resumed."));
-          DEBUG_PRINTF("               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
+          DEBUG_PRINTF_P(PSTR("               RealtimeMode = %d; RealtimeOverride = %d\n"), int(realtimeMode), int(realtimeOverride));
         }
         #endif
         if ((disableSoundProcessing == true) && (audioSyncEnabled == 0)) lastUMRun = millis();  // just left "realtime mode" - update timekeeping
@@ -1315,7 +1315,7 @@ class AudioReactive : public Usermod {
           // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
           // softhack007 disabled temporarily - avoid serial console spam with MANY leds and low FPS
           //if ((userloopDelay > 65) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
-            //DEBUG_PRINTF("[AR userLoop] hiccup detected -> was inactive for last %d millis!\n", userloopDelay);
+          //  DEBUG_PRINTF_P(PSTR("[AR userLoop] hiccup detected -> was inactive for last %d millis!\n"), userloopDelay);
           //}
         #endif
 

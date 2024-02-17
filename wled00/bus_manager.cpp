@@ -32,10 +32,12 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte 
   #define DEBUG_PRINT(x) DEBUGOUT.print(x)
   #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
   #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUG_PRINTF_P(x...) DEBUGOUT.printf_P(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
+  #define DEBUG_PRINTF_P(x...)
 #endif
 
 //color mangling macros

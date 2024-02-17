@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2402090
+#define VERSION 2402170
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -811,10 +811,12 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUG_PRINT(x) DEBUGOUT.print(x)
   #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
   #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUG_PRINTF_P(x...) DEBUGOUT.printf_P(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
+  #define DEBUG_PRINTF_P(x...)
 #endif
 
 #ifdef WLED_DEBUG_FS

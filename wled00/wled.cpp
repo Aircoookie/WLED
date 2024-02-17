@@ -41,7 +41,7 @@ void WLED::loop()
   unsigned long        loopMillis = millis();
   size_t               loopDelay = loopMillis - lastRun;
   if (lastRun == 0) loopDelay=0; // startup - don't have valid data from last run.
-  if (loopDelay > 2) DEBUG_PRINTF("Loop delayed more than %ums.\n", loopDelay);
+  if (loopDelay > 2) DEBUG_PRINTF_P(PSTR("Loop delayed more than %ums.\n"), loopDelay);
   static unsigned long maxLoopMillis = 0;
   static size_t        avgLoopMillis = 0;
   static unsigned long maxUsermodMillis = 0;
@@ -229,9 +229,9 @@ void WLED::loop()
 #ifdef WLED_DEBUG
   loopMillis = millis() - loopMillis;
   if (loopMillis > 30) {
-    DEBUG_PRINTF("Loop took %lums.\n", loopMillis);
-    DEBUG_PRINTF("Usermods took %lums.\n", usermodMillis);
-    DEBUG_PRINTF("Strip took %lums.\n", stripMillis);
+    DEBUG_PRINTF_P(PSTR("Loop took %lums.\n"), loopMillis);
+    DEBUG_PRINTF_P(PSTR("Usermods took %lums.\n"), usermodMillis);
+    DEBUG_PRINTF_P(PSTR("Strip took %lums.\n"), stripMillis);
   }
   avgLoopMillis += loopMillis;
   if (loopMillis > maxLoopMillis) maxLoopMillis = loopMillis;
@@ -335,8 +335,8 @@ void WLED::setup()
   DEBUG_PRINT(F("esp32 "));
   DEBUG_PRINTLN(ESP.getSdkVersion());
   #if defined(ESP_ARDUINO_VERSION)
-    //DEBUG_PRINTF(F("arduino-esp32  0x%06x\n"), ESP_ARDUINO_VERSION);
-    DEBUG_PRINTF("arduino-esp32 v%d.%d.%d\n", int(ESP_ARDUINO_VERSION_MAJOR), int(ESP_ARDUINO_VERSION_MINOR), int(ESP_ARDUINO_VERSION_PATCH));  // availeable since v2.0.0
+    //DEBUG_PRINTF_P(PSTR("arduino-esp32  0x%06x\n"), ESP_ARDUINO_VERSION);
+    DEBUG_PRINTF_P(PSTR("arduino-esp32 v%d.%d.%d\n"), int(ESP_ARDUINO_VERSION_MAJOR), int(ESP_ARDUINO_VERSION_MINOR), int(ESP_ARDUINO_VERSION_PATCH));  // availeable since v2.0.0
   #else
     DEBUG_PRINTLN(F("arduino-esp32 v1.0.x\n"));  // we can't say in more detail.
   #endif

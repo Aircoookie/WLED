@@ -174,9 +174,9 @@ class BobLightUsermod : public Usermod {
 
       #if WLED_DEBUG
       DEBUG_PRINTLN(F("Fill light data: "));
-      DEBUG_PRINTF(" lights %d\n", numLights);
+      DEBUG_PRINTF_P(PSTR(" lights %d\n"), numLights);
       for (int i=0; i<numLights; i++) {
-        DEBUG_PRINTF(" light %s scan %2.1f %2.1f %2.1f %2.1f\n", lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
+        DEBUG_PRINTF_P(PSTR(" light %s scan %2.1f %2.1f %2.1f %2.1f\n"), lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
       }
       #endif
     }
@@ -191,7 +191,7 @@ class BobLightUsermod : public Usermod {
       uint16_t totalLights = bottom + left + top + right;
       if ( totalLights > strip.getLengthTotal() ) {
         DEBUG_PRINTLN(F("BobLight: Too many lights."));
-        DEBUG_PRINTF("%d+%d+%d+%d>%d\n", bottom, left, top, right, strip.getLengthTotal());
+        DEBUG_PRINTF_P(PSTR("%d+%d+%d+%d>%d\n"), bottom, left, top, right, strip.getLengthTotal());
         totalLights = strip.getLengthTotal();
         top = bottom = (uint16_t) roundf((float)totalLights * 16.0f / 50.0f);
         left = right = (uint16_t) roundf((float)totalLights *  9.0f / 50.0f);

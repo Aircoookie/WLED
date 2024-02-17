@@ -248,14 +248,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
         {
           // not an ADC analog pin
-          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
         else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH) && digitalPinToTouchChannel(btnPin[i]) < 0)
         {
           // not a touch pin
-          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n", btnPin[i], i);
+          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
@@ -669,7 +669,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // if the resulting name still contains ":" this means nested object
       JsonObject subObj;
       int umSubObj = name.indexOf(":");
-      DEBUG_PRINTF("(%d):",umSubObj);
+      DEBUG_PRINTF_P(PSTR("(%d):"),umSubObj);
       if (umSubObj>0) {
         subObj = mod[name.substring(0,umSubObj)];
         if (subObj.isNull())

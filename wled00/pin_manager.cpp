@@ -6,7 +6,7 @@ static void DebugPrintOwnerTag(PinOwner tag)
 {
   uint32_t q = static_cast<uint8_t>(tag);
   if (q) {
-    DEBUG_PRINTF("0x%02x (%d)", q, q);
+    DEBUG_PRINTF_P(PSTR("0x%02x (%d)"), q, q);
   } else {
     DEBUG_PRINT(F("(no owner)"));
   }
