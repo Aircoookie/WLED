@@ -234,54 +234,57 @@ void initServer()
 
 #ifdef WLED_ENABLE_WEBSOCKETS
   #ifndef WLED_DISABLE_2D 
-  server.on(SET_F("/liveview2D"), HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on(F("/liveview2D"), HTTP_GET, [](AsyncWebServerRequest *request) {
     handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveviewws2D, PAGE_liveviewws2D_length);
   });
   #endif
 #endif
-  server.on(SET_F("/liveview"), HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on(F("/liveview"), HTTP_GET, [](AsyncWebServerRequest *request) {
     handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveview, PAGE_liveview_length);
   });
 
   //settings page
-  server.on(SET_F("/settings"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/settings"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
 
   // "/settings/settings.js&p=x" request also handled by serveSettings()
-
-  server.on(SET_F("/style.css"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, F("/style.css"), 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
+  const static char STYLE_CSS[] PROGMEM = "/style.css";
+  server.on(FPSTR(STYLE_CSS), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(STYLE_CSS), 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
   });
 
-  server.on(SET_F("/favicon.ico"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, F("/favicon.ico"), 200, F("image/x-icon"), favicon, favicon_length, false);
+  const static char FAVICON_ICO[] PROGMEM = "/favicon.ico";
+  server.on(FPSTR(FAVICON_ICO), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(FAVICON_ICO), 200, FPSTR(CONTENT_TYPE_XICON), favicon, favicon_length, false);
   });
 
-  server.on(SET_F("/skin.css"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (handleFileRead(request, F("/skin.css"))) return;
+  const static char SKIN_CSS[] PROGMEM = "/skin.css";
+  server.on(FPSTR(SKIN_CSS), HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (handleFileRead(request, FPSTR(SKIN_CSS))) return;
     AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(s_css));
     request->send(response);
   });
 
-  server.on(SET_F("/welcome"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/welcome"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
 
-  server.on(SET_F("/reset"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/reset"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
 
-  server.on(SET_F("/settings"), HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on(F("/settings"), HTTP_POST, [](AsyncWebServerRequest *request){
     serveSettings(request, true);
   });
 
-  server.on(SET_F("/json"), HTTP_GET, [](AsyncWebServerRequest *request){
+  const static char JSON[] PROGMEM = "/json";
+  server.on(FPSTR(JSON), HTTP_GET, [](AsyncWebServerRequest *request){
     serveJson(request);
   });
 
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler(F("/json"), [](AsyncWebServerRequest *request) {
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler(FPSTR(JSON), [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
     bool isConfig = false;
 
@@ -333,15 +336,15 @@ void initServer()
   }, JSON_BUFFER_SIZE);
   server.addHandler(handler);
 
-  server.on(SET_F("/version"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/version"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, FPSTR(s_plain), (String)VERSION);
   });
 
-  server.on(SET_F("/uptime"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/uptime"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, FPSTR(s_plain), (String)millis());
   });
 
-  server.on(SET_F("/freeheap"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/freeheap"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, FPSTR(s_plain), (String)ESP.getFreeHeap());
   });
 
@@ -351,11 +354,11 @@ void initServer()
   });
 #endif
 
-  server.on(SET_F("/teapot"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/teapot"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
   });
 
-  server.on(SET_F("/upload"), HTTP_POST, [](AsyncWebServerRequest *request) {},
+  server.on(F("/upload"), HTTP_POST, [](AsyncWebServerRequest *request) {},
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
