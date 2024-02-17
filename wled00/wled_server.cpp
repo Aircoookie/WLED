@@ -285,7 +285,10 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
 
-    if (!requestJSONBufferLock(14)) return;
+    if (!requestJSONBufferLock(14)) {
+      serveJsonError(request, 503, ERR_NOBUF);
+      return;
+    }
 
     DeserializationError error = deserializeJson(*pDoc, (uint8_t*)(request->_tempObject));
     JsonObject root = pDoc->as<JsonObject>();
