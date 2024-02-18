@@ -20,6 +20,7 @@ void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
+void IRAM_ATTR touchButtonISR();
 
 //cfg.cpp
 bool deserializeConfig(JsonObject doc, bool fromFS = false);
