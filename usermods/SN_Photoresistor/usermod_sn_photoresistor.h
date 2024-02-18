@@ -119,7 +119,7 @@ public:
       }
       else
       {
-        DEBUG_PRINTLN("Missing MQTT connection. Not publishing data");
+        DEBUG_PRINTLN(F("Missing MQTT connection. Not publishing data"));
       }
     }
 #endif

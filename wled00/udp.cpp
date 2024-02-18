@@ -13,7 +13,7 @@
 typedef struct PartialEspNowPacket {
   uint8_t magic;
   uint8_t packet;
-  uint8_t segs;
+  uint8_t noOfPackets;
   uint8_t data[247];
 } partial_packet_t;
 
@@ -151,33 +151,45 @@ void notify(byte callMode, bool followUp)
 
 #ifndef WLED_DISABLE_ESPNOW
   if (enableESPNow && useESPNowSync && statusESPNow == ESP_NOW_STATE_ON) {
-    partial_packet_t buffer = {'W', 0, (uint8_t)s, {0}};
+    partial_packet_t buffer = {'W', 0, 1, {0}};
     // send global data
-    DEBUG_PRINTLN(F("ESP-NOW sending first packet.")); 
-    memcpy(buffer.data, udpOut, 41);
-    auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), 41+3);
-    if (!err) {
-      // send segment data
+    DEBUG_PRINTLN(F("ESP-NOW sending first packet."));
+    const size_t bufferSize = sizeof(buffer.data)/sizeof(uint8_t);
+    size_t packetSize = 41;
+    size_t s0 = 0;
+    memcpy(buffer.data, udpOut, packetSize);
+    // stuff as many segments in first packet as possible (normally up to 5)
+    for (size_t i = 0; packetSize < bufferSize && i < s; i++) {
+      memcpy(buffer.data + packetSize, &udpOut[41+i*UDP_SEG_SIZE], UDP_SEG_SIZE);
+      packetSize += UDP_SEG_SIZE;
+      s0++;
+    }
+    if (s > s0) buffer.noOfPackets += 1 + ((s - s0) * UDP_SEG_SIZE) / bufferSize; // set number of packets
+    auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+    if (!err && s0 < s) {
+      // send rest of the segments
       buffer.packet++;
-      size_t packetSize = 0;
-      int32_t err = 0;
-      for (size_t i = 0; i < s; i++) {
+      packetSize = 0;
+      // WARNING: this will only work for up to 3 messages (~17 segments) as QuickESPNOW only has a ring buffer capable of holding 3 queued messages
+      // to work around that limitation it is mandatory to utilize onDataSent() callback which should reduce number queued messages
+      // and wait until at least one space is available in the buffer
+      for (size_t i = s0; i < s; i++) {
         memcpy(buffer.data + packetSize, &udpOut[41+i*UDP_SEG_SIZE], UDP_SEG_SIZE);
         packetSize += UDP_SEG_SIZE;
-        if (packetSize + UDP_SEG_SIZE < sizeof(buffer.data)/sizeof(uint8_t)) continue;
-        DEBUG_PRINTF("ESP-NOW sending packet: %d (%d)\n", (int)buffer.packet, packetSize+3);
+        if (packetSize + UDP_SEG_SIZE < bufferSize) continue;
+        DEBUG_PRINTF_P(PSTR("ESP-NOW sending packet: %d (%d)\n"), (int)buffer.packet, packetSize+3);
         err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
         buffer.packet++;
         packetSize = 0;
         if (err) break;
       }
       if (!err && packetSize > 0) {
-        DEBUG_PRINTF("ESP-NOW sending last packet: %d (%d)\n", (int)buffer.packet, packetSize+3);
+        DEBUG_PRINTF_P(PSTR("ESP-NOW sending last packet: %d (%d)\n"), (int)buffer.packet, packetSize+3);
         err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
       }
-      if (err) {
-        DEBUG_PRINTLN(F("ESP-NOW sending packet failed."));
-      }
+    }
+    if (err) {
+      DEBUG_PRINTLN(F("ESP-NOW sending packet failed."));
     }
   }
   if (udpConnected) 
@@ -286,7 +298,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
       uint16_t stopY  = version > 11 ? (udpIn[34+ofs] << 8 | udpIn[35+ofs]) : 1;
       uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
       if (!receiveSegmentOptions) {
-        DEBUG_PRINTF("Set segment w/o options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
+        DEBUG_PRINTF_P(PSTR("Set segment w/o options: %d [%d,%d;%d,%d]\n"), id, (int)start, (int)stop, (int)startY, (int)stopY);
         strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
         selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
         strip.resume();
@@ -325,12 +337,12 @@ void parseNotifyPacket(uint8_t *udpIn) {
         }
       }
       if (receiveSegmentBounds) {
-        DEBUG_PRINTF("Set segment w/ options: %d [%d,%d;%d,%d]\n", id, (int)start, (int)stop, (int)startY, (int)stopY);
+        DEBUG_PRINTF_P(PSTR("Set segment w/ options: %d [%d,%d;%d,%d]\n"), id, (int)start, (int)stop, (int)startY, (int)stopY);
         strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
         selseg.setUp(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
         strip.resume();
       } else {
-        DEBUG_PRINTF("Set segment grouping: %d [%d,%d]\n", id, (int)udpIn[5+ofs], (int)udpIn[6+ofs]);
+        DEBUG_PRINTF_P(PSTR("Set segment grouping: %d [%d,%d]\n"), id, (int)udpIn[5+ofs], (int)udpIn[6+ofs]);
         strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
         selseg.setUp(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
         strip.resume();
@@ -942,13 +954,18 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
 }
 
 #ifndef WLED_DISABLE_ESPNOW
+// ESP-NOW message sent callback function
+void espNowSentCB(uint8_t* address, uint8_t status) {
+    DEBUG_PRINTF_P(PSTR("Message sent to " MACSTR ", status: %d\n"), MAC2STR(address), status);
+}
+
 // ESP-NOW message receive callback function
 void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast) {
   sprintf_P(last_signal_src, PSTR("%02x%02x%02x%02x%02x%02x"), address[0], address[1], address[2], address[3], address[4], address[5]);
 
   #ifdef WLED_DEBUG
     DEBUG_PRINT(F("ESP-NOW: ")); DEBUG_PRINT(last_signal_src); DEBUG_PRINT(F(" -> ")); DEBUG_PRINTLN(len);
-    for (int i=0; i<len; i++) DEBUG_PRINTF("%02x ", data[i]);
+    for (int i=0; i<len; i++) DEBUG_PRINTF_P(PSTR("%02x "), data[i]);
     DEBUG_PRINTLN();
   #endif
 
@@ -970,19 +987,35 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
   }
 
   static uint8_t *udpIn = nullptr;
-  static uint8_t packetsReceived = 0; // bitfield (max 5 packets ATM)
+  static uint8_t packetsReceived = 0;
   static uint8_t segsReceived = 0;
   static unsigned long lastProcessed = 0;
 
   if (buffer->packet == 0) {
-    if (udpIn == nullptr) udpIn = (uint8_t *)malloc(WLEDPACKETSIZE); // we cannot use stack as we are in callback
-    DEBUG_PRINTLN(F("ESP-NOW inited UDP buffer."));
-    memcpy(udpIn, buffer->data, len-3); // global data (41 bytes)
-    packetsReceived |= 0x01 << buffer->packet;
-    segsReceived = 0;
-    return;
-  } else if (((len-3)/UDP_SEG_SIZE)*UDP_SEG_SIZE != (len-3)) {
-    DEBUG_PRINTF("ESP-NOW incorrect packet size: %d (%d) [%d]\n", (int)buffer->packet, (int)len-3, (int)UDP_SEG_SIZE);
+    packetsReceived = 0; // it will increment later (this is to make sure we start counting packets correctly)
+    if (udpIn == nullptr) {
+      udpIn = (uint8_t *)malloc(WLEDPACKETSIZE); // we cannot use stack as we are in callback
+      if (!udpIn) return; // memory alocation failed
+      DEBUG_PRINTLN(F("ESP-NOW inited UDP buffer."));
+    }
+    memcpy(udpIn, buffer->data, len-3); // global data (41 bytes + up to 5 segments)
+    segsReceived = (len - 3 - 41) / UDP_SEG_SIZE;
+  } else if (buffer->packet == packetsReceived && udpIn && ((len - 3) / UDP_SEG_SIZE) * UDP_SEG_SIZE == (len-3)) {
+    // we received a packet full of segments
+    if (segsReceived >= MAX_NUM_SEGMENTS) {
+      // we are already past max segments, just ignore
+      DEBUG_PRINTLN(F("ESP-NOW received segments past maximum."));
+      len = 3;
+    } else if ((segsReceived + ((len - 3) / UDP_SEG_SIZE)) >= MAX_NUM_SEGMENTS) {
+      len = ((MAX_NUM_SEGMENTS - segsReceived) * UDP_SEG_SIZE) + 3; // we have reached max number of segments
+    }
+    if (len > 3) {
+      memcpy(udpIn + 41 + (segsReceived * UDP_SEG_SIZE), buffer->data, len-3);
+      segsReceived += (len - 3) / UDP_SEG_SIZE;
+    }
+  } else {
+    // any out of order packet or incorrectly sized packet or if we have no UDP buffer will abort
+    DEBUG_PRINTF_P(PSTR("ESP-NOW incorrect packet: %d (%d) [%d]\n"), (int)buffer->packet, (int)len-3, (int)UDP_SEG_SIZE);
     if (udpIn) free(udpIn);
     udpIn = nullptr;
     packetsReceived = 0;
@@ -991,15 +1024,9 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
   }
   if (!udpIn) return;
 
-  // TODO add verification if segsReceived > MAX_NUM_SEGMENTS or WLEDPACKETSIZE
-
-  memcpy(udpIn+41+segsReceived, buffer->data, len-3);
-  packetsReceived |= 0x01 << buffer->packet;
-  segsReceived += (len-3)/UDP_SEG_SIZE;
-
-  DEBUG_PRINTF("ESP-NOW packet received: %d (%d) [%d]\n", (int)buffer->packet, (int)len-3, (int)segsReceived);
-
-  if (segsReceived == buffer->segs) {
+  packetsReceived++;
+  DEBUG_PRINTF_P(PSTR("ESP-NOW packet received: %d (%d/%d) s:[%d/%d]\n"), (int)buffer->packet, (int)packetsReceived, (int)buffer->noOfPackets, (int)segsReceived, MAX_NUM_SEGMENTS);
+  if (packetsReceived >= buffer->noOfPackets) {
     // last packet received
     if (millis() - lastProcessed > 250) {
       DEBUG_PRINTLN(F("ESP-NOW processing complete message."));

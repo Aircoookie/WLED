@@ -398,7 +398,7 @@ void checkTimers()
     // re-calculate sunrise and sunset just after midnight
     if (!hour(localTime) && minute(localTime)==1) calculateSunriseAndSunset();
 
-    DEBUG_PRINTF("Local time: %02d:%02d\n", hour(localTime), minute(localTime));
+    DEBUG_PRINTF_P(PSTR("Local time: %02d:%02d\n"), hour(localTime), minute(localTime));
     for (uint8_t i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
@@ -416,7 +416,7 @@ void checkTimers()
     // sunrise macro
     if (sunrise) {
       time_t tmp = sunrise + timerMinutes[8]*60;  // NOTE: may not be ok
-      DEBUG_PRINTF("Trigger time: %02d:%02d\n", hour(tmp), minute(tmp));
+      DEBUG_PRINTF_P(PSTR("Trigger time: %02d:%02d\n"), hour(tmp), minute(tmp));
       if (timerMacro[8] != 0
           && hour(tmp) == hour(localTime)
           && minute(tmp) == minute(localTime)
@@ -425,13 +425,13 @@ void checkTimers()
       {
         unloadPlaylist();
         applyPreset(timerMacro[8]);
-        DEBUG_PRINTF("Sunrise macro %d triggered.",timerMacro[8]);
+        DEBUG_PRINTF_P(PSTR("Sunrise macro %d triggered."),timerMacro[8]);
       }
     }
     // sunset macro
     if (sunset) {
       time_t tmp = sunset + timerMinutes[9]*60;  // NOTE: may not be ok
-      DEBUG_PRINTF("Trigger time: %02d:%02d\n", hour(tmp), minute(tmp));
+      DEBUG_PRINTF_P(PSTR("Trigger time: %02d:%02d\n"), hour(tmp), minute(tmp));
       if (timerMacro[9] != 0
           && hour(tmp) == hour(localTime)
           && minute(tmp) == minute(localTime)
@@ -440,7 +440,7 @@ void checkTimers()
       {
         unloadPlaylist();
         applyPreset(timerMacro[9]);
-        DEBUG_PRINTF("Sunset macro %d triggered.",timerMacro[9]);
+        DEBUG_PRINTF_P(PSTR("Sunset macro %d triggered."),timerMacro[9]);
       }
     }
   }
@@ -528,7 +528,7 @@ void calculateSunriseAndSunset() {
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
       sunrise = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
-      DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise), minute(sunrise));
+      DEBUG_PRINTF_P(PSTR("Sunrise: %02d:%02d\n"), hour(sunrise), minute(sunrise));
     } else {
       sunrise = 0;
     }
@@ -547,7 +547,7 @@ void calculateSunriseAndSunset() {
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
       sunset = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
-      DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset), minute(sunset));
+      DEBUG_PRINTF_P(PSTR("Sunset: %02d:%02d\n"), hour(sunset), minute(sunset));
     } else {
       sunset = 0;
     }

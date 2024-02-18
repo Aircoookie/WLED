@@ -11,22 +11,21 @@
 #endif
 #include "html_cpal.h"
 
-/*
- * Integrated HTTP web server page declarations
- */
-
-bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request, int code, uint16_t eTagSuffix = 0);
-void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, uint16_t eTagSuffix = 0);
-void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip = true, uint16_t eTagSuffix = 0);
-
 // define flash strings once (saves flash memory)
 static const char s_redirecting[] PROGMEM = "Redirecting...";
 static const char s_content_enc[] PROGMEM = "Content-Encoding";
 static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security settings!";
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
+static const char s_notimplemented[] PROGMEM = "Not implemented";
+static const char s_accessdenied[]   PROGMEM = "Access Denied";
+static const char s_javascript[]     PROGMEM = "application/javascript";
+static const char s_json[]           PROGMEM = "application/json";
+static const char s_html[]           PROGMEM = "text/html";
+static const char s_plain[]          PROGMEM = "text/plain";
+static const char s_css[]            PROGMEM = "text/css";
 
 //Is this an IP?
-bool isIp(String str) {
+static bool isIp(String str) {
   for (size_t i = 0; i < str.length(); i++) {
     int c = str.charAt(i);
     if (c != '.' && (c < '0' || c > '9')) {
@@ -36,9 +35,130 @@ bool isIp(String str) {
   return true;
 }
 
-void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
+/*
+ * Integrated HTTP web server page declarations
+ */
+
+static void generateEtag(char *etag, uint16_t eTagSuffix) {
+  sprintf_P(etag, PSTR("%7d-%02x-%04x"), VERSION, cacheInvalidate, eTagSuffix);
+}
+
+static void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, uint16_t eTagSuffix = 0) {
+  // Only send ETag for 200 (OK) responses
+  if (code != 200) return;
+
+  // https://medium.com/@codebyamir/a-web-developers-guide-to-browser-caching-cc41f3b73e7c
+  #ifndef WLED_DEBUG
+  // this header name is misleading, "no-cache" will not disable cache,
+  // it just revalidates on every load using the "If-None-Match" header with the last ETag value
+  response->addHeader(F("Cache-Control"), F("no-cache"));
+  #else
+  response->addHeader(F("Cache-Control"), F("no-store,max-age=0"));  // prevent caching if debug build
+  #endif
+  char etag[32];
+  generateEtag(etag, eTagSuffix);
+  response->addHeader(F("ETag"), etag);
+}
+
+static bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request, int code, uint16_t eTagSuffix = 0) {
+  // Only send 304 (Not Modified) if response code is 200 (OK)
+  if (code != 200) return false;
+
+  AsyncWebHeader *header = request->getHeader(F("If-None-Match"));
+  char etag[32];
+  generateEtag(etag, eTagSuffix);
+  if (header && header->value() == etag) {
+    AsyncWebServerResponse *response = request->beginResponse(304);
+    setStaticContentCacheHeaders(response, code, eTagSuffix);
+    request->send(response);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Handles the request for a static file.
+ * If the file was found in the filesystem, it will be sent to the client.
+ * Otherwise it will be checked if the browser cached the file and if so, a 304 response will be sent.
+ * If the file was not found in the filesystem and not in the browser cache, the request will be handled as a 200 response with the content of the page.
+ *
+ * @param request The request object
+ * @param path If a file with this path exists in the filesystem, it will be sent to the client. Set to "" to skip this check.
+ * @param code The HTTP status code
+ * @param contentType The content type of the web page
+ * @param content Content of the web page
+ * @param len Length of the content
+ * @param gzip Optional. Defaults to true. If false, the gzip header will not be added.
+ * @param eTagSuffix Optional. Defaults to 0. A suffix that will be added to the ETag header. This can be used to invalidate the cache for a specific page.
+ */
+static void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip = true, uint16_t eTagSuffix = 0) {
+  if (path != "" && handleFileRead(request, path)) return;
+  if (handleIfNoneMatchCacheHeader(request, code, eTagSuffix)) return;
+  AsyncWebServerResponse *response = request->beginResponse_P(code, contentType, content, len);
+  if (gzip) response->addHeader(FPSTR(s_content_enc), F("gzip"));
+  setStaticContentCacheHeaders(response, code, eTagSuffix);
+  request->send(response);
+}
+
+#ifdef WLED_ENABLE_DMX
+static String dmxProcessor(const String& var)
+{
+  String mapJS;
+  if (var == F("DMXVARS")) {
+    mapJS += F("\nCN=");
+    mapJS += String(DMXChannels);
+    mapJS += F(";\nCS=");
+    mapJS += String(DMXStart);
+    mapJS += F(";\nCG=");
+    mapJS += String(DMXGap);
+    mapJS += F(";\nLC=");
+    mapJS += String(strip.getLengthTotal());
+    mapJS += F(";\nvar CH=[");
+    for (int i=0; i<15; i++) {
+      mapJS += String(DMXFixtureMap[i]) + ',';
+    }
+    mapJS += F("0];");
+  }
+  return mapJS;
+}
+#endif
+
+static String msgProcessor(const String& var)
+{
+  if (var == "MSG") {
+    String messageBody = messageHead;
+    messageBody += F("</h2>");
+    messageBody += messageSub;
+    uint32_t optt = optionType;
+
+    if (optt < 60) //redirect to settings after optionType seconds
+    {
+      messageBody += F("<script>setTimeout(RS,");
+      messageBody +=String(optt*1000);
+      messageBody += F(")</script>");
+    } else if (optt < 120) //redirect back after optionType-60 seconds, unused
+    {
+      //messageBody += "<script>setTimeout(B," + String((optt-60)*1000) + ")</script>";
+    } else if (optt < 180) //reload parent after optionType-120 seconds
+    {
+      messageBody += F("<script>setTimeout(RP,");
+      messageBody += String((optt-120)*1000);
+      messageBody += F(")</script>");
+    } else if (optt == 253)
+    {
+      messageBody += F("<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"); //button to settings
+    } else if (optt == 254)
+    {
+      messageBody += F("<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>");
+    }
+    return messageBody;
+  }
+  return String();
+}
+
+static void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (!correctPIN) {
-    if (final) request->send(401, "text/plain", FPSTR(s_unlock_cfg));
+    if (final) request->send(401, FPSTR(s_plain), FPSTR(s_unlock_cfg));
     return;
   }
   if (!index) {
@@ -50,7 +170,7 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
-    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();
+    if (finalname.equals(F("/presets.json"))) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
@@ -59,10 +179,10 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile.close();
     if (filename.indexOf(F("cfg.json")) >= 0) { // check for filename with or without slash
       doReboot = true;
-      request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
+      request->send(200, FPSTR(s_plain), F("Configuration restore successful.\nRebooting..."));
     } else {
       if (filename.indexOf(F("palette")) >= 0 && filename.indexOf(F(".json")) >= 0) strip.loadCustomPalettes();
-      request->send(200, "text/plain", F("File Uploaded!"));
+      request->send(200, FPSTR(s_plain), F("File Uploaded!"));
     }
     cacheInvalidate++;
   }
@@ -79,25 +199,24 @@ void createEditHandler(bool enable) {
       #endif
     #else
       editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-        serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
+        serveMessage(request, 501, FPSTR(s_notimplemented), F("The FS editor is disabled in this build."), 254);
       });
     #endif
   } else {
     editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
-      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_cfg), 254);
+      serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_cfg), 254);
     });
   }
 }
 
-bool captivePortal(AsyncWebServerRequest *request)
+static bool captivePortal(AsyncWebServerRequest *request)
 {
-  if (ON_STA_FILTER(request)) return false; //only serve captive in AP mode
-  String hostH;
+  if (!apActive) return false; //only serve captive in AP mode
   if (!request->hasHeader("Host")) return false;
-  hostH = request->getHeader("Host")->value();
 
-  if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
-    DEBUG_PRINTLN("Captive portal");
+  String hostH = request->getHeader("Host")->value();
+  if (!isIp(hostH) && hostH.indexOf(F("wled.me")) < 0 && hostH.indexOf(cmDNS) < 0 && hostH.indexOf(':') < 0) {
+    DEBUG_PRINTLN(F("Captive portal"));
     AsyncWebServerResponse *response = request->beginResponse(302);
     response->addHeader(F("Location"), F("http://4.3.2.1"));
     request->send(response);
@@ -116,12 +235,12 @@ void initServer()
 #ifdef WLED_ENABLE_WEBSOCKETS
   #ifndef WLED_DISABLE_2D 
   server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, "text/html", PAGE_liveviewws2D, PAGE_liveviewws2D_length);
+    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveviewws2D, PAGE_liveviewws2D_length);
   });
   #endif
 #endif
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, "text/html", PAGE_liveview, PAGE_liveview_length);
+    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveview, PAGE_liveview_length);
   });
 
   //settings page
@@ -132,7 +251,7 @@ void initServer()
   // "/settings/settings.js&p=x" request also handled by serveSettings()
 
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/style.css", 200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
+    handleStaticContent(request, "/style.css", 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -141,7 +260,7 @@ void initServer()
 
   server.on("/skin.css", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (handleFileRead(request, "/skin.css")) return;
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/css");
+    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(s_css));
     request->send(response);
   });
 
@@ -166,7 +285,10 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
 
-    if (!requestJSONBufferLock(14)) return;
+    if (!requestJSONBufferLock(14)) {
+      serveJsonError(request, 503, ERR_NOBUF);
+      return;
+    }
 
     DeserializationError error = deserializeJson(*pDoc, (uint8_t*)(request->_tempObject));
     JsonObject root = pDoc->as<JsonObject>();
@@ -207,25 +329,25 @@ void initServer()
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
     }
-    request->send(200, "application/json", F("{\"success\":true}"));
+    request->send(200, FPSTR(s_json), F("{\"success\":true}"));
   }, JSON_BUFFER_SIZE);
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)VERSION);
+    request->send(200, FPSTR(s_plain), (String)VERSION);
   });
 
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)millis());
+    request->send(200, FPSTR(s_plain), (String)millis());
   });
 
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)ESP.getFreeHeap());
+    request->send(200, FPSTR(s_plain), (String)ESP.getFreeHeap());
   });
 
 #ifdef WLED_ENABLE_USERMOD_PAGE
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, "text/html", PAGE_usermod, PAGE_usermod_length);
+    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_usermod, PAGE_usermod_length);
   });
 #endif
 
@@ -244,7 +366,7 @@ void initServer()
   //init ota page
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
     if (otaLock) {
-      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254);
+      serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254);
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
@@ -255,7 +377,7 @@ void initServer()
       return;
     }
     if (otaLock) {
-      serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254);
+      serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254);
       return;
     }
     if (Update.hasError()) {
@@ -296,25 +418,25 @@ void initServer()
   });
 #else
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 501, "Not implemented", F("OTA updating is disabled in this build."), 254);
+    serveMessage(request, 501, FPSTR(s_notimplemented), F("OTA updating is disabled in this build."), 254);
   });
 #endif
 
 
-  #ifdef WLED_ENABLE_DMX
+#ifdef WLED_ENABLE_DMX
   server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
+    request->send_P(200, FPSTR(s_html), PAGE_dmxmap     , dmxProcessor);
   });
-  #else
+#else
   server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
+    serveMessage(request, 501, FPSTR(s_notimplemented), F("DMX support is not enabled in this build."), 254);
   });
-  #endif
+#endif
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (captivePortal(request)) return;
     if (!showWelcomePage || request->hasArg(F("sliders"))) {
-      handleStaticContent(request, "/index.htm", 200, "text/html", PAGE_index, PAGE_index_L);
+      handleStaticContent(request, "/index.htm", 200, FPSTR(s_html), PAGE_index, PAGE_index_L);
     } else {
       serveSettings(request);
     }
@@ -322,28 +444,27 @@ void initServer()
 
 #ifdef WLED_ENABLE_PIXART
   server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pixart.htm", 200, "text/html", PAGE_pixart, PAGE_pixart_L);
+    handleStaticContent(request, "/pixart.htm", 200, FPSTR(s_html), PAGE_pixart, PAGE_pixart_L);
   });
-  #endif
+#endif
 
 #ifndef WLED_DISABLE_PXMAGIC
   server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pxmagic.htm", 200, "text/html", PAGE_pxmagic, PAGE_pxmagic_L);
+    handleStaticContent(request, "/pxmagic.htm", 200, FPSTR(s_html), PAGE_pxmagic, PAGE_pxmagic_L);
   });
 #endif
 
   server.on("/cpal.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/cpal.htm", 200, "text/html", PAGE_cpal, PAGE_cpal_L);
+    handleStaticContent(request, "/cpal.htm", 200, FPSTR(s_html), PAGE_cpal, PAGE_cpal_L);
   });
 
-  #ifdef WLED_ENABLE_WEBSOCKETS
+#ifdef WLED_ENABLE_WEBSOCKETS
   server.addHandler(&ws);
-  #endif
+#endif
 
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
-    DEBUG_PRINTLN("Not-Found HTTP call:");
-    DEBUG_PRINTLN("URI: " + request->url());
+    DEBUG_PRINT(F("Not-Found HTTP call: ")); DEBUG_PRINTLN(request->url());
     if (captivePortal(request)) return;
 
     //make API CORS compatible
@@ -359,104 +480,8 @@ void initServer()
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
-    handleStaticContent(request, request->url(), 404, "text/html", PAGE_404, PAGE_404_length);
+    handleStaticContent(request, request->url(), 404, FPSTR(s_html), PAGE_404, PAGE_404_length);
   });
-}
-
-void generateEtag(char *etag, uint16_t eTagSuffix) {
-  sprintf_P(etag, PSTR("%7d-%02x-%04x"), VERSION, cacheInvalidate, eTagSuffix);
-}
-
-bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest *request, int code, uint16_t eTagSuffix) {
-  // Only send 304 (Not Modified) if response code is 200 (OK)
-  if (code != 200) return false;
-
-  AsyncWebHeader *header = request->getHeader("If-None-Match");
-  char etag[14];
-  generateEtag(etag, eTagSuffix);
-  if (header && header->value() == etag) {
-    AsyncWebServerResponse *response = request->beginResponse(304);
-    setStaticContentCacheHeaders(response, code, eTagSuffix);
-    request->send(response);
-    return true;
-  }
-  return false;
-}
-
-void setStaticContentCacheHeaders(AsyncWebServerResponse *response, int code, uint16_t eTagSuffix) {
-  // Only send ETag for 200 (OK) responses
-  if (code != 200) return;
-
-  // https://medium.com/@codebyamir/a-web-developers-guide-to-browser-caching-cc41f3b73e7c
-  #ifndef WLED_DEBUG
-  // this header name is misleading, "no-cache" will not disable cache,
-  // it just revalidates on every load using the "If-None-Match" header with the last ETag value
-  response->addHeader(F("Cache-Control"), "no-cache");
-  #else
-  response->addHeader(F("Cache-Control"), "no-store,max-age=0");  // prevent caching if debug build
-  #endif
-  char etag[14];
-  generateEtag(etag, eTagSuffix);
-  response->addHeader(F("ETag"), etag);
-}
-
-/**
- * Handels the request for a static file.
- * If the file was found in the filesystem, it will be sent to the client.
- * Otherwise it will be checked if the browser cached the file and if so, a 304 response will be sent.
- * If the file was not found in the filesystem and not in the browser cache, the request will be handled as a 200 response with the content of the page.
- *
- * @param request The request object
- * @param path If a file with this path exists in the filesystem, it will be sent to the client. Set to "" to skip this check.
- * @param code The HTTP status code
- * @param contentType The content type of the web page
- * @param content Content of the web page
- * @param len Length of the content
- * @param gzip Optional. Defaults to true. If false, the gzip header will not be added.
- * @param eTagSuffix Optional. Defaults to 0. A suffix that will be added to the ETag header. This can be used to invalidate the cache for a specific page.
- */
-void handleStaticContent(AsyncWebServerRequest *request, const String &path, int code, const String &contentType, const uint8_t *content, size_t len, bool gzip, uint16_t eTagSuffix) {
-  if (path != "" && handleFileRead(request, path)) return;
-  if (handleIfNoneMatchCacheHeader(request, code, eTagSuffix)) return;
-  AsyncWebServerResponse *response = request->beginResponse_P(code, contentType, content, len);
-  if (gzip) response->addHeader(FPSTR(s_content_enc), "gzip");
-  setStaticContentCacheHeaders(response, code, eTagSuffix);
-  request->send(response);
-}
-
-
-
-String msgProcessor(const String& var)
-{
-  if (var == "MSG") {
-    String messageBody = messageHead;
-    messageBody += F("</h2>");
-    messageBody += messageSub;
-    uint32_t optt = optionType;
-
-    if (optt < 60) //redirect to settings after optionType seconds
-    {
-      messageBody += F("<script>setTimeout(RS,");
-      messageBody +=String(optt*1000);
-      messageBody += F(")</script>");
-    } else if (optt < 120) //redirect back after optionType-60 seconds, unused
-    {
-      //messageBody += "<script>setTimeout(B," + String((optt-60)*1000) + ")</script>";
-    } else if (optt < 180) //reload parent after optionType-120 seconds
-    {
-      messageBody += F("<script>setTimeout(RP,");
-      messageBody += String((optt-120)*1000);
-      messageBody += F(")</script>");
-    } else if (optt == 253)
-    {
-      messageBody += F("<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"); //button to settings
-    } else if (optt == 254)
-    {
-      messageBody += F("<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>");
-    }
-    return messageBody;
-  }
-  return String();
 }
 
 
@@ -466,43 +491,21 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageSub = subl;
   optionType = optionT;
 
-  request->send_P(code, "text/html", PAGE_msg, msgProcessor);
+  request->send_P(code, FPSTR(s_html), PAGE_msg, msgProcessor);
 }
 
 
 void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error)
 {
     AsyncJsonResponse *response = new AsyncJsonResponse(64);
-    if (error < ERR_NOT_IMPL) response->addHeader("Retry-After", "1");
-    response->setContentType("application/json");
+    if (error < ERR_NOT_IMPL) response->addHeader(F("Retry-After"), F("1"));
+    response->setContentType(FPSTR(s_json));
     response->setCode(code);
     JsonObject obj = response->getRoot();
     obj[F("error")] = error;
     response->setLength();
     request->send(response);
 }
-
-#ifdef WLED_ENABLE_DMX
-String dmxProcessor(const String& var)
-{
-  String mapJS;
-  #ifdef WLED_ENABLE_DMX
-    if (var == "DMXVARS") {
-      mapJS += "\nCN=" + String(DMXChannels) + ";\n";
-      mapJS += "CS=" + String(DMXStart) + ";\n";
-      mapJS += "CG=" + String(DMXGap) + ";\n";
-      mapJS += "LC=" + String(strip.getLengthTotal()) + ";\n";
-      mapJS += "var CH=[";
-      for (int i=0;i<15;i++) {
-        mapJS += String(DMXFixtureMap[i]) + ",";
-      }
-      mapJS += "0];";
-    }
-  #endif
-
-  return mapJS;
-}
-#endif
 
 
 void serveSettingsJS(AsyncWebServerRequest* request)
@@ -512,12 +515,12 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   byte subPage = request->arg(F("p")).toInt();
   if (subPage > 10) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
-    request->send(501, "application/javascript", buf);
+    request->send(501, FPSTR(s_javascript), buf);
     return;
   }
   if (subPage > 0 && !correctPIN && strlen(settingsPIN)>0) {
     strcpy_P(buf, PSTR("alert('PIN incorrect.');"));
-    request->send(401, "application/javascript", buf);
+    request->send(401, FPSTR(s_javascript), buf);
     return;
   }
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
@@ -525,9 +528,9 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   strcat_P(buf,PSTR("}"));
   
   AsyncWebServerResponse *response;
-  response = request->beginResponse(200, "application/javascript", buf);
-  response->addHeader(F("Cache-Control"),"no-store");
-  response->addHeader(F("Expires"),"0");
+  response = request->beginResponse(200, FPSTR(s_javascript), buf);
+  response->addHeader(F("Cache-Control"), F("no-store"));
+  response->addHeader(F("Expires"), F("0"));
   request->send(response);
 }
 
@@ -545,9 +548,13 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
     else if (url.indexOf(  "sync")  > 0) subPage = SUBPAGE_SYNC;
     else if (url.indexOf(  "time")  > 0) subPage = SUBPAGE_TIME;
     else if (url.indexOf(F("sec"))  > 0) subPage = SUBPAGE_SEC;
+#ifdef WLED_ENABLE_DMX
     else if (url.indexOf(  "dmx")   > 0) subPage = SUBPAGE_DMX;
+#endif
     else if (url.indexOf(  "um")    > 0) subPage = SUBPAGE_UM;
+#ifndef WLED_DISABLE_2D
     else if (url.indexOf(  "2D")    > 0) subPage = SUBPAGE_2D;
+#endif
     else if (url.indexOf(F("lock")) > 0) subPage = SUBPAGE_LOCK;
   }
   else if (url.indexOf("/update") >= 0) subPage = SUBPAGE_UPDATE; // update page, for PIN check
@@ -562,7 +569,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
   // if OTA locked or too frequent PIN entry requests fail hard
   if ((subPage == SUBPAGE_WIFI && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < PIN_RETRY_COOLDOWN))
   {
-    serveMessage(request, 401, "Access Denied", FPSTR(s_unlock_ota), 254); return;
+    serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254); return;
   }
 
   if (post) { //settings/set POST request, saving
@@ -578,9 +585,13 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
       case SUBPAGE_SYNC   : strcpy_P(s, PSTR("Sync")); break;
       case SUBPAGE_TIME   : strcpy_P(s, PSTR("Time")); break;
       case SUBPAGE_SEC    : strcpy_P(s, PSTR("Security")); if (doReboot) strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
+#ifdef WLED_ENABLE_DMX
       case SUBPAGE_DMX    : strcpy_P(s, PSTR("DMX")); break;
+#endif
       case SUBPAGE_UM     : strcpy_P(s, PSTR("Usermods")); break;
+#ifndef WLED_DISABLE_2D
       case SUBPAGE_2D     : strcpy_P(s, PSTR("2D")); break;
+#endif
       case SUBPAGE_PINREQ : strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
@@ -598,7 +609,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
   }
 
   int code = 200;
-  String contentType = "text/html";
+  String contentType = FPSTR(s_html);
   const uint8_t* content;
   size_t len;
 
@@ -623,8 +634,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
       serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
       return;
     }
-    case SUBPAGE_PINREQ  :  content = PAGE_settings_pin;  len = PAGE_settings_pin_length; code = 401;               break;
-    case SUBPAGE_CSS     :  content = PAGE_settingsCss;   len = PAGE_settingsCss_length;  contentType = "text/css"; break;
+    case SUBPAGE_PINREQ  :  content = PAGE_settings_pin;  len = PAGE_settings_pin_length; code = 401;                 break;
+    case SUBPAGE_CSS     :  content = PAGE_settingsCss;   len = PAGE_settingsCss_length;  contentType = FPSTR(s_css); break;
     case SUBPAGE_JS      :  serveSettingsJS(request); return;
     case SUBPAGE_WELCOME :  content = PAGE_welcome;       len = PAGE_welcome_length;       break;
     default:                content = PAGE_settings;      len = PAGE_settings_length;      break;

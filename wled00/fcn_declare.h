@@ -253,6 +253,7 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
 #ifndef WLED_DISABLE_ESPNOW
+void espNowSentCB(uint8_t* address, uint8_t status);
 void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast);
 #endif
 
@@ -428,15 +429,10 @@ void handleSerial();
 void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
-bool isIp(String str);
 void createEditHandler(bool enable);
-bool captivePortal(AsyncWebServerRequest *request);
 void initServer();
-void serveIndex(AsyncWebServerRequest* request);
-String msgProcessor(const String& var);
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
 void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error);
-String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
 void serveSettingsJS(AsyncWebServerRequest* request);
 
@@ -447,7 +443,6 @@ void sendDataWs(AsyncWebSocketClient * client = nullptr);
 
 //xml.cpp
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
-void URL_response(AsyncWebServerRequest *request);
 void getSettingsJS(byte subPage, char* dest);
 
 #endif

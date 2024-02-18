@@ -248,14 +248,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
         {
           // not an ADC analog pin
-          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
         else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH) && digitalPinToTouchChannel(btnPin[i]) < 0)
         {
           // not a touch pin
-          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n", btnPin[i], i);
+          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
@@ -669,7 +669,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // if the resulting name still contains ":" this means nested object
       JsonObject subObj;
       int umSubObj = name.indexOf(":");
-      DEBUG_PRINTF("(%d):",umSubObj);
+      DEBUG_PRINTF_P(PSTR("(%d):"),umSubObj);
       if (umSubObj>0) {
         subObj = mod[name.substring(0,umSubObj)];
         if (subObj.isNull())
@@ -694,10 +694,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                         subObj[name].add(value.toInt());    // we may have an int
           j++;
         }
-        DEBUG_PRINT("[");
-        DEBUG_PRINT(j);
-        DEBUG_PRINT("] = ");
-        DEBUG_PRINTLN(value);
+        DEBUG_PRINT(F("[")); DEBUG_PRINT(j); DEBUG_PRINT(F("] = ")); DEBUG_PRINTLN(value);
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
         // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
@@ -716,8 +713,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           } else if (type == "int")      subObj[name] = value.toInt();
           else                           subObj[name] = value;  // text fields
         }
-        DEBUG_PRINT(" = ");
-        DEBUG_PRINTLN(value);
+        DEBUG_PRINT(F(" = ")); DEBUG_PRINTLN(value);
       }
     }
     usermods.readFromConfig(um);  // force change of usermod parameters

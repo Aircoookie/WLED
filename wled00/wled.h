@@ -3,30 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.15.0-a0
+   @version 0.15.0-b1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2402060
-
-// You can define custom product info from build flags.
-// This is useful to allow API consumer to identify what type of WLED version
-// they are interacting with. Be aware that changing this might cause some third
-// party API consumers to consider this as a non-WLED device since the values
-// returned by the API and by MQTT will no longer be default. However, most
-// third party only uses mDNS to validate, so this is generally fine to change.
-// For example, Home Assistant will still work fine even with this value changed.
-// Use like this:
-// -D WLED_BRAND="\"Custom Brand\""
-// -D WLED_PRODUCT_NAME="\"Custom Product\""
-#ifndef WLED_BRAND
-  #define WLED_BRAND "WLED"
-#endif
-#ifndef WLED_PRODUCT_NAME
-  #define WLED_PRODUCT_NAME "FOSS"
-#endif
-
+#define VERSION 2402170
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -155,7 +137,7 @@
 #endif
 
 #ifdef WLED_ENABLE_DMX
- #ifdef ESP8266
+ #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
   #include "src/dependencies/dmx/SparkFunDMX.h"
@@ -428,12 +410,19 @@ WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
 #ifdef WLED_ENABLE_DMX
- #ifdef ESP8266
+ #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
   WLED_GLOBAL SparkFunDMX dmx;
  #endif
-WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
+  WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
+  // dmx CONFIG
+  WLED_GLOBAL byte DMXChannels _INIT(7);        // number of channels per fixture
+  WLED_GLOBAL byte DMXFixtureMap[15] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+  // assigns the different channels to different functions. See wled21_dmx.ino for more information.
+  WLED_GLOBAL uint16_t DMXGap _INIT(10);          // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
+  WLED_GLOBAL uint16_t DMXStart _INIT(10);        // start address of the first fixture
+  WLED_GLOBAL uint16_t DMXStartLED _INIT(0);      // LED from which DMX fixtures start
 #endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consecutive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
@@ -538,16 +527,6 @@ WLED_GLOBAL unsigned long lastEditTime _INIT(0);
 
 WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
 
-#ifdef WLED_ENABLE_DMX
-  // dmx CONFIG
-  WLED_GLOBAL byte DMXChannels _INIT(7);        // number of channels per fixture
-  WLED_GLOBAL byte DMXFixtureMap[15] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
-  // assigns the different channels to different functions. See wled21_dmx.ino for more information.
-  WLED_GLOBAL uint16_t DMXGap _INIT(10);          // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
-  WLED_GLOBAL uint16_t DMXStart _INIT(10);        // start address of the first fixture
-  WLED_GLOBAL uint16_t DMXStartLED _INIT(0);      // LED from which DMX fixtures start
-#endif
-
 // internal global variable declarations
 // wifi
 WLED_GLOBAL bool apActive _INIT(false);
@@ -577,6 +556,7 @@ WLED_GLOBAL bool nightlightActiveOld _INIT(false);
 WLED_GLOBAL uint32_t nightlightDelayMs _INIT(10);
 WLED_GLOBAL byte nightlightDelayMinsDefault _INIT(nightlightDelayMins);
 WLED_GLOBAL unsigned long nightlightStartTime;
+WLED_GLOBAL unsigned long lastNlUpdate;
 WLED_GLOBAL byte briNlT _INIT(0);                     // current nightlight brightness
 WLED_GLOBAL byte colNlT[] _INIT_N(({ 0, 0, 0, 0 }));        // current nightlight color
 
@@ -619,6 +599,7 @@ WLED_GLOBAL bool udpConnected _INIT(false), udp2Connected _INIT(false), udpRgbCo
 WLED_GLOBAL bool showWelcomePage _INIT(false);
 
 // hue
+#ifndef WLED_DISABLE_HUESYNC
 WLED_GLOBAL byte hueError _INIT(HUE_ERROR_INACTIVE);
 // WLED_GLOBAL uint16_t hueFailCount _INIT(0);
 WLED_GLOBAL float hueXLast _INIT(0), hueYLast _INIT(0);
@@ -628,6 +609,7 @@ WLED_GLOBAL unsigned long hueLastRequestSent _INIT(0);
 WLED_GLOBAL bool hueAuthRequired _INIT(false);
 WLED_GLOBAL bool hueReceived _INIT(false);
 WLED_GLOBAL bool hueStoreAllowed _INIT(false), hueNewKey _INIT(false);
+#endif
 
 // countdown
 WLED_GLOBAL unsigned long countdownTime _INIT(1514764800L);
@@ -735,7 +717,9 @@ WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
 #ifdef WLED_ENABLE_WEBSOCKETS
 WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 #endif
+#ifndef WLED_DISABLE_HUESYNC
 WLED_GLOBAL AsyncClient     *hueClient _INIT(NULL);
+#endif
 WLED_GLOBAL AsyncWebHandler *editHandler _INIT(nullptr);
 
 // udp interface objects
@@ -827,10 +811,12 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUG_PRINT(x) DEBUGOUT.print(x)
   #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
   #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUG_PRINTF_P(x...) DEBUGOUT.printf_P(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
+  #define DEBUG_PRINTF_P(x...)
 #endif
 
 #ifdef WLED_DEBUG_FS
@@ -848,7 +834,7 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   WLED_GLOBAL unsigned long debugTime _INIT(0);
   WLED_GLOBAL int lastWifiState _INIT(3);
   WLED_GLOBAL unsigned long wifiStateChangedTime _INIT(0);
-  WLED_GLOBAL unsigned long loops _INIT(0);
+  WLED_GLOBAL unsigned loops _INIT(0);
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -863,13 +849,12 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   } while(0)
 #else
   #define WLED_SET_AP_SSID() do { \
-    strcpy_P(apSSID, PSTR(WLED_AP_SSID)); \
     snprintf_P(\
-      apSSID+strlen(WLED_AP_SSID), \
-      sizeof(apSSID)-strlen(WLED_AP_SSID), \
-      PSTR("-%*s"), \
-      6, \
-      escapedMac.c_str() + 6\
+      apSSID, \
+      sizeof(apSSID)-1, \
+      PSTR("%s-%s"), \
+      WLED_BRAND, \
+      escapedMac.c_str()+6 \
     ); \
   } while(0)
 #endif

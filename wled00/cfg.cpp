@@ -421,7 +421,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(useESPNowSync, if_sync[F("espnow")]);
 #endif
 
-  JsonObject if_sync_recv = if_sync["recv"];
+  JsonObject if_sync_recv = if_sync[F("recv")];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
   CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
@@ -429,7 +429,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveSegmentOptions, if_sync_recv["seg"]);
   CJSON(receiveSegmentBounds, if_sync_recv["sb"]);
 
-  JsonObject if_sync_send = if_sync["send"];
+  JsonObject if_sync_send = if_sync[F("send")];
   CJSON(sendNotifications, if_sync_send["en"]);
   sendNotificationsRT = sendNotifications;
   CJSON(notifyDirect, if_sync_send[F("dir")]);
@@ -440,7 +440,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (if_sync_send[F("twice")]) udpNumRetries = 1; // import setting from 0.13 and earlier
   CJSON(udpNumRetries, if_sync_send["ret"]);
 
-  JsonObject if_nodes = interfaces["nodes"];
+  JsonObject if_nodes = interfaces[F("nodes")];
   CJSON(nodeListEnabled, if_nodes[F("list")]);
   CJSON(nodeBroadcastEnabled, if_nodes[F("bcast")]);
 
@@ -896,7 +896,7 @@ void serializeConfig() {
   if_sync[F("espnow")] = useESPNowSync;
 #endif
 
-  JsonObject if_sync_recv = if_sync.createNestedObject("recv");
+  JsonObject if_sync_recv = if_sync.createNestedObject(F("recv"));
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
   if_sync_recv["fx"]  = receiveNotificationEffects;
@@ -904,7 +904,7 @@ void serializeConfig() {
   if_sync_recv["seg"] = receiveSegmentOptions;
   if_sync_recv["sb"]  = receiveSegmentBounds;
 
-  JsonObject if_sync_send = if_sync.createNestedObject("send");
+  JsonObject if_sync_send = if_sync.createNestedObject(F("send"));
   if_sync_send["en"] = sendNotifications;
   if_sync_send[F("dir")] = notifyDirect;
   if_sync_send["btn"] = notifyButton;
@@ -913,7 +913,7 @@ void serializeConfig() {
   if_sync_send["grp"] = syncGroups;
   if_sync_send["ret"] = udpNumRetries;
 
-  JsonObject if_nodes = interfaces.createNestedObject("nodes");
+  JsonObject if_nodes = interfaces.createNestedObject(F("nodes"));
   if_nodes[F("list")] = nodeListEnabled;
   if_nodes[F("bcast")] = nodeBroadcastEnabled;
 
@@ -969,7 +969,7 @@ void serializeConfig() {
   if_hue["id"] = huePollLightId;
   if_hue[F("iv")] = huePollIntervalMs / 100;
 
-  JsonObject if_hue_recv = if_hue.createNestedObject("recv");
+  JsonObject if_hue_recv = if_hue.createNestedObject(F("recv"));
   if_hue_recv["on"] = hueApplyOnOff;
   if_hue_recv["bri"] = hueApplyBri;
   if_hue_recv["col"] = hueApplyColor;

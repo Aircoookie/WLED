@@ -36,12 +36,12 @@ void WLED::loop()
 {
   static uint32_t      lastHeap = UINT32_MAX;
   static unsigned long heapTime = 0;
-  #ifdef WLED_DEBUG
+#ifdef WLED_DEBUG
   static unsigned long lastRun = 0;
   unsigned long        loopMillis = millis();
   size_t               loopDelay = loopMillis - lastRun;
   if (lastRun == 0) loopDelay=0; // startup - don't have valid data from last run.
-  if (loopDelay > 2) DEBUG_PRINTF("Loop delayed more than %ums.\n", loopDelay);
+  if (loopDelay > 2) DEBUG_PRINTF_P(PSTR("Loop delayed more than %ums.\n"), loopDelay);
   static unsigned long maxLoopMillis = 0;
   static size_t        avgLoopMillis = 0;
   static unsigned long maxUsermodMillis = 0;
@@ -49,12 +49,12 @@ void WLED::loop()
   static unsigned long maxStripMillis = 0;
   static size_t        avgStripMillis = 0;
   unsigned long        stripMillis;
-  #endif
+#endif
 
   handleTime();
-  #ifndef WLED_DISABLE_INFRARED
+#ifndef WLED_DISABLE_INFRARED
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
-  #endif
+#endif
   handleConnection();
   handleSerial();
   handleImprovWifiScan();
@@ -229,9 +229,9 @@ void WLED::loop()
 #ifdef WLED_DEBUG
   loopMillis = millis() - loopMillis;
   if (loopMillis > 30) {
-    DEBUG_PRINTF("Loop took %lums.\n", loopMillis);
-    DEBUG_PRINTF("Usermods took %lums.\n", usermodMillis);
-    DEBUG_PRINTF("Strip took %lums.\n", stripMillis);
+    DEBUG_PRINTF_P(PSTR("Loop took %lums.\n"), loopMillis);
+    DEBUG_PRINTF_P(PSTR("Usermods took %lums.\n"), usermodMillis);
+    DEBUG_PRINTF_P(PSTR("Strip took %lums.\n"), stripMillis);
   }
   avgLoopMillis += loopMillis;
   if (loopMillis > maxLoopMillis) maxLoopMillis = loopMillis;
@@ -247,6 +247,9 @@ void WLED::loop()
     }
     #endif
     DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
+    #ifndef WLED_DISABLE_ESPNOW
+    DEBUG_PRINT(F("ESP-NOW state: "));   DEBUG_PRINTLN(statusESPNow);
+    #endif
 
     if (WiFi.status() != lastWifiState) {
       wifiStateChangedTime = millis();
@@ -332,8 +335,8 @@ void WLED::setup()
   DEBUG_PRINT(F("esp32 "));
   DEBUG_PRINTLN(ESP.getSdkVersion());
   #if defined(ESP_ARDUINO_VERSION)
-    //DEBUG_PRINTF(F("arduino-esp32  0x%06x\n"), ESP_ARDUINO_VERSION);
-    DEBUG_PRINTF("arduino-esp32 v%d.%d.%d\n", int(ESP_ARDUINO_VERSION_MAJOR), int(ESP_ARDUINO_VERSION_MINOR), int(ESP_ARDUINO_VERSION_PATCH));  // availeable since v2.0.0
+    //DEBUG_PRINTF_P(PSTR("arduino-esp32  0x%06x\n"), ESP_ARDUINO_VERSION);
+    DEBUG_PRINTF_P(PSTR("arduino-esp32 v%d.%d.%d\n"), int(ESP_ARDUINO_VERSION_MAJOR), int(ESP_ARDUINO_VERSION_MINOR), int(ESP_ARDUINO_VERSION_PATCH));  // availeable since v2.0.0
   #else
     DEBUG_PRINTLN(F("arduino-esp32 v1.0.x\n"));  // we can't say in more detail.
   #endif
@@ -386,7 +389,7 @@ void WLED::setup()
   pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
   #endif
 */
-  #if defined(WLED_USE_PSRAM)
+  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
   pDoc = new PSRAMDynamicJsonDocument(2*JSON_BUFFER_SIZE);
   if (!pDoc) pDoc = new PSRAMDynamicJsonDocument(JSON_BUFFER_SIZE); // falback if double sized buffer could not be allocated
   // if the above still fails requestJsonBufferLock() will always return false preventing crashes
@@ -813,7 +816,7 @@ void WLED::initConnection()
     
     DEBUG_PRINT(F("Connecting to "));
     DEBUG_PRINT(multiWiFi[selectedWiFi].clientSSID);
-    DEBUG_PRINTLN("...");
+    DEBUG_PRINTLN(F("..."));
 
     // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
     char hostname[25];
@@ -834,7 +837,8 @@ void WLED::initConnection()
 
 #ifndef WLED_DISABLE_ESPNOW
   if (enableESPNow) {
-    quickEspNow.onDataRcvd(espNowReceiveCB);
+    quickEspNow.onDataSent(espNowSentCB);     // see udp.cpp
+    quickEspNow.onDataRcvd(espNowReceiveCB);  // see udp.cpp
     bool espNowOK;
     if (apActive) {
       DEBUG_PRINTLN(F("ESP-NOW initing in AP mode."));

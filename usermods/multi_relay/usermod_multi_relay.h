@@ -262,7 +262,7 @@ void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsync
   DEBUG_PRINTLN(F("Relays: Initialize HTML API"));
 
   server.on("/relays", HTTP_GET, [this](AsyncWebServerRequest *request) {
-    DEBUG_PRINTLN("Relays: HTML API");
+    DEBUG_PRINTLN(F("Relays: HTML API"));
     String janswer;
     String error = "";
     //int params = request->params();

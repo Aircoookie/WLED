@@ -7,9 +7,26 @@
 
 #define GRADIENT_PALETTE_COUNT 58
 
+// You can define custom product info from build flags.
+// This is useful to allow API consumer to identify what type of WLED version
+// they are interacting with. Be aware that changing this might cause some third
+// party API consumers to consider this as a non-WLED device since the values
+// returned by the API and by MQTT will no longer be default. However, most
+// third party only uses mDNS to validate, so this is generally fine to change.
+// For example, Home Assistant will still work fine even with this value changed.
+// Use like this:
+// -D WLED_BRAND="\"Custom Brand\""
+// -D WLED_PRODUCT_NAME="\"Custom Product\""
+#ifndef WLED_BRAND
+  #define WLED_BRAND "WLED"
+#endif
+#ifndef WLED_PRODUCT_NAME
+  #define WLED_PRODUCT_NAME "FOSS"
+#endif
+
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
-#define DEFAULT_AP_SSID     "WLED-AP"
+#define DEFAULT_AP_SSID     WLED_BRAND "-AP"
 #define DEFAULT_AP_PASS     "wled1234"
 #define DEFAULT_OTA_PASS    "wledota"
 #define DEFAULT_MDNS_NAME   "x"
@@ -155,7 +172,9 @@
 #define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
 #define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
 #define USERMOD_ID_LDR_DUSK_DAWN         43     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
-#define USERMOD_ID_ANIMARTRIX            44     //Usermod "usermod_v2_animartrix.h"
+#define USERMOD_ID_STAIRWAY_WIPE         44     //Usermod "stairway-wipe-usermod-v2.h"
+#define USERMOD_ID_ANIMARTRIX            45     //Usermod "usermod_v2_animartrix.h"
+#define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 46   //usermod "usermod_v2_HttpPullLightControl.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
