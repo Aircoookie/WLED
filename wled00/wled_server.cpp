@@ -198,12 +198,12 @@ void createEditHandler(bool enable) {
       editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
       #endif
     #else
-      editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+      editHandler = &server.on(SET_F("/edit"), HTTP_GET, [](AsyncWebServerRequest *request){
         serveMessage(request, 501, FPSTR(s_notimplemented), F("The FS editor is disabled in this build."), 254);
       });
     #endif
   } else {
-    editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
+    editHandler = &server.on(SET_F("/edit"), HTTP_ANY, [](AsyncWebServerRequest *request){
       serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_cfg), 254);
     });
   }
@@ -212,9 +212,9 @@ void createEditHandler(bool enable) {
 static bool captivePortal(AsyncWebServerRequest *request)
 {
   if (!apActive) return false; //only serve captive in AP mode
-  if (!request->hasHeader("Host")) return false;
+  if (!request->hasHeader(F("Host"))) return false;
 
-  String hostH = request->getHeader("Host")->value();
+  String hostH = request->getHeader(F("Host"))->value();
   if (!isIp(hostH) && hostH.indexOf(F("wled.me")) < 0 && hostH.indexOf(cmDNS) < 0 && hostH.indexOf(':') < 0) {
     DEBUG_PRINTLN(F("Captive portal"));
     AsyncWebServerResponse *response = request->beginResponse(302);
@@ -234,54 +234,54 @@ void initServer()
 
 #ifdef WLED_ENABLE_WEBSOCKETS
   #ifndef WLED_DISABLE_2D 
-  server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on(SET_F("/liveview2D"), HTTP_GET, [](AsyncWebServerRequest *request) {
     handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveviewws2D, PAGE_liveviewws2D_length);
   });
   #endif
 #endif
-  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on(SET_F("/liveview"), HTTP_GET, [](AsyncWebServerRequest *request) {
     handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveview, PAGE_liveview_length);
   });
 
   //settings page
-  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/settings"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
 
   // "/settings/settings.js&p=x" request also handled by serveSettings()
 
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/style.css", 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
+  server.on(SET_F("/style.css"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, F("/style.css"), 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
   });
 
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/favicon.ico", 200, "image/x-icon", favicon, favicon_length, false);
+  server.on(SET_F("/favicon.ico"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, F("/favicon.ico"), 200, F("image/x-icon"), favicon, favicon_length, false);
   });
 
-  server.on("/skin.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (handleFileRead(request, "/skin.css")) return;
+  server.on(SET_F("/skin.css"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (handleFileRead(request, F("/skin.css"))) return;
     AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(s_css));
     request->send(response);
   });
 
-  server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/welcome"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
 
-  server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/reset"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
 
-  server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/settings"), HTTP_POST, [](AsyncWebServerRequest *request){
     serveSettings(request, true);
   });
 
-  server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/json"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveJson(request);
   });
 
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler(F("/json"), [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
     bool isConfig = false;
 
@@ -333,15 +333,15 @@ void initServer()
   }, JSON_BUFFER_SIZE);
   server.addHandler(handler);
 
-  server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/version"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, FPSTR(s_plain), (String)VERSION);
   });
 
-  server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/uptime"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, FPSTR(s_plain), (String)millis());
   });
 
-  server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/freeheap"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, FPSTR(s_plain), (String)ESP.getFreeHeap());
   });
 
@@ -351,11 +351,11 @@ void initServer()
   });
 #endif
 
-  server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/teapot"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
   });
 
-  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {},
+  server.on(SET_F("/upload"), HTTP_POST, [](AsyncWebServerRequest *request) {},
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
@@ -364,14 +364,14 @@ void initServer()
 
 #ifndef WLED_DISABLE_OTA
   //init ota page
-  server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/update"), HTTP_GET, [](AsyncWebServerRequest *request){
     if (otaLock) {
       serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254);
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
 
-  server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/update"), HTTP_POST, [](AsyncWebServerRequest *request){
     if (!correctPIN) {
       serveSettings(request, true); // handle PIN page POST request
       return;
@@ -417,18 +417,18 @@ void initServer()
     }
   });
 #else
-  server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/update"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, FPSTR(s_notimplemented), F("OTA updating is disabled in this build."), 254);
   });
 #endif
 
 
 #ifdef WLED_ENABLE_DMX
-  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, FPSTR(s_html), PAGE_dmxmap     , dmxProcessor);
   });
 #else
-  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, FPSTR(s_notimplemented), F("DMX support is not enabled in this build."), 254);
   });
 #endif
@@ -436,26 +436,26 @@ void initServer()
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (captivePortal(request)) return;
     if (!showWelcomePage || request->hasArg(F("sliders"))) {
-      handleStaticContent(request, "/index.htm", 200, FPSTR(s_html), PAGE_index, PAGE_index_L);
+      handleStaticContent(request, F("/index.htm"), 200, FPSTR(s_html), PAGE_index, PAGE_index_L);
     } else {
       serveSettings(request);
     }
   });
 
 #ifdef WLED_ENABLE_PIXART
-  server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pixart.htm", 200, FPSTR(s_html), PAGE_pixart, PAGE_pixart_L);
+  server.on(SET_F("/pixart.htm"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, F("/pixart.htm"), 200, FPSTR(s_html), PAGE_pixart, PAGE_pixart_L);
   });
 #endif
 
 #ifndef WLED_DISABLE_PXMAGIC
-  server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pxmagic.htm", 200, FPSTR(s_html), PAGE_pxmagic, PAGE_pxmagic_L);
+  server.on(SET_F("/pxmagic.htm"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, F("/pxmagic.htm"), 200, FPSTR(s_html), PAGE_pxmagic, PAGE_pxmagic_L);
   });
 #endif
 
-  server.on("/cpal.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/cpal.htm", 200, FPSTR(s_html), PAGE_cpal, PAGE_cpal_L);
+  server.on(SET_F("/cpal.htm"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, F("/cpal.htm"), 200, FPSTR(s_html), PAGE_cpal, PAGE_cpal_L);
   });
 
 #ifdef WLED_ENABLE_WEBSOCKETS

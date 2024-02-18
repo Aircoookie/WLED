@@ -699,11 +699,11 @@ void MultiRelay::addToJsonState(JsonObject &root) {
     if (_relay[i].pin < 0) continue;
     JsonObject relay = rel_arr.createNestedObject();
     relay[FPSTR(_relay_str)] = i;
-    relay[F("state")] = _relay[i].state;
+    relay["state"] = _relay[i].state;
   }
   #else
   multiRelay[FPSTR(_relay_str)] = 0;
-  multiRelay[F("state")] = _relay[0].state;
+  multiRelay["state"] = _relay[0].state;
   #endif
 }
 
