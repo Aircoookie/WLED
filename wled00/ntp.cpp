@@ -55,7 +55,7 @@ Timezone* tz;
 byte tzCurrent = TZ_INIT; //uninitialized
 
 /* C++11 form -- static std::array<std::pair<TimeChangeRule, TimeChangeRule>, TZ_COUNT> TZ_TABLE PROGMEM = {{ */
-static std::pair<TimeChangeRule, TimeChangeRule> TZ_TABLE[] PROGMEM = {
+static const std::pair<TimeChangeRule, TimeChangeRule> TZ_TABLE[] PROGMEM = {
     /* TZ_UTC */ {
       {Last, Sun, Mar, 1, 0}, // UTC
       {Last, Sun, Mar, 1, 0}  // Same
