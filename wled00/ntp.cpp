@@ -48,129 +48,118 @@ Timezone* tz;
 #define TZ_ANCHORAGE           20
 #define TZ_MX_CENTRAL          21
 #define TZ_PAKISTAN            22
+
+#define TZ_COUNT               23
 #define TZ_INIT               255
 
 byte tzCurrent = TZ_INIT; //uninitialized
 
+/* C++11 form -- static std::array<std::pair<TimeChangeRule, TimeChangeRule>, TZ_COUNT> TZ_TABLE PROGMEM = {{ */
+static const std::pair<TimeChangeRule, TimeChangeRule> TZ_TABLE[] PROGMEM = {
+    /* TZ_UTC */ {
+      {Last, Sun, Mar, 1, 0}, // UTC
+      {Last, Sun, Mar, 1, 0}  // Same
+    },
+    /* TZ_UK */ {
+      {Last, Sun, Mar, 1, 60},      //British Summer Time
+      {Last, Sun, Oct, 2, 0}       //Standard Time
+    },
+    /* TZ_EUROPE_CENTRAL */ {
+      {Last, Sun, Mar, 2, 120},     //Central European Summer Time
+      {Last, Sun, Oct, 3, 60}      //Central European Standard Time
+    },
+    /* TZ_EUROPE_EASTERN */ {
+      {Last, Sun, Mar, 3, 180},     //East European Summer Time
+      {Last, Sun, Oct, 4, 120}     //East European Standard Time
+    },
+    /* TZ_US_EASTERN */ {
+      {Second, Sun, Mar, 2, -240},  //EDT = UTC - 4 hours
+      {First,  Sun, Nov, 2, -300}  //EST = UTC - 5 hours
+    },
+    /* TZ_US_CENTRAL */ {
+      {Second, Sun, Mar, 2, -300},  //CDT = UTC - 5 hours
+      {First,  Sun, Nov, 2, -360}  //CST = UTC - 6 hours
+    },
+    /* TZ_US_MOUNTAIN */ {
+      {Second, Sun, Mar, 2, -360},  //MDT = UTC - 6 hours
+      {First,  Sun, Nov, 2, -420}  //MST = UTC - 7 hours
+    },
+    /* TZ_US_ARIZONA */ {
+      {First,  Sun, Nov, 2, -420},  //MST = UTC - 7 hours
+      {First,  Sun, Nov, 2, -420}  //MST = UTC - 7 hours
+    },
+    /* TZ_US_PACIFIC */ {
+      {Second, Sun, Mar, 2, -420},  //PDT = UTC - 7 hours
+      {First,  Sun, Nov, 2, -480}  //PST = UTC - 8 hours
+    },
+    /* TZ_CHINA */ {
+      {Last, Sun, Mar, 1, 480},     //CST = UTC + 8 hours
+      {Last, Sun, Mar, 1, 480}
+    },
+    /* TZ_JAPAN */ {
+      {Last, Sun, Mar, 1, 540},     //JST = UTC + 9 hours
+      {Last, Sun, Mar, 1, 540}
+    },
+    /* TZ_AUSTRALIA_EASTERN */ {
+      {First,  Sun, Oct, 2, 660},   //AEDT = UTC + 11 hours
+      {First,  Sun, Apr, 3, 600}   //AEST = UTC + 10 hours
+    },
+    /* TZ_NEW_ZEALAND */ {
+      {Last,   Sun, Sep, 2, 780},   //NZDT = UTC + 13 hours
+      {First,  Sun, Apr, 3, 720}   //NZST = UTC + 12 hours
+    },
+    /* TZ_NORTH_KOREA */ {
+      {Last, Sun, Mar, 1, 510},     //Pyongyang Time = UTC + 8.5 hours
+      {Last, Sun, Mar, 1, 510}
+    },
+    /* TZ_INDIA */ {
+      {Last, Sun, Mar, 1, 330},     //India Standard Time = UTC + 5.5 hours
+      {Last, Sun, Mar, 1, 330}
+    },
+    /* TZ_SASKACHEWAN */ {
+      {First,  Sun, Nov, 2, -360},  //CST = UTC - 6 hours
+      {First,  Sun, Nov, 2, -360}
+    },
+    /* TZ_AUSTRALIA_NORTHERN */ {
+      {First, Sun, Apr, 3, 570},   //ACST = UTC + 9.5 hours
+      {First, Sun, Apr, 3, 570}
+    },
+    /* TZ_AUSTRALIA_SOUTHERN */ {
+      {First, Sun, Oct, 2, 630},   //ACDT = UTC + 10.5 hours
+      {First, Sun, Apr, 3, 570}   //ACST = UTC + 9.5 hours
+    },
+    /* TZ_HAWAII */ {
+      {Last, Sun, Mar, 1, -600},   //HST =  UTC - 10 hours
+      {Last, Sun, Mar, 1, -600}
+    },
+    /* TZ_NOVOSIBIRSK */ {
+      {Last, Sun, Mar, 1, 420},     //CST = UTC + 7 hours
+      {Last, Sun, Mar, 1, 420}
+    },
+    /* TZ_ANCHORAGE */ {
+      {Second, Sun, Mar, 2, -480},  //AKDT = UTC - 8 hours
+      {First, Sun, Nov, 2, -540}   //AKST = UTC - 9 hours
+    },
+     /* TZ_MX_CENTRAL */ {
+      {First, Sun, Apr, 2, -360},  //CST = UTC - 6 hours
+      {First, Sun, Apr, 2, -360}
+    },
+    /* TZ_PAKISTAN */ {
+      {Last, Sun, Mar, 1, 300},     //Pakistan Standard Time = UTC + 5 hours
+      {Last, Sun, Mar, 1, 300}
+    }
+};
+
 void updateTimezone() {
   delete tz;
-  TimeChangeRule tcrDaylight = {Last, Sun, Mar, 1, 0}; //UTC
-  TimeChangeRule tcrStandard = tcrDaylight;            //UTC
-
-  switch (currentTimezone) {
-    case TZ_UK : {
-      tcrDaylight = {Last, Sun, Mar, 1, 60};      //British Summer Time
-      tcrStandard = {Last, Sun, Oct, 2, 0};       //Standard Time
-      break;
-    }
-    case TZ_EUROPE_CENTRAL : {
-      tcrDaylight = {Last, Sun, Mar, 2, 120};     //Central European Summer Time
-      tcrStandard = {Last, Sun, Oct, 3, 60};      //Central European Standard Time
-      break;
-    }
-    case TZ_EUROPE_EASTERN : {
-      tcrDaylight = {Last, Sun, Mar, 3, 180};     //East European Summer Time
-      tcrStandard = {Last, Sun, Oct, 4, 120};     //East European Standard Time
-      break;
-    }
-    case TZ_US_EASTERN : {
-      tcrDaylight = {Second, Sun, Mar, 2, -240};  //EDT = UTC - 4 hours
-      tcrStandard = {First,  Sun, Nov, 2, -300};  //EST = UTC - 5 hours
-      break;
-    }
-    case TZ_US_CENTRAL : {
-      tcrDaylight = {Second, Sun, Mar, 2, -300};  //CDT = UTC - 5 hours
-      tcrStandard = {First,  Sun, Nov, 2, -360};  //CST = UTC - 6 hours
-      break;
-    }
-    case TZ_US_MOUNTAIN : {
-      tcrDaylight = {Second, Sun, Mar, 2, -360};  //MDT = UTC - 6 hours
-      tcrStandard = {First,  Sun, Nov, 2, -420};  //MST = UTC - 7 hours
-      break;
-    }
-    case TZ_US_ARIZONA : {
-      tcrDaylight = {First,  Sun, Nov, 2, -420};  //MST = UTC - 7 hours
-      tcrStandard = {First,  Sun, Nov, 2, -420};  //MST = UTC - 7 hours
-      break;
-    }
-    case TZ_US_PACIFIC : {
-      tcrDaylight = {Second, Sun, Mar, 2, -420};  //PDT = UTC - 7 hours
-      tcrStandard = {First,  Sun, Nov, 2, -480};  //PST = UTC - 8 hours
-      break;
-    }
-    case TZ_CHINA : {
-      tcrDaylight = {Last, Sun, Mar, 1, 480};     //CST = UTC + 8 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_JAPAN : {
-      tcrDaylight = {Last, Sun, Mar, 1, 540};     //JST = UTC + 9 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_AUSTRALIA_EASTERN : {
-      tcrDaylight = {First,  Sun, Oct, 2, 660};   //AEDT = UTC + 11 hours
-      tcrStandard = {First,  Sun, Apr, 3, 600};   //AEST = UTC + 10 hours
-      break;
-    }
-    case TZ_NEW_ZEALAND : {
-      tcrDaylight = {Last,   Sun, Sep, 2, 780};   //NZDT = UTC + 13 hours
-      tcrStandard = {First,  Sun, Apr, 3, 720};   //NZST = UTC + 12 hours
-      break;
-    }
-    case TZ_NORTH_KOREA : {
-      tcrDaylight = {Last, Sun, Mar, 1, 510};     //Pyongyang Time = UTC + 8.5 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_INDIA : {
-      tcrDaylight = {Last, Sun, Mar, 1, 330};     //India Standard Time = UTC + 5.5 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_SASKACHEWAN : {
-      tcrDaylight = {First,  Sun, Nov, 2, -360};  //CST = UTC - 6 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_AUSTRALIA_NORTHERN : {
-      tcrDaylight = {First, Sun, Apr, 3, 570};   //ACST = UTC + 9.5 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_AUSTRALIA_SOUTHERN : {
-      tcrDaylight = {First, Sun, Oct, 2, 630};   //ACDT = UTC + 10.5 hours
-      tcrStandard = {First, Sun, Apr, 3, 570};   //ACST = UTC + 9.5 hours
-      break;
-    }
-    case TZ_HAWAII : {
-      tcrDaylight = {Last, Sun, Mar, 1, -600};   //HST =  UTC - 10 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_NOVOSIBIRSK : {
-      tcrDaylight = {Last, Sun, Mar, 1, 420};     //CST = UTC + 7 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_ANCHORAGE : {
-      tcrDaylight = {Second, Sun, Mar, 2, -480};  //AKDT = UTC - 8 hours
-      tcrStandard = {First, Sun, Nov, 2, -540};   //AKST = UTC - 9 hours
-      break;
-    }
-     case TZ_MX_CENTRAL : {
-      tcrDaylight = {First, Sun, Apr, 2, -360};  //CST = UTC - 6 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
-    case TZ_PAKISTAN : {
-      tcrDaylight = {Last, Sun, Mar, 1, 300};     //Pakistan Standard Time = UTC + 5 hours
-      tcrStandard = tcrDaylight;
-      break;
-    }
+  TimeChangeRule tcrDaylight, tcrStandard;
+  auto tz_table_entry = currentTimezone;
+  if (tz_table_entry >= TZ_COUNT) {
+    tz_table_entry = 0;
   }
-
   tzCurrent = currentTimezone;
+  memcpy_P(&tcrDaylight, &TZ_TABLE[tz_table_entry].first, sizeof(tcrDaylight));
+  memcpy_P(&tcrStandard, &TZ_TABLE[tz_table_entry].second, sizeof(tcrStandard));
 
   tz = new Timezone(tcrDaylight, tcrStandard);
 }
