@@ -805,6 +805,9 @@ uint16_t Segment::virtualLength() const {
         else 
           vLen = max(vW,vH) * 0.5; // get the longest dimension
         break;
+      case M12_sPinWheel: //WLEDMM
+        vLen = 360; // full circle
+        break;
     }
     return vLen;
   }
@@ -932,6 +935,27 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
           }
         }
         break;
+      case M12_sPinWheel: {
+        // i = 0 through 359
+        int centerX = vW / 2;
+        int centerY = vH / 2;
+        // int maxDistance = sqrt(centerX * centerX + centerY * centerY) + 1;
+       
+        int distance = 1;
+        float cosVal = cos(i * DEG_TO_RAD); // i = current angle
+        float sinVal = sin(i * DEG_TO_RAD); 
+        while (true) {
+          int x = centerX + distance * cosVal;
+          int y = centerY + distance * sinVal;
+          // Check bounds
+          if (x < 0 || x >= vW || y < 0 || y >= vH) {
+            break;
+          }
+          setPixelColorXY(x, y, col);
+          distance++;
+        }
+        break;
+      }
     }
     return;
   } else if (Segment::maxHeight!=1 && (width()==1 || height()==1)) {
