@@ -1424,7 +1424,7 @@ void WS2812FX::enumerateLedmaps() {
   ledmapMaxSize = 0;
   ledMaps = 1;
   for (int i=1; i<10; i++) {
-    char fileName[33];
+    char fileName[33] = {'\0'};       // WLEDMM ensure termination
     snprintf_P(fileName, sizeof(fileName), PSTR("/ledmap%d.json"), i);
     bool isFile = WLED_FS.exists(fileName);
 
@@ -2238,7 +2238,7 @@ void WS2812FX::loadCustomPalettes() {
 bool WS2812FX::deserializeMap(uint8_t n) {
   // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
-  char fileName[32];
+  char fileName[32] = {'\0'};
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;;
   if (n<10) {
@@ -2290,13 +2290,17 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (isMatrix) {
     //WLEDMM: read width and height
+    memset(fileName, 0, sizeof(fileName));              // clear old buffer - readBytesUntil() does not terminate strings !!!
     f.find("\"width\":");
     f.readBytesUntil('\n', fileName, sizeof(fileName)); //hack: use fileName as we have this allocated already
-    uint16_t maxWidth = atoi(fileName);
+    uint16_t maxWidth = atoi(cleanUpName(fileName));
+    //DEBUG_PRINTF(" (\"width\": %s) ", fileName)
 
+    memset(fileName, 0, sizeof(fileName));              // clear old buffer
     f.find("\"height\":");
     f.readBytesUntil('\n', fileName, sizeof(fileName));
-    uint16_t maxHeight = atoi(fileName);
+    uint16_t maxHeight = atoi(cleanUpName(fileName));
+    //DEBUG_PRINTF(" (\"height\": %s) \n", fileName)
 
     //WLEDMM: support ledmap file properties width and height: if found change segment
     if (maxWidth * maxHeight > 0) {
@@ -2331,20 +2335,23 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (customMappingTable != nullptr) {
     customMappingSize  = Segment::maxWidth * Segment::maxHeight;
+    // WLEDMM reset mapping table before loading
+    //memset(customMappingTable, 0xFF, customMappingTableSize * sizeof(uint16_t)); // FFFF = no pixel
+    for (unsigned i=0; i<customMappingTableSize; i++) customMappingTable[i]=i;     // "neutral" 1:1 mapping
 
     //WLEDMM: find the map values
     f.find("\"map\":[");
     uint16_t i=0;
     do { //for each element in the array
       int mapi = f.readStringUntil(',').toInt();
-      // USER_PRINTF(", %d", mapi);
-      customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);
+      // USER_PRINTF(", %d(%d)", mapi, i);
+      if (i < customMappingSize) customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);  // WLEDMM do not write past array bounds
     } while (f.available());
 
     loadedLedmap = n;
     f.close();
 
-    USER_PRINTF("Custom ledmap: %d\n", loadedLedmap);
+    USER_PRINTF("Custom ledmap: %d size=%d\n", loadedLedmap, customMappingSize);
     #ifdef WLED_DEBUG_MAPS
       for (uint16_t j=0; j<customMappingSize; j++) { // fixing a minor warning: declaration of 'i' shadows a previous local
         if (!(j%Segment::maxWidth)) DEBUG_PRINTLN();
