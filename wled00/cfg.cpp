@@ -257,7 +257,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
           else if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH)) 
           {
-            touchAttachInterrupt(btnPin[s], touchButtonISR, touchThreshold<<2); //threshold on Touch V2 is much higher (TODO: may need shift by 3 if very noisy)
+            touchAttachInterrupt(btnPin[s], touchButtonISR, touchThreshold<<4); //threshold on Touch V2 is much higher (1500 is a value given by Espressif example)
           }
         #endif 
 
