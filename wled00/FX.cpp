@@ -7893,7 +7893,7 @@ uint16_t mode_particlerotatingspray(void)
 #ifdef ESP8266
   const uint32_t numParticles = 150; // maximum number of particles
 #else
-  const uint32_t numParticles = 500; // maximum number of particles
+  const uint32_t numParticles = 700; // maximum number of particles
 #endif
 
   const uint8_t numSprays = 8; // maximum number of sprays
@@ -7901,7 +7901,7 @@ uint16_t mode_particlerotatingspray(void)
   PSparticle *particles;
   PSpointsource *spray;
 
-  // allocate memory and divide it into proper pointers, max is 32kB for all segments.
+  // allocate memory and divide it into proper pointers, max is 32kB for all segments, 100 particles use 1200bytes
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
   dataSize += sizeof(PSpointsource) * (numSprays);
   if (!SEGENV.allocateData(dataSize))
@@ -7918,13 +7918,14 @@ uint16_t mode_particlerotatingspray(void)
   if (SEGMENT.call == 0) // initialization
   {
     SEGMENT.aux0 = 0; // starting angle
+    SEGMENT.aux1 = 0xFF; // user check
     for (i = 0; i < numParticles; i++)
     {
       particles[i].ttl = 0;      
     }
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue = random8();
+      spray[i].source.hue = random8(); //TODO: how to keep track of options? can use SEGMENT.aux1: change hue to random or rainbow depending on check but need to find out when it changed.
       spray[i].source.sat = 255; // set saturation
       spray[i].source.x = (cols * PS_P_RADIUS) / 2; // center
       spray[i].source.y = (rows * PS_P_RADIUS) / 2; // center
@@ -7939,11 +7940,27 @@ uint16_t mode_particlerotatingspray(void)
   }
 
   // change source emitting color from time to time
-  if (SEGMENT.call % ((263 - SEGMENT.intensity) >> 3) == 0) // every nth frame, cycle color
+  if (SEGMENT.call % ((263 - SEGMENT.intensity) >> 3) == 0) // every nth frame, cycle color and update hue if necessary
   {
     for (i = 0; i < spraycount; i++)
-    {
+    {      
       spray[i].source.hue++; // = random8(); //change hue of spray source
+    }
+    if (SEGMENT.check1 != SEGMENT.aux1)
+    {
+      SEGMENT.aux1 = SEGMENT.check1;
+      for (i = 0; i < spraycount; i++)
+      {
+        if (SEGMENT.check1) // random color is checked
+        {
+          spray[i].source.hue = random8();
+        }
+        else
+        {
+          uint8_t coloroffset = 0xFF / spraycount;
+          spray[i].source.hue = coloroffset * i;
+        }
+      }
     }
   }
 
@@ -7970,17 +7987,20 @@ uint16_t mode_particlerotatingspray(void)
 
   for (i = 0; i < spraycount; i++)
   {
-    SEGMENT.aux0 += SEGMENT.speed << 2;
-
+    if (SEGMENT.check2) 
+      SEGMENT.aux0 += SEGMENT.speed << 2;
+    else
+      SEGMENT.aux0 -= SEGMENT.speed << 2;
+      
     // calculate the x and y speed using aux0 as the 16bit angle. returned value by sin16/cos16 is 16bit, shifting it by 8 bits results in +/-128, divide that by custom1 slider value
-    spray[i].vx = (cos16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((257 - SEGMENT.custom1) >> 1); // update spray angle (rotate all sprays with angle offset)
-    spray[i].vy = (sin16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((257 - SEGMENT.custom1) >> 1); // update spray angle (rotate all sprays with angle offset)
+    spray[i].vx = (cos16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.custom1) >> 3); // update spray angle (rotate all sprays with angle offset)
+    spray[i].vy = (sin16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.custom1) >> 3); // update spray angle (rotate all sprays with angle offset)
     spray[i].var = (SEGMENT.custom3 >> 1);                                                       // emiting variation = nozzle size  (custom 3 goes from 0-32)
   }
 
   for (i = 0; i < numParticles; i++)
   {
-    Particle_Move_update(&particles[i]); // move the particles
+    Particle_Move_update(&particles[i], true); // move the particles, kill out of bounds particles
   }
 
   SEGMENT.fill(BLACK); // clear the matrix
@@ -7990,7 +8010,7 @@ uint16_t mode_particlerotatingspray(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Particle Spray@Rotation Speed,Color Change,Particle Speed,Spray Count,Nozzle Size;;!;012;pal=6,sx=39,ix=178,c1=225,c2=128,c3=0";
+static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Particle Spray@Rotation Speed,Color Change,Particle Speed,Spray Count,Nozzle Size,Random Color, Direction;;!;012;pal=6,sx=39,ix=178,c1=225,c2=128,c3=0";
 
 /*
  * Particle Fireworks

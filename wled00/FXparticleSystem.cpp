@@ -163,7 +163,7 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 
 // TODO: could solve all update functions in a single function with parameters and handle gravity acceleration in a separte function (uses more cpu time but that is not a huge issue) or maybe not, like this, different preferences can be set
 
-void Particle_Move_update(PSparticle *part) // particle moves, decays and dies  
+void Particle_Move_update(PSparticle *part, bool killoutofbounds) // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -187,13 +187,20 @@ void Particle_Move_update(PSparticle *part) // particle moves, decays and dies
 			// check if particle is out of bounds
 			if ((part->y <= 0) || (part->y >= PS_MAX_Y))
 			{
-				part->outofbounds = 1;
+				if (killoutofbounds)
+					part->ttl = 0;
+				else
+					part->outofbounds = 1;
 			}
 			if ((part->x <= 0) || (part->x >= PS_MAX_X))
 			{
-				part->outofbounds = 1;
+				if(killoutofbounds)
+					part->ttl = 0;
+				else
+					part->outofbounds = 1;
 			}
 	}
+
 }
 
 void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) // bounces a particle on the matrix edges, if surface 'hardness' is <255 some energy will be lost in collision (127 means 50% lost)
@@ -210,6 +217,8 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) // bounces
 	{
 		// age
 		part->ttl--;
+
+		part->outofbounds = 0; // reset out of bounds (particles are never out of bounds)
 
 		// apply velocity
 		int16_t newX, newY;
@@ -235,6 +244,7 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) // bounces
 		part->x = min(newX, (int16_t)PS_MAX_X); // limit to matrix boundaries
 		part->y = min(newY, (int16_t)PS_MAX_Y);
 	}
+
 }
 
 void Particle_Wrap_update(PSparticle *part, bool wrapX, bool wrapY) // particle moves, decays and dies (age or out of matrix), if wrap is set, pixels leaving the matrix reappear on other side
@@ -523,7 +533,7 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 }
 
 // update & move particle using simple particles, wraps around left/right if wrapX is true, wrap around up/down if wrapY is true
-void FireParticle_update(PSparticle *part, bool wrapX = false, bool wrapY = false)
+void FireParticle_update(PSparticle *part, bool wrapX, bool wrapY)
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
