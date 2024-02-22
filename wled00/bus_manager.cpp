@@ -561,6 +561,23 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
 
+  pinManager.allocatePin(mxconfig.gpio.r1, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.g1, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.b1, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.r2, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.g2, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.b2, true, PinOwner::HUB75);
+
+  pinManager.allocatePin(mxconfig.gpio.lat, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.oe, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.clk, true, PinOwner::HUB75);
+
+  pinManager.allocatePin(mxconfig.gpio.a, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.b, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.c, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.d, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.e, true, PinOwner::HUB75);
+
   // display->setLatBlanking(4);
 
   USER_PRINTLN("MatrixPanel_I2S_DMA created");
@@ -589,6 +606,27 @@ void BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
 
 void BusHub75Matrix::setBrightness(uint8_t b, bool immediate) {
   this->display->setBrightness(b);
+}
+
+void BusHub75Matrix::deallocatePins() {
+
+  pinManager.deallocatePin(mxconfig.gpio.r1, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.g1, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.b1, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.r2, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.g2, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.b2, PinOwner::HUB75);
+
+  pinManager.deallocatePin(mxconfig.gpio.lat, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.oe, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.clk, PinOwner::HUB75);
+
+  pinManager.deallocatePin(mxconfig.gpio.a, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.b, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.c, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.d, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.e, PinOwner::HUB75);
+
 }
 #endif
 // ***************************************************************************

@@ -351,7 +351,13 @@ class BusHub75Matrix : public Bus {
 
     uint8_t getPins(uint8_t* pinArray) { return 1; } // Fake value due to keep finaliseInit happy
 
-    void cleanup() {}
+    void deallocatePins();
+
+    void cleanup() {
+      deallocatePins();
+      delete display;
+      _valid = false;
+    }
 
     ~BusHub75Matrix() {
       cleanup();
