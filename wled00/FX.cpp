@@ -8010,7 +8010,7 @@ uint16_t mode_particlerotatingspray(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Particle Spray@Rotation Speed,Color Change,Particle Speed,Spray Count,Nozzle Size,Random Color, Direction;;!;012;pal=6,sx=39,ix=178,c1=225,c2=128,c3=0";
+static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Particle Spray@Rotation Speed,Color Change,Particle Speed,Spray Count,Nozzle Size,Random Color, Direction;;!;012;pal=56,sx=18,ix=222,c1=190,c2=200,c3=0,o1=0,o2=0";
 
 /*
  * Particle Fireworks
