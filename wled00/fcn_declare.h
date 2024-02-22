@@ -69,9 +69,12 @@ uint8_t __attribute__((pure)) gamma8(uint8_t b);                                
 uint32_t __attribute__((pure)) gamma32(uint32_t);                                             // WLEDMM: added attribute pure
 uint8_t unGamma8(uint8_t value);                                                              // WLEDMM revert gamma correction
 
-//dmx.cpp
-void initDMX();
-void handleDMX();
+//dmx_output.cpp
+void initDMXOutput();
+void handleDMXOutput();
+
+//dmx_input.cpp
+void initDMXInput();
 void handleDMXInput();
 
 //e131.cpp

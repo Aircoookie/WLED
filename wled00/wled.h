@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2401290
+#define VERSION 2402180
 
 // WLEDMM  - you can check for this define in usermods, to only enabled WLEDMM specific code in the "right" fork. Its not defined in AC WLED.
 #define _MoonModules_WLED_
@@ -163,6 +163,10 @@
  #else //ESP32
   #include "src/dependencies/dmx/SparkFunDMX.h"
  #endif
+#endif
+
+#ifdef WLED_ENABLE_DMX_INPUT
+  #include "dmx_input.h"
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
@@ -443,9 +447,11 @@ WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to f
 WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
-  WLED_GLOBAL int dmxTransmitPin _INIT(0);
-  WLED_GLOBAL int dmxReceivePin _INIT(0);
-  WLED_GLOBAL int dmxEnablePin _INIT(0);
+  WLED_GLOBAL int dmxInputTransmitPin _INIT(0);
+  WLED_GLOBAL int dmxInputReceivePin _INIT(0);
+  WLED_GLOBAL int dmxInputEnablePin _INIT(0);
+  WLED_GLOBAL int dmxInputPort _INIT(2);
+  WLED_GLOBAL DMXInput dmxInput;
 #endif
 
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consecutive universes)
@@ -743,6 +749,7 @@ WLED_GLOBAL volatile bool doInitBusses _INIT(false);        // WLEDMM "volatile"
 WLED_GLOBAL volatile bool loadLedmap _INIT(false);          // WLEDMM use as bool and use loadedLedmap for Nr
 WLED_GLOBAL volatile uint8_t loadedLedmap _INIT(0);         // WLEDMM default 0
 WLED_GLOBAL volatile bool suspendStripService _INIT(false); // WLEDMM temporarily prevent running strip.service, when strip or segments are "under update" and inconsistent
+WLED_GLOBAL volatile bool OTAisRunning _INIT(false);        // WLEDMM temporarily stop led updates during OTA
 #ifndef ESP8266
 WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
 #endif

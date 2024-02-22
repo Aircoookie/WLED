@@ -139,10 +139,10 @@ void WLED::loop()
   #endif
 
 #ifdef WLED_ENABLE_DMX
-  handleDMX();
+  handleDMXOutput();
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT
-  handleDMXInput();
+  dmxInput.update();
 #endif
   userLoop();
 
@@ -179,7 +179,11 @@ void WLED::loop()
   }
   #endif
 
-  if (doSerializeConfig) serializeConfig();
+  if (doSerializeConfig)
+  {   
+    serializeConfig();
+  } 
+    
 
   if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
     reset();
@@ -221,6 +225,7 @@ void WLED::loop()
       } else {
         if (suspendStripService && (millis() - lastTimeService > 1500)) { // WLEDMM remove stale lock after 1.5 seconds
           USER_PRINTLN("--> looptask: stale suspendStripService lock removed after 1500 ms."); // should not happen - check for missing "suspendStripService = false"
+          suspendStripService = false;
         }
       }
 #endif
@@ -621,11 +626,6 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
-#ifdef WLED_ENABLE_DMX_INPUT
-  if(dmxTransmitPin > 0) pinManager.allocatePin(dmxTransmitPin, true, PinOwner::DMX);
-  if(dmxReceivePin > 0) pinManager.allocatePin(dmxReceivePin, true, PinOwner::DMX);
-  if(dmxEnablePin > 0) pinManager.allocatePin(dmxEnablePin, true, PinOwner::DMX);
-#endif
 
 #if defined(ALL_JSON_TO_PSRAM) && defined(WLED_USE_PSRAM_JSON)
   USER_PRINTLN(F("JSON gabage collection (initial)."));
@@ -680,7 +680,8 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
 #endif
   updateFSInfo();
 
-  USER_PRINTLN(F("done Mounting FS"));
+  USER_PRINT(F("done Mounting FS; "));
+  USER_PRINT(((fsBytesTotal-fsBytesUsed)/1024)); USER_PRINTLN(F(" kB free."));
 
   // generate module IDs must be done before AP setup
   escapedMac = WiFi.macAddress();
@@ -752,8 +753,11 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
       ArduinoOTA.setHostname(cmDNS);
   }
 #endif
-#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
-  initDMX();
+#ifdef WLED_ENABLE_DMX
+  initDMXOutput();
+#endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  dmxInput.init(dmxInputReceivePin, dmxInputTransmitPin, dmxInputEnablePin, dmxInputPort);
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
@@ -1231,11 +1235,13 @@ void WLED::handleConnection()
   if (now - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
     if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      DEBUG_PRINT(F("Heap too low! "));
-      DEBUG_PRINTLN(heap);
+      USER_PRINT(F("Heap too low! (step 2, force reconnect): "));
+      USER_PRINTLN(heap);
       forceReconnect = true;
       strip.purgeSegments(true); // remove all but one segments from memory
     } else if (heap < MIN_HEAP_SIZE) {
+      USER_PRINT(F("Heap too low! (step 1, purge segments): "));
+      USER_PRINTLN(heap);      
       strip.purgeSegments();
     }
     lastHeap = heap;
