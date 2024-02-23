@@ -41,7 +41,7 @@ struct BusConfig {
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
-    else if (type == TYPE_HUB75MATRIX) nPins = 0;
+    else if (type >= TYPE_HUB75MATRIX && type <= (TYPE_HUB75MATRIX + 10)) nPins = 0;
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
