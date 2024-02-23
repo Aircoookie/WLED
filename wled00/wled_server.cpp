@@ -193,7 +193,11 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
 
-    if (!requestJSONBufferLock(14)) return;
+    if (!requestJSONBufferLock(14)) {
+      // serveJsonError(request, 503, ERR_NOBUF); //WLEDMM we dont have this function, so we'll send the error response "old style"
+      request->send(503, "application/json", F("{\"error\":3}")); // ERR_NOBUF
+      return;
+    }
 
     DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
     JsonObject root = doc.as<JsonObject>();

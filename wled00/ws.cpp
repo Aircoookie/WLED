@@ -123,8 +123,8 @@ void sendDataWs(AsyncWebSocketClient * client)
   JsonObject info  = doc.createNestedObject("info");
   serializeInfo(info);
 
-  size_t len = measureJson(*pDoc);
-  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", pDoc->memoryUsage(), len);
+  size_t len = measureJson(doc);
+  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
 
   #ifdef ESP8266
   size_t heap1 = ESP.getFreeHeap();  // WLEDMM moved into 8266 specific section

@@ -137,7 +137,7 @@ void handleSerial()
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
           if (!requestJSONBufferLock(16)) {
-            Serial.println(F("{\"error\":3}")); // ERR_NOBUF
+             if (Serial) Serial.println(F("{\"error\":3}")); // ERR_NOBUF
             return;
           }
           Serial.setTimeout(100);
