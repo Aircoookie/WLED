@@ -1252,6 +1252,7 @@ void WLED::handleConnection()
         strip.purgeSegments(true); // remove all but one segments from memory
         // WLEDMM
         errorFlag = ERR_LOW_MEM;
+        retryCount ++;
       }
     } else if (heap < MIN_HEAP_SIZE) {
       USER_PRINT(F("Heap too low! (step 1, purge segments): "));
