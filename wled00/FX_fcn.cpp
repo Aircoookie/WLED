@@ -942,11 +942,11 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
         // int maxDistance = sqrt(centerX * centerX + centerY * centerY) + 1;
        
         int distance = 0;
-        float cosVal = cos(i * DEG_TO_RAD); // i = current angle
-        float sinVal = sin(i * DEG_TO_RAD); 
+        float cosVal = cosf((float)i * (float)DEG_TO_RAD); // i = current angle
+        float sinVal = sinf((float)i * (float)DEG_TO_RAD); 
         while (true) {
-          int x = round(centerX + distance * cosVal);
-          int y = round(centerY + distance * sinVal);
+          int x = roundf(centerX + distance * cosVal);
+          int y = roundf(centerY + distance * sinVal);
           // Check bounds
           if (x < 0 || x >= vW || y < 0 || y >= vH) {
             break;
