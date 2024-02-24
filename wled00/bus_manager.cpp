@@ -466,6 +466,8 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   mxconfig.double_buff = false; // <------------- Turn on double buffer
 
+  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[0], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
+
   fourScanPanel = nullptr;
 
   switch(bc.type) {
@@ -566,23 +568,10 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 #endif
 
 
-  USER_PRINTLN("MatrixPanel_I2S_DMA config");
+  USER_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
-
-  switch(bc.type) {
-    case 105:
-      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_16PX_HIGH");
-      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 32, 32);
-      fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_16PX_HIGH);
-      break;
-    case 106:
-      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_32PX_HIGH");
-      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 64, 64);
-      fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
-      break;
-  }  
 
   this->_len = (display->width() * display->height());
 
@@ -611,11 +600,28 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   // Allocate memory and start DMA display
   if( not display->begin() ) {
-      USER_PRINTLN("****** !KABOOM! I2S memory allocation failed ***********");
+      USER_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! I2S memory allocation failed ***********");
+      return;
   }
   else {
     _valid = true;
   }
+  
+  switch(bc.type) {
+    case 105:
+      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_32PX_HIGH");
+      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 32, 32);
+      fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
+      fourScanPanel->setRotation(0);
+      break;
+    case 106:
+      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_64PX_HIGH");
+      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 64, 64);
+      fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_64PX_HIGH);
+      fourScanPanel->setRotation(0);
+      break;
+  }  
+
 
   USER_PRINTLN("MatrixPanel_I2S_DMA started");
 }
@@ -624,12 +630,14 @@ void BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
   r = R(c);
   g = G(c);
   b = B(c);
-  x = pix % mxconfig.mx_width;
-  y = floor(pix / mxconfig.mx_width);
   if(fourScanPanel != nullptr) {
+    x = pix % fourScanPanel->width();
+    y = floor(pix / fourScanPanel->width());
     fourScanPanel->drawPixelRGB888(x, y, r, g, b);
   }
   else {
+    x = pix % display->width();
+    y = floor(pix / display->width());
     display->drawPixelRGB888(x, y, r, g, b);
   }
 }

@@ -350,7 +350,10 @@ class BusHub75Matrix : public Bus {
 
     void setBrightness(uint8_t b, bool immediate);
 
-    uint8_t getPins(uint8_t* pinArray) { return 1; } // Fake value due to keep finaliseInit happy
+    uint8_t getPins(uint8_t* pinArray) {
+      pinArray[0] = mxconfig.chain_length;
+      return 1;
+    } // Fake value due to keep finaliseInit happy
 
     void deallocatePins();
 

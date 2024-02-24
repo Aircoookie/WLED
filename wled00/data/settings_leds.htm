@@ -177,18 +177,11 @@
 				if (s[i].name.substring(0,2)=="LT") {
 					var n = s[i].name.substring(2);
 					var t = parseInt(s[i].value,10);
-					gId("p0d"+n).innerHTML = (t>=80 && t<96) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
+					gId("p0d"+n).innerHTML = (t >= 100 && t < 110) ? "Chain Length:" : (t>=80 && t<96) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
 					gId("p1d"+n).innerHTML = (t> 49 && t<64) ? "Clk GPIO:" : "";
 					var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
 					memu += getMem(t, n); // calc memory
-
-					if(t >= 100 && t < 110)  {
-						var LK = d.getElementsByName("L00")[0]; // data pin
-						LK.style.display = "none";
-						LK.required = false;
-						LK.value="";                                                    
-					}
 
 					// enumerate pins
 					for (p=1; p<5; p++) {
