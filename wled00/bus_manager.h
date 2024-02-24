@@ -3,6 +3,7 @@
 
 #ifdef WLED_ENABLE_HUB75MATRIX
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
 #endif
 /*
  * Class for addressing various light types
@@ -355,6 +356,8 @@ class BusHub75Matrix : public Bus {
 
     void cleanup() {
       deallocatePins();
+      fourScanPanel = nullptr;
+      // delete fourScanPanel;
       delete display;
       _valid = false;
     }
@@ -365,6 +368,7 @@ class BusHub75Matrix : public Bus {
 
   private:
     MatrixPanel_I2S_DMA *display = nullptr;
+    VirtualMatrixPanel  *fourScanPanel = nullptr;
     HUB75_I2S_CFG mxconfig;
     uint8_t r, g, b, x, y;
     

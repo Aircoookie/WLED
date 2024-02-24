@@ -465,6 +465,9 @@ void BusNetwork::cleanup() {
 BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
   mxconfig.double_buff = false; // <------------- Turn on double buffer
+
+  fourScanPanel = nullptr;
+
   switch(bc.type) {
     case 101:
       mxconfig.mx_width = 32;
@@ -477,6 +480,14 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
     case 103:
       mxconfig.mx_width = 64;
       mxconfig.mx_height = 64;
+      break;
+    case 105:
+      mxconfig.mx_width = 32 * 2;
+      mxconfig.mx_height = 32 / 2;
+      break;
+    case 106:
+      mxconfig.mx_width = 64 * 2;
+      mxconfig.mx_height = 64 / 2;
       break;
   }
 
@@ -554,12 +565,26 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
 #endif
 
-  this->_len = (mxconfig.mx_width * mxconfig.mx_height);
 
   USER_PRINTLN("MatrixPanel_I2S_DMA config");
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
+
+  switch(bc.type) {
+    case 105:
+      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_16PX_HIGH");
+      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 32, 32);
+      fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_16PX_HIGH);
+      break;
+    case 106:
+      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_32PX_HIGH");
+      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 64, 64);
+      fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
+      break;
+  }  
+
+  this->_len = (display->width() * display->height());
 
   pinManager.allocatePin(mxconfig.gpio.r1, true, PinOwner::HUB75);
   pinManager.allocatePin(mxconfig.gpio.g1, true, PinOwner::HUB75);
@@ -601,7 +626,12 @@ void BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
   b = B(c);
   x = pix % mxconfig.mx_width;
   y = floor(pix / mxconfig.mx_width);
-  display->drawPixelRGB888(x, y, r, g, b);
+  if(fourScanPanel != nullptr) {
+    fourScanPanel->drawPixelRGB888(x, y, r, g, b);
+  }
+  else {
+    display->drawPixelRGB888(x, y, r, g, b);
+  }
 }
 
 void BusHub75Matrix::setBrightness(uint8_t b, bool immediate) {
