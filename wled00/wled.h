@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2402180
+#define VERSION 2402252
 
 // WLEDMM  - you can check for this define in usermods, to only enabled WLEDMM specific code in the "right" fork. Its not defined in AC WLED.
 #define _MoonModules_WLED_
@@ -822,11 +822,13 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUGOUT(x) (netDebugEnabled || !canUseSerial())?NetDebug.print(x):Serial.print(x)
   #define DEBUGOUTLN(x) (netDebugEnabled || !canUseSerial())?NetDebug.println(x):Serial.println(x)
   #define DEBUGOUTF(x...) (netDebugEnabled || !canUseSerial())?NetDebug.printf(x):Serial.printf(x)
+  #define DEBUGOUTFP(x...) (netDebugEnabled || !canUseSerial())?NetDebug.printf_P(x):Serial.printf_P(x)
   #define DEBUGOUTFlush() (netDebugEnabled || !canUseSerial())?NetDebug.flush():Serial.flush()
 #else
   #define DEBUGOUT(x) {if (canUseSerial()) Serial.print(x);}
   #define DEBUGOUTLN(x) {if (canUseSerial()) Serial.println(x);}
   #define DEBUGOUTF(x...) {if (canUseSerial()) Serial.printf(x);}
+  #define DEBUGOUTFP(x...) {if (canUseSerial()) Serial.printf_P(x);}
   #define DEBUGOUTFlush() {if (canUseSerial()) Serial.flush();}
 #endif
 
@@ -837,10 +839,12 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUG_PRINT(x) DEBUGOUT(x)
   #define DEBUG_PRINTLN(x) DEBUGOUTLN(x)
   #define DEBUG_PRINTF(x...) DEBUGOUTF(x)
+  #define DEBUG_PRINTF_P(x...) DEBUGOUTFP(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
+  #define DEBUG_PRINTF_P(x...)
 #endif
 
 #define USER_PRINT(x)      DEBUGOUT(x)
