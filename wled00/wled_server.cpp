@@ -170,7 +170,7 @@ static void handleUpload(AsyncWebServerRequest *request, const String& filename,
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
-    if (finalname.equals(F("/presets.json"))) presetsModifiedTime = toki.second();
+    if (finalname.equals(FPSTR(getPresetsFileName()))) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
@@ -249,17 +249,19 @@ void initServer()
   });
 
   // "/settings/settings.js&p=x" request also handled by serveSettings()
-
-  server.on(SET_F("/style.css"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, F("/style.css"), 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
+  static const char _style_css[] PROGMEM = "/style.css";
+  server.on(_style_css, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_style_css), 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
   });
 
-  server.on(SET_F("/favicon.ico"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, F("/favicon.ico"), 200, F("image/x-icon"), favicon, favicon_length, false);
+  static const char _favicon_ico[] PROGMEM = "/favicon.ico";
+  server.on(_favicon_ico, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_favicon_ico), 200, F("image/x-icon"), favicon, favicon_length, false);
   });
 
-  server.on(SET_F("/skin.css"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (handleFileRead(request, F("/skin.css"))) return;
+  static const char _skin_css[] PROGMEM = "/skin.css";
+  server.on(_skin_css, HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (handleFileRead(request, FPSTR(_skin_css))) return;
     AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(s_css));
     request->send(response);
   });
@@ -363,15 +365,17 @@ void initServer()
   createEditHandler(correctPIN);
 
 #ifndef WLED_DISABLE_OTA
+  static const char _update[] PROGMEM = "/update";
+
   //init ota page
-  server.on(SET_F("/update"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(_update, HTTP_GET, [](AsyncWebServerRequest *request){
     if (otaLock) {
       serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254);
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
 
-  server.on(SET_F("/update"), HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on(_update, HTTP_POST, [](AsyncWebServerRequest *request){
     if (!correctPIN) {
       serveSettings(request, true); // handle PIN page POST request
       return;
@@ -417,7 +421,7 @@ void initServer()
     }
   });
 #else
-  server.on(SET_F("/update"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(_update, HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, FPSTR(s_notimplemented), F("OTA updating is disabled in this build."), 254);
   });
 #endif
@@ -443,19 +447,22 @@ void initServer()
   });
 
 #ifdef WLED_ENABLE_PIXART
-  server.on(SET_F("/pixart.htm"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, F("/pixart.htm"), 200, FPSTR(s_html), PAGE_pixart, PAGE_pixart_L);
+  static const char _pixart_htm[] PROGMEM = "/pixart.htm";
+  server.on(_pixart_htm, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_pixart_htm), 200, FPSTR(s_html), PAGE_pixart, PAGE_pixart_L);
   });
 #endif
 
 #ifndef WLED_DISABLE_PXMAGIC
-  server.on(SET_F("/pxmagic.htm"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, F("/pxmagic.htm"), 200, FPSTR(s_html), PAGE_pxmagic, PAGE_pxmagic_L);
+  static const char _pxmagic_htm[] PROGMEM = "/pxmagic.htm";
+  server.on(_pxmagic_htm, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_pxmagic_htm), 200, FPSTR(s_html), PAGE_pxmagic, PAGE_pxmagic_L);
   });
 #endif
 
-  server.on(SET_F("/cpal.htm"), HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, F("/cpal.htm"), 200, FPSTR(s_html), PAGE_cpal, PAGE_cpal_L);
+  static const char _cpal_htm[] PROGMEM = "/cpal.htm";
+  server.on(_cpal_htm, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_cpal_htm), 200, FPSTR(s_html), PAGE_cpal, PAGE_cpal_L);
   });
 
 #ifdef WLED_ENABLE_WEBSOCKETS

@@ -16,13 +16,14 @@ static char quickLoad[9];
 static char saveName[33];
 static bool includeBri = true, segBounds = true, selectedOnly = false, playlistSave = false;;
 
-static const char *getFileName(bool persist = true) {
-  return persist ? "/presets.json" : "/tmp.json";
+static const char presets_json[] PROGMEM = "/presets.json";
+static const char tmp_json[] PROGMEM = "/tmp.json";
+const char *getPresetsFileName(bool persistent) {
+  return persistent ? presets_json : tmp_json;
 }
 
 static void doSaveState() {
   bool persist = (presetToSave < 251);
-  const char *filename = getFileName(persist);
 
   unsigned long start = millis();
   while (strip.isUpdating() && millis()-start < (2*FRAMETIME_FIXED)+1) yield(); // wait 2 frames
@@ -63,11 +64,11 @@ static void doSaveState() {
     if (tmpRAMbuffer!=nullptr) {
       serializeJson(*fileDoc, tmpRAMbuffer, len);
     } else {
-      writeObjectToFileUsingId(filename, presetToSave, fileDoc);
+      writeObjectToFileUsingId(FPSTR(getPresetsFileName(persist)), presetToSave, fileDoc);
     }
   } else
   #endif
-  writeObjectToFileUsingId(filename, presetToSave, fileDoc);
+  writeObjectToFileUsingId(FPSTR(getPresetsFileName(persist)), presetToSave, fileDoc);
 
   if (persist) presetsModifiedTime = toki.second(); //unix time
   releaseJSONBufferLock();
@@ -85,8 +86,7 @@ bool getPresetName(byte index, String& name)
 {
   if (!requestJSONBufferLock(19)) return false;
   bool presetExists = false;
-  if (readObjectFromFileUsingId(getFileName(), index, pDoc))
-  {
+  if (readObjectFromFileUsingId(FPSTR(getPresetsFileName()), index, pDoc)) {
     JsonObject fdo = pDoc->as<JsonObject>();
     if (fdo["n"]) {
       name = (const char*)(fdo["n"]);
@@ -99,12 +99,12 @@ bool getPresetName(byte index, String& name)
 
 void initPresetsFile()
 {
-  if (WLED_FS.exists(getFileName())) return;
+  if (WLED_FS.exists(FPSTR(getPresetsFileName()))) return;
 
   StaticJsonDocument<64> doc;
   JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");
-  File f = WLED_FS.open(getFileName(), "w");
+  File f = WLED_FS.open(FPSTR(getPresetsFileName()), "w");
   if (!f) {
     errorFlag = ERR_FS_GENERAL;
     return;
@@ -147,7 +147,6 @@ void handlePresets()
   uint8_t tmpMode   = callModeToApply;
 
   JsonObject fdo;
-  const char *filename = getFileName(tmpPreset < 255);
 
   // allocate buffer
   if (!requestJSONBufferLock(9)) return;  // will also assign fileDoc
@@ -165,7 +164,7 @@ void handlePresets()
   } else
   #endif
   {
-  errorFlag = readObjectFromFileUsingId(filename, tmpPreset, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  errorFlag = readObjectFromFileUsingId(FPSTR(getPresetsFileName(tmpPreset < 255)), tmpPreset, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
   }
   fdo = fileDoc->as<JsonObject>();
 
@@ -234,7 +233,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
       sObj.remove(F("psave"));
       if (sObj["n"].isNull()) sObj["n"] = saveName;
       initPresetsFile(); // just in case if someone deleted presets.json using /edit
-      writeObjectToFileUsingId(getFileName(index<255), index, fileDoc);
+      writeObjectToFileUsingId(FPSTR(getPresetsFileName()), index, fileDoc);
       presetsModifiedTime = toki.second(); //unix time
       updateFSInfo();
     } else {
@@ -248,7 +247,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
 
 void deletePreset(byte index) {
   StaticJsonDocument<24> empty;
-  writeObjectToFileUsingId(getFileName(), index, &empty);
+  writeObjectToFileUsingId(FPSTR(getPresetsFileName()), index, &empty);
   presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }

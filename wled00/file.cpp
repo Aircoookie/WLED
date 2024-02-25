@@ -416,7 +416,7 @@ static const uint8_t *getPresetCache(size_t &size) {
   }
 
   if (!presetsCached) {
-    File file = WLED_FS.open("/presets.json", "r");
+    File file = WLED_FS.open(FPSTR(getPresetsFileName()), "r");
     if (file) {
       presetsCachedTime = presetsModifiedTime;
       presetsCachedSize = 0;
@@ -446,7 +446,7 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
     return true;
   }*/
   #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-  if (path.endsWith("/presets.json")) {
+  if (path.endsWith(FPSTR(getPresetsFileName()))) {
     size_t psize;
     const uint8_t *presets = getPresetCache(psize);
     if (presets) {

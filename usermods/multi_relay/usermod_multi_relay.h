@@ -104,6 +104,9 @@ class MultiRelay : public Usermod {
     static const char _HAautodiscovery[];
     static const char _pcf8574[];
     static const char _pcfAddress[];
+    static const char _switch[];
+    static const char _toggle[];
+    static const char _Command[];
 
     void handleOffTimer();
     void InitHtmlAPIHandle();
@@ -261,7 +264,7 @@ void MultiRelay::handleOffTimer() {
 void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsyncWebServer
   DEBUG_PRINTLN(F("Relays: Initialize HTML API"));
 
-  server.on("/relays", HTTP_GET, [this](AsyncWebServerRequest *request) {
+  server.on(SET_F("/relays"), HTTP_GET, [this](AsyncWebServerRequest *request) {
     DEBUG_PRINTLN(F("Relays: HTML API"));
     String janswer;
     String error = "";
@@ -271,9 +274,9 @@ void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsync
 
     if (getActiveRelayCount()) {
       // Commands
-      if(request->hasParam("switch")) {
+      if (request->hasParam(FPSTR(_switch))) {
         /**** Switch ****/
-        AsyncWebParameter* p = request->getParam("switch");
+        AsyncWebParameter* p = request->getParam(FPSTR(_switch));
         // Get Values
         for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           int value = getValue(p->value(), ',', i);
@@ -284,9 +287,9 @@ void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsync
             if (_relay[i].external) switchRelay(i, (bool)value);
           }
         }
-      } else if(request->hasParam("toggle")) {
+      } else if (request->hasParam(FPSTR(_toggle))) {
         /**** Toggle ****/
-        AsyncWebParameter* p = request->getParam("toggle");
+        AsyncWebParameter* p = request->getParam(FPSTR(_toggle));
         // Get Values
         for (int i=0;i<MULTI_RELAY_MAX_RELAYS;i++) {
           int value = getValue(p->value(), ',', i);
@@ -314,7 +317,7 @@ void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsync
     janswer += error;
     janswer += F("\",");
     janswer += F("\"SW Version\":\"");
-    janswer += String(GEOGABVERSION);
+    janswer += String(F(GEOGABVERSION));
     janswer += F("\"}");
     request->send(200, "application/json", janswer);
   });
@@ -420,7 +423,7 @@ uint8_t MultiRelay::getActiveRelayCount() {
  * topic should look like: /relay/X/command; where X is relay number, 0 based
  */
 bool MultiRelay::onMqttMessage(char* topic, char* payload) {
-  if (strlen(topic) > 8 && strncmp_P(topic, PSTR("/relay/"), 7) == 0 && strncmp_P(topic+8, PSTR("/command"), 8) == 0) {
+  if (strlen(topic) > 8 && strncmp_P(topic, PSTR("/relay/"), 7) == 0 && strncmp_P(topic+8, _Command, 8) == 0) {
     uint8_t relay = strtoul(topic+7, NULL, 10);
     if (relay<MULTI_RELAY_MAX_RELAYS) {
       String action = payload;
@@ -430,7 +433,7 @@ bool MultiRelay::onMqttMessage(char* topic, char* payload) {
       } else if (action == "off") {
         if (_relay[relay].external) switchRelay(relay, false);
         return true;
-      } else if (action == "toggle") {
+      } else if (action == FPSTR(_toggle)) {
         if (_relay[relay].external) toggleRelay(relay);
         return true;
       }
@@ -470,7 +473,7 @@ void MultiRelay::publishHomeAssistantAutodiscovery() {
 
       sprintf_P(buf, PSTR("%s/relay/%d"), mqttDeviceTopic, i); //max length: 33 + 7 + 3 = 43
       json["~"] = buf;
-      strcat_P(buf, PSTR("/command"));
+      strcat_P(buf, _Command);
       mqtt->subscribe(buf, 0);
 
       json[F("stat_t")]  = "~";
@@ -675,8 +678,8 @@ void MultiRelay::addToJsonInfo(JsonObject &root) {
       uiDomString += F(",on:");
       uiDomString += _relay[i].state ? "false" : "true";
       uiDomString += F("}});\">");
-      uiDomString += F("<i class=\"icons");
-      uiDomString += _relay[i].state ? F(" on") : F(" off");
+      uiDomString += F("<i class=\"icons ");
+      uiDomString += _relay[i].state ? "on" : "off";
       uiDomString += F("\">&#xe08f;</i></button>");
       infoArr.add(uiDomString);
     }
@@ -836,3 +839,6 @@ const char MultiRelay::_broadcast[]       PROGMEM = "broadcast-sec";
 const char MultiRelay::_HAautodiscovery[] PROGMEM = "HA-autodiscovery";
 const char MultiRelay::_pcf8574[]         PROGMEM = "use-PCF8574";
 const char MultiRelay::_pcfAddress[]      PROGMEM = "PCF8574-address";
+const char MultiRelay::_switch[]          PROGMEM = "switch";
+const char MultiRelay::_toggle[]          PROGMEM = "toggle";
+const char MultiRelay::_Command[]         PROGMEM = "/command";
