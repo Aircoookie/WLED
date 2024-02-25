@@ -889,13 +889,19 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
         else {
           //WLEDMM: drawArc(0, 0, i, col); could work as alternative
 
-          float step = HALF_PI / (2.85f*i);
-          for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
+          //WLEDMM: some opimizations for the drawing loop
+          float radius = float(i); // pre-calculate, for some speed
+          float step = HALF_PI / (2.85f * radius);
+          unsigned numSteps = 1 + ((HALF_PI + step/2.0f) / step); // pre-calculate, so the compiler can better optimize the for loop
+          float rad = 0.0f;
+          for (unsigned count = 0; count < numSteps; count++) {
             // may want to try float version as well (with or without antialiasing)
-            int x = roundf(sinf(rad) * i);
-            int y = roundf(cosf(rad) * i);
+            int x = roundf(sinf(rad) * radius);
+            int y = roundf(cosf(rad) * radius);
             setPixelColorXY(x, y, col);
+            rad += step;
           }
+
           // Bresenham’s Algorithm (may not fill every pixel)
           //int d = 3 - (2*i);
           //int y = i, x = 0;
