@@ -889,16 +889,23 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
         else {
           //WLEDMM: drawArc(0, 0, i, col); could work as alternative
 
-          //WLEDMM: some opimizations for the drawing loop
-          float radius = float(i); // pre-calculate, for some speed
-          float step = HALF_PI / (2.85f * radius);
-          unsigned numSteps = 1 + ((HALF_PI + step/2.0f) / step); // pre-calculate, so the compiler can better optimize the for loop
+          //WLEDMM: some optimizations for the drawing loop
+          //  pre-calculate loop limits, exploit symmetry at 45deg
+          float radius = float(i);
+          // float step = HALF_PI / (2.85f * radius);  // upstream uses this
+          float step = HALF_PI / (M_PI * radius);      // WLEDMM we use the correct circumference
+          bool useSymmetry = (max(vH, vW) > 20);       // for segments wider than 20 pixels, we exploit symmetry
+          unsigned numSteps;
+          if (useSymmetry) numSteps = 1 + ((HALF_PI/2.0f + step/2.0f) / step); // with symmetry
+          else             numSteps = 1 + ((HALF_PI      + step/2.0f) / step); // without symmetry
+
           float rad = 0.0f;
           for (unsigned count = 0; count < numSteps; count++) {
             // may want to try float version as well (with or without antialiasing)
             int x = roundf(sinf(rad) * radius);
             int y = roundf(cosf(rad) * radius);
             setPixelColorXY(x, y, col);
+            if(useSymmetry) setPixelColorXY(y, x, col);// WLEDMM
             rad += step;
           }
 
