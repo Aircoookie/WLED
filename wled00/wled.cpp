@@ -1205,6 +1205,7 @@ void WLED::handleConnection()
     return;
   }
 
+  static unsigned retryCount = 0;  // WLEDMM
   #ifdef ARDUINO_ARCH_ESP32 
   // reconnect WiFi to clear stale allocations if heap gets too low
   if (now - heapTime > 5000) { // WLEDMM: updated with better logic for small heap available by block, not total.
@@ -1214,10 +1215,16 @@ void WLED::handleConnection()
     uint32_t heap = heap_caps_get_largest_free_block(0x1800); // WLEDMM: This is a better metric for free heap.
 #endif
     if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      USER_PRINT(F("Heap too low! (step 2, force reconnect): "));
-      USER_PRINTLN(heap);
-      forceReconnect = true;
-      strip.purgeSegments(true); // remove all but one segments from memory
+      if (retryCount < 5) {  // WLEDMM avoid repeated disconnects
+        USER_PRINT(F("Heap too low! (step 2, force reconnect): "));
+        USER_PRINTLN(heap);
+        forceReconnect = true;
+        strip.purgeSegments(true); // remove all but one segments from memory
+        // WLEDMM
+        errorFlag = ERR_LOW_MEM;
+        retryCount ++;
+      }
+      errorFlag = ERR_LOW_MEM;
     } else if (heap < MIN_HEAP_SIZE) {
       USER_PRINT(F("Heap too low! (step 1, flush unread UDP): "));
       USER_PRINTLN(heap);      
@@ -1226,7 +1233,10 @@ void WLED::handleConnection()
       rgbUdp.flush();
       notifier2Udp.flush();
       ntpUdp.flush();
-    }
+      // WLEDMM
+      errorFlag = ERR_LOW_MEM;
+      retryCount = 1;
+    } else retryCount = 0;  // WLEDMM memory OK - reset counter
     lastHeap = heap;
     heapTime = now;
   }
@@ -1235,15 +1245,23 @@ void WLED::handleConnection()
   if (now - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
     if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
-      USER_PRINT(F("Heap too low! (step 2, force reconnect): "));
-      USER_PRINTLN(heap);
-      forceReconnect = true;
-      strip.purgeSegments(true); // remove all but one segments from memory
+      if (retryCount < 5) {  // WLEDMM avoid repeated disconnects
+        USER_PRINT(F("Heap too low! (step 2, force reconnect): "));
+        USER_PRINTLN(heap);
+        forceReconnect = true;
+        strip.purgeSegments(true); // remove all but one segments from memory
+        // WLEDMM
+        errorFlag = ERR_LOW_MEM;
+        retryCount ++;
+      }
     } else if (heap < MIN_HEAP_SIZE) {
       USER_PRINT(F("Heap too low! (step 1, purge segments): "));
       USER_PRINTLN(heap);      
       strip.purgeSegments();
-    }
+      // WLEDMM
+      errorFlag = ERR_LOW_MEM;
+      retryCount = 1;
+    } else retryCount = 0;  // WLEDMM memory OK - reset counter
     lastHeap = heap;
     heapTime = now;
   }
