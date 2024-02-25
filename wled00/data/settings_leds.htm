@@ -222,7 +222,6 @@
 					gId("dig"+n+"l").style.display = ((t > 48 && t < 64) && !(t >= 100 && t < 110)) ? "inline":"none";  // bus clock speed
 					gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
 					gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
-					if (t >= 100 && t <= 110) d.getElementsByName("LC"+n)[0].remove(); // Remove length for Hub&% to prevent validation errors
 				}
 			}
 			// display global white channel overrides
