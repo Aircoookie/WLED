@@ -892,8 +892,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
           float step = HALF_PI / (2.85f*i);
           for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
             // may want to try float version as well (with or without antialiasing)
-            int x = roundf(sin_t(rad) * i);
-            int y = roundf(cos_t(rad) * i);
+            int x = roundf(sinf(rad) * i);
+            int y = roundf(cosf(rad) * i);
             setPixelColorXY(x, y, col);
           }
           // Bresenham’s Algorithm (may not fill every pixel)
@@ -923,8 +923,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
       case M12_sCircle: //WLEDMM
         if (vStrip > 0)
         {
-          int x = roundf(sin_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
-          int y = roundf(cos_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          int x = roundf(sinf(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          int y = roundf(cosf(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
           setPixelColorXY(x + vW/2, y + vH/2, col);
         }
         else // pArc -> circle
@@ -1101,8 +1101,8 @@ uint32_t Segment::getPixelColor(int i)
       case M12_sCircle: //WLEDMM
         if (vStrip > 0)
         {
-          int x = roundf(sin_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
-          int y = roundf(cos_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          int x = roundf(sinf(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          int y = roundf(cosf(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
           return getPixelColorXY(x + vW/2, y + vH/2);
         }
         else
