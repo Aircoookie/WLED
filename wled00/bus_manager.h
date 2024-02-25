@@ -338,6 +338,8 @@ class BusHub75Matrix : public Bus {
   public:
     BusHub75Matrix(BusConfig &bc);
 
+    uint16_t getMaxPixels() override { return 4096; };
+
     bool hasRGB() { return true; }
     bool hasWhite() { return false; }
 
