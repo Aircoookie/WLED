@@ -127,6 +127,7 @@ class Bus {
     inline  bool     isOk() { return _valid; }
     inline  bool     isOffRefreshRequired() { return _needsRefresh; }
             bool     containsPixel(uint16_t pix) { return pix >= _start && pix < _start+_len; }
+    virtual uint16_t getMaxPixels() { return MAX_LEDS_PER_BUS; };
 
     virtual bool hasRGB() {
       if ((_type >= TYPE_WS2812_1CH && _type <= TYPE_WS2812_WWA) || _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ONOFF) return false;
@@ -296,6 +297,7 @@ class BusNetwork : public Bus {
   public:
     BusNetwork(BusConfig &bc);
 
+    uint16_t getMaxPixels() override { return 4096; };
     bool hasRGB() { return true; }
     bool hasWhite() { return _rgbw; }
 

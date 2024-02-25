@@ -411,7 +411,6 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     oappend(SET_F("bLimits("));
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
     oappend(itoa(WLED_MIN_VIRTUAL_BUSSES,nS,10));  oappend(",");
-    oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
     oappend(SET_F(");"));
@@ -475,6 +474,11 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
         }
       }
       sappend('v',sp,speed);
+
+      oappend(SET_F("setPixelLimit("));
+      oappendi(s); oappend(SET_F(","));
+      oappendi(bus->getMaxPixels()); oappend(SET_F(");"));
+
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);

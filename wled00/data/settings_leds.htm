@@ -60,10 +60,14 @@
 			x.style.animation = 'none';
 			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 		}
-		function bLimits(b,v,p,m,l) {
-			maxB = b; maxV = v; maxM = m; maxPB = p; maxL = l;
+		function bLimits(b,v,m,l) {
+			maxB = b; maxV = v; maxM = m; maxL = l;
 		}
-		function pinsOK() {
+		function setPixelLimit(i, max) {
+			var lc = d.getElementsByName("LC"+i)[0];
+			lc.max = max;
+		}
+ 		function pinsOK() {
 			var LCs = d.getElementsByTagName("input");
 			for (i=0; i<LCs.length; i++) {
 				var nm = LCs[i].name.substring(0,2);
