@@ -23,6 +23,19 @@
 		function isD2P(t) { return t > 47 && t < 64; }                      // is digital 2 pin type
 		function is16b(t) { return t == 26 || t == 29 }                     // is digital 16 bit type
 		function isVir(t) { return t >= 80 && t < 96; }                     // is virtual type
+		function hideHub75() {
+		var s = d.getElementsByTagName("select");
+			for (i=0; i<s.length; i++) {
+				// is the field a LED type?
+				if (s[i].name.substring(0,2)=="LT") {
+					var selectobject = s[i];
+					for (var j=(selectobject.length - 1); j > 0; j--) {
+						var t = parseInt(selectobject.options[j].value);
+						if(t >= 100 && t <= 110) selectobject.remove(j);
+					}
+				}
+			}
+		}
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -413,6 +426,9 @@ ${i+1}:
 <!--option value="81">E1.31 RGB (network)</option-->
 <option value="82">Art-Net RGB (network)</option>
 <option value="88">DDP RGBW (network)</option>
+<option value="101">Hub75Matrix 32x32</option>
+<option value="102">Hub75Matrix 64x32</option>
+<option value="103">Hub75Matrix 64x64</option>
 </select><br>
 <div id="abl${i}">
 mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">

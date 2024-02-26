@@ -770,5 +770,9 @@ void getSettingsJS(byte subPage, char* dest)
     #else
     oappend(SET_F("gId(\"somp\").remove(1);")); // remove 2D option from dropdown
     #endif
+    #ifndef WLED_ENABLE_HUB75MATRIX
+    oappend(SET_F("hideHub75();"));  // WLEDMM hide HUB75 LED types
+    #endif    
+
   }
 }
