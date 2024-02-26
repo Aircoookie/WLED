@@ -8884,6 +8884,7 @@ uint16_t mode_particlebox(void)
         scale = 50;                                    // force is limited at lower angles
       angle = (angle * (int16_t)SEGMENT.custom1) >> 8; // scale angle range according to slider (tilt strength)
       angle -= 63;                                     // make 'down' (or -90°) the zero position
+      //TODO: need to debug this, angle is not symmetrical around 'down'
       // now calculate the force vectors
       xgravity = ((int16_t)cos8((uint8_t)angle)) - 128; // gravity direction +/- 127
       ygravity = ((int16_t)sin8((uint8_t)angle)) - 128;
