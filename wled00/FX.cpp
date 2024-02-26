@@ -5149,13 +5149,13 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   // crc can handle basically all patterns, but detecting gliders may take multiple full trips
   // tracking alive counts will allow detecting gliders in 1 full trip
 
-  if (!SEGENV.allocateData(dataSize + sizeof(uint16_t)*repeatDetectionLen)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize*2 + sizeof(uint16_t)*repeatDetectionLen)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-  uint16_t *repeatDetection = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize); 
+  CRGB *futureLeds = reinterpret_cast<CRGB*>(SEGENV.data + dataSize); // only needed for overlay
+  uint16_t *repeatDetection = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2);
 
   CRGB backgroundColor = SEGCOLOR(1);
   uint16_t aliveCount = 0;
-
   if (SEGENV.call == 0) SEGMENT.setUpLeds();
 
   //start new game of life
@@ -5168,37 +5168,45 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     //Setup Grid
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       uint8_t state = (random8() < 82) ? 1 : 0; // ~32% chance of being alive
-      // state = 0; // Uncomment to use test pattern
-      if (state == 0) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
-      else {
-         SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16()); //WLEDMM support all colors        
-         aliveCount++;
+      if (state == 0) { //dead
+        leds[XY(x,y)] = backgroundColor;
+        //check overlay option
+        if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
+      }
+      else { //alive
+        CRGB color = !SEGMENT.check1? SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0) : random16()*random16();
+        leds[XY(x,y)] = color;
+        aliveCount++;
+
+        SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
       }
     }
-    // // create cross test pattern period 3 (oscillator) >= 16x16 matrix
-    // int patternLen = 56;
-    // byte testPattern[56] = {7,1,10,1,7,2,10,2,6,3,7,3,10,3,11,3,4,4,5,4,6,4,11,4,12,4,13,4,4,7,5,7,6,7,11,7,12,7,13,7,6,8,7,8,10,8,11,8,7,9,10,9,7,10,10,10};
-
-    // // Apply Test Pattern    
-    // for (int i = 0; i < patternLen/2; i++) { //Uncomment state = 0 line above
-    //   SEGMENT.setPixelColorXY(testPattern[i*2],testPattern[i*2+1], SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
-    //   aliveCount++;
-    // }
 
     //Clear repeatDetection 
     memset(repeatDetection, 0, sizeof(uint16_t)*repeatDetectionLen);
     repeatDetection[2] = aliveCount;
-    //Display the initial state
+
     return FRAMETIME;
   } else if (strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,4)) {
     // update only when appropriate time passes (in 42 FPS slots)
+    // Redraw Overlay if needed
+    if (!SEGMENT.check2) return FRAMETIME;
+    for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
+      //redraw foreground/alive
+      if (leds[XY(x,y)] != backgroundColor) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?leds[XY(x,y)] : RGBW32(leds[XY(x,y)].r, leds[XY(x,y)].g, leds[XY(x,y)].b, 0));
+    }
     return FRAMETIME;
   }
-
-  //copy previous leds from pixels
-  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-    leds[XY(x,y)] = CRGB(SEGMENT.getPixelColorXY(x,y));
+  //Update Game of Life
+  //Redraw immediately if overlay to avoid flicker
+  if (SEGMENT.check2) {
+    for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
+      if (leds[XY(x,y)] != backgroundColor) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?leds[XY(x,y)] : RGBW32(leds[XY(x,y)].r, leds[XY(x,y)].g, leds[XY(x,y)].b, 0));
+    }
   }
+
+  //copy leds to futureLeds
+  memcpy(futureLeds, leds, dataSize);
 
   aliveCount = repeatDetection[2];
 
@@ -5210,7 +5218,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { // iterate through 3*3 matrix
       if (i==0 && j==0) continue; // ignore itself
       uint16_t xy;
-      if (SEGMENT.check2) { // wrap around option checked
+      if (SEGMENT.check3) { // wrap around option checked
         xy = XY((x+i+cols)%cols, (y+j+rows)%rows);
       }
       else { // no wrap around
@@ -5230,7 +5238,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     if ((color != bgc) && (neighbors < 2 || neighbors > 3)) {
       // Loneliness or overpopulation
-      SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
+      futureLeds[XY(x,y)] = backgroundColor;
+      if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
       aliveCount--;
     } 
     else if ((color == bgc) && (neighbors == 3)) { 
@@ -5241,13 +5250,17 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       else if (nColors[1] == nColors[2]) dominantColor = nColors[1];
       else dominantColor = nColors[random8()%3];
 
-      // mutate color chance (1/256)
+      futureLeds[XY(x,y)] = dominantColor;
+      // mutate color chance
       if (random8() < SEGMENT.intensity) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
-
-      SEGMENT.setPixelColorXY(x,y, dominantColor);
+      SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?dominantColor : RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0)); //WLEDMM support all colors
+      
       aliveCount++;
     } 
   }
+
+  // copy futureLeds to leds
+  memcpy(leds, futureLeds, dataSize);
 
   // track CRC16 of leds every 16 frames to detect all basic repeating patterns
   // track CRC16 of leds every 4*max(rows,cols) frames to detect all infinite gliders / spaceships
@@ -5283,9 +5296,10 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   // increase generation counter
   SEGENV.aux0++;
   SEGENV.step = strip.now;
+
   return FRAMETIME;
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,,,,All Colors ☾,Wrap ☾;!,!;!;2;sx=200,ix=12,c1=0,c2=1,o2=1"; 
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=200,ix=12,c1=0,o3=1"; 
 
 /////////////////////////
 //     2D Hiphotic     //
