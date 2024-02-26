@@ -662,33 +662,15 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
 #elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
 
-/*
+  USER_PRINTLN("MatrixPanel_I2S_DMA - ESP32_FORUM_PINOUT");
 
+/*
     ESP32 with SmartMatrix's default pinout - ESP32_FORUM_PINOUT
     
     https://github.com/pixelmatix/SmartMatrix/blob/teensylc/src/MatrixHardware_ESP32_V0.h
 
     Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
-
-    #define R1_PIN  GPIO_NUM_2
-    #define G1_PIN  GPIO_NUM_15
-    #define B1_PIN  GPIO_NUM_4
-    #define R2_PIN  GPIO_NUM_16
-    #define G2_PIN  GPIO_NUM_27
-    #define B2_PIN  GPIO_NUM_17
-
-    #define A_PIN   GPIO_NUM_5
-    #define B_PIN   GPIO_NUM_18
-    #define C_PIN   GPIO_NUM_19
-    #define D_PIN   GPIO_NUM_21
-    #define E_PIN   GPIO_NUM_12
-    #define LAT_PIN GPIO_NUM_26
-    #define OE_PIN  GPIO_NUM_25
-
-    #define CLK_PIN GPIO_NUM_22
 */
-
-  DEBUG_PRINTF("MatrixPanel_I2S_DMA - ESP32 config");
 
   mxconfig.gpio.r1 = 2;
   mxconfig.gpio.g1 = 15;
@@ -708,12 +690,16 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   mxconfig.gpio.e = 12;
 
 #else
-  // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA?tab=readme-ov-file
+  USER_PRINTLN("MatrixPanel_I2S_DMA - Default pins");
+  /*
+   https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA?tab=readme-ov-file
 
-  // Boards
-  // https://esp32trinity.com/
-  // https://www.electrodragon.com/product/rgb-matrix-panel-drive-interface-board-for-esp32-dma/
+   Boards
 
+   https://esp32trinity.com/
+   https://www.electrodragon.com/product/rgb-matrix-panel-drive-interface-board-for-esp32-dma/
+   
+  */
   mxconfig.gpio.r1 = 25;
   mxconfig.gpio.g1 = 26;
   mxconfig.gpio.b1 = 27;
