@@ -660,7 +660,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   mxconfig.gpio.d = 35;
   mxconfig.gpio.e = 21;
 
-#else
+#elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
 
 /*
 
@@ -706,6 +706,30 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   mxconfig.gpio.c = 19;
   mxconfig.gpio.d = 21;
   mxconfig.gpio.e = 12;
+
+#else
+  // https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA?tab=readme-ov-file
+
+  // Boards
+  // https://esp32trinity.com/
+  // https://www.electrodragon.com/product/rgb-matrix-panel-drive-interface-board-for-esp32-dma/
+
+  mxconfig.gpio.r1 = 25;
+  mxconfig.gpio.g1 = 26;
+  mxconfig.gpio.b1 = 27;
+  mxconfig.gpio.r2 = 14;
+  mxconfig.gpio.g2 = 12;
+  mxconfig.gpio.b2 = 13;
+
+  mxconfig.gpio.lat = 4;
+  mxconfig.gpio.oe  = 15;
+  mxconfig.gpio.clk = 16;
+
+  mxconfig.gpio.a = 23;
+  mxconfig.gpio.b = 19;
+  mxconfig.gpio.c = 5;
+  mxconfig.gpio.d = 17;
+  mxconfig.gpio.e = 18;
 
 #endif
 
