@@ -425,6 +425,7 @@ void getSettingsJS(byte subPage, char* dest)
       sumMa += bus->getMaxCurrent();
     }
     sappend('v',SET_F("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
+    sappend('c',SET_F("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
     sappend('c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
     oappend(SET_F("resetCOM("));
