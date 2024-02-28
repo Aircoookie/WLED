@@ -5159,26 +5159,24 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
   const uint16_t dataSize = sizeof(byte) * SEGMENT.length()/8;  // using width*height prevents reallocation if mirroring is enabled
-  const uint16_t repeatDetectionLen = 4; // {crc % 16 gen, crc % 4*r*w gen, prevAlive, changeCount}
+  const uint16_t crcBufferLen = 2;
+  const uint16_t totalSize = dataSize*2 + sizeof(uint16_t)*crcBufferLen;
 
-  if (!SEGENV.allocateData(dataSize*2 + sizeof(uint16_t)*repeatDetectionLen)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize*2 + sizeof(uint16_t)*crcBufferLen)) return mode_static(); //allocation failed
   byte *cells = reinterpret_cast<byte*>(SEGENV.data);
   byte *futureCells = reinterpret_cast<byte*>(SEGENV.data + dataSize);
-  uint16_t *repeatDetection = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2); 
+  uint16_t *crcBuffer = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2); 
 
+  uint16_t &generation = SEGENV.aux0;
   CRGB backgroundColor = SEGCOLOR(1);
   CRGB color;
-  uint16_t aliveCount = 0;
 
   if (SEGENV.call == 0) SEGMENT.setUpLeds();
-
   //start new game of life
-  if (SEGENV.call == 0 || SEGENV.aux0 == 0) {
+  if (SEGENV.call == 0 || generation == 0) {
     SEGENV.step = strip.now; // .step = previous call time
-    SEGENV.aux0 = 1; // .aux0 = generation counter
+    generation = 1;
     random16_set_seed(strip.now>>2); //seed the random generator
-
-    //give the leds random state and colors (based on intensity, colors from palette or all posible colors are chosen)
     //Setup Grid
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       uint8_t state = (random8() < 82) ? 1 : 0; // ~32% chance of being alive
@@ -5193,15 +5191,12 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         setBitValue(futureCells, dataSize, y * cols + x, true);
         color = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
         SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
-        aliveCount++;
       }
     }
-
     //Clear repeatDetection 
-    memset(repeatDetection, 0, sizeof(uint16_t)*repeatDetectionLen);
-    repeatDetection[2] = aliveCount;
+    memset(crcBuffer, 0, sizeof(uint16_t)*crcBufferLen);
     return FRAMETIME;
-  } else if (strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,4)) {
+  } else if (strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,2)) {
     // update only when appropriate time passes (in 42 FPS slots)
     // Redraw Overlay if needed
     if (!SEGMENT.check2) return FRAMETIME;
@@ -5225,10 +5220,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       }
     }
   }
-
-
-  aliveCount = repeatDetection[2]; //get alive count from memory
-
+  bool newCellCheck = false; // Detect still live and dead grids
   //cell index and coordinates
   uint16_t cIndex;
   uint16_t cX;
@@ -5241,7 +5233,6 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { // iterate through 3*3 matrix
       if (i==0 && j==0) continue; // ignore itself
-
       if (SEGMENT.check3) { //wrap around
         cX = (x+i+cols) % cols;
         cY = (y+j+rows) % rows;
@@ -5250,7 +5241,6 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         cY = y+j;
         if (cX < 0 || cY < 0 || cX >= cols || cY >= rows) continue; //skip if out of bounds
       }
- 
       cIndex = cY * cols + cX;
       // count neighbors and store upto 3 neighbor colors
       if (getBitValue(cells, dataSize, cIndex)) { //if alive
@@ -5268,69 +5258,48 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       // Loneliness or overpopulation
       setBitValue(futureCells, dataSize, y * cols + x, false);
       if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
-      aliveCount--;
     } 
     else if (!(cellValue) && (neighbors == 3)) { 
       // Reproduction
       setBitValue(futureCells, dataSize, y * cols + x, true);
+      newCellCheck = true;
       // find dominant color and assign it to a cell
+      // no longer storing colors, if parent dies the color is lost
       CRGB dominantColor;
-
-      //Alternative dominant color calculation
-      //ncolors may have fewer than 3 colors
-      if (colorCount == 3) {
+      if (colorCount == 3) { //All parents survived
         if ((nColors[0] == nColors[1]) || (nColors[0] == nColors[2])) dominantColor = nColors[0];
         else if (nColors[1] == nColors[2]) dominantColor = nColors[1];
         else dominantColor = nColors[random8()%3];
       }
-      else if (colorCount == 2) dominantColor = nColors[random8()%2];
-      else if (colorCount == 1) dominantColor = nColors[0];
-      else dominantColor = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
+      else if (colorCount == 2) dominantColor = nColors[random8()%2]; // 1 leading parent died
+      else if (colorCount == 1) dominantColor = nColors[0]; // 2 leading parents survived
+      else dominantColor = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0); // all parents died
       // mutate color chance
       if (random8() < SEGMENT.intensity) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
 
       if (SEGMENT.check1) dominantColor = RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0); //WLEDMM support all colors)
       SEGMENT.setPixelColorXY(x,y, dominantColor);
-      aliveCount++;
     } 
   }
-
   //update cell values
   memcpy(cells, futureCells, dataSize);
-
-  // track CRC16 of leds every 16 frames to detect all basic repeating patterns
-  // track CRC16 of leds every 4*max(rows,cols) frames to detect all infinite gliders / spaceships
-  // rectanglular grids with a side of length <= 6 create extremely long repeating patterns 
-
-  // current crc
+  /////////Repeat Detection/////////
+  const byte oscillatorCheck = 0;
+  const byte spaceshipCheck = 1;
+  // Get current crc value
   uint16_t crc = crc16((const unsigned char*)cells, dataSize);
 
   bool repetition = false;
-  if (aliveCount == 0) repetition = true; // if no alive cells, infinite repetition
-  // check if we had same CRC and reset if needed
-  for (int i=0; i<repeatDetectionLen-2 && !repetition; i++) repetition = (crc == repeatDetection[i]); 
-  // same CRC would mean image did not change or was repeating itself
-  // -> softhack007: not exacly. Different CRC means different image; same CRC means nothing (could be same or slightly different).
-
-  // Update Alive/Counter
-  if (abs8(repeatDetection[2] - aliveCount) < 2) repeatDetection[3]++; // alive count needs to change by 2 or more to reset the repetition counter
-  else repeatDetection[3] = 0;
-
-  if (repeatDetection[3] > (4 * max(rows,cols))) {
-    repetition = true; // if alive count did not change for 4 * max(rows, col) frames, infinite glider
-  }
-
+  if (!newCellCheck || crc == crcBuffer[oscillatorCheck] || crc == crcBuffer[spaceshipCheck]) repetition = true; //check if cell born this gen and previous stored crc values
   if (repetition) {
-    SEGENV.aux0 = 0; // reset on next call
+    generation = 0; // reset on next call
     return FRAMETIME;
   }
-  // Update CRC buffer and alive count
-  if (SEGENV.aux0 % 16 == 0) repeatDetection[0] = crc;
-  if (SEGENV.aux0 % (4*rows*cols+1) == 0) repeatDetection[1] = crc;
-  repeatDetection[2] = aliveCount;
+  // Update CRC values
+  if (generation % 16 == 0) crcBuffer[oscillatorCheck] = crc;
+  if (generation % (4*max(rows,cols)) == 0) crcBuffer[spaceshipCheck] = crc;
 
-  // increase generation counter
-  SEGENV.aux0++;
+  generation++;
   SEGENV.step = strip.now;
   return FRAMETIME;
 } // mode_2Dgameoflife()
