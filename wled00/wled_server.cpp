@@ -364,9 +364,8 @@ void initServer()
 
   createEditHandler(correctPIN);
 
-#ifndef WLED_DISABLE_OTA
   static const char _update[] PROGMEM = "/update";
-
+#ifndef WLED_DISABLE_OTA
   //init ota page
   server.on(_update, HTTP_GET, [](AsyncWebServerRequest *request){
     if (otaLock) {
