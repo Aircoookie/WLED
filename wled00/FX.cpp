@@ -5168,14 +5168,16 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   uint16_t *crcBuffer = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2); 
 
   uint16_t &generation = SEGENV.aux0;
+  uint16_t &pauseFrames = SEGENV.aux1;
   CRGB backgroundColor = SEGCOLOR(1);
   CRGB color;
 
   if (SEGENV.call == 0) SEGMENT.setUpLeds();
   //start new game of life
-  if (SEGENV.call == 0 || generation == 0) {
+  if ((SEGENV.call == 0 || generation == 0) && pauseFrames == 0) {
     SEGENV.step = strip.now; // .step = previous call time
     generation = 1;
+    pauseFrames = 75; // show initial state for longer
     random16_set_seed(strip.now>>2); //seed the random generator
     //Setup Grid
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
@@ -5196,20 +5198,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     //Clear repeatDetection 
     memset(crcBuffer, 0, sizeof(uint16_t)*crcBufferLen);
     return FRAMETIME;
-  } else if (strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,2)) {
-    // update only when appropriate time passes (in 42 FPS slots)
-    // Redraw Overlay if needed
-    if (!SEGMENT.check2) return FRAMETIME;
-    for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-      //redraw foreground/alive
-      if (getBitValue(cells, dataSize, y * cols + x)) {
-        color = SEGMENT.getPixelColorXY(x,y);
-        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
-      }
-    }
-    return FRAMETIME;
   }
-  //Update Game of Life
   //Redraw immediately if overlay to avoid flicker
   if (SEGMENT.check2) {
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
@@ -5220,7 +5209,12 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       }
     }
   }
-  bool newCellCheck = false; // Detect still live and dead grids
+  if (pauseFrames || strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,2)) {
+    if(pauseFrames) pauseFrames--;
+    return FRAMETIME; //skip if not enough time has passed
+  }
+  //Update Game of Life
+  bool cellChanged = false; // Detect still live and dead grids
   //cell index and coordinates
   uint16_t cIndex;
   uint16_t cX;
@@ -5245,7 +5239,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       // count neighbors and store upto 3 neighbor colors
       if (getBitValue(cells, dataSize, cIndex)) { //if alive
         neighbors++;
-        CRGB color = SEGMENT.getPixelColorXY(cX, cY);
+        color = SEGMENT.getPixelColorXY(cX, cY);
         if (color == backgroundColor) continue; //parent just died, color lost
         nColors[colorCount%3] = color;
         colorCount++;
@@ -5256,13 +5250,14 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     bool cellValue = getBitValue(cells, dataSize, y * cols + x);
     if ((cellValue) && (neighbors < 2 || neighbors > 3)) {
       // Loneliness or overpopulation
+      cellChanged = true;
       setBitValue(futureCells, dataSize, y * cols + x, false);
       if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
     } 
     else if (!(cellValue) && (neighbors == 3)) { 
       // Reproduction
       setBitValue(futureCells, dataSize, y * cols + x, true);
-      newCellCheck = true;
+      cellChanged = true;
       // find dominant color and assign it to a cell
       // no longer storing colors, if parent dies the color is lost
       CRGB dominantColor;
@@ -5273,7 +5268,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       }
       else if (colorCount == 2) dominantColor = nColors[random8()%2]; // 1 leading parent died
       else if (colorCount == 1) dominantColor = nColors[0]; // 2 leading parents survived
-      else dominantColor = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0); // all parents died
+      else dominantColor = color; // all parents died last used color
       // mutate color chance
       if (random8() < SEGMENT.intensity) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
 
@@ -5290,9 +5285,10 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   uint16_t crc = crc16((const unsigned char*)cells, dataSize);
 
   bool repetition = false;
-  if (!newCellCheck || crc == crcBuffer[oscillatorCheck] || crc == crcBuffer[spaceshipCheck]) repetition = true; //check if cell born this gen and previous stored crc values
+  if (!cellChanged || crc == crcBuffer[oscillatorCheck] || crc == crcBuffer[spaceshipCheck]) repetition = true; //check if cell born this gen and previous stored crc values
   if (repetition) {
     generation = 0; // reset on next call
+    pauseFrames = 50;
     return FRAMETIME;
   }
   // Update CRC values
