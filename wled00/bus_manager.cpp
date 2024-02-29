@@ -554,6 +554,10 @@ BusNetwork::BusNetwork(BusConfig &bc)
       _rgbw = false;
       _UDPtype = 2;
       break;
+    case TYPE_NET_ARTNET_RGBW:
+      _rgbw = true;
+      _UDPtype = 2;
+      break;
     case TYPE_NET_E131_RGB:
       _rgbw = false;
       _UDPtype = 1;
