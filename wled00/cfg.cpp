@@ -1052,7 +1052,7 @@ void serializeConfig() {
   JsonObject usermods_settings = root.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
 
-  File f = WLED_FS.open("/cfg.json", "w");
+  File f = WLED_FS.open(SET_F("/cfg.json"), "w");
   if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();
@@ -1066,7 +1066,7 @@ bool deserializeConfigSec() {
 
   if (!requestJSONBufferLock(3)) return false;
 
-  bool success = readObjectFromFile("/wsec.json", nullptr, pDoc);
+  bool success = readObjectFromFile(PSTR("/wsec.json"), nullptr, pDoc);
   if (!success) {
     releaseJSONBufferLock();
     return false;

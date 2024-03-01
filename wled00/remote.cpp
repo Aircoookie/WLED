@@ -123,7 +123,7 @@ static bool remoteJson(int button)
   sprintf_P(objKey, PSTR("\"%d\":"), button);
 
   // attempt to read command from remote.json
-  readObjectFromFile("/remote.json", objKey, pDoc);
+  readObjectFromFile(PSTR("/remote.json"), objKey, pDoc);
   JsonObject fdo = pDoc->as<JsonObject>();
   if (fdo.isNull()) {
     // the received button does not exist
