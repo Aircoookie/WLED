@@ -12,7 +12,6 @@
 //colors.cpp
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
-void colorRGBtoRGBW(byte* rgb);
 
 //udp.cpp
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
@@ -384,6 +383,7 @@ BusPwm::BusPwm(BusConfig &bc)
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
   }
+  //_prevBri = _bri;
   #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -395,12 +395,27 @@ BusPwm::BusPwm(BusConfig &bc)
     #ifdef ESP8266
     pinMode(_pins[i], OUTPUT);
     #else
-    ledcSetup(_ledcStart + i, _frequency, 8);
+    switch (_frequency) {
+      case WLED_PWM_FREQ/3:   _depth = 12; break; // 6510Hz
+      case WLED_PWM_FREQ/2:   _depth = 11; break; // 9676Hz
+      default:
+      case WLED_PWM_FREQ:     _depth = 10; break; // 19531Hz
+      case WLED_PWM_FREQ*4/3: _depth =  9; break; // 26041Hz
+      case WLED_PWM_FREQ*2:   _depth =  8; break; // 39062Hz
+    }
+    ledcSetup(_ledcStart + i, _frequency, _depth);
     ledcAttachPin(_pins[i], _ledcStart + i);
     #endif
   }
   _data = _pwmdata; // avoid malloc() and use stack
   _valid = true;
+}
+
+void BusPwm::setBrightness(uint8_t bri) {
+  #ifdef ARDUINO_ARCH_ESP32
+  //_prevBri = _bri;
+  #endif
+  Bus::setBrightness(bri);
 }
 
 void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
@@ -466,11 +481,20 @@ void BusPwm::show() {
   if (!_valid) return;
   uint8_t numPins = NUM_PWM_PINS(_type);
   for (unsigned i = 0; i < numPins; i++) {
+    #ifdef ESP8266
     uint8_t scaled = (_data[i] * _bri) / 255;
     if (_reversed) scaled = 255 - scaled;
-    #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
+    unsigned scaled = ((_data[i] * _bri) << (_depth-8)) / 255;
+    if (_reversed) scaled = (1<<_depth) - 1 - scaled;
+    // TODO: implement ledcFade() if the brightness changed between calls
+    // bool ledcFade(uint8_t pin, uint32_t start_duty, uint32_t target_duty, int max_fade_time_ms);
+    // if (_prevBri != _bri) {
+    //   unsigned prevScaled = ((_data[i] * _prevBri) << (_depth-8)) / 255;
+    //   ledcFade(_ledcStart + i, prevScaled, scaled, FRAMETIME-1); // frametime is a macro expanding to strip.getFrameTime() which is unwanted here
+    //   _prevBri = _bri;
+    // } else
     ledcWrite(_ledcStart + i, scaled);
     #endif
   }
