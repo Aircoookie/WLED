@@ -24,14 +24,14 @@ jobs:
       run: |
         rm -rf /tmp/WLEDtemp/* || true
         mkdir -p /tmp/WLEDtemp
-        wget https://github.com/Aircoookie/WLED/archive/refs/heads/main.zip -O /tmp/WLEDtemp/mm.zip
+        wget https://github.com/canine82/WLED/archive/refs/heads/0_13.zip -O /tmp/WLEDtemp/mm.zip
         unzip /tmp/WLEDtemp/mm.zip -d /tmp/WLEDtemp
         find /tmp/WLEDtemp -maxdepth 1 -mindepth 1 -name "*" -type d >> /tmp/WLEDtemp/wledfoldername
         cd `cat /tmp/WLEDtemp/wledfoldername`
         npm install
         echo '[env:custom_build]' >>platformio.ini
-        echo 'extends = env:esp32s3dev_8MB_PSRAM_opi' >>platformio.ini
-        echo 'build_flags = ${env:esp32s3dev_8MB_PSRAM_opi.build_flags} -D WLED_ENABLE_WEBSOCKETS -D WLED_ENABLE_PIXART -D LEDPIN=7 -D BTNPIN=3 -D DEFAULT_LED_COUNT=53 -D DEFAULT_LED_TYPE=TYPE_WS2812_RGB -D CLIENT_SSID='\''"fleas"'\'' -D CLIENT_PASS='\''"Barkyou123"'\'' -D USERMOD_AUTO_SAVE' >>platformio.ini
+        echo 'extends = env:esp32dev' >>platformio.ini
+        echo 'build_flags = ${env:esp32dev.build_flags} -D WLED_ENABLE_MQTT -D WLED_ENABLE_WEBSOCKETS -D WLED_ENABLE_PIXART -D LEDPIN=26 -D IRPIN=9 -D DEFAULT_LED_COUNT=52 -D CLIENT_SSID='\''"fleas"'\'' -D CLIENT_PASS='\''"Barkyou123"'\'' -D USERMOD_AUTO_SAVE -D USERMOD_WORDCLOCK -D USERMOD_ANIMATED_STAIRCASE -D USERMOD_PIRSWITCH' >>platformio.ini
         
         pio run -e custom_build || pio run -e custom_build
     - name: Copy Files
