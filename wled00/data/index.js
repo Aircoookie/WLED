@@ -2795,6 +2795,12 @@ function search(field, listId = null) {
 
 	const search = field.value !== '';
 
+	// restore default preset sorting if no search term is entered
+	if (listId === 'pcont' && !search) {
+		populatePresets();
+		return;
+	}
+
 	// clear filter if searching in fxlist
 	if (listId === 'fxlist' && search) {
 		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
