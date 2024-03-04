@@ -418,9 +418,4 @@ void handleIO()
 void IRAM_ATTR touchButtonISR()
 {
   // used for ESP32 S2 and S3: nothing to do, ISR is just used to update registers of HAL driver
-  // asm volatile("nop" ::); //prevent compiler to remove this function (TODO: is this really needed? probably not)
-
-  //  #if defined SOC_TOUCH_VERSION_1 //ESP32 original -> unused
-  //  touchInterruptSetThresholdDirection(false); //todo: need to flip direction, for that proably need to read current state or something.
-  //  #endif
 }
