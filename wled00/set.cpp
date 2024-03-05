@@ -102,9 +102,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin, PinOwner::Relay)) {
        pinManager.deallocatePin(rlyPin, PinOwner::Relay);
     }
+    #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
        pinManager.deallocatePin(irPin, PinOwner::IR);
     }
+    #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
         pinManager.deallocatePin(btnPin[s], PinOwner::Button);
@@ -218,6 +220,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     BusManager::updateColorOrderMap(com);
 
     // update other pins
+    #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
@@ -225,6 +228,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    #endif
     irApplyToAllSelected = !request->hasArg(F("MSO"));
 
     int hw_rly_pin = request->arg(F("RL")).toInt();

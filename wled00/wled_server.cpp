@@ -19,10 +19,35 @@ static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN co
 static const char s_notimplemented[] PROGMEM = "Not implemented";
 static const char s_accessdenied[]   PROGMEM = "Access Denied";
 static const char s_javascript[]     PROGMEM = "application/javascript";
-static const char s_json[]           PROGMEM = "application/json";
+static const char s_json[]                   = "application/json"; // AsyncJson-v6.h
 static const char s_html[]           PROGMEM = "text/html";
-static const char s_plain[]          PROGMEM = "text/plain";
+static const char s_plain[]                  = "text/plain"; // Espalexa.h
 static const char s_css[]            PROGMEM = "text/css";
+static const char s_png[]            PROGMEM = "image/png";
+static const char s_gif[]            PROGMEM = "image/gif";
+static const char s_jpg[]            PROGMEM = "image/jpeg";
+static const char s_ico[]            PROGMEM = "image/x-icon";
+//static const char s_xml[]            PROGMEM = "text/xml";
+//static const char s_pdf[]            PROGMEM = "application/x-pdf";
+//static const char s_zip[]            PROGMEM = "application/x-zip";
+//static const char s_gz[]             PROGMEM = "application/x-gzip";
+
+String getFileContentType(String &filename) {
+  if      (filename.endsWith(F(".htm")))  return FPSTR(s_html);
+  else if (filename.endsWith(F(".html"))) return FPSTR(s_html);
+  else if (filename.endsWith(F(".css")))  return FPSTR(s_css);
+  else if (filename.endsWith(F(".js")))   return FPSTR(s_javascript);
+  else if (filename.endsWith(F(".json"))) return       s_json;
+  else if (filename.endsWith(F(".png")))  return FPSTR(s_png);
+  else if (filename.endsWith(F(".gif")))  return FPSTR(s_gif);
+  else if (filename.endsWith(F(".jpg")))  return FPSTR(s_jpg);
+  else if (filename.endsWith(F(".ico")))  return FPSTR(s_ico);
+//  else if (filename.endsWith(F(".xml")))   return FPSTR(s_xml);
+//  else if (filename.endsWith(F(".pdf")))   return FPSTR(s_pdf);
+//  else if (filename.endsWith(F(".zip")))   return FPSTR(s_zip);
+//  else if (filename.endsWith(F(".gz")))    return FPSTR(s_gz);
+  return s_plain;
+}
 
 //Is this an IP?
 static bool isIp(String str) {
@@ -302,7 +327,7 @@ void initServer()
     if (root.containsKey("pin")) checkSettingsPIN(root["pin"].as<const char*>());
 
     const String& url = request->url();
-    isConfig = url.indexOf("cfg") > -1;
+    isConfig = url.indexOf(F("cfg")) > -1;
     if (!isConfig) {
       /*
       #ifdef WLED_DEBUG
@@ -331,7 +356,7 @@ void initServer()
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
     }
-    request->send(200, FPSTR(s_json), F("{\"success\":true}"));
+    request->send(200, s_json, F("{\"success\":true}"));
   }, JSON_BUFFER_SIZE);
   server.addHandler(handler);
 
@@ -505,7 +530,7 @@ void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t erro
 {
     AsyncJsonResponse *response = new AsyncJsonResponse(64);
     if (error < ERR_NOT_IMPL) response->addHeader(F("Retry-After"), F("1"));
-    response->setContentType(FPSTR(s_json));
+    response->setContentType(s_json);
     response->setCode(code);
     JsonObject obj = response->getRoot();
     obj[F("error")] = error;

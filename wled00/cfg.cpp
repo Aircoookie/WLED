@@ -286,13 +286,22 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     // new install/missing configuration (button 0 has defaults)
     if (fromFS) {
       // relies upon only being called once with fromFS == true, which is currently true.
-      uint8_t s = 0;
-      if (pinManager.allocatePin(btnPin[0], false, PinOwner::Button)) { // initialized to #define value BTNPIN, or zero if not defined(!)
-        ++s; // do not clear default button if allocated successfully
-      }
-      for (; s<WLED_MAX_BUTTONS; s++) {
-        btnPin[s]           = -1;
-        buttonType[s]       = BTN_TYPE_NONE;
+      for (size_t s = 0; s < WLED_MAX_BUTTONS; s++) {
+        if (buttonType[s] == BTN_TYPE_NONE || btnPin[s] < 0 || !pinManager.allocatePin(btnPin[s], false, PinOwner::Button)) {
+          btnPin[s]     = -1;
+          buttonType[s] = BTN_TYPE_NONE;
+        }
+        if (btnPin[s] >= 0) {
+          if (disablePullUp) {
+            pinMode(btnPin[s], INPUT);
+          } else {
+            #ifdef ESP32
+            pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+            #else
+            pinMode(btnPin[s], INPUT_PULLUP);
+            #endif
+          }
+        }
         macroButton[s]      = 0;
         macroLongPress[s]   = 0;
         macroDoublePress[s] = 0;
@@ -302,6 +311,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(touchThreshold,btn_obj[F("tt")]);
   CJSON(buttonPublishMqtt,btn_obj["mqtt"]);
 
+  #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
     pinManager.deallocatePin(irPin, PinOwner::IR);
@@ -312,6 +322,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   }
   CJSON(irEnabled, hw["ir"]["type"]);
+  #endif
   CJSON(irApplyToAllSelected, hw["ir"]["sel"]);
 
   JsonObject relay = hw[F("relay")];
@@ -440,7 +451,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (if_sync_send[F("twice")]) udpNumRetries = 1; // import setting from 0.13 and earlier
   CJSON(udpNumRetries, if_sync_send["ret"]);
 
-  JsonObject if_nodes = interfaces[F("nodes")];
+  JsonObject if_nodes = interfaces["nodes"];
   CJSON(nodeListEnabled, if_nodes[F("list")]);
   CJSON(nodeBroadcastEnabled, if_nodes[F("bcast")]);
 
@@ -629,7 +640,7 @@ void deserializeConfigFromFS() {
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
-  success = readObjectFromFile("/cfg.json", nullptr, pDoc);
+  success = readObjectFromFile(PSTR("/cfg.json"), nullptr, pDoc);
   if (!success) { // if file does not exist, optionally try reading from EEPROM and then save defaults to FS
     releaseJSONBufferLock();
     #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -835,8 +846,10 @@ void serializeConfig() {
   hw_btn["mqtt"] = buttonPublishMqtt;
 
   JsonObject hw_ir = hw.createNestedObject("ir");
+  #ifndef WLED_DISABLE_INFRARED
   hw_ir["pin"] = irPin;
   hw_ir["type"] = irEnabled;  // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+  #endif
   hw_ir["sel"] = irApplyToAllSelected;
 
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
@@ -913,7 +926,7 @@ void serializeConfig() {
   if_sync_send["grp"] = syncGroups;
   if_sync_send["ret"] = udpNumRetries;
 
-  JsonObject if_nodes = interfaces.createNestedObject(F("nodes"));
+  JsonObject if_nodes = interfaces.createNestedObject("nodes");
   if_nodes[F("list")] = nodeListEnabled;
   if_nodes[F("bcast")] = nodeBroadcastEnabled;
 
@@ -1149,7 +1162,7 @@ void serializeConfigSec() {
   ota[F("lock-wifi")] = wifiLock;
   ota[F("aota")] = aOtaEnabled;
 
-  File f = WLED_FS.open("/wsec.json", "w");
+  File f = WLED_FS.open(SET_F("/wsec.json"), "w");
   if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();

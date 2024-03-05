@@ -974,7 +974,7 @@ void serializeNetworks(JsonObject root)
 
 void serializeNodes(JsonObject root)
 {
-  JsonArray nodes = root.createNestedArray(F("nodes"));
+  JsonArray nodes = root.createNestedArray("nodes");
 
   for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
   {
@@ -1049,25 +1049,25 @@ void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
   const String& url = request->url();
-  if      (url.indexOf("state") > 0) subJson = JSON_PATH_STATE;
-  else if (url.indexOf("info")  > 0) subJson = JSON_PATH_INFO;
-  else if (url.indexOf("si")    > 0) subJson = JSON_PATH_STATE_INFO;
-  else if (url.indexOf("nodes") > 0) subJson = JSON_PATH_NODES;
-  else if (url.indexOf("eff")   > 0) subJson = JSON_PATH_EFFECTS;
-  else if (url.indexOf("palx")  > 0) subJson = JSON_PATH_PALETTES;
-  else if (url.indexOf("fxda")  > 0) subJson = JSON_PATH_FXDATA;
-  else if (url.indexOf("net")   > 0) subJson = JSON_PATH_NETWORKS;
+  if      (url.indexOf("state")    > 0) subJson = JSON_PATH_STATE;
+  else if (url.indexOf("info")     > 0) subJson = JSON_PATH_INFO;
+  else if (url.indexOf("si")       > 0) subJson = JSON_PATH_STATE_INFO;
+  else if (url.indexOf(F("nodes")) > 0) subJson = JSON_PATH_NODES;
+  else if (url.indexOf(F("eff"))   > 0) subJson = JSON_PATH_EFFECTS;
+  else if (url.indexOf(F("palx"))  > 0) subJson = JSON_PATH_PALETTES;
+  else if (url.indexOf(F("fxda"))  > 0) subJson = JSON_PATH_FXDATA;
+  else if (url.indexOf(F("net"))   > 0) subJson = JSON_PATH_NETWORKS;
   #ifdef WLED_ENABLE_JSONLIVE
-  else if (url.indexOf("live")  > 0) {
+  else if (url.indexOf("live")     > 0) {
     serveLiveLeds(request);
     return;
   }
   #endif
   else if (url.indexOf("pal") > 0) {
-    request->send_P(200, F("application/json"), JSON_palette_names);
+    request->send_P(200, "application/json", JSON_palette_names); // contentType defined in AsyncJson-v6.h
     return;
   }
-  else if (url.indexOf("cfg") > 0 && handleFileRead(request, F("/cfg.json"))) {
+  else if (url.indexOf(F("cfg")) > 0 && handleFileRead(request, F("/cfg.json"))) {
     return;
   }
   else if (url.length() > 6) { //not just /json
@@ -1184,7 +1184,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 #endif
   oappend("}");
   if (request) {
-    request->send(200, F("application/json"), buffer);
+    request->send(200, "application/json", buffer); // contentType defined in AsyncJson-v6.h
   }
   #ifdef WLED_ENABLE_WEBSOCKETS
   else {

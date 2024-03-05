@@ -271,9 +271,10 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware and pin config
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
-#else
-WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({BTNPIN});
+  #define BTNPIN 0,-1
+#endif
+#ifndef BTNTYPE
+  #define BTNTYPE BTN_TYPE_PUSH,BTN_TYPE_NONE
 #endif
 #ifndef RLYPIN
 WLED_GLOBAL int8_t rlyPin _INIT(-1);
@@ -287,9 +288,10 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-WLED_GLOBAL int8_t irPin _INIT(-1);
-#else
-WLED_GLOBAL int8_t irPin _INIT(IRPIN);
+  #define IRPIN -1
+#endif
+#ifndef IRTYPE
+  #define IRTYPE 0
 #endif
 
 #if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || (defined(RX) && defined(TX))
@@ -374,13 +376,11 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
-#if defined(IRTYPE) && defined(IRPIN)
+#ifndef WLED_DISABLE_INFRARED
+WLED_GLOBAL int8_t irPin        _INIT(IRPIN);
 WLED_GLOBAL byte irEnabled      _INIT(IRTYPE); // Infrared receiver
-#else
-WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver disabled
 #endif
-WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR to all selected segments
+WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR or ESP-NOW to all selected segments
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
 WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
@@ -570,6 +570,8 @@ WLED_GLOBAL byte briLast             _INIT(128);           // brightness before 
 WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function in ir.cpp
 
 // button
+WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS]                   _INIT({BTNPIN});
+WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]                 _INIT({BTNTYPE});
 WLED_GLOBAL bool buttonPublishMqtt                            _INIT(false);
 WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
 WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
