@@ -89,6 +89,10 @@
   #include "../usermods/Animated_Staircase/Animated_Staircase.h"
 #endif
 
+#ifdef USERMOD_DISTANCE_STAIRCASE
+  #include "../usermods/Distance_Staircase/Distance_Staircase.h"
+#endif
+
 #ifdef USERMOD_MULTI_RELAY
   #include "../usermods/multi_relay/usermod_multi_relay.h"
 #endif
@@ -274,6 +278,10 @@ void registerUsermods()
 
   #ifdef USERMOD_ANIMATED_STAIRCASE
   usermods.add(new Animated_Staircase());
+  #endif
+
+  #ifdef USERMOD_DISTANCE_STAIRCASE
+  usermods.add(new Distance_Staircase());
   #endif
 
   #ifdef USERMOD_MULTI_RELAY
