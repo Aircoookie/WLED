@@ -7,9 +7,18 @@ class AutoPlaylistUsermod : public Usermod {
 
   private:
     bool silenceDetected = true;
-    uint32_t lastSoundTime;
+    uint32_t lastSoundTime = 0;
+    byte ambientPlaylist = 1;
+    byte musicPlaylist = 2;
+    int timeout = 10;
+
+    static const char _enabled[];
+    static const char _ambientPlaylist[];
+    static const char _musicPlaylist[];
 
   public:
+
+    AutoPlaylistUsermod(const char *name, bool enabled):Usermod(name, enabled) {}
 
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
@@ -25,6 +34,9 @@ class AutoPlaylistUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
+      
+      if(!enabled) return;
+
       um_data_t *um_data;
       if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
         // No Audio Reactive
@@ -38,16 +50,22 @@ class AutoPlaylistUsermod : public Usermod {
         lastSoundTime = millis();
       }
 
-      if(millis() - lastSoundTime > 60000) {
+      if(millis() - lastSoundTime > (timeout * 1000)) {
         if(!silenceDetected) {
           silenceDetected = true;
-          USER_PRINTLN("Silence");
+          String name = "";
+          getPresetName(ambientPlaylist, name);
+          USER_PRINTF("AutoPlaylist: Silence - apply %s\n", name.c_str());
+          applyPreset(ambientPlaylist, CALL_MODE_NOTIFICATION);
         }
       }
       else {
         if(silenceDetected) {
           silenceDetected = false;
-          USER_PRINTLN("End of silence");
+          String name = "";
+          getPresetName(musicPlaylist, name);
+          USER_PRINTF("AutoPlaylist: End of silence - apply %s\n", name.c_str());
+          applyPreset(musicPlaylist, CALL_MODE_NOTIFICATION);
         }
       }
     }
@@ -64,7 +82,12 @@ class AutoPlaylistUsermod : public Usermod {
       }
 
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
-
+      if(!enabled) {
+        infoArr.add("disabled");  
+      }
+      else {
+        infoArr.add(lastSoundTime);
+      }
     }
 
     /*
@@ -106,12 +129,10 @@ class AutoPlaylistUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
-      // we add JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-      // top[FPSTR(_autoSaveEnabled)]     = enabled;
-      // top[FPSTR(_autoSaveAfterSec)]    = autoSaveAfterSec;  // usermodparam
-      // top[FPSTR(_autoSavePreset)]      = autoSavePreset;    // usermodparam
-      // top[FPSTR(_autoSaveApplyOnBoot)] = applyAutoSaveOnBoot;
+      // top[FPSTR(_enabled)]            = enabled;
+      top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
+      top[FPSTR(_musicPlaylist)]      = musicPlaylist;    // usermodparam
       DEBUG_PRINTLN(F("AutoPlaylist config saved."));
     }
 
@@ -126,7 +147,6 @@ class AutoPlaylistUsermod : public Usermod {
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
     bool readFromConfig(JsonObject& root) {
-      // we look for JSON object: {"Autosave": {"enabled": true, "autoSaveAfterSec": 10, "autoSavePreset": 250, ...}}
       JsonObject top = root[FPSTR(_name)];
       if (top.isNull()) {
         DEBUG_PRINT(FPSTR(_name));
@@ -135,6 +155,9 @@ class AutoPlaylistUsermod : public Usermod {
       }
 
       DEBUG_PRINT(FPSTR(_name));
+      getJsonValue(top["ambientPlaylist"], ambientPlaylist);
+      getJsonValue(top["musicPlaylist"], musicPlaylist);
+
       DEBUG_PRINTLN(F(" config (re)loaded."));
 
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
@@ -150,3 +173,6 @@ class AutoPlaylistUsermod : public Usermod {
     }
 };
 
+const char AutoPlaylistUsermod::_enabled[]     PROGMEM = "enabled";
+const char AutoPlaylistUsermod::_ambientPlaylist[]     PROGMEM = "ambientPlaylist";
+const char AutoPlaylistUsermod::_musicPlaylist[]     PROGMEM = "musicPlaylist";
