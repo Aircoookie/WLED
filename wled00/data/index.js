@@ -2794,7 +2794,12 @@ function search(field, listId = null) {
 	if (!listId) return;
 
 	const search = field.value !== '';
-	const presets = listId === 'pcont';
+
+	// restore default preset sorting if no search term is entered
+	if (listId === 'pcont' && !search) {
+		populatePresets();
+		return;
+	}
 
 	// clear filter if searching in fxlist
 	if (listId === 'fxlist' && search) {
@@ -2806,7 +2811,7 @@ function search(field, listId = null) {
 
 	const listItems = gId(listId).querySelectorAll('.lstI');
 	// filter list items but leave (Default & Solid) always visible
-	for (i = (presets ? 0 : 1); i < listItems.length; i++) {
+	for (i = (listId === 'pcont' ? 0 : 1); i < listItems.length; i++) {
 		const listItem = listItems[i];
 		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
 		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
@@ -2814,30 +2819,28 @@ function search(field, listId = null) {
 		listItem.dataset.searchIndex = searchIndex;
 	}
 
-	if (!presets) {
-		// sort list items by search index and name
-		const sortedListItems = Array.from(listItems).sort((a, b) => {
-			const aSearchIndex = parseInt(a.dataset.searchIndex);
-			const bSearchIndex = parseInt(b.dataset.searchIndex);
+	// sort list items by search index and name
+	const sortedListItems = Array.from(listItems).sort((a, b) => {
+		const aSearchIndex = parseInt(a.dataset.searchIndex);
+		const bSearchIndex = parseInt(b.dataset.searchIndex);
 
-			if (aSearchIndex !== bSearchIndex) {
-				return aSearchIndex - bSearchIndex;
-			}
-
-			const aName = a.querySelector('.lstIname').innerText.toUpperCase();
-			const bName = b.querySelector('.lstIname').innerText.toUpperCase();
-
-			return aName.localeCompare(bName);
-		});
-		sortedListItems.forEach(item => {
-			gId(listId).append(item);
-		});
-
-		// scroll to first search result
-		const firstVisibleItem = sortedListItems.find(item => item.style.display !== 'none' && !item.classList.contains('sticky') && !item.classList.contains('selected'));
-		if (firstVisibleItem && search) {
-			firstVisibleItem.scrollIntoView({ behavior: "instant", block: "center" });
+		if (aSearchIndex !== bSearchIndex) {
+			return aSearchIndex - bSearchIndex;
 		}
+
+		const aName = a.querySelector('.lstIname').innerText.toUpperCase();
+		const bName = b.querySelector('.lstIname').innerText.toUpperCase();
+
+		return aName.localeCompare(bName);
+	});
+	sortedListItems.forEach(item => {
+		gId(listId).append(item);
+	});
+
+	// scroll to first search result
+	const firstVisibleItem = sortedListItems.find(item => item.style.display !== 'none' && !item.classList.contains('sticky') && !item.classList.contains('selected'));
+	if (firstVisibleItem && search) {
+		firstVisibleItem.scrollIntoView({ behavior: "instant", block: "center" });
 	}
 }
 
