@@ -10,11 +10,12 @@ class AutoPlaylistUsermod : public Usermod {
     uint32_t lastSoundTime = 0;
     byte ambientPlaylist = 1;
     byte musicPlaylist = 2;
-    int timeout = 10;
+    int timeout = 60;
 
     static const char _enabled[];
     static const char _ambientPlaylist[];
     static const char _musicPlaylist[];
+    static const char _timeout[];
 
   public:
 
@@ -130,7 +131,7 @@ class AutoPlaylistUsermod : public Usermod {
      */
     void addToConfig(JsonObject& root) {
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-      // top[FPSTR(_enabled)]            = enabled;
+      top[FPSTR(_enabled)]            = enabled;
       top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
       top[FPSTR(_musicPlaylist)]      = musicPlaylist;    // usermodparam
       DEBUG_PRINTLN(F("AutoPlaylist config saved."));
@@ -155,8 +156,10 @@ class AutoPlaylistUsermod : public Usermod {
       }
 
       DEBUG_PRINT(FPSTR(_name));
-      getJsonValue(top["ambientPlaylist"], ambientPlaylist);
-      getJsonValue(top["musicPlaylist"], musicPlaylist);
+      getJsonValue(top[_enabled], enabled);
+      getJsonValue(top[_timeout], timeout);
+      getJsonValue(top[_ambientPlaylist], ambientPlaylist);
+      getJsonValue(top[_musicPlaylist], musicPlaylist);
 
       DEBUG_PRINTLN(F(" config (re)loaded."));
 
@@ -173,6 +176,7 @@ class AutoPlaylistUsermod : public Usermod {
     }
 };
 
-const char AutoPlaylistUsermod::_enabled[]     PROGMEM = "enabled";
-const char AutoPlaylistUsermod::_ambientPlaylist[]     PROGMEM = "ambientPlaylist";
-const char AutoPlaylistUsermod::_musicPlaylist[]     PROGMEM = "musicPlaylist";
+const char AutoPlaylistUsermod::_enabled[]         PROGMEM = "enabled";
+const char AutoPlaylistUsermod::_ambientPlaylist[] PROGMEM = "ambientPlaylist";
+const char AutoPlaylistUsermod::_musicPlaylist[]   PROGMEM = "musicPlaylist";
+const char AutoPlaylistUsermod::_timeout[]         PROGMEM = "timeout";
