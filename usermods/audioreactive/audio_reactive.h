@@ -141,6 +141,10 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. chann
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
+int zcr = 0;
+int energy = 0;
+int lfc = 0;
+
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
 
@@ -551,7 +555,18 @@ void FFTcode(void * parameter)
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
+
+      // WLED-MM/TroyHacks: Calculate zero crossings
+      if (i < samplesFFT-2) {
+        if (vReal[i] * vReal[i+1] < 0) {
+            zcr++;
+        }
+      }
+      // WLED-MM/TroyHacks: Calculate energy
+      energy += vReal[i] * vReal[i];
     }
+    energy /= 100000; // WLED-MM/TroyHacks: scale this down becasue we're gonna make it bigger later
+
     // release highest sample to volume reactive effects early - not strictly necessary here - could also be done at the end of the function
     // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.
     micDataReal = maxSample;
@@ -645,6 +660,8 @@ void FFTcode(void * parameter)
         float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
         vReal[i] = t / 16.0f;                           // Reduce magnitude. Want end result to be scaled linear and ~4096 max.
       } // for()
+
+      lfc = fftAddAvg(1,9); // WLED-MM/TroyHacks: Calculate Low-Frequency Content
 
       // mapping of FFT result bins to frequency channels
       //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
@@ -1746,6 +1763,10 @@ class AudioReactive : public Usermod {
         um_data->u_type[9]  = UMT_FLOAT;
         um_data->u_data[10] = &agcSensitivity; // used (New)
         um_data->u_type[10] = UMT_FLOAT;
+        int extra[3] = {zcr, energy, lfc};
+        um_data->u_data[11] = extra; // 
+        um_data->u_type[11] = UMT_INT16_ARR;
+
 #else
        // ESP8266 
         // See https://github.com/MoonModules/WLED/pull/60#issuecomment-1666972133 for explanation of these alternative sources of data
