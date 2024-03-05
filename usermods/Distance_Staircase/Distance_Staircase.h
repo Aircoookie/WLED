@@ -335,6 +335,8 @@ class Distance_Staircase : public Usermod {
     void animateEnterState() {
       int after = state.direction == Up? invite_time_bottom_ms : invite_time_top_ms;
       if ((millis() - state.lastChange) > after && !bottomSensorState && !topSensorState) {
+        onIndex = 0;
+        offIndex = 0;
         state.set(None); 
       }
       if (0 < distanceState.value && distanceState.value < endOfStairsDistance) {
