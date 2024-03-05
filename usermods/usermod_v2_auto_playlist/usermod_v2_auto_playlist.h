@@ -132,6 +132,7 @@ class AutoPlaylistUsermod : public Usermod {
     void addToConfig(JsonObject& root) {
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
       top[FPSTR(_enabled)]            = enabled;
+      top[FPSTR(_timeout)]            = timeout;
       top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
       top[FPSTR(_musicPlaylist)]      = musicPlaylist;    // usermodparam
       DEBUG_PRINTLN(F("AutoPlaylist config saved."));
