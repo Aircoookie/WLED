@@ -19,7 +19,7 @@
 		scE.setAttribute("type", "text/javascript");
 		scE.setAttribute("async", async);
 		d.body.appendChild(scE);
-		// success event 
+		// success event
 		scE.addEventListener("load", () => {
 			//console.log("File loaded");
 			GetV();SetVal();
@@ -79,7 +79,8 @@
 		return (loc ? locproto + "//" + locip : "") + path;
 	}
 	</script>
-	<style>@import url("style.css");</style>
+	<link rel="stylesheet" href="/style.css">
+	<link rel="manifest" href="/app.webmanifest">
 </head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post" onsubmit="GC()">

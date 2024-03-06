@@ -144,7 +144,8 @@
 			return (loc ? locproto + "//" + locip : "") + path;
 		}
 	</script>
-	<style>@import url("style.css");</style>
+	<link rel="stylesheet" href="/style.css">
+	<link rel="manifest" href="/app.webmanifest">
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
@@ -198,7 +199,7 @@
 			<h3>Wireless Remote</h3>
 			<i>Listen for events over ESP-NOW<br>
 			Keep disabled if not using a remote, increases power consumption.<br></i>
-		
+
 			Enable Remote: <input type="checkbox" name="RE"><br>
 			Hardware MAC: <input type="text" name="RMAC"><br>
 			Last Seen: <span class="rlid">None</span> <br>

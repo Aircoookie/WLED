@@ -27,7 +27,7 @@
 		scE.setAttribute("type", "text/javascript");
 		scE.setAttribute("async", async);
 		d.body.appendChild(scE);
-		// success event 
+		// success event
 		scE.addEventListener("load", () => {
 			GetV();
 			for (let r of d.rsvd) { pins.push(r); pinO.push("rsvd"); } // reserved pins
@@ -312,7 +312,8 @@
 		if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
 	}
 	</script>
-	<style>@import url("style.css");</style>
+	<link rel="stylesheet" href="/style.css">
+	<link rel="manifest" href="/app.webmanifest">
 </head>
 
 <body onload="S()">

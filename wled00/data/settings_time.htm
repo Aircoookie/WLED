@@ -20,7 +20,7 @@
 		scE.setAttribute("type", "text/javascript");
 		scE.setAttribute("async", async);
 		d.body.appendChild(scE);
-		// success event 
+		// success event
 		scE.addEventListener("load", () => {
 			//console.log("File loaded");
 			BTa();GetV();updLoc();Cs();FC();
@@ -158,7 +158,8 @@
 		if (parseFloat(d.Sf.LN.value)<0) { d.Sf.LNR.value = "W"; d.Sf.LN.value = -1*parseFloat(d.Sf.LN.value); } else d.Sf.LNR.value = "E";
 	}
 	</script>
-	<style>@import url("style.css");</style>
+	<link rel="stylesheet" href="/style.css">
+	<link rel="manifest" href="/app.webmanifest">
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post" onsubmit="Wd()">
@@ -170,7 +171,7 @@
 		Get time from NTP server: <input type="checkbox" name="NT"><br>
 		<input type="text" name="NS" maxlength="32"><br>
 		Use 24h format: <input type="checkbox" name="CF"><br>
-		Time zone: 
+		Time zone:
 		<select name="TZ">
 			<option value="0" selected>GMT(UTC)</option>
 			<option value="1">GMT/BST</option>

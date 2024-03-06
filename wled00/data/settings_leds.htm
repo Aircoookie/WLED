@@ -23,7 +23,7 @@
 			scE.setAttribute("type", "text/javascript");
 			scE.setAttribute("async", async);
 			d.body.appendChild(scE);
-			// success event 
+			// success event
 			scE.addEventListener("load", () => {
 				GetV();
 				checkSi();
@@ -516,7 +516,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 
 			function receivedText(e) {
 				let lines = e.target.result;
-				var c = JSON.parse(lines); 
+				var c = JSON.parse(lines);
 				if (c.hw) {
 					if (c.hw.led) {
 						for (var i=0; i<10; i++) addLEDs(-1);
@@ -681,7 +681,8 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 			return (loc ? locproto + "//" + locip : "") + path;
 		}
 	</script>
-	<style>@import url("style.css");</style>
+	<link rel="stylesheet" href="/style.css">
+	<link rel="manifest" href="/app.webmanifest">
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
