@@ -131,7 +131,6 @@ class AutoPlaylistUsermod : public Usermod {
           USER_PRINTF("AutoPlaylist: Silence - apply %s\n", name.c_str());
           applyPreset(ambientPlaylist, CALL_MODE_NOTIFICATION);
         }
-        if(autoChange) change(um_data);
       }
       else {
         if(silenceDetected) {
@@ -141,6 +140,7 @@ class AutoPlaylistUsermod : public Usermod {
           USER_PRINTF("AutoPlaylist: End of silence - apply %s\n", name.c_str());
           applyPreset(musicPlaylist, CALL_MODE_NOTIFICATION);
         }
+        if(autoChange) change(um_data);
       }
     }
 
