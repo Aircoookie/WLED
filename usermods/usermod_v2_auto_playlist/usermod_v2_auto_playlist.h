@@ -44,7 +44,7 @@ class AutoPlaylistUsermod : public Usermod {
 
   public:
 
-    AutoPlaylistUsermod(const char *name, bool enabled):Usermod(name, enabled) {}
+    AutoPlaylistUsermod(bool enabled):Usermod("AutoPlaylist", enabled) {}
 
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
@@ -156,6 +156,18 @@ class AutoPlaylistUsermod : public Usermod {
       }
 
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
+      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
+      uiDomString += FPSTR(_name);
+      uiDomString += F(":{");
+      uiDomString += FPSTR(_enabled);
+      uiDomString += enabled ? F(":false}});\">") : F(":true}});\">");
+      uiDomString += F("<i class=\"icons");
+      uiDomString += enabled ? F(" on") : F(" off");
+      uiDomString += F("\">&#xe08f;</i>");
+      uiDomString += F("</button>");
+      infoArr.add(uiDomString);
+
+      infoArr = user.createNestedArray(F(""));
       if(!enabled) {
         infoArr.add("disabled");  
       }
@@ -177,10 +189,11 @@ class AutoPlaylistUsermod : public Usermod {
      */
     void readFromJsonState(JsonObject& root) {
       if (!initDone) return;  // prevent crash on boot applyPreset()
-      bool en = enabled;
       JsonObject um = root[FPSTR(_name)];
       if (!um.isNull()) {
-        if (en != enabled) enabled = en;
+        if (um[FPSTR(_enabled)].is<bool>()) {
+          enabled = um[FPSTR(_enabled)].as<bool>();
+        }
       }
     }
 
