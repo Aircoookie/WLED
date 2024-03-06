@@ -3220,6 +3220,7 @@ function genPresets()
 		playlistTrans[m] += playlistSep[m] + "7";
 		playlistSep[m] = ",";
 	}
+	var seq=230; //Playlist start here
 	for (let ef of effects) {
 		if (ef.name.indexOf("RSVD") < 0) {
 			if (Array.isArray(fxdata) && fxdata.length>ef.id) {
@@ -3261,11 +3262,12 @@ function genPresets()
 				addToPlaylist("All", ef.id);
 				if (m.includes("1")) addToPlaylist("All1", ef.id);
 				if (m.includes("2")) addToPlaylist("All2", ef.id);
+
+				seq = Math.max(seq, (parseInt(ef.id) + 1));
 			} //fxdata is array
 		} //not RSVD
 	} //all effects
 
-	var seq=230; //Playlist start here
 	// console.log(playlistPS, playlistDur, playlistTrans);
 	for (const m in playlistPS) {
 		let playListString = `\n,"${seq}":{"n":"${m}D Playlist","ql":"${seq}","on":true,"playlist":{"ps":[${playlistPS[m]}],"dur":[${playlistDur[m]}],"transition":[${playlistTrans[m]}],"repeat":0,"end":0,"r":1}}`;
