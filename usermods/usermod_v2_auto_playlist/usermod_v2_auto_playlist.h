@@ -11,11 +11,36 @@ class AutoPlaylistUsermod : public Usermod {
     byte ambientPlaylist = 1;
     byte musicPlaylist = 2;
     int timeout = 60;
+    bool autoChange = false;
+
+
+    int avg_long_energy = 10000;
+    int avg_long_lfc = 1000;
+    int avg_long_zcr = 100;
+
+    int avg_short_energy = 10000;
+    int avg_short_lfc = 1000;
+    int avg_short_zcr = 100;
+
+    int vector_energy = 0;
+    int vector_lfc = 0;
+    int vector_zcr = 0;
+
+    int squared_distance = 0;
+    int lastchange = millis();
+
+    int last_beat_interval = millis();
+    int change_threshold = 10;
+
+    int change_lockout = 100; // never change below this numnber of millis. I think of this more like a debounce, but opinions may vary.
+    int ideal_change_max = 5000; // ideally change patterns no more than this number of millis
+    int ideal_change_min = 2000; // ideally change patterns no less than this number of millis
 
     static const char _enabled[];
     static const char _ambientPlaylist[];
     static const char _musicPlaylist[];
     static const char _timeout[];
+    static const char _autoChange[];
 
   public:
 
@@ -31,6 +56,53 @@ class AutoPlaylistUsermod : public Usermod {
     // interfaces here
     void connected() {}
 
+    void change(um_data_t *um_data) {
+
+      int *extra = (int*) um_data->u_data[11];
+
+      int zcr = extra[0];
+      int energy = extra[1];
+      int lfc = extra[2];
+
+      // WLED-MM/TroyHacks: Calculate the long- and short-running averages
+      // and the squared_distance for the vector.
+
+      avg_long_energy = avg_long_energy * 0.99 + energy * 0.01;
+      avg_long_lfc    = avg_long_lfc    * 0.99 + lfc    * 0.01;
+      avg_long_zcr    = avg_long_zcr    * 0.99 + zcr    * 0.01;
+
+      avg_short_energy = avg_short_energy * 0.9 + energy * 0.1;
+      avg_short_lfc    = avg_short_lfc    * 0.9 + lfc    * 0.1;
+      avg_short_zcr    = avg_short_zcr    * 0.9 + zcr    * 0.1;
+
+      // allegedly this is faster than pow(whatever,2)
+      vector_lfc = (avg_short_lfc-avg_long_lfc)*(avg_short_lfc-avg_long_lfc);
+      vector_energy = (avg_short_energy-avg_long_energy)*(avg_short_energy-avg_long_energy);
+      vector_zcr = (avg_short_zcr-avg_long_zcr)*(avg_short_zcr-avg_long_zcr);
+
+      squared_distance = vector_lfc + vector_energy + vector_zcr;
+      squared_distance = squared_distance * squared_distance / 10000000; // shorten just because it's a big number
+
+      // WLED-MM/TroyHacks - Change pattern testing
+      //
+      int change_interval = millis()-lastchange;
+      if (squared_distance <= change_threshold && change_interval > change_lockout) { 
+        if (change_interval > ideal_change_max) {
+          change_threshold += 1;
+        } else if (change_interval < ideal_change_min) {
+          change_threshold -= 1;
+        }
+        if (change_threshold < 0) change_threshold = 0;
+
+        int newpreset = random(2,30);
+        while (currentPreset == newpreset || newpreset == 8 || newpreset == 16 || newpreset == 27) { // 8 is a playlist for me so skip it and the other two just suck :D
+          newpreset = random(2,30); // make sure we get a different preset
+        }
+        applyPreset(newpreset);
+        USER_PRINTF("*** CHANGE! Squared distance = %d - change interval was %d ms - next change min is %d\n",squared_distance, change_interval, change_threshold);
+        lastchange = millis();
+      }
+    }
     /*
      * Da loop.
      */
@@ -59,6 +131,7 @@ class AutoPlaylistUsermod : public Usermod {
           USER_PRINTF("AutoPlaylist: Silence - apply %s\n", name.c_str());
           applyPreset(ambientPlaylist, CALL_MODE_NOTIFICATION);
         }
+        if(autoChange) change(um_data);
       }
       else {
         if(silenceDetected) {
@@ -135,6 +208,7 @@ class AutoPlaylistUsermod : public Usermod {
       top[FPSTR(_timeout)]            = timeout;
       top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
       top[FPSTR(_musicPlaylist)]      = musicPlaylist;    // usermodparam
+      top[FPSTR(_autoChange)]         = autoChange;
       DEBUG_PRINTLN(F("AutoPlaylist config saved."));
     }
 
@@ -161,6 +235,7 @@ class AutoPlaylistUsermod : public Usermod {
       getJsonValue(top[_timeout], timeout);
       getJsonValue(top[_ambientPlaylist], ambientPlaylist);
       getJsonValue(top[_musicPlaylist], musicPlaylist);
+      getJsonValue(top[_autoChange], autoChange);
 
       DEBUG_PRINTLN(F(" config (re)loaded."));
 
@@ -181,3 +256,4 @@ const char AutoPlaylistUsermod::_enabled[]         PROGMEM = "enabled";
 const char AutoPlaylistUsermod::_ambientPlaylist[] PROGMEM = "ambientPlaylist";
 const char AutoPlaylistUsermod::_musicPlaylist[]   PROGMEM = "musicPlaylist";
 const char AutoPlaylistUsermod::_timeout[]         PROGMEM = "timeout";
+const char AutoPlaylistUsermod::_autoChange[]      PROGMEM = "autoChange";
