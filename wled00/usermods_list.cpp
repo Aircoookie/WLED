@@ -11,6 +11,11 @@
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
 
+
+#ifdef USERMOD_TIMER_BAR
+  #include "../usermods/Bar_Timer/usermod_timer_bar.h"
+#endif
+
 #ifdef USERMOD_BATTERY
   #include "../usermods/Battery/usermod_v2_Battery.h"
 #endif
@@ -44,6 +49,10 @@
   #include "../usermods/PIR_sensor_switch/usermod_PIR_sensor_switch.h"
 #endif
 
+#ifdef USERMOD_MODE_SORT
+  #include "../usermods/usermod_v2_mode_sort/usermod_v2_mode_sort.h"
+#endif
+
 #ifdef USERMOD_BH1750
   #include "../usermods/BH1750_v2/usermod_BH1750.h"
 #endif
@@ -54,11 +63,19 @@
 #endif
 
 #ifdef USERMOD_FOUR_LINE_DISPLAY
-  #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
+  #ifdef USE_ALT_DISPlAY
+    #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
+  #else
+    #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
+  #endif
 #endif
 
 #ifdef USERMOD_ROTARY_ENCODER_UI
-  #include "../usermods/usermod_v2_rotary_encoder_ui_ALT/usermod_v2_rotary_encoder_ui_ALT.h"
+  #ifdef USE_ALT_DISPlAY
+    #include "../usermods/usermod_v2_rotary_encoder_ui_ALT/usermod_v2_rotary_encoder_ui_ALT.h"
+  #else
+    #include "../usermods/usermod_v2_rotary_encoder_ui/usermod_v2_rotary_encoder_ui.h"
+  #endif
 #endif
 
 #ifdef USERMOD_AUTO_SAVE
@@ -165,10 +182,6 @@
   #include "../usermods/boblight/boblight.h"
 #endif
 
-#ifdef USERMOD_ANIMARTRIX
-  #include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
-#endif
-
 #ifdef USERMOD_INTERNAL_TEMPERATURE
   #include "../usermods/Internal_Temperature_v2/usermod_internal_temperature.h"
 #endif
@@ -186,27 +199,11 @@
 #endif
 
 #ifdef USERMOD_PWM_OUTPUTS
-  #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
-#endif
-
-#ifdef USERMOD_HTTP_PULL_LIGHT_CONTROL
-  #include "../usermods/usermod_v2_HttpPullLightControl/usermod_v2_HttpPullLightControl.h"
-#endif
-
-#ifdef USERMOD_MPU6050_IMU
-  #include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
-#endif
-
-#ifdef USERMOD_MPU6050_IMU
-  #include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
+#include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
 #ifdef USERMOD_LDR_DUSK_DAWN
-  #include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
-#endif
-
-#ifdef USERMOD_STAIRCASE_WIPE
-  #include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
+#include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
 #endif
 
 void registerUsermods()
@@ -216,7 +213,14 @@ void registerUsermods()
    * || || ||
    * \/ \/ \/
    */
-  //usermods.add(new MyExampleUsermod());
+ // usermods.add(new MyExampleUsermod());
+
+
+
+  #ifdef USERMOD_TIMER_BAR
+  usermods.add(new UsermodTimerBar());
+  #endif
+
 
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
@@ -252,6 +256,10 @@ void registerUsermods()
 
   #ifdef USERMOD_PIRSWITCH
   usermods.add(new PIRsensorSwitch());
+  #endif
+
+  #ifdef USERMOD_MODE_SORT
+  usermods.add(new ModeSortUsermod());
   #endif
 
   #ifdef USERMOD_FOUR_LINE_DISPLAY
@@ -378,31 +386,11 @@ void registerUsermods()
   usermods.add(new ShtUsermod());
   #endif
 
-  #ifdef USERMOD_ANIMARTRIX
-  usermods.add(new AnimartrixUsermod("Animartrix", false));
-  #endif
-
   #ifdef USERMOD_INTERNAL_TEMPERATURE
   usermods.add(new InternalTemperatureUsermod());
   #endif
 
-  #ifdef USERMOD_HTTP_PULL_LIGHT_CONTROL
-  usermods.add(new HttpPullLightControl());
-  #endif
-
-  #ifdef USERMOD_MPU6050_IMU
-  static MPU6050Driver mpu6050; usermods.add(&mpu6050);
-  #endif
-
-  #ifdef USERMOD_GYRO_SURGE
-  static GyroSurge gyro_surge; usermods.add(&gyro_surge);
-  #endif
-
   #ifdef USERMOD_LDR_DUSK_DAWN
   usermods.add(new LDR_Dusk_Dawn_v2());
-  #endif
-
-  #ifdef USERMOD_STAIRCASE_WIPE
-  usermods.add(new StairwayWipeUsermod());
   #endif
 }
