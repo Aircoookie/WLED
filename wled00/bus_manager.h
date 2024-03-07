@@ -255,7 +255,6 @@ class BusPwm : public Bus {
     BusPwm(BusConfig &bc);
     ~BusPwm() { cleanup(); }
 
-    void setBrightness(uint8_t bri) override;
     void setPixelColor(uint16_t pix, uint32_t c) override;
     uint32_t getPixelColor(uint16_t pix) override; //does no index check
     uint8_t  getPins(uint8_t* pinArray) override;
@@ -268,9 +267,8 @@ class BusPwm : public Bus {
     uint8_t _pwmdata[5];
     #ifdef ARDUINO_ARCH_ESP32
     uint8_t _ledcStart;
-    uint8_t _depth;
-    //uint8_t _prevBri;
     #endif
+    uint8_t _depth;
     uint16_t _frequency;
 
     void deallocatePins();

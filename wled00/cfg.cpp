@@ -180,7 +180,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
-      uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
+      uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM
       uint8_t AWmode = elm[F("rgbwm")] | RGBW_MODE_MANUAL_ONLY;
       uint8_t maPerLed = elm[F("ledma")] | 55;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
@@ -627,6 +627,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   return (doc["sv"] | true);
 }
 
+
+static const char s_cfg_json[] PROGMEM = "/cfg.json";
+
 void deserializeConfigFromFS() {
   bool success = deserializeConfigSec();
   if (!success) { //if file does not exist, try reading from EEPROM
@@ -640,7 +643,7 @@ void deserializeConfigFromFS() {
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
-  success = readObjectFromFile(PSTR("/cfg.json"), nullptr, pDoc);
+  success = readObjectFromFile(s_cfg_json, nullptr, pDoc);
   if (!success) { // if file does not exist, optionally try reading from EEPROM and then save defaults to FS
     releaseJSONBufferLock();
     #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -1065,7 +1068,7 @@ void serializeConfig() {
   JsonObject usermods_settings = root.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
 
-  File f = WLED_FS.open(SET_F("/cfg.json"), "w");
+  File f = WLED_FS.open(FPSTR(s_cfg_json), "w");
   if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();
@@ -1073,13 +1076,16 @@ void serializeConfig() {
   doSerializeConfig = false;
 }
 
+
+static const char s_wsec_json[] PROGMEM = "/wsec.json";
+
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
   if (!requestJSONBufferLock(3)) return false;
 
-  bool success = readObjectFromFile(PSTR("/wsec.json"), nullptr, pDoc);
+  bool success = readObjectFromFile(s_wsec_json, nullptr, pDoc);
   if (!success) {
     releaseJSONBufferLock();
     return false;
@@ -1162,7 +1168,7 @@ void serializeConfigSec() {
   ota[F("lock-wifi")] = wifiLock;
   ota[F("aota")] = aOtaEnabled;
 
-  File f = WLED_FS.open(SET_F("/wsec.json"), "w");
+  File f = WLED_FS.open(FPSTR(s_wsec_json), "w");
   if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();

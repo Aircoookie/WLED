@@ -167,12 +167,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       uint16_t freq = request->arg(sp).toInt();
       if (IS_PWM(type)) {
         switch (freq) {
-          case 0 : freq = WLED_PWM_FREQ/3;   break;
-          case 1 : freq = WLED_PWM_FREQ/2;   break;
+          case 0 : freq = WLED_PWM_FREQ/2;   break;
+          case 1 : freq = WLED_PWM_FREQ*2/3; break;
           default:
           case 2 : freq = WLED_PWM_FREQ;     break;
-          case 3 : freq = WLED_PWM_FREQ*4/3; break;
-          case 4 : freq = WLED_PWM_FREQ*2;   break;
+          case 3 : freq = WLED_PWM_FREQ*2;   break;
+          case 4 : freq = WLED_PWM_FREQ*4;   break;
         }
       } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
         switch (freq) {
