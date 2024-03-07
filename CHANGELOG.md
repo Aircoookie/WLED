@@ -1,5 +1,28 @@
 ## WLED changelog
 
+#### Build 2403070
+-   Add additional segment options when controlling over e1.31 (#3616 by @demophoon)
+-   LockedJsonResponse: Release early if possible (#3760 by @willmmiles)
+-   Update setup-node and cache usermods in wled-ci.yml (#3737 by @WoodyLetsCode)
+-   Fix preset sorting (#3790 by @WoodyLetsCode)
+-   compile time button configuration #3792
+-   remove IR config if not compiled
+-   additional string optimisations
+-   Better low brightness level PWM handling (fixes #2767, #2868)
+
+#### Build 2402290
+-   Multiple analog button fix for #3549
+-   Preset caching on chips with PSRAM (credit @akaricchi)
+-   Fixing stairway usermod and adding buildflags (by @lost-hope)
+-   ESP-NOW packet modification
+-   JSON buffer lock error messages / Reduce wait time for lock to 100ms
+-   Reduce string RAM usage for ESP8266
+-   Fixing a potential array bounds violation in ESPDMX
+-   Move timezone table to PROGMEM (#3766 by @willmmiles)
+-   Reposition upload warning message. (fixes #3778)
+-   ABL display fix & optimisation
+-   Add virtual Art-Net RGBW option (#3783 by @shammy642)
+
 #### Build 2402090
 -   Added new Ethernet controller RGB2Go Tetra (duplicate of ESP3DEUXQuattro)
 -   Usermod: httpPullLightControl (#3560 by @roelbroersma)
