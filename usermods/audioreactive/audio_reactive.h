@@ -141,9 +141,9 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. chann
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
-int zcr = 0;
+int zeroCrossingCount = 0;
 int energy = 0;
-int lfc = 0;
+int lowFreqencyContent = 0;
 
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
@@ -559,7 +559,7 @@ void FFTcode(void * parameter)
       // WLED-MM/TroyHacks: Calculate zero crossings
       if (i < samplesFFT-2) {
         if (vReal[i] * vReal[i+1] < 0) {
-            zcr++;
+            zeroCrossingCount++;
         }
       }
       // WLED-MM/TroyHacks: Calculate energy
@@ -661,7 +661,7 @@ void FFTcode(void * parameter)
         vReal[i] = t / 16.0f;                           // Reduce magnitude. Want end result to be scaled linear and ~4096 max.
       } // for()
 
-      lfc = fftAddAvg(1,9); // WLED-MM/TroyHacks: Calculate Low-Frequency Content
+      lowFreqencyContent = fftAddAvg(1,9); // WLED-MM/TroyHacks: Calculate Low-Frequency Content
 
       // mapping of FFT result bins to frequency channels
       //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
@@ -1763,7 +1763,7 @@ class AudioReactive : public Usermod {
         um_data->u_type[9]  = UMT_FLOAT;
         um_data->u_data[10] = &agcSensitivity; // used (New)
         um_data->u_type[10] = UMT_FLOAT;
-        int extra[3] = {zcr, energy, lfc};
+        int extra[3] = {zeroCrossingCount, energy, lowFreqencyContent};
         um_data->u_data[11] = extra; // 
         um_data->u_type[11] = UMT_INT16_ARR;
 
