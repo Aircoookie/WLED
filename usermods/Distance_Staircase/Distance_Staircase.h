@@ -41,7 +41,7 @@ class Distance_Staircase : public Usermod {
     };
 
     enum AnimationState : uint8_t {
-      None, Enter, FollowDistance, Finish, CoolDown
+      None, Enter, FollowDistance, Finish, CoolDown, Reset
     };
 
     struct State {
@@ -161,12 +161,26 @@ class Distance_Staircase : public Usermod {
     static const char _sonarTriggerPin[];
     static const char _sonarEchoPin[];
     
-    void publishMqtt(bool bottom, bool state) {
+    enum MotionType {
+      Bottom, Top, WentUp, WentDown
+    };
+
+    const char* motionTypeName(MotionType type) {
+      switch (type) {
+      case Bottom: return "Bottom";
+      case Top: return "Top";
+      case WentUp: return "WentUp";
+      case WentDown: return "WentDown";
+      }
+      return "unknown";
+    }
+
+    void publishMqtt(MotionType type, bool state) {
 #ifndef WLED_DISABLE_MQTT
       //Check if MQTT Connected, otherwise it will crash the 8266
       if (WLED_MQTT_CONNECTED){
         char subuf[64];
-        sprintf_P(subuf, PSTR("%s/motion/%d"), mqttDeviceTopic, (int)bottom);
+        sprintf_P(subuf, PSTR("%s/motion/%s"), mqttDeviceTopic, motionTypeName(type));
         mqtt->publish(subuf, 0, false, state ? "on" : "off");
       }
 #endif
@@ -185,19 +199,19 @@ class Distance_Staircase : public Usermod {
 #endif
     }
 
-    void publichHomeAssistantAutodiscoveryMotionSensor(bool bottom) {
+    void publichHomeAssistantAutodiscoveryMotionSensor(MotionType type) {
         StaticJsonDocument<600> doc;
         char uid[24], json_str[1024], buf[128];
 
-        const char* topBottom = bottom ? "Bottom" : "Top";
+        const char* name = motionTypeName(type);
 
-        sprintf_P(buf, PSTR("%s %s Motion"), serverDescription, topBottom); //max length: 33 + 7 = 40
+        sprintf_P(buf, PSTR("%s %s Motion"), serverDescription, name); //max length: 33 + 7 = 40
         doc[F("name")] = buf;
-        sprintf_P(buf, PSTR("%s/motion/%d"), mqttDeviceTopic, (int)bottom);   //max length: 33 + 7 = 40
+        sprintf_P(buf, PSTR("%s/motion/%s"), mqttDeviceTopic, name);   //max length: 33 + 7 = 40
         doc[F("stat_t")] = buf;
         doc[F("pl_on")]  = "on";
         doc[F("pl_off")] = "off";
-        sprintf_P(uid, PSTR("%s_%s_motion"), escapedMac.c_str(), topBottom);
+        sprintf_P(uid, PSTR("%s_%s_motion"), escapedMac.c_str(), name);
         doc[F("uniq_id")] = uid;
         doc[F("dev_cla")] = F("motion");
 
@@ -247,8 +261,10 @@ class Distance_Staircase : public Usermod {
     void onMqttConnect(bool sessionPresent) {
 #ifndef WLED_DISABLE_MQTT
       if (HAautodiscovery) {
-        publichHomeAssistantAutodiscoveryMotionSensor(0);
-        publichHomeAssistantAutodiscoveryMotionSensor(1);
+        publichHomeAssistantAutodiscoveryMotionSensor(Top);
+        publichHomeAssistantAutodiscoveryMotionSensor(Bottom);
+        publichHomeAssistantAutodiscoveryMotionSensor(WentUp);
+        publichHomeAssistantAutodiscoveryMotionSensor(WentDown);
         publichHomeAssistantAutodiscoveryDistanceSensor();
       }
 #endif
@@ -294,7 +310,7 @@ class Distance_Staircase : public Usermod {
       int topMovement = digitalRead(topPIRPin);
       if (topMovement != topSensorState) {
         topSensorState = topMovement;
-        publishMqtt(false, topSensorState);
+        publishMqtt(Top, topSensorState);
         if (topMovement) {
           lastActiveSensor = Up;
         }
@@ -303,7 +319,7 @@ class Distance_Staircase : public Usermod {
       int bottomMovement = digitalRead(bottomPIRPin);
       if (bottomMovement != bottomSensorState) {
         bottomSensorState = bottomMovement;
-        publishMqtt(true, bottomSensorState);
+        publishMqtt(Bottom, bottomSensorState);
         if (bottomMovement) {
           lastActiveSensor = Down;
         }
@@ -335,9 +351,7 @@ class Distance_Staircase : public Usermod {
     void animateEnterState() {
       int after = state.direction == Up? invite_time_bottom_ms : invite_time_top_ms;
       if ((millis() - state.lastChange) > after && !bottomSensorState && !topSensorState) {
-        onIndex = 0;
-        offIndex = 0;
-        state.set(None); 
+        state.set(Reset); 
       }
       if (0 < distanceState.value && distanceState.value < endOfStairsDistance) {
         state.set(FollowDistance);
@@ -348,16 +362,17 @@ class Distance_Staircase : public Usermod {
       if (animationTimer.isEarly()) {
         return;
       }
-      if (lastActiveSensor == state.direction && distanceState.value > endOfStairsDistance) {
-        state.set(Finish);
+      
+      if ((lastActiveSensor == state.direction && distanceState.value > endOfStairsDistance) ||     // Person went through
+          ((millis() - state.lastChange) > on_time_ms && !bottomSensorState && !topSensorState))    // Time is up
+      {
+          state.set(Finish);
       }
+      
       if (state.direction == Up) {
         onIndex = MAX(minSegmentId, distanceState.value / (endOfStairsDistance / strip.getSegmentsNum()) - 4);
       } else {
         offIndex = MIN(maxSegmentId + 1, distanceState.value / (endOfStairsDistance / strip.getSegmentsNum()) + 3);
-      }
-      if ((millis() - state.lastChange) > on_time_ms && !bottomSensorState && !topSensorState) {
-        state.set(Finish); 
       }
     }
 
@@ -374,8 +389,11 @@ class Distance_Staircase : public Usermod {
       }
 
       if (onIndex == offIndex) {
-        onIndex = 0;
-        offIndex = 0;
+        if (state.direction == Up) {
+          publishMqtt(WentUp, true);
+        } else {
+          publishMqtt(WentDown, true); 
+        }
         coolDownTimer.reset();
         state.set(CoolDown);
       }
@@ -400,9 +418,15 @@ class Distance_Staircase : public Usermod {
         break;
       case CoolDown:
         if (!coolDownTimer.isEarly()) {
-          state.set(None);
+          state.set(Reset);
         }
         break;
+      case Reset:
+        onIndex  = 0;
+        offIndex = 0;
+        publishMqtt(WentUp, false);
+        publishMqtt(WentDown, false);
+        state.set(None);
       }
 
       if (oldOn != onIndex || oldOff != offIndex) {
@@ -411,13 +435,11 @@ class Distance_Staircase : public Usermod {
     }
 
     void enable(bool enable) {
-      onIndex  = 0;
-      offIndex = 0;
       manageSegments();
       updateSegments();
 
       if (!enable) {        
-        state.set(None);
+        state.set(Reset);
       }
       enabled = enable;
     }
