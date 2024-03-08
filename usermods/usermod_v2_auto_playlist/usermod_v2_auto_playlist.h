@@ -60,9 +60,9 @@ class AutoPlaylistUsermod : public Usermod {
 
       int *extra = (int*) um_data->u_data[11];
 
-      int zcr = extra[0];
+      unsigned int zcr = extra[0];
       int energy = extra[1];
-      int lfc = extra[2];
+      int lfc = getFFTFromRange(um_data, 0 , 3);
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
       // and the squared_distance for the vector.
@@ -103,6 +103,15 @@ class AutoPlaylistUsermod : public Usermod {
         lastchange = millis();
       }
     }
+    uint8_t getFFTFromRange(um_data_t *data, uint8_t from, uint8_t to) {
+      uint8_t *fftResult = (uint8_t*) data->u_data[2];
+      uint8_t result = 0;
+      for (int i = from; i <= to; i++) {
+        result += fftResult[i] * fftResult[i];
+      }
+      return sqrt(result / (to - from + 1));
+    }
+
     /*
      * Da loop.
      */
