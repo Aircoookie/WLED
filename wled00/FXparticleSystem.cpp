@@ -70,7 +70,7 @@ void Emitter_Angle_emit(PSpointsource *emitter, PSparticle *part, uint8_t angle,
 	Emitter_Fountain_emit(emitter, part);
 }
 // attracts a particle to an attractor particle using the inverse square-law
-void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow) // todo: add a parameter 'swallow' so the attractor can 'suck up' particles that are very close, also could use hue of attractor particle for strength
+void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow)
 {
 	// Calculate the distance between the particle and the attractor
 	int dx = attractor->x - particle->x;
@@ -138,7 +138,6 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 
 		if (ycounter > 15)
 		{
-
 			ycounter -= 15;
 			*counter |= (ycounter << 4) & 0xF0; // write upper four bits
 
@@ -161,9 +160,8 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 	// TODO: need to limit the max speed?
 }
 
-// TODO: could solve all update functions in a single function with parameters and handle gravity acceleration in a separte function (uses more cpu time but that is not a huge issue) or maybe not, like this, different preferences can be set
-
-void Particle_Move_update(PSparticle *part, bool killoutofbounds) // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
+// particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
+void Particle_Move_update(PSparticle *part, bool killoutofbounds) 
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -203,7 +201,8 @@ void Particle_Move_update(PSparticle *part, bool killoutofbounds) // particle mo
 
 }
 
-void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) // bounces a particle on the matrix edges, if surface 'hardness' is <255 some energy will be lost in collision (127 means 50% lost)
+// bounces a particle on the matrix edges, if surface 'hardness' is <255 some energy will be lost in collision (127 means 50% lost)
+void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) 
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -247,7 +246,9 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) // bounces
 
 }
 
-void Particle_Wrap_update(PSparticle *part, bool wrapX, bool wrapY) // particle moves, decays and dies (age or out of matrix), if wrap is set, pixels leaving the matrix reappear on other side
+// particle moves, decays and dies (age or out of matrix), if wrap is set, pixels leaving the matrix reappear on other side
+//TODO: this is just move update with wrap, could make one function out of it
+void Particle_Wrap_update(PSparticle *part, bool wrapX, bool wrapY) 
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -296,9 +297,9 @@ void Particle_Wrap_update(PSparticle *part, bool wrapX, bool wrapY) // particle 
 
 }
 
-void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness) // particle moves, decays and dies (age or out of matrix), if wrapX is set, pixels leaving in x direction reappear on other side, hardness is surface hardness for bouncing (127 means 50% speed lost each bounce)
+// particle moves, gravity force is applied and ages, if wrapX is set, pixels leaving in x direction reappear on other side, hardness is surface hardness for bouncing (127 means 50% speed lost each bounce)
+void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness) 
 {
-
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
@@ -388,7 +389,6 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
-// saturation is color saturation, if not set to 255, hsv instead of palette is used (palette does not support saturation)
 void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY)
 {
 #ifdef ESP8266
@@ -532,7 +532,8 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 	}
 }
 
-// update & move particle using simple particles, wraps around left/right if wrapX is true, wrap around up/down if wrapY is true
+// update & move particle, wraps around left/right if wrapX is true, wrap around up/down if wrapY is true
+// particles move upwards faster if ttl is high (i.e. they are hotter)
 void FireParticle_update(PSparticle *part, bool wrapX, bool wrapY)
 {
 	// Matrix dimension
@@ -585,7 +586,7 @@ void FireParticle_update(PSparticle *part, bool wrapX, bool wrapY)
 	}
 }
 
-// render simple particles to the LED buffer using heat to color
+// render fire particles to the LED buffer using heat to color
 // each particle adds heat according to its 'age' (ttl) which is then rendered to a fire color in the 'add heat' function
 void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles, bool wrapX)
 {
@@ -607,18 +608,14 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 			continue;
 		}
 
+		//TODO: no more using simple particles, can use the out of bounds here
+
 		// simple particles do not have 'out of bound' parameter, need to check if particle is within matrix boundaries
 		dx = (uint8_t)((uint16_t)particles[i].x % (uint16_t)PS_P_RADIUS);
 		dy = (uint8_t)((uint16_t)particles[i].y % (uint16_t)PS_P_RADIUS);
 
 		x = (uint8_t)((uint16_t)particles[i].x / (uint16_t)PS_P_RADIUS); // compiler should optimize to bit shift
 		y = (uint8_t)((uint16_t)particles[i].y / (uint16_t)PS_P_RADIUS);
-
-		// for x=1, y=1: starts out with all four pixels at the same color (32/32)
-		// moves to upper right pixel (64/64)
-		// then moves one physical pixel up and right(+1/+1), starts out now with
-		// lower left pixel fully bright (0/0) and moves to all four pixel at same
-		// color (32/32)
 
 		if (dx < (PS_P_RADIUS >> 1)) // jump to next physical pixel if half of virtual pixel size is reached
 		{
@@ -650,7 +647,7 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 			}
 		}
 
-		// calculate brightness values for all four pixels representing a particle using linear interpolation
+		// calculate brightness values for all six pixels representing a particle using linear interpolation
 		// bottom left
 		if (x < cols && y < rows)
 		{
@@ -697,7 +694,7 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 	}
 }
 
-// adds 'heat' to red color channel, if it overflows, add it to green, if that overflows add it to blue
+// adds 'heat' to red color channel, if it overflows, add it to next color channel
 void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 {
 
@@ -769,24 +766,23 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 	SEGMENT.setPixelColorXY(col, rows - row - 1, currentcolor);
 }
 
-/*detect collisions in an array of particles and handle them*/
+// detect collisions in an array of particles and handle them
 void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hardness)
 {
 	// detect and handle collisions
 	uint32_t i,j;
 	int32_t startparticle = 0;
-	int32_t endparticle = numparticles >> 1; // do half the particles
+	int32_t endparticle = numparticles >> 1; // do half the particles, significantly speeds things up
 
 	if (SEGMENT.call % 2 == 0)
-	{ // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame which is overkill)
+	{ // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame, less accurate but good enough)
 		startparticle = endparticle;
 		endparticle = numparticles;
 	}
 	
 	for (i = startparticle; i < endparticle; i++)
 	{
-		// go though all 'higher number' particles and see if any of those are in close proximity
-		// if they are, make them collide
+		// go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide		
 		if (particles[i].ttl > 0 && particles[i].collide && particles[i].outofbounds==0) // if particle is alive and does collide and is not out of view
 		{
 			int32_t dx, dy; // distance to other particles
@@ -808,6 +804,7 @@ void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hard
 		}
 	}
 }
+
 // handle a collision if close proximity is detected, i.e. dx and/or dy smaller than 2*PS_P_RADIUS
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision)
 void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness)
@@ -866,9 +863,9 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 
 			particle2->vx = (particle2->vx < 2 && particle2->vx > -2) ? 0 : particle2->vx;
 			particle2->vy = (particle2->vy < 2 && particle2->vy > -2) ? 0 : particle2->vy;
-		}
-		
+		}		
 	}	
+
 	// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
 	// if pushing is made dependent on hardness, things start to oscillate much more, better to just add a fixed, small increment (tried lots of configurations, this one works best)
 	// one problem remaining is, particles get squished if (external) force applied is higher than the pushback but this may also be desirable if particles are soft. also some oscillations cannot be avoided without addigng a counter
@@ -892,8 +889,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 			else
 				particle2->x += push; 
 		}
-		//Serial.print(" dy");
-		//Serial.println(dy);
+
 		if (dy < HARDDIAMETER && dy > -HARDDIAMETER)
 		{
 			
