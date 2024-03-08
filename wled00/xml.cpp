@@ -402,12 +402,12 @@ void getSettingsJS(byte subPage, char* dest)
       uint16_t speed = bus->getFrequency();
       if (IS_PWM(bus->getType())) {
         switch (speed) {
-          case WLED_PWM_FREQ/2   : speed = 0; break;
-          case WLED_PWM_FREQ*2/3 : speed = 1; break;
+          case WLED_PWM_FREQ/2    : speed = 0; break;
+          case WLED_PWM_FREQ*2/3  : speed = 1; break;
           default:
-          case WLED_PWM_FREQ     : speed = 2; break;
-          case WLED_PWM_FREQ*2   : speed = 3; break;
-          case WLED_PWM_FREQ*4   : speed = 4; break;
+          case WLED_PWM_FREQ      : speed = 2; break;
+          case WLED_PWM_FREQ*2    : speed = 3; break;
+          case WLED_PWM_FREQ*10/3 : speed = 4; break; // uint16_t max (19531 * 3.333)
         }
       } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
         switch (speed) {
