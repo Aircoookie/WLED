@@ -141,9 +141,9 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. chann
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
-int zeroCrossingCount = 0;
-int energy = 0;
-int lowFreqencyContent = 0;
+unsigned int zeroCrossingCount = 0;
+unsigned int energy = 0;
+unsigned int lowFreqencyContent = 0;
 
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
@@ -1763,7 +1763,7 @@ class AudioReactive : public Usermod {
         um_data->u_type[9]  = UMT_FLOAT;
         um_data->u_data[10] = &agcSensitivity; // used (New)
         um_data->u_type[10] = UMT_FLOAT;
-        int extra[3] = {zeroCrossingCount, energy, lowFreqencyContent};
+        unsigned int* extra[3] = {&zeroCrossingCount, &energy, &lowFreqencyContent};
         um_data->u_data[11] = extra; // 
         um_data->u_type[11] = UMT_INT16_ARR;
 
