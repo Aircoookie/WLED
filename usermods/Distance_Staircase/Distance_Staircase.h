@@ -440,6 +440,11 @@ class Distance_Staircase : public Usermod {
 
       if (!enable) {        
         state.set(Reset);
+      } else {
+        pinMode(topPIRPin, INPUT_PULLUP);
+        pinMode(bottomPIRPin, INPUT_PULLUP);
+        pinMode(triggerPin, OUTPUT);
+        pinMode(echoPin, INPUT);
       }
       enabled = enable;
     }
