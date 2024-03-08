@@ -99,21 +99,11 @@ bool isButtonPressed(uint8_t i)
     case BTN_TYPE_TOUCH:
     case BTN_TYPE_TOUCH_SWITCH:
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-        #ifdef SOC_TOUCH_VERSION_2 //ESP32 S2 and S3 provide a function to check touch state (state is updated in interrupt)
-          if (touchInterruptGetLastStatus(pin))
-          {
-            return true;
-          }
-        #else
-          if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold)
-          {
-                return true;
-          }
-        #endif
+      if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
       #endif
-     break;
-    }
-    return false;
+      break;
+  }
+  return false;
 }
 
 void handleSwitch(uint8_t b)
@@ -415,13 +405,4 @@ void handleIO()
     }
     offMode = true;
   }
-}
-
-void IRAM_ATTR touchButtonISR()
-{
-  
-#if defined SOC_TOUCH_VERSION_1 //ESP32 original
-  touchInterruptSetThresholdDirection(flase); //todo: need to flip direction, for that proably need to read current state or something.  
-#endif
-  // For S2 and S3: nothing to do, ISR is just used to update registers of HAL driver
 }
