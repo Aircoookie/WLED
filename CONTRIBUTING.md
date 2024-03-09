@@ -2,6 +2,10 @@
 
 Here are a few suggestions to make it easier for you to contribute!
 
+### Target branch for pull requests
+
+Please make all PRs against the `0_15` branch.
+
 ### Code style
 
 When in doubt, it is easiest to replicate the code style you find in the files you want to edit :)
@@ -73,6 +77,6 @@ Good:
 <!-- This is an HTML comment -->
 ```
 
-There is no set character limit for a comment within a line,
-though as a rule of thumb you should wrap your comment if it exceeds the width of your editor window.  
+There is no hard character limit for a comment within a line,
+though as a rule of thumb consider wrapping after 120 characters.
 Inline comments are OK if they describe that line only and are not exceedingly wide.
