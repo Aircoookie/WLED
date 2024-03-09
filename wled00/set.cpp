@@ -252,15 +252,24 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
-        else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH) && digitalPinToTouchChannel(btnPin[i]) < 0)
+        else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH))
         {
-          // not a touch pin
-          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
-          btnPin[i] = -1;
-          pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+          if (digitalPinToTouchChannel(btnPin[i]) < 0)
+          {
+            // not a touch pin
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
+            btnPin[i] = -1;
+            pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+          }          
+          #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
+          else                    
+          {
+            touchAttachInterrupt(btnPin[i], touchButtonISR, touchThreshold << 4); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example)
+          }
+          #endif          
         }
         else
-      #endif
+#endif
         {
           if (disablePullUp) {
             pinMode(btnPin[i], INPUT);
