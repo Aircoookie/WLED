@@ -88,7 +88,6 @@ function setCSL(cs)
 function applyCfg()
 {
 	cTheme(cfg.theme.base === "light");
-	gId("Colors").style.paddingTop = cfg.comp.colors.picker ? "0" : "28px";
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var l = cfg.comp.labels;
@@ -278,25 +277,17 @@ function onLoad()
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
-	// Once we figure out why ESP8266 sometimes corrupts JSON responses if they are made in quick succession
-	// we can remove all setTimeout() throttling
 	loadPalettes(()=>{
-		setTimeout(()=>{ // ESP8266 can't handle quick requests
-			// fill effect extra data array
-			loadFXData(()=>{
-				setTimeout(()=>{ // ESP8266 can't handle quick requests
-					// load and populate effects
-					loadFX(()=>{
-						setTimeout(()=>{ // ESP8266 can't handle quick requests
-							loadPalettesData(()=>{
-								requestJson();// will load presets and create WS
-								if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},100);
-							});
-						},50);
-					});
-				},50);
+		// fill effect extra data array
+		loadFXData(()=>{
+			// load and populate effects
+			loadFX(()=>{
+				loadPalettesData(()=>{
+					requestJson();// will load presets and create WS
+					if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},50);
+				});
 			});
-		},50);
+		});
 	});
 	resetUtil();
 
@@ -809,13 +800,13 @@ function populateSegments(s)
 					`<span class="checkmark"></span>`+
 				`</label>`+
 				`<div class="segname ${smpl}" onclick="selSegEx(${i})">`+
-					`<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>`+
+					`<i class="icons e-icon frz" id="seg${i}frz" title="(un)Freeze" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>`+
 					(inst.n ? inst.n : "Segment "+i) +
 					`<div class="pop hide" onclick="event.preventDefault();event.stopPropagation();">`+
-						`<i class="icons g-icon" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.set+"A".charCodeAt(0))};</i>`+
+						`<i class="icons g-icon" title="Set group" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.set+"A".charCodeAt(0))};</i>`+
 						`<div class="pop-c hide"><span style="color:var(--c-f);" onclick="setGrp(${i},0);">&#x278A;</span><span style="color:var(--c-r);" onclick="setGrp(${i},1);">&#x278B;</span><span style="color:var(--c-g);" onclick="setGrp(${i},2);">&#x278C;</span><span style="color:var(--c-l);" onclick="setGrp(${i},3);">&#x278D;</span></div>`+
 					`</div> `+
-					`<i class="icons edit-icon flr ${smpl}" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
+					`<i class="icons edit-icon flr ${smpl}" id="seg${i}nedit" title="Edit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
 				`</div>`+
 				`<i class="icons e-icon flr ${smpl}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>`+
 				(cfg.comp.segpwr ? segp : '') +
@@ -846,7 +837,7 @@ function populateSegments(s)
 					`<tr>`+
 						`<td><input class="segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
 						`<td><input class="segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>`+
-						`<td><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>`+
+						`<td><button class="btn btn-xs" title="Update" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>`+
 					`</tr>`+
 					`</table>`+
 					`<div class="h bp" id="seg${i}len"></div>`+
@@ -878,10 +869,11 @@ function populateSegments(s)
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).classList.add("hide");
+		//if (i<lSeg) gId(`segd${i}`).classList.add("hide"); // hide delete button for all but last
 		if (!gId(`seg${i}sel`).checked && gId('selall')) gId('selall').checked = false; // uncheck if at least one is unselected.
 	}
 	if (segCount < 2) {
-		gId(`segd${lSeg}`).classList.add("hide");
+		gId(`segd${lSeg}`).classList.add("hide"); // hide delete if only one segment
 		if (parseInt(gId("seg0bri").value)==255) gId(`segp0`).classList.add("hide");
 		// hide segment controls if there is only one segment in simplified UI
 		if (simplifiedUI) gId("segcont").classList.add("hide");
@@ -898,6 +890,7 @@ function populateSegments(s)
 	} else {
 		gId("ledmap").classList.add('hide');
 	}
+	tooltip("#Segments");
 }
 
 function populateEffects()
@@ -1088,7 +1081,7 @@ function populateNodes(i,n)
 		for (var o of n.nodes) {
 			if (o.name) {
 				let onoff = `<i class="icons e-icon flr ${o.type&0x80?'':'off'}" onclick="rmtTgl('${o.ip}',this);"">&#xe08f;</i>`;
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');"><div class="bname">${bname(o)}</div>${o.vid<2307130?'':onoff}</button>`;
+				var url = `<a class="btn" title="${o.ip}" href="http://${o.ip}">${bname(o)}${o.vid<2307130?'':onoff}</a>`;
 				urows += inforow(url,`${btype(o.type&0x7F)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
@@ -1448,7 +1441,7 @@ function readState(s,command=false)
 		if (s.seg[i].sel) {
 			if (sellvl < 2) selc = i; // get first selected segment
 			sellvl = 2;
-			var lc = lastinfo.leds.seglc[s.seg[i].id];
+			var lc = lastinfo.leds.seglc[i];
 			hasRGB   |= !!(lc & 0x01);
 			hasWhite |= !!(lc & 0x02);
 			hasCCT   |= !!(lc & 0x04);
@@ -1458,7 +1451,7 @@ function readState(s,command=false)
 	}
 	var i=s.seg[selc];
 	if (sellvl == 1) {
-		var lc = lastinfo.leds.seglc[i.id];
+		var lc = lastinfo.leds.seglc[selc];
 		hasRGB   = !!(lc & 0x01);
 		hasWhite = !!(lc & 0x02);
 		hasCCT   = !!(lc & 0x04);
@@ -1534,9 +1527,9 @@ function readState(s,command=false)
 //      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
 //      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
 // If effective (@)
-//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - a ; separates slider controls (left) from color controls (middle) and palette control (right)
 //      - if left, middle or right is empty no controls are shown
-//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a , separates slider controls (max 5) or color controls (max 3). Palette has only one value
 //      - a ! means that the default is used.
 //             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
 //             - For colors: Fx color, Background color, Custom
@@ -1560,12 +1553,12 @@ function setEffectParameters(idx)
 	// set html slider items on/off
 	let sliders = d.querySelectorAll("#sliders .sliderwrap");
 	sliders.forEach((slider, i)=>{
-		let text = slider.getAttribute("tooltip");
+		let text = slider.getAttribute("title");
 		if ((!controlDefined && i<((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i]!="")) {
 			if (slOnOff.length>i && slOnOff[i]!="!") text = slOnOff[i];
 			// restore overwritten default tooltips
 			if (i<2 && slOnOff[i]==="!") text = i==0 ? "Effect speed" : "Effect intensity";
-			slider.setAttribute("tooltip", text);
+			slider.setAttribute("title", text);
 			slider.parentElement.classList.remove('hide');
 		} else
 			slider.parentElement.classList.add('hide');
@@ -1575,10 +1568,10 @@ function setEffectParameters(idx)
 		gId('fxopt').classList.remove('fade');
 		let checks = d.querySelectorAll("#sliders .ochkl");
 		checks.forEach((check, i)=>{
-			let text = check.getAttribute("tooltip");
+			let text = check.getAttribute("title");
 			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
 				if (slOnOff.length>5+i && slOnOff[5+i]!="!") text = slOnOff[5+i];
-				check.setAttribute("tooltip", text);
+				check.setAttribute("title", text);
 				check.classList.remove('hide');
 			} else
 				check.classList.add('hide');
@@ -1827,17 +1820,16 @@ function toggleNodes()
 
 function makeSeg()
 {
-	var ns = 0, ct = 0;
+	var ns = 0, ct = isM ? mw : ledCount;
 	var lu = lowestUnused;
 	let li = lastinfo;
 	if (lu > 0) {
 		let xend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
 		if (isM) {
 			ns = 0;
-			ct = mw;
 		} else {
 			if (xend < ledCount) ns = xend;
-			ct = ledCount-(cfg.comp.seglen?ns:0)
+			ct -= cfg.comp.seglen?ns:0;
 		}
 	}
 	gId('segutil').scrollIntoView({
@@ -1876,7 +1868,7 @@ function resetUtil(off=false)
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
 	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div>`
 	+ '<div class="pop hide" onclick="event.stopPropagation();">'
-	+ `<i class="icons g-icon" onclick="this.nextElementSibling.classList.toggle('hide');">&#xE34B;</i>`
+	+ `<i class="icons g-icon" title="Select group" onclick="this.nextElementSibling.classList.toggle('hide');">&#xE34B;</i>`
 	+ '<div class="pop-c hide"><span style="color:var(--c-f);" onclick="selGrp(0);">&#x278A;</span><span style="color:var(--c-r);" onclick="selGrp(1);">&#x278B;</span><span style="color:var(--c-g);" onclick="selGrp(2);">&#x278C;</span><span style="color:var(--c-l);" onclick="selGrp(3);">&#x278D;</span></div>'
 	+ '</div></div>';
 }
@@ -2161,7 +2153,7 @@ function selGrp(g)
 	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
-	if (sel) for (let s of sel||[]) {
+	for (let s of (sel||[])) {
 		let i = parseInt(s.id.substring(3));
 		obj.seg[i] = {"id":i,"sel":true};
 	}
@@ -2514,8 +2506,8 @@ function selectSlot(b)
 {
 	csel = b;
 	var cd = gId('csl').children;
-	for (let i of cd) i.classList.remove('xxs-w');
-	cd[b].classList.add('xxs-w');
+	for (let i of cd) i.classList.remove('sl');
+	cd[b].classList.add('sl');
 	setPicker(rgbStr(cd[b].dataset));
 	// force slider update on initial load (picker "color:change" not fired if black)
 	if (cpick.color.value == 0) updatePSliders();
@@ -2803,6 +2795,12 @@ function search(field, listId = null) {
 
 	const search = field.value !== '';
 
+	// restore default preset sorting if no search term is entered
+	if (listId === 'pcont' && !search) {
+		populatePresets();
+		return;
+	}
+
 	// clear filter if searching in fxlist
 	if (listId === 'fxlist' && search) {
 		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { e.checked = false; });
@@ -3071,14 +3069,19 @@ function mergeDeep(target, ...sources)
 	return mergeDeep(target, ...sources);
 }
 
-function tooltip()
+function tooltip(cont=null)
 {
-	const elements = d.querySelectorAll("[tooltip]");
+	const elements = d.querySelectorAll((cont?cont+" ":"")+"[title]");
 	elements.forEach((element)=>{
 		element.addEventListener("mouseover", ()=>{
+			// save title
+			element.setAttribute("data-title", element.getAttribute("title"));
 			const tooltip = d.createElement("span");
 			tooltip.className = "tooltip";
-			tooltip.textContent = element.getAttribute("tooltip");
+			tooltip.textContent = element.getAttribute("title");
+
+			// prevent default title popup
+			element.removeAttribute("title");
 
 			let { top, left, width } = element.getBoundingClientRect();
 
@@ -3101,6 +3104,8 @@ function tooltip()
 				tooltip.classList.remove("visible");
 				d.body.removeChild(tooltip);
 			});
+			// restore title
+			element.setAttribute("title", element.getAttribute("data-title"));
 		});
 	});
 };

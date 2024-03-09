@@ -233,7 +233,7 @@ class MPU6050Driver : public Usermod {
      * Use it to initialize network interfaces
      */
     void connected() {
-      //DEBUG_PRINTLN("Connected to WiFi!");
+      //DEBUG_PRINTLN(F("Connected to WiFi!"));
     }
 
 

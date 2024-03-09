@@ -631,6 +631,7 @@ Sample:
 void decodeIRJson(uint32_t code)
 {
   char objKey[10];
+  char fileName[16];
   String cmdStr;
   JsonObject fdo;
   JsonObject jsonCmdObj;
@@ -638,17 +639,18 @@ void decodeIRJson(uint32_t code)
   if (!requestJSONBufferLock(13)) return;
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
+  strcpy_P(fileName, PSTR("/ir.json")); // for FS.exists()
 
   // attempt to read command from ir.json
   // this may fail for two reasons: ir.json does not exist or IR code not found
   // if the IR code is not found readObjectFromFile() will clean() doc JSON document
   // so we can differentiate between the two
-  readObjectFromFile("/ir.json", objKey, pDoc);
+  readObjectFromFile(fileName, objKey, pDoc);
   fdo = pDoc->as<JsonObject>();
   lastValidCode = 0;
   if (fdo.isNull()) {
     //the received code does not exist
-    if (!WLED_FS.exists("/ir.json")) errorFlag = ERR_FS_IRLOAD; //warn if IR file itself doesn't exist
+    if (!WLED_FS.exists(fileName)) errorFlag = ERR_FS_IRLOAD; //warn if IR file itself doesn't exist
     releaseJSONBufferLock();
     return;
   }

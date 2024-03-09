@@ -57,7 +57,10 @@ class UsermodTemperature : public Usermod {
     static const char _parasite[];
     static const char _parasitePin[];
     static const char _domoticzIDX[];
-
+    static const char _sensor[];
+    static const char _temperature[];
+    static const char _Temperature[];
+    
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     float readDallas();
     void requestTemperatures();
@@ -110,9 +113,9 @@ float UsermodTemperature::readDallas() {
     #ifdef WLED_DEBUG
     if (OneWire::crc8(data,8) != data[8]) {
       DEBUG_PRINTLN(F("CRC error reading temperature."));
-      for (byte i=0; i < 9; i++) DEBUG_PRINTF("0x%02X ", data[i]);
+      for (byte i=0; i < 9; i++) DEBUG_PRINTF_P(PSTR("0x%02X "), data[i]);
       DEBUG_PRINT(F(" => "));
-      DEBUG_PRINTF("0x%02X\n", OneWire::crc8(data,8));
+      DEBUG_PRINTF_P(PSTR("0x%02X\n"), OneWire::crc8(data,8));
     }
     #endif
     switch(sensorFound) {
@@ -149,7 +152,7 @@ void UsermodTemperature::readTemperature() {
   temperature = readDallas();
   lastMeasurement = millis();
   waitingForConversion = false;
-  //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
+  //DEBUG_PRINTF_P(PSTR("Read temperature %2.1f.\n"), temperature); // does not work properly on 8266
   DEBUG_PRINT(F("Read temperature "));
   DEBUG_PRINTLN(temperature);
 }
@@ -171,7 +174,7 @@ bool UsermodTemperature::findSensor() {
         case 0x42:  // DS28EA00
           DEBUG_PRINTLN(F("Sensor found."));
           sensorFound = deviceAddress[0];
-          DEBUG_PRINTF("0x%02X\n", sensorFound);
+          DEBUG_PRINTF_P(PSTR("0x%02X\n"), sensorFound);
           return true;
       }
     }
@@ -191,9 +194,9 @@ void UsermodTemperature::publishHomeAssistantAutodiscovery() {
   sprintf_P(buf, PSTR("%s Temperature"), serverDescription);
   json[F("name")] = buf;
   strcpy(buf, mqttDeviceTopic);
-  strcat_P(buf, PSTR("/temperature"));
+  strcat_P(buf, _Temperature);
   json[F("state_topic")] = buf;
-  json[F("device_class")] = F("temperature");
+  json[F("device_class")] = FPSTR(_temperature);
   json[F("unique_id")] = escapedMac.c_str();
   json[F("unit_of_measurement")] = F("°C");
   payload_size = serializeJson(json, json_str);
@@ -272,7 +275,7 @@ void UsermodTemperature::loop() {
         // dont publish super low temperature as the graph will get messed up
         // the DallasTemperature library returns -127C or -196.6F when problem
         // reading the sensor
-        strcat_P(subuf, PSTR("/temperature"));
+        strcat_P(subuf, _Temperature);
         mqtt->publish(subuf, 0, false, String(getTemperatureC()).c_str());
         strcat_P(subuf, PSTR("_f"));
         mqtt->publish(subuf, 0, false, String(getTemperatureF()).c_str());
@@ -335,9 +338,9 @@ void UsermodTemperature::addToJsonInfo(JsonObject& root) {
   temp.add(getTemperature());
   temp.add(getTemperatureUnit());
 
-  JsonObject sensor = root[F("sensor")];
-  if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
-  temp = sensor.createNestedArray(F("temperature"));
+  JsonObject sensor = root[FPSTR(_sensor)];
+  if (sensor.isNull()) sensor = root.createNestedObject(FPSTR(_sensor));
+  temp = sensor.createNestedArray(FPSTR(_temperature));
   temp.add(getTemperature());
   temp.add(getTemperatureUnit());
 }
@@ -367,7 +370,7 @@ void UsermodTemperature::addToConfig(JsonObject &root) {
   JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
   top[FPSTR(_enabled)] = enabled;
   top["pin"]  = temperaturePin;     // usermodparam
-  top["degC"] = degC;  // usermodparam
+  top[F("degC")] = degC;  // usermodparam
   top[FPSTR(_readInterval)] = readingInterval / 1000;
   top[FPSTR(_parasite)] = parasite;
   top[FPSTR(_parasitePin)] = parasitePin;
@@ -393,7 +396,7 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
 
   enabled           = top[FPSTR(_enabled)] | enabled;
   newTemperaturePin = top["pin"] | newTemperaturePin;
-  degC              = top["degC"] | degC;
+  degC              = top[F("degC")] | degC;
   readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
   readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
   parasite          = top[FPSTR(_parasite)] | parasite;
@@ -444,3 +447,6 @@ const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";
 const char UsermodTemperature::_parasite[]     PROGMEM = "parasite-pwr";
 const char UsermodTemperature::_parasitePin[]  PROGMEM = "parasite-pwr-pin";
 const char UsermodTemperature::_domoticzIDX[]  PROGMEM = "domoticz-idx";
+const char UsermodTemperature::_sensor[]       PROGMEM = "sensor";
+const char UsermodTemperature::_temperature[]  PROGMEM = "temperature";
+const char UsermodTemperature::_Temperature[]  PROGMEM = "/temperature";
