@@ -4466,16 +4466,6 @@ static const char _data_FX_MODE_WASHING_MACHINE[] PROGMEM = "Washing Machine@!,!
 
 
 /*
-  Image effect
-  Draws a .gif image from filesystem on the matrix/strip
-*/
-uint16_t mode_image(void) {
-  renderImageToSegment(SEGMENT);
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,;;;12;sx=128";
-
-/*
   Blends random colors across palette
   Modified, originally by Mark Kriegsman https://gist.github.com/kriegsman/1f7ccbbfa492a73c015e
 */
@@ -8034,8 +8024,6 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
   addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
-
-  addEffect(FX_MODE_IMAGE, &mode_image, _data_FX_MODE_IMAGE);
 
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
   addEffect(FX_MODE_TV_SIMULATOR, &mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);

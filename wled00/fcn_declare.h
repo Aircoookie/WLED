@@ -5,8 +5,6 @@
  * All globally accessible functions are declared here
  */
 
-#include "FX.h"
-
 //alexa.cpp
 #ifndef WLED_DISABLE_ALEXA
 void onAlexaChange(EspalexaDevice* dev);
@@ -127,16 +125,6 @@ void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
-//image_loader.cpp
-#ifndef WLED_DISABLE_GIF
-bool fileSeekCallback(unsigned long position);
-unsigned long filePositionCallback(void);
-int fileReadCallback(void);
-int fileReadBlockCallback(void * buffer, int numberOfBytes);
-int fileSizeCallback(void);
-byte renderImageToSegment(Segment &seg);
-#endif
-
 //improv.cpp
 enum ImprovRPCType {
   Command_Wifi = 0x01,
@@ -174,6 +162,7 @@ void handleIR();
 #include "ESPAsyncWebServer.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
+#include "FX.h"
 
 bool deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
 bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, byte presetId = 0);
