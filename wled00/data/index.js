@@ -869,10 +869,11 @@ function populateSegments(s)
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).classList.add("hide");
+		//if (i<lSeg) gId(`segd${i}`).classList.add("hide"); // hide delete button for all but last
 		if (!gId(`seg${i}sel`).checked && gId('selall')) gId('selall').checked = false; // uncheck if at least one is unselected.
 	}
 	if (segCount < 2) {
-		gId(`segd${lSeg}`).classList.add("hide");
+		gId(`segd${lSeg}`).classList.add("hide"); // hide delete if only one segment
 		if (parseInt(gId("seg0bri").value)==255) gId(`segp0`).classList.add("hide");
 		// hide segment controls if there is only one segment in simplified UI
 		if (simplifiedUI) gId("segcont").classList.add("hide");
@@ -1440,7 +1441,7 @@ function readState(s,command=false)
 		if (s.seg[i].sel) {
 			if (sellvl < 2) selc = i; // get first selected segment
 			sellvl = 2;
-			var lc = lastinfo.leds.seglc[s.seg[i].id];
+			var lc = lastinfo.leds.seglc[i];
 			hasRGB   |= !!(lc & 0x01);
 			hasWhite |= !!(lc & 0x02);
 			hasCCT   |= !!(lc & 0x04);
@@ -1450,7 +1451,7 @@ function readState(s,command=false)
 	}
 	var i=s.seg[selc];
 	if (sellvl == 1) {
-		var lc = lastinfo.leds.seglc[i.id];
+		var lc = lastinfo.leds.seglc[selc];
 		hasRGB   = !!(lc & 0x01);
 		hasWhite = !!(lc & 0x02);
 		hasCCT   = !!(lc & 0x04);
@@ -1819,17 +1820,16 @@ function toggleNodes()
 
 function makeSeg()
 {
-	var ns = 0, ct = 0;
+	var ns = 0, ct = isM ? mw : ledCount;
 	var lu = lowestUnused;
 	let li = lastinfo;
 	if (lu > 0) {
 		let xend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
 		if (isM) {
 			ns = 0;
-			ct = mw;
 		} else {
 			if (xend < ledCount) ns = xend;
-			ct = ledCount-(cfg.comp.seglen?ns:0)
+			ct -= cfg.comp.seglen?ns:0;
 		}
 	}
 	gId('segutil').scrollIntoView({
