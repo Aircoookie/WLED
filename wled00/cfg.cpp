@@ -235,9 +235,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (!hw_btn_ins.isNull()) {
     for (uint8_t b = 0; b < WLED_MAX_BUTTONS; b++) { // deallocate existing button pins
       pinManager.deallocatePin(btnPin[b], PinOwner::Button); // does nothing if trying to deallocate a pin with PinOwner != Button
-      #ifdef SOC_TOUCH_VERSION_2  // ESP32 S2 and S3 have a fucntion to check touch state, detach any previous assignments
-      touchDetachInterrupt(btnPin[b]);
-      #endif
     }
     uint8_t s = 0;
     for (JsonObject btn : hw_btn_ins) {
@@ -260,7 +257,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
           else if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH)) 
           {
-            touchAttachInterrupt(btnPin[s], touchButtonISR, touchThreshold<<4); //threshold on Touch V2 is much higher (1500 is a value given by Espressif example)
+            touchAttachInterrupt(btnPin[s], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
           }
         #endif 
         else

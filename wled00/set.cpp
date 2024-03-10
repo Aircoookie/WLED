@@ -236,6 +236,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     rlyMde = (bool)request->hasArg(F("RM"));
 
     disablePullUp = (bool)request->hasArg(F("IP"));
+    touchThreshold = request->arg(F("TT")).toInt();
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
       char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
@@ -264,7 +265,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
           else                    
           {
-            touchAttachInterrupt(btnPin[i], touchButtonISR, touchThreshold << 4); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example)
+            touchAttachInterrupt(btnPin[i], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
           }
           #endif          
         }
@@ -286,7 +287,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         buttonType[i] = BTN_TYPE_NONE;
       }
     }
-    touchThreshold = request->arg(F("TT")).toInt();
 
     briS = request->arg(F("CA")).toInt();
 
