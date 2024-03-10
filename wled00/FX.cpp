@@ -4470,7 +4470,12 @@ static const char _data_FX_MODE_WASHING_MACHINE[] PROGMEM = "Washing Machine@!,!
   Draws a .gif image from filesystem on the matrix/strip
 */
 uint16_t mode_image(void) {
-  renderImageToSegment(SEGMENT);
+  //Serial.println(renderImageToSegment(SEGMENT));
+  int status = renderImageToSegment(SEGMENT);
+  if (status != 0 && status != 254 && status != 255) {
+    Serial.print("GIF renderer return: ");
+    Serial.println(status);
+  }
   return FRAMETIME;
 }
 static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,;;;12;sx=128";
@@ -7973,7 +7978,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
   addEffect(FX_MODE_FAIRYTWINKLE, &mode_fairytwinkle, _data_FX_MODE_FAIRYTWINKLE);
   addEffect(FX_MODE_RUNNING_DUAL, &mode_running_dual, _data_FX_MODE_RUNNING_DUAL);
-
+  addEffect(FX_MODE_IMAGE, &mode_image, _data_FX_MODE_IMAGE);
   addEffect(FX_MODE_TRICOLOR_CHASE, &mode_tricolor_chase, _data_FX_MODE_TRICOLOR_CHASE);
   addEffect(FX_MODE_TRICOLOR_WIPE, &mode_tricolor_wipe, _data_FX_MODE_TRICOLOR_WIPE);
   addEffect(FX_MODE_TRICOLOR_FADE, &mode_tricolor_fade, _data_FX_MODE_TRICOLOR_FADE);
@@ -8034,8 +8039,6 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
   addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
-
-  addEffect(FX_MODE_IMAGE, &mode_image, _data_FX_MODE_IMAGE);
 
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
   addEffect(FX_MODE_TV_SIMULATOR, &mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);

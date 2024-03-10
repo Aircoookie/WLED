@@ -5,7 +5,7 @@
 
 File file;
 char lastFilename[34] = "/";
-GifDecoder<32,32,12> decoder;
+GifDecoder<32,32,12,true> decoder;
 bool gifDecodeFailed = false;
 long lastFrameDisplayTime = 0, currentFrameDelay = 0;
 
@@ -85,7 +85,7 @@ byte renderImageToSegment(Segment &seg) {
     if (file) file.close();
     openGif(lastFilename);
     if (!file) { gifDecodeFailed = true; return IMAGE_ERROR_FILE_MISSING; }
-    //if (!decoder) decoder = new GifDecoder<32,32,12>();
+    //if (!decoder) decoder = new GifDecoder<32,32,12,true>();
     //if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
     decoder.setScreenClearCallback(screenClearCallback);
     decoder.setUpdateScreenCallback(updateScreenCallback);
@@ -95,6 +95,7 @@ byte renderImageToSegment(Segment &seg) {
     decoder.setFileReadCallback(fileReadCallback);
     decoder.setFileReadBlockCallback(fileReadBlockCallback);
     decoder.setFileSizeCallback(fileSizeCallback);
+    decoder.alloc(); // TODO only if not already allocated
     Serial.println("Starting decoding");
     if(decoder.startDecoding() < 0) { gifDecodeFailed = true; return IMAGE_ERROR_GIF_DECODE; }
     Serial.println("Decoding started");
@@ -124,12 +125,16 @@ byte renderImageToSegment(Segment &seg) {
   return IMAGE_ERROR_NONE;
 }
 
-void endImagePlayback() {
+void endImagePlayback(Segment *seg) {
+  Serial.println("Image playback end called");
+  if (!activeSeg || activeSeg != seg) return;
   if (file) file.close();
   //delete decoder;
+  decoder.dealloc();
   gifDecodeFailed = false;
   activeSeg = nullptr;
-  lastFilename[0] = '\0';
+  lastFilename[1] = '\0';
+  Serial.println("Image playback ended");
 }
 
 #endif
