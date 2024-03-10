@@ -1227,6 +1227,7 @@ TD .checkmark, TD .radiomark {
 	text-align: left;
 	transition: background-color .5s;
 	border-radius: 21px;
+	width: 99%;
 }
 
 .seg {
@@ -1420,6 +1421,7 @@ dialog {
 .presin {
 	padding: 8px;
 	position: relative;
+	width: calc(100% - 16px);
 }
 
 .btn-s,
