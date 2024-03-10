@@ -8503,7 +8503,7 @@ uint16_t mode_particlefire(void)
       // add wind, using perlin noise
       int8_t windspeed = (int8_t)(inoise8(SEGMENT.aux0, particles[i].y >> 2) - 127) / ((271 - SEGMENT.custom2) >> 4);
       particles[i].vx = windspeed;
-      FireParticle_update(&particles[i], SEGMENT.check1, false); // update particle, use X-wrapping if check 1 is set by user
+      FireParticle_update(&particles[i], SEGMENT.check1); // update particle, use X-wrapping if check 1 is set by user
     }
   }
 
@@ -9441,8 +9441,8 @@ uint16_t mode_particlespray(void)
       Particle_Gravity_update(&particles[i], SEGMENT.check2, SEGMENT.check2 == 0, true, hardness);
     else //bounce particles
     {
-      if(SEGMENT.check2) //wrap x 
-        Particle_Wrap_update(&particles[i], true, false);
+      if(SEGMENT.check2) //wrap x
+        Particle_Move_update(&particles[i], true, true, false);
       else //bounce
         Particle_Bounce_update(&particles[i], hardness);
     }

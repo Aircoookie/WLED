@@ -161,7 +161,7 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
-void Particle_Move_update(PSparticle *part, bool killoutofbounds) 
+void Particle_Move_update(PSparticle *part, bool killoutofbounds, bool wrapX, bool wrapY)
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -182,21 +182,42 @@ void Particle_Move_update(PSparticle *part, bool killoutofbounds)
 
 			part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
 
-			// check if particle is out of bounds
-			if ((part->y <= 0) || (part->y >= PS_MAX_Y))
+			// apply velocity
+			int32_t newX, newY;
+			newX = part->x + (int16_t)part->vx;
+			newY = part->y + (int16_t)part->vy;
+
+			part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
+			// x direction, handle wraparound
+			if (wrapX)
+			{
+				newX = newX % (PS_MAX_X + 1);
+				if (newX < 0)
+					newX = PS_MAX_X - newX;
+			}
+			else if ((part->x <= 0) || (part->x >= PS_MAX_X)) // check if particle is out of bounds
 			{
 				if (killoutofbounds)
 					part->ttl = 0;
 				else
 					part->outofbounds = 1;
 			}
-			if ((part->x <= 0) || (part->x >= PS_MAX_X))
+			part->x = newX; // set new position
+
+			if (wrapY)
 			{
-				if(killoutofbounds)
+				newY = newY % (PS_MAX_Y + 1);
+				if (newY < 0)
+					newY = PS_MAX_Y - newY;
+			}
+			else if ((part->y <= 0) || (part->y >= PS_MAX_Y)) // check if particle is out of bounds
+			{
+				if (killoutofbounds)
 					part->ttl = 0;
 				else
 					part->outofbounds = 1;
 			}
+			part->y = newY; // set new position
 	}
 
 }
@@ -242,57 +263,6 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness)
 		newY = max(newY, (int16_t)0);
 		part->x = min(newX, (int16_t)PS_MAX_X); // limit to matrix boundaries
 		part->y = min(newY, (int16_t)PS_MAX_Y);
-	}
-
-}
-
-// particle moves, decays and dies (age or out of matrix), if wrap is set, pixels leaving the matrix reappear on other side
-//TODO: this is just move update with wrap, could make one function out of it
-void Particle_Wrap_update(PSparticle *part, bool wrapX, bool wrapY) 
-{
-	// Matrix dimension
-	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
-	// particle box dimensions
-	const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-	const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
-
-	if (part->ttl > 0)
-	{
-		// age
-		part->ttl--;
-
-		// apply velocity
-		int32_t newX, newY;
-		newX = part->x + (int16_t)part->vx;
-		newY = part->y + (int16_t)part->vy;
-
-		part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
-		// x direction, handle wraparound
-		if (wrapX)
-		{
-			newX = newX % (PS_MAX_X + 1);
-			if (newX < 0)
-				newX = PS_MAX_X - newX;
-		}
-		else if ((part->x <= 0) || (part->x >= PS_MAX_X)) // check if particle is out of bounds
-		{
-			part->outofbounds = 1;
-		}
-		part->x = newX; // set new position
-
-		if (wrapY)
-		{
-			newY = newY % (PS_MAX_Y + 1);
-			if (newY < 0)
-				newY = PS_MAX_Y - newY;
-		}
-		else if ((part->y <= 0) || (part->y >= PS_MAX_Y)) // check if particle is out of bounds
-		{
-			part->outofbounds = 1;
-		}
-		part->y = newY; // set new position
 	}
 
 }
@@ -534,7 +504,7 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 
 // update & move particle, wraps around left/right if wrapX is true, wrap around up/down if wrapY is true
 // particles move upwards faster if ttl is high (i.e. they are hotter)
-void FireParticle_update(PSparticle *part, bool wrapX, bool wrapY)
+void FireParticle_update(PSparticle *part, bool wrapX)
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -551,8 +521,9 @@ void FireParticle_update(PSparticle *part, bool wrapX, bool wrapY)
 
 		// apply velocity
 		part->x = part->x + (int16_t)part->vx;
-		part->y = part->y + (int16_t)part->vy + (part->ttl >> 4); // younger particles move faster upward as they are hotter, used for fire //TODO: need to make this optional?
+		part->y = part->y + (int16_t)part->vy + (part->ttl >> 4); // younger particles move faster upward as they are hotter, used for fire
 
+		part->outofbounds = 0;
 		// check if particle is out of bounds, wrap around to other side if wrapping is enabled
 		// x-direction
 		if ((part->x < 0) || (part->x > PS_MAX_X))
@@ -565,23 +536,18 @@ void FireParticle_update(PSparticle *part, bool wrapX, bool wrapY)
 			}
 			else
 			{
-				part->ttl = 0; // todo: for round flame display, particles need to go modulo
+				part->ttl = 0; 
 			}
 		}
 
 		// y-direction
 		if ((part->y < -(PS_P_RADIUS << 4)) || (part->y > PS_MAX_Y))
-		{ // position up to 8 pixels the matrix is allowed, used in fire for wider flames
-			if (wrapY)
-			{
-				part->y = part->y % (PS_MAX_Y + 1);
-				if (part->y < 0)
-					part->y = PS_MAX_Y - part->y;
-			}
-			else
-			{
-				part->ttl = 0; // todo: for round flame display, particles need to go modulo
-			}
+		{ // position up to 8 pixels below the matrix is allowed, used for wider flames at the bottom
+			part->ttl = 0; 
+		}
+		else if (part->y < 0)
+		{
+			part->outofbounds = 1;
 		}
 	}
 }
@@ -594,23 +560,20 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-
 	int32_t x, y;
 	uint8_t dx, dy;
 	uint32_t tempVal;
 	uint32_t i;
 
 	// go over particles and update matrix cells on the way
+	// note: some pixels (the x+1 ones) can be out of bounds, it is probably faster than to check that for every pixel as this only happens on the right border (and nothing bad happens as this is checked down the road)
 	for (i = 0; i < numParticles; i++)
 	{
-		if (particles[i].ttl == 0)
+		if (particles[i].ttl == 0 || particles[i].outofbounds)
 		{
 			continue;
 		}
 
-		//TODO: no more using simple particles, can use the out of bounds here
-
-		// simple particles do not have 'out of bound' parameter, need to check if particle is within matrix boundaries
 		dx = (uint8_t)((uint16_t)particles[i].x % (uint16_t)PS_P_RADIUS);
 		dy = (uint8_t)((uint16_t)particles[i].y % (uint16_t)PS_P_RADIUS);
 
@@ -639,8 +602,8 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 			dy = dy - (PS_P_RADIUS >> 1);
 		}
 
-		if (wrapX)
-		{ // wrap it to the other side if required
+		if (wrapX) 
+		{ 
 			if (x < 0)
 			{ // left half of particle render is out of frame, wrap it
 				x = cols - 1;
@@ -649,7 +612,7 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 
 		// calculate brightness values for all six pixels representing a particle using linear interpolation
 		// bottom left
-		if (x < cols && y < rows)
+		if (x < cols && x >=0 && y < rows && y >=0)
 		{
 			tempVal = (((uint32_t)((PS_P_RADIUS)-dx) * ((PS_P_RADIUS)-dy) * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
 			PartMatrix_addHeat(x, y, tempVal);
@@ -662,7 +625,7 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 			if (x >= cols)
 				x = x % cols; // in case the right half of particle render is out of frame, wrap it (note: on microcontrollers with hardware division, the if statement is not really needed)
 		}
-		if (x < cols && y < rows)
+		if (x < cols && y < rows && y >= 0)
 		{
 			tempVal = (((uint32_t)dx * ((PS_P_RADIUS)-dy) * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
 			PartMatrix_addHeat(x, y, tempVal);
@@ -673,7 +636,7 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 		if (x < cols && y < rows)
 		{
 			tempVal = (((uint32_t)dx * dy * (uint32_t)particles[i].ttl) >> PS_P_SURFACE); //
-			PartMatrix_addHeat(x, y, tempVal);
+			PartMatrix_addHeat(x, y, tempVal);			
 			PartMatrix_addHeat(x + 1, y, tempVal); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 		// top left
@@ -685,7 +648,7 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 				x = cols - 1;
 			}
 		}
-		if (x < cols && y < rows)
+		if (x < cols && x >= 0 && y < rows)
 		{
 			tempVal = (((uint32_t)((PS_P_RADIUS)-dx) * dy * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
 			PartMatrix_addHeat(x, y, tempVal);
