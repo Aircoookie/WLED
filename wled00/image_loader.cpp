@@ -5,7 +5,7 @@
 
 File file;
 char lastFilename[34] = "/";
-GifDecoder<320,320,12,true>* decoder;
+GifDecoder<32,32,12> decoder;
 bool gifDecodeFailed = false;
 long lastFrameDisplayTime = 0, currentFrameDelay = 0;
 
@@ -38,7 +38,7 @@ bool openGif(const char *filename) {
 
 Segment* activeSeg;
 uint16_t gifWidth, gifHeight;
-uint16_t fillPixX, fillPixY;
+//uint16_t fillPixX, fillPixY;
 
 void screenClearCallback(void) {
   activeSeg->fill(0);
@@ -66,6 +66,7 @@ void drawPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t
 #define IMAGE_ERROR_DECODER_ALLOC 5
 #define IMAGE_ERROR_GIF_DECODE 6
 #define IMAGE_ERROR_FRAME_DECODE 7
+#define IMAGE_ERROR_WAITING 254
 #define IMAGE_ERROR_PREV 255
 
 // renders an image (.gif only; .bmp and .fseq to be added soon) from FS to a segment
@@ -84,47 +85,48 @@ byte renderImageToSegment(Segment &seg) {
     if (file) file.close();
     openGif(lastFilename);
     if (!file) { gifDecodeFailed = true; return IMAGE_ERROR_FILE_MISSING; }
-    if (!decoder) decoder = new GifDecoder<320,320,12,true>();
-    if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
-    decoder->setScreenClearCallback(screenClearCallback);
-    decoder->setUpdateScreenCallback(updateScreenCallback);
-    decoder->setDrawPixelCallback(drawPixelCallback);
-    decoder->setFileSeekCallback(fileSeekCallback);
-    decoder->setFilePositionCallback(filePositionCallback);
-    decoder->setFileReadCallback(fileReadCallback);
-    decoder->setFileReadBlockCallback(fileReadBlockCallback);
-    decoder->setFileSizeCallback(fileSizeCallback);
+    //if (!decoder) decoder = new GifDecoder<32,32,12>();
+    //if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
+    decoder.setScreenClearCallback(screenClearCallback);
+    decoder.setUpdateScreenCallback(updateScreenCallback);
+    decoder.setDrawPixelCallback(drawPixelCallback);
+    decoder.setFileSeekCallback(fileSeekCallback);
+    decoder.setFilePositionCallback(filePositionCallback);
+    decoder.setFileReadCallback(fileReadCallback);
+    decoder.setFileReadBlockCallback(fileReadBlockCallback);
+    decoder.setFileSizeCallback(fileSizeCallback);
     Serial.println("Starting decoding");
-    if(decoder->startDecoding() < 0) { gifDecodeFailed = true; return IMAGE_ERROR_GIF_DECODE; }
+    if(decoder.startDecoding() < 0) { gifDecodeFailed = true; return IMAGE_ERROR_GIF_DECODE; }
     Serial.println("Decoding started");
   }
 
   if (gifDecodeFailed) return IMAGE_ERROR_PREV;
   if (!file) { gifDecodeFailed = true; return IMAGE_ERROR_FILE_MISSING; }
-  if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
+  //if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
 
   // speed 0 = half speed, 128 = normal, 255 = full FX FPS
   // TODO: 0 = 4x slow, 64 = 2x slow, 128 = normal, 192 = 2x fast, 255 = 4x fast
   uint32_t wait = currentFrameDelay * 2 - seg.speed * currentFrameDelay / 128;
 
-  if((millis() - lastFrameDisplayTime) >= wait) {
-    decoder->getSize(&gifWidth, &gifHeight);
-    fillPixX = (seg.width()+(gifWidth-1)) / gifWidth;
-    fillPixY = (seg.height()+(gifHeight-1)) / gifHeight;
-    int result = decoder->decodeFrame(false);
-    if (result < 0) { gifDecodeFailed = true; return IMAGE_ERROR_FRAME_DECODE; }
-    long lastFrameDelay = currentFrameDelay;
-    currentFrameDelay = decoder->getFrameDelay_ms();
-    long tooSlowBy = (millis() - lastFrameDisplayTime) - wait; // if last frame was longer than intended, compensate
-    currentFrameDelay -= tooSlowBy;
-    lastFrameDisplayTime = millis();
-  }
-  return true;
+  if((millis() - lastFrameDisplayTime) < wait) return IMAGE_ERROR_WAITING;
+
+  decoder.getSize(&gifWidth, &gifHeight);
+  //fillPixX = (seg.width()+(gifWidth-1)) / gifWidth;
+  //fillPixY = (seg.height()+(gifHeight-1)) / gifHeight;
+  int result = decoder.decodeFrame(false);
+  if (result < 0) { gifDecodeFailed = true; return IMAGE_ERROR_FRAME_DECODE; }
+  //long lastFrameDelay = currentFrameDelay;
+  currentFrameDelay = decoder.getFrameDelay_ms();
+  //long tooSlowBy = (millis() - lastFrameDisplayTime) - wait; // if last frame was longer than intended, compensate
+  //currentFrameDelay -= tooSlowBy; // TODO this is broken
+  lastFrameDisplayTime = millis();
+
+  return IMAGE_ERROR_NONE;
 }
 
 void endImagePlayback() {
   if (file) file.close();
-  delete decoder;
+  //delete decoder;
   gifDecodeFailed = false;
   activeSeg = nullptr;
   lastFilename[0] = '\0';

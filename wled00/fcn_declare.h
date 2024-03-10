@@ -5,7 +5,6 @@
  * All globally accessible functions are declared here
  */
 
-#include "FX.h"
 
 //alexa.cpp
 #ifndef WLED_DISABLE_ALEXA
@@ -126,6 +125,8 @@ void onHueError(void* arg, AsyncClient* client, int8_t error);
 void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
+
+#include "FX.h" // must be below colors.cpp declarations (potentially due to duplicate declarations of e.g. color_blend)
 
 //image_loader.cpp
 #ifndef WLED_DISABLE_GIF
