@@ -314,11 +314,6 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
-  // WW and CW components for chips that support them (FW1906). They have to be set before calling
-  // PolyBus::setPixelColor(). In such case W component has no meaning in setPixelColor()
-  // as there is no support for WW/CW API yet
-  // if both values are 0, W component *may* be used instead (for WW & CW)
-  static uint8_t cctWW, cctCW;
 
   // initialize SPI bus speed for DotStar methods
   template <class T>
@@ -837,12 +832,13 @@ class PolyBus {
     return true;
   }
 
-  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c, uint8_t co) {
+  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c, uint8_t co, uint16_t wwcw = 0) {
     uint8_t r = c >> 16;
     uint8_t g = c >> 8;
     uint8_t b = c >> 0;
     uint8_t w = c >> 24;
     RgbwColor col;
+    uint8_t cctWW = wwcw & 0xFF, cctCW = (wwcw>>8) & 0xFF;
 
     // reorder channels to selected order
     switch (co & 0x0F) {
@@ -1140,10 +1136,10 @@ class PolyBus {
       case I_8266_U1_APA106_3: col = (static_cast<B_8266_U1_APA106_3*>(busPtr))->GetPixelColor(pix); break;
       case I_8266_DM_APA106_3: col = (static_cast<B_8266_DM_APA106_3*>(busPtr))->GetPixelColor(pix); break;
       case I_8266_BB_APA106_3: col = (static_cast<B_8266_BB_APA106_3*>(busPtr))->GetPixelColor(pix); break;
-      case I_8266_U0_FW6_5: { RgbwwColor c = (static_cast<B_8266_U0_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.WW>>8); } break;
-      case I_8266_U1_FW6_5: { RgbwwColor c = (static_cast<B_8266_U1_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.WW>>8); } break;
-      case I_8266_DM_FW6_5: { RgbwwColor c = (static_cast<B_8266_DM_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.WW>>8); } break;
-      case I_8266_BB_FW6_5: { RgbwwColor c = (static_cast<B_8266_BB_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.WW>>8); } break;
+      case I_8266_U0_FW6_5: { RgbwwColor c = (static_cast<B_8266_U0_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_U1_FW6_5: { RgbwwColor c = (static_cast<B_8266_U1_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_DM_FW6_5: { RgbwwColor c = (static_cast<B_8266_DM_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_BB_FW6_5: { RgbwwColor c = (static_cast<B_8266_BB_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: col = (static_cast<B_32_RN_NEO_3*>(busPtr))->GetPixelColor(pix); break;
@@ -1204,12 +1200,12 @@ class PolyBus {
       case I_32_I1_APA106_3: col = (static_cast<B_32_I1_APA106_3*>(busPtr))->GetPixelColor(pix); break;
       #endif
 //      case I_32_BB_APA106_3: col = (static_cast<B_32_BB_APA106_3*>(busPtr))->GetPixelColor(pix); break;
-      case I_32_RN_FW6_5: { RgbwwColor c = (static_cast<B_32_RN_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.WW>>8); } break;
+      case I_32_RN_FW6_5: { RgbwwColor c = (static_cast<B_32_RN_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_FW6_5: { RgbwwColor c = (static_cast<B_32_I0_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.WW>>8); } break;
+      case I_32_I0_FW6_5: { RgbwwColor c = (static_cast<B_32_I0_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_FW6_5: { RgbwwColor c = (static_cast<B_32_I1_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.WW>>8); } break;
+      case I_32_I1_FW6_5: { RgbwwColor c = (static_cast<B_32_I1_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
       #endif
     #endif
       case I_HS_DOT_3: col = (static_cast<B_HS_DOT_3*>(busPtr))->GetPixelColor(pix); break;
@@ -1462,7 +1458,4 @@ class PolyBus {
     return I_NONE;
   }
 };
-
-uint8_t PolyBus::cctWW;
-uint8_t PolyBus::cctCW;
 #endif

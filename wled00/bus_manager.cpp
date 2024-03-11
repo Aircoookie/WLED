@@ -205,10 +205,11 @@ void BusDigital::show() {
   _milliAmpsTotal = 0;
   if (!_valid) return;
 
+  uint8_t cctWW = 0, cctCW = 0;
   uint8_t newBri = estimateCurrentAndLimitBri();  // will fill _milliAmpsTotal
   if (newBri < _bri) PolyBus::setBrightness(_busPtr, _iType, newBri); // limit brightness to stay within current limits
 
-  if (_data) { // use _buffering this causes ~20% FPS drop
+  if (_data) {
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     for (size_t i=0; i<_len; i++) {
       size_t offset = i*channels;
@@ -226,7 +227,8 @@ void BusDigital::show() {
       uint16_t pix = i;
       if (_reversed) pix = _len - pix -1;
       pix += _skip;
-      PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
+      if (_type == TYPE_FW1906) Bus::calculateCCT(c, cctWW, cctCW);
+      PolyBus::setPixelColor(_busPtr, _iType, pix, c, co, (cctCW<<8) | cctWW);
     }
     #if !defined(STATUSLED) || STATUSLED>=0
     if (_skip) PolyBus::setPixelColor(_busPtr, _iType, 0, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
@@ -239,7 +241,8 @@ void BusDigital::show() {
       for (unsigned i = 0; i < hwLen; i++) {
         // use 0 as color order, actual order does not matter here as we just update the channel values as-is
         uint32_t c = restoreColorLossy(PolyBus::getPixelColor(_busPtr, _iType, i, 0), _bri);
-        PolyBus::setPixelColor(_busPtr, _iType, i, c, 0); // repaint all pixels with new brightness
+        if (_type == TYPE_FW1906) Bus::calculateCCT(c, cctWW, cctCW);
+        PolyBus::setPixelColor(_busPtr, _iType, i, c, 0, (cctCW<<8) | cctWW); // repaint all pixels with new brightness
       }
     }
   }
@@ -278,10 +281,10 @@ void BusDigital::setStatusPixel(uint32_t c) {
 
 void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid) return;
+  uint8_t cctWW = 0, cctCW = 0;
   if (Bus::hasWhite(_type)) c = autoWhiteCalc(c);
   if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-  if (_type == TYPE_FW1906) calculateCCT(c, PolyBus::cctWW, PolyBus::cctCW); // FW1906 ignores W component in c
-  if (_data) { // use _buffering this causes ~20% FPS drop
+  if (_data) {
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     if (Bus::hasRGB(_type)) {
@@ -304,14 +307,15 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
         case 2: c = RGBW32(R(cOld), G(cOld), W(c)   , 0); break;
       }
     }
-    PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
+    if (_type == TYPE_FW1906) Bus::calculateCCT(c, cctWW, cctCW);
+    PolyBus::setPixelColor(_busPtr, _iType, pix, c, co, (cctCW<<8) | cctWW);
   }
 }
 
 // returns original color if global buffering is enabled, else returns lossly restored color from bus
 uint32_t IRAM_ATTR BusDigital::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
-  if (_data) { // use _buffering this causes ~20% FPS drop
+  if (_data) {
     size_t channels = Bus::hasWhite(_type) + 3*Bus::hasRGB(_type);
     size_t offset = pix*channels;
     uint32_t c;
@@ -422,22 +426,16 @@ void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
   uint8_t g = G(c);
   uint8_t b = B(c);
   uint8_t w = W(c);
-  
-  uint8_t ww, cw;
-  
-  calculateCCT(c, ww, cw);
 
   switch (_type) {
     case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
       _data[0] = w;
       break;
     case TYPE_ANALOG_2CH: //warm white + cold white
-      _data[1] = cw;
-      _data[0] = ww;
+      Bus::calculateCCT(c, _data[0], _data[1]);
       break;
     case TYPE_ANALOG_5CH: //RGB + warm white + cold white
-      _data[4] = cw;
-      w = ww;
+      Bus::calculateCCT(c, w, _data[4]);
     case TYPE_ANALOG_4CH: //RGBW
       _data[3] = w;
     case TYPE_ANALOG_3CH: //standard dumb RGB
