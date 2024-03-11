@@ -1,5 +1,14 @@
 ## WLED changelog
 
+#### Build 2403110
+-   Beta WLED 0.14.2-b2
+-   New AsyncWebServer (improved performance and reduced memory use)
+-   New builds for ESP8266 with 160MHz CPU clock
+-   Fixing stairway usermod and adding buildflags (#3758 by @lost-hope)
+-   Fixing a potential array bounds violation in ESPDMX
+-   Reduced RAM usage (moved strings and TZ data (by @willmmiles) to PROGMEM)
+-   LockedJsonResponse: Release early if possible (by @willmmiles)
+
 #### Build 2402120
 -   Beta WLED 0.14.2-b1
 -   Possible fix for #3589 & partial fix for #3605
