@@ -224,6 +224,13 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
   if (sObj[F("ql")].is<const char*>()) strlcpy(quickLoad, sObj[F("ql")].as<const char*>(), 9); // client limits QL to 2 chars, buffer for 8 bytes to allow unicode
   else quickLoad[0] = 0;
 
+  const char *bootPS = PSTR("bootps");
+  if (!sObj[FPSTR(bootPS)].isNull()) {
+    bootPreset = sObj[FPSTR(bootPS)] | bootPreset;
+    sObj.remove(FPSTR(bootPS));
+    doSerializeConfig = true;
+  }
+
   if (sObj.size()==0 || sObj["o"].isNull()) { // no "o" means not a playlist or custom API call, saving of state is async (not immediately)
     includeBri   = sObj["ib"].as<bool>() || sObj.size()==0 || index==255; // temporary preset needs brightness
     segBounds    = sObj["sb"].as<bool>() || sObj.size()==0 || index==255; // temporary preset needs bounds

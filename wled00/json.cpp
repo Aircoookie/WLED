@@ -628,6 +628,7 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
+  leds[F("bootps")] = bootPreset;
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
