@@ -328,7 +328,7 @@ void WLED::setup()
   DEBUG_PRINTLN();
   DEBUG_PRINT(F("---WLED "));
   DEBUG_PRINT(versionString);
-  DEBUG_PRINT(" ");
+  DEBUG_PRINT(F(" "));
   DEBUG_PRINT(VERSION);
   DEBUG_PRINTLN(F(" INIT---"));
 #ifdef ARDUINO_ARCH_ESP32
@@ -422,8 +422,6 @@ void WLED::setup()
   registerUsermods();
 
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
-
-  for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));

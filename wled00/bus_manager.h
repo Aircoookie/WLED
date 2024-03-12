@@ -268,6 +268,7 @@ class BusPwm : public Bus {
     #ifdef ARDUINO_ARCH_ESP32
     uint8_t _ledcStart;
     #endif
+    uint8_t _depth;
     uint16_t _frequency;
 
     void deallocatePins();

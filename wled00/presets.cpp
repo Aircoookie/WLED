@@ -12,17 +12,18 @@ static volatile byte presetToApply = 0;
 static volatile byte callModeToApply = 0;
 static volatile byte presetToSave = 0;
 static volatile int8_t saveLedmap = -1;
-static char quickLoad[9];
-static char saveName[33];
+static char *quickLoad = nullptr;
+static char *saveName = nullptr;
 static bool includeBri = true, segBounds = true, selectedOnly = false, playlistSave = false;;
 
-static const char *getFileName(bool persist = true) {
-  return persist ? "/presets.json" : "/tmp.json";
+static const char presets_json[] PROGMEM = "/presets.json";
+static const char tmp_json[] PROGMEM = "/tmp.json";
+const char *getPresetsFileName(bool persistent) {
+  return persistent ? presets_json : tmp_json;
 }
 
 static void doSaveState() {
   bool persist = (presetToSave < 251);
-  const char *filename = getFileName(persist);
 
   unsigned long start = millis();
   while (strip.isUpdating() && millis()-start < (2*FRAMETIME_FIXED)+1) yield(); // wait 2 frames
@@ -38,8 +39,9 @@ static void doSaveState() {
   } else {
     serializeState(sObj, true, includeBri, segBounds, selectedOnly);
   }
-  sObj["n"] = saveName;
-  if (quickLoad[0]) sObj[F("ql")] = quickLoad;
+  if (saveName) sObj["n"] = saveName;
+  else          sObj["n"] = F("Unkonwn preset"); // should not happen, but just in case...
+  if (quickLoad && quickLoad[0]) sObj[F("ql")] = quickLoad;
   if (saveLedmap >= 0) sObj[F("ledmap")] = saveLedmap;
 /*
   #ifdef WLED_DEBUG
@@ -63,11 +65,11 @@ static void doSaveState() {
     if (tmpRAMbuffer!=nullptr) {
       serializeJson(*fileDoc, tmpRAMbuffer, len);
     } else {
-      writeObjectToFileUsingId(filename, presetToSave, fileDoc);
+      writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, fileDoc);
     }
   } else
   #endif
-  writeObjectToFileUsingId(filename, presetToSave, fileDoc);
+  writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, fileDoc);
 
   if (persist) presetsModifiedTime = toki.second(); //unix time
   releaseJSONBufferLock();
@@ -76,8 +78,10 @@ static void doSaveState() {
   // clean up
   saveLedmap   = -1;
   presetToSave = 0;
-  saveName[0]  = '\0';
-  quickLoad[0] = '\0';
+  delete[] saveName;
+  delete[] quickLoad;
+  saveName = nullptr;
+  quickLoad = nullptr;
   playlistSave = false;
 }
 
@@ -85,8 +89,7 @@ bool getPresetName(byte index, String& name)
 {
   if (!requestJSONBufferLock(19)) return false;
   bool presetExists = false;
-  if (readObjectFromFileUsingId(getFileName(), index, pDoc))
-  {
+  if (readObjectFromFileUsingId(getPresetsFileName(), index, pDoc)) {
     JsonObject fdo = pDoc->as<JsonObject>();
     if (fdo["n"]) {
       name = (const char*)(fdo["n"]);
@@ -99,12 +102,13 @@ bool getPresetName(byte index, String& name)
 
 void initPresetsFile()
 {
-  if (WLED_FS.exists(getFileName())) return;
+  char fileName[33]; strncpy_P(fileName, getPresetsFileName(), 32); fileName[32] = 0; //use PROGMEM safe copy as FS.open() does not
+  if (WLED_FS.exists(fileName)) return;
 
   StaticJsonDocument<64> doc;
   JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");
-  File f = WLED_FS.open(getFileName(), "w");
+  File f = WLED_FS.open(fileName, "w");
   if (!f) {
     errorFlag = ERR_FS_GENERAL;
     return;
@@ -147,7 +151,6 @@ void handlePresets()
   uint8_t tmpMode   = callModeToApply;
 
   JsonObject fdo;
-  const char *filename = getFileName(tmpPreset < 255);
 
   // allocate buffer
   if (!requestJSONBufferLock(9)) return;  // will also assign fileDoc
@@ -165,7 +168,7 @@ void handlePresets()
   } else
   #endif
   {
-  errorFlag = readObjectFromFileUsingId(filename, tmpPreset, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  errorFlag = readObjectFromFileUsingId(getPresetsFileName(tmpPreset < 255), tmpPreset, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
   }
   fdo = fileDoc->as<JsonObject>();
 
@@ -203,6 +206,10 @@ void handlePresets()
 //called from handleSet(PS=) [network callback (fileDoc==nullptr), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
 void savePreset(byte index, const char* pname, JsonObject sObj)
 {
+  if (!saveName) saveName = new char[33];
+  if (!quickLoad) quickLoad = new char[9];
+  if (!saveName || !quickLoad) return;
+
   if (index == 0 || (index > 250 && index < 255)) return;
   if (pname) strlcpy(saveName, pname, 33);
   else {
@@ -215,6 +222,14 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
   presetToSave = index;
   playlistSave = false;
   if (sObj[F("ql")].is<const char*>()) strlcpy(quickLoad, sObj[F("ql")].as<const char*>(), 9); // client limits QL to 2 chars, buffer for 8 bytes to allow unicode
+  else quickLoad[0] = 0;
+
+  const char *bootPS = PSTR("bootps");
+  if (!sObj[FPSTR(bootPS)].isNull()) {
+    bootPreset = sObj[FPSTR(bootPS)] | bootPreset;
+    sObj.remove(FPSTR(bootPS));
+    doSerializeConfig = true;
+  }
 
   if (sObj.size()==0 || sObj["o"].isNull()) { // no "o" means not a playlist or custom API call, saving of state is async (not immediately)
     includeBri   = sObj["ib"].as<bool>() || sObj.size()==0 || index==255; // temporary preset needs brightness
@@ -226,17 +241,22 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
     if (sObj[F("playlist")].isNull()) {
       // we will save API call immediately (often causes presets.json corruption)
       presetToSave = 0;
-      if (index > 250 || !fileDoc) return; // cannot save API calls to temporary preset (255)
-      sObj.remove("o");
-      sObj.remove("v");
-      sObj.remove("time");
-      sObj.remove(F("error"));
-      sObj.remove(F("psave"));
-      if (sObj["n"].isNull()) sObj["n"] = saveName;
-      initPresetsFile(); // just in case if someone deleted presets.json using /edit
-      writeObjectToFileUsingId(getFileName(index<255), index, fileDoc);
-      presetsModifiedTime = toki.second(); //unix time
-      updateFSInfo();
+      if (index <= 250 && fileDoc) { // cannot save API calls to temporary preset (255)
+        sObj.remove("o");
+        sObj.remove("v");
+        sObj.remove("time");
+        sObj.remove(F("error"));
+        sObj.remove(F("psave"));
+        if (sObj["n"].isNull()) sObj["n"] = saveName;
+        initPresetsFile(); // just in case if someone deleted presets.json using /edit
+        writeObjectToFileUsingId(getPresetsFileName(), index, fileDoc);
+        presetsModifiedTime = toki.second(); //unix time
+        updateFSInfo();
+      }
+      delete[] saveName;
+      delete[] quickLoad;
+      saveName = nullptr;
+      quickLoad = nullptr;
     } else {
       // store playlist
       // WARNING: playlist will be loaded in json.cpp after this call and will have repeat counter increased by 1
@@ -248,7 +268,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
 
 void deletePreset(byte index) {
   StaticJsonDocument<24> empty;
-  writeObjectToFileUsingId(getFileName(), index, &empty);
+  writeObjectToFileUsingId(getPresetsFileName(), index, &empty);
   presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }

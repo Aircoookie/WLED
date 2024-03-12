@@ -12,7 +12,6 @@
 //colors.cpp
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
-void colorRGBtoRGBW(byte* rgb);
 
 //udp.cpp
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
@@ -377,13 +376,22 @@ BusPwm::BusPwm(BusConfig &bc)
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
 
   #ifdef ESP8266
-  analogWriteRange(255);  //same range as one RGB channel
+  // duty cycle resolution (_depth) can be extracted from this formula: 1MHz > _frequency * 2^_depth
+  if      (_frequency > 1760) _depth =  8;
+  else if (_frequency >  880) _depth =  9;
+  else                        _depth = 10; // WLED_PWM_FREQ <= 880Hz
+  analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
   #else
   _ledcStart = pinManager.allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
   }
+  // duty cycle resolution (_depth) can be extracted from this formula: 80MHz > _frequency * 2^_depth
+  if      (_frequency > 78124) _depth =  9;
+  else if (_frequency > 39062) _depth = 10;
+  else if (_frequency > 19531) _depth = 11;
+  else                         _depth = 12; // WLED_PWM_FREQ <= 19531Hz
   #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -395,7 +403,7 @@ BusPwm::BusPwm(BusConfig &bc)
     #ifdef ESP8266
     pinMode(_pins[i], OUTPUT);
     #else
-    ledcSetup(_ledcStart + i, _frequency, 8);
+    ledcSetup(_ledcStart + i, _frequency, _depth);
     ledcAttachPin(_pins[i], _ledcStart + i);
     #endif
   }
@@ -462,12 +470,49 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) {
   return RGBW32(_data[0], _data[1], _data[2], _data[3]);
 }
 
+#ifndef ESP8266
+static const uint16_t cieLUT[256] = {
+	0, 2, 4, 5, 7, 9, 11, 13, 15, 16, 
+	18, 20, 22, 24, 26, 27, 29, 31, 33, 35, 
+	34, 36, 37, 39, 41, 43, 45, 47, 49, 52, 
+	54, 56, 59, 61, 64, 67, 69, 72, 75, 78, 
+	81, 84, 87, 90, 94, 97, 100, 104, 108, 111, 
+	115, 119, 123, 127, 131, 136, 140, 144, 149, 154, 
+	158, 163, 168, 173, 178, 183, 189, 194, 200, 205, 
+	211, 217, 223, 229, 235, 241, 247, 254, 261, 267, 
+	274, 281, 288, 295, 302, 310, 317, 325, 333, 341, 
+	349, 357, 365, 373, 382, 391, 399, 408, 417, 426, 
+	436, 445, 455, 464, 474, 484, 494, 505, 515, 526, 
+	536, 547, 558, 569, 580, 592, 603, 615, 627, 639, 
+	651, 663, 676, 689, 701, 714, 727, 741, 754, 768, 
+	781, 795, 809, 824, 838, 853, 867, 882, 897, 913, 
+	928, 943, 959, 975, 991, 1008, 1024, 1041, 1058, 1075, 
+	1092, 1109, 1127, 1144, 1162, 1180, 1199, 1217, 1236, 1255, 
+	1274, 1293, 1312, 1332, 1352, 1372, 1392, 1412, 1433, 1454, 
+	1475, 1496, 1517, 1539, 1561, 1583, 1605, 1628, 1650, 1673, 
+	1696, 1719, 1743, 1767, 1791, 1815, 1839, 1864, 1888, 1913, 
+	1939, 1964, 1990, 2016, 2042, 2068, 2095, 2121, 2148, 2176, 
+	2203, 2231, 2259, 2287, 2315, 2344, 2373, 2402, 2431, 2461, 
+	2491, 2521, 2551, 2581, 2612, 2643, 2675, 2706, 2738, 2770, 
+	2802, 2835, 2867, 2900, 2934, 2967, 3001, 3035, 3069, 3104, 
+	3138, 3174, 3209, 3244, 3280, 3316, 3353, 3389, 3426, 3463, 
+	3501, 3539, 3576, 3615, 3653, 3692, 3731, 3770, 3810, 3850, 
+	3890, 3930, 3971, 4012, 4053, 4095
+};
+#endif
+
 void BusPwm::show() {
   if (!_valid) return;
   uint8_t numPins = NUM_PWM_PINS(_type);
+  unsigned maxBri = (1<<_depth) - 1;
+  #ifdef ESP8266
+  unsigned pwmBri = (unsigned)(roundf(powf((float)_bri / 255.0f, 1.7f) * (float)maxBri + 0.5f)); // using gamma 1.7 to extrapolate PWM duty cycle
+  #else
+  unsigned pwmBri = cieLUT[_bri] >> (12 - _depth); // use CIE LUT
+  #endif
   for (unsigned i = 0; i < numPins; i++) {
-    uint8_t scaled = (_data[i] * _bri) / 255;
-    if (_reversed) scaled = 255 - scaled;
+    unsigned scaled = (_data[i] * pwmBri) / 255;
+    if (_reversed) scaled = maxBri - scaled;
     #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
@@ -552,6 +597,10 @@ BusNetwork::BusNetwork(BusConfig &bc)
   switch (bc.type) {
     case TYPE_NET_ARTNET_RGB:
       _rgbw = false;
+      _UDPtype = 2;
+      break;
+    case TYPE_NET_ARTNET_RGBW:
+      _rgbw = true;
       _UDPtype = 2;
       break;
     case TYPE_NET_E131_RGB:

@@ -539,13 +539,13 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
+static const char s_ledmap_tmpl[] PROGMEM = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
   for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
-    char fileName[33];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    char fileName[33] = "/";
+    sprintf_P(fileName+1, s_ledmap_tmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
     #ifndef ESP8266
@@ -574,7 +574,7 @@ void enumerateLedmaps() {
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
-            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            snprintf_P(tmp, 32, s_ledmap_tmpl, i);
             len = strlen(tmp);
             ledmapNames[i-1] = new char[len+1];
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);

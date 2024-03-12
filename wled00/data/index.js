@@ -618,7 +618,7 @@ function populatePresets(fromls)
 
 		cn += `<div class="pres lstI" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
+		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${i==lastinfo.leds.bootps?"<i class='icons btn-icon'>&#xe410;</i>":""}${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
 	<i class="icons edit-icon flr" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
 	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
@@ -869,10 +869,11 @@ function populateSegments(s)
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).classList.add("hide");
+		//if (i<lSeg) gId(`segd${i}`).classList.add("hide"); // hide delete button for all but last
 		if (!gId(`seg${i}sel`).checked && gId('selall')) gId('selall').checked = false; // uncheck if at least one is unselected.
 	}
 	if (segCount < 2) {
-		gId(`segd${lSeg}`).classList.add("hide");
+		gId(`segd${lSeg}`).classList.add("hide"); // hide delete if only one segment
 		if (parseInt(gId("seg0bri").value)==255) gId(`segp0`).classList.add("hide");
 		// hide segment controls if there is only one segment in simplified UI
 		if (simplifiedUI) gId("segcont").classList.add("hide");
@@ -1440,7 +1441,7 @@ function readState(s,command=false)
 		if (s.seg[i].sel) {
 			if (sellvl < 2) selc = i; // get first selected segment
 			sellvl = 2;
-			var lc = lastinfo.leds.seglc[s.seg[i].id];
+			var lc = lastinfo.leds.seglc[i];
 			hasRGB   |= !!(lc & 0x01);
 			hasWhite |= !!(lc & 0x02);
 			hasCCT   |= !!(lc & 0x04);
@@ -1450,7 +1451,7 @@ function readState(s,command=false)
 	}
 	var i=s.seg[selc];
 	if (sellvl == 1) {
-		var lc = lastinfo.leds.seglc[i.id];
+		var lc = lastinfo.leds.seglc[selc];
 		hasRGB   = !!(lc & 0x01);
 		hasWhite = !!(lc & 0x02);
 		hasCCT   = !!(lc & 0x04);
@@ -1819,17 +1820,16 @@ function toggleNodes()
 
 function makeSeg()
 {
-	var ns = 0, ct = 0;
+	var ns = 0, ct = isM ? mw : ledCount;
 	var lu = lowestUnused;
 	let li = lastinfo;
 	if (lu > 0) {
 		let xend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
 		if (isM) {
 			ns = 0;
-			ct = mw;
 		} else {
 			if (xend < ledCount) ns = xend;
-			ct = ledCount-(cfg.comp.seglen?ns:0)
+			ct -= cfg.comp.seglen?ns:0;
 		}
 	}
 	gId('segutil').scrollIntoView({
@@ -1959,6 +1959,7 @@ function plR(p)
 function makeP(i,pl)
 {
 	var content = "";
+	const bps = lastinfo.leds.bootps;
 	if (pl) {
 		if (i===0) plJson[0] = {
 			ps: [1],
@@ -2024,6 +2025,11 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </div>
 <div class="po2" id="p${i}o2">API command<br><textarea class="apitxt" id="p${i}api"></textarea></div>
 <div class="po1" id="p${i}o1">${content}</div>
+<label class="check revchkl">
+	<span class="lstIname">Apply at boot</span>
+	<input type="checkbox" id="p${i}bps" ${i==bps?"checked":""}>
+	<span class="checkmark"></span>
+</label>
 <div class="c m6">Save to ID <input id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
@@ -2445,8 +2451,9 @@ function saveP(i,pl)
 			if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
 		}
 	}
-
-	obj.psave = pI; obj.n = pN;
+	if (gId(`p${i}bps`).checked) obj.bootps = pI;
+	obj.psave = pI;
+	obj.n = pN;
 	var pQN = gId(`p${i}ql`).value;
 	if (pQN.length > 0) obj.ql = pQN;
 
@@ -2794,7 +2801,12 @@ function search(field, listId = null) {
 	if (!listId) return;
 
 	const search = field.value !== '';
-	const presets = listId === 'pcont';
+
+	// restore default preset sorting if no search term is entered
+	if (listId === 'pcont' && !search) {
+		populatePresets();
+		return;
+	}
 
 	// clear filter if searching in fxlist
 	if (listId === 'fxlist' && search) {
@@ -2806,7 +2818,7 @@ function search(field, listId = null) {
 
 	const listItems = gId(listId).querySelectorAll('.lstI');
 	// filter list items but leave (Default & Solid) always visible
-	for (i = (presets ? 0 : 1); i < listItems.length; i++) {
+	for (i = (listId === 'pcont' ? 0 : 1); i < listItems.length; i++) {
 		const listItem = listItems[i];
 		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
 		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
@@ -2814,30 +2826,28 @@ function search(field, listId = null) {
 		listItem.dataset.searchIndex = searchIndex;
 	}
 
-	if (!presets) {
-		// sort list items by search index and name
-		const sortedListItems = Array.from(listItems).sort((a, b) => {
-			const aSearchIndex = parseInt(a.dataset.searchIndex);
-			const bSearchIndex = parseInt(b.dataset.searchIndex);
+	// sort list items by search index and name
+	const sortedListItems = Array.from(listItems).sort((a, b) => {
+		const aSearchIndex = parseInt(a.dataset.searchIndex);
+		const bSearchIndex = parseInt(b.dataset.searchIndex);
 
-			if (aSearchIndex !== bSearchIndex) {
-				return aSearchIndex - bSearchIndex;
-			}
-
-			const aName = a.querySelector('.lstIname').innerText.toUpperCase();
-			const bName = b.querySelector('.lstIname').innerText.toUpperCase();
-
-			return aName.localeCompare(bName);
-		});
-		sortedListItems.forEach(item => {
-			gId(listId).append(item);
-		});
-
-		// scroll to first search result
-		const firstVisibleItem = sortedListItems.find(item => item.style.display !== 'none' && !item.classList.contains('sticky') && !item.classList.contains('selected'));
-		if (firstVisibleItem && search) {
-			firstVisibleItem.scrollIntoView({ behavior: "instant", block: "center" });
+		if (aSearchIndex !== bSearchIndex) {
+			return aSearchIndex - bSearchIndex;
 		}
+
+		const aName = a.querySelector('.lstIname').innerText.toUpperCase();
+		const bName = b.querySelector('.lstIname').innerText.toUpperCase();
+
+		return aName.localeCompare(bName);
+	});
+	sortedListItems.forEach(item => {
+		gId(listId).append(item);
+	});
+
+	// scroll to first search result
+	const firstVisibleItem = sortedListItems.find(item => item.style.display !== 'none' && !item.classList.contains('sticky') && !item.classList.contains('selected'));
+	if (firstVisibleItem && search) {
+		firstVisibleItem.scrollIntoView({ behavior: "instant", block: "center" });
 	}
 }
 

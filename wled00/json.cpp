@@ -628,6 +628,7 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
+  leds[F("bootps")] = bootPreset;
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
@@ -974,7 +975,7 @@ void serializeNetworks(JsonObject root)
 
 void serializeNodes(JsonObject root)
 {
-  JsonArray nodes = root.createNestedArray(F("nodes"));
+  JsonArray nodes = root.createNestedArray("nodes");
 
   for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
   {
@@ -1023,39 +1024,51 @@ void serializeModeNames(JsonArray arr)
 
 // Global buffer locking response helper class (to make sure lock is released when AsyncJsonResponse is destroyed)
 class LockedJsonResponse: public AsyncJsonResponse {
+  bool _holding_lock;
   public:
   // WARNING: constructor assumes requestJSONBufferLock() was successfully acquired externally/prior to constructing the instance
   // Not a good practice with C++. Unfortunately AsyncJsonResponse only has 2 constructors - for dynamic buffer or existing buffer,
   // with existing buffer it clears its content during construction
   // if the lock was not acquired (using JSONBufferGuard class) previous implementation still cleared existing buffer
-  inline LockedJsonResponse(JsonDocument *doc, bool isArray) : AsyncJsonResponse(doc, isArray) {};
+  inline LockedJsonResponse(JsonDocument* doc, bool isArray) : AsyncJsonResponse(doc, isArray), _holding_lock(true) {};
+
+  virtual size_t _fillBuffer(uint8_t *buf, size_t maxLen) { 
+    size_t result = AsyncJsonResponse::_fillBuffer(buf, maxLen);
+    // Release lock as soon as we're done filling content
+    if (((result + _sentLength) >= (_contentLength)) && _holding_lock) {
+      releaseJSONBufferLock();
+      _holding_lock = false;
+    }
+    return result;
+  }
+
   // destructor will remove JSON buffer lock when response is destroyed in AsyncWebServer
-  virtual ~LockedJsonResponse() { releaseJSONBufferLock(); };
+  virtual ~LockedJsonResponse() { if (_holding_lock) releaseJSONBufferLock(); };
 };
 
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
   const String& url = request->url();
-  if      (url.indexOf("state") > 0) subJson = JSON_PATH_STATE;
-  else if (url.indexOf("info")  > 0) subJson = JSON_PATH_INFO;
-  else if (url.indexOf("si")    > 0) subJson = JSON_PATH_STATE_INFO;
-  else if (url.indexOf("nodes") > 0) subJson = JSON_PATH_NODES;
-  else if (url.indexOf("eff")   > 0) subJson = JSON_PATH_EFFECTS;
-  else if (url.indexOf("palx")  > 0) subJson = JSON_PATH_PALETTES;
-  else if (url.indexOf("fxda")  > 0) subJson = JSON_PATH_FXDATA;
-  else if (url.indexOf("net")   > 0) subJson = JSON_PATH_NETWORKS;
+  if      (url.indexOf("state")    > 0) subJson = JSON_PATH_STATE;
+  else if (url.indexOf("info")     > 0) subJson = JSON_PATH_INFO;
+  else if (url.indexOf("si")       > 0) subJson = JSON_PATH_STATE_INFO;
+  else if (url.indexOf(F("nodes")) > 0) subJson = JSON_PATH_NODES;
+  else if (url.indexOf(F("eff"))   > 0) subJson = JSON_PATH_EFFECTS;
+  else if (url.indexOf(F("palx"))  > 0) subJson = JSON_PATH_PALETTES;
+  else if (url.indexOf(F("fxda"))  > 0) subJson = JSON_PATH_FXDATA;
+  else if (url.indexOf(F("net"))   > 0) subJson = JSON_PATH_NETWORKS;
   #ifdef WLED_ENABLE_JSONLIVE
-  else if (url.indexOf("live")  > 0) {
+  else if (url.indexOf("live")     > 0) {
     serveLiveLeds(request);
     return;
   }
   #endif
   else if (url.indexOf("pal") > 0) {
-    request->send_P(200, "application/json", JSON_palette_names);
+    request->send_P(200, "application/json", JSON_palette_names); // contentType defined in AsyncJson-v6.h
     return;
   }
-  else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
+  else if (url.indexOf(F("cfg")) > 0 && handleFileRead(request, F("/cfg.json"))) {
     return;
   }
   else if (url.length() > 6) { //not just /json
@@ -1082,7 +1095,7 @@ void serveJson(AsyncWebServerRequest* request)
     case JSON_PATH_NODES:
       serializeNodes(lDoc); break;
     case JSON_PATH_PALETTES:
-      serializePalettes(lDoc, request->hasParam("page") ? request->getParam("page")->value().toInt() : 0); break;
+      serializePalettes(lDoc, request->hasParam(F("page")) ? request->getParam(F("page"))->value().toInt() : 0); break;
     case JSON_PATH_EFFECTS:
       serializeModeNames(lDoc); break;
     case JSON_PATH_FXDATA:
@@ -1172,7 +1185,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 #endif
   oappend("}");
   if (request) {
-    request->send(200, "application/json", buffer);
+    request->send(200, "application/json", buffer); // contentType defined in AsyncJson-v6.h
   }
   #ifdef WLED_ENABLE_WEBSOCKETS
   else {

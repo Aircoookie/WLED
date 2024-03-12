@@ -102,9 +102,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin, PinOwner::Relay)) {
        pinManager.deallocatePin(rlyPin, PinOwner::Relay);
     }
+    #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
        pinManager.deallocatePin(irPin, PinOwner::IR);
     }
+    #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
         pinManager.deallocatePin(btnPin[s], PinOwner::Button);
@@ -165,12 +167,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       uint16_t freq = request->arg(sp).toInt();
       if (IS_PWM(type)) {
         switch (freq) {
-          case 0 : freq = WLED_PWM_FREQ/3;   break;
-          case 1 : freq = WLED_PWM_FREQ/2;   break;
+          case 0 : freq = WLED_PWM_FREQ/2;    break;
+          case 1 : freq = WLED_PWM_FREQ*2/3;  break;
           default:
-          case 2 : freq = WLED_PWM_FREQ;     break;
-          case 3 : freq = WLED_PWM_FREQ*4/3; break;
-          case 4 : freq = WLED_PWM_FREQ*2;   break;
+          case 2 : freq = WLED_PWM_FREQ;      break;
+          case 3 : freq = WLED_PWM_FREQ*2;    break;
+          case 4 : freq = WLED_PWM_FREQ*10/3; break; // uint16_t max (19531 * 3.333)
         }
       } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
         switch (freq) {
@@ -218,6 +220,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     BusManager::updateColorOrderMap(com);
 
     // update other pins
+    #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
@@ -225,6 +228,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    #endif
     irApplyToAllSelected = !request->hasArg(F("MSO"));
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
