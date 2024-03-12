@@ -27,9 +27,9 @@
 */
 
 /*
-Note: on ESP32 using 32bit integer is faster than 16bit or 8bit, each operation takes on less instruction, can be testen on https://godbolt.org/
-	  it does not matter if using int, unsigned int, uint32_t or int32_t, the compiler will make int into 32bit
-	  this should be used to optimize speed but not if memory is affected much
+	Note on ESP32: using 32bit integer is faster than 16bit or 8bit, each operation takes on less instruction, can be testen on https://godbolt.org/
+	it does not matter if using int, unsigned int, uint32_t or int32_t, the compiler will make int into 32bit
+	this should be used to optimize speed but not if memory is affected much
 */
 
 #include "FXparticleSystem.h"
@@ -366,8 +366,7 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 #else
 	bool fastcoloradd = false; // on ESP32, there is little benefit from using fast add
 #endif
-	
-	
+		
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
@@ -377,7 +376,7 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 
 	int16_t x, y;
 	uint8_t dx, dy;
-	uint32_t intensity; // todo: can this be an uint8_t or will it mess things up?
+	uint32_t intensity;
 	CRGB baseRGB;
 	uint32_t i;
 	uint8_t brightess; // particle brightness, fades if dying
@@ -661,10 +660,10 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 {
 
-	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	CRGB currentcolor = SEGMENT.getPixelColorXY(col, rows - row - 1); // read current matrix color (flip y axis)
-	uint16_t newcolorvalue;
+	uint32_t newcolorvalue;
 	uint8_t colormode = map(SEGMENT.custom3, 0, 31, 0, 5); // get color mode from slider (3bit value)
 
 	// define how the particle TTL value (which is the heat given to the function) maps to heat, if lower, fire is more red, if higher, fire is brighter as bright flames travel higher and decay faster
@@ -677,8 +676,8 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 	int8_t increment = (colormode & 0x01) + 1; // 0 (or 3) means only one single color for the flame, 1 is normal, 2 is alternate color modes
 	if (currentcolor[i] < 255)
 	{
-		newcolorvalue = (uint16_t)currentcolor[i] + heat;  // add heat, check if it overflows, is 16bit value
-		newcolorvalue = min(newcolorvalue, (uint16_t)255); // limit to 8bit value again
+		newcolorvalue = (uint16_t)currentcolor[i] + heat;  // add heat, check if it overflows
+		newcolorvalue = min(newcolorvalue, (uint32_t)255); // limit to 8bit value again
 		// check if there is heat left over
 		if (newcolorvalue == 255)
 		{										   // there cannot be a leftover if it is not full
@@ -700,7 +699,7 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 		if (currentcolor[i] < 255)
 		{
 			newcolorvalue = (uint16_t)currentcolor[i] + heat;  // add heat, check if it overflows
-			newcolorvalue = min(newcolorvalue, (uint16_t)255); // limit to 8bit value again
+			newcolorvalue = min(newcolorvalue, (uint32_t)255); // limit to 8bit value again
 			// check if there is heat left over
 			if (newcolorvalue == 255) // there cannot be a leftover if red is not full
 			{
@@ -721,7 +720,7 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 		if (currentcolor[i] < 255)
 		{
 			newcolorvalue = currentcolor[i] + heat;			  // add heat, check if it overflows
-			newcolorvalue = min(newcolorvalue, (uint16_t)50); // limit so it does not go full white
+			newcolorvalue = min(newcolorvalue, (uint32_t)50); // limit so it does not go full white
 			currentcolor[i] = (uint8_t)newcolorvalue;
 		}
 	}
@@ -867,7 +866,7 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 			else
 				particle2->y += push; 
 		}
-		//note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame		
+		//note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame, if bounce is disabled: bye bye		
 	}
 	
 

@@ -24,6 +24,8 @@
   Modified heavily for WLED
 */
 
+// information for custom FX metadata strings: https://kno.wled.ge/interfaces/json-api/#effect-metadata
+
 #include "wled.h"
 #include "FX.h"
 #include "fcn_declare.h"
@@ -8515,19 +8517,7 @@ uint16_t mode_particlefire(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,Intensity,Base Flames,Wind Speed, Color Scheme, WrapX;;!;012;sx=100,ix=120,c1=16,c2=128,c3=0,o1=0";
-/*syntax for json configuration string:
-@A,B,C,D,E,F,G,H;I,J,K;L;M;N mark commas and semicolons
-A - speed
-B - intensity
-C, D, E, - custom1 to custom3
-F,G,H - check1 to check3
-I,J,K - slot1 to slot3
-L - palette
-M - mode (012)
-N - parameter defaults (sliders: sx=100 ist speed, ix=24 is intensity, c1 ... c3 =20 is custom 1...3)
 
-a '!' uses default values for that section
-*/
 
 /*
 particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
@@ -8580,8 +8570,8 @@ uint16_t mode_particlefall(void)
 
         if (random8(5) == 0) // 16% of particles apper anywhere
           particles[i].x = random16(cols * PS_P_RADIUS - 1);
-        else                                                                                // rest is emitted at center half
-          particles[i].x = random16((cols >> 1) * PS_P_RADIUS + (cols >> 1) * PS_P_RADIUS); // todo: could make this dynamic and random but needs a user variable
+        else                 // rest is emitted at center half
+          particles[i].x = random16((cols >> 1) * PS_P_RADIUS + (cols >> 1) * PS_P_RADIUS); 
 
         particles[i].y = random16(rows * PS_P_RADIUS) + rows * PS_P_RADIUS;                    // particles appear somewhere above the matrix, maximum is double the height
         particles[i].vx = (((int16_t)random8(SEGMENT.custom1)) - (SEGMENT.custom1 >> 1)) >> 1; // side speed is +/- a quarter of the custom1 slider
@@ -8645,45 +8635,6 @@ uint16_t mode_particlewaterfall(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  
-/*
-  um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
-  {    
-    um_data = NULL; //no audio
-  }
-  //TODO: will crash if no umdata!
-  uint8_t volumeSmth = (uint8_t)(*(float *)um_data->u_data[0]); //volume, mapped 0-255
-  float volumeRaw = *(float *)um_data->u_data[1]; //always zero?
-  uint8_t* fftResult = (uint8_t *)um_data->u_data[2]; //16 bins with FFT data
-  uint8_t samplePeak = *(uint8_t *)um_data->u_data[3]; //0 or 1 if a sample peak is detected (not sure what the thresholds are)
-  float FFT_MajorPeak = *(float *)um_data->u_data[4];  //frequency in Hz of major peak 
-  float my_magnitude = *(float *)um_data->u_data[5];  //current volume, should fit a uint16_t (goes up to 20'000 or even higher?) but unclear what exactly the value is
-  //maxVol = (uint8_t *)um_data->u_data[6]; // requires UI element (SEGMENT.customX?), changes source element, see Ripple Peak for an example
-  //binNum = (uint8_t *)um_data->u_data[7]; // requires UI element (SEGMENT.customX?), changes source element
-  //float* fftBin = (float *)um_data->u_data[8]; //points to what exactly?
-  */
-/*
-  //print values as a test:
-  Serial.println("***");
-  Serial.print(volumeSmth);
-  Serial.print(", ");
-  Serial.print(volumeRaw); 
-  Serial.print(", ");
-  Serial.print(samplePeak);
-  Serial.print(", ");
-  Serial.print(FFT_MajorPeak);
-  Serial.print(", ");
-  Serial.println(my_magnitude);
-
-  for(int i = 0; i<16;i++)
-  {
-    Serial.print(fftResult[i]);
-    Serial.print(" ");
-  }
-
-  Serial.println("***");
-*/
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
@@ -8852,54 +8803,28 @@ uint16_t mode_particlebox(void)
   if (SEGMENT.call % (((255 - SEGMENT.speed) >> 6) + 1) == 0 && SEGMENT.speed > 0) // how often the force is applied depends on speed setting
   {
 
-    int8_t xgravity;
-    int8_t ygravity;
+    int32_t xgravity;
+    int32_t ygravity;
     uint8_t scale;
 
-    if (SEGMENT.check1 == 0) // if rocking boat is not set, use perlin noise for force vector generation
+    SEGMENT.aux0 += (SEGMENT.speed >> 6) + 1; // update position in noise
+    
+    xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127);
+    ygravity = ((int16_t)inoise8(SEGMENT.aux0 + 10000) - 127);
+    if (SEGMENT.check1) //sloshing, y force is alwys downwards
     {
-      SEGMENT.aux0 += (SEGMENT.speed >> 6) + 1; // update position in noise
-      // uint8_t angle = (((uint16_t)inoise8(SEGMENT.aux0)) << 1) - 64; // noise avg. value is 127 scale to 256 (to increase the range) and subtract 64 (=90°) to make the average direction downwards (270°), overflow means modulo, so is ok
-      //  calculate x and y vectors from angle:
-      // xgravity = ((int16_t)cos8(angle)) - 128; // gravity direction +/- 127
-      // ygravity = ((int16_t)sin8(angle)) - 128;
-      //  scale the vectors using another inoise value:
-      // scale = inoise8(SEGMENT.aux0 + 4096); // use a offset in the noise for scale value
-
-      // scale = ((uint16_t)scale * SEGMENT.custom1)>>8; //apply rescaling with user input
-      // not using angles but x and y tilt from inoise:
-      xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127);
-      ygravity = ((int16_t)inoise8(SEGMENT.aux0 + 10000) - 127);
+      if(ygravity > 0)
+        ygravity = -ygravity;
     }
-    else 
-    { // use sinusoidal motion
-      // angle needs to move from -270° to +90° (from top leftside to top rightside but limited by one of the sliders by the user (custom1=Amount), -270 (and +90) is ~64 in 8bit angle representation (365=255)
-      // the anglar force changes in a sinusoidal motion, like a rocking boat
-      // the angle is first calculated using a sine, then shifted so it goes from -127 to +127, then scaled, then shifted to 0 is actually -64 (=-90°=down)
+    
 
-      SEGMENT.aux0++;                                    // move forward in the sinusoidal function
-      int16_t angle = (int16_t)sin8(SEGMENT.aux0) - 128; // shift result (0-255 representing -1 to +1) so it goes from -128 to +127
-      scale = 130 - (abs(angle));                        // force gets weaker at exteme positions
-      if (scale > 50)
-        scale = 50;                                    // force is limited at lower angles
-      angle = (angle * (int16_t)SEGMENT.custom1) >> 8; // scale angle range according to slider (tilt strength)
-      angle -= 63;                                     // make 'down' (or -90°) the zero position
-      //TODO: need to debug this, angle is not symmetrical around 'down'
-      // now calculate the force vectors
-      xgravity = ((int16_t)cos8((uint8_t)angle)) - 128; // gravity direction +/- 127
-      ygravity = ((int16_t)sin8((uint8_t)angle)) - 128;
-
-      // scale gravity force
-      xgravity = ((int16_t)xgravity * scale) >> 8;
-      ygravity = ((int16_t)ygravity * scale) >> 8;
-      
-    }
 
     // scale the gravity force down
-    xgravity = xgravity >> 5;
-    ygravity = ygravity >> 5;
-    // Serial.print(xgravity);
-    // Serial.println(" ");
+    xgravity /= 16;
+    ygravity /= 16;
+    Serial.print(xgravity);
+    Serial.print(" ");
+    Serial.println(ygravity);
 
     for (i = 0; i < numParticles; i++)
     {
@@ -8911,8 +8836,7 @@ uint16_t mode_particlebox(void)
 
         // apply a little gravity downwards to bias things in rocking mode
         if (SEGMENT.check1 && SEGMENT.call % 2 == 0)
-            particles[i].vy--;
-          
+            particles[i].vy--;          
       }
     }
   }
@@ -8940,7 +8864,7 @@ uint16_t mode_particlebox(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Hardness,,Rocking Boat,;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Hardness,,Sloshing;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
 
 /*
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
@@ -9456,7 +9380,6 @@ uint16_t mode_particlespray(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "Particle Spray@Particle Speed,Intensity,X Position,Y Position,Angle,Gravity,WrapX/Bounce,Collisions;;!;012;pal=0,sx=180,ix=200,c1=220,c2=30,c3=12,o1=1,o2=0,o3=1";
-// TODO: animation idea: just one spray, sliders set x position, y position, speed, intensity and spray angle. ticks set wrap/bounce, gravity? evtl noch life time koppeln mit speed?
 
 #endif // WLED_DISABLE_2D
 
