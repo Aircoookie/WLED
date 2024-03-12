@@ -133,7 +133,7 @@ void WS2812FX::setUpMatrix() {
       DEBUG_PRINT(F("Matrix ledmap:"));
       for (unsigned i=0; i<customMappingSize; i++) {
         if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
-        DEBUG_PRINTF("%4d,", customMappingTable[i]);
+        DEBUG_PRINTF_P(PSTR("%4d,"), customMappingTable[i]);
       }
       DEBUG_PRINTLN();
       #endif

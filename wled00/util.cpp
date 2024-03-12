@@ -157,9 +157,9 @@ bool oappendi(int i)
 bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
-  if (olen + len >= SETTINGS_STACK_BUF_SIZE) {
+  if ((obuf == nullptr) || (olen + len >= SETTINGS_STACK_BUF_SIZE)) { // sanity checks
 #ifdef WLED_DEBUG
-    DEBUG_PRINT(F("oappend() buffer overflow. Cannnot append "));
+    DEBUG_PRINT(F("oappend() buffer overflow. Cannot append "));
     DEBUG_PRINT(len); DEBUG_PRINT(F(" bytes \t\""));
     DEBUG_PRINT(txt); DEBUG_PRINTLN(F("\""));
 #endif
@@ -173,7 +173,7 @@ bool oappend(const char* txt)
 
 void prepareHostname(char* hostname)
 {
-  sprintf_P(hostname, "wled-%*s", 6, escapedMac.c_str() + 6);
+  sprintf_P(hostname, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
   uint8_t pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length
@@ -215,10 +215,10 @@ bool requestJSONBufferLock(uint8_t module)
   }
   unsigned long now = millis();
 
-  while (jsonBufferLock && millis()-now < 1000) delay(1); // wait for a second for buffer lock
+  while (jsonBufferLock && millis()-now < 100) delay(1); // wait for fraction for buffer lock
 
-  if (millis()-now >= 1000) {
-    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! ("));
+  if (jsonBufferLock) {
+    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
     DEBUG_PRINT(jsonBufferLock);
     DEBUG_PRINTLN(")");
     return false; // waiting time-outed
@@ -245,7 +245,7 @@ void releaseJSONBufferLock()
 
 
 // extracts effect mode (or palette) name from names serialized string
-// caller must provide large enough buffer for name (incluing SR extensions)!
+// caller must provide large enough buffer for name (including SR extensions)!
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
 {
   if (src == JSON_mode_names || src == nullptr) {
@@ -539,13 +539,13 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
+static const char s_ledmap_tmpl[] PROGMEM = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
   for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
-    char fileName[33];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    char fileName[33] = "/";
+    sprintf_P(fileName+1, s_ledmap_tmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
     #ifndef ESP8266
@@ -574,7 +574,7 @@ void enumerateLedmaps() {
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
-            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            snprintf_P(tmp, 32, s_ledmap_tmpl, i);
             len = strlen(tmp);
             ledmapNames[i-1] = new char[len+1];
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);

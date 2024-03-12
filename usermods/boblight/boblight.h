@@ -174,9 +174,9 @@ class BobLightUsermod : public Usermod {
 
       #if WLED_DEBUG
       DEBUG_PRINTLN(F("Fill light data: "));
-      DEBUG_PRINTF(" lights %d\n", numLights);
+      DEBUG_PRINTF_P(PSTR(" lights %d\n"), numLights);
       for (int i=0; i<numLights; i++) {
-        DEBUG_PRINTF(" light %s scan %2.1f %2.1f %2.1f %2.1f\n", lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
+        DEBUG_PRINTF_P(PSTR(" light %s scan %2.1f %2.1f %2.1f %2.1f\n"), lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
       }
       #endif
     }
@@ -191,7 +191,7 @@ class BobLightUsermod : public Usermod {
       uint16_t totalLights = bottom + left + top + right;
       if ( totalLights > strip.getLengthTotal() ) {
         DEBUG_PRINTLN(F("BobLight: Too many lights."));
-        DEBUG_PRINTF("%d+%d+%d+%d>%d\n", bottom, left, top, right, strip.getLengthTotal());
+        DEBUG_PRINTF_P(PSTR("%d+%d+%d+%d>%d\n"), bottom, left, top, right, strip.getLengthTotal());
         totalLights = strip.getLengthTotal();
         top = bottom = (uint16_t) roundf((float)totalLights * 16.0f / 50.0f);
         left = right = (uint16_t) roundf((float)totalLights *  9.0f / 50.0f);
@@ -318,7 +318,7 @@ class BobLightUsermod : public Usermod {
     void addToConfig(JsonObject& root) override {
       JsonObject umData = root.createNestedObject(FPSTR(_name));
       umData[FPSTR(_enabled)] = enabled;
-      umData[F("port")]       = bobPort;
+      umData[  "port" ]       = bobPort;
       umData[F("top")]        = top;
       umData[F("bottom")]     = bottom;
       umData[F("left")]       = left;
@@ -334,7 +334,7 @@ class BobLightUsermod : public Usermod {
       configComplete &= getJsonValue(umData[FPSTR(_enabled)], en);
       enable(en);
 
-      configComplete &= getJsonValue(umData[F("port")],   bobPort);
+      configComplete &= getJsonValue(umData[  "port" ],   bobPort);
       configComplete &= getJsonValue(umData[F("bottom")], bottom,    16);
       configComplete &= getJsonValue(umData[F("top")],    top,       16);
       configComplete &= getJsonValue(umData[F("left")],   left,       9);
@@ -392,7 +392,7 @@ void BobLightUsermod::pollBob() {
     //get data from the client
     while (bobClient.available()) {
       String input = bobClient.readStringUntil('\n');
-      // DEBUG_PRINT("Client: "); DEBUG_PRINTLN(input); // may be to stressful on Serial
+      // DEBUG_PRINT(F("Client: ")); DEBUG_PRINTLN(input); // may be to stressful on Serial
       if (input.startsWith(F("hello"))) {
         DEBUG_PRINTLN(F("hello"));
         bobClient.print(F("hello\n"));
@@ -445,7 +445,7 @@ void BobLightUsermod::pollBob() {
           //strip.setPixelColor(light_id, RGBW32(red, green, blue, 0));
           setRealtimePixel(light_id, red, green, blue, 0);
         } // currently no support for interpolation or speed, we just ignore this
-      } else if (input.startsWith(F("sync"))) {
+      } else if (input.startsWith("sync")) {
         BobSync();
       } else {
         // Client sent gibberish

@@ -157,8 +157,8 @@ void appendGPIOinfo() {
   oappend(SET_F(",2")); // DMX hardcoded pin
   #endif
 
-  #ifdef WLED_DEBUG
-  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
+  #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
+  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10)); // debug output (TX) pin
   #endif
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
@@ -238,8 +238,8 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_MENU)
   {
-  #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
-    oappend(PSTR("gId('2dbtn').style.display='';"));
+  #ifdef WLED_DISABLE_2D // include only if 2D is not compiled in
+    oappend(PSTR("gId('2dbtn').style.display='none';"));
   #endif
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     oappend(PSTR("gId('dmxbtn').style.display='';"));
@@ -248,22 +248,33 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_WIFI)
   {
-    sappends('s',SET_F("CS"),clientSSID);
-
-    byte l = strlen(clientPass);
-    char fpass[l+1]; //fill password field with ***
-    fpass[l] = 0;
-    memset(fpass,'*',l);
-    sappends('s',SET_F("CP"),fpass);
-
-    char k[3]; k[2] = 0; //IP addresses
-    for (int i = 0; i<4; i++)
-    {
-      k[1] = 48+i; //ascii 0,1,2,3
-      k[0] = 'I'; sappend('v',k,staticIP[i]);
-      k[0] = 'G'; sappend('v',k,staticGateway[i]);
-      k[0] = 'S'; sappend('v',k,staticSubnet[i]);
+    char nS[10];
+    size_t l;
+    oappend(SET_F("resetWiFi("));
+    oappend(itoa(WLED_MAX_WIFI_COUNT,nS,10));
+    oappend(SET_F(");"));
+    for (size_t n = 0; n < multiWiFi.size(); n++) {
+      l = strlen(multiWiFi[n].clientPass);
+      char fpass[l+1]; //fill password field with ***
+      fpass[l] = 0;
+      memset(fpass,'*',l);
+      oappend(SET_F("addWiFi(\""));
+      oappend(multiWiFi[n].clientSSID);
+      oappend(SET_F("\",\""));
+      oappend(fpass);
+      oappend(SET_F("\",0x"));
+      oappend(itoa(multiWiFi[n].staticIP,nS,16));
+      oappend(SET_F(",0x"));
+      oappend(itoa(multiWiFi[n].staticGW,nS,16));
+      oappend(SET_F(",0x"));
+      oappend(itoa(multiWiFi[n].staticSN,nS,16));
+      oappend(SET_F(");"));
     }
+
+    sappend('v',SET_F("D0"),dnsAddress[0]);
+    sappend('v',SET_F("D1"),dnsAddress[1]);
+    sappend('v',SET_F("D2"),dnsAddress[2]);
+    sappend('v',SET_F("D3"),dnsAddress[3]);
 
     sappends('s',SET_F("CM"),cmDNS);
     sappend('i',SET_F("AB"),apBehavior);
@@ -391,12 +402,12 @@ void getSettingsJS(byte subPage, char* dest)
       uint16_t speed = bus->getFrequency();
       if (IS_PWM(bus->getType())) {
         switch (speed) {
-          case WLED_PWM_FREQ/3   : speed = 0; break;
-          case WLED_PWM_FREQ/2   : speed = 1; break;
+          case WLED_PWM_FREQ/2    : speed = 0; break;
+          case WLED_PWM_FREQ*2/3  : speed = 1; break;
           default:
-          case WLED_PWM_FREQ     : speed = 2; break;
-          case WLED_PWM_FREQ*4/3 : speed = 3; break;
-          case WLED_PWM_FREQ*2   : speed = 4; break;
+          case WLED_PWM_FREQ      : speed = 2; break;
+          case WLED_PWM_FREQ*2    : speed = 3; break;
+          case WLED_PWM_FREQ*10/3 : speed = 4; break; // uint16_t max (19531 * 3.333)
         }
       } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
         switch (speed) {
@@ -414,6 +425,7 @@ void getSettingsJS(byte subPage, char* dest)
       sumMa += bus->getMaxCurrent();
     }
     sappend('v',SET_F("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
+    sappend('c',SET_F("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
     sappend('c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
     oappend(SET_F("resetCOM("));
@@ -442,6 +454,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
     sappend('v',SET_F("TP"),randomPaletteChangeTime);
+    sappend('c',SET_F("TH"),useHarmonicRandomPalette);
     sappend('v',SET_F("BF"),briMultiplier);
     sappend('v',SET_F("TB"),nightlightTargetBri);
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
@@ -597,6 +610,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("OM"),analogClock12pixel);
     sappend('c',SET_F("OS"),analogClockSecondsTrail);
     sappend('c',SET_F("O5"),analogClock5MinuteMarks);
+    sappend('c',SET_F("OB"),analogClockSolidBlack);
 
     sappend('c',SET_F("CE"),countdownMode);
     sappend('v',SET_F("CY"),countdownYear);

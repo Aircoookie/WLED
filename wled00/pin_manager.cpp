@@ -6,7 +6,7 @@ static void DebugPrintOwnerTag(PinOwner tag)
 {
   uint32_t q = static_cast<uint8_t>(tag);
   if (q) {
-    DEBUG_PRINTF("0x%02x (%d)", q, q);
+    DEBUG_PRINTF_P(PSTR("0x%02x (%d)"), q, q);
   } else {
     DEBUG_PRINT(F("(no owner)"));
   }
@@ -109,7 +109,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: GPIO "));
       DEBUG_PRINT(gpio);
-      DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input");
+      DEBUG_PRINT(F(" as ")); DEBUG_PRINT(mptArray[i].isOutput ? F("output"): F("input"));
       DEBUG_PRINTLN(F(""));
       #endif
       shouldFail = true;
