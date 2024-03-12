@@ -8016,8 +8016,8 @@ static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Part
 
 /*
  * Particle Fireworks
- * Rockets shoot up and explode in a random color
- * Use ranbow palette as default
+ * Rockets shoot up and explode in a random color, sometimes in a defined pattern
+ * Uses ranbow palette as default
  * by DedeHai (Damian Schneider)
  */
 
@@ -8214,7 +8214,7 @@ static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Firework
 
 /*
  * Particle Volcano (gravity spray)
- * Particles are sprayed from below, spray moves back and forth
+ * Particles are sprayed from below, spray moves back and forth if option is set
  * Uses palette for particle color
  * by DedeHai (Damian Schneider)
  */
@@ -8243,9 +8243,6 @@ uint16_t mode_particlevolcano(void)
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  // DEBUG_PRINT(F("particle datasize = "));
-  // DEBUG_PRINTLN(dataSize);
-
   spray = reinterpret_cast<PSpointsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
@@ -8273,7 +8270,6 @@ uint16_t mode_particlevolcano(void)
       spray[i].vy = 20; // emitting speed
       // spray.var = 10 + (random8() % 4);
     }
-    // SEGMENT.palette = 35; //fire palette
   }
 
   // change source emitting color from time to time
@@ -8301,7 +8297,6 @@ uint16_t mode_particlevolcano(void)
       spray[i].vy = SEGMENT.custom1 >> 2;                          // emitting speed, upward
       spray[i].vx = 0; 
       spray[i].var = SEGMENT.custom3;                              // emiting variation = nozzle size  (custom 3 goes from 0-32)
-      //spray[i].source.y = spray[i].var + 1;                        // need to 'lift up' the source as 'var' also changes particle spawn position randomly
       spray[i].source.ttl = 255;                                   // source never dies, replenish its lifespan
     }
 
@@ -8332,7 +8327,6 @@ uint16_t mode_particlevolcano(void)
 
   for (i = 0; i < numParticles; i++)
   {
-    // Particle_Move_update(&particles[i]); //move the particles
     //set color according to ttl ('color by age')
     if (SEGMENT.check1)
       particles[i].hue = min((uint16_t)220, particles[i].ttl);
@@ -8344,31 +8338,13 @@ uint16_t mode_particlevolcano(void)
 
   // render the particles
   ParticleSys_render(particles, numParticles, false, false);
-  // CRGB c = PURPLE;
-  // SEGMENT.setPixelColorXY(0, 0, c);
-
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "Particle Volcano@Moving Speed,Intensity,Particle Speed,Bouncyness,Nozzle Size,Color by Age,Bounce X,Collisions;;!;012;pal=35,sx=0,ix=160,c1=100,c2=160,c3=10,o1=1,o2=1,o3=1";
 
-// good default values for sliders: 100,200,190, 45
-/*syntax for json configuration string:
-@A,B,C,D,E,F,G,H;I,J,K;L;M;N mark commas and semicolons
-A - speed
-B - intensity
-C, D, E, - custom1 to custom3
-F,G,H - check1 to check3
-I,J,K - slot1 to slot3
-L - palette
-M - mode (012)
-N - parameter defaults (sliders: sx=100 ist speed, ix=24 is intensity, c1 ... c3 =20 is custom 1...3)
-
-a '!' uses default values for that section
-*/
-
 /*
  * Particle Fire
- * realistic fire effect using particles, heat and perlinnoise wind
+ * realistic fire effect using particles. heat based and using perlin-noise for wind
  * by DedeHai (Damian Schneider)
  */
 
@@ -8394,10 +8370,6 @@ uint16_t mode_particlefire(void)
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
   dataSize += sizeof(PSpointsource) * (numFlames);
 
-  // DEBUG_PRINTLN(F("**********************"));
-  // DEBUG_PRINT(F("particle datasize = "));
-  // DEBUG_PRINTLN(dataSize);
-
   if (!SEGENV.allocateData(dataSize))
   {
     return mode_static(); // allocation failed; //allocation failed
@@ -8411,7 +8383,6 @@ uint16_t mode_particlefire(void)
 
   if (SEGMENT.call == 0) // initialization
   {
-    DEBUG_PRINTLN(F("Initializing Particle Fire"));
     SEGMENT.aux0 = rand(); // aux0 is wind position (index) in the perlin noise
     // make sure all particles start out dead
     for (i = 0; i < numParticles; i++)
@@ -8424,7 +8395,7 @@ uint16_t mode_particlefire(void)
     {
       flames[i].source.ttl = 0;
       flames[i].source.x = PS_P_RADIUS * 3 + random16(PS_MAX_X - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
-      // other parameters are set when creating the flame (see blow)
+      //note: other parameters are set when creating the flame (see blow)
     }
   }
 
@@ -8442,25 +8413,23 @@ uint16_t mode_particlefire(void)
       // from time to time, chang the flame position
       // make some of the flames small and slow to add a bright base
 
-      if (random8(40) == 0) //from time to time, change flame position (about once per second)
+      if (random8(40) == 0) //from time to time, change flame position (about once per second at 40 fps)
       {
         if (SEGMENT.check1)
         { // wrap around in X direction, distribute randomly
           flames[i].source.x = random16(PS_MAX_X);
         }
-        else
-        {                                                                                // no wrapping
+        else // no X-wrapping
+        {                                                                                
           flames[i].source.x = PS_P_RADIUS * 3 + random16(PS_MAX_X - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
         }
       }
 
       if (i < (numFlames - (cols >> 1)))
       { // all but the last few are normal flames
-
         flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame so particles alredy spread a little when the appear
         flames[i].source.vx = 0;               // (rand() % 3) - 1;
         flames[i].source.vy = 0;
-        // flames[i].source.hue = random8(15) + 18; //flame color, orange to yellow
         flames[i].source.ttl = random8(SEGMENT.intensity >> 2) / (1 + (SEGMENT.speed >> 6)) + 10; //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
         flames[i].maxLife = random8(7) + 13;                                                      // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         flames[i].minLife = 2;
@@ -8472,8 +8441,7 @@ uint16_t mode_particlefire(void)
       {                                        // base flames to make the base brighter, flames are slower and short lived
         flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame
         flames[i].source.vx = 0;
-        flames[i].source.vy = 0; // emitter moving speed;
-        // flames[i].source.hue = 0;//(rand() % 15) + 18; //flame color (not used)
+        flames[i].source.vy = 0;                // emitter moving speed;
         flames[i].source.ttl = random8(25) + 15; // lifetime of one flame
         flames[i].maxLife = 25;                  // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         flames[i].minLife = 12;
@@ -8501,8 +8469,8 @@ uint16_t mode_particlefire(void)
       percycle--;
     }
     else if (particles[i].ttl)
-    { // if particle is alive, update it
-      // add wind, using perlin noise
+    { 
+      // add wind using perlin noise
       int8_t windspeed = (int8_t)(inoise8(SEGMENT.aux0, particles[i].y >> 2) - 127) / ((271 - SEGMENT.custom2) >> 4);
       particles[i].vx = windspeed;
       FireParticle_update(&particles[i], SEGMENT.check1); // update particle, use X-wrapping if check 1 is set by user
@@ -8521,7 +8489,7 @@ static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,In
 
 /*
 particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
-sliders control falling speed, intensity (number of particles spawned), WIND OR SPEED RANDOMNESS?, inter-particle collision hardness (0 means no particle collisions) and render saturation
+sliders control falling speed, intensity (number of particles spawned), inter-particle collision hardness (0 means no particle collisions) and render saturation
 this is quite versatile, can be made to look like rain or snow or confetti, flying sparks etc.
 Uses palette for particle color
 by DedeHai (Damian Schneider)
@@ -8601,8 +8569,6 @@ uint16_t mode_particlefall(void)
 
   SEGMENT.fill(BLACK); // clear the matrix
 
-  
-
   // render the particles
   ParticleSys_render(particles, numParticles, SEGMENT.check1, false); // custom3 slider is saturation, from 7 to 255, 7 is close enough to white (for snow for example)
 
@@ -8615,19 +8581,6 @@ static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Spee
  * Uses palette for particle color, spray source at top emitting particles, many config options
  * by DedeHai (Damian Schneider)
  */
-
-/*Audio Reactive test:
-
-    volumeSmth    = *(float*)   um_data->u_data[0];
-    volumeRaw     = *(float*)   um_data->u_data[1];
-    fftResult     =  (uint8_t*) um_data->u_data[2];
-    samplePeak    = *(uint8_t*) um_data->u_data[3];
-    FFT_MajorPeak = *(float*)   um_data->u_data[4];
-    my_magnitude  = *(float*)   um_data->u_data[5];
-    maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
-    binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
-    fftBin        =  (float*)   um_data->u_data[8];  //not sure what this pointer does... not used in any examples
-    */
 
 uint16_t mode_particlewaterfall(void)
 {
@@ -8677,7 +8630,6 @@ uint16_t mode_particlewaterfall(void)
       spray[i].vx = 0; // emitting speed
       spray[i].var = 7;   // emiting variation
     }
-    // SEGMENT.palette = 35; //fire palette
   }
 
   // change source emitting color 
@@ -8687,11 +8639,7 @@ uint16_t mode_particlewaterfall(void)
   }
 
   uint8_t intensity = SEGMENT.intensity;
-/*
-  if (um_data != NULL) //audio reactive data available
-  {
-    intensity = map(volumeSmth,0,255,20,255);
-  }*/
+
   if (SEGMENT.call % (9 - (intensity >> 5)) == 0 && intensity > 0) // every nth frame, cycle color and emit particles, do not emit if intensity is zero
     {
 
@@ -8719,7 +8667,6 @@ uint16_t mode_particlewaterfall(void)
         i++;
       }
     }
-
 
   // detect and handle collisions
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
@@ -8753,7 +8700,7 @@ uint16_t mode_particlewaterfall(void)
 static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "Particle Waterfall@Particle Speed,Intensity,Speed Variation,Collision Hardness,Position,Wrap X,Bounce X,Ground bounce;;!;012;pal=9,sx=150,ix=240,c1=0,c2=128,c3=17,o1=0,o2=0,o3=1";
 
 /*
-Particle Box, applies gravity to particles in either a random direction or in a rocking motion
+Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
@@ -8775,8 +8722,6 @@ uint16_t mode_particlebox(void)
   if (!SEGENV.allocateData(dataSize))
     return mode_static();                                  // allocation failed; //allocation failed
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
-
-  
 
   uint32_t i = 0;
   uint32_t j = 0;
@@ -8816,8 +8761,6 @@ uint16_t mode_particlebox(void)
       if(ygravity > 0)
         ygravity = -ygravity;
     }
-    
-
 
     // scale the gravity force down
     xgravity /= 16;
@@ -8832,18 +8775,13 @@ uint16_t mode_particlebox(void)
       {
         particles[i].vx += xgravity;
         particles[i].vy += ygravity;
-        particles[i].ttl = 500; // particles never die
-
-        // apply a little gravity downwards to bias things in rocking mode
-        if (SEGMENT.check1 && SEGMENT.call % 2 == 0)
-            particles[i].vy--;          
+        particles[i].ttl = 500; // particles never die       
       }
     }
   }
 
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
   detectCollisions(particles, displayparticles, hardness);
-
 
   // now move the particles
   for (i = 0; i < displayparticles; i++)
@@ -8869,7 +8807,7 @@ static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Part
 /*
 perlin noise 'gravity' mapping as in particles on noise hills viewed from above
 calculates slope gradient at the particle positions
-restults in a fuzzy perlin noise disply
+restults in a fuzzy perlin noise display
 */
 
 uint16_t mode_particleperlin(void)
@@ -8914,7 +8852,6 @@ uint16_t mode_particleperlin(void)
   uint32_t displayparticles = map(SEGMENT.intensity,0,255,10,numParticles);
 
   // apply 'gravity' from a 2D perlin noise map
-
   SEGMENT.aux0 += 1+(SEGMENT.speed >> 5); // noise z-position
 
   // update position in noise
@@ -8930,9 +8867,9 @@ uint16_t mode_particleperlin(void)
     int32_t xnoise = particles[i].x / (1 + (SEGMENT.custom3>>1)); //position in perlin noise, scaled by slider
     int32_t ynoise = particles[i].y / (1 + (SEGMENT.custom3>>1));
 
-    int16_t baseheight = inoise8(xnoise, ynoise, SEGMENT.aux0);              // noise value at particle position
-    particles[i].hue = baseheight;                                                            // color particles to perlin noise value
-    if (SEGMENT.call % 6 == 0)                                                                // do not apply the force every frame, is too chaotic
+    int16_t baseheight = inoise8(xnoise, ynoise, SEGMENT.aux0);   // noise value at particle position
+    particles[i].hue = baseheight;                                // color particles to perlin noise value
+    if (SEGMENT.call % 6 == 0)                                    // do not apply the force every frame, is too chaotic
     {
       int16_t xslope = baseheight - (int16_t)inoise8(xnoise + 10, ynoise, SEGMENT.aux0);
       int16_t yslope = baseheight - (int16_t)inoise8(xnoise, ynoise + 10, SEGMENT.aux0);
@@ -8968,8 +8905,7 @@ static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Nois
 
 
 /*
-* Particle smashing down like meteorites and exploding as they hit the ground, like inverted fireworks
-* has many parameters to play with
+* Particle smashing down like meteorites and exploding as they hit the ground, has many parameters to play with
 * by DedeHai (Damian Schneider)
 */
 
@@ -9027,30 +8963,29 @@ uint16_t mode_particleimpact(void)
 
   // update particles, create particles
 
-  // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
   uint32_t emitparticles; // number of particles to emit for each rocket's state
   i = 0;
   for (j = 0; j < numMeteors; j++)
   {
-    // determine rocket state by its speed:
+    // determine meteor state by its speed:
     if (meteors[j].source.vy < 0) // moving down, emit sparks
     {
       emitparticles = 2;
     }
-    else if (meteors[j].source.vy > 0) // moving up means standby
+    else if (meteors[j].source.vy > 0) // moving up means meteor is on 'standby'
     {
       emitparticles = 0;
     }
     else // speed is zero, explode!
     {
-      meteors[j].source.vy = 125;                             // set source speed positive so it goes into timeout and launches again
+      meteors[j].source.vy = 125;                           // set source speed positive so it goes into timeout and launches again
       emitparticles = random8(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion
     }
 
     for (i; i < numParticles; i++)
     {
-      if (particles[i].ttl == 0)
-      { // particle is dead
+      if (particles[i].ttl == 0) // particle is dead
+      {
         if (emitparticles > 0)
         {
           Emitter_Fountain_emit(&meteors[j], &particles[i]);
@@ -9062,10 +8997,10 @@ uint16_t mode_particleimpact(void)
     }
   }
 
-  uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
-  // add collision if option is set
-  if(SEGMENT.check3)
-  {    
+  uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = fully hard, no energy is lost in collision
+
+  if (SEGMENT.check3) // use collisions if option is set
+  {     
     detectCollisions(particles, numParticles, hardness);
   }
    // update particles
@@ -9077,21 +9012,21 @@ uint16_t mode_particleimpact(void)
     }
   }
   
-      // update the meteors, set the speed state
+  // update the meteors, set the speed state
   for (i = 0; i < numMeteors; i++)
   {
     if (meteors[i].source.ttl)
     {
       Particle_Gravity_update(&meteors[i].source, SEGMENT.check1, SEGMENT.check2, true, 255); // move the meteor, age the meteor (ttl--)
       if (meteors[i].source.vy > 0)
-        meteors[i].source.y=5; //hack to keep the meteors within frame, as ttl will be set to zero by gravity update if too far out of frame
+        meteors[i].source.y=5; //'hack' to keep the meteors within frame, as ttl will be set to zero by gravity update if too far out of frame
             // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
             if ((meteors[i].source.y < PS_P_RADIUS) && (meteors[i].source.vy < 0)) // reached the bottom pixel on its way down
         {
-          meteors[i].source.vy = 0; // set speed zero so it will explode
+          meteors[i].source.vy = 0;                                    // set speed zero so it will explode
           meteors[i].source.vx = 0;
-          meteors[i].source.y = 5;          // offset from ground so explosion happens not out of frame
-          meteors[i].source.collide = true; // explosion particles will collide if checked
+          meteors[i].source.y = 5;                                     // offset from ground so explosion happens not out of frame
+          meteors[i].source.collide = true;                            // explosion particles will collide if checked
           meteors[i].maxLife = 200;
           meteors[i].minLife = 50;
           meteors[i].source.ttl = random8((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
@@ -9100,9 +9035,9 @@ uint16_t mode_particleimpact(void)
           meteors[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
         }
     }
-    else if (meteors[i].source.vy > 0) // rocket is exploded and time is up (ttl==0 and positive speed), relaunch it
+    else if (meteors[i].source.vy > 0) // meteor is exploded and time is up (ttl==0 and positive speed), relaunch it
     {
-      // reinitialize rocket
+      // reinitialize meteor
       meteors[i].source.y = PS_MAX_Y + (PS_P_RADIUS<<2); // start 4 pixels above the top
       meteors[i].source.x = random16(PS_MAX_X);
       meteors[i].source.vy = -random(30) - 30; //meteor downward speed
@@ -9126,8 +9061,8 @@ uint16_t mode_particleimpact(void)
 static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "Particle Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Wrap X,Bounce X,Collisions;;!;012;pal=35,sx=32,ix=85,c1=100,c2=100,c3=8,o1=0,o2=1,o3=1";
 
 /*
-Particle Attractor, currently just a demo function for the particle attractor
-Attractor sits in the matrix center, a spray bounces around and seeds particles.
+Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
+uses inverse square law like in planetary motion
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
@@ -9154,14 +9089,13 @@ uint16_t mode_particleattractor(void)
   PSpointsource *spray;
   uint8_t *counters; //counters for the applied force
 
-
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * (numParticles + 1);
   dataSize  += sizeof(uint8_t) *numParticles;
   dataSize += sizeof(PSpointsource);
 
   if (!SEGENV.allocateData(dataSize))
-    return mode_static();                                  // allocation failed; //allocation failed
+    return mode_static(); // allocation failed
   // divide and cast the data array into correct pointers
   particles = reinterpret_cast<PSparticle *>(SEGENV.data);
   attractor = reinterpret_cast<PSparticle *>(particles + numParticles + 1);
@@ -9224,8 +9158,7 @@ uint16_t mode_particleattractor(void)
   {
 
     if (particles[i].ttl == 0 && emit--) // find a dead particle
-    {
-      //Emitter_Fountain_emit(spray, &particles[i]); //emit one if available
+    {      
       if(SEGMENT.call % 2 == 0) //alternate direction of emit
         Emitter_Angle_emit(spray, &particles[i], SEGMENT.aux0, SEGMENT.custom1 >> 4);
       else
@@ -9253,8 +9186,6 @@ uint16_t mode_particleattractor(void)
   else
     SEGMENT.fill(BLACK); // clear the matrix
 
-  
-
   //ParticleSys_render(&attract, 1, 30, false, false); // render attractor
   // render the particles
   ParticleSys_render(particles, displayparticles, false, false);
@@ -9263,8 +9194,11 @@ uint16_t mode_particleattractor(void)
 }
 static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,Emit Speed,Collision Strength,Friction,Bounce,Trails,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0,o2=0,o3=0";
 
-
-
+/*
+Particle Spray, just a simple spray animation with many parameters
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
 
 uint16_t mode_particlespray(void)
 {
@@ -9290,9 +9224,6 @@ uint16_t mode_particlespray(void)
   dataSize += sizeof(PSpointsource) * (numSprays);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
-
-  // DEBUG_PRINT(F("particle datasize = "));
-  // DEBUG_PRINTLN(dataSize);
 
   spray = reinterpret_cast<PSpointsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
@@ -9321,7 +9252,6 @@ uint16_t mode_particlespray(void)
       spray[i].vy = 0;               // emitting speed
       spray[i].var = 10;
     }
-    // SEGMENT.palette = 35; //fire palette
   }
 
   // change source emitting color from time to time
