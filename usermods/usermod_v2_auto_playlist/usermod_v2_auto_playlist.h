@@ -36,6 +36,8 @@ class AutoPlaylistUsermod : public Usermod {
     int ideal_change_max = 5000; // ideally change patterns no more than this number of millis
     int ideal_change_min = 2000; // ideally change patterns no less than this number of millis
 
+    std::vector<int> autoChangeIds;
+  
     static const char _enabled[];
     static const char _ambientPlaylist[];
     static const char _musicPlaylist[];
@@ -94,10 +96,23 @@ class AutoPlaylistUsermod : public Usermod {
         }
         if (change_threshold < 0) change_threshold = 0;
 
-        int newpreset = random(2,30);
-        while (currentPreset == newpreset || newpreset == 8 || newpreset == 16 || newpreset == 27) { // 8 is a playlist for me so skip it and the other two just suck :D
-          newpreset = random(2,30); // make sure we get a different preset
+        if(autoChangeIds.size() == 0) {
+          USER_PRINTF("Loading presets from playlist:%u\n", currentPlaylist);
+          JsonObject playtlistOjb = doc.to<JsonObject>();
+          serializePlaylist(playtlistOjb);
+          JsonArray playlistArray = playtlistOjb["playlist"]["ps"];
+          for(JsonVariant v : playlistArray) {
+            USER_PRINTF("Adding %u to autoChangeIds\n", v.as<int>());
+            autoChangeIds.push_back(v.as<int>());
+          }
         }
+
+        uint8_t newpreset = 0;
+        do {
+          newpreset = autoChangeIds.at(random(0, (autoChangeIds.size() - 1))); 
+        }
+        while (currentPreset == newpreset);
+
         applyPreset(newpreset);
         USER_PRINTF("*** CHANGE! Squared distance = %d - change interval was %d ms - next change min is %d\n",squared_distance, change_interval, change_threshold);
         lastchange = millis();
@@ -105,7 +120,7 @@ class AutoPlaylistUsermod : public Usermod {
     }
     uint8_t getFFTFromRange(um_data_t *data, uint8_t from, uint8_t to) {
       uint8_t *fftResult = (uint8_t*) data->u_data[2];
-      uint8_t result = 0;
+      uint16_t result = 0;
       for (int i = from; i <= to; i++) {
         result += fftResult[i] * fftResult[i];
       }
