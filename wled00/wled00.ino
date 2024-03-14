@@ -12,10 +12,12 @@
  */
 #include "wled.h"
 
+void setup() __attribute__((used));
 void setup() {
   WLED::instance().setup();
 }
 
+void loop() __attribute__((used));
 void loop() {
   WLED::instance().loop();
 }
