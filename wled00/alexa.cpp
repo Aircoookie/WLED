@@ -10,9 +10,6 @@
 #include "src/dependencies/espalexa/EspalexaDevice.h"
 #include <string>
 
-#define DEBUGPRINT(x) Serial.print(x)
-#define DEBUGPRINTLN(x) Serial.println(x)
-
 #ifndef WLED_DISABLE_ALEXA
 void onAlexaChange(EspalexaDevice* dev);
 
@@ -30,6 +27,38 @@ void turnOffAllAlexaDevices() {
   for (byte i = 0; i < espalexa.getDeviceCount(); i++) {
     espalexa.getDevice(i)->setValue(0);
   }
+}
+
+template<typename T>
+void handleCT(EspalexaDevice* dev, T *stripOrSegment, bool hasCCT, bool hasWhite) {
+  uint16_t ct = dev->getCt();
+  if (!ct) return;
+
+  byte rgbw[4];
+  uint16_t k = 1000000 / ct; //mireds to kelvin
+
+  if (hasCCT) {
+    stripOrSegment->setCCT(k);
+    if (hasWhite) {
+      rgbw[0] = 0; rgbw[1] = 0; rgbw[2] = 0; rgbw[3] = 255;
+    } else {
+      rgbw[0] = 255; rgbw[1] = 255; rgbw[2] = 255; rgbw[3] = 0;
+      dev->setValue(255);
+    }
+  } else if (hasWhite) {
+    switch (ct) { //these values empirically look good on RGBW
+      case 199: rgbw[0]=255; rgbw[1]=255; rgbw[2]=255; rgbw[3]=255; break;
+      case 234: rgbw[0]=127; rgbw[1]=127; rgbw[2]=127; rgbw[3]=255; break;
+      case 284: rgbw[0]=  0; rgbw[1]=  0; rgbw[2]=  0; rgbw[3]=255; break;
+      case 350: rgbw[0]=130; rgbw[1]= 90; rgbw[2]=  0; rgbw[3]=255; break;
+      case 383: rgbw[0]=255; rgbw[1]=153; rgbw[2]=  0; rgbw[3]=255; break;
+      default : colorKtoRGB(k, rgbw);
+    }
+  } else {
+    colorKtoRGB(k, rgbw);
+  }
+
+  stripOrSegment->setColor(0, RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
 }
 
 void onStripChange(EspalexaDevice* dev) {
@@ -55,43 +84,14 @@ void onStripChange(EspalexaDevice* dev) {
     case EspalexaDeviceProperty::bri:
       bri = dev->getValue();
     break;
+    case EspalexaDeviceProperty::ct: {
+      bool hasManualWhite = strip.getActiveSegsLightCapabilities(true) & SEG_CAPABILITY_W;
+      handleCT(dev, &strip, strip.hasCCTBus(), hasManualWhite);
+      break;
+    }
     default:
-    // refactor this into a new function
-      if (dev->getColorMode() == EspalexaColorMode::ct) //shade of white
-      {
-        byte rgbw[4];
-        uint16_t ct = dev->getCt();
-        if (!ct) return;
-        uint16_t k = 1000000 / ct; //mireds to kelvin
-
-        if (strip.hasCCTBus()) {
-          bool hasManualWhite = strip.getActiveSegsLightCapabilities(true) & SEG_CAPABILITY_W;
-
-          strip.setCCT(k);
-          if (hasManualWhite) {
-            rgbw[0] = 0; rgbw[1] = 0; rgbw[2] = 0; rgbw[3] = 255;
-          } else {
-            rgbw[0] = 255; rgbw[1] = 255; rgbw[2] = 255; rgbw[3] = 0;
-            dev->setValue(255);
-          }
-        } else if (strip.hasWhiteChannel()) {
-          switch (ct) { //these values empirically look good on RGBW
-            case 199: rgbw[0]=255; rgbw[1]=255; rgbw[2]=255; rgbw[3]=255; break;
-            case 234: rgbw[0]=127; rgbw[1]=127; rgbw[2]=127; rgbw[3]=255; break;
-            case 284: rgbw[0]=  0; rgbw[1]=  0; rgbw[2]=  0; rgbw[3]=255; break;
-            case 350: rgbw[0]=130; rgbw[1]= 90; rgbw[2]=  0; rgbw[3]=255; break;
-            case 383: rgbw[0]=255; rgbw[1]=153; rgbw[2]=  0; rgbw[3]=255; break;
-            default : colorKtoRGB(k, rgbw);
-          }
-        } else {
-          colorKtoRGB(k, rgbw);
-        }
-        strip.setColor(0, RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
-      } else {
-        uint32_t color = dev->getRGB();
-        strip.setColor(0, color);
-      }
-    break;
+      strip.setColor(0, dev->getRGB());
+      break;
   }
   
   stateUpdated(CALL_MODE_ALEXA);
@@ -111,9 +111,16 @@ void onSegmentChange(EspalexaDevice* dev, Segment *segment) {
     case EspalexaDeviceProperty::bri:
       segment->setOpacity(dev->getValue());
     break;
+    case EspalexaDeviceProperty::ct: {
+      bool segmentHasCCT = segment->getLightCapabilities() & SEG_CAPABILITY_CCT;
+      bool segmentHasWhite = segment->getLightCapabilities() & SEG_CAPABILITY_W;
+
+      handleCT(dev, segment, segmentHasCCT, segmentHasWhite);
+      break;
+    }
     default:
-      uint32_t color = dev->getRGB();
-      segment->setColor(0, color);
+      Serial.println("Color changed");
+      segment->setColor(0, dev->getRGB());
       break;
   }
   
@@ -176,7 +183,7 @@ void alexaInit()
 
   espalexa.removeAllDevices();
 
-  DEBUGPRINTLN("alexaInit");
+  Serial.println("alexaInit");
   
   initAlexaForStrip();
   initAlexaForSegments();
