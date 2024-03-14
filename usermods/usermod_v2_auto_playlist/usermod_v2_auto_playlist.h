@@ -134,6 +134,8 @@ class AutoPlaylistUsermod : public Usermod {
       
       if(!enabled) return;
 
+      if(bri == 0) return;
+
       um_data_t *um_data;
       if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
         // No Audio Reactive
@@ -153,7 +155,7 @@ class AutoPlaylistUsermod : public Usermod {
           String name = "";
           getPresetName(ambientPlaylist, name);
           USER_PRINTF("AutoPlaylist: Silence - apply %s\n", name.c_str());
-          if(bri > 0) applyPreset(ambientPlaylist, CALL_MODE_NOTIFICATION);
+          applyPreset(ambientPlaylist, CALL_MODE_NOTIFICATION);
         }
       }
       else {
@@ -162,7 +164,7 @@ class AutoPlaylistUsermod : public Usermod {
           String name = "";
           getPresetName(musicPlaylist, name);
           USER_PRINTF("AutoPlaylist: End of silence - apply %s\n", name.c_str());
-          if(bri > 0) applyPreset(musicPlaylist, CALL_MODE_NOTIFICATION);
+          applyPreset(musicPlaylist, CALL_MODE_NOTIFICATION);
         }
         if(autoChange) change(um_data);
       }
