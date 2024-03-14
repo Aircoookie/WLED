@@ -46,10 +46,13 @@ class Distance_Staircase : public Usermod {
 
     struct State {
       private:
+        static const long on_time_ms          = 20000; // The time for the light to stay on
+        static const long invite_time_ms      = 5000;  // The time for the light to stay on without movement
+        long lastChange = millis();
+
         AnimationState _animation = None;
       public:
       WalkDirection direction = Up;
-      long lastChange = millis();
 
       State() {}
       State(AnimationState ani, WalkDirection dir): _animation{ani}, direction{dir} {
@@ -65,6 +68,13 @@ class Distance_Staircase : public Usermod {
         lastChange = millis();
       }
 
+      bool inviteTimeOver() {
+        return (millis() - lastChange) > invite_time_ms;
+      }
+
+      bool onTimeOver() {
+        return (millis() - lastChange) > on_time_ms;
+      }
     };
 
     template<int SIZE = 6>
@@ -122,10 +132,6 @@ class Distance_Staircase : public Usermod {
     int8_t topPIRPin       = -1;    // disabled
     int8_t bottomPIRPin    = -1;    // disabled
 
-    unsigned long on_time_ms          = 20000; // The time for the light to stay on
-    unsigned long invite_time_top_ms      = 5000; // The time for the light to stay on without distance
-    unsigned long invite_time_bottom_ms      = 3000; // The time for the light to stay on without distance
-
     int endOfStairsDistance = 145;
 
     /* runtime variables */
@@ -146,7 +152,7 @@ class Distance_Staircase : public Usermod {
 
     bool topSensorState    = false;
     bool bottomSensorState = false;
-    SmoothMeasure<6> distanceState;
+    SmoothMeasure<3> distanceState;
     WalkDirection lastActiveSensor = Down;
 
 
@@ -337,7 +343,6 @@ class Distance_Staircase : public Usermod {
     void animateNoneState() {
       if (topSensorState || bottomSensorState) {
         state = State(Enter, topSensorState? Down : Up);
-        distanceState.reset();
         if (state.direction == Up) {
           onIndex = maxSegmentId - 1;   
           offIndex = maxSegmentId;
@@ -349,9 +354,8 @@ class Distance_Staircase : public Usermod {
     }
 
     void animateEnterState() {
-      int after = state.direction == Up? invite_time_bottom_ms : invite_time_top_ms;
-      if ((millis() - state.lastChange) > after && !bottomSensorState && !topSensorState) {
-        state.set(Reset); 
+      if (state.inviteTimeOver() && !bottomSensorState && !topSensorState) {
+        state.set(Reset);
       }
       if (0 < distanceState.value && distanceState.value < endOfStairsDistance) {
         state.set(FollowDistance);
@@ -364,7 +368,7 @@ class Distance_Staircase : public Usermod {
       }
       
       if ((lastActiveSensor == state.direction && distanceState.value > endOfStairsDistance) ||     // Person went through
-          ((millis() - state.lastChange) > on_time_ms && !bottomSensorState && !topSensorState))    // Time is up
+          (state.onTimeOver() && !bottomSensorState && !topSensorState))
       {
           state.set(Finish);
       }
@@ -418,14 +422,15 @@ class Distance_Staircase : public Usermod {
         break;
       case CoolDown:
         if (!coolDownTimer.isEarly()) {
+          publishMqtt(WentUp, false);
+          publishMqtt(WentDown, false);
           state.set(Reset);
         }
         break;
       case Reset:
+        distanceState.reset();
         onIndex  = 0;
         offIndex = 0;
-        publishMqtt(WentUp, false);
-        publishMqtt(WentDown, false);
         state.set(None);
       }
 
@@ -539,7 +544,6 @@ class Distance_Staircase : public Usermod {
         staircase = root.createNestedObject(FPSTR(_name));
       }
       staircase[FPSTR(_enabled)]               = enabled;
-      staircase[FPSTR(_onTime)]                = on_time_ms / 1000;
       staircase[FPSTR(_sonarTriggerPin)]       = triggerPin;
       staircase[FPSTR(_sonarEchoPin)]          = echoPin;
       staircase[FPSTR(_topPIRPin)]             = topPIRPin;
@@ -569,9 +573,6 @@ class Distance_Staircase : public Usermod {
       enabled = top[FPSTR(_enabled)] | enabled;
 
       HAautodiscovery = top[FPSTR(_HAautodiscovery)] | HAautodiscovery;
-
-      on_time_ms = top[FPSTR(_onTime)] | on_time_ms/1000;
-      on_time_ms = min(900,max(10,(int)on_time_ms)) * 1000; // min 10s, max 15min
 
       endOfStairsDistance = top[FPSTR(_endOfStairsDistance)] | endOfStairsDistance;
       
