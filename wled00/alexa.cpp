@@ -11,11 +11,10 @@
 #include <string>
 
 #ifndef WLED_DISABLE_ALEXA
-void onAlexaChange(EspalexaDevice* dev);
 
-void stripTurnOnOff(bool turnOn) {
+void stripTurnOnOff(bool turnOn, bool revertLastKnownBrightness = true) {
   if (turnOn && bri == 0) {
-    bri = briLast;
+    bri = revertLastKnownBrightness ? briLast : 255;
   }
   if(!turnOn && bri != 0) {
     briLast = bri;
@@ -103,7 +102,7 @@ void onSegmentChange(EspalexaDevice* dev, Segment *segment) {
   switch(m) {
     case EspalexaDeviceProperty::on:
       segment->setOption(SEG_OPTION_ON, true);
-      stripTurnOnOff(true);
+      stripTurnOnOff(true, false);
       break;
     case EspalexaDeviceProperty::off:
       segment->setOption(SEG_OPTION_ON, false);
@@ -119,7 +118,6 @@ void onSegmentChange(EspalexaDevice* dev, Segment *segment) {
       break;
     }
     default:
-      Serial.println("Color changed");
       segment->setColor(0, dev->getRGB());
       break;
   }
@@ -182,8 +180,6 @@ void alexaInit()
   if (!alexaEnabled || !WLED_CONNECTED) return;
 
   espalexa.removeAllDevices();
-
-  Serial.println("alexaInit");
   
   initAlexaForStrip();
   initAlexaForSegments();
