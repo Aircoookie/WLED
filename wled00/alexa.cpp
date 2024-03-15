@@ -8,7 +8,6 @@
  * https://github.com/probonopd/ESP8266HueEmulator
  */
 #include "src/dependencies/espalexa/EspalexaDevice.h"
-#include <string>
 
 #ifndef WLED_DISABLE_ALEXA
 
@@ -166,7 +165,7 @@ void initAlexaForStrip() {
 void initAlexaForSegments() {
   if(strip.getSegmentsNum() < 2) return;
   for(uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
-    std::string name = std::string("Segment ") + std::to_string(i);
+    String name = "Segment " + String(i);
 
     espalexa.addDevice(new EspalexaDevice(name.c_str(), [i](EspalexaDevice* dev) { 
       Segment &segment = strip.getSegment(i);
