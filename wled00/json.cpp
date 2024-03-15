@@ -1152,10 +1152,10 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   }
 #endif
 
-  char buffer[2048];  // shoud be enough for 256 LEDs [RRGGBB] + all other text (9+25)
-  strcpy_P(buffer, PSTR("{\"leds\":["));
-  obuf = buffer;      // assign buffer for oappnd() functions
-  olen = 9;
+  DynamicBuffer buffer(9 + (9*MAX_LIVE_LEDS) + 7 + 5 + 6 + 5 + 6 + 5 + 2);  
+  char* buf = buffer.data();      // assign buffer for oappnd() functions
+  strncpy_P(buffer.data(), PSTR("{\"leds\":["), buffer.size());
+  buf += 9; // sizeof(PSTR()) from last line
 
   for (size_t i = 0; i < used; i += n)
   {
@@ -1170,29 +1170,27 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
     r = scale8(qadd8(w, r), strip.getBrightness()); //R, add white channel to RGB channels as a simple RGBW -> RGB map
     g = scale8(qadd8(w, g), strip.getBrightness()); //G
     b = scale8(qadd8(w, b), strip.getBrightness()); //B
-    olen += sprintf_P(obuf + olen, PSTR("\"%06X\","), RGBW32(r,g,b,0));
+    buf += sprintf_P(buf, PSTR("\"%06X\","), RGBW32(r,g,b,0));
   }
-  olen -= 1;
-  oappend((const char*)F("],\"n\":"));
-  oappendi(n);
+  buf--;  // remove last comma
+  buf += sprintf_P(buf, PSTR("],\"n\":%d"), n);
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
-    oappend((const char*)F(",\"w\":"));
-    oappendi(Segment::maxWidth/n);
-    oappend((const char*)F(",\"h\":"));
-    oappendi(Segment::maxHeight/n);
+    buf += sprintf_P(buf, PSTR(",\"w\":%d"), Segment::maxWidth/n);
+    buf += sprintf_P(buf, PSTR(",\"h\":%d"), Segment::maxHeight/n);
   }
 #endif
-  oappend("}");
+  (*buf++) = '}';
+  (*buf++) = 0;
+  
   if (request) {
-    request->send(200, FPSTR(CONTENT_TYPE_JSON), buffer);
+    request->send(200, FPSTR(CONTENT_TYPE_JSON), toString(std::move(buffer)));
   }
   #ifdef WLED_ENABLE_WEBSOCKETS
   else {
-    wsc->text(obuf, olen);
+    wsc->text(toString(std::move(buffer)));
   }
-  #endif
-  obuf = nullptr;
+  #endif  
   return true;
 }
 #endif
