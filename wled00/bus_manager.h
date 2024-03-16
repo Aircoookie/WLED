@@ -141,6 +141,8 @@ class Bus {
     virtual uint16_t getLEDCurrent()             { return 0; }
     virtual uint16_t getUsedCurrent()            { return 0; }
     virtual uint16_t getMaxCurrent()             { return 0; }
+    virtual uint8_t  getNumberOfChannels()       { return hasWhite(_type) + 3*hasRGB(_type) + hasCCT(_type); }
+    static inline uint8_t getNumberOfChannels(uint8_t type) { return hasWhite(type) + 3*hasRGB(type) + hasCCT(type); }
     inline  void     setReversed(bool reversed)  { _reversed = reversed; }
     inline  uint16_t getStart()                  { return _start; }
     inline  void     setStart(uint16_t start)    { _start = start; }
@@ -157,9 +159,10 @@ class Bus {
     }
     virtual bool hasWhite(void) { return Bus::hasWhite(_type); }
     static  bool hasWhite(uint8_t type) {
-      if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_SK6812_RGBW || type == TYPE_TM1814 || type == TYPE_UCS8904 || type == TYPE_FW1906) return true; // digital types with white channel
+      if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) ||
+          type == TYPE_SK6812_RGBW || type == TYPE_TM1814 || type == TYPE_UCS8904 || type == TYPE_FW1906) return true; // digital types with white channel
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true; // analog types with white channel
-      if (type == TYPE_NET_DDP_RGBW) return true; // network types with white channel
+      if (type == TYPE_NET_DDP_RGBW || type == TYPE_NET_ARTNET_RGBW) return true; // network types with white channel
       return false;
     }
     virtual bool hasCCT(void) { return Bus::hasCCT(_type); }
@@ -168,7 +171,8 @@ class Bus {
           type == TYPE_ANALOG_2CH    || type == TYPE_ANALOG_5CH ||  type == TYPE_FW1906) return true;
       return false;
     }
-    static void setCCT(uint16_t cct) {
+    static int16_t getCCT() { return _cct; }
+    static void setCCT(int16_t cct) {
       _cct = cct;
     }
     static void setCCTBlend(uint8_t b) {
@@ -196,8 +200,7 @@ class Bus {
       #else
       //0 - linear (CCT 127 = 50% warm, 50% cold), 127 - additive CCT blending (CCT 127 = 100% warm, 100% cold)
       if (cct       < _cctBlend) ww = 255;
-      else ww = ((255-cct) * 255) / (255 - _cctBlend);
-
+      else                       ww = ((255-cct) * 255) / (255 - _cctBlend);
       if ((255-cct) < _cctBlend) cw = 255;
       else                       cw = (cct * 255) / (255 - _cctBlend);
 
@@ -220,8 +223,17 @@ class Bus {
     bool     _needsRefresh;
     uint8_t  _autoWhiteMode;
     uint8_t  *_data;
+    // global Auto White Calculation override
     static uint8_t _gAWM;
+    // _cct has the following menaings (see calculateCCT() & BusManager::setSegmentCCT()):
+    //    -1 means to extract approximate CCT value in K from RGB (in calcualteCCT())
+    //    [0,255] is the exact CCT value where 0 means warm and 255 cold
+    //    [1900,10060] only for color correction expressed in K (colorBalanceFromKelvin())
     static int16_t _cct;
+    // _cctBlend determines WW/CW blending:
+    //    0 - linear (CCT 127 => 50% warm, 50% cold)
+    //   63 - semi additive/nonlinear (CCT 127 => 66% warm, 66% cold)
+    //  127 - additive CCT blending (CCT 127 => 100% warm, 100% cold)
     static uint8_t _cctBlend;
 
     uint32_t autoWhiteCalc(uint32_t c);
@@ -363,9 +375,12 @@ class BusManager {
     static void setStatusPixel(uint32_t c);
     static void setPixelColor(uint16_t pix, uint32_t c);
     static void setBrightness(uint8_t b);
+    // for setSegmentCCT(), cct can only be in [-1,255] range; allowWBCorrection will convert it to K
+    // WARNING: setSegmentCCT() is a misleading name!!! much better would be setGlobalCCT() or just setCCT()
     static void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
     static void setMilliampsMax(uint16_t max) { _milliAmpsMax = max;}
     static uint32_t getPixelColor(uint16_t pix);
+    static inline int16_t getSegmentCCT() { return Bus::getCCT(); }
 
     static Bus* getBus(uint8_t busNr);
 
