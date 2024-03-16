@@ -375,6 +375,7 @@ void updateFSInfo() {
   #endif
 }
 
+
 #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
 // caching presets in PSRAM may prevent occasional flashes seen when HomeAssitant polls WLED
 // original idea by @akaricchi (https://github.com/Akaricchi)
@@ -420,8 +421,7 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   DEBUG_PRINT(F("WS FileRead: ")); DEBUG_PRINTLN(path);
   if(path.endsWith("/")) path += "index.htm";
   if(path.indexOf(F("sec")) > -1) return false;
-  String contentType = getFileContentType(path);
-  if(request->hasArg(F("download"))) contentType = F("application/octet-stream");
+  String contentType = request->hasArg(F("download")) ? F("application/octet-stream") : contentTypeFor(path);
   /*String pathWithGz = path + ".gz";
   if(WLED_FS.exists(pathWithGz)){
     request->send(WLED_FS, pathWithGz, contentType);

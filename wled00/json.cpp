@@ -1065,7 +1065,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
   #endif
   else if (url.indexOf("pal") > 0) {
-    request->send_P(200, "application/json", JSON_palette_names); // contentType defined in AsyncJson-v6.h
+    request->send_P(200, FPSTR(CONTENT_TYPE_JSON), JSON_palette_names);
     return;
   }
   else if (url.indexOf(F("cfg")) > 0 && handleFileRead(request, F("/cfg.json"))) {
@@ -1185,7 +1185,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 #endif
   oappend("}");
   if (request) {
-    request->send(200, "application/json", buffer); // contentType defined in AsyncJson-v6.h
+    request->send(200, FPSTR(CONTENT_TYPE_JSON), buffer);
   }
   #ifdef WLED_ENABLE_WEBSOCKETS
   else {
