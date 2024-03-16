@@ -705,7 +705,6 @@ WLED_GLOBAL byte optionType;
 
 WLED_GLOBAL bool doSerializeConfig _INIT(false);        // flag to initiate saving of config
 WLED_GLOBAL bool doReboot          _INIT(false);        // flag to initiate reboot from async handlers
-WLED_GLOBAL bool doPublishMqtt     _INIT(false);
 
 // status led
 #if defined(STATUSLED)
