@@ -11,22 +11,6 @@
 
 #ifndef WLED_DISABLE_ALEXA
 
-void stripTurnOnOff(bool turnOn, bool revertLastKnownBrightness = true) {
-  if (turnOn && bri == 0) {
-    bri = revertLastKnownBrightness ? briLast : 255;
-  }
-  if(!turnOn && bri != 0) {
-    briLast = bri;
-    bri = 0;
-  }
-}
-
-void turnOffAllAlexaDevices() {
-  for (byte i = 0; i < espalexa.getDeviceCount(); i++) {
-    espalexa.getDevice(i)->setValue(0);
-  }
-}
-
 uint16_t miredToKelvin(uint16_t mired) {
   return 1000000 / mired;
 }
@@ -41,6 +25,26 @@ void alexaColorCtToRGBW(uint16_t mired, byte *rgbw) {
     case 350: rgbw[0]=130; rgbw[1]= 90; rgbw[2]=  0; rgbw[3]=255; break;
     case 383: rgbw[0]=255; rgbw[1]=153; rgbw[2]=  0; rgbw[3]=255; break;
     default : colorKtoRGB(k, rgbw);
+  }
+}
+
+void stripTurnOnOff(bool turnOn) {
+  if (turnOn && bri == 0) {
+    bri = briLast;
+  }
+  if(!turnOn && bri != 0) {
+    briLast = bri;
+    bri = 0;
+  }
+}
+
+void stripToFullBrightness() {
+  bri = 255;
+}
+
+void turnOffAllAlexaDevices() {
+  for (byte i = 0; i < espalexa.getDeviceCount(); i++) {
+    espalexa.getDevice(i)->setValue(0);
   }
 }
 
@@ -111,12 +115,13 @@ void onSegmentChange(EspalexaDevice* dev, Segment *segment) {
   switch(m) {
     case EspalexaDeviceProperty::on:
       segment->setOption(SEG_OPTION_ON, true);
-      stripTurnOnOff(true, false);
+      stripToFullBrightness();
       break;
     case EspalexaDeviceProperty::off:
       segment->setOption(SEG_OPTION_ON, false);
       break;
     case EspalexaDeviceProperty::bri:
+      stripToFullBrightness();
       segment->setOpacity(dev->getValue());
     break;
     case EspalexaDeviceProperty::ct: {
