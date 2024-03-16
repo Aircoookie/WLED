@@ -67,7 +67,7 @@ void handleCT(EspalexaDevice* dev, T *stripOrSegment, bool hasCCT, bool hasWhite
   } else if (hasWhite) {
     alexaColorCtToRGBW(mired, rgbw);
   } else {
-    colorKtoRGB(k, rgbw);
+    colorKtoRGB(kelvin, rgbw);
   }
 
   stripOrSegment->setColor(0, RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
@@ -178,7 +178,8 @@ void initAlexaForStrip() {
 }
  
 void initAlexaForSegments() {
-  if(strip.getSegmentsNum() < 2) return;
+  if(!alexaSegmentEnabled || strip.getSegmentsNum() < 2) return;
+
   for(uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     String name = "Segment " + String(i);
 
