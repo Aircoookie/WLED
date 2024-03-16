@@ -434,7 +434,6 @@ void handleSerial();
 void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
-String getFileContentType(String &filename);
 void createEditHandler(bool enable);
 void initServer();
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);

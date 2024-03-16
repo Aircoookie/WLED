@@ -18,36 +18,11 @@ static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security setti
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
 static const char s_notimplemented[] PROGMEM = "Not implemented";
 static const char s_accessdenied[]   PROGMEM = "Access Denied";
-static const char s_javascript[]     PROGMEM = "application/javascript";
-static const char s_json[]                   = "application/json"; // AsyncJson-v6.h
-static const char s_html[]           PROGMEM = "text/html";
-static const char s_plain[]                  = "text/plain"; // Espalexa.h
-static const char s_css[]            PROGMEM = "text/css";
-static const char s_png[]            PROGMEM = "image/png";
-static const char s_gif[]            PROGMEM = "image/gif";
-static const char s_jpg[]            PROGMEM = "image/jpeg";
-static const char s_ico[]            PROGMEM = "image/x-icon";
-//static const char s_xml[]            PROGMEM = "text/xml";
-//static const char s_pdf[]            PROGMEM = "application/x-pdf";
-//static const char s_zip[]            PROGMEM = "application/x-zip";
-//static const char s_gz[]             PROGMEM = "application/x-gzip";
-
-String getFileContentType(String &filename) {
-  if      (filename.endsWith(F(".htm")))  return FPSTR(s_html);
-  else if (filename.endsWith(F(".html"))) return FPSTR(s_html);
-  else if (filename.endsWith(F(".css")))  return FPSTR(s_css);
-  else if (filename.endsWith(F(".js")))   return FPSTR(s_javascript);
-  else if (filename.endsWith(F(".json"))) return       s_json;
-  else if (filename.endsWith(F(".png")))  return FPSTR(s_png);
-  else if (filename.endsWith(F(".gif")))  return FPSTR(s_gif);
-  else if (filename.endsWith(F(".jpg")))  return FPSTR(s_jpg);
-  else if (filename.endsWith(F(".ico")))  return FPSTR(s_ico);
-//  else if (filename.endsWith(F(".xml")))   return FPSTR(s_xml);
-//  else if (filename.endsWith(F(".pdf")))   return FPSTR(s_pdf);
-//  else if (filename.endsWith(F(".zip")))   return FPSTR(s_zip);
-//  else if (filename.endsWith(F(".gz")))    return FPSTR(s_gz);
-  return s_plain;
-}
+static const char* s_javascript = CONTENT_TYPE_JAVASCRIPT;
+static const char* s_json = CONTENT_TYPE_JSON;
+static const char* s_html = CONTENT_TYPE_HTML;
+static const char* s_plain = CONTENT_TYPE_PLAIN;
+static const char* s_css = CONTENT_TYPE_CSS;
 
 //Is this an IP?
 static bool isIp(String str) {
