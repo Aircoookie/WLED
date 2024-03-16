@@ -9328,7 +9328,7 @@ uint16_t mode_particleGEQ(void)
     return mode_static();
 
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  //const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 #ifdef ESP8266
   const uint32_t numParticles = 150; // maximum number of particles
@@ -9345,7 +9345,7 @@ uint16_t mode_particleGEQ(void)
 
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
-
+  uint32_t i;
   if (SEGMENT.call == 0) // initialization
   {
     for (i = 0; i < numParticles; i++)
@@ -9368,65 +9368,71 @@ uint16_t mode_particleGEQ(void)
   //Idea: emit 20 particles at full loudness, can use a shift for that, for example shift by 4 or 5
   //in order to also emit particles for not so loud bands, get a bunch of particles based on frame counter and current loudness? 
   //implement it simply first, then add complexity... need to check what looks good
-  uint32_t i = 0;
+  i = 0;
   uint32_t bin; //current bin
-  uint8_t binwidth = (cols * PS_P_RADIUS - 1)>>4; //emit poisition variation for one bin (+/-)
+  uint32_t binwidth = (cols * PS_P_RADIUS - 1)>>4; //emit poisition variation for one bin (+/-)
+  uint8_t emitparticles = 0;
 
   for (bin = 0; bin < 16; bin++)
   {
-    uint32_t xposition = map(fftResult[band], 0, 255, cols * PS_P_RADIUS - 1); //emit position according to frequency band
-    uint8_t emitspeed = fftResult[band] >> 2;                                  // emit speed according to loudness of band  TODO: SEGMENT.speed?
-    uint8_t emitparticles = 0;
-    //wie sollen die emitted werden? man könnte anzahl berechnen, dann einen emit loop machen 
-    if (fftResult[band] > 10)
+
+    uint32_t xposition = binwidth*bin + (binwidth>>1); // emit position according to frequency band
+    uint8_t emitspeed = fftResult[bin] / map(SEGMENT.speed,0,255,10,1); // emit speed according to loudness of band
+    emitparticles = 0;
+
+    uint8_t threshold = map(SEGMENT.intensity, 0, 255, 250, 2);
+
+    if (fftResult[bin] > threshold)
     {
-      emitparticles = fftResult[band]/10;
+      emitparticles = 1;// + (fftResult[bin]>>6);
     }
-    else if(fftResult[band] > 0)// band has low volue
+    else if(fftResult[bin] > 0)// band has low volue
     {
-      uint32_t restvolume = 12 - fftResult[band];
+      uint32_t restvolume = ((threshold - fftResult[bin])>>2) + 2;
       if (random8() % restvolume == 0)
       {
         emitparticles = 1;
       }
     }
-    while (i < numParticles && emitparticles) // emit particles if there are any left, low frequencies take priority
+
+    while (i < numParticles && emitparticles > 0) // emit particles if there are any left, low frequencies take priority
     {
       if (particles[i].ttl == 0) // find a dead particle
       {        
         //set particle properties
-        particles[i].ttl = emitspeed;                                 // set particle alive, particle lifespan is in number of frames
-        particles[i].x = xposition + random8(binwidth) - binwidth>>1; //position randomly, deviating half a bin width
+        particles[i].ttl = map(SEGMENT.intensity, 0,255, emitspeed>>1, emitspeed + random8(emitspeed)) ;  // set particle alive, particle lifespan is in number of frames
+        particles[i].x = xposition + random8(binwidth) - (binwidth>>1); //position randomly, deviating half a bin width
         particles[i].y = 0; //start at the bottom
-        particles[i].vx = rand(9)-4; //x-speed variation
+        particles[i].vx = random8(SEGMENT.custom1>>1)-(SEGMENT.custom1>>2) ; //x-speed variation
         particles[i].vy = emitspeed;
-        particles[i].hue = bin<<4 + random8(binwidth) - binwidth>>1;            // color from palette according to bin
-        //particles[i].sat = ((SEGMENT.custom3) << 3) + 7; // set saturation                
+        particles[i].hue = (bin<<4) + random8(17) - 8; // color from palette according to bin
+        //particles[i].sat = ((SEGMENT.custom3) << 3) + 7; // set saturation        
+        emitparticles--;
       }
-      emitparticles--;
-      i++;
+      i++;      
     }
   }
 
+   // Serial.println(" ");
 
-  uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
-  // detectCollisions(particles, numParticles, hardness);
+    uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
+    // detectCollisions(particles, numParticles, hardness);
 
-  // now move the particles
-  for (i = 0; i < numParticles; i++)
-  {   
-    //Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, min(hardness, (uint8_t)150)); // surface hardness max is 150
-    Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, min(hardness, (uint8_t)150)); // surface hardness max is 150
+    // now move the particles
+    for (i = 0; i < numParticles; i++)
+    {      
+      particles[i].vy -= (SEGMENT.custom3>>3); // apply stronger gravity
+      Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, hardness); 
+    }
+
+    SEGMENT.fill(BLACK); // clear the matrix
+
+    // render the particles
+    ParticleSys_render(particles, numParticles, SEGMENT.check1, false); // custom3 slider is saturation
+
+    return FRAMETIME;
   }
-
-  SEGMENT.fill(BLACK); // clear the matrix
-
-  // render the particles
-  ParticleSys_render(particles, numParticles, SEGMENT.check1, false); // custom3 slider is saturation, from 7 to 255, 7 is close enough to white (for snow for example)
-
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "Particle GEQ@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=0,c3=20,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "Particle GEQ@Speed,Intensity,Randomness,Collision hardness,Gravity,Wrap X,Side bounce,Ground bounce;;!;012;pal=54,sx=100,ix=200,c1=0,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 #endif // WLED_DISABLE_2D
 
