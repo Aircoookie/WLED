@@ -27,16 +27,33 @@ void turnOffAllAlexaDevices() {
   }
 }
 
+uint16_t miredToKelvin(uint16_t mired) {
+  return 1000000 / mired;
+}
+
+void alexaColorCtToRGBW(uint16_t mired, byte *rgbw) {
+  uint16_t k = miredToKelvin(mired);
+
+  switch (mired) { //these values empirically look good on RGBW
+    case 199: rgbw[0]=255; rgbw[1]=255; rgbw[2]=255; rgbw[3]=255; break;
+    case 234: rgbw[0]=127; rgbw[1]=127; rgbw[2]=127; rgbw[3]=255; break;
+    case 284: rgbw[0]=  0; rgbw[1]=  0; rgbw[2]=  0; rgbw[3]=255; break;
+    case 350: rgbw[0]=130; rgbw[1]= 90; rgbw[2]=  0; rgbw[3]=255; break;
+    case 383: rgbw[0]=255; rgbw[1]=153; rgbw[2]=  0; rgbw[3]=255; break;
+    default : colorKtoRGB(k, rgbw);
+  }
+}
+
 template<typename T>
 void handleCT(EspalexaDevice* dev, T *stripOrSegment, bool hasCCT, bool hasWhite) {
-  uint16_t ct = dev->getCt();
-  if (!ct) return;
+  uint16_t mired = dev->getCt();
+  if (!mired) return;
 
   byte rgbw[4];
-  uint16_t k = 1000000 / ct; //mireds to kelvin
+  uint16_t kelvin = miredToKelvin(mired);
 
   if (hasCCT) {
-    stripOrSegment->setCCT(k);
+    stripOrSegment->setCCT(kelvin);
     if (hasWhite) {
       rgbw[0] = 0; rgbw[1] = 0; rgbw[2] = 0; rgbw[3] = 255;
     } else {
@@ -44,14 +61,7 @@ void handleCT(EspalexaDevice* dev, T *stripOrSegment, bool hasCCT, bool hasWhite
       dev->setValue(255);
     }
   } else if (hasWhite) {
-    switch (ct) { //these values empirically look good on RGBW
-      case 199: rgbw[0]=255; rgbw[1]=255; rgbw[2]=255; rgbw[3]=255; break;
-      case 234: rgbw[0]=127; rgbw[1]=127; rgbw[2]=127; rgbw[3]=255; break;
-      case 284: rgbw[0]=  0; rgbw[1]=  0; rgbw[2]=  0; rgbw[3]=255; break;
-      case 350: rgbw[0]=130; rgbw[1]= 90; rgbw[2]=  0; rgbw[3]=255; break;
-      case 383: rgbw[0]=255; rgbw[1]=153; rgbw[2]=  0; rgbw[3]=255; break;
-      default : colorKtoRGB(k, rgbw);
-    }
+    alexaColorCtToRGBW(mired, rgbw);
   } else {
     colorKtoRGB(k, rgbw);
   }
@@ -132,11 +142,11 @@ void onPresetChange(EspalexaDevice *dev, byte presetIndex) {
       // turn off other preset devices
       for (byte i = 1; i < espalexa.getDeviceCount(); i++)
       {
-        if (i == dev->getId()) continue;
+        if (i == presetIndex) continue;
         espalexa.getDevice(i)->setValue(0); // turn off other presets
       }
 
-      applyPreset(dev->getId(), CALL_MODE_ALEXA); // in alexaInit() preset 1 device was added second (index 1), preset 2 third (index 2) etc.
+      applyPreset(presetIndex, CALL_MODE_ALEXA); // in alexaInit() preset 1 device was added second (index 1), preset 2 third (index 2) etc.
       break;
     default:
       onStripChange(dev);
@@ -168,6 +178,8 @@ void initAlexaForSegments() {
     String name = "Segment " + String(i);
 
     espalexa.addDevice(new EspalexaDevice(name.c_str(), [i](EspalexaDevice* dev) { 
+      if(i >= strip.getSegmentsNum()) return;
+
       Segment &segment = strip.getSegment(i);
       onSegmentChange(dev, &segment); 
     }, EspalexaDeviceType::extendedcolor));
