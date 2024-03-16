@@ -705,16 +705,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         // so checkboxes have one or two fields (first is always "false", existence of second depends on checkmark and may be "true")
         if (subObj[name].isNull()) {
           // the first occurrence of the field describes the parameter type (used in next loop)
-          if (value == "false") subObj[name] = false; // checkboxes may have only one field
+          if (value == F("false")) subObj[name] = false; // checkboxes may have only one field
           else                  subObj[name] = value;
         } else {
           String type = subObj[name].as<String>();  // get previously stored value as a type
           if (subObj[name].is<bool>())   subObj[name] = true;   // checkbox/boolean
-          else if (type == "number") {
+          else if (type == F("number")) {
             value.replace(",",".");      // just in case conversion
             if (value.indexOf(".") >= 0) subObj[name] = value.toFloat();  // we do have a float
             else                         subObj[name] = value.toInt();    // we may have an int
-          } else if (type == "int")      subObj[name] = value.toInt();
+          } else if (type == F("int"))      subObj[name] = value.toInt();
           else                           subObj[name] = value;  // text fields
         }
         DEBUG_PRINT(F(" = ")); DEBUG_PRINTLN(value);
@@ -775,7 +775,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 //HTTP API request parser
 bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 {
-  if (!(req.indexOf("win") >= 0)) return false;
+  if (!(req.indexOf(F("win")) >= 0)) return false;
 
   int pos = 0;
   DEBUG_PRINT(F("API req: "));
