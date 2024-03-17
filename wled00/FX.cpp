@@ -7920,20 +7920,19 @@ uint16_t mode_particlerotatingspray(void)
 
   uint32_t i = 0;
   uint32_t j = 0;
-  uint8_t spraycount = 1 + (SEGMENT.custom2 >> 5); // number of sprays to display, 1-8
+  uint8_t spraycount = 1 + (SEGMENT.custom1 >> 5); // number of sprays to display, 1-8
 
   if (SEGMENT.call == 0) // initialization
   {
-    SEGMENT.aux0 = 0;    // starting angle
-    SEGMENT.aux1 = 0xFF; // user check
+    SEGMENT.aux0 = 0; // starting angle
+    SEGMENT.aux1 = 0x01; // check flags
     for (i = 0; i < numParticles; i++)
     {
       particles[i].ttl = 0;
     }
     for (i = 0; i < numSprays; i++)
-    {
-      spray[i].source.hue = random8();              // TODO: how to keep track of options? can use SEGMENT.aux1: change hue to random or rainbow depending on check but need to find out when it changed.
-      spray[i].source.sat = 255;                    // set saturation
+    {         
+      spray[i].source.sat = 255; // set saturation
       spray[i].source.x = (cols * PS_P_RADIUS) / 2; // center
       spray[i].source.y = (rows * PS_P_RADIUS) / 2; // center
       spray[i].source.vx = 0;
@@ -7945,28 +7944,24 @@ uint16_t mode_particlerotatingspray(void)
       spray[i].var = 0; // emitting variation
     }
   }
-
-  // change source emitting color from time to time
-  if (SEGMENT.call % ((263 - SEGMENT.intensity) >> 3) == 0) // every nth frame, cycle color and update hue if necessary
+  
+  if (SEGMENT.check1 != (SEGMENT.aux1 & 0x01)) //state change
   {
+    if (SEGMENT.check1)
+      SEGMENT.aux1 |= 0x01; //set the flag
+    else
+      SEGMENT.aux1 &= ~0x01; // clear the flag
+
     for (i = 0; i < spraycount; i++)
     {
-      spray[i].source.hue++; // = random8(); //change hue of spray source
-    }
-    if (SEGMENT.check1 != SEGMENT.aux1)
-    {
-      SEGMENT.aux1 = SEGMENT.check1;
-      for (i = 0; i < spraycount; i++)
+      if (SEGMENT.check1) // random color is checked
       {
-        if (SEGMENT.check1) // random color is checked
-        {
-          spray[i].source.hue = random8();
-        }
-        else
-        {
-          uint8_t coloroffset = 0xFF / spraycount;
-          spray[i].source.hue = coloroffset * i;
-        }
+        spray[i].source.hue = random8();
+      }
+      else
+      {
+        uint8_t coloroffset = 0xFF / spraycount;
+        spray[i].source.hue = coloroffset * i;
       }
     }
   }
@@ -7989,20 +7984,44 @@ uint16_t mode_particlerotatingspray(void)
     i++;
   }
 
+  //set rotation direction and speed
+  int32_t rotationspeed = SEGMENT.speed << 2;
+  bool direction = SEGMENT.check2;
+  
+  if (SEGMENT.custom2 > 0) // automatic direction change enabled
+  {
+    uint16_t changeinterval = (265 - SEGMENT.custom2);
+    direction = SEGMENT.aux1 & 0x02; //set direction according to flag
+
+    if (SEGMENT.check3) // random interval
+    {
+      changeinterval = 20 + changeinterval + random16(changeinterval);
+    }
+
+    if (SEGMENT.call % changeinterval == 0) //flip direction on next frame
+    {
+      SEGMENT.aux1 |= 0x04; // set the update flag (for random interval update)
+      if (direction) 
+        SEGMENT.aux1 &= ~0x02; // clear the direction flag 
+      else        
+        SEGMENT.aux1 |= 0x02; // set the direction flag        
+    }
+  }
+
+  if (direction)
+    SEGMENT.aux0 += rotationspeed << 2;
+  else
+    SEGMENT.aux0 -= rotationspeed << 2;
+
   // calculate angle offset for an even distribution
   uint16_t angleoffset = 0xFFFF / spraycount;
 
   for (i = 0; i < spraycount; i++)
   {
-    if (SEGMENT.check2)
-      SEGMENT.aux0 += SEGMENT.speed << 2;
-    else
-      SEGMENT.aux0 -= SEGMENT.speed << 2;
-
     // calculate the x and y speed using aux0 as the 16bit angle. returned value by sin16/cos16 is 16bit, shifting it by 8 bits results in +/-128, divide that by custom1 slider value
-    spray[i].vx = (cos16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.custom1) >> 3); // update spray angle (rotate all sprays with angle offset)
-    spray[i].vy = (sin16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.custom1) >> 3); // update spray angle (rotate all sprays with angle offset)
-    spray[i].var = (SEGMENT.custom3 >> 1);                                                       // emiting variation = nozzle size  (custom 3 goes from 0-32)
+    spray[i].vx = (cos16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
+    spray[i].vy = (sin16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
+    spray[i].var = (SEGMENT.custom3 >> 1);                                                         // emiting variation = nozzle size  (custom 3 goes from 0-32)
   }
 
   for (i = 0; i < numParticles; i++)
@@ -8017,7 +8036,7 @@ uint16_t mode_particlerotatingspray(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Particle Spray@Rotation Speed,Color Change,Particle Speed,Spray Count,Nozzle Size,Random Color, Direction;;!;012;pal=56,sx=18,ix=222,c1=190,c2=200,c3=0,o1=0,o2=0";
+static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Particle Spray@Rotation Speed,Particle Speed,Spray Count,Flip Speed, Nozzle Size,Random Color, Direction, Random Flip;;!;012;pal=56,sx=18,ix=190,c1=200,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 /*
  * Particle Fireworks
@@ -8197,7 +8216,7 @@ uint16_t mode_particlefireworks(void)
       rockets[i].source.vy = random8(SEGMENT.custom1 >> 3) + 5;           // rocket speed depends also on rocket height
       rockets[i].source.vx = random8(5) - 2;
       rockets[i].source.hue = 30; // rocket exhaust = orange (if using rainbow palette)
-      rockets[i].source.sat = 250;
+      rockets[i].source.sat = 30; // low saturation -> exhaust is off-white 
       rockets[i].source.ttl = random8(SEGMENT.custom1) + (SEGMENT.custom1 >> 1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
       rockets[i].maxLife = 30;                                                   // exhaust particle life
       rockets[i].minLife = 10;
