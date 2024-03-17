@@ -64,6 +64,7 @@ void toggleOnOff()
     bri = 0;
   }
   stateChanged = true;
+  toggledOnOff = true;
 }
 
 
@@ -101,7 +102,7 @@ void stateUpdated(byte callMode) {
   setValuesFromFirstSelectedSeg();
 
   if (bri != briOld || stateChanged) {
-    if (stateChanged) currentPreset = 0; //something changed, so we are no longer in the preset
+    if (stateChanged && !toggledOnOff) currentPreset = 0; //something changed, so we are no longer in the preset, except for turning the LEDs on/off
 
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
     if (bri != briOld && nodeBroadcastEnabled) sendSysInfoUDP(); // update on state
@@ -109,6 +110,7 @@ void stateUpdated(byte callMode) {
     //set flag to update ws and mqtt
     interfaceUpdateCallMode = callMode;
     stateChanged = false;
+    toggledOnOff = false;
   } else {
     if (nightlightActive && !nightlightActiveOld && callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) {
       notify(CALL_MODE_NIGHTLIGHT);
