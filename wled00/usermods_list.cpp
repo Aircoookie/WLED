@@ -11,6 +11,10 @@
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
 
+#ifdef USERMOD_CONDITIONAL_TRIGGERING
+  #include "../usermods/Conditional_Triggering/conditional_triggering.h"
+#endif
+
 #ifdef USERMOD_BATTERY
   #include "../usermods/Battery/usermod_v2_Battery.h"
 #endif
@@ -212,6 +216,13 @@ void registerUsermods()
    * \/ \/ \/
    */
   //usermods.add(new MyExampleUsermod());
+
+
+
+  #ifdef USERMOD_CONDITIONAL_TRIGGERING
+  usermods.add(new UsermodConditionalTriggering());
+  #endif
+
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
   #endif
