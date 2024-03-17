@@ -9371,16 +9371,14 @@ uint16_t mode_particleGEQ(void)
   i = 0;
   uint32_t bin; //current bin
   uint32_t binwidth = (cols * PS_P_RADIUS - 1)>>4; //emit poisition variation for one bin (+/-)
-  uint8_t emitparticles = 0;
+  uint32_t threshold = 300 - SEGMENT.intensity;
+  uint32_t emitparticles = 0;
 
   for (bin = 0; bin < 16; bin++)
   {
-
     uint32_t xposition = binwidth*bin + (binwidth>>1); // emit position according to frequency band
-    uint8_t emitspeed = fftResult[bin] / map(SEGMENT.speed,0,255,10,1); // emit speed according to loudness of band
+    uint8_t emitspeed = 5+((uint32_t)fftResult[bin]*(uint32_t)SEGMENT.speed)>>9; // emit speed according to loudness of band
     emitparticles = 0;
-
-    uint8_t threshold = map(SEGMENT.intensity, 0, 255, 250, 2);
 
     if (fftResult[bin] > threshold)
     {
