@@ -3,11 +3,15 @@
 #include "GifDecoder.h"
 #include "wled.h"
 
+/*
+ * Functions to render images from filesystem to segments, used by the "Image" effect
+ */
+
 File file;
 char lastFilename[34] = "/";
-GifDecoder<32,32,12,true> decoder;
+GifDecoder<320,320,12,true> decoder;
 bool gifDecodeFailed = false;
-long lastFrameDisplayTime = 0, currentFrameDelay = 0;
+unsigned long lastFrameDisplayTime = 0, currentFrameDelay = 0;
 
 bool fileSeekCallback(unsigned long position) {
   return file.seek(position);
@@ -38,7 +42,6 @@ bool openGif(const char *filename) {
 
 Segment* activeSeg;
 uint16_t gifWidth, gifHeight;
-//uint16_t fillPixX, fillPixY;
 
 void screenClearCallback(void) {
   activeSeg->fill(0);
@@ -72,6 +75,8 @@ void drawPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t
 // renders an image (.gif only; .bmp and .fseq to be added soon) from FS to a segment
 byte renderImageToSegment(Segment &seg) {
   if (!seg.name) return IMAGE_ERROR_NO_NAME;
+  // disable during effect transition, causes flickering, multiple allocations and depending on image, part of old FX remaining
+  if (seg.mode != seg.currentMode()) return IMAGE_ERROR_WAITING;
   if (activeSeg && activeSeg != &seg) return IMAGE_ERROR_SEG_LIMIT; // only one segment at a time
   activeSeg = &seg;
 
@@ -85,8 +90,6 @@ byte renderImageToSegment(Segment &seg) {
     if (file) file.close();
     openGif(lastFilename);
     if (!file) { gifDecodeFailed = true; return IMAGE_ERROR_FILE_MISSING; }
-    //if (!decoder) decoder = new GifDecoder<32,32,12,true>();
-    //if (!decoder) { gifDecodeFailed = true; return IMAGE_ERROR_DECODER_ALLOC; }
     decoder.setScreenClearCallback(screenClearCallback);
     decoder.setUpdateScreenCallback(updateScreenCallback);
     decoder.setDrawPixelCallback(drawPixelCallback);
@@ -95,7 +98,7 @@ byte renderImageToSegment(Segment &seg) {
     decoder.setFileReadCallback(fileReadCallback);
     decoder.setFileReadBlockCallback(fileReadBlockCallback);
     decoder.setFileSizeCallback(fileSizeCallback);
-    decoder.alloc(); // TODO only if not already allocated
+    decoder.alloc();
     Serial.println("Starting decoding");
     if(decoder.startDecoding() < 0) { gifDecodeFailed = true; return IMAGE_ERROR_GIF_DECODE; }
     Serial.println("Decoding started");
@@ -109,17 +112,17 @@ byte renderImageToSegment(Segment &seg) {
   // TODO: 0 = 4x slow, 64 = 2x slow, 128 = normal, 192 = 2x fast, 255 = 4x fast
   uint32_t wait = currentFrameDelay * 2 - seg.speed * currentFrameDelay / 128;
 
-  if((millis() - lastFrameDisplayTime) < wait) return IMAGE_ERROR_WAITING;
+  // TODO consider handling this on FX level with a different frametime, but that would cause slow gifs to speed up during transitions
+  if (millis() - lastFrameDisplayTime < wait) return IMAGE_ERROR_WAITING;
 
   decoder.getSize(&gifWidth, &gifHeight);
-  //fillPixX = (seg.width()+(gifWidth-1)) / gifWidth;
-  //fillPixY = (seg.height()+(gifHeight-1)) / gifHeight;
+
   int result = decoder.decodeFrame(false);
   if (result < 0) { gifDecodeFailed = true; return IMAGE_ERROR_FRAME_DECODE; }
-  //long lastFrameDelay = currentFrameDelay;
+
   currentFrameDelay = decoder.getFrameDelay_ms();
-  //long tooSlowBy = (millis() - lastFrameDisplayTime) - wait; // if last frame was longer than intended, compensate
-  //currentFrameDelay -= tooSlowBy; // TODO this is broken
+  unsigned long tooSlowBy = (millis() - lastFrameDisplayTime) - wait; // if last frame was longer than intended, compensate
+  currentFrameDelay = tooSlowBy > currentFrameDelay ? 0 : currentFrameDelay - tooSlowBy;
   lastFrameDisplayTime = millis();
 
   return IMAGE_ERROR_NONE;
@@ -129,7 +132,6 @@ void endImagePlayback(Segment *seg) {
   Serial.println("Image playback end called");
   if (!activeSeg || activeSeg != seg) return;
   if (file) file.close();
-  //delete decoder;
   decoder.dealloc();
   gifDecodeFailed = false;
   activeSeg = nullptr;

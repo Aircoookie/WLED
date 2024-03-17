@@ -4470,12 +4470,11 @@ static const char _data_FX_MODE_WASHING_MACHINE[] PROGMEM = "Washing Machine@!,!
   Draws a .gif image from filesystem on the matrix/strip
 */
 uint16_t mode_image(void) {
-  //Serial.println(renderImageToSegment(SEGMENT));
-  int status = renderImageToSegment(SEGMENT);
-  if (status != 0 && status != 254 && status != 255) {
-    Serial.print("GIF renderer return: ");
-    Serial.println(status);
-  }
+  renderImageToSegment(SEGMENT);
+  // if (status != 0 && status != 254 && status != 255) {
+  //   Serial.print("GIF renderer return: ");
+  //   Serial.println(status);
+  // }
   return FRAMETIME;
 }
 static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,;;;12;sx=128";
