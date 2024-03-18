@@ -184,7 +184,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
             // only apply preset if not in playlist, or playlist changed
             (currentPlaylist < 0 || dmxValPreset != currentPlaylist)) { 
           presetCycCurr = dmxValPreset;
-          unloadPlaylist(); // applying a preset unloads the playlist
           applyPreset(dmxValPreset, CALL_MODE_NOTIFICATION);
         }
 
