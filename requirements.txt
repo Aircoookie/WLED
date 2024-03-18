@@ -4,7 +4,7 @@
 #
 #    pip-compile
 #
-aiofiles==22.1.0
+aiofiles==23.1
     # via platformio
 ajsonrpc==1.2.0
     # via platformio
