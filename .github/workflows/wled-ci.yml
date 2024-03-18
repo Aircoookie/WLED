@@ -12,7 +12,7 @@ jobs:
     - name: install pip tools
       run: python -m pip install pip-tools
     - name: reset requirements
-      run: pip-compile - --output-file=- < requirements.in > requirements.txt
+      run: pip-compile - --output-file=- < https://github.com/farmmanic/WLED/requirements.in > requirements.txt
     - name: upgrade pip
       run: pip install --upgrade pip
     - uses: actions/checkout@v3
