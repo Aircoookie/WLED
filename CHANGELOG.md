@@ -1,5 +1,8 @@
 ## WLED changelog
 
+#### Build 2403170
+-   WLED 0.14.2 release
+
 #### Build 2403110
 -   Beta WLED 0.14.2-b2
 -   New AsyncWebServer (improved performance and reduced memory use)
