@@ -412,6 +412,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     } else {
       deserializeSegment(segVar, id, presetId); //apply only the segment with the specified ID
     }
+
+    // segment changes should trigger alexa reinit
+    alexaInit();
   } else {
     size_t deleted = 0;
     JsonArray segs = segVar.as<JsonArray>();
