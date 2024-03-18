@@ -269,6 +269,7 @@ void WLED::loop()
     maxLoopMillis = 0;
     maxUsermodMillis = 0;
     maxStripMillis = 0;
+    avgLoopMillis = 0;
     avgUsermodMillis = 0;
     avgStripMillis = 0;
     debugTime = millis();
