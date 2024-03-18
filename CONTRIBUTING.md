@@ -2,6 +2,16 @@
 
 Here are a few suggestions to make it easier for you to contribute!
 
+### Describe your PR
+
+Please add a description of your proposed code changes. It does not need to be an exhaustive essay, however a PR with no description or just a few words might not get accepted, simply because very basic information is missing.
+
+A good description helps us to review and understand your proposed changes. For example, you could say a few words about
+* what you try to achieve (new feature, fixing a bug, refactoring, security enhancements, etc.)
+* how your code works (short technical summary - focus on important aspects that might not be obvious when reading the code)
+* testing you performed, known limitations, open ends you possibly could not solve.
+* any areas where you like to get help from an experienced maintainer (yes WLED has become big 😉)
+
 ### Target branch for pull requests
 
 Please make all PRs against the `0_15` branch.
