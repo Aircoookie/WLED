@@ -241,7 +241,7 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-// #define FX_MODE_CANDY_CANE             114  // removed in 0.14!
+#define FX_MODE_2DPLASMAROTOZOOM       114 // was Candy Cane prior to 0.14 (use Chase 2)
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117 // candidate for removal (check3 in dynamic)
@@ -420,7 +420,8 @@ typedef struct Segment {
     // perhaps this should be per segment, not static
     static CRGBPalette16 _randomPalette;      // actual random palette
     static CRGBPalette16 _newRandomPalette;   // target random palette
-    static unsigned long _lastPaletteChange;  // last random palette change time in millis()
+    static uint16_t _lastPaletteChange;       // last random palette change time in millis()/1000
+    static uint16_t _lastPaletteBlend;        // blend palette according to set Transition Delay in millis()%0xFFFF
     #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
     #endif
@@ -436,7 +437,7 @@ typedef struct Segment {
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
-      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 belnds possible)
+      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 blends possible)
       unsigned long _start;       // must accommodate millis()
       uint16_t      _dur;
       Transition(uint16_t dur=750)
@@ -802,8 +803,7 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
-      getActiveSegsLightCapabilities(bool selectedOnly = false),
-      setPixelSegment(uint8_t n);
+      getActiveSegsLightCapabilities(bool selectedOnly = false);
 
     inline uint8_t getBrightness(void)    { return _brightness; }       // returns current strip brightness
     inline uint8_t getMaxSegments(void)   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)

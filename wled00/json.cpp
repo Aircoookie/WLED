@@ -31,11 +31,11 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     newSeg = true;
   }
 
-  //DEBUG_PRINTLN("-- JSON deserialize segment.");
+  //DEBUG_PRINTLN(F("-- JSON deserialize segment."));
   Segment& seg = strip.getSegment(id);
-  //DEBUG_PRINTF("--  Original segment: %p (%p)\n", &seg, seg.data);
+  //DEBUG_PRINTF_P(PSTR("--  Original segment: %p (%p)\n"), &seg, seg.data);
   Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
-  //DEBUG_PRINTF("--  Duplicate segment: %p (%p)\n", &prev, prev.data);
+  //DEBUG_PRINTF_P(PSTR("--  Duplicate segment: %p (%p)\n"), &prev, prev.data);
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
@@ -233,7 +233,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
-  getVal(elem["c3"], &cust3); // we can't pass reference to bifield
+  getVal(elem["c3"], &cust3); // we can't pass reference to bitfield
   seg.custom3 = constrain(cust3, 0, 31);
 
   seg.check1 = getBoolVal(elem["o1"], seg.check1);
@@ -353,9 +353,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
-  sendNotificationsRT  = getBoolVal(udpn["send"], sendNotificationsRT);
-  syncGroups           = udpn["sgrp"] | syncGroups;
-  receiveGroups        = udpn["rgrp"] | receiveGroups;
+  sendNotificationsRT  = getBoolVal(udpn[F("send")], sendNotificationsRT);
+  syncGroups           = udpn[F("sgrp")] | syncGroups;
+  receiveGroups        = udpn[F("rgrp")] | receiveGroups;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
   unsigned long timein = root["time"] | UINT32_MAX; //backup time source if NTP not synced
@@ -438,7 +438,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // applying preset (2 cases: a) API call includes all preset values ("pd"), b) API only specifies preset ID ("ps"))
   byte presetToRestore = 0;
   // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
-  if (!root["pd"].isNull() && stateChanged) {
+  if (!root[F("pd")].isNull() && stateChanged) {
     currentPreset = root[F("pd")] | currentPreset;
     if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise it was set in handleSet() [set.cpp]
     presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
@@ -468,6 +468,19 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       if (WLED_FS.exists(fileName)) WLED_FS.remove(fileName);
       strip.loadCustomPalettes();
     }
+  }
+
+  JsonObject wifi = root[F("wifi")];
+  if (!wifi.isNull()) {
+    bool apMode = getBoolVal(wifi[F("ap")], apActive);
+    if (!apActive && apMode) WLED::instance().initAP();  // start AP mode immediately
+    else if (apActive && !apMode) { // stop AP mode immediately
+      dnsServer.stop();
+      WiFi.softAPdisconnect(true);
+      apActive = false;
+    }
+    //bool restart = wifi[F("restart")] | false;
+    //if (restart) forceReconnect = true;
   }
 
   stateUpdated(callMode);
@@ -566,17 +579,13 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     nl["dur"] = nightlightDelayMins;
     nl["mode"] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
-    if (nightlightActive) {
-      nl[F("rem")] = (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000; // seconds remaining
-    } else {
-      nl[F("rem")] = -1;
-    }
+    nl[F("rem")] = nightlightActive ? (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000 : -1; // seconds remaining
 
     JsonObject udpn = root.createNestedObject("udpn");
-    udpn["send"] = sendNotificationsRT;
-    udpn["recv"] = receiveGroups != 0;
-    udpn["sgrp"] = syncGroups;
-    udpn["rgrp"] = receiveGroups;
+    udpn[F("send")] = sendNotificationsRT;
+    udpn[F("recv")] = receiveGroups != 0;
+    udpn[F("sgrp")] = syncGroups;
+    udpn[F("rgrp")] = receiveGroups;
 
     root[F("lor")] = realtimeOverride;
   }
@@ -611,7 +620,7 @@ void serializeInfo(JsonObject root)
   root[F("vid")] = VERSION;
   root[F("cn")] = F(WLED_CODENAME);
 
-  JsonObject leds = root.createNestedObject("leds");
+  JsonObject leds = root.createNestedObject(F("leds"));
   leds[F("count")] = strip.getLengthTotal();
   leds[F("pwr")] = BusManager::currentMilliamps();
   leds["fps"] = strip.getFps();
@@ -619,10 +628,11 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
+  leds[F("bootps")] = bootPreset;
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
-    JsonObject matrix = leds.createNestedObject("matrix");
+    JsonObject matrix = leds.createNestedObject(F("matrix"));
     matrix["w"] = Segment::maxWidth;
     matrix["h"] = Segment::maxHeight;
   }
@@ -674,12 +684,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_DDP:      root["lm"] = F("DDP"); break;
   }
 
-  if (realtimeIP[0] == 0)
-  {
-    root[F("lip")] = "";
-  } else {
-    root[F("lip")] = realtimeIP.toString();
-  }
+  root[F("lip")] = realtimeIP[0] == 0 ? "" : realtimeIP.toString();
 
   #ifdef WLED_ENABLE_WEBSOCKETS
   root[F("ws")] = ws.count();
@@ -702,7 +707,7 @@ void serializeInfo(JsonObject root)
     }
   }
 
-  JsonObject wifi_info = root.createNestedObject("wifi");
+  JsonObject wifi_info = root.createNestedObject(F("wifi"));
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
   int qrssi = WiFi.RSSI();
   wifi_info[F("rssi")] = qrssi;
@@ -716,7 +721,7 @@ void serializeInfo(JsonObject root)
 
   root[F("ndc")] = nodeListEnabled ? (int)Nodes.size() : -1;
 
-  #ifdef ARDUINO_ARCH_ESP32
+#ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
     wifi_info[F("sleep")] = (bool) WiFi.getSleep();
@@ -727,21 +732,21 @@ void serializeInfo(JsonObject root)
     root[F("arch")] = ESP.getChipModel();
   #endif
   root[F("core")] = ESP.getSdkVersion();
-  //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG
-    root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
-    root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
+  root[F("maxalloc")] = ESP.getMaxAllocHeap();
+  root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
+  root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
   root[F("lwip")] = 0; //deprecated
-  #else
+#else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
-  //root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
   #ifdef WLED_DEBUG
-    root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
+  root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
+  root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
   #endif
   root[F("lwip")] = LWIP_VERSION_MAJOR;
-  #endif
+#endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
   #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
@@ -786,8 +791,8 @@ void serializeInfo(JsonObject root)
   #endif
   root[F("opt")] = os;
 
-  root[F("brand")] = "WLED";
-  root[F("product")] = F("FOSS");
+  root[F("brand")] = F(WLED_BRAND);
+  root[F("product")] = F(WLED_PRODUCT_NAME);
   root["mac"] = escapedMac;
   char s[16] = "";
   if (Network.isConnected())
@@ -886,7 +891,7 @@ void serializePalettes(JsonObject root, int page)
         curPalette.add("c2");
         curPalette.add("c1");
         break;
-      case 5: //primary + secondary (+tert if not off), more distinct
+      case 5: //primary + secondary (+tertiary if not off), more distinct
         curPalette.add("c1");
         curPalette.add("c1");
         curPalette.add("c1");
@@ -1017,40 +1022,53 @@ void serializeModeNames(JsonArray arr)
   }
 }
 
-
-// Global buffer locking response helper class
-class GlobalBufferAsyncJsonResponse: public JSONBufferGuard, public AsyncJsonResponse {
+// Global buffer locking response helper class (to make sure lock is released when AsyncJsonResponse is destroyed)
+class LockedJsonResponse: public AsyncJsonResponse {
+  bool _holding_lock;
   public:
-  inline GlobalBufferAsyncJsonResponse(bool isArray) : JSONBufferGuard(17), AsyncJsonResponse(pDoc, isArray) {};
-  virtual ~GlobalBufferAsyncJsonResponse() {};
+  // WARNING: constructor assumes requestJSONBufferLock() was successfully acquired externally/prior to constructing the instance
+  // Not a good practice with C++. Unfortunately AsyncJsonResponse only has 2 constructors - for dynamic buffer or existing buffer,
+  // with existing buffer it clears its content during construction
+  // if the lock was not acquired (using JSONBufferGuard class) previous implementation still cleared existing buffer
+  inline LockedJsonResponse(JsonDocument* doc, bool isArray) : AsyncJsonResponse(doc, isArray), _holding_lock(true) {};
 
-  // Other members are inherited
+  virtual size_t _fillBuffer(uint8_t *buf, size_t maxLen) { 
+    size_t result = AsyncJsonResponse::_fillBuffer(buf, maxLen);
+    // Release lock as soon as we're done filling content
+    if (((result + _sentLength) >= (_contentLength)) && _holding_lock) {
+      releaseJSONBufferLock();
+      _holding_lock = false;
+    }
+    return result;
+  }
+
+  // destructor will remove JSON buffer lock when response is destroyed in AsyncWebServer
+  virtual ~LockedJsonResponse() { if (_holding_lock) releaseJSONBufferLock(); };
 };
-
 
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
   const String& url = request->url();
-  if      (url.indexOf("state") > 0) subJson = JSON_PATH_STATE;
-  else if (url.indexOf("info")  > 0) subJson = JSON_PATH_INFO;
-  else if (url.indexOf("si")    > 0) subJson = JSON_PATH_STATE_INFO;
-  else if (url.indexOf("nodes") > 0) subJson = JSON_PATH_NODES;
-  else if (url.indexOf("eff")   > 0) subJson = JSON_PATH_EFFECTS;
-  else if (url.indexOf("palx")  > 0) subJson = JSON_PATH_PALETTES;
-  else if (url.indexOf("fxda")  > 0) subJson = JSON_PATH_FXDATA;
-  else if (url.indexOf("net")   > 0) subJson = JSON_PATH_NETWORKS;
+  if      (url.indexOf("state")    > 0) subJson = JSON_PATH_STATE;
+  else if (url.indexOf("info")     > 0) subJson = JSON_PATH_INFO;
+  else if (url.indexOf("si")       > 0) subJson = JSON_PATH_STATE_INFO;
+  else if (url.indexOf(F("nodes")) > 0) subJson = JSON_PATH_NODES;
+  else if (url.indexOf(F("eff"))   > 0) subJson = JSON_PATH_EFFECTS;
+  else if (url.indexOf(F("palx"))  > 0) subJson = JSON_PATH_PALETTES;
+  else if (url.indexOf(F("fxda"))  > 0) subJson = JSON_PATH_FXDATA;
+  else if (url.indexOf(F("net"))   > 0) subJson = JSON_PATH_NETWORKS;
   #ifdef WLED_ENABLE_JSONLIVE
-  else if (url.indexOf("live")  > 0) {
+  else if (url.indexOf("live")     > 0) {
     serveLiveLeds(request);
     return;
   }
   #endif
   else if (url.indexOf("pal") > 0) {
-    request->send_P(200, "application/json", JSON_palette_names);
+    request->send_P(200, "application/json", JSON_palette_names); // contentType defined in AsyncJson-v6.h
     return;
   }
-  else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
+  else if (url.indexOf(F("cfg")) > 0 && handleFileRead(request, F("/cfg.json"))) {
     return;
   }
   else if (url.length() > 6) { //not just /json
@@ -1058,12 +1076,13 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  GlobalBufferAsyncJsonResponse *response = new GlobalBufferAsyncJsonResponse(subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
-  if (!response->owns_lock()) {
+  if (!requestJSONBufferLock(17)) {
     serveJsonError(request, 503, ERR_NOBUF);
-    delete response;
     return;
   }
+  // releaseJSONBufferLock() will be called when "response" is destroyed (from AsyncWebServer)
+  // make sure you delete "response" if no "request->send(response);" is made
+  LockedJsonResponse *response = new LockedJsonResponse(pDoc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
@@ -1076,7 +1095,7 @@ void serveJson(AsyncWebServerRequest* request)
     case JSON_PATH_NODES:
       serializeNodes(lDoc); break;
     case JSON_PATH_PALETTES:
-      serializePalettes(lDoc, request->hasParam("page") ? request->getParam("page")->value().toInt() : 0); break;
+      serializePalettes(lDoc, request->hasParam(F("page")) ? request->getParam(F("page"))->value().toInt() : 0); break;
     case JSON_PATH_EFFECTS:
       serializeModeNames(lDoc); break;
     case JSON_PATH_FXDATA:
@@ -1097,7 +1116,7 @@ void serveJson(AsyncWebServerRequest* request)
       //lDoc["m"] = lDoc.memoryUsage(); // JSON buffer usage, for remote debugging
   }
 
-  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
+  DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for request: %d\n"), lDoc.memoryUsage(), subJson);
 
   #ifdef WLED_DEBUG
   size_t len =
@@ -1166,7 +1185,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 #endif
   oappend("}");
   if (request) {
-    request->send(200, "application/json", buffer);
+    request->send(200, "application/json", buffer); // contentType defined in AsyncJson-v6.h
   }
   #ifdef WLED_ENABLE_WEBSOCKETS
   else {
