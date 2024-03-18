@@ -22,3 +22,6 @@ wled-update.sh
 /wled00/my_config.h
 /wled00/Release
 /wled00/wled00.ino.cpp
+.github/*
+.gitignore
+
