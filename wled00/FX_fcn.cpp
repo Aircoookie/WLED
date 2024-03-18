@@ -538,7 +538,6 @@ bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
 }
 
 void Segment::setCCT(uint16_t k) {
-  if (!isCCT() || !correctWB) return;
   if (k > 255) { //kelvin value, convert to 0-255
     if (k < 1900)  k = 1900;
     if (k > 10091) k = 10091;

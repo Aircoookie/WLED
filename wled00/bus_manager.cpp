@@ -441,10 +441,19 @@ void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
       _data[0] = w;
       break;
     case TYPE_ANALOG_2CH: //warm white + cold white
+      #ifdef WLED_USE_IC_CCT
+      _data[0] = w;
+      _data[1] = cct;
+      #else
       Bus::calculateCCT(c, _data[0], _data[1]);
+      #endif
       break;
     case TYPE_ANALOG_5CH: //RGB + warm white + cold white
+      #ifdef WLED_USE_IC_CCT
+      _data[4] = cct;
+      #else
       Bus::calculateCCT(c, w, _data[4]);
+      #endif
     case TYPE_ANALOG_4CH: //RGBW
       _data[3] = w;
     case TYPE_ANALOG_3CH: //standard dumb RGB

@@ -194,10 +194,6 @@ class Bus {
         cct = (approximateKelvinFromRGB(c) - 1900) >> 5;
       }
       
-      #ifdef WLED_USE_IC_CCT
-      ww = w;
-      cw = cct;
-      #else
       //0 - linear (CCT 127 = 50% warm, 50% cold), 127 - additive CCT blending (CCT 127 = 100% warm, 100% cold)
       if (cct       < _cctBlend) ww = 255;
       else                       ww = ((255-cct) * 255) / (255 - _cctBlend);
@@ -206,7 +202,6 @@ class Bus {
 
       ww = (w * ww) / 255; //brightness scaling
       cw = (w * cw) / 255;
-      #endif
     }
     inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
     inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
