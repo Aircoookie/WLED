@@ -20,8 +20,6 @@ jobs:
       with:
         python-version: '3.9'
     - name: upgrade pip
-      run: pip-compile requirements.in
-    - name: revamp requirments
       run: pip install --upgrade pip
     - name: Install PlatformIO
       run: pip install -r requirements.txt
