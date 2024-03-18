@@ -8,6 +8,13 @@ jobs:
     name: Gather Environments
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/setup-python@v4
+    - name: install pip tools
+      run: python -m pip install pip-tools
+    - name: reset requirements
+      run: pip-compile requirements.in
+    - name: upgrade pip
+      run: pip install --upgrade pip
     - uses: actions/checkout@v3
     - name: Cache pip
       uses: actions/cache@v3
@@ -19,12 +26,6 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-    - name: install pip tools
-      run: python -m pip install pip-tools
-    - name: reset requirements
-      run: pip-compile requirements.in
-    - name: upgrade pip
-      run: pip install --upgrade pip
     - name: Install PlatformIO
       run: pip install -r requirements.txt
     - name: Get default environments
