@@ -7,9 +7,26 @@
 
 #define GRADIENT_PALETTE_COUNT 58
 
+// You can define custom product info from build flags.
+// This is useful to allow API consumer to identify what type of WLED version
+// they are interacting with. Be aware that changing this might cause some third
+// party API consumers to consider this as a non-WLED device since the values
+// returned by the API and by MQTT will no longer be default. However, most
+// third party only uses mDNS to validate, so this is generally fine to change.
+// For example, Home Assistant will still work fine even with this value changed.
+// Use like this:
+// -D WLED_BRAND="\"Custom Brand\""
+// -D WLED_PRODUCT_NAME="\"Custom Product\""
+#ifndef WLED_BRAND
+  #define WLED_BRAND "WLED"
+#endif
+#ifndef WLED_PRODUCT_NAME
+  #define WLED_PRODUCT_NAME "FOSS"
+#endif
+
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
-#define DEFAULT_AP_SSID     "WLED-AP"
+#define DEFAULT_AP_SSID     WLED_BRAND "-AP"
 #define DEFAULT_AP_PASS     "wled1234"
 #define DEFAULT_OTA_PASS    "wledota"
 #define DEFAULT_MDNS_NAME   "x"
@@ -75,6 +92,11 @@
     #define WLED_MAX_BUTTONS 2
   #else
     #define WLED_MAX_BUTTONS 4
+  #endif
+#else
+  #if WLED_MAX_BUTTONS < 2
+    #undef WLED_MAX_BUTTONS
+    #define WLED_MAX_BUTTONS 2
   #endif
 #endif
 
@@ -154,7 +176,11 @@
 #define USERMOD_ID_KLIPPER               40     //Usermod Klipper percentage
 #define USERMOD_ID_WIREGUARD             41     //Usermod "wireguard.h"
 #define USERMOD_ID_INTERNAL_TEMPERATURE  42     //Usermod "usermod_internal_temperature.h"
-#define USERMOD_ID_ANIMARTRIX            44     //Usermod "usermod_v2_animartrix.h"
+#define USERMOD_ID_LDR_DUSK_DAWN         43     //Usermod "usermod_LDR_Dusk_Dawn_v2.h"
+#define USERMOD_ID_STAIRWAY_WIPE         44     //Usermod "stairway-wipe-usermod-v2.h"
+#define USERMOD_ID_ANIMARTRIX            45     //Usermod "usermod_v2_animartrix.h"
+#define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 46   //usermod "usermod_v2_HttpPullLightControl.h"
+#define USERMOD_ID_TETRISAI              47     //Usermod "usermod_v2_tetris.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -215,8 +241,8 @@
 #define DMX_MODE_MULTIPLE_RGB     4            //every LED is addressed with its own RGB (ledCount * 3 channels)
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
-#define DMX_MODE_EFFECT_SEGMENT   8            //trigger standalone effects of WLED (15 channels per segement)
-#define DMX_MODE_EFFECT_SEGMENT_W 9            //trigger standalone effects of WLED (18 channels per segement)
+#define DMX_MODE_EFFECT_SEGMENT   8            //trigger standalone effects of WLED (15 channels per segment)
+#define DMX_MODE_EFFECT_SEGMENT_W 9            //trigger standalone effects of WLED (18 channels per segment)
 #define DMX_MODE_PRESET           10           //apply presets (1 channel)
 
 //Light capability byte (unused) 0bRCCCTTTT
@@ -265,6 +291,7 @@
 #define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus, unused)
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
+#define TYPE_NET_ARTNET_RGBW     89            //network ArtNet RGB bus (master broadcast bus, unused)
 
 #define IS_TYPE_VALID(t) ((t) > 15 && (t) < 128)
 #define IS_DIGITAL(t)    (((t) > 15 && (t) < 40) || ((t) > 47 && (t) < 64)) //digital are 16-39 and 48-63
@@ -341,7 +368,7 @@
 #define SEG_DIFFERS_OPT        0x02 // all segment options except: selected, reset & transitional
 #define SEG_DIFFERS_COL        0x04 // colors
 #define SEG_DIFFERS_FX         0x08 // effect/mode parameters
-#define SEG_DIFFERS_BOUNDS     0x10 // segment start/stop ounds
+#define SEG_DIFFERS_BOUNDS     0x10 // segment start/stop bounds
 #define SEG_DIFFERS_GSO        0x20 // grouping, spacing & offset
 #define SEG_DIFFERS_SEL        0x80 // selected
 
@@ -366,7 +393,7 @@
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_IRLOAD   13  // It was attempted to load an IR JSON cmd, but the "ir.json" file does not exist
 #define ERR_FS_RMLOAD   14  // It was attempted to load an remote JSON cmd, but the "remote.json" file does not exist
-#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occurred
 #define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
 #define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
@@ -395,7 +422,8 @@
 #define SUBPAGE_JS              254
 #define SUBPAGE_WELCOME         255
 
-#define NTP_PACKET_SIZE 48
+#define NTP_PACKET_SIZE 48       // size of NTP receive buffer
+#define NTP_MIN_PACKET_SIZE 48   // min expected size - NTP v4 allows for "extended information" appended to the standard fields
 
 //maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
 #ifndef MAX_LEDS
@@ -426,7 +454,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3608  // warning: quite a large value for stack
+#define SETTINGS_STACK_BUF_SIZE 3840  // warning: quite a large value for stack (640 * WLED_MAX_USERMODS)
 #endif
 
 #ifdef WLED_USE_ETHERNET
@@ -483,8 +511,8 @@
 
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
-#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3)
-  #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
+#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(ARDUINO_ESP32_PICO)
+  #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, and on boards where GPIO16 is not available
 #else
   #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
 #endif
@@ -508,7 +536,7 @@
 #define PIN_TIMEOUT        900000 // time in ms after which the PIN will be required again, 15 minutes
 
 // HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
-// which GPIO pins are actually used in a hardwarea layout (controller board)
+// which GPIO pins are actually used in a hardware layout (controller board)
 #if defined(I2CSCLPIN) && !defined(HW_PIN_SCL)
   #define HW_PIN_SCL I2CSCLPIN
 #endif
@@ -531,7 +559,7 @@
 #endif
 
 // HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
-// which GPIO pins are actually used in a hardwarea layout (controller board)
+// which GPIO pins are actually used in a hardware layout (controller board)
 #if defined(SPISCLKPIN) && !defined(HW_PIN_CLOCKSPI)
   #define HW_PIN_CLOCKSPI SPISCLKPIN
 #endif

@@ -238,8 +238,8 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_MENU)
   {
-  #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
-    oappend(PSTR("gId('2dbtn').style.display='';"));
+  #ifdef WLED_DISABLE_2D // include only if 2D is not compiled in
+    oappend(PSTR("gId('2dbtn').style.display='none';"));
   #endif
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     oappend(PSTR("gId('dmxbtn').style.display='';"));
@@ -402,12 +402,12 @@ void getSettingsJS(byte subPage, char* dest)
       uint16_t speed = bus->getFrequency();
       if (IS_PWM(bus->getType())) {
         switch (speed) {
-          case WLED_PWM_FREQ/3   : speed = 0; break;
-          case WLED_PWM_FREQ/2   : speed = 1; break;
+          case WLED_PWM_FREQ/2    : speed = 0; break;
+          case WLED_PWM_FREQ*2/3  : speed = 1; break;
           default:
-          case WLED_PWM_FREQ     : speed = 2; break;
-          case WLED_PWM_FREQ*4/3 : speed = 3; break;
-          case WLED_PWM_FREQ*2   : speed = 4; break;
+          case WLED_PWM_FREQ      : speed = 2; break;
+          case WLED_PWM_FREQ*2    : speed = 3; break;
+          case WLED_PWM_FREQ*10/3 : speed = 4; break; // uint16_t max (19531 * 3.333)
         }
       } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
         switch (speed) {
@@ -425,6 +425,7 @@ void getSettingsJS(byte subPage, char* dest)
       sumMa += bus->getMaxCurrent();
     }
     sappend('v',SET_F("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
+    sappend('c',SET_F("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
     sappend('c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
     oappend(SET_F("resetCOM("));
@@ -453,6 +454,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
     sappend('v',SET_F("TP"),randomPaletteChangeTime);
+    sappend('c',SET_F("TH"),useHarmonicRandomPalette);
     sappend('v',SET_F("BF"),briMultiplier);
     sappend('v',SET_F("TB"),nightlightTargetBri);
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
@@ -469,8 +471,10 @@ void getSettingsJS(byte subPage, char* dest)
     }
     sappend('c',SET_F("IP"),disablePullUp);
     sappend('v',SET_F("TT"),touchThreshold);
+#ifndef WLED_DISABLE_INFRARED
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
+#endif    
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 

@@ -180,7 +180,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
-      uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
+      uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM
       uint8_t AWmode = elm[F("rgbwm")] | RGBW_MODE_MANUAL_ONLY;
       uint8_t maPerLed = elm[F("ledma")] | 55;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
@@ -286,13 +286,22 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     // new install/missing configuration (button 0 has defaults)
     if (fromFS) {
       // relies upon only being called once with fromFS == true, which is currently true.
-      uint8_t s = 0;
-      if (pinManager.allocatePin(btnPin[0], false, PinOwner::Button)) { // initialized to #define value BTNPIN, or zero if not defined(!)
-        ++s; // do not clear default button if allocated successfully
-      }
-      for (; s<WLED_MAX_BUTTONS; s++) {
-        btnPin[s]           = -1;
-        buttonType[s]       = BTN_TYPE_NONE;
+      for (size_t s = 0; s < WLED_MAX_BUTTONS; s++) {
+        if (buttonType[s] == BTN_TYPE_NONE || btnPin[s] < 0 || !pinManager.allocatePin(btnPin[s], false, PinOwner::Button)) {
+          btnPin[s]     = -1;
+          buttonType[s] = BTN_TYPE_NONE;
+        }
+        if (btnPin[s] >= 0) {
+          if (disablePullUp) {
+            pinMode(btnPin[s], INPUT);
+          } else {
+            #ifdef ESP32
+            pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+            #else
+            pinMode(btnPin[s], INPUT_PULLUP);
+            #endif
+          }
+        }
         macroButton[s]      = 0;
         macroLongPress[s]   = 0;
         macroDoublePress[s] = 0;
@@ -302,6 +311,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(touchThreshold,btn_obj[F("tt")]);
   CJSON(buttonPublishMqtt,btn_obj["mqtt"]);
 
+  #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
     pinManager.deallocatePin(irPin, PinOwner::IR);
@@ -312,6 +322,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   }
   CJSON(irEnabled, hw["ir"]["type"]);
+  #endif
   CJSON(irApplyToAllSelected, hw["ir"]["sel"]);
 
   JsonObject relay = hw[F("relay")];
@@ -339,7 +350,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
   if (i2c_scl >= 0 && i2c_sda >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
     #ifdef ESP32
-    if (!Wire.setPins(i2c_sda, i2c_scl)) { i2c_scl = i2c_sda = -1; } // this will fail if Wire is initilised (Wire.begin() called prior)
+    if (!Wire.setPins(i2c_sda, i2c_scl)) { i2c_scl = i2c_sda = -1; } // this will fail if Wire is initialised (Wire.begin() called prior)
     else Wire.begin();
     #else
     Wire.begin(i2c_sda, i2c_scl);
@@ -395,6 +406,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   strip.setTransition(fadeTransition ? transitionDelayDefault : 0);
   CJSON(strip.paletteFade, light_tr["pal"]);
   CJSON(randomPaletteChangeTime, light_tr[F("rpc")]);
+  CJSON(useHarmonicRandomPalette, light_tr[F("hrp")]);
 
   JsonObject light_nl = light["nl"];
   CJSON(nightlightMode, light_nl["mode"]);
@@ -420,7 +432,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(useESPNowSync, if_sync[F("espnow")]);
 #endif
 
-  JsonObject if_sync_recv = if_sync["recv"];
+  JsonObject if_sync_recv = if_sync[F("recv")];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
   CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
@@ -428,7 +440,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveSegmentOptions, if_sync_recv["seg"]);
   CJSON(receiveSegmentBounds, if_sync_recv["sb"]);
 
-  JsonObject if_sync_send = if_sync["send"];
+  JsonObject if_sync_send = if_sync[F("send")];
   CJSON(sendNotifications, if_sync_send["en"]);
   sendNotificationsRT = sendNotifications;
   CJSON(notifyDirect, if_sync_send[F("dir")]);
@@ -615,6 +627,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   return (doc["sv"] | true);
 }
 
+
+static const char s_cfg_json[] PROGMEM = "/cfg.json";
+
 void deserializeConfigFromFS() {
   bool success = deserializeConfigSec();
   if (!success) { //if file does not exist, try reading from EEPROM
@@ -628,7 +643,7 @@ void deserializeConfigFromFS() {
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
-  success = readObjectFromFile("/cfg.json", nullptr, pDoc);
+  success = readObjectFromFile(s_cfg_json, nullptr, pDoc);
   if (!success) { // if file does not exist, optionally try reading from EEPROM and then save defaults to FS
     releaseJSONBufferLock();
     #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -834,8 +849,10 @@ void serializeConfig() {
   hw_btn["mqtt"] = buttonPublishMqtt;
 
   JsonObject hw_ir = hw.createNestedObject("ir");
+  #ifndef WLED_DISABLE_INFRARED
   hw_ir["pin"] = irPin;
   hw_ir["type"] = irEnabled;  // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+  #endif
   hw_ir["sel"] = irApplyToAllSelected;
 
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
@@ -872,6 +889,7 @@ void serializeConfig() {
   light_tr["dur"] = transitionDelayDefault / 100;
   light_tr["pal"] = strip.paletteFade;
   light_tr[F("rpc")] = randomPaletteChangeTime;
+  light_tr[F("hrp")] = useHarmonicRandomPalette;
 
   JsonObject light_nl = light.createNestedObject("nl");
   light_nl["mode"] = nightlightMode;
@@ -894,7 +912,7 @@ void serializeConfig() {
   if_sync[F("espnow")] = useESPNowSync;
 #endif
 
-  JsonObject if_sync_recv = if_sync.createNestedObject("recv");
+  JsonObject if_sync_recv = if_sync.createNestedObject(F("recv"));
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
   if_sync_recv["fx"]  = receiveNotificationEffects;
@@ -902,7 +920,7 @@ void serializeConfig() {
   if_sync_recv["seg"] = receiveSegmentOptions;
   if_sync_recv["sb"]  = receiveSegmentBounds;
 
-  JsonObject if_sync_send = if_sync.createNestedObject("send");
+  JsonObject if_sync_send = if_sync.createNestedObject(F("send"));
   if_sync_send["en"] = sendNotifications;
   if_sync_send[F("dir")] = notifyDirect;
   if_sync_send["btn"] = notifyButton;
@@ -967,7 +985,7 @@ void serializeConfig() {
   if_hue["id"] = huePollLightId;
   if_hue[F("iv")] = huePollIntervalMs / 100;
 
-  JsonObject if_hue_recv = if_hue.createNestedObject("recv");
+  JsonObject if_hue_recv = if_hue.createNestedObject(F("recv"));
   if_hue_recv["on"] = hueApplyOnOff;
   if_hue_recv["bri"] = hueApplyBri;
   if_hue_recv["col"] = hueApplyColor;
@@ -1050,7 +1068,7 @@ void serializeConfig() {
   JsonObject usermods_settings = root.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
 
-  File f = WLED_FS.open("/cfg.json", "w");
+  File f = WLED_FS.open(FPSTR(s_cfg_json), "w");
   if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();
@@ -1058,13 +1076,16 @@ void serializeConfig() {
   doSerializeConfig = false;
 }
 
+
+static const char s_wsec_json[] PROGMEM = "/wsec.json";
+
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
   if (!requestJSONBufferLock(3)) return false;
 
-  bool success = readObjectFromFile("/wsec.json", nullptr, pDoc);
+  bool success = readObjectFromFile(s_wsec_json, nullptr, pDoc);
   if (!success) {
     releaseJSONBufferLock();
     return false;
@@ -1147,7 +1168,7 @@ void serializeConfigSec() {
   ota[F("lock-wifi")] = wifiLock;
   ota[F("aota")] = aOtaEnabled;
 
-  File f = WLED_FS.open("/wsec.json", "w");
+  File f = WLED_FS.open(FPSTR(s_wsec_json), "w");
   if (f) serializeJson(root, f);
   f.close();
   releaseJSONBufferLock();

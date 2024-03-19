@@ -33,7 +33,7 @@
 				).reduce(
 					// Filter out duplicate SSIDs. Since it is sorted by signal
 					// strength, the strongest signal will be kept in the
-					// order it orginally appeared in the array.
+					// order it as originally appeared in the array.
 					(unique, other) => {
 						if(!unique.some(obj => obj.ssid === other.ssid)) {
 							unique.push(other);
@@ -244,7 +244,7 @@ Static subnet mask:<br>
 				<option value="9">ABC! WLED V43 & compatible</option>
 				<option value="2">ESP32-POE</option>
 				<option value="11">ESP32-POE-WROVER</option>
-				<option value="6">ESP32Deux</option>
+				<option value="6">ESP32Deux/RGB2Go Tetra</option>
 				<option value="7">KIT-VE</option>
 				<option value="8">QuinLED-Dig-Octa & T-ETH-POE</option>
 				<option value="4">QuinLED-ESP32</option>

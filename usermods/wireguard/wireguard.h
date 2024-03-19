@@ -66,7 +66,7 @@ class WireguardUsermod : public Usermod {
     void addToConfig(JsonObject& root) {
         JsonObject top = root.createNestedObject(F("WireGuard"));
         top[F("host")] = endpoint_address;
-        top[F("port")] = endpoint_port;
+        top["port"] = endpoint_port;
         top["ip"] = local_ip.toString();
         top["psk"] = preshared_key;
         top[F("pem")] = private_key;
@@ -77,7 +77,7 @@ class WireguardUsermod : public Usermod {
     bool readFromConfig(JsonObject& root) {
         JsonObject top = root[F("WireGuard")];
 
-        if (top[F("host")].isNull() || top[F("port")].isNull() || top["ip"].isNull() || top[F("pem")].isNull() || top[F("pub")].isNull() || top[F("tz")].isNull()) {
+        if (top[F("host")].isNull() || top["port"].isNull() || top["ip"].isNull() || top[F("pem")].isNull() || top[F("pub")].isNull() || top[F("tz")].isNull()) {
             is_enabled = false;
             return false;
         } else {

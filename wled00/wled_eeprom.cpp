@@ -365,7 +365,7 @@ void applyMacro(byte index) {
 
 // De-EEPROM routine, upgrade from previous versions to v0.11
 void deEEP() {
-  if (WLED_FS.exists("/presets.json")) return;
+  if (WLED_FS.exists(FPSTR(getPresetsFileName()))) return;
 
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
@@ -442,7 +442,7 @@ void deEEP() {
 
   EEPROM.end();
 
-  File f = WLED_FS.open("/presets.json", "w");
+  File f = WLED_FS.open(FPSTR(getPresetsFileName()), "w");
   if (!f) {
     errorFlag = ERR_FS_GENERAL;
     releaseJSONBufferLock();

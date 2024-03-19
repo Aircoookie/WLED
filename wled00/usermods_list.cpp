@@ -166,7 +166,7 @@
 #endif
 
 #ifdef USERMOD_ANIMARTRIX
-#include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
+  #include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
 #endif
 
 #ifdef USERMOD_INTERNAL_TEMPERATURE
@@ -186,15 +186,31 @@
 #endif
 
 #ifdef USERMOD_PWM_OUTPUTS
-#include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
+  #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
+#endif
+
+#ifdef USERMOD_HTTP_PULL_LIGHT_CONTROL
+  #include "../usermods/usermod_v2_HttpPullLightControl/usermod_v2_HttpPullLightControl.h"
 #endif
 
 #ifdef USERMOD_MPU6050_IMU
-#include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
+  #include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
 #endif
 
 #ifdef USERMOD_MPU6050_IMU
-#include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
+  #include "../usermods/mpu6050_imu/usermod_gyro_surge.h"
+#endif
+
+#ifdef USERMOD_LDR_DUSK_DAWN
+  #include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+#endif
+
+#ifdef USERMOD_STAIRCASE_WIPE
+  #include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
+#endif
+
+#ifdef USERMOD_TETRISAI
+#include "../usermods/TetrisAI_v2/usermod_v2_tetrisai.h"
 #endif
 
 void registerUsermods()
@@ -374,11 +390,27 @@ void registerUsermods()
   usermods.add(new InternalTemperatureUsermod());
   #endif
 
+  #ifdef USERMOD_HTTP_PULL_LIGHT_CONTROL
+  usermods.add(new HttpPullLightControl());
+  #endif
+
   #ifdef USERMOD_MPU6050_IMU
   static MPU6050Driver mpu6050; usermods.add(&mpu6050);
   #endif
 
   #ifdef USERMOD_GYRO_SURGE
   static GyroSurge gyro_surge; usermods.add(&gyro_surge);
+  #endif
+
+  #ifdef USERMOD_LDR_DUSK_DAWN
+  usermods.add(new LDR_Dusk_Dawn_v2());
+  #endif
+
+  #ifdef USERMOD_STAIRCASE_WIPE
+  usermods.add(new StairwayWipeUsermod());
+  #endif
+
+  #ifdef USERMOD_TETRISAI
+  usermods.add(new TetrisAIUsermod());
   #endif
 }

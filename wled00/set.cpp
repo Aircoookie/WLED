@@ -102,9 +102,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin, PinOwner::Relay)) {
        pinManager.deallocatePin(rlyPin, PinOwner::Relay);
     }
+    #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
        pinManager.deallocatePin(irPin, PinOwner::IR);
     }
+    #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
         pinManager.deallocatePin(btnPin[s], PinOwner::Button);
@@ -165,12 +167,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       uint16_t freq = request->arg(sp).toInt();
       if (IS_PWM(type)) {
         switch (freq) {
-          case 0 : freq = WLED_PWM_FREQ/3;   break;
-          case 1 : freq = WLED_PWM_FREQ/2;   break;
+          case 0 : freq = WLED_PWM_FREQ/2;    break;
+          case 1 : freq = WLED_PWM_FREQ*2/3;  break;
           default:
-          case 2 : freq = WLED_PWM_FREQ;     break;
-          case 3 : freq = WLED_PWM_FREQ*4/3; break;
-          case 4 : freq = WLED_PWM_FREQ*2;   break;
+          case 2 : freq = WLED_PWM_FREQ;      break;
+          case 3 : freq = WLED_PWM_FREQ*2;    break;
+          case 4 : freq = WLED_PWM_FREQ*10/3; break; // uint16_t max (19531 * 3.333)
         }
       } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
         switch (freq) {
@@ -217,7 +219,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     BusManager::updateColorOrderMap(com);
 
-    // upate other pins
+    // update other pins
+    #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
@@ -225,6 +228,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    #endif
     irApplyToAllSelected = !request->hasArg(F("MSO"));
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
@@ -248,14 +252,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
         {
           // not an ADC analog pin
-          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
         else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH) && digitalPinToTouchChannel(btnPin[i]) < 0)
         {
           // not a touch pin
-          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n", btnPin[i], i);
+          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
@@ -302,6 +306,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.paletteFade = request->hasArg(F("PF"));
     t = request->arg(F("TP")).toInt();
     randomPaletteChangeTime = MIN(255,MAX(1,t));
+    useHarmonicRandomPalette = request->hasArg(F("TH"));
 
     nightlightTargetBri = request->arg(F("TB")).toInt();
     t = request->arg(F("TL")).toInt();
@@ -442,7 +447,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     //start ntp if not already connected
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
-    ntpLastSyncTime = 0; // force new NTP query
+    ntpLastSyncTime = NTP_NEVER; // force new NTP query
 
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
@@ -668,7 +673,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // if the resulting name still contains ":" this means nested object
       JsonObject subObj;
       int umSubObj = name.indexOf(":");
-      DEBUG_PRINTF("(%d):",umSubObj);
+      DEBUG_PRINTF_P(PSTR("(%d):"),umSubObj);
       if (umSubObj>0) {
         subObj = mod[name.substring(0,umSubObj)];
         if (subObj.isNull())
@@ -693,16 +698,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                         subObj[name].add(value.toInt());    // we may have an int
           j++;
         }
-        DEBUG_PRINT("[");
-        DEBUG_PRINT(j);
-        DEBUG_PRINT("] = ");
-        DEBUG_PRINTLN(value);
+        DEBUG_PRINT(F("[")); DEBUG_PRINT(j); DEBUG_PRINT(F("] = ")); DEBUG_PRINTLN(value);
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
-        // to describe the type of parameter (text,float,int), for boolean patameters the first field contains "off"
+        // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
         // so checkboxes have one or two fields (first is always "false", existence of second depends on checkmark and may be "true")
         if (subObj[name].isNull()) {
-          // the first occurence of the field describes the parameter type (used in next loop)
+          // the first occurrence of the field describes the parameter type (used in next loop)
           if (value == "false") subObj[name] = false; // checkboxes may have only one field
           else                  subObj[name] = value;
         } else {
@@ -715,8 +717,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           } else if (type == "int")      subObj[name] = value.toInt();
           else                           subObj[name] = value;  // text fields
         }
-        DEBUG_PRINT(" = ");
-        DEBUG_PRINTLN(value);
+        DEBUG_PRINT(F(" = ")); DEBUG_PRINTLN(value);
       }
     }
     usermods.readFromConfig(um);  // force change of usermod parameters
@@ -882,7 +883,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply preset
   if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
-    unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 
