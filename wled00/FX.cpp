@@ -7894,9 +7894,15 @@ uint16_t mode_particlerotatingspray(void)
   if (SEGLEN == 1)
     return mode_static();
 
+<<<<<<< HEAD
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   
+=======
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 #ifdef ESP8266
   const uint32_t numParticles = 150; // maximum number of particles
 #else
@@ -8051,16 +8057,25 @@ uint16_t mode_particlefireworks(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   // particle system box dimensions
+<<<<<<< HEAD
   const uint16_t PS_MAX_X=(cols * PS_P_RADIUS - 1);
   const uint16_t PS_MAX_Y=(rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
   const uint32_t numParticles = 250;
   const uint8_t MaxNumRockets = 4; 
+=======
+  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
+  const uint32_t PS_MAX_Y = (rows * PS_P_RADIUS - 1);
+
+#ifdef ESP8266
+  const uint32_t numParticles = 100;
+  const uint8_t MaxNumRockets = 2;
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 #else
   const uint32_t numParticles = 650;
   const uint8_t MaxNumRockets = 8; 
@@ -8085,7 +8100,11 @@ uint16_t mode_particlefireworks(void)
 
   uint32_t i = 0;
   uint32_t j = 0;
+<<<<<<< HEAD
   uint8_t numRockets = 1+ ((SEGMENT.custom3) >> 2); //1 to 8
+=======
+  uint8_t numRockets = min(uint8_t(1 + ((SEGMENT.custom3) >> 2)), MaxNumRockets); // 1 to 8
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8119,12 +8138,26 @@ uint16_t mode_particlefireworks(void)
       emitparticles = 0;
     }
     else
+<<<<<<< HEAD
     {                                   // speed is zero, explode!
       emitparticles = random8(SEGMENT.intensity>>1) + 10; // defines the size of the explosion
       rockets[j].source.vy = -1;        // set speed negative so it will emit no more particles after this explosion until relaunch
       if (j == circularexplosion || j == spiralexplosion)       // chosen rocket, do an angle emit (creating a circle)
       {
         emitparticles>>3; //emit less particles for circle-explosions
+=======
+    {                                                       // speed is zero, explode!
+      
+      #ifdef ESP8266          
+      emitparticles = random8(SEGMENT.intensity >> 2) + 10; // defines the size of the explosion
+      #else
+      emitparticles = random8(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion
+      #endif
+      rockets[j].source.vy = -1;                            // set speed negative so it will emit no more particles after this explosion until relaunch
+      if (j == circularexplosion || j == spiralexplosion)   // chosen rocket, do an angle emit (creating a circle)
+      {
+        emitparticles = emitparticles >> 3; // emit less particles for circle-explosions
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
         rockets[j].maxLife = 150;
         rockets[j].minLife = 120;        
         rockets[j].var = 0;  // speed variation around vx,vy (+/- var/2)
@@ -8136,7 +8169,7 @@ uint16_t mode_particlefireworks(void)
     if (j == spiralexplosion) 
       angle = random(8);
 
-    for (i; i < numParticles; i++)
+    while(i < numParticles)
     {
       if (particles[i].ttl == 0)
       { // particle is dead
@@ -8163,9 +8196,14 @@ uint16_t mode_particlefireworks(void)
         else if (j == spiralexplosion && emitparticles > 2) // do spiral emit
         {
           Emitter_Angle_emit(&rockets[j], &particles[i], angle, speed);
+<<<<<<< HEAD
           emitparticles--;
           emitparticles--;//only emit half as many particles as in circle explosion, it gets too huge otherwise
           angle += 15;                    
+=======
+          emitparticles-=2; // only emit half as many particles as in circle explosion, it gets too huge otherwise
+          angle += 15;
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
           speed++;
           rockets[j].source.hue++; 
           rockets[j].source.sat = random8(155)+100;        
@@ -8179,6 +8217,7 @@ uint16_t mode_particlefireworks(void)
         else
           break; // done emitting for this rocket
       }
+      i++;
     }
   }
 
@@ -8249,12 +8288,24 @@ uint16_t mode_particlevolcano(void)
   if (SEGLEN == 1)
     return mode_static();
 
+<<<<<<< HEAD
   const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   //particle system x dimension
   const uint16_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
+=======
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  
+  // particle system x dimension
+  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 
-  const uint32_t numParticles = 450;
+#ifdef ESP8266
+  const uint32_t numParticles = 100; // maximum number of particles
+#else
+  const uint32_t numParticles = 450; // maximum number of particles
+#endif
+  
   const uint8_t numSprays = 1;
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
@@ -8316,7 +8367,12 @@ uint16_t mode_particlevolcano(void)
       }
       else{ //wrap on the right side
         spray[i].source.vx = SEGMENT.speed >> 4; // spray speed
+<<<<<<< HEAD
         if (spray[i].source.x >= PS_MAX_X-32) spray[i].source.x = 1; //wrap if close to border (need to wrap before the bounce updated detects a border collision or it will just be stuck)
+=======
+        if (spray[i].source.x >= PS_MAX_X - 32) //compiler warning can be ignored, source.x is always > 0
+          spray[i].source.x = 1; // wrap if close to border (need to wrap before the bounce updated detects a border collision or it will just be stuck)
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
       }
       spray[i].vy = SEGMENT.custom1 >> 2;                          // emitting speed, upward
       spray[i].vx = 0; 
@@ -8364,7 +8420,7 @@ uint16_t mode_particlevolcano(void)
   ParticleSys_render(particles, numParticles, false, false);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "Particle Volcano@Moving Speed,Intensity,Particle Speed,Bouncyness,Nozzle Size,Color by Age,Bounce X,Collisions;;!;012;pal=35,sx=0,ix=160,c1=100,c2=160,c3=10,o1=1,o2=1,o3=1";
+static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "Particle Volcano@Move,Intensity,Speed,Bounce,Size,Color by Age,Bounce X,Collisions;;!;012;pal=35,sx=0,ix=160,c1=100,c2=160,c3=10,o1=1,o2=0,o3=0";
 
 /*
  * Particle Fire
@@ -8377,15 +8433,21 @@ uint16_t mode_particlefire(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;  
 
   // particle system box dimensions
-  const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-  const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
-
+  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
+  
+  #ifdef ESP8266
+  const uint32_t numFlames = min((uint32_t)10, cols); // limit to 10 flames, not enough ram on ESP8266
+  const uint32_t numParticles = numFlames * 16;
+  const uint32_t numNormalFlames = numFlames - (cols >> 2); // number of normal flames, rest of flames are baseflames
+  #else
   const uint32_t numFlames = (cols << 1); // number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results, add a few for the base flames
   const uint32_t numParticles = numFlames * 25;
+  const uint32_t numNormalFlames = numFlames - (cols >> 1); // number of normal flames, rest of flames are baseflames
+  #endif
+  
   uint8_t percycle = numFlames >> 1; // maximum number of particles emitted per cycle
   PSparticle *particles;
   PSpointsource *flames;
@@ -8419,7 +8481,13 @@ uint16_t mode_particlefire(void)
     {
       flames[i].source.ttl = 0;
       flames[i].source.x = PS_P_RADIUS * 3 + random16(PS_MAX_X - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
+<<<<<<< HEAD
       //note: other parameters are set when creating the flame (see blow)
+=======
+      flames[i].source.vx = 0; // emitter moving speed;
+      flames[i].source.vy = 0; 
+      // note: other parameters are set when creating the flame (see blow)
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
     }
   }
 
@@ -8449,23 +8517,34 @@ uint16_t mode_particlefire(void)
         }
       }
 
+<<<<<<< HEAD
       if (i < (numFlames - (cols >> 1)))
       { // all but the last few are normal flames
         flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame so particles alredy spread a little when the appear
         flames[i].source.vx = 0;               // (rand() % 3) - 1;
         flames[i].source.vy = 0;
+=======
+      flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame
+
+      if (i < numNormalFlames)
+      {                                        // all but the last few are normal flames        
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
         flames[i].source.ttl = random8(SEGMENT.intensity >> 2) / (1 + (SEGMENT.speed >> 6)) + 10; //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
         flames[i].maxLife = random8(7) + 13;                                                      // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
-        flames[i].minLife = 2;
+        flames[i].minLife = 3;
         flames[i].vx = (int8_t)random8(4) - 2;   // emitting speed (sideways)
         flames[i].vy = 5 + (SEGMENT.speed >> 2); // emitting speed (upwards)
         flames[i].var = random8(5) + 3;          // speed variation around vx,vy (+/- var/2)
       }
       else
+<<<<<<< HEAD
       {                                        // base flames to make the base brighter, flames are slower and short lived
         flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame
         flames[i].source.vx = 0;
         flames[i].source.vy = 0;                // emitter moving speed;
+=======
+      {                                        // base flames to make the base brighter, flames are slower and short lived        
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
         flames[i].source.ttl = random8(25) + 15; // lifetime of one flame
         flames[i].maxLife = 25;                  // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         flames[i].minLife = 12;
@@ -8508,7 +8587,7 @@ uint16_t mode_particlefire(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,Intensity,Base Flames,Wind Speed, Color Scheme, WrapX;;!;012;sx=100,ix=120,c1=16,c2=128,c3=0,o1=0";
+static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,Intensity,Base Flames,Wind Speed, Color Scheme, WrapX;;!;012;sx=100,ix=120,c1=30,c2=128,c3=0,o1=0";
 
 
 /*
@@ -8525,10 +8604,14 @@ uint16_t mode_particlefall(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint32_t numParticles = 500;
+#ifdef ESP8266
+  const uint32_t numParticles = 100; // maximum number of particles
+#else
+  const uint32_t numParticles = 500; // maximum number of particles
+#endif
 
   PSparticle *particles;
 
@@ -8597,7 +8680,7 @@ uint16_t mode_particlefall(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=0,c3=20,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=100,c3=20,o1=0,o2=0,o3=1";
 
 /*
  * Particle Waterfall
@@ -8611,11 +8694,17 @@ uint16_t mode_particlewaterfall(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-  const uint32_t numParticles = 500;
+#ifdef ESP8266
+  const uint32_t numParticles = 100; // maximum number of particles
+  const uint8_t numSprays = 1;
+#else
+  const uint32_t numParticles = 500; // maximum number of particles
   const uint8_t numSprays = 2;
+#endif
+  
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
   PSparticle *particles;
@@ -8647,11 +8736,25 @@ uint16_t mode_particlewaterfall(void)
       spray[i].source.x = (cols * PS_P_RADIUS) / 2 - PS_P_RADIUS + 2*PS_P_RADIUS * (i);
       spray[i].source.y = (rows+4) * (PS_P_RADIUS*(i+1)); // source y position, few pixels above the top to increase spreading before entering the matrix
       spray[i].source.vx = 0;
+<<<<<<< HEAD
       spray[i].source.collide = true; //seeded particles will collide
       spray[i].maxLife = 600; // lifetime in frames
       spray[i].minLife = 200;
       spray[i].vx = 0; // emitting speed
       spray[i].var = 7;   // emiting variation
+=======
+      spray[i].source.collide = true; // seeded particles will collide
+      #ifdef ESP8266
+      spray[i].maxLife = 100; // lifetime in frames
+      spray[i].minLife = 50;
+      #else
+      spray[i].maxLife = 400;         // lifetime in frames
+      spray[i].minLife = 150;
+      #endif
+
+      spray[i].vx = 0;  // emitting speed
+      spray[i].var = 7; // emiting variation
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
     }
   }
 
@@ -8733,10 +8836,14 @@ uint16_t mode_particlebox(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
+#ifdef ESP8266
+  const uint32_t numParticles = 80; // maximum number of particles
+#else
   const uint32_t numParticles = 255; // maximum number of particles
+#endif
 
   PSparticle *particles;
 
@@ -8747,7 +8854,6 @@ uint16_t mode_particlebox(void)
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
 
   uint32_t i = 0;
-  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8763,17 +8869,15 @@ uint16_t mode_particlebox(void)
     }
   }
 
-  uint16_t displayparticles = SEGMENT.intensity;
+  uint16_t displayparticles = map(SEGMENT.intensity, 0, 255, 10, numParticles);
 
   i = 0;
-  j = 0;
 
   if (SEGMENT.call % (((255 - SEGMENT.speed) >> 6) + 1) == 0 && SEGMENT.speed > 0) // how often the force is applied depends on speed setting
   {
 
     int32_t xgravity;
     int32_t ygravity;
-    uint8_t scale;
 
     SEGMENT.aux0 += (SEGMENT.speed >> 6) + 1; // update position in noise
     
@@ -8788,9 +8892,6 @@ uint16_t mode_particlebox(void)
     // scale the gravity force down
     xgravity /= 16;
     ygravity /= 16;
-    Serial.print(xgravity);
-    Serial.print(" ");
-    Serial.println(ygravity);
 
     for (i = 0; i < numParticles; i++)
     {
@@ -8828,9 +8929,10 @@ uint16_t mode_particlebox(void)
 static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Hardness,,Sloshing;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
 
 /*
-perlin noise 'gravity' mapping as in particles on noise hills viewed from above
-calculates slope gradient at the particle positions
+Perlin Noise 'gravity' mapping as in particles on 'noise hills' viewed from above
+calculates slope gradient at the particle positions and applies 'downhill' force
 restults in a fuzzy perlin noise display
+by DedeHai (Damian Schneider)
 */
 
 uint16_t mode_particleperlin(void)
@@ -8839,12 +8941,12 @@ uint16_t mode_particleperlin(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 
 #ifdef ESP8266
-  const uint32_t numParticles = 150;
+  const uint32_t numParticles = 80;
 #else
   const uint32_t numParticles = 350;
 #endif
@@ -8858,7 +8960,6 @@ uint16_t mode_particleperlin(void)
   particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
 
   uint32_t i = 0;
-  uint32_t j = 0;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8901,11 +9002,14 @@ uint16_t mode_particleperlin(void)
       particles[i].vy += yslope >> 1;
     }
   }
+<<<<<<< HEAD
   uint8_t hardness = SEGMENT.custom1; // how hard the collisions are, 255 = full hard.
   if(SEGMENT.check1) //collisions enabled
   {   
     detectCollisions(particles, displayparticles, hardness);
   }
+=======
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 
   // move particles
   for (i = 0; i < displayparticles; i++)
@@ -8914,7 +9018,7 @@ uint16_t mode_particleperlin(void)
     if (SEGMENT.call % (16-(SEGMENT.custom2>>4)) == 0) // need to apply friction very rarely or particles will clump
       applyFriction(&particles[i], 1);
 
-    Particle_Bounce_update(&particles[i], hardness);
+    Particle_Bounce_update(&particles[i], 255);
   }
 
   SEGMENT.fill(BLACK); // clear the matrix
@@ -8924,7 +9028,7 @@ uint16_t mode_particleperlin(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Noise@Speed,Particles,Collision Hardness,Friction,Scale,Collisions;;!;012;pal=54,sx=70;ix=200,c1=190,c2=120,c3=4,o1=0";
+static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Noise@Speed,Particles,,Friction,Scale;;!;012;pal=54,sx=70;ix=200,c1=120,c2=120,c3=4,o1=0";
 
 
 /*
@@ -8937,16 +9041,16 @@ uint16_t mode_particleimpact(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   // particle system box dimensions
-  const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-  const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+  const uint32_t PS_MAX_X(cols * PS_P_RADIUS - 1);
+  const uint32_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
-  const uint32_t numParticles = 250;
-  const uint8_t MaxNumMeteors = 4;
+  const uint32_t numParticles = 150;
+  const uint8_t MaxNumMeteors = 2;
 #else
   const uint32_t numParticles = 550;
   const uint8_t MaxNumMeteors = 8;
@@ -8993,7 +9097,11 @@ uint16_t mode_particleimpact(void)
     // determine meteor state by its speed:
     if (meteors[j].source.vy < 0) // moving down, emit sparks
     {
+      #ifdef ESP8266
+      emitparticles = 1;
+      #else
       emitparticles = 2;
+      #endif
     }
     else if (meteors[j].source.vy > 0) // moving up means meteor is on 'standby'
     {
@@ -9002,10 +9110,14 @@ uint16_t mode_particleimpact(void)
     else // speed is zero, explode!
     {
       meteors[j].source.vy = 125;                           // set source speed positive so it goes into timeout and launches again
+      #ifdef ESP8266
+      emitparticles = random8(SEGMENT.intensity >> 2) + 10; // defines the size of the explosion
+      #else
       emitparticles = random8(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion
+      #endif
     }
 
-    for (i; i < numParticles; i++)
+    while(i < numParticles)
     {
       if (particles[i].ttl == 0) // particle is dead
       {
@@ -9017,6 +9129,7 @@ uint16_t mode_particleimpact(void)
         else
           break; // done emitting for this meteor
       }
+      i++;
     }
   }
 
@@ -9042,6 +9155,7 @@ uint16_t mode_particleimpact(void)
     {
       Particle_Gravity_update(&meteors[i].source, SEGMENT.check1, SEGMENT.check2, true, 255); // move the meteor, age the meteor (ttl--)
       if (meteors[i].source.vy > 0)
+<<<<<<< HEAD
         meteors[i].source.y=5; //'hack' to keep the meteors within frame, as ttl will be set to zero by gravity update if too far out of frame
             // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
             if ((meteors[i].source.y < PS_P_RADIUS) && (meteors[i].source.vy < 0)) // reached the bottom pixel on its way down
@@ -9057,6 +9171,27 @@ uint16_t mode_particleimpact(void)
           meteors[i].vy = (SEGMENT.custom1 >> 2);                      // emitting speed y
           meteors[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
         }
+=======
+        meteors[i].source.y = 5; //'hack' to keep the meteors within frame, as ttl will be set to zero by gravity update if too far out of frame
+      // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
+      if ((meteors[i].source.y < PS_P_RADIUS) && (meteors[i].source.vy < 0)) // reached the bottom pixel on its way down
+      {
+        meteors[i].source.vy = 0; // set speed zero so it will explode
+        meteors[i].source.vx = 0;
+        meteors[i].source.y = 5;          // offset from ground so explosion happens not out of frame
+        meteors[i].source.collide = true; // explosion particles will collide if checked
+        meteors[i].maxLife = 200;
+        meteors[i].minLife = 50;
+        #ifdef ESP8266
+        meteors[i].source.ttl = random8(255 - (SEGMENT.speed>>1)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
+        #else
+        meteors[i].source.ttl = random8((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
+        #endif       
+        meteors[i].vx = 0;                                           // emitting speed x
+        meteors[i].vy = (SEGMENT.custom1 >> 2);                      // emitting speed y
+        meteors[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
+      }
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
     }
     else if (meteors[i].source.vy > 0) // meteor is exploded and time is up (ttl==0 and positive speed), relaunch it
     {
@@ -9094,14 +9229,14 @@ uint16_t mode_particleattractor(void)
 {
   if (SEGLEN == 1)  return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   // particle system box dimensions
-  const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-  const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+  const uint32_t PS_MAX_X(cols * PS_P_RADIUS - 1);
+  const uint32_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
-  const uint32_t numParticles = 150; // maximum number of particles
+  const uint32_t numParticles = 90; // maximum number of particles
 #else
   const uint32_t numParticles = 300; // maximum number of particles  
 #endif
@@ -9113,9 +9248,15 @@ uint16_t mode_particleattractor(void)
   uint8_t *counters; //counters for the applied force
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
+<<<<<<< HEAD
   uint32_t dataSize = sizeof(PSparticle) * (numParticles + 1);
   dataSize  += sizeof(uint8_t) *numParticles;
   dataSize += sizeof(PSpointsource);
+=======
+  uint32_t dataSize = sizeof(PSparticle) * (numParticles+1); //space for particles and the attractor
+  dataSize += sizeof(uint8_t) * numParticles; //space for counters
+  dataSize += sizeof(PSpointsource); //space for spray
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed
@@ -9126,7 +9267,6 @@ uint16_t mode_particleattractor(void)
   counters = reinterpret_cast<uint8_t *>(spray + 1);
 
   uint32_t i;
-  uint32_t j;
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -9155,11 +9295,15 @@ uint16_t mode_particleattractor(void)
     spray->var = 6; //emitting speed variation    
   }
 
-  uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 1, numParticles);
+  uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 1, numParticles) - 1; //TODO: the -1 is a botch fix, it crashes for some reason if going to max number of particles, is this a rounding error?
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
   i = 0;
+<<<<<<< HEAD
   j = 0;
   
+=======
+
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
   if (hardness > 1) // enable collisions
   {
     detectCollisions(particles, displayparticles, hardness);
@@ -9209,13 +9353,17 @@ uint16_t mode_particleattractor(void)
   else
     SEGMENT.fill(BLACK); // clear the matrix
 
+<<<<<<< HEAD
   //ParticleSys_render(&attract, 1, 30, false, false); // render attractor
+=======
+  // ParticleSys_render(&attract, 1, 30, false, false); // render attractor
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
   // render the particles
   ParticleSys_render(particles, displayparticles, false, false);
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,Emit Speed,Collision Strength,Friction,Bounce,Trails,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=210,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,Emit Speed,Collisions,Friction,Bounce,Trails,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=0,o1=0,o2=0,o3=0";
 
 /*
 Particle Spray, just a simple spray animation with many parameters
@@ -9229,13 +9377,18 @@ uint16_t mode_particlespray(void)
   if (SEGLEN == 1)
     return mode_static();
 
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   // particle system x dimension
-  const uint16_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
-  const uint16_t PS_MAX_Y = (rows * PS_P_RADIUS - 1);
+  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
+  const uint32_t PS_MAX_Y = (rows * PS_P_RADIUS - 1);
 
+#ifdef ESP8266
+  const uint32_t numParticles = 80;
+#else
   const uint32_t numParticles = 450;
+#endif
+  
   const uint8_t numSprays = 1;
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
@@ -9295,7 +9448,11 @@ uint16_t mode_particlespray(void)
       if (particles[i].ttl == 0) // find a dead particle
       {
         // spray[j].source.hue = random8(); //set random color for each particle (using palette)
+<<<<<<< HEAD
         Emitter_Angle_emit(&spray[j], &particles[i], SEGMENT.custom3<<3, SEGMENT.speed>>2);
+=======
+        Emitter_Angle_emit(&spray[j], &particles[i], 255-(SEGMENT.custom3 << 3), SEGMENT.speed >> 2);
+>>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
         j = (j + 1) % numSprays;
         if (percycle-- == 0)
         {
@@ -9332,7 +9489,7 @@ uint16_t mode_particlespray(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "Particle Spray@Particle Speed,Intensity,X Position,Y Position,Angle,Gravity,WrapX/Bounce,Collisions;;!;012;pal=0,sx=180,ix=200,c1=220,c2=30,c3=12,o1=1,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "Particle Spray@Particle Speed,Intensity,X Position,Y Position,Angle,Gravity,WrapX/Bounce,Collisions;;!;012;pal=0,sx=100,ix=160,c1=100,c2=50,c3=20,o1=0,o2=1,o3=0";
 
 /*
 Particle base Graphical Equalizer
