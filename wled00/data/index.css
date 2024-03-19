@@ -1290,6 +1290,7 @@ TD .checkmark, TD .radiomark {
 	margin: 0 auto 12px;
 	min-height: 40px;
 	border: 1px solid var(--c-2);
+	width: 100%;
 }
 
 /* Simplify segments */

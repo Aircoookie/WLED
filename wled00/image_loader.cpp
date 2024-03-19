@@ -1,7 +1,9 @@
+#include "wled.h"
+
 #ifndef WLED_DISABLE_GIF
 
 #include "GifDecoder.h"
-#include "wled.h"
+
 
 /*
  * Functions to render images from filesystem to segments, used by the "Image" effect

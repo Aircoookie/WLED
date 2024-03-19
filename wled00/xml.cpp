@@ -471,8 +471,10 @@ void getSettingsJS(byte subPage, char* dest)
     }
     sappend('c',SET_F("IP"),disablePullUp);
     sappend('v',SET_F("TT"),touchThreshold);
+#ifndef WLED_DISABLE_INFRARED
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
+#endif    
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 

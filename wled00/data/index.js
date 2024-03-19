@@ -618,7 +618,7 @@ function populatePresets(fromls)
 
 		cn += `<div class="pres lstI" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
+		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${i==lastinfo.leds.bootps?"<i class='icons btn-icon'>&#xe410;</i>":""}${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
 	<i class="icons edit-icon flr" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
 	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
@@ -1959,6 +1959,7 @@ function plR(p)
 function makeP(i,pl)
 {
 	var content = "";
+	const bps = lastinfo.leds.bootps;
 	if (pl) {
 		if (i===0) plJson[0] = {
 			ps: [1],
@@ -2024,6 +2025,11 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </div>
 <div class="po2" id="p${i}o2">API command<br><textarea class="apitxt" id="p${i}api"></textarea></div>
 <div class="po1" id="p${i}o1">${content}</div>
+<label class="check revchkl">
+	<span class="lstIname">Apply at boot</span>
+	<input type="checkbox" id="p${i}bps" ${i==bps?"checked":""}>
+	<span class="checkmark"></span>
+</label>
 <div class="c m6">Save to ID <input id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
@@ -2445,8 +2451,9 @@ function saveP(i,pl)
 			if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
 		}
 	}
-
-	obj.psave = pI; obj.n = pN;
+	if (gId(`p${i}bps`).checked) obj.bootps = pI;
+	obj.psave = pI;
+	obj.n = pN;
 	var pQN = gId(`p${i}ql`).value;
 	if (pQN.length > 0) obj.ql = pQN;
 

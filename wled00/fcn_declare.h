@@ -5,7 +5,6 @@
  * All globally accessible functions are declared here
  */
 
-
 //alexa.cpp
 #ifndef WLED_DISABLE_ALEXA
 void onAlexaChange(EspalexaDevice* dev);

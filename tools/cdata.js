@@ -30,14 +30,12 @@ const output = ["wled00/html_ui.h", "wled00/html_pixart.h", "wled00/html_cpal.h"
 
 // \x1b[34m is blue, \x1b[36m is cyan, \x1b[0m is reset
 const wledBanner = `
-\t\x1b[34m##      ## ##       ######## ########  
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m##  ##  ## ##       ######   ##     ## 
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m ###  ###  ######## ######## ########  
-\t\t\x1b[36mbuild script for web UI
+\t\x1b[34m  ##  ##      ##        ######    ######
+\t\x1b[34m##      ##    ##      ##        ##  ##  ##
+\t\x1b[34m##  ##  ##  ##        ######        ##  ##
+\t\x1b[34m##  ##  ##  ##        ##            ##  ##
+\t\x1b[34m  ##  ##      ######    ######    ######
+\t\t\x1b[36m build script for web UI
 \x1b[0m`;
 
 const singleHeader = `/*
