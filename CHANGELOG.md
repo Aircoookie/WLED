@@ -1,7 +1,18 @@
 ## WLED changelog
 
+#### Build 2403190
+-   limit max PWM frequency (fix incorrect PWM resolution)
+-   Segment UI bugfix
+-   Updated AsyncWebServer (by @wlillmmiles)
+-   Simpler boot preset (fix for #3806)
+-   Effect: Fix for 2D Drift animation (#3816 by @BaptisteHudyma)
+-   Effect: Add twin option to 2D Drift
+-   MQTT cleanup
+-   DDP: Support sources that don't push (#3833 by @willmmiles)
+-   Usermod: Tetris AI usermod (#3711 by @muebau)
+
 #### Build 2403171
--   merge 0.14.2 changes
+-   merge 0.14.2 changes into 0.15
 
 #### Build 2403070
 -   Add additional segment options when controlling over e1.31 (#3616 by @demophoon)
