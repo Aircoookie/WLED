@@ -313,6 +313,8 @@ void WLED::setup()
   DEBUG_PRINT(versionString);
   DEBUG_PRINT(" ");
   DEBUG_PRINT(VERSION);
+  DEBUG_PRINT(" ");
+  DEBUG_PRINT(branchString);
   DEBUG_PRINTLN(F(" INIT---"));
 #ifdef ARDUINO_ARCH_ESP32
   DEBUG_PRINT(F("esp32 "));

@@ -613,6 +613,7 @@ void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
   root[F("vid")] = VERSION;
+  root[F("branch")] = branchString;
   //root[F("cn")] = WLED_CODENAME;
 
   JsonObject leds = root.createNestedObject("leds");
