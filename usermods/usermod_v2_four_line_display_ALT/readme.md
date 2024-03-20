@@ -56,10 +56,10 @@ These options are configurable in Config > Usermods
     * 3 = I2C SSD1306 128x64 (4 double-height lines)
     * 4 = I2C SSD1305 128x32
     * 5 = I2C SSD1305 128x64 (4 double-height lines)
-    * 6 = I2C SSD1309 128x64 (4 double-height lines)
-    * 7 = SPI SSD1306 128x32
-    * 8 = SPI SSD1306 128x64 (4 double-height lines)
-    * 9 = SPI SSD1309 128x64 (4 double-height lines)
+    * 6 = SPI SSD1306 128x32
+    * 7 = SPI SSD1306 128x64 (4 double-height lines)
+    * 8 = SPI SSD1309 128x64 (4 double-height lines)
+    * 9 = I2C SSD1309 128x64 (4 double-height lines)
 * `pin` - GPIO pins used for display; SPI displays can use SCK, MOSI, CS, DC & RST
 * `flip` - flip/rotate display 180°
 * `contrast` - set display contrast (higher contrast may reduce display lifetime)

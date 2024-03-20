@@ -87,10 +87,10 @@ typedef enum {
   SSD1306_64,       // U8X8_SSD1306_128X64_NONAME_HW_I2C
   SSD1305,          // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
   SSD1305_64,       // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
-  SSD1309_64,       // U8X8_SSD1309_128X64_NONAME0_HW_I2C
   SSD1306_SPI,      // U8X8_SSD1306_128X32_NONAME_HW_SPI
   SSD1306_SPI64,    // U8X8_SSD1306_128X64_NONAME_HW_SPI
-  SSD1309_SPI64     // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
+  SSD1309_SPI64,    // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
+  SSD1309_64        // U8X8_SSD1309_128X64_NONAME0_HW_I2C
 } DisplayType;
 
 
@@ -1207,10 +1207,10 @@ void FourLineDisplayUsermod::appendConfigData() {
   oappend(SET_F("addOption(dd,'SSD1306 128x64',3);"));
   oappend(SET_F("addOption(dd,'SSD1305',4);"));
   oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
-  oappend(SET_F("addOption(dd,'SSD1309 128x64',6);"));
-  oappend(SET_F("addOption(dd,'SSD1306 SPI',7);"));
-  oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',8);"));
-  oappend(SET_F("addOption(dd,'SSD1309 SPI 128x64',9);"));
+  oappend(SET_F("addOption(dd,'SSD1309 128x64',9);"));
+  oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
+  oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
+  oappend(SET_F("addOption(dd,'SSD1309 SPI 128x64',8);"));
   oappend(SET_F("addInfo('4LineDisplay:type',1,'<br><i class=\"warn\">Change may require reboot</i>','');"));
   oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','SPI CS');"));
   oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'','SPI DC');"));
