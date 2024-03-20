@@ -1162,12 +1162,16 @@ void WS2812FX::service() {
       uint16_t delay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen
+        int16_t oldCCT = BusManager::getSegmentCCT(); // store original CCT value (actually it is not Segment based)
         _virtualSegmentLength = seg.virtualLength(); //SEGLEN
         _colors_t[0] = gamma32(seg.currentColor(0));
         _colors_t[1] = gamma32(seg.currentColor(1));
         _colors_t[2] = gamma32(seg.currentColor(2));
         seg.currentPalette(_currentPalette, seg.palette); // we need to pass reference
-        if (!cctFromRgb || correctWB) BusManager::setSegmentCCT(seg.currentBri(true), correctWB);
+        // when correctWB is true we need to correct/adjust RGB value according to desired CCT value, but it will also affect actual WW/CW ratio
+        // when cctFromRgb is true we implicitly calculate WW and CW from RGB values
+        if (cctFromRgb) BusManager::setSegmentCCT(-1);
+        else            BusManager::setSegmentCCT(seg.currentBri(true), correctWB);
         // Effect blending
         // When two effects are being blended, each may have different segment data, this
         // data needs to be saved first and then restored before running previous mode.
@@ -1190,6 +1194,7 @@ void WS2812FX::service() {
 #endif
         seg.call++;
         if (seg.isInTransition() && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
+        BusManager::setSegmentCCT(oldCCT); // restore old CCT for ABL adjustments
       }
 
       seg.next_time = nowUp + delay;
@@ -1198,7 +1203,6 @@ void WS2812FX::service() {
     _segment_index++;
   }
   _virtualSegmentLength = 0;
-  BusManager::setSegmentCCT(-1);
   _isServicing = false;
   _triggered = false;
 
@@ -1390,11 +1394,7 @@ bool WS2812FX::hasCCTBus(void) {
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
-    switch (bus->getType()) {
-      case TYPE_ANALOG_5CH:
-      case TYPE_ANALOG_2CH:
-        return true;
-    }
+    if (bus->hasCCT()) return true;
   }
   return false;
 }

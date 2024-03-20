@@ -188,6 +188,7 @@
 			if (isDig(t)) {
 				if (is16b(t)) len *= 2; // 16 bit LEDs
 				if (t > 28 && t < 40) ch = 4; //RGBW
+				if (t == 28) ch = 5; //GRBCW
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
 					mul = 5;
 				}
@@ -242,7 +243,7 @@
 					d.Sf["MA"+n].min = (isVir(t) || isAna(t)) ? 0 : 250;
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 27 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide color order for PWM
 				gId("dig"+n+"w").style.display = (isDig(t) && isRGBW) ? "inline":"none";  // show swap channels dropdown
 				if (!(isDig(t) && isRGBW)) d.Sf["WO"+n].value = 0; // reset swapping
@@ -383,6 +384,7 @@ ${i+1}:
 <option value="25">TM1829</option>\
 <option value="26">UCS8903</option>\
 <option value="27">APA106/PL9823</option>\
+<option value="28">FW1906 GRBCW</option>\
 <option value="29">UCS8904 RGBW</option>\
 <option value="50">WS2801</option>\
 <option value="51">APA102</option>\
