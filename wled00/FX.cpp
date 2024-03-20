@@ -7196,6 +7196,42 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;1f;c2=0,m12=2,si=0"; // Circles, Beatsin
 
 
+/*
+ * Uses the average value from user-selected FFT buckets to select a single
+ * color from a palette.
+ */
+uint16_t mode_freqpalette() {
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    // add support for no audio
+    um_data = simulateSound(SEGMENT.soundSim);
+  }
+
+  // Get minimum and maximum FFT bands to consider
+  uint8_t minBand = constrain(SEGMENT.custom1 / 16, 0, 15);
+  uint8_t maxBand = constrain(SEGMENT.custom2 / 16, 0, 15);
+  if (maxBand < minBand) {
+    uint8_t temp = minBand;
+    minBand = maxBand;
+    maxBand = temp;
+  }
+
+  // Average the bands' values, scaled by user-specified sensitivity
+  uint32_t value = 0;
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
+  for (uint8_t band = minBand; band <= maxBand; ++band) {
+    value += fftResult[band] * SEGMENT.intensity;
+  }
+  value /= (maxBand - minBand + 1) * (256 / 8);
+  value = constrain(value, 0, 255);
+
+  SEGMENT.fill(SEGMENT.color_from_palette(value, false, false, 0));
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_FREQPALETTE[] PROGMEM = "Freqpalette@,Sensitivity,First FFT Band,Last FFT Band;;!;1f;ix=128,c1=0,c2=255,m12=0,si=0,pal=4";
+
+
 #ifndef WLED_DISABLE_2D
 /////////////////////////
 //     ** 2D GEQ       //
@@ -7826,6 +7862,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_NOISEMETER, &mode_noisemeter, _data_FX_MODE_NOISEMETER);
   addEffect(FX_MODE_FREQWAVE, &mode_freqwave, _data_FX_MODE_FREQWAVE);
   addEffect(FX_MODE_FREQMATRIX, &mode_freqmatrix, _data_FX_MODE_FREQMATRIX);
+  addEffect(FX_MODE_FREQPALETTE, &mode_freqpalette, _data_FX_MODE_FREQPALETTE);
 
   addEffect(FX_MODE_WATERFALL, &mode_waterfall, _data_FX_MODE_WATERFALL);
   addEffect(FX_MODE_FREQPIXELS, &mode_freqpixels, _data_FX_MODE_FREQPIXELS);
