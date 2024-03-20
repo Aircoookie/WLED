@@ -330,7 +330,8 @@
 #define FX_MODE_PARTICLEWATERFALL      196
 #define FX_MODE_PARTICLESPRAY          197
 #define FX_MODE_PARTICLESGEQ           198
-#define MODE_COUNT                     199
+#define FX_MODE_PARTICLECENTERGEQ      199
+#define MODE_COUNT                     200
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
