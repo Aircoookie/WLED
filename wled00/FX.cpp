@@ -9370,6 +9370,123 @@ uint16_t mode_particlespray(void)
 }
 static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "Particle Spray@Particle Speed,Intensity,X Position,Y Position,Angle,Gravity,WrapX/Bounce,Collisions;;!;012;pal=0,sx=100,ix=160,c1=100,c2=50,c3=20,o1=0,o2=1,o3=0";
 
+/*
+Particle base Graphical Equalizer
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particleGEQ(void)
+{
+
+  if (SEGLEN == 1)
+    return mode_static();
+
+  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+  // const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+
+#ifdef ESP8266
+  const uint32_t numParticles = 150; // maximum number of particles
+#else
+  const uint32_t numParticles = 500; // maximum number of particles
+#endif
+
+  PSparticle *particles;
+
+  // allocate memory and divide it into proper pointers, max is 32k for all segments.
+  uint32_t dataSize = sizeof(PSparticle) * numParticles;
+  if (!SEGENV.allocateData(dataSize))
+    return mode_static(); // allocation failed; //allocation failed
+
+  // calculate the end of the spray data and assign it as the data pointer for the particles:
+  particles = reinterpret_cast<PSparticle *>(SEGENV.data); // cast the data array into a particle pointer
+  uint32_t i;
+  if (SEGMENT.call == 0) // initialization
+  {
+    for (i = 0; i < numParticles; i++)
+    {
+      particles[i].ttl = 0;
+      particles[i].sat = 255; // full color
+    }
+  }
+
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+  {
+    // add support for no audio
+    um_data = simulateSound(SEGMENT.soundSim);
+  }
+
+  uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
+
+  // map the bands into 16 positions on x axis, emit some particles according to frequency loudness
+  // Idea: emit 20 particles at full loudness, can use a shift for that, for example shift by 4 or 5
+  // in order to also emit particles for not so loud bands, get a bunch of particles based on frame counter and current loudness?
+  // implement it simply first, then add complexity... need to check what looks good
+  i = 0;
+  uint32_t bin;                                      // current bin
+  uint32_t binwidth = (cols * PS_P_RADIUS - 1) >> 4; // emit poisition variation for one bin (+/-)
+  uint32_t threshold = 300 - SEGMENT.intensity;
+  uint32_t emitparticles = 0;
+
+  for (bin = 0; bin < 16; bin++)
+  {
+    uint32_t xposition = binwidth * bin + (binwidth >> 1);                               // emit position according to frequency band
+    uint8_t emitspeed = 5 + (((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 9); // emit speed according to loudness of band
+    emitparticles = 0;
+
+    if (fftResult[bin] > threshold)
+    {
+      emitparticles = 1; // + (fftResult[bin]>>6);
+    }
+    else if (fftResult[bin] > 0) // band has low volue
+    {
+      uint32_t restvolume = ((threshold - fftResult[bin]) >> 2) + 2;
+      if (random8() % restvolume == 0)
+      {
+        emitparticles = 1;
+      }
+    }
+
+    while (i < numParticles && emitparticles > 0) // emit particles if there are any left, low frequencies take priority
+    {
+      if (particles[i].ttl == 0) // find a dead particle
+      {
+        // set particle properties
+        particles[i].ttl = map(SEGMENT.intensity, 0, 255, emitspeed >> 1, emitspeed + random8(emitspeed)); // set particle alive, particle lifespan is in number of frames
+        particles[i].x = xposition + random8(binwidth) - (binwidth >> 1);                                  // position randomly, deviating half a bin width
+        particles[i].y = 0;                                                                                // start at the bottom
+        particles[i].vx = random8(SEGMENT.custom1 >> 1) - (SEGMENT.custom1 >> 2);                          // x-speed variation
+        particles[i].vy = emitspeed;
+        particles[i].hue = (bin << 4) + random8(17) - 8; // color from palette according to bin
+        // particles[i].sat = ((SEGMENT.custom3) << 3) + 7; // set saturation
+        emitparticles--;
+      }
+      i++;
+    }
+  }
+
+  // Serial.println(" ");
+
+  uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
+  // detectCollisions(particles, numParticles, hardness);
+
+  // now move the particles
+  for (i = 0; i < numParticles; i++)
+  {
+    particles[i].vy -= (SEGMENT.custom3 >> 3); // apply stronger gravity
+    Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, hardness);
+  }
+
+  SEGMENT.fill(BLACK); // clear the matrix
+
+  // render the particles
+  ParticleSys_render(particles, numParticles, SEGMENT.check1, false); // custom3 slider is saturation
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "Particle GEQ@Speed,Intensity,Randomness,Collision hardness,Gravity,Wrap X,Side bounce,Ground bounce;;!;012;pal=54,sx=100,ix=200,c1=0,c2=0,c3=0,o1=0,o2=0,o3=0";
+
 #endif // WLED_DISABLE_2D
 
 
@@ -9622,6 +9739,8 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLEIMPACT, &mode_particleimpact, _data_FX_MODE_PARTICLEIMPACT);
   addEffect(FX_MODE_PARTICLEATTRACTOR, &mode_particleattractor, _data_FX_MODE_PARTICLEATTRACTOR);
   addEffect(FX_MODE_PARTICLESPRAY, &mode_particlespray, _data_FX_MODE_PARTICLESPRAY);
+  addEffect(FX_MODE_PARTICLEGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
+
 #endif // WLED_DISABLE_2D
 
 }
