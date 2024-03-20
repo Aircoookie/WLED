@@ -21,7 +21,6 @@ void shortPressAction(uint8_t b)
       case 1: ++effectCurrent %= strip.getModeCount(); stateChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -43,7 +42,6 @@ void longPressAction(uint8_t b)
       case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -65,7 +63,6 @@ void doublePressAction(uint8_t b)
       case 1: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
   }
 

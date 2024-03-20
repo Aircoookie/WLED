@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2403100
+#define VERSION 2403190
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -705,7 +705,6 @@ WLED_GLOBAL byte optionType;
 
 WLED_GLOBAL bool doSerializeConfig _INIT(false);        // flag to initiate saving of config
 WLED_GLOBAL bool doReboot          _INIT(false);        // flag to initiate reboot from async handlers
-WLED_GLOBAL bool doPublishMqtt     _INIT(false);
 
 // status led
 #if defined(STATUSLED)

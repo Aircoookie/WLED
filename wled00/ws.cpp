@@ -102,7 +102,6 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 void sendDataWs(AsyncWebSocketClient * client)
 {
   if (!ws.count()) return;
-  AsyncWebSocketMessageBuffer * buffer;
 
   if (!requestJSONBufferLock(12)) {
     if (client) {
@@ -129,7 +128,7 @@ void sendDataWs(AsyncWebSocketClient * client)
     return;
   }
   #endif
-  buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
+  AsyncWebSocketBuffer buffer(len);
   #ifdef ESP8266
   size_t heap2 = ESP.getFreeHeap();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
@@ -141,23 +140,18 @@ void sendDataWs(AsyncWebSocketClient * client)
     DEBUG_PRINTLN(F("WS buffer allocation failed."));
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
     ws.cleanupClients(0); //disconnect all clients to release memory
-    ws._cleanBuffers();
     return; //out of memory
   }
-
-  buffer->lock();
-  serializeJson(*pDoc, (char *)buffer->get(), len);
+  serializeJson(*pDoc, (char *)buffer.data(), len);
 
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {
-    client->text(buffer);
+    client->text(std::move(buffer));
     DEBUG_PRINTLN(F("to a single client."));
   } else {
-    ws.textAll(buffer);
+    ws.textAll(std::move(buffer));
     DEBUG_PRINTLN(F("to multiple clients."));
   }
-  buffer->unlock();
-  ws._cleanBuffers();
 
   releaseJSONBufferLock();
 }
@@ -187,11 +181,10 @@ bool sendLiveLedsWs(uint32_t wsClient)
 #endif
   size_t bufSize = pos + (used/n)*3;
 
-  AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
+  AsyncWebSocketBuffer wsBuf(bufSize);
   if (!wsBuf) return false; //out of memory
-  uint8_t* buffer = wsBuf->get();
+  uint8_t* buffer = reinterpret_cast<uint8_t*>(wsBuf.data());
   if (!buffer) return false; //out of memory
-  wsBuf->lock();  // protect buffer from being cleaned by another WS instance
   buffer[0] = 'L';
   buffer[1] = 1; //version
 
@@ -218,9 +211,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
     buffer[pos++] = scale8(qadd8(w, b), strip.getBrightness()); //B
   }
 
-  wsc->binary(wsBuf);
-  wsBuf->unlock();     // un-protect buffer
-  ws._cleanBuffers();
+  wsc->binary(std::move(wsBuf));
   return true;
 }
 

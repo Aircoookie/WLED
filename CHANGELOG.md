@@ -1,5 +1,19 @@
 ## WLED changelog
 
+#### Build 2403190
+-   limit max PWM frequency (fix incorrect PWM resolution)
+-   Segment UI bugfix
+-   Updated AsyncWebServer (by @wlillmmiles)
+-   Simpler boot preset (fix for #3806)
+-   Effect: Fix for 2D Drift animation (#3816 by @BaptisteHudyma)
+-   Effect: Add twin option to 2D Drift
+-   MQTT cleanup
+-   DDP: Support sources that don't push (#3833 by @willmmiles)
+-   Usermod: Tetris AI usermod (#3711 by @muebau)
+
+#### Build 2403171
+-   merge 0.14.2 changes into 0.15
+
 #### Build 2403070
 -   Add additional segment options when controlling over e1.31 (#3616 by @demophoon)
 -   LockedJsonResponse: Release early if possible (#3760 by @willmmiles)
@@ -119,6 +133,26 @@
     -   ignore inactive segments if not syncing bounds
     -   send UDP/WS on segment change
     -   pop_back() when removing last segment
+
+#### Build 2403170
+-   WLED 0.14.2 release
+
+#### Build 2403110
+-   Beta WLED 0.14.2-b2
+-   New AsyncWebServer (improved performance and reduced memory use)
+-   New builds for ESP8266 with 160MHz CPU clock
+-   Fixing stairway usermod and adding buildflags (#3758 by @lost-hope)
+-   Fixing a potential array bounds violation in ESPDMX
+-   Reduced RAM usage (moved strings and TZ data (by @willmmiles) to PROGMEM)
+-   LockedJsonResponse: Release early if possible (by @willmmiles)
+
+#### Build 2402120
+-   Beta WLED 0.14.2-b1
+-   Possible fix for #3589 & partial fix for #3605
+-   Prevent JSON buffer clear after failed lock attempt
+-   Multiple analog button fix for #3549
+-   UM Audioreactive: add two compiler options (#3732 by @wled-install)
+-   Fix for #3693
 
 #### Build 2401141
 -   Official release of WLED 0.14.1
