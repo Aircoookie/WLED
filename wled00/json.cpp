@@ -226,14 +226,19 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["ix"], &seg.intensity);
 
   uint8_t pal = seg.palette;
+  last = strip.getPaletteCount();
+  if (!elem["pal"].isNull() && elem["pal"].is<const char*>()) {
+    const char *tmp = elem["pal"].as<const char *>();
+    if (strlen(tmp) > 3 && (strchr(tmp,'r') || strchr(tmp,'~') != strrchr(tmp,'~'))) last = 0; // we have "X~Y(r|[w]~[-])" form
+  }
   if (seg.getLightCapabilities() & 1) {  // ignore palette for White and On/Off segments
-    if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
+    if (getVal(elem["pal"], &pal, 0, last)) seg.setPalette(pal);
   }
 
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
-  getVal(elem["c3"], &cust3); // we can't pass reference to bitfield
+  getVal(elem["c3"], &cust3, 0, 31); // we can't pass reference to bitfield
   seg.custom3 = constrain(cust3, 0, 31);
 
   seg.check1 = getBoolVal(elem["o1"], seg.check1);
@@ -850,8 +855,8 @@ void serializePalettes(JsonObject root, int page)
   int itemPerPage = 8;
   #endif
 
-  int palettesCount = strip.getPaletteCount();
   int customPalettes = strip.customPalettes.size();
+  int palettesCount = strip.getPaletteCount() - customPalettes;
 
   int maxPage = (palettesCount + customPalettes -1) / itemPerPage;
   if (page > maxPage) page = maxPage;
