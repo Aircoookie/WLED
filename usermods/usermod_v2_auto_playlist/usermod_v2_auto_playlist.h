@@ -12,7 +12,7 @@ class AutoPlaylistUsermod : public Usermod {
     byte musicPlaylist = 2;
     int timeout = 60;
     bool autoChange = false;
-    byte lastAutoPreset = 0;
+    byte lastAutoPlaylist = 0;
 
 
     int avg_long_energy = 10000;
@@ -135,9 +135,14 @@ class AutoPlaylistUsermod : public Usermod {
       
       if(!enabled) return;
 
+      if(millis() < 10000) return; // Wait for device to settle
+
       if(bri == 0) return;
 
-      if(lastAutoPreset > 0 && lastAutoPreset != currentPreset) enabled = false;
+      if(lastAutoPlaylist > 0 && lastAutoPlaylist != currentPlaylist) {
+        USER_PRINTF("AutoPlaylist: disable due to manual change of playlist from %u to %d, preset:%u\n", lastAutoPlaylist, currentPlaylist, currentPreset);
+        enabled = false;
+      }
 
       um_data_t *um_data;
       if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -155,21 +160,15 @@ class AutoPlaylistUsermod : public Usermod {
       if(millis() - lastSoundTime > (timeout * 1000)) {
         if(!silenceDetected) {
           silenceDetected = true;
-          String name = "";
-          getPresetName(ambientPlaylist, name);
-          USER_PRINTF("AutoPlaylist: Silence - apply %s\n", name.c_str());
-          applyPreset(ambientPlaylist, CALL_MODE_NOTIFICATION);
-          lastAutoPreset = ambientPlaylist;
+          USER_PRINTF("AutoPlaylist: Silence ");
+          changePlaylist(ambientPlaylist);
         }
       }
       else {
         if(silenceDetected) {
           silenceDetected = false;
-          String name = "";
-          getPresetName(musicPlaylist, name);
-          USER_PRINTF("AutoPlaylist: End of silence - apply %s\n", name.c_str());
-          applyPreset(musicPlaylist, CALL_MODE_NOTIFICATION);
-          lastAutoPreset = ambientPlaylist;
+          USER_PRINTF("AutoPlaylist: End of silence ");
+          changePlaylist(musicPlaylist);
         }
         if(autoChange) change(um_data);
       }
@@ -253,6 +252,7 @@ class AutoPlaylistUsermod : public Usermod {
       top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
       top[FPSTR(_musicPlaylist)]      = musicPlaylist;    // usermodparam
       top[FPSTR(_autoChange)]         = autoChange;
+      lastAutoPlaylist = 0;
       DEBUG_PRINTLN(F("AutoPlaylist config saved."));
     }
 
@@ -294,6 +294,18 @@ class AutoPlaylistUsermod : public Usermod {
     uint16_t getId() {
       return USERMOD_ID_AUTOPLAYLIST;
     }
+
+  private:
+
+      void changePlaylist(byte id) {
+          String name = "";
+          getPresetName(id, name);
+          USER_PRINTF("apply %s\n", name.c_str());
+          applyPreset(id, CALL_MODE_NOTIFICATION);
+          lastAutoPlaylist = id;
+    }
+
+
 };
 
 const char AutoPlaylistUsermod::_enabled[]         PROGMEM = "enabled";
