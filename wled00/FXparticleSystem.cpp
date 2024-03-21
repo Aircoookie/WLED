@@ -500,12 +500,14 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 void FireParticle_update(PSparticle *part, bool wrapX)
 {
 	// Matrix dimension
-	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	const int32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	const int32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	// particle box dimensions
-	const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-	const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+	const int32_t PS_MAX_X=(cols * (uint32_t)PS_P_RADIUS - 1);
+	const int32_t PS_MAX_Y=(rows * (uint32_t)PS_P_RADIUS - 1);
+
+
 
 	if (part->ttl > 0)
 	{
@@ -513,8 +515,8 @@ void FireParticle_update(PSparticle *part, bool wrapX)
 		part->ttl--;
 
 		// apply velocity
-		part->x = part->x + (int16_t)part->vx;
-		part->y = part->y + (int16_t)part->vy + (part->ttl >> 4); // younger particles move faster upward as they are hotter, used for fire
+		part->x = part->x + (int32_t)part->vx;
+		part->y = part->y + (int32_t)part->vy + (part->ttl >> 4); // younger particles move faster upward as they are hotter, used for fire
 
 		part->outofbounds = 0;
 		// check if particle is out of bounds, wrap around to other side if wrapping is enabled
@@ -550,11 +552,11 @@ void FireParticle_update(PSparticle *part, bool wrapX)
 void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles, bool wrapX)
 {
 
-	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	int32_t x, y;
-	uint8_t dx, dy;
+	uint32_t dx, dy;
 	uint32_t tempVal;
 	uint32_t i;
 
@@ -562,37 +564,45 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 	// note: some pixels (the x+1 ones) can be out of bounds, it is probably faster than to check that for every pixel as this only happens on the right border (and nothing bad happens as this is checked down the road)
 	for (i = 0; i < numParticles; i++)
 	{
-		if (particles[i].ttl == 0 || particles[i].outofbounds)
+
+		if (particles[i].outofbounds) 
 		{
 			continue;
 		}
 
+		if (particles[i].ttl == 0)
+		{
+			continue;
+		}
+
+		
+
 		dx = (uint8_t)((uint16_t)particles[i].x % (uint16_t)PS_P_RADIUS);
 		dy = (uint8_t)((uint16_t)particles[i].y % (uint16_t)PS_P_RADIUS);
 
-		x = (uint8_t)((uint16_t)particles[i].x / (uint16_t)PS_P_RADIUS); // compiler should optimize to bit shift
-		y = (uint8_t)((uint16_t)particles[i].y / (uint16_t)PS_P_RADIUS);
+		x = (uint8_t)((uint16_t)particles[i].x >> PS_P_RADIUS_SHIFT); // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
+		y = (uint8_t)((uint16_t)particles[i].y >> PS_P_RADIUS_SHIFT);
 
 		if (dx < (PS_P_RADIUS >> 1)) // jump to next physical pixel if half of virtual pixel size is reached
 		{
 			x--;						  // shift left
-			dx = dx + (PS_P_RADIUS >> 1); // add half a radius
+			dx += PS_P_RADIUS >> 1; // add half a radius
 		}
 		else // if jump has ocurred, fade pixel
 		{
 			// adjust dx so pixel fades
-			dx = dx - (PS_P_RADIUS >> 1);
+			dx -= PS_P_RADIUS >> 1;
 		}
 
 		if (dy < (PS_P_RADIUS >> 1)) // jump to next physical pixel if half of virtual pixel size is reached
 		{
 			y--; // shift row
-			dy = dy + (PS_P_RADIUS >> 1);
+			dy += PS_P_RADIUS >> 1;
 		}
 		else
 		{
 			// adjust dy so pixel fades
-			dy = dy - (PS_P_RADIUS >> 1);
+			dy -= PS_P_RADIUS >> 1;
 		}
 
 		if (wrapX) 
@@ -605,56 +615,55 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 
 		// calculate brightness values for all six pixels representing a particle using linear interpolation
 		// bottom left
-		if (x < cols && x >=0 && y < rows && y >=0)
+		//if (x < cols && x >=0 && y < rows && y >=0)
 		{
 			tempVal = (((uint32_t)((PS_P_RADIUS)-dx) * ((PS_P_RADIUS)-dy) * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
-			PartMatrix_addHeat(x, y, tempVal);
-			PartMatrix_addHeat(x + 1, y, tempVal); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			PartMatrix_addHeat(x, y, tempVal, rows);
+			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 		// bottom right;
 		x++;
 		if (wrapX)
 		{ // wrap it to the other side if required
-			if (x >= cols)
+			//if (x >= cols)
 				x = x % cols; // in case the right half of particle render is out of frame, wrap it (note: on microcontrollers with hardware division, the if statement is not really needed)
 		}
-		if (x < cols && y < rows && y >= 0)
+		//if (x < cols && y < rows && y >= 0)
 		{
 			tempVal = (((uint32_t)dx * ((PS_P_RADIUS)-dy) * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
-			PartMatrix_addHeat(x, y, tempVal);
-			PartMatrix_addHeat(x + 1, y, tempVal); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			PartMatrix_addHeat(x, y, tempVal, rows);
+			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 		// top right
 		y++;
-		if (x < cols && y < rows)
+		//if (x < cols && y < rows)
 		{
 			tempVal = (((uint32_t)dx * dy * (uint32_t)particles[i].ttl) >> PS_P_SURFACE); //
-			PartMatrix_addHeat(x, y, tempVal);			
-			PartMatrix_addHeat(x + 1, y, tempVal); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			PartMatrix_addHeat(x, y, tempVal, rows);
+			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 		// top left
 		x--;
 		if (wrapX)
 		{ // wrap it to the other side if required
-			if (x < 0)
-			{ // left half of particle render is out of frame, wrap it
+			if (x < 0) // left half of particle render is out of frame, wrap it
 				x = cols - 1;
-			}
+			
 		}
-		if (x < cols && x >= 0 && y < rows)
+		//if (x < cols && x >= 0 && y < rows)
 		{
 			tempVal = (((uint32_t)((PS_P_RADIUS)-dx) * dy * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
-			PartMatrix_addHeat(x, y, tempVal);
-			PartMatrix_addHeat(x + 1, y, tempVal); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			PartMatrix_addHeat(x, y, tempVal, rows);
+			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 	}
 }
 
 // adds 'heat' to red color channel, if it overflows, add it to next color channel
-void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
+void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint32_t rows)
 {
 
-	const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	//const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	CRGB currentcolor = SEGMENT.getPixelColorXY(col, rows - row - 1); // read current matrix color (flip y axis)
 	uint32_t newcolorvalue;
@@ -665,9 +674,9 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat)
 	heat = heat << 3; // need to take a larger value to scale ttl value of particle to a good heat value that decays fast enough
 
 	// i=0 is normal red fire, i=1 is green fire, i=2 is blue fire
-	uint8_t i = (colormode & 0x07) >> 1;
+	uint32_t i = (colormode & 0x07) >> 1;
 	i = i % 3;
-	int8_t increment = (colormode & 0x01) + 1; // 0 (or 3) means only one single color for the flame, 1 is normal, 2 is alternate color modes
+	uint32_t increment = (colormode & 0x01) + 1; // 0 (or 3) means only one single color for the flame, 1 is normal, 2 is alternate color modes
 	if (currentcolor[i] < 255)
 	{
 		newcolorvalue = (uint16_t)currentcolor[i] + heat;  // add heat, check if it overflows
