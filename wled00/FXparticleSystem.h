@@ -30,9 +30,11 @@
 #include <stdint.h>
 
 //particle dimensions (subpixel division)
-#define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement
+#define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
+#define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
+#define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_HARDRADIUS 80 //hard surface radius of a particle, used for collision detection proximity
-#define PS_P_SURFACE 12  //shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
+
 
 
 //todo: can add bitfields to add in more stuff, but accessing bitfields is slower than direct memory access!
@@ -93,7 +95,7 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY);
 void FireParticle_update(PSparticle *part, bool wrapX = false);
 void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles, bool wrapX);
-void PartMatrix_addHeat(uint8_t col, uint8_t row, uint16_t heat);
+void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint32_t rows);
 void detectCollisions(PSparticle *particles, uint32_t numparticles, uint8_t hardness);
 void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness);
 void applyFriction(PSparticle *particle, uint8_t coefficient);
