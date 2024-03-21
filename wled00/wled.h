@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2403190
+#define VERSION 2403191
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -81,6 +81,8 @@
     #define WIFI_MODE_AP WIFI_AP
     #include <QuickEspNow.h>
   #endif
+  #undef  WLED_DISABLE_GIF
+  #define WLED_DISABLE_GIF
 #else // ESP32
   #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
   #include <WiFi.h>
