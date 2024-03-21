@@ -177,12 +177,6 @@ void Particle_Move_update(PSparticle *part, bool killoutofbounds, bool wrapX, bo
 			part->ttl--;
 			
 			// apply velocity
-			part->x += (int16_t)part->vx;
-			part->y += (int16_t)part->vy;
-
-			part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
-
-			// apply velocity
 			int32_t newX, newY;
 			newX = part->x + (int16_t)part->vx;
 			newY = part->y + (int16_t)part->vy;
