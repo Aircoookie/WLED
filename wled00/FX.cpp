@@ -7882,7 +7882,7 @@ uint16_t mode_2Dwavingcell() {
 static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,,Amplitude 1,Amplitude 2,Amplitude 3;;!;2";
 
 /*
- * Particle rotating spray
+ * Particle System Candy (aka rotating sprays)
  * Particles sprayed from center with a rotating spray
  * Uses palette for particle color
  * by DedeHai (Damian Schneider)
@@ -7894,15 +7894,9 @@ uint16_t mode_particlerotatingspray(void)
   if (SEGLEN == 1)
     return mode_static();
 
-<<<<<<< HEAD
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-  
-=======
   const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 #ifdef ESP8266
   const uint32_t numParticles = 150; // maximum number of particles
 #else
@@ -8042,7 +8036,7 @@ uint16_t mode_particlerotatingspray(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "Rotating Particle Spray@Rotation Speed,Particle Speed,Spray Count,Flip Speed, Nozzle Size,Random Color, Direction, Random Flip;;!;012;pal=56,sx=18,ix=190,c1=200,c2=0,c3=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "PS Candy@Rotation Speed,Particle Speed,Arms,Flip Speed,Nozzle,Random Color, Direction, Random Flip;;!;012;pal=56,sx=18,ix=190,c1=200,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 /*
  * Particle Fireworks
@@ -8061,16 +8055,8 @@ uint16_t mode_particlefireworks(void)
   const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   // particle system box dimensions
-<<<<<<< HEAD
-  const uint16_t PS_MAX_X=(cols * PS_P_RADIUS - 1);
-  const uint16_t PS_MAX_Y=(rows * PS_P_RADIUS - 1);
-
-#ifdef ESP8266
-  const uint32_t numParticles = 250;
-  const uint8_t MaxNumRockets = 4; 
-=======
-  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
-  const uint32_t PS_MAX_Y = (rows * PS_P_RADIUS - 1);
+  const uint32_t Max_x = (cols * PS_P_RADIUS - 1);
+  const uint32_t Max_y = (rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
   const uint32_t numParticles = 100;
@@ -8081,7 +8067,6 @@ uint16_t mode_particlefireworks(void)
   const uint8_t MaxNumRockets = 8; 
 #endif
 
-
   PSparticle *particles;
   PSpointsource *rockets;
 
@@ -8091,20 +8076,13 @@ uint16_t mode_particlefireworks(void)
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  // DEBUG_PRINT(F("particle datasize = "));
-  // DEBUG_PRINTLN(dataSize);
-
   rockets = reinterpret_cast<PSpointsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(rockets + MaxNumRockets); // cast the data array into a particle pointer
 
   uint32_t i = 0;
   uint32_t j = 0;
-<<<<<<< HEAD
-  uint8_t numRockets = 1+ ((SEGMENT.custom3) >> 2); //1 to 8
-=======
   uint8_t numRockets = min(uint8_t(1 + ((SEGMENT.custom3) >> 2)), MaxNumRockets); // 1 to 8
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8138,14 +8116,6 @@ uint16_t mode_particlefireworks(void)
       emitparticles = 0;
     }
     else
-<<<<<<< HEAD
-    {                                   // speed is zero, explode!
-      emitparticles = random8(SEGMENT.intensity>>1) + 10; // defines the size of the explosion
-      rockets[j].source.vy = -1;        // set speed negative so it will emit no more particles after this explosion until relaunch
-      if (j == circularexplosion || j == spiralexplosion)       // chosen rocket, do an angle emit (creating a circle)
-      {
-        emitparticles>>3; //emit less particles for circle-explosions
-=======
     {                                                       // speed is zero, explode!
       
       #ifdef ESP8266          
@@ -8157,7 +8127,6 @@ uint16_t mode_particlefireworks(void)
       if (j == circularexplosion || j == spiralexplosion)   // chosen rocket, do an angle emit (creating a circle)
       {
         emitparticles = emitparticles >> 3; // emit less particles for circle-explosions
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
         rockets[j].maxLife = 150;
         rockets[j].minLife = 120;        
         rockets[j].var = 0;  // speed variation around vx,vy (+/- var/2)
@@ -8196,14 +8165,9 @@ uint16_t mode_particlefireworks(void)
         else if (j == spiralexplosion && emitparticles > 2) // do spiral emit
         {
           Emitter_Angle_emit(&rockets[j], &particles[i], angle, speed);
-<<<<<<< HEAD
-          emitparticles--;
-          emitparticles--;//only emit half as many particles as in circle explosion, it gets too huge otherwise
-          angle += 15;                    
-=======
           emitparticles-=2; // only emit half as many particles as in circle explosion, it gets too huge otherwise
           angle += 15;
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
+
           speed++;
           rockets[j].source.hue++; 
           rockets[j].source.sat = random8(155)+100;        
@@ -8253,8 +8217,8 @@ uint16_t mode_particlefireworks(void)
     {
       // reinitialize rocket
       rockets[i].source.y = 1;                                            // start from bottom
-      rockets[i].source.x = (rand() % (PS_MAX_X >> 1)) + (PS_MAX_Y >> 2); // centered half
-      rockets[i].source.vy = random8(SEGMENT.custom1>>3) + 5; //rocket speed depends also on rocket height
+      rockets[i].source.x = (rand() % (Max_x >> 1)) + (Max_y >> 2); // centered half
+      rockets[i].source.vy = random8(SEGMENT.custom1 >> 3) + 5;           // rocket speed depends also on rocket height
       rockets[i].source.vx = random8(5) - 2;
       rockets[i].source.hue = 30; // rocket exhaust = orange (if using rainbow palette)
       rockets[i].source.sat = 30; // low saturation -> exhaust is off-white 
@@ -8273,7 +8237,7 @@ uint16_t mode_particlefireworks(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "Particle Fireworks@Launches,Explosion Size,Height,Bounce,Rockets,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Height,Bounce,Rockets,Wrap X,Bounce X,Bounce Y;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=0";
 
 /*
  * Particle Volcano (gravity spray)
@@ -8288,17 +8252,10 @@ uint16_t mode_particlevolcano(void)
   if (SEGLEN == 1)
     return mode_static();
 
-<<<<<<< HEAD
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-  //particle system x dimension
-  const uint16_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
-=======
   const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   
   // particle system x dimension
-  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
+  const uint32_t Max_x = (cols * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
   const uint32_t numParticles = 100; // maximum number of particles
@@ -8367,10 +8324,7 @@ uint16_t mode_particlevolcano(void)
       }
       else{ //wrap on the right side
         spray[i].source.vx = SEGMENT.speed >> 4; // spray speed
-<<<<<<< HEAD
-        if (spray[i].source.x >= PS_MAX_X-32) spray[i].source.x = 1; //wrap if close to border (need to wrap before the bounce updated detects a border collision or it will just be stuck)
-=======
-        if (spray[i].source.x >= PS_MAX_X - 32) //compiler warning can be ignored, source.x is always > 0
+        if (spray[i].source.x >= Max_x - 32) //compiler warning can be ignored, source.x is always > 0
           spray[i].source.x = 1; // wrap if close to border (need to wrap before the bounce updated detects a border collision or it will just be stuck)
 >>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
       }
@@ -8420,7 +8374,7 @@ uint16_t mode_particlevolcano(void)
   ParticleSys_render(particles, numParticles, false, false);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "Particle Volcano@Move,Intensity,Speed,Bounce,Size,Color by Age,Bounce X,Collisions;;!;012;pal=35,sx=0,ix=160,c1=100,c2=160,c3=10,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Move,Intensity,Speed,Bounce,Size,Color by Age,Bounce X,Collisions;;!;012;pal=35,sx=0,ix=160,c1=100,c2=160,c3=10,o1=1,o2=0,o3=0";
 
 /*
  * Particle Fire
@@ -8436,7 +8390,7 @@ uint16_t mode_particlefire(void)
   const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;  
 
   // particle system box dimensions
-  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
+  const uint32_t Max_x = (cols * PS_P_RADIUS - 1);
   
   #ifdef ESP8266
   const uint32_t numFlames = min((uint32_t)10, cols); // limit to 10 flames, not enough ram on ESP8266
@@ -8444,8 +8398,8 @@ uint16_t mode_particlefire(void)
   const uint32_t numNormalFlames = numFlames - (cols >> 2); // number of normal flames, rest of flames are baseflames
   #else
   const uint32_t numFlames = (cols << 1); // number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results, add a few for the base flames
-  const uint32_t numParticles = numFlames * 25;
-  const uint32_t numNormalFlames = numFlames - (cols >> 1); // number of normal flames, rest of flames are baseflames
+  const uint32_t numParticles = numFlames * 20;
+  const uint32_t numNormalFlames = numFlames - (cols/3); // number of normal flames, rest of flames are baseflames
   #endif
   
   uint8_t percycle = numFlames >> 1; // maximum number of particles emitted per cycle
@@ -8480,10 +8434,7 @@ uint16_t mode_particlefire(void)
     for (i = 0; i < numFlames; i++)
     {
       flames[i].source.ttl = 0;
-      flames[i].source.x = PS_P_RADIUS * 3 + random16(PS_MAX_X - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
-<<<<<<< HEAD
-      //note: other parameters are set when creating the flame (see blow)
-=======
+      flames[i].source.x = PS_P_RADIUS * 3 + random16(Max_x - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
       flames[i].source.vx = 0; // emitter moving speed;
       flames[i].source.vy = 0; 
       // note: other parameters are set when creating the flame (see blow)
@@ -8509,22 +8460,15 @@ uint16_t mode_particlefire(void)
       {
         if (SEGMENT.check1)
         { // wrap around in X direction, distribute randomly
-          flames[i].source.x = random16(PS_MAX_X);
+          flames[i].source.x = random16(Max_x);
         }
         else // no X-wrapping
-        {                                                                                
-          flames[i].source.x = PS_P_RADIUS * 3 + random16(PS_MAX_X - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
+        {
+          flames[i].source.x = PS_P_RADIUS * 3 + random16(Max_x - (PS_P_RADIUS * 6)); // distribute randomly but not close to the corners
         }
       }
 
-<<<<<<< HEAD
-      if (i < (numFlames - (cols >> 1)))
-      { // all but the last few are normal flames
-        flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame so particles alredy spread a little when the appear
-        flames[i].source.vx = 0;               // (rand() % 3) - 1;
-        flames[i].source.vy = 0;
-=======
-      flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame
+      flames[i].source.y = -PS_P_RADIUS; // set the source below the frame
 
       if (i < numNormalFlames)
       {                                        // all but the last few are normal flames        
@@ -8537,14 +8481,7 @@ uint16_t mode_particlefire(void)
         flames[i].var = random8(5) + 3;          // speed variation around vx,vy (+/- var/2)
       }
       else
-<<<<<<< HEAD
-      {                                        // base flames to make the base brighter, flames are slower and short lived
-        flames[i].source.y = -1 * PS_P_RADIUS; // set the source below the frame
-        flames[i].source.vx = 0;
-        flames[i].source.vy = 0;                // emitter moving speed;
-=======
       {                                        // base flames to make the base brighter, flames are slower and short lived        
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
         flames[i].source.ttl = random8(25) + 15; // lifetime of one flame
         flames[i].maxLife = 25;                  // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         flames[i].minLife = 12;
@@ -8587,13 +8524,12 @@ uint16_t mode_particlefire(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "Particle Fire@Speed,Intensity,Base Flames,Wind Speed, Color Scheme, WrapX;;!;012;sx=100,ix=120,c1=30,c2=128,c3=0,o1=0";
-
+static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Base Flames,Wind,Color Scheme, WrapX;;!;012;sx=100,ix=120,c1=30,c2=128,c3=0,o1=0";
 
 /*
-particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
+PS Hail: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
 sliders control falling speed, intensity (number of particles spawned), inter-particle collision hardness (0 means no particle collisions) and render saturation
-this is quite versatile, can be made to look like rain or snow or confetti, flying sparks etc.
+this is quite versatile, can be made to look like rain or snow or confetti etc.
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
@@ -8680,7 +8616,7 @@ uint16_t mode_particlefall(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "Falling Particles@Speed,Intensity,Randomness,Collision hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=100,c3=20,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "PS Hail@Speed,Intensity,Randomness,Hardness,Saturation,Wrap X,Side bounce,Ground bounce;;!;012;pal=11,sx=100,ix=200,c1=31,c2=100,c3=28,o1=0,o2=0,o3=1";
 
 /*
  * Particle Waterfall
@@ -8736,13 +8672,6 @@ uint16_t mode_particlewaterfall(void)
       spray[i].source.x = (cols * PS_P_RADIUS) / 2 - PS_P_RADIUS + 2*PS_P_RADIUS * (i);
       spray[i].source.y = (rows+4) * (PS_P_RADIUS*(i+1)); // source y position, few pixels above the top to increase spreading before entering the matrix
       spray[i].source.vx = 0;
-<<<<<<< HEAD
-      spray[i].source.collide = true; //seeded particles will collide
-      spray[i].maxLife = 600; // lifetime in frames
-      spray[i].minLife = 200;
-      spray[i].vx = 0; // emitting speed
-      spray[i].var = 7;   // emiting variation
-=======
       spray[i].source.collide = true; // seeded particles will collide
       #ifdef ESP8266
       spray[i].maxLife = 100; // lifetime in frames
@@ -8751,10 +8680,8 @@ uint16_t mode_particlewaterfall(void)
       spray[i].maxLife = 400;         // lifetime in frames
       spray[i].minLife = 150;
       #endif
-
       spray[i].vx = 0;  // emitting speed
       spray[i].var = 7; // emiting variation
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
     }
   }
 
@@ -8823,7 +8750,7 @@ uint16_t mode_particlewaterfall(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "Particle Waterfall@Particle Speed,Intensity,Speed Variation,Collision Hardness,Position,Wrap X,Bounce X,Ground bounce;;!;012;pal=9,sx=150,ix=240,c1=0,c2=128,c3=17,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collisions,Position,Wrap X,Bounce X,Ground bounce;;!;012;pal=9,sx=15,ix=200,c1=15,c2=128,c3=17,o1=0,o2=0,o3=1";
 
 /*
 Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
@@ -8926,12 +8853,11 @@ uint16_t mode_particlebox(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "Particle Box@Speed,Particles,Tilt strength,Hardness,,Sloshing;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,Tilt strength,Hardness,,Sloshing;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
 
 /*
-Perlin Noise 'gravity' mapping as in particles on 'noise hills' viewed from above
-calculates slope gradient at the particle positions and applies 'downhill' force
-restults in a fuzzy perlin noise display
+Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
+calculates slope gradient at the particle positions and applies 'downhill' force, restulting in a fuzzy perlin noise display
 by DedeHai (Damian Schneider)
 */
 
@@ -9002,14 +8928,6 @@ uint16_t mode_particleperlin(void)
       particles[i].vy += yslope >> 1;
     }
   }
-<<<<<<< HEAD
-  uint8_t hardness = SEGMENT.custom1; // how hard the collisions are, 255 = full hard.
-  if(SEGMENT.check1) //collisions enabled
-  {   
-    detectCollisions(particles, displayparticles, hardness);
-  }
-=======
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
 
   // move particles
   for (i = 0; i < displayparticles; i++)
@@ -9028,8 +8946,7 @@ uint16_t mode_particleperlin(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "Particle Perlin-Noise@Speed,Particles,,Friction,Scale;;!;012;pal=54,sx=70;ix=200,c1=120,c2=120,c3=4,o1=0";
-
+static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,,Friction,Scale;;!;012;pal=54,sx=70;ix=200,c1=120,c2=120,c3=4,o1=0"; 
 
 /*
 * Particle smashing down like meteorites and exploding as they hit the ground, has many parameters to play with
@@ -9045,8 +8962,8 @@ uint16_t mode_particleimpact(void)
   const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   // particle system box dimensions
-  const uint32_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-  const uint32_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+  const uint32_t Max_x(cols * PS_P_RADIUS - 1);
+  const uint32_t Max_y(rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
   const uint32_t numParticles = 150;
@@ -9155,23 +9072,6 @@ uint16_t mode_particleimpact(void)
     {
       Particle_Gravity_update(&meteors[i].source, SEGMENT.check1, SEGMENT.check2, true, 255); // move the meteor, age the meteor (ttl--)
       if (meteors[i].source.vy > 0)
-<<<<<<< HEAD
-        meteors[i].source.y=5; //'hack' to keep the meteors within frame, as ttl will be set to zero by gravity update if too far out of frame
-            // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
-            if ((meteors[i].source.y < PS_P_RADIUS) && (meteors[i].source.vy < 0)) // reached the bottom pixel on its way down
-        {
-          meteors[i].source.vy = 0;                                    // set speed zero so it will explode
-          meteors[i].source.vx = 0;
-          meteors[i].source.y = 5;                                     // offset from ground so explosion happens not out of frame
-          meteors[i].source.collide = true;                            // explosion particles will collide if checked
-          meteors[i].maxLife = 200;
-          meteors[i].minLife = 50;
-          meteors[i].source.ttl = random8((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
-          meteors[i].vx = 0;                                           // emitting speed x
-          meteors[i].vy = (SEGMENT.custom1 >> 2);                      // emitting speed y
-          meteors[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
-        }
-=======
         meteors[i].source.y = 5; //'hack' to keep the meteors within frame, as ttl will be set to zero by gravity update if too far out of frame
       // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
       if ((meteors[i].source.y < PS_P_RADIUS) && (meteors[i].source.vy < 0)) // reached the bottom pixel on its way down
@@ -9191,14 +9091,13 @@ uint16_t mode_particleimpact(void)
         meteors[i].vy = (SEGMENT.custom1 >> 2);                      // emitting speed y
         meteors[i].var = (SEGMENT.custom1 >> 1);                     // speed variation around vx,vy (+/- var/2)
       }
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
-    }
+  }
     else if (meteors[i].source.vy > 0) // meteor is exploded and time is up (ttl==0 and positive speed), relaunch it
     {
       // reinitialize meteor
-      meteors[i].source.y = PS_MAX_Y + (PS_P_RADIUS<<2); // start 4 pixels above the top
-      meteors[i].source.x = random16(PS_MAX_X);
-      meteors[i].source.vy = -random(30) - 30; //meteor downward speed
+      meteors[i].source.y = Max_y + (PS_P_RADIUS << 2); // start 4 pixels above the top
+      meteors[i].source.x = random16(Max_x);
+      meteors[i].source.vy = -random(30) - 30; // meteor downward speed
       meteors[i].source.vx = random8(30) - 15;
       meteors[i].source.hue = random8(); // random color 
       meteors[i].source.ttl = 1000; // long life, will explode at bottom
@@ -9216,7 +9115,7 @@ uint16_t mode_particleimpact(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "Particle Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Wrap X,Bounce X,Collisions;;!;012;pal=35,sx=32,ix=85,c1=100,c2=100,c3=8,o1=0,o2=1,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Wrap X,Bounce X,Collisions;;!;012;pal=0,sx=32,ix=85,c1=100,c2=100,c3=8,o1=0,o2=1,o3=1";
 
 /*
 Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
@@ -9232,8 +9131,8 @@ uint16_t mode_particleattractor(void)
   const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   // particle system box dimensions
-  const uint32_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-  const uint32_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+  const uint32_t Max_x(cols * PS_P_RADIUS - 1);
+  const uint32_t Max_y(rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
   const uint32_t numParticles = 90; // maximum number of particles
@@ -9248,15 +9147,10 @@ uint16_t mode_particleattractor(void)
   uint8_t *counters; //counters for the applied force
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
-<<<<<<< HEAD
-  uint32_t dataSize = sizeof(PSparticle) * (numParticles + 1);
-  dataSize  += sizeof(uint8_t) *numParticles;
-  dataSize += sizeof(PSpointsource);
-=======
   uint32_t dataSize = sizeof(PSparticle) * (numParticles+1); //space for particles and the attractor
   dataSize += sizeof(uint8_t) * numParticles; //space for counters
   dataSize += sizeof(PSpointsource); //space for spray
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
+
 
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed
@@ -9272,8 +9166,8 @@ uint16_t mode_particleattractor(void)
   {
     attractor->vx = 0;
     attractor->vy = 0;
-    attractor->x = PS_MAX_X >> 1; // center
-    attractor->y = PS_MAX_Y >> 1;
+    attractor->x = Max_x >> 1; // center
+    attractor->y = Max_y >> 1;
 
     for (i = 0; i < numParticles; i++)
     {
@@ -9298,12 +9192,7 @@ uint16_t mode_particleattractor(void)
   uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 1, numParticles) - 1; //TODO: the -1 is a botch fix, it crashes for some reason if going to max number of particles, is this a rounding error?
   uint8_t hardness = SEGMENT.custom2; // how hard the collisions are, 255 = full hard.
   i = 0;
-<<<<<<< HEAD
-  j = 0;
-  
-=======
 
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
   if (hardness > 1) // enable collisions
   {
     detectCollisions(particles, displayparticles, hardness);
@@ -9353,17 +9242,14 @@ uint16_t mode_particleattractor(void)
   else
     SEGMENT.fill(BLACK); // clear the matrix
 
-<<<<<<< HEAD
-  //ParticleSys_render(&attract, 1, 30, false, false); // render attractor
-=======
   // ParticleSys_render(&attract, 1, 30, false, false); // render attractor
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
+
   // render the particles
   ParticleSys_render(particles, displayparticles, false, false);
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "Particle Attractor@Center Mass,Particles,Emit Speed,Collisions,Friction,Bounce,Trails,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Emit Speed,Collisions,Friction,Bounce,Trails,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=0,o1=0,o2=0,o3=0";
 
 /*
 Particle Spray, just a simple spray animation with many parameters
@@ -9380,8 +9266,8 @@ uint16_t mode_particlespray(void)
   const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   // particle system x dimension
-  const uint32_t PS_MAX_X = (cols * PS_P_RADIUS - 1);
-  const uint32_t PS_MAX_Y = (rows * PS_P_RADIUS - 1);
+  const uint32_t Max_x = (cols * PS_P_RADIUS - 1);
+  const uint32_t Max_y = (rows * PS_P_RADIUS - 1);
 
 #ifdef ESP8266
   const uint32_t numParticles = 80;
@@ -9435,10 +9321,10 @@ uint16_t mode_particlespray(void)
   {
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue++; // = random8(); //change hue of spray source     
-      //spray[i].var = SEGMENT.custom3; // emiting variation = nozzle size  (custom 3 goes from 0-32)
-      spray[i].source.x = map(SEGMENT.custom1,0,255,0,PS_MAX_X);
-      spray[i].source.y = map(SEGMENT.custom2,0,255,0,PS_MAX_Y);
+      spray[i].source.hue++; // = random8(); //change hue of spray source
+      // spray[i].var = SEGMENT.custom3; // emiting variation = nozzle size  (custom 3 goes from 0-32)
+      spray[i].source.x = map(SEGMENT.custom1, 0, 255, 0, Max_x);
+      spray[i].source.y = map(SEGMENT.custom2, 0, 255, 0, Max_y);
     }
 
     i = 0;
@@ -9448,11 +9334,7 @@ uint16_t mode_particlespray(void)
       if (particles[i].ttl == 0) // find a dead particle
       {
         // spray[j].source.hue = random8(); //set random color for each particle (using palette)
-<<<<<<< HEAD
-        Emitter_Angle_emit(&spray[j], &particles[i], SEGMENT.custom3<<3, SEGMENT.speed>>2);
-=======
         Emitter_Angle_emit(&spray[j], &particles[i], 255-(SEGMENT.custom3 << 3), SEGMENT.speed >> 2);
->>>>>>> 6d70b6ab (Cleanup & Bugfixes plus major improvements for ESP8266)
         j = (j + 1) % numSprays;
         if (percycle-- == 0)
         {
@@ -9462,8 +9344,7 @@ uint16_t mode_particlespray(void)
     }
   }
 
-  uint8_t hardness = 200;
-  
+  const uint8_t hardness = 200;
   if (SEGMENT.check3) // collisions enabled
      detectCollisions(particles, numParticles, hardness);
 
@@ -9489,7 +9370,7 @@ uint16_t mode_particlespray(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "Particle Spray@Particle Speed,Intensity,X Position,Y Position,Angle,Gravity,WrapX/Bounce,Collisions;;!;012;pal=0,sx=100,ix=160,c1=100,c2=50,c3=20,o1=0,o2=1,o3=0";
+static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,X Position,Y Position,Angle,Gravity,WrapX/Bounce,Collisions;;!;012;pal=0,sx=150,ix=90,c3=31,o1=0,o2=0,o3=0";
 
 /*
 Particle base Graphical Equalizer
@@ -9604,9 +9485,9 @@ uint16_t mode_particleGEQ(void)
     // render the particles
     ParticleSys_render(particles, numParticles, SEGMENT.check1, false); // custom3 slider is saturation
 
-    return FRAMETIME;
-  }
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "Particle GEQ@Speed,Intensity,Randomness,Collision hardness,Gravity,Wrap X,Side bounce,Ground bounce;;!;012;pal=54,sx=100,ix=200,c1=0,c2=0,c3=0,o1=0,o2=0,o3=0";
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS Equalizer@Speed,Intensity,Diverge,Bounce,Gravity,WrapX,BounceX,Floor;;!;012;pal=0,sx=155,ix=200,c1=0,c2=128,c3=31,o1=0,o2=0,o3=0";
 
 /*
  * Particle rotating spray
