@@ -6621,28 +6621,28 @@ T& move(T& t) {
 }
 #endif
 #if ARDUINOJSON_LITTLE_ENDIAN
-inline void fixEndianess(uint8_t *p, integral_constant<size_t, 8>) {
+inline void fixEndianness(uint8_t *p, integral_constant<size_t, 8>) {
   swap(p[0], p[7]);
   swap(p[1], p[6]);
   swap(p[2], p[5]);
   swap(p[3], p[4]);
 }
-inline void fixEndianess(uint8_t *p, integral_constant<size_t, 4>) {
+inline void fixEndianness(uint8_t *p, integral_constant<size_t, 4>) {
   swap(p[0], p[3]);
   swap(p[1], p[2]);
 }
-inline void fixEndianess(uint8_t *p, integral_constant<size_t, 2>) {
+inline void fixEndianness(uint8_t *p, integral_constant<size_t, 2>) {
   swap(p[0], p[1]);
 }
-inline void fixEndianess(uint8_t *, integral_constant<size_t, 1>) {}
+inline void fixEndianness(uint8_t *, integral_constant<size_t, 1>) {}
 template <typename T>
-inline void fixEndianess(T &value) {
-  fixEndianess(reinterpret_cast<uint8_t *>(&value),
+inline void fixEndianness(T &value) {
+  fixEndianness(reinterpret_cast<uint8_t *>(&value),
                integral_constant<size_t, sizeof(T)>());
 }
 #else
 template <typename T>
-inline void fixEndianess(T &) {}
+inline void fixEndianness(T &) {}
 #endif
 inline void doubleToFloat(const uint8_t d[8], uint8_t f[4]) {
   f[0] = uint8_t((d[0] & 0xC0) | (d[0] << 3 & 0x3f) | (d[1] >> 5));
@@ -6844,7 +6844,7 @@ class MsgPackDeserializer {
   bool readInteger(T &value) {
     if (!readBytes(value))
       return false;
-    fixEndianess(value);
+    fixEndianness(value);
     return true;
   }
   template <typename T>
@@ -6861,7 +6861,7 @@ class MsgPackDeserializer {
     T value;
     if (!readBytes(value))
       return false;
-    fixEndianess(value);
+    fixEndianness(value);
     variant->setFloat(value);
     return true;
   }
@@ -6871,7 +6871,7 @@ class MsgPackDeserializer {
     T value;
     if (!readBytes(value))
       return false;
-    fixEndianess(value);
+    fixEndianness(value);
     variant->setFloat(value);
     return true;
   }
@@ -6884,7 +6884,7 @@ class MsgPackDeserializer {
     if (!readBytes(i, 8))
       return false;
     doubleToFloat(i, o);
-    fixEndianess(value);
+    fixEndianness(value);
     variant->setFloat(value);
     return true;
   }
@@ -7268,7 +7268,7 @@ class MsgPackSerializer : public Visitor<size_t> {
   }
   template <typename T>
   void writeInteger(T value) {
-    fixEndianess(value);
+    fixEndianness(value);
     writeBytes(reinterpret_cast<uint8_t*>(&value), sizeof(value));
   }
   CountingDecorator<TWriter> _writer;
