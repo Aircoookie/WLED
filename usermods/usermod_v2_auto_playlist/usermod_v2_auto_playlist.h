@@ -133,16 +133,26 @@ class AutoPlaylistUsermod : public Usermod {
      */
     void loop() {
       
-      if(!enabled) return;
-
       if(millis() < 10000) return; // Wait for device to settle
 
-      if(bri == 0) return;
-
-      if(lastAutoPlaylist > 0 && lastAutoPlaylist != currentPlaylist) {
-        USER_PRINTF("AutoPlaylist: disable due to manual change of playlist from %u to %d, preset:%u\n", lastAutoPlaylist, currentPlaylist, currentPreset);
-        enabled = false;
+      if(lastAutoPlaylist > 0 && currentPlaylist != lastAutoPlaylist && currentPreset != 0) {
+        if(currentPlaylist == musicPlaylist) {
+          USER_PRINTF("AutoPlaylist: enabled due to manual change of playlist back to %u\n", currentPlaylist);
+          enabled = true;
+          lastAutoPlaylist = currentPlaylist;
+        }
+        else if(enabled) {
+          USER_PRINTF("AutoPlaylist: disable due to manual change of playlist from %u to %d, preset:%u\n", lastAutoPlaylist, currentPlaylist, currentPreset);
+          enabled = false;
+        }
       }
+      if(!enabled && currentPlaylist == musicPlaylist) {
+          USER_PRINTF("AutoPlaylist: enabled due selecting musicPlaylist(%u)", musicPlaylist);
+          enabled = true;
+      }
+      if(!enabled) return;
+
+      if(bri == 0) return;
 
       um_data_t *um_data;
       if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -153,7 +163,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       float volumeSmth    = *(float*)um_data->u_data[0];
 
-      if(volumeSmth > 0.1) {
+      if(volumeSmth > 0.5) {
         lastSoundTime = millis();
       }
 
