@@ -37,7 +37,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         cache: 'npm'
-    - run: npm install
+    - run: npm ci
     - name: Cache PlatformIO
       uses: actions/cache@v4
       with:
