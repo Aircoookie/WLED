@@ -196,16 +196,6 @@ class AutoPlaylistUsermod : public Usermod {
       }
 
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
-      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
-      uiDomString += FPSTR(_name);
-      uiDomString += F(":{");
-      uiDomString += FPSTR(_enabled);
-      uiDomString += enabled ? F(":false}});\">") : F(":true}});\">");
-      uiDomString += F("<i class=\"icons");
-      uiDomString += enabled ? F(" on") : F(" off");
-      uiDomString += F("\">&#xe08f;</i>");
-      uiDomString += F("</button>");
-      infoArr.add(uiDomString);
 
       infoArr = user.createNestedArray(F(""));
       if(!enabled) {
