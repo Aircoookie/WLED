@@ -1984,7 +1984,7 @@ function makeP(i,pl)
 <div class="sel">End preset:<br>
 <div class="sel-p"><select class="sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 <option value="0">None</option>
-<option value="255">Restore preset</option>
+<option value="255" ${plJson[i].end && plJson[i].end==255?"selected":""}>Restore preset</option>
 ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </select></div></div>
 </div>
