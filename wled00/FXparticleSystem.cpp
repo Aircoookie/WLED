@@ -40,22 +40,22 @@
 // Fountain style emitter for particles used for flames (particle TTL depends on source TTL)
 void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part)
 {
-	part->x = emitter->source.x + random8(emitter->var) - (emitter->var >> 1);
-	part->y = emitter->source.y + random8(emitter->var) - (emitter->var >> 1);
-	part->vx = emitter->vx + random8(emitter->var) - (emitter->var >> 1);
-	part->vy = emitter->vy + random8(emitter->var) - (emitter->var >> 1);
+	part->x = emitter->source.x + random16(PS_P_RADIUS) - PS_P_HALFRADIUS; // jitter the flame by one pixel to make the flames wider and softer
+	part->y = emitter->source.y;
+	part->vx = emitter->vx + random16(emitter->var) - (emitter->var >> 1);
+	part->vy = emitter->vy + random16(emitter->var) - (emitter->var >> 1);
 	part->ttl = (uint8_t)((rand() % (emitter->maxLife - emitter->minLife)) + emitter->minLife + emitter->source.ttl); // flame intensity dies down with emitter TTL
-	part->hue = emitter->source.hue;
-	//part->sat = emitter->source.sat; //flame does not use saturation
+																													  // part->hue = emitter->source.hue; //fire uses ttl and not hue for heat
+	// part->sat = emitter->source.sat; //flame does not use saturation
 }
 
 // fountain style emitter
 void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part)
 {
-	part->x = emitter->source.x; // + random8(emitter->var) - (emitter->var >> 1); //randomness uses cpu cycles and is almost invisible, removed for now.
-	part->y = emitter->source.y; // + random8(emitter->var) - (emitter->var >> 1);
-	part->vx = emitter->vx + random8(emitter->var) - (emitter->var >> 1);
-	part->vy = emitter->vy + random8(emitter->var) - (emitter->var >> 1);
+	part->x = emitter->source.x; // + random16(emitter->var) - (emitter->var >> 1); //randomness uses cpu cycles and is almost invisible, removed for now.
+	part->y = emitter->source.y; // + random16(emitter->var) - (emitter->var >> 1);
+	part->vx = emitter->vx + random16(emitter->var) - (emitter->var >> 1);
+	part->vy = emitter->vy + random16(emitter->var) - (emitter->var >> 1);
 	part->ttl = random16(emitter->maxLife - emitter->minLife) + emitter->minLife;
 	part->hue = emitter->source.hue;
 	part->sat = emitter->source.sat;
@@ -65,16 +65,16 @@ void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part)
 // Emits a particle at given angle and speed, angle is from 0-255 (=0-360deg), speed is also affected by emitter->var
 void Emitter_Angle_emit(PSpointsource *emitter, PSparticle *part, uint8_t angle, uint8_t speed)
 {
-	emitter->vx = (((int16_t)cos8(angle)-127) * speed) >> 7; //cos is signed 8bit, so 1 is 127, -1 is -127, shift by 7
-	emitter->vy = (((int16_t)sin8(angle)-127) * speed) >> 7;
+	emitter->vx = (((int16_t)cos8(angle) - 127) * speed) >> 7; // cos is signed 8bit, so 1 is 127, -1 is -127, shift by 7
+	emitter->vy = (((int16_t)sin8(angle) - 127) * speed) >> 7;
 	Emitter_Fountain_emit(emitter, part);
 }
 // attracts a particle to an attractor particle using the inverse square-law
 void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow)
 {
 	// Calculate the distance between the particle and the attractor
-	int dx = attractor->x - particle->x;
-	int dy = attractor->y - particle->y;
+	int32_t dx = attractor->x - particle->x;
+	int32_t dy = attractor->y - particle->y;
 
 	// Calculate the force based on inverse square law
 	int32_t distanceSquared = dx * dx + dy * dy + 1;
@@ -87,7 +87,7 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 		}
 		distanceSquared = 4 * PS_P_RADIUS * PS_P_RADIUS; // limit the distance of particle size to avoid very high forces
 	}
-	
+
 	int32_t shiftedstrength = (int32_t)strength << 16;
 	int32_t force;
 	int32_t xforce;
@@ -124,7 +124,7 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 				particle->vx += 1;
 			}
 		}
-		else //save counter value
+		else							 // save counter value
 			*counter |= xcounter & 0x0F; // write lower four bits, make sure not to write more than 4 bits
 	}
 	else
@@ -150,7 +150,7 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 				particle->vy += 1;
 			}
 		}
-		else // save counter value
+		else									// save counter value
 			*counter |= (ycounter << 4) & 0xF0; // write upper four bits
 	}
 	else
@@ -164,60 +164,59 @@ void Particle_attractor(PSparticle *particle, PSparticle *attractor, uint8_t *co
 void Particle_Move_update(PSparticle *part, bool killoutofbounds, bool wrapX, bool wrapY)
 {
 	// Matrix dimension
-	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	const int32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	const int32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	// particle box dimensions
-	const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-	const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+	const int32_t PS_MAX_X = cols * PS_P_RADIUS - 1;
+	const int32_t PS_MAX_Y = rows * PS_P_RADIUS - 1;
 
 	if (part->ttl > 0)
 	{
-			// age
-			part->ttl--;
-			
-			// apply velocity
-			int32_t newX, newY;
-			newX = part->x + (int16_t)part->vx;
-			newY = part->y + (int16_t)part->vy;
+		// age
+		part->ttl--;
 
-			part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
-			// x direction, handle wraparound
-			if (wrapX)
-			{
-				newX = newX % (PS_MAX_X + 1);
-				if (newX < 0)
-					newX = PS_MAX_X - newX;
-			}
-			else if ((part->x <= 0) || (part->x >= PS_MAX_X)) // check if particle is out of bounds
-			{
-				if (killoutofbounds)
-					part->ttl = 0;
-				else
-					part->outofbounds = 1;
-			}
-			part->x = newX; // set new position
+		// apply velocity
+		int32_t newX, newY;
+		newX = part->x + (int16_t)part->vx;
+		newY = part->y + (int16_t)part->vy;
 
-			if (wrapY)
-			{
-				newY = newY % (PS_MAX_Y + 1);
-				if (newY < 0)
-					newY = PS_MAX_Y - newY;
-			}
-			else if ((part->y <= 0) || (part->y >= PS_MAX_Y)) // check if particle is out of bounds
-			{
-				if (killoutofbounds)
-					part->ttl = 0;
-				else
-					part->outofbounds = 1;
-			}
-			part->y = newY; // set new position
+		part->outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
+		// x direction, handle wraparound
+		if (wrapX)
+		{
+			newX = newX % (PS_MAX_X + 1);
+			if (newX < 0)
+				newX = PS_MAX_X - newX;
+		}
+		else if ((part->x <= 0) || (part->x >= PS_MAX_X)) // check if particle is out of bounds
+		{
+			if (killoutofbounds)
+				part->ttl = 0;
+			else
+				part->outofbounds = 1;
+		}
+		part->x = newX; // set new position
+
+		if (wrapY)
+		{
+			newY = newY % (PS_MAX_Y + 1);
+			if (newY < 0)
+				newY = PS_MAX_Y - newY;
+		}
+		else if ((part->y <= 0) || (part->y >= PS_MAX_Y)) // check if particle is out of bounds
+		{
+			if (killoutofbounds)
+				part->ttl = 0;
+			else
+				part->outofbounds = 1;
+		}
+		part->y = newY; // set new position
 	}
-
 }
 
 // bounces a particle on the matrix edges, if surface 'hardness' is <255 some energy will be lost in collision (127 means 50% lost)
-void Particle_Bounce_update(PSparticle *part, const uint8_t hardness) 
+void Particle_Bounce_update(PSparticle *part, const uint8_t hardness)
 {
 	// Matrix dimension
 	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
@@ -242,15 +241,15 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness)
 		newY = part->y + (int16_t)part->vy;
 
 		if ((newX <= 0) || (newX >= PS_MAX_X))
-		{															   // reached an edge
-			part->vx = -part->vx;									   // invert speed
-			part->vx = (((int16_t)part->vx) * ((int16_t)hardness+1)) >> 8; // reduce speed as energy is lost on non-hard surface
+		{																	 // reached an edge
+			part->vx = -part->vx;											 // invert speed
+			part->vx = (((int16_t)part->vx) * ((int16_t)hardness + 1)) >> 8; // reduce speed as energy is lost on non-hard surface
 		}
 
 		if ((newY <= 0) || (newY >= PS_MAX_Y))
-		{															   // reached an edge
-			part->vy = -part->vy;									   // invert speed
-			part->vy = (((int16_t)part->vy) * ((int16_t)hardness+1)) >> 8; // reduce speed as energy is lost on non-hard surface
+		{																	 // reached an edge
+			part->vy = -part->vy;											 // invert speed
+			part->vy = (((int16_t)part->vy) * ((int16_t)hardness + 1)) >> 8; // reduce speed as energy is lost on non-hard surface
 		}
 
 		newX = max(newX, (int16_t)0); // limit to positive
@@ -258,19 +257,18 @@ void Particle_Bounce_update(PSparticle *part, const uint8_t hardness)
 		part->x = min(newX, (int16_t)PS_MAX_X); // limit to matrix boundaries
 		part->y = min(newY, (int16_t)PS_MAX_Y);
 	}
-
 }
 
 // particle moves, gravity force is applied and ages, if wrapX is set, pixels leaving in x direction reappear on other side, hardness is surface hardness for bouncing (127 means 50% speed lost each bounce)
-void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness) 
+void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness)
 {
 	// Matrix dimension
-	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	const int32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	const int32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	// particle box dimensions
-	const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-	const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+	const int32_t PS_MAX_X = cols * PS_P_RADIUS - 1;
+	const int32_t PS_MAX_Y = rows * PS_P_RADIUS - 1;
 
 	if (part->ttl > 0)
 	{
@@ -300,7 +298,7 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 		}
 
 		// apply velocity
-		int16_t newX, newY;
+		int32_t newX, newY;
 
 		newX = part->x + (int16_t)part->vx;
 		newY = part->y + (int16_t)part->vy;
@@ -323,8 +321,8 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 				{
 					part->vx = -part->vx;									   // invert speed
 					part->vx = (((int16_t)part->vx) * (int16_t)hardness) >> 8; // reduce speed as energy is lost on non-hard surface
-					newX = max(newX, (int16_t)0);							   // limit to positive
-					newX = min(newX, (int16_t)PS_MAX_X);					   // limit to matrix boundaries
+					newX = max(newX, (int32_t)0);							   // limit to positive
+					newX = min(newX, (int32_t)PS_MAX_X);					   // limit to matrix boundaries
 				}
 				else // not bouncing and out of matrix
 					part->outofbounds = 1;
@@ -339,9 +337,9 @@ void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bo
 			if (bounceY)
 			{
 				part->vy = -part->vy;									   // invert speed
-				part->vy = (((int16_t)part->vy) * (int16_t)hardness) >> 8; // reduce speed as energy is lost on non-hard surface				
-				newY = max(newY, (int16_t)0);							   // limit to positive (helps with piling as that can push particles out of frame)
-				// newY = min(newY, (int16_t)PS_MAX_Y); //limit to matrix boundaries
+				part->vy = (((int16_t)part->vy) * (int16_t)hardness) >> 8; // reduce speed as energy is lost on non-hard surface
+				newY = max(newY, (int32_t)0);							   // limit to positive (helps with piling as that can push particles out of frame)
+																		   // newY = min(newY, (int16_t)PS_MAX_Y); //limit to matrix boundaries
 			}
 			else // not bouncing and out of matrix
 				part->outofbounds = 1;
@@ -360,21 +358,19 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 #else
 	bool fastcoloradd = false; // on ESP32, there is little benefit from using fast add
 #endif
-		
-	const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-	const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-	// particle box dimensions
-	const uint16_t PS_MAX_X(cols * PS_P_RADIUS - 1);
-	const uint16_t PS_MAX_Y(rows * PS_P_RADIUS - 1);
+	const int32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	const int32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
-	int16_t x, y;
-	uint8_t dx, dy;
+	int32_t x, y;
+	uint32_t dx, dy;
 	uint32_t intensity;
 	CRGB baseRGB;
 	uint32_t i;
-	uint8_t brightess; // particle brightness, fades if dying
-	
+	uint32_t brightess; // particle brightness, fades if dying
+
+	uint32_t precal1, precal2, precal3; // precalculate values to improve speed
+
 
 	// go over particles and update matrix cells on the way
 	for (i = 0; i < numParticles; i++)
@@ -395,37 +391,19 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 		else
 			baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255, LINEARBLEND);
 
-		dx = (uint8_t)((uint16_t)particles[i].x % (uint16_t)PS_P_RADIUS);
-		dy = (uint8_t)((uint16_t)particles[i].y % (uint16_t)PS_P_RADIUS);
+		// subtract half a radius as the rendering algorithm always starts at the bottom left, this makes calculations more efficient
+		int32_t xoffset = particles[i].x - PS_P_HALFRADIUS;
+		int32_t yoffset = particles[i].y - PS_P_HALFRADIUS;
+		dx = xoffset % (uint32_t)PS_P_RADIUS;
+		dy = yoffset % (uint32_t)PS_P_RADIUS;
+		x = (xoffset) >> PS_P_RADIUS_SHIFT; // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
+		y = (yoffset) >> PS_P_RADIUS_SHIFT;
 
-		x = (uint8_t)((uint16_t)particles[i].x / (uint16_t)PS_P_RADIUS);
-		y = (uint8_t)((uint16_t)particles[i].y / (uint16_t)PS_P_RADIUS);
-
-		// for vx=1, vy=1: starts out with all four pixels at the same color (32/32)
-		// moves to upper right pixel (64/64)
-		// then moves one physical pixel up and right(+1/+1), starts out now with
-		// lower left pixel fully bright (0/0) and moves to all four pixel at same
-		// color (32/32)
-
-		if (dx < (PS_P_RADIUS >> 1)) // jump to next physical pixel if half of virtual pixel size is reached
-		{
-			x--; // shift x to next pixel left, will overflow to 255 if 0
-			dx = dx + (PS_P_RADIUS >> 1);
-		}
-		else // if jump has ocurred
-		{
-			dx = dx - (PS_P_RADIUS >> 1); // adjust dx so pixel fades
-		}
-
-		if (dy < (PS_P_RADIUS >> 1)) // jump to next physical pixel if half of virtual pixel size is reached
-		{
-			y--; // shift y to next pixel down, will overflow to 255 if 0
-			dy = dy + (PS_P_RADIUS >> 1);
-		}
-		else
-		{
-			dy = dy - (PS_P_RADIUS >> 1);
-		}
+		// calculate brightness values for all six pixels representing a particle using linear interpolation
+		// precalculate values for speed optimization
+		precal1 = PS_P_RADIUS - dx;
+		precal2 = (PS_P_RADIUS - dy) * brightess; // multiply by ttl, adds more heat for younger particles
+		precal3 = dy * brightess;
 
 		if (wrapX)
 		{ // wrap it to the other side if required
@@ -447,13 +425,11 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 		// intensity is a scaling value from 0-255 (0-100%)
 
 		// bottom left
-		if (x < cols && y < rows)
-		{
-			// calculate the intensity with linear interpolation
-			intensity = ((uint32_t)((PS_P_RADIUS)-dx) * ((PS_P_RADIUS)-dy) * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
-			// scale the particle base color by the intensity and add it to the pixel
-			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
-		}
+		// calculate the intensity with linear interpolation, divide by surface area (shift by PS_P_SURFACE) to distribute the energy
+		intensity = (precal1 * precal2) >> PS_P_SURFACE; // equal to (PS_P_RADIUS - dx * (PS_P_RADIUS-dy) * brightess) >> PS_P_SURFACE
+		// scale the particle base color by the intensity and add it to the pixel
+		SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
+	
 		// bottom right;
 		x++;
 		if (wrapX)
@@ -463,7 +439,7 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 		}
 		if (x < cols && y < rows)
 		{
-			intensity = ((uint32_t)dx * ((PS_P_RADIUS)-dy) * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
+			intensity = (dx * precal2) >> PS_P_SURFACE; // equal to (dx * (PS_P_RADIUS-dy) * brightess) >> PS_P_SURFACE
 			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
 		}
 		// top right
@@ -475,7 +451,7 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 		}
 		if (x < cols && y < rows)
 		{
-			intensity = ((uint32_t)dx * dy * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
+			intensity = (dx * precal3) >> PS_P_SURFACE; // equal to (dx * dy * brightess) >> PS_P_SURFACE
 			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
 		}
 		// top left
@@ -489,7 +465,7 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 		}
 		if (x < cols && y < rows)
 		{
-			intensity = ((uint32_t)((PS_P_RADIUS)-dx) * dy * (uint32_t)brightess) >> PS_P_SURFACE; // divide by PS_P_SURFACE to distribute the energy
+			intensity = (precal1 * precal3) >> PS_P_SURFACE; // equal to ((PS_P_RADIUS-dx) * dy * brightess) >> PS_P_SURFACE
 			SEGMENT.addPixelColorXY(x, rows - y - 1, baseRGB.scale8(intensity), fastcoloradd);
 		}
 	}
@@ -497,52 +473,56 @@ void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX
 
 // update & move particle, wraps around left/right if wrapX is true, wrap around up/down if wrapY is true
 // particles move upwards faster if ttl is high (i.e. they are hotter)
-void FireParticle_update(PSparticle *part, bool wrapX)
+void FireParticle_update(PSparticle *part, uint32_t numparticles, bool wrapX)
 {
 	// Matrix dimension
 	const int32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	const int32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	// particle box dimensions
-	const int32_t PS_MAX_X=(cols * (uint32_t)PS_P_RADIUS - 1);
-	const int32_t PS_MAX_Y=(rows * (uint32_t)PS_P_RADIUS - 1);
+	const int32_t PS_MAX_X = (cols * (uint32_t)PS_P_RADIUS - 1);
+	const int32_t PS_MAX_Y = (rows * (uint32_t)PS_P_RADIUS - 1);
+	uint32_t i = 0;
 
-
-
-	if (part->ttl > 0)
+	for (i = 0; i < numparticles; i++)
 	{
-		// age
-		part->ttl--;
-
-		// apply velocity
-		part->x = part->x + (int32_t)part->vx;
-		part->y = part->y + (int32_t)part->vy + (part->ttl >> 4); // younger particles move faster upward as they are hotter, used for fire
-
-		part->outofbounds = 0;
-		// check if particle is out of bounds, wrap around to other side if wrapping is enabled
-		// x-direction
-		if ((part->x < 0) || (part->x > PS_MAX_X))
+		if (part[i].ttl > 0)
 		{
-			if (wrapX)
-			{
-				part->x = part->x % (PS_MAX_X + 1);
-				if (part->x < 0)
-					part->x = PS_MAX_X - part->x;
-			}
-			else
-			{
-				part->ttl = 0; 
-			}
-		}
+			// age
+			part[i].ttl--;
 
-		// y-direction
-		if ((part->y < -(PS_P_RADIUS << 4)) || (part->y > PS_MAX_Y))
-		{ // position up to 8 pixels below the matrix is allowed, used for wider flames at the bottom
-			part->ttl = 0; 
-		}
-		else if (part->y < 0)
-		{
-			part->outofbounds = 1;
+			// apply velocity
+			part[i].x = part[i].x + (int32_t)part[i].vx;
+			part[i].y = part[i].y + (int32_t)part[i].vy + (part[i].ttl >> 4); // younger particles move faster upward as they are hotter, used for fire
+
+			part[i].outofbounds = 0;
+			// check if particle is out of bounds, wrap x around to other side if wrapping is enabled
+			// as fire particles start below the frame, lots of particles are out of bounds in y direction. to improve animation speed, only check x direction if y is not out of bounds
+			// y-direction
+			if (part[i].y < 0)
+			{
+				part[i].outofbounds = 1;
+			}
+			else if (part[i].y > PS_MAX_Y) // particle moved out on the top
+			{
+				part[i].ttl = 0;
+			}
+			else // particle is in frame in y direction, also check x direction now
+			{
+				if ((part[i].x < 0) || (part[i].x > PS_MAX_X))
+				{
+					if (wrapX)
+					{
+						part[i].x = part[i].x % (PS_MAX_X + 1);
+						if (part[i].x < 0)
+							part[i].x = PS_MAX_X - part[i].x;
+					}
+					else
+					{
+						part[i].ttl = 0;
+					}
+				}
+			}
 		}
 	}
 }
@@ -552,20 +532,20 @@ void FireParticle_update(PSparticle *part, bool wrapX)
 void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles, bool wrapX)
 {
 
-	const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-	const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	const int32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	const int32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	int32_t x, y;
 	uint32_t dx, dy;
-	uint32_t tempVal;
+	uint32_t pixelheat;
+	uint32_t precal1, precal2, precal3; // precalculated values to improve speed
 	uint32_t i;
-
 	// go over particles and update matrix cells on the way
 	// note: some pixels (the x+1 ones) can be out of bounds, it is probably faster than to check that for every pixel as this only happens on the right border (and nothing bad happens as this is checked down the road)
 	for (i = 0; i < numParticles; i++)
 	{
 
-		if (particles[i].outofbounds) 
+		if (particles[i].outofbounds)
 		{
 			continue;
 		}
@@ -575,38 +555,16 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 			continue;
 		}
 
-		
+		// subtract half a radius as the rendering algorithm always starts at the bottom left, this makes calculations more efficient
+		int32_t xoffset = particles[i].x - PS_P_HALFRADIUS;
+		int32_t yoffset = particles[i].y - PS_P_HALFRADIUS;
+		dx = xoffset % (uint32_t)PS_P_RADIUS;
+		dy = yoffset % (uint32_t)PS_P_RADIUS;
+		x = (xoffset) >> PS_P_RADIUS_SHIFT; // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
+		y = (yoffset) >> PS_P_RADIUS_SHIFT;
 
-		dx = (uint8_t)((uint16_t)particles[i].x % (uint16_t)PS_P_RADIUS);
-		dy = (uint8_t)((uint16_t)particles[i].y % (uint16_t)PS_P_RADIUS);
-
-		x = (uint8_t)((uint16_t)particles[i].x >> PS_P_RADIUS_SHIFT); // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
-		y = (uint8_t)((uint16_t)particles[i].y >> PS_P_RADIUS_SHIFT);
-
-		if (dx < (PS_P_RADIUS >> 1)) // jump to next physical pixel if half of virtual pixel size is reached
+		if (wrapX)
 		{
-			x--;						  // shift left
-			dx += PS_P_RADIUS >> 1; // add half a radius
-		}
-		else // if jump has ocurred, fade pixel
-		{
-			// adjust dx so pixel fades
-			dx -= PS_P_RADIUS >> 1;
-		}
-
-		if (dy < (PS_P_RADIUS >> 1)) // jump to next physical pixel if half of virtual pixel size is reached
-		{
-			y--; // shift row
-			dy += PS_P_RADIUS >> 1;
-		}
-		else
-		{
-			// adjust dy so pixel fades
-			dy -= PS_P_RADIUS >> 1;
-		}
-
-		if (wrapX) 
-		{ 
 			if (x < 0)
 			{ // left half of particle render is out of frame, wrap it
 				x = cols - 1;
@@ -614,47 +572,51 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 		}
 
 		// calculate brightness values for all six pixels representing a particle using linear interpolation
+		// precalculate values for speed optimization
+		precal1 = PS_P_RADIUS - dx;
+		precal2 = (PS_P_RADIUS - dy) * particles[i].ttl; //multiply by ttl, adds more heat for younger particles
+		precal3 = dy * particles[i].ttl;
+
 		// bottom left
-		//if (x < cols && x >=0 && y < rows && y >=0)
+		if (x < cols && x >= 0 && y < rows && y >= 0)
 		{
-			tempVal = (((uint32_t)((PS_P_RADIUS)-dx) * ((PS_P_RADIUS)-dy) * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
-			PartMatrix_addHeat(x, y, tempVal, rows);
-			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			pixelheat = (precal1 * precal2) >> PS_P_SURFACE;
+			PartMatrix_addHeat(x, y, pixelheat, rows);
+			//	PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 		// bottom right;
 		x++;
 		if (wrapX)
-		{ // wrap it to the other side if required
-			//if (x >= cols)
+		{					  // wrap it to the other side if required
+			if (x >= cols)	  // if statement is faster on ESP8266 TODO: add a define
 				x = x % cols; // in case the right half of particle render is out of frame, wrap it (note: on microcontrollers with hardware division, the if statement is not really needed)
 		}
-		//if (x < cols && y < rows && y >= 0)
+		if (x < cols && y < rows && y >= 0)
 		{
-			tempVal = (((uint32_t)dx * ((PS_P_RADIUS)-dy) * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
-			PartMatrix_addHeat(x, y, tempVal, rows);
-			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			pixelheat = (dx * precal2) >> PS_P_SURFACE;
+			PartMatrix_addHeat(x, y, pixelheat, rows);
+			//	PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 		// top right
 		y++;
-		//if (x < cols && y < rows)
+		if (x < cols && y < rows)
 		{
-			tempVal = (((uint32_t)dx * dy * (uint32_t)particles[i].ttl) >> PS_P_SURFACE); //
-			PartMatrix_addHeat(x, y, tempVal, rows);
-			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			pixelheat = (dx * precal3) >> PS_P_SURFACE; //
+			PartMatrix_addHeat(x, y, pixelheat, rows);
+			//	PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 		// top left
 		x--;
 		if (wrapX)
-		{ // wrap it to the other side if required
+		{			   // wrap it to the other side if required
 			if (x < 0) // left half of particle render is out of frame, wrap it
 				x = cols - 1;
-			
 		}
-		//if (x < cols && x >= 0 && y < rows)
+		if (x < cols && x >= 0 && y < rows)
 		{
-			tempVal = (((uint32_t)((PS_P_RADIUS)-dx) * dy * (uint32_t)particles[i].ttl) >> PS_P_SURFACE);
-			PartMatrix_addHeat(x, y, tempVal, rows);
-			PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
+			pixelheat = (precal1 * precal3) >> PS_P_SURFACE;
+			PartMatrix_addHeat(x, y, pixelheat, rows);
+			//	PartMatrix_addHeat(x + 1, y, tempVal, rows); // shift particle by 1 pixel to the right and add heat again (makes flame wider without using more particles)
 		}
 	}
 }
@@ -663,16 +625,19 @@ void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles
 void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint32_t rows)
 {
 
-	//const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	// const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
 	CRGB currentcolor = SEGMENT.getPixelColorXY(col, rows - row - 1); // read current matrix color (flip y axis)
 	uint32_t newcolorvalue;
-	uint8_t colormode = map(SEGMENT.custom3, 0, 31, 0, 5); // get color mode from slider (3bit value)
+	uint32_t colormode = map(SEGMENT.custom3, 0, 31, 0, 5); // get color mode from slider (3bit value)
 
 	// define how the particle TTL value (which is the heat given to the function) maps to heat, if lower, fire is more red, if higher, fire is brighter as bright flames travel higher and decay faster
-
-	heat = heat << 3; // need to take a larger value to scale ttl value of particle to a good heat value that decays fast enough
-
+	// need to scale ttl value of particle to a good heat value that decays fast enough
+	#ifdef ESP8266
+	heat = heat << 4; //ESP8266 has no hardware multiplication, just use shift (also less particles, need more heat)
+	#else
+	heat = heat * 10;
+	#endif
 	// i=0 is normal red fire, i=1 is green fire, i=2 is blue fire
 	uint32_t i = (colormode & 0x07) >> 1;
 	i = i % 3;
@@ -685,7 +650,7 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint32_t rows)
 		if (newcolorvalue == 255)
 		{										   // there cannot be a leftover if it is not full
 			heat = heat - (255 - currentcolor[i]); // heat added is difference from current value to full value, subtract it from the inital heat value so heat is the remaining heat not added yet
-			// this cannot produce an underflow since we never add more than the initial heat value
+												   // this cannot produce an underflow since we never add more than the initial heat value
 		}
 		else
 		{
@@ -701,13 +666,13 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint32_t rows)
 
 		if (currentcolor[i] < 255)
 		{
-			newcolorvalue = (uint16_t)currentcolor[i] + heat;  // add heat, check if it overflows
+			newcolorvalue = (uint32_t)currentcolor[i] + heat;  // add heat, check if it overflows
 			newcolorvalue = min(newcolorvalue, (uint32_t)255); // limit to 8bit value again
 			// check if there is heat left over
 			if (newcolorvalue == 255) // there cannot be a leftover if red is not full
 			{
 				heat = heat - (255 - currentcolor[i]); // heat added is difference from current red value to full red value, subtract it from the inital heat value so heat is the remaining heat not added yet
-				// this cannot produce an underflow since we never add more than the initial heat value
+													   // this cannot produce an underflow since we never add more than the initial heat value
 			}
 			else
 			{
@@ -732,23 +697,23 @@ void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint32_t rows)
 }
 
 // detect collisions in an array of particles and handle them
-void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hardness)
+void detectCollisions(PSparticle *particles, uint32_t numparticles, uint8_t hardness)
 {
 	// detect and handle collisions
-	uint32_t i,j;
-	int32_t startparticle = 0;
-	int32_t endparticle = numparticles >> 1; // do half the particles, significantly speeds things up
+	uint32_t i, j;
+	uint32_t startparticle = 0;
+	uint32_t endparticle = numparticles >> 1; // do half the particles, significantly speeds things up
 
 	if (SEGMENT.call % 2 == 0)
 	{ // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame, less accurate but good enough)
 		startparticle = endparticle;
 		endparticle = numparticles;
 	}
-	
+
 	for (i = startparticle; i < endparticle; i++)
 	{
-		// go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide		
-		if (particles[i].ttl > 0 && particles[i].collide && particles[i].outofbounds==0) // if particle is alive and does collide and is not out of view
+		// go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
+		if (particles[i].ttl > 0 && particles[i].collide && particles[i].outofbounds == 0) // if particle is alive and does collide and is not out of view
 		{
 			int32_t dx, dy; // distance to other particles
 			for (j = i + 1; j < numparticles; j++)
@@ -756,7 +721,7 @@ void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hard
 				if (particles[j].ttl > 0) // if target particle is alive
 				{
 					dx = particles[i].x - particles[j].x;
-					if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS))) //check x direction, if close, check y direction
+					if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS))) // check x direction, if close, check y direction
 					{
 						dy = particles[i].y - particles[j].y;
 						if ((dx < (PS_P_HARDRADIUS)) && (dx > (-PS_P_HARDRADIUS)) && (dy < (PS_P_HARDRADIUS)) && (dy > (-PS_P_HARDRADIUS)))
@@ -771,37 +736,44 @@ void detectCollisions(PSparticle* particles, uint32_t numparticles, uint8_t hard
 }
 
 // handle a collision if close proximity is detected, i.e. dx and/or dy smaller than 2*PS_P_RADIUS
-// takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision)
-void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness)
+// takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
+void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint32_t hardness)
 {
 
 	int32_t dx = particle2->x - particle1->x;
 	int32_t dy = particle2->y - particle1->y;
 	int32_t distanceSquared = dx * dx + dy * dy;
 
-	// Calculate relative velocity
+	// Calculate relative velocity (if it is zero, could exit but extra check does not overall speed but deminish it)
 	int32_t relativeVx = (int16_t)particle2->vx - (int16_t)particle1->vx;
 	int32_t relativeVy = (int16_t)particle2->vy - (int16_t)particle1->vy;
 
+
 	if (distanceSquared == 0) // add distance in case particles exactly meet at center, prevents dotProduct=0 (this can only happen if they move towards each other)
 	{
-		// Adjust positions based on relative velocity direction
-		
-	        if (relativeVx < 0) { //if true, particle2 is on the right side
-	            particle1->x--;
-	            particle2->x++;
-	        } else{
-	            particle1->x++;
-	            particle2->x--;
-	        }
-	
-	        if (relativeVy < 0) {
-	            particle1->y--;
-	            particle2->y++;
-	        } else{
-	            particle1->y++;
-	            particle2->y--;
-	        }
+		// Adjust positions based on relative velocity direction TODO: is this really needed? only happens on fast particles, would save some code (but make it a tiny bit less accurate on fast particles but probably not an issue)
+
+		if (relativeVx < 0)
+		{ // if true, particle2 is on the right side
+			particle1->x--;
+			particle2->x++;
+		}
+		else
+		{
+			particle1->x++;
+			particle2->x--;
+		}
+
+		if (relativeVy < 0)
+		{
+			particle1->y--;
+			particle2->y++;
+		}
+		else
+		{
+			particle1->y++;
+			particle2->y--;
+		}
 		distanceSquared++;
 	}
 	// Calculate dot product of relative velocity and relative distance
@@ -810,77 +782,82 @@ void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t
 	// If particles are moving towards each other
 	if (dotProduct < 0)
 	{
-		const uint8_t bitshift = 14; // bitshift used to avoid floats
+		const uint32_t bitshift = 14; // bitshift used to avoid floats
 
 		// Calculate new velocities after collision
-		int32_t impulse = (((dotProduct << (bitshift)) / (distanceSquared)) * hardness) >> 8;
+		int32_t impulse = (((dotProduct << (bitshift)) / (distanceSquared)) * (hardness+1)) >> 8; 
 		int32_t ximpulse = (impulse * dx) >> bitshift;
 		int32_t yimpulse = (impulse * dy) >> bitshift;
 		particle1->vx += ximpulse;
 		particle1->vy += yimpulse;
 		particle2->vx -= ximpulse;
 		particle2->vy -= yimpulse;
-		
-		if (hardness < 50) // if particles are soft, they become 'sticky' i.e. slow movements are stopped
+		/*
+		//TODO: this is removed for now as it does not seem to do much and does not help with piling. if soft, much energy is lost anyway at a collision, so they are automatically sticky
+		//also second version using multiplication is slower on ESP8266 than the if's
+		if (hardness < 50) // if particles are soft, they become 'sticky' i.e. they are slowed down at collisions 
 		{
-			particle1->vx = (particle1->vx < 2 && particle1->vx > -2) ? 0 : particle1->vx;
-			particle1->vy = (particle1->vy < 2 && particle1->vy > -2) ? 0 : particle1->vy;
+			
+			//particle1->vx = (particle1->vx < 2 && particle1->vx > -2) ? 0 : particle1->vx;
+			//particle1->vy = (particle1->vy < 2 && particle1->vy > -2) ? 0 : particle1->vy;
 
-			particle2->vx = (particle2->vx < 2 && particle2->vx > -2) ? 0 : particle2->vx;
-			particle2->vy = (particle2->vy < 2 && particle2->vy > -2) ? 0 : particle2->vy;
-		}		
-	}	
+			//particle2->vx = (particle2->vx < 2 && particle2->vx > -2) ? 0 : particle2->vx;
+			//particle2->vy = (particle2->vy < 2 && particle2->vy > -2) ? 0 : particle2->vy;
+
+			const uint32_t coeff = 100;
+			particle1->vx = ((int32_t)particle1->vx * coeff) >> 8;
+			particle1->vy = ((int32_t)particle1->vy * coeff) >> 8;
+
+			particle2->vx = ((int32_t)particle2->vx * coeff) >> 8;
+			particle2->vy = ((int32_t)particle2->vy * coeff) >> 8;
+		}*/
+	}
 
 	// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
 	// if pushing is made dependent on hardness, things start to oscillate much more, better to just add a fixed, small increment (tried lots of configurations, this one works best)
 	// one problem remaining is, particles get squished if (external) force applied is higher than the pushback but this may also be desirable if particles are soft. also some oscillations cannot be avoided without addigng a counter
-	if (distanceSquared < (int32_t)2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS)
+	if (distanceSquared < 2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS)
 	{
-		uint8_t choice = random8(2);//randomly choose one particle to push, avoids oscillations
-		const int32_t HARDDIAMETER = (int32_t)2*PS_P_HARDRADIUS;
-
+		uint8_t choice = dotProduct & 0x01; // random16(2); // randomly choose one particle to push, avoids oscillations note: dotprouct LSB should be somewhat random, so no need to calculate a random number
+		const int32_t HARDDIAMETER = 2 * PS_P_HARDRADIUS;
+		const int32_t pushamount = 2; //push a small amount
+		int32_t push = pushamount;
 
 		if (dx < HARDDIAMETER && dx > -HARDDIAMETER)
 		{ // distance is too small, push them apart
 
-			int32_t push;
 			if (dx <= 0)
-				push = -1;//-(PS_P_HARDRADIUS + dx); // inverted push direction
-			else
-				push = 1;//PS_P_HARDRADIUS - dx;
+				push = -pushamount; //-(PS_P_HARDRADIUS + dx); // inverted push direction
 
 			if (choice) // chose one of the particles to push, avoids oscillations
 				particle1->x -= push;
 			else
-				particle2->x += push; 
+				particle2->x += push;
 		}
 
+		push = pushamount; // reset push variable to 1
 		if (dy < HARDDIAMETER && dy > -HARDDIAMETER)
 		{
-			
-			int32_t push;
 			if (dy <= 0)
-				push = -1; //-(PS_P_HARDRADIUS + dy); // inverted push direction
-			else
-				push = 1; // PS_P_HARDRADIUS - dy;
+				push = -pushamount; //-(PS_P_HARDRADIUS + dy); // inverted push direction
 
 			if (choice) // chose one of the particles to push, avoids oscillations
 				particle1->y -= push;
 			else
-				particle2->y += push; 
+				particle2->y += push;
 		}
-		//note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame, if bounce is disabled: bye bye		
+		// note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame, if bounce is disabled: bye bye
 	}
-	
-
 }
 
-// slow down particle by friction, the higher the speed, the higher the friction
-void applyFriction(PSparticle *particle, uint8_t coefficient)
+// slow down particle by friction, the higher the speed, the higher the friction coefficient must be <255 or friction is flipped
+void applyFriction(PSparticle *particle, int32_t coefficient)
 {
-	if(particle->ttl)
+	//note: to increase calculation efficiency, coefficient is not checked if it is within necessary limits of 0-255! if coefficient is made < 1 particles speed up!
+	coefficient = (int32_t)255 - coefficient;
+	if (particle->ttl)
 	{
-	particle->vx = ((int16_t)particle->vx * (255 - coefficient)) >> 8;
-	particle->vy = ((int16_t)particle->vy * (255 - coefficient)) >> 8;
+		particle->vx = ((int16_t)particle->vx * coefficient) >> 8;
+		particle->vy = ((int16_t)particle->vy * coefficient) >> 8;
 	}
 }
