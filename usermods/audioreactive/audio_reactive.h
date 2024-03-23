@@ -141,9 +141,9 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. chann
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
-unsigned int zeroCrossingCount = 0;
-unsigned int energy = 0;
-unsigned int lowFreqencyContent = 0;
+uint_fast32_t zeroCrossingCount = 0;
+uint_fast32_t energy = 0;
+uint_fast32_t lowFreqencyContent = 0;
 
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
@@ -498,6 +498,21 @@ void FFTcode(void * parameter)
 
     // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
+    
+    // WLED-MM/TroyHacks: Calculate zero crossings
+    //
+    zeroCrossingCount = 0;
+    energy = 0;
+
+    for (int i=0; i < samplesFFT; i++) {
+      if (i < (samplesFFT)-2) {
+        if((vReal[i] >= 0 && vReal[i+1] < 0) || (vReal[i+1] < 0 && vReal[i+1] >= 0)) {
+            zeroCrossingCount++;
+        }
+      }
+      // WLED-MM/TroyHacks: Calculate energy
+      energy += (vReal[i] * vReal[i])/10000000;
+    }
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     // debug info in case that stack usage changes
@@ -549,24 +564,13 @@ void FFTcode(void * parameter)
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
-    zeroCrossingCount = 0;
     for (int i=0; i < samplesFFT; i++) {
 	    // set imaginary parts to 0
       vImag[i] = 0;
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
-
-      // WLED-MM/TroyHacks: Calculate zero crossings
-      if (i < samplesFFT-2) {
-        if (vReal[i] * vReal[i+1] < 0) {
-            zeroCrossingCount++;
-        }
-      }
-      // WLED-MM/TroyHacks: Calculate energy
-      energy += vReal[i] * vReal[i];
     }
-    energy /= 100000; // WLED-MM/TroyHacks: scale this down becasue we're gonna make it bigger later
 
     // release highest sample to volume reactive effects early - not strictly necessary here - could also be done at the end of the function
     // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.
@@ -641,6 +645,17 @@ void FFTcode(void * parameter)
         #endif
         FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
         FFT_MajPeakSmth = FFT_MajPeakSmth + 0.42 * (FFT_MajorPeak - FFT_MajPeakSmth);   // I like this "swooping peak" look
+        
+        // WLED-MM/TroyHacks: Calculate Low-Frequency Content
+        //
+        lowFreqencyContent = fftAddAvg(2,4)/1000; 
+
+        // USER_PRINT("ZCR = ");
+        // USER_PRINT(zeroCrossingCount);
+        // USER_PRINT(" Energy = ");
+        // USER_PRINT(" LFC = ");
+        // USER_PRINT(lowFreqencyContent);
+        // USER_PRINTLN();
 
       } else { // skip second run --> clear fft results, keep peaks
         memset(vReal, 0, sizeof(vReal)); 
@@ -661,8 +676,6 @@ void FFTcode(void * parameter)
         float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
         vReal[i] = t / 16.0f;                           // Reduce magnitude. Want end result to be scaled linear and ~4096 max.
       } // for()
-
-      lowFreqencyContent = fftAddAvg(1,4); // WLED-MM/TroyHacks: Calculate Low-Frequency Content
 
       // mapping of FFT result bins to frequency channels
       //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
@@ -1738,7 +1751,7 @@ class AudioReactive : public Usermod {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
         um_data = new um_data_t;
-        um_data->u_size = 11;
+        um_data->u_size = 13;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
         um_data->u_data[0] = &volumeSmth;      //*used (New)
@@ -1764,10 +1777,12 @@ class AudioReactive : public Usermod {
         um_data->u_type[9]  = UMT_FLOAT;
         um_data->u_data[10] = &agcSensitivity; // used (New)
         um_data->u_type[10] = UMT_FLOAT;
-        unsigned int* extra[3] = {&zeroCrossingCount, &energy, &lowFreqencyContent};
-        um_data->u_data[11] = extra; // 
-        um_data->u_type[11] = UMT_INT16_ARR;
-
+        um_data->u_data[11] = &zeroCrossingCount;
+        um_data->u_type[11] = UMT_UINT32;
+        um_data->u_data[12] = &energy;
+        um_data->u_type[12] = UMT_UINT32;
+        um_data->u_data[13] = &lowFreqencyContent;
+        um_data->u_type[13] = UMT_UINT32;
 #else
        // ESP8266 
         // See https://github.com/MoonModules/WLED/pull/60#issuecomment-1666972133 for explanation of these alternative sources of data

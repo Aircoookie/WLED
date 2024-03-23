@@ -13,28 +13,32 @@ class AutoPlaylistUsermod : public Usermod {
     int timeout = 60;
     bool autoChange = false;
     byte lastAutoPlaylist = 0;
+    int change_timer = millis();
 
-    int avg_long_energy = 10000;
-    int avg_long_lfc = 1000;
-    int avg_long_zcr = 100;
+    uint_fast32_t avg_long_energy = 250;
+    uint_fast32_t avg_long_lfc = 1000;
+    uint_fast32_t avg_long_zcr = 500;
 
-    int avg_short_energy = 10000;
-    int avg_short_lfc = 1000;
-    int avg_short_zcr = 100;
+    uint_fast32_t avg_short_energy = 250;
+    uint_fast32_t avg_short_lfc = 1000;
+    uint_fast32_t avg_short_zcr = 500;
 
-    int vector_energy = 0;
-    int vector_lfc = 0;
-    int vector_zcr = 0;
+    uint_fast32_t vector_energy = 0;
+    uint_fast32_t vector_lfc = 0;
+    uint_fast32_t vector_zcr = 0;
 
-    int squared_distance = 0;
+    uint_fast32_t distance = 0;
+
+    // uint_fast64_t squared_distance = 0;
+
     int lastchange = millis();
 
     int last_beat_interval = millis();
-    int change_threshold = 10;
+    int change_threshold = 50;
 
-    int change_lockout = 100; // never change below this numnber of millis. I think of this more like a debounce, but opinions may vary.
-    int ideal_change_min = 2000; // ideally change patterns no less than this number of millis
-    int ideal_change_max = 5000; // ideally change patterns no more than this number of millis
+    int change_lockout = 1000; // never change below this numnber of millis. I think of this more like a debounce, but opinions may vary.
+    int ideal_change_min = 10000; // ideally change patterns no less than this number of millis
+    int ideal_change_max = 20000; // ideally change patterns no more than this number of millis
 
     std::vector<int> autoChangeIds;
   
@@ -43,10 +47,15 @@ class AutoPlaylistUsermod : public Usermod {
     static const char _musicPlaylist[];
     static const char _timeout[];
     static const char _autoChange[];
+    static const char _change_lockout[];
+    static const char _ideal_change_min[];
+    static const char _ideal_change_max[];
 
   public:
 
-    AutoPlaylistUsermod(bool enabled):Usermod("AutoPlaylist", enabled) {}
+    AutoPlaylistUsermod(bool enabled):Usermod("AutoPlaylist", enabled) {
+      // noop
+    }
 
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
@@ -56,47 +65,62 @@ class AutoPlaylistUsermod : public Usermod {
 
     // gets called every time WiFi is (re-)connected. Initialize own network
     // interfaces here
-    void connected() {}
+    void connected() {
+      // noop
+    }
 
     void change(um_data_t *um_data) {
 
-      int *extra = (int*) um_data->u_data[11];
-
-      unsigned int zcr = extra[0];
-      int energy = extra[1];
-      int lfc = extra[2]; // getFFTFromRange(um_data, 2 , 4);
-
-      USER_PRINTF("zcr = %d, energy = %d, lfc = %d\n",zcr,energy,lfc);
+      uint_fast32_t zcr    = *(uint_fast32_t*)um_data->u_data[11];
+      uint_fast32_t energy = *(uint_fast32_t*)um_data->u_data[12];
+      uint_fast32_t lfc    = *(uint_fast32_t*)um_data->u_data[13];
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
       // and the squared_distance for the vector.
 
-      avg_long_energy = avg_long_energy * 0.99 + energy * 0.01;
-      avg_long_lfc    = avg_long_lfc    * 0.99 + lfc    * 0.01;
-      avg_long_zcr    = avg_long_zcr    * 0.99 + zcr    * 0.01;
+      if (volumeSmth > 0.1) { 
 
-      avg_short_energy = avg_short_energy * 0.9 + energy * 0.1;
-      avg_short_lfc    = avg_short_lfc    * 0.9 + lfc    * 0.1;
-      avg_short_zcr    = avg_short_zcr    * 0.9 + zcr    * 0.1;
+        avg_long_energy = avg_long_energy * 0.99 + energy * 0.01;
+        avg_long_lfc    = avg_long_lfc    * 0.99 + lfc    * 0.01;
+        avg_long_zcr    = avg_long_zcr    * 0.99 + zcr    * 0.01;
 
-      energy = 0;
-      lfc = 0;
-      zcr = 0;
+        avg_short_energy = avg_short_energy * 0.9 + energy * 0.1;
+        avg_short_lfc    = avg_short_lfc    * 0.9 + lfc    * 0.1;
+        avg_short_zcr    = avg_short_zcr    * 0.9 + zcr    * 0.1;
 
-      // allegedly this is faster than pow(whatever,2)
-      vector_lfc = (avg_short_lfc-avg_long_lfc)*(avg_short_lfc-avg_long_lfc);
-      vector_energy = (avg_short_energy-avg_long_energy)*(avg_short_energy-avg_long_energy);
-      vector_zcr = (avg_short_zcr-avg_long_zcr)*(avg_short_zcr-avg_long_zcr);
+        // allegedly this is faster than pow(whatever,2)
+        vector_lfc = (avg_short_lfc-avg_long_lfc)*(avg_short_lfc-avg_long_lfc);
+        vector_energy = (avg_short_energy-avg_long_energy)*(avg_short_energy-avg_long_energy);
+        vector_zcr = (avg_short_zcr-avg_long_zcr)*(avg_short_zcr-avg_long_zcr);
 
-      squared_distance = vector_lfc + vector_energy + vector_zcr;
+      }
+
+      distance = vector_lfc + vector_energy + vector_zcr;
       // USER_PRINTF("squared_distance = %d\n", squared_distance * squared_distance / 10000000);
 
-      squared_distance = squared_distance * squared_distance / 10000000; // shorten just because it's a big number
+      // squared_distance = distance * distance;
+
+      int change_interval = millis()-lastchange;
+
+      // if (millis() > change_timer + 100) {
+      //   // if (change_interval > ideal_change_max) {
+      //   //   USER_PRINTF("Increasing sensitivity to: %d\n",change_threshold++);
+      //   // }
+      //   USER_PRINT("\tDistance: ");
+      //   USER_PRINT(distance);
+      //   USER_PRINT("\tv_lfc: ");
+      //   USER_PRINT(vector_lfc);
+      //   USER_PRINT("\tv_energy: ");
+      //   USER_PRINT(vector_energy);
+      //   USER_PRINT("\tv_zcr: ");
+      //   USER_PRINTLN(vector_zcr);
+
+      //   change_timer = millis();
+      // }
 
       // WLED-MM/TroyHacks - Change pattern testing
       //
-      int change_interval = millis()-lastchange;
-      if (squared_distance <= change_threshold && change_interval > change_lockout) { 
+      if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 0.1) { 
         if (change_interval > ideal_change_max) {
           change_threshold += 1;
         } else if (change_interval < ideal_change_min) {
@@ -122,18 +146,15 @@ class AutoPlaylistUsermod : public Usermod {
         while (currentPreset == newpreset);
 
         applyPreset(newpreset);
-        USER_PRINTF("*** CHANGE! Squared distance = %d - change interval was %d ms - next change min is %d\n",squared_distance, change_interval, change_threshold);
+        USER_PRINT("*** CHANGE! Vector distance = ");
+        USER_PRINT(distance);
+        USER_PRINT(" - change interval was ");
+        USER_PRINT(change_interval);
+        USER_PRINT("ms - next change min is ");
+        USER_PRINTLN(change_threshold);
         lastchange = millis();
       }
     }
-
-    // // static float fftAddAvgLin(int from, int to) {
-    //   float result = 0.0f;
-    //   for (int i = from; i <= to; i++) {
-    //     result += vReal[i];
-    //   }
-    //   return result / float(to - from + 1);
-    // }
 
     uint8_t getFFTFromRange(um_data_t *data, uint8_t from, uint8_t to) {
       uint8_t *fftResult = (uint8_t*) data->u_data[2];
@@ -268,6 +289,9 @@ class AutoPlaylistUsermod : public Usermod {
       top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
       top[FPSTR(_musicPlaylist)]      = musicPlaylist;    // usermodparam
       top[FPSTR(_autoChange)]         = autoChange;
+      top[FPSTR(_change_lockout)]     = change_lockout;
+      top[FPSTR(_ideal_change_min)]   = ideal_change_min;
+      top[FPSTR(_ideal_change_max)]   = ideal_change_max;
       lastAutoPlaylist = 0;
       DEBUG_PRINTLN(F("AutoPlaylist config saved."));
     }
@@ -296,6 +320,9 @@ class AutoPlaylistUsermod : public Usermod {
       getJsonValue(top[_ambientPlaylist], ambientPlaylist);
       getJsonValue(top[_musicPlaylist], musicPlaylist);
       getJsonValue(top[_autoChange], autoChange);
+      getJsonValue(top[_change_lockout], change_lockout);
+      getJsonValue(top[_ideal_change_min], ideal_change_min);
+      getJsonValue(top[_ideal_change_max], ideal_change_max);
 
       DEBUG_PRINTLN(F(" config (re)loaded."));
 
@@ -324,8 +351,11 @@ class AutoPlaylistUsermod : public Usermod {
 
 };
 
-const char AutoPlaylistUsermod::_enabled[]         PROGMEM = "enabled";
-const char AutoPlaylistUsermod::_ambientPlaylist[] PROGMEM = "ambientPlaylist";
-const char AutoPlaylistUsermod::_musicPlaylist[]   PROGMEM = "musicPlaylist";
-const char AutoPlaylistUsermod::_timeout[]         PROGMEM = "timeout";
-const char AutoPlaylistUsermod::_autoChange[]      PROGMEM = "autoChange";
+const char AutoPlaylistUsermod::_enabled[]          PROGMEM = "enabled";
+const char AutoPlaylistUsermod::_ambientPlaylist[]  PROGMEM = "ambientPlaylist";
+const char AutoPlaylistUsermod::_musicPlaylist[]    PROGMEM = "musicPlaylist";
+const char AutoPlaylistUsermod::_timeout[]          PROGMEM = "timeout";
+const char AutoPlaylistUsermod::_autoChange[]       PROGMEM = "autoChange";
+const char AutoPlaylistUsermod::_change_lockout[]   PROGMEM = "change_lockout";
+const char AutoPlaylistUsermod::_ideal_change_min[] PROGMEM = "ideal_change_min";
+const char AutoPlaylistUsermod::_ideal_change_max[] PROGMEM = "ideal_change_max";
