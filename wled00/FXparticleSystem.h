@@ -31,14 +31,11 @@
 
 //particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
+#define PS_P_HALFRADIUS 32  
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_HARDRADIUS 80 //hard surface radius of a particle, used for collision detection proximity
 
-
-
-//todo: can add bitfields to add in more stuff, but accessing bitfields is slower than direct memory access!
-//flags as bitfields is still very fast to access.
 //struct for a single particle
 typedef struct {
     int16_t x;   //x position in particle system
