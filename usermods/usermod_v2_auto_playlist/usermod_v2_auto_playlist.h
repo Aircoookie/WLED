@@ -96,27 +96,30 @@ class AutoPlaylistUsermod : public Usermod {
       }
 
       distance = vector_lfc + vector_energy + vector_zcr;
-      // USER_PRINTF("squared_distance = %d\n", squared_distance * squared_distance / 10000000);
-
       // squared_distance = distance * distance;
 
       int change_interval = millis()-lastchange;
 
-      // if (millis() > change_timer + 100) {
-      //   // if (change_interval > ideal_change_max) {
-      //   //   USER_PRINTF("Increasing sensitivity to: %d\n",change_threshold++);
-      //   // }
-      //   USER_PRINT("\tDistance: ");
-      //   USER_PRINT(distance);
-      //   USER_PRINT("\tv_lfc: ");
-      //   USER_PRINT(vector_lfc);
-      //   USER_PRINT("\tv_energy: ");
-      //   USER_PRINT(vector_energy);
-      //   USER_PRINT("\tv_zcr: ");
-      //   USER_PRINTLN(vector_zcr);
+      // USER_PRINT("\tDistance: ");
+      // USER_PRINT(distance);
+      // USER_PRINT("\tv_lfc: ");
+      // USER_PRINT(vector_lfc);
+      // USER_PRINT("\tv_energy: ");
+      // USER_PRINT(vector_energy);
+      // USER_PRINT("\tv_zcr: ");
+      // USER_PRINTLN(vector_zcr);
 
-      //   change_timer = millis();
-      // }
+      if (millis() > change_timer + ideal_change_min) {
+        // Make the analysis less sensitive if we miss the window, slowly.
+        // Sometimes the analysis lowers the change_threshold too much for
+        // the current music, especially after track changes or during 
+        // sparce intros and breakdowns.
+        if (change_interval > ideal_change_min) {
+          change_threshold++;
+          USER_PRINTF("Increasing change_threshold to: %d\n",change_threshold);
+        }
+        change_timer = millis();
+      }
 
       // WLED-MM/TroyHacks - Change pattern testing
       //
@@ -146,14 +149,17 @@ class AutoPlaylistUsermod : public Usermod {
         while (currentPreset == newpreset);
 
         applyPreset(newpreset);
+
         USER_PRINT("*** CHANGE! Vector distance = ");
         USER_PRINT(distance);
-        USER_PRINT(" - change interval was ");
+        USER_PRINT(" - change_interval was ");
         USER_PRINT(change_interval);
-        USER_PRINT("ms - next change min is ");
+        USER_PRINT("ms - next change_threshold is ");
         USER_PRINTLN(change_threshold);
         lastchange = millis();
+
       }
+
     }
 
     uint8_t getFFTFromRange(um_data_t *data, uint8_t from, uint8_t to) {
@@ -283,7 +289,9 @@ class AutoPlaylistUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
+
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
+
       top[FPSTR(_enabled)]            = enabled;
       top[FPSTR(_timeout)]            = timeout;
       top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
@@ -292,8 +300,11 @@ class AutoPlaylistUsermod : public Usermod {
       top[FPSTR(_change_lockout)]     = change_lockout;
       top[FPSTR(_ideal_change_min)]   = ideal_change_min;
       top[FPSTR(_ideal_change_max)]   = ideal_change_max;
+
       lastAutoPlaylist = 0;
+
       DEBUG_PRINTLN(F("AutoPlaylist config saved."));
+
     }
 
     /*
@@ -307,7 +318,9 @@ class AutoPlaylistUsermod : public Usermod {
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
     bool readFromConfig(JsonObject& root) {
+
       JsonObject top = root[FPSTR(_name)];
+
       if (top.isNull()) {
         DEBUG_PRINT(FPSTR(_name));
         DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
@@ -328,6 +341,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return true;
+
   }
 
     /*
@@ -347,7 +361,6 @@ class AutoPlaylistUsermod : public Usermod {
           applyPreset(id, CALL_MODE_NOTIFICATION);
           lastAutoPlaylist = id;
     }
-
 
 };
 
