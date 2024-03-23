@@ -39,15 +39,6 @@
 
 //todo: can add bitfields to add in more stuff, but accessing bitfields is slower than direct memory access!
 //flags as bitfields is still very fast to access.
-
-union Flags {
-  struct  {
-
-  };
-  uint8_t flagsByte; 
-};
-
-
 //struct for a single particle
 typedef struct {
     int16_t x;   //x position in particle system
@@ -93,9 +84,9 @@ void Particle_Move_update(PSparticle *part, bool killoutofbounds = false, bool w
 void Particle_Bounce_update(PSparticle *part, const uint8_t hardness);
 void Particle_Gravity_update(PSparticle *part, bool wrapX, bool bounceX, bool bounceY, const uint8_t hardness);
 void ParticleSys_render(PSparticle *particles, uint32_t numParticles, bool wrapX, bool wrapY);
-void FireParticle_update(PSparticle *part, bool wrapX = false);
+void FireParticle_update(PSparticle *part, uint32_t numparticles, bool wrapX = false);
 void ParticleSys_renderParticleFire(PSparticle *particles, uint32_t numParticles, bool wrapX);
 void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint32_t rows);
 void detectCollisions(PSparticle *particles, uint32_t numparticles, uint8_t hardness);
-void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint8_t hardness);
-void applyFriction(PSparticle *particle, uint8_t coefficient);
+void handleCollision(PSparticle *particle1, PSparticle *particle2, const uint32_t hardness);
+void applyFriction(PSparticle *particle, int32_t coefficient);
