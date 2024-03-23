@@ -662,7 +662,7 @@ void FFTcode(void * parameter)
         vReal[i] = t / 16.0f;                           // Reduce magnitude. Want end result to be scaled linear and ~4096 max.
       } // for()
 
-      lowFreqencyContent = fftAddAvg(1,9); // WLED-MM/TroyHacks: Calculate Low-Frequency Content
+      lowFreqencyContent = fftAddAvg(1,4); // WLED-MM/TroyHacks: Calculate Low-Frequency Content
 
       // mapping of FFT result bins to frequency channels
       //if (fabsf(sampleAvg) > 0.25f) { // noise gate open

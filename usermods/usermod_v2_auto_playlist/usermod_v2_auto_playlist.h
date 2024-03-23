@@ -14,7 +14,6 @@ class AutoPlaylistUsermod : public Usermod {
     bool autoChange = false;
     byte lastAutoPlaylist = 0;
 
-
     int avg_long_energy = 10000;
     int avg_long_lfc = 1000;
     int avg_long_zcr = 100;
@@ -65,7 +64,9 @@ class AutoPlaylistUsermod : public Usermod {
 
       unsigned int zcr = extra[0];
       int energy = extra[1];
-      int lfc = extra[2]; // getFFTFromRange(um_data, 1 , 3);
+      int lfc = extra[2]; // getFFTFromRange(um_data, 2 , 4);
+
+      USER_PRINTF("zcr = %d, energy = %d, lfc = %d\n",zcr,energy,lfc);
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
       // and the squared_distance for the vector.
@@ -78,12 +79,18 @@ class AutoPlaylistUsermod : public Usermod {
       avg_short_lfc    = avg_short_lfc    * 0.9 + lfc    * 0.1;
       avg_short_zcr    = avg_short_zcr    * 0.9 + zcr    * 0.1;
 
+      energy = 0;
+      lfc = 0;
+      zcr = 0;
+
       // allegedly this is faster than pow(whatever,2)
       vector_lfc = (avg_short_lfc-avg_long_lfc)*(avg_short_lfc-avg_long_lfc);
       vector_energy = (avg_short_energy-avg_long_energy)*(avg_short_energy-avg_long_energy);
       vector_zcr = (avg_short_zcr-avg_long_zcr)*(avg_short_zcr-avg_long_zcr);
 
       squared_distance = vector_lfc + vector_energy + vector_zcr;
+      // USER_PRINTF("squared_distance = %d\n", squared_distance * squared_distance / 10000000);
+
       squared_distance = squared_distance * squared_distance / 10000000; // shorten just because it's a big number
 
       // WLED-MM/TroyHacks - Change pattern testing
@@ -119,13 +126,22 @@ class AutoPlaylistUsermod : public Usermod {
         lastchange = millis();
       }
     }
+
+    // // static float fftAddAvgLin(int from, int to) {
+    //   float result = 0.0f;
+    //   for (int i = from; i <= to; i++) {
+    //     result += vReal[i];
+    //   }
+    //   return result / float(to - from + 1);
+    // }
+
     uint8_t getFFTFromRange(um_data_t *data, uint8_t from, uint8_t to) {
       uint8_t *fftResult = (uint8_t*) data->u_data[2];
       uint16_t result = 0;
       for (int i = from; i <= to; i++) {
-        result += fftResult[i] * fftResult[i];
+        result += fftResult[i]; // * fftResult[i];
       }
-      return sqrt(result / (to - from + 1));
+      return result / float(to - from + 1); // sqrt(result / (to - from + 1));
     }
 
     /*
