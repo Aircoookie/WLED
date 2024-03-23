@@ -34,8 +34,8 @@ class AutoPlaylistUsermod : public Usermod {
     int change_threshold = 10;
 
     int change_lockout = 100; // never change below this numnber of millis. I think of this more like a debounce, but opinions may vary.
-    int ideal_change_max = 5000; // ideally change patterns no more than this number of millis
     int ideal_change_min = 2000; // ideally change patterns no less than this number of millis
+    int ideal_change_max = 5000; // ideally change patterns no more than this number of millis
 
     std::vector<int> autoChangeIds;
   
@@ -65,7 +65,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       unsigned int zcr = extra[0];
       int energy = extra[1];
-      int lfc = getFFTFromRange(um_data, 0 , 3);
+      int lfc = extra[2]; // getFFTFromRange(um_data, 1 , 3);
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
       // and the squared_distance for the vector.

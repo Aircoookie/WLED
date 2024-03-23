@@ -36,7 +36,7 @@
 #endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-// this applies "pink noise scaling" to FFT results before computing the major peak for effects.
+// this applies "pink noise scaling" to FFT results before computing the major peak for effects.0
 // currently only for ESP32-S3 and classic ESP32, due to increased runtime
 #define FFT_MAJORPEAK_HUMAN_EAR
 #endif
@@ -549,6 +549,7 @@ void FFTcode(void * parameter)
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
+    zeroCrossingCount = 0;
     for (int i=0; i < samplesFFT; i++) {
 	    // set imaginary parts to 0
       vImag[i] = 0;
