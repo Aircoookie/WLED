@@ -2917,7 +2917,20 @@ function mergeDeep(target, ...sources)
 	}
 	return mergeDeep(target, ...sources);
 }
-
+//Call this on what ever page you want to activate opening a dialog on double click on range sliders.
+//You can also filter when to call it (activate the functionality) on other things, like device type or setting.
+function actDblC(){
+    const rngSlds = d.querySelectorAll('input[type="range"]');
+    rngSlds.forEach(sld => {
+    sld.addEventListener("dblclick", () => {
+        const nVal = prompt(`New value (${sld.min}-${sld.max}):`);
+        if (nVal !== null) {
+        sld.value = nVal;
+        sld.dispatchEvent(new Event("change"));
+        }
+    });
+    });
+}
 size();
 _C.style.setProperty('--n', N);
 
