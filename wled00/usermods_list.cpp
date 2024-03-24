@@ -204,6 +204,11 @@
 #ifdef USERMOD_STAIRCASE_WIPE
 #include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
 #endif
+
+#ifdef USERMOD_BME68X
+  #include "../usermods/BME68X_v2/usermod_bme68x.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -387,4 +392,9 @@ void registerUsermods()
   #ifdef USERMOD_STAIRCASE_WIPE
   usermods.add(new StairwayWipeUsermod());
   #endif
+
+  #ifdef USERMOD_BME68X
+  usermods.add(new UsermodBME68X());
+  #endif
+
 }
