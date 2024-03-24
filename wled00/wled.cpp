@@ -240,7 +240,7 @@ void WLED::loop()
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
-    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
+    #if defined(ARDUINO_ARCH_ESP32)
     if (psramFound()) {
       DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
       DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
@@ -366,51 +366,19 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
-/*
- * The following code is obsolete as PinManager::isPinOK() will return false for reserved GPIO.
- * Additionally xml.cpp will inform UI about reserved GPIO.
- *
-
-  #if defined(CONFIG_IDF_TARGET_ESP32S3)
-  // S3: reserve GPIO 33-37 for "octal" PSRAM
-  managed_pin_type pins[] = { {33, true}, {34, true}, {35, true}, {36, true}, {37, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S2)
-  // S2: reserve GPIO 26-32 for PSRAM (may fail due to isPinOk() but that will also prevent other allocation)
-  managed_pin_type pins[] = { {26, true}, {27, true}, {28, true}, {29, true}, {30, true}, {31, true}, {32, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  // C3: reserve GPIO 12-17 for PSRAM (may fail due to isPinOk() but that will also prevent other allocation)
-  managed_pin_type pins[] = { {12, true}, {13, true}, {14, true}, {15, true}, {16, true}, {17, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
-  #else
-  // GPIO16/GPIO17 reserved for SPI RAM
-  managed_pin_type pins[] = { {16, true}, {17, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
-  #endif
-*/
-  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-  pDoc = new PSRAMDynamicJsonDocument(2*JSON_BUFFER_SIZE);
-  if (!pDoc) pDoc = new PSRAMDynamicJsonDocument(JSON_BUFFER_SIZE); // falback if double sized buffer could not be allocated
-  // if the above still fails requestJsonBufferLock() will always return false preventing crashes
+#if defined(ARDUINO_ARCH_ESP32)
+  pDoc = new PSRAMDynamicJsonDocument((psramFound() ? 2 : 1)*JSON_BUFFER_SIZE);
+  // if the above fails requestJsonBufferLock() will always return false preventing crashes
   if (psramFound()) {
     DEBUG_PRINT(F("Total PSRAM: ")); DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
     DEBUG_PRINT(F("Free PSRAM : ")); DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
   }
-  #else
-    if (!pDoc) pDoc = &gDoc; // just in case ... (it should be globally assigned)
-    DEBUG_PRINTLN(F("PSRAM not used."));
-  #endif
 #endif
 #if defined(ARDUINO_ESP32_PICO)
   // special handling for PICO-D4: gpio16+17 are in use for onboard SPI FLASH (not PSRAM)
   managed_pin_type pins[] = { {16, true}, {17, true} };
   pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
 #endif
-
-  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
-  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
   pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
@@ -555,7 +523,7 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  strip.finalizeInit(); // busses created during deserializeConfig()
+  strip.finalizeInit(); // busses created during deserializeConfig() if config existed
   strip.makeAutoSegments();
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);

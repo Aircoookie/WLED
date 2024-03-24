@@ -23,6 +23,8 @@
 		function isD2P(t) { return t > 47 && t < 64; }                      // is digital 2 pin type
 		function is16b(t) { return t == 26 || t == 29 }                     // is digital 16 bit type
 		function isVir(t) { return t >= 80 && t < 96; }                     // is virtual type
+		function hasW(t)  { return (t >= 18 && t <= 21) || (t >= 28 && t <= 32) || (t >= 44 && t <= 45) || (t >= 88 && t <= 89); }
+		function hasCCT(t) { return t == 20 || t == 21 || t == 42 || t == 45 || t == 28 || t == 32; }
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -203,7 +205,7 @@
 
 		function UI(change=false)
 		{
-			let isRGBW = false, gRGBW = false, memu = 0;
+			let gRGBW = false, memu = 0;
 			let busMA = 0;
 			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
 			const ablEN = d.Sf.ABL.checked;
@@ -243,15 +245,15 @@
 					d.Sf["MA"+n].min = (isVir(t) || isAna(t)) ? 0 : 250;
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 27 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+				gRGBW |= hasW(t); // RGBW checkbox, TYPE_xxxx values from const.h
 				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide color order for PWM
-				gId("dig"+n+"w").style.display = (isDig(t) && isRGBW) ? "inline":"none";  // show swap channels dropdown
-				if (!(isDig(t) && isRGBW)) d.Sf["WO"+n].value = 0; // reset swapping
+				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none";  // show swap channels dropdown
+				if (!(isDig(t) && hasW(t))) d.Sf["WO"+n].value = 0; // reset swapping
 				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";  // hide count for analog
 				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";  // hide reversed for virtual
 				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
 				gId("dig"+n+"f").style.display = (isDig(t)) ? "inline":"none";  // hide refresh
-				gId("dig"+n+"a").style.display = (isRGBW) ? "inline":"none";  // auto calculate white
+				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";   // auto calculate white
 				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
 				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
 				//gId("psd"+n).innerHTML = isAna(t) ? "Index:":"Start:";    // change analog start description
@@ -386,6 +388,7 @@ ${i+1}:
 <option value="27">APA106/PL9823</option>\
 <option value="28">FW1906 GRBCW</option>\
 <option value="29">UCS8904 RGBW</option>\
+<option value="32">WS2805 RGBCW</option>\
 <option value="50">WS2801</option>\
 <option value="51">APA102</option>\
 <option value="52">LPD8806</option>\

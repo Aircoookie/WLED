@@ -185,7 +185,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t maPerLed = elm[F("ledma")] | 55;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
-      if ((ledType > TYPE_TM1814 && ledType < TYPE_WS2801) || ledType >= TYPE_NET_DDP_RGB) { // analog and virtual
+      if (IS_PWM(ledType) || IS_ONOFF(ledType) || IS_VIRTUAL(ledType)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       }

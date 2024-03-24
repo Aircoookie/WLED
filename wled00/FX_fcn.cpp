@@ -1098,6 +1098,12 @@ void WS2812FX::finalizeInit(void) {
     uint16_t prevLen = 0;
     for (int i = 0; i < defNumBusses && i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
       uint8_t defPin[] = {defDataPins[i]};
+      // when booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
+      // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), etc
+      if (pinManager.isPinAllocated(defPin[0])) {
+        defPin[0] = 1; // start with GPIO1 and work upwards
+        while (pinManager.isPinAllocated(defPin[0]) && defPin[0] < WLED_NUM_PINS) defPin[0]++;
+      }
       uint16_t start = prevLen;
       uint16_t count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
