@@ -8047,65 +8047,57 @@ static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "PS Candy@Rota
  * Uses ranbow palette as default
  * by DedeHai (Damian Schneider)
  */
-
 uint16_t mode_particlefireworks(void)
 {
-
   if (SEGLEN == 1)
     return mode_static();
-
   const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
   // particle system box dimensions
   const uint32_t Max_x = (cols * PS_P_RADIUS - 1);
   const uint32_t Max_y = (rows * PS_P_RADIUS - 1);
-
 #ifdef ESP8266
   const uint32_t numParticles = 120;
-  const uint8_t MaxNumRockets = 2;
 #else
-  const uint32_t numParticles = 650;
-  const uint8_t MaxNumRockets = 8; 
+  const uint32_t numParticles = 400;
 #endif
-
+  const uint8_t numRockets = 4;
   PSparticle *particles;
   PSpointsource *rockets;
-
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (MaxNumRockets);
+  dataSize += sizeof(PSpointsource) * (numRockets);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
-
   rockets = reinterpret_cast<PSpointsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle *>(rockets + MaxNumRockets); // cast the data array into a particle pointer
-
+  particles = reinterpret_cast<PSparticle *>(rockets + numRockets); // cast the data array into a particle pointer
   uint32_t i = 0;
-  uint32_t j = 0;
-  uint8_t numRockets = min(uint8_t(1 + ((SEGMENT.custom3) >> 2)), MaxNumRockets); // 1 to 8
-
+  uint32_t j = 0; 
   if (SEGMENT.call == 0) // initialization
   {
     for (i = 0; i < numParticles; i++)
     {
       particles[i].ttl = 0;
     }
-    for (i = 0; i < numRockets; i++)
+    for (j = 0; j < numRockets; j++)
     {
-      rockets[i].source.ttl = random16(20 * i); // first rocket starts immediately, others follow soon
-      rockets[i].source.vy = -1;               // at negative speed, no particles are emitted and if rocket dies, it will be relaunched
+      rockets[j].source.ttl = random16(20 * j); // first rocket starts immediately, others follow soon
+      rockets[j].source.vy = -1;                // at negative speed, no particles are emitted and if rocket dies, it will be relaunched
     }
   }
-
-  // update particles, create particles
-  uint8_t circularexplosion = random16(numRockets + 2); //choose a rocket by random (but not every round one will be picked)
-  uint8_t spiralexplosion = random16(numRockets + 2);
-
   // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
-  uint16_t emitparticles; // number of particles to emit for each rocket's state
+  int32_t emitparticles; // number of particles to emit for each rocket's state
   i = 0;
+  // variables for circle explosions
+  uint32_t speed;
+  uint32_t currentspeed;
+  uint8_t angle;
+  uint32_t counter;
+  uint32_t angleincrement;
+  uint32_t speedvariation;
+  
+  bool circularexplosion = false;
   for (j = 0; j < numRockets; j++)
   {
     // determine rocket state by its speed:
@@ -8118,75 +8110,77 @@ uint16_t mode_particlefireworks(void)
       emitparticles = 0;
     }
     else // speed is zero, explode!
-    {                                                       
-      
-      #ifdef ESP8266          
-      emitparticles = random16(SEGMENT.intensity >> 2) + 10; // defines the size of the explosion
-      #else
-      emitparticles = random16(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion
-      #endif
-      rockets[j].source.vy = -1;                            // set speed negative so it will emit no more particles after this explosion until relaunch
-      if (j == circularexplosion || j == spiralexplosion)   // chosen rocket, do an angle emit (creating a circle)
+    {
+#ifdef ESP8266
+      emitparticles = random16(SEGMENT.intensity >> 3) + (SEGMENT.intensity >> 3)  + 5; // defines the size of the explosion
+#else
+      emitparticles = random16(SEGMENT.intensity >> 2) + (SEGMENT.intensity >> 2) + 5; // defines the size of the explosion
+#endif
+      rockets[j].source.vy = -1; // set speed negative so it will emit no more particles after this explosion until relaunch      
+      if(random16(4) == 0) //!!! make it 5 
       {
-        emitparticles = emitparticles >> 3; // emit less particles for circle-explosions
-        rockets[j].maxLife = 150;
-        rockets[j].minLife = 120;        
-        rockets[j].var = 0;  // speed variation around vx,vy (+/- var/2)
+        circularexplosion = true;
+        speed = 2 + random16(3);
+        currentspeed = speed;
+        counter = 0;
+        angleincrement = random16(20) + 10;
+        speedvariation = random16(3);
+        angle = random16(); // random start angle
+        // calculate the number of particles to make complete circles
+        int percircle = 256 / angleincrement + 2;
+        #ifdef ESP8266 //TODO: this line is untested on ESP8266
+        int circles = (SEGMENT.intensity >> 7) + 1; // max(4, (int)min((int32_t)1, (emitparticles>>2) / percircle));
+        #else
+        int circles = (SEGMENT.intensity >> 6) + 1;// max(4, (int)min((int32_t)1, (emitparticles>>2) / percircle));
+        #endif
+        emitparticles = percircle * circles;
+        rockets[j].var = 0; //no variation for a nice circle
       }
     }
-
-    uint8_t speed = 3;
-    uint8_t angle = 0;
-    if (j == spiralexplosion) 
-      angle = random16(8);
-
-    while(i < numParticles)
+    for (i = 0; i < numParticles; i++)
     {
       if (particles[i].ttl == 0)
       { // particle is dead
-
-        if (j == circularexplosion && emitparticles > 2) //do circle emit
+        if (emitparticles > 0)
         {
-          Emitter_Angle_emit(&rockets[j], &particles[i],angle,speed);
-
-          if (angle > 242) // full circle completed, increase speed and reset angle
+          if (circularexplosion) // do circle emit
           {
-            angle += 10;
-            speed += 6;
-            rockets[j].source.hue = random16(); // new color for next row
-            rockets[j].source.sat = random16();
-            if(emitparticles > 12) 
-              emitparticles-=12; //emitted about 12 particles for one circle, ensures no incomplete circles are done
+            Emitter_Angle_emit(&rockets[j], &particles[i], angle, currentspeed);
+            emitparticles--; 
+            // set angle for next particle
+            angle += angleincrement;
+            counter++;
+            if (counter & 0x01) // make every second particle a lower speed
+              currentspeed = speed - speedvariation;
             else
-              emitparticles = 0;
+              currentspeed = speed;
+            if (counter > 256 / angleincrement + 2) // full circle completed, increase speed
+            {
+              counter = 0;
+              speed += 5; //increase speed to form a second circle
+              speedvariation = speedvariation<<1; //double speed variation
+              rockets[j].source.hue = random16(); // new color for next circle
+              rockets[j].source.sat = min((uint16_t)40,random16());
+            }
           }
-
-          //set angle for next particle          
-          angle += 21; //about 30°          
-        }
-        else if (j == spiralexplosion && emitparticles > 2) // do spiral emit
-        {
-          Emitter_Angle_emit(&rockets[j], &particles[i], angle, speed);
-          emitparticles-=2; // only emit half as many particles as in circle explosion, it gets too huge otherwise
-          angle += 15;
-
-          speed++;
-          rockets[j].source.hue++; 
-          rockets[j].source.sat = random16(155)+100;        
-          
-        }
-        else if (emitparticles > 0)
-        {
-          Emitter_Fountain_emit(&rockets[j], &particles[i]);
-          emitparticles--;
+          else
+          {
+            Emitter_Fountain_emit(&rockets[j], &particles[i]);
+            emitparticles--;
+            if ((j % 3) == 0)
+            {
+              rockets[j].source.hue = random16(); // random color for each particle
+              rockets[j].source.sat = min((uint16_t)40, random16());
+            }
+          }
         }
         else
           break; // done emitting for this rocket
       }
-      i++;
     }
+    circularexplosion = false; //reset for next rocket
   }
-
+  
   // update particles
   for (i = 0; i < numParticles; i++)
   {
@@ -8195,51 +8189,49 @@ uint16_t mode_particlefireworks(void)
       Particle_Gravity_update(&particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, SEGMENT.custom2);
     }
   }
-
   // update the rockets, set the speed state
-  for (i = 0; i < numRockets; i++)
+  for (j = 0; j < numRockets; j++)
   {
-    if (rockets[i].source.ttl)
+    if (rockets[j].source.ttl)
     {
-      Particle_Move_update(&rockets[i].source); // move the rocket, age the rocket (ttl--)      
+      Particle_Move_update(&rockets[j].source); // move the rocket, age the rocket (ttl--)
     }
-    else if (rockets[i].source.vy > 0)
-    {                                    // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
-      rockets[i].source.vy = 0;          // set speed to zero so code above will recognize this as an exploding rocket
-      rockets[i].source.hue = random16(); // random color
-      rockets[i].source.sat = random16(100)+155;
-      rockets[i].maxLife = 200;
-      rockets[i].minLife = 50;
-      rockets[i].source.ttl = random16((255 - SEGMENT.speed))+50; // standby time til next launch (in frames at 42fps, max of 300 is about 7 seconds
-      rockets[i].vx = 0;                         // emitting speed
-      rockets[i].vy = 0;                         // emitting speed
-      rockets[i].var = (SEGMENT.intensity >> 3) + 10; // speed variation around vx,vy (+/- var/2)
+    else if (rockets[j].source.vy > 0) // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
+    {
+      rockets[j].source.vy = 0;           // set speed to zero so code above will recognize this as an exploding rocket
+      rockets[j].source.hue = random16(); // random color
+      rockets[j].source.sat = random16(100) + 155;
+      rockets[j].maxLife = 200;
+      rockets[j].minLife = 50;
+      rockets[j].source.ttl = random16((1024 - ((uint32_t)SEGMENT.speed<<2))) + 50; // standby time til next launch 
+      rockets[j].vx = 0;                                            // emitting speed
+      rockets[j].vy = 3;                                            // emitting speed
+      rockets[j].var = (SEGMENT.intensity >> 3) + 10;               // speed variation around vx,vy (+/- var/2)
     }
-    else if (rockets[i].source.vy < 0) // rocket is exploded and time is up (ttl=0 and negative speed), relaunch it
+    else if (rockets[j].source.vy < 0) // rocket is exploded and time is up (ttl=0 and negative speed), relaunch it
     {
       // reinitialize rocket
-      rockets[i].source.y = 1;                                            // start from bottom
-      rockets[i].source.x = (rand() % (Max_x >> 1)) + (Max_y >> 2); // centered half
-      rockets[i].source.vy = random16(SEGMENT.custom1 >> 3) + 5;           // rocket speed depends also on rocket height
-      rockets[i].source.vx = random16(5) - 2;
-      rockets[i].source.hue = 30; // rocket exhaust = orange (if using rainbow palette)
-      rockets[i].source.sat = 30; // low saturation -> exhaust is off-white 
-      rockets[i].source.ttl = random16(SEGMENT.custom1) + (SEGMENT.custom1 >> 1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
-      rockets[i].maxLife = 30;                                                   // exhaust particle life
-      rockets[i].minLife = 10;
-      rockets[i].vx = 0;  // emitting speed
-      rockets[i].vy = 0;  // emitting speed
-      rockets[i].var = 6; // speed variation around vx,vy (+/- var/2)
+      rockets[j].source.y = 1;                                      // start from bottom
+      rockets[j].source.x = (rand() % (Max_x >> 1)) + (Max_y >> 2); // centered half
+      rockets[j].source.vy = random16(SEGMENT.custom1 >> 3) + 5;    // rocket speed depends also on rocket height
+      rockets[j].source.vx = random16(5) - 2;
+      rockets[j].source.hue = 30;                                                 // rocket exhaust = orange (if using rainbow palette)
+      rockets[j].source.sat = 30;                                                 // low saturation -> exhaust is off-white
+      rockets[j].source.ttl = random16(SEGMENT.custom1) + (SEGMENT.custom1 >> 1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
+      rockets[j].maxLife = 30;                                                    // exhaust particle life
+      rockets[j].minLife = 10;
+      rockets[j].vx = 0;  // emitting speed
+      rockets[j].vy = 0;  // emitting speed
+      rockets[j].var = 6; // speed variation around vx,vy (+/- var/2)
     }
   }
   SEGMENT.fill(BLACK); // clear the matrix
-
   // render the particles
   ParticleSys_render(particles, numParticles, false, false);
-
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Height,Bounce,Rockets,Cylinder,Walls,Ground;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=0";
+//TODO: after implementing gravity function, add slider custom3 to set gravity force
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Bounce,,Cylinder,Walls,Ground;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=0";
 
 /*
  * Particle Volcano (gravity spray)
@@ -8317,19 +8309,19 @@ uint16_t mode_particlevolcano(void)
        {
         if (spray[i].source.vx > 0) // moving to the right currently
         {
-          spray[i].source.vx = SEGMENT.speed >> 4; // spray speed
+          spray[i].source.vx = SEGMENT.custom1 >> 4; // spray movingspeed
         }
         else
         {
-          spray[i].source.vx = -(SEGMENT.speed >> 4); // spray speed (is currently moving negative so keep it negative)
+          spray[i].source.vx = -(SEGMENT.custom1 >> 4); // spray speed (is currently moving negative so keep it negative)
         }
       }
       else{ //wrap on the right side
-        spray[i].source.vx = SEGMENT.speed >> 4; // spray speed
+        spray[i].source.vx = SEGMENT.custom1 >> 4; // spray speed
         if (spray[i].source.x >= Max_x - 32) //compiler warning can be ignored, source.x is always > 0
           spray[i].source.x = 1; // wrap if close to border (need to wrap before the bounce updated detects a border collision or it will just be stuck)
       }
-      spray[i].vy = SEGMENT.custom1 >> 2;                          // emitting speed, upward
+      spray[i].vy = SEGMENT.speed >> 2; // emitting speed
       spray[i].vx = 0; 
       spray[i].var = SEGMENT.custom3;                              // emiting variation = nozzle size  (custom 3 goes from 0-32)
       spray[i].source.ttl = 255;                                   // source never dies, replenish its lifespan
@@ -8375,7 +8367,7 @@ uint16_t mode_particlevolcano(void)
   ParticleSys_render(particles, numParticles, false, false);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Move,Intensity,Speed,Bounce,Size,Color by Age,Walls,Collisions;;!;012;pal=35,sx=0,ix=160,c1=100,c2=160,c3=10,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Size,Color by Age,Walls,Collisions;;!;012;pal=35,sx=100,ix=160,c1=0,c2=160,c3=10,o1=1,o2=0,o3=0";
 
 //for debugging speed tests, this speed test function can be used, compiler will not optimize it 
 void __attribute__((optimize("O0"))) SpeedTestfunction(void)
@@ -9573,7 +9565,7 @@ uint32_t random16_ESP(uint32_t limit)
  * Uses palette for particle color
  * by DedeHai (Damian Schneider)
  */
-
+/*
 uint16_t mode_particlecenterGEQ(void)
 {
 
@@ -9698,7 +9690,7 @@ uint16_t mode_particlecenterGEQ(void)
   return FRAMETIME;
 }  
   static const char _data_FX_MODE_PARTICLECCIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Color Change,Particle Speed,Spray Count,Nozzle Size,Random Color, Direction;;!;012;pal=56,sx=0,ix=222,c1=190,c2=200,c3=0,o1=0,o2=0";
-
+*/
 #endif // WLED_DISABLE_2D
 
 
@@ -9953,7 +9945,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLEATTRACTOR, &mode_particleattractor, _data_FX_MODE_PARTICLEATTRACTOR);
   addEffect(FX_MODE_PARTICLESPRAY, &mode_particlespray, _data_FX_MODE_PARTICLESPRAY);
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
-  addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
+ // addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
 
 #endif // WLED_DISABLE_2D
 

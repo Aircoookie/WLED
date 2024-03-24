@@ -66,13 +66,6 @@ typedef struct {
 #define GRAVITYCOUNTER 2 //the higher the value the lower the gravity (speed is increased every n'th particle update call), values of 1 to 4 give good results
 #define MAXGRAVITYSPEED 40 //particle terminal velocity
 
-/*
-//todo: make these local variables
-uint8_t vortexspeed; //speed around vortex
-uint8_t vortexdirection; //1 or 0
-int8_t vortexpull; //if positive, vortex pushes, if negative it pulls
-*/
-
 void Emitter_Flame_emit(PSpointsource *emitter, PSparticle *part);
 void Emitter_Fountain_emit(PSpointsource *emitter, PSparticle *part);
 void Emitter_Angle_emit(PSpointsource *emitter, PSparticle *part, uint8_t angle, uint8_t speed);
