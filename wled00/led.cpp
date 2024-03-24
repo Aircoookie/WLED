@@ -172,7 +172,9 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
-  doPublishMqtt = true;
+  #ifndef WLED_DISABLE_MQTT
+  publishMqtt();
+  #endif
 }
 
 
@@ -180,9 +182,6 @@ void handleTransitions()
 {
   //handle still pending interface update
   updateInterfaces(interfaceUpdateCallMode);
-#ifndef WLED_DISABLE_MQTT
-  if (doPublishMqtt) publishMqtt();
-#endif
 
   if (transitionActive && strip.getTransition() > 0) {
     float tper = (millis() - transitionStartTime)/(float)strip.getTransition();

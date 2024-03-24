@@ -180,6 +180,7 @@
 #define USERMOD_ID_STAIRWAY_WIPE         44     //Usermod "stairway-wipe-usermod-v2.h"
 #define USERMOD_ID_ANIMARTRIX            45     //Usermod "usermod_v2_animartrix.h"
 #define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 46   //usermod "usermod_v2_HttpPullLightControl.h"
+#define USERMOD_ID_TETRISAI              47     //Usermod "usermod_v2_tetris.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -269,6 +270,7 @@
 #define TYPE_TM1829              25
 #define TYPE_UCS8903             26
 #define TYPE_APA106              27
+#define TYPE_FW1906              28            //RGB + CW + WW + unused channel (6 channels per IC)
 #define TYPE_UCS8904             29            //first RGBW digital type (hardcoded in busmanager.cpp, memUsage())
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
@@ -373,6 +375,7 @@
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
+#define PL_OPTION_RESTORE      0x02
 
 // Segment capability byte
 #define SEG_CAPABILITY_RGB     0x01

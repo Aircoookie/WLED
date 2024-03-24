@@ -117,8 +117,18 @@ void initPresetsFile()
   f.close();
 }
 
+bool applyPresetFromPlaylist(byte index)
+{
+  DEBUG_PRINT(F("Request to apply preset: "));
+  DEBUG_PRINTLN(index);
+  presetToApply = index;
+  callModeToApply = CALL_MODE_DIRECT_CHANGE;
+  return true;
+}
+
 bool applyPreset(byte index, byte callMode)
 {
+  unloadPlaylist(); // applying a preset unloads the playlist (#3827)
   DEBUG_PRINT(F("Request to apply preset: "));
   DEBUG_PRINTLN(index);
   presetToApply = index;

@@ -84,7 +84,7 @@
 					option.textContent = "Other network...";
 					select.appendChild(option);
 
-					if (input.value === "" || found) input.replaceWith(select);
+					if (input.value === "" || input.value === "Your_Network" || found) input.replaceWith(select);
 					else select.remove(); 
 				}
 
