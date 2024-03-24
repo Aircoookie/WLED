@@ -632,12 +632,12 @@ static const char s_cfg_json[] PROGMEM = "/cfg.json";
 
 void deserializeConfigFromFS() {
   bool success = deserializeConfigSec();
+  #ifdef WLED_ADD_EEPROM_SUPPORT
   if (!success) { //if file does not exist, try reading from EEPROM
-    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
     return;
-    #endif
   }
+  #endif
 
   if (!requestJSONBufferLock(1)) return;
 

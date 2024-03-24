@@ -375,6 +375,7 @@
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
+#define PL_OPTION_RESTORE      0x02
 
 // Segment capability byte
 #define SEG_CAPABILITY_RGB     0x01
