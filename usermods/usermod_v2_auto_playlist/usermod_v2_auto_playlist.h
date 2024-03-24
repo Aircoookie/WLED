@@ -28,7 +28,7 @@ class AutoPlaylistUsermod : public Usermod {
     uint_fast32_t vector_zcr = 0;
 
     uint_fast32_t distance = 0;
-
+    uint_fast32_t distance_tracker = UINT_FAST32_MAX;
     // uint_fast64_t squared_distance = 0;
 
     int lastchange = millis();
@@ -78,7 +78,7 @@ class AutoPlaylistUsermod : public Usermod {
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
       // and the squared_distance for the vector.
 
-      if (volumeSmth > 0.1) { 
+      if (volumeSmth > 1) { 
 
         avg_long_energy = avg_long_energy * 0.99 + energy * 0.01;
         avg_long_lfc    = avg_long_lfc    * 0.99 + lfc    * 0.01;
@@ -95,10 +95,16 @@ class AutoPlaylistUsermod : public Usermod {
 
       }
 
+      // distance is linear, squared_distance is magnitude.
+      // linear is easier to fine-tune, IMHO.
       distance = vector_lfc + vector_energy + vector_zcr;
       // squared_distance = distance * distance;
 
       int change_interval = millis()-lastchange;
+
+      if (distance < distance_tracker && change_interval > change_lockout) {
+        distance_tracker = distance;
+      }
 
       // USER_PRINT("\tDistance: ");
       // USER_PRINT(distance);
@@ -114,9 +120,13 @@ class AutoPlaylistUsermod : public Usermod {
         // Sometimes the analysis lowers the change_threshold too much for
         // the current music, especially after track changes or during 
         // sparce intros and breakdowns.
-        if (change_interval > ideal_change_min) {
-          change_threshold++;
+        if (change_interval > ideal_change_min && distance_tracker < 1000) {
+          // change_threshold++;
+          change_threshold += distance_tracker/10;
           USER_PRINTF("Increasing change_threshold to: %d\n",change_threshold);
+          USER_PRINT ("  lowest recorded distance was: ");
+          USER_PRINTLN(distance_tracker);
+          distance_tracker = UINT_FAST32_MAX;
         }
         change_timer = millis();
       }
@@ -124,11 +134,17 @@ class AutoPlaylistUsermod : public Usermod {
       // WLED-MM/TroyHacks - Change pattern testing
       //
       if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 0.1) { 
+
         if (change_interval > ideal_change_max) {
-          change_threshold += 1;
+          // change_threshold += 1;
+          change_threshold += distance/10;
         } else if (change_interval < ideal_change_min) {
-          change_threshold -= 1;
+          // change_threshold -= 1;
+          change_threshold -= distance/10;
         }
+
+        distance_tracker = UINT_FAST32_MAX;
+
         if (change_threshold < 0) change_threshold = 0;
 
         if(autoChangeIds.size() == 0) {
@@ -144,7 +160,7 @@ class AutoPlaylistUsermod : public Usermod {
 
         uint8_t newpreset = 0;
         do {
-          newpreset = autoChangeIds.at(random(0, (autoChangeIds.size() - 1))); 
+          newpreset = autoChangeIds.at(random(0, autoChangeIds.size())); // random() is *exclusive* of the last value, so it's OK to use the full size.
         }
         while (currentPreset == newpreset);
 
