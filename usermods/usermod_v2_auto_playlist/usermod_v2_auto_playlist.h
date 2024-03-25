@@ -2,10 +2,10 @@
 
 #include "wled.h"
 
-
 class AutoPlaylistUsermod : public Usermod {
 
   private:
+
     bool silenceDetected = true;
     uint32_t lastSoundTime = 0;
     byte ambientPlaylist = 1;
@@ -36,7 +36,7 @@ class AutoPlaylistUsermod : public Usermod {
     int last_beat_interval = millis();
     int change_threshold = 50; // arbitrary starting point.
 
-    int change_lockout = 1000; // never change below this number of millis. I think of this more like a debounce, but opinions may vary.
+    int change_lockout = 1000;    // never change below this number of millis. I think of this more like a debounce, but opinions may vary.
     int ideal_change_min = 10000; // ideally change patterns no less than this number of millis
     int ideal_change_max = 20000; // ideally change patterns no more than this number of millis
 
@@ -109,10 +109,12 @@ class AutoPlaylistUsermod : public Usermod {
       // USER_PRINTF("Distance: %3lu - v_lfc: %5lu v_energy: %5lu v_zcr: %5lu\n",(unsigned long)distance,(unsigned long)vector_lfc,(unsigned long)vector_energy,(unsigned long)vector_zcr);
 
       if (millis() > change_timer + ideal_change_min) {
+
         // Make the analysis less sensitive if we miss the window, slowly.
         // Sometimes the analysis lowers the change_threshold too much for
         // the current music, especially after track changes or during 
         // sparce intros and breakdowns.
+
         if (change_interval > ideal_change_min && distance_tracker < 1000) {
 
           change_threshold += distance_tracker>10?distance_tracker/10:1;
@@ -122,11 +124,11 @@ class AutoPlaylistUsermod : public Usermod {
           distance_tracker = UINT_FAST32_MAX;
 
         }
+
         change_timer = millis();
+
       }
 
-      // WLED-MM/TroyHacks - Change pattern testing
-      //
       if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 0.1) { 
 
         if (change_interval > ideal_change_max) {
@@ -139,18 +141,23 @@ class AutoPlaylistUsermod : public Usermod {
 
         if (change_threshold < 0) change_threshold = 0;
 
-        if(autoChangeIds.size() == 0) {
+        if (autoChangeIds.size() == 0) {
+
           USER_PRINTF("Loading presets from playlist: %3u\n", currentPlaylist);
+
           JsonObject playtlistOjb = doc.to<JsonObject>();
           serializePlaylist(playtlistOjb);
           JsonArray playlistArray = playtlistOjb["playlist"]["ps"];
+
           for(JsonVariant v : playlistArray) {
             USER_PRINTF("Adding %3u to autoChangeIds\n", v.as<int>());
             autoChangeIds.push_back(v.as<int>());
           }
+
         }
 
         uint8_t newpreset = 0;
+
         do {
           newpreset = autoChangeIds.at(random(0, autoChangeIds.size())); // random() is *exclusive* of the last value, so it's OK to use the full size.
         }
@@ -166,68 +173,60 @@ class AutoPlaylistUsermod : public Usermod {
 
     }
 
-    uint8_t getFFTFromRange(um_data_t *data, uint8_t from, uint8_t to) {
-      uint8_t *fftResult = (uint8_t*) data->u_data[2];
-      uint16_t result = 0;
-      for (int i = from; i <= to; i++) {
-        result += fftResult[i]; // * fftResult[i];
-      }
-      return result / float(to - from + 1); // sqrt(result / (to - from + 1));
-    }
-
     /*
      * Da loop.
      */
     void loop() {
       
-      if(millis() < 10000) return; // Wait for device to settle
+      if (millis() < 10000) return; // Wait for device to settle
 
-      if(lastAutoPlaylist > 0 && currentPlaylist != lastAutoPlaylist && currentPreset != 0) {
-        if(currentPlaylist == musicPlaylist) {
+      if (lastAutoPlaylist > 0 && currentPlaylist != lastAutoPlaylist && currentPreset != 0) {
+        if (currentPlaylist == musicPlaylist) {
           USER_PRINTF("AutoPlaylist: enabled due to manual change of playlist back to %u\n", currentPlaylist);
           enabled = true;
           lastAutoPlaylist = currentPlaylist;
-        }
-        else if(enabled) {
+        } else if (enabled) {
           USER_PRINTF("AutoPlaylist: disable due to manual change of playlist from %u to %d, preset:%u\n", lastAutoPlaylist, currentPlaylist, currentPreset);
           enabled = false;
         }
       }
-      if(!enabled && currentPlaylist == musicPlaylist) {
+
+      if (!enabled && currentPlaylist == musicPlaylist) {
           USER_PRINTF("AutoPlaylist: enabled due selecting musicPlaylist(%u)", musicPlaylist);
           enabled = true;
       }
-      if(!enabled) return;
 
-      if(bri == 0) return;
+      if (!enabled) return;
+
+      if (bri == 0) return;
 
       um_data_t *um_data;
+
       if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
         // No Audio Reactive
         silenceDetected = true;
         return;
       }
 
-      float volumeSmth    = *(float*)um_data->u_data[0];
+      float volumeSmth = *(float*)um_data->u_data[0];
 
-      if(volumeSmth > 0.5) {
+      if (volumeSmth > 0.5) {
         lastSoundTime = millis();
       }
 
-      if(millis() - lastSoundTime > (timeout * 1000)) {
-        if(!silenceDetected) {
+      if (millis() - lastSoundTime > (timeout * 1000)) {
+        if (!silenceDetected) {
           silenceDetected = true;
           USER_PRINTF("AutoPlaylist: Silence ");
           changePlaylist(ambientPlaylist);
         }
-      }
-      else {
-        if(silenceDetected) {
+      } else {
+        if (silenceDetected) {
           silenceDetected = false;
           USER_PRINTF("AutoPlaylist: End of silence ");
           changePlaylist(musicPlaylist);
         }
-        if(autoChange) change(um_data);
+        if (autoChange) change(um_data);
       }
     }
 
@@ -237,7 +236,9 @@ class AutoPlaylistUsermod : public Usermod {
      * Below it is shown how this could be used for e.g. a light sensor
      */
     void addToJsonInfo(JsonObject& root) {
+
       JsonObject user = root["u"];
+
       if (user.isNull()) {
         user = root.createNestedObject("u");
       }
@@ -245,12 +246,13 @@ class AutoPlaylistUsermod : public Usermod {
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
 
       infoArr = user.createNestedArray(F(""));
-      if(!enabled) {
+
+      if (!enabled) {
         infoArr.add("disabled");  
-      }
-      else {
+      } else {
         infoArr.add(lastSoundTime);
       }
+
     }
 
     /*
@@ -358,12 +360,12 @@ class AutoPlaylistUsermod : public Usermod {
 
   private:
 
-      void changePlaylist(byte id) {
-          String name = "";
-          getPresetName(id, name);
-          USER_PRINTF("apply %s\n", name.c_str());
-          applyPreset(id, CALL_MODE_NOTIFICATION);
-          lastAutoPlaylist = id;
+    void changePlaylist(byte id) {
+        String name = "";
+        getPresetName(id, name);
+        USER_PRINTF("apply %s\n", name.c_str());
+        applyPreset(id, CALL_MODE_NOTIFICATION);
+        lastAutoPlaylist = id;
     }
 
 };
