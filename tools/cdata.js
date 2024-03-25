@@ -15,10 +15,10 @@
  * It uses NodeJS packages to inline, minify and GZIP files. See writeHtmlGzipped and writeChunks invocations at the bottom of the page.
  */
 
-const fs = require("fs");
+const fs = require("node:fs");
 const path = require("path");
 const inliner = require("inliner");
-const zlib = require("zlib");
+const zlib = require("node:zlib");
 const CleanCSS = require("clean-css");
 const minifyHtml = require("html-minifier-terser").minify;
 const packageJson = require("../package.json");
