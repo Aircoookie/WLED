@@ -121,12 +121,15 @@ class AutoPlaylistUsermod : public Usermod {
         // the current music, especially after track changes or during 
         // sparce intros and breakdowns.
         if (change_interval > ideal_change_min && distance_tracker < 1000) {
-          // change_threshold++;
-          change_threshold += distance_tracker/10;
-          USER_PRINTF("Increasing change_threshold to: %d\n",change_threshold);
-          USER_PRINT ("  lowest recorded distance was: ");
+
+          change_threshold += distance_tracker>10?distance_tracker/10:1;
+
+          USER_PRINT ("The lowest recorded distance was: ");
           USER_PRINTLN(distance_tracker);
+          USER_PRINTF("Increasing change_threshold to:   %d\n",change_threshold);
+
           distance_tracker = UINT_FAST32_MAX;
+
         }
         change_timer = millis();
       }
@@ -136,11 +139,9 @@ class AutoPlaylistUsermod : public Usermod {
       if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 0.1) { 
 
         if (change_interval > ideal_change_max) {
-          // change_threshold += 1;
-          change_threshold += distance/10;
+          change_threshold += distance_tracker>10?distance_tracker/10:1;
         } else if (change_interval < ideal_change_min) {
-          // change_threshold -= 1;
-          change_threshold -= distance/10;
+          change_threshold -= distance_tracker>10?distance_tracker/10:1;
         }
 
         distance_tracker = UINT_FAST32_MAX;
@@ -162,7 +163,7 @@ class AutoPlaylistUsermod : public Usermod {
         do {
           newpreset = autoChangeIds.at(random(0, autoChangeIds.size())); // random() is *exclusive* of the last value, so it's OK to use the full size.
         }
-        while (currentPreset == newpreset);
+        while (currentPreset == newpreset); // make sure we get a different random preset.
 
         applyPreset(newpreset);
 

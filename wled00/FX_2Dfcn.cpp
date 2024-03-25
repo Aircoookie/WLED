@@ -64,7 +64,7 @@ void WS2812FX::setUpMatrix() {
       return;
     }
 
-    USER_PRINTF("setUpMatrix %d x %d\n", Segment::maxWidth, Segment::maxHeight);
+    // TroyHacks temp commented out, FIXME and put back: USER_PRINTF("setUpMatrix %d x %d\n", Segment::maxWidth, Segment::maxHeight);
 
     //WLEDMM recreate customMappingTable if more space needed
     if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {

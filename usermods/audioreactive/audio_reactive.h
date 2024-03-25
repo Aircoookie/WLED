@@ -498,20 +498,16 @@ void FFTcode(void * parameter)
 
     // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
-    
+
     // WLED-MM/TroyHacks: Calculate zero crossings
     //
     zeroCrossingCount = 0;
-    energy = 0;
-
     for (int i=0; i < samplesFFT; i++) {
       if (i < (samplesFFT)-2) {
         if((vReal[i] >= 0 && vReal[i+1] < 0) || (vReal[i+1] < 0 && vReal[i+1] >= 0)) {
             zeroCrossingCount++;
         }
       }
-      // WLED-MM/TroyHacks: Calculate energy
-      energy += (vReal[i] * vReal[i])/10000000;
     }
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
@@ -645,17 +641,6 @@ void FFTcode(void * parameter)
         #endif
         FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
         FFT_MajPeakSmth = FFT_MajPeakSmth + 0.42 * (FFT_MajorPeak - FFT_MajPeakSmth);   // I like this "swooping peak" look
-        
-        // WLED-MM/TroyHacks: Calculate Low-Frequency Content
-        //
-        lowFreqencyContent = fftAddAvg(2,4)/1000; 
-
-        // USER_PRINT("ZCR = ");
-        // USER_PRINT(zeroCrossingCount);
-        // USER_PRINT(" Energy = ");
-        // USER_PRINT(" LFC = ");
-        // USER_PRINT(lowFreqencyContent);
-        // USER_PRINTLN();
 
       } else { // skip second run --> clear fft results, keep peaks
         memset(vReal, 0, sizeof(vReal)); 
@@ -801,7 +786,22 @@ void FFTcode(void * parameter)
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
-    
+
+    // WLED-MM/TroyHacks: Calculate Energy & Low-Frequency Content
+    //
+    energy = 0;
+    for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
+      energy += fftResult[i];
+    }
+    energy *= energy;
+    energy /= 10000;
+    lowFreqencyContent = fftResult[0];
+
+    // WLED-MM/TroyHacks: Ideally these numbers are roughly in the same rations
+    // ...but more importantly hitting a zero point at a regular interval
+    //
+    // USER_PRINTF("ZCR: %3lu  Energy: %5lu  LFC: %4lu\n",(unsigned long)zeroCrossingCount,(unsigned long)energy,(unsigned long)lowFreqencyContent)
+
     // we have new results - notify UDP sound send
     haveNewFFTResult = true;
     
