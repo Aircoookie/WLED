@@ -794,11 +794,11 @@ void FFTcode(void * parameter)
       energy += fftResult[i];
     }
     energy *= energy;
-    energy /= 10000;
+    energy /= 10000; // scale down so we get 0 sometimes
     lowFreqencyContent = fftResult[0];
 
-    // WLED-MM/TroyHacks: Ideally these numbers are roughly in the same rations
-    // ...but more importantly hitting a zero point at a regular interval
+    // WLED-MM/TroyHacks: Ideally these numbers are roughly in the same ratios
+    // ...but most importantly all values need to be hitting zero at a regular interval
     //
     // USER_PRINTF("ZCR: %3lu  Energy: %5lu  LFC: %4lu\n",(unsigned long)zeroCrossingCount,(unsigned long)energy,(unsigned long)lowFreqencyContent)
 
