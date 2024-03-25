@@ -124,9 +124,7 @@ class AutoPlaylistUsermod : public Usermod {
 
           change_threshold += distance_tracker>10?distance_tracker/10:1;
 
-          USER_PRINT ("The lowest recorded distance was: ");
-          USER_PRINTLN(distance_tracker);
-          USER_PRINTF("Increasing change_threshold to:   %d\n",change_threshold);
+          USER_PRINTF("The lowest recorded distance was: %3lu - change_threshold increased by %2u to %3u\n", (unsigned long)distance_tracker,(distance_tracker>10?distance_tracker/10:1),change_threshold);
 
           distance_tracker = UINT_FAST32_MAX;
 
@@ -149,12 +147,12 @@ class AutoPlaylistUsermod : public Usermod {
         if (change_threshold < 0) change_threshold = 0;
 
         if(autoChangeIds.size() == 0) {
-          USER_PRINTF("Loading presets from playlist:%u\n", currentPlaylist);
+          USER_PRINTF("Loading presets from playlist: %3u\n", currentPlaylist);
           JsonObject playtlistOjb = doc.to<JsonObject>();
           serializePlaylist(playtlistOjb);
           JsonArray playlistArray = playtlistOjb["playlist"]["ps"];
           for(JsonVariant v : playlistArray) {
-            USER_PRINTF("Adding %u to autoChangeIds\n", v.as<int>());
+            USER_PRINTF("Adding %3u to autoChangeIds\n", v.as<int>());
             autoChangeIds.push_back(v.as<int>());
           }
         }
@@ -167,12 +165,8 @@ class AutoPlaylistUsermod : public Usermod {
 
         applyPreset(newpreset);
 
-        USER_PRINT("*** CHANGE! Vector distance = ");
-        USER_PRINT(distance);
-        USER_PRINT(" - change_interval was ");
-        USER_PRINT(change_interval);
-        USER_PRINT("ms - next change_threshold is ");
-        USER_PRINTLN(change_threshold);
+        USER_PRINTF("*** CHANGE! Vector distance =%4lu - change_interval was %5dms - next change_threshold is %3d\n",(unsigned long)distance,change_interval,change_threshold);
+
         lastchange = millis();
 
       }
