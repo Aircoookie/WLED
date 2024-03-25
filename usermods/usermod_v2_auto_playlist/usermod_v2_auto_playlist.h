@@ -102,18 +102,11 @@ class AutoPlaylistUsermod : public Usermod {
 
       int change_interval = millis()-lastchange;
 
-      if (distance < distance_tracker && change_interval > change_lockout) {
+      if (distance < distance_tracker && change_interval > change_lockout && volumeSmth > 1) {
         distance_tracker = distance;
       }
 
-      // USER_PRINT("\tDistance: ");
-      // USER_PRINT(distance);
-      // USER_PRINT("\tv_lfc: ");
-      // USER_PRINT(vector_lfc);
-      // USER_PRINT("\tv_energy: ");
-      // USER_PRINT(vector_energy);
-      // USER_PRINT("\tv_zcr: ");
-      // USER_PRINTLN(vector_zcr);
+      // USER_PRINTF("Distance: %3lu - v_lfc: %5lu v_energy: %5lu v_zcr: %5lu\n",(unsigned long)distance,(unsigned long)vector_lfc,(unsigned long)vector_energy,(unsigned long)vector_zcr);
 
       if (millis() > change_timer + ideal_change_min) {
         // Make the analysis less sensitive if we miss the window, slowly.
