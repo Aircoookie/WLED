@@ -34,9 +34,9 @@ class AutoPlaylistUsermod : public Usermod {
     int lastchange = millis();
 
     int last_beat_interval = millis();
-    int change_threshold = 50;
+    int change_threshold = 50; // arbitrary starting point.
 
-    int change_lockout = 1000; // never change below this numnber of millis. I think of this more like a debounce, but opinions may vary.
+    int change_lockout = 1000; // never change below this number of millis. I think of this more like a debounce, but opinions may vary.
     int ideal_change_min = 10000; // ideally change patterns no less than this number of millis
     int ideal_change_max = 20000; // ideally change patterns no more than this number of millis
 
