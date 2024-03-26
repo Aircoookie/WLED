@@ -22,7 +22,7 @@ def create_release(source):
     if release_name:
         version = _get_cpp_define_value(env, "WLED_VERSION")
         release_file = os.path.join(OUTPUT_DIR, "release", f"WLED_{version}_{release_name}.bin")
-        release_gz_file = os.path.join(OUTPUT_DIR, "release_gz", f"WLED_{version}_{release_name}.bin.gz")
+        release_gz_file = release_file + ".gz"
         print(f"Copying {source} to {release_file}")
         shutil.copy(source, release_file)
         print(f"Creating gzip file {release_gz_file} from {release_file}")
@@ -42,6 +42,10 @@ def bin_rename_copy(source, target, env):
         shutil.move("firmware.map", map_file)
 
 def bin_gzip(source, target):
+    # only create gzip for esp8266
+    if not env["PIOPLATFORM"] == "espressif8266":
+        return
+
     with open(source,"rb") as fp:
         with gzip.open(target, "wb", compresslevel = 9) as f:
             shutil.copyfileobj(fp, f)
