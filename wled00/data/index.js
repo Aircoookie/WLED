@@ -19,6 +19,7 @@ const ranges = RangeTouch.setup('input[type="range"]', {});
 var retry = false;
 var palettesData;
 var fxdata = [];
+var transitionStyles = [];
 var pJson = {}, eJson = {}, lJson = {};
 var plJson = {}; // array of playlists
 var pN = "", pI = 0, pNum = 0;
@@ -282,9 +283,11 @@ function onLoad()
 		loadFXData(()=>{
 			// load and populate effects
 			loadFX(()=>{
-				loadPalettesData(()=>{
-					requestJson();// will load presets and create WS
-					if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},50);
+				loadTransitionStyles(()=>{
+					loadPalettesData(()=>{
+						requestJson();// will load presets and create WS
+						if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},50);
+					});
 				});
 			});
 		});
@@ -553,6 +556,29 @@ function loadFX(callback = null)
 	});
 }
 
+function loadTransitionStyles(callback = null)
+{
+	fetch(getURL('/json/tra'), {
+		method: 'get'
+	})
+	.then((res)=>{
+		if (!res.ok) showErrorToast();
+		return res.json();
+	})
+	.then((json)=>{
+		transitionStyles = json||[];
+		populateTransitionStyles();
+	})
+	.catch((e)=>{
+		transitionStyles = [];
+		showToast(e, true);
+	})
+	.finally(()=>{
+		if (callback) callback();
+		updateUI();
+	});
+}
+
 function loadFXData(callback = null)
 {
 	fetch(getURL('/json/fxdata'), {
@@ -582,6 +608,7 @@ function loadFXData(callback = null)
 		updateUI();
 	});
 }
+
 
 var pQL = [];
 function populateQL()
@@ -938,6 +965,24 @@ function populateEffects()
 	}
 
 	gId('fxlist').innerHTML=html;
+}
+
+function populateTransitionStyles() {
+	if (transitionStyles.length != 0) {
+		gId('tsp').style.display = "block";
+	}
+
+	var html = "";
+	var index = 0;
+
+	for (let ts of transitionStyles) {
+		if (ts.indexOf("RSVD") < 0) {
+			html += `<option value="` + index + `">` + ts + `</option>`
+		}
+		index++;
+	}
+
+    gId("ts").innerHTML = html;
 }
 
 function populatePalettes()
@@ -1426,6 +1471,8 @@ function readState(s,command=false)
 
 	tr = s.transition;
 	gId('tt').value = tr/10;
+	ts = s.ts;
+	gId('ts').value = ts;
 
 	populateSegments(s);
 	var selc=0;
@@ -1682,6 +1729,8 @@ function requestJson(command=null)
 			var tn = parseInt(t.value*10);
 			if (tn != tr) command.transition = tn;
 		}
+		var ts = gId('ts');
+		command.ts = parseInt(ts.value);
 		req = JSON.stringify(command);
 		if (req.length > 1340) useWs = false; // do not send very long requests over websocket
 		if (req.length >  500 && lastinfo && lastinfo.arch == "esp8266") useWs = false; // esp8266 can only handle 500 bytes
