@@ -303,7 +303,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   return true;
 }
 
-// deserializes WLED state (fileDoc points to doc object if called from web server)
+// deserializes WLED state
 // presetId is non-0 if called from handlePreset()
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {

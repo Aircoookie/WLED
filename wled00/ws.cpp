@@ -55,7 +55,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         } else {
           verboseResponse = deserializeState(root);
         }
-        releaseJSONBufferLock(); // will clean fileDoc
+        releaseJSONBufferLock();
 
         if (!interfaceUpdateCallMode) { // individual client response only needed if no WS broadcast soon
           if (verboseResponse) {
