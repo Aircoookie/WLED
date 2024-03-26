@@ -76,7 +76,7 @@ class AutoPlaylistUsermod : public Usermod {
       uint_fast32_t lfc    = *(uint_fast32_t*)um_data->u_data[13];
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
-      // and the squared_distance for the vector.
+      // and the individual vector distances.
 
       if (volumeSmth > 1) { 
 
@@ -117,9 +117,11 @@ class AutoPlaylistUsermod : public Usermod {
 
         if (change_interval > ideal_change_min && distance_tracker < 1000) {
 
-          change_threshold += distance_tracker>10?distance_tracker/10:1;
+          // change_threshold += distance_tracker>10?distance_tracker/10:1;
+          change_threshold += ((distance_tracker-change_threshold)/2)>1?(distance_tracker-change_threshold)/2:1;
 
-          USER_PRINTF("The lowest recorded distance was: %3lu - change_threshold increased by %2u to %3u\n", (unsigned long)distance_tracker,(distance_tracker>10?distance_tracker/10:1),change_threshold);
+          // USER_PRINTF("The lowest recorded distance was: %3lu - change_threshold increased by %2u to %3u\n", (unsigned long)distance_tracker,(distance_tracker>10?distance_tracker/10:1),change_threshold);
+          USER_PRINTF("The lowest recorded distance was: %3lu - change_threshold increased by %2u to %3u\n", (unsigned long)distance_tracker,((distance_tracker-change_threshold)/2)>1?(distance_tracker-change_threshold)/2:1,change_threshold);
 
           distance_tracker = UINT_FAST32_MAX;
 
