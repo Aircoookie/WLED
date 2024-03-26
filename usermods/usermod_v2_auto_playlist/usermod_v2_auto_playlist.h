@@ -278,11 +278,11 @@ class AutoPlaylistUsermod : public Usermod {
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
 
       infoArr = user.createNestedArray(F(""));
-
-      if (!enabled) {
-        infoArr.add("disabled");  
-      } else {
-        infoArr.add(lastSoundTime);
+      if(!enabled) {
+        infoArr.add("");  
+      }
+      else {
+        infoArr.add("Active");
       }
 
     }
