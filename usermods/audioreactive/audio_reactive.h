@@ -141,9 +141,7 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. chann
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
-uint_fast32_t zeroCrossingCount = 0;
-uint_fast32_t energy = 0;
-uint_fast32_t lowFreqencyContent = 0;
+uint_fast16_t zeroCrossingCount = 0;
 
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
@@ -787,22 +785,6 @@ void FFTcode(void * parameter)
     autoResetPeak();
     detectSamplePeak();
 
-    // WLED-MM/TroyHacks: Calculate Energy & Low-Frequency Content
-    //
-    energy = 0;
-    for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
-      energy += fftResult[i];
-    }
-    energy *= energy;
-    energy /= 10000; // scale down so we get 0 sometimes
-    lowFreqencyContent = fftResult[0];
-
-    // WLED-MM/TroyHacks: Ideally these numbers are roughly in the same ratios
-    // ...but most importantly all values need to be hitting zero at a regular interval
-    //
-    // USER_PRINTF("ZCR: %3lu  Energy: %5lu  LFC: %4lu\n",(unsigned long)zeroCrossingCount,(unsigned long)energy,(unsigned long)lowFreqencyContent)
-
-    // we have new results - notify UDP sound send
     haveNewFFTResult = true;
     
     #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
@@ -1778,11 +1760,7 @@ class AudioReactive : public Usermod {
         um_data->u_data[10] = &agcSensitivity; // used (New)
         um_data->u_type[10] = UMT_FLOAT;
         um_data->u_data[11] = &zeroCrossingCount;
-        um_data->u_type[11] = UMT_UINT32;
-        um_data->u_data[12] = &energy;
-        um_data->u_type[12] = UMT_UINT32;
-        um_data->u_data[13] = &lowFreqencyContent;
-        um_data->u_type[13] = UMT_UINT32;
+        um_data->u_type[11] = UMT_UINT16;
 #else
        // ESP8266 
         // See https://github.com/MoonModules/WLED/pull/60#issuecomment-1666972133 for explanation of these alternative sources of data

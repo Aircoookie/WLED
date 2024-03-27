@@ -15,6 +15,8 @@ class AutoPlaylistUsermod : public Usermod {
     byte lastAutoPlaylist = 0;
     int change_timer = millis();
 
+    uint_fast32_t energy = 0;
+
     uint_fast32_t avg_long_energy = 250;
     uint_fast32_t avg_long_lfc = 1000;
     uint_fast32_t avg_long_zcr = 500;
@@ -71,9 +73,17 @@ class AutoPlaylistUsermod : public Usermod {
 
     void change(um_data_t *um_data) {
 
-      uint_fast32_t zcr    = *(uint_fast32_t*)um_data->u_data[11];
-      uint_fast32_t energy = *(uint_fast32_t*)um_data->u_data[12];
-      uint_fast32_t lfc    = *(uint_fast32_t*)um_data->u_data[13];
+      uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
+
+      for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
+        energy += fftResult[i];
+      }
+      
+      energy *= energy;
+      energy /= 10000; // scale down so we get 0 sometimes
+
+      uint8_t lfc = fftResult[0];
+      uint_fast16_t zcr = *(uint_fast16_t*)um_data->u_data[11];
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
       // and the individual vector distances.
