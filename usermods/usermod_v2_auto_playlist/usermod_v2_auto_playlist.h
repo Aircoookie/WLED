@@ -33,10 +33,10 @@ class AutoPlaylistUsermod : public Usermod {
 
     int lastchange = millis();
 
-    int last_beat_interval = millis();
-    int change_threshold = 50; // arbitrary starting point.
+    int_fast16_t change_threshold = 50; // arbitrary starting point.
+    uint_fast16_t change_threshold_change = 0;
 
-    int change_lockout = 1000;    // never change below this number of millis. I think of this more like a debounce, but opinions may vary.
+    int change_lockout = 1000;    // never change below this number of millis. Ideally 60000/your_average_bpm*beats_to_skip = change_lockout (1000 = skip 2 beats at 120bpm)
     int ideal_change_min = 10000; // ideally change patterns no less than this number of millis
     int ideal_change_max = 20000; // ideally change patterns no more than this number of millis
 
@@ -117,11 +117,10 @@ class AutoPlaylistUsermod : public Usermod {
 
         if (change_interval > ideal_change_min && distance_tracker < 1000) {
 
-          // change_threshold += distance_tracker>10?distance_tracker/10:1;
-          change_threshold += ((distance_tracker-change_threshold)/2)>1?(distance_tracker-change_threshold)/2:1;
+          change_threshold_change = (distance_tracker)-change_threshold;
+          change_threshold = distance_tracker;
 
-          // USER_PRINTF("The lowest recorded distance was: %3lu - change_threshold increased by %2u to %3u\n", (unsigned long)distance_tracker,(distance_tracker>10?distance_tracker/10:1),change_threshold);
-          USER_PRINTF("The lowest recorded distance was: %3lu - change_threshold increased by %2u to %3u\n", (unsigned long)distance_tracker,((distance_tracker-change_threshold)/2)>1?(distance_tracker-change_threshold)/2:1,change_threshold);
+          USER_PRINTF("--- lowest distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
 
           distance_tracker = UINT_FAST32_MAX;
 
@@ -133,15 +132,21 @@ class AutoPlaylistUsermod : public Usermod {
 
       if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 0.1) { 
 
+        change_threshold_change = change_threshold-(distance*0.9);
+
+        if (change_threshold_change < 1) change_threshold_change = 1;
+
         if (change_interval > ideal_change_max) {
-          change_threshold += distance_tracker>10?distance_tracker/10:1;
+          change_threshold += change_threshold_change;
         } else if (change_interval < ideal_change_min) {
-          change_threshold -= distance_tracker>10?distance_tracker/10:1;
+          change_threshold -= change_threshold_change;
+        } else {
+          change_threshold_change = 0;
         }
 
-        distance_tracker = UINT_FAST32_MAX;
+        if (change_threshold < 1) change_threshold = 0; // we need change_threshold to be signed becasue otherwise this wraps to UINT_FAST16_MAX
 
-        if (change_threshold < 0) change_threshold = 0;
+        distance_tracker = UINT_FAST32_MAX;
 
         if (autoChangeIds.size() == 0) {
 
@@ -167,7 +172,7 @@ class AutoPlaylistUsermod : public Usermod {
 
         applyPreset(newpreset);
 
-        USER_PRINTF("*** CHANGE! Vector distance =%4lu - change_interval was %5dms - next change_threshold is %3d\n",(unsigned long)distance,change_interval,change_threshold);
+        USER_PRINTF("*** CHANGE distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
 
         lastchange = millis();
 
