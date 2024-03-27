@@ -13,7 +13,7 @@ def _get_cpp_define_value(env, define):
 
     return None
 
-def _create_dirs(dirs=["map", "release", "release_gz"]):
+def _create_dirs(dirs=["map", "release"]):
     for d in dirs:
         os.makedirs(os.path.join(OUTPUT_DIR, d), exist_ok=True)
 
