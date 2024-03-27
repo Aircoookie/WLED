@@ -228,6 +228,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
+  CJSON(touchThreshold, btn_obj[F("tt")]);
   bool pull = btn_obj[F("pull")] | (!disablePullUp); // if true, pullup is enabled
   disablePullUp = !pull;
   JsonArray hw_btn_ins = btn_obj["ins"];
@@ -252,6 +253,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
           btnPin[s] = -1;
           pinManager.deallocatePin(pin,PinOwner::Button);
         }
+        //if touch pin, enable the touch interrupt on ESP32 S2 & S3
+        #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
+          else if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH)) 
+          {
+            touchAttachInterrupt(btnPin[s], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+          }
+        #endif 
         else
       #endif
         {
@@ -308,7 +316,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
     }
   }
-  CJSON(touchThreshold,btn_obj[F("tt")]);
+
   CJSON(buttonPublishMqtt,btn_obj["mqtt"]);
 
   #ifndef WLED_DISABLE_INFRARED
