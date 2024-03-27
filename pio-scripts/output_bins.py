@@ -25,7 +25,6 @@ def create_release(source):
         release_gz_file = release_file + ".gz"
         print(f"Copying {source} to {release_file}")
         shutil.copy(source, release_file)
-        print(f"Creating gzip file {release_gz_file} from {release_file}")
         bin_gzip(release_file, release_gz_file)
 
 def bin_rename_copy(source, target, env):
@@ -45,7 +44,8 @@ def bin_gzip(source, target):
     # only create gzip for esp8266
     if not env["PIOPLATFORM"] == "espressif8266":
         return
-
+    
+    print(f"Creating gzip file {target} from {source}")
     with open(source,"rb") as fp:
         with gzip.open(target, "wb", compresslevel = 9) as f:
             shutil.copyfileobj(fp, f)
