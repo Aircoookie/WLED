@@ -110,7 +110,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       if (millis() > change_timer + ideal_change_min) {
 
-        // Make the analysis less sensitive if we miss the window, slowly.
+        // Make the analysis less sensitive if we miss the window.
         // Sometimes the analysis lowers the change_threshold too much for
         // the current music, especially after track changes or during 
         // sparce intros and breakdowns.
@@ -120,7 +120,7 @@ class AutoPlaylistUsermod : public Usermod {
           change_threshold_change = (distance_tracker)-change_threshold;
           change_threshold = distance_tracker;
 
-          USER_PRINTF("--- lowest distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
+          USER_PRINTF("--- lowest distance =%4lu - no changes done in %6ums - next change_threshold is %3u (%3u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
 
           distance_tracker = UINT_FAST32_MAX;
 
@@ -129,22 +129,22 @@ class AutoPlaylistUsermod : public Usermod {
         change_timer = millis();
 
       }
-
-      if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 0.1) { 
+      
+      if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1) { 
 
         change_threshold_change = change_threshold-(distance*0.9);
 
         if (change_threshold_change < 1) change_threshold_change = 1;
 
         if (change_interval > ideal_change_max) {
-          change_threshold += change_threshold_change;
+          change_threshold += change_threshold_change;    // make changes more sensitive
         } else if (change_interval < ideal_change_min) {
-          change_threshold -= change_threshold_change;
+          change_threshold -= change_threshold_change;    // make changes less sensitive
         } else {
-          change_threshold_change = 0;
+          change_threshold_change = 0;                    // change was within our window, no sensitivity change
         }
 
-        if (change_threshold < 1) change_threshold = 0; // we need change_threshold to be signed becasue otherwise this wraps to UINT_FAST16_MAX
+        if (change_threshold < 1) change_threshold = 0;   // we need change_threshold to be signed becasue otherwise this wraps to UINT_FAST16_MAX
 
         distance_tracker = UINT_FAST32_MAX;
 
