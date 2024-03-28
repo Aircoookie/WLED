@@ -1021,7 +1021,7 @@ class AudioReactive : public Usermod {
       uint8_t samplePeak;     //  01 Bytes  offset 16 - 0 no peak; >=1 peak detected. In future, this will also provide peak Magnitude
       uint8_t frameCounter;   //  01 Bytes  offset 17 - track duplicate/out of order packets
       uint8_t fftResult[16];  //  16 Bytes  offset 18
-      uint8_t gap2[2];        // gap added by compiler: 02 Bytes, offset 34
+      uint16_t zeroCrossingCount; // 02 Bytes, offset 34
       float  FFT_Magnitude;   //  04 Bytes  offset 36
       float  FFT_MajorPeak;   //  04 Bytes  offset 40
     };
@@ -1561,6 +1561,7 @@ class AudioReactive : public Usermod {
       transmitData.samplePeak  = udpSamplePeak ? 1:0;
       udpSamplePeak            = false;           // Reset udpSamplePeak after we've transmitted it
       transmitData.frameCounter = frameCounter;
+      transmitData.zeroCrossingCount = zeroCrossingCount;
 
       for (int i = 0; i < NUM_GEQ_CHANNELS; i++) {
         transmitData.fftResult[i] = (uint8_t)constrain(fftResult[i], 0, 254);
@@ -1633,6 +1634,7 @@ class AudioReactive : public Usermod {
       FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
       soundPressure = volumeSmth; // substitute - V2 format does not (yet) include this value
       agcSensitivity = 128.0f; // substitute - V2 format does not (yet) include this value
+      zeroCrossingCount = receivedPacket->zeroCrossingCount;
 
       return true;
     }
