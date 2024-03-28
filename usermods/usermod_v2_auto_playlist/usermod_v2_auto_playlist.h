@@ -180,11 +180,26 @@ class AutoPlaylistUsermod : public Usermod {
         }
         while (currentPreset == newpreset); // make sure we get a different random preset.
 
-        applyPreset(newpreset);
+        if (change_interval > change_lockout+3) {
 
-        USER_PRINTF("*** CHANGE distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+          // Make sure we have a statistically significant change and we aren't
+          // just bouncing off change_lockout. That's valid for changing the
+          // thresholds, but might be a bit crazy for lighting changes. 
+          // When the music changes quite a bit, the distance calculation can
+          // go into freefall - this logic stops that from triggering right
+          // after change_lockout. Better for smaller change_lockout values.
 
-        lastchange = millis();
+          applyPreset(newpreset);
+
+          USER_PRINTF("*** CHANGE distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+
+        } else {
+
+          USER_PRINTF("*** SKIP!! distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+
+        }
+        
+        lastchange = millis();  
 
       }
 
