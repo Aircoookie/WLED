@@ -56,7 +56,7 @@ static void doSaveState() {
     size_t len = measureJson(*pDoc) + 1;
     DEBUG_PRINTLN(len);
     // if possible use SPI RAM on ESP32
-    if (psramFound())
+    if (psramSafe && psramFound())
       tmpRAMbuffer = (char*) ps_malloc(len);
     else
       tmpRAMbuffer = (char*) malloc(len);

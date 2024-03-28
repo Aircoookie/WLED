@@ -360,6 +360,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("MS"),autoSegments);
     sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("IC"),cctICused);
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());

@@ -110,6 +110,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | AW_GLOBAL_DISABLED);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
+  CJSON(cctICused, hw_led[F("ic")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
@@ -767,6 +768,7 @@ void serializeConfig() {
   hw_led[F("ledma")] = 0; // no longer used
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
+  hw_led[F("ic")] = cctICused;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override

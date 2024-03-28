@@ -753,7 +753,7 @@ void serializeInfo(JsonObject root)
 
   root[F("freeheap")] = ESP.getFreeHeap();
   #if defined(ARDUINO_ARCH_ESP32)
-  if (psramFound()) root[F("psram")] = ESP.getFreePsram();
+  if (psramSafe && psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 

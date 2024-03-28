@@ -417,7 +417,7 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   if(path.endsWith("/")) path += "index.htm";
   if(path.indexOf(F("sec")) > -1) return false;
   #ifdef ARDUINO_ARCH_ESP32
-  if (psramFound() && path.endsWith(FPSTR(getPresetsFileName()))) {
+  if (psramSafe && psramFound() && path.endsWith(FPSTR(getPresetsFileName()))) {
     size_t psize;
     const uint8_t *presets = getPresetCache(psize);
     if (presets) {

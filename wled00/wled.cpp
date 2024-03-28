@@ -241,7 +241,7 @@ void WLED::loop()
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
     #if defined(ARDUINO_ARCH_ESP32)
-    if (psramFound()) {
+    if (psramSafe && psramFound()) {
       DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
       DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
     }
@@ -367,9 +367,12 @@ void WLED::setup()
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
 #if defined(ARDUINO_ARCH_ESP32)
-  pDoc = new PSRAMDynamicJsonDocument((psramFound() ? 2 : 1)*JSON_BUFFER_SIZE);
+  #ifndef BOARD_HAS_PSRAM
+  if (psramFound() && ESP.getChipRevision() < 3) psramSafe = false;
+  #endif
+  pDoc = new PSRAMDynamicJsonDocument((psramSafe && psramFound() ? 2 : 1)*JSON_BUFFER_SIZE);
   // if the above fails requestJsonBufferLock() will always return false preventing crashes
-  if (psramFound()) {
+  if (psramSafe && psramFound()) {
     DEBUG_PRINT(F("Total PSRAM: ")); DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
     DEBUG_PRINT(F("Free PSRAM : ")); DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
   }
