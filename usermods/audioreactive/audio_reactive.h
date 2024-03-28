@@ -36,7 +36,7 @@
 #endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-// this applies "pink noise scaling" to FFT results before computing the major peak for effects.0
+// this applies "pink noise scaling" to FFT results before computing the major peak for effects.
 // currently only for ESP32-S3 and classic ESP32, due to increased runtime
 #define FFT_MAJORPEAK_HUMAN_EAR
 #endif
