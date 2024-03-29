@@ -137,6 +137,8 @@ void stateUpdated(byte callMode) {
     if (strip.getTransition() == 0) {
       jsonTransitionOnce = false;
       transitionActive = false;
+      applyFinalBri();
+      strip.trigger();
       return;
     }
 
