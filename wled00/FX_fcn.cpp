@@ -151,7 +151,8 @@ bool IRAM_ATTR Segment::allocateData(size_t len) {
     if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
     return true;
   }
-  //DEBUG_PRINTF_P(PSTR("--   Allocating data (%d): %p\n", len, this);
+  DEBUG_PRINT(F("Allocating Data"));
+  // DEBUG_PRINTF_P(PSTR("--   Allocating data (%d): %p\n", len, this);
   deallocateData(); // if the old buffer was smaller release it first
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
     // not enough memory

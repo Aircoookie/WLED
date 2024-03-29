@@ -7890,58 +7890,63 @@ static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,,Amplitu
 
 uint16_t mode_particlerotatingspray(void)
 {
-
   if (SEGLEN == 1)
     return mode_static();
-
-  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
-#ifdef ESP8266
-  const uint32_t numParticles = 170; // maximum number of particles
-#else
-  const uint32_t numParticles = 700; // maximum number of particles
-#endif
-
   const uint8_t numSprays = 8; // maximum number of sprays
+  ParticleSystem *PartSys = NULL;
 
-  PSparticle *particles;
-  PSpointsource *spray;
+  if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
+  {
+    if (!initParticleSystem(PartSys, numSprays))
+      return mode_static(); // allocation failed; //allocation failed
 
-  // allocate memory and divide it into proper pointers, max is 32kB for all segments, 100 particles use 1200bytes
-  uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numSprays);
-  if (!SEGENV.allocateData(dataSize))
-    return mode_static(); // allocation failed; //allocation failed
+  //  Serial.print("PS pointer ");
+   // Serial.println((uintptr_t)PartSys);    
+   // Serial.print("set pointer to data ");
+  //  PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // set the pointer to the PS (todo: is done in init function but wiped when leaving it)
+   // Serial.println((uintptr_t)PartSys);
+   // Serial.print("SEGdata ");
+   // Serial.println((uintptr_t)(SEGENV.data));
+    PartSys->setKillOutOfBounds(true); 
+    Serial.println("INIT done");
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  spray = reinterpret_cast<PSpointsource *>(SEGENV.data);
-  // calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
-
+  if(PartSys == NULL)
+  {
+    Serial.println("ERROR: paticle system not found, nullpointer");
+    return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
+  }
   uint32_t i = 0;
   uint32_t j = 0;
+  
   uint8_t spraycount = 1 + (SEGMENT.custom1 >> 5); // number of sprays to display, 1-8
 
   if (SEGMENT.call == 0) // initialization
   {
     SEGMENT.aux0 = 0; // starting angle
     SEGMENT.aux1 = 0x01; // check flags
-    for (i = 0; i < numParticles; i++)
-    {
-      particles[i].ttl = 0;      
-    }
+//TODO: use SEGMENT.step for smooth direction change
     for (i = 0; i < numSprays; i++)
-    {         
-      spray[i].source.sat = 255; // set saturation
-      spray[i].source.x = (cols * PS_P_RADIUS) / 2; // center
-      spray[i].source.y = (rows * PS_P_RADIUS) / 2; // center
-      spray[i].source.vx = 0;
-      spray[i].source.vy = 0;
-      spray[i].maxLife = 400;
-      spray[i].minLife = 200;
-      spray[i].vx = 0;  // emitting speed
-      spray[i].vy = 0;  // emitting speed
-      spray[i].var = 0; // emitting variation
+    {      
+      PartSys->sources[i].source.sat = 255; // set saturation
+      PartSys->sources[i].source.x = (PartSys->maxX - PS_P_HALFRADIUS + 1) >> 1; // center 
+      PartSys->sources[i].source.y = (PartSys->maxY - PS_P_HALFRADIUS + 1) >> 1; // center
+      PartSys->sources[i].source.vx = 0;
+      PartSys->sources[i].source.vy = 0;
+      PartSys->sources[i].maxLife = 900;  
+      PartSys->sources[i].minLife = 800;//!!!
+      PartSys->sources[i].vx = 0;  // emitting speed
+      PartSys->sources[i].vy = 0;  // emitting speed
+      PartSys->sources[i].var = 0; // emitting variation
+      if (SEGMENT.check1)          // random color is checked
+        PartSys->sources[i].source.hue = random16();
+      else
+      {
+        uint8_t coloroffset = 0xFF / spraycount;
+        PartSys->sources[i].source.hue = coloroffset * i;
+      }
     }
   }
   
@@ -7956,38 +7961,16 @@ uint16_t mode_particlerotatingspray(void)
     {
       if (SEGMENT.check1) // random color is checked
       {
-        spray[i].source.hue = random16();
+        PartSys->sources[i].source.hue = random16();
       }
       else
       {
         uint8_t coloroffset = 0xFF / spraycount;
-        spray[i].source.hue = coloroffset * i;
+        PartSys->sources[i].source.hue = coloroffset * i;
       }
     }
   }
 
-  uint8_t percycle = spraycount; // maximum number of particles emitted per cycle
-
-  #ifdef ESP8266
-  if (SEGMENT.call & 0x01) //every other frame, do not emit to save particles
-    percycle = 0;
-#endif
-        i = 0;
-  j = random16(spraycount); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
-  while (i < numParticles)
-  {
-    if (particles[i].ttl == 0) // find a dead particle
-    {
-      // spray[j].source.hue = random16(); //set random color for each particle (using palette)
-      Emitter_Fountain_emit(&spray[j], &particles[i]);
-      j = (j + 1) % spraycount;
-      if (percycle-- == 0)
-      {
-        break; // quit loop if all particles of this round emitted
-      }
-    }
-    i++;
-  }
 
   //set rotation direction and speed
   int32_t rotationspeed = SEGMENT.speed << 2;
@@ -8018,27 +8001,62 @@ uint16_t mode_particlerotatingspray(void)
   else
     SEGMENT.aux0 -= rotationspeed << 2;
 
-  // calculate angle offset for an even distribution
-  uint16_t angleoffset = 0xFFFF / spraycount;
-
-  for (i = 0; i < spraycount; i++)
+/*
+//DEBUG: emit single particles in x,y
+  if (SEGMENT.call % 3000 == 0) 
   {
-    // calculate the x and y speed using aux0 as the 16bit angle. returned value by sin16/cos16 is 16bit, shifting it by 8 bits results in +/-128, divide that by custom1 slider value
-    spray[i].vx = (cos16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
-    spray[i].vy = (sin16(SEGMENT.aux0 + angleoffset * i) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
-    spray[i].var = (SEGMENT.custom3 >> 1);                                                         // emiting variation = nozzle size  (custom 3 goes from 0-32)
+    PartSys->sources[0].vx = -1;  // emitting speed
+    PartSys->sources[0].vy = 0;  // emitting speed
+    PartSys->sources[0].var = 0; // emitting variation
+    PartSys->SprayEmit(PartSys->sources[0]);
+    
+    PartSys->sources[1].vx = 1;  // emitting speed
+    PartSys->sources[1].vy = 0;  // emitting speed
+    PartSys->sources[1].var =0; // emitting variation
+    PartSys->SprayEmit(PartSys->sources[1]);
+    PartSys->sources[2].vx = 0;  // emitting speed
+    PartSys->sources[2].vy = 1;  // emitting speed
+    PartSys->sources[2].var = 0; // emitting variation
+    PartSys->SprayEmit(PartSys->sources[2]);
+    PartSys->sources[3].vx = 0;  // emitting speed
+    PartSys->sources[3].vy = -1;  // emitting speed
+    PartSys->sources[3].var = 0; // emitting variation
+    PartSys->SprayEmit(PartSys->sources[3]);
+  }*/
+    // calculate angle offset for an even distribution
+    uint16_t angleoffset = 0xFFFF / spraycount;
+
+    for (j = 0; j < spraycount; j++)
+    {
+      // calculate the x and y speed using aux0 as the 16bit angle. returned value by sin16/cos16 is 16bit, shifting it by 8 bits results in +/-128, divide that by custom1 slider value
+      PartSys->sources[j].vx = (cos16(SEGMENT.aux0 + angleoffset * j) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
+      PartSys->sources[j].vy = (sin16(SEGMENT.aux0 + angleoffset * j) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
+      PartSys->sources[j].var = (SEGMENT.custom3 >> 1);                                                         // emiting variation = nozzle size  (custom 3 goes from 0-32)
   }
 
-  for (i = 0; i < numParticles; i++)
+#ifdef ESP8266
+  if (SEGMENT.call & 0x01) // every other frame, do not emit to save particles
+    percycle = 0;
+#endif
+
+//TODO: limit the emit amount by particle speed. should not emit more than one for every speed of like 20 or so, it looks weird on initialisation also make it depnd on angle speed, emit no more than once every few degrees -> less overlap (need good finetuning)
+
+  j = random16(spraycount); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
+  
+  for (i = 0; i < spraycount; i++) // emit one particle per spray (if available)
   {
-    Particle_Move_update(&particles[i], true); // move the particles, kill out of bounds particles
+    PartSys->SprayEmit(PartSys->sources[j]); 
+    j = (j + 1) % spraycount;
+    // if (++j > spraycount) // faster than modulo, avoid modulo it in a loop !!! todo: add this back? 
+    //  j = 0;
   }
 
   SEGMENT.fill(BLACK); // clear the matrix
-  // render the particles
-  ParticleSys_render(particles, numParticles, false, false);
+
+  PartSys->update(); //update all particles and render to frame
+  
   return FRAMETIME;
-}
+  }
 static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "PS Candy@Rotation Speed,Particle Speed,Arms,Flip Speed,Nozzle,Random Color, Direction, Random Flip;;!;012;pal=56,sx=18,ix=190,c1=200,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 /*
@@ -8047,6 +8065,7 @@ static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "PS Candy@Rota
  * Uses ranbow palette as default
  * by DedeHai (Damian Schneider)
  */
+/*
 uint16_t mode_particlefireworks(void)
 {
   if (SEGLEN == 1)
@@ -8063,17 +8082,17 @@ uint16_t mode_particlefireworks(void)
 #endif
   const uint8_t numRockets = 4;
   PSparticle *particles;
-  PSpointsource *rockets;
+  PSsource *rockets;
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numRockets);
+  dataSize += sizeof(PSsource) * (numRockets);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
-  rockets = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  rockets = reinterpret_cast<PSsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(rockets + numRockets); // cast the data array into a particle pointer
   uint32_t i = 0;
-  uint32_t j = 0; 
+  uint32_t j = 0;
   if (SEGMENT.call == 0) // initialization
   {
     for (i = 0; i < numParticles; i++)
@@ -8096,7 +8115,7 @@ uint16_t mode_particlefireworks(void)
   uint32_t counter;
   uint32_t angleincrement;
   uint32_t speedvariation;
-  
+
   bool circularexplosion = false;
   for (j = 0; j < numRockets; j++)
   {
@@ -8116,8 +8135,8 @@ uint16_t mode_particlefireworks(void)
 #else
       emitparticles = random16(SEGMENT.intensity >> 2) + (SEGMENT.intensity >> 2) + 5; // defines the size of the explosion
 #endif
-      rockets[j].source.vy = -1; // set speed negative so it will emit no more particles after this explosion until relaunch      
-      if(random16(4) == 0) //!!! make it 5 
+      rockets[j].source.vy = -1; // set speed negative so it will emit no more particles after this explosion until relaunch
+      if(random16(4) == 0) //!!! make it 5
       {
         circularexplosion = true;
         speed = 2 + random16(3);
@@ -8146,7 +8165,7 @@ uint16_t mode_particlefireworks(void)
           if (circularexplosion) // do circle emit
           {
             Emitter_Angle_emit(&rockets[j], &particles[i], angle, currentspeed);
-            emitparticles--; 
+            emitparticles--;
             // set angle for next particle
             angle += angleincrement;
             counter++;
@@ -8180,7 +8199,7 @@ uint16_t mode_particlefireworks(void)
     }
     circularexplosion = false; //reset for next rocket
   }
-  
+
   // update particles
   for (i = 0; i < numParticles; i++)
   {
@@ -8203,7 +8222,7 @@ uint16_t mode_particlefireworks(void)
       rockets[j].source.sat = random16(100) + 155;
       rockets[j].maxLife = 200;
       rockets[j].minLife = 50;
-      rockets[j].source.ttl = random16((1024 - ((uint32_t)SEGMENT.speed<<2))) + 50; // standby time til next launch 
+      rockets[j].source.ttl = random16((1024 - ((uint32_t)SEGMENT.speed<<2))) + 50; // standby time til next launch
       rockets[j].vx = 0;                                            // emitting speed
       rockets[j].vy = 3;                                            // emitting speed
       rockets[j].var = (SEGMENT.intensity >> 3) + 10;               // speed variation around vx,vy (+/- var/2)
@@ -8230,9 +8249,10 @@ uint16_t mode_particlefireworks(void)
   ParticleSys_render(particles, numParticles, false, false);
   return FRAMETIME;
 }
+
 //TODO: after implementing gravity function, add slider custom3 to set gravity force
 static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Bounce,,Cylinder,Walls,Ground;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=0";
-
+*/
 /*
  * Particle Volcano (gravity spray)
  * Particles are sprayed from below, spray moves back and forth if option is set
@@ -8240,9 +8260,9 @@ static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Laun
  * by DedeHai (Damian Schneider)
  */
 
+/*
 uint16_t mode_particlevolcano(void)
 {
-
   if (SEGLEN == 1)
     return mode_static();
 
@@ -8261,15 +8281,15 @@ uint16_t mode_particlevolcano(void)
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
   PSparticle *particles;
-  PSpointsource *spray;
+  PSsource *spray;
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numSprays); 
+  dataSize += sizeof(PSsource) * (numSprays); 
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  spray = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  spray = reinterpret_cast<PSsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
 
@@ -8368,70 +8388,15 @@ uint16_t mode_particlevolcano(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Size,Color by Age,Walls,Collisions;;!;012;pal=35,sx=100,ix=160,c1=0,c2=160,c3=10,o1=1,o2=0,o3=0";
-
-//for debugging speed tests, this speed test function can be used, compiler will not optimize it 
-void __attribute__((optimize("O0"))) SpeedTestfunction(void)
-{
-  // unmodifiable compiler code
-  Serial.print("Speedtest: ");
-  int32_t i;
-  volatile int32_t randomnumber;
-  uint32_t start = micros();
-  uint32_t time;
-  volatile int32_t windspeed;
-  for (i = 0; i < 100000; i++)
-  {
-    //windspeed=(inoise16(SEGMENT.aux0, start >> 2) - 127) / ((271 - SEGMENT.custom2) >> 4);
-    randomnumber = random8();    
-  }
-  time = micros() - start;
-  Serial.print(time);
-  Serial.print(" ");
-  start = micros();
-  for (i = 0; i < 100000; i++)
-  {
-    //windspeed = (inoise8(SEGMENT.aux0, start >> 2) - 127) / ((271 - SEGMENT.custom2) >> 4);
-    randomnumber = random8(15);    
-  }
-  time = micros() - start;
-  Serial.print(time);
-  Serial.print(" ");
-
-  start = micros();
-  for (i = 0; i < 100000; i++)
-  {
-    // windspeed=(inoise16(SEGMENT.aux0, start >> 2) - 127) / ((271 - SEGMENT.custom2) >> 4);
-    randomnumber = random16();
-  }
-  time = micros() - start;
-  Serial.print(time);
-  Serial.print(" ");
-  start = micros();
-  for (i = 0; i < 100000; i++)
-  {
-    // windspeed = (inoise8(SEGMENT.aux0, start >> 2) - 127) / ((271 - SEGMENT.custom2) >> 4);
-    randomnumber = random16(15);
-  }
-  
-  time = micros() - start;
-  Serial.print(time);
-  Serial.print(" ");
-
-  Serial.println(" ***");
-}
-
+*/
 /*
  * Particle Fire
  * realistic fire effect using particles. heat based and using perlin-noise for wind
  * by DedeHai (Damian Schneider)
  */
-
+/*
 uint16_t mode_particlefire(void)
 {
-
-  // speed tests :
-  // SpeedTestfunction();
-
   if (SEGLEN == 1)
     return mode_static();
 
@@ -8454,18 +8419,18 @@ uint16_t mode_particlefire(void)
 
   
   PSparticle *particles;
-  PSpointsource *flames;
+  PSsource *flames;
 
   // allocate memory and divide it into proper pointers
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numFlames);
+  dataSize += sizeof(PSsource) * (numFlames);
 
   if (!SEGENV.allocateData(dataSize))
   {
     return mode_static(); // allocation failed; //allocation failed
   }
 
-  flames = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  flames = reinterpret_cast<PSsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(flames + numFlames); // cast the data array into a particle pointer
 
@@ -8516,7 +8481,7 @@ uint16_t mode_particlefire(void)
 
       if (i < numNormalFlames) 
       {                                                                                          
-        flames[i].source.ttl = random16((SEGMENT.intensity * SEGMENT.intensity) >> 9) / (1 + (SEGMENT.speed >> 6)) + 10; //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
+        flames[i].source.ttl = random16((SEGMENT.intensity * SEGMENT.intensity) >> 9) / (2 + (SEGMENT.speed >> 6)) + 10; //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
         flames[i].maxLife = random16(7) + 13; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         flames[i].minLife = 4;
         flames[i].vx = (int8_t)random16(4) - 2; // emitting speed (sideways)
@@ -8563,7 +8528,7 @@ uint16_t mode_particlefire(void)
     else if (particles[i].y > PS_P_RADIUS) // particle is alive, apply wind if y > 1
     {
       // add wind using perlin noise         
-      particles[i].vx = windspeed;
+      particles[i].vx = windspeed; //todo: should this be depending on position? would be slower but may look better (used in old, slow fire)
     }
   }
 
@@ -8577,7 +8542,7 @@ uint16_t mode_particlefire(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Base Flames,Wind,Color Scheme, Cylinder;;!;012;sx=130,ix=120,c1=110,c2=128,c3=0,o1=0";
-
+*/
 /*
 PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
 sliders control falling speed, intensity (number of particles spawned), inter-particle collision hardness (0 means no particle collisions) and render saturation
@@ -8585,10 +8550,9 @@ this is quite versatile, can be made to look like rain or snow or confetti etc.
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
+/*
 uint16_t mode_particlefall(void)
 {
-
   if (SEGLEN == 1)
     return mode_static();
 
@@ -8641,7 +8605,7 @@ uint16_t mode_particlefall(void)
         particles[i].vy = -(SEGMENT.speed >> 1);
         particles[i].hue = random16(); // set random color
         particles[i].sat = ((SEGMENT.custom3) << 3) + 7; // set saturation
-        particles[i].collide = true;  // particle will collide  
+        
         break; //emit only one particle per round
       }
       i++;
@@ -8674,16 +8638,15 @@ uint16_t mode_particlefall(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEFALL[] PROGMEM = "PS Ballpit@Speed,Intensity,Randomness,Hardness,Saturation,Cylinder,Walls,Ground;;!;012;pal=11,sx=100,ix=200,c1=31,c2=100,c3=28,o1=0,o2=0,o3=1";
-
+*/
 /*
  * Particle Waterfall
  * Uses palette for particle color, spray source at top emitting particles, many config options
  * by DedeHai (Damian Schneider)
  */
-
+/*
 uint16_t mode_particlewaterfall(void)
 {
-
   if (SEGLEN == 1)
     return mode_static();
 
@@ -8701,15 +8664,15 @@ uint16_t mode_particlewaterfall(void)
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
   PSparticle *particles;
-  PSpointsource *spray;
+  PSsource *spray;
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numSprays);
+  dataSize += sizeof(PSsource) * (numSprays);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  spray = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  spray = reinterpret_cast<PSsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
 
@@ -8808,13 +8771,13 @@ uint16_t mode_particlewaterfall(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collisions,Position,Cylinder,Walls,Ground;;!;012;pal=9,sx=15,ix=200,c1=15,c2=128,c3=17,o1=0,o2=0,o3=1";
-
+*/
 /*
 Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
+/*
 uint16_t mode_particlebox(void)
 {
   if (SEGLEN == 1)
@@ -8911,13 +8874,13 @@ uint16_t mode_particlebox(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,Tilt strength,Hardness,,Sloshing;;!;012;pal=1,sx=120,ix=100,c1=190,c2=210,o1=0";
-
+*/
 /*
 Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
 calculates slope gradient at the particle positions and applies 'downhill' force, restulting in a fuzzy perlin noise display
 by DedeHai (Damian Schneider)
 */
-
+/*
 uint16_t mode_particleperlin(void)
 {
 
@@ -9004,12 +8967,12 @@ uint16_t mode_particleperlin(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,,Friction,Scale;;!;012;pal=54,sx=70;ix=200,c1=120,c2=120,c3=4,o1=0"; 
-
+*/
 /*
 * Particle smashing down like meteorites and exploding as they hit the ground, has many parameters to play with
 * by DedeHai (Damian Schneider)
 */
-
+/*
 uint16_t mode_particleimpact(void) 
 {
   if (SEGLEN == 1)
@@ -9031,15 +8994,15 @@ uint16_t mode_particleimpact(void)
 #endif
 
   PSparticle *particles;
-  PSpointsource *meteors;
+  PSsource *meteors;
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (MaxNumMeteors);
+  dataSize += sizeof(PSsource) * (MaxNumMeteors);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  meteors = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  meteors = reinterpret_cast<PSsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(meteors + MaxNumMeteors); // cast the data array into a particle pointer
 
@@ -9135,8 +9098,7 @@ uint16_t mode_particleimpact(void)
       {
         meteors[i].source.vy = 0; // set speed zero so it will explode
         meteors[i].source.vx = 0;
-        meteors[i].source.y = 5;          // offset from ground so explosion happens not out of frame
-        meteors[i].source.collide = true; // explosion particles will collide if checked
+        meteors[i].source.y = 5;          // offset from ground so explosion happens not out of frame        
         meteors[i].maxLife = 200;
         meteors[i].minLife = 50;
         #ifdef ESP8266
@@ -9173,14 +9135,14 @@ uint16_t mode_particleimpact(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Cylinder,Walls,Collisions;;!;012;pal=0,sx=32,ix=85,c1=100,c2=100,c3=8,o1=0,o2=1,o3=1";
-
+*/
 /*
 Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
 uses inverse square law like in planetary motion
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
+/*
 uint16_t mode_particleattractor(void)
 {
   if (SEGLEN == 1)  return mode_static();
@@ -9200,13 +9162,13 @@ uint16_t mode_particleattractor(void)
 
   PSparticle *particles;
   PSparticle *attractor;
-  PSpointsource *spray;
+  PSsource *spray;
   uint8_t *counters; //counters for the applied force
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * (numParticles+1); //space for particles and the attractor
   dataSize += sizeof(uint8_t) * numParticles; //space for counters
-  dataSize += sizeof(PSpointsource); //space for spray
+  dataSize += sizeof(PSsource); //space for spray
 
 
   if (!SEGENV.allocateData(dataSize))
@@ -9214,7 +9176,7 @@ uint16_t mode_particleattractor(void)
   // divide and cast the data array into correct pointers
   particles = reinterpret_cast<PSparticle *>(SEGENV.data);
   attractor = reinterpret_cast<PSparticle *>(particles + numParticles + 1);
-  spray = reinterpret_cast<PSpointsource *>(attractor + 1);
+  spray = reinterpret_cast<PSsource *>(attractor + 1);
   counters = reinterpret_cast<uint8_t *>(spray + 1);
 
   uint32_t i;
@@ -9307,13 +9269,13 @@ uint16_t mode_particleattractor(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Emit Speed,Collisions,Friction,Bounce,Trails,Swallow;;!;012;pal=9,sx=100,ix=82,c1=190,c2=0,o1=0,o2=0,o3=0";
-
+*/
 /*
 Particle Spray, just a simple spray animation with many parameters
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
+/*
 uint16_t mode_particlespray(void)
 {
 
@@ -9336,15 +9298,15 @@ uint16_t mode_particlespray(void)
   uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
 
   PSparticle *particles;
-  PSpointsource *spray;
+  PSsource *spray;
 
   // allocate memory and divide it into proper pointers, max is 32k for all segments.
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numSprays);
+  dataSize += sizeof(PSsource) * (numSprays);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  spray = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  spray = reinterpret_cast<PSsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
 
@@ -9428,13 +9390,13 @@ uint16_t mode_particlespray(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;012;pal=0,sx=150,ix=90,c3=31,o1=0,o2=0,o3=0";
-
+*/
 /*
 Particle base Graphical Equalizer
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
+/*
 uint16_t mode_particleGEQ(void)
 {
 
@@ -9558,7 +9520,7 @@ uint32_t random16_ESP(uint32_t limit)
   r = p >> 16;
   return r;
 }
-
+*/
 /*
  * Particle rotating GEQ
  * Particles sprayed from center with a rotating spray
@@ -9584,15 +9546,15 @@ uint16_t mode_particlecenterGEQ(void)
   const uint8_t numSprays = 16; // maximum number of sprays
 
   PSparticle *particles;
-  PSpointsource *spray;
+  PSsource *spray;
 
   // allocate memory and divide it into proper pointers, max is 32kB for all segments, 100 particles use 1200bytes
   uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSpointsource) * (numSprays);
+  dataSize += sizeof(PSsource) * (numSprays);
   if (!SEGENV.allocateData(dataSize))
     return mode_static(); // allocation failed; //allocation failed
 
-  spray = reinterpret_cast<PSpointsource *>(SEGENV.data);
+  spray = reinterpret_cast<PSsource *>(SEGENV.data);
   // calculate the end of the spray data and assign it as the data pointer for the particles:
   particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
 
@@ -9932,11 +9894,11 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 
-
+  addEffect(FX_MODE_PARTICLEROTATINGSPRAY, &mode_particlerotatingspray, _data_FX_MODE_PARTICLEROTATINGSPRAY);
+  /*
   addEffect(FX_MODE_PARTICLEVOLCANO, &mode_particlevolcano, _data_FX_MODE_PARTICLEVOLCANO);
   addEffect(FX_MODE_PARTICLEFIRE, &mode_particlefire, _data_FX_MODE_PARTICLEFIRE);
   addEffect(FX_MODE_PARTICLEFIREWORKS, &mode_particlefireworks, _data_FX_MODE_PARTICLEFIREWORKS);
-  addEffect(FX_MODE_PARTICLEROTATINGSPRAY, &mode_particlerotatingspray, _data_FX_MODE_PARTICLEROTATINGSPRAY);
   addEffect(FX_MODE_PARTICLEPERLIN, &mode_particleperlin, _data_FX_MODE_PARTICLEPERLIN);
   addEffect(FX_MODE_PARTICLEFALL, &mode_particlefall, _data_FX_MODE_PARTICLEFALL);
   addEffect(FX_MODE_PARTICLEBOX, &mode_particlebox, _data_FX_MODE_PARTICLEBOX);
@@ -9945,6 +9907,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLEATTRACTOR, &mode_particleattractor, _data_FX_MODE_PARTICLEATTRACTOR);
   addEffect(FX_MODE_PARTICLESPRAY, &mode_particlespray, _data_FX_MODE_PARTICLESPRAY);
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
+  */
  // addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
 
 #endif // WLED_DISABLE_2D
