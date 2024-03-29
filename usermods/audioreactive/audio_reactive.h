@@ -1939,7 +1939,7 @@ class AudioReactive : public Usermod {
         USER_PRINTF("|  uint8_t samplePeak    offset = %2d   size = %2d\n", offsetof(audioSyncPacket, samplePeak), sizeof(data.samplePeak));      // offset 16 size 1
         USER_PRINTF("|  uint8_t frameCounter  offset = %2d   size = %2d\n", offsetof(audioSyncPacket, frameCounter), sizeof(data.frameCounter));  // offset 17 size 1
         USER_PRINTF("|  uint8_t fftResult[16] offset = %2d   size = %2d\n", offsetof(audioSyncPacket, fftResult[0]), sizeof(data.fftResult));     // offset 18 size 16
-        USER_PRINTF("|  uint8_t gap2[2]       offset = %2d   size = %2d\n", offsetof(audioSyncPacket, gap2[0]), sizeof(data.gap2));               // offset 34 size 2
+        USER_PRINTF("|  uint16_t zeroCrossingCount offset = %2d   size = %2d\n", offsetof(audioSyncPacket, zeroCrossingCount), sizeof(data.zeroCrossingCount)); // offset 34 size 2
         USER_PRINTF("|  float   FFT_Magnitude offset = %2d   size = %2d\n", offsetof(audioSyncPacket, FFT_Magnitude), sizeof(data.FFT_Magnitude));// offset 36 size 4
         USER_PRINTF("|  float   FFT_MajorPeak offset = %2d   size = %2d\n", offsetof(audioSyncPacket, FFT_MajorPeak), sizeof(data.FFT_MajorPeak));// offset 40 size 4
         USER_PRINTLN(); USER_FLUSH();
