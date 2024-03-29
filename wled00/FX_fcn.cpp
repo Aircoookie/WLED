@@ -1205,7 +1205,6 @@ void WS2812FX::service() {
 
       seg.next_time = nowUp + delay;
     }
-//    if (_segment_index == _queuedChangesSegId) setUpSegmentFromQueuedChanges();
     _segment_index++;
   }
   _virtualSegmentLength = 0;
@@ -1213,7 +1212,7 @@ void WS2812FX::service() {
   _triggered = false;
 
   #ifdef WLED_DEBUG
-  if (millis() - nowUp > _frametime) DEBUG_PRINTLN(F("Slow effects."));
+  if (millis() - nowUp > _frametime) DEBUG_PRINTF_P(PSTR("Slow effects %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
   #endif
   if (doShow) {
     yield();
@@ -1221,7 +1220,7 @@ void WS2812FX::service() {
     show();
   }
   #ifdef WLED_DEBUG
-  if (millis() - nowUp > _frametime) DEBUG_PRINTLN(F("Slow strip."));
+  if (millis() - nowUp > _frametime) DEBUG_PRINTF_P(PSTR("Slow strip %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
   #endif
 }
 
@@ -1431,31 +1430,12 @@ void WS2812FX::setSegment(uint8_t segId, uint16_t i1, uint16_t i2, uint8_t group
     appendSegment(Segment(0, strip.getLengthTotal()));
     segId = getSegmentsNum()-1; // segments are added at the end of list
   }
-/*
-  if (_queuedChangesSegId == segId) _queuedChangesSegId = 255; // cancel queued change if already queued for this segment
-
-  if (segId < getMaxSegments() && segId == getCurrSegmentId() && isServicing()) { // queue change to prevent concurrent access
-    // queuing a change for a second segment will lead to the loss of the first change if not yet applied
-    // however this is not a problem as the queued change is applied immediately after the effect function in that segment returns
-    _qStart  = i1; _qStop   = i2; _qStartY = startY; _qStopY  = stopY;
-    _qGrouping = grouping; _qSpacing  = spacing; _qOffset   = offset;
-    _queuedChangesSegId = segId;
-    DEBUG_PRINT(F("Segment queued: ")); DEBUG_PRINTLN(segId);
-    return; // queued changes are applied immediately after effect function returns
-  }
-*/
   suspend();
   _segments[segId].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
   resume();
   if (segId > 0 && segId == getSegmentsNum()-1 && i2 <= i1) _segments.pop_back(); // if last segment was deleted remove it from vector
 }
-/*
-void WS2812FX::setUpSegmentFromQueuedChanges() {
-  if (_queuedChangesSegId >= getSegmentsNum()) return;
-  _segments[_queuedChangesSegId].setUp(_qStart, _qStop, _qGrouping, _qSpacing, _qOffset, _qStartY, _qStopY);
-  _queuedChangesSegId = 255;
-}
-*/
+
 void WS2812FX::resetSegments() {
   _segments.clear(); // destructs all Segment as part of clearing
   #ifndef WLED_DISABLE_2D
