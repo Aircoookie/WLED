@@ -61,7 +61,7 @@ jobs:
         name: firmware-${{ matrix.environment }}
         path: |
           build_output/release/*.bin
-          build_output/release/*_ESP02.bin.gz
+          build_output/release/*_ESP02*.bin.gz
   release:
     name: Create Release
     runs-on: ubuntu-latest
