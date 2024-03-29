@@ -159,8 +159,9 @@ class AutoPlaylistUsermod : public Usermod {
         distance_tracker = UINT_FAST32_MAX;
 
         if (autoChangeIds.size() == 0) {
+          if(currentPlaylist < 1) return;
 
-          USER_PRINTF("Loading presets from playlist: %3u\n", currentPlaylist);
+          USER_PRINTF("Loading presets from playlist: %3d\n", currentPlaylist);
 
           JsonObject playtlistOjb = doc.to<JsonObject>();
           serializePlaylist(playtlistOjb);
