@@ -140,6 +140,8 @@ void stateUpdated(byte callMode) {
     jsonTransitionOnce = false;
     strip.setTransition(transitionDelayTemp);
     if (transitionDelayTemp == 0) {
+      jsonTransitionOnce = false;
+      transitionActive = false;
       applyFinalBri();
       strip.trigger();
       return;
