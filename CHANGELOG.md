@@ -1,5 +1,17 @@
 ## WLED changelog
 
+#### Build 2403280
+-   Individual color channel control for JSON API (fixes #3860)
+    - "col":[int|string|object|array, int|string|object|array, int|string|object|array]
+        int = Kelvin temperature or 0 for black
+        string = hex representation of [WW]RRGGBB
+        object = individual channel control {"r":0,"g":127,"b":255,"w":255}, each being optional (valid to send {})
+        array = direct channel values [r,g,b,w] (w element being optional)
+-   runtime selection for CCT IC (Athom 15W bulb)
+-   #3850 (by @w00000dy)
+-   Rotary encoder palette count bugfix
+-   bugfixes and optimisations
+
 #### Build 2403240
 -   v0.15.0-b2
 -   WS2805 support (RGB + WW + CW, 600kbps)
