@@ -129,7 +129,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
-  DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n", _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], _pins[1], _iType, _milliAmpsPerLed, _milliAmpsMax);
+  DEBUG_PRINTF_P(PSTR("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n"), _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], IS_2PIN(bc.type)?_pins[1]:255, _iType, _milliAmpsPerLed, _milliAmpsMax);
 }
 
 //fine tune power estimation constants for your setup

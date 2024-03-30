@@ -206,81 +206,101 @@
 //RGB
 #define B_32_RN_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0Ws2812xMethod, NeoGammaNullMethod>
+//#define B_32_I0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0X8Ws2812xMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1Ws2812xMethod, NeoGammaNullMethod>
+//#define B_32_I1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1X8Ws2812xMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 //RGBW
-#define B_32_RN_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
+#define B_32_RN_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32RmtNSk6812Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s0Sk6812Method, NeoGammaNullMethod>
+//#define B_32_I0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s0X8Sk6812Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s1Sk6812Method, NeoGammaNullMethod>
+//#define B_32_I1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s1X8Sk6812Method, NeoGammaNullMethod> // parallel I2S
 #endif
 //400Kbps
 #define B_32_RN_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtN400KbpsMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0400KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0X8400KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1400KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1X8400KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 //TM1814 (RGBW)
 #define B_32_RN_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32RmtNTm1814Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s0Tm1814Method, NeoGammaNullMethod>
+//#define B_32_I0_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s0X8Tm1814Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s1Tm1814Method, NeoGammaNullMethod>
+//#define B_32_I1_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s1X8Tm1814Method, NeoGammaNullMethod> // parallel I2S
 #endif
 //TM1829 (RGB)
 #define B_32_RN_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32RmtNTm1829Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s0Tm1829Method, NeoGammaNullMethod>
+//#define B_32_I0_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s0X8Tm1829Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s1Tm1829Method, NeoGammaNullMethod>
+//#define B_32_I1_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s1X8Tm1829Method, NeoGammaNullMethod> // parallel I2S
 #endif
 //UCS8903
 #define B_32_RN_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s0X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s1X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 //UCS8904
 #define B_32_RN_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s0X8800KbpsMethod, NeoGammaNullMethod>// parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s1X8800KbpsMethod, NeoGammaNullMethod>// parallel I2S
 #endif
 #define B_32_RN_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtNApa106Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0Apa106Method, NeoGammaNullMethod>
+//#define B_32_I0_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0X8Apa106Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1Apa106Method, NeoGammaNullMethod>
+//#define B_32_I1_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1X8Apa106Method, NeoGammaNullMethod> // parallel I2S
 #endif
 //FW1906 GRBCW
 #define B_32_RN_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s0X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s1X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 //WS2805 RGBWC
 #define B_32_RN_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32RmtNWs2805Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s0Ws2805Method, NeoGammaNullMethod>
+//#define B_32_I0_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s0X8Ws2805Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s1Ws2805Method, NeoGammaNullMethod>
+//#define B_32_I1_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s1X8Ws2805Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #endif
 
@@ -1458,11 +1478,11 @@ class PolyBus {
           return I_8266_U0_2805_5 + offset;
       }
       #else //ESP32
-      uint8_t offset = 0; //0 = RMT (num 0-7) 8 = I2S0 9 = I2S1
+      uint8_t offset = 0; // 0 = RMT (num 1-8), 1 = I2S0 (used by Audioreactive), 2 = I2S1
       #if defined(CONFIG_IDF_TARGET_ESP32S2)
       // ESP32-S2 only has 4 RMT channels
       if (num > 4) return I_NONE;
-      if (num > 3) offset = 1;  // only one I2S
+      if (num > 3) offset = 1;  // only one I2S (use last to allow Audioreactive)
       #elif defined(CONFIG_IDF_TARGET_ESP32C3)
       // On ESP32-C3 only the first 2 RMT channels are usable for transmitting
       if (num > 1) return I_NONE;
@@ -1474,7 +1494,8 @@ class PolyBus {
       #else
       // standard ESP32 has 8 RMT and 2 I2S channels
       if (num > 9) return I_NONE;
-      if (num > 7) offset = num -7;
+      if (num > 8) offset = 1;
+      if (num == 0) offset = 2; // prefer I2S1 for 1st bus (less flickering but more RAM needed)
       #endif
       switch (busType) {
         case TYPE_WS2812_1CH_X3:

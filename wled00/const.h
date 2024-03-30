@@ -53,24 +53,16 @@
       #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
-      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-        #define WLED_MAX_BUSSES 6             // will allow 4 digital & 2 analog
-        #define WLED_MIN_VIRTUAL_BUSSES 4
-      #else
-        #define WLED_MAX_BUSSES 7             // will allow 5 digital & 2 analog
-        #define WLED_MIN_VIRTUAL_BUSSES 3
-      #endif
+      // the 5th bus (I2S) will prevent Audioreactive usermod from functioning (it is last used though)
+      #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog
+      #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
       #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
-      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-        #define WLED_MAX_BUSSES 8
-        #define WLED_MIN_VIRTUAL_BUSSES 2
-      #else
-        #define WLED_MAX_BUSSES 10
-        #define WLED_MIN_VIRTUAL_BUSSES 0
-      #endif
+      // the 10th digital bus (I2S0) will prevent Audioreactive usermod from functioning (it is last used though)
+      #define WLED_MAX_BUSSES 10
+      #define WLED_MIN_VIRTUAL_BUSSES 0
     #endif
   #endif
 #else
