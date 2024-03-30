@@ -5,7 +5,8 @@
 class AutoPlaylistUsermod : public Usermod {
 
   private:
-
+    
+    bool initDone = false;
     bool silenceDetected = true;
     uint32_t lastSoundTime = 0;
     byte ambientPlaylist = 1;
@@ -44,7 +45,8 @@ class AutoPlaylistUsermod : public Usermod {
 
     std::vector<int> autoChangeIds;
   
-    static const char _enabled[];
+    static const char _name[];
+    static const char _autoPlaylistEnabled[];
     static const char _ambientPlaylist[];
     static const char _musicPlaylist[];
     static const char _timeout[];
@@ -63,6 +65,7 @@ class AutoPlaylistUsermod : public Usermod {
     // network here
     void setup() {
       USER_PRINTLN("AutoPlaylistUsermod");
+      initDone = true;
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -264,36 +267,27 @@ class AutoPlaylistUsermod : public Usermod {
     }
 
     /*
-     * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
-     * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
-     * Below it is shown how this could be used for e.g. a light sensor
+     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
+     * Values in the state object may be modified by connected clients
      */
     void addToJsonInfo(JsonObject& root) {
-
       JsonObject user = root["u"];
-
       if (user.isNull()) {
         user = root.createNestedObject("u");
       }
 
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
 
-      infoArr = user.createNestedArray(F(""));
-      if(!enabled) {
-        infoArr.add("");  
-      }
-      else {
-        infoArr.add("Active");
-      }
-
+      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
+      uiDomString += FPSTR(_name);
+      uiDomString += F(":{");
+      uiDomString += FPSTR(_autoPlaylistEnabled);
+      uiDomString += enabled ? F(":false}});\">") : F(":true}});\">");
+      uiDomString += F("<i class=\"icons ");
+      uiDomString += enabled ? "on" : "off";
+      uiDomString += F("\">&#xe08f;</i></button>");
+      infoArr.add(uiDomString);
     }
-
-    /*
-     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     */
-    //void addToJsonState(JsonObject& root) {
-    //}
 
     /*
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
@@ -301,11 +295,18 @@ class AutoPlaylistUsermod : public Usermod {
      */
     void readFromJsonState(JsonObject& root) {
       if (!initDone) return;  // prevent crash on boot applyPreset()
+      bool en = enabled;
       JsonObject um = root[FPSTR(_name)];
       if (!um.isNull()) {
-        if (um[FPSTR(_enabled)].is<bool>()) {
-          enabled = um[FPSTR(_enabled)].as<bool>();
+        if (um[FPSTR(_autoPlaylistEnabled)].is<bool>()) {
+          en = um[FPSTR(_autoPlaylistEnabled)].as<bool>();
+        } else {
+          String str = um[FPSTR(_autoPlaylistEnabled)]; // checkbox -> off or on
+          en = (bool)(str!="off"); // off is guaranteed to be present
         }
+        if (en != enabled) enabled = en;
+        USER_PRINT("AutoPlaylist enabled = ");
+        USER_PRINTLN(en);
       }
     }
 
@@ -331,18 +332,18 @@ class AutoPlaylistUsermod : public Usermod {
 
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
 
-      top[FPSTR(_enabled)]            = enabled;
-      top[FPSTR(_timeout)]            = timeout;
-      top[FPSTR(_ambientPlaylist)]    = ambientPlaylist;  // usermodparam
-      top[FPSTR(_musicPlaylist)]      = musicPlaylist;    // usermodparam
-      top[FPSTR(_autoChange)]         = autoChange;
-      top[FPSTR(_change_lockout)]     = change_lockout;
-      top[FPSTR(_ideal_change_min)]   = ideal_change_min;
-      top[FPSTR(_ideal_change_max)]   = ideal_change_max;
+      top[FPSTR(_autoPlaylistEnabled)] = enabled;
+      top[FPSTR(_timeout)]             = timeout;
+      top[FPSTR(_ambientPlaylist)]     = ambientPlaylist;  // usermodparam
+      top[FPSTR(_musicPlaylist)]       = musicPlaylist;    // usermodparam
+      top[FPSTR(_autoChange)]          = autoChange;
+      top[FPSTR(_change_lockout)]      = change_lockout;
+      top[FPSTR(_ideal_change_min)]    = ideal_change_min;
+      top[FPSTR(_ideal_change_max)]    = ideal_change_max;
 
       lastAutoPlaylist = 0;
 
-      DEBUG_PRINTLN(F("AutoPlaylist config saved."));
+      USER_PRINTLN(F("AutoPlaylist config saved."));
 
     }
 
@@ -361,22 +362,22 @@ class AutoPlaylistUsermod : public Usermod {
       JsonObject top = root[FPSTR(_name)];
 
       if (top.isNull()) {
-        DEBUG_PRINT(FPSTR(_name));
-        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        USER_PRINT(FPSTR(_name));
+        USER_PRINTLN(F(": No config found. (Using defaults.)"));
         return false;
       }
 
-      DEBUG_PRINT(FPSTR(_name));
-      getJsonValue(top[_enabled], enabled);
-      getJsonValue(top[_timeout], timeout);
-      getJsonValue(top[_ambientPlaylist], ambientPlaylist);
-      getJsonValue(top[_musicPlaylist], musicPlaylist);
-      getJsonValue(top[_autoChange], autoChange);
-      getJsonValue(top[_change_lockout], change_lockout);
-      getJsonValue(top[_ideal_change_min], ideal_change_min);
-      getJsonValue(top[_ideal_change_max], ideal_change_max);
+      enabled          = top[FPSTR(_autoPlaylistEnabled)] | enabled;
+      timeout          = top[FPSTR(_timeout)]             | timeout;
+      ambientPlaylist  = top[FPSTR(_ambientPlaylist)]     | ambientPlaylist;
+      musicPlaylist    = top[FPSTR(_musicPlaylist)]       | musicPlaylist;
+      autoChange       = top[FPSTR(_autoChange)]          | autoChange;
+      change_lockout   = top[FPSTR(_change_lockout)]      | change_lockout;
+      ideal_change_min = top[FPSTR(_ideal_change_min)]    | ideal_change_min;
+      ideal_change_max = top[FPSTR(_ideal_change_max)]    | ideal_change_max;
 
-      DEBUG_PRINTLN(F(" config (re)loaded."));
+      USER_PRINT(FPSTR(_name));
+      USER_PRINTLN(F(" config (re)loaded."));
 
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return true;
@@ -403,11 +404,12 @@ class AutoPlaylistUsermod : public Usermod {
 
 };
 
-const char AutoPlaylistUsermod::_enabled[]          PROGMEM = "enabled";
-const char AutoPlaylistUsermod::_ambientPlaylist[]  PROGMEM = "ambientPlaylist";
-const char AutoPlaylistUsermod::_musicPlaylist[]    PROGMEM = "musicPlaylist";
-const char AutoPlaylistUsermod::_timeout[]          PROGMEM = "timeout";
-const char AutoPlaylistUsermod::_autoChange[]       PROGMEM = "autoChange";
-const char AutoPlaylistUsermod::_change_lockout[]   PROGMEM = "change_lockout";
-const char AutoPlaylistUsermod::_ideal_change_min[] PROGMEM = "ideal_change_min";
-const char AutoPlaylistUsermod::_ideal_change_max[] PROGMEM = "ideal_change_max";
+const char AutoPlaylistUsermod::_name[]                PROGMEM = "AutoPlaylist";
+const char AutoPlaylistUsermod::_autoPlaylistEnabled[] PROGMEM = "enabled";
+const char AutoPlaylistUsermod::_ambientPlaylist[]     PROGMEM = "ambientPlaylist";
+const char AutoPlaylistUsermod::_musicPlaylist[]       PROGMEM = "musicPlaylist";
+const char AutoPlaylistUsermod::_timeout[]             PROGMEM = "timeout";
+const char AutoPlaylistUsermod::_autoChange[]          PROGMEM = "autoChange";
+const char AutoPlaylistUsermod::_change_lockout[]      PROGMEM = "change_lockout";
+const char AutoPlaylistUsermod::_ideal_change_min[]    PROGMEM = "ideal_change_min";
+const char AutoPlaylistUsermod::_ideal_change_max[]    PROGMEM = "ideal_change_max";
