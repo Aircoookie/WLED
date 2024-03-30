@@ -128,12 +128,12 @@ class AutoPlaylistUsermod : public Usermod {
         // the current music, especially after track changes or during 
         // sparce intros and breakdowns.
 
-        if (change_interval > ideal_change_min && distance_tracker < 1000) {
+        if (change_interval > ideal_change_min && distance_tracker <= 9999) {
 
           change_threshold_change = (distance_tracker)-change_threshold;
           change_threshold = distance_tracker;
 
-          USER_PRINTF("--- lowest distance =%4lu - no changes done in %6ums - next change_threshold is %3u (%3u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
+          USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ums - next change_threshold is %4u (%4u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
 
           distance_tracker = UINT_FAST32_MAX;
 
@@ -195,15 +195,16 @@ class AutoPlaylistUsermod : public Usermod {
 
           applyPreset(newpreset);
 
-          USER_PRINTF("*** CHANGE distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+          USER_PRINTF("*** CHANGE distance = %4lu - change_interval was %5ums - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
 
         } else {
 
-          USER_PRINTF("*** SKIP!! distance =%4lu - change_interval was %5ums - next change_threshold is %3u (%3u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+          USER_PRINTF("^^^ SKIP!! distance = %4lu - change_interval was %5ums - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
 
         }
         
         lastchange = millis();  
+        change_timer = millis();
 
       }
 
