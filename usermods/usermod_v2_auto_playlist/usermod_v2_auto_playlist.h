@@ -214,6 +214,8 @@ class AutoPlaylistUsermod : public Usermod {
      */
     void loop() {
       
+      if (!enabled) return;
+
       if (millis() < 10000) return; // Wait for device to settle
 
       if (lastAutoPlaylist > 0 && currentPlaylist != lastAutoPlaylist && currentPreset != 0) {
@@ -232,7 +234,7 @@ class AutoPlaylistUsermod : public Usermod {
           enabled = true;
       }
 
-      if (!enabled) return;
+      
 
       if (bri == 0) return;
 
@@ -305,8 +307,8 @@ class AutoPlaylistUsermod : public Usermod {
           en = (bool)(str!="off"); // off is guaranteed to be present
         }
         if (en != enabled) enabled = en;
-        USER_PRINT("AutoPlaylist enabled = ");
-        USER_PRINTLN(en);
+        DEBUG_PRINT("AutoPlaylist enabled = ");
+        DEBUG_PRINTLN(en);
       }
     }
 
@@ -343,7 +345,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       lastAutoPlaylist = 0;
 
-      USER_PRINTLN(F("AutoPlaylist config saved."));
+      DEBUG_PRINTLN(F("AutoPlaylist config saved."));
 
     }
 
@@ -376,8 +378,8 @@ class AutoPlaylistUsermod : public Usermod {
       ideal_change_min = top[FPSTR(_ideal_change_min)]    | ideal_change_min;
       ideal_change_max = top[FPSTR(_ideal_change_max)]    | ideal_change_max;
 
-      USER_PRINT(FPSTR(_name));
-      USER_PRINTLN(F(" config (re)loaded."));
+      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINTLN(F(" config (re)loaded."));
 
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return true;
