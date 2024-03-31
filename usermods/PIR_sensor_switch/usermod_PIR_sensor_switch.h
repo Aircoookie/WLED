@@ -33,7 +33,7 @@ class PIRsensorSwitch : public Usermod
 {
 public:
   // constructor
-  PIRsensorSwitch() {}
+  PIRsensorSwitch(const char* nm) : _name(nm) {}
   // destructor
   ~PIRsensorSwitch() {}
 
@@ -72,7 +72,7 @@ private:
   bool HomeAssistantDiscovery = false;        // is HA discovery turned on
 
   // strings to reduce flash memory usage (used more than twice)
-  static const char _name[];
+  const char *_name;
   static const char _switchOffDelay[];
   static const char _enabled[];
   static const char _onPreset[];
@@ -185,7 +185,6 @@ public:
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
 const char PIRsensorSwitch::_enabled[]        PROGMEM = "PIRenabled";
 const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";
 const char PIRsensorSwitch::_onPreset[]       PROGMEM = "on-preset";
@@ -272,7 +271,7 @@ void PIRsensorSwitch::publishMqtt(const char* state)
   //Check if MQTT Connected, otherwise it will crash the 8266
   if (WLED_MQTT_CONNECTED) {
     char buf[64];
-    sprintf_P(buf, PSTR("%s/motion"), mqttDeviceTopic);   //max length: 33 + 7 = 40
+    sprintf_P(buf, PSTR("%s/motion_%s"), mqttDeviceTopic,_name);   //max length: 33 + 7 = 40
     mqtt->publish(buf, 0, false, state);
   }
 #endif
@@ -283,22 +282,22 @@ void PIRsensorSwitch::publishHomeAssistantAutodiscovery()
 #ifndef WLED_DISABLE_MQTT
   if (WLED_MQTT_CONNECTED) {
     StaticJsonDocument<600> doc;
-    char uid[24], json_str[1024], buf[128];
+    char uid[128], json_str[1024], buf[256];
 
-    sprintf_P(buf, PSTR("%s Motion"), serverDescription); //max length: 33 + 7 = 40
+    sprintf_P(buf, PSTR("%s Motion %s "), serverDescription, _name); //max length: 33 + 7 = 40
     doc[F("name")] = buf;
-    sprintf_P(buf, PSTR("%s/motion"), mqttDeviceTopic);   //max length: 33 + 7 = 40
+    sprintf_P(buf, PSTR("%s/motion_%s"), mqttDeviceTopic,_name);   //max length: 33 + 7 = 40
     doc[F("stat_t")] = buf;
     doc[F("pl_on")]  = "on";
     doc[F("pl_off")] = "off";
-    sprintf_P(uid, PSTR("%s_motion"), escapedMac.c_str());
+    sprintf_P(uid, PSTR("%s_%s_motion"), escapedMac.c_str(),_name);
     doc[F("uniq_id")] = uid;
     doc[F("dev_cla")] = F("motion");
     doc[F("exp_aft")] = 1800;
 
     JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
-    device[F("name")] = serverDescription;
-    device[F("ids")]  = String(F("wled-sensor-")) + mqttClientID;
+    device[F("name")] = String(serverDescription) + _name ;
+    device[F("ids")]  = String(F("wled-sensor-")) + mqttClientID +_name;
     device[F("mf")]   = "WLED";
     device[F("mdl")]  = F("FOSS");
     device[F("sw")]   = versionString;
