@@ -33,14 +33,13 @@
 
 /*
   TODO:
+  -add SEGMENT.fill(BLACK); // clear the matrix   into rendering function?
   -init funktion für sprays: alles auf null setzen, dann muss man im FX nur noch setzten was man braucht
   -pass all pointers by reference to make it consistene throughout the code (or not?)
-  -add local buffer for faster rendering (-> it is allowed to do so) -> run a test, it crashes. need to find out why exatly
   -add possiblity to emit more than one particle, just pass a source and the amount to emit or even add several sources and the amount, function decides if it should do it fair or not
   -add an x/y struct, do particle rendering using that, much easier to read
   -extend rendering to more than 2x2, 3x2 (fire) should be easy, 3x3 maybe also doable without using much math (need to see if it looks good)
-   -das system udpate kann fire nicht handlen, es braucht auch noch ein fire update. die funktion kann einen parameter nehmen mit 'use palette'
-  //todo: eine funktion für init fire? dann wäre der FX etwas aufgeräumter...
+
   -need a random emit? one that does not need an emitter but just takes some properties, so FX can implement their own emitters?
   -line emit wäre noch was, der die PS source anders interpretiert
 
@@ -54,11 +53,11 @@
 ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources)
 {
 	Serial.print("initializing PS... ");
-
+	numSources = numberofsources;
 	numParticles = numberofparticles; // set number of particles in the array
 	usedParticles = numberofparticles; // use all particles by default
 	particlesettings = {false, false, false, false, false, false, false, false}; // all settings off by default
-	setPSpointers(numberofsources);	   // set the particle and sources pointer (call this before accessing sprays or particles)
+	initPSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
 	emitIndex = 0;
@@ -72,37 +71,31 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 //update function applies gravity, moves the particles, handles collisions and renders the particles
 void ParticleSystem::update(void)
 {
-	uint32_t i;
 	//apply gravity globally if enabled
 	if (particlesettings.useGravity)
 		applyGravity(particles, usedParticles, gforce, &gforcecounter);
 	
-	//move all particles
-	for (i = 0; i < usedParticles; i++)
-	{
-		ParticleMoveUpdate(particles[i], particlesettings);
-	}
-
-	//handle collisions after moving the particles
+	// handle collisions (can push particles, must be done before updating particles or they can render out of bounds, causing a crash if using local buffer for speed)
 	if (particlesettings.useCollisions)
 		handleCollisions();
 
-	//render the particles
+	//move all particles
+	for (int i = 0; i < usedParticles; i++)
+	{
+		particleMoveUpdate(particles[i], particlesettings);
+	}	
+
 	ParticleSys_render();
 }
 
 //update function for fire animation
-void ParticleSystem::updateFire(uint8_t colormode)
+void ParticleSystem::updateFire(uint32_t intensity, bool usepalette)
 {
-	
-	// update all fire particles
-	FireParticle_update();
-	
-	// render the particles
-	renderParticleFire(colormode);
+	fireParticleupdate();
+	renderParticleFire(intensity, usepalette);
 }
 
-void ParticleSystem::setUsedParticles(uint32_t num)
+void ParticleSystem::setUsedParticles(uint16_t num)
 {
 	usedParticles = min(num, numParticles); //limit to max particles
 }
@@ -121,8 +114,8 @@ void ParticleSystem::setMatrixSize(uint16_t x, uint16_t y)
 {
 	maxXpixel = x - 1; // last physical pixel that can be drawn to
 	maxYpixel = y - 1;
-	maxX = x * PS_P_RADIUS + PS_P_HALFRADIUS - 1; // particle system boundaries, allow them to exist one pixel out of boundaries for smooth leaving/entering when kill out of bounds is set
-	maxY = y * PS_P_RADIUS + PS_P_HALFRADIUS - 1; // it is faster to add this here then on every signle out of bounds check, is deducted when wrapping / bouncing
+	maxX = x * PS_P_RADIUS - 1;	// particle system boundary for movements
+	maxY = y * PS_P_RADIUS - 1;	// this value is often needed by FX to calculate positions
 }
 
 void ParticleSystem::setWrapX(bool enable)
@@ -158,8 +151,7 @@ void ParticleSystem::enableGravity(bool enable, uint8_t force)
 	if (force > 0)
 		gforce = force;
 	else 
-		particlesettings.useGravity = false;
-	
+		particlesettings.useGravity = false;	
 }
 
 void ParticleSystem::enableParticleCollisions(bool enable, uint8_t hardness) // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is also disable
@@ -168,13 +160,9 @@ void ParticleSystem::enableParticleCollisions(bool enable, uint8_t hardness) // 
 	collisionHardness = hardness + 1;
 }
 
-int16_t ParticleSystem::getMaxParticles(void)
-{
-	return numParticles;
-}
 	
 // Spray emitter for particles used for flames (particle TTL depends on source TTL)
-void ParticleSystem::FlameEmit(PSsource &emitter)
+void ParticleSystem::flameEmit(PSsource &emitter)
 {
 	for (uint32_t i = 0; i < usedParticles; i++)
 	{
@@ -195,7 +183,7 @@ void ParticleSystem::FlameEmit(PSsource &emitter)
 }
 
 // emit one particle with variation
-void ParticleSystem::SprayEmit(PSsource &emitter)
+void ParticleSystem::sprayEmit(PSsource &emitter)
 {
 	for (uint32_t i = 0; i < usedParticles; i++)
 	{
@@ -232,72 +220,102 @@ void ParticleSystem::SprayEmit(PSsource &emitter)
 
 // Emits a particle at given angle and speed, angle is from 0-255 (=0-360deg), speed is also affected by emitter->var
 // angle = 0 means in x-direction
-void ParticleSystem::AngleEmit(PSsource &emitter, uint8_t angle, uint32_t speed)
+void ParticleSystem::angleEmit(PSsource &emitter, uint8_t angle, uint32_t speed)
 {
-	//todo: go to 16 bits, rotating particles could use this, others maybe as well
+	//todo: go to 16 bits, rotating particles could use this, others maybe as well. from rotating spray FX, angleoffset is the angle in 16bit
+	//PartSys->sources[j].vx = (cos16(SEGMENT.aux0 + angleoffset * j) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
+	//PartSys->sources[j].vy = (sin16(SEGMENT.aux0 + angleoffset * j) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
 	emitter.vx = (((int32_t)cos8(angle) - 127) * speed) >> 7; // cos is signed 8bit, so 1 is 127, -1 is -127, shift by 7
 	emitter.vy = (((int32_t)sin8(angle) - 127) * speed) >> 7;
-	SprayEmit(emitter);
+	sprayEmit(emitter);
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
-// uses passed settings to set bounce or wrap, if useGravity is set, it will never bounce at the top
-void ParticleSystem::ParticleMoveUpdate(PSparticle &part, PSsettings &options)
+// uses passed settings to set bounce or wrap, if useGravity is set, it will never bounce at the top and killoutofbounds is not applied over the top
+void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 {
 	if (part.ttl > 0)
 	{
 		// age
 		part.ttl--;
 		// apply velocity
-		int32_t newX, newY; //use temporary 32bit vaiable to make function a tad faster (maybe)
-		newX = part.x + (int16_t)part.vx;
-		newY = part.y + (int16_t)part.vy;
-		part.outofbounds = 0;	// reset out of bounds (in case particle was created outside the matrix and is now moving into view)
+		//Serial.print("x:");
+		//Serial.print(part.x);
+		//Serial.print("y:");
+		//Serial.print(part.y);
+		int32_t newX = part.x + (int16_t)part.vx;
+		int32_t newY = part.y + (int16_t)part.vy;
+		//Serial.print(" ");
+		//Serial.print(newY);
+		part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
 
-		if (((newX < -PS_P_HALFRADIUS) || (newX > maxX))) // check if particle is out of bounds
+		if (((newX < 0) || (newX > maxX))) // check if particle reached an edge
 		{
-			if (options.killoutofbounds)
-				part.ttl = 0;
-			else if (options.bounceX) // particle was in view and now moved out -> bounce it
-			{					
-				newX = -newX;	// invert speed
-				newX = ((newX) * wallHardness) >> 8; // reduce speed as energy is lost on non-hard surface
+			if (options.bounceX) // particle was in view and now moved out -> bounce it
+			{
+				part.vx = -part.vx;				   // invert speed
+				part.vx = (part.vx * wallHardness) >> 8; // reduce speed as energy is lost on non-hard surface
 				if (newX < 0)
-					newX = -newX;					
+					newX = 0;//-newX; set to boarder (less acurate but at high speeds they will bounce mid frame if just flipped)
 				else
-					newX = maxX - PS_P_RADIUS - newX;
+					newX = maxX; // maxX - (newX - (int32_t)maxX);
 			}
 			else if (options.wrapX)
 			{
-				newX = wraparound(newX, maxX - PS_P_RADIUS);
+				newX = wraparound(newX, maxX);
 			}
-			else
-				part.outofbounds = 1;
-		}
-	
-		if (((newY < -PS_P_HALFRADIUS) || (newY > maxY))) // check if particle is out of bounds
-		{
-			if (options.killoutofbounds)
-				part.ttl = 0;
-			else if (options.bounceY) // particle was in view and now moved out -> bounce it
+			else if (((newX <= -PS_P_HALFRADIUS) || (newX > maxX + PS_P_HALFRADIUS))) // particle is leaving, set out of bounds if it has fully left
 			{
-				part.vy = -part.vy;						 // invert speed
-				part.vy = (part.vy * wallHardness) >> 8; // reduce speed as energy is lost on non-hard surface
-				if (newY < 0)
-					newY = -newY;
-				else if (options.useGravity == false) //if gravity disabled also bounce at the top
-					newY = maxY - PS_P_RADIUS - newY;
+				part.outofbounds = 1;
+				if (options.killoutofbounds)
+					part.ttl = 0;
+			}
+		}
+		if (((newY < 0) || (newY > maxY))) // check if particle reached an edge
+		{
+			if (options.bounceY) // particle was in view and now moved out -> bounce it
+			{
+				if (newY > maxY)
+				{
+					if (options.useGravity)  // do not bounce on top if using gravity (open container)
+					{
+						if(newY > maxY + PS_P_HALFRADIUS) 
+							part.outofbounds = 1; // set out of bounds, kill out of bounds over the top does not apply if gravity is used (user can implement it in FX if needed)
+					}
+					else
+					{
+						part.vy = -part.vy;	// invert speed
+						part.vy = (part.vy * wallHardness) >> 8; // reduce speed as energy is lost on non-hard surface
+						newY = maxY; //(int32_t)maxY - (newY - (int32_t)maxY);
+					}
+				}
+				else //bounce at bottom
+				{
+					part.vy = -part.vy; // invert speed
+					part.vy = (part.vy * wallHardness) >> 8; // reduce speed as energy is lost on non-hard surface
+					newY = 0;// -newY; 				
+				}
 			}
 			else if (options.wrapY)
 			{
-				newY = wraparound(newY, maxY - PS_P_RADIUS);
+				newY = wraparound(newY, maxY);
 			}
-			else
+			else if (((newY <= -PS_P_HALFRADIUS) || (newY > maxY + PS_P_HALFRADIUS))) // particle is leaving, set out of bounds if it has fully left
+			{
 				part.outofbounds = 1;
+				if (options.killoutofbounds)
+				{
+					if (newY < 0) // if gravity is enabled, only kill particles below ground
+						part.ttl = 0;
+					else if (!options.useGravity)
+						part.ttl = 0;
+				}
+			}
+
 		}
 		
-			part.x = newX; // set new position
-			part.y = newY; // set new position
+		part.x = (int16_t)newX; // set new position
+		part.y = (int16_t)newY; // set new position
 	}
 }
 
@@ -394,14 +412,23 @@ void ParticleSystem::applyGravity(PSparticle *part, uint32_t numarticles, uint8_
 }
 
 // slow down particles by friction, the higher the speed, the higher the friction. a high friction coefficient slows them more (255 means instant stop)
-void ParticleSystem::applyFriction(PSparticle *part, uint32_t numparticles, uint8_t coefficient)
+void ParticleSystem::applyFriction(PSparticle *part, uint8_t coefficient)
 {
 	int32_t friction = 256 - coefficient;
-	for (uint32_t i = 0; i < numparticles; i++)
+	
+		part->vx = ((int16_t)part->vx * friction) >> 8;
+		part->vy = ((int16_t)part->vy * friction) >> 8;
+}
+
+void ParticleSystem::applyFriction(uint8_t coefficient)
+{
+	int32_t friction = 256 - coefficient;
+	// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster
+	for (uint32_t i = 0; i < usedParticles; i++)
 	{
 		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster
-		part[i].vx = ((int16_t)part[i].vx * friction) >> 8;
-		part[i].vy = ((int16_t)part[i].vy * friction) >> 8;
+		particles[i].vx = ((int16_t)particles[i].vx * friction) >> 8;
+		particles[i].vy = ((int16_t)particles[i].vy * friction) >> 8;
 	}
 }
 
@@ -489,62 +516,56 @@ void ParticleSystem::attract(PSparticle *particle, PSparticle *attractor, uint8_
 	// TODO: need to limit the max speed?
 }
 
-
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
+// warning: do not render out of bounds particles or system will crash! rendering does not check if particle is out of bounds
 void ParticleSystem::ParticleSys_render()
 {
-#ifdef ESP8266
-	const bool fastcoloradd = true; // on ESP8266, we need every bit of performance we can get
-#else
-	const bool fastcoloradd = false; // on ESP32, there is very little benefit from using fast add
-#endif
 
-
-	int32_t pixelCoordinates[4][2]; //physical coordinates of the four positions, x,y pairs
+	int32_t pixco[4][2]; //physical pixel coordinates of the four positions, x,y pairs
 	//int32_t intensity[4];
 	CRGB baseRGB;
+	bool useLocalBuffer = true;
+	CRGB **colorbuffer;
 	uint32_t i;
 	uint32_t brightness; // particle brightness, fades if dying
-	//CRGB colorbuffer[maxXpixel/4][maxYpixel/4] = {0}; //put buffer on stack, will this work? or better allocate it? -> crashes hard even with quarter the size
-
-	// to create a 2d array on heap:
-/*
-TODO: using a local buffer crashed immediately, find out why.
-	//  Allocate memory for the array of pointers to rows
-	CRGB **colorbuffer = (CRGB **)calloc(maxXpixel+1, sizeof(CRGB *));
-	if (colorbuffer == NULL)
+	//CRGB colorbuffer[maxXpixel+1][maxYpixel+1] = {0}; //put buffer on stack (not a good idea, can cause crashes on large segments if other function run the stack into the heap)
+	//calloc(maxXpixel + 1, sizeof(CRGB *))
+		// to create a 2d array on heap:
+		// TODO: put this in a function? fire render also uses this
+		// TODO: if pointer returns null, use classic render (or do not render this frame)
+	if (useLocalBuffer)
 	{
-		Serial.println("Memory allocation failed111");
-		return;
+		// allocate memory for the 2D array in one contiguous block
+		colorbuffer = (CRGB **)malloc((maxXpixel + 1) * sizeof(CRGB *) + (maxXpixel + 1) * (maxYpixel + 1) * sizeof(CRGB));
+		if (colorbuffer == NULL)
+		{
+			DEBUG_PRINT(F("PS renderbuffer memory alloc failed"));
+			useLocalBuffer = false;
+			//return;
+		}
+		else{
+			// assign pointers of 2D array
+			CRGB *start = (CRGB *)(colorbuffer + (maxXpixel + 1));
+			for (i = 0; i < maxXpixel + 1; i++)
+			{
+				colorbuffer[i] = start + i * (maxYpixel + 1);
+			}
+			memset(start, 0, (maxXpixel + 1) * (maxYpixel + 1) * sizeof(CRGB)); // set all values to zero
+		}
 	}
 
-	// Allocate memory for each row
-	for (i = 0; i < maxXpixel; i++)
-	{
-		colorbuffer[i] = (CRGB *)calloc(maxYpixel + 1, sizeof(CRGB));
-		if (colorbuffer[i] == NULL)
-		{
-			Serial.println("Memory allocation failed222");
-			return;
-		}
-	}*/
-
-//TODO: in der renderfunktion gibts noch ein bug, am linken rand verschwindet die rechte hälfte der partikel sehr abrupt, das passiert auch wenn man TTX und outofbounds pixel mitrendert (continue unten auskommentiert)
-//es hat also nichts mit dem TTL oder dem outofbounds zu tun sondern muss etwas anderes sein...
-//rechts und oben gibts ein schönes fade-out der pixel, links und unten verschwinden sie plötzlich muss in der pixel renderfunktion sein.
-
-
-	// go over particles and update matrix cells on the way
+	// go over particles and render them to the buffer
 	for (i = 0; i < usedParticles; i++)
-	{	
-		/*
-		if (particles[i].ttl == 0 || particles[i].outofbounds)
-		{
-			continue;
-		}*/
+	{			
 		if (particles[i].ttl == 0)
 		{
+			//Serial.print("d");
+			continue;
+		}
+		if(particles[i].outofbounds)
+		{
+			//Serial.print("o");
 			continue;
 		}
 		// generate RGB values for particle
@@ -559,51 +580,79 @@ TODO: using a local buffer crashed immediately, find out why.
 		int32_t intensity[4] = {0}; //note: intensity needs to be set to 0 or checking in rendering function does not work (if values persist), this is faster then setting it to 0 there
 
 		// calculate brightness values for all four pixels representing a particle using linear interpolation and calculate the coordinates of the phyiscal pixels to add the color to
-		renderParticle(&particles[i], brightness, intensity, pixelCoordinates);
+		renderParticle(&particles[i], brightness, intensity, pixco);
 
-		if (intensity[0] > 0)
-		SEGMENT.addPixelColorXY(pixelCoordinates[0][0], maxYpixel - pixelCoordinates[0][1], baseRGB.scale8((uint8_t)intensity[0]), fastcoloradd); // bottom left
-		if (intensity[1] > 0)
-		SEGMENT.addPixelColorXY(pixelCoordinates[1][0], maxYpixel - pixelCoordinates[1][1], baseRGB.scale8((uint8_t)intensity[1]), fastcoloradd); // bottom right
-		if (intensity[2] > 0)
-		SEGMENT.addPixelColorXY(pixelCoordinates[2][0], maxYpixel - pixelCoordinates[2][1], baseRGB.scale8((uint8_t)intensity[2]), fastcoloradd); // top right
-		if (intensity[3] > 0)
-		SEGMENT.addPixelColorXY(pixelCoordinates[3][0], maxYpixel - pixelCoordinates[3][1], baseRGB.scale8((uint8_t)intensity[3]), fastcoloradd); // top left
-
-		//test to render larger pixels with minimal effort (not working yet, need to calculate coordinate from actual dx position but brightness seems right)
-		//	SEGMENT.addPixelColorXY(pixelCoordinates[1][0] + 1, maxYpixel - pixelCoordinates[1][1], baseRGB.scale8((uint8_t)((brightness>>1) - intensity[0])), fastcoloradd); 																																									  
-		//	SEGMENT.addPixelColorXY(pixelCoordinates[2][0] + 1, maxYpixel - pixelCoordinates[2][1], baseRGB.scale8((uint8_t)((brightness>>1) -intensity[3])), fastcoloradd);
-		//	colorbuffer[pixelCoordinates[0][0]][maxYpixel - pixelCoordinates[0][1]] += baseRGB.scale8((uint8_t)intensity[0]);
-		//	colorbuffer[pixelCoordinates[1][0]][maxYpixel - pixelCoordinates[1][1]] += baseRGB.scale8((uint8_t)intensity[0]);
-		//	colorbuffer[pixelCoordinates[2][0]][maxYpixel - pixelCoordinates[2][1]] += baseRGB.scale8((uint8_t)intensity[0]);
-		//	colorbuffer[pixelCoordinates[3][0]][maxYpixel - pixelCoordinates[3][1]] += baseRGB.scale8((uint8_t)intensity[0]);
-	}
-	/*
-	int x,y;
-	for (x = 0; x <= maxXpixel; x++)
-	{
-		for (y = 0; x <= maxYpixel; y++)
+		//debug: check coordinates if out of buffer boundaries print out some info
+		for(uint32_t d; d<4; d++)
 		{
-			if(colorbuffer[x][y]>0)
+			if (pixco[d][0] < 0 || pixco[d][0] > maxXpixel)
 			{
-				SEGMENT.setPixelColorXY(x,y,colorbuffer[x][y]);
+				intensity[d] = -1; //do not render
+				Serial.print("uncought out of bounds: x=");
+				Serial.print(pixco[d][0]);
+				Serial.print("particle x=");
+				Serial.print(particles[i].x);
+				Serial.print(" y=");
+				Serial.println(particles[i].y);
+				useLocalBuffer = false;
+				free(colorbuffer); // free buffer memory
+			}
+			if (pixco[d][1] < 0 || pixco[d][1] > maxYpixel)
+			{
+				intensity[d] = -1; // do not render
+				Serial.print("uncought out of bounds: y=");
+				Serial.print(pixco[d][1]);
+				Serial.print("particle x=");
+				Serial.print(particles[i].x);
+				Serial.print(" y=");
+				Serial.println(particles[i].y);
+				useLocalBuffer = false;
+				free(colorbuffer); // free buffer memory
 			}
 		}
+		if (useLocalBuffer)
+		{
+			if (intensity[0] > 0)
+				colorbuffer[pixco[0][0]][pixco[0][1]] = fast_color_add(colorbuffer[pixco[0][0]][pixco[0][1]], baseRGB, intensity[0]); // bottom left			
+			if (intensity[1] > 0)
+				colorbuffer[pixco[1][0]][pixco[1][1]] = fast_color_add(colorbuffer[pixco[1][0]][pixco[1][1]], baseRGB, intensity[1]); // bottom right
+			if (intensity[2] > 0)
+				colorbuffer[pixco[2][0]][pixco[2][1]] = fast_color_add(colorbuffer[pixco[2][0]][pixco[2][1]], baseRGB, intensity[2]); // top right			
+			if (intensity[3] > 0)
+				colorbuffer[pixco[3][0]][pixco[3][1]] = fast_color_add(colorbuffer[pixco[3][0]][pixco[3][1]], baseRGB, intensity[3]); // top left																																			
+		}
+		else
+		{
+			if (intensity[0] > 0)
+				SEGMENT.addPixelColorXY(pixco[0][0], maxYpixel - pixco[0][1], baseRGB.scale8((uint8_t)intensity[0])); // bottom left
+			if (intensity[1] > 0)
+				SEGMENT.addPixelColorXY(pixco[1][0], maxYpixel - pixco[1][1], baseRGB.scale8((uint8_t)intensity[1])); // bottom right
+			if (intensity[2] > 0)
+				SEGMENT.addPixelColorXY(pixco[2][0], maxYpixel - pixco[2][1], baseRGB.scale8((uint8_t)intensity[2])); // top right
+			if (intensity[3] > 0)			
+				SEGMENT.addPixelColorXY(pixco[3][0], maxYpixel - pixco[3][1], baseRGB.scale8((uint8_t)intensity[3])); // top left
+			// test to render larger pixels with minimal effort (not working yet, need to calculate coordinate from actual dx position but brightness seems right), could probably be extended to 3x3
+			//	SEGMENT.addPixelColorXY(pixco[1][0] + 1, maxYpixel - pixco[1][1], baseRGB.scale8((uint8_t)((brightness>>1) - intensity[0])), fastcoloradd);
+			//	SEGMENT.addPixelColorXY(pixco[2][0] + 1, maxYpixel - pixco[2][1], baseRGB.scale8((uint8_t)((brightness>>1) -intensity[3])), fastcoloradd);
+		}
 	}
-
-	// Free memory for each row
-	for (int i = 0; i <= maxXpixel; i++)
+	if (useLocalBuffer)
 	{
-		free(colorbuffer[i]);
+		uint32_t yflipped;
+		for (int y = 0; y <= maxYpixel; y++)
+		{
+			yflipped = maxYpixel - y;
+			for (int x = 0; x <= maxXpixel; x++)
+			{
+				SEGMENT.setPixelColorXY(x, yflipped, colorbuffer[x][y]);
+			}
+		}
+		free(colorbuffer); // free buffer memory
 	}
-
-	// Free memory for the array of pointers to rows
-	free(colorbuffer);*/
 }
 
 // calculate pixel positions and brightness distribution for rendering function
 // pixelpositions are the physical positions in the matrix that the particle renders to (4x2 array for the four positions)
-
 void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, int32_t *pixelvalues, int32_t (*pixelpositions)[2])
 {
 	// subtract half a radius as the rendering algorithm always starts at the bottom left, this makes calculations more efficient
@@ -664,7 +713,6 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 			pixelvalues[2] = pixelvalues[3] = -1;
 	}
 
-
 	// calculate brightness values for all four pixels representing a particle using linear interpolation
 	// precalculate values for speed optimization
 	int32_t precal1 = (int32_t)PS_P_RADIUS - dx;
@@ -681,31 +729,72 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 	if (pixelvalues[3] >= 0)
 		pixelvalues[3] = (precal1 * precal3) >> PS_P_SURFACE; // top left value equal to ((PS_P_RADIUS-dx) * dy * brightess) >> PS_P_SURFACE
 /*
+	Serial.print("x:");
 	Serial.print(particle->x);
-	Serial.print(" ");
-	Serial.print(xoffset);
-	Serial.print(" dx");
-	Serial.print(dx);
-	Serial.print(" ");
+	Serial.print(" y:");
+	Serial.print(particle->y);
+	//Serial.print(" xo");
+	//Serial.print(xoffset);
+	//Serial.print(" dx");
+	//Serial.print(dx);
+	//Serial.print(" ");
 	for(uint8_t t = 0; t<4; t++)
 	{
-		Serial.print("x");
+		Serial.print(" v");
+		Serial.print(pixelvalues[t]);
+		Serial.print(" x");
 		Serial.print(pixelpositions[t][0]);
 		Serial.print(" y");
 		Serial.print(pixelpositions[t][1]);
-		Serial.print(" v");		
-		Serial.print(pixelvalues[t]);
+
 		Serial.print(" ");
 	}
 	Serial.println(" ");
-	*/
+*/
+	// debug: check coordinates if out of buffer boundaries print out some info
+	for (uint32_t d; d < 4; d++)
+	{
+		if (pixelpositions[d][0] < 0 || pixelpositions[d][0] > maxXpixel)
+		{
+			//Serial.print("<");
+			if (pixelvalues[d] >= 0)
+			{				
+				Serial.print("uncought out of bounds: x:");
+				Serial.print(pixelpositions[d][0]);
+				Serial.print(" y:");
+				Serial.print(pixelpositions[d][1]);
+				Serial.print("particle x=");
+				Serial.print(particle->x);
+				Serial.print(" y=");
+				Serial.println(particle->y);
+				pixelvalues[d] = -1; // do not render
+			}
+		}
+		if (pixelpositions[d][1] < 0 || pixelpositions[d][1] > maxYpixel)
+		{
+			//Serial.print("^");
+			if (pixelvalues[d] >= 0)
+			{		
+				Serial.print("uncought out of bounds: x:");
+				Serial.print(pixelpositions[d][0]);
+				Serial.print(" y:");
+				Serial.print(pixelpositions[d][1]);
+				Serial.print("particle x=");
+				Serial.print(particle->x);
+				Serial.print(" y=");
+				Serial.println(particle->y);				
+				pixelvalues[d] = -1; // do not render
+			}
+		}
+	}
 }
 
 // update & move particle, wraps around left/right if settings.wrapX is true, wrap around up/down if settings.wrapY is true
 // particles move upwards faster if ttl is high (i.e. they are hotter)
-void ParticleSystem::FireParticle_update()
+void ParticleSystem::fireParticleupdate()
 {
-	//TODO: cleanup this function?
+	//TODO: cleanup this function? check if normal move is much slower, change move function to check y first and check again
+	//todo: kill out of bounds funktioniert nicht?
 	uint32_t i = 0;
 
 	for (i = 0; i < usedParticles; i++)
@@ -714,32 +803,26 @@ void ParticleSystem::FireParticle_update()
 		{
 			// age
 			particles[i].ttl--;
-
 			// apply velocity
 			particles[i].x = particles[i].x + (int32_t)particles[i].vx;
 			particles[i].y = particles[i].y + (int32_t)particles[i].vy + (particles[i].ttl >> 4); // younger particles move faster upward as they are hotter, used for fire
-
 			particles[i].outofbounds = 0;
 			// check if particle is out of bounds, wrap x around to other side if wrapping is enabled
 			// as fire particles start below the frame, lots of particles are out of bounds in y direction. to improve animation speed, only check x direction if y is not out of bounds
 			// y-direction
-			if (particles[i].y < -PS_P_HALFRADIUS)
-			{
+			if (particles[i].y < -PS_P_HALFRADIUS)			
 				particles[i].outofbounds = 1;
-			}
-			else if (particles[i].y > maxY) // particle moved out on the top
-			{
+			else if (particles[i].y > maxY + PS_P_HALFRADIUS) // particle moved out at the top
 				particles[i].ttl = 0;
-			}
 			else // particle is in frame in y direction, also check x direction now
 			{
-				if ((particles[i].x < -PS_P_HALFRADIUS) || (particles[i].x > maxX))
+				if ((particles[i].x < 0) || (particles[i].x > maxX))
 				{
 					if (particlesettings.wrapX)
 					{
 						particles[i].x = wraparound(particles[i].x, maxX);						
 					}
-					else
+					else if ((particles[i].x < -PS_P_HALFRADIUS) || (particles[i].x > maxX + PS_P_HALFRADIUS)) //if fully out of view
 					{
 						particles[i].ttl = 0;
 					}
@@ -751,106 +834,169 @@ void ParticleSystem::FireParticle_update()
 
 // render fire particles to the LED buffer using heat to color
 // each particle adds heat according to its 'age' (ttl) which is then rendered to a fire color in the 'add heat' function
-// note: colormode 0-5 are native, heat based color modes, set colormode to 255 to use palette
-void ParticleSystem::renderParticleFire(uint8_t colormode)
+// without using a plette native, heat based color mode applied
+// intensity from 0-255 is mapped such that higher values result in more intense flames
+void ParticleSystem::renderParticleFire(uint32_t intensity, bool usepalette)
 {
-//TODO: if colormode = 255 call normal rendering function
-	int32_t pixelCoordinates[4][2]; // physical coordinates of the four positions, x,y pairs
-	int32_t pixelheat[4];
+	int32_t pixco[4][2]; // physical coordinates of the four positions, x,y pairs
 	uint32_t flameheat; //depends on particle.ttl
 	uint32_t i;
-	
+	uint32_t debug = 0;	
+	//CRGB colorbuffer[(maxXpixel+1)][(maxYpixel+1)] = {0};
+
+	//  Allocate memory for the array of pointers to rows
+	CRGB **colorbuffer = (CRGB **)calloc(maxXpixel + 1, sizeof(CRGB *));
+	if (colorbuffer == NULL)
+	{
+		Serial.println("Memory allocation failed111");
+		return;
+	}
+
+	// Allocate memory for each row
+	for (i = 0; i <= maxXpixel; i++)
+	{
+		colorbuffer[i] = (CRGB *)calloc(maxYpixel + 1, sizeof(CRGB));
+		if (colorbuffer[i] == NULL)
+		{
+			Serial.println("Memory allocation failed222");
+			return;
+		}
+	}
+
 	// go over particles and update matrix cells on the way
 	// note: some pixels (the x+1 ones) can be out of bounds, it is probably faster than to check that for every pixel as this only happens on the right border (and nothing bad happens as this is checked down the road)
 	for (i = 0; i < usedParticles; i++)
 	{
 		if (particles[i].outofbounds) //lots of fire particles are out of bounds, check first
+		{
+			//Serial.print("o");
 			continue;
-
+		}
 		if (particles[i].ttl == 0)
+		{
+			//Serial.print("d");
 			continue;
+		}
+		if (usepalette)
+		{
+			// generate RGB values for particle
+			uint32_t brightness = (uint32_t)particles[i].ttl * (1 + (intensity >> 4)) + (intensity >> 2);
+			brightness > 255 ? 255 : brightness; // faster then using min()
+			CRGB baseRGB = ColorFromPalette(SEGPALETTE, brightness, 255, LINEARBLEND);
 
-		flameheat = particles[i].ttl;
-		renderParticle(&particles[i], flameheat, pixelheat, pixelCoordinates);
+			int32_t intensity[4] = {0}; // note: intensity needs to be set to 0 or checking in rendering function does not work (if values persist), this is faster then setting it to 0 there
 
+			// calculate brightness values for all four pixels representing a particle using linear interpolation and calculate the coordinates of the phyiscal pixels to add the color to
+			renderParticle(&particles[i], brightness, intensity, pixco);
 
-		//TODO: add one more pixel closer to the particle, so it is 3 pixels wide
+			if (intensity[0] > 0)
+				colorbuffer[pixco[0][0]][pixco[0][1]] = fast_color_add(colorbuffer[pixco[0][0]][pixco[0][1]], baseRGB, intensity[0]); // bottom left
+			// SEGMENT.addPixelColorXY(pixco[0][0], maxYpixel - pixco[0][1], baseRGB.scale8((uint8_t)intensity[0]));
+			if (intensity[1] > 0)
+				colorbuffer[pixco[1][0]][pixco[1][1]] = fast_color_add(colorbuffer[pixco[1][0]][pixco[1][1]], baseRGB, intensity[1]);
+			//	SEGMENT.addPixelColorXY(pixco[1][0], maxYpixel - pixco[1][1], baseRGB.scale8((uint8_t)intensity[1])); // bottom right
+			if (intensity[2] > 0)
+				colorbuffer[pixco[2][0]][pixco[2][1]] = fast_color_add(colorbuffer[pixco[2][0]][pixco[2][1]], baseRGB, intensity[2]);
+			//	SEGMENT.addPixelColorXY(pixco[2][0], maxYpixel - pixco[2][1], baseRGB.scale8((uint8_t)intensity[2])); // top right
+			if (intensity[3] > 0)
+				colorbuffer[pixco[3][0]][pixco[3][1]] = fast_color_add(colorbuffer[pixco[3][0]][pixco[3][1]], baseRGB, intensity[3]);
+			//	SEGMENT.addPixelColorXY(pixco[3][0], maxYpixel - pixco[3][1], baseRGB.scale8((uint8_t)intensity[3])); // top left
+		}
+		else{
+			flameheat = particles[i].ttl;
+			int32_t pixelheat[4] = {0}; // note: passed array needs to be set to 0 or checking in rendering function does not work (if values persist), this is faster then setting it to 0 there
+			renderParticle(&particles[i], flameheat, pixelheat, pixco); //render heat to physical pixels
 
-		if (pixelheat[0] >= 0)
-			PartMatrix_addHeat(pixelCoordinates[0][0], pixelCoordinates[0][1], pixelheat[0], colormode);
-		if (pixelheat[1] >= 0)
-			PartMatrix_addHeat(pixelCoordinates[1][0], pixelCoordinates[1][1], pixelheat[0], colormode);
-		if (pixelheat[2] >= 0)
-			PartMatrix_addHeat(pixelCoordinates[2][0], pixelCoordinates[2][1], pixelheat[0], colormode);
-		if (pixelheat[3] >= 0)
-			PartMatrix_addHeat(pixelCoordinates[3][0], pixelCoordinates[3][1], pixelheat[0], colormode);
+				// TODO: add one more pixel closer to the particle, so it is 3 pixels wide
+			if (pixelheat[0] >= 0)
+				PartMatrix_addHeat(pixelheat[0], &colorbuffer[pixco[0][0]][pixco[0][1]].r, intensity);			
+				//PartMatrix_addHeat(pixco[0][0], pixco[0][1], pixelheat[0], intensity);
+			if (pixelheat[1] >= 0)
+				PartMatrix_addHeat(pixelheat[1], &colorbuffer[pixco[1][0]][pixco[1][1]].r, intensity);
+				//PartMatrix_addHeat(pixco[1][0], pixco[1][1], pixelheat[1], intensity);
+			if (pixelheat[2] >= 0)
+				PartMatrix_addHeat(pixelheat[2], &colorbuffer[pixco[2][0]][pixco[2][1]].r, intensity);
+				//PartMatrix_addHeat(pixco[2][0], pixco[2][1], pixelheat[2], intensity);
+			if (pixelheat[3] >= 0)
+				PartMatrix_addHeat(pixelheat[3], &colorbuffer[pixco[3][0]][pixco[3][1]].r, intensity);
+				//PartMatrix_addHeat(pixco[3][0], pixco[3][1], pixelheat[3], intensity);
 
-		// TODO: add heat to a third pixel. need to konw dx and dy, the heatvalue is (flameheat - pixelheat) vom pixel das weiter weg ist vom partikelzentrum
-		// also wenn dx < halfradius dann links, sonst rechts. rechts flameheat-pixelheat vom linken addieren und umgekehrt
-		// das ist relativ effizient um rechnen und sicher schneller als die alte variante. gibt ein FPS drop, das könnte man aber
-		// mit einer schnelleren add funktion im segment locker ausgleichen
+			// TODO: add heat to a third pixel. need to konw dx and dy, the heatvalue is (flameheat - pixelheat) vom pixel das weiter weg ist vom partikelzentrum
+			// also wenn dx < halfradius dann links, sonst rechts. rechts flameheat-pixelheat vom linken addieren und umgekehrt
+			// das ist relativ effizient um rechnen und sicher schneller als die alte variante. gibt ein FPS drop, das könnte man aber
+			// mit einer schnelleren add funktion im segment locker ausgleichen
+			//debug++; //!!!
+		}
 	}
+//	Serial.println(" ");
+//	Serial.print("rp:");
+//	Serial.println(debug);
+	
+	for (int x = 0; x <= maxXpixel;x++)
+	{
+		for (int y = 0; y <= maxYpixel; y++)
+		{
+			SEGMENT.setPixelColorXY(x, maxYpixel - y, colorbuffer[x][y]);
+		}
+	}
+
+	// Free memory for each row
+	for (int i = 0; i <= maxXpixel; i++)
+	{
+		free(colorbuffer[i]);
+	}
+
+	// Free memory for the array of pointers to rows
+	free(colorbuffer); 
 }
 
 // adds 'heat' to red color channel, if it overflows, add it to next color channel
-// colormode is 0-5 where 0 is normal fire and all others are color variations
-void ParticleSystem::PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint8_t colormode)
+void ParticleSystem::PartMatrix_addHeat(int32_t heat, uint8_t *currentcolor, uint32_t intensity)
 {
-
-	CRGB currentcolor = SEGMENT.getPixelColorXY(col, maxYpixel - row); // read current matrix color (flip y axis)
-	uint32_t newcolorvalue, i;
 
 	// define how the particle TTL value (which is the heat given to the function) maps to heat, if lower, fire is more red, if higher, fire is brighter as bright flames travel higher and decay faster
 	// need to scale ttl value of particle to a good heat value that decays fast enough
 	#ifdef ESP8266
-	heat = heat << 4; //ESP8266 has slow hardware multiplication, just use shift (also less particles, need more heat)
+	heat = heat * (1 + (intensity >> 4)) + (intensity >> 3); // ESP8266 TODO: does this still need different value like in the old version? currently set to same
 	#else
-	heat = heat * 10; //TODO: need to play with this some more to see if it makes fire better or worse
+	heat = heat * (1 + (intensity >> 4)) + (intensity >> 3); // todo: make this a variable to pass
 	#endif
 
-	uint32_t coloridx = (colormode & 0x07) >> 1; // set startindex for colormode 0 is normal red fire, 1 is green fire, 2 is blue fire
-	if (coloridx > 2)
-		coloridx -= 3;	// faster than i = i % 3
-	uint32_t increment = (colormode & 0x01) + 1; // 0 (or 3) means only one single color for the flame, 1 is normal, 2 is alternate color modes
-	//go over the three colors and fill them with heat, if one overflows, add heat to the next
-	for (i = 0; i < 3; ++i)
+	uint32_t i;
+	//go over the three color channels and fill them with heat, if one overflows, add heat to the next, start with red
+	for (i = 0; i < 3; i++)
 	{
-		if (currentcolor[coloridx] < 255) //current color is not yet full
+		if (currentcolor[i] < 255) //current color is not yet full
 		{
-				if (heat > 255)
+			if (heat > 255)
+			{
+				heat -= 255 - currentcolor[i];
+				currentcolor[i] = 255;
+			}
+			else{
+				int32_t leftover = heat - (255 - currentcolor[i]);
+				if(leftover <= 0) //all heat is being used up for this color
 				{
-					heat -= 255 - currentcolor[coloridx];
-					currentcolor[coloridx] = 255;
+					currentcolor[i] += heat;
+					break;
 				}
 				else{
-					int32_t leftover = heat - currentcolor[coloridx];
-					if(leftover <= 0)
+					currentcolor[i] = 255;
+					if(heat > leftover)
 					{
-						currentcolor[coloridx] += heat;
+						heat -= leftover;
+					}
+					else
 						break;
-					}
-					else{
-						currentcolor[coloridx] = 255;
-						if(heat > leftover)
-						{
-							heat -= leftover;
-						}
-						else
-							break;
-					}
-				}					
-		}
-		coloridx += increment; 
-		if (coloridx > 2)
-			coloridx -= 3; // faster than i = i % 3 and is allowed since increment is never more than 2
+				}
+			}					
+		}		
 	}
 
-	if (i == 2) // last color was reached limit the color value (in normal mode, this is blue) so it does not go full white
-	{
-		currentcolor[coloridx] = currentcolor[coloridx] > 60 ? 60 : currentcolor[coloridx]; //faster than min()
-	}
-
-	SEGMENT.setPixelColorXY(col, maxYpixel - row, currentcolor);
+	if (i == 2) // blue channel was reached, limit the color value so it does not go full white
+		currentcolor[i] = currentcolor[i] > 60 ? 60 : currentcolor[i]; //faster than min()
+	
+	//SEGMENT.setPixelColorXY(col, maxYpixel - row, currentcolor);	
 }
 
 // detect collisions in an array of particles and handle them
@@ -950,25 +1096,24 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 		particle1->vy += yimpulse;
 		particle2->vx -= ximpulse;
 		particle2->vy -= yimpulse;
-		/*
+		
 		//TODO: this is removed for now as it does not seem to do much and does not help with piling. if soft, much energy is lost anyway at a collision, so they are automatically sticky
 		//also second version using multiplication is slower on ESP8266 than the if's
-		if (hardness < 50) // if particles are soft, they become 'sticky' i.e. they are slowed down at collisions 
-		{
-			
+		if (collisionHardness < 220) // if particles are soft, they become 'sticky' i.e. they are slowed down at collisions
+		{			
 			//particle1->vx = (particle1->vx < 2 && particle1->vx > -2) ? 0 : particle1->vx;
 			//particle1->vy = (particle1->vy < 2 && particle1->vy > -2) ? 0 : particle1->vy;
 
 			//particle2->vx = (particle2->vx < 2 && particle2->vx > -2) ? 0 : particle2->vx;
 			//particle2->vy = (particle2->vy < 2 && particle2->vy > -2) ? 0 : particle2->vy;
 
-			const uint32_t coeff = 100;
+			const uint32_t coeff = collisionHardness + 20;
 			particle1->vx = ((int32_t)particle1->vx * coeff) >> 8;
 			particle1->vy = ((int32_t)particle1->vy * coeff) >> 8;
 
 			particle2->vx = ((int32_t)particle2->vx * coeff) >> 8;
 			particle2->vy = ((int32_t)particle2->vy * coeff) >> 8;
-		}*/
+		}
 	}
 
 	// particles have volume, push particles apart if they are too close by moving each particle by a fixed amount away from the other particle
@@ -1050,11 +1195,19 @@ int32_t ParticleSystem::calcForce_dV(int8_t force, uint8_t* counter)
 // set the pointers for the class (this only has to be done once and not on every FX call, only the class pointer needs to be reassigned to SEGENV.data every time)
 // function returns the pointer to the next byte available for the FX (if it assigned more memory for other stuff using the above allocate function)
 // FX handles the PSsources, need to tell this function how many there are
-void ParticleSystem::setPSpointers(uint16_t numsources)
+void ParticleSystem::initPSpointers()
 {
-	particles = reinterpret_cast<PSparticle *>(SEGMENT.data + sizeof(ParticleSystem)); // pointer to particle array
+	Serial.print("this ");
+	Serial.println((uintptr_t)this);
+	particles = reinterpret_cast<PSparticle *>(this + 1);							  // pointer to particle array sizeof(ParticleSystem)
 	sources = reinterpret_cast<PSsource *>(particles + numParticles);				  // pointer to source(s)
-	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numsources);					  // pointer to first available byte after the PS
+	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources);					  // pointer to first available byte after the PS
+	Serial.print("particles ");
+	Serial.println((uintptr_t)particles);
+	Serial.print("sources ");
+	Serial.println((uintptr_t)sources);
+	Serial.print("end ");
+	Serial.println((uintptr_t)PSdataEnd);
 }
 
 //non class functions to use for initialization
@@ -1064,17 +1217,19 @@ uint32_t calculateNumberOfParticles()
 	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 #ifdef ESP8266
-	uint32_t numberofParticles = cols * rows ; // 1 particle per pixel
+	uint32_t numberofParticles = (cols * rows * 3)>>2 ; // 0.75 particle per pixel
 #elseif ARDUINO_ARCH_ESP32S2
-	uint32_t numberofParticles = (cols * rows * 3) / 2; // 1.5 particles per pixel (for example 768 particles on 32x16)
+	uint32_t numberofParticles = (cols * rows); // 1 particle per pixel
 #else
-	uint32_t numberofParticles = (cols * rows * 7) / 4; // 1.75 particles per pixel 
+	uint32_t numberofParticles = (cols * rows * 3) / 2; // 1.5 particles per pixel (for example 768 particles on 32x16)
 #endif
 
 	Serial.print("segsize ");
 	Serial.print(cols);
+	Serial.print(" ");	
 	Serial.print(" ");
-	Serial.println(rows);
+	Serial.print("particles: ");
+	Serial.println(numberofParticles);
 	// TODO: ist das genug für fire auf 32x16? evtl auf 2 gehen? oder das dynamisch machen, als parameter?
 	return numberofParticles;
 }
@@ -1086,6 +1241,9 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, ui
 	requiredmemory += sizeof(PSparticle) * numparticles;
 	requiredmemory += sizeof(PSsource) * numsources;
 	requiredmemory += additionalbytes;
+	Serial.print("allocatin: ");
+	Serial.print(requiredmemory);
+	Serial.print("Bytes");
 	return(SEGMENT.allocateData(requiredmemory));		
 }
 
@@ -1098,14 +1256,43 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint16_t numsources)
 		DEBUG_PRINT(F("PS init failed: memory depleted"));
 		return false;
 	}
-	Serial.println("memory allocated");
+	Serial.print("segment data ptr");
+	Serial.println((uintptr_t)(SEGMENT.data));
 	uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 	Serial.println("calling constructor");
-	PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources); // particle system constructor
+	PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources); // particle system constructor TODO: why does VS studio thinkt this is bad?
 	Serial.print("PS pointer at ");
 	Serial.println((uintptr_t)PartSys);
 	return true;
 }
 
-
+// fastled color adding is very inaccurate in color preservation
+// a better color add function is implemented in colors.cpp but it uses 32bit RGBW. so colors need to be shifted and then shifted back by that function, which is slow
+// this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color (fastled scale8 can be made faster using native 32bit on ESP)
+CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale)
+{
+	CRGB result;
+	scale++; //add one to scale so 255 will not scale when shifting
+	uint32_t r = c1.r + ((c2.r * (scale)) >> 8);
+	uint32_t g = c1.g + ((c2.g * (scale)) >> 8);
+	uint32_t b = c1.b + ((c2.b * (scale)) >> 8);
+	uint32_t max = r;
+	if (g > max)
+		max = g;
+	if (b > max)
+		max = b;
+	if (max < 256)
+	{
+		result.r = r;
+		result.g = g;
+		result.b = b;
+	}
+	else
+	{
+		result.r = (r * 255) / max;
+		result.g = (g * 255) / max;
+		result.b = (b * 255) / max;
+	}
+	return result;
+}

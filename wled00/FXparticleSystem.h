@@ -27,6 +27,7 @@
 
 
 #include <stdint.h>
+#include "FastLED.h"
 
 //particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
@@ -98,27 +99,27 @@ public:
   ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources); // constructor
   // note: memory is allcated in the FX function, no deconstructor needed
   void update(void); //update the particles according to set options and render to the matrix
-  void updateFire(uint8_t colormode); // update function for fire
+  void updateFire(uint32_t intensity, bool usepalette); // update function for fire
 
   // particle emitters
-  void FlameEmit(PSsource &emitter);
-  void SprayEmit(PSsource &emitter);
-  void AngleEmit(PSsource& emitter, uint8_t angle, uint32_t speed);
+  void flameEmit(PSsource &emitter);
+  void sprayEmit(PSsource &emitter);
+  void angleEmit(PSsource& emitter, uint8_t angle, uint32_t speed);
   
   //move functions
-  void ParticleMoveUpdate(PSparticle &part, PSsettings &options);
-  void FireParticle_update();
+  void particleMoveUpdate(PSparticle &part, PSsettings &options);
 
   //particle physics
   void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t force, uint8_t *counter);
   void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t *counter); //use global gforce
   void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter);
   void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint8_t angle, uint8_t *counter);
-  void applyFriction(PSparticle *part, uint32_t numparticles, uint8_t coefficient); // apply friction
+  void applyFriction(PSparticle *part, uint8_t coefficient); // apply friction to specific particle
+  void applyFriction(uint8_t coefficient); // apply friction to all used particles
   void attract(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
   
   //set options
-  void setUsedParticles(uint32_t num);
+  void setUsedParticles(uint16_t num);
   void setCollisionHardness(uint8_t hardness); //hardness for particle collisions (255 means full hard)
   void setWallHardness(uint8_t hardness); //hardness for bouncing on the wall if bounceXY is set
   void setMatrixSize(uint16_t x, uint16_t y);
@@ -129,39 +130,35 @@ public:
   void setKillOutOfBounds(bool enable); //if enabled, particles outside of matrix instantly die
   void enableGravity(bool enable, uint8_t force = 8);
   void enableParticleCollisions(bool enable, uint8_t hardness = 255);  
-  // get options
-  int16_t getMaxParticles(void); // read size of particle array
-
-  void setPSpointers(uint16_t numsources); //call this after allocating the memory to initialize the PS pointers
-  
+    
   PSparticle *particles; // pointer to particle array
-  PSsource *sources;
-  uint8_t* PSdataEnd; //points to first available byte after the PSmemory, is set in setPointers(). use this to set pointer to FX custom data
-  uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to
-  uint32_t maxX, maxY; //particle system size (subpixelsize)
-  uint32_t numParticles;  // number of particles available in this system
-  uint32_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
+  PSsource *sources; // pointer to sources
+  uint8_t* PSdataEnd; //points to first available byte after the PSmemory, is set in setPointers(). use this to set pointer to FX custom data  
+  uint16_t maxX, maxY; //particle system size i.e. width-1 / height-1 in subpixels
+  uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required)
+  uint8_t numSources; //number of sources
+  uint16_t numParticles;  // number of particles available in this system
+  uint16_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
 
 private: 
   //rendering functions
-  void ParticleSys_render();  
-  void renderParticleFire(uint8_t colormode);
-  void PartMatrix_addHeat(uint8_t col, uint8_t row, uint32_t heat, uint8_t colormode);
+  void ParticleSys_render();
+  void renderParticleFire(uint32_t intensity, bool usepalette);
+  void PartMatrix_addHeat(int32_t heat, uint8_t *currentcolor, uint32_t intensity);
   void renderParticle(PSparticle *particle, uint32_t brightess, int32_t *pixelvalues, int32_t (*pixelpositions)[2]);    
   
   //paricle physics applied by system if flags are set
   void handleCollisions();
   void collideParticles(PSparticle *particle1, PSparticle *particle2);
+  void fireParticleupdate();
 
   //utility functions
+  void initPSpointers(); // call this after allocating the memory to initialize the pointers
   int32_t wraparound(int32_t w, int32_t maxvalue);
   int32_t calcForce_dV(int8_t force, uint8_t *counter);
 
   // note: variables that are accessed often are 32bit for speed
-  
-  //uint8_t numSources; //number of sources note: currently not needed, is handled by FX, only needed to init the pointers correctly
-
-  uint32_t emitIndex; //index to count through particles to emit so searching for dead pixels is faster
+  uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
   int32_t wallHardness;
   uint8_t gforcecounter; //counter for global gravity
@@ -174,3 +171,5 @@ private:
 bool initParticleSystem(ParticleSystem *&PartSys, uint16_t numsources);
 uint32_t calculateNumberOfParticles();
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
+//color add function
+CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale); // fast and accurate color adding with scaling (scales c2 before adding)
