@@ -48,26 +48,12 @@ typedef struct {
     //two byte bit field:
     //uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
     bool outofbounds : 1; //out of bounds flag, set to true if particle is outside of display area
-    bool flag1 : 1;       // unused flags...
-    bool flag2 : 1;
-    bool flag3 : 1;
+    bool collide : 1; //if set, particle takes part in collisions
+    bool flag3 : 1; // unused flags...
+    bool flag4 : 1;
 
     uint16_t ttl; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
 } PSparticle;
-
-// struct for a single particle
-typedef struct
-{
-  int16_t x;   // x position in particle system
-  int16_t y;   // y position in particle system
-  int8_t vx;   // horizontal velocity
-  int8_t vy;   // vertical velocity
-  uint8_t hue; // color hue
-  // two byte bit field:
-  bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
-  uint16_t ttl : 7; // time to live, 7 bit or 128 max (need to adjust fire animation to not exceed this value! max is now 137 because of +10 -> done einfach durch zwei geteilt.)
-} PSfireparticle;
-//todo: wenn man reduzierte partikel verwenet, kann man das nicht mit palette rendern. erst ausprobieren, ob das gut aussieht, dann entscheiden. ist vermutlich keine gute idee...
 
 //struct for a particle source
 typedef struct {
@@ -112,6 +98,7 @@ public:
   //particle physics
   void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t force, uint8_t *counter);
   void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t *counter); //use global gforce
+  void applyGravity(PSparticle *part); //use global system settings 
   void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter);
   void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint8_t angle, uint8_t *counter);
   void applyFriction(PSparticle *part, uint8_t coefficient); // apply friction to specific particle
@@ -139,6 +126,7 @@ public:
   uint8_t numSources; //number of sources
   uint16_t numParticles;  // number of particles available in this system
   uint16_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
+  PSsettings particlesettings; // settings used when updating particles (can also used by FX to move sources)
 
 private: 
   //rendering functions
@@ -156,6 +144,7 @@ private:
   void initPSpointers(); // call this after allocating the memory to initialize the pointers
   int32_t wraparound(int32_t w, int32_t maxvalue);
   int32_t calcForce_dV(int8_t force, uint8_t *counter);
+  CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
 
   // note: variables that are accessed often are 32bit for speed
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
@@ -164,12 +153,12 @@ private:
   uint8_t gforcecounter; //counter for global gravity
   uint8_t gforce; //gravity strength, default is 8
   uint8_t collisioncounter; //counter to handle collisions
-  PSsettings particlesettings; // settings used when updating particles
 };
 
 //initialization functions (not part of class)
-bool initParticleSystem(ParticleSystem *&PartSys, uint16_t numsources);
+bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes);
 uint32_t calculateNumberOfParticles();
+uint32_t calculateNumberOfSources();
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
 //color add function
 CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale); // fast and accurate color adding with scaling (scales c2 before adding)

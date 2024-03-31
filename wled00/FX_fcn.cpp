@@ -148,7 +148,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 bool IRAM_ATTR Segment::allocateData(size_t len) {
   if (len == 0) return false; // nothing to do
   if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
-    if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
+   //!!! if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
     return true;
   }
   DEBUG_PRINT(F("Allocating Data"));
