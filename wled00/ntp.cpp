@@ -399,7 +399,6 @@ void checkTimers()
           && isTodayInDateRange(((timerMonth[i] >> 4) & 0x0F), timerDay[i], timerMonth[i] & 0x0F, timerDayEnd[i])
          )
       {
-        unloadPlaylist();
         applyPreset(timerMacro[i]);
       }
     }
@@ -413,7 +412,6 @@ void checkTimers()
           && (timerWeekday[8] & 0x01) //timer is enabled
           && ((timerWeekday[8] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
-        unloadPlaylist();
         applyPreset(timerMacro[8]);
         DEBUG_PRINTF_P(PSTR("Sunrise macro %d triggered."),timerMacro[8]);
       }
@@ -428,7 +426,6 @@ void checkTimers()
           && (timerWeekday[9] & 0x01) //timer is enabled
           && ((timerWeekday[9] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
-        unloadPlaylist();
         applyPreset(timerMacro[9]);
         DEBUG_PRINTF_P(PSTR("Sunset macro %d triggered."),timerMacro[9]);
       }

@@ -59,13 +59,12 @@
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
-//#define FRAMETIME        _frametime
 #define FRAMETIME        strip.getFrameTime()
 
 /* each segment uses 82 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #ifdef ESP8266
-  #define MAX_NUM_SEGMENTS    12
+  #define MAX_NUM_SEGMENTS    16
   /* How much data bytes all segments combined may allocate */
   #define MAX_SEGMENT_DATA  5120
 #else
@@ -73,11 +72,7 @@
     #define MAX_NUM_SEGMENTS  32
   #endif
   #if defined(ARDUINO_ARCH_ESP32S2)
-    #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-      #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*1024 // 32k by default
-    #else
-      #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*768  // 24k by default
-    #endif
+    #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*768 // 24k by default (S2 is short on free RAM)
   #else
     #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*1280 // 40k by default
   #endif
@@ -810,7 +805,7 @@ class WS2812FX {  // 96 bytes
     inline uint8_t getSegmentsNum(void)   { return _segments.size(); }  // returns currently present segments
     inline uint8_t getCurrSegmentId(void) { return _segment_index; }    // returns current segment index (only valid while strip.isServicing())
     inline uint8_t getMainSegmentId(void) { return _mainSegment; }      // returns main segment index
-    inline uint8_t getPaletteCount()      { return 13 + GRADIENT_PALETTE_COUNT; }  // will only return built-in palette count
+    inline uint8_t getPaletteCount()      { return 13 + GRADIENT_PALETTE_COUNT + customPalettes.size(); }
     inline uint8_t getTargetFps()         { return _targetFps; }        // returns rough FPS value for las 2s interval
     inline uint8_t getModeCount()         { return _modeCount; }        // returns number of registered modes/effects
 

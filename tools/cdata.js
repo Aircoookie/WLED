@@ -15,10 +15,10 @@
  * It uses NodeJS packages to inline, minify and GZIP files. See writeHtmlGzipped and writeChunks invocations at the bottom of the page.
  */
 
-const fs = require("fs");
+const fs = require("node:fs");
 const path = require("path");
 const inliner = require("inliner");
-const zlib = require("zlib");
+const zlib = require("node:zlib");
 const CleanCSS = require("clean-css");
 const minifyHtml = require("html-minifier-terser").minify;
 const packageJson = require("../package.json");
@@ -30,14 +30,12 @@ const output = ["wled00/html_ui.h", "wled00/html_pixart.h", "wled00/html_cpal.h"
 
 // \x1b[34m is blue, \x1b[36m is cyan, \x1b[0m is reset
 const wledBanner = `
-\t\x1b[34m##      ## ##       ######## ########  
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m##  ##  ## ##       ######   ##     ## 
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m##  ##  ## ##       ##       ##     ## 
-\t\x1b[34m ###  ###  ######## ######## ########  
-\t\t\x1b[36mbuild script for web UI
+\t\x1b[34m  ##  ##      ##        ######    ######
+\t\x1b[34m##      ##    ##      ##        ##  ##  ##
+\t\x1b[34m##  ##  ##  ##        ######        ##  ##
+\t\x1b[34m##  ##  ##  ##        ##            ##  ##
+\t\x1b[34m  ##  ##      ######    ######    ######
+\t\t\x1b[36m build script for web UI
 \x1b[0m`;
 
 const singleHeader = `/*

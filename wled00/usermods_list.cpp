@@ -213,6 +213,10 @@
   #include "../usermods/MAX17048_v2/usermod_max17048.h"
 #endif
 
+#ifdef USERMOD_TETRISAI
+  #include "../usermods/TetrisAI_v2/usermod_v2_tetrisai.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -412,5 +416,9 @@ void registerUsermods()
 
   #ifdef USERMOD_MAX17048
   usermods.add(new Usermod_MAX17048());
+  #endif
+
+  #ifdef USERMOD_TETRISAI
+  usermods.add(new TetrisAIUsermod());
   #endif
 }

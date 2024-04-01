@@ -209,11 +209,10 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 
 // if tag is set to PinOwner::None, checks for ANY owner of the pin.
 // if tag is set to any other value, checks if that tag is the current owner of the pin.
-bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
+bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag) const
 {
   if (!isPinOk(gpio, false)) return true;
   if ((tag != PinOwner::None) && (ownerTag[gpio] != tag)) return false;
-  if (gpio >= WLED_NUM_PINS) return false; // catch error case, to avoid array out-of-bounds access
   byte by = gpio >> 3;
   byte bi = gpio - (by<<3);
   return bitRead(pinAlloc[by], bi);
@@ -236,8 +235,9 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
  */
 
 // Check if supplied GPIO is ok to use
-bool PinManagerClass::isPinOk(byte gpio, bool output)
+bool PinManagerClass::isPinOk(byte gpio, bool output) const
 {
+  if (gpio >= WLED_NUM_PINS) return false;        // catch error case, to avoid array out-of-bounds access
 #ifdef ARDUINO_ARCH_ESP32
   if (digitalPinIsValid(gpio)) {
   #if defined(CONFIG_IDF_TARGET_ESP32C3)
@@ -257,9 +257,7 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
     // GPIO46 is input only and pulled down
   #else
     if (gpio > 5 && gpio < 12) return false;      //SPI flash pins
-    #ifdef BOARD_HAS_PSRAM
-    if (gpio == 16 || gpio == 17) return false;   //PSRAM pins
-    #endif
+    if (gpio == 16 || gpio == 17) return !psramFound(); //PSRAM pins on ESP32 (these are IO)
   #endif
     if (output) return digitalPinCanOutput(gpio);
     else        return true;
@@ -272,8 +270,8 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
   return false;
 }
 
-PinOwner PinManagerClass::getPinOwner(byte gpio) {
-  if (gpio >= WLED_NUM_PINS) return PinOwner::None; // catch error case, to avoid array out-of-bounds access
+PinOwner PinManagerClass::getPinOwner(byte gpio) const
+{
   if (!isPinOk(gpio, false)) return PinOwner::None;
   return ownerTag[gpio];
 }

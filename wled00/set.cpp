@@ -123,6 +123,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
     cctFromRgb = request->hasArg(F("CR"));
+    cctICused = request->hasArg(F("IC"));
     strip.cctBlending = request->arg(F("CB")).toInt();
     Bus::setCCTBlend(strip.cctBlending);
     Bus::setGlobalAWMode(request->arg(F("AW")).toInt());
@@ -883,7 +884,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply preset
   if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
-    unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 

@@ -163,7 +163,7 @@ void appendGPIOinfo() {
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
 
-  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
+  #if defined(ARDUINO_ARCH_ESP32)
     #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
     if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM on ESP32 (not on S2, S3 or C3)
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -360,6 +360,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("MS"),autoSegments);
     sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("IC"),cctICused);
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
@@ -471,8 +472,10 @@ void getSettingsJS(byte subPage, char* dest)
     }
     sappend('c',SET_F("IP"),disablePullUp);
     sappend('v',SET_F("TT"),touchThreshold);
+#ifndef WLED_DISABLE_INFRARED
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
+#endif    
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 
