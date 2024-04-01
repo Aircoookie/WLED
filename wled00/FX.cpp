@@ -7902,9 +7902,7 @@ uint16_t mode_particlerotatingspray(void)
   {
     if (!initParticleSystem(PartSys, 0))
       return mode_static(); // allocation failed; //allocation failed
-
-    Serial.print("PS pointer ");
-    Serial.println((uintptr_t)PartSys);    
+    DEBUG_PRINTF_P(PSTR("PS pointer %p\n"), PartSys);   
    // Serial.print("set pointer to data ");
   //  PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // set the pointer to the PS (todo: is done in init function but wiped when leaving it)
    // Serial.println((uintptr_t)PartSys);
@@ -7936,12 +7934,15 @@ uint16_t mode_particlerotatingspray(void)
       }
     }
     PartSys->setKillOutOfBounds(true);
-    Serial.print("segment data ptr in FX");
-    Serial.println((uintptr_t)(SEGMENT.data));
+    
+    DEBUG_PRINTF_P(PSTR("segment data ptr in candy FX %p\n"), SEGMENT.data);
     Serial.println("INIT done");
   }
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
+
+  //DEBUG_PRINTF_P(PSTR("segment data ptr in candy FX %p\n"), SEGMENT.data);
+  PartSys->updatePSpointers(); // update data pointers (needed in case our memory was moved)
 
   numSprays = min(PartSys->numSources, (uint8_t)8);
   /*
@@ -8064,18 +8065,18 @@ uint16_t mode_particlerotatingspray(void)
     PartSys->sources[j].var = (SEGMENT.custom3 >> 1);                                                         // emiting variation = nozzle size  (custom 3 goes from 0-32)
   }
 
-  #ifdef ESP8266
-  if (SEGMENT.call & 0x01) // every other frame, do not emit to save particles
-    percycle = 0;
-  #endif
 
 //TODO: limit the emit amount by particle speed. should not emit more than one for every speed of like 20 or so, it looks weird on initialisation also make it depnd on angle speed, emit no more than once every few degrees -> less overlap (need good finetuning)
 
   j = random16(spraycount); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
-  
+
+
   for (i = 0; i < spraycount; i++) // emit one particle per spray (if available)
   {
-    PartSys->sprayEmit(PartSys->sources[j]); 
+    #ifdef ESP8266
+    if (SEGMENT.call & 0x01) // every other frame, do not emit to save particles
+    #endif
+    PartSys->sprayEmit(PartSys->sources[j]);
     j = (j + 1) % spraycount;
   }
 
@@ -8084,7 +8085,7 @@ uint16_t mode_particlerotatingspray(void)
   PartSys->update(); //update all particles and render to frame
   
   return FRAMETIME;
-  }
+}
 static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "PS Candy@Rotation Speed,Particle Speed,Arms,Flip Speed,Nozzle,Random Color, Direction, Random Flip;;!;012;pal=56,sx=18,ix=190,c1=200,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 /*
@@ -8093,194 +8094,171 @@ static const char _data_FX_MODE_PARTICLEROTATINGSPRAY[] PROGMEM = "PS Candy@Rota
  * Uses ranbow palette as default
  * by DedeHai (Damian Schneider)
  */
-/*
+
 uint16_t mode_particlefireworks(void)
 {
   if (SEGLEN == 1)
     return mode_static();
-  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-  // particle system box dimensions
-  const uint32_t Max_x = (cols * PS_P_RADIUS - 1);
-  const uint32_t Max_y = (rows * PS_P_RADIUS - 1);
-#ifdef ESP8266
-  const uint32_t numParticles = 120;
-#else
-  const uint32_t numParticles = 400;
-#endif
-  const uint8_t numRockets = 4;
-  PSparticle *particles;
-  PSsource *rockets;
-  // allocate memory and divide it into proper pointers, max is 32k for all segments.
-  uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSsource) * (numRockets);
-  if (!SEGENV.allocateData(dataSize))
-    return mode_static(); // allocation failed; //allocation failed
-  rockets = reinterpret_cast<PSsource *>(SEGENV.data);
-  // calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle *>(rockets + numRockets); // cast the data array into a particle pointer
+  ParticleSystem *PartSys = NULL;
+  uint8_t numRockets;
   uint32_t i = 0;
   uint32_t j = 0;
-  if (SEGMENT.call == 0) // initialization
+
+  if (SEGMENT.call == 0) // initialization 
   {
-    for (i = 0; i < numParticles; i++)
-    {
-      PartSys->particles[i].ttl = 0;
-    }
+    if (!initParticleSystem(PartSys, 0)) // init, no additional data needed
+      return mode_static(); // allocation failed; //allocation failed
+    PartSys->setKillOutOfBounds(true);  //out of bounds particles dont return (except on top, taken care of by gravity setting)   
+    numRockets = min(PartSys->numSources, (uint8_t)4);
     for (j = 0; j < numRockets; j++)
     {
-      rockets[j].source.ttl = random16(20 * j); // first rocket starts immediately, others follow soon
-      rockets[j].source.vy = -1;                // at negative speed, no particles are emitted and if rocket dies, it will be relaunched
+        PartSys->sources[j].source.ttl = 500 * j; // first rocket starts immediately, others follow soon
+        PartSys->sources[j].source.vy = -1; // at negative speed, no particles are emitted and if rocket dies, it will be relaunched
     }
   }
+  else
+    PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    Serial.println("ERROR: paticle system not found, nullpointer");
+    return mode_static(); // something went wrong, no data! 
+  }
+  PartSys->updatePSpointers(); //update data pointers (needed in case our memory was moved)
+  numRockets = min(PartSys->numSources, (uint8_t)4);
+
+  PartSys->setWrapX(SEGMENT.check1);  
+  PartSys->setBounceY(SEGMENT.check2);
+  PartSys->setWallHardness(SEGMENT.custom2);
+  PartSys->enableGravity(true, map(SEGMENT.custom3,0,31,0,10)); // todo: make it a slider to adjust
+
   // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
   int32_t emitparticles; // number of particles to emit for each rocket's state
-  i = 0;
-  // variables for circle explosions
-  uint32_t speed;
-  uint32_t currentspeed;
-  uint8_t angle;
-  uint32_t counter;
-  uint32_t angleincrement;
-  uint32_t speedvariation;
 
+  // variables for circle explosions
+  uint8_t speed;
+  uint8_t currentspeed;
+  uint16_t angle;
+  uint8_t counter;
+  uint16_t angleincrement;
+  uint8_t percircle;
+  uint8_t speedvariation;
   bool circularexplosion = false;
   for (j = 0; j < numRockets; j++)
   {
     // determine rocket state by its speed:
-    if (rockets[j].source.vy > 0)
+    if (PartSys->sources[j].source.vy > 0)
     { // moving up, emit exhaust
       emitparticles = 1;
     }
-    else if (rockets[j].source.vy < 0)
+    else if (PartSys->sources[j].source.vy < 0)
     { // falling down
       emitparticles = 0;
     }
     else // speed is zero, explode!
     {
-#ifdef ESP8266
+    #ifdef ESP8266
       emitparticles = random16(SEGMENT.intensity >> 3) + (SEGMENT.intensity >> 3)  + 5; // defines the size of the explosion
-#else
+    #else
       emitparticles = random16(SEGMENT.intensity >> 2) + (SEGMENT.intensity >> 2) + 5; // defines the size of the explosion
-#endif
-      rockets[j].source.vy = -1; // set speed negative so it will emit no more particles after this explosion until relaunch
-      if(random16(4) == 0) //!!! make it 5
+    #endif
+      PartSys->sources[j].source.vy = -1; // set speed negative so it will emit no more particles after this explosion until relaunch
+      if(random16(4) == 0)
       {
         circularexplosion = true;
         speed = 2 + random16(3);
         currentspeed = speed;
         counter = 0;
-        angleincrement = random16(20) + 10;
-        speedvariation = random16(3);
+        angleincrement = 2730 + random16(5461); // minimum 15° (=2730), + random(30°) (=5461)        
         angle = random16(); // random start angle
+        speedvariation = angle & 0x01; // 0 or 1, no need for a new random number
         // calculate the number of particles to make complete circles
-        int percircle = 256 / angleincrement + 2;
+        percircle = (uint16_t)0xFFFF / angleincrement + 1;
         #ifdef ESP8266 //TODO: this line is untested on ESP8266
-        int circles = (SEGMENT.intensity >> 7) + 1; // max(4, (int)min((int32_t)1, (emitparticles>>2) / percircle));
+        int circles = (SEGMENT.intensity >> 7) + 1; 
         #else
-        int circles = (SEGMENT.intensity >> 6) + 1;// max(4, (int)min((int32_t)1, (emitparticles>>2) / percircle));
+        int circles = (SEGMENT.intensity >> 6) + 1;
         #endif
         emitparticles = percircle * circles;
-        rockets[j].var = 0; //no variation for a nice circle
+        PartSys->sources[j].var = 0; //no variation for nicer circles
       }
     }
-    for (i = 0; i < numParticles; i++)
+    for (i = 0; i < emitparticles; i++)
     {
-      if (PartSys->particles[i].ttl == 0)
-      { // particle is dead
-        if (emitparticles > 0)
-        {
-          if (circularexplosion) // do circle emit
-          {
-            Emitter_Angle_emit(&rockets[j], &PartSys->particles[i], angle, currentspeed);
-            emitparticles--;
-            // set angle for next particle
-            angle += angleincrement;
-            counter++;
-            if (counter & 0x01) // make every second particle a lower speed
-              currentspeed = speed - speedvariation;
-            else
-              currentspeed = speed;
-            if (counter > 256 / angleincrement + 2) // full circle completed, increase speed
-            {
-              counter = 0;
-              speed += 5; //increase speed to form a second circle
-              speedvariation = speedvariation<<1; //double speed variation
-              rockets[j].source.hue = random16(); // new color for next circle
-              rockets[j].source.sat = min((uint16_t)40,random16());
-            }
-          }
-          else
-          {
-            Emitter_Fountain_emit(&rockets[j], &PartSys->particles[i]);
-            emitparticles--;
-            if ((j % 3) == 0)
-            {
-              rockets[j].source.hue = random16(); // random color for each particle
-              rockets[j].source.sat = min((uint16_t)40, random16());
-            }
-          }
-        }
+      if (circularexplosion) // do circle emit
+      {
+        if (counter & 0x01) // make every second particle a lower speed
+          currentspeed = speed - speedvariation;
         else
-          break; // done emitting for this rocket
+          currentspeed = speed;
+        PartSys->angleEmit(PartSys->sources[j], angle, currentspeed);
+        counter++;
+        if (counter > percircle) // full circle completed, increase speed
+        {
+          counter = 0;
+          speed += 5; //increase speed to form a second circle
+          speedvariation = speedvariation ? speedvariation + random16(4) : 0; // double speed variation
+          PartSys->sources[j].source.hue = random16(); // new color for next circle
+          PartSys->sources[j].source.sat = min((uint16_t)150,random16());
+        }
+        angle += angleincrement; // set angle for next particle
+      }
+      else
+      { 
+        PartSys->sprayEmit(PartSys->sources[j]);
+        if ((j % 3) == 0)
+        {
+            PartSys->sources[j].source.hue = random16(); // random color for each particle (this is also true for exhaust, but that is white anyways)
+           // PartSys->sources[j].source.sat = min((uint16_t)150, random16()); //dont change saturation, this can also be exhaust!
+        }
       }
     }
+    if(i == 0) //no particles emitted, this rocket is falling
+      PartSys->sources[j].source.y = 1000; // set position up high so gravity wont pull it to the ground and bounce it (vy MUST stay negative until relaunch)
     circularexplosion = false; //reset for next rocket
   }
 
-  // update particles
-  for (i = 0; i < numParticles; i++)
-  {
-    if (PartSys->particles[i].ttl)
-    {
-      Particle_Gravity_update(&PartSys->particles[i], SEGMENT.check1, SEGMENT.check2, SEGMENT.check3, SEGMENT.custom2);
-    }
-  }
   // update the rockets, set the speed state
   for (j = 0; j < numRockets; j++)
   {
-    if (rockets[j].source.ttl)
+    if (PartSys->sources[j].source.ttl)
     {
-      Particle_Move_update(&rockets[j].source); // move the rocket, age the rocket (ttl--)
+      PartSys->particleMoveUpdate(PartSys->sources[j].source, PartSys->particlesettings); //todo: need different settings for rocket?      
     }
-    else if (rockets[j].source.vy > 0) // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
+    else if (PartSys->sources[j].source.vy > 0) // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
     {
-      rockets[j].source.vy = 0;           // set speed to zero so code above will recognize this as an exploding rocket
-      rockets[j].source.hue = random16(); // random color
-      rockets[j].source.sat = random16(100) + 155;
-      rockets[j].maxLife = 200;
-      rockets[j].minLife = 50;
-      rockets[j].source.ttl = random16((1024 - ((uint32_t)SEGMENT.speed<<2))) + 50; // standby time til next launch
-      rockets[j].vx = 0;                                            // emitting speed
-      rockets[j].vy = 3;                                            // emitting speed
-      rockets[j].var = (SEGMENT.intensity >> 3) + 10;               // speed variation around vx,vy (+/- var/2)
+        PartSys->sources[j].source.vy = 0; // set speed to zero so code above will recognize this as an exploding rocket
+        PartSys->sources[j].source.hue = random16(); // random color
+        PartSys->sources[j].source.sat = random16(55) + 200;
+        PartSys->sources[j].maxLife = 200;
+        PartSys->sources[j].minLife = 100;
+        PartSys->sources[j].source.ttl = random16((1024 - ((uint32_t)SEGMENT.speed<<2))) + 100; // standby time til next launch
+        PartSys->sources[j].var = (SEGMENT.intensity >> 3) + 10; // speed variation around vx,vy (+/- var/2)
     }
-    else if (rockets[j].source.vy < 0) // rocket is exploded and time is up (ttl=0 and negative speed), relaunch it
+    else if (  PartSys->sources[j].source.vy < 0) // rocket is exploded and time is up (ttl=0 and negative speed), relaunch it
     {
       // reinitialize rocket
-      rockets[j].source.y = 1;                                      // start from bottom
-      rockets[j].source.x = (rand() % (Max_x >> 1)) + (Max_y >> 2); // centered half
-      rockets[j].source.vy = random16(SEGMENT.custom1 >> 3) + 5;    // rocket speed depends also on rocket height
-      rockets[j].source.vx = random16(5) - 2;
-      rockets[j].source.hue = 30;                                                 // rocket exhaust = orange (if using rainbow palette)
-      rockets[j].source.sat = 30;                                                 // low saturation -> exhaust is off-white
-      rockets[j].source.ttl = random16(SEGMENT.custom1) + (SEGMENT.custom1 >> 1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
-      rockets[j].maxLife = 30;                                                    // exhaust particle life
-      rockets[j].minLife = 10;
-      rockets[j].vx = 0;  // emitting speed
-      rockets[j].vy = 0;  // emitting speed
-      rockets[j].var = 6; // speed variation around vx,vy (+/- var/2)
+        PartSys->sources[j].source.y = 1; // start from bottom
+        PartSys->sources[j].source.x = (rand() % (PartSys->maxX >> 1)) + (PartSys->maxX >> 2); // centered half
+        PartSys->sources[j].source.vy = random16(SEGMENT.custom1 >> 3) + 5;    // rocket speed depends also on rocket fuse
+        PartSys->sources[j].source.vx = random16(5) - 2; //i.e. not perfectly straight up
+        PartSys->sources[j].source.sat = 30; // low saturation -> exhaust is off-white
+        PartSys->sources[j].source.ttl = random16(SEGMENT.custom1) + (SEGMENT.custom1 >> 1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
+        PartSys->sources[j].maxLife = 30; // exhaust particle life
+        PartSys->sources[j].minLife = 10;
+        PartSys->sources[j].vx = 0;  // emitting speed
+        PartSys->sources[j].vy = 0;  // emitting speed
+        PartSys->sources[j].var = 6; // speed variation around vx,vy (+/- var/2)
     }
   }
+
   SEGMENT.fill(BLACK); // clear the matrix
-  // render the particles
-  ParticleSys_render(particles, numParticles, false, false);
+  PartSys->update();   // update and render
   return FRAMETIME;
 }
 
 //TODO: after implementing gravity function, add slider custom3 to set gravity force
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Bounce,,Cylinder,Walls,Ground;;!;012;pal=11,sx=100,ix=50,c1=64,c2=128,c3=10,o1=0,o2=0,o3=0";
-*/
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Bounce,Gravity,Cylinder,Ground,;;!;012;pal=11,sx=100,ix=50,c1=84,c2=128,c3=12,o1=0,o2=0,o3=0";
 
 /*
  * Particle Volcano 
@@ -8289,164 +8267,103 @@ static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Laun
  * by DedeHai (Damian Schneider)
  */
 
-/*
+
 uint16_t mode_particlevolcano(void)
 {
   if (SEGLEN == 1)
     return mode_static();
-
-  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  
-  // particle system x dimension
-  const uint32_t Max_x = (cols * PS_P_RADIUS - 1);
-
-#ifdef ESP8266
-  const uint32_t numParticles = 100; // maximum number of particles
-#else
-  const uint32_t numParticles = 450; // maximum number of particles
-#endif
-  
-  const uint8_t numSprays = 1;
-  uint8_t percycle = numSprays; // maximum number of particles emitted per cycle
-
-  PSparticle *particles;
-  PSsource *spray;
-
-  // allocate memory and divide it into proper pointers, max is 32k for all segments.
-  uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSsource) * (numSprays); 
-  if (!SEGENV.allocateData(dataSize))
-    return mode_static(); // allocation failed; //allocation failed
-
-  spray = reinterpret_cast<PSsource *>(SEGENV.data);
-  // calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
-
+  ParticleSystem *PartSys = NULL;
+  uint8_t numSprays;
   uint32_t i = 0;
   uint32_t j = 0;
 
-  if (SEGMENT.call == 0) // initialization
+  if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    for (i = 0; i < numParticles; i++)
-    {
-      PartSys->particles[i].ttl = 0;      
-    }
+    if (!initParticleSystem(PartSys, 0)) // init, no additional data needed
+      return mode_static();              // allocation failed; //allocation failed    
+    PartSys->setBounceY(true); 
+    PartSys->enableGravity(true); //enable with default gforce
+    PartSys->setKillOutOfBounds(true);   // out of bounds particles dont return (except on top, taken care of by gravity setting)
+    numSprays = min(PartSys->numSources, (uint8_t)1); //number of sprays
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue = random16();
-      spray[i].source.sat = 255; // set full saturation
-      spray[i].source.x = (cols * PS_P_RADIUS)/(numSprays+1) * (i + 1);
-      spray[i].source.y = 5; // just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
-      spray[i].source.vx = 0;
-      spray[i].maxLife = 300; // lifetime in frames
-      spray[i].minLife = 20;
-      spray[i].source.collide = true; //seeded particles will collide
-      spray[i].vx = 0;  // emitting speed
-      spray[i].vy = 20; // emitting speed
-      // spray.var = 10 + (random16() % 4);
+        PartSys->sources[i].source.hue = random16();
+        PartSys->sources[i].source.sat = 255; // set full saturation
+        PartSys->sources[i].source.x = PartSys->maxX / (numSprays + 1) * (i + 1); //distribute evenly        
+        PartSys->sources[i].maxLife = 300; // lifetime in frames
+        PartSys->sources[i].minLife = 250;
+        PartSys->sources[i].source.collide = true; // seeded particles will collide (if enabled)
+        PartSys->sources[i].vx = 0; // emitting speed
     }
   }
+  else
+    PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  // change source emitting color from time to time
-  if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) // every nth frame, cycle color and emit particles
+  if (PartSys == NULL)
   {
+    Serial.println("ERROR: paticle system not found, nullpointer");
+    return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
+  }
+
+  numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
+
+  // Particle System settings
+  PartSys->updatePSpointers(); // update data pointers (needed in case our memory was moved)
+  PartSys->setColorByAge(SEGMENT.check1);
+  PartSys->setBounceX(SEGMENT.check2);
+  PartSys->setWallHardness(SEGMENT.custom2);  
+
+  if (SEGMENT.check3) // collisions enabled
+    PartSys->enableParticleCollisions(true, SEGMENT.custom2); // enable collisions and set particle collision hardness
+  else
+    PartSys->enableParticleCollisions(false);
+
+  // change source emitting color from time to time, emit one particle per spray
+  if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) // every nth frame, cycle color and emit particles (and update the sources)
+  {    
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue++; // = random16(); //change hue of spray source
+      PartSys->sources[i].source.y = 5; // reset to just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
+      PartSys->sources[i].source.vy = 0; //reset speed (so no extra particlesettin is required to keep the source 'afloat')
+      PartSys->sources[i].source.hue++; // = random16(); //change hue of spray source
       // percycle = 1+(SEGMENT.intensity>>4); //how many particles are sprayed per cycle and how fast ist the color changing
-      if(SEGMENT.check2) //bounce
-       {
-        if (spray[i].source.vx > 0) // moving to the right currently
-        {
-          spray[i].source.vx = SEGMENT.custom1 >> 4; // spray movingspeed
-        }
-        else
-        {
-          spray[i].source.vx = -(SEGMENT.custom1 >> 4); // spray speed (is currently moving negative so keep it negative)
-        }
-      }
-      else{ //wrap on the right side
-        spray[i].source.vx = SEGMENT.custom1 >> 4; // spray speed
-        if (spray[i].source.x >= Max_x - 32) //compiler warning can be ignored, source.x is always > 0
-          spray[i].source.x = 1; // wrap if close to border (need to wrap before the bounce updated detects a border collision or it will just be stuck)
-      }
-      spray[i].vy = SEGMENT.speed >> 2; // emitting speed
-      spray[i].vx = 0; 
-      spray[i].var = SEGMENT.custom3;                              // emiting variation = nozzle size  (custom 3 goes from 0-32)
-      spray[i].source.ttl = 255;                                   // source never dies, replenish its lifespan
+      PartSys->sources[i].source.vx > 0 ? SEGMENT.custom1 >> 4 : -(SEGMENT.custom1 >> 4);  // set moving speed but keep the direction                        
+      PartSys->sources[i].vy = SEGMENT.speed >> 2; // emitting speed
+      PartSys->sources[i].vx = 0; 
+      PartSys->sources[i].var = SEGMENT.custom3; // emiting variation = nozzle size  (custom 3 goes from 0-31)
+      PartSys->sources[i].source.ttl = 255; // source never dies, replenish its lifespan
+      // spray[j].source.hue = random16(); //set random color for each particle (using palette) -> does not look good
+      PartSys->sprayEmit(PartSys->sources[i]);
+      PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->particlesettings); //move the source (also applies gravity, which is corrected for above, that is a hack but easier than creating more particlesettings)
+      //Serial.println("emit");
     }
-
-    i = 0;
-    j = 0;
-    for (i = 0; i < numParticles; i++)
-    {
-      if (PartSys->particles[i].ttl == 0) // find a dead particle
-      {        
-        // spray[j].source.hue = random16(); //set random color for each particle (using palette)
-        Emitter_Fountain_emit(&spray[j], &PartSys->particles[i]);
-        j = (j + 1) % numSprays;
-        if (percycle-- == 0)
-        {
-          break; // quit loop if all particles of this round emitted
-        }
-      }
-    }
-  }
-  uint8_t hardness = SEGMENT.custom2;
-  if (SEGMENT.check3)//collisions enabled
-    detectCollisions(particles, numParticles, hardness);
-
-  for (i = 0; i < numSprays; i++)
-  {
-    Particle_Bounce_update(&spray[i].source, (uint8_t)255); // move the source
-  }
-
-  for (i = 0; i < numParticles; i++)
-  {
-    //set color according to ttl ('color by age')
-    if (SEGMENT.check1)
-      PartSys->particles[i].hue = min((uint16_t)220, PartSys->particles[i].ttl);
-
-    Particle_Gravity_update(&PartSys->particles[i], false, SEGMENT.check2, true, hardness);
   }
 
   SEGMENT.fill(BLACK); // clear the matrix
-
-  // render the particles
-  ParticleSys_render(particles, numParticles, false, false);
+  PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Size,Color by Age,Walls,Collisions;;!;012;pal=35,sx=100,ix=160,c1=0,c2=160,c3=10,o1=1,o2=0,o3=0";
-*/
-/*
- * Particle Fire
- * realistic fire effect using particles. heat based and using perlin-noise for wind
- * by DedeHai (Damian Schneider)
- */
+static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,Color by Age,Walls,Collisions;;!;012;pal=35,sx=100,ix=160,c1=0,c2=160,c3=10,o1=1,o2=0,o3=0";
 
-//TODO: 
-//do not use width to calculate numflames. it changes when mirror/transpose is activated, so will crash if height>width and then transposed
-//if using width*height and assuming a square, it will look sparse on a wide matrix...
-//could just allocate way too many and then dynamically adjust at at the expense of ram usage (but flames only use about 16bytes so is ok)
-//TODO: add 2D perlin noise to add to flame speed for randomness? may look good, may look awful, test it. also may hit FPS hard.
+  /*
+   * Particle Fire
+   * realistic fire effect using particles. heat based and using perlin-noise for wind
+   * by DedeHai (Damian Schneider)
+   */
+
+  // TODO:
+  // do not use width to calculate numflames. it changes when mirror/transpose is activated, so will crash if height>width and then transposed
+  // if using width*height and assuming a square, it will look sparse on a wide matrix...
+  // could just allocate way too many and then dynamically adjust at at the expense of ram usage (but flames only use about 16bytes so is ok)
+  // TODO: add 2D perlin noise to add to flame speed for randomness? may look good, may look awful, test it. also may hit FPS hard.
 uint16_t mode_particlefire(void)
 {
   if (SEGLEN == 1)
-    return mode_static();  
-  ParticleSystem *PartSys = NULL;
-  const uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-  uint32_t i; //index variable
+    return mode_static();
 
-#ifdef ESP8266
-   uint32_t numFlames = min((uint32_t)12, (cols << 1));    // limit to 18 flames, not enough ram on ESP8266  
-  const uint32_t numNormalFlames = numFlames - (numFlames / 3); // number of normal flames, rest of flames are baseflames
-  uint32_t percycle = numFlames >> 2;                           // maximum number of particles emitted per cycle
-#else
-  uint32_t numFlames = (cols*2); // number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results, add a few for the base flames
-  const uint32_t numNormalFlames = numFlames;//- (cols / 2); // number of normal flames, rest of flames are baseflames
-  uint32_t percycle = (numFlames) / 2;                       // maximum number of particles emitted per cycle
-#endif
+  ParticleSystem *PartSys = NULL;
+  uint32_t i; // index variable
+  uint32_t numFlames; // number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results     
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
@@ -8458,18 +8375,29 @@ uint16_t mode_particlefire(void)
     numFlames = PartSys->numSources;
     for (i = 0; i < numFlames; i++)
     {
-      PartSys->sources[i].source.ttl = 0;
+      PartSys->sources[i].source.ttl = 1000;
       PartSys->sources[i].source.vx = 0; // emitter moving speed;
       PartSys->sources[i].source.vy = 0;
+      PartSys->sources[i].source.sat = 255; //!!!debug, test if transitions are better (non white)
       // note: other parameters are set when creating the flame (see blow)
     }
-    Serial.print("segment data ptr in fireFX");
-    Serial.println((uintptr_t)(SEGMENT.data));
+
+    DEBUG_PRINTF_P(PSTR("segment data ptr in fireFX %p\n"), SEGMENT.data);
   }
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  
-  numFlames = PartSys->numSources;
+  if (PartSys == NULL)
+  {
+    Serial.println("ERROR: paticle system not found, nullpointer");
+    return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
+  }
+
+  DEBUG_PRINTF_P(PSTR("segment data ptr in Fire FX %p\n"), SEGMENT.data);
+  PartSys->updatePSpointers(); // update data pointers (needed in case our memory was moved)
+
+  uint32_t spread = (PartSys->maxX >> 5) * (SEGMENT.custom3 + 1); //fire around segment center (in subpixel points)
+  numFlames = min((uint)PartSys->numSources, 1+((spread/PS_P_RADIUS)<<1)); // number of flames used depends on spread with, good value is (fire width in pixel) * 2
+  uint32_t percycle = numFlames / 2; // maximum number of particles emitted per cycle
   /*
     if (SEGMENT.call < 3)
     {
@@ -8477,68 +8405,37 @@ uint16_t mode_particlefire(void)
       Serial.println((uintptr_t)(SEGMENT.data));
     }*/
 
-  if (PartSys == NULL)
-  {
-    Serial.println("ERROR: paticle system not found, nullpointer");
-    return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
-    }
-
-  if(SEGMENT.check2) //wrap X set
-    PartSys->setWrapX(true);
+  PartSys->setWrapX(SEGMENT.check2);
 
   // update the flame sprays:
   for (i = 0; i < numFlames; i++)
   {
-    if (   PartSys->sources[i].source.ttl > 0)
+    if (PartSys->sources[i].source.ttl > 0)
     {
-         PartSys->sources[i].source.ttl--;      
+      PartSys->sources[i].source.ttl--;      
     }
     else // flame source is dead
     {
       // initialize new flame: set properties of source      
       if (random16(20) == 0 || SEGMENT.call == 0) // from time to time, change flame position 
-      {
-        if (SEGMENT.check2) // wrap around in X direction, distribute randomly
-        {
-          PartSys->sources[i].source.x = rand() % (PartSys->maxX - PS_P_HALFRADIUS + 1); // note: cannot use rand16() here, it is not random enough: tends to burn on left side
-        }
-        else // no X-wrapping
-        {
-          PartSys->sources[i].source.x = (rand() % ((PartSys->maxX - PS_P_HALFRADIUS + 1) - (PS_P_RADIUS * ((cols >> 3) + 1)))) + PS_P_RADIUS * ((cols >> 4) + 1); // distribute randomly but not close to the corners 
-        }
+      {          
+         //!!!remove if done PartSys->sources[i].source.x = ((rand() % (PartSys->maxX>>1)) + (PartSys->maxX>>2)); // distribute randomly on center half corners         
+         PartSys->sources[i].source.x = (PartSys->maxX >> 1) - (spread>>1) + (rand() % spread) ; // distribute randomly on chosen width         
       }
 
-         PartSys->sources[i].source.y = -PS_P_RADIUS; // set the source below the frame 
-
-      if (i < numNormalFlames) 
-      {
+        PartSys->sources[i].source.y = -PS_P_RADIUS; // set the source below the frame 
         PartSys->sources[i].source.ttl = 1 + random16((SEGMENT.custom1 * SEGMENT.custom1) >> 8) / (1 + (SEGMENT.speed >> 5)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
-       // PartSys->sources[i].source.ttl = (rand() % ((SEGMENT.intensity * SEGMENT.intensity) >> 9) / (1 + (SEGMENT.speed >> 6))) + 10;   //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
-       // PartSys->sources[i].source.ttl = random16(SEGMENT.intensity+10) + 5;
+        //!!! remove when done  PartSys->sources[i].source.ttl = (rand() % ((SEGMENT.intensity * SEGMENT.intensity) >> 9) / (1 + (SEGMENT.speed >> 6))) + 10;   //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed
+        //!!! remove when done  PartSys->sources[i].source.ttl = random16(SEGMENT.intensity+10) + 5;
         PartSys->sources[i].maxLife = random16(7) + 13; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         PartSys->sources[i].minLife = 4;
         PartSys->sources[i].vx = (int8_t)random16(4) - 2;  // emitting speed (sideways)
         PartSys->sources[i].vy = 5 + (SEGMENT.speed >> 2); // emitting speed (upwards)
         PartSys->sources[i].var = random16(5) + 3;         // speed variation around vx,vy (+/- var/2)
-      }
-      else // base flames: make the base brighter, flames are slower and short lived //TODO:  not used anymore
-      {
-         //  PartSys->sources[i].source.ttl = random16(25) + 15; // lifetime of one flame
-          // PartSys->sources[i].maxLife = 25; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
-          // PartSys->sources[i].minLife = 12;
-          // PartSys->sources[i].vx = 0; // emitting speed, sideways
-          // PartSys->sources[i].vy = (SEGMENT.custom1 >> 4); // slow emitting speed (upwards)
-           //PartSys->sources[i].var = 5; // speed variation around vx,vy (+/- var/2)
-           PartSys->sources[i].source.ttl = random16(25) + 15; // lifetime of one flame
-           PartSys->sources[i].maxLife = 0;                   // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
-           PartSys->sources[i].minLife = 0;
-           PartSys->sources[i].vx = 0;                      // emitting speed, sideways
-           PartSys->sources[i].vy = (SEGMENT.custom1 >> 4); // slow emitting speed (upwards)
-           PartSys->sources[i].var = 0;                     // speed variation around vx,vy (+/- var/2)
-      }
     }
+    
   }
- // percycle = map(SEGMENT.intensity,0,255, 2, (numFlames*3) / 2);
+ // percycle = map(SEGMENT.intensity,0,255, 2, (numFlames*3) / 2); //TODO: will this give better flames or worse?
   if (SEGMENT.call & 0x01) // update noise position every second frames
   {
     SEGMENT.aux0++; // position in the perlin noise matrix for wind generation
@@ -8567,7 +8464,7 @@ uint16_t mode_particlefire(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Height,Wind,,Palette,Cylinder;;!;035;sx=130,ix=120,c1=110,c2=128,c3=0,o1=0";
+static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Height,Wind,Spread,Palette,Cylinder;;!;035;sx=130,ix=120,c1=110,c2=128,c3=22,o1=0";
 
 /*
 PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
@@ -8582,8 +8479,6 @@ uint16_t mode_particlefall(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
-
-
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
@@ -8602,7 +8497,7 @@ uint16_t mode_particlefall(void)
     Serial.println("ERROR: paticle system not found, nullpointer");
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
   }
-
+  PartSys->updatePSpointers(); // update data pointers (needed in case our memory was moved)
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceX(SEGMENT.check2);
   PartSys->setBounceY(SEGMENT.check3);   
@@ -8736,28 +8631,28 @@ uint16_t mode_particlewaterfall(void)
     }
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue = random16();
-      spray[i].source.sat = 255; // set full saturation
-      spray[i].source.x = (cols * PS_P_RADIUS) / 2 - PS_P_RADIUS + 2*PS_P_RADIUS * (i);
-      spray[i].source.y = (rows+4) * (PS_P_RADIUS*(i+1)); // source y position, few pixels above the top to increase spreading before entering the matrix
-      spray[i].source.vx = 0;
-      spray[i].source.collide = true; // seeded particles will collide
+        PartSys->sources[i].source.hue = random16();
+        PartSys->sources[i].source.sat = 255; // set full saturation
+        PartSys->sources[i].source.x = (cols * PS_P_RADIUS) / 2 - PS_P_RADIUS + 2*PS_P_RADIUS * (i);
+        PartSys->sources[i].source.y = (rows+4) * (PS_P_RADIUS*(i+1)); // source y position, few pixels above the top to increase spreading before entering the matrix
+        PartSys->sources[i].source.vx = 0;
+        PartSys->sources[i].source.collide = true; // seeded particles will collide
       #ifdef ESP8266
-      spray[i].maxLife = 100; // lifetime in frames
-      spray[i].minLife = 50;
+        PartSys->sources[i].maxLife = 100; // lifetime in frames
+        PartSys->sources[i].minLife = 50;
       #else
-      spray[i].maxLife = 400;         // lifetime in frames
-      spray[i].minLife = 150;
+        PartSys->sources[i].maxLife = 400;         // lifetime in frames
+        PartSys->sources[i].minLife = 150;
       #endif
-      spray[i].vx = 0;  // emitting speed
-      spray[i].var = 7; // emiting variation
+        PartSys->sources[i].vx = 0;  // emitting speed
+        PartSys->sources[i].var = 7; // emiting variation
     }
   }
 
   // change source emitting color
   for (i = 0; i < numSprays; i++)
   {
-    spray[i].source.hue++; //change hue of spray source
+      PartSys->sources[i].source.hue++; //change hue of spray source
   }
 
   uint8_t intensity = SEGMENT.intensity;
@@ -8767,10 +8662,10 @@ uint16_t mode_particlewaterfall(void)
 
       for (i = 0; i < numSprays; i++)
       {
-        spray[i].vy = -SEGMENT.speed >> 3;                                                                  // emitting speed, down
-        spray[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (cols - 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
-        spray[i].source.ttl = 255;                                                                          // source never dies, replenish its lifespan
-        spray[i].var = SEGMENT.custom1 >> 3;                                                                // emiting variation 0-32
+          PartSys->sources[i].vy = -SEGMENT.speed >> 3;                                                                  // emitting speed, down
+          PartSys->sources[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (cols - 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
+          PartSys->sources[i].source.ttl = 255;                                                                          // source never dies, replenish its lifespan
+          PartSys->sources[i].var = SEGMENT.custom1 >> 3;                                                                // emiting variation 0-32
       }
 
       i = 0;
@@ -9051,14 +8946,13 @@ uint16_t mode_particleimpact(void)
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  MaxNumMeteors = min(PartSys->numSources, (uint8_t)8);
-  uint8_t numMeteors = map(SEGMENT.custom3, 0, 31, 1, MaxNumMeteors); // number of meteors to use for animation
-
   if (PartSys == NULL)
   {
     Serial.println("ERROR: paticle system not found, nullpointer");
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
   }
+  MaxNumMeteors = min(PartSys->numSources, (uint8_t)8);
+  uint8_t numMeteors = map(SEGMENT.custom3, 0, 31, 1, MaxNumMeteors); // number of meteors to use for animation
 
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceX(SEGMENT.check2);
@@ -9111,7 +9005,7 @@ uint16_t mode_particleimpact(void)
       {
          PartSys->sources[i].source.vy = 0; // set speed zero so it will explode
          PartSys->sources[i].source.vx = 0;
-         //PartSys->sources[i].source.y = 5; // offset from ground so explosion happens not out of frame (TODO: still needed?)
+         //PartSys->sources[i].source.y = 5; // offset from ground so explosion happens not out of frame (TODO: still needed? the class takes care of that)
          PartSys->sources[i].source.collide = true;
          PartSys->sources[i].maxLife = 200;
          PartSys->sources[i].minLife = 50;
@@ -9132,7 +9026,7 @@ uint16_t mode_particleimpact(void)
        PartSys->sources[i].source.vy = -random16(30) - 30; // meteor downward speed
        PartSys->sources[i].source.vx = random16(30) - 15;
        PartSys->sources[i].source.hue = random16(); // random color
-       PartSys->sources[i].source.ttl = 1000; // long life, will explode at bottom
+       PartSys->sources[i].source.ttl = 255; // long life, will explode at bottom
        PartSys->sources[i].source.collide = false; // trail particles will not collide
        PartSys->sources[i].maxLife = 60;      // spark particle life
        PartSys->sources[i].minLife = 20;      
@@ -9332,17 +9226,17 @@ uint16_t mode_particlespray(void)
     }
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue = random16();
-      spray[i].source.sat = 255; // set full saturation
-      spray[i].source.x = (cols * PS_P_RADIUS) / (numSprays + 1) * (i + 1);
-      spray[i].source.y = 5; // just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
-      spray[i].source.vx = 0;
-      spray[i].maxLife = 300; // lifetime in frames
-      spray[i].minLife = 20;
-      spray[i].source.collide = true; // seeded particles will collide
-      spray[i].vx = 0;                // emitting speed
-      spray[i].vy = 0;               // emitting speed
-      spray[i].var = 10;
+        PartSys->sources[i].source.hue = random16();
+        PartSys->sources[i].source.sat = 255; // set full saturation
+        PartSys->sources[i].source.x = (cols * PS_P_RADIUS) / (numSprays + 1) * (i + 1);
+        PartSys->sources[i].source.y = 5; // just above the lower edge, if zero, particles already 'bounce' at start and loose speed.
+        PartSys->sources[i].source.vx = 0;
+        PartSys->sources[i].maxLife = 300; // lifetime in frames
+        PartSys->sources[i].minLife = 20;
+        PartSys->sources[i].source.collide = true; // seeded particles will collide
+        PartSys->sources[i].vx = 0;                // emitting speed
+        PartSys->sources[i].vy = 0;               // emitting speed
+        PartSys->sources[i].var = 10;
     }
   }
 
@@ -9351,10 +9245,10 @@ uint16_t mode_particlespray(void)
   {
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue++; // = random16(); //change hue of spray source
-      // spray[i].var = SEGMENT.custom3; // emiting variation = nozzle size  (custom 3 goes from 0-32)
-      spray[i].source.x = map(SEGMENT.custom1, 0, 255, 0, Max_x);
-      spray[i].source.y = map(SEGMENT.custom2, 0, 255, 0, Max_y);
+        PartSys->sources[i].source.hue++; // = random16(); //change hue of spray source
+      //   PartSys->sources[i].var = SEGMENT.custom3; // emiting variation = nozzle size  (custom 3 goes from 0-32)
+        PartSys->sources[i].source.x = map(SEGMENT.custom1, 0, 255, 0, Max_x);
+        PartSys->sources[i].source.y = map(SEGMENT.custom2, 0, 255, 0, Max_y);
     }
 
     i = 0;
@@ -9439,7 +9333,7 @@ uint16_t mode_particleGEQ(void)
   PartSys->setBounceY(SEGMENT.check3);
   PartSys->enableParticleCollisions(false);
   PartSys->setWallHardness(SEGMENT.custom2);
-  PartSys->enableGravity(true, SEGMENT.custom3<<2); //set gravity strength
+  PartSys->enableGravity(true, SEGMENT.custom3<<1); //set gravity strength
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
@@ -9555,17 +9449,17 @@ uint16_t mode_particlecenterGEQ(void)
     }
     for (i = 0; i < numSprays; i++)
     {
-      spray[i].source.hue = i*16; //even color distribution
-      spray[i].source.sat = 255;                    // set saturation
-      spray[i].source.x = (cols * PS_P_RADIUS) / 2; // center
-      spray[i].source.y = (rows * PS_P_RADIUS) / 2; // center
-      spray[i].source.vx = 0;
-      spray[i].source.vy = 0;
-      spray[i].maxLife = 400;
-      spray[i].minLife = 200;
-      spray[i].vx = 0;  // emitting speed
-      spray[i].vy = 0;  // emitting speed
-      spray[i].var = 0; // emitting variation
+        PartSys->sources[i].source.hue = i*16; //even color distribution
+        PartSys->sources[i].source.sat = 255;                    // set saturation
+        PartSys->sources[i].source.x = (cols * PS_P_RADIUS) / 2; // center
+        PartSys->sources[i].source.y = (rows * PS_P_RADIUS) / 2; // center
+        PartSys->sources[i].source.vx = 0;
+        PartSys->sources[i].source.vy = 0;
+        PartSys->sources[i].maxLife = 400;
+        PartSys->sources[i].minLife = 200;
+        PartSys->sources[i].vx = 0;  // emitting speed
+        PartSys->sources[i].vy = 0;  // emitting speed
+        PartSys->sources[i].var = 0; // emitting variation
     }
   }
 
@@ -9879,22 +9773,18 @@ void WS2812FX::setupEffectData() {
 
   
   addEffect(FX_MODE_PARTICLEROTATINGSPRAY, &mode_particlerotatingspray, _data_FX_MODE_PARTICLEROTATINGSPRAY);
+  addEffect(FX_MODE_PARTICLEFIREWORKS, &mode_particlefireworks, _data_FX_MODE_PARTICLEFIREWORKS);
   addEffect(FX_MODE_PARTICLEFIRE, &mode_particlefire, _data_FX_MODE_PARTICLEFIRE);
   addEffect(FX_MODE_PARTICLEFALL, &mode_particlefall, _data_FX_MODE_PARTICLEFALL);
   addEffect(FX_MODE_PARTICLEIMPACT, &mode_particleimpact, _data_FX_MODE_PARTICLEIMPACT);
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
-  /*
   addEffect(FX_MODE_PARTICLEVOLCANO, &mode_particlevolcano, _data_FX_MODE_PARTICLEVOLCANO);
-  
-  addEffect(FX_MODE_PARTICLEFIREWORKS, &mode_particlefireworks, _data_FX_MODE_PARTICLEFIREWORKS);
+  /*
   addEffect(FX_MODE_PARTICLEPERLIN, &mode_particleperlin, _data_FX_MODE_PARTICLEPERLIN);
-  
   addEffect(FX_MODE_PARTICLEBOX, &mode_particlebox, _data_FX_MODE_PARTICLEBOX);
   addEffect(FX_MODE_PARTICLEWATERFALL, &mode_particlewaterfall, _data_FX_MODE_PARTICLEWATERFALL); 
-  
   addEffect(FX_MODE_PARTICLEATTRACTOR, &mode_particleattractor, _data_FX_MODE_PARTICLEATTRACTOR);
   addEffect(FX_MODE_PARTICLESPRAY, &mode_particlespray, _data_FX_MODE_PARTICLESPRAY);
-  
   */
  // addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
 

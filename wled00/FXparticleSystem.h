@@ -46,13 +46,13 @@ typedef struct {
     uint8_t hue;  // color hue
     uint8_t sat;  // color saturation
     //two byte bit field:
-    //uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
+    uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
     bool outofbounds : 1; //out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; //if set, particle takes part in collisions
     bool flag3 : 1; // unused flags...
     bool flag4 : 1;
 
-    uint16_t ttl; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
+    //uint16_t ttl; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
 } PSparticle;
 
 //struct for a particle source
@@ -76,7 +76,7 @@ typedef struct
   bool bounceY : 1;
   bool useGravity : 1; //set to 1 if gravity is used, disables bounceY at the top
   bool useCollisions : 1;
-  bool flag8 : 1; // unused flag
+  bool colorByAge : 1; // if set, particle hue is set by ttl value 
 } PSsettings;
 
 class ParticleSystem
@@ -86,11 +86,12 @@ public:
   // note: memory is allcated in the FX function, no deconstructor needed
   void update(void); //update the particles according to set options and render to the matrix
   void updateFire(uint32_t intensity, bool usepalette); // update function for fire
+  void updatePSpointers(); // update the data pointers to current segment data space
 
   // particle emitters
   void flameEmit(PSsource &emitter);
   void sprayEmit(PSsource &emitter);
-  void angleEmit(PSsource& emitter, uint8_t angle, uint32_t speed);
+  void angleEmit(PSsource& emitter, uint16_t angle, uint32_t speed);
   
   //move functions
   void particleMoveUpdate(PSparticle &part, PSsettings &options);
@@ -100,7 +101,7 @@ public:
   void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t *counter); //use global gforce
   void applyGravity(PSparticle *part); //use global system settings 
   void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter);
-  void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint8_t angle, uint8_t *counter);
+  void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle, uint8_t *counter);
   void applyFriction(PSparticle *part, uint8_t coefficient); // apply friction to specific particle
   void applyFriction(uint8_t coefficient); // apply friction to all used particles
   void attract(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
@@ -115,6 +116,7 @@ public:
   void setBounceX(bool enable);
   void setBounceY(bool enable);
   void setKillOutOfBounds(bool enable); //if enabled, particles outside of matrix instantly die
+  void setColorByAge(bool enable);
   void enableGravity(bool enable, uint8_t force = 8);
   void enableParticleCollisions(bool enable, uint8_t hardness = 255);  
     
@@ -126,7 +128,7 @@ public:
   uint8_t numSources; //number of sources
   uint16_t numParticles;  // number of particles available in this system
   uint16_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
-  PSsettings particlesettings; // settings used when updating particles (can also used by FX to move sources)
+  PSsettings particlesettings; // settings used when updating particles (can also used by FX to move sources), do not edit properties directly, use functions above
 
 private: 
   //rendering functions
@@ -141,7 +143,6 @@ private:
   void fireParticleupdate();
 
   //utility functions
-  void initPSpointers(); // call this after allocating the memory to initialize the pointers
   int32_t wraparound(int32_t w, int32_t maxvalue);
   int32_t calcForce_dV(int8_t force, uint8_t *counter);
   CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);

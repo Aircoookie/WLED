@@ -33,6 +33,7 @@
 
 /*
   TODO:
+  -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired. config should be optional, if not set, use default config.
   -add SEGMENT.fill(BLACK); // clear the matrix   into rendering function?
   -init funktion für sprays: alles auf null setzen, dann muss man im FX nur noch setzten was man braucht
   -pass all pointers by reference to make it consistene throughout the code (or not?)
@@ -52,19 +53,28 @@
 
 ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources)
 {
-	Serial.print("initializing PS... ");
+	Serial.println("PS Constructor");
 	numSources = numberofsources;
 	numParticles = numberofparticles; // set number of particles in the array
 	usedParticles = numberofparticles; // use all particles by default
 	//particlesettings = {false, false, false, false, false, false, false, false}; // all settings off by default
-	initPSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
+	updatePSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
 	emitIndex = 0;
+	/*
+	Serial.println("alive particles: ");
 	for (int i = 0; i < numParticles; i++)
 	{
 		//particles[i].ttl = 0; //initialize all particles to dead
-	}
+		//if (particles[i].ttl)
+		{
+			Serial.print("x:");
+			Serial.print(particles[i].x);
+			Serial.print(" y:");
+			Serial.println(particles[i].y);
+		}
+	}*/
 	Serial.println("PS Constructor done");
 }
 
@@ -143,6 +153,11 @@ void ParticleSystem::setKillOutOfBounds(bool enable)
 	particlesettings.killoutofbounds = enable;
 }
 
+void ParticleSystem::setColorByAge(bool enable)
+{
+	particlesettings.colorByAge = enable;
+}
+
 // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is also disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
 void ParticleSystem::enableGravity(bool enable, uint8_t force) 
@@ -160,28 +175,6 @@ void ParticleSystem::enableParticleCollisions(bool enable, uint8_t hardness) // 
 	collisionHardness = hardness + 1;
 }
 
-	
-// Spray emitter for particles used for flames (particle TTL depends on source TTL)
-void ParticleSystem::flameEmit(PSsource &emitter)
-{
-	for (uint32_t i = 0; i < usedParticles; i++)
-	{
-		emitIndex++;
-		if (emitIndex >= usedParticles)
-			emitIndex = 0;
-		if (particles[emitIndex].ttl == 0) // find a dead particle
-		{
-			particles[emitIndex].x = emitter.source.x + random16(PS_P_RADIUS) - PS_P_HALFRADIUS; // jitter the flame by one pixel to make the flames wider and softer
-			particles[emitIndex].y = emitter.source.y;
-			particles[emitIndex].vx = emitter.vx + random16(emitter.var) - (emitter.var >> 1);
-			particles[emitIndex].vy = emitter.vy + random16(emitter.var) - (emitter.var >> 1);
-			particles[emitIndex].ttl = random16(emitter.maxLife - emitter.minLife) + emitter.minLife + emitter.source.ttl; // flame intensity dies down with emitter TTL  
-			// fire uses ttl and not hue for heat, so no need to set the hue
-			break; //done
-		}
-	}
-}
-
 // emit one particle with variation
 void ParticleSystem::sprayEmit(PSsource &emitter)
 {
@@ -194,8 +187,8 @@ void ParticleSystem::sprayEmit(PSsource &emitter)
 		{
 			particles[emitIndex].x = emitter.source.x; // + random16(emitter.var) - (emitter.var >> 1); //randomness uses cpu cycles and is almost invisible, removed for now.
 			particles[emitIndex].y = emitter.source.y; // + random16(emitter.var) - (emitter.var >> 1);
-			particles[emitIndex].vx = emitter.vx + random16(emitter.var) - (emitter.var>>1);
-			particles[emitIndex].vy = emitter.vy + random16(emitter.var) - (emitter.var>>1);
+			particles[emitIndex].vx = emitter.vx + random(emitter.var) - (emitter.var>>1);
+			particles[emitIndex].vy = emitter.vy + random(emitter.var) - (emitter.var>>1);
 			particles[emitIndex].ttl = random16(emitter.maxLife - emitter.minLife) + emitter.minLife;
 			particles[emitIndex].hue = emitter.source.hue;
 			particles[emitIndex].sat = emitter.source.sat;
@@ -216,18 +209,36 @@ void ParticleSystem::sprayEmit(PSsource &emitter)
 	//Serial.println("**");
 }
 
+// Spray emitter for particles used for flames (particle TTL depends on source TTL)
+void ParticleSystem::flameEmit(PSsource &emitter)
+{
+	for (uint32_t i = 0; i < usedParticles; i++)
+	{
+		emitIndex++;
+		if (emitIndex >= usedParticles)
+			emitIndex = 0;
+		if (particles[emitIndex].ttl == 0) // find a dead particle
+		{ 
+			particles[emitIndex].x = emitter.source.x + random16(PS_P_RADIUS<<1) - PS_P_RADIUS; // jitter the flame by one pixel to make the flames wider at the base
+			particles[emitIndex].y = emitter.source.y;
+			particles[emitIndex].vx = emitter.vx + random16(emitter.var) - (emitter.var >> 1); //random16 is good enough for fire and much faster
+			particles[emitIndex].vy = emitter.vy + random16(emitter.var) - (emitter.var >> 1);
+			particles[emitIndex].ttl = random16(emitter.maxLife - emitter.minLife) + emitter.minLife + emitter.source.ttl; // flame intensity dies down with emitter TTL
+			// fire uses ttl and not hue for heat, so no need to set the hue
+			break; // done
+		}
+	}
+}
+
 //todo: idee: man könnte einen emitter machen, wo die anzahl emittierten partikel von seinem alter abhängt. benötigt aber einen counter
 //idee2: source einen counter hinzufügen, dann setting für emitstärke, dann müsste man das nicht immer in den FX animationen handeln
 
-// Emits a particle at given angle and speed, angle is from 0-255 (=0-360deg), speed is also affected by emitter->var
-// angle = 0 means in x-direction
-void ParticleSystem::angleEmit(PSsource &emitter, uint8_t angle, uint32_t speed)
+// Emits a particle at given angle and speed, angle is from 0-65535 (=0-360deg), speed is also affected by emitter->var
+// angle = 0 means in positive x-direction (i.e. to the right)
+void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, uint32_t speed)
 {
-	//todo: go to 16 bits, rotating particles could use this, others maybe as well. from rotating spray FX, angleoffset is the angle in 16bit
-	//PartSys->sources[j].vx = (cos16(SEGMENT.aux0 + angleoffset * j) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
-	//PartSys->sources[j].vy = (sin16(SEGMENT.aux0 + angleoffset * j) >> 8) / ((263 - SEGMENT.intensity) >> 3); // update spray angle (rotate all sprays with angle offset)
-	emitter.vx = (((int32_t)cos8(angle) - 127) * speed) >> 7; // cos is signed 8bit, so 1 is 127, -1 is -127, shift by 7
-	emitter.vy = (((int32_t)sin8(angle) - 127) * speed) >> 7;
+	emitter.vx = ((int32_t)cos16(angle) * speed) >> 15; // cos16() and sin16() return signed 16bit
+	emitter.vy = ((int32_t)sin16(angle) * speed) >> 15;
 	sprayEmit(emitter);
 }
 
@@ -239,12 +250,14 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 	{
 		// age
 		part.ttl--;
-		// apply velocity
-		//Serial.print("x:");
-		//Serial.print(part.x);
-		//Serial.print("y:");
-		//Serial.print(part.y);
-		int32_t newX = part.x + (int16_t)part.vx;
+		if (particlesettings.colorByAge)
+			part.hue = part.ttl > 255 ? 255 : part.ttl; //set color to ttl
+			// apply velocity
+			// Serial.print("x:");
+			// Serial.print(part.x);
+			// Serial.print("y:");
+			// Serial.print(part.y);
+			int32_t newX = part.x + (int16_t)part.vx;
 		int32_t newY = part.y + (int16_t)part.vy;
 		//Serial.print(" ");
 		//Serial.print(newY);
@@ -368,14 +381,14 @@ void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t 
 	}
 }
 
-// apply a force in angular direction to of particles
+// apply a force in angular direction to group of particles //TODO: actually test if this works as expected, this is untested code
 // caller needs to provide a 8bit counter that holds its value between calls for each group (numparticles can be 1 for single particle)
-void ParticleSystem::applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint8_t angle, uint8_t *counter)
+void ParticleSystem::applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle, uint8_t *counter)
 {
-	int8_t xforce = ((int32_t)force * (cos8(angle) - 128)) >> 8; // force is +/- 127
-	int8_t yforce = ((int32_t)force * (sin8(angle) - 128)) >> 8;
-	// noste: sin16 is 10% faster than sin8() on ESP32 but on ESP8266 it is 9% slower, and dont need that 16bit of resolution
-	// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame (useful force range is +/- 127)
+	int8_t xforce = ((int32_t)force * cos8(angle)) >> 15; // force is +/- 127
+	int8_t yforce = ((int32_t)force * sin8(angle)) >> 15;
+	// noste: sin16 is 10% faster than sin8() on ESP32 but on ESP8266 it is 9% slower
+	// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame (useful force range is +/- 127) 
 	applyForce(part, numparticles, xforce, yforce, counter);
 }
 
@@ -1010,15 +1023,12 @@ void ParticleSystem::handleCollisions()
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
 void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particle2) //TODO: dx,dy is calculated just above, can pass it over here to save some CPU time
 {
-
 	int32_t dx = particle2->x - particle1->x;
-	int32_t dy = particle2->y - particle1->y;
+	int32_t dy = particle2->y - particle1->y; 
 	int32_t distanceSquared = dx * dx + dy * dy;
-
 	// Calculate relative velocity (if it is zero, could exit but extra check does not overall speed but deminish it)
 	int32_t relativeVx = (int16_t)particle2->vx - (int16_t)particle1->vx;
 	int32_t relativeVy = (int16_t)particle2->vy - (int16_t)particle1->vy;
-
 
 	if (distanceSquared == 0) // add distance in case particles exactly meet at center, prevents dotProduct=0 (this can only happen if they move towards each other)
 	{
@@ -1042,16 +1052,16 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 	}*/
 	// Calculate dot product of relative velocity and relative distance
 	int32_t dotProduct = (dx * relativeVx + dy * relativeVy);
-
+	uint32_t notsorandom = dotProduct & 0x01; // random16(2); //dotprouct LSB should be somewhat random, so no need to calculate a random number
 	// If particles are moving towards each other
 	if (dotProduct < 0)
 	{
-		const uint32_t bitshift = 16; // bitshift used to avoid floats (dx/dy are 7bit, relativV are 8bit -> dotproduct is 15bit so 16bit shift is ok)
+		const uint32_t bitshift = 15; // bitshift used to avoid floats (dx/dy are 7bit, relativV are 8bit -> dotproduct is 15bit so up to 16bit shift is ok)
 
 		// Calculate new velocities after collision
 		int32_t impulse = (((dotProduct << (bitshift)) / (distanceSquared)) * collisionHardness) >> 8;
-		int32_t ximpulse = (impulse * dx) >> bitshift;
-		int32_t yimpulse = (impulse * dy) >> bitshift;
+		int32_t ximpulse = 1 + (impulse * dx) >> bitshift;
+		int32_t yimpulse = 1 + (impulse * dy) >> bitshift;
 		particle1->vx += ximpulse;
 		particle1->vy += yimpulse;
 		particle2->vx -= ximpulse;
@@ -1067,11 +1077,11 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 			//particle2->vx = (particle2->vx < 2 && particle2->vx > -2) ? 0 : particle2->vx;
 			//particle2->vy = (particle2->vy < 2 && particle2->vy > -2) ? 0 : particle2->vy;
 
-			const uint32_t coeff = 191 + (collisionHardness>>1);
-			particle1->vx = ((int32_t)particle1->vx * coeff) >> 8;
+			const uint32_t coeff = 247 + (collisionHardness>>4);
+			particle1->vx = ((((int32_t)particle1->vx + notsorandom) * coeff) >> 8); // add 1 sometimes to balance favour to left side TODO: did this really fix it?
 			particle1->vy = ((int32_t)particle1->vy * coeff) >> 8;
 
-			particle2->vx = ((int32_t)particle2->vx * coeff) >> 8;
+			particle2->vx = (((int32_t)particle2->vx * coeff) >> 8); 
 			particle2->vy = ((int32_t)particle2->vy * coeff) >> 8;
 		}
 	}
@@ -1082,7 +1092,7 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 	// one problem remaining is, particles get squished if (external) force applied is higher than the pushback but this may also be desirable if particles are soft. also some oscillations cannot be avoided without addigng a counter
 	if (distanceSquared < 2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS)
 	{
-		uint8_t choice = dotProduct & 0x01; // random16(2); // randomly choose one particle to push, avoids oscillations note: dotprouct LSB should be somewhat random, so no need to calculate a random number
+		
 		const int32_t HARDDIAMETER = 2 * PS_P_HARDRADIUS;
 		const int32_t pushamount = 1; // push a small amount
 		int32_t push = pushamount;
@@ -1093,7 +1103,7 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 			if (dx < 0)
 				push = -pushamount; //-(PS_P_HARDRADIUS + dx); // inverted push direction
 
-			if (choice) // chose one of the particles to push, avoids oscillations
+			if (notsorandom) // chose one of the particles to push, avoids oscillations
 				particle1->x -= push;
 			else
 				particle2->x += push;
@@ -1105,7 +1115,7 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 			if (dy < 0)
 				push = -pushamount; //-(PS_P_HARDRADIUS + dy); // inverted push direction
 
-			if (choice) // chose one of the particles to push, avoids oscillations
+			if (notsorandom) // chose one of the particles to push, avoids oscillations
 				particle1->y -= push;
 			else
 				particle2->y += push;
@@ -1175,19 +1185,18 @@ CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 // set the pointers for the class (this only has to be done once and not on every FX call, only the class pointer needs to be reassigned to SEGENV.data every time)
 // function returns the pointer to the next byte available for the FX (if it assigned more memory for other stuff using the above allocate function)
 // FX handles the PSsources, need to tell this function how many there are
-void ParticleSystem::initPSpointers()
+void ParticleSystem::updatePSpointers()
 {
-	Serial.print("this ");
-	Serial.println((uintptr_t)this);
-	particles = reinterpret_cast<PSparticle *>(this + 1);							  // pointer to particle array sizeof(ParticleSystem)
+	DEBUG_PRINT(F("*** PS pointers ***"));
+	DEBUG_PRINTF_P(PSTR("this PS %p\n"), this);
+
+	particles = reinterpret_cast<PSparticle *>(this + 1);							  // pointer to particle array at data+sizeof(ParticleSystem)
 	sources = reinterpret_cast<PSsource *>(particles + numParticles);				  // pointer to source(s)
 	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources);					  // pointer to first available byte after the PS
-	Serial.print("particles ");
-	Serial.println((uintptr_t)particles);
-	Serial.print("sources ");
-	Serial.println((uintptr_t)sources);
-	Serial.print("end ");
-	Serial.println((uintptr_t)PSdataEnd);
+	
+	DEBUG_PRINTF_P(PSTR("particles %p\n"), particles);	
+	DEBUG_PRINTF_P(PSTR("sources %p\n"), sources);	
+	DEBUG_PRINTF_P(PSTR("end %p\n"), PSdataEnd);
 }
 
 //non class functions to use for initialization
@@ -1197,20 +1206,16 @@ uint32_t calculateNumberOfParticles()
 	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 #ifdef ESP8266
-	uint32_t numberofParticles = (cols * rows * 3)>>2 ; // 0.75 particle per pixel
+	uint numberofParticles = (cols * rows * 3)>>2 ; // 0.75 particle per pixel
+	uint particlelimit = 148; //maximum number of paticles allowed (based on one segment of 16x16 and 4k effect ram)
 #elseif ARDUINO_ARCH_ESP32S2
-	uint32_t numberofParticles = (cols * rows); // 1 particle per pixel
+	uint numberofParticles = (cols * rows); // 1 particle per pixe
+	uint particlelimit = 768; // maximum number of paticles allowed (based on one segment of 32x32 and 24k effect ram)
 #else
-	uint32_t numberofParticles = (cols * rows * 3) / 2; // 1.5 particles per pixel (for example 768 particles on 32x16)
+	uint numberofParticles = (cols * rows * 3) / 2; // 1.5 particles per pixel (for example 768 particles on 32x16)
+	uint particlelimit = 1280; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
 #endif
-
-	Serial.print("segsize ");
-	Serial.print(cols);
-	Serial.print(" ");	
-	Serial.print(" ");
-	Serial.print("particles: ");
-	Serial.println(numberofParticles);
-	// TODO: ist das genug für fire auf 32x16? evtl auf 2 gehen? oder das dynamisch machen, als parameter?
+	numberofParticles = max((uint)1, min(numberofParticles, particlelimit)); 	
 	return numberofParticles;
 }
 
@@ -1220,15 +1225,14 @@ uint32_t calculateNumberOfSources()
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 #ifdef ESP8266
 	int numberofSources = (cols * rows) / 8;
-	numberofSources = min(numberofSources, 16);
+	numberofSources = max(1 , min(numberofSources, 16)); //limit to 1 - 16
 #elseif ARDUINO_ARCH_ESP32S2
 	int numberofSources = (cols * rows) / 6;
-	numberofSources = min(numberofSources, 32);
+	numberofSources = max(1, min(numberofSources, 48)); // limit to 1 - 48
 #else
 	int numberofSources = (cols * rows) / 4;
-	numberofSources = min(numberofSources, 64);
-#endif	
-	// TODO: may be too many..
+	numberofSources = max(1 , min(numberofSources, 72)); //limit to 1 - 72
+#endif
 	return numberofSources;
 }
 
@@ -1239,9 +1243,11 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, ui
 	requiredmemory += sizeof(PSparticle) * numparticles;
 	requiredmemory += sizeof(PSsource) * numsources;
 	requiredmemory += additionalbytes;
-	Serial.print("allocatin: ");
+	Serial.print("allocating: ");
 	Serial.print(requiredmemory);
-	Serial.print("Bytes");
+	Serial.println("Bytes");
+	Serial.print("allocating for segment at");
+	Serial.println((uintptr_t)SEGMENT.data);
 	return(SEGMENT.allocateData(requiredmemory));		
 }
 
@@ -1256,7 +1262,7 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes)
 		DEBUG_PRINT(F("PS init failed: memory depleted"));
 		return false;
 	}
-	Serial.print("segment data ptr");
+	Serial.print("segment.data ptr");
 	Serial.println((uintptr_t)(SEGMENT.data));
 	uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
