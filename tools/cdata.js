@@ -2,7 +2,7 @@
  * Writes compressed C arrays of data files (web interface)
  * How to use it?
  *
- * 1) Install Node 11+ and npm
+ * 1) Install Node 20+ and npm
  * 2) npm install
  * 3) npm run build
  *
@@ -207,7 +207,7 @@ function isAnyFileInFolderNewerThan(folderPath, time) {
 }
 
 // Check if the web UI is already built
-function isAlreadyBuilt(folderPath) {
+function isAlreadyBuilt(webUIPath, packageJsonPath = "package.json") {
   let lastBuildTime = Infinity;
 
   for (const file of output) {
@@ -220,7 +220,7 @@ function isAlreadyBuilt(folderPath) {
     }
   }
 
-  return !isAnyFileInFolderNewerThan(folderPath, lastBuildTime) && !isFileNewerThan("tools/cdata.js", lastBuildTime);
+  return !isAnyFileInFolderNewerThan(webUIPath, lastBuildTime) && !isFileNewerThan(packageJsonPath, lastBuildTime) && !isFileNewerThan(__filename, lastBuildTime);
 }
 
 // Don't run this script if we're in a test environment
