@@ -83,6 +83,7 @@ describe('Script', () => {
     // Backup files
     fs.cpSync("wled00/data", "wled00Backup", { recursive: true });
     fs.cpSync("tools/cdata.js", "cdata.bak.js");
+    fs.cpSync("package.json", "package.bak.json");
   });
   after(() => {
     // Restore backup
@@ -90,6 +91,8 @@ describe('Script', () => {
     fs.renameSync("wled00Backup", "wled00/data");
     fs.rmSync("tools/cdata.js");
     fs.renameSync("cdata.bak.js", "tools/cdata.js");
+    fs.rmSync("package.json");
+    fs.renameSync("package.bak.json", "package.json");
   });
 
   // delete all html_*.h files
