@@ -33,16 +33,10 @@
 
 /*
   TODO:
-  -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired. config should be optional, if not set, use default config.
-  -add SEGMENT.fill(BLACK); // clear the matrix   into rendering function?
-  -init funktion für sprays: alles auf null setzen, dann muss man im FX nur noch setzten was man braucht
-  -pass all pointers by reference to make it consistene throughout the code (or not?)
+  -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired. config should be optional, if not set, use default config.    
   -add possiblity to emit more than one particle, just pass a source and the amount to emit or even add several sources and the amount, function decides if it should do it fair or not
   -add an x/y struct, do particle rendering using that, much easier to read
   -extend rendering to more than 2x2, 3x2 (fire) should be easy, 3x3 maybe also doable without using much math (need to see if it looks good)
-
-  -need a random emit? one that does not need an emitter but just takes some properties, so FX can implement their own emitters?
-  -line emit wäre noch was, der die PS source anders interpretiert
 
 */
 // sources need to be updatable by the FX, so functions are needed to apply it to a single particle that are public
@@ -356,29 +350,42 @@ void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t 
 	{
 		if (numparticles == 1) // for single particle, skip the for loop to make it faster
 		{
-			particles[0].vx = particles[0].vx + dvx > PS_P_MAXSPEED ? PS_P_MAXSPEED : particles[0].vx + dvx; // limit the force, this is faster than min or if/else
+			part[0].vx = part[0].vx + dvx > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[0].vx + dvx; // limit the force, this is faster than min or if/else
 		}
 		else
 		{
 			for (i = 0; i < numparticles; i++)
 			{
 				// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster so no speed penalty
-				particles[i].vx = particles[i].vx + dvx > PS_P_MAXSPEED ? PS_P_MAXSPEED : particles[i].vx + dvx; 
+				part[i].vx = part[i].vx + dvx > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vx + dvx;
 			}
 		}
 	}
 	if (dvy != 0)
 	{
 		if (numparticles == 1) // for single particle, skip the for loop to make it faster
-			particles[0].vy = particles[0].vy + dvy > PS_P_MAXSPEED ? PS_P_MAXSPEED : particles[0].vy + dvy;
+			part[0].vy = part[0].vy + dvy > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[0].vy + dvy;
 		else
 		{
 			for (i = 0; i < numparticles; i++)
 			{
-				particles[i].vy = particles[i].vy + dvy > PS_P_MAXSPEED ? PS_P_MAXSPEED : particles[i].vy + dvy;
+				part[i].vy = part[i].vy + dvy > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vy + dvy;
 			}
 		}
 	}
+}
+
+
+// apply a force in x,y direction to particles directly (no counter required)
+void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce)
+{
+	//note: could make this faster for single particles by adding an if statement, but it is fast enough as is
+	for (uint i = 0; i < numparticles; i++)
+	{
+		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster so no speed penalty
+		part[i].vx = part[i].vx + xforce > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vx + xforce;
+		part[i].vy = part[i].vy + yforce > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vy + yforce;
+	}	
 }
 
 // apply a force in angular direction to group of particles //TODO: actually test if this works as expected, this is untested code
@@ -387,7 +394,7 @@ void ParticleSystem::applyAngleForce(PSparticle *part, uint32_t numparticles, ui
 {
 	int8_t xforce = ((int32_t)force * cos8(angle)) >> 15; // force is +/- 127
 	int8_t yforce = ((int32_t)force * sin8(angle)) >> 15;
-	// noste: sin16 is 10% faster than sin8() on ESP32 but on ESP8266 it is 9% slower
+	// note: sin16 is 10% faster than sin8() on ESP32 but on ESP8266 it is 9% slower
 	// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame (useful force range is +/- 127) 
 	applyForce(part, numparticles, xforce, yforce, counter);
 }
@@ -448,6 +455,7 @@ void ParticleSystem::applyFriction(PSparticle *part, uint8_t coefficient)
 		part->vy = ((int16_t)part->vy * friction) >> 8;
 }
 
+// apply friction to all particles
 void ParticleSystem::applyFriction(uint8_t coefficient)
 {
 	int32_t friction = 256 - coefficient;
@@ -462,36 +470,37 @@ void ParticleSystem::applyFriction(uint8_t coefficient)
 
 // TODO: attract needs to use the above force functions
 // attracts a particle to an attractor particle using the inverse square-law
-void ParticleSystem::attract(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow)
+void ParticleSystem::attract(PSparticle *part, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow)
 {
 	// Calculate the distance between the particle and the attractor
-	int32_t dx = attractor->x - particle->x;
-	int32_t dy = attractor->y - particle->y;
+	int32_t dx = attractor->x - part->x;
+	int32_t dy = attractor->y - part->y;
 
 	// Calculate the force based on inverse square law
 	int32_t distanceSquared = dx * dx + dy * dy + 1;
-	if (distanceSquared < 4096)
+	if (distanceSquared < 8192)
 	{
-		if (swallow) // particle is close, kill it
-		{
-			particle->ttl = 0;
-			return;
+		if (swallow) // particle is close, age it fast so it fades out, do not attract further
+		{			
+			if (part->ttl > 7)
+				part->ttl -= 8; 
+			else
+			{
+				part->ttl = 0;
+				return;
+			}
 		}
-		distanceSquared = 4 * PS_P_RADIUS * PS_P_RADIUS; // limit the distance of particle size to avoid very high forces
+		distanceSquared = 4 * PS_P_RADIUS * PS_P_RADIUS; // limit the distance to avoid very high forces
 	}
 
-	int32_t shiftedstrength = (int32_t)strength << 16;
-	int32_t force;
-	int32_t xforce;
-	int32_t yforce;
-	int32_t xforce_abs; // absolute value
-	int32_t yforce_abs;
+	int32_t force = ((int32_t)strength << 16) / distanceSquared;
+	int8_t xforce = (force * dx) >> 10; // scale to a lower value, found by experimenting
+	int8_t yforce = (force * dy) >> 10;
 
-	force = shiftedstrength / distanceSquared;
-	xforce = (force * dx) >> 10; // scale to a lower value, found by experimenting
-	yforce = (force * dy) >> 10;
-	xforce_abs = abs(xforce); // absolute value
-	yforce_abs = abs(yforce);
+	applyForce(part, 1, xforce, yforce, counter);
+	/*
+	int32_t xforce_abs = abs(xforce); // absolute value
+	int32_t yforce_abs = abs(yforce);
 
 	uint8_t xcounter = (*counter) & 0x0F; // lower four bits
 	uint8_t ycounter = (*counter) >> 4;	  // upper four bits
@@ -541,7 +550,7 @@ void ParticleSystem::attract(PSparticle *particle, PSparticle *attractor, uint8_
 	{
 		particle->vy += yforce >> 4; // divide by 16
 	}
-	// TODO: need to limit the max speed?
+	*/
 }
 
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
@@ -572,17 +581,10 @@ void ParticleSystem::ParticleSys_render()
 
 	// go over particles and render them to the buffer
 	for (i = 0; i < usedParticles; i++)
-	{			
-		if (particles[i].ttl == 0)
-		{
-			//Serial.print("d");
+	{
+		if (particles[i].ttl == 0 || particles[i].outofbounds)
 			continue;
-		}
-		if(particles[i].outofbounds)
-		{
-			//Serial.print("o");
-			continue;
-		}
+
 		// generate RGB values for particle
 		brightness = particles[i].ttl > 255 ? 255 : particles[i].ttl; //faster then using min()
 		baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255, LINEARBLEND);
@@ -596,7 +598,7 @@ void ParticleSystem::ParticleSys_render()
 
 		// calculate brightness values for all four pixels representing a particle using linear interpolation and calculate the coordinates of the phyiscal pixels to add the color to
 		renderParticle(&particles[i], brightness, intensity, pixco);
-
+		/*
 		//debug: check coordinates if out of buffer boundaries print out some info
 		for(uint32_t d; d<4; d++)
 		{
@@ -624,7 +626,7 @@ void ParticleSystem::ParticleSys_render()
 				useLocalBuffer = false;
 				free(colorbuffer); // free buffer memory
 			}
-		}
+		}*/
 		if (useLocalBuffer)
 		{
 			if (intensity[0] > 0)
@@ -638,6 +640,7 @@ void ParticleSystem::ParticleSys_render()
 		}
 		else
 		{
+			SEGMENT.fill(BLACK); // clear the matrix
 			if (intensity[0] > 0)
 				SEGMENT.addPixelColorXY(pixco[0][0], maxYpixel - pixco[0][1], baseRGB.scale8((uint8_t)intensity[0])); // bottom left
 			if (intensity[1] > 0)
@@ -766,8 +769,9 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 	}
 	Serial.println(" ");
 */
+/*
 	// debug: check coordinates if out of buffer boundaries print out some info
-	for (uint32_t d; d < 4; d++)
+	for (uint32_t d = 0; d < 4; d++)
 	{
 		if (pixelpositions[d][0] < 0 || pixelpositions[d][0] > maxXpixel)
 		{
@@ -802,6 +806,7 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 			}
 		}
 	}
+*/
 }
 
 // update & move particle, wraps around left/right if settings.wrapX is true, wrap around up/down if settings.wrapY is true
@@ -820,7 +825,7 @@ void ParticleSystem::fireParticleupdate()
 			particles[i].ttl--;
 			// apply velocity
 			particles[i].x = particles[i].x + (int32_t)particles[i].vx;
-			particles[i].y = particles[i].y + (int32_t)particles[i].vy + (particles[i].ttl >> 4); // younger particles move faster upward as they are hotter
+			particles[i].y = particles[i].y + (int32_t)particles[i].vy + (particles[i].ttl >> 2); // younger particles move faster upward as they are hotter
 			particles[i].outofbounds = 0;
 			// check if particle is out of bounds, wrap x around to other side if wrapping is enabled
 			// as fire particles start below the frame, lots of particles are out of bounds in y direction. to improve speed, only check x direction if y is not out of bounds
@@ -936,9 +941,11 @@ void ParticleSystem::PartMatrix_addHeat(int32_t heat, uint8_t *currentcolor, uin
 	// define how the particle TTL value (which is the heat given to the function) maps to heat, if lower, fire is more red, if higher, fire is brighter as bright flames travel higher and decay faster
 	// need to scale ttl value of particle to a good heat value that decays fast enough
 	#ifdef ESP8266
-	heat = heat * (1 + (intensity >> 4)) + (intensity >> 3); // ESP8266 TODO: does this still need different value like in the old version? currently set to same
+	heat = heat * (1 + (intensity >> 3)) + (intensity >> 3); //ESP8266 has to make due with less flames, so add more heat 
 	#else
-	heat = heat * (1 + (intensity >> 4)) + (intensity >> 3); // todo: make this a variable to pass
+	//heat = (heat * (1 + (intensity)) >> 4) + (intensity >> 3);  //this makes it more pulsating
+	//heat = heat * (1 + (intensity >> 4)) + (intensity >> 3); //this is good, but pulsating at low speeds
+	heat = heat * heat / (1 + (255-intensity)) + (intensity >> 3); 
 	#endif
 
 	uint32_t i;
@@ -1056,12 +1063,12 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 	// If particles are moving towards each other
 	if (dotProduct < 0)
 	{
-		const uint32_t bitshift = 15; // bitshift used to avoid floats (dx/dy are 7bit, relativV are 8bit -> dotproduct is 15bit so up to 16bit shift is ok)
+		const uint32_t bitshift = 16; // bitshift used to avoid floats (dx/dy are 7bit, relativV are 8bit -> dotproduct is 15bit so up to 16bit shift is ok)
 
 		// Calculate new velocities after collision
 		int32_t impulse = (((dotProduct << (bitshift)) / (distanceSquared)) * collisionHardness) >> 8;
-		int32_t ximpulse = 1 + (impulse * dx) >> bitshift;
-		int32_t yimpulse = 1 + (impulse * dy) >> bitshift;
+		int32_t ximpulse = ((impulse + 1) * dx) >> bitshift; // todo: is the +1 a good idea?
+		int32_t yimpulse = ((impulse + 1) * dy) >> bitshift;
 		particle1->vx += ximpulse;
 		particle1->vy += yimpulse;
 		particle2->vx -= ximpulse;
@@ -1139,13 +1146,13 @@ int32_t ParticleSystem::wraparound(int32_t p, int32_t maxvalue)
 	return p;
 }
 
-//calculate the dV value and update the counter for force calculation (is used several times, function saves on codesize)
+//calculate the delta speed (dV) value and update the counter for force calculation (is used several times, function saves on codesize)
 //force is in 3.4 fixedpoint notation, +/-127
 int32_t ParticleSystem::calcForce_dV(int8_t force, uint8_t* counter)
 {
 	// for small forces, need to use a delay counter
 	int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)
-	int32_t dv;
+	int32_t dv = 0;
 	// for small forces, need to use a delay counter, apply force only if it overflows
 	if (force_abs < 16)
 	{
@@ -1173,13 +1180,23 @@ CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 	{
 		// assign pointers of 2D array
 		CRGB *start = (CRGB *)(array2D + cols);
-		for (int i = 0; i < cols; i++)
+		for (uint i = 0; i < cols; i++)
 		{
 			array2D[i] = start + i * rows;
 		}
 		memset(start, 0, cols * rows * sizeof(CRGB)); // set all values to zero
 	}
 	return array2D;
+}
+
+//update size and pointers (memory location and size can change dynamically)
+void ParticleSystem::updateSystem(void)
+{
+	// update matrix size
+	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
+	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+	setMatrixSize(cols, rows);
+	updatePSpointers();
 }
 
 // set the pointers for the class (this only has to be done once and not on every FX call, only the class pointer needs to be reassigned to SEGENV.data every time)
@@ -1200,20 +1217,19 @@ void ParticleSystem::updatePSpointers()
 }
 
 //non class functions to use for initialization
-
 uint32_t calculateNumberOfParticles()
 {
 	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 #ifdef ESP8266
-	uint numberofParticles = (cols * rows * 3)>>2 ; // 0.75 particle per pixel
-	uint particlelimit = 148; //maximum number of paticles allowed (based on one segment of 16x16 and 4k effect ram)
-#elseif ARDUINO_ARCH_ESP32S2
+	uint numberofParticles = (cols * rows * 3) / 4; // 0.75 particle per pixel
+	uint particlelimit = ESP8266_MAXPARTICLES; // maximum number of paticles allowed (based on one segment of 16x16 and 4k effect ram)
+#elif ARDUINO_ARCH_ESP32S2
 	uint numberofParticles = (cols * rows); // 1 particle per pixe
-	uint particlelimit = 768; // maximum number of paticles allowed (based on one segment of 32x32 and 24k effect ram)
+	uint particlelimit = ESP32S2_MAXPARTICLES; // maximum number of paticles allowed (based on one segment of 32x32 and 24k effect ram)
 #else
-	uint numberofParticles = (cols * rows * 3) / 2; // 1.5 particles per pixel (for example 768 particles on 32x16)
-	uint particlelimit = 1280; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
+	uint numberofParticles = (cols * rows);		 // 1 particle per pixel (for example 768 particles on 32x16)
+	uint particlelimit = ESP32_MAXPARTICLES; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
 #endif
 	numberofParticles = max((uint)1, min(numberofParticles, particlelimit)); 	
 	return numberofParticles;
@@ -1225,13 +1241,13 @@ uint32_t calculateNumberOfSources()
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 #ifdef ESP8266
 	int numberofSources = (cols * rows) / 8;
-	numberofSources = max(1 , min(numberofSources, 16)); //limit to 1 - 16
-#elseif ARDUINO_ARCH_ESP32S2
+	numberofSources = max(1, min(numberofSources, ESP8266_MAXSOURCES)); // limit to 1 - 16
+#elif ARDUINO_ARCH_ESP32S2
 	int numberofSources = (cols * rows) / 6;
-	numberofSources = max(1, min(numberofSources, 48)); // limit to 1 - 48
+	numberofSources = max(1, min(numberofSources, ESP32S2_MAXSOURCES)); // limit to 1 - 48
 #else
 	int numberofSources = (cols * rows) / 4;
-	numberofSources = max(1 , min(numberofSources, 72)); //limit to 1 - 72
+	numberofSources = max(1, min(numberofSources, ESP32_MAXSOURCES)); // limit to 1 - 72
 #endif
 	return numberofSources;
 }
@@ -1274,7 +1290,7 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes)
 }
 
 // fastled color adding is very inaccurate in color preservation
-// a better color add function is implemented in colors.cpp but it uses 32bit RGBW. so colors need to be shifted and then shifted back by that function, which is slow
+// a better color add function is implemented in colors.cpp but it uses 32bit RGBW. to use it colors need to be shifted just to then be shifted back by that function, which is slow
 // this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color (fastled scale8 can be made faster using native 32bit on ESP)
 CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale)
 {
@@ -1284,7 +1300,7 @@ CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale)
 	uint32_t g = c1.g + ((c2.g * (scale)) >> 8);
 	uint32_t b = c1.b + ((c2.b * (scale)) >> 8);
 	uint32_t max = r;
-	if (g > max)
+	if (g > max) //note: using ? operator would be slower by 2 cpu cycles
 		max = g;
 	if (b > max)
 		max = b;

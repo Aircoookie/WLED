@@ -29,13 +29,21 @@
 #include <stdint.h>
 #include "FastLED.h"
 
+//memory allocation
+#define ESP8266_MAXPARTICLES 148 // enough for one 16x16 segment with transitions
+#define ESP8266_MAXSOURCES 16
+#define ESP32S2_MAXPARTICLES 768 // enough for four 16x16 segments
+#define ESP32S2_MAXSOURCES 48
+#define ESP32_MAXPARTICLES 1024 // enough for four 16x16 segments  TODO: not enough for one 64x64 panel...
+#define ESP32_MAXSOURCES 64
+
 //particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 //subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
 #define PS_P_HALFRADIUS 32  
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_HARDRADIUS 80 //hard surface radius of a particle, used for collision detection proximity
-#define PS_P_MAXSPEED 255 //maximum speed a particle can have
+#define PS_P_MAXSPEED 200 //maximum speed a particle can have
 
 //struct for a single particle
 typedef struct {
@@ -51,8 +59,6 @@ typedef struct {
     bool collide : 1; //if set, particle takes part in collisions
     bool flag3 : 1; // unused flags...
     bool flag4 : 1;
-
-    //uint16_t ttl; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
 } PSparticle;
 
 //struct for a particle source
@@ -68,15 +74,15 @@ typedef struct {
 // struct for PS settings
 typedef struct
 {
-  // add a one byte bit field:
-  bool killoutofbounds : 1; // if set, out of bound particles are killed immediately 
+  // add a one byte bit field:  
   bool wrapX : 1; 
   bool wrapY : 1;
   bool bounceX : 1;
   bool bounceY : 1;
+  bool killoutofbounds : 1; // if set, out of bound particles are killed immediately
   bool useGravity : 1; //set to 1 if gravity is used, disables bounceY at the top
   bool useCollisions : 1;
-  bool colorByAge : 1; // if set, particle hue is set by ttl value 
+  bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
 } PSsettings;
 
 class ParticleSystem
@@ -86,14 +92,15 @@ public:
   // note: memory is allcated in the FX function, no deconstructor needed
   void update(void); //update the particles according to set options and render to the matrix
   void updateFire(uint32_t intensity, bool usepalette); // update function for fire
-  void updatePSpointers(); // update the data pointers to current segment data space
+  
 
   // particle emitters
   void flameEmit(PSsource &emitter);
   void sprayEmit(PSsource &emitter);
   void angleEmit(PSsource& emitter, uint16_t angle, uint32_t speed);
-  
-  //move functions
+  void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
+
+  // move functions
   void particleMoveUpdate(PSparticle &part, PSsettings &options);
 
   //particle physics
@@ -101,6 +108,7 @@ public:
   void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t *counter); //use global gforce
   void applyGravity(PSparticle *part); //use global system settings 
   void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter);
+  void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce);
   void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle, uint8_t *counter);
   void applyFriction(PSparticle *part, uint8_t coefficient); // apply friction to specific particle
   void applyFriction(uint8_t coefficient); // apply friction to all used particles
@@ -143,6 +151,7 @@ private:
   void fireParticleupdate();
 
   //utility functions
+  void updatePSpointers(); // update the data pointers to current segment data space
   int32_t wraparound(int32_t w, int32_t maxvalue);
   int32_t calcForce_dV(int8_t force, uint8_t *counter);
   CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
