@@ -1,0 +1,27 @@
+name: 'Close stale issues and PRs'
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 120
+          days-before-close: 7
+          exempt-issue-labels: 'pinned,keep,enhancement,confirmed'
+          exempt-pr-labels: 'pinned,keep,enhancement,confirmed'
+          stale-issue-message: >
+            Hey! This issue has been open for quite some time without any new comments now.
+            It will be closed automatically in a week if no further activity occurs.
+            
+            Thank you for using WLED! ✨
+          stale-pr-message: >
+            Hey! This pull request has been open for quite some time without any new comments now.
+            It will be closed automatically in a week if no further activity occurs.
+            
+            Thank you for using WLED! ✨
+          debug-only: true
