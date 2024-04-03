@@ -316,6 +316,25 @@
 
 #define MODE_COUNT                     187
 
+
+#define BLEND_STYLE_FADE            0
+#define BLEND_STYLE_FAIRY_DUST      1
+#define BLEND_STYLE_SWIPE_RIGHT     2
+#define BLEND_STYLE_SWIPE_LEFT      3
+#define BLEND_STYLE_PINCH_OUT       4
+#define BLEND_STYLE_INSIDE_OUT      5
+#define BLEND_STYLE_SWIPE_UP        6
+#define BLEND_STYLE_SWIPE_DOWN      7
+#define BLEND_STYLE_OPEN_H          8
+#define BLEND_STYLE_OPEN_V          9
+#define BLEND_STYLE_PUSH_TL         10
+#define BLEND_STYLE_PUSH_TR         11
+#define BLEND_STYLE_PUSH_BR         12
+#define BLEND_STYLE_PUSH_BL         13
+
+#define BLEND_STYLE_COUNT           14
+
+
 typedef enum mapping1D2D {
   M12_Pixels = 0,
   M12_pBar = 1,
@@ -419,6 +438,9 @@ typedef struct Segment {
     static uint16_t _lastPaletteBlend;        // blend palette according to set Transition Delay in millis()%0xFFFF
     #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
+    // clipping
+    static uint16_t _clipStart, _clipStop;
+    static uint8_t  _clipStartY, _clipStopY;
     #endif
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
@@ -578,6 +600,10 @@ typedef struct Segment {
     void setPixelColor(float i, uint32_t c, bool aa = true);
     inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
+    #ifndef WLED_DISABLE_MODE_BLEND
+    inline void setClippingRect(int startX, int stopX, int startY = 0, int stopY = 1) { _clipStart = startX; _clipStop = stopX; _clipStartY = startY; _clipStopY = stopY; };
+    #endif
+    bool isPixelClipped(int i);
     uint32_t getPixelColor(int i);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
@@ -606,6 +632,7 @@ typedef struct Segment {
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
+    bool isPixelXYClipped(int x, int y);
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
     // 2D support functions
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) { setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend)); }
@@ -640,6 +667,7 @@ typedef struct Segment {
     inline void setPixelColorXY(float x, float y, uint32_t c, bool aa = true)     { setPixelColor(x, c, aa); }
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColor(x, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
+    inline bool isPixelXYClipped(int x, int y)                                    { return isPixelClipped(x); }
     inline uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColor(x, RGBW32(c.r,c.g,c.b,0), blend); }

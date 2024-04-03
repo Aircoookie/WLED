@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2403280
+#define VERSION 2404030
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -547,6 +547,7 @@ WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random co
 // transitions
 WLED_GLOBAL bool          fadeTransition           _INIT(true);   // enable crossfading brightness/color
 WLED_GLOBAL bool          modeBlending             _INIT(true);   // enable effect blending
+WLED_GLOBAL uint8_t       blendingStyle            _INIT(0);      // effect blending/transitionig style
 WLED_GLOBAL bool          transitionActive         _INIT(false);
 WLED_GLOBAL uint16_t      transitionDelay          _INIT(750);    // global transition duration
 WLED_GLOBAL uint16_t      transitionDelayDefault   _INIT(750);    // default transition time (stored in cfg.json)

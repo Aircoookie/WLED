@@ -1426,6 +1426,9 @@ function readState(s,command=false)
 
 	tr = s.transition;
 	gId('tt').value = tr/10;
+	gId('bs').value = s.bs || 0;
+	if (tr===0) gId('bsp').classList.add('hide')
+	else gId('bsp').classList.remove('hide')
 
 	populateSegments(s);
 	var selc=0;
@@ -1682,6 +1685,7 @@ function requestJson(command=null)
 			var tn = parseInt(t.value*10);
 			if (tn != tr) command.transition = tn;
 		}
+		//command.bs = parseInt(gId('bs').value);
 		req = JSON.stringify(command);
 		if (req.length > 1340) useWs = false; // do not send very long requests over websocket
 		if (req.length >  500 && lastinfo && lastinfo.arch == "esp8266") useWs = false; // esp8266 can only handle 500 bytes

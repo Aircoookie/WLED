@@ -84,6 +84,10 @@ uint16_t      Segment::_lastPaletteBlend  = 0; //in millis (lowest 16 bits only)
 
 #ifndef WLED_DISABLE_MODE_BLEND
 bool Segment::_modeBlend = false;
+uint16_t Segment::_clipStart = 0;
+uint16_t Segment::_clipStop = 0;
+uint8_t  Segment::_clipStartY = 0;
+uint8_t  Segment::_clipStopY = 1;
 #endif
 
 // copy constructor
@@ -413,12 +417,17 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 
 uint8_t IRAM_ATTR Segment::currentBri(bool useCct) {
   uint32_t prog = progress();
+  uint32_t curBri = useCct ? cct : (on ? opacity : 0);
   if (prog < 0xFFFFU) {
-    uint32_t curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
-    curBri += (useCct ? _t->_cctT : _t->_briT) * (0xFFFFU - prog);
+    uint8_t tmpBri = useCct ? _t->_cctT : (_t->_segT._optionsT & 0x0004 ? _t->_briT : 0);
+#ifndef WLED_DISABLE_MODE_BLEND
+    if (blendingStyle > BLEND_STYLE_FADE) return _modeBlend ? tmpBri : curBri; // not fade/blend transition, each effect uses its brightness
+#endif
+    curBri *=  prog;
+    curBri += tmpBri * (0xFFFFU - prog);
     return curBri / 0xFFFFU;
   }
-  return (useCct ? cct : (on ? opacity : 0));
+  return curBri;
 }
 
 uint8_t IRAM_ATTR Segment::currentMode() {
@@ -431,16 +440,23 @@ uint8_t IRAM_ATTR Segment::currentMode() {
 
 uint32_t IRAM_ATTR Segment::currentColor(uint8_t slot) {
   if (slot >= NUM_COLORS) slot = 0;
+  uint32_t prog = progress();
+  if (prog == 0xFFFFU) return colors[slot];
 #ifndef WLED_DISABLE_MODE_BLEND
-  return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];
+  if (blendingStyle > BLEND_STYLE_FADE) return _modeBlend ? _t->_segT._colorT[slot] : colors[slot]; // not fade/blend transition, each effect uses its color
+  return color_blend(_t->_segT._colorT[slot], colors[slot], prog, true);
 #else
-  return isInTransition() ? color_blend(_t->_colorT[slot], colors[slot], progress(), true) : colors[slot];
+  return color_blend(_t->_colorT[slot], colors[slot], prog, true);
 #endif
 }
 
 CRGBPalette16 IRAM_ATTR &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   loadPalette(targetPalette, pal);
   uint16_t prog = progress();
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (prog < 0xFFFFU && blendingStyle > BLEND_STYLE_FADE && _modeBlend) targetPalette = _t->_palT; // not fade/blend transition, each effect uses its palette
+  else
+#endif
   if (strip.paletteFade && prog < 0xFFFFU) {
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
@@ -456,9 +472,9 @@ CRGBPalette16 IRAM_ATTR &Segment::currentPalette(CRGBPalette16 &targetPalette, u
 void Segment::handleRandomPalette() {
   // is it time to generate a new palette?
   if ((millis()/1000U) - _lastPaletteChange > randomPaletteChangeTime) {
-        _newRandomPalette = useHarmonicRandomPalette ? generateHarmonicRandomPalette(_randomPalette) : generateRandomPalette();
-        _lastPaletteChange = millis()/1000U;
-        _lastPaletteBlend = (uint16_t)(millis() & 0xFFFF)-512; // starts blending immediately
+    _newRandomPalette = useHarmonicRandomPalette ? generateHarmonicRandomPalette(_randomPalette) : generateRandomPalette();
+    _lastPaletteChange = millis()/1000U;
+    _lastPaletteBlend = (uint16_t)(millis() & 0xFFFF)-512; // starts blending immediately
   }
 
   // if palette transitions is enabled, blend it according to Transition Time (if longer than minimum given by service calls)
@@ -662,6 +678,32 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
   return vLength;
 }
 
+// pixel is clipped if it falls outside clipping range (_modeBlend==true) or is inside clipping range (_modeBlend==false)
+// if clipping start > stop the clipping range is inverted
+// _modeBlend==true  -> old effect during transition
+// _modeBlend==false -> new effect during transition
+bool IRAM_ATTR Segment::isPixelClipped(int i) {
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (_clipStart != _clipStop && blendingStyle > BLEND_STYLE_FADE) {
+    bool invert    = _clipStart > _clipStop;
+    unsigned start = invert ? _clipStop : _clipStart;
+    unsigned stop  = invert ? _clipStart : _clipStop;
+    if (blendingStyle == BLEND_STYLE_FAIRY_DUST) {
+      unsigned len = stop - start;
+      if (len < 2) return false;
+      unsigned shuffled = hashInt(i) % len;
+      unsigned pos = (shuffled * 0xFFFFU) / len;
+      return progress() <= pos;
+    }
+    const bool iInside = (i >= start && i < stop);
+    if (!invert &&  iInside) return _modeBlend;
+    if ( invert && !iInside) return _modeBlend;
+    return !_modeBlend;
+  }
+#endif
+  return false;
+}
+
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
   if (!isActive()) return; // not active
@@ -732,6 +774,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
+  if (isPixelClipped(i)) return; // handle clipping on 1D
+
   uint16_t len = length();
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
@@ -763,14 +807,16 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexMir), col, 0xFFFFU - progress(), true);
+        // _modeBlend==true -> old effect
+        if (_modeBlend && blendingStyle == BLEND_STYLE_FADE) tmpCol = color_blend(strip.getPixelColor(indexMir), col, 0xFFFFU - progress(), true);
 #endif
         strip.setPixelColor(indexMir, tmpCol);
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-      if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexSet), col, 0xFFFFU - progress(), true);
+        // _modeBlend==true -> old effect
+      if (_modeBlend && blendingStyle == BLEND_STYLE_FADE) tmpCol = color_blend(strip.getPixelColor(indexSet), col, 0xFFFFU - progress(), true);
 #endif
       strip.setPixelColor(indexSet, tmpCol);
     }
@@ -1062,7 +1108,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
   // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
   if (!wrap && strip.paletteBlend != 3) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGBPalette16 curPal;
-  curPal = currentPalette(curPal, palette);
+  currentPalette(curPal, palette);
   CRGB fastled_col = ColorFromPalette(curPal, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
 
   return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, W(color));
@@ -1185,8 +1231,59 @@ void WS2812FX::service() {
         // overwritten by later effect. To enable seamless blending for every effect, additional LED buffer
         // would need to be allocated for each effect and then blended together for each pixel.
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
-        delay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
+        seg.setClippingRect(0, 0); // disable clipping
+        if (modeBlending && seg.mode != tmpMode) {
+          // set clipping rectangle
+          // new mode is run inside clipping area and old mode outside clipping area
+          unsigned p = seg.progress();
+          unsigned w = seg.is2D() ? seg.virtualWidth() : _virtualSegmentLength;
+          unsigned h = seg.virtualHeight();
+          unsigned dw = p * w / 0xFFFFU + 1;
+          unsigned dh = p * h / 0xFFFFU + 1;
+          switch (blendingStyle) {
+            case BLEND_STYLE_FAIRY_DUST: // fairy dust (must set entire segment, see isPixelXYClipped())
+              seg.setClippingRect(0, w, 0, h);
+              break;
+            case BLEND_STYLE_SWIPE_RIGHT: // left-to-right
+              seg.setClippingRect(0, dw, 0, h);
+              break;
+            case BLEND_STYLE_SWIPE_LEFT: // right-to-left
+              seg.setClippingRect(w - dw, w, 0, h);
+              break;
+            case BLEND_STYLE_PINCH_OUT: // corners
+              seg.setClippingRect((w + dw)/2, (w - dw)/2, (h + dh)/2, (h - dh)/2); // inverted!!
+              break;
+            case BLEND_STYLE_INSIDE_OUT: // outward
+              seg.setClippingRect((w - dw)/2, (w + dw)/2, (h - dh)/2, (h + dh)/2);
+              break;
+            case BLEND_STYLE_SWIPE_DOWN: // top-to-bottom (2D)
+              seg.setClippingRect(0, w, 0, dh);
+              break;
+            case BLEND_STYLE_SWIPE_UP: // bottom-to-top (2D)
+              seg.setClippingRect(0, w, h - dh, h);
+              break;
+            case BLEND_STYLE_OPEN_H: // horizontal-outward (2D) same look as INSIDE_OUT on 1D
+              seg.setClippingRect((w - dw)/2, (w + dw)/2, 0, h);
+              break;
+            case BLEND_STYLE_OPEN_V: // vertical-outward (2D)
+              seg.setClippingRect(0, w, (h - dh)/2, (h + dh)/2);
+              break;
+            case BLEND_STYLE_PUSH_TL: // TL-to-BR (2D)
+              seg.setClippingRect(0, dw, 0, dh);
+              break;
+            case BLEND_STYLE_PUSH_TR: // TR-to-BL (2D)
+              seg.setClippingRect(w - dw, w, 0, dh);
+              break;
+            case BLEND_STYLE_PUSH_BR: // BR-to-TL (2D)
+              seg.setClippingRect(w - dw, w, h - dh, h);
+              break;
+            case BLEND_STYLE_PUSH_BL: // BL-to-TR (2D)
+              seg.setClippingRect(0, dw, h - dh, h);
+              break;
+          }
+        }
+        delay = (*_mode[seg.mode])();         // run new/current mode
         if (modeBlending && seg.mode != tmpMode) {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
@@ -1197,6 +1294,8 @@ void WS2812FX::service() {
           delay = MIN(delay,d2);              // use shortest delay
           Segment::modeBlend(false);          // unset semaphore
         }
+#else
+        delay = (*_mode[seg.mode])();         // run effect mode
 #endif
         seg.call++;
         if (seg.isInTransition() && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition

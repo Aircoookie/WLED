@@ -265,7 +265,25 @@
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
-		<p>Transition: <input id="tt" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>
+		<p>Transition: <input id="tt" type="number" min="0" max="65.5" step="0.1" value="0.7" onchange="parseFloat(this.value)===0?gId('bsp').classList.add('hide'):gId('bsp').classList.remove('hide');">&nbsp;s</p>
+		<p id="bsp">Blend:
+			<select id="bs" class="sel-sg" onchange="requestJson({'bs':parseInt(this.value)})">
+				<option value="0">Fade</option>
+				<option value="1">Fairy Dust</option>
+				<option value="2">Swipe left</option>
+				<option value="3">Swipe right</option>
+				<option value="4">Pinch-out</option>
+				<option value="5">Inside-out</option>
+				<option value="6">Swipe up (2D)</option>
+				<option value="7">Swipe down (2D)</option>
+				<option value="8">Open V (2D)</option>
+				<option value="9">Open H (2D)</option>
+				<option value="10">Push TL (2D)</option>
+				<option value="11">Push TR (2D)</option>
+				<option value="12">Push BR (2D)</option>
+				<option value="13">Push BL (2D)</option>
+			</select>
+		</p>
 		<p id="ledmap" class="hide"></p>
 	</div>
 
