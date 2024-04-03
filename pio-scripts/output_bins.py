@@ -3,7 +3,8 @@ import os
 import shutil
 import gzip
 
-OUTPUT_DIR = os.path.join("build_output")
+OUTPUT_DIR = "build_output{}".format(os.path.sep)
+#OUTPUT_DIR = os.path.join("build_output")
 
 def _get_cpp_define_value(env, define):
     define_list = [item[-1] for item in env["CPPDEFINES"] if item[0] == define]
@@ -13,7 +14,7 @@ def _get_cpp_define_value(env, define):
 
     return None
 
-def _create_dirs(dirs=["map", "release"]):
+def _create_dirs(dirs=["map", "release", "firmware"]):
     for d in dirs:
         os.makedirs(os.path.join(OUTPUT_DIR, d), exist_ok=True)
 
@@ -26,6 +27,11 @@ def create_release(source):
         print(f"Copying {source} to {release_file}")
         shutil.copy(source, release_file)
         bin_gzip(release_file, release_gz_file)
+    else:
+        variant = env["PIOENV"]
+        bin_file = "{}firmware{}{}.bin".format(OUTPUT_DIR, os.path.sep, variant)
+        print(f"Copying {source} to {bin_file}")
+        shutil.copy(source, bin_file)
 
 def bin_rename_copy(source, target, env):
     _create_dirs()

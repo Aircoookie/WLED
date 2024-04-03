@@ -76,7 +76,7 @@
 
 #### Build 2309120 till build 2402010
 -   WLED version 0.15.0-a0
--   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to
+-   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to (with help from @JPZV)
 -   Temporary AP. Use your WLED in public with temporary AP.
 -   Github CI build system enhancements (#3718 by @WoodyLetsCode)
 -   Accessibility: Node list ( #3715 by @WoodyLetsCode)
