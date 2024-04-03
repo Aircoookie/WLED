@@ -419,9 +419,11 @@ uint8_t IRAM_ATTR Segment::currentBri(bool useCct) {
   uint32_t prog = progress();
   uint32_t curBri = useCct ? cct : (on ? opacity : 0);
   if (prog < 0xFFFFU) {
-    uint8_t tmpBri = useCct ? _t->_cctT : (_t->_segT._optionsT & 0x0004 ? _t->_briT : 0);
 #ifndef WLED_DISABLE_MODE_BLEND
+    uint8_t tmpBri = useCct ? _t->_cctT : (_t->_segT._optionsT & 0x0004 ? _t->_briT : 0);
     if (blendingStyle > BLEND_STYLE_FADE) return _modeBlend ? tmpBri : curBri; // not fade/blend transition, each effect uses its brightness
+#else
+    uint8_t tmpBri = useCct ? _t->_cctT : _t->_briT;
 #endif
     curBri *=  prog;
     curBri += tmpBri * (0xFFFFU - prog);
