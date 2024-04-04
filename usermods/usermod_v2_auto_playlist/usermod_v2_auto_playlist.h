@@ -8,23 +8,23 @@ class AutoPlaylistUsermod : public Usermod {
     
     bool initDone = false;
     bool silenceDetected = true;
-    uint32_t lastSoundTime = 0;
+    unsigned long lastSoundTime = 0;
     byte ambientPlaylist = 1;
     byte musicPlaylist = 2;
     int timeout = 60;
     bool autoChange = false;
     byte lastAutoPlaylist = 0;
-    int change_timer = millis();
+    unsigned long change_timer = millis();
 
     uint_fast32_t energy = 0;
 
-    uint_fast32_t avg_long_energy = 250;
-    uint_fast32_t avg_long_lfc = 1000;
-    uint_fast32_t avg_long_zcr = 500;
+    float avg_long_energy = 250;
+    float avg_long_lfc = 1000;
+    float avg_long_zcr = 500;
 
-    uint_fast32_t avg_short_energy = 250;
-    uint_fast32_t avg_short_lfc = 1000;
-    uint_fast32_t avg_short_zcr = 500;
+    float avg_short_energy = 250;
+    float avg_short_lfc = 1000;
+    float avg_short_zcr = 500;
 
     uint_fast32_t vector_energy = 0;
     uint_fast32_t vector_lfc = 0;
@@ -34,7 +34,7 @@ class AutoPlaylistUsermod : public Usermod {
     uint_fast32_t distance_tracker = UINT_FAST32_MAX;
     // uint_fast64_t squared_distance = 0;
 
-    int lastchange = millis();
+    unsigned long lastchange = millis();
 
     int_fast16_t change_threshold = 50; // arbitrary starting point.
     uint_fast16_t change_threshold_change = 0;
@@ -86,20 +86,21 @@ class AutoPlaylistUsermod : public Usermod {
       energy /= 10000; // scale down so we get 0 sometimes
 
       uint8_t lfc = fftResult[0];
-      uint_fast16_t zcr = *(uint_fast16_t*)um_data->u_data[11];
+      uint16_t zcr = *(uint16_t*)um_data->u_data[11];
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
       // and the individual vector distances.
 
-      if (volumeSmth > 1) { 
+      if (volumeSmth > 1.0f) { 
 
-        avg_long_energy = avg_long_energy * 0.99 + energy * 0.01;
-        avg_long_lfc    = avg_long_lfc    * 0.99 + lfc    * 0.01;
-        avg_long_zcr    = avg_long_zcr    * 0.99 + zcr    * 0.01;
+        // softhack007: original code used 0.998f as decay factor
+        avg_long_energy = avg_long_energy * 0.99f + energy * 0.01f;
+        avg_long_lfc    = avg_long_lfc    * 0.99f + lfc    * 0.01f;
+        avg_long_zcr    = avg_long_zcr    * 0.99f + zcr    * 0.01f;
 
-        avg_short_energy = avg_short_energy * 0.9 + energy * 0.1;
-        avg_short_lfc    = avg_short_lfc    * 0.9 + lfc    * 0.1;
-        avg_short_zcr    = avg_short_zcr    * 0.9 + zcr    * 0.1;
+        avg_short_energy = avg_short_energy * 0.9f + energy * 0.1f;
+        avg_short_lfc    = avg_short_lfc    * 0.9f + lfc    * 0.1f;
+        avg_short_zcr    = avg_short_zcr    * 0.9f + zcr    * 0.1f;
 
         // allegedly this is faster than pow(whatever,2)
         vector_lfc = (avg_short_lfc-avg_long_lfc)*(avg_short_lfc-avg_long_lfc);
@@ -113,15 +114,15 @@ class AutoPlaylistUsermod : public Usermod {
       distance = vector_lfc + vector_energy + vector_zcr;
       // squared_distance = distance * distance;
 
-      int change_interval = millis()-lastchange;
+      long change_interval = millis()-lastchange;
 
-      if (distance < distance_tracker && change_interval > change_lockout && volumeSmth > 1) {
+      if (distance < distance_tracker && change_interval > change_lockout && volumeSmth > 1.0f) {
         distance_tracker = distance;
       }
 
       // USER_PRINTF("Distance: %3lu - v_lfc: %5lu v_energy: %5lu v_zcr: %5lu\n",(unsigned long)distance,(unsigned long)vector_lfc,(unsigned long)vector_energy,(unsigned long)vector_zcr);
 
-      if (millis() > change_timer + ideal_change_min) {
+      if ((millis() - change_timer) > ideal_change_min) { // softhack007 same result as "millis() > change_timer + ideal_change_min", but more robust against unsigned overflow
 
         // Make the analysis less sensitive if we miss the window.
         // Sometimes the analysis lowers the change_threshold too much for
@@ -133,7 +134,7 @@ class AutoPlaylistUsermod : public Usermod {
           change_threshold_change = (distance_tracker)-change_threshold;
           change_threshold = distance_tracker;
 
-          USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ums - next change_threshold is %4u (%4u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
+          USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ldms - next change_threshold is %4u (%4u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
 
           distance_tracker = UINT_FAST32_MAX;
 
@@ -143,9 +144,9 @@ class AutoPlaylistUsermod : public Usermod {
 
       }
       
-      if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1) { 
+      if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1.0f) { 
 
-        change_threshold_change = change_threshold-(distance*0.9);
+        change_threshold_change = change_threshold-(distance*0.9f);
 
         if (change_threshold_change < 1) change_threshold_change = 1;
 
@@ -157,7 +158,7 @@ class AutoPlaylistUsermod : public Usermod {
           change_threshold_change = 0;                    // change was within our window, no sensitivity change
         }
 
-        if (change_threshold < 1) change_threshold = 0;   // we need change_threshold to be signed becasue otherwise this wraps to UINT_FAST16_MAX
+        if (change_threshold < 1) change_threshold = 0;   // we need change_threshold to be signed because otherwise this wraps to UINT_FAST16_MAX
 
         distance_tracker = UINT_FAST32_MAX;
 
@@ -195,11 +196,11 @@ class AutoPlaylistUsermod : public Usermod {
 
           applyPreset(newpreset);
 
-          USER_PRINTF("*** CHANGE distance = %4lu - change_interval was %5ums - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+          USER_PRINTF("*** CHANGE distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
 
         } else {
 
-          USER_PRINTF("^^^ SKIP!! distance = %4lu - change_interval was %5ums - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+          USER_PRINTF("^^^ SKIP!! distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
 
         }
         
@@ -226,7 +227,7 @@ class AutoPlaylistUsermod : public Usermod {
           lastAutoPlaylist = currentPlaylist;
         } else if (enabled) {
           USER_PRINTF("AutoPlaylist: disable due to manual change of playlist from %u to %d, preset:%u\n", lastAutoPlaylist, currentPlaylist, currentPreset);
-          enabled = false;
+          enabled = false;  // softhack007: warning this state is _not_ intermediate, due to line 219 "if (!enabled) return;"
         }
       }
 
@@ -249,11 +250,11 @@ class AutoPlaylistUsermod : public Usermod {
 
       float volumeSmth = *(float*)um_data->u_data[0];
 
-      if (volumeSmth > 0.5) {
+      if (volumeSmth > 0.5f) {
         lastSoundTime = millis();
       }
 
-      if (millis() - lastSoundTime > (timeout * 1000)) {
+      if (millis() - lastSoundTime > (long(timeout) * 1000)) {
         if (!silenceDetected) {
           silenceDetected = true;
           USER_PRINTF("AutoPlaylist: Silence ");
