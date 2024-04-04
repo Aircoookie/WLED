@@ -141,7 +141,7 @@ static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};   // Our calculated freq. chann
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f}; // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256. (also used by dynamics limiter)
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};  // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 
-uint_fast16_t zeroCrossingCount = 0;
+static uint16_t zeroCrossingCount = 0; // number of zero crossings in the current batch of 512 samples
 
 // TODO: probably best not used by receive nodes
 static float agcSensitivity = 128;            // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
@@ -497,17 +497,6 @@ void FFTcode(void * parameter)
     // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
-    // WLED-MM/TroyHacks: Calculate zero crossings
-    //
-    zeroCrossingCount = 0;
-    for (int i=0; i < samplesFFT; i++) {
-      if (i < (samplesFFT)-2) {
-        if((vReal[i] >= 0 && vReal[i+1] < 0) || (vReal[i+1] < 0 && vReal[i+1] >= 0)) {
-            zeroCrossingCount++;
-        }
-      }
-    }
-
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     // debug info in case that stack usage changes
     static unsigned int minStackFree = UINT32_MAX;
@@ -556,15 +545,25 @@ void FFTcode(void * parameter)
       }
     }
 
-    // find highest sample in the batch
+    // find highest sample in the batch, and count zero crossings
     float maxSample = 0.0f;                         // max sample from FFT batch
+    uint_fast16_t newZeroCrossingCount = 0;
     for (int i=0; i < samplesFFT; i++) {
 	    // set imaginary parts to 0
       vImag[i] = 0;
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
+
+      // WLED-MM/TroyHacks: Calculate zero crossings
+      //
+      if (i < (samplesFFT-1)) {
+        if((vReal[i] >= 0 && vReal[i+1] < 0) || (vReal[i] < 0 && vReal[i+1] >= 0)) {
+            newZeroCrossingCount++;
+        }
+      }
     }
+    zeroCrossingCount = newZeroCrossingCount; // update only once, to avoid that effects pick up an intermediate value
 
     // release highest sample to volume reactive effects early - not strictly necessary here - could also be done at the end of the function
     // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.
@@ -1736,7 +1735,7 @@ class AudioReactive : public Usermod {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
         um_data = new um_data_t;
-        um_data->u_size = 11;
+        um_data->u_size = 12;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
         um_data->u_data[0] = &volumeSmth;      //*used (New)
@@ -1778,6 +1777,8 @@ class AudioReactive : public Usermod {
         um_data->u_type[9]  = UMT_FLOAT;
         um_data->u_data[10] = &agcSensitivity; // used (New) - dummy value (128 => 50%)
         um_data->u_type[10] = UMT_FLOAT;
+        um_data->u_data[11] = &zeroCrossingCount;
+        um_data->u_type[11] = UMT_UINT16;
 #endif
       }
 
