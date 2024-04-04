@@ -43,6 +43,7 @@
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_HARDRADIUS 80 //hard surface radius of a particle, used for collision detection proximity
+#define PS_P_MINSURFACEHARDNESS 128 //minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 #define PS_P_MAXSPEED 200 //maximum speed a particle can have
 
 //struct for a single particle
@@ -91,7 +92,7 @@ public:
   ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources); // constructor
   // note: memory is allcated in the FX function, no deconstructor needed
   void update(void); //update the particles according to set options and render to the matrix
-  void updateFire(uint32_t intensity, bool usepalette); // update function for fire
+  void updateFire(uint32_t intensity); // update function for fire
   
 
   // particle emitters
@@ -110,6 +111,7 @@ public:
   void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter);
   void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce);
   void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle, uint8_t *counter);
+  void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle);
   void applyFriction(PSparticle *part, uint8_t coefficient); // apply friction to specific particle
   void applyFriction(uint8_t coefficient); // apply friction to all used particles
   void attract(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
@@ -140,9 +142,7 @@ public:
 
 private: 
   //rendering functions
-  void ParticleSys_render();
-  void renderParticleFire(uint32_t intensity, bool usepalette);
-  void PartMatrix_addHeat(int32_t heat, uint8_t *currentcolor, uint32_t intensity);
+  void ParticleSys_render(bool firemode = false, uint32_t fireintensity = 128);
   void renderParticle(PSparticle *particle, uint32_t brightess, int32_t *pixelvalues, int32_t (*pixelpositions)[2]);    
   
   //paricle physics applied by system if flags are set
@@ -166,7 +166,7 @@ private:
 };
 
 //initialization functions (not part of class)
-bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes);
+bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes = 0);
 uint32_t calculateNumberOfParticles();
 uint32_t calculateNumberOfSources();
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
