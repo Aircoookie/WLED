@@ -749,6 +749,8 @@ void serializeInfo(JsonObject root)
     root[F("arch")] = ESP.getChipModel();
   #endif
   root[F("core")] = ESP.getSdkVersion();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   #ifdef WLED_DEBUG
   root[F("maxalloc")] = ESP.getMaxAllocHeap();
   root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
@@ -758,6 +760,8 @@ void serializeInfo(JsonObject root)
 #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   #ifdef WLED_DEBUG
   root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
   root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
