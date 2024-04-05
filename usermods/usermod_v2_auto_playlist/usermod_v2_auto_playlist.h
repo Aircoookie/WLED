@@ -22,6 +22,7 @@ class AutoPlaylistUsermod : public Usermod {
     bool autoChange = false;
     byte lastAutoPlaylist = 0;
     unsigned long change_timer = millis();
+    unsigned long autochange_timer = millis();
 
     uint_fast32_t energy = 0;
 
@@ -85,6 +86,8 @@ class AutoPlaylistUsermod : public Usermod {
 
       uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
+      energy = 0;
+
       for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
         energy += fftResult[i];
       }
@@ -136,12 +139,12 @@ class AutoPlaylistUsermod : public Usermod {
         // the current music, especially after track changes or during 
         // sparce intros and breakdowns.
 
-        if (change_interval > ideal_change_min && distance_tracker <= 1000) {
+        if (change_interval > ideal_change_min && distance_tracker <= 100) {
           
           change_threshold_change = distance_tracker-change_threshold;
           change_threshold = distance_tracker;
 
-          if (change_threshold_change > 9999999) change_threshold_change = 0;
+          if (change_threshold_change > 9999) change_threshold_change = 0; // cosmetic for debug
 
           if (functionality_enabled)  {
             #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
@@ -157,7 +160,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       }
 
-      if (functionality_enabled && distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1.0f) { 
+      if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1.0f) { 
 
         change_threshold_change = change_threshold-(distance*0.9f);
 
@@ -175,52 +178,56 @@ class AutoPlaylistUsermod : public Usermod {
 
         distance_tracker = UINT_FAST32_MAX;
 
-        if (autoChangeIds.size() == 0) {
-          if(currentPlaylist < 1) return;
+        if (functionality_enabled) {
+            
+          if (autoChangeIds.size() == 0) {
+            if(currentPlaylist < 1) return;
 
-          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-          USER_PRINTF("Loading presets from playlist: %3d\n", currentPlaylist);
-          #endif
-
-          JsonObject playtlistOjb = doc.to<JsonObject>();
-          serializePlaylist(playtlistOjb);
-          JsonArray playlistArray = playtlistOjb["playlist"]["ps"];
-
-          for(JsonVariant v : playlistArray) {
             #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-            USER_PRINTF("Adding %3u to autoChangeIds\n", v.as<int>());
+            USER_PRINTF("Loading presets from playlist: %3d\n", currentPlaylist);
             #endif
-            autoChangeIds.push_back(v.as<int>());
+
+            JsonObject playtlistOjb = doc.to<JsonObject>();
+            serializePlaylist(playtlistOjb);
+            JsonArray playlistArray = playtlistOjb["playlist"]["ps"];
+
+            for(JsonVariant v : playlistArray) {
+              #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+              USER_PRINTF("Adding %3u to autoChangeIds\n", v.as<int>());
+              #endif
+              autoChangeIds.push_back(v.as<int>());
+            }
+
           }
 
-        }
+          uint8_t newpreset = 0;
 
-        uint8_t newpreset = 0;
+          do {
+            newpreset = autoChangeIds.at(random(0, autoChangeIds.size())); // random() is *exclusive* of the last value, so it's OK to use the full size.
+          } while (currentPreset == newpreset); // make sure we get a different random preset.
 
-        do {
-          newpreset = autoChangeIds.at(random(0, autoChangeIds.size())); // random() is *exclusive* of the last value, so it's OK to use the full size.
-        } while (currentPreset == newpreset); // make sure we get a different random preset.
+          if (change_interval > change_lockout+3) {
 
-        if (change_interval > change_lockout+3) {
+            // Make sure we have a statistically significant change and we aren't
+            // just bouncing off change_lockout. That's valid for changing the
+            // thresholds, but might be a bit crazy for lighting changes. 
+            // When the music changes quite a bit, the distance calculation can
+            // go into freefall - this logic stops that from triggering right
+            // after change_lockout. Better for smaller change_lockout values.
 
-          // Make sure we have a statistically significant change and we aren't
-          // just bouncing off change_lockout. That's valid for changing the
-          // thresholds, but might be a bit crazy for lighting changes. 
-          // When the music changes quite a bit, the distance calculation can
-          // go into freefall - this logic stops that from triggering right
-          // after change_lockout. Better for smaller change_lockout values.
+            applyPreset(newpreset);
+            
+            #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+            USER_PRINTF("*** CHANGE distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+            #endif
 
-          applyPreset(newpreset);
-          
-          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-          USER_PRINTF("*** CHANGE distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
-          #endif
+          } else {
 
-        } else {
+            #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+            USER_PRINTF("^^^ SKIP!! distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+            #endif
 
-          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-          USER_PRINTF("^^^ SKIP!! distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
-          #endif
+          }
 
         }
         
@@ -292,7 +299,10 @@ class AutoPlaylistUsermod : public Usermod {
           USER_PRINTLN("AutoPlaylist: End of silence");
           changePlaylist(musicPlaylist);
         }
-        if (autoChange) change(um_data);
+        if (autoChange && millis() >= autochange_timer+22) {
+          change(um_data);
+          autochange_timer = millis();
+        }
       }
     }
 
