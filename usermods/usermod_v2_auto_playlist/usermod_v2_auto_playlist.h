@@ -1,5 +1,11 @@
 #pragma once
 
+#ifdef WLED_DEBUG
+  #ifndef USERMOD_AUTO_PLAYLIST_DEBUG
+    #define USERMOD_AUTO_PLAYLIST_DEBUG
+  #endif
+#endif
+
 #include "wled.h"
 
 class AutoPlaylistUsermod : public Usermod {
@@ -134,7 +140,9 @@ class AutoPlaylistUsermod : public Usermod {
           change_threshold_change = (distance_tracker)-change_threshold;
           change_threshold = distance_tracker;
 
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ldms - next change_threshold is %4u (%4u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
+          #endif
 
           distance_tracker = UINT_FAST32_MAX;
 
@@ -165,14 +173,18 @@ class AutoPlaylistUsermod : public Usermod {
         if (autoChangeIds.size() == 0) {
           if(currentPlaylist < 1) return;
 
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("Loading presets from playlist: %3d\n", currentPlaylist);
+          #endif
 
           JsonObject playtlistOjb = doc.to<JsonObject>();
           serializePlaylist(playtlistOjb);
           JsonArray playlistArray = playtlistOjb["playlist"]["ps"];
 
           for(JsonVariant v : playlistArray) {
+            #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
             USER_PRINTF("Adding %3u to autoChangeIds\n", v.as<int>());
+            #endif
             autoChangeIds.push_back(v.as<int>());
           }
 
@@ -195,12 +207,16 @@ class AutoPlaylistUsermod : public Usermod {
           // after change_lockout. Better for smaller change_lockout values.
 
           applyPreset(newpreset);
-
+          
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("*** CHANGE distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+          #endif
 
         } else {
 
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("^^^ SKIP!! distance = %4lu - change_interval was %5ldms - next change_threshold is %4u (%4u diff aprox)\n",(unsigned long)distance,change_interval,change_threshold,change_threshold_change);
+          #endif
 
         }
         
@@ -216,27 +232,31 @@ class AutoPlaylistUsermod : public Usermod {
      */
     void loop() {
       
-      if (!enabled) return;
-
       if (millis() < 10000) return; // Wait for device to settle
 
       if (lastAutoPlaylist > 0 && currentPlaylist != lastAutoPlaylist && currentPreset != 0) {
         if (currentPlaylist == musicPlaylist) {
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("AutoPlaylist: enabled due to manual change of playlist back to %u\n", currentPlaylist);
+          #endif
           enabled = true;
           lastAutoPlaylist = currentPlaylist;
         } else if (enabled) {
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("AutoPlaylist: disable due to manual change of playlist from %u to %d, preset:%u\n", lastAutoPlaylist, currentPlaylist, currentPreset);
+          #endif
           enabled = false;  // softhack007: warning this state is _not_ intermediate, due to line 219 "if (!enabled) return;"
         }
       }
 
       if (!enabled && currentPlaylist == musicPlaylist) {
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("AutoPlaylist: enabled due selecting musicPlaylist(%u)", musicPlaylist);
+          #endif
           enabled = true;
       }
 
-      
+      if (!enabled) return;
 
       if (bri == 0) return;
 
@@ -282,15 +302,30 @@ class AutoPlaylistUsermod : public Usermod {
 
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
 
-      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
-      uiDomString += FPSTR(_name);
-      uiDomString += F(":{");
-      uiDomString += FPSTR(_autoPlaylistEnabled);
-      uiDomString += enabled ? F(":false}});\">") : F(":true}});\">");
-      uiDomString += F("<i class=\"icons ");
-      uiDomString += enabled ? "on" : "off";
-      uiDomString += F("\">&#xe08f;</i></button>");
+      String uiDomString = enabled ? F("AutoPlaylist is Enabled") : F("AutoPlaylist is Disabled");
+
+      uiDomString += F("<br />");
+
+      if (autoChange && currentPlaylist == musicPlaylist) {
+        uiDomString += F("AutoChange is Active");
+      } else if (autoChange && currentPlaylist != musicPlaylist) {
+        uiDomString += F("AutoChange on Stand-by");
+      } else if (!autoChange) {
+        uiDomString += F("AutoChange is Disabled");
+      }
+
+      uiDomString += F("<br />");
+
+      if (currentPlaylist == musicPlaylist && currentPlaylist > 0) {
+        uiDomString += F("Music Playlist");
+      } else if (currentPlaylist == ambientPlaylist && currentPlaylist > 0) {
+        uiDomString += F("Ambient Playlist");
+      } else {
+        uiDomString += F("Playlist Overridden");
+      }
+
       infoArr.add(uiDomString);
+
     }
 
     /*
@@ -298,20 +333,7 @@ class AutoPlaylistUsermod : public Usermod {
      * Values in the state object may be modified by connected clients
      */
     void readFromJsonState(JsonObject& root) {
-      if (!initDone) return;  // prevent crash on boot applyPreset()
-      bool en = enabled;
-      JsonObject um = root[FPSTR(_name)];
-      if (!um.isNull()) {
-        if (um[FPSTR(_autoPlaylistEnabled)].is<bool>()) {
-          en = um[FPSTR(_autoPlaylistEnabled)].as<bool>();
-        } else {
-          String str = um[FPSTR(_autoPlaylistEnabled)]; // checkbox -> off or on
-          en = (bool)(str!="off"); // off is guaranteed to be present
-        }
-        if (en != enabled) enabled = en;
-        DEBUG_PRINT("AutoPlaylist enabled = ");
-        DEBUG_PRINTLN(en);
-      }
+      return;
     }
 
     void appendConfigData() {
@@ -347,7 +369,9 @@ class AutoPlaylistUsermod : public Usermod {
 
       lastAutoPlaylist = 0;
 
-      DEBUG_PRINTLN(F("AutoPlaylist config saved."));
+      #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+      USER_PRINTLN(F("AutoPlaylist config saved."));
+      #endif
 
     }
 
@@ -380,8 +404,10 @@ class AutoPlaylistUsermod : public Usermod {
       ideal_change_min = top[FPSTR(_ideal_change_min)]    | ideal_change_min;
       ideal_change_max = top[FPSTR(_ideal_change_max)]    | ideal_change_max;
 
-      DEBUG_PRINT(FPSTR(_name));
-      DEBUG_PRINTLN(F(" config (re)loaded."));
+      #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+      USER_PRINT(FPSTR(_name));
+      USER_PRINTLN(F(" config (re)loaded."));
+      #endif
 
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return true;
@@ -401,7 +427,9 @@ class AutoPlaylistUsermod : public Usermod {
     void changePlaylist(byte id) {
         String name = "";
         getPresetName(id, name);
+        #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
         USER_PRINTF("apply %s\n", name.c_str());
+        #endif
         applyPreset(id, CALL_MODE_NOTIFICATION);
         lastAutoPlaylist = id;
     }
