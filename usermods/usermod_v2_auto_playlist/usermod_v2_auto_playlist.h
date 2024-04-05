@@ -13,6 +13,7 @@ class AutoPlaylistUsermod : public Usermod {
   private:
     
     bool initDone = false;
+    bool functionality_enabled = false;
     bool silenceDetected = true;
     unsigned long lastSoundTime = 0;
     byte ambientPlaylist = 1;
@@ -100,13 +101,13 @@ class AutoPlaylistUsermod : public Usermod {
       if (volumeSmth > 1.0f) { 
 
         // softhack007: original code used 0.998f as decay factor
-        avg_long_energy = avg_long_energy * 0.99f + energy * 0.01f;
-        avg_long_lfc    = avg_long_lfc    * 0.99f + lfc    * 0.01f;
-        avg_long_zcr    = avg_long_zcr    * 0.99f + zcr    * 0.01f;
+        avg_long_energy  = avg_long_energy  * 0.99f + energy * 0.01f;
+        avg_long_lfc     = avg_long_lfc     * 0.99f + lfc    * 0.01f;
+        avg_long_zcr     = avg_long_zcr     * 0.99f + zcr    * 0.01f;
 
-        avg_short_energy = avg_short_energy * 0.9f + energy * 0.1f;
-        avg_short_lfc    = avg_short_lfc    * 0.9f + lfc    * 0.1f;
-        avg_short_zcr    = avg_short_zcr    * 0.9f + zcr    * 0.1f;
+        avg_short_energy = avg_short_energy * 0.90f + energy * 0.10f;
+        avg_short_lfc    = avg_short_lfc    * 0.90f + lfc    * 0.10f;
+        avg_short_zcr    = avg_short_zcr    * 0.90f + zcr    * 0.10f;
 
         // allegedly this is faster than pow(whatever,2)
         vector_lfc = (avg_short_lfc-avg_long_lfc)*(avg_short_lfc-avg_long_lfc);
@@ -135,14 +136,18 @@ class AutoPlaylistUsermod : public Usermod {
         // the current music, especially after track changes or during 
         // sparce intros and breakdowns.
 
-        if (change_interval > ideal_change_min && distance_tracker <= 9999) {
-
-          change_threshold_change = (distance_tracker)-change_threshold;
+        if (change_interval > ideal_change_min && distance_tracker <= 1000) {
+          
+          change_threshold_change = distance_tracker-change_threshold;
           change_threshold = distance_tracker;
 
-          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-          USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ldms - next change_threshold is %4u (%4u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
-          #endif
+          if (change_threshold_change > 9999999) change_threshold_change = 0;
+
+          if (functionality_enabled)  {
+            #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+            USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ldms - next change_threshold is %4u (%4u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
+            #endif
+          }
 
           distance_tracker = UINT_FAST32_MAX;
 
@@ -151,8 +156,8 @@ class AutoPlaylistUsermod : public Usermod {
         change_timer = millis();
 
       }
-      
-      if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1.0f) { 
+
+      if (functionality_enabled && distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1.0f) { 
 
         change_threshold_change = change_threshold-(distance*0.9f);
 
@@ -194,8 +199,7 @@ class AutoPlaylistUsermod : public Usermod {
 
         do {
           newpreset = autoChangeIds.at(random(0, autoChangeIds.size())); // random() is *exclusive* of the last value, so it's OK to use the full size.
-        }
-        while (currentPreset == newpreset); // make sure we get a different random preset.
+        } while (currentPreset == newpreset); // make sure we get a different random preset.
 
         if (change_interval > change_lockout+3) {
 
@@ -232,31 +236,33 @@ class AutoPlaylistUsermod : public Usermod {
      */
     void loop() {
       
+      if (!enabled) return;
+
       if (millis() < 10000) return; // Wait for device to settle
 
       if (lastAutoPlaylist > 0 && currentPlaylist != lastAutoPlaylist && currentPreset != 0) {
-        if (currentPlaylist == musicPlaylist) {
-          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-          USER_PRINTF("AutoPlaylist: enabled due to manual change of playlist back to %u\n", currentPlaylist);
-          #endif
-          enabled = true;
-          lastAutoPlaylist = currentPlaylist;
-        } else if (enabled) {
+        if (functionality_enabled) {
           #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
           USER_PRINTF("AutoPlaylist: disable due to manual change of playlist from %u to %d, preset:%u\n", lastAutoPlaylist, currentPlaylist, currentPreset);
           #endif
-          enabled = false;  // softhack007: warning this state is _not_ intermediate, due to line 219 "if (!enabled) return;"
+          functionality_enabled = false;
+        } else if (currentPlaylist == musicPlaylist) {
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+          USER_PRINTF("AutoPlaylist: enabled due to manual change of playlist back to %u\n", currentPlaylist);
+          #endif
+          functionality_enabled = true;
+          lastAutoPlaylist = currentPlaylist;
         }
       }
 
-      if (!enabled && currentPlaylist == musicPlaylist) {
+      if (!functionality_enabled && currentPlaylist == musicPlaylist) {
           #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-          USER_PRINTF("AutoPlaylist: enabled due selecting musicPlaylist(%u)", musicPlaylist);
+          USER_PRINTF("AutoPlaylist: enabled due selecting musicPlaylist(%u)\n", musicPlaylist);
           #endif
-          enabled = true;
+          functionality_enabled = true;
       }
 
-      if (!enabled) return;
+      // if (!functionality_enabled) return;
 
       if (bri == 0) return;
 
@@ -277,13 +283,13 @@ class AutoPlaylistUsermod : public Usermod {
       if (millis() - lastSoundTime > (long(timeout) * 1000)) {
         if (!silenceDetected) {
           silenceDetected = true;
-          USER_PRINTF("AutoPlaylist: Silence ");
+          USER_PRINTLN("AutoPlaylist: Silence");
           changePlaylist(ambientPlaylist);
         }
       } else {
         if (silenceDetected) {
           silenceDetected = false;
-          USER_PRINTF("AutoPlaylist: End of silence ");
+          USER_PRINTLN("AutoPlaylist: End of silence");
           changePlaylist(musicPlaylist);
         }
         if (autoChange) change(um_data);
@@ -302,13 +308,21 @@ class AutoPlaylistUsermod : public Usermod {
 
       JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
 
-      String uiDomString = enabled ? F("AutoPlaylist is Enabled") : F("AutoPlaylist is Disabled");
+      String uiDomString = F("");
+      
+      if (enabled && functionality_enabled) {
+        uiDomString += F("AutoPlaylist is Running");
+      } else if (!enabled) {
+        uiDomString += F("AutoPlaylist is Disabled");
+      } else {
+        uiDomString += F("AutoPlaylist is Suspended");
+      }
 
       uiDomString += F("<br />");
 
-      if (autoChange && currentPlaylist == musicPlaylist) {
+      if (autoChange && currentPlaylist == musicPlaylist && functionality_enabled) {
         uiDomString += F("AutoChange is Active");
-      } else if (autoChange && currentPlaylist != musicPlaylist) {
+      } else if (autoChange && (currentPlaylist != musicPlaylist || !functionality_enabled || !enabled)) {
         uiDomString += F("AutoChange on Stand-by");
       } else if (!autoChange) {
         uiDomString += F("AutoChange is Disabled");
@@ -317,12 +331,18 @@ class AutoPlaylistUsermod : public Usermod {
       uiDomString += F("<br />");
 
       if (currentPlaylist == musicPlaylist && currentPlaylist > 0) {
-        uiDomString += F("Music Playlist");
+        uiDomString += F("Playlist: Music Playlist");
       } else if (currentPlaylist == ambientPlaylist && currentPlaylist > 0) {
-        uiDomString += F("Ambient Playlist");
+        uiDomString += F("Playlist: Ambient Playlist");
       } else {
-        uiDomString += F("Playlist Overridden");
+        uiDomString += F("Playlist: Overridden");
       }
+      
+      // #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+      // uiDomString += F("<br />");
+      // uiDomString += F("Change Threshold: ");
+      // uiDomString += String(change_threshold);
+      // #endif
 
       infoArr.add(uiDomString);
 
