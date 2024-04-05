@@ -115,7 +115,7 @@ Segment::Segment(const Segment &orig) {
 
 //WLEDMM: recreate ledsrgb if more space needed (will not free ledsrgb!)
 void Segment::allocLeds() {
-  size_t size = sizeof(CRGB)*max((size_t) length(), ledmapMaxSize); //TroyHack
+  size_t size = sizeof(CRGB)*max((size_t) length(), ledmapMaxSize); //Hack
   if ((size < sizeof(CRGB)) || (size > 164000)) {                   //softhack too small (<3) or too large (>160Kb)
     DEBUG_PRINTF("allocLeds warning: size == %u !!\n", size);
     if (ledsrgb && (ledsrgbSize == 0)) {
@@ -124,9 +124,7 @@ void Segment::allocLeds() {
     } // softhack007 clean up buffer
   }
   if ((size > 0) && (!ledsrgb || size > ledsrgbSize)) {    //softhack dont allocate zero bytes
-    #ifndef USERMOD_AUTO_PLAYLIST // TroyHacks - FIXME: just tidy output temporarily while debugging
     USER_PRINTF("allocLeds (%d,%d to %d,%d), %u from %u\n", start, startY, stop, stopY, size, ledsrgb?ledsrgbSize:0);
-    #endif
     if (ledsrgb) free(ledsrgb);   // we need a bigger buffer, so free the old one first
     ledsrgb = (CRGB*)calloc(size, 1);
     ledsrgbSize = ledsrgb?size:0;
@@ -1538,7 +1536,7 @@ void WS2812FX::enumerateLedmaps() {
 
           USER_PRINTF("enumerateLedmaps %s \"%s\"", fileName, name);
           if (isMatrix) {
-            //WLEDMM calc ledmapMaxSize (TroyHack)
+            //WLEDMM calc ledmapMaxSize (Hack)
             char dim[34] = { '\0' };
             f.find("\"width\":");
             f.readBytesUntil('\n', dim, sizeof(dim)-1); //hack: use fileName as we have this allocated already
@@ -2389,7 +2387,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   //WLEDMM recreate customMappingTable if more space needed
   if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
-    size_t size = max(ledmapMaxSize, size_t(Segment::maxWidth * Segment::maxHeight));//TroyHack
+    size_t size = max(ledmapMaxSize, size_t(Segment::maxWidth * Segment::maxHeight));//Hack
     USER_PRINTF("deserializemap customMappingTable alloc %u from %u\n", size, customMappingTableSize);
     //if (customMappingTable != nullptr) delete[] customMappingTable;
     //customMappingTable = new uint16_t[size];
