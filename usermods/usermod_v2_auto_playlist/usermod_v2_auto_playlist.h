@@ -15,14 +15,15 @@ class AutoPlaylistUsermod : public Usermod {
     bool initDone = false;
     bool functionality_enabled = false;
     bool silenceDetected = true;
-    unsigned long lastSoundTime = 0;
     byte ambientPlaylist = 1;
     byte musicPlaylist = 2;
     int timeout = 60;
     bool autoChange = false;
     byte lastAutoPlaylist = 0;
+    unsigned long lastSoundTime = millis()-(timeout*1000)-100;
     unsigned long change_timer = millis();
     unsigned long autochange_timer = millis();
+    float avg_volumeSmth = 0;
 
     uint_fast32_t energy = 0;
 
@@ -283,20 +284,22 @@ class AutoPlaylistUsermod : public Usermod {
 
       float volumeSmth = *(float*)um_data->u_data[0];
 
-      if (volumeSmth > 0.5f) {
+      avg_volumeSmth = avg_volumeSmth * 0.99f + volumeSmth * 0.01f;
+
+      if (avg_volumeSmth >= 1.0f) {
         lastSoundTime = millis();
       }
 
       if (millis() - lastSoundTime > (long(timeout) * 1000)) {
         if (!silenceDetected) {
           silenceDetected = true;
-          USER_PRINTLN("AutoPlaylist: Silence");
+          USER_PRINTLN("AutoPlaylist: Silence detected");
           changePlaylist(ambientPlaylist);
         }
       } else {
         if (silenceDetected) {
           silenceDetected = false;
-          USER_PRINTLN("AutoPlaylist: End of silence");
+          USER_PRINTLN("AutoPlaylist: Sound detected");
           changePlaylist(musicPlaylist);
         }
         if (autoChange && millis() >= autochange_timer+22) {
@@ -330,7 +333,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       uiDomString += F("<br />");
 
-      if (autoChange && currentPlaylist == musicPlaylist && functionality_enabled) {
+      if (enabled && autoChange && currentPlaylist == musicPlaylist && functionality_enabled) {
         uiDomString += F("AutoChange is Active");
       } else if (autoChange && (currentPlaylist != musicPlaylist || !functionality_enabled || !enabled)) {
         uiDomString += F("AutoChange on Stand-by");
@@ -458,7 +461,7 @@ class AutoPlaylistUsermod : public Usermod {
         String name = "";
         getPresetName(id, name);
         #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-        USER_PRINTF("apply %s\n", name.c_str());
+        USER_PRINTF("AutoPlaylist: Applying \"%s\"\n", name.c_str());
         #endif
         applyPreset(id, CALL_MODE_NOTIFICATION);
         lastAutoPlaylist = id;
