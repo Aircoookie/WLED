@@ -406,7 +406,7 @@ void registerUsermods()
 #endif
 
 #ifdef USERMOD_AUTO_PLAYLIST
-  usermods.add(new AutoPlaylistUsermod(true));
+  usermods.add(new AutoPlaylistUsermod(false));
 #endif
 
 
