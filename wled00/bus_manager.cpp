@@ -505,7 +505,7 @@ void BusPwm::show() {
   uint8_t numPins = NUM_PWM_PINS(_type);
   unsigned maxBri = (1<<_depth) - 1;
   #ifdef ESP8266
-  unsigned pwmBri = (unsigned)(roundf(powf((float)_bri / 255.0f, 1.7f) * (float)maxBri + 0.5f)); // using gamma 1.7 to extrapolate PWM duty cycle
+  unsigned pwmBri = (unsigned)(roundf(powf((float)_bri / 255.0f, 1.7f) * (float)maxBri)); // using gamma 1.7 to extrapolate PWM duty cycle
   #else
   unsigned pwmBri = cieLUT[_bri] >> (12 - _depth); // use CIE LUT
   #endif
