@@ -47,7 +47,7 @@
 
 ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources)
 {
-	Serial.println("PS Constructor");
+	//Serial.println("PS Constructor");
 	numSources = numberofsources;
 	numParticles = numberofparticles; // set number of particles in the array
 	usedParticles = numberofparticles; // use all particles by default
@@ -69,7 +69,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 			Serial.println(particles[i].y);
 		}
 	}*/
-	Serial.println("PS Constructor done");
+	//Serial.println("PS Constructor done");
 }
 
 //update function applies gravity, moves the particles, handles collisions and renders the particles
@@ -285,9 +285,12 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 			{
 				if (newY < PS_P_RADIUS) // bounce at bottom
 				{
-					part.vy = -part.vy; // invert speed
-					part.vy = (part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-					newY = PS_P_RADIUS;
+					if(part.vy < -10)
+					{
+						part.vy = -part.vy; // invert speed
+						part.vy = ((int32_t)part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
+						newY = PS_P_RADIUS;		
+					}
 				}
 				else
 				{
@@ -299,7 +302,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 					else
 					{
 						part.vy = -part.vy;	// invert speed
-						part.vy = (part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
+						part.vy = ((int32_t)part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
 						newY = maxY - PS_P_RADIUS;	
 					}
 				}		
@@ -341,8 +344,8 @@ void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t 
 	uint8_t ycounter = (*counter) >> 4;	  // upper four bits
 
 	// velocity increase
-	int32_t dvx = calcForce_dV(xforce, &xcounter);
-	int32_t dvy = calcForce_dV(yforce, &ycounter);
+	int32_t dvx = calcForce_dv(xforce, &xcounter);
+	int32_t dvy = calcForce_dv(yforce, &ycounter);
 
 	// save counter values back
 	*counter |= xcounter & 0x0F;		// write lower four bits, make sure not to write more than 4 bits
@@ -352,30 +355,18 @@ void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t 
 	int32_t i = 0;
 	if (dvx != 0)
 	{
-		if (numparticles == 1) // for single particle, skip the for loop to make it faster
+		for (i = 0; i < numparticles; i++)
 		{
-			part[0].vx = part[0].vx + dvx > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[0].vx + dvx; // limit the force, this is faster than min or if/else
-		}
-		else
-		{
-			for (i = 0; i < numparticles; i++)
-			{
-				// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster so no speed penalty
-				part[i].vx = part[i].vx + dvx > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vx + dvx;
-			}
+			// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster so no speed penalty			
+			part[i].vx = limitSpeed((int32_t)particles[i].vx + dvx);
 		}
 	}
 	if (dvy != 0)
 	{
-		if (numparticles == 1) // for single particle, skip the for loop to make it faster
-			part[0].vy = part[0].vy + dvy > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[0].vy + dvy;
-		else
+		for (i = 0; i < numparticles; i++)
 		{
-			for (i = 0; i < numparticles; i++)
-			{
-				part[i].vy = part[i].vy + dvy > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vy + dvy;
-			}
-		}
+			part[i].vy = limitSpeed((int32_t)particles[i].vy + dvy);
+		}	
 	}
 }
 
@@ -386,8 +377,8 @@ void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t 
 	for (uint i = 0; i < numparticles; i++)
 	{
 		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster so no speed penalty
-		part[i].vx = part[i].vx + xforce > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vx + xforce;
-		part[i].vy = part[i].vy + yforce > PS_P_MAXSPEED ? PS_P_MAXSPEED : part[i].vy + yforce;
+		part[i].vx = limitSpeed((int32_t)part[i].vx + (int32_t)xforce);
+		part[i].vy = limitSpeed((int32_t)part[i].vy + (int32_t)yforce);
 	}	
 }
 
@@ -415,27 +406,17 @@ void ParticleSystem::applyAngleForce(PSparticle *part, uint32_t numparticles, ui
 // apply gravity to a group of particles
 // faster than apply force since direction is always down and counter is fixed for all particles
 // caller needs to provide a 8bit counter that holds its value between calls
-// force is in 4.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame (gives good results), force above 127 are VERY strong
-void ParticleSystem::applyGravity(PSparticle *part, uint32_t numarticles, uint8_t force, uint8_t *counter)
+// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame (gives good results)
+// positive force means down
+void ParticleSystem::applyGravity(PSparticle *part, uint32_t numarticles, int8_t force, uint8_t *counter)
 {
-	int32_t dv; // velocity increase
-	if (force > 15)
-		dv = (force >> 4); // apply the 4 MSBs
-	else
-		dv = 1;
-
-	*counter += force;
-
-	if (*counter > 15)
-	{
-		*counter -= 16;
-		// apply force to all used particles
-		for (uint32_t i = 0; i < numarticles; i++)
-		{
-			// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is fast anyways
-			particles[i].vy = particles[i].vy - dv > PS_P_MAXSPEED ? PS_P_MAXSPEED : particles[i].vy - dv; // limit the force, this is faster than min or if/else
-		}
+	int32_t dv = calcForce_dv(force, counter);
+	for (uint32_t i = 0; i < numarticles; i++)
+	{		
+		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is fast anyways
+		part[i].vy = limitSpeed((int32_t)particles[i].vy - dv);
 	}
+	
 }
 
 //apply gravity using PS global gforce
@@ -445,6 +426,7 @@ void ParticleSystem::applyGravity(PSparticle *part, uint32_t numarticles, uint8_
 }
 
 //apply gravity to single particle using system settings (use this for sources)
+//function does not increment gravity counter, if gravity setting is disabled, this cannot be used
 void ParticleSystem::applyGravity(PSparticle *part)
 {
 	int32_t dv; // velocity increase
@@ -454,8 +436,8 @@ void ParticleSystem::applyGravity(PSparticle *part)
 		dv = 1;
 
 	if (gforcecounter + gforce > 15) //counter is updated in global update when applying gravity
-	{
-		part->vy = part->vy - dv > PS_P_MAXSPEED ? PS_P_MAXSPEED : part->vy - dv; // limit the force, this is faster than min or if/else
+	{		
+		part->vy = limitSpeed((int32_t)part->vy - dv);
 	}
 }
 
@@ -1093,11 +1075,11 @@ int32_t ParticleSystem::wraparound(int32_t p, int32_t maxvalue)
 
 //calculate the delta speed (dV) value and update the counter for force calculation (is used several times, function saves on codesize)
 //force is in 3.4 fixedpoint notation, +/-127
-int32_t ParticleSystem::calcForce_dV(int8_t force, uint8_t* counter)
+int32_t ParticleSystem::calcForce_dv(int8_t force, uint8_t* counter)
 {
 	// for small forces, need to use a delay counter
 	int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)
-	int32_t dv = 0;
+	int32_t dv;
 	// for small forces, need to use a delay counter, apply force only if it overflows
 	if (force_abs < 16)
 	{
@@ -1113,6 +1095,12 @@ int32_t ParticleSystem::calcForce_dV(int8_t force, uint8_t* counter)
 		dv = force >> 4; // MSBs
 	}
 	return dv;
+}
+
+//limit speed to prevent overflows
+int32_t ParticleSystem::limitSpeed(int32_t speed)
+{
+	return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed);
 }
 
 // allocate memory for the 2D array in one contiguous block and set values to zero
@@ -1207,18 +1195,18 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, ui
 	requiredmemory += sizeof(PSparticle) * numparticles;
 	requiredmemory += sizeof(PSsource) * numsources;
 	requiredmemory += additionalbytes;
-	Serial.print("allocating: ");
-	Serial.print(requiredmemory);
-	Serial.println("Bytes");
-	Serial.print("allocating for segment at");
-	Serial.println((uintptr_t)SEGMENT.data);
+	//Serial.print("allocating: ");
+	//Serial.print(requiredmemory);
+	//Serial.println("Bytes");
+	//Serial.print("allocating for segment at");
+	//Serial.println((uintptr_t)SEGMENT.data);
 	return(SEGMENT.allocateData(requiredmemory));		
 }
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
 bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes)
 {
-	Serial.println("PS init function");
+	//Serial.println("PS init function");
 	uint32_t numparticles = calculateNumberOfParticles();
 	uint32_t numsources = calculateNumberOfSources();
 	if (!allocateParticleSystemMemory(numparticles, numsources, additionalbytes))
@@ -1226,14 +1214,14 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes)
 		DEBUG_PRINT(F("PS init failed: memory depleted"));
 		return false;
 	}
-	Serial.print("segment.data ptr");
-	Serial.println((uintptr_t)(SEGMENT.data));
+	//Serial.print("segment.data ptr");
+	//Serial.println((uintptr_t)(SEGMENT.data));
 	uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-	Serial.println("calling constructor");
+	//Serial.println("calling constructor");
 	PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources); // particle system constructor TODO: why does VS studio thinkt this is bad?
-	Serial.print("PS pointer at ");
-	Serial.println((uintptr_t)PartSys);
+	//Serial.print("PS pointer at ");
+	//Serial.println((uintptr_t)PartSys);
 	return true;
 }
 

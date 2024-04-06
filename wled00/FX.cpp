@@ -7910,8 +7910,8 @@ uint16_t mode_particlevortex(void)
     for (i = 0; i < numSprays; i++)
     {
       PartSys->sources[i].source.sat = 255;                                      // set saturation
-      PartSys->sources[i].source.x = (PartSys->maxX - PS_P_HALFRADIUS + 1) >> 1; // center
-      PartSys->sources[i].source.y = (PartSys->maxY - PS_P_HALFRADIUS + 1) >> 1; // center
+      PartSys->sources[i].source.x = (PartSys->maxX + 1) >> 1; // center
+      PartSys->sources[i].source.y = (PartSys->maxY + 1) >> 1; // center
       PartSys->sources[i].source.vx = 0;
       PartSys->sources[i].source.vy = 0;
       PartSys->sources[i].maxLife = 900;
@@ -8294,7 +8294,7 @@ uint16_t mode_particlefire(void)
   {
     if (!initParticleSystem(PartSys))
       return mode_static(); // allocation failed; //allocation failed
-    Serial.println("fireinit done");
+   // Serial.println("fireinit done");
     SEGMENT.aux0 = rand(); // aux0 is wind position (index) in the perlin noise
     // initialize the flame sprays
     numFlames = PartSys->numSources; 
@@ -8379,7 +8379,7 @@ uint16_t mode_particlefire(void)
       {
         //int32_t curl = ((int16_t)inoise8(PartSys->particles[i].x , PartSys->particles[i].y >> 1, SEGMENT.step<<2 ) - 127);
         //int32_t curl = ((int16_t)inoise8(PartSys->particles[i].x, PartSys->particles[i].y , SEGMENT.step << 4) - 127);
-        int32_t curl = ((int16_t)inoise8(PartSys->particles[i].x, PartSys->particles[i].y , SEGMENT.step << 4) - 127); //-> this is good!
+        int32_t curl = ((int32_t)inoise8(PartSys->particles[i].x, PartSys->particles[i].y , SEGMENT.step << 4) - 127); //-> this is good!
 
         //int32_t curl = ((int16_t)inoise8(PartSys->particles[i].x>>1, SEGMENT.step<<5) - 127);
         // curl = ((curl * PartSys->particles[i].y) / PartSys->maxY); //'curl' stronger at the top
@@ -8424,13 +8424,21 @@ uint16_t mode_particlefire(void)
     }
     Serial.println("B");
   }*/
-  
+  if(SEGMENT.check1) //low fps is enabled
+  {
+    static uint32_t lastcall; //!!! put this in heap
+    while(millis()-lastcall < 25)
+    {
+      yield();
+    }
+    lastcall = millis();
+  }
   
   PartSys->updateFire(SEGMENT.intensity); // update and render the fire
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Base Heat,Wind,Spread,,Cylinder,Turbulence;;!;2;pal=35,sx=130,ix=120,c1=110,c2=128,c3=22,o1=0";
+static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Base Heat,Wind,Spread,FPS Limit,Cylinder,Turbulence;;!;2;pal=35,sx=130,ix=120,c1=110,c2=128,c3=22,o1=0";
 
 /*
 PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
@@ -8551,7 +8559,7 @@ uint16_t mode_particlewaterfall(void)
 
   if (PartSys == NULL)
   {
-    Serial.println("ERROR: paticle system not found, nullpointer");
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
   }
   // Particle System settings
@@ -8623,7 +8631,7 @@ uint16_t mode_particlebox(void)
 
   if (PartSys == NULL)
   {
-    Serial.println("ERROR: paticle system not found, nullpointer");
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data! 
   }
 
@@ -8819,7 +8827,7 @@ uint16_t mode_particleimpact(void)
 
   if (PartSys == NULL)
   {
-    Serial.println("ERROR: paticle system not found, nullpointer");
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
   }
 
@@ -8961,7 +8969,7 @@ uint16_t mode_particleattractor(void)
 
   if (PartSys == NULL)
   {
-    Serial.println("ERROR: paticle system not found, nullpointer");
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
   }
   // Particle System settings
@@ -9130,7 +9138,7 @@ uint16_t mode_particleGEQ(void)
 
   if (PartSys == NULL)
   {
-    Serial.println("ERROR: paticle system not found, nullpointer");
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
   }
 
@@ -9142,7 +9150,7 @@ uint16_t mode_particleGEQ(void)
   PartSys->setBounceY(SEGMENT.check3);
   PartSys->enableParticleCollisions(false);
   PartSys->setWallHardness(SEGMENT.custom2);
-  PartSys->enableGravity(true, SEGMENT.custom3<<1); //set gravity strength
+  PartSys->enableGravity(true, SEGMENT.custom3<<2); //set gravity strength
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
@@ -9166,7 +9174,7 @@ uint16_t mode_particleGEQ(void)
   for (bin = 0; bin < 16; bin++)
   {
     uint32_t xposition = binwidth*bin + (binwidth>>1); // emit position according to frequency band
-    uint8_t emitspeed = 5 + (((uint32_t)fftResult[bin]*(uint32_t)SEGMENT.speed)>>9); // emit speed according to loudness of band
+    uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 9; // emit speed according to loudness of band (127 max!)
     emitparticles = 0;
 
     if (fftResult[bin] > threshold)
@@ -9187,10 +9195,10 @@ uint16_t mode_particleGEQ(void)
       if (PartSys->particles[i].ttl == 0) // find a dead particle
       {
         //set particle properties
-        PartSys->particles[i].ttl = map(SEGMENT.intensity, 0,255, emitspeed>>1, emitspeed + random16(emitspeed)) ;  // set particle alive, particle lifespan is in number of frames
+        PartSys->particles[i].ttl = 20 + map(SEGMENT.intensity, 0,255, emitspeed>>1, emitspeed + random16(emitspeed)) ;  // set particle alive, particle lifespan is in number of frames
         PartSys->particles[i].x = xposition + random16(binwidth) - (binwidth>>1); //position randomly, deviating half a bin width
-        PartSys->particles[i].y = 0; //start at the bottom
-        PartSys->particles[i].vx = random16(SEGMENT.custom1>>1)-(SEGMENT.custom1>>2) ; //x-speed variation
+        PartSys->particles[i].y = PS_P_RADIUS; //tart at the bottom (PS_P_RADIUS is minimum position a particle is fully in frame)
+        PartSys->particles[i].vx = random16(SEGMENT.custom1>>1)-(SEGMENT.custom1>>2) ; //x-speed variation: +/- custom1/4
         PartSys->particles[i].vy = emitspeed;
         PartSys->particles[i].hue = (bin<<4) + random16(17) - 8; // color from palette according to bin
         PartSys->particles[i].sat = 255; // set saturation

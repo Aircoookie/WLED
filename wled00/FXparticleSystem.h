@@ -44,7 +44,7 @@
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_HARDRADIUS 80 //hard surface radius of a particle, used for collision detection proximity
 #define PS_P_MINSURFACEHARDNESS 128 //minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
-#define PS_P_MAXSPEED 200 //maximum speed a particle can have
+#define PS_P_MAXSPEED 120 //maximum speed a particle can have (vx/vy is int8)
 
 //struct for a single particle
 typedef struct {
@@ -105,7 +105,7 @@ public:
   void particleMoveUpdate(PSparticle &part, PSsettings &options);
 
   //particle physics
-  void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t force, uint8_t *counter);
+  void applyGravity(PSparticle *part, uint32_t numarticles, int8_t force, uint8_t *counter);
   void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t *counter); //use global gforce
   void applyGravity(PSparticle *part); //use global system settings 
   void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter);
@@ -153,7 +153,8 @@ private:
   //utility functions
   void updatePSpointers(); // update the data pointers to current segment data space
   int32_t wraparound(int32_t w, int32_t maxvalue);
-  int32_t calcForce_dV(int8_t force, uint8_t *counter);
+  int32_t calcForce_dv(int8_t force, uint8_t *counter);
+  int32_t limitSpeed(int32_t speed);
   CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
 
   // note: variables that are accessed often are 32bit for speed
@@ -161,7 +162,7 @@ private:
   int32_t collisionHardness;
   int32_t wallHardness;
   uint8_t gforcecounter; //counter for global gravity
-  uint8_t gforce; //gravity strength, default is 8
+  int8_t gforce; //gravity strength, default is 8 (negative is allowed)
   uint8_t collisioncounter; //counter to handle collisions
 };
 
