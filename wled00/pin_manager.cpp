@@ -32,11 +32,6 @@ bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
     return false;
   }
 
-  #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a fucntion to check touch state, detach any previous assignments
-  if (digitalPinToTouchChannel(gpio) >= 0) //if touch capable pin
-    touchDetachInterrupt(gpio); 
-  #endif
-
   byte by = gpio >> 3;
   byte bi = gpio - 8*by;
   bitWrite(pinAlloc[by], bi, false);

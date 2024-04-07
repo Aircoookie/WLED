@@ -108,6 +108,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
         pinManager.deallocatePin(btnPin[s], PinOwner::Button);
+      #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a function to check touch state, detach interrupt
+      if (digitalPinToTouchChannel(btnPin[i]) >= 0) // if touch capable pin
+        touchDetachInterrupt(btnPin[i]);            // if not assigned previously, this will do nothing
+      #endif
       }
     }
 
@@ -270,7 +274,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           #endif          
         }
         else
-#endif
+      #endif
         {
           if (disablePullUp) {
             pinMode(btnPin[i], INPUT);
