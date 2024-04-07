@@ -100,18 +100,14 @@ bool isButtonPressed(uint8_t i)
     case BTN_TYPE_TOUCH_SWITCH:
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         #ifdef SOC_TOUCH_VERSION_2 //ESP32 S2 and S3 provide a function to check touch state (state is updated in interrupt)
-        if (touchInterruptGetLastStatus(pin))
-          return true;
+        if (touchInterruptGetLastStatus(pin)) return true;
         #else
-          if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold)
-          {
-                return true;
-          }
+        if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
         #endif
       #endif
      break;
-    }
-    return false;
+  }
+  return false;
 }
 
 void handleSwitch(uint8_t b)
