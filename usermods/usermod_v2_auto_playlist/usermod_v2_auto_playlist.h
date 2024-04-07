@@ -138,7 +138,7 @@ class AutoPlaylistUsermod : public Usermod {
         // Make the analysis less sensitive if we miss the window.
         // Sometimes the analysis lowers the change_threshold too much for
         // the current music, especially after track changes or during 
-        // sparce intros and breakdowns.
+        // sparse intros and breakdowns.
 
         if (change_interval > ideal_change_min && distance_tracker <= 100) {
           
@@ -149,7 +149,7 @@ class AutoPlaylistUsermod : public Usermod {
 
           if (functionality_enabled)  {
             #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-            USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ldms - next change_threshold is %4u (%4u diff aprox)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
+            USER_PRINTF("--- lowest distance = %4lu - no changes done in %6ldms - next change_threshold is %4u (%4u diff approx)\n", (unsigned long)distance_tracker,change_interval,change_threshold,change_threshold_change);
             #endif
           }
 
@@ -205,7 +205,7 @@ class AutoPlaylistUsermod : public Usermod {
 
           do {
             newpreset = autoChangeIds.at(random(0, autoChangeIds.size())); // random() is *exclusive* of the last value, so it's OK to use the full size.
-          } while (currentPreset == newpreset); // make sure we get a different random preset.
+          } while ((currentPreset == newpreset) && (autoChangeIds.size() > 1)); // make sure we get a different random preset. Unless there is only one.
 
           if (change_interval > change_lockout+3) {
 
