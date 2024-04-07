@@ -12,6 +12,25 @@ class AutoPlaylistUsermod : public Usermod {
 
   private:
     
+  #if 0
+    // experimental parameters by softhack007 - more balanced but need testing
+    const uint_fast32_t ENERGY_SCALE = 24000;
+    const float FILTER_SLOW1 = 0.0075f;  // for "slow" energy
+    const float FILTER_SLOW2 = 0.005f;   // for "slow" lfc / zcr
+    const float FILTER_FAST1 = 0.2f;     // for "fast" energy
+    const float FILTER_FAST2 = 0.25f;    // for "fast" lfc / zcr
+    const float FILTER_VOLUME = 0.03f;   // for volumeSmth averaging - takes 8-10sec until "silence"
+  #else
+    // parameters used by TroyHacks / netmindz - behaviour is mainly driven by "energy"
+    const uint_fast32_t ENERGY_SCALE = 10000;
+    //     softhack007: original code used FILTER_SLOW = 0.002f
+    const float FILTER_SLOW1 = 0.01f;   // for "slow" energy
+    const float FILTER_SLOW2 = 0.01f;   // for "slow" lfc / zcr
+    const float FILTER_FAST1 = 0.1f;    // for "fast" energy
+    const float FILTER_FAST2 = 0.1f;    // for "fast" lfc / zcr
+    const float FILTER_VOLUME = 0.01f;  // for volumeSmth averaging - takes 12-15sec until "silence"
+  #endif
+
     bool initDone = false;
     bool functionality_enabled = false;
     bool silenceDetected = true;
@@ -35,6 +54,7 @@ class AutoPlaylistUsermod : public Usermod {
     float avg_short_lfc = 1000;
     float avg_short_zcr = 500;
 
+    bool resetFilters = true;  // to (re)initialize filters on first run
     uint_fast32_t vector_energy = 0;
     uint_fast32_t vector_lfc = 0;
     uint_fast32_t vector_zcr = 0;
@@ -94,7 +114,7 @@ class AutoPlaylistUsermod : public Usermod {
       }
       
       energy *= energy;
-      energy /= 10000; // scale down so we get 0 sometimes
+      energy /= ENERGY_SCALE; // scale down so we get 0 sometimes
 
       uint8_t lfc = fftResult[0];
       uint16_t zcr = *(uint16_t*)um_data->u_data[11];
@@ -103,15 +123,24 @@ class AutoPlaylistUsermod : public Usermod {
       // and the individual vector distances.
 
       if (volumeSmth > 1.0f) { 
+        // initialize filters on first run
+        if (resetFilters) {
+          avg_short_energy = avg_long_energy = energy;
+          avg_short_lfc = avg_long_lfc = lfc;
+          avg_short_zcr = avg_long_zcr = zcr;
+          resetFilters = false;
+          #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
+          USER_PRINTLN("autoplaylist: filters reset.");
+          #endif
+        }
 
-        // softhack007: original code used 0.998f as decay factor
-        avg_long_energy  = avg_long_energy  * 0.99f + energy * 0.01f;
-        avg_long_lfc     = avg_long_lfc     * 0.99f + lfc    * 0.01f;
-        avg_long_zcr     = avg_long_zcr     * 0.99f + zcr    * 0.01f;
+        avg_long_energy = avg_long_energy + FILTER_SLOW1 * (float(energy) - avg_long_energy);
+        avg_long_lfc    = avg_long_lfc    + FILTER_SLOW2 * (float(lfc)    - avg_long_lfc);
+        avg_long_zcr    = avg_long_zcr    + FILTER_SLOW2 * (float(zcr)    - avg_long_zcr);
 
-        avg_short_energy = avg_short_energy * 0.90f + energy * 0.10f;
-        avg_short_lfc    = avg_short_lfc    * 0.90f + lfc    * 0.10f;
-        avg_short_zcr    = avg_short_zcr    * 0.90f + zcr    * 0.10f;
+        avg_short_energy = avg_short_energy + FILTER_FAST1 * (float(energy) - avg_short_energy);
+        avg_short_lfc    = avg_short_lfc    + FILTER_FAST2 * (float(lfc)    - avg_short_lfc);
+        avg_short_zcr    = avg_short_zcr    + FILTER_FAST2 * (float(zcr)    - avg_short_zcr);
 
         // allegedly this is faster than pow(whatever,2)
         vector_lfc = (avg_short_lfc-avg_long_lfc)*(avg_short_lfc-avg_long_lfc);
@@ -284,7 +313,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       float volumeSmth = *(float*)um_data->u_data[0];
 
-      avg_volumeSmth = avg_volumeSmth * 0.99f + volumeSmth * 0.01f;
+      avg_volumeSmth = avg_volumeSmth +  FILTER_VOLUME * (volumeSmth - avg_volumeSmth);
 
       if (avg_volumeSmth >= 1.0f) {
         lastSoundTime = millis();
