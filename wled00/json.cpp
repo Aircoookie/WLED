@@ -142,28 +142,42 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   {
     if (seg.getLightCapabilities() & 3) {
       // segment has RGB or White
-      for (size_t i = 0; i < 3; i++)
-      {
+      for (size_t i = 0; i < NUM_COLORS; i++) {
+        // JSON "col" array can contain the following values for each of segment's colors (primary, background, custom):
+        // "col":[int|string|object|array, int|string|object|array, int|string|object|array]
+        //   int = Kelvin temperature or 0 for black
+        //   string = hex representation of [WW]RRGGBB
+        //   object = individual channel control {"r":0,"g":127,"b":255,"w":255}, each being optional (valid to send {})
+        //   array = direct channel values [r,g,b,w] (w element being optional)
         int rgbw[] = {0,0,0,0};
         bool colValid = false;
         JsonArray colX = colarr[i];
         if (colX.isNull()) {
-          byte brgbw[] = {0,0,0,0};
-          const char* hexCol = colarr[i];
-          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-            int kelvin = colarr[i] | -1;
-            if (kelvin <  0) continue;
-            if (kelvin == 0) seg.setColor(i, 0);
-            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+          JsonObject oCol = colarr[i];
+          if (!oCol.isNull()) {
+            // we have a JSON object for color {"w":123,"r":123,...}; allows individual channel control
+            rgbw[0] = oCol["r"] | R(seg.colors[i]);
+            rgbw[1] = oCol["g"] | G(seg.colors[i]);
+            rgbw[2] = oCol["b"] | B(seg.colors[i]);
+            rgbw[3] = oCol["w"] | W(seg.colors[i]);
             colValid = true;
-          } else { //HEX string, e.g. "FFAA00"
-            colValid = colorFromHexString(brgbw, hexCol);
+          } else {
+            byte brgbw[] = {0,0,0,0};
+            const char* hexCol = colarr[i];
+            if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+              int kelvin = colarr[i] | -1;
+              if (kelvin <  0) continue;
+              if (kelvin == 0) seg.setColor(i, 0);
+              if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+              colValid = true;
+            } else { //HEX string, e.g. "FFAA00"
+              colValid = colorFromHexString(brgbw, hexCol);
+            }
+            for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
           }
-          for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
         } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
           byte sz = colX.size();
           if (sz == 0) continue; //do nothing on empty array
-
           copyArray(colX, rgbw, 4);
           colValid = true;
         }
@@ -303,7 +317,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   return true;
 }
 
-// deserializes WLED state (fileDoc points to doc object if called from web server)
+// deserializes WLED state
 // presetId is non-0 if called from handlePreset()
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
@@ -735,6 +749,8 @@ void serializeInfo(JsonObject root)
     root[F("arch")] = ESP.getChipModel();
   #endif
   root[F("core")] = ESP.getSdkVersion();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   #ifdef WLED_DEBUG
   root[F("maxalloc")] = ESP.getMaxAllocHeap();
   root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
@@ -744,6 +760,8 @@ void serializeInfo(JsonObject root)
 #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   #ifdef WLED_DEBUG
   root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
   root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
@@ -752,8 +770,8 @@ void serializeInfo(JsonObject root)
 #endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
-  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
-  if (psramFound()) root[F("psram")] = ESP.getFreePsram();
+  #if defined(ARDUINO_ARCH_ESP32)
+  if (psramSafe && psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 

@@ -1,5 +1,29 @@
 ## WLED changelog
 
+#### Build 2403280
+-   Individual color channel control for JSON API (fixes #3860)
+    - "col":[int|string|object|array, int|string|object|array, int|string|object|array]
+        int = Kelvin temperature or 0 for black
+        string = hex representation of [WW]RRGGBB
+        object = individual channel control {"r":0,"g":127,"b":255,"w":255}, each being optional (valid to send {})
+        array = direct channel values [r,g,b,w] (w element being optional)
+-   runtime selection for CCT IC (Athom 15W bulb)
+-   #3850 (by @w00000dy)
+-   Rotary encoder palette count bugfix
+-   bugfixes and optimisations
+
+#### Build 2403240
+-   v0.15.0-b2
+-   WS2805 support (RGB + WW + CW, 600kbps)
+-   Unified PSRAM use
+-   NeoPixelBus v2.7.9 (for future WS2805 support)
+-   Ubiquitous PSRAM mode for all variants of ESP32
+-   SSD1309_64 I2C Support for FLD Usermod (#3836 by @THATDONFC)
+-   Palette cycling fix (add support for `{"seg":[{"pal":"X~Y~"}]}` or `{"seg":[{"pal":"X~Yr"}]}`)
+-   FW1906 Support (#3810 by @deece and @Robert-github-com)
+-   ESPAsyncWebServer 2.2.0 (#3828 by @willmmiles)
+-   Bugfixes: #3843, #3844
+
 #### Build 2403190
 -   limit max PWM frequency (fix incorrect PWM resolution)
 -   Segment UI bugfix
@@ -52,7 +76,7 @@
 
 #### Build 2309120 till build 2402010
 -   WLED version 0.15.0-a0
--   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to
+-   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to (with help from @JPZV)
 -   Temporary AP. Use your WLED in public with temporary AP.
 -   Github CI build system enhancements (#3718 by @WoodyLetsCode)
 -   Accessibility: Node list ( #3715 by @WoodyLetsCode)

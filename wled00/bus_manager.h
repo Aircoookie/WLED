@@ -35,7 +35,7 @@ struct BusConfig {
   uint8_t skipAmount;
   bool refreshReq;
   uint8_t autoWhite;
-  uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
+  uint8_t pins[5] = {255, 255, 255, 255, 255};
   uint16_t frequency;
   bool doubleBuffer;
   uint8_t milliAmpsPerLed;
@@ -56,9 +56,9 @@ struct BusConfig {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
     size_t nPins = 1;
-    if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
-    else if (type > 47) nPins = 2;
-    else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
+    if (IS_VIRTUAL(type))   nPins = 4; //virtual network bus. 4 "pins" store IP address
+    else if (IS_2PIN(type)) nPins = 2;
+    else if (IS_PWM(type))  nPins = NUM_PWM_PINS(type);
     for (size_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
@@ -160,7 +160,8 @@ class Bus {
     virtual bool hasWhite(void) { return Bus::hasWhite(_type); }
     static  bool hasWhite(uint8_t type) {
       if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) ||
-          type == TYPE_SK6812_RGBW || type == TYPE_TM1814 || type == TYPE_UCS8904 || type == TYPE_FW1906) return true; // digital types with white channel
+          type == TYPE_SK6812_RGBW || type == TYPE_TM1814 || type == TYPE_UCS8904 ||
+          type == TYPE_FW1906 || type == TYPE_WS2805) return true; // digital types with white channel
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true; // analog types with white channel
       if (type == TYPE_NET_DDP_RGBW || type == TYPE_NET_ARTNET_RGBW) return true; // network types with white channel
       return false;
@@ -168,7 +169,8 @@ class Bus {
     virtual bool hasCCT(void) { return Bus::hasCCT(_type); }
     static  bool hasCCT(uint8_t type) {
       if (type == TYPE_WS2812_2CH_X3 || type == TYPE_WS2812_WWA ||
-          type == TYPE_ANALOG_2CH    || type == TYPE_ANALOG_5CH ||  type == TYPE_FW1906) return true;
+          type == TYPE_ANALOG_2CH    || type == TYPE_ANALOG_5CH ||
+          type == TYPE_FW1906        || type == TYPE_WS2805 ) return true;
       return false;
     }
     static int16_t getCCT() { return _cct; }

@@ -110,6 +110,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | AW_GLOBAL_DISABLED);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
+  CJSON(cctICused, hw_led[F("ic")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
@@ -185,7 +186,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t maPerLed = elm[F("ledma")] | 55;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
-      if ((ledType > TYPE_TM1814 && ledType < TYPE_WS2801) || ledType >= TYPE_NET_DDP_RGB) { // analog and virtual
+      if (IS_PWM(ledType) || IS_ONOFF(ledType) || IS_VIRTUAL(ledType)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       }
@@ -767,6 +768,7 @@ void serializeConfig() {
   hw_led[F("ledma")] = 0; // no longer used
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
+  hw_led[F("ic")] = cctICused;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override

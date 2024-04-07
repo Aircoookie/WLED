@@ -209,8 +209,12 @@
   #include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
 #endif
 
+#ifdef USERMOD_MAX17048
+  #include "../usermods/MAX17048_v2/usermod_max17048.h"
+#endif
+
 #ifdef USERMOD_TETRISAI
-#include "../usermods/TetrisAI_v2/usermod_v2_tetrisai.h"
+  #include "../usermods/TetrisAI_v2/usermod_v2_tetrisai.h"
 #endif
 
 void registerUsermods()
@@ -408,6 +412,10 @@ void registerUsermods()
 
   #ifdef USERMOD_STAIRCASE_WIPE
   usermods.add(new StairwayWipeUsermod());
+  #endif
+
+  #ifdef USERMOD_MAX17048
+  usermods.add(new Usermod_MAX17048());
   #endif
 
   #ifdef USERMOD_TETRISAI

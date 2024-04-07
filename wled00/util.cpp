@@ -228,7 +228,6 @@ bool requestJSONBufferLock(uint8_t module)
   DEBUG_PRINT(F("JSON buffer locked. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = pDoc;  // used for applying presets (presets.cpp)
   pDoc->clear();
   return true;
 }
@@ -239,7 +238,6 @@ void releaseJSONBufferLock()
   DEBUG_PRINT(F("JSON buffer released. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = nullptr;
   jsonBufferLock = 0;
 }
 

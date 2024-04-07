@@ -9,6 +9,8 @@
 #include "bus_wrapper.h"
 #include "bus_manager.h"
 
+extern bool cctICused;
+
 //colors.cpp
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 
@@ -127,7 +129,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
-  DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n", _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], _pins[1], _iType, _milliAmpsPerLed, _milliAmpsMax);
+  DEBUG_PRINTF_P(PSTR("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n"), _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], IS_2PIN(bc.type)?_pins[1]:255, _iType, _milliAmpsPerLed, _milliAmpsMax);
 }
 
 //fine tune power estimation constants for your setup
@@ -210,7 +212,7 @@ void BusDigital::show() {
 
   if (_data) {
     size_t channels = getNumberOfChannels();
-    int16_t oldCCT = _cct; // temporarily save bus CCT
+    int16_t oldCCT = Bus::_cct; // temporarily save bus CCT
     for (size_t i=0; i<_len; i++) {
       size_t offset = i * channels;
       uint8_t co = _colorOrderMap.getPixelColorOrder(i+_start, _colorOrder);
@@ -229,7 +231,7 @@ void BusDigital::show() {
         // unfortunately as a segment may span multiple buses or a bus may contain multiple segments and each segment may have different CCT
         // we need to extract and appy CCT value for each pixel individually even though all buses share the same _cct variable
         // TODO: there is an issue if CCT is calculated from RGB value (_cct==-1), we cannot do that with double buffer
-        _cct = _data[offset+channels-1];
+        Bus::_cct = _data[offset+channels-1];
         Bus::calculateCCT(c, cctWW, cctCW);
       }
       uint16_t pix = i;
@@ -241,7 +243,7 @@ void BusDigital::show() {
     if (_skip) PolyBus::setPixelColor(_busPtr, _iType, 0, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
     #endif
     for (int i=1; i<_skip; i++) PolyBus::setPixelColor(_busPtr, _iType, i, 0, _colorOrderMap.getPixelColorOrder(_start, _colorOrder)); // paint skipped pixels black
-    _cct = oldCCT;
+    Bus::_cct = oldCCT;
   } else {
     if (newBri < _bri) {
       uint16_t hwLen = _len;
@@ -291,7 +293,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid) return;
   uint8_t cctWW = 0, cctCW = 0;
   if (hasWhite()) c = autoWhiteCalc(c);
-  if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
+  if (Bus::_cct >= 1900) c = colorBalanceFromKelvin(Bus::_cct, c); //color correction from CCT
   if (_data) {
     size_t offset = pix * getNumberOfChannels();
     if (hasRGB()) {
@@ -302,7 +304,7 @@ void IRAM_ATTR BusDigital::setPixelColor(uint16_t pix, uint32_t c) {
     if (hasWhite()) _data[offset++] = W(c);
     // unfortunately as a segment may span multiple buses or a bus may contain multiple segments and each segment may have different CCT
     // we need to store CCT value for each pixel (if there is a color correction in play, convert K in CCT ratio)
-    if (hasCCT())   _data[offset]   = _cct >= 1900 ? (_cct - 1900) >> 5 : (_cct < 0 ? 127 : _cct); // TODO: if _cct == -1 we simply ignore it
+    if (hasCCT())   _data[offset]   = Bus::_cct >= 1900 ? (Bus::_cct - 1900) >> 5 : (Bus::_cct < 0 ? 127 : Bus::_cct); // TODO: if _cct == -1 we simply ignore it
   } else {
     if (_reversed) pix = _len - pix -1;
     pix += _skip;
@@ -428,8 +430,8 @@ BusPwm::BusPwm(BusConfig &bc)
 void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
   if (pix != 0 || !_valid) return; //only react to first pixel
   if (_type != TYPE_ANALOG_3CH) c = autoWhiteCalc(c);
-  if (_cct >= 1900 && (_type == TYPE_ANALOG_3CH || _type == TYPE_ANALOG_4CH)) {
-    c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
+  if (Bus::_cct >= 1900 && (_type == TYPE_ANALOG_3CH || _type == TYPE_ANALOG_4CH)) {
+    c = colorBalanceFromKelvin(Bus::_cct, c); //color correction from CCT
   }
   uint8_t r = R(c);
   uint8_t g = G(c);
@@ -441,19 +443,18 @@ void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
       _data[0] = w;
       break;
     case TYPE_ANALOG_2CH: //warm white + cold white
-      #ifdef WLED_USE_IC_CCT
-      _data[0] = w;
-      _data[1] = cct;
-      #else
-      Bus::calculateCCT(c, _data[0], _data[1]);
-      #endif
+      if (cctICused) {
+        _data[0] = w;
+        _data[1] = Bus::_cct < 0 || Bus::_cct > 255 ? 127 : Bus::_cct;
+      } else {
+        Bus::calculateCCT(c, _data[0], _data[1]);
+      }
       break;
     case TYPE_ANALOG_5CH: //RGB + warm white + cold white
-      #ifdef WLED_USE_IC_CCT
-      _data[4] = cct;
-      #else
-      Bus::calculateCCT(c, w, _data[4]);
-      #endif
+      if (cctICused)
+        _data[4] = Bus::_cct < 0 || Bus::_cct > 255 ? 127 : Bus::_cct;
+      else
+        Bus::calculateCCT(c, w, _data[4]);
     case TYPE_ANALOG_4CH: //RGBW
       _data[3] = w;
     case TYPE_ANALOG_3CH: //standard dumb RGB
@@ -504,7 +505,7 @@ void BusPwm::show() {
   uint8_t numPins = NUM_PWM_PINS(_type);
   unsigned maxBri = (1<<_depth) - 1;
   #ifdef ESP8266
-  unsigned pwmBri = (unsigned)(roundf(powf((float)_bri / 255.0f, 1.7f) * (float)maxBri + 0.5f)); // using gamma 1.7 to extrapolate PWM duty cycle
+  unsigned pwmBri = (unsigned)(roundf(powf((float)_bri / 255.0f, 1.7f) * (float)maxBri)); // using gamma 1.7 to extrapolate PWM duty cycle
   #else
   unsigned pwmBri = cieLUT[_bri] >> (12 - _depth); // use CIE LUT
   #endif
@@ -618,7 +619,7 @@ BusNetwork::BusNetwork(BusConfig &bc)
 void BusNetwork::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid || pix >= _len) return;
   if (_rgbw) c = autoWhiteCalc(c);
-  if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
+  if (Bus::_cct >= 1900) c = colorBalanceFromKelvin(Bus::_cct, c); //color correction from CCT
   uint16_t offset = pix * _UDPchannels;
   _data[offset]   = R(c);
   _data[offset+1] = G(c);
