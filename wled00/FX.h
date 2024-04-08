@@ -601,7 +601,7 @@ typedef struct Segment {
     inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     #ifndef WLED_DISABLE_MODE_BLEND
-    inline void setClippingRect(int startX, int stopX, int startY = 0, int stopY = 1) { _clipStart = startX; _clipStop = stopX; _clipStartY = startY; _clipStopY = stopY; };
+    static inline void setClippingRect(int startX, int stopX, int startY = 0, int stopY = 1) { _clipStart = startX; _clipStop = stopX; _clipStartY = startY; _clipStopY = stopY; };
     #endif
     bool isPixelClipped(int i);
     uint32_t getPixelColor(int i);
@@ -708,9 +708,7 @@ class WS2812FX {  // 96 bytes
   public:
 
     WS2812FX() :
-      paletteFade(0),
       paletteBlend(0),
-      cctBlending(0),
       now(millis()),
       timebase(0),
       isMatrix(false),
@@ -792,6 +790,7 @@ class WS2812FX {  // 96 bytes
       addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name), // add effect to the list; defined in FX.cpp
       setupEffectData(void);                      // add default effects to the list; defined in FX.cpp
 
+    inline void resetTimebase()           { timebase = 0U - millis(); }
     inline void restartRuntime()          { for (Segment &seg : _segments) seg.markForReset(); }
     inline void setTransitionMode(bool t) { for (Segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0); }
     inline void setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0)    { setColor(slot, RGBW32(r,g,b,w)); }
@@ -806,7 +805,6 @@ class WS2812FX {  // 96 bytes
     inline void resume(void)                                  { _suspend = false; }   // will resume strip.service() execution
 
     bool
-      paletteFade,
       checkSegmentAlignment(void),
       hasRGBWBus(void),
       hasCCTBus(void),
@@ -822,7 +820,6 @@ class WS2812FX {  // 96 bytes
 
     uint8_t
       paletteBlend,
-      cctBlending,
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),

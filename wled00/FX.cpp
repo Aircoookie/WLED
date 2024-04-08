@@ -1211,8 +1211,9 @@ static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!,!;!"
  */
 uint16_t mode_fireworks() {
   if (SEGLEN == 1) return mode_static();
-  const uint16_t width  = SEGMENT.is2D() ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t height = SEGMENT.virtualHeight();
+  const unsigned width  = SEGMENT.is2D() ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const unsigned height = SEGMENT.virtualHeight();
+  const unsigned dimension = width * height;
 
   if (SEGENV.call == 0) {
     SEGENV.aux0 = UINT16_MAX;
@@ -1220,19 +1221,19 @@ uint16_t mode_fireworks() {
   }
   SEGMENT.fade_out(128);
 
-  bool valid1 = (SEGENV.aux0 < width*height);
-  bool valid2 = (SEGENV.aux1 < width*height);
-  uint8_t x = SEGENV.aux0%width, y = SEGENV.aux0/width; // 2D coordinates stored in upper and lower byte
+  bool valid1 = (SEGENV.aux0 < dimension);
+  bool valid2 = (SEGENV.aux1 < dimension);
+  unsigned x = SEGENV.aux0%width, y = SEGENV.aux0/width; // 2D coordinates stored in upper and lower byte
   uint32_t sv1 = 0, sv2 = 0;
   if (valid1) sv1 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux0); // get spark color
   if (valid2) sv2 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux1);
-  if (!SEGENV.step) SEGMENT.blur(16);
+  if (!SEGENV.step) SEGMENT.blur(dimension > 100 ? 16 : 8);
   if (valid1) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv1); else SEGMENT.setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
   if (valid2) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv2); else SEGMENT.setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
 
-  for (int i=0; i<max(1, width/20); i++) {
+  for (unsigned i=0; i<max(1U, width/20); i++) {
     if (random8(129 - (SEGMENT.intensity >> 1)) == 0) {
-      uint16_t index = random16(width*height);
+      unsigned index = random16(dimension);
       x = index % width;
       y = index / width;
       uint32_t col = SEGMENT.color_from_palette(random8(), false, false, 0);
@@ -2066,41 +2067,41 @@ uint16_t mode_fire_2012() {
   struct virtualStrip {
     static void runStrip(uint16_t stripNr, byte* heat, uint32_t it) {
 
-      const uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
+      const unsigned ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
 
       // Step 1.  Cool down every cell a little
-      for (int i = 0; i < SEGLEN; i++) {
-        uint8_t cool = (it != SEGENV.step) ? random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2) : random8(4);
-        uint8_t minTemp = (i<ignition) ? (ignition-i)/4 + 16 : 0;  // should not become black in ignition area
-        uint8_t temp = qsub8(heat[i], cool);
+      for (unsigned i = 0; i < SEGLEN; i++) {
+        unsigned cool = (it != SEGENV.step) ? random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2) : random8(4);
+        unsigned minTemp = (i<ignition) ? (ignition-i)/4 + 16 : 0;  // should not become black in ignition area
+        unsigned temp = qsub8(heat[i], cool);
         heat[i] = temp<minTemp ? minTemp : temp;
       }
 
       if (it != SEGENV.step) {
         // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-        for (int k = SEGLEN -1; k > 1; k--) {
+        for (unsigned k = SEGLEN -1; k > 1; k--) {
           heat[k] = (heat[k - 1] + (heat[k - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
         }
 
         // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
         if (random8() <= SEGMENT.intensity) {
-          uint8_t y = random8(ignition);
-          uint8_t boost = (17+SEGMENT.custom3) * (ignition - y/2) / ignition; // integer math!
+          unsigned y = random8(ignition);
+          unsigned boost = (17+SEGMENT.custom3) * (ignition - y/2) / ignition; // integer math!
           heat[y] = qadd8(heat[y], random8(96+2*boost,207+boost));
         }
       }
 
       // Step 4.  Map from heat cells to LED colors
       for (int j = 0; j < SEGLEN; j++) {
-        SEGMENT.setPixelColor(indexToVStrip(j, stripNr), ColorFromPalette(SEGPALETTE, MIN(heat[j],240), 255, NOBLEND));
+        SEGMENT.setPixelColor(indexToVStrip(j, stripNr), ColorFromPalette(SEGPALETTE, MIN(heat[j],240), 255, LINEARBLEND_NOWRAP));
       }
     }
   };
 
-  for (int stripNr=0; stripNr<strips; stripNr++)
+  for (unsigned stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &heat[stripNr * SEGLEN], it);
 
-  if (SEGMENT.is2D()) SEGMENT.blur(32);
+  if (SEGMENT.is2D()) SEGMENT.blur((SEGMENT.virtualWidth()*SEGMENT.virtualHeight()) > 100 ? 32 : 0);
 
   if (it != SEGENV.step)
     SEGENV.step = it;
@@ -4856,9 +4857,9 @@ static const char _data_FX_MODE_FLOWSTRIPE[] PROGMEM = "Flow Stripe@Hue speed,Ef
 uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
   if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
 
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-  uint16_t x, y;
+  const unsigned cols = SEGMENT.virtualWidth();
+  const unsigned rows = SEGMENT.virtualHeight();
+  unsigned x, y;
 
   SEGMENT.fadeToBlackBy(16 + (SEGMENT.speed>>3)); // create fading trails
   unsigned long t = strip.now/128;                 // timebase
@@ -4877,7 +4878,7 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   // central white dot
   SEGMENT.setPixelColorXY(cols/2, rows/2, WHITE);
   // blur everything a bit
-  SEGMENT.blur(16);
+  SEGMENT.blur(sqrt16(cols*rows) > 100 ? 16 : 0);
 
   return FRAMETIME;
 } // mode_2DBlackHole()
@@ -6436,8 +6437,8 @@ static const char _data_FX_MODE_2DSWIRL[] PROGMEM = "Swirl@!,Sensitivity,Blur;,B
 uint16_t mode_2DWaverly(void) {
   if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
 
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const unsigned cols = SEGMENT.virtualWidth();
+  const unsigned rows = SEGMENT.virtualHeight();
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6449,21 +6450,21 @@ uint16_t mode_2DWaverly(void) {
   SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
   long t = strip.now / 2;
-  for (int i = 0; i < cols; i++) {
-    uint16_t thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
+  for (unsigned i = 0; i < cols; i++) {
+    unsigned thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
     // use audio if available
     if (um_data) {
       thisVal /= 32; // reduce intensity of inoise8()
       thisVal *= volumeSmth;
     }
-    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
+    unsigned thisMax = map(thisVal, 0, 512, 0, rows);
 
-    for (int j = 0; j < thisMax; j++) {
+    for (unsigned j = 0; j < thisMax; j++) {
       SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
       SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
-  SEGMENT.blur(16);
+  SEGMENT.blur(sqrt16(cols*rows) > 100 ? 16 : 0);
 
   return FRAMETIME;
 } // mode_2DWaverly()

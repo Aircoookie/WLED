@@ -351,7 +351,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     tr = root[F("transition")] | -1;
     if (tr >= 0) {
       transitionDelay = tr * 100;
-      if (fadeTransition) strip.setTransition(transitionDelay);
+      strip.setTransition(transitionDelay);
     }
   }
 
@@ -364,7 +364,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   tr = root[F("tt")] | -1;
   if (tr >= 0) {
     jsonTransitionOnce = true;
-    if (fadeTransition) strip.setTransition(tr * 100);
+    strip.setTransition(tr * 100);
   }
 
   tr = root[F("tb")] | -1;
@@ -779,7 +779,7 @@ void serializeInfo(JsonObject root)
 
   root[F("freeheap")] = ESP.getFreeHeap();
   #if defined(ARDUINO_ARCH_ESP32)
-  if (psramSafe && psramFound()) root[F("psram")] = ESP.getFreePsram();
+  if (psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 

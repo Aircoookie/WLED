@@ -47,12 +47,6 @@ void applyValuesToSelectedSegs()
 }
 
 
-void resetTimebase()
-{
-  strip.timebase = 0 - millis();
-}
-
-
 void toggleOnOff()
 {
   if (bri == 0)
@@ -76,7 +70,7 @@ byte scaledBri(byte in)
 }
 
 
-//applies global brightness
+//applies global temporary brightness (briT) to strip
 void applyBri() {
   if (!realtimeMode || !arlsForceMaxBri)
   {
@@ -90,6 +84,7 @@ void applyFinalBri() {
   briOld = bri;
   briT = bri;
   applyBri();
+  strip.trigger(); // force one last update
 }
 
 
@@ -122,7 +117,7 @@ void stateUpdated(byte callMode) {
     nightlightStartTime = millis();
   }
   if (briT == 0) {
-    if (callMode != CALL_MODE_NOTIFICATION) resetTimebase(); //effect start from beginning
+    if (callMode != CALL_MODE_NOTIFICATION) strip.resetTimebase(); //effect start from beginning
   }
 
   if (bri > 0) briLast = bri;
@@ -133,31 +128,24 @@ void stateUpdated(byte callMode) {
   // notify usermods of state change
   usermods.onStateChange(callMode);
 
-  if (fadeTransition) {
-    if (strip.getTransition() == 0) {
-      jsonTransitionOnce = false;
-      transitionActive = false;
-      applyFinalBri();
-      strip.trigger();
-      return;
-    }
-
-    if (transitionActive) {
-      briOld = briT;
-      tperLast = 0;
-    } else
-      strip.setTransitionMode(true); // force all segments to transition mode
-    transitionActive = true;
-    transitionStartTime = millis();
-  } else {
+  if (strip.getTransition() == 0) {
+    jsonTransitionOnce = false;
+    transitionActive = false;
     applyFinalBri();
-    strip.trigger();
+    return;
   }
+
+  if (transitionActive) {
+    briOld = briT;
+    tperLast = 0;
+  } else
+    strip.setTransitionMode(true); // force all segments to transition mode
+  transitionActive = true;
+  transitionStartTime = millis();
 }
 
 
-void updateInterfaces(uint8_t callMode)
-{
+void updateInterfaces(uint8_t callMode) {
   if (!interfaceUpdateCallMode || millis() - lastInterfaceUpdate < INTERFACE_UPDATE_COOLDOWN) return;
 
   sendDataWs();
@@ -178,8 +166,7 @@ void updateInterfaces(uint8_t callMode)
 }
 
 
-void handleTransitions()
-{
+void handleTransitions() {
   //handle still pending interface update
   updateInterfaces(interfaceUpdateCallMode);
 
@@ -198,7 +185,6 @@ void handleTransitions()
     if (tper - tperLast < 0.004f) return;
     tperLast = tper;
     briT = briOld + ((bri - briOld) * tper);
-
     applyBri();
   }
 }
@@ -211,8 +197,7 @@ void colorUpdated(byte callMode) {
 }
 
 
-void handleNightlight()
-{
+void handleNightlight() {
   unsigned long now = millis();
   if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; // take care of millis() rollover
   if (now - lastNlUpdate < 100) return; // allow only 10 NL updates per second
@@ -292,7 +277,6 @@ void handleNightlight()
 }
 
 //utility for FastLED to use our custom timer
-uint32_t get_millisecond_timer()
-{
+uint32_t get_millisecond_timer() {
   return strip.now;
 }

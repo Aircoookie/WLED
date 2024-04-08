@@ -225,10 +225,8 @@ void parseNotifyPacket(uint8_t *udpIn) {
 
   // set transition time before making any segment changes
   if (version > 3) {
-    if (fadeTransition) {
-      jsonTransitionOnce = true;
-      strip.setTransition(((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00));
-    }
+    jsonTransitionOnce = true;
+    strip.setTransition(((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00));
   }
 
   //apply colors from notification to main segment, only if not syncing full segments

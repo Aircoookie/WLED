@@ -1,5 +1,8 @@
 ## WLED changelog
 
+#### Build 2404050
+-   Blending styles (with help from @tkadauke)
+
 #### Build 2403280
 -   Individual color channel control for JSON API (fixes #3860)
     - "col":[int|string|object|array, int|string|object|array, int|string|object|array]

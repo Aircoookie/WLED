@@ -391,14 +391,14 @@ BusPwm::BusPwm(BusConfig &bc)
   uint8_t numPins = NUM_PWM_PINS(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
 
-  #ifdef ESP8266
+#ifdef ESP8266
   // duty cycle resolution (_depth) can be extracted from this formula: 1MHz > _frequency * 2^_depth
   if      (_frequency > 1760) _depth =  8;
   else if (_frequency >  880) _depth =  9;
   else                        _depth = 10; // WLED_PWM_FREQ <= 880Hz
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
-  #else
+#else
   _ledcStart = pinManager.allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
@@ -408,7 +408,7 @@ BusPwm::BusPwm(BusConfig &bc)
   else if (_frequency > 39062) _depth = 10;
   else if (_frequency > 19531) _depth = 11;
   else                         _depth = 12; // WLED_PWM_FREQ <= 19531Hz
-  #endif
+#endif
 
   for (unsigned i = 0; i < numPins; i++) {
     uint8_t currentPin = bc.pins[i];

@@ -357,7 +357,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CCT"),correctWB);
     sappend('c',SET_F("IC"),cctICused);
     sappend('c',SET_F("CR"),cctFromRgb);
-    sappend('v',SET_F("CB"),strip.cctBlending);
+    sappend('v',SET_F("CB"),Bus::getCCTBlend());
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
     sappend('c',SET_F("LD"),useGlobalLedBuffer);
@@ -445,10 +445,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("GB"),gammaCorrectBri);
     sappend('c',SET_F("GC"),gammaCorrectCol);
     dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
-    sappend('c',SET_F("TF"),fadeTransition);
-    sappend('c',SET_F("EB"),modeBlending);
     sappend('v',SET_F("TD"),transitionDelayDefault);
-    sappend('c',SET_F("PF"),strip.paletteFade);
     sappend('v',SET_F("TP"),randomPaletteChangeTime);
     sappend('c',SET_F("TH"),useHarmonicRandomPalette);
     sappend('v',SET_F("BF"),briMultiplier);

@@ -173,10 +173,11 @@ class Bus {
           type == TYPE_FW1906        || type == TYPE_WS2805 ) return true;
       return false;
     }
-    static int16_t getCCT() { return _cct; }
+    static inline int16_t getCCT() { return _cct; }
     static void setCCT(int16_t cct) {
       _cct = cct;
     }
+    static inline uint8_t getCCTBlend() { return _cctBlend; }
     static void setCCTBlend(uint8_t b) {
       if (b > 100) b = 100;
       _cctBlend = (b * 127) / 100;
