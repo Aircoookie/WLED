@@ -473,18 +473,18 @@ CRGBPalette16 IRAM_ATTR &Segment::currentPalette(CRGBPalette16 &targetPalette, u
 // relies on WS2812FX::service() to call it for each frame
 void Segment::handleRandomPalette() {
   // is it time to generate a new palette?
-  if ((millis()/1000U) - _lastPaletteChange > randomPaletteChangeTime) {
-    _newRandomPalette = useHarmonicRandomPalette ? generateHarmonicRandomPalette(_randomPalette) : generateRandomPalette();
-    _lastPaletteChange = millis()/1000U;
-    _lastPaletteBlend = (uint16_t)(millis() & 0xFFFF)-512; // starts blending immediately
+  if ((uint16_t)(millis() / 1000U) - _lastPaletteChange > randomPaletteChangeTime){
+        _newRandomPalette = useHarmonicRandomPalette ? generateHarmonicRandomPalette(_randomPalette) : generateRandomPalette();
+        _lastPaletteChange = (uint16_t)(millis() / 1000U);
+        _lastPaletteBlend = (uint16_t)millis() - 512; // starts blending immediately   
   }
 
   // if palette transitions is enabled, blend it according to Transition Time (if longer than minimum given by service calls)
   if (strip.paletteFade) {
     // assumes that 128 updates are sufficient to blend a palette, so shift by 7 (can be more, can be less)
     // in reality there need to be 255 blends to fully blend two entirely different palettes
-    if ((millis() & 0xFFFF) - _lastPaletteBlend < strip.getTransition() >> 7) return; // not yet time to fade, delay the update
-    _lastPaletteBlend = millis();
+    if ((uint16_t)((uint16_t)millis() - _lastPaletteBlend) < strip.getTransition() >> 7) return; // not yet time to fade, delay the update
+    _lastPaletteBlend = (uint16_t)millis();
   }
   nblendPaletteTowardPalette(_randomPalette, _newRandomPalette, 48);
 }

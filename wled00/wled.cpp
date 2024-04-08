@@ -362,13 +362,15 @@ void WLED::setup()
   DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
 
 #else
-  DEBUG_PRINT(F("esp8266 "));
+  DEBUG_PRINT(F("esp8266 @ ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINT(F("MHz.\nCore: "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
+  DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipSize()/1024)/1024); DEBUG_PRINTLN(F(" MB"));
 #endif
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
 #if defined(ARDUINO_ARCH_ESP32)
-  #ifndef BOARD_HAS_PSRAM
+  // BOARD_HAS_PSRAM also means that a compiler flag "-mfix-esp32-psram-cache-issue" was used and so PSRAM is safe to use on rev.1 ESP32
+  #if !defined(BOARD_HAS_PSRAM) && !(defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3))
   if (psramFound() && ESP.getChipRevision() < 3) psramSafe = false;
   if (!psramSafe) DEBUG_PRINTLN(F("Not using PSRAM."));
   #endif
@@ -379,11 +381,6 @@ void WLED::setup()
     DEBUG_PRINT(F("Total PSRAM: ")); DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
     DEBUG_PRINT(F("Free PSRAM : ")); DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
   }
-#endif
-#if defined(ARDUINO_ESP32_PICO)
-  // special handling for PICO-D4: gpio16+17 are in use for onboard SPI FLASH (not PSRAM)
-  managed_pin_type pins[] = { {16, true}, {17, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
 #endif
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
