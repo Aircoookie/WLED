@@ -14,6 +14,7 @@ class AutoPlaylistUsermod : public Usermod {
     
   #if 0
     // experimental parameters by softhack007 - more balanced but need testing
+    const uint_fast32_t MAX_DISTANCE_TRACKER = 184; // maximum accepted distance_tracker
     const uint_fast32_t ENERGY_SCALE = 24000;
     const float FILTER_SLOW1 = 0.0075f;  // for "slow" energy
     const float FILTER_SLOW2 = 0.005f;   // for "slow" lfc / zcr
@@ -22,6 +23,7 @@ class AutoPlaylistUsermod : public Usermod {
     const float FILTER_VOLUME = 0.03f;   // for volumeSmth averaging - takes 8-10sec until "silence"
   #else
     // parameters used by TroyHacks / netmindz - behaviour is mainly driven by "energy"
+    const uint_fast32_t MAX_DISTANCE_TRACKER = 128; // maximum accepted distance_tracker
     const uint_fast32_t ENERGY_SCALE = 10000;
     //     softhack007: original code used FILTER_SLOW = 0.002f
     const float FILTER_SLOW1 = 0.01f;   // for "slow" energy
@@ -169,7 +171,7 @@ class AutoPlaylistUsermod : public Usermod {
         // the current music, especially after track changes or during 
         // sparse intros and breakdowns.
 
-        if (change_interval > ideal_change_min && distance_tracker <= 100) {
+        if (change_interval > ideal_change_min && distance_tracker <= MAX_DISTANCE_TRACKER) {
           
           change_threshold_change = distance_tracker-change_threshold;
           change_threshold = distance_tracker;
@@ -192,9 +194,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       if (distance <= change_threshold && change_interval > change_lockout && volumeSmth > 1.0f) { 
 
-        change_threshold_change = change_threshold-(distance*0.9f);
-
-        if (change_threshold_change < 1) change_threshold_change = 1;
+        change_threshold_change = max(1.0f, roundf(change_threshold-(distance*0.9f)));  // exclude negatives, ensure change_threshold_change is always >= 1
 
         if (change_interval > ideal_change_max) {
           change_threshold += change_threshold_change;    // make changes more sensitive
@@ -245,6 +245,8 @@ class AutoPlaylistUsermod : public Usermod {
             // go into freefall - this logic stops that from triggering right
             // after change_lockout. Better for smaller change_lockout values.
 
+            // SH7: this method is sub-optimal, as its interfering with the "playlist" engine
+            //       we shoud find a better method for triggering playlist changes
             applyPreset(newpreset);
             
             #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
@@ -492,7 +494,10 @@ class AutoPlaylistUsermod : public Usermod {
         #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
         USER_PRINTF("AutoPlaylist: Applying \"%s\"\n", name.c_str());
         #endif
-        applyPreset(id, CALL_MODE_NOTIFICATION);
+        // if (currentPlaylist != id) {  // un-comment to only change on "real" changes
+          unloadPlaylist(); // applying a preset requires to unload previous playlist
+          applyPreset(id, CALL_MODE_NOTIFICATION);
+        // }
         lastAutoPlaylist = id;
     }
 
