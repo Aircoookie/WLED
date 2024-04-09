@@ -1656,19 +1656,23 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     return false; // if file does not load properly then exit
   }
 
-  DEBUG_PRINT(F("Reading LED map from ")); DEBUG_PRINTLN(fileName);
+  if (customMappingTable) delete[] customMappingTable;
+  customMappingTable = new uint16_t[getLengthTotal()];
 
-  if (customMappingTable == nullptr) customMappingTable = new uint16_t[getLengthTotal()];
-
-  JsonObject root = pDoc->as<JsonObject>();
-  JsonArray map = root[F("map")];
-  if (!map.isNull() && map.size()) {  // not an empty map
-    customMappingSize = min((unsigned)map.size(), (unsigned)getLengthTotal());
-    for (unsigned i=0; i<customMappingSize; i++) customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+  if (customMappingTable) {
+    DEBUG_PRINT(F("Reading LED map from ")); DEBUG_PRINTLN(fileName);
+    JsonObject root = pDoc->as<JsonObject>();
+    JsonArray map = root[F("map")];
+    if (!map.isNull() && map.size()) {  // not an empty map
+      customMappingSize = min((unsigned)map.size(), (unsigned)getLengthTotal());
+      for (unsigned i=0; i<customMappingSize; i++) customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+    }
+  } else {
+    DEBUG_PRINTLN(F("ERROR LED map allocation error."));
   }
 
   releaseJSONBufferLock();
-  return true;
+  return (customMappingSize > 0);
 }
 
 uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) {
