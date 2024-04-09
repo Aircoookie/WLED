@@ -65,9 +65,10 @@ void WS2812FX::setUpMatrix() {
 
     customMappingSize = 0; // prevent use of mapping if anything goes wrong
 
-    if (customMappingTable == nullptr) customMappingTable = new uint16_t[getLengthTotal()];
+    if (customMappingTable) delete[] customMappingTable;
+    customMappingTable = new uint16_t[getLengthTotal()];
 
-    if (customMappingTable != nullptr) {
+    if (customMappingTable) {
       customMappingSize = getLengthTotal();
 
       // fill with empty in case we don't fill the entire matrix
@@ -138,7 +139,7 @@ void WS2812FX::setUpMatrix() {
       DEBUG_PRINTLN();
       #endif
     } else { // memory allocation error
-      DEBUG_PRINTLN(F("Ledmap alloc error."));
+      DEBUG_PRINTLN(F("ERROR 2D LED map allocation error."));
       isMatrix = false;
       panels = 0;
       panel.clear();
