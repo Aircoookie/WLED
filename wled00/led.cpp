@@ -105,6 +105,7 @@ void stateUpdated(byte callMode) {
     if (stateChanged) currentPreset = 0; //something changed, so we are no longer in the preset
 
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
+    if (bri != briOld && nodeBroadcastEnabled) sendSysInfoUDP(); // update on state
 
     //set flag to update ws and mqtt
     interfaceUpdateCallMode = callMode;
@@ -193,12 +194,15 @@ void handleTransitions()
     if (tper >= 1.0f)
     {
       strip.setTransitionMode(false);
+      // restore (global) transition time if not called from UDP notifier or single/temporary transition from JSON (also playlist)
+      if (jsonTransitionOnce) strip.setTransition(transitionDelay);
       transitionActive = false;
+      jsonTransitionOnce = false;
       tperLast = 0;
       applyFinalBri();
       return;
     }
-    if (tper - tperLast < 0.004) return;
+    if (tper - tperLast < 0.004f) return;
     tperLast = tper;
     briT = briOld + ((bri - briOld) * tper);
 
@@ -208,7 +212,7 @@ void handleTransitions()
 
 
 // legacy method, applies values from col, effectCurrent, ... to selected segments
-void colorUpdated(byte callMode){
+void colorUpdated(byte callMode) {
   applyValuesToSelectedSegs();
   stateUpdated(callMode);
 }
