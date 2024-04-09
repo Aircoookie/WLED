@@ -272,8 +272,8 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   #endif
 
   size_t pos = 0;
-  f = WLED_FS.open(file, "r+");
-  if (!f && !WLED_FS.exists(file)) f = WLED_FS.open(file, "w+");
+  char fileName[129]; strncpy_P(fileName, file, 128); fileName[128] = 0; //use PROGMEM safe copy as FS.open() does not
+  f = WLED_FS.open(fileName, WLED_FS.exists(fileName) ? "r+" : "w+");
   if (!f) {
     DEBUGFS_PRINTLN(F("Failed to open!"));
     return false;
@@ -340,7 +340,8 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
     DEBUGFS_PRINTF("Read from %s with key %s >>>\n", file, (key==nullptr)?"nullptr":key);
     uint32_t s = millis();
   #endif
-  f = WLED_FS.open(file, "r");
+  char fileName[129]; strncpy_P(fileName, file, 128); fileName[128] = 0; //use PROGMEM safe copy as FS.open() does not
+  f = WLED_FS.open(fileName, "r");
   if (!f) return false;
 
   if (key != nullptr && !bufferedFind(key)) //key does not exist in file
@@ -375,38 +376,14 @@ void updateFSInfo() {
 }
 
 
-//Un-comment any file types you need
-static String getContentType(AsyncWebServerRequest* request, String filename){
-  if(request->hasArg(F("download")))     return SET_F("application/octet-stream");
-  else if(filename.endsWith(F(".htm")))  return SET_F("text/html");
-  else if(filename.endsWith(F(".html"))) return SET_F("text/html");
-  else if(filename.endsWith(F(".css")))  return SET_F("text/css");
-  else if(filename.endsWith(F(".js")))   return SET_F("application/javascript");
-  else if(filename.endsWith(F(".json"))) return SET_F("application/json");
-  else if(filename.endsWith(F(".png")))  return SET_F("image/png");
-  else if(filename.endsWith(F(".gif")))  return SET_F("image/gif");
-  else if(filename.endsWith(F(".jpg")))  return SET_F("image/jpeg");
-  else if(filename.endsWith(F(".ico")))  return SET_F("image/x-icon");
-//  else if(filename.endsWith(F(".xml")))   return SET_F("text/xml");
-//  else if(filename.endsWith(F(".pdf")))   return SET_F("application/x-pdf");
-//  else if(filename.endsWith(F(".zip")))   return SET_F("application/x-zip");
-//  else if(filename.endsWith(F(".gz")))    return SET_F("application/x-gzip");
-  return "text/plain";
-}
-
-#if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+#ifdef ARDUINO_ARCH_ESP32
 // caching presets in PSRAM may prevent occasional flashes seen when HomeAssitant polls WLED
 // original idea by @akaricchi (https://github.com/Akaricchi)
-// returns a pointer to the PSRAM buffer updates size parameter
+// returns a pointer to the PSRAM buffer, updates size parameter
 static const uint8_t *getPresetCache(size_t &size) {
   static unsigned long presetsCachedTime;
   static uint8_t *presetsCached;
   static size_t presetsCachedSize;
-
-  if (!psramFound()) {
-    size = 0;
-    return nullptr;
-  }
 
   if (presetsModifiedTime != presetsCachedTime) {
     if (presetsCached) {
@@ -416,7 +393,7 @@ static const uint8_t *getPresetCache(size_t &size) {
   }
 
   if (!presetsCached) {
-    File file = WLED_FS.open("/presets.json", "r");
+    File file = WLED_FS.open(FPSTR(getPresetsFileName()), "r");
     if (file) {
       presetsCachedTime = presetsModifiedTime;
       presetsCachedSize = 0;
@@ -439,25 +416,19 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   DEBUG_PRINT(F("WS FileRead: ")); DEBUG_PRINTLN(path);
   if(path.endsWith("/")) path += "index.htm";
   if(path.indexOf(F("sec")) > -1) return false;
-  String contentType = getContentType(request, path);
-  /*String pathWithGz = path + ".gz";
-  if(WLED_FS.exists(pathWithGz)){
-    request->send(WLED_FS, pathWithGz, contentType);
-    return true;
-  }*/
-  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-  if (path.endsWith("/presets.json")) {
+  #ifdef ARDUINO_ARCH_ESP32
+  if (psramSafe && psramFound() && path.endsWith(FPSTR(getPresetsFileName()))) {
     size_t psize;
     const uint8_t *presets = getPresetCache(psize);
     if (presets) {
-      AsyncWebServerResponse *response = request->beginResponse_P(200, contentType, presets, psize);
+      AsyncWebServerResponse *response = request->beginResponse_P(200, FPSTR(CONTENT_TYPE_JSON), presets, psize);
       request->send(response);
       return true;
     }
   }
   #endif
-  if(WLED_FS.exists(path)) {
-    request->send(WLED_FS, path, contentType);
+  if(WLED_FS.exists(path) || WLED_FS.exists(path + ".gz")) {
+    request->send(WLED_FS, path, String(), request->hasArg(F("download")));
     return true;
   }
   return false;

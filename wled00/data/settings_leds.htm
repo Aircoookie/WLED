@@ -23,6 +23,8 @@
 		function isD2P(t) { return t > 47 && t < 64; }                      // is digital 2 pin type
 		function is16b(t) { return t == 26 || t == 29 }                     // is digital 16 bit type
 		function isVir(t) { return t >= 80 && t < 96; }                     // is virtual type
+		function hasW(t)  { return (t >= 18 && t <= 21) || (t >= 28 && t <= 32) || (t >= 44 && t <= 45) || (t >= 88 && t <= 89); }
+		function hasCCT(t) { return t == 20 || t == 21 || t == 42 || t == 45 || t == 28 || t == 32; }
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -123,10 +125,10 @@
 			gId('abl').style.display = (en) ? 'inline':'none';
 			gId('psu2').style.display = (en) ? 'inline':'none';
 			if (!en) d.Sf.PPL.checked = false;
-			enPPL();
 			UI();
 		}
-		function enPPL()
+		// enable per port limiter and calculate current
+		function enPPL(sDI=0)
 		{
 			const abl = d.Sf.ABL.checked;
 			const ppl = d.Sf.PPL.checked;
@@ -139,9 +141,11 @@
 			d.Sf.querySelectorAll("#mLC input[name^=MA]").forEach((i,n)=>{
 				gId("PSU"+n).style.display = ppl ? "inline" : "none";
 				const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
+				const c = parseInt(d.Sf["LC"+n].value); //get LED count
 				i.min = ppl && !(isVir(t) || isAna(t)) ? 250 : 0;
-				if (!abl) i.value = 0;
+				if (!abl || isVir(t) || isAna(t)) i.value = 0;
 				else if (ppl) sumMA += parseInt(i.value,10);
+				else if (sDI) i.value = Math.round(parseInt(d.Sf.MA.value,10)*c/sDI);
 			});
 			if (ppl) d.Sf.MA.value = sumMA; // populate UI ABL value if PPL used
 		}
@@ -186,6 +190,7 @@
 			if (isDig(t)) {
 				if (is16b(t)) len *= 2; // 16 bit LEDs
 				if (t > 28 && t < 40) ch = 4; //RGBW
+				if (t == 28) ch = 5; //GRBCW
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
 					mul = 5;
 				}
@@ -200,11 +205,10 @@
 
 		function UI(change=false)
 		{
-			let isRGBW = false, gRGBW = false, memu = 0;
-			let sumMA = 0, busMA = 0;
+			let gRGBW = false, memu = 0;
+			let busMA = 0;
 			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
 			const ablEN = d.Sf.ABL.checked;
-			const pplEN = d.Sf.PPL.checked;
 
 			// enable/disable LED fields
 			d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((s)=>{
@@ -241,21 +245,18 @@
 					d.Sf["MA"+n].min = (isVir(t) || isAna(t)) ? 0 : 250;
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+				gRGBW |= hasW(t); // RGBW checkbox, TYPE_xxxx values from const.h
 				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide color order for PWM
-				gId("dig"+n+"w").style.display = (isDig(t) && isRGBW) ? "inline":"none";  // show swap channels dropdown
-				if (!(isDig(t) && isRGBW)) d.Sf["WO"+n].value = 0; // reset swapping
+				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none";  // show swap channels dropdown
+				if (!(isDig(t) && hasW(t))) d.Sf["WO"+n].value = 0; // reset swapping
 				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";  // hide count for analog
 				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";  // hide reversed for virtual
 				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
 				gId("dig"+n+"f").style.display = (isDig(t)) ? "inline":"none";  // hide refresh
-				gId("dig"+n+"a").style.display = (isRGBW) ? "inline":"none";  // auto calculate white
+				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";   // auto calculate white
 				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
 				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
 				//gId("psd"+n).innerHTML = isAna(t) ? "Index:":"Start:";    // change analog start description
-				if (ablEN && pplEN && !(isVir(t) || isAna(t))) {
-					sumMA += parseInt(d.Sf["MA"+n].value); // summarize PPL ABL limit (fields)
-				}
 			});
 			// display global white channel overrides
 			gId("wc").style.display = (gRGBW) ? 'inline':'none';
@@ -279,7 +280,6 @@
 						if (s+c > sLC) sLC = s+c; //update total count
 						if (c > maxLC) maxLC = c; //max per output
 						if (!isVir(t)) sPC += c; //virtual out busses do not count towards physical LEDs
-						//if (!(isVir(t) || isPWM(t))) sDI += c;
 						if (!(isVir(t) || isAna(t))) {
 							sDI += c; // summarize digital LED count
 							let maPL = parseInt(d.Sf["LA"+n].value);
@@ -327,18 +327,9 @@
 						else LC.style.color = d.ro_gpio.some((e)=>e==parseInt(LC.value)) ? "orange" : "#fff";
 					}
 			});
-			// distribute ABL current if not using PPL, otherwise sumMA contains summarized ABL limit
-			d.Sf.querySelectorAll("#mLC input[name^=LC]").forEach((s,n)=>{
-				let c = parseInt(s.value,10); //get LED count
-				let t = parseInt(d.Sf["LT"+n].value); //get LED type
-				if (!ablEN || isVir(t) || isAna(t)) {
-					// virtual and analog LEDs have no limiter
-					d.Sf["MA"+n].value = 0;
-					return;
-				}
-				if (!pplEN) d.Sf["MA"+n].value = Math.round(parseInt(d.Sf.MA.value,10)*c/sDI);
-			});
-			if (pplEN) d.Sf.MA.value = sumMA; // update global ABL if using PPL
+			// distribute ABL current if not using PPL
+			enPPL(sDI);
+
 			// update total led count
 			gId("lc").textContent = sLC;
 			gId("pc").textContent = (sLC == sPC) ? "":"(" + sPC + " physical)";
@@ -395,7 +386,9 @@ ${i+1}:
 <option value="25">TM1829</option>\
 <option value="26">UCS8903</option>\
 <option value="27">APA106/PL9823</option>\
+<option value="28">FW1906 GRBCW</option>\
 <option value="29">UCS8904 RGBW</option>\
+<option value="32">WS2805 RGBCW</option>\
 <option value="50">WS2801</option>\
 <option value="51">APA102</option>\
 <option value="52">LPD8806</option>\
@@ -413,6 +406,7 @@ ${i+1}:
 <!--option value="81">E1.31 RGB (network)</option-->
 <option value="82">Art-Net RGB (network)</option>
 <option value="88">DDP RGBW (network)</option>
+<option value="89">Art-Net RGBW (network)</option>
 </select><br>
 <div id="abl${i}">
 mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">
@@ -461,7 +455,6 @@ mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">
 			gId("-").style.display = (i>0) ? "inline":"none";
 
 			if (!init) {
-				enPPL();
 				UI();
 			}
 		}
@@ -776,7 +769,7 @@ Swap: <select id="xw${i}" name="XW${i}">
 				Keep at &lt;1A if poweing LEDs directly from the ESP 5V pin!<br>
 				Analog (PWM) and virtual LEDs cannot use automatic brightness limiter.<br></i>
 			<div id="psuMA">Maximum PSU Current: <input name="MA" type="number" class="xl" min="250" max="65000" oninput="UI()" required> mA<br></div>
-			Use per-output limiter: <input type="checkbox" name="PPL" onchange="enPPL()"><br>
+			Use per-output limiter: <input type="checkbox" name="PPL" onchange="UI()"><br>
 			<div id="ppldis" style="display:none;">
 				<i>Make sure you enter correct values in each LED output.<br>
 				If using multiple outputs with only one PSU, distribute its power proportionally amongst ouputs.</i><br>
@@ -873,6 +866,7 @@ Swap: <select id="xw${i}" name="XW${i}">
 			</select>
 			<br>
 			Calculate CCT from RGB: <input type="checkbox" name="CR"><br>
+			CCT IC used (Athom 15W): <input type="checkbox" name="IC"><br>
 			CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %
 		</div>
 		<h3>Advanced</h3>

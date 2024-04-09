@@ -53,24 +53,16 @@
       #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
-      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-        #define WLED_MAX_BUSSES 6             // will allow 4 digital & 2 analog
-        #define WLED_MIN_VIRTUAL_BUSSES 4
-      #else
-        #define WLED_MAX_BUSSES 7             // will allow 5 digital & 2 analog
-        #define WLED_MIN_VIRTUAL_BUSSES 3
-      #endif
+      // the 5th bus (I2S) will prevent Audioreactive usermod from functioning (it is last used though)
+      #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog
+      #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
       #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
-      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-        #define WLED_MAX_BUSSES 8
-        #define WLED_MIN_VIRTUAL_BUSSES 2
-      #else
-        #define WLED_MAX_BUSSES 10
-        #define WLED_MIN_VIRTUAL_BUSSES 0
-      #endif
+      // the 10th digital bus (I2S0) will prevent Audioreactive usermod from functioning (it is last used though)
+      #define WLED_MAX_BUSSES 10
+      #define WLED_MIN_VIRTUAL_BUSSES 0
     #endif
   #endif
 #else
@@ -92,6 +84,11 @@
     #define WLED_MAX_BUTTONS 2
   #else
     #define WLED_MAX_BUTTONS 4
+  #endif
+#else
+  #if WLED_MAX_BUTTONS < 2
+    #undef WLED_MAX_BUTTONS
+    #define WLED_MAX_BUTTONS 2
   #endif
 #endif
 
@@ -175,6 +172,8 @@
 #define USERMOD_ID_STAIRWAY_WIPE         44     //Usermod "stairway-wipe-usermod-v2.h"
 #define USERMOD_ID_ANIMARTRIX            45     //Usermod "usermod_v2_animartrix.h"
 #define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 46   //usermod "usermod_v2_HttpPullLightControl.h"
+#define USERMOD_ID_TETRISAI              47     //Usermod "usermod_v2_tetris.h"
+#define USERMOD_ID_MAX17048              48     //Usermod "usermod_max17048.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -264,9 +263,11 @@
 #define TYPE_TM1829              25
 #define TYPE_UCS8903             26
 #define TYPE_APA106              27
+#define TYPE_FW1906              28            //RGB + CW + WW + unused channel (6 channels per IC)
 #define TYPE_UCS8904             29            //first RGBW digital type (hardcoded in busmanager.cpp, memUsage())
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
+#define TYPE_WS2805              32            //RGB + WW + CW
 //"Analog" types (40-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
@@ -285,11 +286,13 @@
 #define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus, unused)
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
+#define TYPE_NET_ARTNET_RGBW     89            //network ArtNet RGB bus (master broadcast bus, unused)
 
 #define IS_TYPE_VALID(t) ((t) > 15 && (t) < 128)
 #define IS_DIGITAL(t)    (((t) > 15 && (t) < 40) || ((t) > 47 && (t) < 64)) //digital are 16-39 and 48-63
 #define IS_2PIN(t)       ((t) > 47 && (t) < 64)
 #define IS_16BIT(t)      ((t) == TYPE_UCS8903 || (t) == TYPE_UCS8904)
+#define IS_ONOFF(t)      ((t) == 40)
 #define IS_PWM(t)        ((t) > 40 && (t) < 46)     //does not include on/Off type
 #define NUM_PWM_PINS(t)  ((t) - 40)                 //for analog PWM 41-45 only
 #define IS_VIRTUAL(t)    ((t) >= 80 && (t) < 96)    //this was a poor choice a better would be 96-111
@@ -367,6 +370,7 @@
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
+#define PL_OPTION_RESTORE      0x02
 
 // Segment capability byte
 #define SEG_CAPABILITY_RGB     0x01
@@ -504,10 +508,10 @@
 
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
-#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(ARDUINO_ESP32_PICO)
-  #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, and on boards where GPIO16 is not available
+#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)  //|| (defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)) || defined(ARDUINO_ESP32_PICO)
+  #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
 #else
-  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
+  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
 #endif
 #endif
 

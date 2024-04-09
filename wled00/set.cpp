@@ -102,12 +102,18 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin, PinOwner::Relay)) {
        pinManager.deallocatePin(rlyPin, PinOwner::Relay);
     }
+    #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
        pinManager.deallocatePin(irPin, PinOwner::IR);
     }
+    #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
         pinManager.deallocatePin(btnPin[s], PinOwner::Button);
+        #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a function to check touch state, detach interrupt
+        if (digitalPinToTouchChannel(btnPin[s]) >= 0) // if touch capable pin
+          touchDetachInterrupt(btnPin[s]);            // if not assigned previously, this will do nothing
+        #endif
       }
     }
 
@@ -121,6 +127,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
     cctFromRgb = request->hasArg(F("CR"));
+    cctICused = request->hasArg(F("IC"));
     strip.cctBlending = request->arg(F("CB")).toInt();
     Bus::setCCTBlend(strip.cctBlending);
     Bus::setGlobalAWMode(request->arg(F("AW")).toInt());
@@ -165,12 +172,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       uint16_t freq = request->arg(sp).toInt();
       if (IS_PWM(type)) {
         switch (freq) {
-          case 0 : freq = WLED_PWM_FREQ/3;   break;
-          case 1 : freq = WLED_PWM_FREQ/2;   break;
+          case 0 : freq = WLED_PWM_FREQ/2;    break;
+          case 1 : freq = WLED_PWM_FREQ*2/3;  break;
           default:
-          case 2 : freq = WLED_PWM_FREQ;     break;
-          case 3 : freq = WLED_PWM_FREQ*4/3; break;
-          case 4 : freq = WLED_PWM_FREQ*2;   break;
+          case 2 : freq = WLED_PWM_FREQ;      break;
+          case 3 : freq = WLED_PWM_FREQ*2;    break;
+          case 4 : freq = WLED_PWM_FREQ*10/3; break; // uint16_t max (19531 * 3.333)
         }
       } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
         switch (freq) {
@@ -218,6 +225,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     BusManager::updateColorOrderMap(com);
 
     // update other pins
+    #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
@@ -225,6 +233,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    #endif
     irApplyToAllSelected = !request->hasArg(F("MSO"));
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
@@ -236,6 +245,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     rlyMde = (bool)request->hasArg(F("RM"));
 
     disablePullUp = (bool)request->hasArg(F("IP"));
+    touchThreshold = request->arg(F("TT")).toInt();
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
       char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
@@ -252,12 +262,21 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         }
-        else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH) && digitalPinToTouchChannel(btnPin[i]) < 0)
+        else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH))
         {
-          // not a touch pin
-          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
-          btnPin[i] = -1;
-          pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+          if (digitalPinToTouchChannel(btnPin[i]) < 0)
+          {
+            // not a touch pin
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
+            btnPin[i] = -1;
+            pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+          }          
+          #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
+          else                    
+          {
+            touchAttachInterrupt(btnPin[i], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+          }
+          #endif          
         }
         else
       #endif
@@ -277,7 +296,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         buttonType[i] = BTN_TYPE_NONE;
       }
     }
-    touchThreshold = request->arg(F("TT")).toInt();
 
     briS = request->arg(F("CA")).toInt();
 
@@ -879,7 +897,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply preset
   if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
-    unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 

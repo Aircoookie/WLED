@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.15.0-b1
+   @version 0.15.0-b2
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2402170
+#define VERSION 2404050
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -158,15 +158,16 @@
 // The following is a construct to enable code to compile without it.
 // There is a code that will still not use PSRAM though:
 //    AsyncJsonResponse is a derived class that implements DynamicJsonDocument (AsyncJson-v6.h)
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+#if defined(ARDUINO_ARCH_ESP32)
+extern bool psramSafe;
 struct PSRAM_Allocator {
   void* allocate(size_t size) {
-    if (psramFound()) return ps_malloc(size); // use PSRAM if it exists
-    else              return malloc(size);    // fallback
+    if (psramSafe && psramFound()) return ps_malloc(size); // use PSRAM if it exists
+    else                           return malloc(size);    // fallback
   }
   void* reallocate(void* ptr, size_t new_size) {
-    if (psramFound()) return ps_realloc(ptr, new_size); // use PSRAM if it exists
-    else              return realloc(ptr, new_size);    // fallback
+    if (psramSafe && psramFound()) return ps_realloc(ptr, new_size); // use PSRAM if it exists
+    else                           return realloc(ptr, new_size);    // fallback
   }
   void deallocate(void* pointer) {
     free(pointer);
@@ -271,9 +272,10 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware and pin config
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
-#else
-WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({BTNPIN});
+  #define BTNPIN 0,-1
+#endif
+#ifndef BTNTYPE
+  #define BTNTYPE BTN_TYPE_PUSH,BTN_TYPE_NONE
 #endif
 #ifndef RLYPIN
 WLED_GLOBAL int8_t rlyPin _INIT(-1);
@@ -287,9 +289,10 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-WLED_GLOBAL int8_t irPin _INIT(-1);
-#else
-WLED_GLOBAL int8_t irPin _INIT(IRPIN);
+  #define IRPIN -1
+#endif
+#ifndef IRTYPE
+  #define IRTYPE 0
 #endif
 
 #if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || (defined(RX) && defined(TX))
@@ -346,6 +349,11 @@ WLED_GLOBAL bool useGlobalLedBuffer _INIT(true);  // double buffering enabled on
 #endif
 WLED_GLOBAL bool correctWB          _INIT(false); // CCT color correction of RGB color
 WLED_GLOBAL bool cctFromRgb         _INIT(false); // CCT is calculated from RGB instead of using seg.cct
+#ifdef WLED_USE_IC_CCT
+WLED_GLOBAL bool cctICused          _INIT(true);  // CCT IC used (Athom 15W bulbs)
+#else
+WLED_GLOBAL bool cctICused          _INIT(false); // CCT IC used (Athom 15W bulbs)
+#endif
 WLED_GLOBAL bool gammaCorrectCol    _INIT(true);  // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri    _INIT(false); // use gamma correction on brightness
 WLED_GLOBAL float gammaCorrectVal   _INIT(2.8f);  // gamma correction value
@@ -374,13 +382,11 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
-#if defined(IRTYPE) && defined(IRPIN)
+#ifndef WLED_DISABLE_INFRARED
+WLED_GLOBAL int8_t irPin        _INIT(IRPIN);
 WLED_GLOBAL byte irEnabled      _INIT(IRTYPE); // Infrared receiver
-#else
-WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver disabled
 #endif
-WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR to all selected segments
+WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR or ESP-NOW to all selected segments
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
 WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
@@ -567,9 +573,11 @@ WLED_GLOBAL byte bri                 _INIT(briS);          // global brightness 
 WLED_GLOBAL byte briOld              _INIT(0);             // global brightness while in transition loop (previous iteration)
 WLED_GLOBAL byte briT                _INIT(0);             // global brightness during transition
 WLED_GLOBAL byte briLast             _INIT(128);           // brightness before turned off. Used for toggle function
-WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function
+WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function in ir.cpp
 
 // button
+WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS]                   _INIT({BTNPIN});
+WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]                 _INIT({BTNTYPE});
 WLED_GLOBAL bool buttonPublishMqtt                            _INIT(false);
 WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
 WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
@@ -690,7 +698,6 @@ WLED_GLOBAL uint16_t olen _INIT(0);
 WLED_GLOBAL size_t fsBytesUsed _INIT(0);
 WLED_GLOBAL size_t fsBytesTotal _INIT(0);
 WLED_GLOBAL unsigned long presetsModifiedTime _INIT(0L);
-WLED_GLOBAL JsonDocument* fileDoc;
 WLED_GLOBAL bool doCloseFile _INIT(false);
 
 // presets
@@ -703,7 +710,8 @@ WLED_GLOBAL byte optionType;
 
 WLED_GLOBAL bool doSerializeConfig _INIT(false);        // flag to initiate saving of config
 WLED_GLOBAL bool doReboot          _INIT(false);        // flag to initiate reboot from async handlers
-WLED_GLOBAL bool doPublishMqtt     _INIT(false);
+
+WLED_GLOBAL bool psramSafe         _INIT(true);         // is it safe to use PSRAM (on ESP32 rev.1; compiler fix used "-mfix-esp32-psram-cache-issue")
 
 // status led
 #if defined(STATUSLED)
@@ -780,7 +788,7 @@ WLED_GLOBAL int8_t spi_sclk  _INIT(SPISCLKPIN);
 #endif
 
 // global ArduinoJson buffer
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+#if defined(ARDUINO_ARCH_ESP32)
 WLED_GLOBAL JsonDocument *pDoc _INIT(nullptr);
 #else
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> gDoc;

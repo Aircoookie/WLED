@@ -228,7 +228,6 @@ bool requestJSONBufferLock(uint8_t module)
   DEBUG_PRINT(F("JSON buffer locked. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = pDoc;  // used for applying presets (presets.cpp)
   pDoc->clear();
   return true;
 }
@@ -239,7 +238,6 @@ void releaseJSONBufferLock()
   DEBUG_PRINT(F("JSON buffer released. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = nullptr;
   jsonBufferLock = 0;
 }
 
@@ -265,8 +263,8 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
     } else return 0;
   }
 
-  if (src == JSON_palette_names && mode > GRADIENT_PALETTE_COUNT) {
-    snprintf_P(dest, maxLen, PSTR("~ Custom %d~"), 255-mode);
+  if (src == JSON_palette_names && mode > (GRADIENT_PALETTE_COUNT + 13)) {
+    snprintf_P(dest, maxLen, PSTR("~ Custom %d ~"), 255-mode);
     dest[maxLen-1] = '\0';
     return strlen(dest);
   }
@@ -539,13 +537,13 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
+static const char s_ledmap_tmpl[] PROGMEM = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
   for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
-    char fileName[33];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    char fileName[33] = "/";
+    sprintf_P(fileName+1, s_ledmap_tmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
     #ifndef ESP8266
@@ -574,7 +572,7 @@ void enumerateLedmaps() {
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
-            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            snprintf_P(tmp, 32, s_ledmap_tmpl, i);
             len = strlen(tmp);
             ledmapNames[i-1] = new char[len+1];
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);

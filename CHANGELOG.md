@@ -1,5 +1,66 @@
 ## WLED changelog
 
+#### Build 2403280
+-   Individual color channel control for JSON API (fixes #3860)
+    - "col":[int|string|object|array, int|string|object|array, int|string|object|array]
+        int = Kelvin temperature or 0 for black
+        string = hex representation of [WW]RRGGBB
+        object = individual channel control {"r":0,"g":127,"b":255,"w":255}, each being optional (valid to send {})
+        array = direct channel values [r,g,b,w] (w element being optional)
+-   runtime selection for CCT IC (Athom 15W bulb)
+-   #3850 (by @w00000dy)
+-   Rotary encoder palette count bugfix
+-   bugfixes and optimisations
+
+#### Build 2403240
+-   v0.15.0-b2
+-   WS2805 support (RGB + WW + CW, 600kbps)
+-   Unified PSRAM use
+-   NeoPixelBus v2.7.9 (for future WS2805 support)
+-   Ubiquitous PSRAM mode for all variants of ESP32
+-   SSD1309_64 I2C Support for FLD Usermod (#3836 by @THATDONFC)
+-   Palette cycling fix (add support for `{"seg":[{"pal":"X~Y~"}]}` or `{"seg":[{"pal":"X~Yr"}]}`)
+-   FW1906 Support (#3810 by @deece and @Robert-github-com)
+-   ESPAsyncWebServer 2.2.0 (#3828 by @willmmiles)
+-   Bugfixes: #3843, #3844
+
+#### Build 2403190
+-   limit max PWM frequency (fix incorrect PWM resolution)
+-   Segment UI bugfix
+-   Updated AsyncWebServer (by @wlillmmiles)
+-   Simpler boot preset (fix for #3806)
+-   Effect: Fix for 2D Drift animation (#3816 by @BaptisteHudyma)
+-   Effect: Add twin option to 2D Drift
+-   MQTT cleanup
+-   DDP: Support sources that don't push (#3833 by @willmmiles)
+-   Usermod: Tetris AI usermod (#3711 by @muebau)
+
+#### Build 2403171
+-   merge 0.14.2 changes into 0.15
+
+#### Build 2403070
+-   Add additional segment options when controlling over e1.31 (#3616 by @demophoon)
+-   LockedJsonResponse: Release early if possible (#3760 by @willmmiles)
+-   Update setup-node and cache usermods in wled-ci.yml (#3737 by @WoodyLetsCode)
+-   Fix preset sorting (#3790 by @WoodyLetsCode)
+-   compile time button configuration #3792
+-   remove IR config if not compiled
+-   additional string optimisations
+-   Better low brightness level PWM handling (fixes #2767, #2868)
+
+#### Build 2402290
+-   Multiple analog button fix for #3549
+-   Preset caching on chips with PSRAM (credit @akaricchi)
+-   Fixing stairway usermod and adding buildflags (by @lost-hope)
+-   ESP-NOW packet modification
+-   JSON buffer lock error messages / Reduce wait time for lock to 100ms
+-   Reduce string RAM usage for ESP8266
+-   Fixing a potential array bounds violation in ESPDMX
+-   Move timezone table to PROGMEM (#3766 by @willmmiles)
+-   Reposition upload warning message. (fixes #3778)
+-   ABL display fix & optimisation
+-   Add virtual Art-Net RGBW option (#3783 by @shammy642)
+
 #### Build 2402090
 -   Added new Ethernet controller RGB2Go Tetra (duplicate of ESP3DEUXQuattro)
 -   Usermod: httpPullLightControl (#3560 by @roelbroersma)
@@ -15,7 +76,7 @@
 
 #### Build 2309120 till build 2402010
 -   WLED version 0.15.0-a0
--   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to
+-   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to (with help from @JPZV)
 -   Temporary AP. Use your WLED in public with temporary AP.
 -   Github CI build system enhancements (#3718 by @WoodyLetsCode)
 -   Accessibility: Node list ( #3715 by @WoodyLetsCode)
@@ -96,6 +157,26 @@
     -   ignore inactive segments if not syncing bounds
     -   send UDP/WS on segment change
     -   pop_back() when removing last segment
+
+#### Build 2403170
+-   WLED 0.14.2 release
+
+#### Build 2403110
+-   Beta WLED 0.14.2-b2
+-   New AsyncWebServer (improved performance and reduced memory use)
+-   New builds for ESP8266 with 160MHz CPU clock
+-   Fixing stairway usermod and adding buildflags (#3758 by @lost-hope)
+-   Fixing a potential array bounds violation in ESPDMX
+-   Reduced RAM usage (moved strings and TZ data (by @willmmiles) to PROGMEM)
+-   LockedJsonResponse: Release early if possible (by @willmmiles)
+
+#### Build 2402120
+-   Beta WLED 0.14.2-b1
+-   Possible fix for #3589 & partial fix for #3605
+-   Prevent JSON buffer clear after failed lock attempt
+-   Multiple analog button fix for #3549
+-   UM Audioreactive: add two compiler options (#3732 by @wled-install)
+-   Fix for #3693
 
 #### Build 2401141
 -   Official release of WLED 0.14.1

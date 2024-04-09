@@ -18,11 +18,6 @@ static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security setti
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
 static const char s_notimplemented[] PROGMEM = "Not implemented";
 static const char s_accessdenied[]   PROGMEM = "Access Denied";
-static const char s_javascript[]     PROGMEM = "application/javascript";
-static const char s_json[]           PROGMEM = "application/json";
-static const char s_html[]           PROGMEM = "text/html";
-static const char s_plain[]          PROGMEM = "text/plain";
-static const char s_css[]            PROGMEM = "text/css";
 
 //Is this an IP?
 static bool isIp(String str) {
@@ -158,7 +153,7 @@ static String msgProcessor(const String& var)
 
 static void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (!correctPIN) {
-    if (final) request->send(401, FPSTR(s_plain), FPSTR(s_unlock_cfg));
+    if (final) request->send(401, FPSTR(CONTENT_TYPE_PLAIN), FPSTR(s_unlock_cfg));
     return;
   }
   if (!index) {
@@ -170,7 +165,7 @@ static void handleUpload(AsyncWebServerRequest *request, const String& filename,
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
-    if (finalname.equals(F("/presets.json"))) presetsModifiedTime = toki.second();
+    if (finalname.equals(FPSTR(getPresetsFileName()))) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
@@ -179,10 +174,10 @@ static void handleUpload(AsyncWebServerRequest *request, const String& filename,
     request->_tempFile.close();
     if (filename.indexOf(F("cfg.json")) >= 0) { // check for filename with or without slash
       doReboot = true;
-      request->send(200, FPSTR(s_plain), F("Configuration restore successful.\nRebooting..."));
+      request->send(200, FPSTR(CONTENT_TYPE_PLAIN), F("Configuration restore successful.\nRebooting..."));
     } else {
       if (filename.indexOf(F("palette")) >= 0 && filename.indexOf(F(".json")) >= 0) strip.loadCustomPalettes();
-      request->send(200, FPSTR(s_plain), F("File Uploaded!"));
+      request->send(200, FPSTR(CONTENT_TYPE_PLAIN), F("File Uploaded!"));
     }
     cacheInvalidate++;
   }
@@ -198,12 +193,12 @@ void createEditHandler(bool enable) {
       editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
       #endif
     #else
-      editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+      editHandler = &server.on(SET_F("/edit"), HTTP_GET, [](AsyncWebServerRequest *request){
         serveMessage(request, 501, FPSTR(s_notimplemented), F("The FS editor is disabled in this build."), 254);
       });
     #endif
   } else {
-    editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
+    editHandler = &server.on(SET_F("/edit"), HTTP_ANY, [](AsyncWebServerRequest *request){
       serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_cfg), 254);
     });
   }
@@ -212,9 +207,9 @@ void createEditHandler(bool enable) {
 static bool captivePortal(AsyncWebServerRequest *request)
 {
   if (!apActive) return false; //only serve captive in AP mode
-  if (!request->hasHeader("Host")) return false;
+  if (!request->hasHeader(F("Host"))) return false;
 
-  String hostH = request->getHeader("Host")->value();
+  String hostH = request->getHeader(F("Host"))->value();
   if (!isIp(hostH) && hostH.indexOf(F("wled.me")) < 0 && hostH.indexOf(cmDNS) < 0 && hostH.indexOf(':') < 0) {
     DEBUG_PRINTLN(F("Captive portal"));
     AsyncWebServerResponse *response = request->beginResponse(302);
@@ -234,54 +229,57 @@ void initServer()
 
 #ifdef WLED_ENABLE_WEBSOCKETS
   #ifndef WLED_DISABLE_2D 
-  server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveviewws2D, PAGE_liveviewws2D_length);
+  server.on(F("/liveview2D"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "", 200, FPSTR(CONTENT_TYPE_HTML), PAGE_liveviewws2D, PAGE_liveviewws2D_length);
   });
   #endif
 #endif
-  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_liveview, PAGE_liveview_length);
+  server.on(F("/liveview"), HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, "", 200, FPSTR(CONTENT_TYPE_HTML), PAGE_liveview, PAGE_liveview_length);
   });
 
   //settings page
-  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/settings"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
 
   // "/settings/settings.js&p=x" request also handled by serveSettings()
-
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/style.css", 200, FPSTR(s_css), PAGE_settingsCss, PAGE_settingsCss_length);
+  static const char _style_css[] PROGMEM = "/style.css";
+  server.on(_style_css, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_style_css), 200, FPSTR(CONTENT_TYPE_CSS), PAGE_settingsCss, PAGE_settingsCss_length);
   });
 
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/favicon.ico", 200, "image/x-icon", favicon, favicon_length, false);
+  static const char _favicon_ico[] PROGMEM = "/favicon.ico";
+  server.on(_favicon_ico, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_favicon_ico), 200, F("image/x-icon"), favicon, favicon_length, false);
   });
 
-  server.on("/skin.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (handleFileRead(request, "/skin.css")) return;
-    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(s_css));
+  static const char _skin_css[] PROGMEM = "/skin.css";
+  server.on(_skin_css, HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (handleFileRead(request, FPSTR(_skin_css))) return;
+    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(CONTENT_TYPE_CSS));
     request->send(response);
   });
 
-  server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/welcome"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
 
-  server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/reset"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
 
-  server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on(F("/settings"), HTTP_POST, [](AsyncWebServerRequest *request){
     serveSettings(request, true);
   });
 
-  server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request){
+  const static char _json[] PROGMEM = "/json";
+  server.on(FPSTR(_json), HTTP_GET, [](AsyncWebServerRequest *request){
     serveJson(request);
   });
 
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler(FPSTR(_json), [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
     bool isConfig = false;
 
@@ -300,7 +298,7 @@ void initServer()
     if (root.containsKey("pin")) checkSettingsPIN(root["pin"].as<const char*>());
 
     const String& url = request->url();
-    isConfig = url.indexOf("cfg") > -1;
+    isConfig = url.indexOf(F("cfg")) > -1;
     if (!isConfig) {
       /*
       #ifdef WLED_DEBUG
@@ -329,49 +327,50 @@ void initServer()
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
     }
-    request->send(200, FPSTR(s_json), F("{\"success\":true}"));
+    request->send(200, CONTENT_TYPE_JSON, F("{\"success\":true}"));
   }, JSON_BUFFER_SIZE);
   server.addHandler(handler);
 
-  server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, FPSTR(s_plain), (String)VERSION);
+  server.on(F("/version"), HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, FPSTR(CONTENT_TYPE_PLAIN), (String)VERSION);
   });
 
-  server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, FPSTR(s_plain), (String)millis());
+  server.on(F("/uptime"), HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, FPSTR(CONTENT_TYPE_PLAIN), (String)millis());
   });
 
-  server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, FPSTR(s_plain), (String)ESP.getFreeHeap());
+  server.on(F("/freeheap"), HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, FPSTR(CONTENT_TYPE_PLAIN), (String)ESP.getFreeHeap());
   });
 
 #ifdef WLED_ENABLE_USERMOD_PAGE
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "", 200, FPSTR(s_html), PAGE_usermod, PAGE_usermod_length);
+    handleStaticContent(request, "", 200, FPSTR(CONTENT_TYPE_HTML), PAGE_usermod, PAGE_usermod_length);
   });
 #endif
 
-  server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/teapot"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
   });
 
-  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {},
+  server.on(F("/upload"), HTTP_POST, [](AsyncWebServerRequest *request) {},
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
 
   createEditHandler(correctPIN);
 
+  static const char _update[] PROGMEM = "/update";
 #ifndef WLED_DISABLE_OTA
   //init ota page
-  server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(_update, HTTP_GET, [](AsyncWebServerRequest *request){
     if (otaLock) {
       serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_ota), 254);
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
 
-  server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on(_update, HTTP_POST, [](AsyncWebServerRequest *request){
     if (!correctPIN) {
       serveSettings(request, true); // handle PIN page POST request
       return;
@@ -417,18 +416,18 @@ void initServer()
     }
   });
 #else
-  server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(_update, HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, FPSTR(s_notimplemented), F("OTA updating is disabled in this build."), 254);
   });
 #endif
 
 
 #ifdef WLED_ENABLE_DMX
-  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, FPSTR(s_html), PAGE_dmxmap     , dmxProcessor);
+  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, FPSTR(CONTENT_TYPE_HTML), PAGE_dmxmap     , dmxProcessor);
   });
 #else
-  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, FPSTR(s_notimplemented), F("DMX support is not enabled in this build."), 254);
   });
 #endif
@@ -436,26 +435,29 @@ void initServer()
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (captivePortal(request)) return;
     if (!showWelcomePage || request->hasArg(F("sliders"))) {
-      handleStaticContent(request, "/index.htm", 200, FPSTR(s_html), PAGE_index, PAGE_index_L);
+      handleStaticContent(request, F("/index.htm"), 200, FPSTR(CONTENT_TYPE_HTML), PAGE_index, PAGE_index_L);
     } else {
       serveSettings(request);
     }
   });
 
 #ifdef WLED_ENABLE_PIXART
-  server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pixart.htm", 200, FPSTR(s_html), PAGE_pixart, PAGE_pixart_L);
+  static const char _pixart_htm[] PROGMEM = "/pixart.htm";
+  server.on(_pixart_htm, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_pixart_htm), 200, FPSTR(CONTENT_TYPE_HTML), PAGE_pixart, PAGE_pixart_L);
   });
 #endif
 
 #ifndef WLED_DISABLE_PXMAGIC
-  server.on("/pxmagic.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/pxmagic.htm", 200, FPSTR(s_html), PAGE_pxmagic, PAGE_pxmagic_L);
+  static const char _pxmagic_htm[] PROGMEM = "/pxmagic.htm";
+  server.on(_pxmagic_htm, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_pxmagic_htm), 200, FPSTR(CONTENT_TYPE_HTML), PAGE_pxmagic, PAGE_pxmagic_L);
   });
 #endif
 
-  server.on("/cpal.htm", HTTP_GET, [](AsyncWebServerRequest *request) {
-    handleStaticContent(request, "/cpal.htm", 200, FPSTR(s_html), PAGE_cpal, PAGE_cpal_L);
+  static const char _cpal_htm[] PROGMEM = "/cpal.htm";
+  server.on(_cpal_htm, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_cpal_htm), 200, FPSTR(CONTENT_TYPE_HTML), PAGE_cpal, PAGE_cpal_L);
   });
 
 #ifdef WLED_ENABLE_WEBSOCKETS
@@ -480,7 +482,7 @@ void initServer()
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
-    handleStaticContent(request, request->url(), 404, FPSTR(s_html), PAGE_404, PAGE_404_length);
+    handleStaticContent(request, request->url(), 404, FPSTR(CONTENT_TYPE_HTML), PAGE_404, PAGE_404_length);
   });
 }
 
@@ -491,7 +493,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageSub = subl;
   optionType = optionT;
 
-  request->send_P(code, FPSTR(s_html), PAGE_msg, msgProcessor);
+  request->send_P(code, FPSTR(CONTENT_TYPE_HTML), PAGE_msg, msgProcessor);
 }
 
 
@@ -499,7 +501,7 @@ void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t erro
 {
     AsyncJsonResponse *response = new AsyncJsonResponse(64);
     if (error < ERR_NOT_IMPL) response->addHeader(F("Retry-After"), F("1"));
-    response->setContentType(FPSTR(s_json));
+    response->setContentType(CONTENT_TYPE_JSON);
     response->setCode(code);
     JsonObject obj = response->getRoot();
     obj[F("error")] = error;
@@ -515,12 +517,12 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   byte subPage = request->arg(F("p")).toInt();
   if (subPage > 10) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
-    request->send(501, FPSTR(s_javascript), buf);
+    request->send(501, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
     return;
   }
   if (subPage > 0 && !correctPIN && strlen(settingsPIN)>0) {
     strcpy_P(buf, PSTR("alert('PIN incorrect.');"));
-    request->send(401, FPSTR(s_javascript), buf);
+    request->send(401, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
     return;
   }
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
@@ -528,7 +530,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   strcat_P(buf,PSTR("}"));
   
   AsyncWebServerResponse *response;
-  response = request->beginResponse(200, FPSTR(s_javascript), buf);
+  response = request->beginResponse(200, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
   response->addHeader(F("Cache-Control"), F("no-store"));
   response->addHeader(F("Expires"), F("0"));
   request->send(response);
@@ -609,7 +611,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
   }
 
   int code = 200;
-  String contentType = FPSTR(s_html);
+  String contentType = FPSTR(CONTENT_TYPE_HTML);
   const uint8_t* content;
   size_t len;
 
@@ -635,7 +637,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post) {
       return;
     }
     case SUBPAGE_PINREQ  :  content = PAGE_settings_pin;  len = PAGE_settings_pin_length; code = 401;                 break;
-    case SUBPAGE_CSS     :  content = PAGE_settingsCss;   len = PAGE_settingsCss_length;  contentType = FPSTR(s_css); break;
+    case SUBPAGE_CSS     :  content = PAGE_settingsCss;   len = PAGE_settingsCss_length;  contentType = FPSTR(CONTENT_TYPE_CSS); break;
     case SUBPAGE_JS      :  serveSettingsJS(request); return;
     case SUBPAGE_WELCOME :  content = PAGE_welcome;       len = PAGE_welcome_length;       break;
     default:                content = PAGE_settings;      len = PAGE_settings_length;      break;

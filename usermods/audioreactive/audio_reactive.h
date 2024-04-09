@@ -183,31 +183,20 @@ constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT resul
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
 static float vReal[samplesFFT] = {0.0f};       // FFT sample inputs / freq output -  these are our raw result bins
 static float vImag[samplesFFT] = {0.0f};       // imaginary parts
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 static float windowWeighingFactors[samplesFFT] = {0.0f};
-#endif
 
 // Create FFT object
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-  // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
-  // these options actually cause slow-downs on all esp32 processors, don't use them.
-  // #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc) - not faster on ESP32
-  // #define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt  - slower on ESP32
-  // Below options are forcing ArduinoFFT to use sqrtf() instead of sqrt()
-  #define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 10-50% on ESP32
-  #define sqrt_internal sqrtf          // see https://github.com/kosme/arduinoFFT/pull/83
-#else
-  // around 40% slower on -S2
-  // lib_deps += https://github.com/blazoncek/arduinoFFT.git
-#endif
+// lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
+// these options actually cause slow-downs on all esp32 processors, don't use them.
+// #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc) - not faster on ESP32
+// #define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt  - slower on ESP32
+// Below options are forcing ArduinoFFT to use sqrtf() instead of sqrt()
+#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 10-50% on ESP32
+#define sqrt_internal sqrtf          // see https://github.com/kosme/arduinoFFT/pull/83
 
 #include <arduinoFFT.h>
 
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, windowWeighingFactors);
-#else
-static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
-#endif
 
 // Helper functions
 
@@ -288,28 +277,13 @@ void FFTcode(void * parameter)
 #endif
 
       // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
       FFT.dcRemoval();                                            // remove DC offset
       FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
       //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
       FFT.compute( FFTDirection::Forward );                       // Compute FFT
       FFT.complexToMagnitude();                                   // Compute magnitudes
-#else
-      FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
 
-      //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
-      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
-      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
-      FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
-      FFT.Compute( FFT_FORWARD );                             // Compute FFT
-      FFT.ComplexToMagnitude();                               // Compute magnitudes
-#endif
-
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-      FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
-#else
-      FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
-#endif
+      FFT.majorPeak(&FFT_MajorPeak, &FFT_Magnitude);                // let the effects know which freq was most dominant
       FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)

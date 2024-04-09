@@ -21,7 +21,6 @@ void shortPressAction(uint8_t b)
       case 1: ++effectCurrent %= strip.getModeCount(); stateChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -43,7 +42,6 @@ void longPressAction(uint8_t b)
       case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -65,7 +63,6 @@ void doublePressAction(uint8_t b)
       case 1: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -99,9 +96,13 @@ bool isButtonPressed(uint8_t i)
     case BTN_TYPE_TOUCH:
     case BTN_TYPE_TOUCH_SWITCH:
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-      if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
+        #ifdef SOC_TOUCH_VERSION_2 //ESP32 S2 and S3 provide a function to check touch state (state is updated in interrupt)
+        if (touchInterruptGetLastStatus(pin)) return true;
+        #else
+        if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
+        #endif
       #endif
-      break;
+     break;
   }
   return false;
 }
@@ -405,4 +406,9 @@ void handleIO()
     }
     offMode = true;
   }
+}
+
+void IRAM_ATTR touchButtonISR()
+{
+  // used for ESP32 S2 and S3: nothing to do, ISR is just used to update registers of HAL driver
 }
