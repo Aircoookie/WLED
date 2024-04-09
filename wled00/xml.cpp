@@ -31,7 +31,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend(SET_F("<ns>"));
   oappendi(notifyDirect);
   oappend(SET_F("</ns><nr>"));
-  oappendi(receiveNotifications);
+  oappendi(receiveGroups!=0);
   oappend(SET_F("</nr><nl>"));
   oappendi(nightlightActive);
   oappend(SET_F("</nl><nf>"));
@@ -133,7 +133,7 @@ void appendGPIOinfo() {
   // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
-    JsonObject mods = doc.createNestedObject(F("um"));
+    JsonObject mods = pDoc->createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
     releaseJSONBufferLock();
@@ -145,10 +145,13 @@ void appendGPIOinfo() {
   oappend(SET_F("d.rsvd=[22,23,24,25,26,27,28,29,30,31,32"));
   #elif defined(CONFIG_IDF_TARGET_ESP32S3)
   oappend(SET_F("d.rsvd=[19,20,22,23,24,25,26,27,28,29,30,31,32"));  // includes 19+20 for USB OTG (JTAG)
+  if (psramFound()) oappend(SET_F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
   #elif defined(CONFIG_IDF_TARGET_ESP32C3)
   oappend(SET_F("d.rsvd=[11,12,13,14,15,16,17"));
   #elif defined(ESP32)
   oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31,37,38"));
+  if (!pinManager.isPinOk(16,false)) oappend(SET_F(",16")); // covers PICO & WROVER
+  if (!pinManager.isPinOk(17,false)) oappend(SET_F(",17")); // covers PICO & WROVER
   #else
   oappend(SET_F("d.rsvd=[6,7,8,9,10,11"));
   #endif
@@ -157,19 +160,11 @@ void appendGPIOinfo() {
   oappend(SET_F(",2")); // DMX hardcoded pin
   #endif
 
-  #ifdef WLED_DEBUG
-  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
+  #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
+  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10)); // debug output (TX) pin
   #endif
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
-
-  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
-    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-    if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM on ESP32 (not on S2, S3 or C3)
-    #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    if (psramFound()) oappend(SET_F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
-    #endif
-  #endif
 
   #ifdef WLED_USE_ETHERNET
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
@@ -238,8 +233,8 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_MENU)
   {
-  #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
-    oappend(PSTR("gId('2dbtn').style.display='';"));
+  #ifdef WLED_DISABLE_2D // include only if 2D is not compiled in
+    oappend(PSTR("gId('2dbtn').style.display='none';"));
   #endif
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     oappend(PSTR("gId('dmxbtn').style.display='';"));
@@ -248,22 +243,33 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == SUBPAGE_WIFI)
   {
-    sappends('s',SET_F("CS"),clientSSID);
-
-    byte l = strlen(clientPass);
-    char fpass[l+1]; //fill password field with ***
-    fpass[l] = 0;
-    memset(fpass,'*',l);
-    sappends('s',SET_F("CP"),fpass);
-
-    char k[3]; k[2] = 0; //IP addresses
-    for (int i = 0; i<4; i++)
-    {
-      k[1] = 48+i; //ascii 0,1,2,3
-      k[0] = 'I'; sappend('v',k,staticIP[i]);
-      k[0] = 'G'; sappend('v',k,staticGateway[i]);
-      k[0] = 'S'; sappend('v',k,staticSubnet[i]);
+    char nS[10];
+    size_t l;
+    oappend(SET_F("resetWiFi("));
+    oappend(itoa(WLED_MAX_WIFI_COUNT,nS,10));
+    oappend(SET_F(");"));
+    for (size_t n = 0; n < multiWiFi.size(); n++) {
+      l = strlen(multiWiFi[n].clientPass);
+      char fpass[l+1]; //fill password field with ***
+      fpass[l] = 0;
+      memset(fpass,'*',l);
+      oappend(SET_F("addWiFi(\""));
+      oappend(multiWiFi[n].clientSSID);
+      oappend(SET_F("\",\""));
+      oappend(fpass);
+      oappend(SET_F("\",0x"));
+      oappend(itoa(multiWiFi[n].staticIP,nS,16));
+      oappend(SET_F(",0x"));
+      oappend(itoa(multiWiFi[n].staticGW,nS,16));
+      oappend(SET_F(",0x"));
+      oappend(itoa(multiWiFi[n].staticSN,nS,16));
+      oappend(SET_F(");"));
     }
+
+    sappend('v',SET_F("D0"),dnsAddress[0]);
+    sappend('v',SET_F("D1"),dnsAddress[1]);
+    sappend('v',SET_F("D2"),dnsAddress[2]);
+    sappend('v',SET_F("D3"),dnsAddress[3]);
 
     sappends('s',SET_F("CM"),cmDNS);
     sappend('i',SET_F("AB"),apBehavior);
@@ -277,14 +283,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AP"),fapass);
 
     sappend('v',SET_F("AC"),apChannel);
+    sappend('c',SET_F("FG"),force802_3g);
     sappend('c',SET_F("WS"),noWifiSleep);
 
     #ifndef WLED_DISABLE_ESPNOW
-    sappend('c',SET_F("RE"),enable_espnow_remote);
+    sappend('c',SET_F("RE"),enableESPNow);
     sappends('s',SET_F("RMAC"),linked_remote);
     #else
     //hide remote settings if not compiled
-    oappend(SET_F("document.getElementById('remd').style.display='none';"));
+    oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
     #endif
 
     #ifdef WLED_USE_ETHERNET
@@ -321,14 +328,11 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     #ifndef WLED_DISABLE_ESPNOW
-    if (last_signal_src[0] != 0) //Have seen an ESP-NOW Remote
-    {
+    if (strlen(last_signal_src) > 0) { //Have seen an ESP-NOW Remote
       sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
-    } else if (!enable_espnow_remote)
-    {
-      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable remote to listen)"));
-    } else 
-    {
+    } else if (!enableESPNow) {
+      sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable ESP-NOW to listen)"));
+    } else {
       sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("None"));
     }
     #endif
@@ -351,14 +355,16 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("MS"),autoSegments);
     sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("IC"),cctICused);
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
-    sappend('c',SET_F("LD"),strip.useLedsArray);
+    sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
-    for (uint8_t s=0; s < busses.getNumBusses(); s++) {
-      Bus* bus = busses.getBus(s);
+    uint16_t sumMa = 0;
+    for (uint8_t s=0; s < BusManager::getNumBusses(); s++) {
+      Bus* bus = BusManager::getBus(s);
       if (bus == nullptr) continue;
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
@@ -371,33 +377,35 @@ void getSettingsJS(byte subPage, char* dest)
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
       char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed
+      char la[4] = "LA"; la[2] = 48+s; la[3] = 0; //LED current
+      char ma[4] = "MA"; ma[2] = 48+s; ma[3] = 0; //max per-port PSU current
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
       for (uint8_t i = 0; i < nPins; i++) {
         lp[1] = 48+i;
-        if (pinManager.isPinOk(pins[i]) || bus->getType()>=TYPE_NET_DDP_RGB) sappend('v',lp,pins[i]);
+        if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
       sappend('v',co,bus->getColorOrder() & 0x0F);
       sappend('v',ls,bus->getStart());
-      sappend('c',cv,bus->reversed);
+      sappend('c',cv,bus->isReversed());
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
       uint16_t speed = bus->getFrequency();
-      if (bus->getType() > TYPE_ONOFF && bus->getType() < 48) {
+      if (IS_PWM(bus->getType())) {
         switch (speed) {
-          case WLED_PWM_FREQ/3 : speed = 0; break;
-          case WLED_PWM_FREQ/2 : speed = 1; break;
+          case WLED_PWM_FREQ/2    : speed = 0; break;
+          case WLED_PWM_FREQ*2/3  : speed = 1; break;
           default:
-          case WLED_PWM_FREQ   : speed = 2; break;
-          case WLED_PWM_FREQ*2 : speed = 3; break;
-          case WLED_PWM_FREQ*3 : speed = 4; break;
+          case WLED_PWM_FREQ      : speed = 2; break;
+          case WLED_PWM_FREQ*2    : speed = 3; break;
+          case WLED_PWM_FREQ*10/3 : speed = 4; break; // uint16_t max (19531 * 3.333)
         }
-      } else {
+      } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
         switch (speed) {
           case  1000 : speed = 0; break;
           case  2000 : speed = 1; break;
@@ -408,28 +416,25 @@ void getSettingsJS(byte subPage, char* dest)
         }
       }
       sappend('v',sp,speed);
+      sappend('v',la,bus->getLEDCurrent());
+      sappend('v',ma,bus->getMaxCurrent());
+      sumMa += bus->getMaxCurrent();
     }
-    sappend('v',SET_F("MA"),strip.ablMilliampsMax);
-    sappend('v',SET_F("LA"),strip.milliampsPerLed);
-    if (strip.currentMilliamps)
-    {
-      sappends('m',SET_F("(\"pow\")[0]"),(char*)"");
-      olen -= 2; //delete ";
-      oappendi(strip.currentMilliamps);
-      oappend(SET_F("mA\";"));
-    }
+    sappend('v',SET_F("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
+    sappend('c',SET_F("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
+    sappend('c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
     oappend(SET_F("resetCOM("));
     oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
-    const ColorOrderMap& com = busses.getColorOrderMap();
+    const ColorOrderMap& com = BusManager::getColorOrderMap();
     for (uint8_t s=0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;
       oappend(SET_F("addCOM("));
-      oappend(itoa(entry->start,nS,10));  oappend(",");
-      oappend(itoa(entry->len,nS,10));  oappend(",");
-      oappend(itoa(entry->colorOrder,nS,10));  oappend(");");
+      oappend(itoa(entry->start,nS,10)); oappend(",");
+      oappend(itoa(entry->len,nS,10)); oappend(",");
+      oappend(itoa(entry->colorOrder,nS,10)); oappend(");");
     }
 
     sappend('v',SET_F("CA"),briS);
@@ -441,9 +446,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("GC"),gammaCorrectCol);
     dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
+    sappend('c',SET_F("EB"),modeBlending);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
     sappend('v',SET_F("TP"),randomPaletteChangeTime);
+    sappend('c',SET_F("TH"),useHarmonicRandomPalette);
     sappend('v',SET_F("BF"),briMultiplier);
     sappend('v',SET_F("TB"),nightlightTargetBri);
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
@@ -453,33 +460,37 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RM"),rlyMde);
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addBtn("));
-      oappend(itoa(i,nS,10));  oappend(",");
+      oappend(itoa(i,nS,10)); oappend(",");
       oappend(itoa(btnPin[i],nS,10)); oappend(",");
       oappend(itoa(buttonType[i],nS,10));
       oappend(SET_F(");"));
     }
     sappend('c',SET_F("IP"),disablePullUp);
     sappend('v',SET_F("TT"),touchThreshold);
+#ifndef WLED_DISABLE_INFRARED
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
+#endif    
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 
   if (subPage == SUBPAGE_UI)
   {
     sappends('s',SET_F("DS"),serverDescription);
-    sappend('c',SET_F("ST"),syncToggleReceive);
-  #ifdef WLED_ENABLE_SIMPLE_UI
     sappend('c',SET_F("SU"),simplifiedUI);
-  #else
-    oappend(SET_F("toggle('Simple');"));    // hide Simplified UI settings
-  #endif
   }
 
   if (subPage == SUBPAGE_SYNC)
   {
+    [[maybe_unused]] char nS[32];
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
+  #ifndef WLED_DISABLE_ESPNOW
+    if (enableESPNow) sappend('c',SET_F("EN"),useESPNowSync);
+    else              oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+  #else
+    oappend(SET_F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+  #endif
     sappend('v',SET_F("GS"),syncGroups);
     sappend('v',SET_F("GR"),receiveGroups);
 
@@ -488,10 +499,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RX"),receiveNotificationEffects);
     sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SG"),receiveSegmentBounds);
-    sappend('c',SET_F("SD"),notifyDirectDefault);
+    sappend('c',SET_F("SS"),sendNotifications);
+    sappend('c',SET_F("SD"),notifyDirect);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
-    sappend('c',SET_F("SM"),notifyMacro);
     sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);
@@ -499,6 +510,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('c',SET_F("MO"),useMainSegmentOnly);
+    sappend('c',SET_F("RLM"),realtimeRespectLedMaps);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);
@@ -534,6 +546,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
     sappend('c',SET_F("RT"),retainMqttMsg);
+    oappend(SET_F("d.Sf.MD.maxlength=")); oappend(itoa(MQTT_MAX_TOPIC_LEN,nS,10));  oappend(SET_F(";"));
+    oappend(SET_F("d.Sf.MG.maxlength=")); oappend(itoa(MQTT_MAX_TOPIC_LEN,nS,10));  oappend(SET_F(";"));
+    oappend(SET_F("d.Sf.MS.maxlength=")); oappend(itoa(MQTT_MAX_SERVER_LEN,nS,10));  oappend(SET_F(";"));
     #else
     oappend(SET_F("toggle('MQTT');"));    // hide MQTT settings
     #endif
@@ -583,7 +598,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("LT"),tm);
     getTimeString(tm);
     sappends('m',SET_F("(\"times\")[0]"),tm);
-    if ((int)(longitude*10.) || (int)(latitude*10.)) {
+    if ((int)(longitude*10.0f) || (int)(latitude*10.0f)) {
       sprintf_P(tm, PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
       sappends('m',SET_F("(\"times\")[1]"),tm);
     }
@@ -593,6 +608,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("OM"),analogClock12pixel);
     sappend('c',SET_F("OS"),analogClockSecondsTrail);
     sappend('c',SET_F("O5"),analogClock5MinuteMarks);
+    sappend('c',SET_F("OB"),analogClockSolidBlack);
 
     sappend('c',SET_F("CE"),countdownMode);
     sappend('v',SET_F("CY"),countdownYear);

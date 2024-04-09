@@ -4,7 +4,7 @@
 
 //
 // Inspired by the original v2 usermods
-// * usermod_v2_rotaty_encoder_ui
+// * usermod_v2_rotary_encoder_ui
 //
 // v2 usermod that provides a rotary encoder-based UI.
 //
@@ -99,7 +99,7 @@ static int re_qstringCmp(const void *ap, const void *bp) {
       // Lowercase
       bVal -= 32;
     }
-    // Relly we shouldn't ever get to '\0'
+    // Really we shouldn't ever get to '\0'
     if (aVal == '"' || bVal == '"' || aVal == '\0' || bVal == '\0') {
       // We're done. one is a substring of the other
       // or something happenend and the quote didn't stop us.
@@ -285,7 +285,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    uint16_t getId() { return USERMOD_ID_ROTARY_ENC_UI; }
+    uint16_t getId() override { return USERMOD_ID_ROTARY_ENC_UI; }
     /**
      * Enable/Disable the usermod
      */
@@ -300,7 +300,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup();
+    void setup() override;
 
     /**
      * connected() is called every time the WiFi is (re)connected
@@ -311,11 +311,11 @@ class RotaryEncoderUIUsermod : public Usermod {
     /**
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
-    void loop();
+    void loop() override;
 
 #ifndef WLED_DISABLE_MQTT
-    //bool onMqttMessage(char* topic, char* payload);
-    //void onMqttConnect(bool sessionPresent);
+    //bool onMqttMessage(char* topic, char* payload) override;
+    //void onMqttConnect(bool sessionPresent) override;
 #endif
 
     /**
@@ -323,31 +323,31 @@ class RotaryEncoderUIUsermod : public Usermod {
      * will prevent button working in a default way.
      * Replicating button.cpp
      */
-    //bool handleButton(uint8_t b);
+    //bool handleButton(uint8_t b) override;
 
     /**
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      */
-    //void addToJsonInfo(JsonObject &root);
+    //void addToJsonInfo(JsonObject &root) override;
 
     /**
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void addToJsonState(JsonObject &root);
+    //void addToJsonState(JsonObject &root) override;
 
     /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void readFromJsonState(JsonObject &root);
+    //void readFromJsonState(JsonObject &root) override;
 
     /**
      * provide the changeable values
      */
-    void addToConfig(JsonObject &root);
+    void addToConfig(JsonObject &root) override;
 
-    void appendConfigData();
+    void appendConfigData() override;
 
     /**
      * restore the changeable values
@@ -355,7 +355,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      * 
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
-    bool readFromConfig(JsonObject &root);
+    bool readFromConfig(JsonObject &root) override;
 
     // custom methods
     void displayNetworkInfo();
@@ -392,20 +392,26 @@ byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
  * modes_alpha_indexes and palettes_alpha_indexes.
  */
 void RotaryEncoderUIUsermod::sortModesAndPalettes() {
-  DEBUG_PRINTLN(F("Sorting modes and palettes."));
+  DEBUG_PRINT(F("Sorting modes: ")); DEBUG_PRINTLN(strip.getModeCount());
   //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
   modes_qstrings = strip.getModeDataSrc();
   modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
   re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
+  DEBUG_PRINT(F("Sorting palettes: ")); DEBUG_PRINT(strip.getPaletteCount()); DEBUG_PRINT('/'); DEBUG_PRINTLN(strip.customPalettes.size());
   palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
-  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());  // only use internal palettes
-
+  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
+  if (strip.customPalettes.size()) {
+    for (int i=0; i<strip.customPalettes.size(); i++) {
+      palettes_alpha_indexes[strip.getPaletteCount()-strip.customPalettes.size()+i] = 255-i;
+      palettes_qstrings[strip.getPaletteCount()-strip.customPalettes.size()+i] = PSTR("~Custom~");
+    }
+  }
   // How many palette names start with '*' and should not be sorted?
   // (Also skipping the first one, 'Default').
   int skipPaletteCount = 1;
-  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount++]) == '*') ;
-  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
+  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount]) == '*') skipPaletteCount++;
+  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount()-strip.customPalettes.size(), skipPaletteCount);
 }
 
 byte *RotaryEncoderUIUsermod::re_initIndexArray(int numModes) {
@@ -496,7 +502,7 @@ void RotaryEncoderUIUsermod::setup()
     }
   } else {
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
-    if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
+    if (pinA<0 || pinB<0 || !pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       pinA = pinB = pinC = -1;
       enabled = false;
       return;
@@ -507,7 +513,7 @@ void RotaryEncoderUIUsermod::setup()
     #endif
     pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
     pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
-    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+    if (pinC>=0) pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
   }
 
   loopTime = millis();
@@ -590,7 +596,7 @@ void RotaryEncoderUIUsermod::loop()
       bool changedState = false;
       char lineBuffer[64];
       do {
-        // finde new state
+        // find new state
         switch (newState) {
           case  0: strcpy_P(lineBuffer, PSTR("Brightness")); changedState = true; break;
           case  1: if (!extractModeSlider(effectCurrent, 0, lineBuffer, 63)) newState++; else changedState = true; break; // speed
@@ -682,21 +688,25 @@ void RotaryEncoderUIUsermod::displayNetworkInfo() {
 void RotaryEncoderUIUsermod::findCurrentEffectAndPalette() {
   DEBUG_PRINTLN(F("Finding current mode and palette."));
   currentEffectAndPaletteInitialized = true;
-  for (uint8_t i = 0; i < strip.getModeCount(); i++) {
+
+  effectCurrentIndex = 0;
+  for (int i = 0; i < strip.getModeCount(); i++) {
     if (modes_alpha_indexes[i] == effectCurrent) {
       effectCurrentIndex = i;
+      DEBUG_PRINTLN(F("Found current mode."));
       break;
     }
   }
-  DEBUG_PRINTLN(F("Found current mode."));
 
-  for (uint8_t i = 0; i < strip.getPaletteCount(); i++) {
+  effectPaletteIndex = 0;
+  DEBUG_PRINTLN(effectPalette);
+  for (uint8_t i = 0; i < strip.getPaletteCount()+strip.customPalettes.size(); i++) {
     if (palettes_alpha_indexes[i] == effectPalette) {
       effectPaletteIndex = i;
+      DEBUG_PRINTLN(F("Found palette."));
       break;
     }
   }
-  DEBUG_PRINTLN(F("Found palette."));
 }
 
 bool RotaryEncoderUIUsermod::changeState(const char *stateName, byte markedLine, byte markedCol, byte glyph) {
@@ -731,7 +741,9 @@ void RotaryEncoderUIUsermod::changeBrightness(bool increase) {
   }
   display->updateRedrawTime();
 #endif
-  bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+  //bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+  if (bri < 40) bri = max(min((increase ? bri+fadeAmount/2 : bri-fadeAmount/2), 255), 0); // slower steps when brightness < 16%
+  else bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
   lampUdated();
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   display->updateBrightness();
@@ -878,7 +890,7 @@ void RotaryEncoderUIUsermod::changePalette(bool increase) {
   }
   display->updateRedrawTime();
 #endif
-  effectPaletteIndex = max(min((increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()-1), 0);
+  effectPaletteIndex = max(min((unsigned)(increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()+strip.customPalettes.size()-1), 0U);
   effectPalette = palettes_alpha_indexes[effectPaletteIndex];
   stateChanged = true;
   if (applyToAll) {

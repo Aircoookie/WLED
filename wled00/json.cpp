@@ -20,17 +20,22 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return false;
 
+  bool newSeg = false;
   int stop = elem["stop"] | -1;
 
-  // if using vectors use this code to append segment
+  // append segment
   if (id >= strip.getSegmentsNum()) {
     if (stop <= 0) return false; // ignore empty/inactive segments
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
+    newSeg = true;
   }
 
+  //DEBUG_PRINTLN(F("-- JSON deserialize segment."));
   Segment& seg = strip.getSegment(id);
-  Segment prev = seg; //make a backup so we can tell if something changed
+  //DEBUG_PRINTF_P(PSTR("--  Original segment: %p (%p)\n"), &seg, seg.data);
+  Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
+  //DEBUG_PRINTF_P(PSTR("--  Duplicate segment: %p (%p)\n"), &prev, prev.data);
 
   uint16_t start = elem["start"] | seg.start;
   if (stop < 0) {
@@ -95,7 +100,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
   seg.map1D2D  = constrain(map1D2D, 0, 7);
-  seg.soundSim = constrain(soundSim, 0, 1);
+  seg.soundSim = constrain(soundSim, 0, 3);
 
   uint8_t set = elem[F("set")] | seg.set;
   seg.set = constrain(set, 0, 3);
@@ -110,9 +115,16 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     of = offsetAbs;
   }
   if (stop > start && of > len -1) of = len -1;
-  seg.setUp(start, stop, grp, spc, of, startY, stopY);
 
-  if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
+  // update segment (delete if necessary)
+  seg.setUp(start, stop, grp, spc, of, startY, stopY); // strip needs to be suspended for this to work without issues
+
+  if (newSeg) seg.refreshLightCapabilities(); // fix for #3403
+
+  if (seg.reset && seg.stop == 0) {
+    if (id == strip.getMainSegmentId()) strip.setMainSegmentId(0); // fix for #3403
+    return true; // segment was deleted & is marked for reset, no need to change anything else
+  }
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
@@ -120,12 +132,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     seg.setOption(SEG_OPTION_ON, segbri); // use transition
   }
 
-  bool on = elem["on"] | seg.on;
-  if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
-  seg.setOption(SEG_OPTION_ON, on); // use transition
-  bool frz = elem["frz"] | seg.freeze;
-  if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.freeze;
-  seg.freeze = frz;
+  seg.setOption(SEG_OPTION_ON, getBoolVal(elem["on"], seg.on)); // use transition
+  seg.freeze = getBoolVal(elem["frz"], seg.freeze);
 
   seg.setCCT(elem["cct"] | seg.cct);
 
@@ -134,28 +142,42 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   {
     if (seg.getLightCapabilities() & 3) {
       // segment has RGB or White
-      for (size_t i = 0; i < 3; i++)
-      {
+      for (size_t i = 0; i < NUM_COLORS; i++) {
+        // JSON "col" array can contain the following values for each of segment's colors (primary, background, custom):
+        // "col":[int|string|object|array, int|string|object|array, int|string|object|array]
+        //   int = Kelvin temperature or 0 for black
+        //   string = hex representation of [WW]RRGGBB
+        //   object = individual channel control {"r":0,"g":127,"b":255,"w":255}, each being optional (valid to send {})
+        //   array = direct channel values [r,g,b,w] (w element being optional)
         int rgbw[] = {0,0,0,0};
         bool colValid = false;
         JsonArray colX = colarr[i];
         if (colX.isNull()) {
-          byte brgbw[] = {0,0,0,0};
-          const char* hexCol = colarr[i];
-          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-            int kelvin = colarr[i] | -1;
-            if (kelvin <  0) continue;
-            if (kelvin == 0) seg.setColor(i, 0);
-            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+          JsonObject oCol = colarr[i];
+          if (!oCol.isNull()) {
+            // we have a JSON object for color {"w":123,"r":123,...}; allows individual channel control
+            rgbw[0] = oCol["r"] | R(seg.colors[i]);
+            rgbw[1] = oCol["g"] | G(seg.colors[i]);
+            rgbw[2] = oCol["b"] | B(seg.colors[i]);
+            rgbw[3] = oCol["w"] | W(seg.colors[i]);
             colValid = true;
-          } else { //HEX string, e.g. "FFAA00"
-            colValid = colorFromHexString(brgbw, hexCol);
+          } else {
+            byte brgbw[] = {0,0,0,0};
+            const char* hexCol = colarr[i];
+            if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+              int kelvin = colarr[i] | -1;
+              if (kelvin <  0) continue;
+              if (kelvin == 0) seg.setColor(i, 0);
+              if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+              colValid = true;
+            } else { //HEX string, e.g. "FFAA00"
+              colValid = colorFromHexString(brgbw, hexCol);
+            }
+            for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
           }
-          for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
         } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
           byte sz = colX.size();
           if (sz == 0) continue; //do nothing on empty array
-
           copyArray(colX, rgbw, 4);
           colValid = true;
         }
@@ -188,20 +210,27 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   bool reverse  = seg.reverse;
   bool mirror   = seg.mirror;
   #endif
-  seg.selected  = elem["sel"] | seg.selected;
-  seg.reverse   = elem["rev"] | seg.reverse;
-  seg.mirror    = elem["mi"]  | seg.mirror;
+  seg.selected  = getBoolVal(elem["sel"], seg.selected);
+  seg.reverse   = getBoolVal(elem["rev"], seg.reverse);
+  seg.mirror    = getBoolVal(elem["mi"] , seg.mirror);
   #ifndef WLED_DISABLE_2D
   bool reverse_y = seg.reverse_y;
   bool mirror_y  = seg.mirror_y;
-  seg.reverse_y  = elem["rY"]  | seg.reverse_y;
-  seg.mirror_y   = elem["mY"]  | seg.mirror_y;
-  seg.transpose  = elem[F("tp")] | seg.transpose;
+  seg.reverse_y  = getBoolVal(elem["rY"]   , seg.reverse_y);
+  seg.mirror_y   = getBoolVal(elem["mY"]   , seg.mirror_y);
+  seg.transpose  = getBoolVal(elem[F("tp")], seg.transpose);
   if (seg.is2D() && seg.map1D2D == M12_pArc && (reverse != seg.reverse || reverse_y != seg.reverse_y || mirror != seg.mirror || mirror_y != seg.mirror_y)) seg.fill(BLACK); // clear entire segment (in case of Arc 1D to 2D expansion)
   #endif
 
   byte fx = seg.mode;
-  if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
+  byte last = strip.getModeCount();
+  // partial fix for #3605
+  if (!elem["fx"].isNull() && elem["fx"].is<const char*>()) {
+    const char *tmp = elem["fx"].as<const char *>();
+    if (strlen(tmp) > 3 && (strchr(tmp,'r') || strchr(tmp,'~') != strrchr(tmp,'~'))) last = 0; // we have "X~Y(r|[w]~[-])" form
+  }
+  // end fix
+  if (getVal(elem["fx"], &fx, 0, last)) { //load effect ('r' random, '~' inc/dec, 0-255 exact value, 5~10r pick random between 5 & 10)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
     if (fx != seg.mode) seg.setMode(fx, elem[F("fxdef")]);
   }
@@ -211,19 +240,24 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["ix"], &seg.intensity);
 
   uint8_t pal = seg.palette;
+  last = strip.getPaletteCount();
+  if (!elem["pal"].isNull() && elem["pal"].is<const char*>()) {
+    const char *tmp = elem["pal"].as<const char *>();
+    if (strlen(tmp) > 3 && (strchr(tmp,'r') || strchr(tmp,'~') != strrchr(tmp,'~'))) last = 0; // we have "X~Y(r|[w]~[-])" form
+  }
   if (seg.getLightCapabilities() & 1) {  // ignore palette for White and On/Off segments
-    if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
+    if (getVal(elem["pal"], &pal, 0, last)) seg.setPalette(pal);
   }
 
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
-  getVal(elem["c3"], &cust3); // we can't pass reference to bifield
+  getVal(elem["c3"], &cust3, 0, 31); // we can't pass reference to bitfield
   seg.custom3 = constrain(cust3, 0, 31);
 
-  seg.check1 = elem["o1"] | seg.check1;
-  seg.check2 = elem["o2"] | seg.check2;
-  seg.check3 = elem["o3"] | seg.check3;
+  seg.check1 = getBoolVal(elem["o1"], seg.check1);
+  seg.check2 = getBoolVal(elem["o2"], seg.check2);
+  seg.check3 = getBoolVal(elem["o3"], seg.check3);
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -231,8 +265,9 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     seg.map1D2D = M12_Pixels; // no mapping
 
     // set brightness immediately and disable transition
-    transitionDelayTemp = 0;
     jsonTransitionOnce = true;
+    seg.stopTransition();
+    strip.setTransition(0);
     strip.setBrightness(scaledBri(bri), true);
 
     // freeze and init to black
@@ -282,7 +317,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   return true;
 }
 
-// deserializes WLED state (fileDoc points to doc object if called from web server)
+// deserializes WLED state
 // presetId is non-0 if called from handlePreset()
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
@@ -314,36 +349,32 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   int tr = -1;
   if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
     tr = root[F("transition")] | -1;
-    if (tr >= 0)
-    {
-      transitionDelay = tr;
-      transitionDelay *= 100;
-      transitionDelayTemp = transitionDelay;
+    if (tr >= 0) {
+      transitionDelay = tr * 100;
+      if (fadeTransition) strip.setTransition(transitionDelay);
     }
   }
 
   // temporary transition (applies only once)
   tr = root[F("tt")] | -1;
-  if (tr >= 0)
-  {
-    transitionDelayTemp = tr;
-    transitionDelayTemp *= 100;
+  if (tr >= 0) {
     jsonTransitionOnce = true;
+    if (fadeTransition) strip.setTransition(tr * 100);
   }
-  strip.setTransition(transitionDelayTemp); // required here for color transitions to have correct duration
 
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
 
   JsonObject nl       = root["nl"];
-  nightlightActive    = nl["on"]      | nightlightActive;
+  nightlightActive    = getBoolVal(nl["on"], nightlightActive);
   nightlightDelayMins = nl["dur"]     | nightlightDelayMins;
   nightlightMode      = nl["mode"]    | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
-  notifyDirect         = udpn["send"] | notifyDirect;
-  receiveNotifications = udpn["recv"] | receiveNotifications;
+  sendNotificationsRT  = getBoolVal(udpn[F("send")], sendNotificationsRT);
+  syncGroups           = udpn[F("sgrp")] | syncGroups;
+  receiveGroups        = udpn[F("rgrp")] | receiveGroups;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
   unsigned long timein = root["time"] | UINT32_MAX; //backup time source if NTP not synced
@@ -365,8 +396,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   if (root.containsKey("live")) {
     if (root["live"].as<bool>()) {
-      transitionDelayTemp = 0;
       jsonTransitionOnce = true;
+      strip.setTransition(0);
       realtimeLock(65000);
     } else {
       exitRealtime();
@@ -375,6 +406,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   int it = 0;
   JsonVariant segVar = root["seg"];
+  if (!segVar.isNull()) strip.suspend();
   if (segVar.is<JsonObject>())
   {
     int id = segVar["id"] | -1;
@@ -402,6 +434,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
     if (strip.getSegmentsNum() > 3 && deleted >= strip.getSegmentsNum()/2U) strip.purgeSegments(); // batch deleting more than half segments
   }
+  strip.resume();
 
   usermods.readFromJsonState(root);
 
@@ -424,17 +457,15 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // applying preset (2 cases: a) API call includes all preset values ("pd"), b) API only specifies preset ID ("ps"))
   byte presetToRestore = 0;
   // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
-  if (!root["pd"].isNull() && stateChanged) {
+  if (!root[F("pd")].isNull() && stateChanged) {
     currentPreset = root[F("pd")] | currentPreset;
     if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise it was set in handleSet() [set.cpp]
     presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
-    //unloadPlaylist(); // applying a preset unloads the playlist, may be needed here too?
   } else if (!root["ps"].isNull()) {
     ps = presetCycCurr;
     if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
-      unloadPlaylist();          // applying a preset unloads the playlist
       applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
       return stateResponse;
     }
@@ -456,6 +487,19 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+  JsonObject wifi = root[F("wifi")];
+  if (!wifi.isNull()) {
+    bool apMode = getBoolVal(wifi[F("ap")], apActive);
+    if (!apActive && apMode) WLED::instance().initAP();  // start AP mode immediately
+    else if (apActive && !apMode) { // stop AP mode immediately
+      dnsServer.stop();
+      WiFi.softAPdisconnect(true);
+      apActive = false;
+    }
+    //bool restart = wifi[F("restart")] | false;
+    //if (restart) forceReconnect = true;
+  }
+
   stateUpdated(callMode);
   if (presetToRestore) currentPreset = presetToRestore;
 
@@ -468,12 +512,14 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   if (segmentBounds) {
     root["start"] = seg.start;
     root["stop"] = seg.stop;
+    #ifndef WLED_DISABLE_2D
     if (strip.isMatrix) {
       root[F("startY")] = seg.startY;
       root[F("stopY")]  = seg.stopY;
     }
+    #endif
   }
-  if (!forPreset) root["len"] = (seg.stop >= seg.start) ? (seg.stop - seg.start) : 0;
+  if (!forPreset) root["len"] = seg.stop - seg.start;
   root["grp"]    = seg.grouping;
   root[F("spc")] = seg.spacing;
   root[F("of")]  = seg.offset;
@@ -484,7 +530,8 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   root["cct"]    = seg.cct;
   root[F("set")] = seg.set;
 
-  if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
+  if (seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
+  else if (forPreset) root["n"] = "";
 
   // to conserve RAM we will serialize the col array manually
   // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
@@ -549,15 +596,13 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     nl["dur"] = nightlightDelayMins;
     nl["mode"] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
-    if (nightlightActive) {
-      nl[F("rem")] = (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000; // seconds remaining
-    } else {
-      nl[F("rem")] = -1;
-    }
+    nl[F("rem")] = nightlightActive ? (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000 : -1; // seconds remaining
 
     JsonObject udpn = root.createNestedObject("udpn");
-    udpn["send"] = notifyDirect;
-    udpn["recv"] = receiveNotifications;
+    udpn[F("send")] = sendNotificationsRT;
+    udpn[F("recv")] = receiveGroups != 0;
+    udpn[F("sgrp")] = syncGroups;
+    udpn[F("rgrp")] = receiveGroups;
 
     root[F("lor")] = realtimeOverride;
   }
@@ -590,20 +635,21 @@ void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
   root[F("vid")] = VERSION;
-  //root[F("cn")] = WLED_CODENAME;
+  root[F("cn")] = F(WLED_CODENAME);
 
-  JsonObject leds = root.createNestedObject("leds");
+  JsonObject leds = root.createNestedObject(F("leds"));
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("pwr")] = strip.currentMilliamps;
+  leds[F("pwr")] = BusManager::currentMilliamps();
   leds["fps"] = strip.getFps();
-  leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
+  leds[F("maxpwr")] = BusManager::currentMilliamps()>0 ? BusManager::ablMilliampsMax() : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
+  leds[F("bootps")] = bootPreset;
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
-    JsonObject matrix = leds.createNestedObject("matrix");
+    JsonObject matrix = leds.createNestedObject(F("matrix"));
     matrix["w"] = Segment::maxWidth;
     matrix["h"] = Segment::maxHeight;
   }
@@ -635,10 +681,11 @@ void serializeInfo(JsonObject root)
   spi.add(spi_miso);
   #endif
 
-  root[F("str")] = syncToggleReceive;
+  root[F("str")] = false; //syncToggleReceive;
 
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
+  root[F("simplifiedui")] = simplifiedUI;
   root["live"] = (bool)realtimeMode;
   root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
 
@@ -654,12 +701,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_DDP:      root["lm"] = F("DDP"); break;
   }
 
-  if (realtimeIP[0] == 0)
-  {
-    root[F("lip")] = "";
-  } else {
-    root[F("lip")] = realtimeIP.toString();
-  }
+  root[F("lip")] = realtimeIP[0] == 0 ? "" : realtimeIP.toString();
 
   #ifdef WLED_ENABLE_WEBSOCKETS
   root[F("ws")] = ws.count();
@@ -682,7 +724,7 @@ void serializeInfo(JsonObject root)
     }
   }
 
-  JsonObject wifi_info = root.createNestedObject("wifi");
+  JsonObject wifi_info = root.createNestedObject(F("wifi"));
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
   int qrssi = WiFi.RSSI();
   wifi_info[F("rssi")] = qrssi;
@@ -696,7 +738,7 @@ void serializeInfo(JsonObject root)
 
   root[F("ndc")] = nodeListEnabled ? (int)Nodes.size() : -1;
 
-  #ifdef ARDUINO_ARCH_ESP32
+#ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
     wifi_info[F("sleep")] = (bool) WiFi.getSleep();
@@ -707,27 +749,35 @@ void serializeInfo(JsonObject root)
     root[F("arch")] = ESP.getChipModel();
   #endif
   root[F("core")] = ESP.getSdkVersion();
-  //root[F("maxalloc")] = ESP.getMaxAllocHeap();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   #ifdef WLED_DEBUG
-    root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
-    root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
+  root[F("maxalloc")] = ESP.getMaxAllocHeap();
+  root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
+  root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
   root[F("lwip")] = 0; //deprecated
-  #else
+#else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
-  //root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   #ifdef WLED_DEBUG
-    root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
+  root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
+  root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;
   #endif
   root[F("lwip")] = LWIP_VERSION_MAJOR;
-  #endif
+#endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
-  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
-  if (psramFound()) root[F("psram")] = ESP.getFreePsram();
+  #if defined(ARDUINO_ARCH_ESP32)
+  if (psramSafe && psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
+
+  char time[32];
+  getTimeString(time);
+  root[F("time")] = time;
 
   usermods.addToJsonInfo(root);
 
@@ -762,8 +812,8 @@ void serializeInfo(JsonObject root)
   #endif
   root[F("opt")] = os;
 
-  root[F("brand")] = "WLED";
-  root[F("product")] = F("FOSS");
+  root[F("brand")] = F(WLED_BRAND);
+  root[F("product")] = F(WLED_PRODUCT_NAME);
   root["mac"] = escapedMac;
   char s[16] = "";
   if (Network.isConnected())
@@ -823,8 +873,8 @@ void serializePalettes(JsonObject root, int page)
   int itemPerPage = 8;
   #endif
 
-  int palettesCount = strip.getPaletteCount();
   int customPalettes = strip.customPalettes.size();
+  int palettesCount = strip.getPaletteCount() - customPalettes;
 
   int maxPage = (palettesCount + customPalettes -1) / itemPerPage;
   if (page > maxPage) page = maxPage;
@@ -862,7 +912,7 @@ void serializePalettes(JsonObject root, int page)
         curPalette.add("c2");
         curPalette.add("c1");
         break;
-      case 5: //primary + secondary (+tert if not off), more distinct
+      case 5: //primary + secondary (+tertiary if not off), more distinct
         curPalette.add("c1");
         curPalette.add("c1");
         curPalette.add("c1");
@@ -930,11 +980,11 @@ void serializeNetworks(JsonObject root)
 
   for (int i = 0; i < status; i++) {
     JsonObject node = networks.createNestedObject();
-    node["ssid"]    = WiFi.SSID(i);
-    node["rssi"]    = WiFi.RSSI(i);
-    node["bssid"]   = WiFi.BSSIDstr(i);
-    node["channel"] = WiFi.channel(i);
-    node["enc"]     = WiFi.encryptionType(i);
+    node[F("ssid")]    = WiFi.SSID(i);
+    node[F("rssi")]    = WiFi.RSSI(i);
+    node[F("bssid")]   = WiFi.BSSIDstr(i);
+    node[F("channel")] = WiFi.channel(i);
+    node[F("enc")]     = WiFi.encryptionType(i);
   }
 
   WiFi.scanDelete();
@@ -965,9 +1015,10 @@ void serializeNodes(JsonObject root)
 // deserializes mode data string into JsonArray
 void serializeModeData(JsonArray fxdata)
 {
-  char lineBuffer[128];
+  char lineBuffer[256];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    strncpy_P(lineBuffer, strip.getModeData(i), 127);
+    strncpy_P(lineBuffer, strip.getModeData(i), sizeof(lineBuffer)/sizeof(char)-1);
+    lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
     if (lineBuffer[0] != 0) {
       char* dataPtr = strchr(lineBuffer,'@');
       if (dataPtr) fxdata.add(dataPtr+1);
@@ -978,10 +1029,12 @@ void serializeModeData(JsonArray fxdata)
 
 // deserializes mode names string into JsonArray
 // also removes effect data extensions (@...) from deserialised names
-void serializeModeNames(JsonArray arr) {
-  char lineBuffer[128];
+void serializeModeNames(JsonArray arr)
+{
+  char lineBuffer[256];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    strncpy_P(lineBuffer, strip.getModeData(i), 127);
+    strncpy_P(lineBuffer, strip.getModeData(i), sizeof(lineBuffer)/sizeof(char)-1);
+    lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
     if (lineBuffer[0] != 0) {
       char* dataPtr = strchr(lineBuffer,'@');
       if (dataPtr) *dataPtr = 0; // terminate mode data after name
@@ -990,41 +1043,67 @@ void serializeModeNames(JsonArray arr) {
   }
 }
 
+// Global buffer locking response helper class (to make sure lock is released when AsyncJsonResponse is destroyed)
+class LockedJsonResponse: public AsyncJsonResponse {
+  bool _holding_lock;
+  public:
+  // WARNING: constructor assumes requestJSONBufferLock() was successfully acquired externally/prior to constructing the instance
+  // Not a good practice with C++. Unfortunately AsyncJsonResponse only has 2 constructors - for dynamic buffer or existing buffer,
+  // with existing buffer it clears its content during construction
+  // if the lock was not acquired (using JSONBufferGuard class) previous implementation still cleared existing buffer
+  inline LockedJsonResponse(JsonDocument* doc, bool isArray) : AsyncJsonResponse(doc, isArray), _holding_lock(true) {};
+
+  virtual size_t _fillBuffer(uint8_t *buf, size_t maxLen) { 
+    size_t result = AsyncJsonResponse::_fillBuffer(buf, maxLen);
+    // Release lock as soon as we're done filling content
+    if (((result + _sentLength) >= (_contentLength)) && _holding_lock) {
+      releaseJSONBufferLock();
+      _holding_lock = false;
+    }
+    return result;
+  }
+
+  // destructor will remove JSON buffer lock when response is destroyed in AsyncWebServer
+  virtual ~LockedJsonResponse() { if (_holding_lock) releaseJSONBufferLock(); };
+};
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
   const String& url = request->url();
-  if      (url.indexOf("state") > 0) subJson = JSON_PATH_STATE;
-  else if (url.indexOf("info")  > 0) subJson = JSON_PATH_INFO;
-  else if (url.indexOf("si")    > 0) subJson = JSON_PATH_STATE_INFO;
-  else if (url.indexOf("nodes") > 0) subJson = JSON_PATH_NODES;
-  else if (url.indexOf("eff")   > 0) subJson = JSON_PATH_EFFECTS;
-  else if (url.indexOf("palx")  > 0) subJson = JSON_PATH_PALETTES;
-  else if (url.indexOf("fxda")  > 0) subJson = JSON_PATH_FXDATA;
-  else if (url.indexOf("net")   > 0) subJson = JSON_PATH_NETWORKS;
+  if      (url.indexOf("state")    > 0) subJson = JSON_PATH_STATE;
+  else if (url.indexOf("info")     > 0) subJson = JSON_PATH_INFO;
+  else if (url.indexOf("si")       > 0) subJson = JSON_PATH_STATE_INFO;
+  else if (url.indexOf(F("nodes")) > 0) subJson = JSON_PATH_NODES;
+  else if (url.indexOf(F("eff"))   > 0) subJson = JSON_PATH_EFFECTS;
+  else if (url.indexOf(F("palx"))  > 0) subJson = JSON_PATH_PALETTES;
+  else if (url.indexOf(F("fxda"))  > 0) subJson = JSON_PATH_FXDATA;
+  else if (url.indexOf(F("net"))   > 0) subJson = JSON_PATH_NETWORKS;
   #ifdef WLED_ENABLE_JSONLIVE
-  else if (url.indexOf("live")  > 0) {
+  else if (url.indexOf("live")     > 0) {
     serveLiveLeds(request);
     return;
   }
   #endif
   else if (url.indexOf("pal") > 0) {
-    request->send_P(200, "application/json", JSON_palette_names);
+    request->send_P(200, FPSTR(CONTENT_TYPE_JSON), JSON_palette_names);
     return;
   }
-  else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
+  else if (url.indexOf(F("cfg")) > 0 && handleFileRead(request, F("/cfg.json"))) {
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(501, "application/json", F("{\"error\":\"Not implemented\"}"));
+    serveJsonError(request, 501, ERR_NOT_IMPL);
     return;
   }
 
   if (!requestJSONBufferLock(17)) {
-    request->send(503, "application/json", F("{\"error\":3}"));
+    serveJsonError(request, 503, ERR_NOBUF);
     return;
   }
-  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
+  // releaseJSONBufferLock() will be called when "response" is destroyed (from AsyncWebServer)
+  // make sure you delete "response" if no "request->send(response);" is made
+  LockedJsonResponse *response = new LockedJsonResponse(pDoc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
@@ -1037,7 +1116,7 @@ void serveJson(AsyncWebServerRequest* request)
     case JSON_PATH_NODES:
       serializeNodes(lDoc); break;
     case JSON_PATH_PALETTES:
-      serializePalettes(lDoc, request->hasParam("page") ? request->getParam("page")->value().toInt() : 0); break;
+      serializePalettes(lDoc, request->hasParam(F("page")) ? request->getParam(F("page"))->value().toInt() : 0); break;
     case JSON_PATH_EFFECTS:
       serializeModeNames(lDoc); break;
     case JSON_PATH_FXDATA:
@@ -1058,17 +1137,19 @@ void serveJson(AsyncWebServerRequest* request)
       //lDoc["m"] = lDoc.memoryUsage(); // JSON buffer usage, for remote debugging
   }
 
-  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
+  DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for request: %d\n"), lDoc.memoryUsage(), subJson);
 
-  size_t len = response->setLength();
+  #ifdef WLED_DEBUG
+  size_t len =
+  #endif
+  response->setLength();
   DEBUG_PRINT(F("JSON content length: ")); DEBUG_PRINTLN(len);
 
   request->send(response);
-  releaseJSONBufferLock();
 }
 
 #ifdef WLED_ENABLE_JSONLIVE
-#define MAX_LIVE_LEDS 180
+#define MAX_LIVE_LEDS 256
 
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 {
@@ -1082,31 +1163,55 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 
   uint16_t used = strip.getLengthTotal();
   uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
-  char buffer[2000];
-  strcpy_P(buffer, PSTR("{\"leds\":["));
-  obuf = buffer;
-  olen = 9;
-
-  for (size_t i= 0; i < used; i += n)
-  {
-    uint32_t c = strip.getPixelColor(i);
-    uint8_t r = qadd8(W(c), R(c)); //add white channel to RGB channels as a simple RGBW -> RGB map
-    uint8_t g = qadd8(W(c), G(c));
-    uint8_t b = qadd8(W(c), B(c));
-    olen += sprintf(obuf + olen, "\"%06X\",", RGBW32(r,g,b,0));
+#ifndef WLED_DISABLE_2D
+  if (strip.isMatrix) {
+    // ignore anything behid matrix (i.e. extra strip)
+    used = Segment::maxWidth*Segment::maxHeight; // always the size of matrix (more or less than strip.getLengthTotal())
+    n = 1;
+    if (used > MAX_LIVE_LEDS) n = 2;
+    if (used > MAX_LIVE_LEDS*4) n = 4;
   }
-  olen -= 1;
-  oappend((const char*)F("],\"n\":"));
-  oappendi(n);
-  oappend("}");
+#endif
+
+  DynamicBuffer buffer(9 + (9*(1+(used/n))) + 7 + 5 + 6 + 5 + 6 + 5 + 2);  
+  char* buf = buffer.data();      // assign buffer for oappnd() functions
+  strncpy_P(buffer.data(), PSTR("{\"leds\":["), buffer.size());
+  buf += 9; // sizeof(PSTR()) from last line
+
+  for (size_t i = 0; i < used; i += n)
+  {
+#ifndef WLED_DISABLE_2D
+    if (strip.isMatrix && n>1 && (i/Segment::maxWidth)%n) i += Segment::maxWidth * (n-1);
+#endif
+    uint32_t c = strip.getPixelColor(i);
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
+    uint8_t w = W(c);
+    r = scale8(qadd8(w, r), strip.getBrightness()); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    g = scale8(qadd8(w, g), strip.getBrightness()); //G
+    b = scale8(qadd8(w, b), strip.getBrightness()); //B
+    buf += sprintf_P(buf, PSTR("\"%06X\","), RGBW32(r,g,b,0));
+  }
+  buf--;  // remove last comma
+  buf += sprintf_P(buf, PSTR("],\"n\":%d"), n);
+#ifndef WLED_DISABLE_2D
+  if (strip.isMatrix) {
+    buf += sprintf_P(buf, PSTR(",\"w\":%d"), Segment::maxWidth/n);
+    buf += sprintf_P(buf, PSTR(",\"h\":%d"), Segment::maxHeight/n);
+  }
+#endif
+  (*buf++) = '}';
+  (*buf++) = 0;
+  
   if (request) {
-    request->send(200, "application/json", buffer);
+    request->send(200, FPSTR(CONTENT_TYPE_JSON), toString(std::move(buffer)));
   }
   #ifdef WLED_ENABLE_WEBSOCKETS
   else {
-    wsc->text(obuf, olen);
+    wsc->text(toString(std::move(buffer)));
   }
-  #endif
+  #endif  
   return true;
 }
 #endif

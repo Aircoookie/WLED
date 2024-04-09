@@ -113,23 +113,26 @@ void handleSerial()
 
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
-          if (!requestJSONBufferLock(16)) return;
+          if (!requestJSONBufferLock(16)) {
+            Serial.println(F("{\"error\":3}")); // ERR_NOBUF
+            return;
+          }
           Serial.setTimeout(100);
-          DeserializationError error = deserializeJson(doc, Serial);
+          DeserializationError error = deserializeJson(*pDoc, Serial);
           if (error) {
             releaseJSONBufferLock();
             return;
           }
-          verboseResponse = deserializeState(doc.as<JsonObject>());
+          verboseResponse = deserializeState(pDoc->as<JsonObject>());
           //only send response if TX pin is unused for other purposes
           if (verboseResponse && (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut)) {
-            doc.clear();
-            JsonObject state = doc.createNestedObject("state");
+            pDoc->clear();
+            JsonObject state = pDoc->createNestedObject("state");
             serializeState(state);
-            JsonObject info  = doc.createNestedObject("info");
+            JsonObject info  = pDoc->createNestedObject("info");
             serializeInfo(info);
 
-            serializeJson(doc, Serial);
+            serializeJson(*pDoc, Serial);
             Serial.println();
           }
           releaseJSONBufferLock();

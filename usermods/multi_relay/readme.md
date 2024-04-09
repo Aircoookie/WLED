@@ -2,7 +2,7 @@
 
 This usermod-v2 modification allows the connection of multiple relays, each with individual delay and on/off mode.
 Usermod supports PCF8574 I2C port expander to reduce GPIO use.
-PCF8574 supports 8 outputs and each output corresponds to a relay in WLED (relay 0 = port 0, etc). I you are using more than 8 relays with multiple PCF8574 make sure their addresses are set conscutively (e.g. 0x20 and 0x21). You can set address of first expander in settings.
+PCF8574 supports 8 outputs and each output corresponds to a relay in WLED (relay 0 = port 0, etc). I you are using more than 8 relays with multiple PCF8574 make sure their addresses are set in sequence (e.g. 0x20 and 0x21). You can set address of first expander in settings.
 (**NOTE:** Will require Wire library and global I2C pins defined.)
 
 ## HTTP API
@@ -46,6 +46,24 @@ or
 2. Use `#define USERMOD_MULTI_RELAY` in wled.h or `-D USERMOD_MULTI_RELAY` in your platformio.ini
 
 You can override the default maximum number of relays (which is 4) by defining MULTI_RELAY_MAX_RELAYS.
+
+Some settings can be defined (defaults) at compile time by setting the following defines:
+
+```cpp
+// enable or disable HA discovery for externally controlled relays
+#define MULTI_RELAY_HA_DISCOVERY true
+```
+
+The following definitions should be a list of values (maximum number of entries is MULTI_RELAY_MAX_RELAYS) that will be applied to the relays in order:
+(e.g. assuming MULTI_RELAY_MAX_RELAYS=2)
+
+```cpp
+#define MULTI_RELAY_PINS 12,18
+#define MULTI_RELAY_DELAYS 0,0
+#define MULTI_RELAY_EXTERNALS false,true
+#define MULTI_RELAY_INVERTS false,false
+```
+These can be set via your `platformio_override.ini` file or as `#define` in your `my_config.h` (remember to set `WLED_USE_MY_CONFIG` in your `platformio_override.ini`)
 
 Example **usermods_list.cpp**:
 
@@ -108,3 +126,6 @@ Have fun - @blazoncek
 
 2023-05
 * Added support for PCF8574 I2C port expander (multiple)
+
+2023-11
+* @chrisburrows Added support for compile time defaults for setting DELAY, EXTERNAL, INVERTS and HA discovery

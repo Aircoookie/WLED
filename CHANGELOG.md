@@ -1,11 +1,267 @@
 ## WLED changelog
 
+#### Build 2403280
+-   Individual color channel control for JSON API (fixes #3860)
+    - "col":[int|string|object|array, int|string|object|array, int|string|object|array]
+        int = Kelvin temperature or 0 for black
+        string = hex representation of [WW]RRGGBB
+        object = individual channel control {"r":0,"g":127,"b":255,"w":255}, each being optional (valid to send {})
+        array = direct channel values [r,g,b,w] (w element being optional)
+-   runtime selection for CCT IC (Athom 15W bulb)
+-   #3850 (by @w00000dy)
+-   Rotary encoder palette count bugfix
+-   bugfixes and optimisations
+
+#### Build 2403240
+-   v0.15.0-b2
+-   WS2805 support (RGB + WW + CW, 600kbps)
+-   Unified PSRAM use
+-   NeoPixelBus v2.7.9 (for future WS2805 support)
+-   Ubiquitous PSRAM mode for all variants of ESP32
+-   SSD1309_64 I2C Support for FLD Usermod (#3836 by @THATDONFC)
+-   Palette cycling fix (add support for `{"seg":[{"pal":"X~Y~"}]}` or `{"seg":[{"pal":"X~Yr"}]}`)
+-   FW1906 Support (#3810 by @deece and @Robert-github-com)
+-   ESPAsyncWebServer 2.2.0 (#3828 by @willmmiles)
+-   Bugfixes: #3843, #3844
+
+#### Build 2403190
+-   limit max PWM frequency (fix incorrect PWM resolution)
+-   Segment UI bugfix
+-   Updated AsyncWebServer (by @wlillmmiles)
+-   Simpler boot preset (fix for #3806)
+-   Effect: Fix for 2D Drift animation (#3816 by @BaptisteHudyma)
+-   Effect: Add twin option to 2D Drift
+-   MQTT cleanup
+-   DDP: Support sources that don't push (#3833 by @willmmiles)
+-   Usermod: Tetris AI usermod (#3711 by @muebau)
+
+#### Build 2403171
+-   merge 0.14.2 changes into 0.15
+
+#### Build 2403070
+-   Add additional segment options when controlling over e1.31 (#3616 by @demophoon)
+-   LockedJsonResponse: Release early if possible (#3760 by @willmmiles)
+-   Update setup-node and cache usermods in wled-ci.yml (#3737 by @WoodyLetsCode)
+-   Fix preset sorting (#3790 by @WoodyLetsCode)
+-   compile time button configuration #3792
+-   remove IR config if not compiled
+-   additional string optimisations
+-   Better low brightness level PWM handling (fixes #2767, #2868)
+
+#### Build 2402290
+-   Multiple analog button fix for #3549
+-   Preset caching on chips with PSRAM (credit @akaricchi)
+-   Fixing stairway usermod and adding buildflags (by @lost-hope)
+-   ESP-NOW packet modification
+-   JSON buffer lock error messages / Reduce wait time for lock to 100ms
+-   Reduce string RAM usage for ESP8266
+-   Fixing a potential array bounds violation in ESPDMX
+-   Move timezone table to PROGMEM (#3766 by @willmmiles)
+-   Reposition upload warning message. (fixes #3778)
+-   ABL display fix & optimisation
+-   Add virtual Art-Net RGBW option (#3783 by @shammy642)
+
+#### Build 2402090
+-   Added new Ethernet controller RGB2Go Tetra (duplicate of ESP3DEUXQuattro)
+-   Usermod: httpPullLightControl (#3560 by @roelbroersma)
+-   DMX: S2 & C3 support via modified ESPDMX
+-   Bugfix: prevent cleaning of JSON buffer after a failed lock attempt (BufferGuard)
+-   Product/Brand override (API & AP SSID) (#3750 by @moustachauve)
+
+#### Build 2402060
+-   WLED version 0.15.0-b1
+-   Harmonic Random Cycle palette (#3729 by @dedehai)
+-   Multi PIR sensor usermod (added support for attaching multiple PIR sensors)
+-   Removed obsolete (and nonfunctional) usermods
+
+#### Build 2309120 till build 2402010
+-   WLED version 0.15.0-a0
+-   Multi-WiFi support. Add up to 3 (or more via cusom compile) WiFis to connect to (with help from @JPZV)
+-   Temporary AP. Use your WLED in public with temporary AP.
+-   Github CI build system enhancements (#3718 by @WoodyLetsCode)
+-   Accessibility: Node list ( #3715 by @WoodyLetsCode)
+-   Analog clock overlay enhancement (#3489 by @WoodyLetsCode)
+-   ESP32-POE-WROVER from Olimex ethernet support (#3625 by @m-wachter)
+-   APA106 support (#3580 by @itstefanjanos)
+-   BREAKING: Effect: updated Palette effect to support 2D (#3683 by @TripleWhy)
+-   "SuperSync" from WLED MM (by @MoonModules)
+-   Effect: DNA Spiral Effect Speed Fix (#3723 by @Derek4aty1)
+-   Fix for #3693
+-   Orange flash fix (#3196) for transitions
+-   Add own background image upload (#3596 by @WoodyLetsCode)
+-   WLED time overrides (`WLED_NTP_ENABLED`, `WLED_TIMEZONE`, `WLED_UTC_OFFSET`, `WLED_LAT` and `WLED_LON`)
+-   Better sorting and naming of static palettes (by @WoodyLetsCode)
+-   ANIMartRIX usermod and effects (#3673 by @netmindz)
+-   Use canvas instead of CSS gradient for liveview (#3621 by @zanhecht)
+-   Fix for #3672
+-   ColoOrderMap W channel swap (color order overrides now have W swap)
+-   En-/disable LED maps when receiving realtime data (#3554 by @ezcGman)
+-   Added PWM frequency selection to UI (Settings)
+-   Automatically build UI before compiling (#3598, #3666 by @WoodyLetsCode)
+-   Internal: Added *suspend* API to `strip` (`WS2812FX class`)
+-   Possible fix for #3589 & partial fix for #3605
+-   MPU6050 upgrade (#3654 by @willmmiles)
+-   UI internals (#3656 by @WoodyLetsCode)
+-   ColorPicker fix (#3658 by @WoodyLetsCode)
+-   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
+-   Effect: Fireworks 1D (fix for matrix trailing strip)
+-   BREAKING: Reduced number of segments (12) on ESP8266 due to less available RAM
+-   Increased available effect data buffer (increases more if board has PSRAM)
+-   Custom palette editor mobile UI enhancement (by @imeszaros)
+-   Per port Auto Brightness Limiter (ABL)
+-   Use PSRAM for JSON buffer (double size, larger ledmaps, up to 2k)
+-   Reduced heap fragmentation by allocating ledmap array only once and not deallocating effect buffer
+-   HTTP retries on failed UI load
+-   UI Search: scroll to top (#3587 by @WoodyLetsCode)
+-   Return to inline iro.js and rangetouch.js (#3597 by @WoodyLetsCode)
+-   Better caching (#3591 by @WoodyLetsCode)
+-   Do not send 404 for missing `skin.css` (#3590 by @WoodyLetsCode)
+-   Simplified UI rework (#3511 by @WoodyLetsCode)
+-   Domoticz device ID for PIR and Temperature usermods
+-   Bugfix for UCS8904 `hasWhite()`
+-   Better search in UI (#3540 by @WoodyLetsCode)
+-   Seeding FastLED PRNG (#3552 by @TripleWhy)
+-   WIZ Smart Button support (#3547 by @micw)
+-   New button type (button switch, fix for #3537)
+-   Pixel Magic Tool update (#3483 by @ajotanc)
+-   Effect: 2D Matrix fix for gaps
+-   Bugfix #3526, #3533, #3561
+-   Spookier Halloween Eyes (#3501)
+-   Compile time options for Multi Relay usermod (#3498)
+-   Effect: Fix for Dissolve (#3502)
+-   Better reverse proxy support (nested paths)
+-   Implement global JSON API boolean toggle (i.e. instead of "var":true or "var":false -> "var":"t").
+-   Sort presets by ID
+-   Fix for #3641, #3312, #3367, #3637, #3646, #3447, #3632, #3496, #2922, #3593, #3514, #3522, #3578 (partial), #3606 (@WoodyLetsCode)
+-   Improved random bg image and added random bg image options (@WoodyLetsCode, #3481)
+-   Audio palettes (Audioreactive usermod, credit @netmindz)
+-   Better UI tooltips (@ajotnac, #3464)
+-   Better effect filters (filter dropdown)
+-   UDP sync fix (for #3487)
+-   Power button override (solves #3431)
+-   Additional HTTP request throttling (ESP8266)
+-   Additional UI/UX improvements
+-   Segment class optimisations (internal)
+-   ESP-NOW sync
+-   ESP-NOW Wiz remote JSON overrides (similar to IR JSON) & bugfixes
+-   Gamma correction for custom palettes (#3399).
+-   Restore presets from browser local storage
+-   Optional effect blending
+-   Restructured UDP Sync (internal)
+    -   Remove sync receive
+    -   Sync clarification
+-   Disallow 2D effects on non-2D segments
+-   Return of 2 audio simulations
+-   Bugfix in sync #3344 (internal)
+    -   remove excessive segments
+    -   ignore inactive segments if not syncing bounds
+    -   send UDP/WS on segment change
+    -   pop_back() when removing last segment
+
+#### Build 2403170
+-   WLED 0.14.2 release
+
+#### Build 2403110
+-   Beta WLED 0.14.2-b2
+-   New AsyncWebServer (improved performance and reduced memory use)
+-   New builds for ESP8266 with 160MHz CPU clock
+-   Fixing stairway usermod and adding buildflags (#3758 by @lost-hope)
+-   Fixing a potential array bounds violation in ESPDMX
+-   Reduced RAM usage (moved strings and TZ data (by @willmmiles) to PROGMEM)
+-   LockedJsonResponse: Release early if possible (by @willmmiles)
+
+#### Build 2402120
+-   Beta WLED 0.14.2-b1
+-   Possible fix for #3589 & partial fix for #3605
+-   Prevent JSON buffer clear after failed lock attempt
+-   Multiple analog button fix for #3549
+-   UM Audioreactive: add two compiler options (#3732 by @wled-install)
+-   Fix for #3693
+
+#### Build 2401141
+-   Official release of WLED 0.14.1
+-   Fix for #3566, #3665, #3672
+-   Sorting of palettes in custom palette editor (#3674 by @WoodyLetsCode)
+
+#### Build 2401060
+-   Version bump: 0.14.1-b3
+-   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
+-   Fix for #3632
+-   Custom palette editor mobile UI enhancement (#3617 by @imeszaros)
+-   changelog update
+
+#### Build 2312290
+-   Fix for #3622, #3613, #3609
+-   Various tweaks and fixes
+-   changelog update
+
+#### Build 2312230
+-   Version bump: 0.14.1-b2
+-   Fix for Pixel Magic button
+-   Fix for #2922 (option to force WiFi PHY mode to G on ESP8266)
+-   Fix for #3601, #3400 (incorrect sunrise/sunset, #3612 by @softhack007)
+
+#### Build 2312180
+-   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3515, #3522, #3533, #3508)
+-   Various other internal cleanups and optimisations
+
+#### Build 2311160
+-   Version bump: 0.14.1-b1
+-   Bugfixes (#3526, #3502, #3496, #3484, #3487, #3445, #3466, #3296, #3382, #3312)
+-   New feature: Sort presets by ID
+-   New usermod: LDR sensor (#3490 by @JeffWDH)
+-   Effect: Twinklefox & Tinklecat metadata fix
+-   Effect: separate #HH and #MM for Scrolling Text (#3480)
+-   SSDR usermod enhancements (#3368)
+-   PWM fan usermod enhancements (#3414)
+
+#### Build 2310010, build 2310130
+-   Release of WLED version 0.14.0 "Hoshi"
+-   Bugfixes for #3400, #3403, #3405
+-   minor HTML optimizations
+-   audioreactive: bugfix for UDP sound sync (partly initialized packets)
+
+#### Build 2309240
+-   Release of WLED beta version 0.14.0-b6 "Hoshi"
+-   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
+-   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
+
+#### Build 2309100
+-   Release of WLED beta version 0.14.0-b5 "Hoshi"
+-   New standard esp32 build with audioreactive
+-   Effect blending bugfixes, and minor optimizations
+
+#### Build 2309050
+-   Effect blending (#3311) (finally effect transitions!)
+    *WARNING*: May not work well with ESP8266, with plenty of segments or usermods (low RAM condition)!!!
+-   Added receive and send sync groups to JSON API (#3317) (you can change sync groups using preset)
+-   Internal temperature usermod (#3246)
+-   MQTT server and topic length overrides (#3354) (new build flags)
+-   Animated Staircase usermod enhancement (#3348) (on/off toggle/relay control)
+-   Added local time info to Info page (#3351)
+-   New effect: Rolling Balls (a.k.a. linear bounce) (#1039)
+-   Various bug fixes and enhancements.
+
+#### Build 2308110
+-   Release of WLED beta version 0.14.0-b4 "Hoshi"
+-   Reset effect data immediately upon mode change
+
+#### Build 2308030
+-   Improved random palette handling and blending
+-   Soap bugfix
+-   Fix ESP-NOW crash with AP mode Always
+
+#### Build 2307180
+-   Bus-level global buffering (#3280)
+-   Removed per-segment LED buffer (SEGMENT.leds)
+-   various fixes and improvements (ESP variants platform 5.3.0, effect optimizations, /json/cfg pin allocation)
+
 #### Build 2307130
 -   larger `oappend()` stack buffer (3.5k) for ESP32
 -   Preset cycle bugfix (#3262)
 -   Rotary encoder ALT fix for large LED count (#3276)
 -   effect updates (2D Plasmaball), `blur()` speedup
--   On/Off toggle from nodes view (may show unknow device type on older versions) (#3291)
+-   On/Off toggle from nodes view (may show unknown device type on older versions) (#3291)
 -   various fixes and improvements (ABL, crashes when changing presets with different segments)
 
 #### Build 2306270
@@ -18,7 +274,7 @@
 
 #### Build 2306210
 -   0.14.0-b3 release
--   respect global I2C in all usermods (no local initilaisation of I2C bus)
+-   respect global I2C in all usermods (no local initialization of I2C bus)
 -   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
 
 #### Build 2306180
@@ -44,7 +300,7 @@
 
 #### Build 2306020
 -   Support for segment sets (PR #3171)
--   Reduce sound simulation modes to 2 to facilitiate segment sets
+-   Reduce sound simulation modes to 2 to facilitate segment sets
 -   Trigger button immediately on press if all configured presets are the same (PR #3226)
 -   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
 
@@ -381,7 +637,7 @@
 
 -   Added application level pong websockets reply (#2139)
 -   Use AsyncTCP 1.0.3 as it mitigates the flickering issue from 0.13.0-b2
--   Fixed transition manually updated in preset overriden by field value
+-   Fixed transition manually updated in preset overridden by field value
 
 #### Build 2108050
 
@@ -910,7 +1166,7 @@
 
 #### Build 2011040
 
--   Inversed Rain direction (fixes #1147)
+-   Inverted Rain direction (fixes #1147)
 
 #### Build 2011010
 
@@ -1121,7 +1377,7 @@
 
 -   Added module info page to web UI
 -   Added realtime override functionality to web UI
--   Added individial segment power and brightness to web UI
+-   Added individual segment power and brightness to web UI
 -   Added feature to one-click select single segment only by tapping segment name
 -   Removed palette jumping to default if color is changed
 

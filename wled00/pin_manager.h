@@ -41,7 +41,7 @@ enum struct PinOwner : uint8_t {
   UM_Temperature       = USERMOD_ID_TEMPERATURE,        // 0x03 // Usermod "usermod_temperature.h"
   // #define USERMOD_ID_FIXNETSERVICES                  // 0x04 // Usermod "usermod_Fix_unreachable_netservices.h" -- Does not allocate pins
   UM_PIR               = USERMOD_ID_PIRSWITCH,          // 0x05 // Usermod "usermod_PIR_sensor_switch.h"
-  // #define USERMOD_ID_IMU                             // 0x06 // Usermod "usermod_mpu6050_imu.h" -- Uses "standard" HW_I2C pins
+  UM_IMU               = USERMOD_ID_IMU,                // 0x06 // Usermod "usermod_mpu6050_imu.h" -- Interrupt pin
   UM_FourLineDisplay   = USERMOD_ID_FOUR_LINE_DISP,     // 0x07 // Usermod "usermod_v2_four_line_display.h -- May use "standard" HW_I2C pins
   UM_RotaryEncoderUI   = USERMOD_ID_ROTARY_ENC_UI,      // 0x08 // Usermod "usermod_v2_rotary_encoder_ui.h"
   // #define USERMOD_ID_AUTO_SAVE                       // 0x09 // Usermod "usermod_v2_auto_save.h" -- Does not allocate pins
@@ -60,7 +60,9 @@ enum struct PinOwner : uint8_t {
   UM_BME280            = USERMOD_ID_BME280,             // 0x1E // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
   UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE,      // 0x20 // Usermod "audio_reactive.h"
   UM_SdCard            = USERMOD_ID_SD_CARD,            // 0x25 // Usermod "usermod_sd_card.h"
-  UM_PWM_OUTPUTS       = USERMOD_ID_PWM_OUTPUTS         // 0x26 // Usermod "usermod_pwm_outputs.h"
+  UM_PWM_OUTPUTS       = USERMOD_ID_PWM_OUTPUTS,        // 0x26 // Usermod "usermod_pwm_outputs.h"
+  UM_LDR_DUSK_DAWN     = USERMOD_ID_LDR_DUSK_DAWN,      // 0x2B // Usermod "usermod_LDR_Dusk_Dawn_v2.h"
+  UM_MAX17048          = USERMOD_ID_MAX17048            // 0x2F // Usermod "usermod_max17048.h"
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
@@ -107,11 +109,11 @@ class PinManagerClass {
   inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
 
   // will return true for reserved pins
-  bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None);
+  bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None) const;
   // will return false for reserved pins
-  bool isPinOk(byte gpio, bool output = true);
+  bool isPinOk(byte gpio, bool output = true) const;
 
-  PinOwner getPinOwner(byte gpio);
+  PinOwner getPinOwner(byte gpio) const;
 
   #ifdef ARDUINO_ARCH_ESP32
   byte allocateLedc(byte channels);

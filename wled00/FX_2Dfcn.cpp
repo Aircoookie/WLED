@@ -36,14 +36,9 @@
 // so matrix should disable regular ledmap processing
 void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
-  // erase old ledmap, just in case.
-  if (customMappingTable != nullptr) delete[] customMappingTable;
-  customMappingTable = nullptr;
-  customMappingSize = 0;
-
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
-    // calculate width dynamically because it will have gaps
+    // calculate width dynamically because it may have gaps
     Segment::maxWidth = 1;
     Segment::maxHeight = 1;
     for (size_t i = 0; i < panel.size(); i++) {
@@ -68,15 +63,18 @@ void WS2812FX::setUpMatrix() {
       return;
     }
 
-    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+    customMappingSize = 0; // prevent use of mapping if anything goes wrong
 
-    if (customMappingTable != nullptr) {
-      customMappingSize = Segment::maxWidth * Segment::maxHeight;
+    if (customMappingTable) delete[] customMappingTable;
+    customMappingTable = new uint16_t[getLengthTotal()];
+
+    if (customMappingTable) {
+      customMappingSize = getLengthTotal();
 
       // fill with empty in case we don't fill the entire matrix
-      for (size_t i = 0; i< customMappingSize; i++) {
-        customMappingTable[i] = (uint16_t)-1;
-      }
+      unsigned matrixSize = Segment::maxWidth * Segment::maxHeight;
+      for (unsigned i = 0; i<matrixSize; i++) customMappingTable[i] = 0xFFFFU;
+      for (unsigned i = matrixSize; i<getLengthTotal(); i++) customMappingTable[i] = i; // trailing LEDs for ledmap (after matrix) if it exist
 
       // we will try to load a "gap" array (a JSON file)
       // the array has to have the same amount of values as mapping array (or larger)
@@ -94,14 +92,14 @@ void WS2812FX::setUpMatrix() {
         DEBUG_PRINT(F("Reading LED gap from "));
         DEBUG_PRINTLN(fileName);
         // read the array into global JSON buffer
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        if (readObjectFromFile(fileName, nullptr, pDoc)) {
           // the array is similar to ledmap, except it has only 3 values:
           // -1 ... missing pixel (do not increase pixel count)
           //  0 ... inactive pixel (it does count, but should be mapped out (-1))
           //  1 ... active pixel (it will count and will be mapped)
-          JsonArray map = doc.as<JsonArray>();
+          JsonArray map = pDoc->as<JsonArray>();
           gapSize = map.size();
-          if (!map.isNull() && gapSize >= customMappingSize) { // not an empty map
+          if (!map.isNull() && gapSize >= matrixSize) { // not an empty map
             gapTable = new int8_t[gapSize];
             if (gapTable) for (size_t i = 0; i < gapSize; i++) {
               gapTable[i] = constrain(map[i], -1, 1);
@@ -134,14 +132,14 @@ void WS2812FX::setUpMatrix() {
 
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
-      for (uint16_t i=0; i<customMappingSize; i++) {
+      for (unsigned i=0; i<customMappingSize; i++) {
         if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
-        DEBUG_PRINTF("%4d,", customMappingTable[i]);
+        DEBUG_PRINTF_P(PSTR("%4d,"), customMappingTable[i]);
       }
       DEBUG_PRINTLN();
       #endif
     } else { // memory allocation error
-      DEBUG_PRINTLN(F("Ledmap alloc error."));
+      DEBUG_PRINTLN(F("ERROR 2D LED map allocation error."));
       isMatrix = false;
       panels = 0;
       panel.clear();
@@ -155,31 +153,6 @@ void WS2812FX::setUpMatrix() {
 #endif
 }
 
-// absolute matrix version of setPixelColor()
-void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
-{
-#ifndef WLED_DISABLE_2D
-  if (!isMatrix) return; // not a matrix set-up
-  uint16_t index = y * Segment::maxWidth + x;
-#else
-  uint16_t index = x;
-#endif
-  if (index < customMappingSize) index = customMappingTable[index];
-  if (index >= _length) return;
-  busses.setPixelColor(index, col);
-}
-
-// returns RGBW values of pixel
-uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
-#ifndef WLED_DISABLE_2D
-  uint16_t index = (y * Segment::maxWidth + x);
-#else
-  uint16_t index = x;
-#endif
-  if (index < customMappingSize) index = customMappingTable[index];
-  if (index >= _length) return 0;
-  return busses.getPixelColor(index);
-}
 
 ///////////////////////////////////////////////////////////
 // Segment:: routines
@@ -188,22 +161,19 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t /*IRAM_ATTR*/ Segment::XY(uint16_t x, uint16_t y) {
-  uint16_t width  = virtualWidth();   // segment width in logical pixels
-  uint16_t height = virtualHeight();  // segment height in logical pixels
-  if (width == 0) return 0;           // softhack007 avoid div/0
-  if (height == 0) return (x%width);  // softhack007 avoid div/0
-  return (x%width) + (y%height) * width;
+uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y)
+{
+  uint16_t width  = virtualWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+  uint16_t height = virtualHeight();  // segment height in logical pixels (is always >= 1)
+  return isActive() ? (x%width) + (y%height) * width : 0;
 }
 
-void /*IRAM_ATTR*/ Segment::setPixelColorXY(int x, int y, uint32_t col)
+void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
-  if (Segment::maxHeight==1) return; // not a matrix set-up
+  if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
-  if (leds) leds[XY(x,y)] = col;
-
-  uint8_t _bri_t = currentBri(on ? opacity : 0);
+  uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -220,23 +190,29 @@ void /*IRAM_ATTR*/ Segment::setPixelColorXY(int x, int y, uint32_t col)
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return;  // if pixel would fall out of segment just exit
 
+  uint32_t tmpCol = col;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
     for (int g = 0; g < grouping; g++) { // groupping horizontally
       uint16_t xX = (x+g), yY = (y+j);
       if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
-      strip.setPixelColorXY(start + xX, startY + yY, col);
+#ifndef WLED_DISABLE_MODE_BLEND
+      // if blending modes, blend with underlying pixel
+      if (_modeBlend) tmpCol = color_blend(strip.getPixelColorXY(start + xX, startY + yY), col, 0xFFFFU - progress(), true);
+#endif
+
+      strip.setPixelColorXY(start + xX, startY + yY, tmpCol);
 
       if (mirror) { //set the corresponding horizontally mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
-        else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
+        if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
+        else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, tmpCol);
       }
       if (mirror_y) { //set the corresponding vertically mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
-        else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
+        if (transpose) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, tmpCol);
+        else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, col);
+        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, tmpCol);
       }
     }
   }
@@ -245,7 +221,7 @@ void /*IRAM_ATTR*/ Segment::setPixelColorXY(int x, int y, uint32_t col)
 // anti-aliased version of setPixelColorXY()
 void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 {
-  if (Segment::maxHeight==1) return; // not a matrix set-up
+  if (!isActive()) return; // not active
   if (x<0.0f || x>1.0f || y<0.0f || y>1.0f) return; // not normalized
 
   const uint16_t cols = virtualWidth();
@@ -287,9 +263,9 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 }
 
 // returns RGBW values of pixel
-uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
-  int i = XY(x,y);
-  if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
+uint32_t IRAM_ATTR Segment::getPixelColorXY(uint16_t x, uint16_t y) {
+  if (!isActive()) return 0; // not active
+  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
   if (transpose) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
@@ -299,38 +275,9 @@ uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   return strip.getPixelColorXY(start + x, startY + y);
 }
 
-// Blends the specified color with the existing pixel color.
-void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) {
-  setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend));
-}
-
-// Adds the specified color with the existing pixel color perserving color balance.
-void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
-  uint32_t col = getPixelColorXY(x,y);
-  uint8_t r = R(col);
-  uint8_t g = G(col);
-  uint8_t b = B(col);
-  uint8_t w = W(col);
-  if (fast) {
-    r = qadd8(r, R(color));
-    g = qadd8(g, G(color));
-    b = qadd8(b, B(color));
-    w = qadd8(w, W(color));
-    col = RGBW32(r,g,b,w);
-  } else {
-    col = color_add(col, color);
-  }
-  setPixelColorXY(x, y, col);
-}
-
-void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
-  CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
-  setPixelColorXY(x, y, pix);
-}
-
 // blurRow: perform a blur on a row of a rectangular matrix
 void Segment::blurRow(uint16_t row, fract8 blur_amount) {
+  if (!isActive() || blur_amount == 0) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
@@ -339,9 +286,9 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint_fast16_t x = 0; x < cols; x++) {
+  for (unsigned x = 0; x < cols; x++) {
     CRGB cur = getPixelColorXY(x, row);
-    uint32_t before = uint32_t(cur);     // remember color before blur
+    CRGB before = cur;     // remember color before blur
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
@@ -350,7 +297,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
       CRGB prev = CRGB(getPixelColorXY(x-1, row)) + part;
       setPixelColorXY(x-1, row, prev);
     }
-    if (before != uint32_t(cur))         // optimization: only set pixel if color has changed
+    if (before != cur)         // optimization: only set pixel if color has changed
       setPixelColorXY(x, row, cur);
     carryover = part;
   }
@@ -358,6 +305,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
 
 // blurCol: perform a blur on a column of a rectangular matrix
 void Segment::blurCol(uint16_t col, fract8 blur_amount) {
+  if (!isActive() || blur_amount == 0) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
@@ -366,10 +314,10 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint_fast16_t y = 0; y < rows; y++) {
+  for (unsigned y = 0; y < rows; y++) {
     CRGB cur = getPixelColorXY(col, y);
     CRGB part = cur;
-    uint32_t before = uint32_t(cur);     // remember color before blur
+    CRGB before = cur;     // remember color before blur
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
@@ -377,7 +325,7 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
       CRGB prev = CRGB(getPixelColorXY(col, y-1)) + part;
       setPixelColorXY(col, y-1, prev);
     }
-    if (before != uint32_t(cur))         // optimization: only set pixel if color has changed
+    if (before != cur)         // optimization: only set pixel if color has changed
       setPixelColorXY(col, y, cur);
     carryover = part;
   }
@@ -385,6 +333,7 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
 
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
 void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
+  if (!isActive() || blur_amount == 0) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const uint16_t dim1 = vertical ? rows : cols;
@@ -394,7 +343,7 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
   const float keep = 3.f - 2.f*seep;
   // 1D box blur
   CRGB tmp[dim1];
-  for (uint16_t j = 0; j < dim1; j++) {
+  for (int j = 0; j < dim1; j++) {
     uint16_t x = vertical ? i : j;
     uint16_t y = vertical ? j : i;
     int16_t xp = vertical ? x : x-1;  // "signed" to prevent underflow
@@ -410,7 +359,7 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
     b = (curr.b*keep + (prev.b + next.b)*seep) / 3;
     tmp[j] = CRGB(r,g,b);
   }
-  for (uint16_t j = 0; j < dim1; j++) {
+  for (int j = 0; j < dim1; j++) {
     uint16_t x = vertical ? i : j;
     uint16_t y = vertical ? j : i;
     setPixelColorXY(x, y, tmp[j]);
@@ -433,10 +382,11 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
 
 void Segment::blur1d(fract8 blur_amount) {
   const uint16_t rows = virtualHeight();
-  for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount);
+  for (unsigned y = 0; y < rows; y++) blurRow(y, blur_amount);
 }
 
 void Segment::moveX(int8_t delta, bool wrap) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (!delta || abs(delta) >= cols) return;
@@ -454,6 +404,7 @@ void Segment::moveX(int8_t delta, bool wrap) {
 }
 
 void Segment::moveY(int8_t delta, bool wrap) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (!delta || abs(delta) >= rows) return;
@@ -489,6 +440,7 @@ void Segment::move(uint8_t dir, uint8_t delta, bool wrap) {
 }
 
 void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  if (!isActive() || radius == 0) return; // not active
   // Bresenham’s Algorithm
   int d = 3 - (2*radius);
   int y = radius, x = 0;
@@ -513,6 +465,7 @@ void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  if (!isActive() || radius == 0) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for (int16_t y = -radius; y <= radius; y++) {
@@ -526,15 +479,17 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
 }
 
 void Segment::nscale8(uint8_t scale) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+  for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
     setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
 }
 
 //line function
 void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) {
+  if (!isActive()) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
@@ -558,7 +513,8 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, int8_t rotate) {
+  if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
@@ -570,9 +526,6 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
-    int16_t y0 = y + i;
-    if (y0 < 0) continue; // drawing off-screen
-    if (y0 >= rows) break; // drawing off-screen
     uint8_t bits = 0;
     switch (font) {
       case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 5x8 font
@@ -584,8 +537,16 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     }
     col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
     for (int j = 0; j<w; j++) { // character width
-      int16_t x0 = x + (w-1) - j;
-      if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
+      int x0, y0;
+      switch (rotate) {
+        case -1: x0 = x + (h-1) - i; y0 = y + (w-1) - j; break; // -90 deg
+        case -2:
+        case  2: x0 = x + j;         y0 = y + (h-1) - i; break; // 180 deg
+        case  1: x0 = x + i;         y0 = y + j;         break; // +90 deg
+        default: x0 = x + (w-1) - j; y0 = y + i;         break; // no rotation
+      }
+      if (x0 < 0 || x0 >= cols || y0 < 0 || y0 >= rows) continue; // drawing off-screen
+      if (((bits>>(j+(8-w))) & 0x01)) { // bit set
         setPixelColorXY(x0, y0, col);
       }
     }
@@ -594,6 +555,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
 void Segment::wu_pixel(uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+  if (!isActive()) return; // not active
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel

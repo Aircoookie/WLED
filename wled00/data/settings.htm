@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>WLED Settings</title>
 	<script>
 		var d=document;
@@ -40,9 +40,10 @@
 				let path = l.pathname;
 				let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
 				if (paths.length > 1) {
+					paths.pop(); // remove "settings"
 					locproto = l.protocol;
 					loc = true;
-					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
 				}
 			}
 			loadJS(getURL('/settings/s.js?p=0'), false);	// If we set async false, file is loaded and executed, then next statement is processed
@@ -80,7 +81,7 @@
 <button type=submit id="b" onclick="window.location=getURL('/')">Back</button>
 <button type="submit" onclick="window.location=getURL('/settings/wifi')">WiFi Setup</button>
 <button type="submit" onclick="window.location=getURL('/settings/leds')">LED Preferences</button>
-<button id="2dbtn" style="display:none;" type="submit" onclick="window.location=getURL('/settings/2D')">2D Configuration</button>
+<button id="2dbtn" type="submit" onclick="window.location=getURL('/settings/2D')">2D Configuration</button>
 <button type="submit" onclick="window.location=getURL('/settings/ui')">User Interface</button>
 <button id="dmxbtn" style="display:none;" type="submit" onclick="window.location=getURL('/settings/dmx')">DMX Output</button>
 <button type="submit" onclick="window.location=getURL('/settings/sync')">Sync Interfaces</button>

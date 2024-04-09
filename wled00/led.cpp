@@ -37,12 +37,12 @@ void applyValuesToSelectedSegs()
 
     if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
     if (effectIntensity != selsegPrev.intensity) {seg.intensity = effectIntensity; stateChanged = true;}
-    if (effectPalette   != selsegPrev.palette)   {seg.setPalette(effectPalette);   stateChanged = true;}
-    if (effectCurrent   != selsegPrev.mode)      {seg.setMode(effectCurrent);      stateChanged = true;}
+    if (effectPalette   != selsegPrev.palette)   {seg.setPalette(effectPalette);}
+    if (effectCurrent   != selsegPrev.mode)      {seg.setMode(effectCurrent);}
     uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
-    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0);           stateChanged = true;}
-    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1);           stateChanged = true;}
+    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0);}
+    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1);}
   }
 }
 
@@ -134,11 +134,9 @@ void stateUpdated(byte callMode) {
   usermods.onStateChange(callMode);
 
   if (fadeTransition) {
-    //set correct delay if not using notification delay
-    if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay; // load actual transition duration
-    jsonTransitionOnce = false;
-    strip.setTransition(transitionDelayTemp);
-    if (transitionDelayTemp == 0) {
+    if (strip.getTransition() == 0) {
+      jsonTransitionOnce = false;
+      transitionActive = false;
       applyFinalBri();
       strip.trigger();
       return;
@@ -152,7 +150,6 @@ void stateUpdated(byte callMode) {
     transitionActive = true;
     transitionStartTime = millis();
   } else {
-    strip.setTransition(0);
     applyFinalBri();
     strip.trigger();
   }
@@ -161,8 +158,12 @@ void stateUpdated(byte callMode) {
 
 void updateInterfaces(uint8_t callMode)
 {
+  if (!interfaceUpdateCallMode || millis() - lastInterfaceUpdate < INTERFACE_UPDATE_COOLDOWN) return;
+
   sendDataWs();
   lastInterfaceUpdate = millis();
+  interfaceUpdateCallMode = 0; //disable further updates
+
   if (callMode == CALL_MODE_WS_SEND) return;
 
   #ifndef WLED_DISABLE_ALEXA
@@ -171,31 +172,30 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
-  doPublishMqtt = true;
-  interfaceUpdateCallMode = 0; //disable
+  #ifndef WLED_DISABLE_MQTT
+  publishMqtt();
+  #endif
 }
 
 
 void handleTransitions()
 {
   //handle still pending interface update
-  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN) updateInterfaces(interfaceUpdateCallMode);
-#ifndef WLED_DISABLE_MQTT
-  if (doPublishMqtt) publishMqtt();
-#endif
+  updateInterfaces(interfaceUpdateCallMode);
 
-  if (transitionActive && transitionDelayTemp > 0)
-  {
-    float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;
-    if (tper >= 1.0)
-    {
-      strip.setTransitionMode(false);
+  if (transitionActive && strip.getTransition() > 0) {
+    float tper = (millis() - transitionStartTime)/(float)strip.getTransition();
+    if (tper >= 1.0f) {
+      strip.setTransitionMode(false); // stop all transitions
+      // restore (global) transition time if not called from UDP notifier or single/temporary transition from JSON (also playlist)
+      if (jsonTransitionOnce) strip.setTransition(transitionDelay);
       transitionActive = false;
+      jsonTransitionOnce = false;
       tperLast = 0;
       applyFinalBri();
       return;
     }
-    if (tper - tperLast < 0.004) return;
+    if (tper - tperLast < 0.004f) return;
     tperLast = tper;
     briT = briOld + ((bri - briOld) * tper);
 
@@ -205,7 +205,7 @@ void handleTransitions()
 
 
 // legacy method, applies values from col, effectCurrent, ... to selected segments
-void colorUpdated(byte callMode){
+void colorUpdated(byte callMode) {
   applyValuesToSelectedSegs();
   stateUpdated(callMode);
 }
@@ -213,7 +213,6 @@ void colorUpdated(byte callMode){
 
 void handleNightlight()
 {
-  static unsigned long lastNlUpdate;
   unsigned long now = millis();
   if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; // take care of millis() rollover
   if (now - lastNlUpdate < 100) return; // allow only 10 NL updates per second
@@ -224,7 +223,7 @@ void handleNightlight()
     if (!nightlightActiveOld) //init
     {
       nightlightStartTime = millis();
-      nightlightDelayMs = (int)(nightlightDelayMins*60000);
+      nightlightDelayMs = (unsigned)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
       for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
