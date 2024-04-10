@@ -7,6 +7,7 @@
 #include <driver/i2s.h>
 #include <driver/adc.h>
 
+#include <math.h>
 #endif
 
 #if defined(ARDUINO_ARCH_ESP32) && (defined(WLED_DEBUG) || defined(SR_DEBUG))
@@ -545,12 +546,13 @@ void FFTcode(void * parameter)
       }
     }
 
+    // set imaginary parts to 0
+    memset(vImag, 0, sizeof(vImag));
+
     // find highest sample in the batch, and count zero crossings
     float maxSample = 0.0f;                         // max sample from FFT batch
     uint_fast16_t newZeroCrossingCount = 0;
     for (int i=0; i < samplesFFT; i++) {
-	    // set imaginary parts to 0
-      vImag[i] = 0;
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
@@ -558,9 +560,8 @@ void FFTcode(void * parameter)
       // WLED-MM/TroyHacks: Calculate zero crossings
       //
       if (i < (samplesFFT-1)) {
-        if((vReal[i] >= 0 && vReal[i+1] < 0) || (vReal[i] < 0 && vReal[i+1] >= 0)) {
+        if (__builtin_signbit(vReal[i]) != __builtin_signbit(vReal[i+1]))  // test sign bit: sign changed -> zero crossing
             newZeroCrossingCount++;
-        }
       }
     }
     newZeroCrossingCount = (newZeroCrossingCount*2)/3; // reduce value so it typicially stays below 256
