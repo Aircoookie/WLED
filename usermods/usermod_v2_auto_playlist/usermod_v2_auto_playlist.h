@@ -15,7 +15,7 @@ class AutoPlaylistUsermod : public Usermod {
   #if 0
     // experimental parameters by softhack007 - more balanced but need testing
     const uint_fast32_t MAX_DISTANCE_TRACKER = 184; // maximum accepted distance_tracker
-    const uint_fast32_t ENERGY_SCALE = 24000;
+    const uint_fast32_t ENERGY_SCALE = 14000;
     const float FILTER_SLOW1 = 0.0075f;  // for "slow" energy
     const float FILTER_SLOW2 = 0.005f;   // for "slow" lfc / zcr
     const float FILTER_FAST1 = 0.2f;     // for "fast" energy
@@ -112,10 +112,10 @@ class AutoPlaylistUsermod : public Usermod {
       energy = 0;
 
       for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
-        energy += fftResult[i];
+        uint_fast32_t amplitude = fftResult[i];
+        energy += amplitude * amplitude;
       }
       
-      energy *= energy;
       energy /= ENERGY_SCALE; // scale down so we get 0 sometimes
 
       uint8_t lfc = fftResult[0];
