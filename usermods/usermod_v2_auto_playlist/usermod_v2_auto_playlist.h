@@ -15,7 +15,7 @@ class AutoPlaylistUsermod : public Usermod {
   #if 0
     // experimental parameters by softhack007 - more balanced but need testing
     const uint_fast32_t MAX_DISTANCE_TRACKER = 184; // maximum accepted distance_tracker
-    const uint_fast32_t ENERGY_SCALE = 14000;
+    const uint_fast32_t ENERGY_SCALE = 1500;
     const float FILTER_SLOW1 = 0.0075f;  // for "slow" energy
     const float FILTER_SLOW2 = 0.005f;   // for "slow" lfc / zcr
     const float FILTER_FAST1 = 0.2f;     // for "fast" energy
@@ -24,7 +24,8 @@ class AutoPlaylistUsermod : public Usermod {
   #else
     // parameters used by TroyHacks / netmindz - behaviour is mainly driven by "energy"
     const uint_fast32_t MAX_DISTANCE_TRACKER = 128; // maximum accepted distance_tracker
-    const uint_fast32_t ENERGY_SCALE = 10000;
+    //const uint_fast32_t ENERGY_SCALE = 10000;
+    const uint_fast32_t ENERGY_SCALE = 2000;
     //     softhack007: original code used FILTER_SLOW = 0.002f
     const float FILTER_SLOW1 = 0.01f;   // for "slow" energy
     const float FILTER_SLOW2 = 0.01f;   // for "slow" lfc / zcr
@@ -45,6 +46,9 @@ class AutoPlaylistUsermod : public Usermod {
     unsigned long change_timer = millis();
     unsigned long autochange_timer = millis();
     float avg_volumeSmth = 0;
+
+    // fftesult de-scaling factors: 2.8f / fftResultPink[]
+    const float fftDeScaler[NUM_GEQ_CHANNELS] = {2.8/2.35, 2.8/1.32, 2.8/1.32, 2.8/1.40, 2.8/1.48, 2.8/1.57, 2.8/1.68, 2.8/1.80, 2.8/1.89, 2.8/1.95, 2.8/2.14, 2.8/2.26, 2.8/2.50, 2.8/2.90, 2.8/4.20, 2.8/6.50}; 
 
     uint_fast32_t energy = 0;
 
@@ -112,8 +116,15 @@ class AutoPlaylistUsermod : public Usermod {
       energy = 0;
 
       for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
+#if 1
+        // make an attempt to undo some "trying to look better" FFT manglings in AudioReactive postProcessFFTResults()
+        float amplitude = float(fftResult[i]) * fftDeScaler[i];   // undo "pink noise" scaling
+        amplitude /= 0.85f + (float(i)/4.5f);                     // undo extra up-scaling for high frequencies
+        energy += roundf(amplitude * amplitude);                  // calc energy from amplitude
+#else
         uint_fast32_t amplitude = fftResult[i];
         energy += amplitude * amplitude;
+#endif
       }
       
       energy /= ENERGY_SCALE; // scale down so we get 0 sometimes
