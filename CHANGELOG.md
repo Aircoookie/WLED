@@ -1,5 +1,22 @@
 ## WLED changelog
 
+#### Build 2404100
+-   Internals: #3859, #3862, #3873, #3875
+-   Prefer I2S1 over RMT on ESP32
+-   usermod for Adafruit MAX17048 (#3667 by @ccruz09)
+-   Runtime detection of ESP32 PICO, general PSRAM support
+-   Extend JSON API "info" object
+    - add "clock" - CPU clock in MHz
+    - add "flash" - flash size in MB
+-   Fix for #3879
+-   Analog PWM fix for ESP8266 (#3887 by @gaaat98)
+-   Fix for #3870 (#3880 by @DedeHai)
+-   ESP32 S3/S2 touch fix (#3798 by @DedeHai)
+-   PIO env. PSRAM fix for S3 & S3 with 4M flash
+    - audioreactive always included for S3 & S2
+-   Fix for #3889
+-   BREAKING: Effect: modified KITT (Scanner) (#3763)
+
 #### Build 2403280
 -   Individual color channel control for JSON API (fixes #3860)
     - "col":[int|string|object|array, int|string|object|array, int|string|object|array]
@@ -16,7 +33,7 @@
 -   v0.15.0-b2
 -   WS2805 support (RGB + WW + CW, 600kbps)
 -   Unified PSRAM use
--   NeoPixelBus v2.7.9 (for future WS2805 support)
+-   NeoPixelBus v2.7.9
 -   Ubiquitous PSRAM mode for all variants of ESP32
 -   SSD1309_64 I2C Support for FLD Usermod (#3836 by @THATDONFC)
 -   Palette cycling fix (add support for `{"seg":[{"pal":"X~Y~"}]}` or `{"seg":[{"pal":"X~Yr"}]}`)
