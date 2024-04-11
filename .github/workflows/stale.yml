@@ -14,6 +14,7 @@ jobs:
           days-before-close: 7
           exempt-issue-labels: 'pinned,keep,enhancement,confirmed'
           exempt-pr-labels: 'pinned,keep,enhancement,confirmed'
+          exempt-all-milestones: true
           stale-issue-message: >
             Hey! This issue has been open for quite some time without any new comments now.
             It will be closed automatically in a week if no further activity occurs.
