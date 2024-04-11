@@ -1,7 +1,7 @@
 name: 'Close stale issues and PRs'
 on:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 6,12,18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -23,5 +23,4 @@ jobs:
             Hey! This pull request has been open for quite some time without any new comments now.
             It will be closed automatically in a week if no further activity occurs.
             
-            Thank you for using WLED! ✨
-          debug-only: true
+            Thank you for contributing to WLED! ❤️
