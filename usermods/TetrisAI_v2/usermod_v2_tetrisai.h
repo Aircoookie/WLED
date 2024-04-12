@@ -9,8 +9,6 @@
 
 typedef struct TetrisAI_data
 {
-  unsigned long lastTime = 0;
-  TetrisAIGame tetris;
   uint8_t   intelligence;
   uint8_t   rotate;
   bool      showNext;
@@ -96,6 +94,8 @@ void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
 ////////////////////////////
 uint16_t mode_2DTetrisAI()
 {
+  static unsigned long lastTime = 0;
+
   if (!strip.isMatrix || !SEGENV.allocateData(sizeof(tetrisai_data)))
   {
     // not a 2D set-up
@@ -116,14 +116,16 @@ uint16_t mode_2DTetrisAI()
   //range 0 - 16
   tetrisai_data->colorInc = SEGMENT.custom2 >> 4;
 
-  if (!tetrisai_data->tetris || (tetrisai_data->tetris.nLookAhead != nLookAhead
+  static TetrisAIGame tetris(cols < 32 ? cols : 32, rows, 1, piecesData, numPieces);
+
+  if (tetris.nLookAhead != nLookAhead
     || tetrisai_data->showNext != SEGMENT.check1
     || tetrisai_data->showBorder != SEGMENT.check2
-      )
     )
   {
     tetrisai_data->showNext = SEGMENT.check1;
     tetrisai_data->showBorder = SEGMENT.check2;
+    tetris.nLookAhead = nLookAhead;
 
     //not more than 32 as this is the limit of this implementation
     uint8_t gridWidth = cols < 32 ? cols : 32;
@@ -142,7 +144,7 @@ uint16_t mode_2DTetrisAI()
       }
     }
 
-    tetrisai_data->tetris = TetrisAIGame(gridWidth, gridHeight, nLookAhead, piecesData, numPieces);
+    tetris = TetrisAIGame(gridWidth, gridHeight, nLookAhead, piecesData, numPieces);
     SEGMENT.fill(SEGCOLOR(1));
   }
 
@@ -151,48 +153,48 @@ uint16_t mode_2DTetrisAI()
     tetrisai_data->intelligence = SEGMENT.custom1;
     double dui = 0.2 - (0.2 * (tetrisai_data->intelligence / 255.0));
 
-    tetrisai_data->tetris.ai.aHeight = -0.510066 + dui;
-    tetrisai_data->tetris.ai.fullLines = 0.760666 - dui;
-    tetrisai_data->tetris.ai.holes = -0.35663 + dui;
-    tetrisai_data->tetris.ai.bumpiness = -0.184483 + dui;
+    tetris.ai.aHeight = -0.510066 + dui;
+    tetris.ai.fullLines = 0.760666 - dui;
+    tetris.ai.holes = -0.35663 + dui;
+    tetris.ai.bumpiness = -0.184483 + dui;
   }
 
-  if (tetrisai_data->tetris.state == TetrisAIGame::ANIMATE_MOVE)
+  if (tetris.state == TetrisAIGame::ANIMATE_MOVE)
   {
-    if (millis() - tetrisai_data->lastTime > msDelayMove)
+    if (millis() - lastTime > msDelayMove)
     {
-      drawGrid(&tetrisai_data->tetris, tetrisai_data);
-      tetrisai_data->lastTime = millis();
-      tetrisai_data->tetris.poll();
+      drawGrid(&tetris, tetrisai_data);
+      lastTime = millis();
+      tetris.poll();
     }
   }
-  else if (tetrisai_data->tetris.state == TetrisAIGame::ANIMATE_GAME_OVER)
+  else if (tetris.state == TetrisAIGame::ANIMATE_GAME_OVER)
   {
-    if (millis() - tetrisai_data->lastTime > msDelayGameOver)
+    if (millis() - lastTime > msDelayGameOver)
     {
-      drawGrid(&tetrisai_data->tetris, tetrisai_data);
-      tetrisai_data->lastTime = millis();
-      tetrisai_data->tetris.poll();
+      drawGrid(&tetris, tetrisai_data);
+      lastTime = millis();
+      tetris.poll();
     }
   }
-  else if (tetrisai_data->tetris.state == TetrisAIGame::FIND_BEST_MOVE)
+  else if (tetris.state == TetrisAIGame::FIND_BEST_MOVE)
   {
     if (SEGMENT.check3)
     {
       if(tetrisai_data->mistaceCountdown == 0)
       {
-        tetrisai_data->tetris.ai.findWorstMove = true;
-        tetrisai_data->tetris.poll();
-        tetrisai_data->tetris.ai.findWorstMove = false;
+        tetris.ai.findWorstMove = true;
+        tetris.poll();
+        tetris.ai.findWorstMove = false;
         tetrisai_data->mistaceCountdown = SEGMENT.custom3;
       }
       tetrisai_data->mistaceCountdown--;      
     }
-    tetrisai_data->tetris.poll();
+    tetris.poll();
   }
   else
   {
-    tetrisai_data->tetris.poll();
+    tetris.poll();
   }
 
   return FRAMETIME;
