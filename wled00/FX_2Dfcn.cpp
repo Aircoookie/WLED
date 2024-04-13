@@ -218,6 +218,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   }
 }
 
+#ifdef WLED_USE_AA_PIXELS
 // anti-aliased version of setPixelColorXY()
 void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 {
@@ -261,6 +262,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
     setPixelColorXY(uint16_t(roundf(fX)), uint16_t(roundf(fY)), col);
   }
 }
+#endif
 
 // returns RGBW values of pixel
 uint32_t IRAM_ATTR Segment::getPixelColorXY(uint16_t x, uint16_t y) {

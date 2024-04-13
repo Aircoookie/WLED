@@ -1,5 +1,10 @@
 ## WLED changelog
 
+#### Build 2404120
+-   v0.15.0-b3
+-   fix for #3896 & WS2815 current saving
+-   conditional compile for AA setPixelColor()
+
 #### Build 2404100
 -   Internals: #3859, #3862, #3873, #3875
 -   Prefer I2S1 over RMT on ESP32
