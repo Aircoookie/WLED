@@ -694,8 +694,6 @@ function parseInfo(i) {
 function populateInfo(i)
 {
 	var cn="";
-	var heap = i.freeheap/1024;
-	heap = heap.toFixed(1);
 	var pwr = i.leds.pwr;
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
@@ -720,11 +718,13 @@ ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
 ${inforow("Time",i.time)}
-${inforow("Free heap",heap," kB")}
+${inforow("Free heap",(i.freeheap/1024).toFixed(1)," kB")}
 ${i.psram?inforow("Free PSRAM",(i.psram/1024).toFixed(1)," kB"):""}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
 ${inforow("MAC address",i.mac)}
+${inforow("CPU clock",i.clock," MHz")}
+${inforow("Flash size",i.flash," MB")}
 ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
 </table>`;
@@ -1984,7 +1984,7 @@ function makeP(i,pl)
 <div class="sel">End preset:<br>
 <div class="sel-p"><select class="sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 <option value="0">None</option>
-<option value="255">Restore preset</option>
+<option value="255" ${plJson[i].end && plJson[i].end==255?"selected":""}>Restore preset</option>
 ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </select></div></div>
 </div>

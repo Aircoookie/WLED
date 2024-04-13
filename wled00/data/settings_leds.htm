@@ -23,6 +23,8 @@
 		function isD2P(t) { return t > 47 && t < 64; }                      // is digital 2 pin type
 		function is16b(t) { return t == 26 || t == 29 }                     // is digital 16 bit type
 		function isVir(t) { return t >= 80 && t < 96; }                     // is virtual type
+		function hasW(t)  { return (t >= 18 && t <= 21) || (t >= 28 && t <= 32) || (t >= 44 && t <= 45) || (t >= 88 && t <= 89); }
+		function hasCCT(t) { return t == 20 || t == 21 || t == 42 || t == 45 || t == 28 || t == 32; }
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -151,7 +153,7 @@
 		{
 			const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
 			gId('LAdis'+n).style.display = s.selectedIndex==5 ? "inline" : "none";
-			d.Sf["LA"+n].value = s.value==="0" ? 55 : s.value;
+			if (s.value!=="0") d.Sf["LA"+n].value = s.value;
 			d.Sf["LA"+n].min = (isVir(t) || isAna(t)) ? 0 : 1;
 		}
 		function setABL()
@@ -188,6 +190,7 @@
 			if (isDig(t)) {
 				if (is16b(t)) len *= 2; // 16 bit LEDs
 				if (t > 28 && t < 40) ch = 4; //RGBW
+				if (t == 28) ch = 5; //GRBCW
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
 					mul = 5;
 				}
@@ -202,7 +205,7 @@
 
 		function UI(change=false)
 		{
-			let isRGBW = false, gRGBW = false, memu = 0;
+			let gRGBW = false, memu = 0;
 			let busMA = 0;
 			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
 			const ablEN = d.Sf.ABL.checked;
@@ -242,15 +245,15 @@
 					d.Sf["MA"+n].min = (isVir(t) || isAna(t)) ? 0 : 250;
 				}
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-				gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+				gRGBW |= hasW(t); // RGBW checkbox, TYPE_xxxx values from const.h
 				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide color order for PWM
-				gId("dig"+n+"w").style.display = (isDig(t) && isRGBW) ? "inline":"none";  // show swap channels dropdown
-				if (!(isDig(t) && isRGBW)) d.Sf["WO"+n].value = 0; // reset swapping
+				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none";  // show swap channels dropdown
+				if (!(isDig(t) && hasW(t))) d.Sf["WO"+n].value = 0; // reset swapping
 				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";  // hide count for analog
 				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";  // hide reversed for virtual
 				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
 				gId("dig"+n+"f").style.display = (isDig(t)) ? "inline":"none";  // hide refresh
-				gId("dig"+n+"a").style.display = (isRGBW) ? "inline":"none";  // auto calculate white
+				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";   // auto calculate white
 				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
 				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
 				//gId("psd"+n).innerHTML = isAna(t) ? "Index:":"Start:";    // change analog start description
@@ -383,7 +386,9 @@ ${i+1}:
 <option value="25">TM1829</option>\
 <option value="26">UCS8903</option>\
 <option value="27">APA106/PL9823</option>\
+<option value="28">FW1906 GRBCW</option>\
 <option value="29">UCS8904 RGBW</option>\
+<option value="32">WS2805 RGBCW</option>\
 <option value="50">WS2801</option>\
 <option value="51">APA102</option>\
 <option value="52">LPD8806</option>\
@@ -412,7 +417,7 @@ mA/LED: <select name="LAsel${i}" onchange="enLA(this,${i});UI();">
 <option value="15">15mA (seed/fairy pixels)</option>
 <option value="0">Custom</option>
 </select><br>
-<div id="LAdis${i}" style="display: none;">max. mA/LED: <input name="LA${i}" type="number" min="1" max="254" oninput="UI()"> mA<br></div>
+<div id="LAdis${i}" style="display: none;">max. mA/LED: <input name="LA${i}" type="number" min="1" max="255" oninput="UI()"> mA<br></div>
 <div id="PSU${i}">PSU: <input name="MA${i}" type="number" class="xl" min="250" max="65000" oninput="UI()" value="250"> mA<br></div>
 </div>
 <div id="co${i}" style="display:inline">Color Order:
@@ -861,6 +866,7 @@ Swap: <select id="xw${i}" name="XW${i}">
 			</select>
 			<br>
 			Calculate CCT from RGB: <input type="checkbox" name="CR"><br>
+			CCT IC used (Athom 15W): <input type="checkbox" name="IC"><br>
 			CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %
 		</div>
 		<h3>Advanced</h3>

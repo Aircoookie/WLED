@@ -392,26 +392,26 @@ byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
  * modes_alpha_indexes and palettes_alpha_indexes.
  */
 void RotaryEncoderUIUsermod::sortModesAndPalettes() {
-  DEBUG_PRINTLN(F("Sorting modes and palettes."));
+  DEBUG_PRINT(F("Sorting modes: ")); DEBUG_PRINTLN(strip.getModeCount());
   //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
   modes_qstrings = strip.getModeDataSrc();
   modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
   re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
-  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount()+strip.customPalettes.size());
-  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount()+strip.customPalettes.size());
+  DEBUG_PRINT(F("Sorting palettes: ")); DEBUG_PRINT(strip.getPaletteCount()); DEBUG_PRINT('/'); DEBUG_PRINTLN(strip.customPalettes.size());
+  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
+  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
   if (strip.customPalettes.size()) {
     for (int i=0; i<strip.customPalettes.size(); i++) {
-      palettes_alpha_indexes[strip.getPaletteCount()+i] = 255-i;
-      palettes_qstrings[strip.getPaletteCount()+i] = PSTR("~Custom~");
+      palettes_alpha_indexes[strip.getPaletteCount()-strip.customPalettes.size()+i] = 255-i;
+      palettes_qstrings[strip.getPaletteCount()-strip.customPalettes.size()+i] = PSTR("~Custom~");
     }
   }
-
   // How many palette names start with '*' and should not be sorted?
   // (Also skipping the first one, 'Default').
   int skipPaletteCount = 1;
-  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount++]) == '*') ;
-  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
+  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount]) == '*') skipPaletteCount++;
+  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount()-strip.customPalettes.size(), skipPaletteCount);
 }
 
 byte *RotaryEncoderUIUsermod::re_initIndexArray(int numModes) {

@@ -17,7 +17,7 @@
 // for WLED.
 //
 // Dependencies
-// * This Usermod works best, by far, when coupled 
+// * This Usermod works best, by far, when coupled
 //   with RotaryEncoderUI ALT Usermod.
 //
 // Make sure to enable NTP and set your time zone in WLED Config | Time.
@@ -89,7 +89,8 @@ typedef enum {
   SSD1305_64,       // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
   SSD1306_SPI,      // U8X8_SSD1306_128X32_NONAME_HW_SPI
   SSD1306_SPI64,    // U8X8_SSD1306_128X64_NONAME_HW_SPI
-  SSD1309_SPI64     // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
+  SSD1309_SPI64,    // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
+  SSD1309_64        // U8X8_SSD1309_128X64_NONAME0_HW_I2C
 } DisplayType;
 
 
@@ -235,7 +236,7 @@ class FourLineDisplayUsermod : public Usermod {
     void updateSpeed();
     void updateIntensity();
     void drawStatusIcons();
-    
+
     /**
      * marks the position of the arrow showing
      * the current setting being changed
@@ -246,8 +247,8 @@ class FourLineDisplayUsermod : public Usermod {
     //Draw the arrow for the current setting being changed
     void drawArrow();
 
-    //Display the current effect or palette (desiredEntry) 
-    // on the appropriate line (row). 
+    //Display the current effect or palette (desiredEntry)
+    // on the appropriate line (row).
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row);
 
     /**
@@ -314,14 +315,14 @@ class FourLineDisplayUsermod : public Usermod {
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
      * If you want to force saving the current state, use serializeConfig() in your loop().
-     * 
+     *
      * CAUTION: serializeConfig() will initiate a filesystem write operation.
      * It might cause the LEDs to stutter and will cause flash wear if called too often.
      * Use it sparingly and always in the loop, never in network callbacks!
-     * 
+     *
      * addToConfig() will also not yet add your setting to one of the settings pages automatically.
      * To make that work you still have to add the setting to the HTML, xml.cpp and set.cpp manually.
-     * 
+     *
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) override;
@@ -329,7 +330,7 @@ class FourLineDisplayUsermod : public Usermod {
     /*
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
      * This is called by WLED when settings are loaded (currently this only happens once immediately after boot)
-     * 
+     *
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
@@ -494,7 +495,7 @@ void FourLineDisplayUsermod::showTime() {
     }
     if (knownHour != hourCurrent) {
       // only update date when hour changes
-      sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
+      sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime));
       draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
     }
     sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
@@ -556,6 +557,7 @@ void FourLineDisplayUsermod::setup() {
     case SSD1306_64:    u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C();    break;
     case SSD1305:       u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C();  break;
     case SSD1305_64:    u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C();  break;
+    case SSD1309_64:    u8x8 = (U8X8 *) new U8X8_SSD1309_128X64_NONAME0_HW_I2C();   break;
     // U8X8 uses global SPI variable that is attached to VSPI bus on ESP32
     case SSD1306_SPI:   u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_HW_SPI(ioPin[0], ioPin[1], ioPin[2]); break; // Pins are cs, dc, reset
     case SSD1306_SPI64: u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[0], ioPin[1], ioPin[2]);    break; // Pins are cs, dc, reset
@@ -581,7 +583,7 @@ void FourLineDisplayUsermod::setup() {
 // gets called every time WiFi is (re-)connected. Initialize own network
 // interfaces here
 void FourLineDisplayUsermod::connected() {
-  knownSsid = WiFi.SSID();       //apActive ? apSSID : WiFi.SSID(); //apActive ? WiFi.softAPSSID() : 
+  knownSsid = WiFi.SSID();       //apActive ? apSSID : WiFi.SSID(); //apActive ? WiFi.softAPSSID() :
   knownIp   = Network.localIP(); //apActive ? IPAddress(4, 3, 2, 1) : Network.localIP();
   networkOverlay(PSTR("NETWORK INFO"),7000);
 }
@@ -637,7 +639,7 @@ void FourLineDisplayUsermod::redraw(bool forceRedraw) {
     powerON = !powerON;
     drawStatusIcons();
     return;
-  } else if (knownnightlight != nightlightActive) {   //trigger moon icon 
+  } else if (knownnightlight != nightlightActive) {   //trigger moon icon
     knownnightlight = nightlightActive;
     drawStatusIcons();
     if (knownnightlight) {
@@ -652,7 +654,7 @@ void FourLineDisplayUsermod::redraw(bool forceRedraw) {
     return;
   } else if (knownMode != effectCurrent || knownPalette != effectPalette) {
     if (displayTurnedOff) needRedraw = true;
-    else { 
+    else {
       if (knownPalette != effectPalette) { showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2); knownPalette = effectPalette; }
       if (knownMode    != effectCurrent) { showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3); knownMode = effectCurrent; }
       lastRedraw = now;
@@ -703,7 +705,7 @@ void FourLineDisplayUsermod::redraw(bool forceRedraw) {
   drawArrow();
   drawStatusIcons();
 
-  // Second row 
+  // Second row
   updateBrightness();
   updateSpeed();
   updateIntensity();
@@ -805,8 +807,8 @@ void FourLineDisplayUsermod::drawArrow() {
   lockRedraw = false;
 }
 
-//Display the current effect or palette (desiredEntry) 
-// on the appropriate line (row). 
+//Display the current effect or palette (desiredEntry)
+// on the appropriate line (row).
 void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   unsigned long now = millis();
@@ -857,7 +859,7 @@ void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const c
         while (smallChars1 < (MAX_MODE_LINE_SPACE-1)) smallBuffer1[smallChars1++]=' ';
         smallBuffer1[smallChars1] = 0;
         drawString(1, row*lineHeight, smallBuffer1, true);
-        while (smallChars2 < (MAX_MODE_LINE_SPACE-1)) smallBuffer2[smallChars2++]=' '; 
+        while (smallChars2 < (MAX_MODE_LINE_SPACE-1)) smallBuffer2[smallChars2++]=' ';
         smallBuffer2[smallChars2] = 0;
         drawString(1, row*lineHeight+1, smallBuffer2, true);
       }
@@ -1150,7 +1152,7 @@ void FourLineDisplayUsermod::onUpdateBegin(bool init) {
       xTaskCreatePinnedToCore(
         [](void * par) {                  // Function to implement the task
           // see https://www.freertos.org/vtaskdelayuntil.html
-          const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;  
+          const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;
           TickType_t xLastWakeTime = xTaskGetTickCount();
           for(;;) {
             delay(1); // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -1205,6 +1207,7 @@ void FourLineDisplayUsermod::appendConfigData() {
   oappend(SET_F("addOption(dd,'SSD1306 128x64',3);"));
   oappend(SET_F("addOption(dd,'SSD1305',4);"));
   oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
+  oappend(SET_F("addOption(dd,'SSD1309 128x64',9);"));
   oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
   oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
   oappend(SET_F("addOption(dd,'SSD1309 SPI 128x64',8);"));
@@ -1218,14 +1221,14 @@ void FourLineDisplayUsermod::appendConfigData() {
   * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
   * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
   * If you want to force saving the current state, use serializeConfig() in your loop().
-  * 
+  *
   * CAUTION: serializeConfig() will initiate a filesystem write operation.
   * It might cause the LEDs to stutter and will cause flash wear if called too often.
   * Use it sparingly and always in the loop, never in network callbacks!
-  * 
+  *
   * addToConfig() will also not yet add your setting to one of the settings pages automatically.
   * To make that work you still have to add the setting to the HTML, xml.cpp and set.cpp manually.
-  * 
+  *
   * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
   */
 void FourLineDisplayUsermod::addToConfig(JsonObject& root) {
@@ -1252,7 +1255,7 @@ void FourLineDisplayUsermod::addToConfig(JsonObject& root) {
 /*
   * readFromConfig() can be used to read back the custom settings you added with addToConfig().
   * This is called by WLED when settings are loaded (currently this only happens once immediately after boot)
-  * 
+  *
   * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
   * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
   * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
@@ -1344,6 +1347,10 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
           break;
         case SSD1305_64:
           u8x8_Setup(u8x8->getU8x8(), u8x8_d_ssd1305_128x64_adafruit, u8x8_cad_ssd13xx_fast_i2c, u8x8_byte_arduino_hw_i2c, u8x8_gpio_and_delay_arduino);
+          u8x8_SetPin_HW_I2C(u8x8->getU8x8(), U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE);
+          break;
+        case SSD1309_64:
+          u8x8_Setup(u8x8->getU8x8(), u8x8_d_ssd1309_128x64_noname0, u8x8_cad_ssd13xx_fast_i2c, u8x8_byte_arduino_hw_i2c, u8x8_gpio_and_delay_arduino);
           u8x8_SetPin_HW_I2C(u8x8->getU8x8(), U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE);
           break;
         case SSD1306_SPI:

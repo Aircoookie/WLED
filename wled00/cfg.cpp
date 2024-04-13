@@ -110,6 +110,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | AW_GLOBAL_DISABLED);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
+  CJSON(cctICused, hw_led[F("ic")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
@@ -185,7 +186,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t maPerLed = elm[F("ledma")] | 55;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
-      if ((ledType > TYPE_TM1814 && ledType < TYPE_WS2801) || ledType >= TYPE_NET_DDP_RGB) { // analog and virtual
+      if (IS_PWM(ledType) || IS_ONOFF(ledType) || IS_VIRTUAL(ledType)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       }
@@ -228,6 +229,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
+  CJSON(touchThreshold, btn_obj[F("tt")]);
   bool pull = btn_obj[F("pull")] | (!disablePullUp); // if true, pullup is enabled
   disablePullUp = !pull;
   JsonArray hw_btn_ins = btn_obj["ins"];
@@ -252,6 +254,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
           btnPin[s] = -1;
           pinManager.deallocatePin(pin,PinOwner::Button);
         }
+        //if touch pin, enable the touch interrupt on ESP32 S2 & S3
+        #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
+        if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH)) 
+        {
+          touchAttachInterrupt(btnPin[s], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+        }
+        #endif 
         else
       #endif
         {
@@ -308,7 +317,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
     }
   }
-  CJSON(touchThreshold,btn_obj[F("tt")]);
+
   CJSON(buttonPublishMqtt,btn_obj["mqtt"]);
 
   #ifndef WLED_DISABLE_INFRARED
@@ -632,12 +641,12 @@ static const char s_cfg_json[] PROGMEM = "/cfg.json";
 
 void deserializeConfigFromFS() {
   bool success = deserializeConfigSec();
+  #ifdef WLED_ADD_EEPROM_SUPPORT
   if (!success) { //if file does not exist, try reading from EEPROM
-    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
     return;
-    #endif
   }
+  #endif
 
   if (!requestJSONBufferLock(1)) return;
 
@@ -767,6 +776,7 @@ void serializeConfig() {
   hw_led[F("ledma")] = 0; // no longer used
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
+  hw_led[F("ic")] = cctICused;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override

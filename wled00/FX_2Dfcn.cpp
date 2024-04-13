@@ -65,9 +65,10 @@ void WS2812FX::setUpMatrix() {
 
     customMappingSize = 0; // prevent use of mapping if anything goes wrong
 
-    if (customMappingTable == nullptr) customMappingTable = new uint16_t[getLengthTotal()];
+    if (customMappingTable) delete[] customMappingTable;
+    customMappingTable = new uint16_t[getLengthTotal()];
 
-    if (customMappingTable != nullptr) {
+    if (customMappingTable) {
       customMappingSize = getLengthTotal();
 
       // fill with empty in case we don't fill the entire matrix
@@ -138,7 +139,7 @@ void WS2812FX::setUpMatrix() {
       DEBUG_PRINTLN();
       #endif
     } else { // memory allocation error
-      DEBUG_PRINTLN(F("Ledmap alloc error."));
+      DEBUG_PRINTLN(F("ERROR 2D LED map allocation error."));
       isMatrix = false;
       panels = 0;
       panel.clear();
@@ -217,6 +218,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   }
 }
 
+#ifdef WLED_USE_AA_PIXELS
 // anti-aliased version of setPixelColorXY()
 void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 {
@@ -260,6 +262,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
     setPixelColorXY(uint16_t(roundf(fX)), uint16_t(roundf(fY)), col);
   }
 }
+#endif
 
 // returns RGBW values of pixel
 uint32_t IRAM_ATTR Segment::getPixelColorXY(uint16_t x, uint16_t y) {
