@@ -1,7 +1,26 @@
 ## WLED changelog
 
-#### Build 2404050
--   Blending styles (with help from @tkadauke)
+#### Build 2404120
+-   v0.15.0-b3
+-   fix for #3896 & WS2815 current saving
+-   conditional compile for AA setPixelColor()
+
+#### Build 2404100
+-   Internals: #3859, #3862, #3873, #3875
+-   Prefer I2S1 over RMT on ESP32
+-   usermod for Adafruit MAX17048 (#3667 by @ccruz09)
+-   Runtime detection of ESP32 PICO, general PSRAM support
+-   Extend JSON API "info" object
+    - add "clock" - CPU clock in MHz
+    - add "flash" - flash size in MB
+-   Fix for #3879
+-   Analog PWM fix for ESP8266 (#3887 by @gaaat98)
+-   Fix for #3870 (#3880 by @DedeHai)
+-   ESP32 S3/S2 touch fix (#3798 by @DedeHai)
+-   PIO env. PSRAM fix for S3 & S3 with 4M flash
+    - audioreactive always included for S3 & S2
+-   Fix for #3889
+-   BREAKING: Effect: modified KITT (Scanner) (#3763)
 
 #### Build 2403280
 -   Individual color channel control for JSON API (fixes #3860)

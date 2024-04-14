@@ -182,7 +182,7 @@
 #define FX_MODE_LIGHTNING               57
 #define FX_MODE_ICU                     58
 #define FX_MODE_MULTI_COMET             59
-#define FX_MODE_DUAL_LARSON_SCANNER     60
+#define FX_MODE_DUAL_LARSON_SCANNER     60  // candidate for removal (use Scanner with with check 1)
 #define FX_MODE_RANDOM_CHASE            61
 #define FX_MODE_OSCILLATE               62
 #define FX_MODE_PRIDE_2015              63
@@ -597,9 +597,11 @@ typedef struct Segment {
     inline void setPixelColor(unsigned n, uint32_t c)                    { setPixelColor(int(n), c); }
     inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); }
     inline void setPixelColor(int n, CRGB c)                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); }
+    #ifdef WLED_USE_AA_PIXELS
     void setPixelColor(float i, uint32_t c, bool aa = true);
     inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
+    #endif
     #ifndef WLED_DISABLE_MODE_BLEND
     static inline void setClippingRect(int startX, int stopX, int startY = 0, int stopY = 1) { _clipStart = startX; _clipStop = stopX; _clipStartY = startY; _clipStopY = stopY; };
     #endif
@@ -629,9 +631,11 @@ typedef struct Segment {
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColorXY(int(x), int(y), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
+    #ifdef WLED_USE_AA_PIXELS
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
+    #endif
     bool isPixelXYClipped(int x, int y);
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
     // 2D support functions
@@ -662,11 +666,14 @@ typedef struct Segment {
   #else
     inline uint16_t XY(uint16_t x, uint16_t y)                                    { return x; }
     inline void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
+    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColor(int(x), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColor(x, RGBW32(c.r,c.g,c.b,0)); }
+    #ifdef WLED_USE_AA_PIXELS
     inline void setPixelColorXY(float x, float y, uint32_t c, bool aa = true)     { setPixelColor(x, c, aa); }
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColor(x, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
+    #endif
     inline bool isPixelXYClipped(int x, int y)                                    { return isPixelClipped(x); }
     inline uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }

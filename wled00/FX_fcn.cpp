@@ -818,6 +818,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 }
 
+#ifdef WLED_USE_AA_PIXELS
 // anti-aliased normalized version of setPixelColor()
 void Segment::setPixelColor(float i, uint32_t col, bool aa)
 {
@@ -850,6 +851,7 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
     setPixelColor(uint16_t(roundf(fC)) | (vStrip<<16), col);
   }
 }
+#endif
 
 uint32_t IRAM_ATTR Segment::getPixelColor(int i)
 {
