@@ -12,27 +12,14 @@ class AutoPlaylistUsermod : public Usermod {
 
   private:
     
-  #if 1
     // experimental parameters by softhack007 - more balanced but need testing
     const uint_fast32_t MAX_DISTANCE_TRACKER = 184; // maximum accepted distance_tracker
     const uint_fast32_t ENERGY_SCALE = 1500;
-    const float FILTER_SLOW1 = 0.0075f;  // for "slow" energy
-    const float FILTER_SLOW2 = 0.005f;   // for "slow" lfc / zcr
-    const float FILTER_FAST1 = 0.2f;     // for "fast" energy
-    const float FILTER_FAST2 = 0.25f;    // for "fast" lfc / zcr
+    const float FILTER_SLOW1 = 0.0075f;  // for "slow" energy     - was 0.01f
+    const float FILTER_SLOW2 = 0.005f;   // for "slow" lfc / zcr  - was 0.01f
+    const float FILTER_FAST1 = 0.2f;     // for "fast" energy     - was 0.10f
+    const float FILTER_FAST2 = 0.25f;    // for "fast" lfc / zcr  - was 0.10f
     const float FILTER_VOLUME = 0.03f;   // for volumeSmth averaging - takes 8-10sec until "silence"
-  #else
-    // parameters used by TroyHacks / netmindz - behaviour is mainly driven by "energy"
-    const uint_fast32_t MAX_DISTANCE_TRACKER = 128; // maximum accepted distance_tracker
-    //const uint_fast32_t ENERGY_SCALE = 10000;
-    const uint_fast32_t ENERGY_SCALE = 2000;
-    //     softhack007: original code used FILTER_SLOW = 0.002f
-    const float FILTER_SLOW1 = 0.01f;    // for "slow" energy
-    const float FILTER_SLOW2 = 0.01f;    // for "slow" lfc / zcr
-    const float FILTER_FAST1 = 0.1f;     // for "fast" energy
-    const float FILTER_FAST2 = 0.1f;     // for "fast" lfc / zcr
-    const float FILTER_VOLUME = 0.03f;   // for volumeSmth averaging - takes 8-10sec until "silence"
-  #endif
 
     bool initDone = false;
     bool functionality_enabled = false;
@@ -126,7 +113,7 @@ class AutoPlaylistUsermod : public Usermod {
       
       energy /= ENERGY_SCALE; // scale down so we get 0 sometimes
 
-      uint8_t lfc = fftResult[0];
+      uint8_t lfc = float(fftResult[0]) * fftDeScaler[0] / 0.85f; // might as well undo pink noise here too.
       uint16_t zcr = *(uint16_t*)um_data->u_data[11];
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
@@ -168,6 +155,7 @@ class AutoPlaylistUsermod : public Usermod {
         distance_tracker = distance;
       }
 
+      // Debug for adjusting formulas, etc:
       // USER_PRINTF("Distance: %5lu - v_lfc: %5lu v_energy: %5lu v_zcr: %5lu\n",(unsigned long)distance,(unsigned long)vector_lfc,(unsigned long)vector_energy,(unsigned long)vector_zcr);
 
       if ((millis() - change_timer) > ideal_change_min) { // softhack007 same result as "millis() > change_timer + ideal_change_min", but more robust against unsigned overflow
