@@ -167,7 +167,12 @@ class AutoPlaylistUsermod : public Usermod {
 
         if (change_interval > ideal_change_min && distance_tracker <= MAX_DISTANCE_TRACKER) {
           
-          change_threshold_change = distance_tracker-change_threshold;
+          if (distance_tracker >= change_threshold) {
+            change_threshold_change = distance_tracker-change_threshold;
+          } else {
+            change_threshold_change = change_threshold-distance_tracker;
+          }
+          
           change_threshold = distance_tracker;
 
           if (change_threshold_change > 9999) change_threshold_change = 0; // cosmetic for debug
