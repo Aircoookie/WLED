@@ -316,6 +316,21 @@
 
 #define MODE_COUNT                     187
 
+#define TRANSITION_STYLE_FADE            0
+#define TRANSITION_STYLE_SWIPE_RIGHT     1
+#define TRANSITION_STYLE_SWIPE_LEFT      2
+#define TRANSITION_STYLE_SWIPE_UP        3
+#define TRANSITION_STYLE_SWIPE_DOWN      4
+#define TRANSITION_STYLE_PUSH_RIGHT      5
+#define TRANSITION_STYLE_PUSH_LEFT       6
+#define TRANSITION_STYLE_PUSH_UP         7
+#define TRANSITION_STYLE_PUSH_DOWN       8
+#define TRANSITION_STYLE_OUTSIDE_IN      9
+#define TRANSITION_STYLE_INSIDE_OUT      10
+#define TRANSITION_STYLE_FAIRY_DUST      11
+
+#define TRANSITION_STYLE_COUNT           12
+
 typedef enum mapping1D2D {
   M12_Pixels = 0,
   M12_pBar = 1,
@@ -373,6 +388,10 @@ typedef struct Segment {
     uint16_t aux1;  // custom var
     byte     *data; // effect data pointer
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
+    #ifndef WLED_DISABLE_TRANSITION_STYLES
+    uint32_t *buffer1;
+    uint32_t *buffer2;
+    #endif
 
     typedef struct TemporarySegmentData {
       uint16_t _optionsT;
@@ -419,6 +438,10 @@ typedef struct Segment {
     static uint16_t _lastPaletteBlend;        // blend palette according to set Transition Delay in millis()%0xFFFF
     #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
+    #ifndef WLED_DISABLE_TRANSITION_STYLES
+    static uint32_t*     _activeBuffer;       // pointer to the buffer where the mode should be rendered to
+    uint16_t             _bufferSize;
+    #endif
     #endif
 
     // transition data, valid only if transitional==true, holds values during transition (72 bytes)
@@ -444,7 +467,6 @@ typedef struct Segment {
     } *_t;
 
   public:
-
     Segment(uint16_t sStart=0, uint16_t sStop=30) :
       start(sStart),
       stop(sStop),
@@ -474,8 +496,15 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+      buffer1(nullptr),
+      buffer2(nullptr),
+#endif
       _capabilities(0),
       _dataLen(0),
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+      _bufferSize(0),
+#endif
       _t(nullptr)
     {
       #ifdef WLED_DEBUG
@@ -499,12 +528,21 @@ typedef struct Segment {
       //Serial.println();
       #endif
       if (name) { delete[] name; name = nullptr; }
+      #ifndef WLED_DISABLE_TRANSITION_STYLES
+      if (buffer1) { delete[] buffer1; buffer1 = nullptr; }
+      if (buffer2) { delete[] buffer2; buffer2 = nullptr; }
+      #endif
       stopTransition();
       deallocateData();
     }
 
     Segment& operator= (const Segment &orig); // copy assignment
     Segment& operator= (Segment &&orig) noexcept; // move assignment
+
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+    void allocateBuffers();
+    void savePixelsToBuffer(uint32_t* buffer);
+#endif
 
 #ifdef WLED_DEBUG
     size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0); }
@@ -528,6 +566,9 @@ typedef struct Segment {
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
     #ifndef WLED_DISABLE_MODE_BLEND
     static void     modeBlend(bool blend)       { _modeBlend = blend; }
+    #ifndef WLED_DISABLE_TRANSITION_STYLES
+    static void     renderToBuffer(uint32_t* buffer) { _activeBuffer = buffer; }
+    #endif
     #endif
     static void     handleRandomPalette();
 
@@ -581,6 +622,7 @@ typedef struct Segment {
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
     uint32_t getPixelColor(int i);
+    int getPixelIndex(int i);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
     void fill(uint32_t c);
@@ -682,6 +724,10 @@ class WS2812FX {  // 96 bytes
     ModeData(uint8_t id, uint16_t (*fcn)(void), const char *data) : _id(id), _fcn(fcn), _data(data) {}
   } mode_data_t;
 
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+  typedef void (*transition_ptr)(void); // pointer to transition function
+#endif
+
   static WS2812FX* instance;
 
   public:
@@ -713,6 +759,9 @@ class WS2812FX {  // 96 bytes
       _hasWhiteChannel(false),
       _triggered(false),
       _modeCount(MODE_COUNT),
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+      _transitionStyleCount(TRANSITION_STYLE_COUNT),
+#endif
       _callback(nullptr),
       customMappingTable(nullptr),
       customMappingSize(0),
@@ -733,12 +782,21 @@ class WS2812FX {  // 96 bytes
       _modeData.reserve(_modeCount); // allocate memory to prevent initial fragmentation (does not increase size())
       if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _modeCount = 1; // memory allocation failed only show Solid
       else setupEffectData();
+
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+      _transitionStyles.reserve(_transitionStyleCount); // allocate memory to prevent initial fragmentation (does not increase size())
+      if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _transitionStyleCount = 0; // memory allocation failed, disable transition styles
+      else setupTransitionStyleData();
+#endif
     }
 
     ~WS2812FX() {
       if (customMappingTable) delete[] customMappingTable;
       _mode.clear();
       _modeData.clear();
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+      _transitionStyles.clear();
+#endif
       _segments.clear();
 #ifndef WLED_DISABLE_2D
       panel.clear();
@@ -770,6 +828,11 @@ class WS2812FX {  // 96 bytes
       setTargetFps(uint8_t fps),
       addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name), // add effect to the list; defined in FX.cpp
       setupEffectData(void);                      // add default effects to the list; defined in FX.cpp
+
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+    void setupTransitionStyleData();
+    void addTransitionStyle(uint8_t id, transition_ptr func, const char *name, bool only2D); // add transition style to the list
+#endif
 
     inline void restartRuntime()          { for (Segment &seg : _segments) seg.markForReset(); }
     inline void setTransitionMode(bool t) { for (Segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0); }
@@ -815,6 +878,9 @@ class WS2812FX {  // 96 bytes
     inline uint8_t getPaletteCount()      { return 13 + GRADIENT_PALETTE_COUNT + customPalettes.size(); }
     inline uint8_t getTargetFps()         { return _targetFps; }        // returns rough FPS value for las 2s interval
     inline uint8_t getModeCount()         { return _modeCount; }        // returns number of registered modes/effects
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+    inline uint8_t getTransitionStyleCount() { return _transitionStyleCount; }
+#endif
 
     uint16_t
       getLengthPhysical(void),
@@ -840,6 +906,11 @@ class WS2812FX {  // 96 bytes
 
     const char **
       getModeDataSrc(void) { return &(_modeData[0]); } // vectors use arrays for underlying data
+    
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+    const char* getTransitionStyleName(uint8_t id) { return (id && id<_transitionStyleCount) ? _transitionStyles[id]._name : PSTR("Fade"); }
+    bool isTransitionStyle2DOnly(uint8_t id) { return (id && id<_transitionStyleCount) ? _transitionStyles[id]._only2D : false; }
+#endif
 
     Segment&        getSegment(uint8_t id);
     inline Segment& getFirstSelectedSeg(void) { return _segments[getFirstSelectedSegId()]; }  // returns reference to first segment that is "selected"
@@ -925,6 +996,22 @@ class WS2812FX {  // 96 bytes
     uint8_t                  _modeCount;
     std::vector<mode_ptr>    _mode;     // SRAM footprint: 4 bytes per element
     std::vector<const char*> _modeData; // mode (effect) name and its slider control data array
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+    uint8_t                  _transitionStyleCount;
+
+    struct TransitionStyleData {
+      TransitionStyleData() : _name("RSVD"), _only2D(false) {}
+      TransitionStyleData(transition_ptr func, const char* name, bool only2D)
+        : _func(func),
+          _name(name),
+          _only2D(only2D) {}
+
+      transition_ptr _func;
+      const char* _name;
+      bool _only2D;
+    };
+    std::vector<TransitionStyleData> _transitionStyles; // transition style names
+#endif
 
     show_callback _callback;
 

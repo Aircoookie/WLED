@@ -60,6 +60,11 @@
   #define WLED_WATCHDOG_TIMEOUT 0
 #endif
 
+#ifdef WLED_DISABLE_MODE_BLEND
+  // transition styles depend on mode blend code
+  #define WLED_DISABLE_TRANSITION_STYLES
+#endif
+
 //optionally disable brownout detector on ESP32.
 //This is generally a terrible idea, but improves boot success on boards with a 3.3v regulator + cap setup that can't provide 400mA peaks
 //#define WLED_DISABLE_BROWNOUT_DET
@@ -545,6 +550,9 @@ WLED_GLOBAL bool wasConnected _INIT(false);
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same
 
 // transitions
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+WLED_GLOBAL uint16_t      transitionStyle          _INIT(0);      // global transition style
+#endif
 WLED_GLOBAL bool          fadeTransition           _INIT(true);   // enable crossfading brightness/color
 WLED_GLOBAL bool          modeBlending             _INIT(true);   // enable effect blending
 WLED_GLOBAL bool          transitionActive         _INIT(false);

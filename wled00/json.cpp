@@ -10,6 +10,7 @@
 #define JSON_PATH_FXDATA     6
 #define JSON_PATH_NETWORKS   7
 #define JSON_PATH_EFFECTS    8
+#define JSON_PATH_TRANSITION_STYLES 9
 
 /*
  * JSON API (De)serialization
@@ -355,6 +356,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+  int ts = root[F("ts")] | -1;
+  if (ts >= 0) {
+    transitionStyle = ts;
+  }
+#endif
+
   // temporary transition (applies only once)
   tr = root[F("tt")] | -1;
   if (tr >= 0) {
@@ -581,6 +589,9 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+    root[F("ts")] = transitionStyle;
+#endif
   }
 
   if (!forPreset) {
@@ -1043,6 +1054,27 @@ void serializeModeNames(JsonArray arr)
   }
 }
 
+void serializeTransitionStyles(JsonArray arr) {
+#ifndef WLED_DISABLE_TRANSITION_STYLES
+  if (!modeBlending) return;
+
+  char lineBuffer[256];
+  for (size_t i = 0; i < strip.getTransitionStyleCount(); i++) {
+    if (!strip.isMatrix && strip.isTransitionStyle2DOnly(i)) {
+      arr.add("RSVD");
+      continue;
+    }
+
+    strncpy_P(lineBuffer, strip.getTransitionStyleName(i), sizeof(lineBuffer)/sizeof(char)-1);
+    lineBuffer[sizeof(lineBuffer)/sizeof(char)-1] = '\0'; // terminate string
+    if (lineBuffer[0] != 0) {
+      arr.add(lineBuffer);
+    }
+  }
+
+#endif
+}
+
 // Global buffer locking response helper class (to make sure lock is released when AsyncJsonResponse is destroyed)
 class LockedJsonResponse: public AsyncJsonResponse {
   bool _holding_lock;
@@ -1079,6 +1111,7 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf(F("palx"))  > 0) subJson = JSON_PATH_PALETTES;
   else if (url.indexOf(F("fxda"))  > 0) subJson = JSON_PATH_FXDATA;
   else if (url.indexOf(F("net"))   > 0) subJson = JSON_PATH_NETWORKS;
+  else if (url.indexOf(F("tra"))   > 0) subJson = JSON_PATH_TRANSITION_STYLES;
   #ifdef WLED_ENABLE_JSONLIVE
   else if (url.indexOf("live")     > 0) {
     serveLiveLeds(request);
@@ -1103,7 +1136,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
   // releaseJSONBufferLock() will be called when "response" is destroyed (from AsyncWebServer)
   // make sure you delete "response" if no "request->send(response);" is made
-  LockedJsonResponse *response = new LockedJsonResponse(pDoc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS); // will clear and convert JsonDocument into JsonArray if necessary
+  LockedJsonResponse *response = new LockedJsonResponse(pDoc, subJson==JSON_PATH_FXDATA || subJson==JSON_PATH_EFFECTS || subJson==JSON_PATH_TRANSITION_STYLES); // will clear and convert JsonDocument into JsonArray if necessary
 
   JsonVariant lDoc = response->getRoot();
 
@@ -1121,6 +1154,8 @@ void serveJson(AsyncWebServerRequest* request)
       serializeModeNames(lDoc); break;
     case JSON_PATH_FXDATA:
       serializeModeData(lDoc); break;
+    case JSON_PATH_TRANSITION_STYLES:
+      serializeTransitionStyles(lDoc); break;
     case JSON_PATH_NETWORKS:
       serializeNetworks(lDoc); break;
     default: //all
