@@ -12,7 +12,7 @@ class AutoPlaylistUsermod : public Usermod {
 
   private:
     
-  #if 0
+  #if 1
     // experimental parameters by softhack007 - more balanced but need testing
     const uint_fast32_t MAX_DISTANCE_TRACKER = 184; // maximum accepted distance_tracker
     const uint_fast32_t ENERGY_SCALE = 1500;
@@ -27,11 +27,11 @@ class AutoPlaylistUsermod : public Usermod {
     //const uint_fast32_t ENERGY_SCALE = 10000;
     const uint_fast32_t ENERGY_SCALE = 2000;
     //     softhack007: original code used FILTER_SLOW = 0.002f
-    const float FILTER_SLOW1 = 0.01f;   // for "slow" energy
-    const float FILTER_SLOW2 = 0.01f;   // for "slow" lfc / zcr
-    const float FILTER_FAST1 = 0.1f;    // for "fast" energy
-    const float FILTER_FAST2 = 0.1f;    // for "fast" lfc / zcr
-    const float FILTER_VOLUME = 0.01f;  // for volumeSmth averaging - takes 12-15sec until "silence"
+    const float FILTER_SLOW1 = 0.01f;    // for "slow" energy
+    const float FILTER_SLOW2 = 0.01f;    // for "slow" lfc / zcr
+    const float FILTER_FAST1 = 0.1f;     // for "fast" energy
+    const float FILTER_FAST2 = 0.1f;     // for "fast" lfc / zcr
+    const float FILTER_VOLUME = 0.03f;   // for volumeSmth averaging - takes 8-10sec until "silence"
   #endif
 
     bool initDone = false;
@@ -67,7 +67,6 @@ class AutoPlaylistUsermod : public Usermod {
 
     uint_fast32_t distance = 0;
     uint_fast32_t distance_tracker = UINT_FAST32_MAX;
-    // uint_fast64_t squared_distance = 0;
 
     unsigned long lastchange = millis();
 
@@ -116,15 +115,13 @@ class AutoPlaylistUsermod : public Usermod {
       energy = 0;
 
       for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
-#if 1
+
         // make an attempt to undo some "trying to look better" FFT manglings in AudioReactive postProcessFFTResults()
+
         float amplitude = float(fftResult[i]) * fftDeScaler[i];   // undo "pink noise" scaling
         amplitude /= 0.85f + (float(i)/4.5f);                     // undo extra up-scaling for high frequencies
         energy += roundf(amplitude * amplitude);                  // calc energy from amplitude
-#else
-        uint_fast32_t amplitude = fftResult[i];
-        energy += amplitude * amplitude;
-#endif
+
       }
       
       energy /= ENERGY_SCALE; // scale down so we get 0 sometimes
@@ -136,6 +133,7 @@ class AutoPlaylistUsermod : public Usermod {
       // and the individual vector distances.
 
       if (volumeSmth > 1.0f) { 
+
         // initialize filters on first run
         if (resetFilters) {
           avg_short_energy = avg_long_energy = energy;
@@ -143,7 +141,7 @@ class AutoPlaylistUsermod : public Usermod {
           avg_short_zcr = avg_long_zcr = zcr;
           resetFilters = false;
           #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
-          USER_PRINTLN("autoplaylist: filters reset.");
+          USER_PRINTLN("AutoPlaylist: Filters reset.");
           #endif
         }
 
@@ -162,10 +160,7 @@ class AutoPlaylistUsermod : public Usermod {
 
       }
 
-      // distance is linear, squared_distance is magnitude.
-      // linear is easier to fine-tune, IMHO.
       distance = vector_lfc + vector_energy + vector_zcr;
-      // squared_distance = distance * distance;
 
       long change_interval = millis()-lastchange;
 
@@ -173,7 +168,7 @@ class AutoPlaylistUsermod : public Usermod {
         distance_tracker = distance;
       }
 
-      // USER_PRINTF("Distance: %3lu - v_lfc: %5lu v_energy: %5lu v_zcr: %5lu\n",(unsigned long)distance,(unsigned long)vector_lfc,(unsigned long)vector_energy,(unsigned long)vector_zcr);
+      // USER_PRINTF("Distance: %5lu - v_lfc: %5lu v_energy: %5lu v_zcr: %5lu\n",(unsigned long)distance,(unsigned long)vector_lfc,(unsigned long)vector_energy,(unsigned long)vector_zcr);
 
       if ((millis() - change_timer) > ideal_change_min) { // softhack007 same result as "millis() > change_timer + ideal_change_min", but more robust against unsigned overflow
 
@@ -311,8 +306,6 @@ class AutoPlaylistUsermod : public Usermod {
           #endif
           functionality_enabled = true;
       }
-
-      // if (!functionality_enabled) return;
 
       if (bri == 0) return;
 
