@@ -80,6 +80,7 @@ class NeoGammaWLEDMethod {
 #define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
 uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
 uint32_t color_add(uint32_t,uint32_t, bool fast=false);
+uint32_t color_scale(uint32_t c1, uint8_t scale);
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
 CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
 CRGBPalette16 generateRandomPalette(void);

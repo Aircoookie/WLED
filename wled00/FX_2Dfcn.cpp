@@ -175,11 +175,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
-    byte r = scale8(R(col), _bri_t);
-    byte g = scale8(G(col), _bri_t);
-    byte b = scale8(B(col), _bri_t);
-    byte w = scale8(W(col), _bri_t);
-    col = RGBW32(r, g, b, w);
+    col = color_scale(col, _bri_t);
   }
 
   if (reverse  ) x = virtualWidth()  - x - 1;
@@ -265,7 +261,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 #endif
 
 // returns RGBW values of pixel
-uint32_t IRAM_ATTR Segment::getPixelColorXY(uint16_t x, uint16_t y) {
+uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
   if (!isActive()) return 0; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;
@@ -278,59 +274,74 @@ uint32_t IRAM_ATTR Segment::getPixelColorXY(uint16_t x, uint16_t y) {
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
-void Segment::blurRow(uint16_t row, fract8 blur_amount) {
-  if (!isActive() || blur_amount == 0) return; // not active
+void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear)
+{
+  if (!isActive() || blur_amount == 0)
+    return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
-  if (row >= rows) return;
+  if (row >= rows)
+    return;
   // blur one row
-  uint8_t keep = 255 - blur_amount;
+  uint8_t keep = smear ? 255 : 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
-  CRGB carryover = CRGB::Black;
+  uint32_t carryover = BLACK;
+  uint32_t lastnew;
+  uint32_t last;
+  uint32_t curnew;
   for (unsigned x = 0; x < cols; x++) {
-    CRGB cur = getPixelColorXY(x, row);
-    CRGB before = cur;     // remember color before blur
-    CRGB part = cur;
-    part.nscale8(seep);
-    cur.nscale8(keep);
-    cur += carryover;
-    if (x>0) {
-      CRGB prev = CRGB(getPixelColorXY(x-1, row)) + part;
-      setPixelColorXY(x-1, row, prev);
+    uint32_t cur = getPixelColorXY(x, row);
+    uint32_t part = color_scale(cur, seep);
+    curnew = color_scale(cur, keep);
+    if (x > 0) {
+      if (carryover)
+        curnew = color_add(curnew, carryover, true);
+      uint32_t prev = color_add(lastnew, part, true);
+      if (last != prev) // optimization: only set pixel if color has changed
+        setPixelColorXY(x - 1, row, prev);
     }
-    if (before != cur)         // optimization: only set pixel if color has changed
-      setPixelColorXY(x, row, cur);
+    else // first pixel or last pixel
+      setPixelColorXY(x, row, curnew);
+    lastnew = curnew;
+    last = cur; // save original value for comparison on next iteration
     carryover = part;
   }
+  setPixelColorXY(cols-1, row, curnew); // set last pixel
 }
 
 // blurCol: perform a blur on a column of a rectangular matrix
-void Segment::blurCol(uint16_t col, fract8 blur_amount) {
+void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
   if (!isActive() || blur_amount == 0) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
   if (col >= cols) return;
   // blur one column
-  uint8_t keep = 255 - blur_amount;
+  uint8_t keep = smear ? 255 : 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
-  CRGB carryover = CRGB::Black;
+  uint32_t carryover = BLACK;
+  uint32_t lastnew;
+  uint32_t last;
+  uint32_t curnew;
   for (unsigned y = 0; y < rows; y++) {
-    CRGB cur = getPixelColorXY(col, y);
-    CRGB part = cur;
-    CRGB before = cur;     // remember color before blur
-    part.nscale8(seep);
-    cur.nscale8(keep);
-    cur += carryover;
-    if (y>0) {
-      CRGB prev = CRGB(getPixelColorXY(col, y-1)) + part;
-      setPixelColorXY(col, y-1, prev);
+    uint32_t cur = getPixelColorXY(col, y);
+    uint32_t part = color_scale(cur, seep);
+    curnew = color_scale(cur, keep);
+    if (y > 0) {
+      if (carryover)
+        curnew = color_add(curnew, carryover, true);
+      uint32_t prev = color_add(lastnew, part, true);      
+      if (last != prev) // optimization: only set pixel if color has changed
+        setPixelColorXY(col, y - 1, prev);
     }
-    if (before != cur)         // optimization: only set pixel if color has changed
-      setPixelColorXY(col, y, cur);
-    carryover = part;
+    else // first pixel
+      setPixelColorXY(col, y, curnew);
+    lastnew = curnew;
+    last = cur; //save original value for comparison on next iteration
+    carryover = part;        
   }
+  setPixelColorXY(col, rows - 1, curnew);
 }
 
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
