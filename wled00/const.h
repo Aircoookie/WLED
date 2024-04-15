@@ -268,6 +268,7 @@
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
 #define TYPE_WS2805              32            //RGB + WW + CW
+#define TYPE_TM1914              33            //RGB
 //"Analog" types (40-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
