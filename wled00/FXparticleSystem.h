@@ -98,7 +98,7 @@ public:
   // particle emitters
   void flameEmit(PSsource &emitter);
   void sprayEmit(PSsource &emitter);
-  void angleEmit(PSsource& emitter, uint16_t angle, uint32_t speed);
+  void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed);
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
 
   // move functions
@@ -114,8 +114,9 @@ public:
   void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle);
   void applyFriction(PSparticle *part, uint8_t coefficient); // apply friction to specific particle
   void applyFriction(uint8_t coefficient); // apply friction to all used particles
-  void attract(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
-  
+  void pointAttractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
+  void lineAttractor(PSparticle *particle, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t *counter, uint8_t strength);
+
   //set options
   void setUsedParticles(uint16_t num);
   void setCollisionHardness(uint8_t hardness); //hardness for particle collisions (255 means full hard)
@@ -127,6 +128,8 @@ public:
   void setBounceY(bool enable);
   void setKillOutOfBounds(bool enable); //if enabled, particles outside of matrix instantly die
   void setColorByAge(bool enable);
+  void setMotionBlur(uint8_t bluramount);
+  void setParticleSize(uint8_t size);
   void enableGravity(bool enable, uint8_t force = 8);
   void enableParticleCollisions(bool enable, uint8_t hardness = 255);  
     
@@ -164,6 +167,8 @@ private:
   uint8_t gforcecounter; //counter for global gravity
   int8_t gforce; //gravity strength, default is 8 (negative is allowed)
   uint8_t collisioncounter; //counter to handle collisions
+  uint8_t particlesize;
+  uint8_t motionBlur;
 };
 
 //initialization functions (not part of class)

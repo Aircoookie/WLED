@@ -33,10 +33,11 @@
 
 /*
   TODO:
-  -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired. config should be optional, if not set, use default config.    
+  -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired. config should be optional, if not set, use default config.
   -add possiblity to emit more than one particle, just pass a source and the amount to emit or even add several sources and the amount, function decides if it should do it fair or not
   -add an x/y struct, do particle rendering using that, much easier to read
   -extend rendering to more than 2x2, 3x2 (fire) should be easy, 3x3 maybe also doable without using much math (need to see if it looks good)
+  
 
 */
 // sources need to be updatable by the FX, so functions are needed to apply it to a single particle that are public
@@ -55,6 +56,8 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	updatePSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
+	particlesize = 0; //minimum size
+	motionBlur = 0; //no fading by default
 	emitIndex = 0;
 	/*
 	Serial.println("alive particles: ");
@@ -152,6 +155,16 @@ void ParticleSystem::setColorByAge(bool enable)
 	particlesettings.colorByAge = enable;
 }
 
+void ParticleSystem::setMotionBlur(uint8_t bluramount)
+{
+	motionBlur = bluramount;
+}
+
+// render size using smearing
+void ParticleSystem::setParticleSize(uint8_t size)
+{
+	particlesize = size;
+}
 // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is also disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
 void ParticleSystem::enableGravity(bool enable, uint8_t force) 
@@ -229,11 +242,15 @@ void ParticleSystem::flameEmit(PSsource &emitter)
 
 // Emits a particle at given angle and speed, angle is from 0-65535 (=0-360deg), speed is also affected by emitter->var
 // angle = 0 means in positive x-direction (i.e. to the right)
-void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, uint32_t speed)
+void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed)
 {
-	emitter.vx = ((int32_t)cos16(angle) * speed) / 32767; // cos16() and sin16() return signed 16bit
-	emitter.vy = ((int32_t)sin16(angle) * speed) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
+	emitter.vx = ((int32_t)cos16(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding 
+	emitter.vy = ((int32_t)sin16(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
 	sprayEmit(emitter);
+	Serial.print(" x: ");
+	Serial.print(emitter.vx);
+	Serial.print(" y: ");
+	Serial.println(emitter.vy);
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
@@ -285,12 +302,9 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 			{
 				if (newY < PS_P_RADIUS) // bounce at bottom
 				{
-					if(part.vy < -10)
-					{
 						part.vy = -part.vy; // invert speed
 						part.vy = ((int32_t)part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
 						newY = PS_P_RADIUS;		
-					}
 				}
 				else
 				{
@@ -465,14 +479,14 @@ void ParticleSystem::applyFriction(uint8_t coefficient)
 }
 
 // attracts a particle to an attractor particle using the inverse square-law
-void ParticleSystem::attract(PSparticle *part, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow)
+void ParticleSystem::pointAttractor(PSparticle *part, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow)
 {
 	// Calculate the distance between the particle and the attractor
 	int32_t dx = attractor->x - part->x;
 	int32_t dy = attractor->y - part->y;
 
 	// Calculate the force based on inverse square law
-	int32_t distanceSquared = dx * dx + dy * dy + 1;
+	int32_t distanceSquared = dx * dx + dy * dy;
 	if (distanceSquared < 8192)
 	{
 		if (swallow) // particle is close, age it fast so it fades out, do not attract further
@@ -485,7 +499,7 @@ void ParticleSystem::attract(PSparticle *part, PSparticle *attractor, uint8_t *c
 				return;
 			}
 		}
-		distanceSquared = 4 * PS_P_RADIUS * PS_P_RADIUS; // limit the distance to avoid very high forces
+		distanceSquared = 2 * PS_P_RADIUS * PS_P_RADIUS; // limit the distance to avoid very high forces
 	}
 
 	int32_t force = ((int32_t)strength << 16) / distanceSquared;
@@ -495,6 +509,56 @@ void ParticleSystem::attract(PSparticle *part, PSparticle *attractor, uint8_t *c
 	applyForce(part, 1, xforce, yforce, counter);
 }
 
+void ParticleSystem::lineAttractor(PSparticle *part, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t *counter, uint8_t strength)
+{
+	// Calculate the distance between the particle and the attractor
+
+	//calculate a second point on the line
+	int32_t x1 = attractorcenter->x + (cos16(attractorangle) >> 5);
+	int32_t y1 = attractorcenter->y + (sin16(attractorangle) >> 5);
+	//calculate squared distance from particle to the line:
+	int32_t dx = (x1 - attractorcenter->x) >> 4;
+	int32_t dy = (y1 - attractorcenter->y) >> 4;
+	int32_t d = ((dx * (part->y - attractorcenter->y)) - (dy * (part->x - attractorcenter->x))) >> 8;
+	int32_t distanceSquared = (d * d) / (dx * dx + dy * dy);
+
+
+	// Calculate the force based on inverse square law
+	if (distanceSquared < 2)
+	{
+		distanceSquared = 1;
+	//	distanceSquared = 4 * PS_P_RADIUS * PS_P_RADIUS; // limit the distance to avoid very high forces
+	}
+
+	int32_t force = (((int32_t)strength << 16) / distanceSquared)>>10;
+	//apply force in a 90° angle to the line
+	int8_t xforce = (d > 0 ? 1 : -1) * (force * dy) / 100; // scale to a lower value, found by experimenting
+	int8_t yforce = (d > 0 ? -1 : 1) * (force * dx) / 100; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!	
+/*
+	Serial.print(" partx: ");
+	Serial.print(part->x);
+	Serial.print(" party ");
+	Serial.print(part->y);
+	Serial.print(" x1 ");
+	Serial.print(x1);
+	Serial.print(" y1 ");
+	Serial.print(y1);
+	Serial.print(" dx ");
+	Serial.print(dx);
+	Serial.print(" dy ");
+	Serial.print(dy);
+	Serial.print(" d: ");
+	Serial.print(d);
+	Serial.print(" dsq: ");
+	Serial.print(distanceSquared);
+	Serial.print(" force: ");
+	Serial.print(force);
+	Serial.print(" fx: ");
+	Serial.print(xforce);
+	Serial.print(" fy: ");
+	Serial.println(yforce);*/
+	applyForce(part, 1, xforce, yforce, counter);
+}
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
 // warning: do not render out of bounds particles or system will crash! rendering does not check if particle is out of bounds
@@ -503,19 +567,42 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 {
 	int32_t pixco[4][2]; //physical pixel coordinates of the four pixels a particle is rendered to. x,y pairs
 	CRGB baseRGB;
-	bool useLocalBuffer = true;
+	bool useLocalBuffer = true; //use local rendering buffer, gives huge speed boost (at least 30% more FPS)
 	CRGB **colorbuffer;
 	uint32_t i;
-	uint32_t brightness; // particle brightness, fades if dying
-	//CRGB colorbuffer[maxXpixel+1][maxYpixel+1] = {0}; //put buffer on stack (not a good idea, can cause crashes on large segments if other function run the stack into the heap)
+	uint32_t brightness; // particle brightness, fades if dying	
+	// CRGB colorbuffer[maxXpixel+1][maxYpixel+1] = {0}; //put buffer on stack (not a good idea, can cause crashes on large segments if other function run the stack into the heap)
 	if (useLocalBuffer)
 	{
 		//  allocate memory for the local renderbuffer
 		colorbuffer = allocate2Dbuffer(maxXpixel + 1, maxYpixel + 1);
 		if (colorbuffer == NULL)
-			useLocalBuffer = false; //render to segment pixels directly if not enough memory
-	}
+			useLocalBuffer = false; //render to segment pixels directly if not enough memory	
 
+		if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
+		{
+			uint32_t residual = motionBlur; //32bit for faster calculation
+			uint32_t yflipped;
+			for (int y = 0; y <= maxYpixel; y++)
+			{
+				yflipped = maxYpixel - y;
+				for (int x = 0; x <= maxXpixel; x++)
+				{
+					colorbuffer[x][y] = SEGMENT.getPixelColorXY(x, yflipped);
+					colorbuffer[x][y].r = (colorbuffer[x][y].r * residual) >> 8;
+					colorbuffer[x][y].g = (colorbuffer[x][y].g * residual) >> 8;
+					colorbuffer[x][y].b = (colorbuffer[x][y].b * residual) >> 8;
+				}
+			}
+		}
+	}
+	else
+	{
+		if (motionBlur > 0)
+			SEGMENT.fadeToBlackBy(256 - motionBlur);
+		else
+			SEGMENT.fill(BLACK); //clear the buffer before rendering to it 
+	}
 	// go over particles and render them to the buffer
 	for (i = 0; i < usedParticles; i++)
 	{
@@ -589,8 +676,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 				colorbuffer[pixco[3][0]][pixco[3][1]] = fast_color_add(colorbuffer[pixco[3][0]][pixco[3][1]], baseRGB, pxlbrightness[3]); // top left																																			
 		}
 		else
-		{
-			SEGMENT.fill(BLACK); // clear the matrix
+		{			
 			if (pxlbrightness[0] > 0)
 				SEGMENT.addPixelColorXY(pixco[0][0], maxYpixel - pixco[0][1], baseRGB.scale8((uint8_t)pxlbrightness[0])); // bottom left
 			if (pxlbrightness[1] > 0)
@@ -599,12 +685,39 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 				SEGMENT.addPixelColorXY(pixco[2][0], maxYpixel - pixco[2][1], baseRGB.scale8((uint8_t)pxlbrightness[2])); // top right
 			if (pxlbrightness[3] > 0)			
 				SEGMENT.addPixelColorXY(pixco[3][0], maxYpixel - pixco[3][1], baseRGB.scale8((uint8_t)pxlbrightness[3])); // top left
+			/*
+			uint32_t color = RGBW32(baseRGB.r, baseRGB.g, baseRGB.b, 0);
+			if (pxlbrightness[0] > 0)
+				SEGMENT.addPixelColorXY(pixco[0][0], maxYpixel - pixco[0][1], color_scale(color, pxlbrightness[0])); // bottom left
+			if (pxlbrightness[1] > 0)
+				SEGMENT.addPixelColorXY(pixco[1][0], maxYpixel - pixco[1][1], color_scale(color, pxlbrightness[1])); // bottom right
+			if (pxlbrightness[2] > 0)
+				SEGMENT.addPixelColorXY(pixco[2][0], maxYpixel - pixco[2][1], color_scale(color, pxlbrightness[2])); // top right
+			if (pxlbrightness[3] > 0)
+				SEGMENT.addPixelColorXY(pixco[3][0], maxYpixel - pixco[3][1], color_scale(color, pxlbrightness[3])); // top left
+			*/
+
+
+
 			// test to render larger pixels with minimal effort (not working yet, need to calculate coordinate from actual dx position but brightness seems right), could probably be extended to 3x3
 			//	SEGMENT.addPixelColorXY(pixco[1][0] + 1, maxYpixel - pixco[1][1], baseRGB.scale8((uint8_t)((brightness>>1) - pxlbrightness[0])), fastcoloradd);
 			//	SEGMENT.addPixelColorXY(pixco[2][0] + 1, maxYpixel - pixco[2][1], baseRGB.scale8((uint8_t)((brightness>>1) -pxlbrightness[3])), fastcoloradd);
 		}
 	}
-	if (useLocalBuffer)
+
+	if(particlesize > 0)
+	{
+		if (useLocalBuffer) 
+		{
+		//TODO: come up with a good and short 2D smearing function derived from blur
+		//put it in a function taking width, height and buffer pointer, so it can be used to blur individual particles for different sizes (will be slow) -> or maybe not, there is little use
+		// and would need individual sizes for each particle, 
+		}
+		else
+			SEGMENT.blur(particlesize, true); //todo: come up with good algorithm for size
+	}
+
+	if (useLocalBuffer) //transfer local buffer back to segment
 	{
 		uint32_t yflipped;
 		for (int y = 0; y <= maxYpixel; y++)
