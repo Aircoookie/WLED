@@ -175,7 +175,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
-    col = color_scale(col, _bri_t);
+    col = color_fade(col, _bri_t);
   }
 
   if (reverse  ) x = virtualWidth()  - x - 1;
@@ -274,15 +274,13 @@ uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
-void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear)
-{
+void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
   if (!isActive() || blur_amount == 0)
     return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
-  if (row >= rows)
-    return;
+  if (row >= rows) return;
   // blur one row
   uint8_t keep = smear ? 255 : 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
@@ -292,8 +290,8 @@ void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear)
   uint32_t curnew;
   for (unsigned x = 0; x < cols; x++) {
     uint32_t cur = getPixelColorXY(x, row);
-    uint32_t part = color_scale(cur, seep);
-    curnew = color_scale(cur, keep);
+    uint32_t part = color_fade(cur, seep);
+    curnew = color_fade(cur, keep);
     if (x > 0) {
       if (carryover)
         curnew = color_add(curnew, carryover, true);
@@ -301,7 +299,7 @@ void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear)
       if (last != prev) // optimization: only set pixel if color has changed
         setPixelColorXY(x - 1, row, prev);
     }
-    else // first pixel or last pixel
+    else // first pixel
       setPixelColorXY(x, row, curnew);
     lastnew = curnew;
     last = cur; // save original value for comparison on next iteration
@@ -326,8 +324,8 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
   uint32_t curnew;
   for (unsigned y = 0; y < rows; y++) {
     uint32_t cur = getPixelColorXY(col, y);
-    uint32_t part = color_scale(cur, seep);
-    curnew = color_scale(cur, keep);
+    uint32_t part = color_fade(cur, seep);
+    curnew = color_fade(cur, keep);
     if (y > 0) {
       if (carryover)
         curnew = color_add(curnew, carryover, true);

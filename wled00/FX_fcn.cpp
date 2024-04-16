@@ -735,7 +735,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   uint16_t len = length();
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
-	col = color_scale(col, _bri_t);
+    col = color_fade(col, _bri_t);
   }
 
   // expand pixel (taking into account start, grouping, spacing [and offset])
@@ -1003,7 +1003,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
     return;
   }
 #endif
-  uint8_t keep = smear ? 250 : 255 - blur_amount;
+  uint8_t keep = smear ? 255 : 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   unsigned vlength = virtualLength();
   uint32_t carryover = BLACK;
@@ -1012,10 +1012,9 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
   uint32_t curnew;
   for (unsigned i = 0; i < vlength; i++) {
     uint32_t cur = getPixelColor(i);
-    uint32_t part = color_scale(cur, seep);
-    curnew = color_scale(cur, keep);
-    if (i > 0)
-    {
+    uint32_t part = color_fade(cur, seep);
+    curnew = color_fade(cur, keep);
+    if (i > 0) {
       if (carryover)
         curnew = color_add(curnew, carryover, true);
       uint32_t prev = color_add(lastnew, part, true);
