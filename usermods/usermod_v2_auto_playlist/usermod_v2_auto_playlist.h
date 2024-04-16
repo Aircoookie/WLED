@@ -113,7 +113,7 @@ class AutoPlaylistUsermod : public Usermod {
       
       energy /= ENERGY_SCALE; // scale down so we get 0 sometimes
 
-      uint8_t lfc = float(fftResult[0]) * fftDeScaler[0] / 0.85f; // might as well undo pink noise here too.
+      uint16_t lfc = float(fftResult[0]) * fftDeScaler[0] / 0.85f; // might as well undo pink noise here too.
       uint16_t zcr = *(uint16_t*)um_data->u_data[11];
 
       // WLED-MM/TroyHacks: Calculate the long- and short-running averages
@@ -244,8 +244,7 @@ class AutoPlaylistUsermod : public Usermod {
             // go into freefall - this logic stops that from triggering right
             // after change_lockout. Better for smaller change_lockout values.
 
-            // SH7: this method is sub-optimal, as its interfering with the "playlist" engine
-            //       we shoud find a better method for triggering playlist changes
+            suspendPlaylist();       // suspend the playlist engine before changing to another preset
             applyPreset(newpreset);
             
             #ifdef USERMOD_AUTO_PLAYLIST_DEBUG

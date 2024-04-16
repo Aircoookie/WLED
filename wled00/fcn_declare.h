@@ -208,6 +208,7 @@ void _overlayAnalogCountdown();
 void _overlayAnalogClock();
 
 //playlist.cpp
+void suspendPlaylist(); // WLEDMM support function for auto playlist usermod
 void shufflePlaylist();
 void unloadPlaylist();
 int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
