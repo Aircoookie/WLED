@@ -12,6 +12,8 @@ jobs:
         with:
           days-before-stale: 120
           days-before-close: 7
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
           exempt-issue-labels: 'pinned,keep,enhancement,confirmed'
           exempt-pr-labels: 'pinned,keep,enhancement,confirmed'
           exempt-all-milestones: true
