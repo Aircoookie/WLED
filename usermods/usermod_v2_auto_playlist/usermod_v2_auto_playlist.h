@@ -346,16 +346,26 @@ class AutoPlaylistUsermod : public Usermod {
         user = root.createNestedObject("u");
       }
 
-      JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
+      if (!enabled) return; // usermod disabled -> don't add to info page
 
-      String uiDomString = F("");
-      
+      String uiNameString = FPSTR(_name);
       if (enabled && functionality_enabled) {
-        uiDomString += F("AutoPlaylist is Running");
+        uiNameString += F(" Running");
       } else if (!enabled) {
-        uiDomString += F("AutoPlaylist is Disabled");
+        uiNameString += F(" Disabled");
       } else {
-        uiDomString += F("AutoPlaylist is Suspended");
+        uiNameString += F(" Suspended");
+      }
+      JsonArray infoArr = user.createNestedArray(uiNameString);  // name + status
+
+      String uiDomString = (currentPlaylist > 0) ? String("#") + String(currentPlaylist) + String(" ") : String("");
+
+      if (currentPlaylist == musicPlaylist && currentPlaylist > 0) {
+        uiDomString += F("Music Playlist");
+      } else if (currentPlaylist == ambientPlaylist && currentPlaylist > 0) {
+        uiDomString += F("Ambient Playlist");
+      } else {
+        uiDomString += F("Playlist Overridden");
       }
 
       uiDomString += F("<br />");
@@ -366,16 +376,6 @@ class AutoPlaylistUsermod : public Usermod {
         uiDomString += F("AutoChange on Stand-by");
       } else if (!autoChange) {
         uiDomString += F("AutoChange is Disabled");
-      }
-
-      uiDomString += F("<br />");
-
-      if (currentPlaylist == musicPlaylist && currentPlaylist > 0) {
-        uiDomString += F("Playlist: Music Playlist");
-      } else if (currentPlaylist == ambientPlaylist && currentPlaylist > 0) {
-        uiDomString += F("Playlist: Ambient Playlist");
-      } else {
-        uiDomString += F("Playlist: Overridden");
       }
       
       // #ifdef USERMOD_AUTO_PLAYLIST_DEBUG
