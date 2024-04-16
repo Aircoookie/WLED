@@ -162,6 +162,7 @@ void sendDataWs(AsyncWebSocketClient * client)
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
     ws.cleanupClients(0); //disconnect all clients to release memory
     ws._cleanBuffers();
+    errorFlag = ERR_LOW_WS_MEM;
     return; //out of memory
   }
 

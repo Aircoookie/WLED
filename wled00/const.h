@@ -347,7 +347,9 @@
 #define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
 #define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
-#define ERR_LOW_MEM     33  // low memory (RAM)
+#define ERR_LOW_MEM     33  // WLEDMM: low memory (RAM)
+#define ERR_LOW_SEG_MEM 34  // WLEDMM: low memory (segment data RAM)
+#define ERR_LOW_WS_MEM  35  // WLEDMM: low memory (ws)
 
 // Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness

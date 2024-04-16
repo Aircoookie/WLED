@@ -128,10 +128,13 @@ void Segment::allocLeds() {
     if (ledsrgb) free(ledsrgb);   // we need a bigger buffer, so free the old one first
     ledsrgb = (CRGB*)calloc(size, 1);
     ledsrgbSize = ledsrgb?size:0;
-    if (ledsrgb == nullptr) USER_PRINTLN("allocLeds failed!!");
+    if (ledsrgb == nullptr) {
+      USER_PRINTLN("allocLeds failed!!");
+      errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
+    }
   }
   else {
-    USER_PRINTF("reuse Leds %u from %u\n", size, ledsrgb?ledsrgbSize:0);
+    //USER_PRINTF("reuse Leds %u from %u\n", size, ledsrgb?ledsrgbSize:0);
   }
 }
 
@@ -212,7 +215,11 @@ bool Segment::allocateData(size_t len) {
   //DEBUG_PRINTF("allocateData(%u) start %d, stop %d, vlen %d\n", len, start, stop, virtualLength());
   deallocateData();
   if (len == 0) return false; // nothing to do
-  if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
+  if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
+    //USER_PRINTF("Segment::allocateData: Segment data quota exceeded! used:%u request:%u max:%d\n", Segment::getUsedSegmentData(), len, MAX_SEGMENT_DATA);
+    if (len > 0) errorFlag = ERR_LOW_SEG_MEM;  // WLEDMM raise errorflag
+    return false; //not enough memory
+  }
   // do not use SPI RAM on ESP32 since it is slow
   //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
   //if (psramFound())
@@ -220,10 +227,17 @@ bool Segment::allocateData(size_t len) {
   //else
   //#endif
     data = (byte*) malloc(len);
-  if (!data) { _dataLen = 0; return false;} //allocation failed // WLEDMM reset dataLen
+  if (!data) {
+      _dataLen = 0; // WLEDMM reset dataLen
+      errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
+      USER_PRINT(F("Segment::allocateData: FAILED to allocate ")); 
+      USER_PRINT(len); USER_PRINTLN(F(" bytes."));
+      return false;
+  } //allocation failed
   Segment::addUsedSegmentData(len);
   _dataLen = len;
   memset(data, 0, len);
+  if (errorFlag == ERR_LOW_SEG_MEM) errorFlag = ERR_NONE; // WLEDMM reset errorflag on success
   return true;
 }
 
@@ -231,7 +245,7 @@ void Segment::deallocateData() {
   if (!data) {_dataLen = 0; return;}  // WLEDMM reset dataLen
   free(data);
   data = nullptr;
-  //DEBUG_PRINTLN("deallocateData() called free().");
+  //USER_PRINTF("Segment::deallocateData: free'd   %d bytes.\n", _dataLen);
   Segment::addUsedSegmentData(-_dataLen);
   _dataLen = 0;
 }
@@ -1656,6 +1670,7 @@ void WS2812FX::finalizeInit(void)
     //#endif
       if (arrSize > 0) Segment::_globalLeds = (CRGB*) malloc(arrSize); // WLEDMM avoid malloc(0)
     if ((Segment::_globalLeds != nullptr) && (arrSize > 0)) memset(Segment::_globalLeds, 0, arrSize); // WLEDMM avoid dereferencing nullptr
+    if ((Segment::_globalLeds == nullptr) && (arrSize > 0)) errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
   }
 
   //segments are created in makeAutoSegments();
@@ -2403,7 +2418,10 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     if ((size > 0) && (customMappingTable == nullptr)) { // second try
       DEBUG_PRINTLN("deserializeMap: trying to get fresh memory block.");
       customMappingTable = (uint16_t*) calloc(size, sizeof(uint16_t));
-      if (customMappingTable == nullptr) DEBUG_PRINTLN("deserializeMap: alloc failed!");
+      if (customMappingTable == nullptr) { 
+        DEBUG_PRINTLN("deserializeMap: alloc failed!");
+        errorFlag = ERR_LOW_MEM; // WLEDMM raise errorflag
+      }
     }
     if (customMappingTable != nullptr) customMappingTableSize = size;
   }
