@@ -735,11 +735,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   uint16_t len = length();
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
-    byte r = scale8(R(col), _bri_t);
-    byte g = scale8(G(col), _bri_t);
-    byte b = scale8(B(col), _bri_t);
-    byte w = scale8(W(col), _bri_t);
-    col = RGBW32(r, g, b, w);
+    col = color_fade(col, _bri_t);
   }
 
   // expand pixel (taking into account start, grouping, spacing [and offset])
@@ -995,33 +991,43 @@ void Segment::fadeToBlackBy(uint8_t fadeBy) {
 /*
  * blurs segment content, source: FastLED colorutils.cpp
  */
-void Segment::blur(uint8_t blur_amount) {
+void Segment::blur(uint8_t blur_amount, bool smear) {
   if (!isActive() || blur_amount == 0) return; // optimization: 0 means "don't blur"
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     // compatibility with 2D
     const unsigned cols = virtualWidth();
     const unsigned rows = virtualHeight();
-    for (unsigned i = 0; i < rows; i++) blurRow(i, blur_amount); // blur all rows
-    for (unsigned k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
+    for (unsigned i = 0; i < rows; i++) blurRow(i, blur_amount, smear); // blur all rows
+    for (unsigned k = 0; k < cols; k++) blurCol(k, blur_amount, smear); // blur all columns
     return;
   }
 #endif
-  uint8_t keep = 255 - blur_amount;
+  uint8_t keep = smear ? 255 : 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
-  uint32_t carryover = BLACK;
   unsigned vlength = virtualLength();
+  uint32_t carryover = BLACK;
+  uint32_t lastnew;
+  uint32_t last;
+  uint32_t curnew;
   for (unsigned i = 0; i < vlength; i++) {
     uint32_t cur = getPixelColor(i);
     uint32_t part = color_fade(cur, seep);
-    cur = color_add(color_fade(cur, keep), carryover, true);
+    curnew = color_fade(cur, keep);
     if (i > 0) {
-      uint32_t c = getPixelColor(i-1);
-      setPixelColor(i-1, color_add(c, part, true));
+      if (carryover)
+        curnew = color_add(curnew, carryover, true);
+      uint32_t prev = color_add(lastnew, part, true);
+      if (last != prev) // optimization: only set pixel if color has changed
+        setPixelColor(i - 1, prev);
     }
-    setPixelColor(i, cur);
+    else // first pixel
+      setPixelColor(i, curnew);
+    lastnew = curnew;
+    last = cur; // save original value for comparison on next iteration
     carryover = part;
   }
+  setPixelColor(vlength - 1, curnew);
 }
 
 /*
