@@ -785,8 +785,7 @@ void FFTcode(void * parameter)
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
-    
-    // we have new results - notify UDP sound send
+
     haveNewFFTResult = true;
     
     #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
