@@ -275,8 +275,7 @@ uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
 
 // blurRow: perform a blur on a row of a rectangular matrix
 void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
-  if (!isActive() || blur_amount == 0)
-    return; // not active
+  if (!isActive() || blur_amount == 0) return; // not active
   const uint_fast16_t cols = virtualWidth();
   const uint_fast16_t rows = virtualHeight();
 
