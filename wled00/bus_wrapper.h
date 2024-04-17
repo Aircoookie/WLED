@@ -79,6 +79,11 @@
 #define I_8266_U1_2805_5 90
 #define I_8266_DM_2805_5 91
 #define I_8266_BB_2805_5 92
+//TM1914 (RGB)
+#define I_8266_U0_TM1914_3 99
+#define I_8266_U1_TM1914_3 100
+#define I_8266_DM_TM1914_3 101
+#define I_8266_BB_TM1914_3 102
 
 /*** ESP32 Neopixel methods ***/
 //RGB
