@@ -35,8 +35,11 @@ IRAM_ATTR_YN uint32_t color_blend(uint32_t color1, uint32_t color2, uint_fast16_
  * color add function that preserves ratio
  * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
  */
-IRAM_ATTR_YN uint32_t color_add(uint32_t c1, uint32_t c2)   // WLEDMM added IRAM_ATTR_YN
+IRAM_ATTR_YN uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)   // WLEDMM added IRAM_ATTR_YN
 {
+  if (c2 == 0) return c1;  // WLEDMM shortcut
+  if (c1 == 0) return c2;  // WLEDMM shortcut
+
   if (fast) {
     uint8_t r = R(c1);
     uint8_t g = G(c1);
@@ -52,7 +55,7 @@ IRAM_ATTR_YN uint32_t color_add(uint32_t c1, uint32_t c2)   // WLEDMM added IRAM
     uint32_t g = G(c1) + G(c2);
     uint32_t b = B(c1) + B(c2);
     uint32_t w = W(c1) + W(c2);
-    uint_fast16_t max = r;
+    uint32_t max = r;
     if (g > max) max = g;
     if (b > max) max = b;
     if (w > max) max = w;
@@ -66,8 +69,10 @@ IRAM_ATTR_YN uint32_t color_add(uint32_t c1, uint32_t c2)   // WLEDMM added IRAM
  * if using "video" method the resulting color will never become black unless it is already black
  */
 
-uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
+IRAM_ATTR_YN uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
+  if (amount == 0) return 0; // WLEDMM shortcut
+
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
   uint32_t r = R(c1);
   uint32_t g = G(c1);
@@ -78,7 +83,7 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
     scaledcolor = (((r * scale) >> 8) << 16) + ((r && scale) ? 1 : 0);
     scaledcolor |= (((g * scale) >> 8) << 8) + ((g && scale) ? 1 : 0);
     scaledcolor |= ((b * scale) >> 8) + ((b && scale) ? 1 : 0);
-    scaledcolor |= (((w * scale) >> 8) << 24) + ((w && scale) ? 1 : 0);
+    if (w>0) scaledcolor |= (((w * scale) >> 8) << 24) + ((scale) ? 1 : 0);  // WLEDMM small speedup when no white channel
     return scaledcolor;
   }
   else  {
@@ -86,7 +91,7 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
     scaledcolor = ((r * scale) >> 8) << 16;
     scaledcolor |= ((g * scale) >> 8) << 8;
     scaledcolor |= (b * scale) >> 8;
-    scaledcolor |= ((w * scale) >> 8) << 24;
+    if (w>0) scaledcolor |= ((w * scale) >> 8) << 24;                              // WLEDMM small speedup when no white channel
     return scaledcolor;
   }
 }

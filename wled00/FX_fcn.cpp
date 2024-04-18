@@ -1358,10 +1358,10 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     // compatibility with 2D
-    const unsigned cols = virtualWidth();
-    const unsigned rows = virtualHeight();
-    for (unsigned i = 0; i < rows; i++) blurRow(i, blur_amount, smear); // blur all rows
-    for (unsigned k = 0; k < cols; k++) blurCol(k, blur_amount, smear); // blur all columns
+    const uint_fast32_t cols = virtualWidth();
+    const uint_fast32_t rows = virtualHeight();
+    for (uint_fast32_t i = 0; i < rows; i++) blurRow(i, blur_amount, smear); // blur all rows
+    for (uint_fast32_t k = 0; k < cols; k++) blurCol(k, blur_amount, smear); // blur all columns
     return;
   }
 #endif
@@ -1371,25 +1371,25 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
   uint32_t carryover = BLACK;
   uint32_t lastnew;
   uint32_t last;
-  uint32_t curnew;
+  uint32_t curnew = 0;
   for (unsigned i = 0; i < vlength; i++) {
     uint32_t cur = getPixelColor(i);
     uint32_t part = color_fade(cur, seep);
     curnew = color_fade(cur, keep);
     if (i > 0) {
       if (carryover)
-        curnew = color_add(curnew, carryover, true);
-      uint32_t prev = color_add(lastnew, part, true);
+        curnew = color_add(curnew, carryover, !smear);  // WLEDMM
+      uint32_t prev = color_add(lastnew, part, !smear); // WLEDMM
       if (last != prev) // optimization: only set pixel if color has changed
-        setPixelColor(i - 1, prev);
+        setPixelColor(int(i - 1), prev);
     }
     else // first pixel
-      setPixelColor(i, curnew);
+      setPixelColor(int(i), curnew);
     lastnew = curnew;
     last = cur; // save original value for comparison on next iteration
     carryover = part;
   }
-  setPixelColor(vlength - 1, curnew);
+  setPixelColor(int(vlength - 1), curnew);
 }
 
 /*

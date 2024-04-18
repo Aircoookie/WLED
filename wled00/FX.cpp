@@ -5627,7 +5627,7 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
                                     (rows - 1 - cy == 0)) ? ColorFromPalette(SEGPALETTE, beat8(5), thisVal, LINEARBLEND) : CRGB::Black);
     }
   }
-  SEGMENT.blur(SEGMENT.custom2>>5);
+  SEGMENT.blur(SEGMENT.custom2>>5, (SEGMENT.custom2 > 132));  // WLEDMM
 
   return FRAMETIME;
 } // mode_2DPlasmaball()
