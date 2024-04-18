@@ -564,7 +564,7 @@ void FFTcode(void * parameter)
             newZeroCrossingCount++;
       }
     }
-    newZeroCrossingCount = (newZeroCrossingCount*2)/3; // reduce value so it typicially stays below 256
+    newZeroCrossingCount = (newZeroCrossingCount*2)/3; // reduce value so it typically stays below 256
     zeroCrossingCount = newZeroCrossingCount; // update only once, to avoid that effects pick up an intermediate value
 
     // release highest sample to volume reactive effects early - not strictly necessary here - could also be done at the end of the function
