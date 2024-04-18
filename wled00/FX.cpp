@@ -5645,6 +5645,8 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
+  const float maxRows  = (rows <= 32) ? 32.0f : (rows <= 64) ? 64.0f : 128.0f;  // WLEDMM safe up to 128x128
+  const float minScale = (rows <= 32) ? 12.0f : (rows <= 64) ? 4.6f : 2.1f;     // WLEDMM
 
   const CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
 
@@ -5653,8 +5655,11 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
     SEGMENT.fill(BLACK);
   }
 
-  float adjustHeight = mapf(rows, 8, 32, 28, 12); // maybe use mapf() ??? // WLEDMM yes!
+  float adjustHeight = mapf(rows, 8, maxRows, 28, minScale); // maybe use mapf() ??? // WLEDMM yes!  
   uint16_t adjScale = map(cols, 8, 64, 310, 63);
+
+  adjustHeight = max(min(adjustHeight, 28.0f), minScale);     // WLEDMM bugfix for larger fixtures
+  adjScale = max(min(adjScale, uint16_t(310)), uint16_t(63)); // WLEDMM
 /*
   if (SEGENV.aux1 != SEGMENT.custom1/12) {   // Hacky palette rotation. We need that black.
     SEGENV.aux1 = SEGMENT.custom1/12;
