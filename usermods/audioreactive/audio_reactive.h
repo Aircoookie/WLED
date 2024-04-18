@@ -601,8 +601,8 @@ void FFTcode(void * parameter)
           FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
         #endif
         FFT.compute( FFTDirection::Forward );                       // Compute FFT
-      vReal[0] = 0;   // The remaining DC offset on the signal produces a strong spike on position 0 that should be eliminated to avoid issues.
         FFT.complexToMagnitude();                                   // Compute magnitudes
+        vReal[0] = 0;   // The remaining DC offset on the signal produces a strong spike on position 0 that should be eliminated to avoid issues.
         #else
         FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
 
