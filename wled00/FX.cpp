@@ -5818,6 +5818,8 @@ uint16_t mode_2DSunradiation(void) {                   // By: ldirko https://edi
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
+  const int minSize = min(cols, rows);          // WLEDMM
+  const int magnify = (minSize <= 32) ? 8 : 46; // WLEDMM
 
   if (!SEGENV.allocateData(sizeof(byte)*(cols+2)*(rows+2))) return mode_static(); //allocation failed
   byte *bump = reinterpret_cast<byte*>(SEGENV.data);
@@ -5846,10 +5848,10 @@ uint16_t mode_2DSunradiation(void) {                   // By: ldirko https://edi
       ++vlx;
       int8_t nx = bump[x + yindex + 1] - bump[x + yindex - 1];
       int8_t ny = bump[x + yindex + (cols + 2)] - bump[x + yindex - (cols + 2)];
-      byte difx = abs8(vlx * 7 - nx);
-      byte dify = abs8(vly * 7 - ny);
+      byte difx = min(abs(vlx * 7 - nx), 255);  // WLEDMM replaced abs8 as it does not work for numbers >127
+      byte dify = min(abs(vly * 7 - ny), 255);  // WLEDMM
       int temp = difx * difx + dify * dify;
-      int col = 255 - temp / 8; //8 its a size of effect
+      int col = 255 - temp / magnify; //8 its a size of effect // WLEDMM size adjusts to matrix dimensions
       if (col < 0) col = 0;
       SEGMENT.setPixelColorXY(x, y, HeatColor(col / (3.0f-(float)(SEGMENT.intensity)/128.f)));
     }
