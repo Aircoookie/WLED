@@ -1187,7 +1187,7 @@ class PolyBus {
           if (num > 9) return I_NONE;        
         #endif
       #else
-      // ESP32 "audio_fastpath" - 8 RMT and 1 I2S channels. RMT 5-8 have sending delays, so use I2S#1 before going for RMT 5-8
+        // ESP32 "audio_fastpath" - 8 RMT and 1 I2S channels. RMT 5-8 have sending delays, so use I2S#1 before going for RMT 5-8
         #ifdef WLEDMM_SLOWPATH // I2S flickers on large installs. Favor stability over framerate.
           if (num > 7) return I_NONE;
         #else
