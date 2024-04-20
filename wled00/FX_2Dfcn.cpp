@@ -220,8 +220,9 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM:
   bool sameColor = false;
   if (ledsrgb) { // WLEDMM small optimization
     i = XY(x,y);
-    if ((i < UINT_MAX) && (ledsrgb[i] == col)) sameColor = true;
-    else ledsrgb[i] = col;
+    CRGB fastled_col = CRGB(col);
+    if (ledsrgb[i] == fastled_col) sameColor = true;
+    else ledsrgb[i] = fastled_col;
   }
   uint8_t _bri_t = currentBri(on ? opacity : 0);
   if (!_bri_t && !transitional) return;
@@ -230,7 +231,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM:
   }
 
 #if 0 // this is a dangerous optimization
-  if ((i < UINT_MAX) && sameColor && (ledsrgb[i] == col) && (_globalLeds == nullptr)) return; // WLEDMM looks like nothing to do (but we don't trust globalleds)
+  if ((i < UINT_MAX) && sameColor && (ledsrgb[i] == CRGB(col)) && (_globalLeds == nullptr)) return; // WLEDMM looks like nothing to do (but we don't trust globalleds)
 #endif
 
   if (reverse  ) x = virtualWidth()  - x - 1;
