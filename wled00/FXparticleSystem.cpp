@@ -56,7 +56,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	updatePSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
-	particlesize = 0; //minimum size
+	setParticleSize(0); // minimum size
 	motionBlur = 0; //no fading by default
 	emitIndex = 0;
 	/*
@@ -164,6 +164,7 @@ void ParticleSystem::setMotionBlur(uint8_t bluramount)
 void ParticleSystem::setParticleSize(uint8_t size)
 {
 	particlesize = size;
+	particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize); 
 }
 // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is also disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
@@ -271,14 +272,14 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 		//if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of vew
 		if (options.bounceX) 
 		{
-			if ((newX < PS_P_RADIUS) || (newX > maxX - PS_P_RADIUS)) // reached a wall
+			if ((newX < particleHardRadius) || (newX > maxX - particleHardRadius)) // reached a wall
 			{
 				part.vx = -part.vx;					  // invert speed
 				part.vx = (part.vx * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-				if (newX < PS_P_RADIUS)
-					newX = PS_P_RADIUS; // fast particles will never reach the edge if position is inverted
+				if (newX < particleHardRadius)
+					newX = particleHardRadius; // fast particles will never reach the edge if position is inverted
 				else
-					newX = maxX - PS_P_RADIUS;
+					newX = maxX - particleHardRadius;
 			}
 		}
 		
@@ -298,13 +299,13 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 
 		if (options.bounceY) 
 		{
-			if ((newY < PS_P_RADIUS) || (newY > maxY - PS_P_RADIUS)) // reached floor / ceiling
+			if ((newY < particleHardRadius) || (newY > maxY - particleHardRadius)) // reached floor / ceiling
 			{
-				if (newY < PS_P_RADIUS) // bounce at bottom
+				if (newY < particleHardRadius) // bounce at bottom
 				{
 						part.vy = -part.vy; // invert speed
 						part.vy = ((int32_t)part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-						newY = PS_P_RADIUS;		
+						newY = particleHardRadius;
 				}
 				else
 				{
@@ -317,7 +318,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 					{
 						part.vy = -part.vy;	// invert speed
 						part.vy = ((int32_t)part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-						newY = maxY - PS_P_RADIUS;	
+						newY = maxY - particleHardRadius;
 					}
 				}		
 			}
@@ -730,6 +731,15 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 		}
 		free(colorbuffer); // free buffer memory
 	}
+
+	// blur function that works: (for testing only)
+	SEGMENT.blur(particlesize, true);
+	if (particlesize > 64)
+		SEGMENT.blur((particlesize - 64) << 1, true);
+	if (particlesize > 128)
+		SEGMENT.blur((particlesize - 128) << 1, true);
+	if (particlesize > 192)
+		SEGMENT.blur((particlesize - 192) << 1, true);
 }
 
 // calculate pixel positions and brightness distribution for rendering function
@@ -924,7 +934,6 @@ void ParticleSystem::handleCollisions()
 	uint32_t i, j;
 	uint32_t startparticle = 0;
 	uint32_t endparticle = usedParticles >> 1; // do half the particles, significantly speeds things up
-
 	// every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame, less accurate but good enough)
 	// if m ore accurate collisions are needed, just call it twice in a row
 	if (collisioncounter & 0x01) 
@@ -948,10 +957,10 @@ void ParticleSystem::handleCollisions()
 				if (particles[j].ttl > 0) // if target particle is alive
 				{
 					dx = particles[i].x - particles[j].x;
-					if (dx < PS_P_HARDRADIUS && dx > -PS_P_HARDRADIUS) // check x direction, if close, check y direction
+					if (dx < particleHardRadius && dx > -particleHardRadius) // check x direction, if close, check y direction
 					{
 						dy = particles[i].y - particles[j].y;
-						if (dy < PS_P_HARDRADIUS && dy > -PS_P_HARDRADIUS) // particles are close
+						if (dy < particleHardRadius && dy > -particleHardRadius) // particles are close
 							collideParticles(&particles[i], &particles[j]);
 					}
 				}
@@ -980,18 +989,14 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 		dx = -1; 
 		if (relativeVx < 0) // if true, particle2 is on the right side
 			dx = 1;				
-		else if(relativeVx == 0) //if true 
-		{
+		else if(relativeVx == 0) 
 			relativeVx = 1;
-		}	
-		
+
 		dy = -1;
 		if (relativeVy < 0)
 			dy = 1;
 		else if (relativeVy == 0)
-		{
 			relativeVy = 1;
-		}
 
 		distanceSquared = 2; //1 + 1
 	}
@@ -1061,8 +1066,8 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 
 		
 
-			// const int32_t HARDDIAMETER = 2 * PS_P_HARDRADIUS; // push beyond the hard radius, helps with keeping stuff fluffed up -> not really
-			//  int32_t push = (2 * PS_P_HARDRADIUS * PS_P_HARDRADIUS - distanceSquared) >> 6; // push a small amount, if pushing too much, it becomse chaotic as waves of pushing run through piles
+			// const int32_t HARDDIAMETER = 2 * particleHardRadius; // push beyond the hard radius, helps with keeping stuff fluffed up -> not really
+			//  int32_t push = (2 * particleHardRadius * particleHardRadius - distanceSquared) >> 6; // push a small amount, if pushing too much, it becomse chaotic as waves of pushing run through piles
 			int32_t pushamount = 1 + ((250 + dotProduct) >> 6); // the closer dotproduct is to zero, the closer the particles are
 			int32_t push;
 
@@ -1284,19 +1289,19 @@ uint32_t calculateNumberOfParticles()
 	return numberofParticles;
 }
 
-uint32_t calculateNumberOfSources()
+uint32_t calculateNumberOfSources(uint8_t requestedsources)
 {
 	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 #ifdef ESP8266
-	int numberofSources = (cols * rows) / 8;
+	int numberofSources = min((cols * rows) / 8, (uint32_t)requestedsources);
 	numberofSources = max(1, min(numberofSources, ESP8266_MAXSOURCES)); // limit to 1 - 16
 #elif ARDUINO_ARCH_ESP32S2
-	int numberofSources = (cols * rows) / 6;
+	int numberofSources = min((cols * rows) / 6, (uint32_t)requestedsources);
 	numberofSources = max(1, min(numberofSources, ESP32S2_MAXSOURCES)); // limit to 1 - 48
 #else
-	int numberofSources = (cols * rows) / 4;
-	numberofSources = max(1, min(numberofSources, ESP32_MAXSOURCES)); // limit to 1 - 72
+	int numberofSources = min((cols * rows) / 4, (uint32_t)requestedsources);
+	numberofSources = max(1, min(numberofSources, ESP32_MAXSOURCES)); // limit to 1 - 64
 #endif
 	return numberofSources;
 }
@@ -1317,11 +1322,11 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, ui
 }
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
-bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes)
+bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes)
 {
 	//Serial.println("PS init function");
 	uint32_t numparticles = calculateNumberOfParticles();
-	uint32_t numsources = calculateNumberOfSources();
+	uint32_t numsources = calculateNumberOfSources(requestedsources);
 	if (!allocateParticleSystemMemory(numparticles, numsources, additionalbytes))
 	{
 		DEBUG_PRINT(F("PS init failed: memory depleted"));

@@ -42,11 +42,11 @@
 #define PS_P_HALFRADIUS 32  
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
-#define PS_P_HARDRADIUS 80 //hard surface radius of a particle, used for collision detection proximity
+#define PS_P_MINHARDRADIUS 80 // minimum hard surface radius
 #define PS_P_MINSURFACEHARDNESS 128 //minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 #define PS_P_MAXSPEED 120 //maximum speed a particle can have (vx/vy is int8)
 
-//struct for a single particle
+//struct for a single particle (10 bytes)
 typedef struct {
     int16_t x;   //x position in particle system
     int16_t y;   //y position in particle system    
@@ -62,7 +62,7 @@ typedef struct {
     bool flag4 : 1;
 } PSparticle;
 
-//struct for a particle source
+//struct for a particle source (17 bytes)
 typedef struct {
 	uint16_t minLife; //minimum ttl of emittet particles
 	uint16_t maxLife; //maximum ttl of emitted particles
@@ -137,7 +137,7 @@ public:
   PSsource *sources; // pointer to sources
   uint8_t* PSdataEnd; //points to first available byte after the PSmemory, is set in setPointers(). use this to set pointer to FX custom data  
   uint16_t maxX, maxY; //particle system size i.e. width-1 / height-1 in subpixels
-  uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required)
+  uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
   uint8_t numSources; //number of sources
   uint16_t numParticles;  // number of particles available in this system
   uint16_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
@@ -168,11 +168,12 @@ private:
   int8_t gforce; //gravity strength, default is 8 (negative is allowed)
   uint8_t collisioncounter; //counter to handle collisions
   uint8_t particlesize;
+  int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
   uint8_t motionBlur;
 };
 
 //initialization functions (not part of class)
-bool initParticleSystem(ParticleSystem *&PartSys, uint16_t additionalbytes = 0);
+bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0);
 uint32_t calculateNumberOfParticles();
 uint32_t calculateNumberOfSources();
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
