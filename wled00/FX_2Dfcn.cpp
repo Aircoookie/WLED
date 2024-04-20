@@ -231,7 +231,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM:
   }
 
 #if 0 // this is a dangerous optimization
-  if ((i < UINT_MAX) && sameColor && (ledsrgb[i] == CRGB(col)) && (_globalLeds == nullptr)) return; // WLEDMM looks like nothing to do (but we don't trust globalleds)
+  if ((i < UINT_MAX) && sameColor && (call > 0) && (ledsrgb[i] == CRGB(col)) && (_globalLeds == nullptr)) return; // WLEDMM looks like nothing to do (but we don't trust globalleds)
 #endif
 
   if (reverse  ) x = virtualWidth()  - x - 1;
@@ -348,19 +348,7 @@ void IRAM_ATTR_YN Segment::addPixelColorXY(int x, int y, uint32_t color, bool fa
   if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
   uint32_t col = getPixelColorXY(x,y);
-  uint8_t r = R(col);
-  uint8_t g = G(col);
-  uint8_t b = B(col);
-  uint8_t w = W(col);
-  if (fast) {
-    r = qadd8(r, R(color));
-    g = qadd8(g, G(color));
-    b = qadd8(b, B(color));
-    w = qadd8(w, W(color));
-    col = RGBW32(r,g,b,w);
-  } else {
-    col = color_add(col, color);
-  }
+  col = color_add(col, color, fast);
   setPixelColorXY(x, y, col);
 }
 
