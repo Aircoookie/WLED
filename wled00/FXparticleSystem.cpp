@@ -56,6 +56,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	updatePSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
+	setSaturation(255); //full saturation by default
 	setParticleSize(0); // minimum size
 	motionBlur = 0; //no fading by default
 	emitIndex = 0;
@@ -148,6 +149,11 @@ void ParticleSystem::setBounceY(bool enable)
 void ParticleSystem::setKillOutOfBounds(bool enable)
 {
 	particlesettings.killoutofbounds = enable;
+}
+
+void ParticleSystem::setSaturation(uint8_t sat)
+{
+	saturation = sat;
 }
 
 void ParticleSystem::setColorByAge(bool enable)
@@ -735,7 +741,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 	// blur function that works: (for testing only)
 	SEGMENT.blur(particlesize, true);
 	if (particlesize > 64)
-		SEGMENT.blur((particlesize - 64) << 1, true);
+		SEGMENT.blur(particlesize - 64, true);
 	if (particlesize > 128)
 		SEGMENT.blur((particlesize - 128) << 1, true);
 	if (particlesize > 192)

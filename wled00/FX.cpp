@@ -8339,12 +8339,12 @@ uint16_t mode_particlefire(void)
 
  // DEBUG_PRINTF_P(PSTR("segment data ptr in Fire FX %p\n"), SEGMENT.data);
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-
-  if (SEGMENT.check1) //slow i.e. low fps is enabled  TODO: test if this works, adjust if needed
+  uint32_t firespeed = max((uint8_t)100, SEGMENT.speed); //limit speed to 100 minimum, reduce frame rate to make it slower (slower speeds than 100 do not look nice)
+  if (SEGMENT.speed < 100) //slow, limit FPS
   {
     uint32_t *lastcall = reinterpret_cast<uint32_t *>(PartSys->PSdataEnd);
     uint32_t period = strip.now - *lastcall;    
-    if (period < 30) // limit to approximately 30FPS
+    if (period < map(SEGMENT.speed, 0, 99, 100, 20)) // limit to 50FPS - 10FPS
     {
       return FRAMETIME; //do not update this frame
     }
@@ -8374,14 +8374,14 @@ uint16_t mode_particlefire(void)
 
         PartSys->sources[i].source.y = -PS_P_RADIUS; // set the source below the frame 
         //PartSys->sources[i].source.ttl = 10 + random16((SEGMENT.custom1 * SEGMENT.custom1) >> 8) / (1 + (SEGMENT.speed >> 5)); //old not really good, too intense     
-        PartSys->sources[i].source.ttl = 5 + random16((SEGMENT.custom1 * SEGMENT.custom1) >> 7) / (2 + (SEGMENT.speed >> 4)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed -> new, this works!
-        //PartSys->sources[i].source.ttl = 5 + random16(SEGMENT.custom1) / (1 + (SEGMENT.speed >> 5)); // this is experimental, fine tuning all parameters
+        PartSys->sources[i].source.ttl = 5 + random16((SEGMENT.custom1 * SEGMENT.custom1) >> 7) / (2 + (firespeed >> 4)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed -> new, this works!
+        //PartSys->sources[i].source.ttl = 5 + random16(SEGMENT.custom1) / (1 + (firespeed >> 5)); // this is experimental, fine tuning all parameters
         PartSys->sources[i].maxLife = random16(7) + 13; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         PartSys->sources[i].minLife = 4;
         PartSys->sources[i].vx = (int8_t)random16(4) - 2;  // emitting speed (sideways)
-        PartSys->sources[i].vy = 5 + (SEGMENT.speed >> 2); // emitting speed (upwards) -> this is good        
+        PartSys->sources[i].vy = 5 + (firespeed >> 2); // emitting speed (upwards) -> this is good        
         //PartSys->sources[i].var = (random16(5) + 3) | 0x01; // speed variation around vx,vy (+/- var/2), only use odd numbers
-        PartSys->sources[i].var = (random16(2 + (SEGMENT.speed >> 5)) + 3) | 0x01; // speed variation around vx,vy (+/- var/2), only use odd numbers
+        PartSys->sources[i].var = (random16(2 + (firespeed >> 5)) + 3) | 0x01; // speed variation around vx,vy (+/- var/2), only use odd numbers
     }
     
   }
@@ -8401,7 +8401,7 @@ uint16_t mode_particlefire(void)
 //this is a work in progress... hard to find settings that look good TODO: looks ok on speed 130, need to tune it for other speeds
   if (SEGMENT.check3)
   {
-    if (SEGMENT.call % map(SEGMENT.speed,0,255,4,15)==0) // update noise position every xth frames, also add wind -> has do be according to speed.  135-> every third frame
+    if (SEGMENT.call % map(firespeed,0,255,4,15)==0) // update noise position every xth frames, also add wind -> has do be according to speed.  135-> every third frame
   {
     for (i = 0; i < PartSys->usedParticles; i++)
     {
@@ -8419,8 +8419,8 @@ uint16_t mode_particlefire(void)
          //PartSys->particles[i].vy += curl>>3;
         //PartSys->particles[i].vx += (curl * ((SEGMENT.custom2 * modulation)>>7)) >> 9;
         //PartSys->particles[i].vy += ((curl ) * ((SEGMENT.custom2 * modulation)>>7))>>10;
-        //PartSys->particles[i].vx += (curl * curl * (SEGMENT.speed+10)) >> 14; //this may be a bad idea -> yes, squre is always positive... and a bit strong
-        PartSys->particles[i].vx += (curl * (SEGMENT.speed + 10)) >> 9; //-> this is not too bad!
+        //PartSys->particles[i].vx += (curl * curl * (firespeed+10)) >> 14; //this may be a bad idea -> yes, squre is always positive... and a bit strong
+        PartSys->particles[i].vx += (curl * (firespeed + 10)) >> 9; //-> this is not too bad!
         // PartSys->particles[i].vy += (curl * SEGMENT.custom2 ) >> 13;
       }
     }
@@ -8443,7 +8443,7 @@ uint16_t mode_particlefire(void)
       if (PartSys->particles[i].ttl == 0) // find a dead particle
       {
         // emit particle at random position over the top of the matrix (random16 is not random enough)
-        PartSys->particles[i].vy = 1 ;//+ (SEGMENT.speed >> 3);
+        PartSys->particles[i].vy = 1 ;//+ (firespeed >> 3);
         PartSys->particles[i].ttl = 10;//(PS_P_RADIUS<<2) / PartSys->particles[i].vy;
         PartSys->particles[i].x = (PartSys->maxX >> 1) - (spread>>1) + (rand() % spread) ;
         PartSys->particles[i].y = 0; 
@@ -8537,8 +8537,8 @@ uint16_t mode_particlepit(void)
 
       // blur function that works: (for testing only)
     static uint8_t testcntr;
-    static uint8_t wobbleamount = 255;
-    wobbleamount -= 3;
+    static uint8_t wobbleamount = 200;
+    wobbleamount -= 2;
 
     testcntr+=15;
 
@@ -8546,7 +8546,7 @@ uint16_t mode_particlepit(void)
  //   int32_t xsize = 255-ysize;
 
     int32_t ysize = (int32_t)sin8(testcntr)-128;
-    int32_t xsize = -ysize;
+    int32_t xsize = -ysize; //TODO: xsize is not really needed, calculation can be simplified using just ysize
 
     //ysize = (((int16_t)SEGMENT.custom1 * ysize) >> 8);
     //xsize = (((int16_t)SEGMENT.custom1 * xsize) >> 8);
@@ -8560,56 +8560,94 @@ uint16_t mode_particlepit(void)
 
     Serial.print(xsize);
     Serial.print(" ");
-    Serial.println(ysize);
+    Serial.print(ysize);
 
-   // PartSys->setParticleSize(SEGMENT.custom1);
+    //PartSys->setParticleSize(SEGMENT.custom1);
     PartSys->update(); // update and render
-/*
+
     const unsigned cols = PartSys->maxXpixel + 1;
     const unsigned rows = PartSys->maxYpixel + 1;
-    for (unsigned i = 0; i < cols; i++)
-    {
-      SEGMENT.blurCol(i, xsize, true);
-      if (xsize > 64)
-        SEGMENT.blurCol(i, xsize - 64, true);
-      if (xsize > 128)
-        SEGMENT.blurCol(i, (xsize - 128) << 1, true);
-      if (xsize > 192)
-        SEGMENT.blurCol(i, (xsize - 192) << 1, true);
-    }
-    for (unsigned i = 0; i < rows; i++){
-      SEGMENT.blurRow(i, ysize, true);
-      if (ysize > 64)
-        SEGMENT.blurRow(i, ysize - 64, true);
-      if (ysize > 128)
-        SEGMENT.blurRow(i, (ysize - 128) << 1, true);
-      if (ysize > 192)
-        SEGMENT.blurRow(i, (ysize - 192) << 1, true);
-    }
+    uint8_t xiterations = 1 + (xsize>>8);
+    uint8_t yiterations = 1 + (ysize>>8);
+    uint8_t secondpassxsize = xsize - 255;
+    uint8_t secondpassysize = ysize - 255;
+    if (xsize > 255)
+      xsize = 255; //first pass, full sized
+    if (ysize > 255)
+      ysize = 255; 
 
-    for (unsigned i = 0; i < cols; i++)
+    Serial.print(xsize);
+    Serial.print(" ");
+    Serial.println(ysize);
+    for (uint32_t j = 0; j < xiterations; j++)
     {
-      SEGMENT.blurCol(i, xsize, true);
-      if (xsize > 64)
-        SEGMENT.blurCol(i, xsize - 64, true);
-      if (xsize > 128)
-        SEGMENT.blurCol(i, (xsize - 128) << 1, true);
-      if (xsize > 192)
-        SEGMENT.blurCol(i, (xsize - 192) << 1, true);
+      for (uint32_t i = 0; i < cols; i++)
+      {      
+        SEGMENT.blurCol(i, xsize, true);
+        if (xsize > 64)
+          SEGMENT.blurCol(i, xsize - 64, true);
+        if (xsize > 128)
+          SEGMENT.blurCol(i, (xsize - 128) << 1, true);
+        if (xsize > 192)
+          SEGMENT.blurCol(i, (xsize - 192) << 1, true);
+      }
+      //set size for second pass:
+      xsize = secondpassxsize;
     }
-    for (unsigned i = 0; i < rows; i++)
+    for (uint32_t j = 0; j < yiterations; j++)
     {
-      SEGMENT.blurRow(i, ysize, true);
-      if (ysize > 64)
-        SEGMENT.blurRow(i, ysize - 64, true);
-      if (ysize > 128)
-        SEGMENT.blurRow(i, (ysize - 128) << 1, true);
-      if (ysize > 192)
-        SEGMENT.blurRow(i, (ysize - 192) << 1, true);
+      for (unsigned i = 0; i < rows; i++)
+      {
+        SEGMENT.blurRow(i, ysize, true);
+        if (ysize > 64)
+          SEGMENT.blurRow(i, ysize - 64, true);
+        if (ysize > 128)
+          SEGMENT.blurRow(i, (ysize - 128) << 1, true);
+        if (ysize > 192)
+          SEGMENT.blurRow(i, (ysize - 192) << 1, true);
+      }
+      // set size for second pass:
+      ysize = secondpassysize;
+    }
+/*
+//rotat image (just a test, non working yet)
+    float angle = PI/3;
+    // Calculate sine and cosine of the angle
+    float cosTheta = cos(angle);
+    float sinTheta = sin(angle);
+
+    // Center of rotation
+    int centerX = cols / 2;
+    int centerY = rows / 2;
+
+    // Iterate over each pixel in the output image
+    for (int y = 0; y < rows; y++)
+    {
+      for (int x = 0; x < cols; x++)
+      {
+        int relX = x - centerX;
+        int relY = y - centerY;
+
+        // Apply rotation using axis symmetry
+        int origX = round(relX * cosTheta - relY * sinTheta) + centerX;
+        int origY = round(relX * sinTheta + relY * cosTheta) + centerY;
+
+        // Check if original coordinates are within bounds
+        if (origX >= 0 && origX < rows && origY >= 0 && origY < cols)
+        {
+          // Copy pixel value from original image to rotated image
+          SEGMENT.setPixelColorXY(x, y, SEGMENT.getPixelColorXY(origX, origY));
+        }
+
+        // Copy pixel values from original image to rotated image
+        rotatedImage[origY][origX] = image[y][x];
+        rotatedImage[origY][cols - 1 - origX] = image[y][cols - 1 - x];
+        rotatedImage[rows - 1 - origY][origX] = image[rows - 1 - y][x];
+        rotatedImage[rows - 1 - origY][cols - 1 - origX] = image[rows - 1 - y][cols - 1 - x];
+      }
     }*/
-
-    return FRAMETIME;
-  }
+      return FRAMETIME;
+    }
 static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=200,c1=120,c2=100,c3=31,o1=0,o2=0,o3=1";
 
 /*

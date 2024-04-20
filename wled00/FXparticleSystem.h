@@ -53,7 +53,6 @@ typedef struct {
     int8_t vx;  //horizontal velocity
     int8_t vy;  //vertical velocity
     uint8_t hue;  // color hue
-    uint8_t sat;  // color saturation
     //two byte bit field:
     uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
     bool outofbounds : 1; //out of bounds flag, set to true if particle is outside of display area
@@ -61,6 +60,20 @@ typedef struct {
     bool flag3 : 1; // unused flags...
     bool flag4 : 1;
 } PSparticle;
+
+// struct for additional particle settings (optional)
+typedef struct
+{  
+  uint8_t sat; //particle color saturation
+  uint8_t size; //particle size, 255 means 10 pixels in diameter
+  uint8_t sizeasymmetry; //asymmetrical size TODO: need something better to define this?
+  uint8_t forcecounter; //counter for applying forces to individual particles
+
+  bool flag1 : 1; // unused flags... for now.
+  bool flag2 : 1;    
+  bool flag3 : 1;       
+  bool flag4 : 1;
+} PSadvancedparticle;
 
 //struct for a particle source (17 bytes)
 typedef struct {
@@ -70,7 +83,7 @@ typedef struct {
   uint8_t var; //variation of emitted speed
   int8_t vx; //emitting speed
   int8_t vy; //emitting speed
-} PSsource;
+} PSsource; //TODO: sources also need parameter for advanced particles, so size, saturation, ...
 
 // struct for PS settings
 typedef struct
@@ -127,6 +140,7 @@ public:
   void setBounceX(bool enable);
   void setBounceY(bool enable);
   void setKillOutOfBounds(bool enable); //if enabled, particles outside of matrix instantly die
+  void setSaturation(uint8_t sat); //set global color saturation
   void setColorByAge(bool enable);
   void setMotionBlur(uint8_t bluramount);
   void setParticleSize(uint8_t size);
@@ -166,7 +180,9 @@ private:
   int32_t wallHardness;
   uint8_t gforcecounter; //counter for global gravity
   int8_t gforce; //gravity strength, default is 8 (negative is allowed)
-  uint8_t collisioncounter; //counter to handle collisions
+  uint8_t collisioncounter; //counter to handle collisions TODO: could use the SEGMENT.call?
+  //global particle properties for basic particles
+  uint8_t saturation;
   uint8_t particlesize;
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
   uint8_t motionBlur;
