@@ -574,18 +574,6 @@
                 style="display: none"
               />
             </div>
-            <div class="row margin-y">
-              <div class="col-full">
-                <button
-                  type="button"
-                  class="button"
-                  id="btnUpload"
-                  disabled="true"
-                  style="display: none"
-                >
-                  Upload
-                </button>
-              </div>
             </div>
           </form>
         </div>
@@ -952,24 +940,30 @@
         method: "POST",
         body: formData,
       };
+      showLoading();
       try {
         const response = await fetch(url, options);
         if (!response.ok) {
           throw new Error(response.status);
         }
         toast(`${file.name} successfully uploaded`, "success");
-        images();
-        storage();
       } catch (error) {
         const msg = `Error uploading image: ${error}`;
         console.error(msg);
         toast(msg, "error");
+      } finally {
+        await images();
+        await storage();
+        hideLoading();
       }
     }
 
     // reload all info on change of hostname input
     hostname.addEventListener("blur", async () => {
-      WLED_URL = `${protocol}//${hostname.value}`;
+      hostname.value = hostname.value.trim();
+      newWledUrl = `${protocol}//${hostname.value}`;
+      if (WLED_URL == newWledUrl) { return; }
+      WLED_URL = newWledUrl
       // replace url in browser
       var url =
         window.location.protocol +
@@ -1000,8 +994,6 @@
       false
     );
 
-    gId("btnUpload").addEventListener("click", upload, false);
-
     gId("dropzone").addEventListener("dragover", (e) => {
       e.preventDefault();
     });
@@ -1015,8 +1007,6 @@
 
       source.files = e.dataTransfer.files;
       const { name } = source.files[0];
-      // gId("dropzoneLabel").textContent = `Image ${name} selected!`;
-      btnUpload.removeAttribute("disabled");
       upload();
     });
 
@@ -1033,14 +1023,7 @@
           return;
         }
         const { name } = e.target.files[0];
-        // dropzoneLabel.textContent = `Image ${name} selected!`;
-        btnUpload.removeAttribute("disabled");
-        console.log("test");
         upload();
-      } else {
-        // dropzoneLabel.textContent =
-        //   "Drag and drop a file here or click to select a file";
-        btnUpload.setAttribute("disabled", "");
       }
     });
 
