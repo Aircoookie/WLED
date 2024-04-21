@@ -336,9 +336,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonObject relay = hw[F("relay")];
 
-  if (relay.containsKey("odrain")) {
-    rlyOpenDrain = relay["odrain"];
-  }
+  rlyOpenDrain  = relay[F("odrain")] | rlyOpenDrain;
   int hw_relay_pin = relay["pin"] | -2;
   if (hw_relay_pin > -2) {
     pinManager.deallocatePin(rlyPin, PinOwner::Relay);
@@ -872,7 +870,7 @@ void serializeConfig() {
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
   hw_relay["pin"] = rlyPin;
   hw_relay["rev"] = !rlyMde;
-  hw_relay["odrain"] = rlyOpenDrain;
+  hw_relay[F("odrain")] = rlyOpenDrain;
 
   hw[F("baud")] = serialBaud;
 
