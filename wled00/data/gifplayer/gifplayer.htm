@@ -915,7 +915,7 @@
           const { success } = await response.json();
 
           if (success) {
-            toast("Request sent successfully");
+            toast(`Saved as preset with ID ${id}`);
             window.parent.postMessage("loadPresets", WLED_URL);
           }
         } catch (error) {
