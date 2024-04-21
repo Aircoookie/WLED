@@ -288,6 +288,12 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 #else
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
+//Use open drain (floating pin) when relay should be off
+#ifndef RLYODRAIN
+WLED_GLOBAL bool rlyOpenDrain _INIT(false);
+#else
+WLED_GLOBAL bool rlyOpenDrain _INIT(RLYODRAIN);
+#endif
 #ifndef IRPIN
   #define IRPIN -1
 #endif
