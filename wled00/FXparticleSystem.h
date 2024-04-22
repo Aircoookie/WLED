@@ -30,9 +30,9 @@
 #include "FastLED.h"
 
 //memory allocation
-#define ESP8266_MAXPARTICLES 148 // enough for one 16x16 segment with transitions
+#define ESP8266_MAXPARTICLES 160 // enough for one 16x16 segment with transitions
 #define ESP8266_MAXSOURCES 16
-#define ESP32S2_MAXPARTICLES 768 // enough for four 16x16 segments
+#define ESP32S2_MAXPARTICLES 840 // enough for four 16x16 segments
 #define ESP32S2_MAXSOURCES 48
 #define ESP32_MAXPARTICLES 1024 // enough for four 16x16 segments  TODO: not enough for one 64x64 panel...
 #define ESP32_MAXSOURCES 64
@@ -46,7 +46,7 @@
 #define PS_P_MINSURFACEHARDNESS 128 //minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 #define PS_P_MAXSPEED 120 //maximum speed a particle can have (vx/vy is int8)
 
-//struct for a single particle (10 bytes)
+//struct for a single particle (9 bytes)
 typedef struct {
     int16_t x;   //x position in particle system
     int16_t y;   //y position in particle system    
@@ -66,24 +66,44 @@ typedef struct
 {  
   uint8_t sat; //particle color saturation
   uint8_t size; //particle size, 255 means 10 pixels in diameter
-  uint8_t sizeasymmetry; //asymmetrical size TODO: need something better to define this?
   uint8_t forcecounter; //counter for applying forces to individual particles
 
-  bool flag1 : 1; // unused flags... for now.
-  bool flag2 : 1;    
-  bool flag3 : 1;       
+  //bool flag1 : 1; // unused flags... for now.
+  //bool flag2 : 1;    
+  //bool flag3 : 1;       
+  //bool flag4 : 1;
+} PSadvancedParticle;
+
+// struct for advanced particle size control (optional) TODO: this is currently just an idea, may not make it into final code if too slow / complex 
+typedef struct
+{
+  uint8_t sizeasymmetry; // asymmetrical size TODO: need something better to define this?
+  uint8_t targetsize;  // target size for growing / shrinking
+  uint8_t growspeed : 4;   
+  uint8_t shrinkspeed : 4; 
+  uint8_t sizecounter; // counter that can be used for size contol TODO: need more than one?
+  //ideas:
+  //wobbleamount, rotation angle for asymmetic particles
+  //a flag 'usegravity' that can be set to false for selective gravity application
+
+  bool grow : 1; // flags
+  bool shrink : 1;
+  bool wobble : 1;
   bool flag4 : 1;
-} PSadvancedparticle;
+} PSsizeControl;
+
 
 //struct for a particle source (17 bytes)
 typedef struct {
-	uint16_t minLife; //minimum ttl of emittet particles
-	uint16_t maxLife; //maximum ttl of emitted particles
-  PSparticle source; //use a particle as the emitter source (speed, position, color)
-  uint8_t var; //variation of emitted speed
-  int8_t vx; //emitting speed
-  int8_t vy; //emitting speed
-} PSsource; //TODO: sources also need parameter for advanced particles, so size, saturation, ...
+	uint16_t minLife; // minimum ttl of emittet particles
+	uint16_t maxLife; // maximum ttl of emitted particles
+  PSparticle source; // use a particle as the emitter source (speed, position, color)
+  uint8_t var; // variation of emitted speed (use odd numbers for good symmetry)
+  int8_t vx; // emitting speed
+  int8_t vy; 
+  uint8_t sat; // particle saturation (advanced property)
+  uint8_t size; // particle size (advanced property)
+} PSsource; 
 
 // struct for PS settings
 typedef struct
@@ -102,33 +122,32 @@ typedef struct
 class ParticleSystem
 {
 public:
-  ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources); // constructor
+  ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced = false); // constructor
   // note: memory is allcated in the FX function, no deconstructor needed
   void update(void); //update the particles according to set options and render to the matrix
   void updateFire(uint32_t intensity); // update function for fire
-  
+  void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
 
   // particle emitters
   void flameEmit(PSsource &emitter);
   void sprayEmit(PSsource &emitter);
-  void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed);
-  void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
+  void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed);  
 
   // move functions
   void particleMoveUpdate(PSparticle &part, PSsettings &options);
 
-  //particle physics
-  void applyGravity(PSparticle *part, uint32_t numarticles, int8_t force, uint8_t *counter);
-  void applyGravity(PSparticle *part, uint32_t numarticles, uint8_t *counter); //use global gforce
-  void applyGravity(PSparticle *part); //use global system settings 
-  void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter);
-  void applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce);
-  void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle, uint8_t *counter);
-  void applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle);
+  //particle physics  
+  void applyGravity(PSparticle *part); // applies gravity to single particle (use this for sources)
+  void applyForce(PSparticle *part, int8_t xforce, int8_t yforce, uint8_t *counter);
+  void applyForce(uint16_t particleindex, int8_t xforce, int8_t yforce); //use this for advanced property particles
+  void applyForce(int8_t xforce, int8_t yforce); //apply a force to all particles
+  void applyAngleForce(PSparticle *part, int8_t force, uint16_t angle, uint8_t *counter);
+  void applyAngleForce(uint16_t particleindex, int8_t force, uint16_t angle); // use this for advanced property particles
+  void applyAngleForce(int8_t force, uint16_t angle); //apply angular force to all particles
   void applyFriction(PSparticle *part, uint8_t coefficient); // apply friction to specific particle
   void applyFriction(uint8_t coefficient); // apply friction to all used particles
-  void pointAttractor(PSparticle *particle, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow);
-  void lineAttractor(PSparticle *particle, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t *counter, uint8_t strength);
+  void pointAttractor(uint16_t particleindex, PSparticle *attractor, uint8_t strength, bool swallow);
+  void lineAttractor(uint16_t particleindex, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t strength);
 
   //set options
   void setUsedParticles(uint16_t num);
@@ -144,11 +163,12 @@ public:
   void setColorByAge(bool enable);
   void setMotionBlur(uint8_t bluramount);
   void setParticleSize(uint8_t size);
-  void enableGravity(bool enable, uint8_t force = 8);
+  void setGravity(int8_t force = 8);
   void enableParticleCollisions(bool enable, uint8_t hardness = 255);  
     
   PSparticle *particles; // pointer to particle array
   PSsource *sources; // pointer to sources
+  PSadvancedParticle *advPartProps; // pointer to advanced particle properties (can be NULL)
   uint8_t* PSdataEnd; //points to first available byte after the PSmemory, is set in setPointers(). use this to set pointer to FX custom data  
   uint16_t maxX, maxY; //particle system size i.e. width-1 / height-1 in subpixels
   uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
@@ -163,12 +183,13 @@ private:
   void renderParticle(PSparticle *particle, uint32_t brightess, int32_t *pixelvalues, int32_t (*pixelpositions)[2]);    
   
   //paricle physics applied by system if flags are set
+  void applyGravity(); // applies gravity to all particles
   void handleCollisions();
   void collideParticles(PSparticle *particle1, PSparticle *particle2);
   void fireParticleupdate();
 
   //utility functions
-  void updatePSpointers(); // update the data pointers to current segment data space
+  void updatePSpointers(bool isadvanced); // update the data pointers to current segment data space
   int32_t wraparound(int32_t w, int32_t maxvalue);
   int32_t calcForce_dv(int8_t force, uint8_t *counter);
   int32_t limitSpeed(int32_t speed);
@@ -179,19 +200,20 @@ private:
   int32_t collisionHardness;
   int32_t wallHardness;
   uint8_t gforcecounter; //counter for global gravity
-  int8_t gforce; //gravity strength, default is 8 (negative is allowed)
+  int8_t gforce; //gravity strength, default is 8 (negative is allowed, positive is downwards)
   uint8_t collisioncounter; //counter to handle collisions TODO: could use the SEGMENT.call?
+  uint8_t forcecounter; //counter for globally applied forces
   //global particle properties for basic particles
-  uint8_t saturation;
-  uint8_t particlesize;
+  uint8_t saturation; //note: on advanced particles, set this to 255 to disable saturation rendering, any other value uses particle sat value
+  uint8_t particlesize; //global particle size, 0 = 2 pixels, 255 = 10 pixels
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
   uint8_t motionBlur;
 };
 
 //initialization functions (not part of class)
-bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0);
-uint32_t calculateNumberOfParticles();
-uint32_t calculateNumberOfSources();
-bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
+bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, bool advanced = false, uint16_t additionalbytes = 0);
+uint32_t calculateNumberOfParticles(bool advanced);
+uint32_t calculateNumberOfSources(uint8_t requestedsources);
+bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool advanced, uint16_t additionalbytes);
 //color add function
 CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale); // fast and accurate color adding with scaling (scales c2 before adding)

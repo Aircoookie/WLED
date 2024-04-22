@@ -46,22 +46,29 @@
 #include "FastLED.h"
 #include "FX.h"
 
-ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources)
+ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced)
 {
 	//Serial.println("PS Constructor");
 	numSources = numberofsources;
 	numParticles = numberofparticles; // set number of particles in the array
 	usedParticles = numberofparticles; // use all particles by default
 	//particlesettings = {false, false, false, false, false, false, false, false}; // all settings off by default
-	updatePSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
+	updatePSpointers(isadvanced); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
+	setGravity(0); //gravity disabled by default
 	setSaturation(255); //full saturation by default
-	setParticleSize(0); // minimum size
+	setParticleSize(0); // minimum size by default
 	motionBlur = 0; //no fading by default
 	emitIndex = 0;
 	/*
 	Serial.println("alive particles: ");
+	uint32_t aliveparticles = 0;
+	for (int i = 0; i < numParticles; i++)
+	{
+		aliveparticles++;
+	}
+	Serial.println(aliveparticles);
 	for (int i = 0; i < numParticles; i++)
 	{
 		//particles[i].ttl = 0; //initialize all particles to dead
@@ -73,7 +80,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 			Serial.println(particles[i].y);
 		}
 	}*/
-	//Serial.println("PS Constructor done");
+	// Serial.println("PS Constructor done");
 }
 
 //update function applies gravity, moves the particles, handles collisions and renders the particles
@@ -81,8 +88,8 @@ void ParticleSystem::update(void)
 {
 	//apply gravity globally if enabled
 	if (particlesettings.useGravity)
-		applyGravity(particles, usedParticles, gforce, &gforcecounter);
-	
+		applyGravity();
+
 	// handle collisions (can push particles, must be done before updating particles or they can render out of bounds, causing a crash if using local buffer for speed)
 	if (particlesettings.useCollisions)
 		handleCollisions();
@@ -91,8 +98,17 @@ void ParticleSystem::update(void)
 	for (int i = 0; i < usedParticles; i++)
 	{
 		particleMoveUpdate(particles[i], particlesettings);
-	}	
+	}
+	//!!! remove this
+	//Serial.print("alive particles: ");
+	uint32_t aliveparticles = 0;
+	for (int i = 0; i < numParticles; i++)
+	{
+		if(particles[i].ttl)
+		aliveparticles++;
+	}
 
+	//Serial.println(aliveparticles);
 	ParticleSys_render();
 }
 
@@ -172,13 +188,16 @@ void ParticleSystem::setParticleSize(uint8_t size)
 	particlesize = size;
 	particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize); 
 }
-// enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is also disable
+// enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
-void ParticleSystem::enableGravity(bool enable, uint8_t force) 
-{
-	particlesettings.useGravity = enable;
-	if (force > 0)
+// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame (gives good results)
+void ParticleSystem::setGravity(int8_t force) 
+{	
+	if (force)
+	{
 		gforce = force;
+		particlesettings.useGravity = true;
+	}
 	else 
 		particlesettings.useGravity = false;	
 }
@@ -204,9 +223,13 @@ void ParticleSystem::sprayEmit(PSsource &emitter)
 			particles[emitIndex].vx = emitter.vx + random(emitter.var) - (emitter.var>>1);
 			particles[emitIndex].vy = emitter.vy + random(emitter.var) - (emitter.var>>1);
 			particles[emitIndex].ttl = random16(emitter.maxLife - emitter.minLife) + emitter.minLife;
-			particles[emitIndex].hue = emitter.source.hue;
-			particles[emitIndex].sat = emitter.source.sat;
+			particles[emitIndex].hue = emitter.source.hue;			
 			particles[emitIndex].collide = emitter.source.collide;
+			if (advPartProps) 
+				{
+					advPartProps[emitIndex].sat = emitter.sat;
+					advPartProps[emitIndex].size = emitter.size;
+				}
 			break;
 		}
 		/*	
@@ -254,10 +277,11 @@ void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed)
 	emitter.vx = ((int32_t)cos16(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding 
 	emitter.vy = ((int32_t)sin16(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
 	sprayEmit(emitter);
+	/*
 	Serial.print(" x: ");
 	Serial.print(emitter.vx);
 	Serial.print(" y: ");
-	Serial.println(emitter.vy);
+	Serial.println(emitter.vy);*/
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
@@ -355,10 +379,10 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 	}
 }
 
-// apply a force in x,y direction to particles
-// caller needs to provide a 8bit counter that holds its value between calls for each group (numparticles can be 1 for single particle)
+// apply a force in x,y direction to individual particle
+// caller needs to provide a 8bit counter (for each paticle) that holds its value between calls
 // force is in 3.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame (gives good results)
-void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce, uint8_t *counter)
+void ParticleSystem::applyForce(PSparticle *part, int8_t xforce, int8_t yforce, uint8_t *counter)
 {
 	// for small forces, need to use a delay counter
 	uint8_t xcounter = (*counter) & 0x0F; // lower four bits
@@ -369,81 +393,76 @@ void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t 
 	int32_t dvy = calcForce_dv(yforce, &ycounter);
 
 	// save counter values back
-	*counter |= xcounter & 0x0F;		// write lower four bits, make sure not to write more than 4 bits
+	*counter = xcounter & 0x0F;		// write lower four bits, make sure not to write more than 4 bits
 	*counter |= (ycounter << 4) & 0xF0; // write upper four bits
 
-	// apply the force to particle:
-	int32_t i = 0;
-	if (dvx != 0)
-	{
-		for (i = 0; i < numparticles; i++)
-		{
-			// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster so no speed penalty			
-			part[i].vx = limitSpeed((int32_t)particles[i].vx + dvx);
-		}
-	}
-	if (dvy != 0)
-	{
-		for (i = 0; i < numparticles; i++)
-		{
-			part[i].vy = limitSpeed((int32_t)particles[i].vy + dvy);
-		}	
-	}
+	// apply the force to particle:			
+	part->vx = limitSpeed((int32_t)part->vx + dvx);
+	part->vy = limitSpeed((int32_t)part->vy + dvy);
 }
 
-// apply a force in x,y direction to particles directly (no counter required but no 'sub 1' force supported)
-void ParticleSystem::applyForce(PSparticle *part, uint32_t numparticles, int8_t xforce, int8_t yforce)
+// apply a force in x,y direction to individual particle using advanced particle properties 
+void ParticleSystem::applyForce(uint16_t particleindex, int8_t xforce, int8_t yforce)
 {
-	//note: could make this faster for single particles by adding an if statement, but it is fast enough as is
-	for (uint i = 0; i < numparticles; i++)
-	{
-		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster so no speed penalty
-		part[i].vx = limitSpeed((int32_t)part[i].vx + (int32_t)xforce);
-		part[i].vy = limitSpeed((int32_t)part[i].vy + (int32_t)yforce);
-	}	
+	if (advPartProps == NULL)
+		return; // no advanced properties available
+	applyForce(&particles[particleindex], xforce, yforce, &advPartProps[particleindex].forcecounter);
 }
 
-// apply a force in angular direction to group of particles //TODO: actually test if this works as expected, this is untested code
-// caller needs to provide a 8bit counter that holds its value between calls for each group (numparticles can be 1 for single particle)
+// apply a force in x,y direction to all particles
+void ParticleSystem::applyForce(int8_t xforce, int8_t yforce)
+{
+	// for small forces, need to use a delay counter
+	uint8_t tempcounter;
+
+	//note: this is not the most compuatationally effeicient way to do this, but it saves on duplacte code and is fast enough
+	for (uint i = 0; i < usedParticles; i++)
+	{
+		tempcounter = forcecounter;
+		applyForce(&particles[i], xforce, yforce, &tempcounter);
+	}	
+	forcecounter = tempcounter; //save value back
+}
+
+// apply a force in angular direction to single particle
+// caller needs to provide a 8bit counter that holds its value between calls (if using single particles, a counter for each particle is needed)
 // angle is from 0-65535 (=0-360deg) angle = 0 means in positive x-direction (i.e. to the right)
-void ParticleSystem::applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle, uint8_t *counter)
+// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame (useful force range is +/- 127)
+void ParticleSystem::applyAngleForce(PSparticle *part, int8_t force, uint16_t angle, uint8_t *counter)
 {
 	int8_t xforce = ((int32_t)force * cos16(angle)) / 32767; // force is +/- 127
 	int8_t yforce = ((int32_t)force * sin16(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
 	// note: sin16 is 10% faster than sin8() on ESP32 but on ESP8266 it is 9% slower
-	// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame (useful force range is +/- 127) 
-	applyForce(part, numparticles, xforce, yforce, counter);
+	applyForce(part, xforce, yforce, counter);
 }
 
-// apply a force in angular direction to particles directly (no counter required but no 'sub 1' force supported)
+void ParticleSystem::applyAngleForce(uint16_t particleindex, int8_t force, uint16_t angle)
+{
+	if (advPartProps == NULL)
+		return; // no advanced properties available
+	applyAngleForce(&particles[particleindex], force, angle, &advPartProps[particleindex].forcecounter);
+}
+// apply a force in angular direction to all particles
 // angle is from 0-65535 (=0-360deg) angle = 0 means in positive x-direction (i.e. to the right)
-void ParticleSystem::applyAngleForce(PSparticle *part, uint32_t numparticles, uint8_t force, uint16_t angle)
+void ParticleSystem::applyAngleForce(int8_t force, uint16_t angle)
 {
 	int8_t xforce = ((int32_t)force * cos16(angle)) / 32767; // force is +/- 127
 	int8_t yforce = ((int32_t)force * sin16(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
-	applyForce(part, numparticles, xforce, yforce);
+	applyForce(xforce, yforce);
 }
 
-// apply gravity to a group of particles
-// faster than apply force since direction is always down and counter is fixed for all particles
-// caller needs to provide a 8bit counter that holds its value between calls
 // force is in 3.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame (gives good results)
-// positive force means down
-void ParticleSystem::applyGravity(PSparticle *part, uint32_t numarticles, int8_t force, uint8_t *counter)
-{
-	int32_t dv = calcForce_dv(force, counter);
-	for (uint32_t i = 0; i < numarticles; i++)
-	{		
-		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is fast anyways
-		part[i].vy = limitSpeed((int32_t)particles[i].vy - dv);
-	}
-	
-}
 
-//apply gravity using PS global gforce
-void ParticleSystem::applyGravity(PSparticle *part, uint32_t numarticles, uint8_t *counter)
+// apply gravity to all particles using PS global gforce setting
+// note: faster than apply force since direction is always down and counter is fixed for all particles
+void ParticleSystem::applyGravity()
 {
-	applyGravity(part, numarticles, gforce, counter);
+	int32_t dv = calcForce_dv(gforce, &gforcecounter);
+	for (uint32_t i = 0; i < usedParticles; i++)
+	{
+		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is fast anyways
+		particles[i].vy = limitSpeed((int32_t)particles[i].vy - dv);
+	}	
 }
 
 //apply gravity to single particle using system settings (use this for sources)
@@ -462,11 +481,11 @@ void ParticleSystem::applyGravity(PSparticle *part)
 	}
 }
 
-// slow down particles by friction, the higher the speed, the higher the friction. a high friction coefficient slows them more (255 means instant stop)
+// slow down particle by friction, the higher the speed, the higher the friction. a high friction coefficient slows them more (255 means instant stop)
 void ParticleSystem::applyFriction(PSparticle *part, uint8_t coefficient)
 {
 	int32_t friction = 255 - coefficient;
-	// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster
+	// note: not checking if particle is dead can be done by caller (or can be omitted)
 	// note2: cannot use right shifts as bit shifting in right direction is asymmetrical for positive and negative numbers and this needs to be accurate or things start to go to the left side.
 	part->vx = ((int16_t)part->vx * friction) / 255; 
 	part->vy = ((int16_t)part->vy * friction) / 255; 
@@ -475,22 +494,22 @@ void ParticleSystem::applyFriction(PSparticle *part, uint8_t coefficient)
 // apply friction to all particles
 void ParticleSystem::applyFriction(uint8_t coefficient)
 {
-	int32_t friction = 255 - coefficient;	
 	for (uint32_t i = 0; i < usedParticles; i++)
 	{
-		// note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is faster
-		// note2: cannot use right shifts as bit shifting in right direction is asymmetrical for positive and negative numbers and this needs to be accurate or things start to go to the left side.
-		particles[i].vx = ((int16_t)particles[i].vx * friction) / 255; 
-		particles[i].vy = ((int16_t)particles[i].vy * friction) / 255; 
+		if(particles[i].ttl)
+			applyFriction(&particles[i], coefficient);
 	}
 }
 
 // attracts a particle to an attractor particle using the inverse square-law
-void ParticleSystem::pointAttractor(PSparticle *part, PSparticle *attractor, uint8_t *counter, uint8_t strength, bool swallow)
+void ParticleSystem::pointAttractor(uint16_t particleindex, PSparticle *attractor, uint8_t strength, bool swallow) // TODO: need to check if this is ok with new advancedprops !!!
 {
+	if (advPartProps == NULL)
+		return; // no advanced properties available
+
 	// Calculate the distance between the particle and the attractor
-	int32_t dx = attractor->x - part->x;
-	int32_t dy = attractor->y - part->y;
+	int32_t dx = attractor->x - particles[particleindex].x;
+	int32_t dy = attractor->y - particles[particleindex].y;
 
 	// Calculate the force based on inverse square law
 	int32_t distanceSquared = dx * dx + dy * dy;
@@ -498,11 +517,11 @@ void ParticleSystem::pointAttractor(PSparticle *part, PSparticle *attractor, uin
 	{
 		if (swallow) // particle is close, age it fast so it fades out, do not attract further
 		{			
-			if (part->ttl > 7)
-				part->ttl -= 8; 
+			if (particles[particleindex].ttl > 7)
+				particles[particleindex].ttl -= 8; 
 			else
 			{
-				part->ttl = 0;
+				particles[particleindex].ttl = 0;
 				return;
 			}
 		}
@@ -513,12 +532,14 @@ void ParticleSystem::pointAttractor(PSparticle *part, PSparticle *attractor, uin
 	int8_t xforce = (force * dx) / 1024; // scale to a lower value, found by experimenting
 	int8_t yforce = (force * dy) / 1024; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
 
-	applyForce(part, 1, xforce, yforce, counter);
+	applyForce(particleindex, xforce, yforce);
 }
 
-void ParticleSystem::lineAttractor(PSparticle *part, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t *counter, uint8_t strength)
+void ParticleSystem::lineAttractor(uint16_t particleindex, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t strength)
 {
 	// Calculate the distance between the particle and the attractor
+	if(advPartProps == NULL)
+		return; //no advanced properties available
 
 	//calculate a second point on the line
 	int32_t x1 = attractorcenter->x + (cos16(attractorangle) >> 5);
@@ -526,7 +547,7 @@ void ParticleSystem::lineAttractor(PSparticle *part, PSparticle *attractorcenter
 	//calculate squared distance from particle to the line:
 	int32_t dx = (x1 - attractorcenter->x) >> 4;
 	int32_t dy = (y1 - attractorcenter->y) >> 4;
-	int32_t d = ((dx * (part->y - attractorcenter->y)) - (dy * (part->x - attractorcenter->x))) >> 8;
+	int32_t d = ((dx * (particles[particleindex].y - attractorcenter->y)) - (dy * (particles[particleindex].x - attractorcenter->x))) >> 8;
 	int32_t distanceSquared = (d * d) / (dx * dx + dy * dy);
 
 
@@ -543,9 +564,9 @@ void ParticleSystem::lineAttractor(PSparticle *part, PSparticle *attractorcenter
 	int8_t yforce = (d > 0 ? -1 : 1) * (force * dx) / 100; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!	
 /*
 	Serial.print(" partx: ");
-	Serial.print(part->x);
+	Serial.print(particles[particleindex].x);
 	Serial.print(" party ");
-	Serial.print(part->y);
+	Serial.print(particles[particleindex].y);
 	Serial.print(" x1 ");
 	Serial.print(x1);
 	Serial.print(" y1 ");
@@ -564,7 +585,8 @@ void ParticleSystem::lineAttractor(PSparticle *part, PSparticle *attractorcenter
 	Serial.print(xforce);
 	Serial.print(" fy: ");
 	Serial.println(yforce);*/
-	applyForce(part, 1, xforce, yforce, counter);
+
+	applyForce(particleindex, xforce, yforce);
 }
 // render particles to the LED buffer (uses palette to render the 8bit particle color value)
 // if wrap is set, particles half out of bounds are rendered to the other side of the matrix
@@ -631,10 +653,13 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 		else{
 			brightness = particles[i].ttl > 255 ? 255 : particles[i].ttl; //faster then using min()
 			baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255, LINEARBLEND);
-			if (particles[i].sat < 255)
+			if (saturation < 255) 
 			{
 				CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to hsv
-				baseHSV.s = particles[i].sat; //desaturate
+				if(advPartProps)
+					baseHSV.s = advPartProps->sat; 
+				else
+					baseHSV.s = saturation;	
 				baseRGB = (CRGB)baseHSV; //convert back to RGB
 			}
 		}
@@ -1256,20 +1281,32 @@ void ParticleSystem::updateSystem(void)
 	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 	setMatrixSize(cols, rows);
-	updatePSpointers();
+	bool isadvanced = false;
+	if (advPartProps) //if pointer was previously set i.e. non NULL (pinter is only NULL if never set, even if segment is copied)
+		isadvanced = true;
+	updatePSpointers(isadvanced);
 }
 
 // set the pointers for the class (this only has to be done once and not on every FX call, only the class pointer needs to be reassigned to SEGENV.data every time)
 // function returns the pointer to the next byte available for the FX (if it assigned more memory for other stuff using the above allocate function)
 // FX handles the PSsources, need to tell this function how many there are
-void ParticleSystem::updatePSpointers()
+void ParticleSystem::updatePSpointers(bool isadvanced)
 {
 	//DEBUG_PRINT(F("*** PS pointers ***"));
-	//DEBUG_PRINTF_P(PSTR("this PS %p\n"), this);
-
-	particles = reinterpret_cast<PSparticle *>(this + 1);							  // pointer to particle array at data+sizeof(ParticleSystem)
-	sources = reinterpret_cast<PSsource *>(particles + numParticles);				  // pointer to source(s)
-	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources);					  // pointer to first available byte after the PS
+	//DEBUG_PRINTF_P(PSTR("this PS %p\n"), this);	
+	byte *nextaddress = NULL;
+	particles = reinterpret_cast<PSparticle *>(this + 1); // pointer to particle array at data+sizeof(ParticleSystem)
+	if(isadvanced)
+	{
+		advPartProps = reinterpret_cast<PSadvancedParticle *>(particles + numParticles);
+		sources = reinterpret_cast<PSsource *>(advPartProps + numParticles); // pointer to source(s)
+	}
+	else
+	{
+		advPartProps = NULL;
+		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)
+	}	
+	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources); // pointer to first available byte after the PS for FX additional data
 	
 	//DEBUG_PRINTF_P(PSTR("particles %p\n"), particles);	
 	//DEBUG_PRINTF_P(PSTR("sources %p\n"), sources);	
@@ -1277,21 +1314,23 @@ void ParticleSystem::updatePSpointers()
 }
 
 //non class functions to use for initialization
-uint32_t calculateNumberOfParticles()
+uint32_t calculateNumberOfParticles(bool isadvanced)
 {
 	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 #ifdef ESP8266
-	uint numberofParticles = (cols * rows * 3) / 4; // 0.75 particle per pixel
-	uint particlelimit = ESP8266_MAXPARTICLES; // maximum number of paticles allowed (based on one segment of 16x16 and 4k effect ram)
+	uint32_t numberofParticles = (cols * rows * 3) / 4; // 0.75 particle per pixel
+	uint32_t particlelimit = ESP8266_MAXPARTICLES;	// maximum number of paticles allowed (based on one segment of 16x16 and 4k effect ram)
 #elif ARDUINO_ARCH_ESP32S2
-	uint numberofParticles = (cols * rows); // 1 particle per pixe
-	uint particlelimit = ESP32S2_MAXPARTICLES; // maximum number of paticles allowed (based on one segment of 32x32 and 24k effect ram)
+	uint32_t numberofParticles = (cols * rows); // 1 particle per pixel
+	uint32_t particlelimit = ESP32S2_MAXPARTICLES; // maximum number of paticles allowed (based on one segment of 32x32 and 24k effect ram)
 #else
-	uint numberofParticles = (cols * rows);		 // 1 particle per pixel (for example 768 particles on 32x16)
-	uint particlelimit = ESP32_MAXPARTICLES; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
+	uint32_t numberofParticles = (cols * rows);		 // 1 particle per pixel (for example 512 particles on 32x16)
+	uint32_t particlelimit = ESP32_MAXPARTICLES;	 // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
 #endif
-	numberofParticles = max((uint)1, min(numberofParticles, particlelimit)); 	
+	numberofParticles = max((uint32_t)1, min(numberofParticles, particlelimit));
+	if (isadvanced) // advanced property array needs ram, reduce number of particles to use the same amount
+		numberofParticles = (numberofParticles * sizeof(PSparticle)) / (sizeof(PSparticle) + sizeof(PSadvancedParticle));
 	return numberofParticles;
 }
 
@@ -1313,10 +1352,12 @@ uint32_t calculateNumberOfSources(uint8_t requestedsources)
 }
 
 //allocate memory for particle system class, particles, sprays plus additional memory requested by FX
-bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes)
+bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool isadvanced, uint16_t additionalbytes)
 {
 	uint32_t requiredmemory = sizeof(ParticleSystem);
 	requiredmemory += sizeof(PSparticle) * numparticles;
+	if (isadvanced)
+		requiredmemory += sizeof(PSadvancedParticle) * numparticles;
 	requiredmemory += sizeof(PSsource) * numsources;
 	requiredmemory += additionalbytes;
 	//Serial.print("allocating: ");
@@ -1328,12 +1369,14 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, ui
 }
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
-bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes)
+bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, bool isadvanced, uint16_t additionalbytes)
 {
 	//Serial.println("PS init function");
-	uint32_t numparticles = calculateNumberOfParticles();
+	uint32_t numparticles = calculateNumberOfParticles(isadvanced);
 	uint32_t numsources = calculateNumberOfSources(requestedsources);
-	if (!allocateParticleSystemMemory(numparticles, numsources, additionalbytes))
+	//Serial.print("numsources: ");
+	//Serial.println(numsources);
+	if (!allocateParticleSystemMemory(numparticles, numsources, isadvanced, additionalbytes))
 	{
 		DEBUG_PRINT(F("PS init failed: memory depleted"));
 		return false;
@@ -1343,7 +1386,7 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint
 	uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 	//Serial.println("calling constructor");
-	PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources); // particle system constructor TODO: why does VS studio thinkt this is bad?
+	PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources, isadvanced); // particle system constructor TODO: why does VS studio thinkt this is bad?
 	//Serial.print("PS pointer at ");
 	//Serial.println((uintptr_t)PartSys);
 	return true;
