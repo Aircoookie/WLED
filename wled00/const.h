@@ -21,7 +21,7 @@
   #define WLED_BRAND "WLED"
 #endif
 #ifndef WLED_PRODUCT_NAME
-  #define WLED_PRODUCT_NAME "FOSS"
+  #define WLED_PRODUCT_NAME "DIY"
 #endif
 
 //Defaults
