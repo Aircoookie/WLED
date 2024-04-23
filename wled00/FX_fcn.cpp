@@ -1664,12 +1664,18 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     return false; // if file does not load properly then exit
   }
 
+  JsonObject root = pDoc->as<JsonObject>();
+  // if we are loading default ledmap (at boot) set matrix width and height from the ledmap (compatible with WLED MM ledmaps)
+  if (isMatrix && n == 0 && (!root[F("width")].isNull() || !root[F("height")].isNull())) {
+    Segment::maxWidth  = min(max(root[F("width")].as<int>(), 1), 128);
+    Segment::maxHeight = min(max(root[F("height")].as<int>(), 1), 128);
+  }
+
   if (customMappingTable) delete[] customMappingTable;
   customMappingTable = new uint16_t[getLengthTotal()];
 
   if (customMappingTable) {
     DEBUG_PRINT(F("Reading LED map from ")); DEBUG_PRINTLN(fileName);
-    JsonObject root = pDoc->as<JsonObject>();
     JsonArray map = root[F("map")];
     if (!map.isNull() && map.size()) {  // not an empty map
       customMappingSize = min((unsigned)map.size(), (unsigned)getLengthTotal());
