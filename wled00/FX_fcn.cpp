@@ -1009,7 +1009,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
   uint32_t carryover = BLACK;
   uint32_t lastnew;
   uint32_t last;
-  uint32_t curnew;
+  uint32_t curnew = BLACK;
   for (unsigned i = 0; i < vlength; i++) {
     uint32_t cur = getPixelColor(i);
     uint32_t part = color_fade(cur, seep);
@@ -1099,21 +1099,24 @@ void WS2812FX::finalizeInit(void) {
   //if busses failed to load, add default (fresh install, FS issue, ...)
   if (BusManager::getNumBusses() == 0) {
     DEBUG_PRINTLN(F("No busses, init default"));
-    const uint8_t defDataPins[] = {DATA_PINS};
-    const uint16_t defCounts[] = {PIXEL_COUNTS};
-    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
-    const uint8_t defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
-    uint16_t prevLen = 0;
-    for (int i = 0; i < defNumBusses && i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
-      uint8_t defPin[] = {defDataPins[i]};
+    const unsigned defDataPins[] = {DATA_PINS};
+    const unsigned defCounts[] = {PIXEL_COUNTS};
+    const unsigned defNumPins = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const unsigned defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
+    const unsigned defNumBusses = defNumPins > defNumCounts && defNumCounts > 1 && defNumPins%defNumCounts == 0 ? defNumCounts : defNumPins;
+    const unsigned pinsPerBus = defNumPins / defNumBusses;
+    unsigned prevLen = 0;
+    for (unsigned i = 0; i < defNumBusses && i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
+      uint8_t defPin[5]; // max 5 pins
+      for (unsigned j = 0; j < pinsPerBus; j++) defPin[j] = defDataPins[i*pinsPerBus + j];
       // when booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
       // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), etc
       if (pinManager.isPinAllocated(defPin[0])) {
         defPin[0] = 1; // start with GPIO1 and work upwards
         while (pinManager.isPinAllocated(defPin[0]) && defPin[0] < WLED_NUM_PINS) defPin[0]++;
       }
-      uint16_t start = prevLen;
-      uint16_t count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
+      unsigned start = prevLen;
+      unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
       BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY);
       if (BusManager::add(defCfg) == -1) break;
