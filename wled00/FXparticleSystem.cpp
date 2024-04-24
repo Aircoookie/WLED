@@ -1207,18 +1207,20 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 
 }
 
-//fast calculation of particle wraparound (modulo version takes 37 instructions, this only takes 28, other variants are slower on ESP8266)
+//calculation of particle wraparound
 //function assumes that out of bounds is checked before calling it
 int32_t ParticleSystem::wraparound(int32_t p, int32_t maxvalue)
 {
+	/* 
+	//variant without modulo (but is unsafe, far out particles will not get wrapped!) TODO: !!! remove this variant
 	if (p < 0)
-	{
 		p += maxvalue + 1;
-	}
 	else //if (p > maxvalue) 
-	{
 		p -= maxvalue + 1;
-	}
+	return p;*/
+	p = p % (maxvalue + 1);
+	if (p < 0)
+		p = maxvalue - p;
 	return p;
 }
 

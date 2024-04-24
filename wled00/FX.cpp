@@ -8063,7 +8063,7 @@ uint16_t mode_particlefireworks(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, NUMBEROFSOURCES)) // init, no additional data needed
+    if (!initParticleSystem(PartSys, NUMBEROFSOURCES, true)) // init with advanced particle properties
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true);  //out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->setWallHardness(100); //ground bounce is fixed
