@@ -662,6 +662,7 @@
     const imgDialog = gId("image-dialog");
     const contentDivConnected = gId("content-connected");
     let selectedImage;
+    let presetsJson = {};
 
     // get host address and build WLED_URL
     const params = new URLSearchParams(window.location.search);
@@ -679,10 +680,8 @@
 
     checkBackBtn();
 
-    // load all images on page load
-    images();
-    // get storage used/total count
-    storage();
+    // load all info on page load
+    loadInfo();
 
     async function loadImages(images, forceReload = false) {
       const maxConcurrentRequests = 2;
@@ -737,7 +736,7 @@
 
       try {
         const response = await fetch(url, {
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(8000),
         });
         const data = await response.json();
         const images = data.filter((file) => {
@@ -802,12 +801,25 @@
         // Load images asynchronously
         loadImages(imageHolders, forceReload);
         showPageContent();
+        return Promise.resolve("Image list received");
       } catch (error) {
         console.error(error);
         toast("Failed to get image list, check hostname!", "error", 10000);
         gId("hostname").classList.add("error");
+        return Promise.reject("Failed to get image list");
       } finally {
         hideLoading();
+      }
+    }
+
+    async function presets() {
+      const urlPresets = `${WLED_URL}/presets.json`;
+      try {
+        const response = await fetch(urlPresets);
+        presetsJson = await response.json();
+      } catch (error) {
+        console.error(error);
+        toast("Error loading presets. Malformed JSON? ", "error");
       }
     }
 
@@ -843,8 +855,7 @@
           throw new Error(response.status);
         }
         toast("Image deleted (if not currently in use)");
-        images();
-        storage();
+        loadInfo();
       } catch (error) {
         const msg = `Error deleting image: ${error}`;
         console.error(msg);
@@ -854,6 +865,14 @@
 
     async function showImg() {
       let state = {};
+
+      let existingPreset = findPresetID(selectedImage.name);
+      if (existingPreset) {
+        Object.assign(state, {
+          on: true,
+          ps: existingPreset,
+        });
+      } else {
       Object.assign(state, {
         on: true,
         seg: {
@@ -863,6 +882,7 @@
           n: selectedImage.name,
         },
       });
+      }
 
       const url = `${WLED_URL}/json/state`;
       const options = {
@@ -875,7 +895,15 @@
         const { success } = await response.json();
 
         if (success) {
+          if (existingPreset) {
+            toast(
+              `Preset '${presetsJson[existingPreset].n}' loaded`,
+              "success",
+              1000
+            );
+          } else {
           toast("Image changed", "success", 1000);
+          }
         }
       } catch (error) {
         console.error(error);
@@ -883,31 +911,28 @@
       }
     }
 
+    // save preset at new ID (highest preset ID+1), or overwrite existing preset
     async function savePreset() {
       await showImg();
       imgDialog.close();
       showLoading();
       await new Promise((resolve) => setTimeout(resolve, 500));
+      await presets();
 
-      const urlPreset = `${WLED_URL}/presets.json`;
-      const url = `${WLED_URL}/json`;
+      // find next lowest ID / ID of existing preset with segment name == image name
+      let existingPreset = false;
+      existingPreset = findPresetID(selectedImage.name);
+      items = Object.keys(presetsJson);
+      const id = existingPreset || parseInt(items.pop()) + 1;
+      const pName = existingPreset
+        ? presetsJson[id].n
+        : selectedImage.name.substring(0, selectedImage.name.lastIndexOf("."));
 
-      try {
-        const response = await fetch(urlPreset);
-        const data = await response.json();
-        const items = Object.keys(data);
-        const pName = selectedImage.name.substring(
-          0,
-          selectedImage.name.lastIndexOf(".")
-        );
-
-        const id =
-          items.find(
-            (key) =>
-              typeof data[key] === "object" &&
-              !data[key].playlist &&
-              data[key].n === pName
-          ) || parseInt(items.pop()) + 1;
+      if (existingPreset) {
+        toast(`Preset '${pName}' already saved with ID ${id}`, "success");
+        hideLoading();
+        return;
+      }
 
         let body = {};
         Object.assign(body, {
@@ -915,27 +940,31 @@
           n: pName,
         });
 
+      try {
+        const url = `${WLED_URL}/json`;
         const options = {
           method: "POST",
           body: JSON.stringify(body),
         };
-
-        try {
           const response = await fetch(url, options);
           const { success } = await response.json();
 
           if (success) {
-            toast(`Saved as preset with ID ${id}`);
+          toast(
+            `${
+              existingPreset ? "Modified" : "Saved as"
+            }  preset '${pName}' with ID ${id}`,
+            "success",
+            8000
+          );
             window.parent.postMessage("loadPresets", WLED_URL);
           }
         } catch (error) {
           console.error(error);
           toast("Error saving preset", "error");
-        }
-      } catch (error) {
-        console.error(error);
-        toast("Error loading presets. Malformed JSON? ", "error");
       } finally {
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Add a delay before refreshing presets
+        await presets();
         hideLoading();
       }
     }
@@ -962,10 +991,32 @@
         console.error(msg);
         toast(msg, "error");
       } finally {
-        await images();
-        await storage();
+        await loadInfo();
         hideLoading();
       }
+    }
+
+    async function loadInfo() {
+      // await loading of image list, actual images will load asynchronously
+      if (await images());
+      {
+      // await loading of presets.json
+      await presets();
+      // get storage used/total count
+      storage();
+      }
+    }
+
+    function findPresetID(segmentName) {
+      items = Object.keys(presetsJson);
+      return items.find(
+        (key) =>
+          typeof presetsJson[key] === "object" &&
+          !presetsJson[key].playlist &&
+          presetsJson[key].seg &&
+          presetsJson[key].seg[0].fx === FX_MODE_IMAGE &&
+          presetsJson[key].seg[0].n === segmentName
+      );
     }
 
     // reload all info on change of hostname input
@@ -984,8 +1035,7 @@
         window.location.pathname +
         `?hostname=${hostname.value}`;
       window.history.pushState({ path: url }, "", url);
-      images();
-      storage();
+      loadInfo();
     });
     gId("btnShowImg").addEventListener("click", showImg, false);
     gId("btnSavePreset").addEventListener("click", savePreset, false);
@@ -999,8 +1049,9 @@
     );
     gId("btnReloadImages").addEventListener(
       "click",
-      () => {
-        images(true);
+      async () => {
+        await images(true);
+        await presets();
         storage();
       },
       false
