@@ -221,6 +221,10 @@
         text-align: center;
       }
 
+      #hostname.error {
+        color: var(--error-light);
+      }
+
       .dropzone {
         border: 1px dashed var(--gray-light);
         background-color: var(--gray-dark);
@@ -574,7 +578,6 @@
                 style="display: none"
               />
             </div>
-            </div>
           </form>
         </div>
         <footer>
@@ -726,12 +729,16 @@
       const url = `${WLED_URL}/edit?list=/`;
       // clear image list intially
       gId("image-list").innerHTML = "";
+      // reset hostname input color
+      gId("hostname").classList.remove("error");
 
       showLoading();
       hidePageContent();
 
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          signal: AbortSignal.timeout(5000),
+        });
         const data = await response.json();
         const images = data.filter((file) => {
           const { name } = file;
@@ -794,19 +801,22 @@
 
         // Load images asynchronously
         loadImages(imageHolders, forceReload);
+        showPageContent();
       } catch (error) {
         console.error(error);
         toast("Failed to get image list, check hostname!", "error", 10000);
+        gId("hostname").classList.add("error");
       } finally {
         hideLoading();
-        showPageContent();
       }
     }
 
     async function storage() {
       const url = `${WLED_URL}/json/info`;
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          signal: AbortSignal.timeout(10000),
+        });
         const info = await response.json();
         gId("fsUsed").innerHTML = `${info.fs.u}`;
         gId("fsTotal").innerHTML = `${info.fs.t}`;
@@ -962,8 +972,10 @@
     hostname.addEventListener("blur", async () => {
       hostname.value = hostname.value.trim();
       newWledUrl = `${protocol}//${hostname.value}`;
-      if (WLED_URL == newWledUrl) { return; }
-      WLED_URL = newWledUrl
+      if (WLED_URL == newWledUrl) {
+        return;
+      }
+      WLED_URL = newWledUrl;
       // replace url in browser
       var url =
         window.location.protocol +
