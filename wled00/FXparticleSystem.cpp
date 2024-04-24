@@ -873,7 +873,7 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 	}
 	Serial.println(" ");
 */
-/*
+
 	// debug: check coordinates if out of buffer boundaries print out some info
 	for (uint32_t d = 0; d < 4; d++)
 	{
@@ -898,7 +898,7 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 			//Serial.print("^");
 			if (pixelvalues[d] >= 0)
 			{		
-				Serial.print("uncought out of bounds: x:");
+				Serial.print("uncought out of bounds: y:");
 				Serial.print(pixelpositions[d][0]);
 				Serial.print(" y:");
 				Serial.print(pixelpositions[d][1]);
@@ -910,7 +910,7 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 			}
 		}
 	}
-*/
+
 }
 
 // update & move particle, wraps around left/right if settings.wrapX is true, wrap around up/down if settings.wrapY is true

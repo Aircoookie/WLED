@@ -8888,7 +8888,7 @@ uint16_t mode_particleperlin(void)
   PartSys->enableParticleCollisions(SEGMENT.check3, SEGMENT.custom1); // enable collisions and set particle collision hardness
   uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 10, PartSys->numParticles>>1);
   PartSys->setUsedParticles(displayparticles);
-
+  PartSys->setMotionBlur(200); // anable motion blur
   // apply 'gravity' from a 2D perlin noise map
   SEGMENT.aux0 += 1+(SEGMENT.speed >> 5); // noise z-position
 
@@ -8906,7 +8906,7 @@ uint16_t mode_particleperlin(void)
     uint16_t ynoise = PartSys->particles[i].y / scale;
     int16_t baseheight = inoise8(xnoise, ynoise, SEGMENT.aux0); // noise value at particle position
     PartSys->particles[i].hue = baseheight; // color particles to perlin noise value
-    if (SEGMENT.call % 10 == 0) // do not apply the force every frame, is too chaotic
+    if (SEGMENT.call % 3 == 0) // do not apply the force every frame, is too chaotic
     {
       int8_t xslope = (baseheight - (int16_t)inoise8(xnoise + 10, ynoise, SEGMENT.aux0));
       int8_t yslope = (baseheight - (int16_t)inoise8(xnoise, ynoise + 10, SEGMENT.aux0));
@@ -8920,7 +8920,7 @@ uint16_t mode_particleperlin(void)
   PartSys->update();   // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,,Collisions;;!;2;pal=54,sx=75,ix=200,c1=255,c2=180,c3=20,o1=0";
+static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,,Collisions;;!;2;pal=54,sx=75,ix=200,c1=130,c2=30,c3=5,o1=0,o3=1";
 
 /*
  * Particle smashing down like meteors and exploding as they hit the ground, has many parameters to play with
@@ -8934,8 +8934,8 @@ uint16_t mode_particleimpact(void)
   ParticleSystem *PartSys = NULL;
   uint32_t i = 0;
   uint8_t MaxNumMeteors;
-  PSsettings meteorsettings = {0, 0, 0, 1, 0, 1, 0, 0}; // PS settings for meteors: bounceY and gravity enabled (todo: if ESP8266 is ok with out of bounds particles, this can be removed, it just takes care of the kill out of bounds setting)
-  //PSsettings meteorsettings;
+  PSsettings meteorsettings;// = {0, 0, 0, 1, 0, 1, 0, 0}; // PS settings for meteors: bounceY and gravity enabled 
+  meteorsettings.asByte = 0b00101000;
   //uint8_t *settingsPtr = reinterpret_cast<uint8_t *>(&meteorsettings); // access settings as one byte (wmore efficient in code and speed)
   //*settingsPtr = 0b00101000; // PS settings for meteors: bounceY and gravity enabled 
 
@@ -8951,7 +8951,7 @@ uint16_t mode_particleimpact(void)
     for (i = 0; i < MaxNumMeteors; i++)
     {
       PartSys->sources[i].vx = 0; //emit speed in x
-      PartSys->sources[i].source.y = 10;
+      PartSys->sources[i].source.y = 500;
       PartSys->sources[i].source.ttl = random16(20 * i); // set initial delay for meteors
       PartSys->sources[i].source.vy = 10; // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
     }
@@ -8993,12 +8993,12 @@ uint16_t mode_particleimpact(void)
     }
     else // speed is zero, explode!
     {
-      PartSys->sources[i].source.vy = 125; // set source speed positive so it goes into timeout and launches again
+      PartSys->sources[i].source.vy = 10; // set source speed positive so it goes into timeout and launches again
     #ifdef ESP8266
       emitparticles = random16(SEGMENT.intensity >> 3) + 5; // defines the size of the explosion
     #else
-      emitparticles = random16(SEGMENT.intensity >> 1) + 10; // defines the size of the explosion
-    #endif
+      emitparticles = map(SEGMENT.intensity, 0, 255, 10, random16(PartSys->numParticles>>2)); // defines the size of the explosion !!!TODO: check if this works, drop esp8266 def if it does
+#endif
     }
     for (int e = emitparticles; e > 0; e--)
     {
@@ -9011,29 +9011,33 @@ uint16_t mode_particleimpact(void)
   {
     if (PartSys->sources[i].source.ttl)
     {
-      PartSys->applyGravity(&PartSys->sources[i].source);
-      PartSys->particleMoveUpdate(PartSys->sources[i].source, meteorsettings);
-
-      // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
-      if ((PartSys->sources[i].source.y < PS_P_RADIUS<<1) && ( PartSys->sources[i].source.vy < 0)) // reached the bottom pixel on its way down
+      PartSys->sources[i].source.ttl--; //note: this saves an if statement, but moving down particles age twice
+      if (PartSys->sources[i].source.vy < 0) //move down
       {
-        PartSys->sources[i].source.vy = 0; // set speed zero so it will explode
-        PartSys->sources[i].source.vx = 0;
-        //PartSys->sources[i].source.y = 5; // offset from ground so explosion happens not out of frame (TODO: still needed? the class takes care of that)
-        PartSys->sources[i].source.collide = true;
-        #ifdef ESP8266
-        PartSys->sources[i].maxLife = 130; 
-        PartSys->sources[i].minLife = 20;
-        PartSys->sources[i].source.ttl = random16(255 - (SEGMENT.speed>>1)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
-        #else
-        PartSys->sources[i].maxLife = 200;
-        PartSys->sources[i].minLife = 50;
-        PartSys->sources[i].source.ttl = random16((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
-        #endif
-        PartSys->sources[i].vy = (SEGMENT.custom1 >> 2);  // emitting speed y
-        PartSys->sources[i].var = (SEGMENT.custom1 >> 1) | 0x01; // speed variation around vx,vy (+/- var/2), only use odd numbers
-      }
-   }
+        PartSys->applyGravity(&PartSys->sources[i].source);
+        PartSys->particleMoveUpdate(PartSys->sources[i].source, meteorsettings);
+        
+        // if source reaches the bottom, set speed to 0 so it will explode on next function call (handled above)
+        if (PartSys->sources[i].source.y < PS_P_RADIUS<<1) // reached the bottom pixel on its way down
+        {         
+          PartSys->sources[i].source.vy = 0; // set speed zero so it will explode
+          PartSys->sources[i].source.vx = 0;
+          //PartSys->sources[i].source.y = 5; // offset from ground so explosion happens not out of frame (!!!TODO: still needed? the class takes care of that)
+          PartSys->sources[i].source.collide = true;
+          #ifdef ESP8266
+          PartSys->sources[i].maxLife = 130; 
+          PartSys->sources[i].minLife = 20;
+          PartSys->sources[i].source.ttl = random16(255 - (SEGMENT.speed>>1)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
+          #else
+          PartSys->sources[i].maxLife = 160;
+          PartSys->sources[i].minLife = 50;
+          PartSys->sources[i].source.ttl = random16((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
+          #endif
+          PartSys->sources[i].vy = (SEGMENT.custom1 >> 2);  // emitting speed y
+          PartSys->sources[i].var = (SEGMENT.custom1 >> 1) | 0x01; // speed variation around vx,vy (+/- var/2), only use odd numbers
+        }
+      }      
+    }
     else if ( PartSys->sources[i].source.vy > 0) // meteor is exploded and time is up (ttl==0 and positive speed), relaunch it
     {
       // reinitialize meteor
@@ -9042,9 +9046,9 @@ uint16_t mode_particleimpact(void)
        PartSys->sources[i].source.vy = -random16(30) - 30; // meteor downward speed
        PartSys->sources[i].source.vx = random16(30) - 15;
        PartSys->sources[i].source.hue = random16(); // random color
-       PartSys->sources[i].source.ttl = 255; // long life, will explode at bottom
+       PartSys->sources[i].source.ttl = 2000; // long life, will explode at bottom
        PartSys->sources[i].source.collide = false; // trail particles will not collide
-       PartSys->sources[i].maxLife = 60;      // spark particle life
+       PartSys->sources[i].maxLife = 60; // spark particle life
        PartSys->sources[i].minLife = 20;      
        PartSys->sources[i].vy = -9; // emitting speed (down)
        PartSys->sources[i].var = 5;  // speed variation around vx,vy (+/- var/2)
@@ -9070,7 +9074,8 @@ uint16_t mode_particleattractor(void)
     return mode_static();
   ParticleSystem *PartSys = NULL;  
   uint32_t i = 0;
-  PSsettings sourcesettings = {0, 0, 1, 1, 0, 0, 0, 0}; // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
+  PSsettings sourcesettings;// = {0, 0, 1, 1, 0, 0, 0, 0}; // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
+  sourcesettings.asByte = 0b00001100;
   PSparticle *attractor; //particle pointer to the attractor  
   
 /*
@@ -9100,7 +9105,7 @@ uint16_t mode_particleattractor(void)
     PartSys->sources[0].vx = 0;  // emitting speed
     PartSys->sources[0].vy = 0;  // emitting speed
     PartSys->sources[0].var = 7; // emiting variation
-    PartSys->setWallHardness(230); // walls are always same hardness
+    PartSys->setWallHardness(255);  //bounce forever
   }
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9125,17 +9130,21 @@ uint16_t mode_particleattractor(void)
   PartSys->setUsedParticles(displayparticles);
 
   // set pointers
-  attractor = reinterpret_cast<PSparticle *>(&PartSys->particles[lastusedparticle + 1]);
-  //set attractor properties
-  if(SEGMENT.check2) //move attractor
+  //attractor = reinterpret_cast<PSparticle *>(&PartSys->particles[lastusedparticle + 1]);
+  attractor = &PartSys->particles[lastusedparticle + 1];
+  if(SEGMENT.call == 0)
   {
     attractor->vx = PartSys->sources[0].source.vy; // set to spray movemement but reverse x and y
     attractor->vy = PartSys->sources[0].source.vx;
+  }
+  //set attractor properties
+  if (SEGMENT.check2 && (SEGMENT.call % 2) == 0) // move attractor
+  {
+    
+    attractor->ttl = 255; //must be alive to move
     PartSys->particleMoveUpdate(*attractor, sourcesettings); // move the attractor
   }
   else{
-    attractor->vx = 0; // not moving
-    attractor->vy = 0;
     attractor->x = PartSys->maxX >> 1; // center
     attractor->y = PartSys->maxY >> 1;
   }
@@ -9161,8 +9170,7 @@ uint16_t mode_particleattractor(void)
     PartSys->applyFriction(2);
 
   PartSys->particleMoveUpdate(PartSys->sources[0].source, sourcesettings); // move the source
-  
-  PartSys->update();   // update and render
+  PartSys->update(); // update and render
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Emit Speed,Collisions,Friction,Color by Age,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=190,c2=0,o1=0,o2=0,o3=0";
@@ -9244,8 +9252,6 @@ uint16_t mode_particleattractor(void)
   }
   else
   {
-    attractor->vx = 0; // not moving
-    attractor->vy = 0;
     attractor->x = PartSys->maxX >> 1; // center
     attractor->y = PartSys->maxY >> 1;
   }
@@ -9273,7 +9279,14 @@ uint16_t mode_particleattractor(void)
     PartSys->applyFriction(2);
 
   PartSys->particleMoveUpdate(PartSys->sources[0].source, sourcesettings); // move the source
-
+  Serial.print("vx:");
+  Serial.print(attractor->vx);
+  Serial.print("vy:");
+  Serial.print(attractor->vy);
+  Serial.print("x:");
+  Serial.print(attractor->x);
+  Serial.print("y:");
+  Serial.println(attractor->y);
   PartSys->update(); // update and render
   return FRAMETIME;
 }

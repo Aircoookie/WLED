@@ -106,8 +106,9 @@ typedef struct {
 } PSsource; 
 
 // struct for PS settings
-typedef struct
+typedef union
 {
+  struct{
   // add a one byte bit field:  
   bool wrapX : 1; 
   bool wrapY : 1;
@@ -117,6 +118,8 @@ typedef struct
   bool useGravity : 1; //set to 1 if gravity is used, disables bounceY at the top
   bool useCollisions : 1;
   bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
+  };
+  byte asByte;
 } PSsettings;
 
 class ParticleSystem
