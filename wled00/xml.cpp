@@ -722,6 +722,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
     olen -= 2; //delete ";
     oappend(versionString);
+    oappend(SET_F("<br>"));
+    oappend((char*)FPSTR(releaseString));
     oappend(SET_F("<br>("));
     #if defined(ARDUINO_ARCH_ESP32)
     oappend(ESP.getChipModel());

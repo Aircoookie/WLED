@@ -286,7 +286,7 @@ void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
   uint32_t carryover = BLACK;
   uint32_t lastnew;
   uint32_t last;
-  uint32_t curnew;
+  uint32_t curnew = BLACK;
   for (unsigned x = 0; x < cols; x++) {
     uint32_t cur = getPixelColorXY(x, row);
     uint32_t part = color_fade(cur, seep);
@@ -297,8 +297,7 @@ void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
       uint32_t prev = color_add(lastnew, part, true);
       if (last != prev) // optimization: only set pixel if color has changed
         setPixelColorXY(x - 1, row, prev);
-    }
-    else // first pixel
+    } else // first pixel
       setPixelColorXY(x, row, curnew);
     lastnew = curnew;
     last = cur; // save original value for comparison on next iteration
@@ -320,7 +319,7 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
   uint32_t carryover = BLACK;
   uint32_t lastnew;
   uint32_t last;
-  uint32_t curnew;
+  uint32_t curnew = BLACK;
   for (unsigned y = 0; y < rows; y++) {
     uint32_t cur = getPixelColorXY(col, y);
     uint32_t part = color_fade(cur, seep);
@@ -331,8 +330,7 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
       uint32_t prev = color_add(lastnew, part, true);      
       if (last != prev) // optimization: only set pixel if color has changed
         setPixelColorXY(col, y - 1, prev);
-    }
-    else // first pixel
+    } else // first pixel
       setPixelColorXY(col, y, curnew);
     lastnew = curnew;
     last = cur; //save original value for comparison on next iteration

@@ -243,27 +243,32 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 //     int arr[]{0,1,2} becomes WLED_GLOBAL int arr[] _INIT_N(({0,1,2}));
 
 #ifndef WLED_DEFINE_GLOBAL_VARS
-# define WLED_GLOBAL extern
-# define _INIT(x)
-# define _INIT_N(x)
+  #define WLED_GLOBAL extern
+  #define _INIT(x)
+  #define _INIT_N(x)
+  #define _INIT_PROGMEM(x)
 #else
-# define WLED_GLOBAL
-# define _INIT(x) = x
-
-//needed to ignore commas in array definitions
-#define UNPACK( ... ) __VA_ARGS__
-# define _INIT_N(x) UNPACK x
+  #define WLED_GLOBAL
+  #define _INIT(x) = x
+  //needed to ignore commas in array definitions
+  #define UNPACK( ... ) __VA_ARGS__
+  #define _INIT_N(x) UNPACK x
+  #define _INIT_PROGMEM(x) PROGMEM = x
 #endif
 
 #define STRINGIFY(X) #X
 #define TOSTRING(X) STRINGIFY(X)
 
 #ifndef WLED_VERSION
-  #define WLED_VERSION "dev"
+  #define WLED_VERSION dev
+#endif
+#ifndef WLED_RELEASE_NAME
+  #define WLED_RELEASE_NAME dev_release
 #endif
 
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
+WLED_GLOBAL char releaseString[] _INIT_PROGMEM(TOSTRING(WLED_RELEASE_NAME)); // somehow this will not work if using "const char releaseString[]
 #define WLED_CODENAME "Kōsen"
 
 // AP and OTA default passwords (for maximum security change them!)
