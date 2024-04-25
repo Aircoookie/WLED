@@ -11,6 +11,7 @@ static char *tmpRAMbuffer = nullptr;
 static volatile byte presetToApply = 0;
 static volatile byte callModeToApply = 0;
 static volatile byte presetToSave = 0;
+static volatile byte rearrangePresets = 0;
 static volatile int8_t saveLedmap = -1;
 static char quickLoad[9];
 static char saveName[33];
@@ -18,6 +19,95 @@ static bool includeBri = true, segBounds = true, selectedOnly = false, playlistS
 
 static const char *getFileName(bool persist = true) {
   return persist ? "/presets.json" : "/tmp.json";
+}
+
+
+// Function to retrieve the preset name from a JSON object
+const char * getPresetNameFromJsonObject(const JsonObject& presetObj) {
+    if (presetObj.containsKey("n")) {
+        return (const char*)presetObj["n"];
+    } else {
+        return nullptr;
+    }
+}
+
+// Function to find the preset ID by its name
+int findPresetIdByName(const char* targetName) {
+  String currentName;
+  byte maxPresetId = 251;
+  for (byte i = 1; i <= maxPresetId; i++) {
+    if (getPresetName(i, currentName)) {
+      if (currentName == targetName) {
+        return i;  // Return the matching preset ID
+      }
+    }
+  }
+  return -1;  // Return -1 if no matching preset is found
+}
+
+void rearrangePresetIds(int oldId, int newId) {
+
+    // Check if the IDs are the same or invalid
+    if (oldId == newId) {
+        //Serial.println(F("Old ID and New ID are the same. No changes required."));
+        return;
+    }
+    if (newId < 1 || oldId < 1) {
+        /*Serial.print(F("Invalid ID provided. IDs: "));
+        Serial.print(newId);
+        Serial.print(F(", "));
+        Serial.println(oldId);*/
+        return;
+    }
+
+    rearrangePresets = 1;
+
+    // Determine the highest ID to dictate array size
+    int highestId = max(oldId, newId);
+    StaticJsonDocument<4096> *tempPresets = new StaticJsonDocument<4096>[highestId + 2];
+
+    // Load all presets into temporary storage
+    for (int i = 1; i <= highestId; i++) {
+        if (!readObjectFromFileUsingId(getFileName(true), i, &tempPresets[i])) {
+            //Serial.print(F("Error reading preset: "));
+            //Serial.println(i);
+        } else {
+            String presetName;
+            if (!getPresetName(i, presetName)) {
+                //Serial.println("Error reading preset name for ID: " + String(i));
+                presetName="ERROR READING NAME";
+                // You may choose to continue the loop or handle the error differently.
+            }
+            JsonObject preset = tempPresets[i].as<JsonObject>();
+            preset["n"] = presetName;
+        }
+    }
+    tempPresets[highestId+1] = tempPresets[oldId];
+    // Swap preset data in memory according to the new rearrangement
+    if (oldId < newId) {
+        for (int i = oldId; i < newId; i++) {
+            tempPresets[i] = tempPresets[i + 1];
+        }
+    } else {
+        for (int i = oldId; i > newId; i--) {
+            tempPresets[i] = tempPresets[i - 1];
+        }
+    }
+
+    // Assign the originally moved preset to its new position
+    tempPresets[newId] = tempPresets[highestId+1];
+
+    // Save all modified presets back to the filesystem
+    for (int i = 1; i <= highestId; i++) {
+        if (!writeObjectToFileUsingId(getFileName(true), i, &tempPresets[i]));
+        updateFSInfo();
+        // Introduce a delay to prevent corruption of the presets.json file.
+        delay(100);
+    }
+    // Clean up
+    delete[] tempPresets;
+    tempPresets = nullptr;
+    rearrangePresets = 0;
 }
 
 static void doSaveState() {
@@ -81,7 +171,8 @@ static void doSaveState() {
 
 bool getPresetName(byte index, String& name)
 {
-  if (!requestJSONBufferLock(9)) return false;
+  //had to remove this so the rearange presets would work
+  //if (!requestJSONBufferLock(9)) return false;
   bool presetExists = false;
   if (readObjectFromFileUsingId(getFileName(), index, &doc))
   {
@@ -205,7 +296,6 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
     if (sObj["n"].is<const char*>()) strlcpy(saveName, sObj["n"].as<const char*>(), 33);
     else                             sprintf_P(saveName, PSTR("Preset %d"), index);
   }
-
   DEBUG_PRINT(F("Saving preset (")); DEBUG_PRINT(index); DEBUG_PRINT(F(") ")); DEBUG_PRINTLN(saveName);
 
   presetToSave = index;
@@ -222,6 +312,20 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
     if (sObj[F("playlist")].isNull()) {
       // we will save API call immediately (often causes presets.json corruption)
       presetToSave = 0;
+      if(rearrangePresets==0){
+        String presetName;
+        if(getPresetName(index, presetName)){
+          if(presetName!=saveName){
+            int oldId=findPresetIdByName(saveName);
+            if(oldId==-1){
+            }
+            else{
+              rearrangePresetIds(oldId, index);
+              return;
+            }
+          }
+        }
+      }
       if (index > 250 || !fileDoc) return; // cannot save API calls to temporary preset (255)
       sObj.remove("o");
       sObj.remove("v");
