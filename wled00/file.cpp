@@ -35,6 +35,14 @@ static File f; // don't export to other cpp files
 
 //wrapper to find out how long closing takes
 void closeFile() {
+  #ifdef ARDUINO_ARCH_ESP32
+  // WLEDMM: file.close() triggers flash writing. While flash is writing, the NPB RMT driver cannot fill its buffer which may create glitches.
+  unsigned long t_wait = millis();
+  while(strip.isUpdating() && (millis() - t_wait < 72)) delay(1); // WLEDMM try to catch a moment when strip is idle
+  while(strip.isUpdating() && (millis() - t_wait < 96)) delay(0); //        try harder
+  //if (strip.isUpdating()) USER_PRINTLN("closeFile: strip still updating.");
+  delay(2); // might help
+  #endif
   #ifdef WLED_DEBUG_FS
     DEBUGFS_PRINT(F("Close -> "));
     uint32_t s = millis();

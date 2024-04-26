@@ -1192,8 +1192,8 @@ class PolyBus {
           if (num > 7) return I_NONE;
         #else
           if (num > 8) return I_NONE;
-          if (num == 1) offset = 2;    // use I2S#1 as 2nd bus - seems to be a good compromise for performance, and reduces flickering for some users
-          // if (num == 0) offset = 2;  // un-comment to use I2S#1 as 1st bus - sometimes helps, if you experience flickering during Wifi or filesystem activity.
+          //if (num == 1) offset = 2;    // use I2S#1 as 2nd bus - seems to be a good compromise for performance, and reduces flickering for some users
+          if (num == 0) offset = 2;  // un-comment to use I2S#1 as 1st bus - sometimes helps, if you experience flickering during Wifi or filesystem activity.
         #endif
       #endif
       #endif

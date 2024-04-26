@@ -1031,6 +1031,12 @@ bool WLED::initEthernet()
 
 void WLED::initConnection()
 {
+#ifdef ARDUINO_ARCH_ESP32
+  unsigned long t_wait = millis();
+  while(strip.isUpdating() && (millis() - t_wait < 86)) delay(1); // WLEDMM try to catch a moment when strip is idle
+  //if (strip.isUpdating()) USER_PRINTLN("WLED::initConnection: strip still updating.");
+#endif
+
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
@@ -1208,7 +1214,7 @@ void WLED::handleConnection()
   static unsigned retryCount = 0;  // WLEDMM
   #ifdef ARDUINO_ARCH_ESP32 
   // reconnect WiFi to clear stale allocations if heap gets too low
-  if (now - heapTime > 5000) { // WLEDMM: updated with better logic for small heap available by block, not total.
+  if ((!strip.isUpdating()) && (now - heapTime > 5000)) { // WLEDMM: updated with better logic for small heap available by block, not total. // WLEDMM trying to use a moment when the strip is idle
 #if defined(ARDUINO_ARCH_ESP32S2)
     uint32_t heap = ESP.getFreeHeap(); // WLEDMM works better on -S2
 #else
