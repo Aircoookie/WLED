@@ -13,6 +13,7 @@
 #define WLED_LONG_BRI_STEPS          16 // how long to wait before increasing/decreasing brightness on long press
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+static bool buttonBriDirection = false; // true: increase brightness, false: decrease brightness
 
 void shortPressAction(uint8_t b)
 {
@@ -41,7 +42,6 @@ void longPressAction(uint8_t b)
     switch (b) {
       case 0: setRandomColor(col); colorUpdated(CALL_MODE_BUTTON); break;
       case 1: 
-        // increase bri on true, decrease on false
         if(buttonBriDirection) {
           if (bri == 255) break; // avoid unnecessary updates to brightness
           if (bri >= 255 - WLED_LONG_BRI_STEPS) bri = 255;
