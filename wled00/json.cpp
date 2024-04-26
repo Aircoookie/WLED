@@ -276,8 +276,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
       seg.fill(BLACK);
     }
 
-    uint16_t start = 0, stop = 0;
-    byte set = 0; //0 nothing set, 1 start set, 2 range set
+    start = 0, stop = 0;
+    set = 0; //0 nothing set, 1 start set, 2 range set
 
     for (size_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
@@ -636,6 +636,7 @@ void serializeInfo(JsonObject root)
   root[F("ver")] = versionString;
   root[F("vid")] = VERSION;
   root[F("cn")] = F(WLED_CODENAME);
+  root[F("release")] = FPSTR(releaseString);
 
   JsonObject leds = root.createNestedObject(F("leds"));
   leds[F("count")] = strip.getLengthTotal();

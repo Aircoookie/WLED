@@ -1135,10 +1135,12 @@ bool FourLineDisplayUsermod::handleButton(uint8_t b) {
   return handled;
 }
 
-#if CONFIG_FREERTOS_UNICORE
-#define ARDUINO_RUNNING_CORE 0
-#else
-#define ARDUINO_RUNNING_CORE 1
+#ifndef ARDUINO_RUNNING_CORE
+  #if CONFIG_FREERTOS_UNICORE
+    #define ARDUINO_RUNNING_CORE 0
+  #else
+    #define ARDUINO_RUNNING_CORE 1
+  #endif
 #endif
 void FourLineDisplayUsermod::onUpdateBegin(bool init) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
