@@ -335,12 +335,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(irApplyToAllSelected, hw["ir"]["sel"]);
 
   JsonObject relay = hw[F("relay")];
+
+  rlyOpenDrain  = relay[F("odrain")] | rlyOpenDrain;
   int hw_relay_pin = relay["pin"] | -2;
   if (hw_relay_pin > -2) {
     pinManager.deallocatePin(rlyPin, PinOwner::Relay);
     if (pinManager.allocatePin(hw_relay_pin,true, PinOwner::Relay)) {
       rlyPin = hw_relay_pin;
-      pinMode(rlyPin, OUTPUT);
+      pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
     } else {
       rlyPin = -1;
     }
@@ -868,6 +870,7 @@ void serializeConfig() {
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
   hw_relay["pin"] = rlyPin;
   hw_relay["rev"] = !rlyMde;
+  hw_relay[F("odrain")] = rlyOpenDrain;
 
   hw[F("baud")] = serialBaud;
 
