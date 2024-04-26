@@ -379,7 +379,7 @@ void handleIO()
       esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
-        pinMode(rlyPin, OUTPUT);
+        pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, rlyMde);
       }
       offMode = false;
@@ -400,7 +400,7 @@ void handleIO()
       esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
-        pinMode(rlyPin, OUTPUT);
+        pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, !rlyMde);
       }
     }

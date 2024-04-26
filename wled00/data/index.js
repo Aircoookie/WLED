@@ -430,7 +430,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="pres c" ${empty?'style="padding:8px;margin-top: 16px;"':'onclick="pmtLast=0;loadPresets();" style="cursor:pointer;padding:8px;margin-top: 16px;"'}>`;
+	var cn = `<div class="pres c" style="padding:8px;margin-bottom:8px;${empty?'':'cursor:pointer;'}" ${empty?'':'onclick="pmtLast=0;loadPresets();"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -442,8 +442,8 @@ function presetError(empty)
 			cn += `However, there is backup preset data of a previous installation available.<br>(Saving a preset will hide this and overwrite the backup)`;
 		else
 			cn += `Here is a backup of the last known good state:`;
-		cn += `<textarea id="bck"></textarea><br><button class="btn" onclick="cpBck()">Copy to clipboard</button>`;
-		cn += `<br><button type="button" class="btn" onclick="restore(gId('bck').value)">Restore</button>`;
+		cn += `<textarea id="bck"></textarea><br><button class="btn" style="margin-top:12px;" onclick="cpBck()">Copy to clipboard</button>`;
+		cn += `<br><button type="button" class="btn" style="margin-top:12px;" onclick="restore(gId('bck').value)">Restore</button>`;
 	}
 	cn += `</div>`;
 	gId('pcont').innerHTML = cn;
@@ -863,14 +863,11 @@ function populateSegments(s)
 	gId("segcont").classList.remove("hide");
 	let noNewSegs = (lowestUnused >= maxSeg);
 	resetUtil(noNewSegs);
-	if (gId('selall')) gId('selall').checked = true;
 	for (var i = 0; i <= lSeg; i++) {
 		if (!gId(`seg${i}`)) continue;
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).classList.add("hide");
-		//if (i<lSeg) gId(`segd${i}`).classList.add("hide"); // hide delete button for all but last
-		if (!gId(`seg${i}sel`).checked && gId('selall')) gId('selall').checked = false; // uncheck if at least one is unselected.
 	}
 	if (segCount < 2) {
 		gId(`segd${lSeg}`).classList.add("hide"); // hide delete if only one segment
@@ -1465,8 +1462,6 @@ function readState(s,command=false)
 		return true;
 	}
 
-	if (s.seg.length>2) d.querySelectorAll(".pop").forEach((e)=>{e.classList.remove("hide");});
-
 	var cd = gId('csl').querySelectorAll("button");
 	for (let e = cd.length-1; e >= 0; e--) {
 		cd[e].dataset.r = i.col[e][0];
@@ -1842,7 +1837,7 @@ function makeSeg()
 	});
 	var cn = `<div class="seg lstI expanded">`+
 		`<div class="segin">`+
-			`<input type="text" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>`+
+			`<input class="ptxt show" type="text" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>`+
 			`<table class="segt">`+
 				`<tr>`+
 					`<td width="38%">${isM?'Start X':'Start LED'}</td>`+
@@ -1868,13 +1863,19 @@ function makeSeg()
 
 function resetUtil(off=false)
 {
-	gId('segutil').innerHTML = `<div class="seg btn btn-s${off?' off':''}" style="padding:0;">`
+	gId('segutil').innerHTML = `<div class="seg btn btn-s${off?' off':''}" style="padding:0;margin-bottom:12px;">`
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
 	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div>`
 	+ '<div class="pop hide" onclick="event.stopPropagation();">'
 	+ `<i class="icons g-icon" title="Select group" onclick="this.nextElementSibling.classList.toggle('hide');">&#xE34B;</i>`
 	+ '<div class="pop-c hide"><span style="color:var(--c-f);" onclick="selGrp(0);">&#x278A;</span><span style="color:var(--c-r);" onclick="selGrp(1);">&#x278B;</span><span style="color:var(--c-g);" onclick="selGrp(2);">&#x278C;</span><span style="color:var(--c-l);" onclick="selGrp(3);">&#x278D;</span></div>'
 	+ '</div></div>';
+	gId('selall').checked = true;
+	for (var i = 0; i <= lSeg; i++) {
+		if (!gId(`seg${i}`)) continue;
+		if (!gId(`seg${i}sel`).checked) gId('selall').checked = false; // uncheck if at least one is unselected.
+	}
+	if (lSeg>2) d.querySelectorAll("#Segments .pop").forEach((e)=>{e.classList.remove("hide");});
 }
 
 function makePlSel(el, incPl=false)

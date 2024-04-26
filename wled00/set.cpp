@@ -243,6 +243,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       rlyPin = -1;
     }
     rlyMde = (bool)request->hasArg(F("RM"));
+    rlyOpenDrain = (bool)request->hasArg(F("RO"));
 
     disablePullUp = (bool)request->hasArg(F("IP"));
     touchThreshold = request->arg(F("TT")).toInt();
