@@ -603,14 +603,13 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 	// CRGB colorbuffer[maxXpixel+1][maxYpixel+1] = {0}; //put buffer on stack (not a good idea, can cause crashes on large segments if other function run the stack into the heap)
 	if (useLocalBuffer)
 	{
-		//  allocate memory for the local renderbuffer
+		//  allocate empty memory for the local renderbuffer
 		colorbuffer = allocate2Dbuffer(maxXpixel + 1, maxYpixel + 1);
 		if (colorbuffer == NULL)
 			useLocalBuffer = false; //render to segment pixels directly if not enough memory	
 
 		if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
 		{
-			uint32_t residual = motionBlur; //32bit for faster calculation
 			uint32_t yflipped;
 			for (int y = 0; y <= maxYpixel; y++)
 			{
@@ -618,9 +617,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 				for (int x = 0; x <= maxXpixel; x++)
 				{
 					colorbuffer[x][y] = SEGMENT.getPixelColorXY(x, yflipped);
-					colorbuffer[x][y].r = (colorbuffer[x][y].r * residual) >> 8;
-					colorbuffer[x][y].g = (colorbuffer[x][y].g * residual) >> 8;
-					colorbuffer[x][y].b = (colorbuffer[x][y].b * residual) >> 8;
+					fast_color_scale(colorbuffer[x][y], motionBlur);					
 				}
 			}
 		}
@@ -657,7 +654,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 			{
 				CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to hsv
 				if(advPartProps)
-					baseHSV.s = advPartProps->sat; 
+					baseHSV.s = advPartProps[i].sat; 
 				else
 					baseHSV.s = saturation;	
 				baseRGB = (CRGB)baseHSV; //convert back to RGB
@@ -699,13 +696,13 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 		if (useLocalBuffer)
 		{
 			if (pxlbrightness[0] > 0)
-				colorbuffer[pixco[0][0]][pixco[0][1]] = fast_color_add(colorbuffer[pixco[0][0]][pixco[0][1]], baseRGB, pxlbrightness[0]); // bottom left			
+				fast_color_add(colorbuffer[pixco[0][0]][pixco[0][1]], baseRGB, pxlbrightness[0]); // bottom left			
 			if (pxlbrightness[1] > 0)
-				colorbuffer[pixco[1][0]][pixco[1][1]] = fast_color_add(colorbuffer[pixco[1][0]][pixco[1][1]], baseRGB, pxlbrightness[1]); // bottom right
+				fast_color_add(colorbuffer[pixco[1][0]][pixco[1][1]], baseRGB, pxlbrightness[1]); // bottom right
 			if (pxlbrightness[2] > 0)
-				colorbuffer[pixco[2][0]][pixco[2][1]] = fast_color_add(colorbuffer[pixco[2][0]][pixco[2][1]], baseRGB, pxlbrightness[2]); // top right			
+				fast_color_add(colorbuffer[pixco[2][0]][pixco[2][1]], baseRGB, pxlbrightness[2]); // top right			
 			if (pxlbrightness[3] > 0)
-				colorbuffer[pixco[3][0]][pixco[3][1]] = fast_color_add(colorbuffer[pixco[3][0]][pixco[3][1]], baseRGB, pxlbrightness[3]); // top left																																			
+				fast_color_add(colorbuffer[pixco[3][0]][pixco[3][1]], baseRGB, pxlbrightness[3]); // top left																																			
 		}
 		else
 		{			
@@ -741,12 +738,27 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 	{
 		if (useLocalBuffer) 
 		{
-		//TODO: come up with a good and short 2D smearing function derived from blur
-		//put it in a function taking width, height and buffer pointer, so it can be used to blur individual particles for different sizes (will be slow) -> or maybe not, there is little use
-		// and would need individual sizes for each particle, 
+			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, particlesize, particlesize);
+			if (particlesize > 64)
+			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, particlesize - 64, particlesize - 64);			
+			if (particlesize > 128)
+			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, (particlesize - 128) << 1, (particlesize - 128) << 1);			
+			if (particlesize > 192)
+			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, (particlesize - 192) << 1, (particlesize - 192) << 1);
+			
+			//Serial.println("blr");
 		}
 		else
-			SEGMENT.blur(particlesize, true); //todo: come up with good algorithm for size
+		{	
+			SEGMENT.blur(particlesize, true);
+			if (particlesize > 64)
+			SEGMENT.blur(particlesize - 64, true);
+			if (particlesize > 128)
+			SEGMENT.blur((particlesize - 128) << 1, true);
+			if (particlesize > 192)
+			SEGMENT.blur((particlesize - 192) << 1, true);			
+		}
+		
 	}
 
 	if (useLocalBuffer) //transfer local buffer back to segment
@@ -763,14 +775,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 		free(colorbuffer); // free buffer memory
 	}
 
-	// blur function that works: (for testing only)
-	SEGMENT.blur(particlesize, true);
-	if (particlesize > 64)
-		SEGMENT.blur(particlesize - 64, true);
-	if (particlesize > 128)
-		SEGMENT.blur((particlesize - 128) << 1, true);
-	if (particlesize > 192)
-		SEGMENT.blur((particlesize - 192) << 1, true);
+
 }
 
 // calculate pixel positions and brightness distribution for rendering function
@@ -1257,9 +1262,9 @@ int32_t ParticleSystem::limitSpeed(int32_t speed)
 // allocate memory for the 2D array in one contiguous block and set values to zero
 CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 {	
-	cli();//!!! test to see if anything messes with the allocation (flicker issues)
+	//cli();//!!! test to see if anything messes with the allocation (flicker issues)
 	CRGB ** array2D = (CRGB **)malloc(cols * sizeof(CRGB *) + cols * rows * sizeof(CRGB));
-	sei();
+	//sei();
 	if (array2D == NULL)
 		DEBUG_PRINT(F("PS buffer alloc failed"));
 	else
@@ -1282,11 +1287,8 @@ void ParticleSystem::updateSystem(void)
 	// update matrix size
 	uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
 	uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-	setMatrixSize(cols, rows);
-	bool isadvanced = false;
-	if (advPartProps) //if pointer was previously set i.e. non NULL (pinter is only NULL if never set, even if segment is copied)
-		isadvanced = true;
-	updatePSpointers(isadvanced);
+	setMatrixSize(cols, rows);	
+	updatePSpointers(advPartProps != NULL);
 }
 
 // set the pointers for the class (this only has to be done once and not on every FX call, only the class pointer needs to be reassigned to SEGENV.data every time)
@@ -1397,29 +1399,100 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, bool
 // fastled color adding is very inaccurate in color preservation
 // a better color add function is implemented in colors.cpp but it uses 32bit RGBW. to use it colors need to be shifted just to then be shifted back by that function, which is slow
 // this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color (fastled scale8 can be made faster using native 32bit on ESP)
-CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale)
+// note: result is stored in c1, so c1 will contain the result. not using a return value is much faster as the struct does not need to be copied upon return
+void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale)
 {
-	CRGB result;
-	scale++; //add one to scale so 255 will not scale when shifting
-	uint32_t r = c1.r + ((c2.r * (scale)) >> 8);
-	uint32_t g = c1.g + ((c2.g * (scale)) >> 8);
-	uint32_t b = c1.b + ((c2.b * (scale)) >> 8);
+	uint32_t r, g, b;
+	if(scale < 255)
+	{		
+		r = c1.r + ((c2.r * scale) >> 8);
+		g = c1.g + ((c2.g * scale) >> 8);
+		b = c1.b + ((c2.b * scale) >> 8);
+	}
+	else{
+		r = c1.r + c2.r;
+		g = c1.g + c2.g;
+		b = c1.b + c2.b;
+	}
 	uint32_t max = r;
-	if (g > max) //note: using ? operator would be slower by 2 cpu cycles
+	if (g > max) //note: using ? operator would be slower by 2 instructions
 		max = g;
 	if (b > max)
 		max = b;
 	if (max < 256)
 	{
-		result.r = r;
-		result.g = g;
-		result.b = b;
+		c1.r = r; //save result to c1
+		c1.g = g;
+		c1.b = b;
 	}
 	else
 	{
-		result.r = (r * 255) / max;
-		result.g = (g * 255) / max;
-		result.b = (b * 255) / max;
+		c1.r = (r * 255) / max;
+		c1.g = (g * 255) / max;
+		c1.b = (b * 255) / max;
 	}
-	return result;
+}
+
+//faster than fastled color scaling as it uses a 32bit scale factor and pointer
+void fast_color_scale(CRGB &c, uint32_t scale)
+{
+	c.r = ((c.r * scale) >> 8);
+	c.g = ((c.g * scale) >> 8);
+	c.b = ((c.b * scale) >> 8);			
+}
+
+
+
+//blur a matrix in x and y direction, blur can be asymmetric in x and y
+//for speed, 32bit variables are used, make sure to limit them to 8bit (0-255)
+//note: classic WLED blurrint is not (yet) supportet, this is a smearing function that does not fade original image, just blurrs it
+void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool particleblur)
+{
+	//uint32_t keep = smear ? 255 : 255 - xblur;
+	CRGB seeppart, carryover;
+	uint32_t seep = xblur >> 1;
+	uint32_t startrow = 0;
+	uint32_t endrow = ysize;
+	if(particleblur) //blurring a single particle, can skip first and last row in x blurring as it is black
+	{
+		startrow++;
+		endrow--;
+	}
+
+	for(uint32_t y = startrow; y < endrow; y++)
+	{					
+		//fast_color_scale(colorbuffer[0][y], keep); //first pixel is just faded, carryover is black (this only needs to be done if smear is false)
+		carryover =	BLACK;
+		for(uint32_t x = 0; x < xsize; x++)	
+		{			
+			seeppart = colorbuffer[x][y]; //create copy of current color
+			fast_color_scale(seeppart, seep); //scale it and seep to neighbours
+			if(x > 0)
+			{
+				fast_color_add(colorbuffer[x-1][y], seeppart);
+				fast_color_add(colorbuffer[x][y], carryover); //todo: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
+			}			
+			carryover = seeppart; 			
+		}
+		fast_color_add(colorbuffer[xsize-1][y], carryover); // set last pixel
+	}
+
+	//uint32_t keep = smear ? 255 : 255 - xblur;
+	seep = yblur >> 1;		
+	for(uint32_t x = 0; x < xsize; x++)
+	{							
+		carryover =	BLACK;
+		for(uint32_t y = 0; y < ysize; y++)	
+		{				
+			seeppart = colorbuffer[x][y]; //create copy of current color
+			fast_color_scale(seeppart, seep); //scale it and seep to neighbours
+			if(y > 0)
+			{
+				fast_color_add(colorbuffer[x][y-1], seeppart);
+				fast_color_add(colorbuffer[x][y], carryover); //todo: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
+			}			
+			carryover = seeppart; 			
+		}
+		fast_color_add(colorbuffer[x][ysize-1], carryover); // set last pixel
+	}
 }

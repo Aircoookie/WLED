@@ -219,4 +219,6 @@ uint32_t calculateNumberOfParticles(bool advanced);
 uint32_t calculateNumberOfSources(uint8_t requestedsources);
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool advanced, uint16_t additionalbytes);
 //color add function
-CRGB fast_color_add(CRGB c1, CRGB c2, uint32_t scale); // fast and accurate color adding with scaling (scales c2 before adding)
+void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
+void fast_color_scale(CRGB &c, uint32_t scale); //fast scaling function using 32bit factor (keep it 0-255) and pointer
+void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool particleblur = false);
