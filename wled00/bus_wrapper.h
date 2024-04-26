@@ -392,7 +392,7 @@ class PolyBus {
     #if defined(ARDUINO_ARCH_ESP32) && !(defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3))
     // NOTE: "channel" is only used on ESP32 (and its variants) for RMT channel allocation
     // since 0.15.0-b3 I2S1 is favoured for classic ESP32 and moved to position 0 (channel 0) so we need to subtract 1 for correct RMT allocation
-    if (channel > 1) channel--; // accommodate I2S1 which is used as 1st bus on classic ESP32
+    if (channel > 0) channel--; // accommodate I2S1 which is used as 1st bus on classic ESP32
     #endif
     void* busPtr = nullptr;
     switch (busType) {
