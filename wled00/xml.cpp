@@ -458,6 +458,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("PB"),strip.paletteBlend);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
+    sappend('c',SET_F("RO"),rlyOpenDrain);
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addBtn("));
       oappend(itoa(i,nS,10)); oappend(",");
@@ -722,6 +723,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
     olen -= 2; //delete ";
     oappend(versionString);
+    oappend(SET_F("<br>"));
+    oappend((char*)FPSTR(releaseString));
     oappend(SET_F("<br>("));
     #if defined(ARDUINO_ARCH_ESP32)
     oappend(ESP.getChipModel());
