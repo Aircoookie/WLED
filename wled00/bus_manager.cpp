@@ -309,6 +309,10 @@ void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
 //does no index check
 uint32_t BusPwm::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
+#if 1
+  // WLEDMM stick with the old code - we don't have cctICused
+  return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+#else
   // TODO getting the reverse from CCT is involved (a quick approximation when CCT blending is ste to 0 implemented)
   switch (_type) {
     case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
@@ -325,6 +329,7 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) {
       return RGBW32(_data[0], _data[1], _data[2], 0);
   }
   return RGBW32(_data[0], _data[0], _data[0], _data[0]);
+#endif
 }
 
 void BusPwm::show() {
