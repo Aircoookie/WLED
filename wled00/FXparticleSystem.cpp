@@ -56,6 +56,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	updatePSpointers(isadvanced); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
+	setWallRoughness(200); // smooth walls by default !!! testing this 
 	setGravity(0); //gravity disabled by default
 	setSaturation(255); //full saturation by default
 	setParticleSize(0); // minimum size by default
@@ -129,6 +130,11 @@ void ParticleSystem::setWallHardness(uint8_t hardness)
 	wallHardness = hardness;
 }
 
+void ParticleSystem::setWallRoughness(uint8_t roughness)
+{
+	wallRoughness = roughness;
+}
+
 void ParticleSystem::setCollisionHardness(uint8_t hardness)
 {	
 	collisionHardness = hardness;  
@@ -179,14 +185,16 @@ void ParticleSystem::setColorByAge(bool enable)
 
 void ParticleSystem::setMotionBlur(uint8_t bluramount)
 {
-	motionBlur = bluramount;
+	if(particlesize == 0) //only allwo motion blurring on default particle size
+		motionBlur = bluramount;
 }
 
 // render size using smearing
 void ParticleSystem::setParticleSize(uint8_t size)
 {
 	particlesize = size;
-	particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize); 
+	particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize);
+	motionBlur = 0; //disable motion blur if particle size is set
 }
 // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
@@ -302,15 +310,8 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 		//if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of vew
 		if (options.bounceX) 
 		{
-			if ((newX < particleHardRadius) || (newX > maxX - particleHardRadius)) // reached a wall
-			{
-				part.vx = -part.vx;					  // invert speed
-				part.vx = (part.vx * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-				if (newX < particleHardRadius)
-					newX = particleHardRadius; // fast particles will never reach the edge if position is inverted
-				else
-					newX = maxX - particleHardRadius;
-			}
+			if ((newX < particleHardRadius) || (newX > maxX - particleHardRadius)) // reached a wall							
+				bounce(part.vx, part.vy, newX, maxX);			
 		}
 		
 		if ((newX < 0) || (newX > maxX)) // check if particle reached an edge
@@ -332,11 +333,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 			if ((newY < particleHardRadius) || (newY > maxY - particleHardRadius)) // reached floor / ceiling
 			{
 				if (newY < particleHardRadius) // bounce at bottom
-				{
-						part.vy = -part.vy; // invert speed
-						part.vy = ((int32_t)part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-						newY = particleHardRadius;
-				}
+					bounce(part.vy, part.vx, newY, maxY);					
 				else
 				{
 					if (options.useGravity) // do not bounce on top if using gravity (open container) if this is needed implement it in the FX
@@ -346,9 +343,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 					}
 					else
 					{
-						part.vy = -part.vy;	// invert speed
-						part.vy = ((int32_t)part.vy * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-						newY = maxY - particleHardRadius;
+						bounce(part.vy, part.vx, newY, maxY);	
 					}
 				}		
 			}
@@ -377,6 +372,27 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options)
 		part.x = (int16_t)newX; // set new position
 		part.y = (int16_t)newY; // set new position
 	}
+}
+
+//function to bounce a particle from a wall using set parameters (wallHardness and wallRoughness)
+void ParticleSystem::bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition)
+{
+				incomingspeed = -incomingspeed;					  // invert speed
+				incomingspeed = (incomingspeed * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
+				if (position < particleHardRadius)
+					position = particleHardRadius; // fast particles will never reach the edge if position is inverted
+				else
+					position = maxposition - particleHardRadius;
+				if(wallRoughness)
+				{
+					//transfer an amount of incomingspeed speed to parallel speed
+					int32_t donatespeed = abs(incomingspeed);
+					donatespeed = ((random(donatespeed << 1) - donatespeed) * wallRoughness) / 255; //take random portion of + or - x speed, scaled by roughness 
+					parallelspeed += donatespeed;
+					donatespeed = abs(donatespeed);
+					incomingspeed -= incomingspeed > 0 ? donatespeed : -donatespeed;
+				}
+
 }
 
 // apply a force in x,y direction to individual particle
@@ -616,7 +632,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 				yflipped = maxYpixel - y;
 				for (int x = 0; x <= maxXpixel; x++)
 				{
-					colorbuffer[x][y] = SEGMENT.getPixelColorXY(x, yflipped);
+					colorbuffer[x][y] = SEGMENT.getPixelColorXY(x, yflipped); //copy to local buffer
 					fast_color_scale(colorbuffer[x][y], motionBlur);					
 				}
 			}
@@ -695,42 +711,19 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 		}*/
 		if (useLocalBuffer)
 		{
-			if (pxlbrightness[0] > 0)
-				fast_color_add(colorbuffer[pixco[0][0]][pixco[0][1]], baseRGB, pxlbrightness[0]); // bottom left			
-			if (pxlbrightness[1] > 0)
-				fast_color_add(colorbuffer[pixco[1][0]][pixco[1][1]], baseRGB, pxlbrightness[1]); // bottom right
-			if (pxlbrightness[2] > 0)
-				fast_color_add(colorbuffer[pixco[2][0]][pixco[2][1]], baseRGB, pxlbrightness[2]); // top right			
-			if (pxlbrightness[3] > 0)
-				fast_color_add(colorbuffer[pixco[3][0]][pixco[3][1]], baseRGB, pxlbrightness[3]); // top left																																			
+			for(uint32_t i = 0; i < 4; i ++)
+			{
+				if (pxlbrightness[i] > 0)
+					fast_color_add(colorbuffer[pixco[i][0]][pixco[i][1]], baseRGB, pxlbrightness[i]); // order is: bottom left, bottom right, top right, top left																							
+			}
 		}
 		else
-		{			
-			if (pxlbrightness[0] > 0)
-				SEGMENT.addPixelColorXY(pixco[0][0], maxYpixel - pixco[0][1], baseRGB.scale8((uint8_t)pxlbrightness[0])); // bottom left
-			if (pxlbrightness[1] > 0)
-				SEGMENT.addPixelColorXY(pixco[1][0], maxYpixel - pixco[1][1], baseRGB.scale8((uint8_t)pxlbrightness[1])); // bottom right
-			if (pxlbrightness[2] > 0)
-				SEGMENT.addPixelColorXY(pixco[2][0], maxYpixel - pixco[2][1], baseRGB.scale8((uint8_t)pxlbrightness[2])); // top right
-			if (pxlbrightness[3] > 0)			
-				SEGMENT.addPixelColorXY(pixco[3][0], maxYpixel - pixco[3][1], baseRGB.scale8((uint8_t)pxlbrightness[3])); // top left
-			/*
-			uint32_t color = RGBW32(baseRGB.r, baseRGB.g, baseRGB.b, 0);
-			if (pxlbrightness[0] > 0)
-				SEGMENT.addPixelColorXY(pixco[0][0], maxYpixel - pixco[0][1], color_scale(color, pxlbrightness[0])); // bottom left
-			if (pxlbrightness[1] > 0)
-				SEGMENT.addPixelColorXY(pixco[1][0], maxYpixel - pixco[1][1], color_scale(color, pxlbrightness[1])); // bottom right
-			if (pxlbrightness[2] > 0)
-				SEGMENT.addPixelColorXY(pixco[2][0], maxYpixel - pixco[2][1], color_scale(color, pxlbrightness[2])); // top right
-			if (pxlbrightness[3] > 0)
-				SEGMENT.addPixelColorXY(pixco[3][0], maxYpixel - pixco[3][1], color_scale(color, pxlbrightness[3])); // top left
-			*/
-
-
-
-			// test to render larger pixels with minimal effort (not working yet, need to calculate coordinate from actual dx position but brightness seems right), could probably be extended to 3x3
-			//	SEGMENT.addPixelColorXY(pixco[1][0] + 1, maxYpixel - pixco[1][1], baseRGB.scale8((uint8_t)((brightness>>1) - pxlbrightness[0])), fastcoloradd);
-			//	SEGMENT.addPixelColorXY(pixco[2][0] + 1, maxYpixel - pixco[2][1], baseRGB.scale8((uint8_t)((brightness>>1) -pxlbrightness[3])), fastcoloradd);
+		{	
+			for(uint32_t i = 0; i < 4; i ++)
+			{
+				if (pxlbrightness[i] > 0)			
+					SEGMENT.addPixelColorXY(pixco[i][0], maxYpixel - pixco[i][1], baseRGB.scale8((uint8_t)pxlbrightness[i])); 
+			}
 		}
 	}
 
@@ -738,6 +731,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 	{
 		if (useLocalBuffer) 
 		{
+			//uint32_t firstblur = particlesize > 64 ? 64 : particlesize; //attempt to add blurring, but does not work...
 			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, particlesize, particlesize);
 			if (particlesize > 64)
 			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, particlesize - 64, particlesize - 64);			
@@ -745,8 +739,6 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, (particlesize - 128) << 1, (particlesize - 128) << 1);			
 			if (particlesize > 192)
 			blur2D(colorbuffer, maxYpixel + 1, maxYpixel + 1, (particlesize - 192) << 1, (particlesize - 192) << 1);
-			
-			//Serial.println("blr");
 		}
 		else
 		{	
@@ -855,6 +847,11 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 		pixelvalues[2] = (dx * precal3) >> PS_P_SURFACE; // top right value equal to (dx * dy * brightess) >> PS_P_SURFACE
 	if (pixelvalues[3] >= 0)
 		pixelvalues[3] = (precal1 * precal3) >> PS_P_SURFACE; // top left value equal to ((PS_P_RADIUS-dx) * dy * brightess) >> PS_P_SURFACE
+
+	//TODO: for advance pixels, render them to larger size in a local buffer. or better make a new function for that? 
+	//easiest would be to create a 2x2 buffer for the original values, but that may not be as fast for smaller pixels...
+	//just make a new function that these colors are rendered to and then blurr it so it stays fast for normal rendering. 
+
 /*
 	Serial.print("x:");
 	Serial.print(particle->x);
@@ -922,8 +919,7 @@ void ParticleSystem::renderParticle(PSparticle* particle, uint32_t brightess, in
 // particles move upwards faster if ttl is high (i.e. they are hotter)
 void ParticleSystem::fireParticleupdate()
 {
-	//TODO: cleanup this function? check if normal move is much slower, change move function to check y first and check again
-	//todo: kill out of bounds funktioniert nicht?
+	//TODO: cleanup this function? check if normal move is much slower, change move function to check y first then this function just needs to add ttl to y befor calling normal move function	
 	uint32_t i = 0;
 
 	for (i = 0; i < usedParticles; i++)
@@ -935,7 +931,7 @@ void ParticleSystem::fireParticleupdate()
 			// apply velocity
 			particles[i].x = particles[i].x + (int32_t)particles[i].vx;
 			particles[i].y = particles[i].y + (int32_t)particles[i].vy + (particles[i].ttl >> 2); // younger particles move faster upward as they are hotter 
-			//particles[i].y = particles[i].y + (int32_t)particles[i].vy;// + (particles[i].ttl >> 3); // younger particles move faster upward as they are hotter //!! shift ttl by 2 is the original value, this is experimental
+			//particles[i].y = particles[i].y + (int32_t)particles[i].vy;// + (particles[i].ttl >> 3); // younger particles move faster upward as they are hotter //this is experimental, different shifting
 			particles[i].outofbounds = 0;
 			// check if particle is out of bounds, wrap x around to other side if wrapping is enabled
 			// as fire particles start below the frame, lots of particles are out of bounds in y direction. to improve speed, only check x direction if y is not out of bounds
@@ -1233,6 +1229,8 @@ int32_t ParticleSystem::wraparound(int32_t p, int32_t maxvalue)
 //force is in 3.4 fixedpoint notation, +/-127
 int32_t ParticleSystem::calcForce_dv(int8_t force, uint8_t* counter)
 {
+	if(force == 0) 
+		return 0;
 	// for small forces, need to use a delay counter
 	int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)
 	int32_t dv;
@@ -1243,7 +1241,7 @@ int32_t ParticleSystem::calcForce_dv(int8_t force, uint8_t* counter)
 		if (*counter > 15)
 		{
 			*counter -= 16;
-			dv = (force < 0) ? -1 : ((force > 0) ? 1 : 0); // force is either, 1, 0 or -1 if it is small
+			dv = force < 0 ? -1 : 1; // force is either, 1 or -1 if it is small (zero force is handled above)
 		}		
 	}
 	else
@@ -1396,6 +1394,11 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, bool
 	return true;
 }
 
+///////////////////////
+// Utility Functions //
+///////////////////////
+
+
 // fastled color adding is very inaccurate in color preservation
 // a better color add function is implemented in colors.cpp but it uses 32bit RGBW. to use it colors need to be shifted just to then be shifted back by that function, which is slow
 // this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color (fastled scale8 can be made faster using native 32bit on ESP)
@@ -1444,9 +1447,9 @@ void fast_color_scale(CRGB &c, uint32_t scale)
 
 
 //blur a matrix in x and y direction, blur can be asymmetric in x and y
-//for speed, 32bit variables are used, make sure to limit them to 8bit (0-255)
+//for speed, 32bit variables are used, make sure to limit them to 8bit (0-255) or result is undefined 
 //note: classic WLED blurrint is not (yet) supportet, this is a smearing function that does not fade original image, just blurrs it
-void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool particleblur)
+void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear, bool particleblur)
 {
 	//uint32_t keep = smear ? 255 : 255 - xblur;
 	CRGB seeppart, carryover;
@@ -1467,17 +1470,19 @@ void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, 
 		{			
 			seeppart = colorbuffer[x][y]; //create copy of current color
 			fast_color_scale(seeppart, seep); //scale it and seep to neighbours
+			if(!smear) //fade current pixel if smear is disabled
+				fast_color_scale(colorbuffer[x][y], 255 - xblur); 
+
 			if(x > 0)
 			{
 				fast_color_add(colorbuffer[x-1][y], seeppart);
 				fast_color_add(colorbuffer[x][y], carryover); //todo: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
-			}			
+			}						
 			carryover = seeppart; 			
 		}
 		fast_color_add(colorbuffer[xsize-1][y], carryover); // set last pixel
 	}
 
-	//uint32_t keep = smear ? 255 : 255 - xblur;
 	seep = yblur >> 1;		
 	for(uint32_t x = 0; x < xsize; x++)
 	{							
@@ -1486,6 +1491,9 @@ void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, 
 		{				
 			seeppart = colorbuffer[x][y]; //create copy of current color
 			fast_color_scale(seeppart, seep); //scale it and seep to neighbours
+			if(!smear) //fade current pixel if smear is disabled
+				fast_color_scale(colorbuffer[x][y], 255 - xblur); 
+
 			if(y > 0)
 			{
 				fast_color_add(colorbuffer[x][y-1], seeppart);

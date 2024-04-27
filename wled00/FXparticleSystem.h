@@ -156,6 +156,7 @@ public:
   void setUsedParticles(uint16_t num);
   void setCollisionHardness(uint8_t hardness); //hardness for particle collisions (255 means full hard)
   void setWallHardness(uint8_t hardness); //hardness for bouncing on the wall if bounceXY is set
+  void setWallRoughness(uint8_t roughness); //wall roughness randomizes wall collisions
   void setMatrixSize(uint16_t x, uint16_t y);
   void setWrapX(bool enable);
   void setWrapY(bool enable);
@@ -193,7 +194,8 @@ private:
 
   //utility functions
   void updatePSpointers(bool isadvanced); // update the data pointers to current segment data space
-  int32_t wraparound(int32_t w, int32_t maxvalue);
+  void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); //bounce on a wall
+  int32_t wraparound(int32_t p, int32_t maxvalue);
   int32_t calcForce_dv(int8_t force, uint8_t *counter);
   int32_t limitSpeed(int32_t speed);
   CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
@@ -201,7 +203,8 @@ private:
   // note: variables that are accessed often are 32bit for speed
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
-  int32_t wallHardness;
+  uint8_t wallHardness;
+  uint8_t wallRoughness;
   uint8_t gforcecounter; //counter for global gravity
   int8_t gforce; //gravity strength, default is 8 (negative is allowed, positive is downwards)
   uint8_t collisioncounter; //counter to handle collisions TODO: could use the SEGMENT.call?
@@ -210,7 +213,7 @@ private:
   uint8_t saturation; //note: on advanced particles, set this to 255 to disable saturation rendering, any other value uses particle sat value
   uint8_t particlesize; //global particle size, 0 = 2 pixels, 255 = 10 pixels
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
-  uint8_t motionBlur;
+  uint8_t motionBlur; //enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
 
 //initialization functions (not part of class)
@@ -221,4 +224,4 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bo
 //color add function
 void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
 void fast_color_scale(CRGB &c, uint32_t scale); //fast scaling function using 32bit factor (keep it 0-255) and pointer
-void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool particleblur = false);
+void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, bool particleblur = false);
