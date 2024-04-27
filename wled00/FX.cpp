@@ -7918,13 +7918,8 @@ uint16_t mode_particlevortex(void)
     {      
       PartSys->sources[i].source.x = (PartSys->maxX + 1) >> 1; // center
       PartSys->sources[i].source.y = (PartSys->maxY + 1) >> 1; // center
-      PartSys->sources[i].source.vx = 0;
-      PartSys->sources[i].source.vy = 0;
       PartSys->sources[i].maxLife = 900;
       PartSys->sources[i].minLife = 800; 
-      PartSys->sources[i].vx = 0;  // emitting speed
-      PartSys->sources[i].vy = 0;  // emitting speed
-      PartSys->sources[i].var = 0; // emitting variation
     }
     PartSys->setKillOutOfBounds(true);
   }
@@ -8243,8 +8238,7 @@ uint16_t mode_particlevolcano(void)
         PartSys->sources[i].source.x = PartSys->maxX / (numSprays + 1) * (i + 1); //distribute evenly        
         PartSys->sources[i].maxLife = 300; // lifetime in frames
         PartSys->sources[i].minLife = 250;
-        PartSys->sources[i].source.collide = true; // seeded particles will collide (if enabled)
-        PartSys->sources[i].vx = 0; // emitting speed
+        PartSys->sources[i].source.collide = true; // seeded particles will collide (if enabled)        
     }
   }
   else
@@ -8317,14 +8311,6 @@ uint16_t mode_particlefire(void)
     SEGMENT.aux0 = rand(); // aux0 is wind position (index) in the perlin noise
     // initialize the flame sprays
     numFlames = PartSys->numSources; 
-    for (i = 0; i < numFlames; i++)
-    {
-      PartSys->sources[i].source.ttl = 0;
-      PartSys->sources[i].source.vx = 0; // emitter moving speed;
-      PartSys->sources[i].source.vy = 0;      
-      // note: other parameters are set when creating the flame (see blow)
-    }
-
     DEBUG_PRINTF_P(PSTR("segment data ptr in fireFX %p\n"), SEGMENT.data);
   }
   else
@@ -8652,7 +8638,6 @@ uint16_t mode_particlewaterfall(void)
     for (i = 0; i < numSprays; i++)
     {
       PartSys->sources[i].source.hue = random16();
-      PartSys->sources[i].source.vx = 0;
       PartSys->sources[i].source.collide = true; // seeded particles will collide
 #ifdef ESP8266
       PartSys->sources[i].maxLife = 250; // lifetime in frames  (ESP8266 has less particles, make them short lived to keep the water flowing)
@@ -8661,7 +8646,6 @@ uint16_t mode_particlewaterfall(void)
       PartSys->sources[i].maxLife = 400; // lifetime in frames
       PartSys->sources[i].minLife = 150;
 #endif
-      PartSys->sources[i].vx = 0;  // emitting speed
       PartSys->sources[i].var = 7; // emiting variation
     }
   }
@@ -8924,8 +8908,7 @@ uint16_t mode_particleimpact(void)
     PartSys->setBounceY(true); //always use ground bounce   
     MaxNumMeteors = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
     for (i = 0; i < MaxNumMeteors; i++)
-    {
-      PartSys->sources[i].vx = 0; //emit speed in x
+    {      
       PartSys->sources[i].source.y = 500;
       PartSys->sources[i].source.ttl = random16(20 * i); // set initial delay for meteors
       PartSys->sources[i].source.vy = 10; // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
@@ -9063,11 +9046,8 @@ uint16_t mode_particleattractor(void)
     if (!initParticleSystem(PartSys, 1, true)) // init using 1 source and advanced particle settings
       return mode_static(); // allocation failed; //allocation failed
     
-    PartSys->sources[0].source.hue = random16();    
-    PartSys->sources[0].source.x = PS_P_RADIUS; //start out in bottom left corner
-    PartSys->sources[0].source.y = PS_P_RADIUS<<1;
-    PartSys->sources[0].source.vx = random16(5) + 3;
-    PartSys->sources[0].source.vy = PartSys->sources[0].source.vx - 2; //move slower in y
+    PartSys->sources[0].source.hue = random16();        
+    PartSys->sources[0].source.vx = -7;
     PartSys->sources[0].source.collide = true; // seeded particles will collide
     PartSys->sources[0].source.ttl = 100; //is replenished below, it never dies
     #ifdef ESP8266
@@ -9077,10 +9057,9 @@ uint16_t mode_particleattractor(void)
     PartSys->sources[0].maxLife = 350; // lifetime in frames
     PartSys->sources[0].minLife = 50;
     #endif
-    PartSys->sources[0].vx = 0;  // emitting speed
-    PartSys->sources[0].vy = 0;  // emitting speed
     PartSys->sources[0].var = 7; // emiting variation
     PartSys->setWallHardness(255);  //bounce forever
+     PartSys->setWallRoughness(200); //randomize wall bounce
   }
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGMENT.data); // if not first call, just set the pointer to the PS

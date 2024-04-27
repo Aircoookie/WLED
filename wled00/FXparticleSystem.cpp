@@ -56,7 +56,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	updatePSpointers(isadvanced); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
-	setWallRoughness(200); // smooth walls by default !!! testing this 
+	setWallRoughness(0); // smooth walls by default !!! testing this 
 	setGravity(0); //gravity disabled by default
 	setSaturation(255); //full saturation by default
 	setParticleSize(0); // minimum size by default
