@@ -7,11 +7,13 @@
 #define WLED_DEBOUNCE_THRESHOLD      50 // only consider button input of at least 50ms as valid (debouncing)
 #define WLED_LONG_PRESS             600 // long press if button is released after held for at least 600ms
 #define WLED_DOUBLE_PRESS           350 // double press if another press within 350ms after a short press
-#define WLED_LONG_REPEATED_ACTION   300 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+#define WLED_LONG_REPEATED_ACTION   400 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
 #define WLED_LONG_AP               5000 // how long button 0 needs to be held to activate WLED-AP
 #define WLED_LONG_FACTORY_RESET   10000 // how long button 0 needs to be held to trigger a factory reset
+#define WLED_LONG_BRI_STEPS          16 // how much to increase/decrease the brightness with each long press repetition
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+static bool buttonBriDirection = false; // true: increase brightness, false: decrease brightness
 
 void shortPressAction(uint8_t b)
 {
@@ -39,7 +41,19 @@ void longPressAction(uint8_t b)
   if (!macroLongPress[b]) {
     switch (b) {
       case 0: setRandomColor(col); colorUpdated(CALL_MODE_BUTTON); break;
-      case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
+      case 1: 
+        if(buttonBriDirection) {
+          if (bri == 255) break; // avoid unnecessary updates to brightness
+          if (bri >= 255 - WLED_LONG_BRI_STEPS) bri = 255;
+          else bri += WLED_LONG_BRI_STEPS;
+        } else {
+          if (bri == 1) break; // avoid unnecessary updates to brightness
+          if (bri <= WLED_LONG_BRI_STEPS) bri = 1;
+          else bri -= WLED_LONG_BRI_STEPS;
+        }
+        stateUpdated(CALL_MODE_BUTTON); 
+        buttonPressedTime[b] = millis();         
+        break; // repeatable action
     }
   } else {
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
@@ -284,10 +298,12 @@ void handleButton()
       buttonPressedBefore[b] = true;
 
       if (now - buttonPressedTime[b] > WLED_LONG_PRESS) { //long press
-        if (!buttonLongPressed[b]) longPressAction(b);
-        else if (b) { //repeatable action (~3 times per s) on button > 0
+        if (!buttonLongPressed[b]) {
+          buttonBriDirection = !buttonBriDirection; //toggle brightness direction on long press
           longPressAction(b);
-          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //333ms
+        } else if (b) { //repeatable action (~5 times per s) on button > 0
+          longPressAction(b);
+          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //200ms
         }
         buttonLongPressed[b] = true;
       }
