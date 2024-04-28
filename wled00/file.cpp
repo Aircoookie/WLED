@@ -407,10 +407,33 @@ static String getContentType(AsyncWebServerRequest* request, String filename){
   return "text/plain";
 }
 
+// WLEDMM
+static bool haveLedmapFile = true;
+static bool haveIndexFile = true;
+static bool haveSkinFile = true;
+static bool haveICOFile = true;
+static bool haveCpalFile = true;
+void invalidateFileNameCache() { // reset "file not found" cache
+  haveLedmapFile = true;
+  haveIndexFile = true;
+  haveSkinFile = true;
+  haveICOFile = true;
+  haveCpalFile = true;
+}
+
 bool handleFileRead(AsyncWebServerRequest* request, String path){
   DEBUG_PRINTLN("WS FileRead: " + path);
   if(path.endsWith("/")) path += "index.htm";
   if(path.indexOf("sec") > -1) return false;
+
+  // WLEDMM shortcuts
+  if ((haveLedmapFile == false) && path.equals("/ledmap.json")) return false;
+  if ((haveIndexFile == false)  && path.equals("/index.htm")) return false;
+  if ((haveSkinFile == false)   && path.equals("/skin.css")) return false;
+  if ((haveICOFile == false)    && path.equals("/favicon.ico")) return false;
+  if ((haveCpalFile == false)   && path.equals("/cpal.htm")) return false;
+  // WLEDMM toDO: add file caching (PSRAM) for /presets.json an /cfg.json
+
   String contentType = getContentType(request, path);
   /*String pathWithGz = path + ".gz";
   if(WLED_FS.exists(pathWithGz)){
@@ -421,5 +444,13 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
     request->send(WLED_FS, path, contentType);
     return true;
   }
+  //USER_PRINTLN("WS FileRead failed: "  + path + " (" + contentType + ")");
+
+  // WLEDMM cache "file not found" results (reduces LED flickering during UI activities)
+  if (path.equals("/ledmap.json")) haveLedmapFile = false;
+  if (path.equals("/index.htm"))   haveIndexFile = false;
+  if (path.equals("/skin.css"))    haveSkinFile = false;
+  if (path.equals("/favicon.ico")) haveICOFile = false;
+  if (path.equals("/cpal.htm"))    haveCpalFile = false;
   return false;
 }
