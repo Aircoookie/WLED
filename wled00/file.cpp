@@ -408,9 +408,9 @@ static String getContentType(AsyncWebServerRequest* request, String filename){
 }
 
 #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-// caching presets in PSRAM may prevent occasional flashes seen when HomeAssitant polls WLED
+// caching presets in PSRAM may prevent occasional flashes seen when HomeAssistant polls WLED
 // original idea by @akaricchi (https://github.com/Akaricchi)
-// returns a pointer to the PSRAM buffer updates size parameter
+// returns a pointer to the PSRAM buffer, updates size parameter
 static const uint8_t *getPresetCache(size_t &size) {
   static unsigned long presetsCachedTime;
   static uint8_t *presetsCached;
