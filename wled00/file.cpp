@@ -407,7 +407,7 @@ static String getContentType(AsyncWebServerRequest* request, String filename){
   return "text/plain";
 }
 
-#if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+#if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
 // caching presets in PSRAM may prevent occasional flashes seen when HomeAssistant polls WLED
 // original idea by @akaricchi (https://github.com/Akaricchi)
 // returns a pointer to the PSRAM buffer, updates size parameter
@@ -482,7 +482,7 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
     return true;
   }*/
 
-  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+  #if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
   if (path.endsWith("/presets.json")) {
     size_t psize;
     const uint8_t *presets = getPresetCache(psize);
