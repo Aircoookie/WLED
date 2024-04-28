@@ -8334,6 +8334,8 @@ uint16_t mode_particlefire(void)
     if (period < map(SEGMENT.speed, 0, 99, 50, 10)) // limit to 90FPS - 20FPS
     {
       SEGMENT.call--; //skipping a frame, decrement the counter (on call0, this is never executed as lastcall is 0, so its fine to not check if >0)
+      //still need to render the frame or flickering will occur in transitions
+      PartSys->updateFire(SEGMENT.intensity, true); // render the fire without updating it
       return FRAMETIME; //do not update this frame
     }
     *lastcall = strip.now;
@@ -8442,7 +8444,7 @@ uint16_t mode_particlepit(void)
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceX(SEGMENT.check2);
   PartSys->setBounceY(SEGMENT.check3);   
-  PartSys->setWallHardness(min(SEGMENT.custom2, (uint8_t)200)); //limit to 200 min
+  PartSys->setWallHardness(min(SEGMENT.custom2, (uint8_t)150)); //limit to 100 min (if collisions are disabled, still want bouncy)  
   if (SEGMENT.custom2>0)
   {
     PartSys->enableParticleCollisions(true, SEGMENT.custom2); // enable collisions and set particle collision hardness
@@ -8469,22 +8471,31 @@ uint16_t mode_particlepit(void)
         PartSys->particles[i].hue = random16(); // set random color        
         PartSys->particles[i].collide = true; //enable collision for particle
         PartSys->advPartProps[i].sat = ((SEGMENT.custom3) << 3) + 7;
+        //set particle size
+        if(SEGMENT.custom1 == 255)
+        {         
+          PartSys->setParticleSize(0); //set global size to zero
+          PartSys->advPartProps[i].size = random(SEGMENT.custom1); //set each particle to random size
+        }
+        else
+        {
+          PartSys->setParticleSize(SEGMENT.custom1); //set global size
+          PartSys->advPartProps[i].size = 0; //use global size          
+        }
         break; // emit only one particle per round
       }
     }
   }
-
     
-  uint32_t frictioncoefficient = 1;
+  uint32_t frictioncoefficient = 1 + SEGMENT.check1; //need more friction if wrapX is set, see below note
   if (SEGMENT.speed < 50) // for low speeds, apply more friction
     frictioncoefficient = 50 - SEGMENT.speed;
 
   //if (SEGMENT.call % (3 + (SEGMENT.custom2 >> 2)) == 0)
-  if (SEGMENT.call % (3 + (SEGMENT.speed >> 2)) == 0)
+  //if (SEGMENT.call % (3 + (SEGMENT.speed >> 2)) == 0)
+  if (SEGMENT.call % 6 == 0)// (3 + max(3, (SEGMENT.speed >> 2))) == 0)  //note: if friction is too low, hard particles uncontrollably 'wander' left and right if wrapX is enabled
     PartSys->applyFriction(frictioncoefficient);
 
-  
-  PartSys->setParticleSize(SEGMENT.custom1);
   PartSys->update(); // update and render
 
 //Experiment: blur to grow the particles, also blur asymmetric, make the particles wobble:
@@ -8612,7 +8623,7 @@ uint16_t mode_particlepit(void)
     }*/
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=200,c1=120,c2=100,c3=31,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=200,c1=120,c2=130,c3=31,o1=0,o2=0,o3=1";
 
 /*
  * Particle Waterfall
@@ -9017,7 +9028,7 @@ uint16_t mode_particleimpact(void)
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Cylinder,Walls,Collisions;;!;2;pal=0,sx=32,ix=85,c1=120,c2=125,c3=8,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Cylinder,Walls,Collisions;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=8,o1=0,o2=0,o3=1";
 
 /*
 Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
@@ -9059,7 +9070,7 @@ uint16_t mode_particleattractor(void)
     #endif
     PartSys->sources[0].var = 7; // emiting variation
     PartSys->setWallHardness(255);  //bounce forever
-     PartSys->setWallRoughness(200); //randomize wall bounce
+    PartSys->setWallRoughness(200); //randomize wall bounce
   }
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -9073,7 +9084,7 @@ uint16_t mode_particleattractor(void)
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
 
   PartSys->setColorByAge(SEGMENT.check1);
-  PartSys->setParticleSize(SEGMENT.custom1 >> 1);
+  PartSys->setParticleSize(SEGMENT.custom1 >> 1); //set size globally
 
   if (SEGMENT.custom2 > 0) // collisions enabled
     PartSys->enableParticleCollisions(true, map(SEGMENT.custom2, 1, 255, 120, 255)); // enable collisions and set particle collision hardness
@@ -9294,7 +9305,7 @@ uint16_t mode_particlespray(void)
   PartSys->setBounceX(!SEGMENT.check2);
   PartSys->setWrapX(SEGMENT.check2);
   PartSys->setWallHardness(hardness);
-  if(SEGMENT.check1) PartSys->setGravity(); 
+  PartSys->setGravity(8 * SEGMENT.check1); //enable gravity if checked (8 is default strength)
   numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
 
   if (SEGMENT.check3) // collisions enabled
@@ -9417,7 +9428,7 @@ uint16_t mode_particleGEQ(void)
   PartSys->update();   // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS Equalizer@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128,c3=31,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS Equalizer@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128,o1=0,o2=0,o3=0";
 
 
 /*

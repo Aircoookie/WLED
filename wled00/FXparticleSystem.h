@@ -42,7 +42,7 @@
 #define PS_P_HALFRADIUS 32  
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
-#define PS_P_MINHARDRADIUS 80 // minimum hard surface radius
+#define PS_P_MINHARDRADIUS 70 // minimum hard surface radius
 #define PS_P_MINSURFACEHARDNESS 128 //minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 #define PS_P_MAXSPEED 120 //maximum speed a particle can have (vx/vy is int8)
 
@@ -128,7 +128,7 @@ public:
   ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced = false); // constructor
   // note: memory is allcated in the FX function, no deconstructor needed
   void update(void); //update the particles according to set options and render to the matrix
-  void updateFire(uint32_t intensity); // update function for fire
+  void updateFire(uint32_t intensity, bool renderonly = false); // update function for fire, if renderonly is set, particles are not updated (required to fix transitions with frameskips)
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
 
   // particle emitters
@@ -137,8 +137,7 @@ public:
   void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed);  
 
   // move functions
-  void particleMoveUpdate(PSparticle &part, PSsettings &options);
-
+  void particleMoveUpdate(PSparticle &part, PSsettings &options, PSadvancedParticle *advancedproperties = NULL);
   //particle physics  
   void applyGravity(PSparticle *part); // applies gravity to single particle (use this for sources)
   void applyForce(PSparticle *part, int8_t xforce, int8_t yforce, uint8_t *counter);
@@ -184,7 +183,7 @@ public:
 private: 
   //rendering functions
   void ParticleSys_render(bool firemode = false, uint32_t fireintensity = 128);
-  void renderParticle(PSparticle *particle, uint32_t brightess, int32_t *pixelvalues, int32_t (*pixelpositions)[2]);    
+  void renderParticle(CRGB **framebuffer, uint32_t particleindex, uint32_t brightess, CRGB color, CRGB **renderbuffer);
   
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
@@ -195,7 +194,7 @@ private:
   //utility functions
   void updatePSpointers(bool isadvanced); // update the data pointers to current segment data space
   void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); //bounce on a wall
-  int32_t wraparound(int32_t p, int32_t maxvalue);
+  int16_t wraparound(uint16_t p, uint32_t maxvalue);
   int32_t calcForce_dv(int8_t force, uint8_t *counter);
   int32_t limitSpeed(int32_t speed);
   CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
@@ -211,7 +210,7 @@ private:
   uint8_t forcecounter; //counter for globally applied forces
   //global particle properties for basic particles
   uint8_t saturation; //note: on advanced particles, set this to 255 to disable saturation rendering, any other value uses particle sat value
-  uint8_t particlesize; //global particle size, 0 = 2 pixels, 255 = 10 pixels
+  uint8_t particlesize; //global particle size, 0 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
   uint8_t motionBlur; //enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
@@ -224,4 +223,4 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bo
 //color add function
 void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
 void fast_color_scale(CRGB &c, uint32_t scale); //fast scaling function using 32bit factor (keep it 0-255) and pointer
-void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, bool particleblur = false);
+void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
