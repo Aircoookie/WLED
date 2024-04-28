@@ -58,10 +58,15 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	setWallHardness(255); // set default wall hardness to max
 	setWallRoughness(0); // smooth walls by default !!! testing this 
 	setGravity(0); //gravity disabled by default
-	setSaturation(255); //full saturation by default
 	setParticleSize(0); // minimum size by default
 	motionBlur = 0; //no fading by default
 	emitIndex = 0;
+
+	//initialize some default non-zero values most FX use
+	for (int i = 0; i < numSources; i++)
+	{
+		sources[i].source.sat = 255; //set saturation to max by default
+	}
 	/*
 	Serial.println("alive particles: ");
 	uint32_t aliveparticles = 0;
@@ -179,11 +184,6 @@ void ParticleSystem::setKillOutOfBounds(bool enable)
 	particlesettings.killoutofbounds = enable;
 }
 
-void ParticleSystem::setSaturation(uint8_t sat)
-{
-	saturation = sat;
-}
-
 void ParticleSystem::setColorByAge(bool enable)
 {
 	particlesettings.colorByAge = enable;
@@ -238,12 +238,10 @@ void ParticleSystem::sprayEmit(PSsource &emitter)
 			particles[emitIndex].vy = emitter.vy + random(emitter.var) - (emitter.var>>1);
 			particles[emitIndex].ttl = random16(emitter.maxLife - emitter.minLife) + emitter.minLife;
 			particles[emitIndex].hue = emitter.source.hue;			
+			particles[emitIndex].sat = emitter.source.sat;			
 			particles[emitIndex].collide = emitter.source.collide;
-			if (advPartProps) 
-				{
-					advPartProps[emitIndex].sat = emitter.sat;
-					advPartProps[emitIndex].size = emitter.size;
-				}
+			if (advPartProps) 								
+				advPartProps[emitIndex].size = emitter.size;
 			break;
 		}
 		/*	
@@ -657,27 +655,32 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 		//  allocate empty memory for the local renderbuffer
 		framebuffer = allocate2Dbuffer(maxXpixel + 1, maxYpixel + 1);
 		if (framebuffer == NULL)
-			useLocalBuffer = false; //render to segment pixels directly if not enough memory	
-
-		if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
 		{
-			uint32_t yflipped;
-			for (int y = 0; y <= maxYpixel; y++)
+			Serial.println("Frame buffer alloc failed");
+			useLocalBuffer = false; //render to segment pixels directly if not enough memory	
+		}
+		else{
+			if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
 			{
-				yflipped = maxYpixel - y;
-				for (int x = 0; x <= maxXpixel; x++)
+				uint32_t yflipped;
+				for (uint32_t y = 0; y <= maxYpixel; y++)
 				{
-					framebuffer[x][y] = SEGMENT.getPixelColorXY(x, yflipped); //copy to local buffer
-					fast_color_scale(framebuffer[x][y], motionBlur);					
+					yflipped = maxYpixel - y;
+					for (uint32_t x = 0; x <= maxXpixel; x++)
+					{
+						framebuffer[x][y] = SEGMENT.getPixelColorXY(x, yflipped); //copy to local buffer
+						fast_color_scale(framebuffer[x][y], motionBlur);					
+					}
 				}
 			}
-		}
-		if(advPartProps)
-		{	
-			renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0  note: null checking is done when accessing it
+			if(advPartProps)
+			{	
+				renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0  note: null checking is done when accessing it
+			}
 		}
 	}
-	else
+	
+	if(!useLocalBuffer) //disabled or allocation above failed
 	{
 		if (motionBlur > 0)
 			SEGMENT.fadeToBlackBy(256 - motionBlur);
@@ -701,19 +704,16 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 			//brightness = (((uint32_t)particles[i].ttl * (maxY + PS_P_RADIUS - particles[i].y)) >> 7) + particles[i].ttl + (fireintensity>>1); // this is experimental
 			//brightness = (((uint32_t)particles[i].ttl * (maxY + PS_P_RADIUS - particles[i].y)) >> 7) + ((particles[i].ttl * fireintensity) >> 5); // this is experimental TODO: test this -> testing... ok but not the best, bit sparky
 			brightness = (((uint32_t)particles[i].ttl * (maxY + PS_P_RADIUS - particles[i].y)) >> 7) + (fireintensity >> 1); // this is experimental TODO: test this -> testing... does not look too bad!
-			brightness > 255 ? 255 : brightness; // faster then using min()
+			brightness = brightness > 255 ? 255 : brightness; // faster then using min()
 			baseRGB = ColorFromPalette(SEGPALETTE, brightness, 255, LINEARBLEND);
 		}
 		else{
 			brightness = particles[i].ttl > 255 ? 255 : particles[i].ttl; //faster then using min()
 			baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255, LINEARBLEND);
-			if (saturation < 255) 
+			if (particles[i].sat < 255) 
 			{
 				CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to hsv
-				if(advPartProps)
-					baseHSV.s = advPartProps[i].sat; 
-				else
-					baseHSV.s = saturation;	
+				baseHSV.s = particles[i].sat;	
 				baseRGB = (CRGB)baseHSV; //convert back to RGB
 			}
 		}
@@ -787,10 +787,15 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 	int32_t y = yoffset >> PS_P_RADIUS_SHIFT;
 
 	//check if particle has advanced size properties and buffer is available
-	if(advPartProps && renderbuffer)
+	if(advPartProps)
 	{
 		if(advPartProps[particleindex].size > 0)
-			advancedrender = true;					
+		{
+			if(renderbuffer)
+				advancedrender = true;					
+			else
+				return; //cannot render without buffer, advanced size particles are allowed out of frame
+		}			
 	}
 
 	// set the four raw pixel coordinates, the order is bottom left [0], bottom right[1], top right [2], top left [3]
@@ -1394,22 +1399,26 @@ void ParticleSystem::updatePSpointers(bool isadvanced)
 {
 	//DEBUG_PRINT(F("*** PS pointers ***"));
 	//DEBUG_PRINTF_P(PSTR("this PS %p\n"), this);	
-	byte *nextaddress = NULL;
+	//Note on memory alignment:
+	//a pointer MUST be 4 byte aligned. sizeof() in a struct/class is always aligned to the largest element. if it contains a 32bit, it will be padded to 4 bytes, 16bit is padded to 2byte alignment.
+	//The PS is aligned to 4 bytes, a PSparticle is aligned to 2 and a struct containing only byte sized variables is not aligned at all and may need to be padded when dividing the memoryblock.
+	//by making sure that the number of sources and particles is a multiple of 4, padding can be skipped here as alignent is ensured, independent of struct sizes.
 	particles = reinterpret_cast<PSparticle *>(this + 1); // pointer to particle array at data+sizeof(ParticleSystem)
 	if(isadvanced)
 	{
-		advPartProps = reinterpret_cast<PSadvancedParticle *>(particles + numParticles);
-		sources = reinterpret_cast<PSsource *>(advPartProps + numParticles); // pointer to source(s)
+		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)
+		advPartProps = reinterpret_cast<PSadvancedParticle *>(sources + numParticles);		
 	}
 	else
 	{
-		advPartProps = NULL;
 		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)
+		advPartProps = NULL;		
 	}	
 	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources); // pointer to first available byte after the PS for FX additional data
 	
 	//DEBUG_PRINTF_P(PSTR("particles %p\n"), particles);	
 	//DEBUG_PRINTF_P(PSTR("sources %p\n"), sources);	
+	//DEBUG_PRINTF_P(PSTR("adv. props %p\n"), advPartProps);	
 	//DEBUG_PRINTF_P(PSTR("end %p\n"), PSdataEnd);
 }
 
@@ -1431,6 +1440,8 @@ uint32_t calculateNumberOfParticles(bool isadvanced)
 	numberofParticles = max((uint32_t)1, min(numberofParticles, particlelimit));
 	if (isadvanced) // advanced property array needs ram, reduce number of particles to use the same amount
 		numberofParticles = (numberofParticles * sizeof(PSparticle)) / (sizeof(PSparticle) + sizeof(PSadvancedParticle));
+	//make sure it is a multiple of 4 for proper memory alignment
+	numberofParticles = ((numberofParticles+3) >> 2) << 2;	
 	return numberofParticles;
 }
 
@@ -1448,6 +1459,8 @@ uint32_t calculateNumberOfSources(uint8_t requestedsources)
 	int numberofSources = min((cols * rows) / 4, (uint32_t)requestedsources);
 	numberofSources = max(1, min(numberofSources, ESP32_MAXSOURCES)); // limit to 1 - 64
 #endif
+	//make sure it is a multiple of 4 for proper memory alignment
+	numberofSources = ((numberofSources+3) >> 2) << 2;	
 	return numberofSources;
 }
 
@@ -1455,6 +1468,7 @@ uint32_t calculateNumberOfSources(uint8_t requestedsources)
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool isadvanced, uint16_t additionalbytes)
 {
 	uint32_t requiredmemory = sizeof(ParticleSystem);
+	//functions above make sure these are a multiple of 4 bytes	(to avoid alignment issues)
 	requiredmemory += sizeof(PSparticle) * numparticles;
 	if (isadvanced)
 		requiredmemory += sizeof(PSadvancedParticle) * numparticles;

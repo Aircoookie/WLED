@@ -7912,7 +7912,11 @@ uint16_t mode_particlevortex(void)
 
     //SEGMENT.aux0 = 0;    // starting angle
     SEGMENT.aux1 = 0x01; // check flags
-
+    #ifdef ESP8266  
+    PartSys->setMotionBlur(150);
+    #else
+    PartSys->setMotionBlur(100);
+    #endif
     uint8_t numSprays = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
     for (i = 0; i < numSprays; i++)
     {      
@@ -7934,7 +7938,15 @@ uint16_t mode_particlevortex(void)
   
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   uint8_t spraycount = min(PartSys->numSources, (uint8_t)(1 + (SEGMENT.custom1 >> 5))); // number of sprays to display, 1-8
-
+  #ifdef ESP8266  
+  for (i = 1; i < 4; i++) //need static particles in the center to reduce blinking (would be black every other frame without this hack), just set them there fixed
+  {
+    PartSys->particles[PartSys->numParticles - i].x = (PartSys->maxX + 1) >> 1; // center
+    PartSys->particles[PartSys->numParticles - i].y = (PartSys->maxY + 1) >> 1; // center
+    PartSys->particles[PartSys->numParticles - i].sat = 230; 
+    PartSys->particles[PartSys->numParticles - i].ttl = 100; //set alive
+  }
+  #endif
   if (SEGMENT.check1 != (SEGMENT.aux1 & 0x01) || SEGMENT.call == 0) //state change
   {
     if (SEGMENT.check1)
@@ -8017,17 +8029,17 @@ uint16_t mode_particlevortex(void)
 
 
 //test to check if less particles are ok at lower speeds.
-  uint32_t skip = PS_P_HALFRADIUS/SEGMENT.intensity + 1;
+  uint32_t skip = PS_P_HALFRADIUS/(SEGMENT.intensity + 1) + 1;
   if (SEGMENT.call % skip == 0)
   {
     j = random(spraycount); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
     for (i = 0; i < spraycount; i++) // emit one particle per spray (if available)
     {
       PartSys->sources[j].var = (SEGMENT.custom3 >> 1); //update speed variation
-#ifdef ESP8266
+      #ifdef ESP8266
       if (SEGMENT.call & 0x01) // every other frame, do not emit to save particles
       #endif
-      PartSys->angleEmit(PartSys->sources[j], SEGMENT.aux0 + angleoffset * j, SEGMENT.intensity >> 2);
+      PartSys->angleEmit(PartSys->sources[j], SEGMENT.aux0 + angleoffset * j, (SEGMENT.intensity >> 2)+1);
       //PartSys->sprayEmit(PartSys->sources[j]);
       j = (j + 1) % spraycount;
     }
@@ -8061,8 +8073,7 @@ uint16_t mode_particlefireworks(void)
     if (!initParticleSystem(PartSys, NUMBEROFSOURCES, true)) // init with advanced particle properties
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true);  //out of bounds particles dont return (except on top, taken care of by gravity setting)
-    PartSys->setWallHardness(100); //ground bounce is fixed
-    PartSys->setSaturation(0); //need to set saturation lower than 255 so rendering will use individual particle saturation
+    PartSys->setWallHardness(100); //ground bounce is fixed    
     numRockets = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
     for (j = 0; j < numRockets; j++)
     {
@@ -8149,7 +8160,7 @@ uint16_t mode_particlefireworks(void)
           speed += 5; //increase speed to form a second circle
           speedvariation = speedvariation ? speedvariation + random16(4) : 0; // double speed variation
           PartSys->sources[j].source.hue = random16(); // new color for next circle
-          PartSys->sources[j].sat = min((uint16_t)150,random16());
+          PartSys->sources[j].source.sat = min((uint16_t)150,random16());
         }
         angle += angleincrement; // set angle for next particle
       }
@@ -8179,7 +8190,7 @@ uint16_t mode_particlefireworks(void)
     {
         PartSys->sources[j].source.vy = 0; // set speed to zero so code above will recognize this as an exploding rocket
         PartSys->sources[j].source.hue = random16(); // random color
-        PartSys->sources[j].sat = random16(55) + 200;
+        PartSys->sources[j].source.sat = random16(55) + 200;
         PartSys->sources[j].maxLife = 200;
         PartSys->sources[j].minLife = 100;
         PartSys->sources[j].source.ttl = random16((1200 - ((uint32_t)SEGMENT.speed << 2))) + 550 - (SEGMENT.speed << 1); // standby time til next launch
@@ -8192,7 +8203,7 @@ uint16_t mode_particlefireworks(void)
         PartSys->sources[j].source.x = (rand() % (PartSys->maxX >> 1)) + (PartSys->maxX >> 2); // centered half
         PartSys->sources[j].source.vy = random16(SEGMENT.custom1 >> 3) + 5;    // rocket speed depends also on rocket fuse
         PartSys->sources[j].source.vx = random(5) - 2; //i.e. not perfectly straight up
-        PartSys->sources[j].sat = 30; // low saturation -> exhaust is off-white
+        PartSys->sources[j].source.sat = 30; // low saturation -> exhaust is off-white
         PartSys->sources[j].source.ttl = random16(SEGMENT.custom1) + (SEGMENT.custom1 >> 1); // sets explosion height (rockets explode at the top if set too high as paticle update set speed to zero if moving out of matrix)
         PartSys->sources[j].maxLife = 40; // exhaust particle life
         PartSys->sources[j].minLife = 10;
@@ -8331,7 +8342,7 @@ uint16_t mode_particlefire(void)
   {
     uint32_t *lastcall = reinterpret_cast<uint32_t *>(PartSys->PSdataEnd);
     uint32_t period = strip.now - *lastcall;    
-    if (period < map(SEGMENT.speed, 0, 99, 50, 10)) // limit to 90FPS - 20FPS
+    if (period < (uint32_t)map(SEGMENT.speed, 0, 99, 50, 10)) // limit to 90FPS - 20FPS
     {
       SEGMENT.call--; //skipping a frame, decrement the counter (on call0, this is never executed as lastcall is 0, so its fine to not check if >0)
       //still need to render the frame or flickering will occur in transitions
@@ -8453,8 +8464,6 @@ uint16_t mode_particlepit(void)
     PartSys->enableParticleCollisions(false);
   }
 
-  PartSys->setSaturation(((SEGMENT.custom3) << 3) + 7); // set global rendering saturation so individual saturation rendering is enabled
-
   uint32_t i;                                                                   
   if (SEGMENT.call % (128 - (SEGMENT.intensity >> 1)) == 0 && SEGMENT.intensity > 0) // every nth frame emit particles, stop emitting if set to zero
   {
@@ -8470,7 +8479,7 @@ uint16_t mode_particlepit(void)
         PartSys->particles[i].vy = map(SEGMENT.speed, 0, 255, -5, -100); // downward speed
         PartSys->particles[i].hue = random16(); // set random color        
         PartSys->particles[i].collide = true; //enable collision for particle
-        PartSys->advPartProps[i].sat = ((SEGMENT.custom3) << 3) + 7;
+        PartSys->particles[i].sat = ((SEGMENT.custom3) << 3) + 7;
         //set particle size
         if(SEGMENT.custom1 == 255)
         {         
@@ -8745,11 +8754,7 @@ uint16_t mode_particlebox(void)
   PartSys->setBounceX(true);
   PartSys->setBounceY(true);
   PartSys->setWallHardness(min(SEGMENT.custom2, (uint8_t)200)); // wall hardness is 200 or more
-  if (SEGMENT.custom2 > 0)
-    PartSys->enableParticleCollisions(true, SEGMENT.custom2); // enable collisions and set particle collision hardness
-  else
-    PartSys->enableParticleCollisions(false);
-
+  PartSys->enableParticleCollisions(true, max(2, (int)SEGMENT.custom2)); // enable collisions and set particle collision hardness
 
   #ifdef ESP8266
   uint16_t maxnumParticles = min((uint16_t)((PartSys->maxXpixel * PartSys->maxYpixel) >> 1), PartSys->numParticles);
@@ -8783,17 +8788,20 @@ uint16_t mode_particlebox(void)
 
     if(SEGMENT.check1) //random, use perlin noise
     {
-      xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127); // TODO: inoise 16 would be faster?
+      xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127); 
       ygravity = ((int16_t)inoise8(SEGMENT.aux0 + 10000) - 127);
-      // scale the gravity force down
-      xgravity /= 2 + ((256 - SEGMENT.custom1) >> 3); //(divide by 1-32)
-      ygravity /= 2 + ((256 - SEGMENT.custom1) >> 3);
+      // scale the gravity force
+      //xgravity /= 1 + ((256 - SEGMENT.custom1) >> 5); 
+      //ygravity /= 1 + ((256 - SEGMENT.custom1) >> 5);
+      // scale the gravity force 
+      xgravity = (xgravity * SEGMENT.custom1) / 50; 
+      ygravity = (ygravity * SEGMENT.custom1) / 50;
     }
     else //go in a circle
     {
       // PartSys->applyAngleForce(PartSys->particles, PartSys->usedParticles, SEGMENT.custom1>>2, SEGMENT.aux0<<8);//not used, calculate here directly as perlin noise force is in x and y, not angle
-      xgravity = ((int32_t)(SEGMENT.custom1 >> 3) * cos16(SEGMENT.aux0 << 8)) / 0xFFFF;
-      ygravity = ((int32_t)(SEGMENT.custom1 >> 3) * sin16(SEGMENT.aux0 << 8)) / 0xFFFF;
+      xgravity = ((int32_t)(SEGMENT.custom1) * cos16(SEGMENT.aux0 << 8)) / 0xFFFF;
+      ygravity = ((int32_t)(SEGMENT.custom1) * sin16(SEGMENT.aux0 << 8)) / 0xFFFF;
     }
     if (SEGMENT.check3) //sloshing, y force is alwys downwards
     {
@@ -9046,17 +9054,11 @@ uint16_t mode_particleattractor(void)
   PSsettings sourcesettings;// = {0, 0, 1, 1, 0, 0, 0, 0}; // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
   sourcesettings.asByte = 0b00001100;
   PSparticle *attractor; //particle pointer to the attractor  
-  
-/*
-  PSsettings sourcesettings;
-  uint8_t *settingsPtr = reinterpret_cast<uint8_t *>(&sourcesettings); // access settings as one byte (wmore efficient in code and speed)
-  *settingsPtr = 0b00001100;                                           // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
-*/
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {    
     if (!initParticleSystem(PartSys, 1, true)) // init using 1 source and advanced particle settings
       return mode_static(); // allocation failed; //allocation failed
-    
+    	//DEBUG_PRINTF_P(PSTR("sources in FX %p\n"), &PartSys->sources[0]);	
     PartSys->sources[0].source.hue = random16();        
     PartSys->sources[0].source.vx = -7;
     PartSys->sources[0].source.collide = true; // seeded particles will collide
@@ -9090,11 +9092,9 @@ uint16_t mode_particleattractor(void)
     PartSys->enableParticleCollisions(true, map(SEGMENT.custom2, 1, 255, 120, 255)); // enable collisions and set particle collision hardness
   else
     PartSys->enableParticleCollisions(false);
-  
   uint16_t lastusedparticle = (PartSys->numParticles * 3) >> 2; //use 3/4 of particles
   uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 10, lastusedparticle);
   PartSys->setUsedParticles(displayparticles);
-
   // set pointers
   //attractor = reinterpret_cast<PSparticle *>(&PartSys->particles[lastusedparticle + 1]);
   attractor = &PartSys->particles[lastusedparticle + 1];
@@ -9116,21 +9116,18 @@ uint16_t mode_particleattractor(void)
     attractor->x = PartSys->maxX >> 1; // set to center
     attractor->y = PartSys->maxY >> 1;
   }
-  
   if (SEGMENT.call % 5 == 0)
   {
      PartSys->sources[0].source.hue++;
      PartSys->sources[0].source.ttl = 100; //spray never dies
   }
-
   SEGMENT.aux0 += 256; //emitting angle, one full turn in 255 frames (0xFFFF is 360°)
   if (SEGMENT.call % 2 == 0) // alternate direction of emit
     PartSys->angleEmit(PartSys->sources[0], SEGMENT.aux0, 12);     
     //PartSys->angleEmit(PartSys->sources[0], SEGMENT.aux0, SEGMENT.custom1 >> 4);     
   else
     PartSys->angleEmit(PartSys->sources[0], SEGMENT.aux0 + 0x7FFF, 12); // emit at 180° as well
-    //PartSys->angleEmit(PartSys->sources[0], SEGMENT.aux0 + 0x7FFF, SEGMENT.custom1 >> 4); // emit at 180° as well
-
+    //PartSys->angleEmit(PartSys->sources[0], SEGMENT.aux0 + 0x7FFF, SEGMENT.custom1 >> 4); 
   // apply force
   for(i = 0; i < displayparticles; i++) 
   {
@@ -9138,7 +9135,6 @@ uint16_t mode_particleattractor(void)
   }
   if (SEGMENT.call % (33 - SEGMENT.custom3) == 0)
     PartSys->applyFriction(2);
-
   PartSys->particleMoveUpdate(PartSys->sources[0].source, sourcesettings); // move the source
   PartSys->update(); // update and render
   return FRAMETIME;
@@ -9273,8 +9269,7 @@ uint16_t mode_particlespray(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
-  uint8_t numSprays;
-  uint32_t i;
+  //uint8_t numSprays;
   const uint8_t hardness = 200; //collision hardness is fixed
 
   if (SEGMENT.call == 0) // initialization 
@@ -9306,7 +9301,7 @@ uint16_t mode_particlespray(void)
   PartSys->setWrapX(SEGMENT.check2);
   PartSys->setWallHardness(hardness);
   PartSys->setGravity(8 * SEGMENT.check1); //enable gravity if checked (8 is default strength)
-  numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
+  //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
 
   if (SEGMENT.check3) // collisions enabled
     PartSys->enableParticleCollisions(true, hardness); // enable collisions and set particle collision hardness

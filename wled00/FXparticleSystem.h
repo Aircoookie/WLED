@@ -30,7 +30,7 @@
 #include "FastLED.h"
 
 //memory allocation
-#define ESP8266_MAXPARTICLES 160 // enough for one 16x16 segment with transitions
+#define ESP8266_MAXPARTICLES 200// // enough for one 16x16 segment with transitions
 #define ESP8266_MAXSOURCES 16
 #define ESP32S2_MAXPARTICLES 840 // enough for four 16x16 segments
 #define ESP32S2_MAXSOURCES 48
@@ -46,25 +46,26 @@
 #define PS_P_MINSURFACEHARDNESS 128 //minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 #define PS_P_MAXSPEED 120 //maximum speed a particle can have (vx/vy is int8)
 
-//struct for a single particle (9 bytes)
+//struct for a single particle (10 bytes)
 typedef struct {
     int16_t x;   //x position in particle system
     int16_t y;   //y position in particle system    
     int8_t vx;  //horizontal velocity
     int8_t vy;  //vertical velocity
     uint8_t hue;  // color hue
+    uint8_t sat; //particle color saturation
     //two byte bit field:
     uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
     bool outofbounds : 1; //out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; //if set, particle takes part in collisions
     bool flag3 : 1; // unused flags...
-    bool flag4 : 1;
+    bool flag4 : 1;        
 } PSparticle;
 
 // struct for additional particle settings (optional)
 typedef struct
 {  
-  uint8_t sat; //particle color saturation
+
   uint8_t size; //particle size, 255 means 10 pixels in diameter
   uint8_t forcecounter; //counter for applying forces to individual particles
 
@@ -101,7 +102,6 @@ typedef struct {
   uint8_t var; // variation of emitted speed (use odd numbers for good symmetry)
   int8_t vx; // emitting speed
   int8_t vy; 
-  uint8_t sat; // particle saturation (advanced property)
   uint8_t size; // particle size (advanced property)
 } PSsource; 
 
@@ -122,6 +122,7 @@ typedef union
   byte asByte;
 } PSsettings;
 
+//class uses approximately 60 bytes
 class ParticleSystem
 {
 public:
@@ -209,7 +210,6 @@ private:
   uint8_t collisioncounter; //counter to handle collisions TODO: could use the SEGMENT.call?
   uint8_t forcecounter; //counter for globally applied forces
   //global particle properties for basic particles
-  uint8_t saturation; //note: on advanced particles, set this to 255 to disable saturation rendering, any other value uses particle sat value
   uint8_t particlesize; //global particle size, 0 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
   uint8_t motionBlur; //enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
