@@ -4897,7 +4897,7 @@ uint16_t mode_2DAnalogClock(void) {                  // By Andras Fekete (bandi1
   SEGMENT.drawLine(centerX, centerY, minute_x, minute_y, GREEN);
   SEGMENT.drawLine(centerX, centerY, hour_x, hour_y, RED);
 
-  return FRAMETIME;
+  return (1000 / WLED_FPS); // calculate once per second
 } // mode_2DAnalogClock()
 static const char _data_FX_MODE_2DANALOGCLOCK[] PROGMEM = "AnalogClock2D";
 
