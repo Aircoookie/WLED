@@ -4869,8 +4869,8 @@ uint16_t mode_2DAnalogClock(void) {                  // By Andras Fekete (bandi1
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t centerX = (cols >> 1) - 1;
-  const uint16_t centerY = (rows >> 1) - 1;
+  const uint16_t centerX = cols >> 1;
+  const uint16_t centerY = rows >> 1;
   const uint16_t radius = min(centerX, centerY);
 
   auto hours_in_day = (localTime / (60 * 60)) % 12;
