@@ -5912,6 +5912,7 @@ static const char _data_FX_MODE_2DCRAZYBEES[] PROGMEM = "Crazy Bees@!,Blur;;;2";
 //     2D Ghost Rider  //
 /////////////////////////
 //// Ghost Rider by stepko (c)2021 [https://editor.soulmatelights.com/gallery/716-ghost-rider], adapted by Blaz Kristan (AKA blazoncek)
+/*
 #define LIGHTERS_AM 64  // max lighters (adequate for 32x32 matrix)
 uint16_t mode_2Dghostrider(void) {
   if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
@@ -5996,7 +5997,7 @@ uint16_t mode_2Dghostrider(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_2DGHOSTRIDER[] PROGMEM = "Ghost Rider@Fade rate,Blur;;!;2";
-
+*/
 
 ////////////////////////////
 //     2D Floating Blobs  //
@@ -9425,6 +9426,89 @@ uint16_t mode_particleGEQ(void)
 }
 static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS Equalizer@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128,o1=0,o2=0,o3=0";
 
+/*
+Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
+*/
+#define MAXANGLESTEP 2000 //32767 means 180°
+uint16_t mode_particlghostrider(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem *PartSys = NULL;
+  PSsettings ghostsettings;
+  ghostsettings.asByte = 0b0000011; //enable wrapX and wrapY
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem(PartSys, 1)) // init, no additional data needed
+      return mode_static(); // allocation failed; //allocation failed
+    PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
+    PartSys->sources[0].maxLife = 260; // lifetime in frames
+    PartSys->sources[0].minLife = 250;
+    PartSys->sources[0].source.x = random16(PartSys->maxX);
+    PartSys->sources[0].source.y = random16(PartSys->maxY);   
+    SEGMENT.step = random(MAXANGLESTEP) - (MAXANGLESTEP>>1); //angle increment 
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+
+  if(SEGMENT.intensity > 0) //spiraling
+  {
+    if(SEGMENT.aux1)
+    {
+      SEGMENT.step += SEGMENT.intensity>>3;
+      if((int32_t)SEGMENT.step > MAXANGLESTEP)
+        SEGMENT.aux1 = 0;
+    }
+    else
+    {
+     SEGMENT.step -= SEGMENT.intensity>>3;
+      if((int32_t)SEGMENT.step < -MAXANGLESTEP)
+        SEGMENT.aux1 = 1;
+    }
+  }
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  PartSys->setMotionBlur(SEGMENT.custom1); 
+  //PartSys->setColorByAge(SEGMENT.check1);
+  PartSys->sources[0].var = (1 + (SEGMENT.custom3>>1)) | 0x01; //odd numbers only
+
+  //color by age (PS always starts with hue = 255 so cannot use that)
+  if(SEGMENT.check1)
+  {
+    for(int i = 0; i < PartSys->usedParticles; i++)
+    {
+      PartSys->particles[i].hue = PartSys->sources[0].source.hue + (PartSys->particles[i].ttl<<2);
+    }      
+  }
+  SEGMENT.aux0 += (int32_t)SEGMENT.step; //step is angle increment
+
+  uint16_t emitangle = SEGMENT.aux0 + 32767; //+180°
+  int32_t speed = map(SEGMENT.speed, 0, 255, 12, 64);
+  PartSys->sources[0].source.vx = ((int32_t)cos16(SEGMENT.aux0) * speed) / (int32_t)32767; 
+  PartSys->sources[0].source.vy = ((int32_t)sin16(SEGMENT.aux0) * speed) / (int32_t)32767;  
+  PartSys->sources[0].source.ttl = 500; //source never dies
+  PartSys->particleMoveUpdate(PartSys->sources[0].source, ghostsettings);
+  //set head (steal one of the particles)
+  PartSys->particles[PartSys->usedParticles-1].x = PartSys->sources[0].source.x;
+  PartSys->particles[PartSys->usedParticles-1].y = PartSys->sources[0].source.y;
+  PartSys->particles[PartSys->usedParticles-1].ttl = PartSys->sources[0].source.ttl;
+  PartSys->particles[PartSys->usedParticles-1].sat = 0;  
+  //emit two particles
+  PartSys->angleEmit(PartSys->sources[0], emitangle, speed);
+  PartSys->angleEmit(PartSys->sources[0], emitangle, speed);
+  PartSys->sources[0].source.hue += SEGMENT.custom2 >> 3;
+
+  PartSys->update(); // update and render
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,Color by age;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1,o2=0,o3=0";
 
 /*
  * Particle rotating GEQ
@@ -9753,7 +9837,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DPLASMAROTOZOOM, &mode_2Dplasmarotozoom, _data_FX_MODE_2DPLASMAROTOZOOM);
   addEffect(FX_MODE_2DSPACESHIPS, &mode_2Dspaceships, _data_FX_MODE_2DSPACESHIPS);
   addEffect(FX_MODE_2DCRAZYBEES, &mode_2Dcrazybees, _data_FX_MODE_2DCRAZYBEES);
-  addEffect(FX_MODE_2DGHOSTRIDER, &mode_2Dghostrider, _data_FX_MODE_2DGHOSTRIDER);
+  //addEffect(FX_MODE_2DGHOSTRIDER, &mode_2Dghostrider, _data_FX_MODE_2DGHOSTRIDER);
   //addEffect(FX_MODE_2DBLOBS, &mode_2Dfloatingblobs, _data_FX_MODE_2DBLOBS);
   addEffect(FX_MODE_2DSCROLLTEXT, &mode_2Dscrollingtext, _data_FX_MODE_2DSCROLLTEXT);
   addEffect(FX_MODE_2DDRIFTROSE, &mode_2Ddriftrose, _data_FX_MODE_2DDRIFTROSE);
@@ -9810,6 +9894,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLEATTRACTOR, &mode_particleattractor, _data_FX_MODE_PARTICLEATTRACTOR);
   addEffect(FX_MODE_PARTICLESPRAY, &mode_particlespray, _data_FX_MODE_PARTICLESPRAY);
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
+  addEffect(FX_MODE_PARTICLEGHOSTRIDER, &mode_particlghostrider, _data_FX_MODE_PARTICLEGHOSTRIDER);
 
  // addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
 

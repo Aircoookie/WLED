@@ -119,7 +119,7 @@ typedef union
   bool useCollisions : 1;
   bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
   };
-  byte asByte;
+  byte asByte; //order is: LSB is first entry in the list above
 } PSsettings;
 
 //class uses approximately 60 bytes
