@@ -512,8 +512,8 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   }
   #endif
 
-  if(WLED_FS.exists(path)) {
-    request->send(WLED_FS, path, contentType);
+  if(WLED_FS.exists(path) || WLED_FS.exists(path + ".gz")) {
+      request->send(WLED_FS, path, String(), request->hasArg(F("download")));
     return true;
   }
   //USER_PRINTLN("WS FileRead failed: "  + path + " (" + contentType + ")");
