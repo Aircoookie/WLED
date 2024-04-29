@@ -4892,7 +4892,7 @@ uint16_t mode_2DAnalogClock(void) {                  // By Andras Fekete (bandi1
   uint16_t second_y = centerY + second_len * sin_t(second_angle);
 
   SEGMENT.fill(BLACK);
-  SEGMENT.draw_circle(centerX, centerY, radius, DARKSLATEGRAY);
+  SEGMENT.draw_circle_antialiased(centerX, centerY, radius, DARKSLATEGRAY);
   SEGMENT.drawLine(centerX, centerY, second_x, second_y, BLUE);
   SEGMENT.drawLine(centerX, centerY, minute_x, minute_y, GREEN);
   SEGMENT.drawLine(centerX, centerY, hour_x, hour_y, RED);

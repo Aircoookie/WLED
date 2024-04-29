@@ -471,6 +471,32 @@ void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   }
 }
 
+void Segment::draw_circle_antialiased(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  if (!isActive() || radius == 0) return; // not active
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
+  // Bresenham’s Algorithm
+  int d = 3 - (2*radius);
+  int y = radius, x = 0;
+  while (y >= x) {
+    setPixelColorXY(((float)cx+x-0.5)/cols, ((float)cy+y-0.5)/rows, col, true);
+    setPixelColorXY(((float)cx-x+0.5)/cols, ((float)cy+y-0.5)/rows, col, true);
+    setPixelColorXY(((float)cx+x-0.5)/cols, ((float)cy-y+0.5)/rows, col, true);
+    setPixelColorXY(((float)cx-x+0.5)/cols, ((float)cy-y+0.5)/rows, col, true);
+    setPixelColorXY(((float)cx+y-0.5)/cols, ((float)cy+x-0.5)/rows, col, true);
+    setPixelColorXY(((float)cx-y+0.5)/cols, ((float)cy+x-0.5)/rows, col, true);
+    setPixelColorXY(((float)cx+y-0.5)/cols, ((float)cy-x+0.5)/rows, col, true);
+    setPixelColorXY(((float)cx-y+0.5)/cols, ((float)cy-x+0.5)/rows, col, true);
+    x++;
+    if (d > 0) {
+      y--;
+      d += 4 * (x - y) + 10;
+    } else {
+      d += 4 * x + 6;
+    }
+  }
+}
+
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   if (!isActive() || radius == 0) return; // not active
