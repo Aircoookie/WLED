@@ -439,8 +439,11 @@ static const uint8_t *getPresetCache(size_t &size) {
         file.read(presetsCached, presetsCachedSize);
         presetsCached[presetsCachedSize] = 0;
         file.close();
+        //USER_PRINTLN(F("getPresetCache(): /presets.json cached in PSRAM."));
       }
     }
+  } else {
+    //USER_PRINTLN(F("getPresetCache(): /presets.json served from PSRAM."));
   }
 
   size = presetsCachedSize;
@@ -460,6 +463,16 @@ void invalidateFileNameCache() { // reset "file not found" cache
   haveSkinFile = true;
   haveICOFile = true;
   haveCpalFile = true;
+
+  #if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
+  // WLEDMM hack to clear presets.json cache
+  size_t dummy;
+  unsigned long realpresetsTime = presetsModifiedTime;
+  presetsModifiedTime = toki.second();   // pretend we have changes
+  (void) getPresetCache(dummy);          // clear presets.json cache
+  presetsModifiedTime = realpresetsTime; // restore correct value
+#endif
+  //USER_PRINTLN("WS FileRead cache cleared");
 }
 
 bool handleFileRead(AsyncWebServerRequest* request, String path){
