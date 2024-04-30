@@ -729,12 +729,12 @@ uint32_t BusManager::memUsage(BusConfig &bc) {
 
 int BusManager::add(BusConfig &bc) {
   if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
-  USER_PRINTF("BusManager::add(bc.type=%u)\n", bc.type);
+  DEBUG_PRINTF("BusManager::add(bc.type=%u)\n", bc.type);
   if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
     busses[numBusses] = new BusNetwork(bc);
 #ifdef WLED_ENABLE_HUB75MATRIX
   } else if (bc.type >= TYPE_HUB75MATRIX && bc.type <= (TYPE_HUB75MATRIX + 10)) {
-    USER_PRINTLN("BusManager::add - Adding BusHub75Matrix");
+    DEBUG_PRINTLN("BusManager::add - Adding BusHub75Matrix");
     busses[numBusses] = new BusHub75Matrix(bc);
 #endif
   } else if (IS_DIGITAL(bc.type)) {
