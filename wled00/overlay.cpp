@@ -11,6 +11,7 @@ void _overlayAnalogClock()
   {
     _overlayAnalogCountdown(); return;
   }
+  uint8_t brightness = strip.getBrightness();
   float hourP = ((float)(hour(localTime)%12))/12.0f;
   float minuteP = ((float)minute(localTime))/60.0f;
   hourP = hourP + minuteP/12.0f;
@@ -25,11 +26,11 @@ void _overlayAnalogClock()
   {
     if (secondPixel < analogClock12pixel)
     {
-      strip.setRange(analogClock12pixel, overlayMax, 0xFF0000);
-      strip.setRange(overlayMin, secondPixel, 0xFF0000);
+      strip.setRange(analogClock12pixel, overlayMax, (uint32_t)brightness<<16);
+      strip.setRange(overlayMin, secondPixel, (uint32_t)brightness<<16);
     } else
     {
-      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
+      strip.setRange(analogClock12pixel, secondPixel, (uint32_t)brightness<<16);
     }
   }
   if (analogClock5MinuteMarks)
@@ -38,12 +39,12 @@ void _overlayAnalogClock()
     {
       unsigned pix = analogClock12pixel + roundf((overlaySize / 12.0f) *i);
       if (pix > overlayMax) pix -= overlaySize;
-      strip.setPixelColor(pix, 0x00FFAA);
+      strip.setPixelColor(pix, ((uint32_t)brightness<<8)|((uint32_t)brightness*2/3));
     }
   }
-  if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, 0xFF0000);
-  strip.setPixelColor(minutePixel, 0x00FF00);
-  strip.setPixelColor(hourPixel, 0x0000FF);
+  if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, (uint32_t)brightness<<16);
+  strip.setPixelColor(minutePixel, (uint32_t)brightness<<8);
+  strip.setPixelColor(hourPixel, (uint32_t)brightness);
 }
 
 
