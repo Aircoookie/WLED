@@ -486,7 +486,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       strip.loadCustomPalettes();
     }
   }
-
+  
+  if (root.containsKey(F("np")) && root[F("np")].as<bool>()) { //skip to next preset in a playlist
+    handlePlaylist(true);
+  }
+  
   JsonObject wifi = root[F("wifi")];
   if (!wifi.isNull()) {
     bool apMode = getBoolVal(wifi[F("ap")], apActive);
