@@ -226,7 +226,7 @@ void _overlayAnalogClock();
 void shufflePlaylist();
 void unloadPlaylist();
 int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
-void handlePlaylist();
+void handlePlaylist(bool skipNext=false);
 void serializePlaylist(JsonObject obj);
 
 //presets.cpp
