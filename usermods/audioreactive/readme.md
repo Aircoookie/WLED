@@ -27,18 +27,11 @@ Currently ESP8266 is not supported, due to low speed and small RAM of this chip.
 There are however plans to create a lightweight audioreactive for the 8266, with reduced features.
 ## Installation 
 
-### using customised _arduinoFFT_ library for use with this usermod
-Add `-D USERMOD_AUDIOREACTIVE` to your PlatformIO environment `build_flags`, as well as `https://github.com/blazoncek/arduinoFFT.git` to your `lib_deps`.
-If you are not using PlatformIO (which you should) try adding `#define USERMOD_AUDIOREACTIVE` to *my_config.h* and make sure you have _arduinoFFT_ library downloaded and installed.
+### using latest _arduinoFFT_ library version 2.x
+The latest arduinoFFT release version should be used for audioreactive.
 
-Customised _arduinoFFT_ library for use with this usermod can be found at https://github.com/blazoncek/arduinoFFT.git
-
-### using latest (develop) _arduinoFFT_ library
-Alternatively, you can use the latest arduinoFFT development version.
-ArduinoFFT `develop` library is slightly more accurate, and slightly faster than our customised library, however also needs additional 2kB RAM.
-
-* `build_flags` = `-D USERMOD_AUDIOREACTIVE` `-D UM_AUDIOREACTIVE_USE_NEW_FFT`
-* `lib_deps`= `https://github.com/kosme/arduinoFFT#develop @ 1.9.2`
+* `build_flags` = `-D USERMOD_AUDIOREACTIVE`
+* `lib_deps`= `kosme/arduinoFFT @ 2.0.1`
 
 ## Configuration
 
@@ -54,6 +47,11 @@ If you want to define default GPIOs during compile time, use the following (defa
 - `-D MCLK_PIN=x`  : GPIO for master clock pin on digital Line-In boards (-1)
 - `-D ES7243_SDAPIN` : GPIO for I2C SDA pin on ES7243 microphone (-1)
 - `-D ES7243_SCLPIN` : GPIO for I2C SCL pin on ES7243 microphone (-1)
+
+Other options:
+
+- `-D UM_AUDIOREACTIVE_ENABLE` : makes usermod default enabled (not the same as include into build option!)
+- `-D UM_AUDIOREACTIVE_DYNAMICS_LIMITER_OFF` : disables rise/fall limiter default
 
 **NOTE** I2S is used for analog audio sampling. Hence, the analog *buttons* (i.e. potentiometers) are disabled when running this usermod with an analog microphone.
 

@@ -74,17 +74,17 @@ void loadSettingsFromEEPROM()
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
 
 
-  readStringFromEEPROM(  0, clientSSID, 32);
-  readStringFromEEPROM( 32, clientPass, 64);
-  readStringFromEEPROM( 96,      cmDNS, 32);
-  readStringFromEEPROM(128,     apSSID, 32);
-  readStringFromEEPROM(160,     apPass, 64);
+  readStringFromEEPROM(  0, multiWiFi[0].clientSSID, 32);
+  readStringFromEEPROM( 32, multiWiFi[0].clientPass, 64);
+  readStringFromEEPROM( 96, cmDNS, 32);
+  readStringFromEEPROM(128, apSSID, 32);
+  readStringFromEEPROM(160, apPass, 64);
 
   nightlightDelayMinsDefault = EEPROM.read(224);
   nightlightDelayMins = nightlightDelayMinsDefault;
   nightlightMode = EEPROM.read(225);
-  notifyDirectDefault = EEPROM.read(226);
-  notifyDirect = notifyDirectDefault;
+  notifyDirect = EEPROM.read(226);
+  sendNotificationsRT = notifyDirect;
 
   apChannel = EEPROM.read(227);
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
@@ -99,7 +99,7 @@ void loadSettingsFromEEPROM()
   bool skipFirst = EEPROM.read(2204);
   bool reversed = EEPROM.read(252);
   BusConfig bc = BusConfig(EEPROM.read(372) ? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, length, colorOrder, reversed, skipFirst);
-  busses.add(bc);
+  BusManager::add(bc);
 
   notifyButton = EEPROM.read(230);
   if (EEPROM.read(231)) udpNumRetries = 1;
@@ -163,7 +163,6 @@ void loadSettingsFromEEPROM()
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
   }
-  receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 
   if (lastEEPROMversion > 4) {
     #ifndef WLED_DISABLE_HUESYNC
@@ -278,10 +277,10 @@ void loadSettingsFromEEPROM()
   if (lastEEPROMversion > 13)
   {
     mqttEnabled = EEPROM.read(2299);
-    syncToggleReceive = EEPROM.read(397);
+    //syncToggleReceive = EEPROM.read(397);
   } else {
     mqttEnabled = true;
-    syncToggleReceive = false;
+    //syncToggleReceive = false;
   }
 
   if (lastEEPROMversion > 14)
@@ -322,7 +321,7 @@ void loadSettingsFromEEPROM()
   }
 
   receiveDirect = !EEPROM.read(2200);
-  notifyMacro = EEPROM.read(2201);
+  //notifyMacro = EEPROM.read(2201);
 
   //strip.rgbwMode = EEPROM.read(2203);
   //skipFirstLed = EEPROM.read(2204);
@@ -366,13 +365,13 @@ void applyMacro(byte index) {
 
 // De-EEPROM routine, upgrade from previous versions to v0.11
 void deEEP() {
-  if (WLED_FS.exists("/presets.json")) return;
+  if (WLED_FS.exists(FPSTR(getPresetsFileName()))) return;
 
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
   if (!requestJSONBufferLock(8)) return;
 
-  JsonObject sObj = doc.to<JsonObject>();
+  JsonObject sObj = pDoc->to<JsonObject>();
   sObj.createNestedObject("0");
 
   EEPROM.begin(EEPSIZE);
@@ -443,13 +442,13 @@ void deEEP() {
 
   EEPROM.end();
 
-  File f = WLED_FS.open("/presets.json", "w");
+  File f = WLED_FS.open(FPSTR(getPresetsFileName()), "w");
   if (!f) {
     errorFlag = ERR_FS_GENERAL;
     releaseJSONBufferLock();
     return;
   }
-  serializeJson(doc, f);
+  serializeJson(*pDoc, f);
   f.close();
 
   releaseJSONBufferLock();

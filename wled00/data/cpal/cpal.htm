@@ -544,6 +544,7 @@
         const json = await response.json();
         paletteArray.push(json);
       } catch (error) {
+        cpalc--; //remove audio/dynamically generated palettes
         console.error(`Error fetching JSON from ${url}: `, error);
       }
     }

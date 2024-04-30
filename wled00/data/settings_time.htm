@@ -45,9 +45,11 @@
 			let path = l.pathname;
 			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
 			if (paths.length > 2) {
+				paths.pop(); // remove "time"
+				paths.pop(); // remove "settings"
 				locproto = l.protocol;
 				loc = true;
-				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
 			}
 		}
 		loadJS(getURL('/settings/s.js?p=5'), false);	// If we set async false, file is loaded and executed, then next statement is processed
@@ -210,6 +212,7 @@
 			12h LED: <input name="OM" type="number" min="0" max="255" required><br>
 			Show 5min marks: <input type="checkbox" name="O5"><br>
 			Seconds (as trail): <input type="checkbox" name="OS"><br>
+			Show clock overlay only if all LEDs are solid black: <input type="checkbox" name="OB"><br>
 		</div>
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>

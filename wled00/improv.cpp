@@ -210,7 +210,7 @@ void sendImprovInfoResponse() {
   //Use serverDescription if it has been changed from the default "WLED", else mDNS name
   bool useMdnsName = (strcmp(serverDescription, "WLED") == 0 && strlen(cmDNS) > 0);
   char vString[20];
-  sprintf_P(vString, PSTR("0.14.1/%i"), VERSION);
+  sprintf_P(vString, PSTR("0.15.0-b3/%i"), VERSION);
   const char *str[4] = {"WLED", vString, bString, useMdnsName ? cmDNS : serverDescription};
 
   sendImprovRPCResult(ImprovRPCType::Request_Info, 4, str);
@@ -259,14 +259,14 @@ void parseWiFiCommand(char* rpcData) {
 
   uint8_t ssidLen = rpcData[1];
   if (ssidLen > len -1 || ssidLen > 32) return;
-  memset(clientSSID, 0, 32);
-  memcpy(clientSSID, rpcData+2, ssidLen);
+  memset(multiWiFi[0].clientSSID, 0, 32);
+  memcpy(multiWiFi[0].clientSSID, rpcData+2, ssidLen);
 
-  memset(clientPass, 0, 64);
+  memset(multiWiFi[0].clientPass, 0, 64);
   if (len > ssidLen +1) {
     uint8_t passLen = rpcData[2+ssidLen];
-    memset(clientPass, 0, 64);
-    memcpy(clientPass, rpcData+3+ssidLen, passLen);
+    memset(multiWiFi[0].clientPass, 0, 64);
+    memcpy(multiWiFi[0].clientPass, rpcData+3+ssidLen, passLen);
   }
 
   sendImprovStateResponse(0x03); //provisioning

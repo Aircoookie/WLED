@@ -6,7 +6,7 @@ static void DebugPrintOwnerTag(PinOwner tag)
 {
   uint32_t q = static_cast<uint8_t>(tag);
   if (q) {
-    DEBUG_PRINTF("0x%02x (%d)", q, q);
+    DEBUG_PRINTF_P(PSTR("0x%02x (%d)"), q, q);
   } else {
     DEBUG_PRINT(F("(no owner)"));
   }
@@ -109,7 +109,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: GPIO "));
       DEBUG_PRINT(gpio);
-      DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input");
+      DEBUG_PRINT(F(" as ")); DEBUG_PRINT(mptArray[i].isOutput ? F("output"): F("input"));
       DEBUG_PRINTLN(F(""));
       #endif
       shouldFail = true;
@@ -209,11 +209,10 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 
 // if tag is set to PinOwner::None, checks for ANY owner of the pin.
 // if tag is set to any other value, checks if that tag is the current owner of the pin.
-bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
+bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag) const
 {
   if (!isPinOk(gpio, false)) return true;
   if ((tag != PinOwner::None) && (ownerTag[gpio] != tag)) return false;
-  if (gpio >= WLED_NUM_PINS) return false; // catch error case, to avoid array out-of-bounds access
   byte by = gpio >> 3;
   byte bi = gpio - (by<<3);
   return bitRead(pinAlloc[by], bi);
@@ -236,9 +235,10 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
  */
 
 // Check if supplied GPIO is ok to use
-bool PinManagerClass::isPinOk(byte gpio, bool output)
+bool PinManagerClass::isPinOk(byte gpio, bool output) const
 {
-#ifdef ESP32
+  if (gpio >= WLED_NUM_PINS) return false;        // catch error case, to avoid array out-of-bounds access
+#ifdef ARDUINO_ARCH_ESP32
   if (digitalPinIsValid(gpio)) {
   #if defined(CONFIG_IDF_TARGET_ESP32C3)
     // strapping pins: 2, 8, & 9
@@ -248,7 +248,7 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
     // 00 to 18 are for general use. Be careful about straping pins GPIO0 and GPIO3 - these may be pulled-up or pulled-down on your board.
     if (gpio > 18 && gpio < 21) return false;     // 19 + 20 = USB-JTAG. Not recommended for other uses.
     if (gpio > 21 && gpio < 33) return false;     // 22 to 32: not connected + SPI FLASH
-    //if (gpio > 32 && gpio < 38) return false;     // 33 to 37: not available if using _octal_ SPI Flash or _octal_ PSRAM
+    if (gpio > 32 && gpio < 38) return !psramFound(); // 33 to 37: not available if using _octal_ SPI Flash or _octal_ PSRAM
     // 38 to 48 are for general use. Be careful about straping pins GPIO45 and GPIO46 - these may be pull-up or pulled-down on your board.
   #elif defined(CONFIG_IDF_TARGET_ESP32S2)
     // strapping pins: 0, 45 & 46
@@ -257,6 +257,8 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
     // GPIO46 is input only and pulled down
   #else
     if (gpio > 5 && gpio < 12) return false;      //SPI flash pins
+    if (strncmp_P(PSTR("ESP32-PICO"), ESP.getChipModel(), 10) == 0 && (gpio == 16 || gpio == 17)) return false; // PICO-D4: gpio16+17 are in use for onboard SPI FLASH
+    if (gpio == 16 || gpio == 17) return !psramFound(); //PSRAM pins on ESP32 (these are IO)
   #endif
     if (output) return digitalPinCanOutput(gpio);
     else        return true;
@@ -269,8 +271,8 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
   return false;
 }
 
-PinOwner PinManagerClass::getPinOwner(byte gpio) {
-  if (gpio >= WLED_NUM_PINS) return PinOwner::None; // catch error case, to avoid array out-of-bounds access
+PinOwner PinManagerClass::getPinOwner(byte gpio) const
+{
   if (!isPinOk(gpio, false)) return PinOwner::None;
   return ownerTag[gpio];
 }

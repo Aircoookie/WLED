@@ -285,7 +285,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    uint16_t getId() { return USERMOD_ID_ROTARY_ENC_UI; }
+    uint16_t getId() override { return USERMOD_ID_ROTARY_ENC_UI; }
     /**
      * Enable/Disable the usermod
      */
@@ -300,7 +300,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup();
+    void setup() override;
 
     /**
      * connected() is called every time the WiFi is (re)connected
@@ -311,11 +311,11 @@ class RotaryEncoderUIUsermod : public Usermod {
     /**
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
-    void loop();
+    void loop() override;
 
 #ifndef WLED_DISABLE_MQTT
-    //bool onMqttMessage(char* topic, char* payload);
-    //void onMqttConnect(bool sessionPresent);
+    //bool onMqttMessage(char* topic, char* payload) override;
+    //void onMqttConnect(bool sessionPresent) override;
 #endif
 
     /**
@@ -323,31 +323,31 @@ class RotaryEncoderUIUsermod : public Usermod {
      * will prevent button working in a default way.
      * Replicating button.cpp
      */
-    //bool handleButton(uint8_t b);
+    //bool handleButton(uint8_t b) override;
 
     /**
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      */
-    //void addToJsonInfo(JsonObject &root);
+    //void addToJsonInfo(JsonObject &root) override;
 
     /**
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void addToJsonState(JsonObject &root);
+    //void addToJsonState(JsonObject &root) override;
 
     /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void readFromJsonState(JsonObject &root);
+    //void readFromJsonState(JsonObject &root) override;
 
     /**
      * provide the changeable values
      */
-    void addToConfig(JsonObject &root);
+    void addToConfig(JsonObject &root) override;
 
-    void appendConfigData();
+    void appendConfigData() override;
 
     /**
      * restore the changeable values
@@ -355,7 +355,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      * 
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
-    bool readFromConfig(JsonObject &root);
+    bool readFromConfig(JsonObject &root) override;
 
     // custom methods
     void displayNetworkInfo();
@@ -392,26 +392,26 @@ byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
  * modes_alpha_indexes and palettes_alpha_indexes.
  */
 void RotaryEncoderUIUsermod::sortModesAndPalettes() {
-  DEBUG_PRINTLN(F("Sorting modes and palettes."));
+  DEBUG_PRINT(F("Sorting modes: ")); DEBUG_PRINTLN(strip.getModeCount());
   //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
   modes_qstrings = strip.getModeDataSrc();
   modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
   re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
-  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount()+strip.customPalettes.size());
-  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount()+strip.customPalettes.size());
+  DEBUG_PRINT(F("Sorting palettes: ")); DEBUG_PRINT(strip.getPaletteCount()); DEBUG_PRINT('/'); DEBUG_PRINTLN(strip.customPalettes.size());
+  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
+  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
   if (strip.customPalettes.size()) {
     for (int i=0; i<strip.customPalettes.size(); i++) {
-      palettes_alpha_indexes[strip.getPaletteCount()+i] = 255-i;
-      palettes_qstrings[strip.getPaletteCount()+i] = PSTR("~Custom~");
+      palettes_alpha_indexes[strip.getPaletteCount()-strip.customPalettes.size()+i] = 255-i;
+      palettes_qstrings[strip.getPaletteCount()-strip.customPalettes.size()+i] = PSTR("~Custom~");
     }
   }
-
   // How many palette names start with '*' and should not be sorted?
   // (Also skipping the first one, 'Default').
   int skipPaletteCount = 1;
-  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount++]) == '*') ;
-  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
+  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount]) == '*') skipPaletteCount++;
+  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount()-strip.customPalettes.size(), skipPaletteCount);
 }
 
 byte *RotaryEncoderUIUsermod::re_initIndexArray(int numModes) {

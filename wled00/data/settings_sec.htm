@@ -77,9 +77,11 @@
 				let path = l.pathname;
 				let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
 				if (paths.length > 2) {
+					paths.pop(); // remove "sec"
+					paths.pop(); // remove "settings"
 					locproto = l.protocol;
 					loc = true;
-					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
 				}
 			}
 			if (loc) {
@@ -122,20 +124,20 @@
 		Enable ArduinoOTA: <input type="checkbox" name="AO">
 		<hr>
 		<h3>Backup & Restore</h3>
+		<div class="warn">&#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.<br>
+		Incorrect upload or configuration may require a factory reset or re-flashing of your ESP.</div>
+		For security reasons, passwords are not backed up.
 		<a class="btn lnk" id="bckcfg" href="/presets.json" download="presets">Backup presets</a><br>
 		<div>Restore presets<br><input type="file" name="data" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data,'/presets.json');">Upload</button><br></div><br>
 		<a class="btn lnk" id="bckpresets" href="/cfg.json" download="cfg">Backup configuration</a><br>
 		<div>Restore configuration<br><input type="file" name="data2" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data2,'/cfg.json');">Upload</button><br></div>
-		<div class="warn">&#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.<br>
-		Incorrect configuration may require a factory reset or re-flashing of your ESP.</div>
-		For security reasons, passwords are not backed up.
 		<hr>
 		<h3>About</h3>
-		<a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a> version ##VERSION##<!-- Autoreplaced from package.json --><br><br>
+		<a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>&#32;version ##VERSION##<!-- Autoreplaced from package.json --><br><br>
 		<a href="https://github.com/Aircoookie/WLED/wiki/Contributors-and-credits" target="_blank">Contributors, dependencies and special thanks</a><br>
 		A huge thank you to everyone who helped me create WLED!<br><br>
-		(c) 2016-2023 Christian Schwinne <br>
-		<i>Licensed under the <a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">MIT license</a></i><br><br>
+		(c) 2016-2024 Christian Schwinne <br>
+		<i>Licensed under the&#32;<a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">MIT license</a></i><br><br>
 		Server message: <span class="sip"> Response error! </span><hr>
 		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>

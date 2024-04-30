@@ -11,6 +11,7 @@
 //DDP protocol support, called by handleE131Packet
 //handles RGB data only
 void handleDDPPacket(e131_packet_t* p) {
+  static bool ddpSeenPush = false;  // have we seen a push yet?
   int lastPushSeq = e131LastSequenceNumber[0];
 
   //reject late packets belonging to previous frame (assuming 4 packets max. before push)
@@ -34,6 +35,7 @@ void handleDDPPacket(e131_packet_t* p) {
   uint16_t c = 0;
   if (p->flags & DDP_TIMECODE_FLAG) c = 4; //packet has timecode flag, we do not support it, but data starts 4 bytes later
 
+  if (realtimeMode != REALTIME_MODE_DDP) ddpSeenPush = false; // just starting, no push yet
   realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
 
   if (!realtimeOverride || (realtimeMode && useMainSegmentOnly)) {
@@ -44,7 +46,8 @@ void handleDDPPacket(e131_packet_t* p) {
   }
 
   bool push = p->flags & DDP_PUSH_FLAG;
-  if (push) {
+  ddpSeenPush |= push;
+  if (!ddpSeenPush || push) { // if we've never seen a push, or this is one, render display
     e131NewData = true;
     byte sn = p->sequenceNum & 0xF;
     if (sn) e131LastSequenceNumber[0] = sn;
@@ -184,7 +187,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
             // only apply preset if not in playlist, or playlist changed
             (currentPlaylist < 0 || dmxValPreset != currentPlaylist)) { 
           presetCycCurr = dmxValPreset;
-          unloadPlaylist(); // applying a preset unloads the playlist
           applyPreset(dmxValPreset, CALL_MODE_NOTIFICATION);
         }
 
@@ -225,11 +227,16 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           if (e131_data[dataOffset+3]   != seg.intensity) seg.intensity = e131_data[dataOffset+3];
           if (e131_data[dataOffset+4]   != seg.palette)   seg.setPalette(e131_data[dataOffset+4]);
 
-          uint8_t segOption = (uint8_t)floor(e131_data[dataOffset+5]/64.0);
-          if (segOption == 0 && (seg.mirror  || seg.reverse )) {seg.setOption(SEG_OPTION_MIRROR, false); seg.setOption(SEG_OPTION_REVERSED, false);}
-          if (segOption == 1 && (seg.mirror  || !seg.reverse)) {seg.setOption(SEG_OPTION_MIRROR, false); seg.setOption(SEG_OPTION_REVERSED,  true);}
-          if (segOption == 2 && (!seg.mirror || seg.reverse )) {seg.setOption(SEG_OPTION_MIRROR,  true); seg.setOption(SEG_OPTION_REVERSED, false);}
-          if (segOption == 3 && (!seg.mirror || !seg.reverse)) {seg.setOption(SEG_OPTION_MIRROR,  true); seg.setOption(SEG_OPTION_REVERSED,  true);}
+          if ((e131_data[dataOffset+5] & 0b00000010) != seg.reverse_y) { seg.setOption(SEG_OPTION_REVERSED_Y, e131_data[dataOffset+5] & 0b00000010); }
+          if ((e131_data[dataOffset+5] & 0b00000100) != seg.mirror_y) { seg.setOption(SEG_OPTION_MIRROR_Y, e131_data[dataOffset+5] & 0b00000100); }
+          if ((e131_data[dataOffset+5] & 0b00001000) != seg.transpose) { seg.setOption(SEG_OPTION_TRANSPOSED, e131_data[dataOffset+5] & 0b00001000); }
+          if ((e131_data[dataOffset+5] & 0b00110000) / 8 != seg.map1D2D) {
+            seg.map1D2D = (e131_data[dataOffset+5] & 0b00110000) / 8;
+          }
+          // To maintain backwards compatibility with prior e1.31 values, reverse is fixed to mask 0x01000000
+          if ((e131_data[dataOffset+5] & 0b01000000) != seg.reverse) { seg.setOption(SEG_OPTION_REVERSED, e131_data[dataOffset+5] & 0b01000000); }
+          // To maintain backwards compatibility with prior e1.31 values, mirror is fixed to mask 0x10000000
+          if ((e131_data[dataOffset+5] & 0b10000000) != seg.mirror) { seg.setOption(SEG_OPTION_MIRROR, e131_data[dataOffset+5] & 0b10000000); }
 
           uint32_t colors[3];
           byte whites[3] = {0,0,0};
@@ -339,7 +346,6 @@ void handleArtnetPollReply(IPAddress ipAddress) {
 
   switch (DMXMode) {
     case DMX_MODE_DISABLED:
-      return;  // nothing to do
       break;
 
     case DMX_MODE_SINGLE_RGB:
@@ -384,9 +390,17 @@ void handleArtnetPollReply(IPAddress ipAddress) {
       break;
   }
 
-  for (uint16_t i = startUniverse; i <= endUniverse; ++i) {
-    sendArtnetPollReply(&artnetPollReply, ipAddress, i);
+  if (DMXMode != DMX_MODE_DISABLED) {
+    for (uint16_t i = startUniverse; i <= endUniverse; ++i) {
+      sendArtnetPollReply(&artnetPollReply, ipAddress, i);
+    }
   }
+
+  #ifdef WLED_ENABLE_DMX
+    if (e131ProxyUniverse > 0 && (DMXMode == DMX_MODE_DISABLED || (e131ProxyUniverse < startUniverse || e131ProxyUniverse > endUniverse))) {
+      sendArtnetPollReply(&artnetPollReply, ipAddress, e131ProxyUniverse);
+    }
+  #endif
 }
 
 void prepareArtnetPollReply(ArtPollReply *reply) {
@@ -490,7 +504,7 @@ void prepareArtnetPollReply(ArtPollReply *reply) {
   // Node is DHCP capable
   // Node supports 15 bit Port-Address (Art-Net 3 or 4)
   // Node is able to switch between ArtNet and sACN
-  reply->reply_status_2 = (staticIP[0] == 0) ? 0x1F : 0x1D;
+  reply->reply_status_2 = (multiWiFi[0].staticIP[0] == 0) ? 0x1F : 0x1D;
 
   // RDM is disabled
   // Output style is continuous

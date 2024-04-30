@@ -7,11 +7,13 @@
 #define WLED_DEBOUNCE_THRESHOLD      50 // only consider button input of at least 50ms as valid (debouncing)
 #define WLED_LONG_PRESS             600 // long press if button is released after held for at least 600ms
 #define WLED_DOUBLE_PRESS           350 // double press if another press within 350ms after a short press
-#define WLED_LONG_REPEATED_ACTION   300 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+#define WLED_LONG_REPEATED_ACTION   400 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
 #define WLED_LONG_AP               5000 // how long button 0 needs to be held to activate WLED-AP
 #define WLED_LONG_FACTORY_RESET   10000 // how long button 0 needs to be held to trigger a factory reset
+#define WLED_LONG_BRI_STEPS          16 // how much to increase/decrease the brightness with each long press repetition
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+static bool buttonBriDirection = false; // true: increase brightness, false: decrease brightness
 
 void shortPressAction(uint8_t b)
 {
@@ -21,7 +23,6 @@ void shortPressAction(uint8_t b)
       case 1: ++effectCurrent %= strip.getModeCount(); stateChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -40,10 +41,21 @@ void longPressAction(uint8_t b)
   if (!macroLongPress[b]) {
     switch (b) {
       case 0: setRandomColor(col); colorUpdated(CALL_MODE_BUTTON); break;
-      case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
+      case 1: 
+        if(buttonBriDirection) {
+          if (bri == 255) break; // avoid unnecessary updates to brightness
+          if (bri >= 255 - WLED_LONG_BRI_STEPS) bri = 255;
+          else bri += WLED_LONG_BRI_STEPS;
+        } else {
+          if (bri == 1) break; // avoid unnecessary updates to brightness
+          if (bri <= WLED_LONG_BRI_STEPS) bri = 1;
+          else bri -= WLED_LONG_BRI_STEPS;
+        }
+        stateUpdated(CALL_MODE_BUTTON); 
+        buttonPressedTime[b] = millis();         
+        break; // repeatable action
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -65,7 +77,6 @@ void doublePressAction(uint8_t b)
       case 1: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -97,10 +108,15 @@ bool isButtonPressed(uint8_t i)
       if (digitalRead(pin) == HIGH) return true;
       break;
     case BTN_TYPE_TOUCH:
+    case BTN_TYPE_TOUCH_SWITCH:
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-      if (touchRead(pin) <= touchThreshold) return true;
+        #ifdef SOC_TOUCH_VERSION_2 //ESP32 S2 and S3 provide a function to check touch state (state is updated in interrupt)
+        if (touchInterruptGetLastStatus(pin)) return true;
+        #else
+        if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
+        #endif
       #endif
-      break;
+     break;
   }
   return false;
 }
@@ -109,6 +125,7 @@ void handleSwitch(uint8_t b)
 {
   // isButtonPressed() handles inverted/noninverted logic
   if (buttonPressedBefore[b] != isButtonPressed(b)) {
+    DEBUG_PRINT(F("Switch: State changed ")); DEBUG_PRINTLN(b);
     buttonPressedTime[b] = millis();
     buttonPressedBefore[b] = !buttonPressedBefore[b];
   }
@@ -116,12 +133,15 @@ void handleSwitch(uint8_t b)
   if (buttonLongPressed[b] == buttonPressedBefore[b]) return;
 
   if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
+    DEBUG_PRINT(F("Switch: Activating ")); DEBUG_PRINTLN(b);
     if (!buttonPressedBefore[b]) { // on -> off
+      DEBUG_PRINT(F("Switch: On -> Off ")); DEBUG_PRINTLN(b);
       if (macroButton[b]) applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
       else { //turn on
         if (!bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
       }
     } else {  // off -> on
+      DEBUG_PRINT(F("Switch: Off -> On ")); DEBUG_PRINTLN(b);
       if (macroLongPress[b]) applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
       else { //turn off
         if (bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
@@ -153,6 +173,8 @@ void handleAnalog(uint8_t b)
   static float filteredReading[WLED_MAX_BUTTONS] = {0.0f};
   uint16_t rawReading;    // raw value from analogRead, scaled to 12bit
 
+  DEBUG_PRINT(F("Analog: Reading button ")); DEBUG_PRINTLN(b);
+
   #ifdef ESP8266
   rawReading = analogRead(A0) << 2;   // convert 10bit read to 12bit
   #else
@@ -171,7 +193,10 @@ void handleAnalog(uint8_t b)
   // remove noise & reduce frequency of UI updates
   if (abs(int(aRead) - int(oldRead[b])) <= POT_SENSITIVITY) return;  // no significant change in reading
 
-  // Un-comment the next lines if you still see flickering related to potentiometer
+  DEBUG_PRINT(F("Analog: Raw = ")); DEBUG_PRINT(rawReading);
+  DEBUG_PRINT(F(" Filtered = ")); DEBUG_PRINTLN(aRead);
+
+  // Unomment the next lines if you still see flickering related to potentiometer
   // This waits until strip finishes updating (why: strip was not updating at the start of handleButton() but may have started during analogRead()?)
   //unsigned long wait_started = millis();
   //while(strip.isUpdating() && (millis() - wait_started < STRIP_WAIT_TIME)) {
@@ -182,6 +207,7 @@ void handleAnalog(uint8_t b)
 
   // if no macro for "short press" and "long press" is defined use brightness control
   if (!macroButton[b] && !macroLongPress[b]) {
+    DEBUG_PRINT(F("Analog: Action = ")); DEBUG_PRINTLN(macroDoublePress[b]);
     // if "double press" macro defines which option to change
     if (macroDoublePress[b] >= 250) {
       // global brightness
@@ -217,6 +243,7 @@ void handleAnalog(uint8_t b)
       updateInterfaces(CALL_MODE_BUTTON);
     }
   } else {
+    DEBUG_PRINTLN(F("Analog: No action"));
     //TODO:
     // we can either trigger a preset depending on the level (between short and long entries)
     // or use it for RGBW direct control
@@ -226,11 +253,11 @@ void handleAnalog(uint8_t b)
 
 void handleButton()
 {
-  static unsigned long lastRead = 0UL;
+  static unsigned long lastAnalogRead = 0UL;
   static unsigned long lastRun = 0UL;
   unsigned long now = millis();
 
-  if (strip.isUpdating() && (now - lastRun < 400)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
+  if (strip.isUpdating() && (now - lastRun < ANALOG_BTN_READ_CYCLE+1)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
   lastRun = now;
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
@@ -243,15 +270,14 @@ void handleButton()
     if (usermods.handleButton(b)) continue; // did usermod handle buttons
 
     if (buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) { // button is not a button but a potentiometer
-      if (now - lastRead > ANALOG_BTN_READ_CYCLE) {
+      if (now - lastAnalogRead > ANALOG_BTN_READ_CYCLE) {
         handleAnalog(b);
-        lastRead = now;
       }
       continue;
     }
 
     // button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
-    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
+    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_TOUCH_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
       handleSwitch(b);
       continue;
     }
@@ -272,10 +298,12 @@ void handleButton()
       buttonPressedBefore[b] = true;
 
       if (now - buttonPressedTime[b] > WLED_LONG_PRESS) { //long press
-        if (!buttonLongPressed[b]) longPressAction(b);
-        else if (b) { //repeatable action (~3 times per s) on button > 0
+        if (!buttonLongPressed[b]) {
+          buttonBriDirection = !buttonBriDirection; //toggle brightness direction on long press
           longPressAction(b);
-          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //333ms
+        } else if (b) { //repeatable action (~5 times per s) on button > 0
+          longPressAction(b);
+          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //200ms
         }
         buttonLongPressed[b] = true;
       }
@@ -325,6 +353,9 @@ void handleButton()
       shortPressAction(b);
     }
   }
+  if (now - lastAnalogRead > ANALOG_BTN_READ_CYCLE) {
+    lastAnalogRead = now;
+  }
 }
 
 // If enabled, RMT idle level is set to HIGH when off
@@ -333,10 +364,10 @@ void handleButton()
 void esp32RMTInvertIdle()
 {
   bool idle_out;
-  for (uint8_t u = 0; u < busses.getNumBusses(); u++)
+  for (uint8_t u = 0; u < BusManager::getNumBusses(); u++)
   {
     if (u > 7) return; // only 8 RMT channels, TODO: ESP32 variants have less RMT channels
-    Bus *bus = busses.getBus(u);
+    Bus *bus = BusManager::getBus(u);
     if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType())) continue;
     //assumes that bus number to rmt channel mapping stays 1:1
     rmt_channel_t ch = static_cast<rmt_channel_t>(u);
@@ -364,7 +395,7 @@ void handleIO()
       esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
-        pinMode(rlyPin, OUTPUT);
+        pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, rlyMde);
       }
       offMode = false;
@@ -385,10 +416,15 @@ void handleIO()
       esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
-        pinMode(rlyPin, OUTPUT);
+        pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, !rlyMde);
       }
     }
     offMode = true;
   }
+}
+
+void IRAM_ATTR touchButtonISR()
+{
+  // used for ESP32 S2 and S3: nothing to do, ISR is just used to update registers of HAL driver
 }

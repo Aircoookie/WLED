@@ -69,6 +69,15 @@ bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
 }
 
 
+bool getBoolVal(JsonVariant elem, bool dflt) {
+  if (elem.is<const char*>() && elem.as<const char*>()[0] == 't') {
+    return !dflt;
+  } else {
+    return elem | dflt;
+  }
+}
+
+
 bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv)
 {
   const char *v = strstr(req, key);
@@ -164,7 +173,7 @@ bool oappend(const char* txt)
 
 void prepareHostname(char* hostname)
 {
-  sprintf_P(hostname, "wled-%*s", 6, escapedMac.c_str() + 6);
+  sprintf_P(hostname, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
   uint8_t pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length
@@ -200,12 +209,16 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 //threading/network callback details: https://github.com/Aircoookie/WLED/pull/2336#discussion_r762276994
 bool requestJSONBufferLock(uint8_t module)
 {
+  if (pDoc == nullptr) {
+    DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
+    return false;
+  }
   unsigned long now = millis();
 
-  while (jsonBufferLock && millis()-now < 1000) delay(1); // wait for a second for buffer lock
+  while (jsonBufferLock && millis()-now < 100) delay(1); // wait for fraction for buffer lock
 
-  if (millis()-now >= 1000) {
-    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! ("));
+  if (jsonBufferLock) {
+    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
     DEBUG_PRINT(jsonBufferLock);
     DEBUG_PRINTLN(")");
     return false; // waiting time-outed
@@ -215,8 +228,7 @@ bool requestJSONBufferLock(uint8_t module)
   DEBUG_PRINT(F("JSON buffer locked. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = &doc;  // used for applying presets (presets.cpp)
-  doc.clear();
+  pDoc->clear();
   return true;
 }
 
@@ -226,7 +238,6 @@ void releaseJSONBufferLock()
   DEBUG_PRINT(F("JSON buffer released. ("));
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
-  fileDoc = nullptr;
   jsonBufferLock = 0;
 }
 
@@ -252,8 +263,8 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
     } else return 0;
   }
 
-  if (src == JSON_palette_names && mode > GRADIENT_PALETTE_COUNT) {
-    snprintf_P(dest, maxLen, PSTR("~ Custom %d~"), 255-mode);
+  if (src == JSON_palette_names && mode > (GRADIENT_PALETTE_COUNT + 13)) {
+    snprintf_P(dest, maxLen, PSTR("~ Custom %d ~"), 255-mode);
     dest[maxLen-1] = '\0';
     return strlen(dest);
   }
@@ -364,7 +375,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 }
 
 
-// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;sx=16,ix=240,1d")
+// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;012;sx=16,ix=240")
 int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
@@ -526,13 +537,13 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
+static const char s_ledmap_tmpl[] PROGMEM = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
   for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
-    char fileName[33];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    char fileName[33] = "/";
+    sprintf_P(fileName+1, s_ledmap_tmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
     #ifndef ESP8266
@@ -547,11 +558,12 @@ void enumerateLedmaps() {
 
       #ifndef ESP8266
       if (requestJSONBufferLock(21)) {
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        if (readObjectFromFile(fileName, nullptr, pDoc)) {
           size_t len = 0;
-          if (!doc["n"].isNull()) {
+          JsonObject root = pDoc->as<JsonObject>();
+          if (!root["n"].isNull()) {
             // name field exists
-            const char *name = doc["n"].as<const char*>();
+            const char *name = root["n"].as<const char*>();
             if (name != nullptr) len = strlen(name);
             if (len > 0 && len < 33) {
               ledmapNames[i-1] = new char[len+1];
@@ -560,7 +572,7 @@ void enumerateLedmaps() {
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
-            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            snprintf_P(tmp, 32, s_ledmap_tmpl, i);
             len = strlen(tmp);
             ledmapNames[i-1] = new char[len+1];
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);

@@ -56,9 +56,11 @@
 			let path = l.pathname;
 			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
 			if (paths.length > 2) {
+				paths.pop(); // remove "um"
+				paths.pop(); // remove "settings"
 				locproto = l.protocol;
 				loc = true;
-				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
 			}
 		}
 		ldS();
@@ -225,10 +227,10 @@
 		} else if (typeof(fld) === "number") sel.classList.add("pin"); // a hack to add a class
 		let arr = d.getElementsByName(um);
 		let idx = arr[0].type==="hidden"?1:0; // ignore hidden field
-		if (arr.length > 2) {
+		if (arr.length > 1+idx) {
 			// we have array of values (usually pins)
 			for (let i of arr) {
-				if (i.type === "number") break;
+				if (i.nodeName === "INPUT" && i.type === "number") break;
 				idx++;
 			}
 		}
