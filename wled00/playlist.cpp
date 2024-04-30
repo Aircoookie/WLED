@@ -123,11 +123,11 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
 }
 
 
-void handlePlaylist() {
+void handlePlaylist(bool skipNext) {
   static unsigned long presetCycledTime = 0;
   if (currentPlaylist < 0 || playlistEntries == nullptr) return;
 
-  if (millis() - presetCycledTime > (100*playlistEntryDur)) {
+if (millis() - presetCycledTime > (100 * playlistEntryDur) || skipNext) {
     presetCycledTime = millis();
     if (bri == 0 || nightlightActive) return;
 
