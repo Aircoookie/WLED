@@ -4861,6 +4861,7 @@ static const char _data_FX_MODE_FLOWSTRIPE[] PROGMEM = "Flow Stripe@Hue speed,Ef
 #define XY(x,y) SEGMENT.XY(x,y)
 
 
+#ifdef WLED_USE_AA_PIXELS
 /////////////////////////////
 //    2D Analog Clock      //
 /////////////////////////////
@@ -4893,14 +4894,15 @@ uint16_t mode_2DAnalogClock(void) {                  // By Andras Fekete (bandi1
   uint16_t second_y = centerY + second_len * sin_t(second_angle);
 
   SEGMENT.fill(BLACK);
-  SEGMENT.draw_circle_antialiased(centerX, centerY, radius, DARKSLATEGRAY);
+  SEGMENT.drawCircleAntialiased(centerX, centerY, radius, 0x333333);
   SEGMENT.drawLineAntialiased(centerX, centerY, second_x, second_y, BLUE);
   SEGMENT.drawLineAntialiased(centerX, centerY, minute_x, minute_y, GREEN);
   SEGMENT.drawLineAntialiased(centerX, centerY, hour_x, hour_y, RED);
 
   return (1000 / WLED_FPS); // calculate once per second
 } // mode_2DAnalogClock()
-static const char _data_FX_MODE_2DANALOGCLOCK[] PROGMEM = "AnalogClock2D@;";
+static const char _data_FX_MODE_2DANALOGCLOCK[] PROGMEM = "Analog Clock 2D@;";
+#endif
 
 // Black hole
 uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
@@ -8133,7 +8135,9 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_2DGEQ, &mode_2DGEQ, _data_FX_MODE_2DGEQ); // audio
 
+#ifdef WLED_USE_AA_PIXELS
   addEffect(FX_MODE_2DANALOGCLOCK, &mode_2DAnalogClock, _data_FX_MODE_2DANALOGCLOCK);
+#endif
   addEffect(FX_MODE_2DNOISE, &mode_2Dnoise, _data_FX_MODE_2DNOISE);
 
   addEffect(FX_MODE_2DFIRENOISE, &mode_2Dfirenoise, _data_FX_MODE_2DFIRENOISE);

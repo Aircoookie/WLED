@@ -370,7 +370,7 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
   for (unsigned j = 0; j < dim1; j++) {
     unsigned x = vertical ? i : j;
     unsigned y = vertical ? j : i;
-    setPixelColorXY(x, y, tmp[j]);
+    setPixelColorXY((int)x, (int)y, tmp[j]);
   }
 }
 
@@ -471,7 +471,8 @@ void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   }
 }
 
-void Segment::draw_circle_antialiased(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+#ifdef WLED_USE_AA_PIXELS
+void Segment::drawCircleAntialiased(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   if (!isActive() || radius == 0) return; // not active
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
@@ -496,6 +497,7 @@ void Segment::draw_circle_antialiased(uint16_t cx, uint16_t cy, uint8_t radius, 
     }
   }
 }
+#endif
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
@@ -517,7 +519,7 @@ void Segment::nscale8(uint8_t scale) {
   const unsigned cols = virtualWidth();
   const unsigned rows = virtualHeight();
   for (unsigned y = 0; y < rows; y++) for (unsigned x = 0; x < cols; x++) {
-    setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
+    setPixelColorXY((int)x, (int)y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
 }
 
