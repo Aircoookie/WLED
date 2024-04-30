@@ -91,7 +91,8 @@ class StairwayWipeUsermod : public Usermod {
     void startWipe()
     {
     bri = briLast; //turn on
-    transitionDelayTemp = 0; //no transition
+    jsonTransitionOnce = true;
+    strip.setTransition(0); //no transition
     effectCurrent = FX_MODE_COLOR_WIPE;
     resetTimebase(); //make sure wipe starts from beginning
 
@@ -105,10 +106,11 @@ class StairwayWipeUsermod : public Usermod {
 
     void turnOff()
     {
+    jsonTransitionOnce = true;
     #ifdef STAIRCASE_WIPE_OFF
-    transitionDelayTemp = 0; //turn off immediately after wipe completed
+    strip.setTransition(0); //turn off immediately after wipe completed
     #else
-    transitionDelayTemp = 4000; //fade out slowly
+    strip.setTransition(4000); //fade out slowly
     #endif
     bri = 0;
     stateUpdated(CALL_MODE_NOTIFICATION);

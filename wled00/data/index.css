@@ -134,7 +134,7 @@ button {
 
 .off {
 	color: var(--c-6) !important;
-	cursor: default !important;
+	/* cursor: default !important; */
 }
 
 .top .icons, .bot .icons {
@@ -1010,7 +1010,7 @@ textarea {
 	width: 50px !important;
 }
 
-.segname, .pname {
+.segname, .pname, .bname {
 	white-space: nowrap;
 	text-align: center;
 	overflow: hidden;
@@ -1019,6 +1019,9 @@ textarea {
 	padding: 8px 24px;
 	max-width: 170px;
 	position: relative;
+}
+.bname {
+	padding: 0 24px;
 }
 
 .segname .flr, .pname .flr {
@@ -1031,6 +1034,7 @@ textarea {
 	/*padding: 1px 0 1px 20px;*/
 	display: var(--sgp);
 	width: 100%;
+	position: relative;
 }
 
 .pname {

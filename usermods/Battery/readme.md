@@ -19,7 +19,7 @@ If you have an ESP32 board, connect the positive side of the battery to ADC1 (GP
 - 💯 Displays current battery voltage 
 - 🚥 Displays battery level
 - 🚫 Auto-off with configurable Threshold
-- 🚨 Low power indicator with many configuration posibilities
+- 🚨 Low power indicator with many configuration possibilities
 
 ## 🎈 Installation
 
@@ -40,7 +40,7 @@ define `USERMOD_BATTERY` in `wled00/my_config.h`
 | `USERMOD_BATTERY_MEASUREMENT_INTERVAL`          | ms          | battery check interval. defaults to 30 seconds                                        |
 | `USERMOD_BATTERY_{TYPE}_MIN_VOLTAGE`            | v           | minimum battery voltage. default is 2.6 (18650 battery standard)                      |
 | `USERMOD_BATTERY_{TYPE}_MAX_VOLTAGE`            | v           | maximum battery voltage. default is 4.2 (18650 battery standard)                      |
-| `USERMOD_BATTERY_{TYPE}_TOTAL_CAPACITY`         | mAh         | the capacity of all cells in parralel sumed up                                        |
+| `USERMOD_BATTERY_{TYPE}_TOTAL_CAPACITY`         | mAh         | the capacity of all cells in parallel summed up                                       |
 | `USERMOD_BATTERY_{TYPE}_CALIBRATION`            |             | offset / calibration number, fine tune the measured voltage by the microcontroller    |
 | Auto-Off                                        | ---         | ---                                                                                   |
 | `USERMOD_BATTERY_AUTO_OFF_ENABLED`              | true/false  | enables auto-off                                                                      |

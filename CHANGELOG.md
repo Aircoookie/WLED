@@ -1,7 +1,105 @@
 ## WLED changelog
 
-#### Build 2306180
+#### Build 2401141
+-   Official release of WLED 0.14.1
+-   Fix for #3566, #3665, #3672
+-   Sorting of palettes in custom palette editor (#3674 by @WoodyLetsCode)
 
+#### Build 2401060
+-   Version bump: 0.14.1-b3
+-   Global JSON buffer guarding (#3648 by @willmmiles, resolves #3641, #3312, #3367, #3637, #3646, #3447)
+-   Fix for #3632
+-   Custom palette editor mobile UI enhancement (#3617 by @imeszaros)
+-   changelog update
+
+#### Build 2312290
+-   Fix for #3622, #3613, #3609
+-   Various tweaks and fixes
+-   changelog update
+
+#### Build 2312230
+-   Version bump: 0.14.1-b2
+-   Fix for Pixel Magic button
+-   Fix for #2922 (option to force WiFi PHY mode to G on ESP8266)
+-   Fix for #3601, #3400 (incorrect sunrise/sunset, #3612 by @softhack007)
+
+#### Build 2312180
+-   Bugfixes (#3593, #3490, #3573, #3517, #3561, #3555, #3541, #3536, #3515, #3522, #3533, #3508)
+-   Various other internal cleanups and optimisations
+
+#### Build 2311160
+-   Version bump: 0.14.1-b1
+-   Bugfixes (#3526, #3502, #3496, #3484, #3487, #3445, #3466, #3296, #3382, #3312)
+-   New feature: Sort presets by ID
+-   New usermod: LDR sensor (#3490 by @JeffWDH)
+-   Effect: Twinklefox & Tinklecat metadata fix
+-   Effect: separate #HH and #MM for Scrolling Text (#3480)
+-   SSDR usermod enhancements (#3368)
+-   PWM fan usermod enhancements (#3414)
+
+#### Build 2310010, build 2310130
+-   Release of WLED version 0.14.0 "Hoshi"
+-   Bugfixes for #3400, #3403, #3405
+-   minor HTML optimizations
+-   audioreactive: bugfix for UDP sound sync (partly initialized packets)
+
+#### Build 2309240
+-   Release of WLED beta version 0.14.0-b6 "Hoshi"
+-   Effect bugfixes and improvements (Meteor, Meteor Smooth, Scrolling Text)
+-   audioreactive: bugfixes for ES8388 and ES7243 init; minor improvements for analog inputs
+
+#### Build 2309100
+-   Release of WLED beta version 0.14.0-b5 "Hoshi"
+-   New standard esp32 build with audioreactive
+-   Effect blending bugfixes, and minor optimizations
+
+#### Build 2309050
+-   Effect blending (#3311) (finally effect transitions!)
+    *WARNING*: May not work well with ESP8266, with plenty of segments or usermods (low RAM condition)!!!
+-   Added receive and send sync groups to JSON API (#3317) (you can change sync groups using preset)
+-   Internal temperature usermod (#3246)
+-   MQTT server and topic length overrides (#3354) (new build flags)
+-   Animated Staircase usermod enhancement (#3348) (on/off toggle/relay control)
+-   Added local time info to Info page (#3351)
+-   New effect: Rolling Balls (a.k.a. linear bounce) (#1039)
+-   Various bug fixes and enhancements.
+
+#### Build 2308110
+-   Release of WLED beta version 0.14.0-b4 "Hoshi"
+-   Reset effect data immediately upon mode change
+
+#### Build 2308030
+-   Improved random palette handling and blending
+-   Soap bugfix
+-   Fix ESP-NOW crash with AP mode Always
+
+#### Build 2307180
+-   Bus-level global buffering (#3280)
+-   Removed per-segment LED buffer (SEGMENT.leds)
+-   various fixes and improvements (ESP variants platform 5.3.0, effect optimizations, /json/cfg pin allocation)
+
+#### Build 2307130
+-   larger `oappend()` stack buffer (3.5k) for ESP32
+-   Preset cycle bugfix (#3262)
+-   Rotary encoder ALT fix for large LED count (#3276)
+-   effect updates (2D Plasmaball), `blur()` speedup
+-   On/Off toggle from nodes view (may show unknown device type on older versions) (#3291)
+-   various fixes and improvements (ABL, crashes when changing presets with different segments)
+
+#### Build 2306270
+-   ESP-NOW remote support (#3237)
+-   Pixel Magic tool (display pixel art) (#3249)
+-   Websocket (peek) fallback when connection cannot be established, WS retries (#3267)
+-   Add WiFi network scan RPC command to Improv Serial (#3271)
+-   Longer (custom option available) segment name for ESP32
+-   various fixes and improvements
+
+#### Build 2306210
+-   0.14.0-b3 release
+-   respect global I2C in all usermods (no local initialization of I2C bus)
+-   Multi relay usermod compile-time enabled option (-D MULTI_RELAY_ENABLED=true|false)
+
+#### Build 2306180
 -   Added client-side option for applying effect defaults from metadata
 -   Improved ESP8266 stability by reducing WebSocket response resends
 -   Updated ESP8266 core to 3.1.2
@@ -24,7 +122,7 @@
 
 #### Build 2306020
 -   Support for segment sets (PR #3171)
--   Reduce sound simulation modes to 2 to facilitiate segment sets
+-   Reduce sound simulation modes to 2 to facilitate segment sets
 -   Trigger button immediately on press if all configured presets are the same (PR #3226)
 -   Changes for allowing Alexa to change light color to White when auto-calculating from RGB (PR #3211)
 
@@ -361,7 +459,7 @@
 
 -   Added application level pong websockets reply (#2139)
 -   Use AsyncTCP 1.0.3 as it mitigates the flickering issue from 0.13.0-b2
--   Fixed transition manually updated in preset overriden by field value
+-   Fixed transition manually updated in preset overridden by field value
 
 #### Build 2108050
 
@@ -890,7 +988,7 @@
 
 #### Build 2011040
 
--   Inversed Rain direction (fixes #1147)
+-   Inverted Rain direction (fixes #1147)
 
 #### Build 2011010
 
@@ -1101,7 +1199,7 @@
 
 -   Added module info page to web UI
 -   Added realtime override functionality to web UI
--   Added individial segment power and brightness to web UI
+-   Added individual segment power and brightness to web UI
 -   Added feature to one-click select single segment only by tapping segment name
 -   Removed palette jumping to default if color is changed
 
