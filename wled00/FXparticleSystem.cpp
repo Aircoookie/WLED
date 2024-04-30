@@ -36,9 +36,6 @@
   -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired. config should be optional, if not set, use default config.
   -add possiblity to emit more than one particle, just pass a source and the amount to emit or even add several sources and the amount, function decides if it should do it fair or not
   -add an x/y struct, do particle rendering using that, much easier to read
-  -extend rendering to more than 2x2, 3x2 (fire) should be easy, 3x3 maybe also doable without using much math (need to see if it looks good)
-  
-
 */
 // sources need to be updatable by the FX, so functions are needed to apply it to a single particle that are public
 #include "FXparticleSystem.h"
@@ -56,7 +53,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	updatePSpointers(isadvanced); // set the particle and sources pointer (call this before accessing sprays or particles)
 	setMatrixSize(width, height);
 	setWallHardness(255); // set default wall hardness to max
-	setWallRoughness(0); // smooth walls by default !!! testing this 
+	setWallRoughness(0); // smooth walls by default
 	setGravity(0); //gravity disabled by default
 	setParticleSize(0); // minimum size by default
 	motionBlur = 0; //no fading by default
@@ -66,6 +63,10 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	for (int i = 0; i < numSources; i++)
 	{
 		sources[i].source.sat = 255; //set saturation to max by default
+	}
+	for (int i = 0; i < numParticles; i++)
+	{
+	 	particles[i].sat = 255; // full saturation
 	}
 	/*
 	Serial.println("alive particles: ");
@@ -110,16 +111,16 @@ void ParticleSystem::update(void)
 		}
 		particleMoveUpdate(particles[i], particlesettings, advprop);
 	}
-	//!!! remove this
-	//Serial.print("alive particles: ");
+	/*!!! remove this
+	Serial.print("alive particles: ");
 	uint32_t aliveparticles = 0;
 	for (int i = 0; i < numParticles; i++)
 	{
 		if(particles[i].ttl)
 		aliveparticles++;
 	}
-
-	//Serial.println(aliveparticles);
+	Serial.println(aliveparticles);
+	*/
 	ParticleSys_render();
 }
 
@@ -550,7 +551,7 @@ void ParticleSystem::applyFriction(uint8_t coefficient)
 }
 
 // attracts a particle to an attractor particle using the inverse square-law
-void ParticleSystem::pointAttractor(uint16_t particleindex, PSparticle *attractor, uint8_t strength, bool swallow) // TODO: need to check if this is ok with new advancedprops !!!
+void ParticleSystem::pointAttractor(uint16_t particleindex, PSparticle *attractor, uint8_t strength, bool swallow) 
 {
 	if (advPartProps == NULL)
 		return; // no advanced properties available
@@ -682,19 +683,18 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 	
 	if(!useLocalBuffer) //disabled or allocation above failed
 	{
+		Serial.println("NOT using local buffer!");
 		if (motionBlur > 0)
-			SEGMENT.fadeToBlackBy(256 - motionBlur);
+			SEGMENT.fadeToBlackBy(255 - motionBlur);
 		else
 			SEGMENT.fill(BLACK); //clear the buffer before rendering to it 
 	}
-	uint32_t debug = 0;
 	// go over particles and render them to the buffer
 	for (i = 0; i < usedParticles; i++)
 	{
 		if (particles[i].outofbounds || particles[i].ttl == 0)
 			continue;
 
-		debug++;
 		// generate RGB values for particle
 		if(firemode)
 		{
@@ -768,7 +768,6 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 	}
 	if(renderbuffer)
 		free(renderbuffer); // free buffer memory		
-	Serial.println(debug);
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -1091,7 +1090,7 @@ void ParticleSystem::handleCollisions()
 	}	
 	collisioncounter++;
 
-	//startparticle = 0;//!!! test: do all collisions every frame, FPS goes from about 52 to 
+	//startparticle = 0;//!!!TODO test: do all collisions every frame
 	//endparticle = usedParticles;
 
 	for (i = startparticle; i < endparticle; i++)
@@ -1363,9 +1362,7 @@ int32_t ParticleSystem::limitSpeed(int32_t speed)
 // allocate memory for the 2D array in one contiguous block and set values to zero
 CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 {	
-	//cli();//!!! test to see if anything messes with the allocation (flicker issues)
 	CRGB ** array2D = (CRGB **)malloc(cols * sizeof(CRGB *) + cols * rows * sizeof(CRGB));
-	//sei();
 	if (array2D == NULL)
 		DEBUG_PRINT(F("PS buffer alloc failed"));
 	else

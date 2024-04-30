@@ -8770,7 +8770,7 @@ uint16_t mode_particlebox(void)
     for (i = 0; i < maxnumParticles; i++)
     {
       PartSys->particles[i].ttl = 500; //set all particles alive (not all are rendered though)
-      PartSys->particles[i].hue = i * 5; // color range 
+      PartSys->particles[i].hue = i * 5; // color range       
       PartSys->particles[i].x = map(i, 0, maxnumParticles, 1, PartSys->maxX); // distribute along x according to color
       PartSys->particles[i].y = random16(PartSys->maxY); // randomly in y direction
       PartSys->particles[i].collide = true; // all particles collide
@@ -8975,7 +8975,7 @@ uint16_t mode_particleimpact(void)
     #ifdef ESP8266
       emitparticles = random16(SEGMENT.intensity >> 3) + 5; // defines the size of the explosion
     #else
-      emitparticles = map(SEGMENT.intensity, 0, 255, 10, random16(PartSys->numParticles>>2)); // defines the size of the explosion !!!TODO: check if this works, drop esp8266 def if it does
+      emitparticles = map(SEGMENT.intensity, 0, 255, 10, random16(PartSys->numParticles>>2)); // defines the size of the explosion !!!TODO: check if this works on ESP8266, drop esp8266 def if it does
 #endif
     }
     for (int e = emitparticles; e > 0; e--)
@@ -9429,7 +9429,7 @@ static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS Equalizer@Speed,Inte
 /*
 Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
 */
-#define MAXANGLESTEP 2000 //32767 means 180°
+#define MAXANGLESTEP 2200 //32767 means 180°
 uint16_t mode_particlghostrider(void)
 {
   if (SEGLEN == 1)
@@ -9487,10 +9487,16 @@ uint16_t mode_particlghostrider(void)
       PartSys->particles[i].hue = PartSys->sources[0].source.hue + (PartSys->particles[i].ttl<<2);
     }      
   }
-  SEGMENT.aux0 += (int32_t)SEGMENT.step; //step is angle increment
 
+  //enable/disable walls
+  ghostsettings.bounceX = SEGMENT.check2;
+  ghostsettings.bounceY = SEGMENT.check2;
+
+  SEGMENT.aux0 += (int32_t)SEGMENT.step; //step is angle increment
   uint16_t emitangle = SEGMENT.aux0 + 32767; //+180°
   int32_t speed = map(SEGMENT.speed, 0, 255, 12, 64);
+  int8_t newvx = ((int32_t)cos16(SEGMENT.aux0) * speed) / (int32_t)32767; 
+  int8_t newvy = ((int32_t)sin16(SEGMENT.aux0) * speed) / (int32_t)32767; 
   PartSys->sources[0].source.vx = ((int32_t)cos16(SEGMENT.aux0) * speed) / (int32_t)32767; 
   PartSys->sources[0].source.vy = ((int32_t)sin16(SEGMENT.aux0) * speed) / (int32_t)32767;  
   PartSys->sources[0].source.ttl = 500; //source never dies
@@ -9508,7 +9514,7 @@ uint16_t mode_particlghostrider(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,Color by age;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,Color by age,Walls;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1,o2=0,o3=0";
 
 /*
  * Particle rotating GEQ

@@ -30,7 +30,7 @@
 #include "FastLED.h"
 
 //memory allocation
-#define ESP8266_MAXPARTICLES 200// // enough for one 16x16 segment with transitions
+#define ESP8266_MAXPARTICLES 180// // enough for one 16x16 segment with transitions
 #define ESP8266_MAXSOURCES 16
 #define ESP32S2_MAXPARTICLES 840 // enough for four 16x16 segments
 #define ESP32S2_MAXSOURCES 48
