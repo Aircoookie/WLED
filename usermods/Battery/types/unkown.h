@@ -13,8 +13,7 @@ class Unkown : public Battery
     private:
 
     public:
-        Unkown()
-        : Battery()
+        Unkown() : Battery()
         {
             this->setMinVoltage(USERMOD_BATTERY_UNKOWN_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE);

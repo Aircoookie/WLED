@@ -111,6 +111,7 @@
   #define USERMOD_BATTERY_LOW_POWER_INDICATOR_DURATION 5
 #endif
 
+// battery types
 typedef enum
 {
   unknown=0,

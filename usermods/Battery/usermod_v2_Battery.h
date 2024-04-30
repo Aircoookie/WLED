@@ -9,9 +9,8 @@
 
 /*
  * Usermod by Maximilian Mewes
- * Mail: mewes.maximilian@gmx.de
- * GitHub: itCarl
- * Date: 25.12.2022
+ * E-mail: mewes.maximilian@gmx.de
+ * Created at: 25.12.2022
  * If you have any questions, please feel free to contact me.
  */
 class UsermodBattery : public Usermod 
@@ -140,7 +139,6 @@ class UsermodBattery : public Usermod
         }
       #else //ESP8266 boards have only one analog input pin A0
         pinMode(batteryPin, INPUT);
-        // voltage = readVoltage();
       #endif
 
       // plug in the right battery type

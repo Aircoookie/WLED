@@ -13,8 +13,7 @@ class Lipo : public Battery
     private:
 
     public:
-        Lipo()
-        : Battery()
+        Lipo() : Battery()
         {
             this->setMinVoltage(USERMOD_BATTERY_LIPO_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_LIPO_MAX_VOLTAGE);

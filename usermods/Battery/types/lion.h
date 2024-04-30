@@ -13,8 +13,7 @@ class Lion : public Battery
     private:
 
     public:
-        Lion()
-        : Battery()
+        Lion() : Battery()
         {
             this->setMinVoltage(USERMOD_BATTERY_LION_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_LION_MAX_VOLTAGE);

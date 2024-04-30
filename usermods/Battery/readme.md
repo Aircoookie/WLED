@@ -86,6 +86,11 @@ Specification from:  [Molicel INR18650-M35A, 3500mAh 10A Lithium-ion battery, 3.
 
 ## 📝 Change Log
 
+2024-04-30
+
+- integrate factory pattern to make it easier to add other / custom battery types
+- update readme
+
 2023-01-04
 
 - basic support for LiPo rechargeable batteries ( `-D USERMOD_BATTERY_USE_LIPO`)
