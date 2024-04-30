@@ -155,6 +155,7 @@ bool oappend(const char* txt)
       USER_PRINTF("%2u bytes \t\"", len /*1 + olen + len - SETTINGS_STACK_BUF_SIZE*/);
       USER_PRINT(txt);
       USER_PRINTLN(F("\""));
+      errorFlag = ERR_LOW_AJAX_MEM;
 	  }
     return false;        // buffer full
   }
