@@ -4900,7 +4900,7 @@ uint16_t mode_2DAnalogClock(void) {                  // By Andras Fekete (bandi1
 
   return (1000 / WLED_FPS); // calculate once per second
 } // mode_2DAnalogClock()
-static const char _data_FX_MODE_2DANALOGCLOCK[] PROGMEM = "AnalogClock2D";
+static const char _data_FX_MODE_2DANALOGCLOCK[] PROGMEM = "AnalogClock2D@;";
 
 // Black hole
 uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
