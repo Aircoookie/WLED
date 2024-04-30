@@ -539,6 +539,33 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   }
 }
 
+//line function
+void Segment::drawLineAntialiased(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) {
+  if (!isActive()) return; // not active
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
+  if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
+  const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
+  int16_t err = (dx-dy)/2, e2, x2;
+  int16_t ed = (dx+dy == 0) ? 1 : sqrt((float)dx*dx + (float)dy*dy);
+
+  for (;;) {
+    setPixelColorXY(x0,y0,color_blend(c,getPixelColorXY(x0,y0),0xFFFF * abs(err - dx + dy) / ed, true));
+    e2 = err; x2 = x0;
+    if (e2 >= -dx) {
+      if(x0 == x1) break;
+      if (e2+dy < ed) setPixelColorXY(x0,y0+sy, color_blend(c,getPixelColorXY(x0,y0+sy), 0xFFFF * (e2+dy)/ed, true));
+      err -= dy; x0 += sx;
+    }
+    if (e2 <= dy) {
+      if (y0 == y1) break;
+      if (dx-e2 < ed) setPixelColorXY(x2+sx, y0, color_blend(c,getPixelColorXY(x2+sx,y0), 0xFFFF * (dx-e2)/ed, true));
+      err += dx; y0 += sy;
+    }
+  }
+}
+
 #include "src/font/console_font_4x6.h"
 #include "src/font/console_font_5x8.h"
 #include "src/font/console_font_5x12.h"
