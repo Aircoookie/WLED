@@ -681,7 +681,7 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   updateFSInfo();
 
   USER_PRINT(F("done Mounting FS; "));
-  USER_PRINT(((fsBytesTotal-fsBytesUsed)/1024)); USER_PRINTLN(F(" kB free."));
+  USER_PRINT(((fsBytesTotal-fsBytesUsed)/1024)); USER_PRINTLN(F(" kB free.\n"));
 
   // generate module IDs must be done before AP setup
   escapedMac = WiFi.macAddress();
@@ -705,7 +705,7 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   beginStrip();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  USER_PRINTLN(F("Usermods setup ..."));
+  USER_PRINTLN(F("\nUsermods setup ..."));
   userSetup();
   usermods.setup();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
@@ -721,7 +721,7 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
   //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
   if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
-    if (Serial) Serial.println(F("Ada"));
+    if (Serial) Serial.println(F("\nAda"));
   }
   #endif
 
@@ -852,7 +852,7 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   // repeat Ada prompt
   #ifdef WLED_ENABLE_ADALIGHT
   if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
-    if (Serial) Serial.println(F("Ada"));
+    if (Serial) Serial.println(F("\nAda"));
   }
   #endif
 
