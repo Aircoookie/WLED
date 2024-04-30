@@ -7,11 +7,13 @@
 #define WLED_DEBOUNCE_THRESHOLD      50 // only consider button input of at least 50ms as valid (debouncing)
 #define WLED_LONG_PRESS             600 // long press if button is released after held for at least 600ms
 #define WLED_DOUBLE_PRESS           350 // double press if another press within 350ms after a short press
-#define WLED_LONG_REPEATED_ACTION   300 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+#define WLED_LONG_REPEATED_ACTION   400 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
 #define WLED_LONG_AP               5000 // how long button 0 needs to be held to activate WLED-AP
 #define WLED_LONG_FACTORY_RESET   10000 // how long button 0 needs to be held to trigger a factory reset
+#define WLED_LONG_BRI_STEPS          16 // how much to increase/decrease the brightness with each long press repetition
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+static bool buttonBriDirection = false; // true: increase brightness, false: decrease brightness
 
 void shortPressAction(uint8_t b)
 {
@@ -21,7 +23,6 @@ void shortPressAction(uint8_t b)
       case 1: ++effectCurrent %= strip.getModeCount(); stateChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -40,10 +41,21 @@ void longPressAction(uint8_t b)
   if (!macroLongPress[b]) {
     switch (b) {
       case 0: setRandomColor(col); colorUpdated(CALL_MODE_BUTTON); break;
-      case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
+      case 1: 
+        if(buttonBriDirection) {
+          if (bri == 255) break; // avoid unnecessary updates to brightness
+          if (bri >= 255 - WLED_LONG_BRI_STEPS) bri = 255;
+          else bri += WLED_LONG_BRI_STEPS;
+        } else {
+          if (bri == 1) break; // avoid unnecessary updates to brightness
+          if (bri <= WLED_LONG_BRI_STEPS) bri = 1;
+          else bri -= WLED_LONG_BRI_STEPS;
+        }
+        stateUpdated(CALL_MODE_BUTTON); 
+        buttonPressedTime[b] = millis();         
+        break; // repeatable action
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -65,7 +77,6 @@ void doublePressAction(uint8_t b)
       case 1: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
-    unloadPlaylist(); // applying a preset unloads the playlist
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
   }
 
@@ -99,9 +110,13 @@ bool isButtonPressed(uint8_t i)
     case BTN_TYPE_TOUCH:
     case BTN_TYPE_TOUCH_SWITCH:
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-      if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
+        #ifdef SOC_TOUCH_VERSION_2 //ESP32 S2 and S3 provide a function to check touch state (state is updated in interrupt)
+        if (touchInterruptGetLastStatus(pin)) return true;
+        #else
+        if (digitalPinToTouchChannel(btnPin[i]) >= 0 && touchRead(pin) <= touchThreshold) return true;
+        #endif
       #endif
-      break;
+     break;
   }
   return false;
 }
@@ -283,10 +298,12 @@ void handleButton()
       buttonPressedBefore[b] = true;
 
       if (now - buttonPressedTime[b] > WLED_LONG_PRESS) { //long press
-        if (!buttonLongPressed[b]) longPressAction(b);
-        else if (b) { //repeatable action (~3 times per s) on button > 0
+        if (!buttonLongPressed[b]) {
+          buttonBriDirection = !buttonBriDirection; //toggle brightness direction on long press
           longPressAction(b);
-          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //333ms
+        } else if (b) { //repeatable action (~5 times per s) on button > 0
+          longPressAction(b);
+          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //200ms
         }
         buttonLongPressed[b] = true;
       }
@@ -378,7 +395,7 @@ void handleIO()
       esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
-        pinMode(rlyPin, OUTPUT);
+        pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, rlyMde);
       }
       offMode = false;
@@ -399,10 +416,15 @@ void handleIO()
       esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
-        pinMode(rlyPin, OUTPUT);
+        pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, !rlyMde);
       }
     }
     offMode = true;
   }
+}
+
+void IRAM_ATTR touchButtonISR()
+{
+  // used for ESP32 S2 and S3: nothing to do, ISR is just used to update registers of HAL driver
 }

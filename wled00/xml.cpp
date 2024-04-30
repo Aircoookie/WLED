@@ -145,10 +145,13 @@ void appendGPIOinfo() {
   oappend(SET_F("d.rsvd=[22,23,24,25,26,27,28,29,30,31,32"));
   #elif defined(CONFIG_IDF_TARGET_ESP32S3)
   oappend(SET_F("d.rsvd=[19,20,22,23,24,25,26,27,28,29,30,31,32"));  // includes 19+20 for USB OTG (JTAG)
+  if (psramFound()) oappend(SET_F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
   #elif defined(CONFIG_IDF_TARGET_ESP32C3)
   oappend(SET_F("d.rsvd=[11,12,13,14,15,16,17"));
   #elif defined(ESP32)
   oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31,37,38"));
+  if (!pinManager.isPinOk(16,false)) oappend(SET_F(",16")); // covers PICO & WROVER
+  if (!pinManager.isPinOk(17,false)) oappend(SET_F(",17")); // covers PICO & WROVER
   #else
   oappend(SET_F("d.rsvd=[6,7,8,9,10,11"));
   #endif
@@ -162,14 +165,6 @@ void appendGPIOinfo() {
   #endif
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
-
-  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
-    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-    if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM on ESP32 (not on S2, S3 or C3)
-    #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    if (psramFound()) oappend(SET_F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
-    #endif
-  #endif
 
   #ifdef WLED_USE_ETHERNET
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
@@ -360,6 +355,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("MS"),autoSegments);
     sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("IC"),cctICused);
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
@@ -462,6 +458,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("PB"),strip.paletteBlend);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
+    sappend('c',SET_F("RO"),rlyOpenDrain);
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addBtn("));
       oappend(itoa(i,nS,10)); oappend(",");
@@ -471,8 +468,10 @@ void getSettingsJS(byte subPage, char* dest)
     }
     sappend('c',SET_F("IP"),disablePullUp);
     sappend('v',SET_F("TT"),touchThreshold);
+#ifndef WLED_DISABLE_INFRARED
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
+#endif    
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 
@@ -724,6 +723,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
     olen -= 2; //delete ";
     oappend(versionString);
+    oappend(SET_F("<br>"));
+    oappend((char*)FPSTR(releaseString));
     oappend(SET_F("<br>("));
     #if defined(ARDUINO_ARCH_ESP32)
     oappend(ESP.getChipModel());

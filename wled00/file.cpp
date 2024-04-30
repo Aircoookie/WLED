@@ -375,21 +375,21 @@ void updateFSInfo() {
   #endif
 }
 
-#if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+
+#ifdef ARDUINO_ARCH_ESP32
 // caching presets in PSRAM may prevent occasional flashes seen when HomeAssitant polls WLED
 // original idea by @akaricchi (https://github.com/Akaricchi)
-// returns a pointer to the PSRAM buffer updates size parameter
+// returns a pointer to the PSRAM buffer, updates size parameter
 static const uint8_t *getPresetCache(size_t &size) {
-  static unsigned long presetsCachedTime;
-  static uint8_t *presetsCached;
-  static size_t presetsCachedSize;
+  static unsigned long presetsCachedTime = 0;
+  static uint8_t *presetsCached = nullptr;
+  static size_t presetsCachedSize = 0;
+  static byte presetsCachedValidate = 0;
 
-  if (!psramFound()) {
-    size = 0;
-    return nullptr;
-  }
+  //if (presetsModifiedTime != presetsCachedTime) DEBUG_PRINTLN(F("getPresetCache(): presetsModifiedTime changed."));
+  //if (presetsCachedValidate != cacheInvalidate) DEBUG_PRINTLN(F("getPresetCache(): cacheInvalidate changed."));
 
-  if (presetsModifiedTime != presetsCachedTime) {
+  if ((presetsModifiedTime != presetsCachedTime) || (presetsCachedValidate != cacheInvalidate)) {
     if (presetsCached) {
       free(presetsCached);
       presetsCached = nullptr;
@@ -400,6 +400,7 @@ static const uint8_t *getPresetCache(size_t &size) {
     File file = WLED_FS.open(FPSTR(getPresetsFileName()), "r");
     if (file) {
       presetsCachedTime = presetsModifiedTime;
+      presetsCachedValidate = cacheInvalidate;
       presetsCachedSize = 0;
       presetsCached = (uint8_t*)ps_malloc(file.size() + 1);
       if (presetsCached) {
@@ -420,26 +421,19 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   DEBUG_PRINT(F("WS FileRead: ")); DEBUG_PRINTLN(path);
   if(path.endsWith("/")) path += "index.htm";
   if(path.indexOf(F("sec")) > -1) return false;
-  String contentType = getFileContentType(path);
-  if(request->hasArg(F("download"))) contentType = F("application/octet-stream");
-  /*String pathWithGz = path + ".gz";
-  if(WLED_FS.exists(pathWithGz)){
-    request->send(WLED_FS, pathWithGz, contentType);
-    return true;
-  }*/
-  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-  if (path.endsWith(FPSTR(getPresetsFileName()))) {
+  #ifdef ARDUINO_ARCH_ESP32
+  if (psramSafe && psramFound() && path.endsWith(FPSTR(getPresetsFileName()))) {
     size_t psize;
     const uint8_t *presets = getPresetCache(psize);
     if (presets) {
-      AsyncWebServerResponse *response = request->beginResponse_P(200, contentType, presets, psize);
+      AsyncWebServerResponse *response = request->beginResponse_P(200, FPSTR(CONTENT_TYPE_JSON), presets, psize);
       request->send(response);
       return true;
     }
   }
   #endif
-  if(WLED_FS.exists(path)) {
-    request->send(WLED_FS, path, contentType);
+  if(WLED_FS.exists(path) || WLED_FS.exists(path + ".gz")) {
+    request->send(WLED_FS, path, String(), request->hasArg(F("download")));
     return true;
   }
   return false;

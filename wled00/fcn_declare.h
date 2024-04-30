@@ -20,6 +20,7 @@ void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
+void IRAM_ATTR touchButtonISR();
 
 //cfg.cpp
 bool deserializeConfig(JsonObject doc, bool fromFS = false);
@@ -233,6 +234,7 @@ const char *getPresetsFileName(bool persistent = true);
 void initPresetsFile();
 void handlePresets();
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+bool applyPresetFromPlaylist(byte index);
 void applyPresetWithFallback(uint8_t presetID, uint8_t callMode, uint8_t effectID = 0, uint8_t paletteID = 0);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
@@ -434,7 +436,6 @@ void handleSerial();
 void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
-String getFileContentType(String &filename);
 void createEditHandler(bool enable);
 void initServer();
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);

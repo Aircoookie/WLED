@@ -2,6 +2,7 @@
 #define BusWrapper_h
 
 #include "NeoPixelBusLg.h"
+#include "bus_manager.h"
 
 // temporary - these defines should actually be set in platformio.ini
 // C3: I2S0 and I2S1 methods not supported (has one I2S bus)
@@ -63,52 +64,64 @@
 #define I_8266_U1_UCS_4 54
 #define I_8266_DM_UCS_4 55
 #define I_8266_BB_UCS_4 56
+//FW1906 GRBCW
+#define I_8266_U0_FW6_5 66
+#define I_8266_U1_FW6_5 67
+#define I_8266_DM_FW6_5 68
+#define I_8266_BB_FW6_5 69
 //ESP8266 APA106
 #define I_8266_U0_APA106_3 81
 #define I_8266_U1_APA106_3 82
 #define I_8266_DM_APA106_3 83
 #define I_8266_BB_APA106_3 84
+//WS2805
+#define I_8266_U0_2805_5 89
+#define I_8266_U1_2805_5 90
+#define I_8266_DM_2805_5 91
+#define I_8266_BB_2805_5 92
 
 /*** ESP32 Neopixel methods ***/
 //RGB
 #define I_32_RN_NEO_3 21
 #define I_32_I0_NEO_3 22
 #define I_32_I1_NEO_3 23
-#define I_32_BB_NEO_3 24  // bitbanging on ESP32 not recommended
 //RGBW
 #define I_32_RN_NEO_4 25
 #define I_32_I0_NEO_4 26
 #define I_32_I1_NEO_4 27
-#define I_32_BB_NEO_4 28  // bitbanging on ESP32 not recommended
 //400Kbps
 #define I_32_RN_400_3 29
 #define I_32_I0_400_3 30
 #define I_32_I1_400_3 31
-#define I_32_BB_400_3 32  // bitbanging on ESP32 not recommended
 //TM1814 (RGBW)
 #define I_32_RN_TM1_4 33
 #define I_32_I0_TM1_4 34
 #define I_32_I1_TM1_4 35
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //TM1829 (RGB)
 #define I_32_RN_TM2_3 36
 #define I_32_I0_TM2_3 37
 #define I_32_I1_TM2_3 38
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //UCS8903 (RGB)
 #define I_32_RN_UCS_3 57
 #define I_32_I0_UCS_3 58
 #define I_32_I1_UCS_3 59
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //UCS8904 (RGBW)
 #define I_32_RN_UCS_4 60
 #define I_32_I0_UCS_4 61
 #define I_32_I1_UCS_4 62
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
+//FW1906 GRBCW
+#define I_32_RN_FW6_5 63
+#define I_32_I0_FW6_5 64
+#define I_32_I1_FW6_5 65
+//APA106
 #define I_32_RN_APA106_3 85
 #define I_32_I0_APA106_3 86
 #define I_32_I1_APA106_3 87
-#define I_32_BB_APA106_3 88  // bitbangging on ESP32 not recommended
+//WS2805
+#define I_32_RN_2805_5 93
+#define I_32_I0_2805_5 94
+#define I_32_I1_2805_5 95
+
 
 //APA102
 #define I_HS_DOT_3 39 //hardware SPI
@@ -176,6 +189,16 @@
 #define B_8266_U1_APA106_3 NeoPixelBusLg<NeoRbgFeature, NeoEsp8266Uart1Apa106Method, NeoGammaNullMethod> //3 chan, esp8266, gpio2
 #define B_8266_DM_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266DmaApa106Method, NeoGammaNullMethod>  //3 chan, esp8266, gpio3
 #define B_8266_BB_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266BitBangApa106Method, NeoGammaNullMethod> //3 chan, esp8266, bb (any pin but 16)
+//FW1906 GRBCW
+#define B_8266_U0_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp8266Uart0Ws2813Method, NeoGammaNullMethod>   //esp8266, gpio1
+#define B_8266_U1_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp8266Uart1Ws2813Method, NeoGammaNullMethod>   //esp8266, gpio2
+#define B_8266_DM_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp8266Dma800KbpsMethod, NeoGammaNullMethod>   //esp8266, gpio3
+#define B_8266_BB_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp8266BitBang800KbpsMethod, NeoGammaNullMethod>   //esp8266, bb
+//WS2805 GRBCW
+#define B_8266_U0_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp8266Uart0Ws2805Method, NeoGammaNullMethod> //esp8266, gpio1
+#define B_8266_U1_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp8266Uart1Ws2805Method, NeoGammaNullMethod> //esp8266, gpio2
+#define B_8266_DM_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp8266DmaWs2805Method, NeoGammaNullMethod> //esp8266, gpio3
+#define B_8266_BB_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp8266BitBangWs2805Method, NeoGammaNullMethod> //esp8266, bb
 #endif
 
 /*** ESP32 Neopixel methods ***/
@@ -183,75 +206,102 @@
 //RGB
 #define B_32_RN_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0Ws2812xMethod, NeoGammaNullMethod>
+//#define B_32_I0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0X8Ws2812xMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1Ws2812xMethod, NeoGammaNullMethod>
+//#define B_32_I1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1X8Ws2812xMethod, NeoGammaNullMethod> // parallel I2S
 #endif
-//#define B_32_BB_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32BitBang800KbpsMethod, NeoGammaNullMethod> // NeoEsp8266BitBang800KbpsMethod
 //RGBW
-#define B_32_RN_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
+#define B_32_RN_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32RmtNSk6812Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s0Sk6812Method, NeoGammaNullMethod>
+//#define B_32_I0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s0X8Sk6812Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+#define B_32_I1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s1Sk6812Method, NeoGammaNullMethod>
+//#define B_32_I1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s1X8Sk6812Method, NeoGammaNullMethod> // parallel I2S
 #endif
-//#define B_32_BB_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32BitBang800KbpsMethod, NeoGammaNullMethod> // NeoEsp8266BitBang800KbpsMethod
 //400Kbps
 #define B_32_RN_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtN400KbpsMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0400KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0X8400KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1400KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1X8400KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
-//#define B_32_BB_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32BitBang400KbpsMethod, NeoGammaNullMethod> // NeoEsp8266BitBang400KbpsMethod
 //TM1814 (RGBW)
 #define B_32_RN_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32RmtNTm1814Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s0Tm1814Method, NeoGammaNullMethod>
+//#define B_32_I0_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s0X8Tm1814Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s1Tm1814Method, NeoGammaNullMethod>
+//#define B_32_I1_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s1X8Tm1814Method, NeoGammaNullMethod> // parallel I2S
 #endif
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //TM1829 (RGB)
 #define B_32_RN_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32RmtNTm1829Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s0Tm1829Method, NeoGammaNullMethod>
+//#define B_32_I0_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s0X8Tm1829Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s1Tm1829Method, NeoGammaNullMethod>
+//#define B_32_I1_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s1X8Tm1829Method, NeoGammaNullMethod> // parallel I2S
 #endif
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //UCS8903
 #define B_32_RN_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s0X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s1X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
 #endif
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //UCS8904
 #define B_32_RN_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s0X8800KbpsMethod, NeoGammaNullMethod>// parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s1X8800KbpsMethod, NeoGammaNullMethod>// parallel I2S
 #endif
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 #define B_32_RN_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtNApa106Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
 #define B_32_I0_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0Apa106Method, NeoGammaNullMethod>
+//#define B_32_I0_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0X8Apa106Method, NeoGammaNullMethod> // parallel I2S
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
 #define B_32_I1_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1Apa106Method, NeoGammaNullMethod>
+//#define B_32_I1_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1X8Apa106Method, NeoGammaNullMethod> // parallel I2S
 #endif
-//#define B_32_BB_APA106_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266BitBangApa106Method, NeoGammaNullMethod> // NeoEsp8266BitBang800KbpsMethod
-
+//FW1906 GRBCW
+#define B_32_RN_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
+#ifndef WLED_NO_I2S0_PIXELBUS
+#define B_32_I0_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I0_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s0X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
+#endif
+#ifndef WLED_NO_I2S1_PIXELBUS
+#define B_32_I1_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
+//#define B_32_I1_FW6_5 NeoPixelBusLg<NeoGrbcwxFeature, NeoEsp32I2s1X8800KbpsMethod, NeoGammaNullMethod> // parallel I2S
+#endif
+//WS2805 RGBWC
+#define B_32_RN_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32RmtNWs2805Method, NeoGammaNullMethod>
+#ifndef WLED_NO_I2S0_PIXELBUS
+#define B_32_I0_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s0Ws2805Method, NeoGammaNullMethod>
+//#define B_32_I0_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s0X8Ws2805Method, NeoGammaNullMethod> // parallel I2S
+#endif
+#ifndef WLED_NO_I2S1_PIXELBUS
+#define B_32_I1_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s1Ws2805Method, NeoGammaNullMethod>
+//#define B_32_I1_2805_5 NeoPixelBusLg<NeoGrbwwFeature, NeoEsp32I2s1X8Ws2805Method, NeoGammaNullMethod> // parallel I2S
+#endif
 #endif
 
 //APA102
@@ -290,6 +340,7 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
+
   // initialize SPI bus speed for DotStar methods
   template <class T>
   static void beginDotStar(void* busPtr, int8_t sck, int8_t miso, int8_t mosi, int8_t ss, uint16_t clock_kHz = 0U) {
@@ -353,6 +404,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: (static_cast<B_8266_U1_APA106_3*>(busPtr))->Begin(); break;
       case I_8266_DM_APA106_3: (static_cast<B_8266_DM_APA106_3*>(busPtr))->Begin(); break;
       case I_8266_BB_APA106_3: (static_cast<B_8266_BB_APA106_3*>(busPtr))->Begin(); break;
+      case I_8266_U0_FW6_5: (static_cast<B_8266_U0_FW6_5*>(busPtr))->Begin(); break;
+      case I_8266_U1_FW6_5: (static_cast<B_8266_U1_FW6_5*>(busPtr))->Begin(); break;
+      case I_8266_DM_FW6_5: (static_cast<B_8266_DM_FW6_5*>(busPtr))->Begin(); break;
+      case I_8266_BB_FW6_5: (static_cast<B_8266_BB_FW6_5*>(busPtr))->Begin(); break;
+      case I_8266_U0_2805_5: (static_cast<B_8266_U0_2805_5*>(busPtr))->Begin(); break;
+      case I_8266_U1_2805_5: (static_cast<B_8266_U1_2805_5*>(busPtr))->Begin(); break;
+      case I_8266_DM_2805_5: (static_cast<B_8266_DM_2805_5*>(busPtr))->Begin(); break;
+      case I_8266_BB_2805_5: (static_cast<B_8266_BB_2805_5*>(busPtr))->Begin(); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->Begin(); break;
@@ -362,7 +421,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->Begin(); break;
       #endif
-//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->Begin(); break;
       case I_32_RN_NEO_4: (static_cast<B_32_RN_NEO_4*>(busPtr))->Begin(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->Begin(); break;
@@ -370,7 +428,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->Begin(); break;
       #endif
-//      case I_32_BB_NEO_4: (static_cast<B_32_BB_NEO_4*>(busPtr))->Begin(); break;
       case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->Begin(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->Begin(); break;
@@ -378,7 +435,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->Begin(); break;
       #endif
-//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->Begin(); break;
       case I_32_RN_TM1_4: beginTM1814<B_32_RN_TM1_4*>(busPtr); break;
       case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->Begin(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -396,7 +452,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->Begin(); break;
       #endif
-//      case I_32_BB_UCS_3: (static_cast<B_32_BB_UCS_3*>(busPtr))->Begin(); break;
       case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->Begin(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->Begin(); break;
@@ -404,7 +459,13 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->Begin(); break;
       #endif
-//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->Begin(); break;
+      case I_32_RN_FW6_5: (static_cast<B_32_RN_FW6_5*>(busPtr))->Begin(); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: (static_cast<B_32_I0_FW6_5*>(busPtr))->Begin(); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: (static_cast<B_32_I1_FW6_5*>(busPtr))->Begin(); break;
+      #endif
       case I_32_RN_APA106_3: (static_cast<B_32_RN_APA106_3*>(busPtr))->Begin(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: (static_cast<B_32_I0_APA106_3*>(busPtr))->Begin(); break;
@@ -412,7 +473,13 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: (static_cast<B_32_I1_APA106_3*>(busPtr))->Begin(); break;
       #endif
-//      case I_32_BB_APA106_3: (static_cast<B_32_BB_APA106_3*>(busPtr))->Begin(); break;
+      case I_32_RN_2805_5: (static_cast<B_32_RN_2805_5*>(busPtr))->Begin(); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: (static_cast<B_32_I0_2805_5*>(busPtr))->Begin(); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: (static_cast<B_32_I1_2805_5*>(busPtr))->Begin(); break;
+      #endif
       // ESP32 can (and should, to avoid inadvertantly driving the chip select signal) specify the pins used for SPI, but only in begin()
       case I_HS_DOT_3: beginDotStar<B_HS_DOT_3*>(busPtr, pins[1], -1, pins[0], -1, clock_kHz); break;
       case I_HS_LPD_3: beginDotStar<B_HS_LPD_3*>(busPtr, pins[1], -1, pins[0], -1, clock_kHz); break;
@@ -429,6 +496,11 @@ class PolyBus {
   }
 
   static void* create(uint8_t busType, uint8_t* pins, uint16_t len, uint8_t channel, uint16_t clock_kHz = 0U) {
+    #if defined(ARDUINO_ARCH_ESP32) && !(defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3))
+    // NOTE: "channel" is only used on ESP32 (and its variants) for RMT channel allocation
+    // since 0.15.0-b3 I2S1 is favoured for classic ESP32 and moved to position 0 (channel 0) so we need to subtract 1 for correct RMT allocation
+    if (channel > 0) channel--; // accommodate I2S1 which is used as 1st bus on classic ESP32
+    #endif
     void* busPtr = nullptr;
     switch (busType) {
       case I_NONE: break;
@@ -465,6 +537,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: busPtr = new B_8266_U1_APA106_3(len, pins[0]); break;
       case I_8266_DM_APA106_3: busPtr = new B_8266_DM_APA106_3(len, pins[0]); break;
       case I_8266_BB_APA106_3: busPtr = new B_8266_BB_APA106_3(len, pins[0]); break;
+      case I_8266_U0_FW6_5: busPtr = new B_8266_U0_FW6_5(len, pins[0]); break;
+      case I_8266_U1_FW6_5: busPtr = new B_8266_U1_FW6_5(len, pins[0]); break;
+      case I_8266_DM_FW6_5: busPtr = new B_8266_DM_FW6_5(len, pins[0]); break;
+      case I_8266_BB_FW6_5: busPtr = new B_8266_BB_FW6_5(len, pins[0]); break;
+      case I_8266_U0_2805_5: busPtr = new B_8266_U0_2805_5(len, pins[0]); break;
+      case I_8266_U1_2805_5: busPtr = new B_8266_U1_2805_5(len, pins[0]); break;
+      case I_8266_DM_2805_5: busPtr = new B_8266_DM_2805_5(len, pins[0]); break;
+      case I_8266_BB_2805_5: busPtr = new B_8266_BB_2805_5(len, pins[0]); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: busPtr = new B_32_RN_NEO_3(len, pins[0], (NeoBusChannel)channel); break;
@@ -474,7 +554,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: busPtr = new B_32_I1_NEO_3(len, pins[0]); break;
       #endif
-//      case I_32_BB_NEO_3: busPtr = new B_32_BB_NEO_3(len, pins[0], (NeoBusChannel)channel); break;
       case I_32_RN_NEO_4: busPtr = new B_32_RN_NEO_4(len, pins[0], (NeoBusChannel)channel); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: busPtr = new B_32_I0_NEO_4(len, pins[0]); break;
@@ -482,7 +561,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: busPtr = new B_32_I1_NEO_4(len, pins[0]); break;
       #endif
-//      case I_32_BB_NEO_4: busPtr = new B_32_BB_NEO_4(len, pins[0], (NeoBusChannel)channel); break;
       case I_32_RN_400_3: busPtr = new B_32_RN_400_3(len, pins[0], (NeoBusChannel)channel); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: busPtr = new B_32_I0_400_3(len, pins[0]); break;
@@ -490,7 +568,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: busPtr = new B_32_I1_400_3(len, pins[0]); break;
       #endif
-//      case I_32_BB_400_3: busPtr = new B_32_BB_400_3(len, pins[0], (NeoBusChannel)channel); break;
       case I_32_RN_TM1_4: busPtr = new B_32_RN_TM1_4(len, pins[0], (NeoBusChannel)channel); break;
       case I_32_RN_TM2_3: busPtr = new B_32_RN_TM2_3(len, pins[0], (NeoBusChannel)channel); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -508,7 +585,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: busPtr = new B_32_I1_UCS_3(len, pins[0]); break;
       #endif
-//      case I_32_BB_UCS_3: busPtr = new B_32_BB_UCS_3(len, pins[0], (NeoBusChannel)channel); break;
       case I_32_RN_UCS_4: busPtr = new B_32_RN_UCS_4(len, pins[0], (NeoBusChannel)channel); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: busPtr = new B_32_I0_UCS_4(len, pins[0]); break;
@@ -516,7 +592,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: busPtr = new B_32_I1_UCS_4(len, pins[0]); break;
       #endif
-//      case I_32_BB_UCS_4: busPtr = new B_32_BB_UCS_4(len, pins[0], (NeoBusChannel)channel); break;
       case I_32_RN_APA106_3: busPtr = new B_32_RN_APA106_3(len, pins[0], (NeoBusChannel)channel); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: busPtr = new B_32_I0_APA106_3(len, pins[0]); break;
@@ -524,7 +599,20 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: busPtr = new B_32_I1_APA106_3(len, pins[0]); break;
       #endif
-//      case I_32_BB_APA106_3: busPtr = new B_32_BB_APA106_3(len, pins[0], (NeoBusChannel)channel); break;
+      case I_32_RN_FW6_5: busPtr = new B_32_RN_FW6_5(len, pins[0], (NeoBusChannel)channel); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: busPtr = new B_32_I0_FW6_5(len, pins[0]); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: busPtr = new B_32_I1_FW6_5(len, pins[0]); break;
+      #endif
+      case I_32_RN_2805_5: busPtr = new B_32_RN_2805_5(len, pins[0], (NeoBusChannel)channel); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: busPtr = new B_32_I0_2805_5(len, pins[0]); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: busPtr = new B_32_I1_2805_5(len, pins[0]); break;
+      #endif
     #endif
       // for 2-wire: pins[1] is clk, pins[0] is dat.  begin expects (len, clk, dat)
       case I_HS_DOT_3: busPtr = new B_HS_DOT_3(len, pins[1], pins[0]); break;
@@ -578,6 +666,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: (static_cast<B_8266_U1_APA106_3*>(busPtr))->Show(consistent); break;
       case I_8266_DM_APA106_3: (static_cast<B_8266_DM_APA106_3*>(busPtr))->Show(consistent); break;
       case I_8266_BB_APA106_3: (static_cast<B_8266_BB_APA106_3*>(busPtr))->Show(consistent); break;
+      case I_8266_U0_FW6_5: (static_cast<B_8266_U0_FW6_5*>(busPtr))->Show(consistent); break;
+      case I_8266_U1_FW6_5: (static_cast<B_8266_U1_FW6_5*>(busPtr))->Show(consistent); break;
+      case I_8266_DM_FW6_5: (static_cast<B_8266_DM_FW6_5*>(busPtr))->Show(consistent); break;
+      case I_8266_BB_FW6_5: (static_cast<B_8266_BB_FW6_5*>(busPtr))->Show(consistent); break;
+      case I_8266_U0_2805_5: (static_cast<B_8266_U0_2805_5*>(busPtr))->Show(consistent); break;
+      case I_8266_U1_2805_5: (static_cast<B_8266_U1_2805_5*>(busPtr))->Show(consistent); break;
+      case I_8266_DM_2805_5: (static_cast<B_8266_DM_2805_5*>(busPtr))->Show(consistent); break;
+      case I_8266_BB_2805_5: (static_cast<B_8266_BB_2805_5*>(busPtr))->Show(consistent); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->Show(consistent); break;
@@ -587,7 +683,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->Show(consistent); break;
       #endif
-//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->Show(consistent); break;
       case I_32_RN_NEO_4: (static_cast<B_32_RN_NEO_4*>(busPtr))->Show(consistent); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->Show(consistent); break;
@@ -595,7 +690,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->Show(consistent); break;
       #endif
-//      case I_32_BB_NEO_4: (static_cast<B_32_BB_NEO_4*>(busPtr))->Show(consistent); break;
       case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->Show(consistent); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->Show(consistent); break;
@@ -603,7 +697,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->Show(consistent); break;
       #endif
-//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->Show(consistent); break;
       case I_32_RN_TM1_4: (static_cast<B_32_RN_TM1_4*>(busPtr))->Show(consistent); break;
       case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->Show(consistent); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -621,7 +714,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->Show(consistent); break;
       #endif
-//      case I_32_BB_UCS_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->Show(consistent); break;
       case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->Show(consistent); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->Show(consistent); break;
@@ -629,7 +721,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->Show(consistent); break;
       #endif
-//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->Show(consistent); break;
       case I_32_RN_APA106_3: (static_cast<B_32_RN_APA106_3*>(busPtr))->Show(consistent); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: (static_cast<B_32_I0_APA106_3*>(busPtr))->Show(consistent); break;
@@ -637,7 +728,20 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: (static_cast<B_32_I1_APA106_3*>(busPtr))->Show(consistent); break;
       #endif
-//      case I_32_BB_APA106_3: (static_cast<B_32_BB_APA106_3*>(busPtr))->Show(consistent); break;
+      case I_32_RN_FW6_5: (static_cast<B_32_RN_FW6_5*>(busPtr))->Show(consistent); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: (static_cast<B_32_I0_FW6_5*>(busPtr))->Show(consistent); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: (static_cast<B_32_I1_FW6_5*>(busPtr))->Show(consistent); break;
+      #endif
+      case I_32_RN_2805_5: (static_cast<B_32_RN_2805_5*>(busPtr))->Show(consistent); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: (static_cast<B_32_I0_2805_5*>(busPtr))->Show(consistent); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: (static_cast<B_32_I1_2805_5*>(busPtr))->Show(consistent); break;
+      #endif
     #endif
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Show(consistent); break;
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->Show(consistent); break;
@@ -687,6 +791,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: return (static_cast<B_8266_U1_APA106_3*>(busPtr))->CanShow(); break;
       case I_8266_DM_APA106_3: return (static_cast<B_8266_DM_APA106_3*>(busPtr))->CanShow(); break;
       case I_8266_BB_APA106_3: return (static_cast<B_8266_BB_APA106_3*>(busPtr))->CanShow(); break;
+      case I_8266_U0_FW6_5: return (static_cast<B_8266_U0_FW6_5*>(busPtr))->CanShow(); break;
+      case I_8266_U1_FW6_5: return (static_cast<B_8266_U1_FW6_5*>(busPtr))->CanShow(); break;
+      case I_8266_DM_FW6_5: return (static_cast<B_8266_DM_FW6_5*>(busPtr))->CanShow(); break;
+      case I_8266_BB_FW6_5: return (static_cast<B_8266_BB_FW6_5*>(busPtr))->CanShow(); break;
+      case I_8266_U0_2805_5: return (static_cast<B_8266_U0_2805_5*>(busPtr))->CanShow(); break;
+      case I_8266_U1_2805_5: return (static_cast<B_8266_U1_2805_5*>(busPtr))->CanShow(); break;
+      case I_8266_DM_2805_5: return (static_cast<B_8266_DM_2805_5*>(busPtr))->CanShow(); break;
+      case I_8266_BB_2805_5: return (static_cast<B_8266_BB_2805_5*>(busPtr))->CanShow(); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: return (static_cast<B_32_RN_NEO_3*>(busPtr))->CanShow(); break;
@@ -696,7 +808,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: return (static_cast<B_32_I1_NEO_3*>(busPtr))->CanShow(); break;
       #endif
-//      case I_32_BB_NEO_3: return (static_cast<B_32_BB_NEO_3*>(busPtr))->CanShow(); break;
       case I_32_RN_NEO_4: return (static_cast<B_32_RN_NEO_4*>(busPtr))->CanShow(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: return (static_cast<B_32_I0_NEO_4*>(busPtr))->CanShow(); break;
@@ -704,7 +815,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: return (static_cast<B_32_I1_NEO_4*>(busPtr))->CanShow(); break;
       #endif
-//      case I_32_BB_NEO_4: return (static_cast<B_32_BB_NEO_4*>(busPtr))->CanShow(); break;
       case I_32_RN_400_3: return (static_cast<B_32_RN_400_3*>(busPtr))->CanShow(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: return (static_cast<B_32_I0_400_3*>(busPtr))->CanShow(); break;
@@ -712,7 +822,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: return (static_cast<B_32_I1_400_3*>(busPtr))->CanShow(); break;
       #endif
-//      case I_32_BB_400_3: return (static_cast<B_32_BB_400_3*>(busPtr))->CanShow(); break;
       case I_32_RN_TM1_4: return (static_cast<B_32_RN_TM1_4*>(busPtr))->CanShow(); break;
       case I_32_RN_TM2_3: return (static_cast<B_32_RN_TM2_3*>(busPtr))->CanShow(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -730,7 +839,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: return (static_cast<B_32_I1_UCS_3*>(busPtr))->CanShow(); break;
       #endif
-//      case I_32_BB_UCS_3: return (static_cast<B_32_BB_UCS_3*>(busPtr))->CanShow(); break;
       case I_32_RN_UCS_4: return (static_cast<B_32_RN_UCS_4*>(busPtr))->CanShow(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: return (static_cast<B_32_I0_UCS_4*>(busPtr))->CanShow(); break;
@@ -738,7 +846,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: return (static_cast<B_32_I1_UCS_4*>(busPtr))->CanShow(); break;
       #endif
-//      case I_32_BB_UCS_4: return (static_cast<B_32_BB_UCS_4*>(busPtr))->CanShow(); break;
       case I_32_RN_APA106_3: return (static_cast<B_32_RN_APA106_3*>(busPtr))->CanShow(); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: return (static_cast<B_32_I0_APA106_3*>(busPtr))->CanShow(); break;
@@ -746,7 +853,20 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: return (static_cast<B_32_I1_APA106_3*>(busPtr))->CanShow(); break;
       #endif
-//      case I_32_BB_APA106_3: return (static_cast<B_32_BB_APA106_3*>(busPtr))->CanShow(); break;
+      case I_32_RN_FW6_5: return (static_cast<B_32_RN_FW6_5*>(busPtr))->CanShow(); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: return (static_cast<B_32_I0_FW6_5*>(busPtr))->CanShow(); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: return (static_cast<B_32_I1_FW6_5*>(busPtr))->CanShow(); break;
+      #endif
+      case I_32_RN_2805_5: return (static_cast<B_32_RN_2805_5*>(busPtr))->CanShow(); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: return (static_cast<B_32_I0_2805_5*>(busPtr))->CanShow(); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: return (static_cast<B_32_I1_2805_5*>(busPtr))->CanShow(); break;
+      #endif
     #endif
       case I_HS_DOT_3: return (static_cast<B_HS_DOT_3*>(busPtr))->CanShow(); break;
       case I_SS_DOT_3: return (static_cast<B_SS_DOT_3*>(busPtr))->CanShow(); break;
@@ -762,12 +882,13 @@ class PolyBus {
     return true;
   }
 
-  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c, uint8_t co) {
+  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c, uint8_t co, uint16_t wwcw = 0) {
     uint8_t r = c >> 16;
     uint8_t g = c >> 8;
     uint8_t b = c >> 0;
     uint8_t w = c >> 24;
     RgbwColor col;
+    uint8_t cctWW = wwcw & 0xFF, cctCW = (wwcw>>8) & 0xFF;
 
     // reorder channels to selected order
     switch (co & 0x0F) {
@@ -821,6 +942,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: (static_cast<B_8266_U1_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_8266_DM_APA106_3: (static_cast<B_8266_DM_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_8266_BB_APA106_3: (static_cast<B_8266_BB_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_U0_FW6_5: (static_cast<B_8266_U0_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      case I_8266_U1_FW6_5: (static_cast<B_8266_U1_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      case I_8266_DM_FW6_5: (static_cast<B_8266_DM_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      case I_8266_BB_FW6_5: (static_cast<B_8266_BB_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      case I_8266_U0_2805_5: (static_cast<B_8266_U0_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      case I_8266_U1_2805_5: (static_cast<B_8266_U1_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      case I_8266_DM_2805_5: (static_cast<B_8266_DM_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      case I_8266_BB_2805_5: (static_cast<B_8266_BB_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
@@ -830,7 +959,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
-//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_32_RN_NEO_4: (static_cast<B_32_RN_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
@@ -838,7 +966,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       #endif
-//      case I_32_BB_NEO_4: (static_cast<B_32_BB_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
@@ -846,7 +973,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
-//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(colB)); break;
       case I_32_RN_TM1_4: (static_cast<B_32_RN_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -864,7 +990,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
       #endif
-//      case I_32_BB_UCS_3: (static_cast<B_32_BB_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
       case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
@@ -872,7 +997,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
       #endif
-//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
       case I_32_RN_APA106_3: (static_cast<B_32_RN_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: (static_cast<B_32_I0_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
@@ -880,7 +1004,20 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: (static_cast<B_32_I1_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
-//      case I_32_BB_APA106_3: (static_cast<B_32_BB_APA106_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_32_RN_FW6_5: (static_cast<B_32_RN_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: (static_cast<B_32_I0_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: (static_cast<B_32_I1_FW6_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      #endif
+      case I_32_RN_2805_5: (static_cast<B_32_RN_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: (static_cast<B_32_I0_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: (static_cast<B_32_I1_2805_5*>(busPtr))->SetPixelColor(pix, RgbwwColor(col.R, col.G, col.B, cctWW, cctCW)); break;
+      #endif
     #endif
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
@@ -931,6 +1068,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: (static_cast<B_8266_U1_APA106_3*>(busPtr))->SetLuminance(b); break;
       case I_8266_DM_APA106_3: (static_cast<B_8266_DM_APA106_3*>(busPtr))->SetLuminance(b); break;
       case I_8266_BB_APA106_3: (static_cast<B_8266_BB_APA106_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_FW6_5: (static_cast<B_8266_U0_FW6_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_FW6_5: (static_cast<B_8266_U1_FW6_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_FW6_5: (static_cast<B_8266_DM_FW6_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_FW6_5: (static_cast<B_8266_BB_FW6_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_2805_5: (static_cast<B_8266_U0_2805_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_2805_5: (static_cast<B_8266_U1_2805_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_2805_5: (static_cast<B_8266_DM_2805_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_2805_5: (static_cast<B_8266_BB_2805_5*>(busPtr))->SetLuminance(b); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->SetLuminance(b); break;
@@ -940,7 +1085,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->SetLuminance(b); break;
       case I_32_RN_NEO_4: (static_cast<B_32_RN_NEO_4*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->SetLuminance(b); break;
@@ -948,7 +1092,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_NEO_4: (static_cast<B_32_BB_NEO_4*>(busPtr))->SetLuminance(b); break;
       case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetLuminance(b); break;
@@ -956,7 +1099,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->SetLuminance(b); break;
       case I_32_RN_TM1_4: (static_cast<B_32_RN_TM1_4*>(busPtr))->SetLuminance(b); break;
       case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -974,7 +1116,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_UCS_3: (static_cast<B_32_BB_UCS_3*>(busPtr))->SetLuminance(b); break;
       case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->SetLuminance(b); break;
@@ -982,7 +1123,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->SetLuminance(b); break;
       case I_32_RN_APA106_3: (static_cast<B_32_RN_APA106_3*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: (static_cast<B_32_I0_APA106_3*>(busPtr))->SetLuminance(b); break;
@@ -990,7 +1130,20 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: (static_cast<B_32_I1_APA106_3*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_APA106_3: (static_cast<B_32_BB_APA106_3*>(busPtr))->SetLuminance(b); break;
+      case I_32_RN_FW6_5: (static_cast<B_32_RN_FW6_5*>(busPtr))->SetLuminance(b); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: (static_cast<B_32_I0_FW6_5*>(busPtr))->SetLuminance(b); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: (static_cast<B_32_I1_FW6_5*>(busPtr))->SetLuminance(b); break;
+      #endif
+      case I_32_RN_2805_5: (static_cast<B_32_RN_2805_5*>(busPtr))->SetLuminance(b); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: (static_cast<B_32_I0_2805_5*>(busPtr))->SetLuminance(b); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: (static_cast<B_32_I1_2805_5*>(busPtr))->SetLuminance(b); break;
+      #endif
     #endif
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetLuminance(b); break;
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetLuminance(b); break;
@@ -1042,6 +1195,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: col = (static_cast<B_8266_U1_APA106_3*>(busPtr))->GetPixelColor(pix); break;
       case I_8266_DM_APA106_3: col = (static_cast<B_8266_DM_APA106_3*>(busPtr))->GetPixelColor(pix); break;
       case I_8266_BB_APA106_3: col = (static_cast<B_8266_BB_APA106_3*>(busPtr))->GetPixelColor(pix); break;
+      case I_8266_U0_FW6_5: { RgbwwColor c = (static_cast<B_8266_U0_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_U1_FW6_5: { RgbwwColor c = (static_cast<B_8266_U1_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_DM_FW6_5: { RgbwwColor c = (static_cast<B_8266_DM_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_BB_FW6_5: { RgbwwColor c = (static_cast<B_8266_BB_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_U0_2805_5: { RgbwwColor c = (static_cast<B_8266_U0_2805_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_U1_2805_5: { RgbwwColor c = (static_cast<B_8266_U1_2805_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_DM_2805_5: { RgbwwColor c = (static_cast<B_8266_DM_2805_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_BB_2805_5: { RgbwwColor c = (static_cast<B_8266_BB_2805_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: col = (static_cast<B_32_RN_NEO_3*>(busPtr))->GetPixelColor(pix); break;
@@ -1051,7 +1212,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: col = (static_cast<B_32_I1_NEO_3*>(busPtr))->GetPixelColor(pix); break;
       #endif
-//      case I_32_BB_NEO_3: col = (static_cast<B_32_BB_NEO_3*>(busPtr))->GetPixelColor(pix); break;
       case I_32_RN_NEO_4: col = (static_cast<B_32_RN_NEO_4*>(busPtr))->GetPixelColor(pix); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: col = (static_cast<B_32_I0_NEO_4*>(busPtr))->GetPixelColor(pix); break;
@@ -1059,7 +1219,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: col = (static_cast<B_32_I1_NEO_4*>(busPtr))->GetPixelColor(pix); break;
       #endif
-//      case I_32_BB_NEO_4: col = (static_cast<B_32_BB_NEO_4*>(busPtr))->GetPixelColor(pix); break;
       case I_32_RN_400_3: col = (static_cast<B_32_RN_400_3*>(busPtr))->GetPixelColor(pix); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: col = (static_cast<B_32_I0_400_3*>(busPtr))->GetPixelColor(pix); break;
@@ -1067,7 +1226,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: col = (static_cast<B_32_I1_400_3*>(busPtr))->GetPixelColor(pix); break;
       #endif
-//      case I_32_BB_400_3: col = (static_cast<B_32_BB_400_3*>(busPtr))->GetPixelColor(pix); break;
       case I_32_RN_TM1_4: col = (static_cast<B_32_RN_TM1_4*>(busPtr))->GetPixelColor(pix); break;
       case I_32_RN_TM2_3: col = (static_cast<B_32_RN_TM2_3*>(busPtr))->GetPixelColor(pix); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -1085,7 +1243,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: { Rgb48Color c = (static_cast<B_32_I1_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
       #endif
-//      case I_32_BB_UCS_3: col = (static_cast<B_32_BB_UCS_3*>(busPtr))->GetPixelColor(pix); break;
       case I_32_RN_UCS_4: { Rgbw64Color c = (static_cast<B_32_RN_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: { Rgbw64Color c = (static_cast<B_32_I0_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
@@ -1093,7 +1250,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: { Rgbw64Color c = (static_cast<B_32_I1_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
       #endif
-//      case I_32_BB_UCS_4: col = (static_cast<B_32_BB_UCS_4*>(busPtr))->GetPixelColor(pix); break;
       case I_32_RN_APA106_3: col = (static_cast<B_32_RN_APA106_3*>(busPtr))->GetPixelColor(pix); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: col = (static_cast<B_32_I0_APA106_3*>(busPtr))->GetPixelColor(pix); break;
@@ -1101,7 +1257,20 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: col = (static_cast<B_32_I1_APA106_3*>(busPtr))->GetPixelColor(pix); break;
       #endif
-//      case I_32_BB_APA106_3: col = (static_cast<B_32_BB_APA106_3*>(busPtr))->GetPixelColor(pix); break;
+      case I_32_RN_FW6_5: { RgbwwColor c = (static_cast<B_32_RN_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: { RgbwwColor c = (static_cast<B_32_I0_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: { RgbwwColor c = (static_cast<B_32_I1_FW6_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      #endif
+      case I_32_RN_2805_5: { RgbwwColor c = (static_cast<B_32_RN_2805_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: { RgbwwColor c = (static_cast<B_32_I0_2805_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: { RgbwwColor c = (static_cast<B_32_I1_2805_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      #endif
     #endif
       case I_HS_DOT_3: col = (static_cast<B_HS_DOT_3*>(busPtr))->GetPixelColor(pix); break;
       case I_SS_DOT_3: col = (static_cast<B_SS_DOT_3*>(busPtr))->GetPixelColor(pix); break;
@@ -1171,6 +1340,14 @@ class PolyBus {
       case I_8266_U1_APA106_3: delete (static_cast<B_8266_U1_APA106_3*>(busPtr)); break;
       case I_8266_DM_APA106_3: delete (static_cast<B_8266_DM_APA106_3*>(busPtr)); break;
       case I_8266_BB_APA106_3: delete (static_cast<B_8266_BB_APA106_3*>(busPtr)); break;
+      case I_8266_U0_FW6_5: delete (static_cast<B_8266_U0_FW6_5*>(busPtr)); break;
+      case I_8266_U1_FW6_5: delete (static_cast<B_8266_U1_FW6_5*>(busPtr)); break;
+      case I_8266_DM_FW6_5: delete (static_cast<B_8266_DM_FW6_5*>(busPtr)); break;
+      case I_8266_BB_FW6_5: delete (static_cast<B_8266_BB_FW6_5*>(busPtr)); break;
+      case I_8266_U0_2805_5: delete (static_cast<B_8266_U0_2805_5*>(busPtr)); break;
+      case I_8266_U1_2805_5: delete (static_cast<B_8266_U1_2805_5*>(busPtr)); break;
+      case I_8266_DM_2805_5: delete (static_cast<B_8266_DM_2805_5*>(busPtr)); break;
+      case I_8266_BB_2805_5: delete (static_cast<B_8266_BB_2805_5*>(busPtr)); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: delete (static_cast<B_32_RN_NEO_3*>(busPtr)); break;
@@ -1180,7 +1357,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_3: delete (static_cast<B_32_I1_NEO_3*>(busPtr)); break;
       #endif
-//      case I_32_BB_NEO_3: delete (static_cast<B_32_BB_NEO_3*>(busPtr)); break;
       case I_32_RN_NEO_4: delete (static_cast<B_32_RN_NEO_4*>(busPtr)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: delete (static_cast<B_32_I0_NEO_4*>(busPtr)); break;
@@ -1188,7 +1364,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_NEO_4: delete (static_cast<B_32_I1_NEO_4*>(busPtr)); break;
       #endif
-//      case I_32_BB_NEO_4: delete (static_cast<B_32_BB_NEO_4*>(busPtr)); break;
       case I_32_RN_400_3: delete (static_cast<B_32_RN_400_3*>(busPtr)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_400_3: delete (static_cast<B_32_I0_400_3*>(busPtr)); break;
@@ -1196,7 +1371,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_400_3: delete (static_cast<B_32_I1_400_3*>(busPtr)); break;
       #endif
-//      case I_32_BB_400_3: delete (static_cast<B_32_BB_400_3*>(busPtr)); break;
       case I_32_RN_TM1_4: delete (static_cast<B_32_RN_TM1_4*>(busPtr)); break;
       case I_32_RN_TM2_3: delete (static_cast<B_32_RN_TM2_3*>(busPtr)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
@@ -1214,7 +1388,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_3: delete (static_cast<B_32_I1_UCS_3*>(busPtr)); break;
       #endif
-//      case I_32_BB_UCS_3: delete (static_cast<B_32_BB_UCS_3*>(busPtr)); break;
       case I_32_RN_UCS_4: delete (static_cast<B_32_RN_UCS_4*>(busPtr)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_UCS_4: delete (static_cast<B_32_I0_UCS_4*>(busPtr)); break;
@@ -1222,7 +1395,6 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_UCS_4: delete (static_cast<B_32_I1_UCS_4*>(busPtr)); break;
       #endif
-//      case I_32_BB_UCS_4: delete (static_cast<B_32_BB_UCS_4*>(busPtr)); break;
       case I_32_RN_APA106_3: delete (static_cast<B_32_RN_APA106_3*>(busPtr)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_APA106_3: delete (static_cast<B_32_I0_APA106_3*>(busPtr)); break;
@@ -1230,7 +1402,20 @@ class PolyBus {
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_APA106_3: delete (static_cast<B_32_I1_APA106_3*>(busPtr)); break;
       #endif
-//      case I_32_BB_APA106_3: delete (static_cast<B_32_BB_APA106_3*>(busPtr)); break;
+      case I_32_RN_FW6_5: delete (static_cast<B_32_RN_FW6_5*>(busPtr)); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_FW6_5: delete (static_cast<B_32_I0_FW6_5*>(busPtr)); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_FW6_5: delete (static_cast<B_32_I1_FW6_5*>(busPtr)); break;
+      #endif
+      case I_32_RN_2805_5: delete (static_cast<B_32_RN_2805_5*>(busPtr)); break;
+      #ifndef WLED_NO_I2S0_PIXELBUS
+      case I_32_I0_2805_5: delete (static_cast<B_32_I0_2805_5*>(busPtr)); break;
+      #endif
+      #ifndef WLED_NO_I2S1_PIXELBUS
+      case I_32_I1_2805_5: delete (static_cast<B_32_I1_2805_5*>(busPtr)); break;
+      #endif
     #endif
       case I_HS_DOT_3: delete (static_cast<B_HS_DOT_3*>(busPtr)); break;
       case I_SS_DOT_3: delete (static_cast<B_SS_DOT_3*>(busPtr)); break;
@@ -1292,13 +1477,17 @@ class PolyBus {
           return I_8266_U0_UCS_4 + offset;
         case TYPE_APA106:
           return I_8266_U0_APA106_3 + offset;
+        case TYPE_FW1906:
+          return I_8266_U0_FW6_5 + offset;
+        case TYPE_WS2805:
+          return I_8266_U0_2805_5 + offset;
       }
       #else //ESP32
-      uint8_t offset = 0; //0 = RMT (num 0-7) 8 = I2S0 9 = I2S1
+      uint8_t offset = 0; // 0 = RMT (num 1-8), 1 = I2S0 (used by Audioreactive), 2 = I2S1
       #if defined(CONFIG_IDF_TARGET_ESP32S2)
       // ESP32-S2 only has 4 RMT channels
       if (num > 4) return I_NONE;
-      if (num > 3) offset = 1;  // only one I2S
+      if (num > 3) offset = 1;  // only one I2S (use last to allow Audioreactive)
       #elif defined(CONFIG_IDF_TARGET_ESP32C3)
       // On ESP32-C3 only the first 2 RMT channels are usable for transmitting
       if (num > 1) return I_NONE;
@@ -1310,7 +1499,8 @@ class PolyBus {
       #else
       // standard ESP32 has 8 RMT and 2 I2S channels
       if (num > 9) return I_NONE;
-      if (num > 7) offset = num -7;
+      if (num > 8) offset = 1;
+      if (num == 0) offset = 2; // prefer I2S1 for 1st bus (less flickering but more RAM needed)
       #endif
       switch (busType) {
         case TYPE_WS2812_1CH_X3:
@@ -1332,11 +1522,14 @@ class PolyBus {
           return I_32_RN_UCS_4 + offset;
         case TYPE_APA106:
           return I_32_RN_APA106_3 + offset;
+        case TYPE_FW1906:
+          return I_32_RN_FW6_5 + offset;
+        case TYPE_WS2805:
+          return I_32_RN_2805_5 + offset;
       }
       #endif
     }
     return I_NONE;
   }
 };
-
 #endif
