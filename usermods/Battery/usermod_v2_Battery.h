@@ -264,6 +264,7 @@ class UsermodBattery : public Usermod
       battery[F("min-voltage")] = bat->getMinVoltage();
       battery[F("max-voltage")] = bat->getMaxVoltage();
       battery[F("calibration")] = bat->getCalibration();
+      battery[F("voltage-multiplier")] = bat->getVoltageMultiplier();
       battery[FPSTR(_readInterval)] = readingInterval;
 
       JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
@@ -283,6 +284,7 @@ class UsermodBattery : public Usermod
       getJsonValue(battery[F("min-voltage")], cfg.minVoltage);
       getJsonValue(battery[F("max-voltage")], cfg.maxVoltage);
       getJsonValue(battery[F("calibration")], cfg.calibration);
+      getJsonValue(battery[F("voltage-multiplier")], cfg.voltageMultiplier);
     
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
@@ -459,6 +461,7 @@ class UsermodBattery : public Usermod
       setMinBatteryVoltage(battery[F("min-voltage")] | bat->getMinVoltage());
       setMaxBatteryVoltage(battery[F("max-voltage")] | bat->getMaxVoltage());
       setCalibration(battery[F("calibration")] | calibration);
+      setVoltageMultiplier(battery[F("voltage-multiplier")] | voltageMultiplier);
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
       getUsermodConfigFromJsonObject(battery);
@@ -537,7 +540,25 @@ class UsermodBattery : public Usermod
       return USERMOD_ID_BATTERY;
     }
 
+    /**
+     * get currently active battery type
+     */
+    batteryType getBatteryType()
+    {
+      return cfg.type;
+    }
 
+    /**
+     * Set currently active battery type
+     */
+    batteryType setBatteryType(batteryType type)
+    {
+      cfg.type = type;
+    }
+
+    /**
+     * 
+     */
     unsigned long getReadingInterval()
     {
       return readingInterval;
@@ -561,7 +582,7 @@ class UsermodBattery : public Usermod
 
     /**
      * Set lowest battery voltage
-     * cant be below 0 volt
+     * can't be below 0 volt
      */
     void setMinBatteryVoltage(float voltage)
     {
@@ -620,6 +641,24 @@ class UsermodBattery : public Usermod
     void setCalibration(float offset)
     {
       bat->setCalibration(offset);
+    }
+
+    /**
+     * Set the voltage multiplier value
+     * A multiplier that may need adjusting for different voltage divider setups
+     */
+    void setVoltageMultiplier(float multiplier)
+    {
+      bat->setVoltageMultiplier(multiplier);
+    }
+
+    /*
+     * Get the voltage multiplier value
+     * A multiplier that may need adjusting for different voltage divider setups
+     */
+    float getVoltageMultiplier()
+    {
+      return bat->getVoltageMultiplier();
     }
 
     /**
@@ -727,7 +766,7 @@ class UsermodBattery : public Usermod
     }
 
     /**
-     * Get low-power-indicator status when the indication is done thsi returns true
+     * Get low-power-indicator status when the indication is done this returns true
      */
     bool getLowPowerIndicatorDone()
     {

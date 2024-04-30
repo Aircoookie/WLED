@@ -19,14 +19,6 @@ class Lipo : public Battery
             this->setMaxVoltage(USERMOD_BATTERY_LIPO_MAX_VOLTAGE);
         }
 
-        void update(batteryConfig cfg)
-        {
-            if(cfg.minVoltage) this->setMinVoltage(cfg.minVoltage);
-            if(cfg.maxVoltage) this->setMaxVoltage(cfg.maxVoltage);
-            if(cfg.level) this->setLevel(cfg.level);
-            if(cfg.calibration) this->setCalibration(cfg.calibration);
-        }
-
         /**
          * LiPo batteries have a differnt discharge curve, see 
          * https://blog.ampow.com/lipo-voltage-chart/

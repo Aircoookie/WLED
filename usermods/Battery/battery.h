@@ -32,7 +32,14 @@ class Battery
             this->setCalibration(USERMOD_BATTERY_CALIBRATION);
         }
 
-        virtual void update(batteryConfig cfg) = 0;
+        virtual void update(batteryConfig cfg)
+        {
+            if(cfg.minVoltage) this->setMinVoltage(cfg.minVoltage);
+            if(cfg.maxVoltage) this->setMaxVoltage(cfg.maxVoltage);
+            if(cfg.level) this->setLevel(cfg.level);
+            if(cfg.calibration) this->setCalibration(cfg.calibration);
+            if(cfg.voltageMultiplier) this->setVoltageMultiplier(cfg.voltageMultiplier);
+        }
 
         /**
          * Corresponding battery curves
@@ -49,10 +56,10 @@ class Battery
 
 
         /*
-        *
-        * Getter and Setter
-        *
-        */
+         *
+         * Getter and Setter
+         *
+         */
 
         /*
         * Get lowest configured battery voltage
@@ -63,26 +70,26 @@ class Battery
         }
 
         /*
-        * Set lowest battery voltage
-        * can't be below 0 volt
-        */
+         * Set lowest battery voltage
+         * can't be below 0 volt
+         */
         virtual void setMinVoltage(float voltage)
         {
             this->minVoltage = max(0.0f, voltage);
         }
 
         /*
-        * Get highest configured battery voltage
-        */
+         * Get highest configured battery voltage
+         */
         virtual float getMaxVoltage()
         {
             return this->maxVoltage;
         }
 
         /*
-        * Set highest battery voltage
-        * can't be below minVoltage
-        */
+         * Set highest battery voltage
+         * can't be below minVoltage
+         */
         virtual void setMaxVoltage(float voltage)
         {
             this->maxVoltage = max(getMinVoltage()+.5f, voltage);
@@ -110,43 +117,43 @@ class Battery
 
         void setLevel(float level)
         {
-            this->level = constrain(level, 0.0f, 110.0f);;
+            this->level = constrain(level, 0.0f, 110.0f);
         }
 
         /*
-        * Get the configured calibration value
-        * a offset value to fine-tune the calculated voltage.
-        */
+         * Get the configured calibration value
+         * a offset value to fine-tune the calculated voltage.
+         */
         virtual float getCalibration()
         {
             return calibration;
         }
 
         /*
-        * Set the voltage calibration offset value
-        * a offset value to fine-tune the calculated voltage.
-        */
+         * Set the voltage calibration offset value
+         * a offset value to fine-tune the calculated voltage.
+         */
         virtual void setCalibration(float offset)
         {
             calibration = offset;
         }
 
         /*
-        * Get the configured calibration value
-        * a value to set the voltage divider ratio
-        */
+         * Get the configured calibration value
+         * a value to set the voltage divider ratio
+         */
         virtual float getVoltageMultiplier()
         {
             return voltageMultiplier;
         }
 
         /*
-        * Set the voltage multiplier value
-        * a value to set the voltage divider ratio.
-        */
+         * Set the voltage multiplier value
+         * a value to set the voltage divider ratio.
+         */
         virtual void setVoltageMultiplier(float multiplier)
         {
-            voltageMultiplier = voltageMultiplier;
+            voltageMultiplier = multiplier;
         }
 };
 
