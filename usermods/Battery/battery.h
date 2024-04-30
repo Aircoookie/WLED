@@ -27,7 +27,6 @@ class Battery
     public:
         Battery()
         {
-            this->setVoltage(USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE);
             this->setVoltageMultiplier(USERMOD_BATTERY_VOLTAGE_MULTIPLIER);
             this->setCalibration(USERMOD_BATTERY_CALIBRATION);
         }

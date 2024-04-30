@@ -150,6 +150,8 @@ class UsermodBattery : public Usermod
       // update the choosen battery type with configured values
       bat->update(cfg);
 
+      bat->setVoltage(readVoltage());
+
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
 
@@ -389,7 +391,7 @@ class UsermodBattery : public Usermod
       addBatteryToJsonObject(battery, false);
 
       // read voltage in case calibration or voltage multiplier changed to see immediate effect
-      // voltage = readVoltage();
+      bat->setVoltage(readVoltage());
 
       DEBUG_PRINTLN(F("Battery config saved."));
     }
