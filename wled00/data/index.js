@@ -247,6 +247,7 @@ function onLoad()
 
 	selectSlot(0);
 	updateTablinks(0);
+	handleLocationHash();
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
@@ -289,6 +290,21 @@ function openTab(tabI, force = false)
 	_C.classList.toggle('smooth', false);
 	_C.style.setProperty('--i', iSlide);
 	updateTablinks(tabI);
+	switch (tabI) {
+		case 0: window.location.hash = "Colors"; break;
+		case 1: window.location.hash = "Effects"; break;
+		case 2: window.location.hash = "Segments"; break;
+		case 3: window.location.hash = "Presets"; break;
+	}
+}
+
+function handleLocationHash() {
+	switch (window.location.hash) {
+		case "#Colors": openTab(0); break;
+		case "#Effects": openTab(1); break;
+		case "#Segments": openTab(2); break;
+		case "#Presets": openTab(3); break;
+	}
 }
 
 var timeout;
@@ -3650,6 +3666,7 @@ size();
 _C.style.setProperty('--n', N);
 
 window.addEventListener('resize', size, true);
+window.addEventListener('hashchange', handleLocationHash);
 
 _C.addEventListener('mousedown', lock, false);
 _C.addEventListener('touchstart', lock, false);
