@@ -27,7 +27,7 @@ class Battery
     public:
         Battery()
         {
-            this->setVoltage(this->getVoltage());
+            this->setVoltage(USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE);
             this->setVoltageMultiplier(USERMOD_BATTERY_VOLTAGE_MULTIPLIER);
             this->setCalibration(USERMOD_BATTERY_CALIBRATION);
         }
@@ -105,9 +105,10 @@ class Battery
          */
         void setVoltage(float voltage)
         {
-            this->voltage = ( (voltage < this->getMinVoltage() * 0.85f) || (voltage > this->getMaxVoltage() * 1.1f) ) 
-                ? -1.0f 
-                : voltage;
+            // this->voltage = ( (voltage < this->getMinVoltage() * 0.85f) || (voltage > this->getMaxVoltage() * 1.1f) ) 
+            //     ? -1.0f 
+            //     : voltage;
+            this->voltage = voltage;
         }
 
         float getLevel()

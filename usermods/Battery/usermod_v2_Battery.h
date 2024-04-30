@@ -28,8 +28,6 @@ class UsermodBattery : public Usermod
     unsigned long lastReadTime = 0;
     // between 0 and 1, to control strength of voltage smoothing filter
     float alpha = USERMOD_BATTERY_AVERAGING_ALPHA;
-    // offset or calibration value to fine tune the calculated voltage
-    float calibration = USERMOD_BATTERY_CALIBRATION;
 
     // auto shutdown/shutoff/master off feature
     bool autoOffEnabled = USERMOD_BATTERY_AUTO_OFF_ENABLED;
@@ -45,6 +43,7 @@ class UsermodBattery : public Usermod
     unsigned long lowPowerActivationTime = 0; // used temporary during active time
     uint8_t lastPreset = 0;
 
+    //
     bool initDone = false;
     bool initializing = true;
 
@@ -311,9 +310,8 @@ class UsermodBattery : public Usermod
     {
       JsonObject battery = root.createNestedObject(FPSTR(_name));
 
-      if (battery.isNull()) {
+      if (battery.isNull())
         battery = root.createNestedObject(FPSTR(_name));
-      }
       
       addBatteryToJsonObject(battery, true);
       
@@ -460,8 +458,8 @@ class UsermodBattery : public Usermod
       // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
       setMinBatteryVoltage(battery[F("min-voltage")] | bat->getMinVoltage());
       setMaxBatteryVoltage(battery[F("max-voltage")] | bat->getMaxVoltage());
-      setCalibration(battery[F("calibration")] | calibration);
-      setVoltageMultiplier(battery[F("voltage-multiplier")] | voltageMultiplier);
+      setCalibration(battery[F("calibration")] | bat->getCalibration());
+      setVoltageMultiplier(battery[F("voltage-multiplier")] | bat->getVoltageMultiplier());
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
       getUsermodConfigFromJsonObject(battery);
@@ -546,14 +544,6 @@ class UsermodBattery : public Usermod
     batteryType getBatteryType()
     {
       return cfg.type;
-    }
-
-    /**
-     * Set currently active battery type
-     */
-    batteryType setBatteryType(batteryType type)
-    {
-      cfg.type = type;
     }
 
     /**
