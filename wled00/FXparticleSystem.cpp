@@ -646,6 +646,7 @@ void ParticleSystem::lineAttractor(uint16_t particleindex, PSparticle *attractor
 // fireintensity and firemode are optional arguments (fireintensity is only used in firemode)
 void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 {
+	
 	CRGB baseRGB;
 	bool useLocalBuffer = true; //use local rendering buffer, gives huge speed boost (at least 30% more FPS)
 	CRGB **framebuffer = NULL; //local frame buffer
@@ -655,14 +656,26 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 
 	if (useLocalBuffer)
 	{
+		cli(); //no interrupts so we get one block of memory for both buffers, less fragmentation
+		/*
+		Serial.print("heap: ");
+		Serial.print(heap_caps_get_free_size(MALLOC_CAP_8BIT));
+		Serial.print(" block: ");
+		Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));*/
 		//  allocate empty memory for the local renderbuffer
 		framebuffer = allocate2Dbuffer(maxXpixel + 1, maxYpixel + 1);
 		if (framebuffer == NULL)
 		{
+			sei(); //re enable interrupts
 			Serial.println("Frame buffer alloc failed");
 			useLocalBuffer = false; //render to segment pixels directly if not enough memory	
 		}
 		else{
+			if(advPartProps)
+			{	
+				renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0  note: null checking is done when accessing it
+			}
+			sei(); //re enable interrupts
 			if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
 			{
 				uint32_t yflipped;
@@ -676,11 +689,9 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 					}
 				}
 			}
-			if(advPartProps)
-			{	
-				renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0  note: null checking is done when accessing it
-			}
+
 		}
+
 	}
 	
 	if(!useLocalBuffer) //disabled or allocation above failed
@@ -789,24 +800,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 			if(renderbuffer)
 			{
 				advancedrender = true;
-				//memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); //clear the buffer, renderbuffer is 10x10 pixels
-				//memset seems to do something bad... trying to set it manually -> was probably a bug in the access below... TODO: remove this
-
-				for(int i = 0; i<10;i++) //this works fine but is slower
-				{
-					for(int j = 0; j<10;j++)
-					{
-						renderbuffer[i][j] = BLACK; //note: this is way slower than memset (but safer)
-					}
-				}
-				
-				//faster: the memory block is 300bytes, or 75*32bit
-				/*				
-				uint32_t* datablock = reinterpret_cast<uint32_t *>(renderbuffer[0]);
-				for(int i = 0; i<75;i++)
-				{					
-					datablock[i] = 0; //note: this is almost as fast as memset but also not safe(?)
-				}*/
+				memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); //clear the buffer, renderbuffer is 10x10 pixels				
 			}
 			else
 				return; //cannot render without buffer, advanced size particles are allowed out of frame
@@ -1416,7 +1410,7 @@ void ParticleSystem::updateSystem(void)
 void ParticleSystem::updatePSpointers(bool isadvanced)
 {
 	//DEBUG_PRINT(F("*** PS pointers ***"));
-	//DEBUG_PRINTF_P(PSTR("this PS %p\n"), this);	
+	//DEBUG_PRINTF_P(PSTR("this PS %p "), this);	
 	//Note on memory alignment:
 	//a pointer MUST be 4 byte aligned. sizeof() in a struct/class is always aligned to the largest element. if it contains a 32bit, it will be padded to 4 bytes, 16bit is padded to 2byte alignment.
 	//The PS is aligned to 4 bytes, a PSparticle is aligned to 2 and a struct containing only byte sized variables is not aligned at all and may need to be padded when dividing the memoryblock.
@@ -1424,19 +1418,19 @@ void ParticleSystem::updatePSpointers(bool isadvanced)
 	particles = reinterpret_cast<PSparticle *>(this + 1); // pointer to particle array at data+sizeof(ParticleSystem)
 	if(isadvanced)
 	{
-		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)				
-		advPartProps = reinterpret_cast<PSadvancedParticle *>(sources + numParticles);
+		advPartProps = reinterpret_cast<PSadvancedParticle *>(particles + numParticles);
+		sources = reinterpret_cast<PSsource *>(advPartProps + numParticles); // pointer to source(s)						
 	}
 	else
 	{
-		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)
-		advPartProps = NULL;		
+		advPartProps = NULL;	
+		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)			
 	}	
 	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources); // pointer to first available byte after the PS for FX additional data
 	
-	//DEBUG_PRINTF_P(PSTR("particles %p\n"), particles);	
-	//DEBUG_PRINTF_P(PSTR("sources %p\n"), sources);	
-	//DEBUG_PRINTF_P(PSTR("adv. props %p\n"), advPartProps);	
+	//DEBUG_PRINTF_P(PSTR(" particles %p "), particles);	
+	//DEBUG_PRINTF_P(PSTR(" sources %p "), sources);	
+	//DEBUG_PRINTF_P(PSTR(" adv. props %p\n"), advPartProps);	
 	//DEBUG_PRINTF_P(PSTR("end %p\n"), PSdataEnd);
 }
 
