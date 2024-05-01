@@ -209,6 +209,12 @@ void WLED::loop()
 
   toki.resetTick();
 
+// Advance to next playlist preset if the flag is set to true
+  if (doAdvancePlaylist) {
+    handlePlaylist(true); 
+    doAdvancePlaylist = false; // Reset flag to false
+  }
+
 #if WLED_WATCHDOG_TIMEOUT > 0
   // we finished our mainloop, reset the watchdog timer
   static unsigned long lastWDTFeed = 0;
