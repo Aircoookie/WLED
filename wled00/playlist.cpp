@@ -127,7 +127,7 @@ void handlePlaylist(bool doAdvancePlaylist) {
   static unsigned long presetCycledTime = 0;
   if (currentPlaylist < 0 || playlistEntries == nullptr) return;
 
-if (millis() - presetCycledTime > (100 * playlistEntryDur) || skipNext) {
+if (millis() - presetCycledTime > (100 * playlistEntryDur) || doAdvancePlaylist) {
     presetCycledTime = millis();
     if (bri == 0 || nightlightActive) return;
 
