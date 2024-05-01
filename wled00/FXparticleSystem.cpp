@@ -63,6 +63,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	for (int i = 0; i < numSources; i++)
 	{
 		sources[i].source.sat = 255; //set saturation to max by default
+		sources[i].source.ttl = 1; //set source alive
 	}
 	for (int i = 0; i < numParticles; i++)
 	{
@@ -304,8 +305,9 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options, P
 
 	if (part.ttl > 0)
 	{
-		// age
-		part.ttl--;
+		
+		if(!part.perpetural) 
+			part.ttl--; // age
 		if (particlesettings.colorByAge)
 			part.hue = part.ttl > 255 ? 255 : part.ttl; //set color to ttl
 

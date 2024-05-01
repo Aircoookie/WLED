@@ -58,14 +58,13 @@ typedef struct {
     uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
     bool outofbounds : 1; //out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; //if set, particle takes part in collisions
-    bool flag3 : 1; // unused flags...
-    bool flag4 : 1;        
+    bool perpetural : 1; //if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
+    bool flag4 : 1;   // unused flag      
 } PSparticle;
 
 // struct for additional particle settings (optional)
 typedef struct
 {  
-
   uint8_t size; //particle size, 255 means 10 pixels in diameter
   uint8_t forcecounter; //counter for applying forces to individual particles
 
