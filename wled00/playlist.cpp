@@ -123,7 +123,7 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
 }
 
 
-void handlePlaylist(bool skipNext) {
+void handlePlaylist(bool doAdvancePlaylist) {
   static unsigned long presetCycledTime = 0;
   if (currentPlaylist < 0 || playlistEntries == nullptr) return;
 
