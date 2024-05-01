@@ -902,7 +902,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
 
   pos = req.indexOf(F("NP")); //skips to next preset in a playlist
-  if (pos > 0) handlePlaylist(true); 
+  if (pos > 0) doAdvancePlaylist = true; 
   
   //set brightness
   updateVal(req.c_str(), "&A=", &bri);
