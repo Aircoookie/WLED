@@ -481,6 +481,7 @@ void BusNetwork::cleanup() {
 // ***************************************************************************
 
 #ifdef WLED_ENABLE_HUB75MATRIX
+#warning "HUB75 driver enabled (experimental)"
 
 BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 

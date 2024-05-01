@@ -20,6 +20,7 @@
 #ifdef WLED_DISABLE_ESPNOW
 void handleRemote(){}
 #else
+#pragma message "ESP-NOW remote driver enabled"
 
 #if !defined(ARDUINO_ARCH_ESP32) && !defined(ESP_OK)
 #define ESP_OK 0  // add missing constant for stupid esp8266
