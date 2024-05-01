@@ -63,6 +63,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
 	for (int i = 0; i < numSources; i++)
 	{
 		sources[i].source.sat = 255; //set saturation to max by default
+		sources[i].source.ttl = 1; //set source alive
 	}
 	for (int i = 0; i < numParticles; i++)
 	{
@@ -304,8 +305,9 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options, P
 
 	if (part.ttl > 0)
 	{
-		// age
-		part.ttl--;
+		
+		if(!part.perpetural) 
+			part.ttl--; // age
 		if (particlesettings.colorByAge)
 			part.hue = part.ttl > 255 ? 255 : part.ttl; //set color to ttl
 
@@ -318,7 +320,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options, P
 		{		
 			if(advancedproperties->size > 0)
 				usesize = true; //note: variable eases out of frame checking below
-			particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize + advancedproperties->size);											
+			particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize + (advancedproperties->size));
 		}
 		//if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of view
 		if (options.bounceX) 
@@ -338,7 +340,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options, P
 				bool isleaving = true;
 				if(usesize) //using individual particle size
 				{
-					if (((newX > -particleHardRadius) || (newX < maxX + particleHardRadius))) // large particle is not yet leaving the view - note: this is not pixel perfect but good enough
+					if (((newX > -particleHardRadius) && (newX < maxX + particleHardRadius))) // large particle is not yet leaving the view - note: this is not pixel perfect but good enough
 						isleaving = false; 
 				}
 				
@@ -644,6 +646,7 @@ void ParticleSystem::lineAttractor(uint16_t particleindex, PSparticle *attractor
 // fireintensity and firemode are optional arguments (fireintensity is only used in firemode)
 void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 {
+	
 	CRGB baseRGB;
 	bool useLocalBuffer = true; //use local rendering buffer, gives huge speed boost (at least 30% more FPS)
 	CRGB **framebuffer = NULL; //local frame buffer
@@ -653,14 +656,26 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 
 	if (useLocalBuffer)
 	{
+		cli(); //no interrupts so we get one block of memory for both buffers, less fragmentation
+		/*
+		Serial.print("heap: ");
+		Serial.print(heap_caps_get_free_size(MALLOC_CAP_8BIT));
+		Serial.print(" block: ");
+		Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));*/
 		//  allocate empty memory for the local renderbuffer
 		framebuffer = allocate2Dbuffer(maxXpixel + 1, maxYpixel + 1);
 		if (framebuffer == NULL)
 		{
+			sei(); //re enable interrupts
 			Serial.println("Frame buffer alloc failed");
 			useLocalBuffer = false; //render to segment pixels directly if not enough memory	
 		}
 		else{
+			if(advPartProps)
+			{	
+				renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0  note: null checking is done when accessing it
+			}
+			sei(); //re enable interrupts
 			if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
 			{
 				uint32_t yflipped;
@@ -674,11 +689,9 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 					}
 				}
 			}
-			if(advPartProps)
-			{	
-				renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0  note: null checking is done when accessing it
-			}
+
 		}
+
 	}
 	
 	if(!useLocalBuffer) //disabled or allocation above failed
@@ -717,14 +730,8 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 				baseRGB = (CRGB)baseHSV; //convert back to RGB
 			}
 		}
-
-		if(renderbuffer) //set buffer to zero if it exists
-		{
-			memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); // renderbuffer is 10x10 pixels. note: passing the buffer and setting it zero here is faster than creating a new buffer for every particle
-		}
 		
-		renderParticle(framebuffer, i, brightness, baseRGB, renderbuffer); 
-		
+		renderParticle(framebuffer, i, brightness, baseRGB, renderbuffer); 		
 	}
 
 	if(particlesize > 0)
@@ -791,7 +798,10 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 		if(advPartProps[particleindex].size > 0)
 		{
 			if(renderbuffer)
-				advancedrender = true;					
+			{
+				advancedrender = true;
+				memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); //clear the buffer, renderbuffer is 10x10 pixels				
+			}
 			else
 				return; //cannot render without buffer, advanced size particles are allowed out of frame
 		}			
@@ -869,8 +879,6 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 	if (pxlbrightness[3] >= 0)
 		pxlbrightness[3] = (precal1 * precal3) >> PS_P_SURFACE; // top left value equal to ((PS_P_RADIUS-dx) * dy * brightess) >> PS_P_SURFACE
 
-
-
 	if(advancedrender)
 	{
 		//render particle to a bigger size
@@ -883,6 +891,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 		fast_color_add(renderbuffer[4][5], color, pxlbrightness[3]); //TODO: make this a loop somehow? needs better coordinate handling...
 		uint32_t rendersize = 4;
 		uint32_t offset = 3; //offset to zero coordinate to write/read data in renderbuffer
+		//TODO: add asymmetrical size support
 		blur2D(renderbuffer, rendersize, rendersize, advPartProps[particleindex].size, advPartProps[particleindex].size, true, offset, offset, true);  //blur to 4x4
 		if (advPartProps[particleindex].size > 64)
 		{
@@ -913,20 +922,26 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 		{
 			xfb = xfb_orig + xrb;
 			if(xfb > maxXpixel)
+			{
 				if (particlesettings.wrapX) // wrap x to the other side if required
 					xfb = xfb % (maxXpixel + 1);
 				else
 					continue;
+			}
+			
 			for(uint32_t yrb = offset; yrb < rendersize+offset; yrb++)
 			{
 				yfb = yfb_orig + yrb;
 				if(yfb > maxYpixel)
-				if (particlesettings.wrapY) // wrap y to the other side if required
-					yfb = yfb % (maxYpixel + 1);
-				else
-					continue;
+				{
+					if (particlesettings.wrapY) // wrap y to the other side if required
+						yfb = yfb % (maxYpixel + 1);
+					else
+						continue;
+				}
+				
 				//if(xfb < maxXpixel +1 && yfb < maxYpixel +1)
-				fast_color_add(framebuffer[xfb][yfb], renderbuffer[xrb][yrb]); //TODO: this is just a test, need to render to correct coordinates with out of frame checking
+				fast_color_add(framebuffer[xfb][yfb], renderbuffer[xrb][yrb]); 
 			}
 		}
 	}		
@@ -1362,7 +1377,7 @@ int32_t ParticleSystem::limitSpeed(int32_t speed)
 // allocate memory for the 2D array in one contiguous block and set values to zero
 CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 {	
-	CRGB ** array2D = (CRGB **)malloc(cols * sizeof(CRGB *) + cols * rows * sizeof(CRGB));
+	CRGB ** array2D = (CRGB **)calloc(cols, sizeof(CRGB *) + rows * sizeof(CRGB));
 	if (array2D == NULL)
 		DEBUG_PRINT(F("PS buffer alloc failed"));
 	else
@@ -1373,7 +1388,7 @@ CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 		{
 			array2D[i] = start + i * rows;
 		}
-		memset(start, 0, cols * rows * sizeof(CRGB)); // set all values to zero
+		//memset(start, 0, cols * rows * sizeof(CRGB)); // set all values to zero (TODO: remove, not needed if calloc is used)
 	}
 	return array2D;
 }
@@ -1395,7 +1410,7 @@ void ParticleSystem::updateSystem(void)
 void ParticleSystem::updatePSpointers(bool isadvanced)
 {
 	//DEBUG_PRINT(F("*** PS pointers ***"));
-	//DEBUG_PRINTF_P(PSTR("this PS %p\n"), this);	
+	//DEBUG_PRINTF_P(PSTR("this PS %p "), this);	
 	//Note on memory alignment:
 	//a pointer MUST be 4 byte aligned. sizeof() in a struct/class is always aligned to the largest element. if it contains a 32bit, it will be padded to 4 bytes, 16bit is padded to 2byte alignment.
 	//The PS is aligned to 4 bytes, a PSparticle is aligned to 2 and a struct containing only byte sized variables is not aligned at all and may need to be padded when dividing the memoryblock.
@@ -1403,19 +1418,19 @@ void ParticleSystem::updatePSpointers(bool isadvanced)
 	particles = reinterpret_cast<PSparticle *>(this + 1); // pointer to particle array at data+sizeof(ParticleSystem)
 	if(isadvanced)
 	{
-		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)
-		advPartProps = reinterpret_cast<PSadvancedParticle *>(sources + numParticles);		
+		advPartProps = reinterpret_cast<PSadvancedParticle *>(particles + numParticles);
+		sources = reinterpret_cast<PSsource *>(advPartProps + numParticles); // pointer to source(s)						
 	}
 	else
 	{
-		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)
-		advPartProps = NULL;		
+		advPartProps = NULL;	
+		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)			
 	}	
 	PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources); // pointer to first available byte after the PS for FX additional data
 	
-	//DEBUG_PRINTF_P(PSTR("particles %p\n"), particles);	
-	//DEBUG_PRINTF_P(PSTR("sources %p\n"), sources);	
-	//DEBUG_PRINTF_P(PSTR("adv. props %p\n"), advPartProps);	
+	//DEBUG_PRINTF_P(PSTR(" particles %p "), particles);	
+	//DEBUG_PRINTF_P(PSTR(" sources %p "), sources);	
+	//DEBUG_PRINTF_P(PSTR(" adv. props %p\n"), advPartProps);	
 	//DEBUG_PRINTF_P(PSTR("end %p\n"), PSdataEnd);
 }
 
