@@ -320,7 +320,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options, P
 		{		
 			if(advancedproperties->size > 0)
 				usesize = true; //note: variable eases out of frame checking below
-			particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize + advancedproperties->size);											
+			particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize + (advancedproperties->size));
 		}
 		//if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of view
 		if (options.bounceX) 
@@ -340,7 +340,7 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings &options, P
 				bool isleaving = true;
 				if(usesize) //using individual particle size
 				{
-					if (((newX > -particleHardRadius) || (newX < maxX + particleHardRadius))) // large particle is not yet leaving the view - note: this is not pixel perfect but good enough
+					if (((newX > -particleHardRadius) && (newX < maxX + particleHardRadius))) // large particle is not yet leaving the view - note: this is not pixel perfect but good enough
 						isleaving = false; 
 				}
 				
@@ -719,14 +719,8 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
 				baseRGB = (CRGB)baseHSV; //convert back to RGB
 			}
 		}
-
-		if(renderbuffer) //set buffer to zero if it exists
-		{
-			memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); // renderbuffer is 10x10 pixels. note: passing the buffer and setting it zero here is faster than creating a new buffer for every particle
-		}
 		
-		renderParticle(framebuffer, i, brightness, baseRGB, renderbuffer); 
-		
+		renderParticle(framebuffer, i, brightness, baseRGB, renderbuffer); 		
 	}
 
 	if(particlesize > 0)
@@ -793,7 +787,27 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 		if(advPartProps[particleindex].size > 0)
 		{
 			if(renderbuffer)
-				advancedrender = true;					
+			{
+				advancedrender = true;
+				//memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); //clear the buffer, renderbuffer is 10x10 pixels
+				//memset seems to do something bad... trying to set it manually -> was probably a bug in the access below... TODO: remove this
+
+				for(int i = 0; i<10;i++) //this works fine but is slower
+				{
+					for(int j = 0; j<10;j++)
+					{
+						renderbuffer[i][j] = BLACK; //note: this is way slower than memset (but safer)
+					}
+				}
+				
+				//faster: the memory block is 300bytes, or 75*32bit
+				/*				
+				uint32_t* datablock = reinterpret_cast<uint32_t *>(renderbuffer[0]);
+				for(int i = 0; i<75;i++)
+				{					
+					datablock[i] = 0; //note: this is almost as fast as memset but also not safe(?)
+				}*/
+			}
 			else
 				return; //cannot render without buffer, advanced size particles are allowed out of frame
 		}			
@@ -871,8 +885,6 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 	if (pxlbrightness[3] >= 0)
 		pxlbrightness[3] = (precal1 * precal3) >> PS_P_SURFACE; // top left value equal to ((PS_P_RADIUS-dx) * dy * brightess) >> PS_P_SURFACE
 
-
-
 	if(advancedrender)
 	{
 		//render particle to a bigger size
@@ -885,6 +897,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 		fast_color_add(renderbuffer[4][5], color, pxlbrightness[3]); //TODO: make this a loop somehow? needs better coordinate handling...
 		uint32_t rendersize = 4;
 		uint32_t offset = 3; //offset to zero coordinate to write/read data in renderbuffer
+		//TODO: add asymmetrical size support
 		blur2D(renderbuffer, rendersize, rendersize, advPartProps[particleindex].size, advPartProps[particleindex].size, true, offset, offset, true);  //blur to 4x4
 		if (advPartProps[particleindex].size > 64)
 		{
@@ -915,20 +928,26 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 		{
 			xfb = xfb_orig + xrb;
 			if(xfb > maxXpixel)
+			{
 				if (particlesettings.wrapX) // wrap x to the other side if required
 					xfb = xfb % (maxXpixel + 1);
 				else
 					continue;
+			}
+			
 			for(uint32_t yrb = offset; yrb < rendersize+offset; yrb++)
 			{
 				yfb = yfb_orig + yrb;
 				if(yfb > maxYpixel)
-				if (particlesettings.wrapY) // wrap y to the other side if required
-					yfb = yfb % (maxYpixel + 1);
-				else
-					continue;
+				{
+					if (particlesettings.wrapY) // wrap y to the other side if required
+						yfb = yfb % (maxYpixel + 1);
+					else
+						continue;
+				}
+				
 				//if(xfb < maxXpixel +1 && yfb < maxYpixel +1)
-				fast_color_add(framebuffer[xfb][yfb], renderbuffer[xrb][yrb]); //TODO: this is just a test, need to render to correct coordinates with out of frame checking
+				fast_color_add(framebuffer[xfb][yfb], renderbuffer[xrb][yrb]); 
 			}
 		}
 	}		
@@ -1364,7 +1383,7 @@ int32_t ParticleSystem::limitSpeed(int32_t speed)
 // allocate memory for the 2D array in one contiguous block and set values to zero
 CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 {	
-	CRGB ** array2D = (CRGB **)malloc(cols * sizeof(CRGB *) + cols * rows * sizeof(CRGB));
+	CRGB ** array2D = (CRGB **)calloc(cols, sizeof(CRGB *) + rows * sizeof(CRGB));
 	if (array2D == NULL)
 		DEBUG_PRINT(F("PS buffer alloc failed"));
 	else
@@ -1375,7 +1394,7 @@ CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 		{
 			array2D[i] = start + i * rows;
 		}
-		memset(start, 0, cols * rows * sizeof(CRGB)); // set all values to zero
+		//memset(start, 0, cols * rows * sizeof(CRGB)); // set all values to zero (TODO: remove, not needed if calloc is used)
 	}
 	return array2D;
 }
@@ -1405,8 +1424,8 @@ void ParticleSystem::updatePSpointers(bool isadvanced)
 	particles = reinterpret_cast<PSparticle *>(this + 1); // pointer to particle array at data+sizeof(ParticleSystem)
 	if(isadvanced)
 	{
-		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)
-		advPartProps = reinterpret_cast<PSadvancedParticle *>(sources + numParticles);		
+		sources = reinterpret_cast<PSsource *>(particles + numParticles); // pointer to source(s)				
+		advPartProps = reinterpret_cast<PSadvancedParticle *>(sources + numParticles);
 	}
 	else
 	{

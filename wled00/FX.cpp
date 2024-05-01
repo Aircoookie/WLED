@@ -8078,9 +8078,9 @@ uint16_t mode_particlefireworks(void)
     numRockets = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
     for (j = 0; j < numRockets; j++)
     {
-        PartSys->sources[j].source.ttl = 500 * j; // first rocket starts immediately, others follow soon
-        PartSys->sources[j].source.vy = -1; // at negative speed, no particles are emitted and if rocket dies, it will be relaunched
-    }
+      PartSys->sources[j].source.ttl = 500 * j; // first rocket starts immediately, others follow soon
+      PartSys->sources[j].source.vy = -1; // at negative speed, no particles are emitted and if rocket dies, it will be relaunched
+    }    
   }
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -8167,6 +8167,14 @@ uint16_t mode_particlefireworks(void)
       }
       else
       { 
+      /*
+        if( PartSys->sources[j].source.vy < 0) //explosion is ongoing
+        {
+        if(i < (emitparticles>>2)) //set 1/4 of particles to larger size
+          PartSys->sources[j].size = 50+random16(140);
+        else
+          PartSys->sources[j].size = 0;
+        }*/
         PartSys->sprayEmit(PartSys->sources[j]);
         if ((j % 3) == 0)
         {
@@ -8353,7 +8361,7 @@ uint16_t mode_particlefire(void)
   }
 
   uint32_t spread = (PartSys->maxX >> 5) * (SEGMENT.custom3 + 1); //fire around segment center (in subpixel points)
-  numFlames = min((uint32_t)PartSys->numSources, (1 + ((spread / PS_P_RADIUS) << 1))); // number of flames used depends on spread with, good value is (fire width in pixel) * 2
+  numFlames = min((uint32_t)PartSys->numSources, (2 + ((spread / PS_P_RADIUS) << 1))); // number of flames used depends on spread with, good value is (fire width in pixel) * 2
   uint32_t percycle = numFlames*2/3;// / 2; // maximum number of particles emitted per cycle (TODO: for ESP826 maybe use flames/2)
   // percycle = map(SEGMENT.intensity,0,255, 2, (numFlames*3) / 2); //TODO: does this give better flames or worse?
 
@@ -8420,7 +8428,7 @@ uint16_t mode_particlefire(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Base Heat,Wind,Spread,Smooth,Cylinder,Turbulence;;!;2;pal=35,sx=110,c1=110,c2=50,o1=1";
+static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Base Heat,Wind,Spread,Smooth,Cylinder,Turbulence;;!;2;pal=35,sx=110,c1=110,c2=50,c3=31,o1=1";
 
 /*
 PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
@@ -8791,8 +8799,8 @@ uint16_t mode_particlebox(void)
       xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127); 
       ygravity = ((int16_t)inoise8(SEGMENT.aux0 + 10000) - 127);
       // scale the gravity force 
-      xgravity = (xgravity * SEGMENT.custom1) / 50; 
-      ygravity = (ygravity * SEGMENT.custom1) / 50;
+      xgravity = (xgravity * SEGMENT.custom1) / 128; 
+      ygravity = (ygravity * SEGMENT.custom1) / 128;
     }
     else //go in a circle
     {      
