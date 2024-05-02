@@ -486,9 +486,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       strip.loadCustomPalettes();
     }
   }
-  
-  if (root.containsKey(F("np")) && root[F("np")].as<bool>()) { //skip to next preset in a playlist
-    doAdvancePlaylist = true;
+
+  if (root.containsKey(F("np"))) {
+    doAdvancePlaylist = root[F("np")].as<bool>(); //advances to next preset in playlist when true
   }
   
   JsonObject wifi = root[F("wifi")];
