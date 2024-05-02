@@ -3062,11 +3062,11 @@ function togglePcMode(fromB = false)
 	if (fromB) {
 		pcModeA = !pcModeA;
 		localStorage.setItem('pcm', pcModeA);
-		openTab(0, true);
 	}
 	pcMode = (wW >= 1024) && pcModeA;
 	if (cpick) cpick.resize(pcMode && wW>1023 && wW<1250 ? 230 : 260); // for tablet in landscape
 	if (!fromB && ((wW < 1024 && lastw < 1024) || (wW >= 1024 && lastw >= 1024))) return; // no change in size and called from size()
+	if (pcMode) openTab(0, true);
 	gId('buttonPcm').className = (pcMode) ? "active":"";
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
