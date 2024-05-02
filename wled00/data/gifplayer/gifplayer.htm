@@ -101,15 +101,24 @@
 
       .row {
         display: flex;
+        position: relative;
         flex-wrap: nowrap;
-        justify-content: space-between;
-        align-items: flex-end;
+        justify-content: center;
+        align-items: center;
       }
 
       .row-dialog-button {
         display: flex;
         justify-content: center;
         margin-block: 10px;
+      }
+
+      .row-gif-control-buttons {
+        display: flex;
+        justify-content: center;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 10px;
       }
 
       .col {
@@ -138,13 +147,17 @@
 
       .col-dialog-button {
         min-width: 180px;
+        display: flex;
+        flex-direction: column;
       }
 
       .header {
         position: relative;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         padding-block: 20px;
+        justify-content: space-between;
+        align-items: center;
       }
 
       .header .title {
@@ -154,6 +167,7 @@
         color: var(--gray-light);
         text-align: center;
         text-wrap: wrap;
+        margin-inline: 20px;
       }
 
       .header .title .title-wled {
@@ -184,19 +198,34 @@
         transition: background-position 0.5s ease;
       }
 
-      #btnStop {
-        display: block;
-        position: absolute;
-        right: 10px;
-        top: calc(50% - 20px);
+      .btn-icon {
         width: 40px;
         height: 40px;
-        cursor: pointer;
-        transition: transform 0.1s;
-        background-repeat: no-repeat;
-        background-size: cover;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='40' viewBox='0 -960 960 960' width='40'%3E%3Cpath d='M326.667-326.667h306.666v-306.666H326.667v306.666ZM480.177-80q-82.822 0-155.666-31.5t-127.178-85.833Q143-251.667 111.5-324.56 80-397.454 80-480.333q0-82.88 31.5-155.773Q143-709 197.333-763q54.334-54 127.227-85.5Q397.454-880 480.333-880q82.88 0 155.773 31.5Q709-817 763-763t85.5 127Q880-563 880-480.177q0 82.822-31.5 155.666T763-197.456q-54 54.21-127 85.833Q563-80 480.177-80Zm.156-66.666q139 0 236.001-97.334 97-97.333 97-236.333t-96.875-236.001q-96.876-97-236.459-97-138.667 0-236 96.875Q146.666-619.583 146.666-480q0 138.667 97.334 236 97.333 97.334 236.333 97.334ZM480-480Z'/%3E%3C/svg%3E");
         filter: invert(100%);
+        transition: transform 0.1s;
+        cursor: pointer;
+      }
+
+      .btn-icon.stop {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='40' viewBox='0 -960 960 960' width='40'%3E%3Cpath d='M360-326.67h240q14.17 0 23.75-9.58t9.58-23.75v-240q0-14.17-9.58-23.75T600-633.33H360q-14.17 0-23.75 9.58T326.67-600v240q0 14.17 9.58 23.75t23.75 9.58ZM480.18-80q-82.83 0-155.67-31.5-72.84-31.5-127.18-85.83Q143-251.67 111.5-324.56T80-480.33q0-82.88 31.5-155.78Q143-709 197.33-763q54.34-54 127.23-85.5T480.33-880q82.88 0 155.78 31.5Q709-817 763-763t85.5 127Q880-563 880-480.18q0 82.83-31.5 155.67Q817-251.67 763-197.46q-54 54.21-127 85.84Q563-80 480.18-80Z'/%3E%3C/svg%3E");
+      }
+      .btn-icon.play {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='40' viewBox='0 -960 960 960' width='40'%3E%3Cpath d='M420.67-331.33 620.33-459q12-7.67 12-21t-12-21L420.67-628.67q-12.34-8.66-25.5-1.5Q382-623 382-607.67v255.34q0 15.33 13.17 22.5 13.16 7.16 25.5-1.5ZM480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-83 31.5-156t85.83-127q54.34-54 127.34-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Zm0-66.67q139.33 0 236.33-97.33t97-236q0-139.33-97-236.33t-236.33-97q-138.67 0-236 97-97.33 97-97.33 236.33 0 138.67 97.33 236 97.33 97.33 236 97.33ZM480-480Z'/%3E%3C/svg%3E");
+      }
+      .btn-icon.pause {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='40' viewBox='0 -960 960 960' width='40'%3E%3Cpath d='M400.12-320q14.21 0 23.71-9.58 9.5-9.59 9.5-23.75v-253.34q0-14.16-9.61-23.75-9.62-9.58-23.84-9.58-14.21 0-23.71 9.58-9.5 9.59-9.5 23.75v253.34q0 14.16 9.61 23.75 9.62 9.58 23.84 9.58Zm160 0q14.21 0 23.71-9.58 9.5-9.59 9.5-23.75v-253.34q0-14.16-9.61-23.75-9.62-9.58-23.84-9.58-14.21 0-23.71 9.58-9.5 9.59-9.5 23.75v253.34q0 14.16 9.61 23.75 9.62 9.58 23.84 9.58ZM480.18-80q-82.83 0-155.67-31.5-72.84-31.5-127.18-85.83Q143-251.67 111.5-324.56T80-480.33q0-82.88 31.5-155.78Q143-709 197.33-763q54.34-54 127.23-85.5T480.33-880q82.88 0 155.78 31.5Q709-817 763-763t85.5 127Q880-563 880-480.18q0 82.83-31.5 155.67Q817-251.67 763-197.46q-54 54.21-127 85.84Q563-80 480.18-80Z'/%3E%3C/svg%3E");
+      }
+      .btn-icon.settings {
+        width: 30px;
+        height: 30px;
+        background-size: contain;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='40' viewBox='0 -960 960 960' width='40'%3E%3Cpath d='M425-80q-18.33 0-32.17-12-13.83-12-16.5-30l-13-84.67q-17-6.33-34.83-16.66-17.83-10.34-32.17-21.67l-78 35.33Q200.67-202 183-208q-17.67-6-27.67-22.33L101-327q-10-16.33-5.67-34.33 4.34-18 19.34-29.67l71-52.67q-1.67-8.33-2-18.16-.34-9.84-.34-18.17 0-8.33.34-18.17.33-9.83 2-18.16l-71-52.67q-15-11.67-19.34-29.67Q91-616.67 101-633l54.33-96.67Q165.33-746 183-752t35.33 1.67l78 35.33q14.34-11.33 32.34-21.67 18-10.33 34.66-16l13-85.33q2.67-18 16.5-30 13.84-12 32.17-12h110q18.33 0 32.17 12 13.83 12 16.5 30l13 84.67q17 6.33 35.16 16.33 18.17 10 31.84 22l78-35.33q17.66-7.67 35-1.67Q794-746 804-729.67L859-633q10 16.33 5.67 34.67Q860.33-580 845.33-569l-71 51.33q1.67 9 2 18.84.34 9.83.34 18.83 0 9-.34 18.5Q776-452 774-443l71 52q15 11 19.33 29.33 4.34 18.34-5.66 34.67L804-230.33Q794-214 776.33-208q-17.66 6-35.33-1.67L663.67-245q-14.34 11.33-32 22-17.67 10.67-35 16.33l-13 84.67q-2.67 18-16.5 30Q553.33-80 535-80H425Zm55.67-266.67q55.33 0 94.33-39T614-480q0-55.33-39-94.33t-94.33-39q-55.67 0-94.5 39-38.84 39-38.84 94.33t38.84 94.33q38.83 39 94.5 39Z'/%3E%3C/svg%3E");
+      }
+      .btn-icon.back {
+        width: 35px;
+        height: 35px;
+        background-size: contain;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='40' viewBox='0 -960 960 960' width='40'%3E%3Cpath d='M287-446.67 503.67-230q10 10 9.83 23.33-.17 13.34-10.17 23.34-10 9.66-23.33 9.83-13.33.17-23.33-9.83L183.33-456.67q-5.33-5.33-7.5-11-2.16-5.66-2.16-12.33t2.16-12.33q2.17-5.67 7.5-11l273.34-273.34q9.66-9.66 23.16-9.66t23.5 9.66q10 10 10 23.5t-10 23.5L287-513.33h479.67q14.33 0 23.83 9.5 9.5 9.5 9.5 23.83 0 14.33-9.5 23.83-9.5 9.5-23.83 9.5H287Z'/%3E%3C/svg%3E");
       }
 
       .text-info {
@@ -210,11 +239,10 @@
       }
 
       label {
-        display: flex;
         margin-bottom: 5px;
         font-weight: bold;
         color: var(--text);
-        align-items: center;
+        text-align: center;
       }
 
       .margin-y {
@@ -371,14 +399,14 @@
         content: "";
         display: block;
         position: absolute;
-        left: 10px;
-        top: calc(50% - 17px);
-        width: 34px;
-        height: 34px;
+        left: 50px;
+        top: calc(50% - 14px);
+        width: 28px;
+        height: 28px;
         border: 4px solid var(--gray-light);
         border-top-color: var(--gray-dark);
         border-radius: 50%;
-        animation: fadeIn 0.7s ease both, spin 1s linear infinite;
+        animation: fadeIn 1s ease both, spin 1s linear infinite;
       }
 
       .show-when-connected {
@@ -435,8 +463,8 @@
       }
 
       dialog {
-        padding: 0 30px;
-        background: rgb(33 33 33 / 60%);
+        padding: 0;
+        background: rgb(33 33 33 / 70%);
         color: var(--text);
         max-width: 90vw;
         border-radius: 10px;
@@ -459,6 +487,10 @@
         backdrop-filter: blur(20px);
       }
 
+      .dialog {
+        padding: 10px 30px;
+      }
+
       h3 {
         color: var(--text);
         font-weight: bold;
@@ -476,6 +508,11 @@
 
         .header {
           padding-block: 10px;
+        }
+        #loading {
+          left: 5px;
+          bottom: -35px;
+          top: unset;
         }
       }
 
@@ -530,6 +567,14 @@
     <div class="container">
       <div class="content">
         <div class="header">
+          <div id="btnBack">
+            <div
+              class="btn-icon back"
+              id="btnBack"
+              onclick="window.location.href = WLED_URL;"
+            ></div>
+          </div>
+          <div class="" id="loading"></div>
           <span class="title"
             ><img
               alt=""
@@ -538,41 +583,24 @@
             /><span class="rainbow">GIF</span
             ><span class="title-player">PLAYER</span></span
           >
-          <div class="loading" id="loading"></div>
-          <div id="btnStop"></div>
-        </div>
-        <form id="formHostname" novalidate>
-          <div class="row">
-            <div class="col-small" validate style="position: relative">
-              <input
-                type="text"
-                name="hostname"
-                id="hostname"
-                placeholder="Hostname"
-                required
-              />
-            </div>
-            <div class="col-small">
-              <button type="button" class="button" id="btnReloadImages">
-                Refresh
-              </button>
-            </div>
-            <div class="col-small" id="goBack">
-              <button
-                type="button"
-                class="button"
-                onclick="window.location.href = WLED_URL;"
-              >
-                Back
-              </button>
-            </div>
+          <div id="btnSettings">
+            <div class="btn-icon settings"></div>
           </div>
-        </form>
+        </div>
+
         <div
           id="contentConnected"
           class="show-when-connected"
           style="display: none"
         >
+          <div class="row">
+            <div class="col-small" validate style="position: relative">
+              <div class="row-gif-control-buttons">
+                <div class="btn-icon pause" id="btnPlayPause"></div>
+                <div class="btn-icon stop" id="btnStop"></div>
+              </div>
+            </div>
+          </div>
           <div class="image-list margin-y" id="image-list">
             <!-- dynamically populated -->
           </div>
@@ -613,54 +641,101 @@
       </div>
     </div>
     <dialog id="image-dialog">
-      <h3 id="image-dialog-name"></h3>
-      <img class="image-dialog-img" id="image-dialog-img" src="" />
-      <div class="row-dialog-button">
-        <div class="col-dialog-button">
-          <button
-            type="button"
-            class="button"
-            id="btnShowImg"
-            style="background-color: var(--success-medium)"
-          >
-            Show
-          </button>
+      <div class="dialog">
+        <h3 id="image-dialog-name"></h3>
+        <img class="image-dialog-img" id="image-dialog-img" src="" />
+        <div class="row-dialog-button">
+          <div class="col-dialog-button">
+            <button
+              type="button"
+              class="button"
+              id="btnShowImg"
+              style="background-color: var(--success-medium)"
+            >
+              Show
+            </button>
+          </div>
+        </div>
+        <div class="row-dialog-button">
+          <div class="col-dialog-button">
+            <button
+              type="button"
+              class="button button-dialog"
+              id="btnSavePreset"
+              style="background-color: var(--blue-light)"
+            >
+              Save As Preset
+            </button>
+          </div>
+        </div>
+        <div class="row-dialog-button">
+          <div class="col-dialog-button">
+            <button
+              type="button"
+              class="button button-dialog"
+              id="btnDeleteImg"
+              style="background-color: var(--error-dark)"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+        <div class="row-dialog-button">
+          <div class="col-dialog-button">
+            <button
+              type="button"
+              class="button button-dialog"
+              id="btnCloseImgDialog"
+              style="background-color: var(--blue-dark)"
+              onclick="imgDialog.close()"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
-      <div class="row-dialog-button">
-        <div class="col-dialog-button">
-          <button
-            type="button"
-            class="button button-dialog"
-            id="btnSavePreset"
-            style="background-color: var(--blue-light)"
-          >
-            Save As Preset
-          </button>
-        </div>
-      </div>
-      <div class="row-dialog-button">
-        <div class="col-dialog-button">
-          <button
-            type="button"
-            class="button button-dialog"
-            id="btnDeleteImg"
-            style="background-color: var(--error-dark)"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-      <div class="row-dialog-button">
-        <div class="col-dialog-button">
-          <button
-            type="button"
-            class="button button-dialog"
-            id="btnCloseImgDialog"
-            style="background-color: var(--blue-dark)"
-          >
-            Close
-          </button>
+    </dialog>
+    <dialog id="settings-dialog">
+      <div class="dialog">
+        <h3 id="">Settings</h3>
+        <form id="formHostname" novalidate>
+          <div class="row-dialog-button">
+            <div class="col-dialog-button" validate style="position: relative">
+              <label for="hostname">Hostname</label>
+              <input
+                type="text"
+                name="hostname"
+                id="hostname"
+                placeholder="Hostname"
+                required
+              />
+            </div>
+          </div>
+          <div class="row-dialog-button">
+            <div class="col-dialog-button">
+              <button
+                type="button"
+                class="button"
+                id="btnReloadImages"
+                style="background-color: var(--blue-medium)"
+              >
+                Force refresh
+              </button>
+            </div>
+          </div>
+        </form>
+        <div class="row-dialog-button">
+          <div class="col-dialog-button">
+            <button
+              type="button"
+              class="button button-dialog"
+              id="btnCloseSettingsDialog"
+              style="background-color: var(--blue-dark)"
+              onclick="settingsDialog.close()"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </dialog>
@@ -671,11 +746,16 @@
     const FX_MODE_IMAGE = 53; // set effect mode "Image"
     const GIF_SPEED = 128; // set effect speed to 128, original gif speed
     const ALLOWED_EXT = ["gif", "bmp", "png"];
+    const urlEdit = "/edit";
+    const urlJsonState = "/json/state";
+    const urlJsonInfo = "/json/info";
+    const urlPresets = "/presets.json";
 
     // dynamic variables
     const d = document;
     const hostname = gId("hostname");
     const imgDialog = gId("image-dialog");
+    const settingsDialog = gId("settings-dialog");
     const contentDivConnected = gId("content-connected");
     let selectedImage;
     let presetsJson = {};
@@ -741,7 +821,7 @@
     }
 
     async function images(forceReload = false) {
-      const url = `${WLED_URL}/edit?list=/`;
+      const url = `${WLED_URL}${urlEdit}?list=/`;
       // clear image list intially
       gId("image-list").innerHTML = "";
       // reset hostname input color
@@ -829,9 +909,9 @@
     }
 
     async function presets() {
-      const urlPresets = `${WLED_URL}/presets.json`;
+      const url = `${WLED_URL}${urlPresets}`;
       try {
-        const response = await fetch(urlPresets);
+        const response = await fetch(url);
         presetsJson = await response.json();
       } catch (error) {
         console.error(error);
@@ -840,7 +920,7 @@
     }
 
     async function storage() {
-      const url = `${WLED_URL}/json/info`;
+      const url = `${WLED_URL}${urlJsonInfo}`;
       try {
         const response = await fetch(url, {
           signal: AbortSignal.timeout(10000),
@@ -889,18 +969,19 @@
           ps: existingPreset,
         });
       } else {
-      Object.assign(state, {
-        on: true,
-        seg: {
-          id: 0,
-          fx: FX_MODE_IMAGE,
-          sx: GIF_SPEED,
-          n: selectedImage.name,
-        },
-      });
+        Object.assign(state, {
+          on: true,
+          seg: {
+            id: 0,
+            fx: FX_MODE_IMAGE,
+            frz: false,
+            sx: GIF_SPEED,
+            n: selectedImage.name,
+          },
+        });
       }
 
-      const url = `${WLED_URL}/json/state`;
+      const url = `${WLED_URL}${urlJsonState}`;
       const options = {
         method: "POST",
         body: JSON.stringify(state),
@@ -918,7 +999,7 @@
               1000
             );
           } else {
-          toast("Image changed", "success", 1000);
+            toast("Image changed", "success", 1000);
           }
         }
       } catch (error) {
@@ -950,11 +1031,11 @@
         return;
       }
 
-        let body = {};
-        Object.assign(body, {
-          psave: parseInt(id),
-          n: pName,
-        });
+      let body = {};
+      Object.assign(body, {
+        psave: parseInt(id),
+        n: pName,
+      });
 
       try {
         const url = `${WLED_URL}/json`;
@@ -962,10 +1043,10 @@
           method: "POST",
           body: JSON.stringify(body),
         };
-          const response = await fetch(url, options);
-          const { success } = await response.json();
+        const response = await fetch(url, options);
+        const { success } = await response.json();
 
-          if (success) {
+        if (success) {
           toast(
             `${
               existingPreset ? "Modified" : "Saved as"
@@ -973,11 +1054,11 @@
             "success",
             8000
           );
-            window.parent.postMessage("loadPresets", WLED_URL);
-          }
-        } catch (error) {
-          console.error(error);
-          toast("Error saving preset", "error");
+          window.parent.postMessage("loadPresets", WLED_URL);
+        }
+      } catch (error) {
+        console.error(error);
+        toast("Error saving preset", "error");
       } finally {
         await new Promise((resolve) => setTimeout(resolve, 2000)); // Add a delay before refreshing presets
         await presets();
@@ -990,7 +1071,7 @@
       formData = new FormData();
       formData.append("data", file, `/${file.name}`);
 
-      const url = `${WLED_URL}/edit`;
+      const url = `${WLED_URL}${urlEdit}`;
       const options = {
         method: "POST",
         body: formData,
@@ -1013,13 +1094,34 @@
     }
 
     async function powerOff() {
-      const url = `${WLED_URL}/json/state`;
+      const url = `${WLED_URL}${urlJsonState}`;
       try {
         const options = {
           method: "POST",
           body: JSON.stringify({ on: false }),
         };
-        await fetch(url, options);
+        const response = await fetch(url, options);
+        const { success } = await response.json();
+        if (success) {
+          toast("Playback stopped", "success", 1000);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    async function playPause() {
+      const url = `${WLED_URL}${urlJsonState}`;
+      try {
+        const options = {
+          method: "POST",
+          body: JSON.stringify({ seg: { frz: "t" } }),
+        };
+        const response = await fetch(url, options);
+        const { success } = await response.json();
+        if (success) {
+          toast("Playback paused/resumed", "success", 1000);
+        }
       } catch (error) {
         console.error(error);
       }
@@ -1029,10 +1131,10 @@
       // await loading of image list, actual images will load asynchronously
       if (await images());
       {
-      // await loading of presets.json
-      await presets();
-      // get storage used/total count
-      storage();
+        // await loading of presets.json
+        await presets();
+        // get storage used/total count
+        storage();
       }
     }
 
@@ -1069,16 +1171,10 @@
     gId("btnShowImg").addEventListener("click", showImg, false);
     gId("btnSavePreset").addEventListener("click", savePreset, false);
     gId("btnDeleteImg").addEventListener("click", deleteImage, false);
-    gId("btnCloseImgDialog").addEventListener(
-      "click",
-      () => {
-        imgDialog.close();
-      },
-      false
-    );
     gId("btnReloadImages").addEventListener(
       "click",
       async () => {
+        settingsDialog.close();
         await images(true);
         await presets();
         storage();
@@ -1120,33 +1216,45 @@
     });
 
     // dismiss dialog when clicking somewhere other than its elements
-    imgDialog.addEventListener(
-      "click",
-      ({ target: dialog }) => {
-        if (dialog.nodeName === "DIALOG") dialog.close();
-      },
-      false
+    d.querySelectorAll("dialog").forEach((dialog) =>
+      dialog.addEventListener(
+        "click",
+        ({ target: dialog }) => {
+          if (dialog.nodeName === "DIALOG") dialog.close();
+        },
+        false
+      )
     );
 
     ["mousedown", "touchstart"].forEach((evt) =>
-      gId("btnStop").addEventListener(
-        evt,
-        () => {
-          gId("btnStop").classList.add("selected");
-        },
-        false
+      ["btnStop", "btnPlayPause", "btnBack", "btnSettings"].forEach((btn) =>
+        gId(btn).addEventListener(
+          evt,
+          () => {
+            gId(btn).classList.add("selected");
+          },
+          false
+        )
       )
     );
     ["mouseup", "touchend", "mouseleave"].forEach((evt) =>
-      gId("btnStop").addEventListener(
-        evt,
-        () => {
-          gId("btnStop").classList.remove("selected");
-        },
-        false
+      ["btnStop", "btnPlayPause", "btnBack", "btnSettings"].forEach((btn) =>
+        gId(btn).addEventListener(
+          evt,
+          () => {
+            gId(btn).classList.remove("selected");
+          },
+          false
+        )
       )
     );
     gId("btnStop").addEventListener("click", powerOff, false);
+    gId("btnPlayPause").addEventListener("click", playPause, false);
+    gId("btnSettings").addEventListener(
+      "click",
+      () => settingsDialog.showModal(),
+      false
+    );
 
     function toast(message, type = "success", duration = 5000) {
       const toast = d.createElement("div");
@@ -1210,8 +1318,8 @@
 
     // "Back" button will only be shown if served from webserver
     function checkBackBtn() {
-      gId("goBack").style.display =
-        window.location.protocol === "http:" ? "flex" : "none";
+      gId("btnBack").style.visibility =
+        window.location.protocol === "http:" ? "visible" : "hidden";
     }
 
     function validateFile(file) {
