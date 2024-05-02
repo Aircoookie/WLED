@@ -550,7 +550,7 @@ void Segment::drawLineAntialiased(uint16_t x0, uint16_t y0, uint16_t x1, uint16_
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
   const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int16_t err = (dx-dy)/2, e2, x2;
-  int16_t ed = (dx+dy == 0) ? 1 : sqrt((float)dx*dx + (float)dy*dy);
+  int16_t ed = (dx+dy == 0) ? 1 : sqrtf((float)dx*dx + (float)dy*dy);
 
   for (;;) {
     setPixelColorXY(x0,y0,color_blend(c,getPixelColorXY(x0,y0),0xFFFF * abs(err - dx + dy) / ed, true));

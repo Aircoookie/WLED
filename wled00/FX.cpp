@@ -4874,9 +4874,9 @@ uint16_t mode_2DAnalogClock(void) {                  // By Andras Fekete (bandi1
   const uint16_t centerY = rows >> 1;
   const uint16_t radius = min(centerX, centerY);
 
-  auto hours_in_day = (localTime / (60 * 60)) % 12;
-  auto minutes_in_day = (localTime / (60)) % 60;
-  auto seconds_in_day = (localTime) % 60;
+  time_t hours_in_day = (localTime / (60 * 60)) % 12;
+  time_t minutes_in_day = (localTime / (60)) % 60;
+  time_t seconds_in_day = (localTime) % 60;
 
   float hour_angle = radians(360 * (hours_in_day + minutes_in_day / 60.0) / 12 - 90);
   uint16_t hour_len = radius * 0.5;
