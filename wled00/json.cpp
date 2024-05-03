@@ -487,9 +487,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
-  if (root.containsKey(F("np"))) {
-    doAdvancePlaylist = root[F("np")].as<bool>(); //advances to next preset in playlist when true
-  }
+  doAdvancePlaylist = root["np"].as<bool>() || doAdvancePlaylist; //advances to next preset in playlist when true
   
   JsonObject wifi = root[F("wifi")];
   if (!wifi.isNull()) {
