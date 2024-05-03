@@ -1,5 +1,15 @@
 ## WLED changelog
 
+#### Build 240503
+-   Using brightness in analog clock overlay (#3944 by @paspiz85)
+-   Add Webpage shortcuts (#3945 by @w00000dy)
+-   ArtNet Poll reply (#3892 by @askask)
+-   Improved brightness change via long button presses (#3933 by @gaaat98)
+-   Relay open drain output (#3920 by @Suxsem)
+-   NEW JSON API: release info (update page, `info.release`)
+-   update esp32 platform to arduino-esp32 v2.0.9 (#3902)
+-   various optimisations and bugfixes (#3952, #3922, #3878, #3926, #3919, #3904 @DedeHai)
+
 #### Build 2404120
 -   v0.15.0-b3
 -   fix for #3896 & WS2815 current saving
