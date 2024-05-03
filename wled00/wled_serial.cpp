@@ -230,7 +230,7 @@ void handleSerial()
     if ((millis() - startTime) > SERIAL_MAXTIME_MILLIS) { USER_PRINTLN(F("handleSerial(): need a break after >100ms of activity.")); }
   //#endif
   #else
-    #pragma message "Serial protocols (AdaLight, Serial JSON, Serial LED driver) disabled"
+    #pragma message "Serial protocols (AdaLight, Serial JSON, Serial LED driver, improv) disabled"
   #endif
 
   // If Continuous Serial Streaming is enabled, send new LED data as bytes
