@@ -597,6 +597,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+  doAdvancePlaylist = root[F("np")] | doAdvancePlaylist; //advances to next preset in playlist when true
+  
   stateUpdated(callMode);
   if (presetToRestore) currentPreset = presetToRestore;
 
