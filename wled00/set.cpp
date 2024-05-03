@@ -104,7 +104,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
-       pinManager.deallocatePin(irPin, PinOwner::IR);
+      deInitIR();
+      pinManager.deallocatePin(irPin, PinOwner::IR);
     }
     #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
@@ -233,6 +234,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    initIR();
     #endif
     irApplyToAllSelected = !request->hasArg(F("MSO"));
 

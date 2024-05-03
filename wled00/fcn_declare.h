@@ -143,20 +143,8 @@ void handleImprovWifiScan();
 void sendImprovIPRPCResult(ImprovRPCType type);
 
 //ir.cpp
-void applyRepeatActions();
-byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
-void decodeIR(uint32_t code);
-void decodeIR24(uint32_t code);
-void decodeIR24OLD(uint32_t code);
-void decodeIR24CT(uint32_t code);
-void decodeIR40(uint32_t code);
-void decodeIR44(uint32_t code);
-void decodeIR21(uint32_t code);
-void decodeIR6(uint32_t code);
-void decodeIR9(uint32_t code);
-void decodeIRJson(uint32_t code);
-
 void initIR();
+void deInitIR();
 void handleIR();
 
 //json.cpp
