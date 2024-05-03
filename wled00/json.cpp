@@ -1529,6 +1529,8 @@ void serveJson(AsyncWebServerRequest* request)
 #ifdef WLED_ENABLE_JSONLIVE
 #define MAX_LIVE_LEDS 180
 
+#warning "JSON Live enabled"
+
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 {
   #ifdef WLED_ENABLE_WEBSOCKETS
