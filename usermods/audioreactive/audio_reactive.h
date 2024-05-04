@@ -183,7 +183,6 @@ constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT resul
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
 static float vReal[samplesFFT] = {0.0f};       // FFT sample inputs / freq output -  these are our raw result bins
 static float vImag[samplesFFT] = {0.0f};       // imaginary parts
-static float windowWeighingFactors[samplesFFT] = {0.0f};
 
 // Create FFT object
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
@@ -196,7 +195,8 @@ static float windowWeighingFactors[samplesFFT] = {0.0f};
 
 #include <arduinoFFT.h>
 
-static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, windowWeighingFactors);
+/* Create FFT object with weighing factor storage */
+static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, true);
 
 // Helper functions
 
