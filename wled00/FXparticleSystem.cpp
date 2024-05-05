@@ -216,10 +216,10 @@ void ParticleSystem::enableParticleCollisions(bool enable, uint8_t hardness) // 
 	collisionHardness = hardness + 1;
 }
 
-// emit one particle with variation, returns index of emitted particle
-uint32_t ParticleSystem::sprayEmit(PSsource &emitter)
+// emit one particle with variation, returns index of emitted particle (or -1 if no particle emitted)
+int32_t ParticleSystem::sprayEmit(PSsource &emitter)
 {
-	for (uint32_t i = 0; i < usedParticles; i++)
+	for (int32_t i = 0; i < usedParticles; i++)
 	{
 		emitIndex++;
 		if (emitIndex >= usedParticles)
@@ -239,6 +239,7 @@ uint32_t ParticleSystem::sprayEmit(PSsource &emitter)
 			return i;
 		}
 	}
+	return -1;
 }
 
 // Spray emitter for particles used for flames (particle TTL depends on source TTL)
