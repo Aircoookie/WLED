@@ -10,9 +10,10 @@
 #define WLED_LONG_REPEATED_ACTION   400 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
 #define WLED_LONG_AP               5000 // how long button 0 needs to be held to activate WLED-AP
 #define WLED_LONG_FACTORY_RESET   10000 // how long button 0 needs to be held to trigger a factory reset
-#define WLED_LONG_BRI_STEPS          16 // how long to wait before increasing/decreasing brightness on long press
+#define WLED_LONG_BRI_STEPS          16 // how much to increase/decrease the brightness with each long press repetition
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+static bool buttonBriDirection = false; // true: increase brightness, false: decrease brightness
 
 void shortPressAction(uint8_t b)
 {
@@ -41,7 +42,6 @@ void longPressAction(uint8_t b)
     switch (b) {
       case 0: setRandomColor(col); colorUpdated(CALL_MODE_BUTTON); break;
       case 1: 
-        // increase bri on true, decrease on false
         if(buttonBriDirection) {
           if (bri == 255) break; // avoid unnecessary updates to brightness
           if (bri >= 255 - WLED_LONG_BRI_STEPS) bri = 255;

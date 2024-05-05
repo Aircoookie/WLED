@@ -466,7 +466,22 @@ void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
 //does no index check
 uint32_t BusPwm::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
-  return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+  // TODO getting the reverse from CCT is involved (a quick approximation when CCT blending is ste to 0 implemented)
+  switch (_type) {
+    case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
+      return RGBW32(0, 0, 0, _data[0]);
+    case TYPE_ANALOG_2CH: //warm white + cold white
+      if (cctICused) return RGBW32(0, 0, 0, _data[0]);
+      else           return RGBW32(0, 0, 0, _data[0] + _data[1]);
+    case TYPE_ANALOG_5CH: //RGB + warm white + cold white
+      if (cctICused) return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+      else           return RGBW32(_data[0], _data[1], _data[2], _data[3] + _data[4]);
+    case TYPE_ANALOG_4CH: //RGBW
+      return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+    case TYPE_ANALOG_3CH: //standard dumb RGB
+      return RGBW32(_data[0], _data[1], _data[2], 0);
+  }
+  return RGBW32(_data[0], _data[0], _data[0], _data[0]);
 }
 
 #ifndef ESP8266
