@@ -127,8 +127,8 @@ public:
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
 
   // particle emitters
+  uint32_t sprayEmit(PSsource &emitter);
   void flameEmit(PSsource &emitter);
-  void sprayEmit(PSsource &emitter);
   void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed);  
 
   // move functions

@@ -7968,8 +7968,7 @@ uint16_t mode_particlevortex(void)
       }
     }
   }
-
-  //TODO: speed increment is still wrong, it only works in autochange, manual change to a lower speed does not work. need to make it better.
+  
   // set rotation direction and speed 
   // can use direction flag to determine current direction
   bool direction = SEGMENT.check2; //no automatic direction change, set it to flag
@@ -7977,7 +7976,6 @@ uint16_t mode_particlevortex(void)
  
   if (SEGMENT.custom2 > 0) // automatic direction change enabled
   {
-  //  speedincrement = 1 + (SEGMENT.speed >> 5) + (SEGMENT.custom2 >> 2);
     uint16_t changeinterval = (270 - SEGMENT.custom2);
     direction = SEGMENT.aux1 & 0x02; //set direction according to flag
 
@@ -8014,22 +8012,6 @@ uint16_t mode_particlevortex(void)
 
   // calculate angle offset for an even distribution
   uint16_t angleoffset = 0xFFFF / spraycount;
-
-  //int32_t particlespeeddiv = ((263 - SEGMENT.intensity) >> 3);
-  //int32_t particlespeed = 127/particlespeeddiv; //just for testing, need to replace this with angle emit and come up with a new speed calculation
-  //particle speed goes from 7 to 128 (sin cos return 15bit value but with sign)
-
- // for (j = 0; j < spraycount; j++) //TODO: use angle emit
- // {
-    
-    // calculate the x and y speed using aux0 as the 16bit angle. returned value by sin16/cos16 is 16bit, shifting it by 8 bits results in +/-128, divide that by custom1 slider value
-   // PartSys->sources[j].vx = (cos16(SEGMENT.aux0 + angleoffset * j) >> 8) / particlespeeddiv;                // update spray angle (rotate all sprays with angle offset)
-   // PartSys->sources[j].vy = (sin16(SEGMENT.aux0 + angleoffset * j) >> 8) / particlespeeddiv; // update spray angle (rotate all sprays with angle offset)
-   // PartSys->sources[j].var = (SEGMENT.custom3 >> 1); // emiting variation = nozzle size  (custom 3 goes from 0-32)
- // }
-
-
-//test to check if less particles are ok at lower speeds.
   uint32_t skip = PS_P_HALFRADIUS/(SEGMENT.intensity + 1) + 1;
   if (SEGMENT.call % skip == 0)
   {
@@ -8072,7 +8054,7 @@ uint16_t mode_particlefireworks(void)
   if (SEGMENT.call == 0) // initialization 
   {
     if (!initParticleSystem(PartSys, NUMBEROFSOURCES, true)) // init with advanced particle properties
-      return mode_static(); // allocation failed; //allocation failed
+      return mode_static(); // allocation failed
     PartSys->setKillOutOfBounds(true);  //out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->setWallHardness(100); //ground bounce is fixed    
     numRockets = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
@@ -8095,7 +8077,6 @@ uint16_t mode_particlefireworks(void)
 
   PartSys->setWrapX(SEGMENT.check1);  
   PartSys->setBounceY(SEGMENT.check2);
-  //PartSys->setWallHardness(SEGMENT.custom2);  //not used anymore, can be removed
   PartSys->setGravity(map(SEGMENT.custom3,0,31,0,10)); // todo: make it a slider to adjust
 
   // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
@@ -8168,6 +8149,7 @@ uint16_t mode_particlefireworks(void)
       else
       { 
       /*
+        //TODO: this does not look good. adjust or remove completely      
         if( PartSys->sources[j].source.vy < 0) //explosion is ongoing
         {
         if(i < (emitparticles>>2)) //set 1/4 of particles to larger size
@@ -8193,7 +8175,7 @@ uint16_t mode_particlefireworks(void)
   {
     if (PartSys->sources[j].source.ttl)
     {
-      PartSys->particleMoveUpdate(PartSys->sources[j].source); //todo: need different settings for rocket?      
+      PartSys->particleMoveUpdate(PartSys->sources[j].source);
     }
     else if (PartSys->sources[j].source.vy > 0) // rocket has died and is moving up. stop it so it will explode (is handled in the code above)
     {
@@ -8218,7 +8200,7 @@ uint16_t mode_particlefireworks(void)
         PartSys->sources[j].minLife = 10;
         PartSys->sources[j].vx = 0;  // emitting speed
         PartSys->sources[j].vy = 0;  // emitting speed
-        PartSys->sources[j].var = 5; // speed variation around vx,vy (+/- var/2)
+        PartSys->sources[j].var = 3; // speed variation around vx,vy (+/- var/2)
     }
   }
 
@@ -8296,7 +8278,7 @@ uint16_t mode_particlevolcano(void)
       PartSys->sources[i].source.vx > 0 ? SEGMENT.custom1 >> 4 : -(SEGMENT.custom1 >> 4);  // set moving speed but keep the direction                        
       PartSys->sources[i].vy = SEGMENT.speed >> 2; // emitting speed
       PartSys->sources[i].vx = 0; 
-      PartSys->sources[i].var = SEGMENT.custom3 | 0x01; // emiting variation = nozzle size  (custom 3 goes from 0-31), only use odd numbers      
+      PartSys->sources[i].var = SEGMENT.custom3 >> 1; // emiting variation = nozzle size  (custom 3 goes from 0-31)
       // spray[j].source.hue = random16(); //set random color for each particle (using palette) -> does not look good
       PartSys->sprayEmit(PartSys->sources[i]);
       PartSys->particleMoveUpdate(PartSys->sources[i].source); //move the source (also applies gravity, which is corrected for above, that is a hack but easier than creating more particlesettings)
@@ -8385,7 +8367,7 @@ uint16_t mode_particlefire(void)
         PartSys->sources[i].minLife = 4;
         PartSys->sources[i].vx = (int8_t)random(-3, 3);  // emitting speed (sideways)
         PartSys->sources[i].vy = 5 + (firespeed >> 2); // emitting speed (upwards) -> this is good                
-        PartSys->sources[i].var = (random16(2 + (firespeed >> 5)) + 3) | 0x01; // speed variation around vx,vy (+/- var/2), only use odd numbers
+        PartSys->sources[i].var = (random16(1 + (firespeed >> 5)) + 2); // speed variation around vx,vy (+/- var)
     }
     
   }
@@ -8588,7 +8570,6 @@ uint16_t mode_particlewaterfall(void)
       PartSys->sources[i].maxLife = 400; // lifetime in frames
       PartSys->sources[i].minLife = 150;
 #endif
-      PartSys->sources[i].var = 7; // emiting variation
     }
   }
   else
@@ -8627,7 +8608,7 @@ uint16_t mode_particlewaterfall(void)
       PartSys->sources[i].vy = -SEGMENT.speed >> 3; // emitting speed, down
       PartSys->sources[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (PartSys->maxXpixel - numSprays * 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
       PartSys->sources[i].source.y = PartSys->maxY + (PS_P_RADIUS * ((i<<2) + 4)); // source y position, few pixels above the top to increase spreading before entering the matrix
-      PartSys->sources[i].var = (SEGMENT.custom1 >> 3) | 0x01; // emiting variation 0-32, only use odd numbers
+      PartSys->sources[i].var = (SEGMENT.custom1 >> 3); // emiting variation 0-32
     }
 
     for (i = 0; i < numSprays; i++)
@@ -8918,7 +8899,7 @@ uint16_t mode_particleimpact(void)
           PartSys->sources[i].source.ttl = random16((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
           #endif
           PartSys->sources[i].vy = (SEGMENT.custom1 >> 2);  // emitting speed y
-          PartSys->sources[i].var = (SEGMENT.custom1 >> 1) | 0x01; // speed variation around vx,vy (+/- var/2), only use odd numbers
+          PartSys->sources[i].var = (SEGMENT.custom1 >> 2); // speed variation around vx,vy (+/- var)
         }
       }      
     }
@@ -8935,7 +8916,7 @@ uint16_t mode_particleimpact(void)
        PartSys->sources[i].maxLife = 60; // spark particle life
        PartSys->sources[i].minLife = 20;      
        PartSys->sources[i].vy = -9; // emitting speed (down)
-       PartSys->sources[i].var = 5;  // speed variation around vx,vy (+/- var/2)
+       PartSys->sources[i].var = 3;  // speed variation around vx,vy (+/- var)
     }
   }
 
@@ -8977,8 +8958,7 @@ uint16_t mode_particleattractor(void)
     PartSys->sources[0].maxLife = 350; // lifetime in frames
     PartSys->sources[0].minLife = 50;
     #endif
-    PartSys->sources[0].var = 7; // emiting variation
-    PartSys->sources[0].size = 100; //!!! debug remove this again
+    PartSys->sources[0].var = 4; // emiting variation
     PartSys->setWallHardness(255);  //bounce forever
     PartSys->setWallRoughness(200); //randomize wall bounce
   }
@@ -9089,7 +9069,7 @@ uint16_t mode_particleattractor(void)
 #endif
     PartSys->sources[0].vx = 0;  // emitting speed
     PartSys->sources[0].vy = 0;  // emitting speed
-    PartSys->sources[0].var = 7; // emiting variation
+    PartSys->sources[0].var = 4; // emiting variation
   }
   else
     PartSys = reinterpret_cast<ParticleSystem *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -9189,7 +9169,7 @@ uint16_t mode_particlespray(void)
     PartSys->sources[0].maxLife = 300; // lifetime in frames
     PartSys->sources[0].minLife = 100;
     PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
-    PartSys->sources[0].var = 7;
+    PartSys->sources[0].var = 3;
 
   }
   else
@@ -9218,10 +9198,9 @@ uint16_t mode_particlespray(void)
   if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) // every nth frame, cycle color and emit particles
   {    
         PartSys->sources[0].source.hue++; // = random16(); //change hue of spray source
-      //   PartSys->sources[i].var = SEGMENT.custom3; // emiting variation = nozzle size  (custom 3 goes from 0-32)
+        // PartSys->sources[i].var = SEGMENT.custom3; // emiting variation = nozzle size  (custom 3 goes from 0-32)
         PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);
         PartSys->sources[0].source.y = map(SEGMENT.custom2, 0, 255, 0, PartSys->maxY);   
-
         // spray[j].source.hue = random16(); //set random color for each particle (using palette)        
         PartSys->angleEmit(PartSys->sources[0], (256 - (((int32_t)SEGMENT.custom3 + 1) << 3)) << 8, SEGMENT.speed >> 2);
   }
@@ -9381,8 +9360,7 @@ uint16_t mode_particleghostrider(void)
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setMotionBlur(SEGMENT.custom1); 
-  //PartSys->setColorByAge(SEGMENT.check1);
-  PartSys->sources[0].var = (1 + (SEGMENT.custom3>>1)) | 0x01; //odd numbers only
+  PartSys->sources[0].var = SEGMENT.custom3 >> 1;
 
   //color by age (PS color by age always starts with hue = 255 so cannot use that)
   if(SEGMENT.check1)
@@ -9404,7 +9382,7 @@ uint16_t mode_particleghostrider(void)
   int8_t newvy = ((int32_t)sin16(SEGMENT.aux0) * speed) / (int32_t)32767; 
   PartSys->sources[0].source.vx = ((int32_t)cos16(SEGMENT.aux0) * speed) / (int32_t)32767; 
   PartSys->sources[0].source.vy = ((int32_t)sin16(SEGMENT.aux0) * speed) / (int32_t)32767;  
-  PartSys->sources[0].source.ttl = 500; //source never dies
+  PartSys->sources[0].source.ttl = 500; //source never dies (note: setting 'perpetual' is not needed if replenished each frame)
   PartSys->particleMoveUpdate(PartSys->sources[0].source, &ghostsettings);
   //set head (steal one of the particles)
   PartSys->particles[PartSys->usedParticles-1].x = PartSys->sources[0].source.x;
