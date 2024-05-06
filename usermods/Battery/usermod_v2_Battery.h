@@ -2,10 +2,10 @@
 
 #include "wled.h"
 #include "battery_defaults.h"
-#include "battery.h"
-#include "types/unkown.h"
-#include "types/lion.h"
-#include "types/lipo.h"
+#include "UMBattery.h"
+#include "types/UnkownUMBattery.h"
+#include "types/LionUMBattery.h"
+#include "types/LiPoUMBattery.h"
 
 /*
  * Usermod by Maximilian Mewes
@@ -19,7 +19,7 @@ class UsermodBattery : public Usermod
     // battery pin can be defined in my_config.h
     int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
     
-    Battery* bat = new Unkown();
+    UMBattery* bat = new UnkownUMBattery();
     batteryConfig cfg;
 
     // how often to read the battery voltage
@@ -142,9 +142,9 @@ class UsermodBattery : public Usermod
 
       // plug in the right battery type
       if(cfg.type == (batteryType)lipo) {
-        bat = new Lipo();
+        bat = new LipoUMBattery();
       } else if(cfg.type == (batteryType)lion) {
-        bat = new Lion();
+        bat = new LipoUMBattery();
       }
 
       // update the choosen battery type with configured values

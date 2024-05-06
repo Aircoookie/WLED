@@ -2,18 +2,18 @@
 #define UMBLion_h
 
 #include "../battery_defaults.h"
-#include "../battery.h"
+#include "../UMBattery.h"
 
 /**
- *  Lion Battery
+ *  LiOn Battery
  * 
  */
-class Lion : public Battery
+class LionUMBattery : public UMBattery
 {
     private:
 
     public:
-        Lion() : Battery()
+        LionUMBattery() : UMBattery()
         {
             this->setMinVoltage(USERMOD_BATTERY_LION_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_LION_MAX_VOLTAGE);

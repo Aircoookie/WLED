@@ -2,18 +2,18 @@
 #define UMBUnkown_h
 
 #include "../battery_defaults.h"
-#include "../battery.h"
+#include "../UMBattery.h"
 
 /**
- *  Lion Battery
+ *  Unkown / Default Battery
  * 
  */
-class Unkown : public Battery
+class UnkownUMBattery : public UMBattery
 {
     private:
 
     public:
-        Unkown() : Battery()
+        UnkownUMBattery() : UMBattery()
         {
             this->setMinVoltage(USERMOD_BATTERY_UNKOWN_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE);

@@ -2,18 +2,18 @@
 #define UMBLipo_h
 
 #include "../battery_defaults.h"
-#include "../battery.h"
+#include "../UMBattery.h"
 
 /**
- *  Lipo Battery
+ *  LiPo Battery
  * 
  */
-class Lipo : public Battery
+class LipoUMBattery : public UMBattery
 {
     private:
 
     public:
-        Lipo() : Battery()
+        LipoUMBattery() : UMBattery()
         {
             this->setMinVoltage(USERMOD_BATTERY_LIPO_MIN_VOLTAGE);
             this->setMaxVoltage(USERMOD_BATTERY_LIPO_MAX_VOLTAGE);

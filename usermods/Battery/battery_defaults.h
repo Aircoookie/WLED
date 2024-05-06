@@ -131,5 +131,4 @@ typedef struct bconfig_t
   float voltageMultiplier;
 } batteryConfig;
 
-
 #endif

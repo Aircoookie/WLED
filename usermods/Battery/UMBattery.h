@@ -7,7 +7,7 @@
  *  Battery base class
  *  all other battery classes should inherit from this
  */
-class Battery
+class UMBattery
 {
     private:
 
@@ -25,7 +25,7 @@ class Battery
         }
 
     public:
-        Battery()
+        UMBattery()
         {
             this->setVoltageMultiplier(USERMOD_BATTERY_VOLTAGE_MULTIPLIER);
             this->setCalibration(USERMOD_BATTERY_CALIBRATION);
