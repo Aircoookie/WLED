@@ -1066,6 +1066,13 @@ void serializeInfo(JsonObject root)
     root[F("tpram")] = ESP.getPsramSize(); //WLEDMM
     root[F("psram")] = ESP.getFreePsram();
     root[F("psusedram")] = ESP.getMinFreePsram();
+    #if CONFIG_ESP32S3_SPIRAM_SUPPORT  // WLEDMM -S3 has "qspi" or "opi" PSRAM mode
+    #if CONFIG_SPIRAM_MODE_OCT
+      root[F("psrmode")]  = F("🚀 OPI");
+    #elif CONFIG_SPIRAM_MODE_QUAD
+      root[F("psrmode")]  = F("qspi 🛻");
+    #endif
+    #endif
   }
   #else
   // for testing
