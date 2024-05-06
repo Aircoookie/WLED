@@ -124,7 +124,7 @@ class UsermodBattery : public Usermod
       if(cfg.type == (batteryType)lipo) {
         bat = new LipoUMBattery();
       } else if(cfg.type == (batteryType)lion) {
-        bat = new LipoUMBattery();
+        bat = new LionUMBattery();
       }
 
       // update the choosen battery type with configured values
