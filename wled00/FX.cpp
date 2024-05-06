@@ -8117,7 +8117,7 @@ uint16_t mode_particlefireworks(void)
         currentspeed = speed;
         counter = 0;
         angleincrement = 2730 + random16(5461); // minimum 15° (=2730), + random(30°) (=5461)        
-        angle = esp_random(); // random start angle
+        angle = random16(); // random start angle
         speedvariation = angle & 0x01; // 0 or 1, no need for a new random number
         // calculate the number of particles to make complete circles
         percircle = (uint16_t)0xFFFF / angleincrement + 1;
@@ -8310,7 +8310,7 @@ uint16_t mode_particlefire(void)
   {
     if (!initParticleSystem(PartSys, 25, 4)) //maximum number of source (PS will determine the exact number based on segment size) and need 4 additional bytes for time keeping (uint32_t lastcall)
       return mode_static(); // allocation failed; //allocation failed
-    SEGMENT.aux0 = esp_random(); // aux0 is wind position (index) in the perlin noise
+    SEGMENT.aux0 = random(); // aux0 is wind position (index) in the perlin noise
     numFlames = PartSys->numSources; 
     DEBUG_PRINTF_P(PSTR("segment data ptr in fireFX %p\n"), SEGMENT.data);
   }
