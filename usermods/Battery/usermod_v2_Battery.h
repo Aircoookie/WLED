@@ -120,26 +120,6 @@ class UsermodBattery : public Usermod
      */
     void setup() 
     {
-      #ifdef ARDUINO_ARCH_ESP32
-        bool success = false;
-        DEBUG_PRINTLN(F("Allocating battery pin..."));
-        if (batteryPin >= 0 && digitalPinToAnalogChannel(batteryPin) >= 0) 
-          if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
-            DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
-            success = true;
-            voltage = readVoltage();
-          }
-
-        if (!success) {
-          DEBUG_PRINTLN(F("Battery pin allocation failed."));
-          batteryPin = -1;  // allocation failed
-        } else {
-          pinMode(batteryPin, INPUT);
-        }
-      #else //ESP8266 boards have only one analog input pin A0
-        pinMode(batteryPin, INPUT);
-      #endif
-
       // plug in the right battery type
       if(cfg.type == (batteryType)lipo) {
         bat = new LipoUMBattery();
@@ -150,7 +130,26 @@ class UsermodBattery : public Usermod
       // update the choosen battery type with configured values
       bat->update(cfg);
 
-      bat->setVoltage(readVoltage());
+      #ifdef ARDUINO_ARCH_ESP32
+        bool success = false;
+        DEBUG_PRINTLN(F("Allocating battery pin..."));
+        if (batteryPin >= 0 && digitalPinToAnalogChannel(batteryPin) >= 0) 
+          if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
+            DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
+            success = true;
+            bat->setVoltage(readVoltage());
+          }
+
+        if (!success) {
+          DEBUG_PRINTLN(F("Battery pin allocation failed."));
+          batteryPin = -1;  // allocation failed
+        } else {
+          pinMode(batteryPin, INPUT);
+        }
+      #else //ESP8266 boards have only one analog input pin A0
+        pinMode(batteryPin, INPUT);
+        bat->setVoltage(readVoltage());
+      #endif
 
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
