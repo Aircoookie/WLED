@@ -5138,13 +5138,13 @@ static const char _data_FX_MODE_2DFRIZZLES[] PROGMEM = "Frizzles@X frequency,Y f
 ///////////////////////////////////////////
 //   2D Cellular Automata Game of life   //
 ///////////////////////////////////////////
-bool getBitValue(const uint8_t* byteArray, size_t arraySize, size_t n) {
+static bool getBitValue(const uint8_t* byteArray, size_t n) {
     size_t byteIndex = n / 8;
     size_t bitIndex = n % 8;
     uint8_t byte = byteArray[byteIndex];
     return (byte >> bitIndex) & 1;
 }
-void setBitValue(uint8_t* byteArray, size_t arraySize, size_t n, bool value) {
+static void setBitValue(uint8_t* byteArray, size_t n, bool value) {
     size_t byteIndex = n / 8;
     size_t bitIndex = n % 8;
     if (value)
@@ -5177,7 +5177,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     gol->futureCells = new uint8_t[dataSize];
   }
 
-  uint16_t &generation = SEGENV.aux0;
+  uint16_t &generation = SEGENV.aux0; //rename aux0 and aux1 for readability (not needed)
   uint16_t &pauseFrames = SEGENV.aux1;
   CRGB backgroundColor = SEGCOLOR(1);
   CRGB color;
@@ -5193,14 +5193,14 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       uint8_t state = (random8() < 82) ? 1 : 0; // ~32% chance of being alive
       if (state == 0) {
-        setBitValue(gol->cells, dataSize, y * cols + x, false);
-        setBitValue(gol->futureCells, dataSize, y * cols + x, false);
+        setBitValue(gol->cells, y * cols + x, false);
+        setBitValue(gol->futureCells, y * cols + x, false);
         if (SEGMENT.check2) continue;
         SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
       }
       else {
-        setBitValue(gol->cells, dataSize, y * cols + x, true);
-        setBitValue(gol->futureCells, dataSize, y * cols + x, true);
+        setBitValue(gol->cells, y * cols + x, true);
+        setBitValue(gol->futureCells, y * cols + x, true);
         color = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
         SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
       }
@@ -5225,7 +5225,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   if (SEGMENT.check2) {
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       //redraw foreground/alive
-      if (getBitValue(gol->cells, dataSize, y * cols + x)) {
+      if (getBitValue(gol->cells, y * cols + x)) {
         color = SEGMENT.getPixelColorXY(x,y);
         SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
       }
@@ -5249,17 +5249,17 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { // iterate through 3*3 matrix
       if (i==0 && j==0) continue; // ignore itself
-      if (SEGMENT.check3) { //wrap around
-        cX = (x+i+cols) % cols;
-        cY = (y+j+rows) % rows;
-      } else {
+      if (!SEGMENT.check3 || generation % 1500 == 0) { //no wrap disable wrap every 1500 generations to prevent undetected repeats
         cX = x+i;
         cY = y+j;
         if (cX < 0 || cY < 0 || cX >= cols || cY >= rows) continue; //skip if out of bounds
+      } else { //wrap around
+        cX = (x+i+cols) % cols;
+        cY = (y+j+rows) % rows;
       }
       cIndex = cY * cols + cX;
       // count neighbors and store upto 3 neighbor colors
-      if (getBitValue(gol->cells, dataSize, cIndex)) { //if alive
+      if (getBitValue(gol->cells, cIndex)) { //if alive
         neighbors++;
         color = SEGMENT.getPixelColorXY(cX, cY);
         if (color == backgroundColor) continue; //parent just died, color lost
@@ -5269,16 +5269,16 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     }
 
     // Rules of Life
-    bool cellValue = getBitValue(gol->cells, dataSize, y * cols + x);
+    bool cellValue = getBitValue(gol->cells, y * cols + x);
     if ((cellValue) && (neighbors < 2 || neighbors > 3)) {
       // Loneliness or overpopulation
       cellChanged = true;
-      setBitValue(gol->futureCells, dataSize, y * cols + x, false);
+      setBitValue(gol->futureCells, y * cols + x, false);
       if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
     } 
     else if (!(cellValue) && (neighbors == 3)) { 
       // Reproduction
-      setBitValue(gol->futureCells, dataSize, y * cols + x, true);
+      setBitValue(gol->futureCells, y * cols + x, true);
       cellChanged = true;
       // find dominant color and assign it to a cell
       // no longer storing colors, if parent dies the color is lost
