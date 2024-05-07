@@ -204,6 +204,10 @@
 #ifdef USERMOD_STAIRCASE_WIPE
 #include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
 #endif
+
+#ifdef USERMOD_FLASH_EFFECT
+#include "../usermods/FlashEffect/flash_effect.h"
+#endif
 void registerUsermods()
 {
 /*
@@ -386,5 +390,9 @@ void registerUsermods()
 
   #ifdef USERMOD_STAIRCASE_WIPE
   usermods.add(new StairwayWipeUsermod());
+  #endif
+
+  #ifdef USERMOD_FLASH_EFFECT
+  usermods.add(new FlashEffect());
   #endif
 }
