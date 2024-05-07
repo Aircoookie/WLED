@@ -36,13 +36,12 @@ define `USERMOD_BATTERY` in `wled00/my_config.h`
 | Name                                            | Unit        | Description                                                                           |
 | ----------------------------------------------- | ----------- |-------------------------------------------------------------------------------------- |
 | `USERMOD_BATTERY`                               |             | define this (in `my_config.h`) to have this usermod included wled00\usermods_list.cpp |
-| `USERMOD_BATTERY_USE_LIPO`                      |             | define this (in `my_config.h`) if you use LiPo rechargeables (1S)                     |
 | `USERMOD_BATTERY_MEASUREMENT_PIN`               |             | defaults to A0 on ESP8266 and GPIO35 on ESP32                                         |
 | `USERMOD_BATTERY_MEASUREMENT_INTERVAL`          | ms          | battery check interval. defaults to 30 seconds                                        |
-| `USERMOD_BATTERY_MIN_VOLTAGE`                   | v           | minimum battery voltage. default is 2.6 (18650 battery standard)                      |
-| `USERMOD_BATTERY_MAX_VOLTAGE`                   | v           | maximum battery voltage. default is 4.2 (18650 battery standard)                      |
-| `USERMOD_BATTERY_TOTAL_CAPACITY`                | mAh         | the capacity of all cells in parallel summed up                                       |
-| `USERMOD_BATTERY_CALIBRATION`                   |             | offset / calibration number, fine tune the measured voltage by the microcontroller    |
+| `USERMOD_BATTERY_{TYPE}_MIN_VOLTAGE`            | v           | minimum battery voltage. default is 2.6 (18650 battery standard)                      |
+| `USERMOD_BATTERY_{TYPE}_MAX_VOLTAGE`            | v           | maximum battery voltage. default is 4.2 (18650 battery standard)                      |
+| `USERMOD_BATTERY_{TYPE}_TOTAL_CAPACITY`         | mAh         | the capacity of all cells in parallel summed up                                       |
+| `USERMOD_BATTERY_{TYPE}_CALIBRATION`            |             | offset / calibration number, fine tune the measured voltage by the microcontroller    |
 | Auto-Off                                        | ---         | ---                                                                                   |
 | `USERMOD_BATTERY_AUTO_OFF_ENABLED`              | true/false  | enables auto-off                                                                      |
 | `USERMOD_BATTERY_AUTO_OFF_THRESHOLD`            | % (0-100)   | when this threshold is reached master power turns off                                 |
@@ -53,6 +52,13 @@ define `USERMOD_BATTERY` in `wled00/my_config.h`
 | `USERMOD_BATTERY_LOW_POWER_INDICATOR_DURATION`  | seconds     | for this long the configured preset is played                                         |
 
 All parameters can be configured at runtime via the Usermods settings page.
+
+**NOTICE:** Each Battery type can be pre-configured individualy (in `my_config.h`)
+
+| Name            | Alias         | `my_config.h` example                 |
+| --------------- | ------------- | ------------------------------------- |
+| Lithium Polymer | lipo (Li-Po)  | `USERMOD_BATTERY_lipo_MIN_VOLTAGE`    |
+| Lithium Ionen   | lion (Li-Ion) | `USERMOD_BATTERY_lion_TOTAL_CAPACITY` |
 
 ## ⚠️ Important
 
@@ -79,6 +85,11 @@ Specification from:  [Molicel INR18650-M35A, 3500mAh 10A Lithium-ion battery, 3.
 - https://arduinodiy.wordpress.com/2016/12/25/monitoring-lipo-battery-voltage-with-wemos-d1-minibattery-shield-and-thingspeak/
 
 ## 📝 Change Log
+
+2024-04-30
+
+- integrate factory pattern to make it easier to add other / custom battery types
+- update readme
 
 2023-01-04
 
