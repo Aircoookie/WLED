@@ -611,10 +611,12 @@ void WLED::setup()
     DEBUG_PRINTLN(F("PSRAM not used."));
   #endif
 #endif
-#if defined(ARDUINO_ESP32_PICO)
-// special handling for PICO-D4: gpio16+17 are in use for onboard SPI FLASH (not PSRAM)
-managed_pin_type pins[] = { {16, true}, {17, true} };
-pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
+#if defined(ARDUINO_ARCH_ESP32)
+  if (strncmp("ESP32-PICO", ESP.getChipModel(), 10) == 0) { // WLEDMM detect pico board at runtime
+    // special handling for PICO-D4: gpio16+17 are in use for onboard SPI FLASH (not PSRAM)
+    managed_pin_type pins[] = { {16, true}, {17, true} };
+    pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
+  }
 #endif
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
