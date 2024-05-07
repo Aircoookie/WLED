@@ -36,7 +36,9 @@
   -add possiblity to emit more than one particle, just pass a source and the amount to emit or even add several sources and the amount, function decides if it should do it fair or not
   -add an x/y struct, do particle rendering using that, much easier to read
 */
-// sources need to be updatable by the FX, so functions are needed to apply it to a single particle that are public
+
+#ifndef WLED_DISABLE_PARTICLESYSTEM
+
 #include "FXparticleSystem.h"
 #include "wled.h"
 #include "FastLED.h"
@@ -1538,4 +1540,5 @@ void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, 
     }
     fast_color_add(colorbuffer[x][ysize-1], carryover); // set last pixel
   }
-}
+}}
+

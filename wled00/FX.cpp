@@ -7892,6 +7892,8 @@ uint16_t mode_2Dwavingcell() {
 }
 static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,,Amplitude 1,Amplitude 2,Amplitude 3;;!;2";
 
+#ifndef WLED_DISABLE_PARTICLESYSTEM
+
 /*
  * Particle System Vortex 
  * Particles sprayed from center with a rotating spray
@@ -8222,8 +8224,11 @@ uint16_t mode_particlevolcano(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
+  PSsettings volcanosettings; 
+  volcanosettings.asByte = 0b00000100; // PS settings for volcano movement: bounceX is enabled
   uint8_t numSprays; // note: so far only one tested but more is possible
   uint32_t i = 0;
+
 
   if (SEGMENT.call == 0) // initialization
   {
@@ -8274,12 +8279,12 @@ uint16_t mode_particlevolcano(void)
       PartSys->sources[i].source.y = PS_P_RADIUS + 5; // reset to just above the lower edge that is allowed for bouncing particles, if zero, particles already 'bounce' at start and loose speed.
       PartSys->sources[i].source.vy = 0; //reset speed (so no extra particlesettin is required to keep the source 'afloat')
       PartSys->sources[i].source.hue++; // = random16(); //change hue of spray source (note: random does not look good)
-      PartSys->sources[i].source.vx = PartSys->sources[i].source.vx > 0 ? SEGMENT.custom1 >> 4 : -(SEGMENT.custom1 >> 4); // set moving speed but keep the direction given by PS
+      PartSys->sources[i].source.vx = PartSys->sources[i].source.vx > 0 ? SEGMENT.custom1 >> 2 : -(SEGMENT.custom1 >> 2); // set moving speed but keep the direction given by PS
       PartSys->sources[i].vy = SEGMENT.speed >> 2; // emitting speed
       PartSys->sources[i].vx = 0; 
       PartSys->sources[i].var = SEGMENT.custom3 >> 1; // emiting variation = nozzle size (custom 3 goes from 0-31)
       PartSys->sprayEmit(PartSys->sources[i]);
-      PartSys->particleMoveUpdate(PartSys->sources[i].source); //move the source (also applies gravity, which is corrected for above, that is a hack but easier than creating more particlesettings)
+      PartSys->particleMoveUpdate(PartSys->sources[i].source, &volcanosettings); //move the source 
     }
   }
 
@@ -9367,8 +9372,6 @@ uint16_t mode_particleghostrider(void)
   SEGMENT.aux0 += (int32_t)SEGMENT.step; // step is angle increment
   uint16_t emitangle = SEGMENT.aux0 + 32767; // +180°
   int32_t speed = map(SEGMENT.speed, 0, 255, 12, 64);
-  int8_t newvx = ((int32_t)cos16(SEGMENT.aux0) * speed) / (int32_t)32767; 
-  int8_t newvy = ((int32_t)sin16(SEGMENT.aux0) * speed) / (int32_t)32767; 
   PartSys->sources[0].source.vx = ((int32_t)cos16(SEGMENT.aux0) * speed) / (int32_t)32767; 
   PartSys->sources[0].source.vy = ((int32_t)sin16(SEGMENT.aux0) * speed) / (int32_t)32767;
   PartSys->sources[0].source.ttl = 500; // source never dies (note: setting 'perpetual' is not needed if replenished each frame)
@@ -9596,6 +9599,9 @@ uint16_t mode_particlecenterGEQ(void)
 }
   static const char _data_FX_MODE_PARTICLECCIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Color Change,Particle Speed,Spray Count,Nozzle Size,Random Color, Direction;;!;012;pal=56,sx=0,ix=222,c1=190,c2=200,c3=0,o1=0,o2=0";
 */
+
+#endif //WLED_DISABLE_PARTICLESYSTEM
+
 #endif // WLED_DISABLE_2D
 
 
@@ -9837,6 +9843,7 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 
+#ifndef WLED_DISABLE_PARTICLESYSTEM
   addEffect(FX_MODE_PARTICLEVORTEX, &mode_particlevortex, _data_FX_MODE_PARTICLEVORTEX);
   addEffect(FX_MODE_PARTICLEFIREWORKS, &mode_particlefireworks, _data_FX_MODE_PARTICLEFIREWORKS);
   addEffect(FX_MODE_PARTICLEVOLCANO, &mode_particlevolcano, _data_FX_MODE_PARTICLEVOLCANO);
@@ -9851,8 +9858,8 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
   addEffect(FX_MODE_PARTICLEGHOSTRIDER, &mode_particleghostrider, _data_FX_MODE_PARTICLEGHOSTRIDER);
   addEffect(FX_MODE_PARTICLEBLOBS, &mode_particleblobs, _data_FX_MODE_PARTICLEBLOBS);
-
  // addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
+#endif // WLED_DISABLE_PARTICLESYSTEM
 
 #endif // WLED_DISABLE_2D
 

@@ -24,6 +24,7 @@
   THE SOFTWARE.
 */
 
+#ifndef WLED_DISABLE_PARTICLESYSTEM
 
 #include <stdint.h>
 #include "FastLED.h"
@@ -220,3 +221,5 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bo
 void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
 void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
 void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
+
+#endif // WLED_DISABLE_PARTICLESYSTEM
