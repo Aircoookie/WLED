@@ -1540,5 +1540,8 @@ void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, 
     }
     fast_color_add(colorbuffer[x][ysize-1], carryover); // set last pixel
   }
-}}
+}
+
+#endif // WLED_DISABLE_PARTICLESYSTEM
+
 
