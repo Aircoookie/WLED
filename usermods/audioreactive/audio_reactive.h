@@ -119,10 +119,6 @@ static uint8_t inputLevel = 128;              // UI slider value
 #else
   uint8_t sampleGain = SR_GAIN;               // sample gain (config value)
 #endif
-//static uint8_t soundAgc = 1;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
-//static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
-//static bool udpSyncConnected = false;         // UDP connection status -> true if connected to multicast group
-
 // user settable options for FFTResult scaling
 static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized square root
 
@@ -146,24 +142,7 @@ const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; //
 // AGC presets end
 
 static AudioSource *audioSource = nullptr;
-//static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
-
-// audioreactive variables shared with FFT task
-// static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
-// static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
-// static float    sampleAvg = 0.0f;               // Smoothed Average sample - sampleAvg < 1 means "quiet" (simple noise gate)
-// static float    sampleAgc = 0.0f;               // Smoothed AGC sample
-
-// peak detection
-// static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
-// static uint8_t maxVol = 31;          // Reasonable value for constant volume for 'peak detector', as it won't always trigger (deprecated)
-// static uint8_t binNum = 8;           // Used to select the bin for FFT based beat detection  (deprecated)
-// static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same time as samplePeak, but reset by transmitAudioData
-// static unsigned long timeOfPeak = 0; // time of last sample peak detection.
-// static void detectSamplePeak(void);  // peak detection function (needs scaled FFT results in vReal[])
-// static void autoResetPeak(void);     // peak auto-reset function
-
 
 ////////////////////
 // Begin FFT Code //
@@ -176,17 +155,12 @@ void FFTcode(void * parameter);      // audio processing task: read samples, run
 static void runMicFilter(uint16_t numSamples, float *sampleBuffer);          // pre-filtering of raw samples (band-pass)
 static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels); // post-processing and post-amp of GEQ channels
 
-//#define NUM_GEQ_CHANNELS 16                                           // number of frequency channels. Don't change !!
-
 static TaskHandle_t FFT_Task = nullptr;
 
 // Table of multiplication factors so that we can even out the frequency response.
 static float fftResultPink[NUM_GEQ_CHANNELS] = { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f };
 
 // globals and FFT Output variables shared with animations
-//static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
-//static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
-//static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
 static uint64_t fftTime = 0;
 static uint64_t sampleTime = 0;
