@@ -143,20 +143,8 @@ void handleImprovWifiScan();
 void sendImprovIPRPCResult(ImprovRPCType type);
 
 //ir.cpp
-void applyRepeatActions();
-byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
-void decodeIR(uint32_t code);
-void decodeIR24(uint32_t code);
-void decodeIR24OLD(uint32_t code);
-void decodeIR24CT(uint32_t code);
-void decodeIR40(uint32_t code);
-void decodeIR44(uint32_t code);
-void decodeIR21(uint32_t code);
-void decodeIR6(uint32_t code);
-void decodeIR9(uint32_t code);
-void decodeIRJson(uint32_t code);
-
 void initIR();
+void deInitIR();
 void handleIR();
 
 //json.cpp
@@ -421,14 +409,14 @@ void clearEEPROM();
   float fmod_t(float num, float denom);
 #else
   #include <math.h>
-  #define sin_t sin
-  #define cos_t cos
-  #define tan_t tan
-  #define asin_t asin
-  #define acos_t acos
-  #define atan_t atan
-  #define fmod_t fmod
-  #define floor_t floor
+  #define sin_t sinf
+  #define cos_t cosf
+  #define tan_t tanf
+  #define asin_t asinf
+  #define acos_t acosf
+  #define atan_t atanf
+  #define fmod_t fmodf
+  #define floor_t floorf
 #endif
 
 //wled_serial.cpp

@@ -487,6 +487,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+  doAdvancePlaylist = root[F("np")] | doAdvancePlaylist; //advances to next preset in playlist when true
+  
   JsonObject wifi = root[F("wifi")];
   if (!wifi.isNull()) {
     bool apMode = getBoolVal(wifi[F("ap")], apActive);
