@@ -37,6 +37,7 @@ define `USERMOD_BATTERY` in `wled00/my_config.h`
 | ----------------------------------------------- | ----------- |-------------------------------------------------------------------------------------- |
 | `USERMOD_BATTERY`                               |             | define this (in `my_config.h`) to have this usermod included wled00\usermods_list.cpp |
 | `USERMOD_BATTERY_MEASUREMENT_PIN`               |             | defaults to A0 on ESP8266 and GPIO35 on ESP32                                         |
+| `USERMOD_BATTERY_INITIAL_DELAY`                 | ms          | delay before initial reading. defaults to 10 seconds to allow voltage stabilization
 | `USERMOD_BATTERY_MEASUREMENT_INTERVAL`          | ms          | battery check interval. defaults to 30 seconds                                        |
 | `USERMOD_BATTERY_{TYPE}_MIN_VOLTAGE`            | v           | minimum battery voltage. default is 2.6 (18650 battery standard)                      |
 | `USERMOD_BATTERY_{TYPE}_MAX_VOLTAGE`            | v           | maximum battery voltage. default is 4.2 (18650 battery standard)                      |
@@ -85,6 +86,10 @@ Specification from:  [Molicel INR18650-M35A, 3500mAh 10A Lithium-ion battery, 3.
 - https://arduinodiy.wordpress.com/2016/12/25/monitoring-lipo-battery-voltage-with-wemos-d1-minibattery-shield-and-thingspeak/
 
 ## 📝 Change Log
+
+2024-04-30
+
+- improved initial reading accuracy by delaying initial measurement to allow voltage to stabilize at power-on
 
 2024-04-30
 
