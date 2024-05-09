@@ -9209,8 +9209,8 @@ uint16_t mode_particlespray(void)
     if (SEGMENT.call % 20 == 0 || SEGMENT.call % (11 - volumeSmth / 25) == 0) // defines interval of particle emit
     {
       PartSys->sources[0].maxLife = (volumeSmth >> 1) + (SEGMENT.intensity >> 1); // lifetime in frames
-      PartSys->sources[0].var = 1 + volumeRaw >> 4;             
-      uint32_t emitspeed = (SEGMENT.speed >> 2) + (volumeSmth >> 3);
+      PartSys->sources[0].var = 1 + ((volumeRaw * SEGMENT.speed)  >> 12);           
+      uint32_t emitspeed = (SEGMENT.speed >> 2) + (volumeRaw >> 3);
       PartSys->sources[0].source.hue += volumeSmth/30;      
       PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);      
     }
@@ -9339,6 +9339,95 @@ uint16_t mode_particleGEQ(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS Equalizer@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128,o1=0,o2=0,o3=0";
+
+/*
+ * Particle rotating GEQ (unfinished, basically works but needs more fine-tuning)
+ * Particles sprayed from center with a rotating spray
+ * Uses palette for particle color
+ * by DedeHai (Damian Schneider)
+ */
+
+#define NUMBEROFSOURCES 16
+uint16_t mode_particlecenterGEQ(void)
+{
+if (SEGLEN == 1)
+    return mode_static();
+
+  ParticleSystem *PartSys = NULL;
+  uint8_t numSprays;
+  uint32_t i;
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem(PartSys, NUMBEROFSOURCES)) // init, request 16 sources
+      return mode_static(); // allocation failed
+    numSprays = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
+    for (i = 0; i < numSprays; i++)
+    {
+      PartSys->sources[i].source.x = (PartSys->maxX + 1) >> 1; // center
+      PartSys->sources[i].source.y = (PartSys->maxY + 1) >> 1; // center
+      PartSys->sources[i].source.hue = i*16; // even color distribution
+      PartSys->sources[i].maxLife = 400;
+      PartSys->sources[i].minLife = 200;
+    }
+    PartSys->setKillOutOfBounds(true); 
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data! 
+  }
+
+  numSprays = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
+
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+    um_data = simulateSound(SEGMENT.soundSim);     // add support for no audio
+
+  uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
+  uint32_t threshold = 300 - SEGMENT.intensity;
+
+
+  if (SEGMENT.check2)
+    SEGMENT.aux0 += SEGMENT.custom1 << 2;
+  else
+    SEGMENT.aux0 -= SEGMENT.custom1 << 2;
+
+  uint16_t angleoffset = (uint16_t)0xFFFF / (uint16_t)numSprays;
+  uint32_t j = random(numSprays); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
+  for (i = 0; i < numSprays; i++)
+  {
+    if(SEGMENT.call % (32 - (SEGMENT.custom2 >> 3)) == 0 && SEGMENT.custom2 > 0)
+      PartSys->sources[j].source.hue += 1 + (SEGMENT.custom2 >> 4);
+    PartSys->sources[j].var = SEGMENT.custom3>>1;
+    int8_t emitspeed = 5 + (((uint32_t)fftResult[j] * ((uint32_t)SEGMENT.speed+20)) >> 10); // emit speed according to loudness of band
+    uint16_t emitangle = j * angleoffset + SEGMENT.aux0;
+
+    uint32_t emitparticles = 0;
+    if (fftResult[j] > threshold)
+    {
+      emitparticles = 1; 
+    }
+    else if (fftResult[j] > 0) // band has low value
+    {
+      uint32_t restvolume = ((threshold - fftResult[j]) >> 2) + 2;
+      if (random16() % restvolume == 0)
+      {
+        emitparticles = 1;
+      }
+    }
+    if (emitparticles)
+      PartSys->angleEmit(PartSys->sources[j], emitangle, emitspeed);      
+    j = (j + 1) % numSprays;
+  }
+
+  PartSys->update(); // update and render
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLECCIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;012;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
 
 /*
 Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
@@ -9514,139 +9603,6 @@ uint16_t mode_particleblobs(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o1=0,o2=0,o3=1";
-
-
-/*
- * Particle rotating GEQ (unfinished, basically works but needs more fine-tuning)
- * Particles sprayed from center with a rotating spray
- * Uses palette for particle color
- * by DedeHai (Damian Schneider)
- */
-/*
-uint16_t mode_particlecenterGEQ(void)
-{
-
-  if (SEGLEN == 1)
-    return mode_static();
-
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
-#ifdef ESP8266
-  const uint32_t numParticles = 50; // maximum number of particles
-#else
-  const uint32_t numParticles = 500; // maximum number of particles
-#endif
-
-  const uint8_t numSprays = 16; // maximum number of sprays
-
-  PSparticle *particles;
-  PSsource *spray;
-
-  // allocate memory and divide it into proper pointers, max is 32kB for all segments, 100 particles use 1200bytes
-  uint32_t dataSize = sizeof(PSparticle) * numParticles;
-  dataSize += sizeof(PSsource) * (numSprays);
-  if (!SEGMENT.allocateData(dataSize))
-    return mode_static(); // allocation failed; //allocation failed
-
-  spray = reinterpret_cast<PSsource *>(SEGMENT.data);
-  // calculate the end of the spray data and assign it as the data pointer for the particles:
-  particles = reinterpret_cast<PSparticle *>(spray + numSprays); // cast the data array into a particle pointer
-
-  uint32_t i = 0;
-  uint32_t j = 0;
-  //uint8_t spraycount = 1 + (SEGMENT.custom2 >> 5); // number of sprays to display, 1-8
-
-  if (SEGMENT.call == 0) // initialization
-  {
-    SEGMENT.aux0 = 0;    // starting angle
-    SEGMENT.aux1 = 0xFF; // user check
-    for (i = 0; i < numParticles; i++)
-    {
-      PartSys->particles[i].ttl = 0;
-    }
-    for (i = 0; i < numSprays; i++)
-    {
-        PartSys->sources[i].source.hue = i*16; // even color distribution
-        PartSys->sources[i].source.sat = 255; // set saturation
-        PartSys->sources[i].source.x = (cols * PS_P_RADIUS) / 2; // center
-        PartSys->sources[i].source.y = (rows * PS_P_RADIUS) / 2; // center
-        PartSys->sources[i].source.vx = 0;
-        PartSys->sources[i].source.vy = 0;
-        PartSys->sources[i].maxLife = 400;
-        PartSys->sources[i].minLife = 200;
-        PartSys->sources[i].vx = 0;  // emitting speed
-        PartSys->sources[i].vy = 0;  // emitting speed
-        PartSys->sources[i].var = 0; // emitting variation
-    }
-  }
-
-  um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
-  {
-    // add support for no audio
-    um_data = simulateSound(SEGMENT.soundSim);
-  }
-
-  uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
-
-  i = 0;
-
-  uint32_t threshold = 300 - SEGMENT.intensity;
-
-    i = 0;
-    j = random16(numSprays); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
-    if (SEGMENT.check2)
-      SEGMENT.aux0 += SEGMENT.custom1;
-    else
-      SEGMENT.aux0 -= SEGMENT.custom1;
-
-    uint32_t angleoffset = SEGMENT.aux0 >> 4;
-
-    while (i < numParticles)
-    {
-      if (PartSys->particles[i].ttl == 0) // find a dead particle
-      {
-        uint8_t emitspeed = 5 + (((uint32_t)fftResult[j] * ((uint32_t)SEGMENT.speed+10)) >> 9); // emit speed according to loudness of band
-        uint8_t emitangle = j * 16 + random16(SEGMENT.custom3 >> 1) + angleoffset;
-
-        uint32_t emitparticles = 0;
-        if (fftResult[j] > threshold)
-        {
-          emitparticles = 1; // + (fftResult[bin]>>6);
-        }
-        else if (fftResult[j] > 0) // band has low volue
-        {
-          uint32_t restvolume = ((threshold - fftResult[j]) >> 2) + 2;
-          if (random16() % restvolume == 0)
-          {
-            emitparticles = 1;
-          }
-        }
-        if (emitparticles)
-          Emitter_Angle_emit(&spray[j], &PartSys->particles[i], emitangle, emitspeed);
-        j = (j + 1) % numSprays;
-      }
-      i++;
-      //todo: could add a break if all 16 sprays have been checked, would speed it up
-    }
-
-
-
-    for (i = 0; i < numParticles; i++)
-    {
-      Particle_Move_update(&PartSys->particles[i], true); // move the particles, kill out of bounds particles
-    }
-
-
-    // render the particles
-    ParticleSys_render(particles, numParticles, false, false);
-
-
-  return FRAMETIME;
-}
-  static const char _data_FX_MODE_PARTICLECCIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Color Change,Particle Speed,Spray Count,Nozzle Size,Random Color, Direction;;!;012;pal=56,sx=0,ix=222,c1=190,c2=200,c3=0,o1=0,o2=0";
-*/
 
 #endif //WLED_DISABLE_PARTICLESYSTEM
 
@@ -9906,7 +9862,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
   addEffect(FX_MODE_PARTICLEGHOSTRIDER, &mode_particleghostrider, _data_FX_MODE_PARTICLEGHOSTRIDER);
   addEffect(FX_MODE_PARTICLEBLOBS, &mode_particleblobs, _data_FX_MODE_PARTICLEBLOBS);
- // addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
+  addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
 #endif // WLED_DISABLE_PARTICLESYSTEM
 
 #endif // WLED_DISABLE_2D
