@@ -93,7 +93,7 @@ typedef struct {
   uint16_t minLife; // minimum ttl of emittet particles
   uint16_t maxLife; // maximum ttl of emitted particles
   PSparticle source; // use a particle as the emitter source (speed, position, color)
-  uint8_t var; // variation of emitted speed (use odd numbers for good symmetry)
+  int8_t var; // variation of emitted speed (adds random(+/- var) to speed)
   int8_t vx; // emitting speed
   int8_t vy; 
   uint8_t size; // particle size (advanced property)
@@ -127,9 +127,9 @@ public:
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
 
   // particle emitters
-  int32_t sprayEmit(PSsource &emitter);
+  int32_t sprayEmit(PSsource &emitter, uint32_t amount = 1);
   void flameEmit(PSsource &emitter);
-  void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed);
+  void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed, uint32_t amount = 1);
 
 
   void particleMoveUpdate(PSparticle &part, PSsettings *options = NULL, PSadvancedParticle *advancedproperties = NULL); // move function
