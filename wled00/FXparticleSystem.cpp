@@ -33,7 +33,6 @@
 /*
   TODO:
   -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired. 
-  -add possiblity to emit more than one particle, just pass a source and the amount to emit or even add several sources and the amount, function decides if it should do it fair or not
   -add an x/y struct, do particle rendering using that, much easier to read
 */
 
@@ -217,27 +216,30 @@ void ParticleSystem::enableParticleCollisions(bool enable, uint8_t hardness) // 
   collisionHardness = hardness + 1;
 }
 
-// emit one particle with variation, returns index of emitted particle (or -1 if no particle emitted)
-int32_t ParticleSystem::sprayEmit(PSsource &emitter)
+// emit one particle with variation, returns index of last emitted particle (or -1 if no particle emitted)
+int32_t ParticleSystem::sprayEmit(PSsource &emitter, uint32_t amount)
 {
-  for (int32_t i = 0; i < usedParticles; i++)
+ for (uint32_t a = 0; a < amount; a++)
   {
-    emitIndex++;
-    if (emitIndex >= usedParticles)
-      emitIndex = 0;
-    if (particles[emitIndex].ttl == 0) // find a dead particle
+    for (int32_t i = 0; i < usedParticles; i++)
     {
-      particles[emitIndex].vx = emitter.vx + random(-emitter.var, emitter.var); 
-      particles[emitIndex].vy = emitter.vy + random(-emitter.var, emitter.var);
-      particles[emitIndex].x = emitter.source.x; 
-      particles[emitIndex].y = emitter.source.y; 
-      particles[emitIndex].hue = emitter.source.hue;
-      particles[emitIndex].sat = emitter.source.sat;
-      particles[emitIndex].collide = emitter.source.collide;
-      particles[emitIndex].ttl = random(emitter.minLife, emitter.maxLife);
-      if (advPartProps)
-        advPartProps[emitIndex].size = emitter.size;
-      return i;
+      emitIndex++;
+      if (emitIndex >= usedParticles)
+        emitIndex = 0;
+      if (particles[emitIndex].ttl == 0) // find a dead particle
+      {
+        particles[emitIndex].vx = emitter.vx + random(-emitter.var, emitter.var); 
+        particles[emitIndex].vy = emitter.vy + random(-emitter.var, emitter.var);
+        particles[emitIndex].x = emitter.source.x; 
+        particles[emitIndex].y = emitter.source.y; 
+        particles[emitIndex].hue = emitter.source.hue;
+        particles[emitIndex].sat = emitter.source.sat;
+        particles[emitIndex].collide = emitter.source.collide;
+        particles[emitIndex].ttl = random(emitter.minLife, emitter.maxLife);
+        if (advPartProps)
+          advPartProps[emitIndex].size = emitter.size;
+        return i;
+      }
     }
   }
   return -1;
@@ -273,11 +275,11 @@ void ParticleSystem::flameEmit(PSsource &emitter)
 
 // Emits a particle at given angle and speed, angle is from 0-65535 (=0-360deg), speed is also affected by emitter->var
 // angle = 0 means in positive x-direction (i.e. to the right)
-void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed)
+void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, uint32_t amount)
 {
   emitter.vx = ((int32_t)cos16(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding 
   emitter.vy = ((int32_t)sin16(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
-  sprayEmit(emitter);
+  sprayEmit(emitter, amount);
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0

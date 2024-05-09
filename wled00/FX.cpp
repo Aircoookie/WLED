@@ -9164,11 +9164,9 @@ uint16_t mode_particlespray(void)
     if (!initParticleSystem(PartSys, 1)) // init, no additional data needed
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
-    PartSys->setBounceY(true);
+    PartSys->setBounceY(true); 
     PartSys->setMotionBlur(200); // anable motion blur
     PartSys->sources[0].source.hue = random16();
-    PartSys->sources[0].maxLife = 300; // lifetime in frames
-    PartSys->sources[0].minLife = 100;
     PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
     PartSys->sources[0].var = 3;
 
@@ -9195,21 +9193,55 @@ uint16_t mode_particlespray(void)
   else
     PartSys->enableParticleCollisions(false);
 
+  //position according to sliders
+  PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);
+  PartSys->sources[0].source.y = map(SEGMENT.custom2, 0, 255, 0, PartSys->maxY);
+  uint16_t angle = (256 - (((int32_t)SEGMENT.custom3 + 1) << 3)) << 8;   
+  
+  #ifdef USERMOD_AUDIOREACTIVE        
+  um_data_t *um_data;
+  if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))          
+  {
+    uint32_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]); //0 to 255
+    uint32_t volumeRaw    = *(int16_t*)um_data->u_data[1]; //0 to 255   
+    PartSys->sources[0].minLife = 30;    
+
+    if (SEGMENT.call % 20 == 0 || SEGMENT.call % (11 - volumeSmth / 25) == 0) // defines interval of particle emit
+    {
+      PartSys->sources[0].maxLife = (volumeSmth >> 1) + (SEGMENT.intensity >> 1); // lifetime in frames
+      PartSys->sources[0].var = 1 + volumeRaw >> 4;             
+      uint32_t emitspeed = (SEGMENT.speed >> 2) + (volumeSmth >> 3);
+      PartSys->sources[0].source.hue += volumeSmth/30;      
+      PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);      
+    }
+  }
+  else{ //no AR data, fall back to normal mode
+    // change source properties
+    if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) // every nth frame, cycle color and emit particles
+    {
+      PartSys->sources[0].maxLife = 300; // lifetime in frames
+      PartSys->sources[0].minLife = 100;
+      PartSys->sources[0].source.hue++; // = random16(); //change hue of spray source         
+      PartSys->angleEmit(PartSys->sources[0], angle, SEGMENT.speed >> 2);
+    }
+  }
+  #else
   // change source properties
   if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) // every nth frame, cycle color and emit particles
   {
-        PartSys->sources[0].source.hue++; // = random16(); //change hue of spray source
-        // PartSys->sources[i].var = SEGMENT.custom3; // emiting variation = nozzle size (custom 3 goes from 0-32)
-        PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);
-        PartSys->sources[0].source.y = map(SEGMENT.custom2, 0, 255, 0, PartSys->maxY); 
-        // spray[j].source.hue = random16(); //set random color for each particle (using palette)
-        PartSys->angleEmit(PartSys->sources[0], (256 - (((int32_t)SEGMENT.custom3 + 1) << 3)) << 8, SEGMENT.speed >> 2);
+    PartSys->sources[0].maxLife = 300; // lifetime in frames. note: could be done in init part, but AR moderequires this to be dynamic
+    PartSys->sources[0].minLife = 100;
+    PartSys->sources[0].source.hue++; // = random16(); //change hue of spray source
+    // PartSys->sources[i].var = SEGMENT.custom3; // emiting variation = nozzle size (custom 3 goes from 0-32)
+    // spray[j].source.hue = random16(); //set random color for each particle (using palette)
+    PartSys->angleEmit(PartSys->sources[0], angle, SEGMENT.speed >> 2);
   }
+  #endif
 
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;2;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;2v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
 
 
 /*
@@ -9464,12 +9496,24 @@ uint16_t mode_particleblobs(void)
   SEGMENT.aux0 = SEGMENT.speed; //write state back
   SEGMENT.aux1 = SEGMENT.custom1;
 
+  #ifdef USERMOD_AUDIOREACTIVE        
+  um_data_t *um_data;
+  if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))          
+  {    
+    uint8_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]); 
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) // update particles
+      {
+        if(SEGMENT.check3) //pulsate selected
+          PartSys->advPartProps[i].size = volumeSmth;
+      }
+  }
+  #endif
   PartSys->setMotionBlur(((SEGMENT.custom3) << 3) + 7);
   PartSys->update(); // update and render
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2;sx=30,ix=64,c1=200,c2=130,c3=0,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o1=0,o2=0,o3=1";
 
 
 /*
