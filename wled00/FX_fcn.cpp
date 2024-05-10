@@ -738,16 +738,17 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         float centerY = roundf((vH-1) / 2.0f);
         // int maxDistance = sqrt(centerX * centerX + centerY * centerY) + 1;
         float angleRad = (max(vW,vH) > Pinwheel_Size_Medium) ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med; // angle in radians
-        float cosVal = cosf(angleRad);
-        float sinVal = sinf(angleRad);
+        float cosVal = cos_t(angleRad);
+        float sinVal = sin_t(angleRad);
 
         // draw line at angle, starting at center and ending at the segment edge
         // we use fixed point math for better speed. Starting distance is 0.5 for better rounding
-        constexpr int_fast32_t Fixed_Scale = 512;  // fixpoint scaling factor
-        int_fast32_t posx = (centerX + 0.5f * cosVal) * Fixed_Scale; // X starting position in fixed point
-        int_fast32_t posy = (centerY + 0.5f * sinVal) * Fixed_Scale; // Y starting position in fixed point
-        int_fast16_t inc_x = cosVal * Fixed_Scale; // X increment per step (fixed point)
-        int_fast16_t inc_y = sinVal * Fixed_Scale; // Y increment per step (fixed point)
+        // int_fast16_t and int_fast32_t types changed to int, minimum bits commented
+        constexpr int Fixed_Scale = 512;  // fixpoint scaling factor 18 bit
+        int posx = (centerX + 0.5f * cosVal) * Fixed_Scale; // X starting position in fixed point 18 bit
+        int posy = (centerY + 0.5f * sinVal) * Fixed_Scale; // Y starting position in fixed point 18 bit
+        int inc_x = cosVal * Fixed_Scale; // X increment per step (fixed point) 10 bit
+        int inc_y = sinVal * Fixed_Scale; // Y increment per step (fixed point) 10 bit
 
         int32_t maxX = vW * Fixed_Scale; // X edge in fixedpoint
         int32_t maxY = vH * Fixed_Scale; // Y edge in fixedpoint
@@ -885,8 +886,8 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
         float centerX = (vW - 1) / 2.0f;
         float centerY = (vH - 1) / 2.0f;
         float angleRad = (max(vW,vH) > Pinwheel_Size_Medium) ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med; // angle in radians
-        int x = roundf(centerX + distance * cosf(angleRad));
-        int y = roundf(centerY + distance * sinf(angleRad));
+        int x = roundf(centerX + distance * cos_t(angleRad));
+        int y = roundf(centerY + distance * sin_t(angleRad));
         return getPixelColorXY(x, y);
         break;
       }
