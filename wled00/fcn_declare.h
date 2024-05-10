@@ -398,7 +398,7 @@ void clearEEPROM();
 #endif
 
 //wled_math.cpp
-#ifndef WLED_USE_REAL_MATH
+#if defined(ESP8266) && !defined(WLED_USE_REAL_MATH)
   template <typename T> T atan_t(T x);
   float cos_t(float phi);
   float sin_t(float x);
