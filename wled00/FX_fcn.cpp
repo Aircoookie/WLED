@@ -639,7 +639,7 @@ uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
 
 // Constants for mapping mode "Pinwheel"
 constexpr int Pinwheel_Steps_Medium = 208;     // no holes up to 32x32;  60fps
-constexpr int Pinwheel_Size_Medium = 32;       // larger than this -> use "Big"
+constexpr int Pinwheel_Size_Medium = 30;       // larger than this -> use "Big"
 constexpr int Pinwheel_Steps_Big = 360;        // no holes expected up to  58x58; 40fps
 constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...208 to Radians
 constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...360 to Radians
