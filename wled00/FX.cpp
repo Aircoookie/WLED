@@ -5166,7 +5166,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(byte) * SEGMENT.length()/8;  // using width*height prevents reallocation if mirroring is enabled
+  const uint16_t dataSize = SEGMENT.length() / 8;
   const uint16_t totalSize = dataSize*2 + sizeof(gameOfLife);
 
   if (!SEGENV.allocateData(totalSize)) return mode_static(); //allocation failed
