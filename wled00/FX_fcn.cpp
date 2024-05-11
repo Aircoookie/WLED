@@ -638,9 +638,12 @@ uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
 }
 
 // Constants for mapping mode "Pinwheel"
-constexpr int Pinwheel_Steps_Medium = 208;     // no holes up to 32x32;  60fps
-constexpr int Pinwheel_Size_Medium = 30;       // larger than this -> use "Big"
-constexpr int Pinwheel_Steps_Big = 360;        // no holes expected up to  58x58; 40fps
+constexpr int Pinwheel_Steps_Small = 72;       // no holes up to 16x16;
+constexpr int Pinwheel_Size_Small = 16;       
+constexpr int Pinwheel_Steps_Medium = 200;     // no holes up to 32x32;  60fps
+constexpr int Pinwheel_Size_Medium = 32;       // larger than this -> use "Big"
+constexpr int Pinwheel_Steps_Big = 296;        // no holes expected up to  58x58; 40fps
+constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...208 to Radians
 constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...208 to Radians
 constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...360 to Radians
 
@@ -661,7 +664,9 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
         vLen = max(vW,vH); // get the longest dimension
         break;
       case M12_sPinwheel:
-        if (max(vW,vH) <= Pinwheel_Size_Medium) 
+        if (max(vW,vH) <= Pinwheel_Size_Small) 
+          vLen = Pinwheel_Steps_Small;
+        else if (max(vW,vH) <= Pinwheel_Size_Medium) 
           vLen = Pinwheel_Steps_Medium;
         else 
           vLen = Pinwheel_Steps_Big;
@@ -736,8 +741,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         // i = angle --> 0 through 359 (Big), OR 0 through 208 (Medium)
         float centerX = roundf((vW-1) / 2.0f);
         float centerY = roundf((vH-1) / 2.0f);
-        // int maxDistance = sqrt(centerX * centerX + centerY * centerY) + 1;
-        float angleRad = (max(vW,vH) > Pinwheel_Size_Medium) ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med; // angle in radians
+        float angleRad = (max(vW, vH) > Pinwheel_Size_Small ? (max(vW, vH) > Pinwheel_Size_Medium ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small); // angle in radians
         float cosVal = cos_t(angleRad);
         float sinVal = sin_t(angleRad);
 
@@ -885,7 +889,7 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
         float distance = max(1.0f, min(vH-1, vW-1) / 2.0f);
         float centerX = (vW - 1) / 2.0f;
         float centerY = (vH - 1) / 2.0f;
-        float angleRad = (max(vW,vH) > Pinwheel_Size_Medium) ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med; // angle in radians
+        float angleRad = (max(vW, vH) > Pinwheel_Size_Small ? (max(vW, vH) > Pinwheel_Size_Medium ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small); // angle in radians
         int x = roundf(centerX + distance * cos_t(angleRad));
         int y = roundf(centerY + distance * sin_t(angleRad));
         return getPixelColorXY(x, y);
