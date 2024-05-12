@@ -127,7 +127,7 @@ void handlePlaylist() {
   static unsigned long presetCycledTime = 0;
   if (currentPlaylist < 0 || playlistEntries == nullptr) return;
 
-  if (millis() - presetCycledTime > (100*playlistEntryDur)) {
+if (millis() - presetCycledTime > (100 * playlistEntryDur) || doAdvancePlaylist) {
     presetCycledTime = millis();
     if (bri == 0 || nightlightActive) return;
 
@@ -149,6 +149,7 @@ void handlePlaylist() {
     strip.setTransition(playlistEntries[playlistIndex].tr * 100);
     playlistEntryDur = playlistEntries[playlistIndex].dur;
     applyPresetFromPlaylist(playlistEntries[playlistIndex].preset);
+    doAdvancePlaylist = false;
   }
 }
 
