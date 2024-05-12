@@ -638,15 +638,14 @@ uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
 }
 
 // Constants for mapping mode "Pinwheel"
-constexpr int Pinwheel_Steps_Small = 72;       // no holes up to 16x16;
+constexpr int Pinwheel_Steps_Small = 72;       // no holes up to 16x16
 constexpr int Pinwheel_Size_Small = 16;       
-constexpr int Pinwheel_Steps_Medium = 192;     // no holes up to 32x32;  60fps
+constexpr int Pinwheel_Steps_Medium = 192;     // no holes up to 32x32
 constexpr int Pinwheel_Size_Medium = 32;       // larger than this -> use "Big"
-constexpr int Pinwheel_Steps_Big = 296;        // no holes expected up to  58x58; 40fps
-constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...208 to Radians
-constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...208 to Radians
-constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...360 to Radians
-int prevRay = INT_MIN;
+constexpr int Pinwheel_Steps_Big = 296;        // no holes expected up to  56x56
+constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...72 to Radians
+constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...192 to Radians
+constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...296 to Radians
 
 // 1D strip
 uint16_t IRAM_ATTR Segment::virtualLength() const {
@@ -738,6 +737,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
         break;
       case M12_sPinwheel: {
+        static int prevRay = INT_MIN; // previous ray number
         // i = angle --> 0 - 296  (Big), 0 - 192  (Medium), 0 - 72 (Small)
         float centerX = roundf((vW-1) / 2.0f);
         float centerY = roundf((vH-1) / 2.0f);
@@ -761,9 +761,9 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         int32_t maxY = vH * Fixed_Scale; // Y edge in fixedpoint
 
         // Odd rays start further from center if prevRay started at center.
-        if (i % 2 == 1 && (i - 1 == prevRay || i + 1 == prevRay)) {
-          posx = (posx + inc_x * (vW/4));
-          posy = (posy + inc_y * (vH/4));
+        if ((i % 2 == 1) && (i - 1 == prevRay || i + 1 == prevRay)) {
+          posx += inc_x * (vW/4);
+          posy += inc_y * (vH/4);
         }
         prevRay = i;
 
@@ -772,13 +772,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
           // scale down to integer (compiler will replace division with appropriate bitshift)
           int x = posx / Fixed_Scale;
           int y = posy / Fixed_Scale;
-#if 1
           // set pixel
           if (x != lastX || y != lastY) setPixelColorXY(x, y, col);  // only paint if pixel position is different
-#else
-          // experimental: only set pixel if color is different (trade getPC performance against setPC)
-          if ((x != lastX || y != lastY) && (getPixelColorXY(x, y) != col)) setPixelColorXY(x, y, col); // only paint if pixel color is different
-#endif
           lastX = x;
           lastY = y;
           // advance to next position
