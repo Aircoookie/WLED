@@ -762,8 +762,9 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
         // Odd rays start further from center if prevRay started at center.
         if ((i % 2 == 1) && (i - 1 == prevRay || i + 1 == prevRay)) {
-          posx += inc_x * (vW/4);
-          posy += inc_y * (vH/4);
+          int jump = min(vW/3, vH/3);
+          posx += inc_x * jump;
+          posy += inc_y * jump;
         }
         prevRay = i;
 
