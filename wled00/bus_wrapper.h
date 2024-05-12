@@ -17,6 +17,11 @@
 #if !defined(WLED_NO_I2S1_PIXELBUS) && (defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2))
 #define WLED_NO_I2S1_PIXELBUS
 #endif
+#ifndef WLED_NO_I2S1_PIXELBUS
+  #ifdef WLED_USE_PARALLEL_I2S
+    #warning Use less than 300 pixels per bus.
+  #endif
+#endif
 // temporary end
 
 //Hardware SPI Pins

@@ -360,9 +360,10 @@
 			gId("json").style.display = d.Sf.IT.value==8 ? "" : "none";
 		}
 		function lastEnd(i) {
-			if (i<1) return 0;
-			v = parseInt(d.getElementsByName("LS"+(i-1))[0].value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
-			var t = parseInt(d.getElementsByName("LT"+(i-1))[0].value);
+			if (i-- < 1) return 0;
+			var s = String.fromCharCode((i<10?48:55)+i);
+			v = parseInt(d.getElementsByName("LS"+s)[0].value) + parseInt(d.getElementsByName("LC"+s)[0].value);
+			var t = parseInt(d.getElementsByName("LT"+s)[0].value);
 			if (isPWM(t)) v = 1; //PWM busses
 			if (isNaN(v)) return 0;
 			return v;
@@ -373,7 +374,7 @@
 			var i = o.length;
 
 			if ((n==1 && i>=maxB+maxV) || (n==-1 && i==0)) return;
-			var s = String.fromCharCode((n<10?48:55)+n);
+			var s = String.fromCharCode((i<10?48:55)+i);
 
 			var f = gId("mLC");
 			if (n==1) {
@@ -413,7 +414,7 @@ ${i+1}:
 <option value="89">Art-Net RGBW (network)</option>
 </select><br>
 <div id="abl${s}">
-mA/LED: <select name="LAsel${s}" onchange="enLA(this,${s});UI();">
+mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}'');UI();">
 <option value="55" selected>55mA (typ. 5V WS281x)</option>
 <option value="35">35mA (eco WS2812)</option>
 <option value="30">30mA (typ. 12V)</option>
