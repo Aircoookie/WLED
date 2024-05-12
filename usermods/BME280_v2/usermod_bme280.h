@@ -368,9 +368,9 @@ public:
       
       JsonArray temperature_json = user.createNestedArray(F("Temperature"));
       JsonArray pressure_json = user.createNestedArray(F("Pressure"));
-      temperature_json.add(roundf(sensorTemperature * powf(10, TemperatureDecimals)));
+      temperature_json.add(roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
       temperature_json.add(tempScale);
-      pressure_json.add(roundf(sensorPressure * powf(10, PressureDecimals)));
+      pressure_json.add(roundf(sensorPressure * powf(10, PressureDecimals)) / powf(10, PressureDecimals));
       pressure_json.add(F("hPa"));
     }
     else if (sensorType==1) //BME280
@@ -382,9 +382,9 @@ public:
       JsonArray dewpoint_json = user.createNestedArray(F("Dew Point"));
       temperature_json.add(roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
       temperature_json.add(tempScale);
-      humidity_json.add(roundf(sensorHumidity * powf(10, HumidityDecimals)));
+      humidity_json.add(roundf(sensorHumidity * powf(10, HumidityDecimals)) / powf(10, HumidityDecimals));
       humidity_json.add(F("%"));
-      pressure_json.add(roundf(sensorPressure * powf(10, PressureDecimals)));
+      pressure_json.add(roundf(sensorPressure * powf(10, PressureDecimals)) / powf(10, PressureDecimals));
       pressure_json.add(F("hPa"));
       heatindex_json.add(roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
       heatindex_json.add(tempScale);

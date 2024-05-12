@@ -350,7 +350,8 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(WLED_MIN_VIRTUAL_BUSSES,nS,10));  oappend(",");
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
-    oappend(itoa(MAX_LEDS,nS,10));
+    oappend(itoa(MAX_LEDS,nS,10));         oappend(",");
+    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);
@@ -362,28 +363,29 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
     sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
-    uint16_t sumMa = 0;
-    for (uint8_t s=0; s < BusManager::getNumBusses(); s++) {
+    unsigned sumMa = 0;
+    for (int s = 0; s < BusManager::getNumBusses(); s++) {
       Bus* bus = BusManager::getBus(s);
       if (bus == nullptr) continue;
-      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
-      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
-      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
-      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
-      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
-      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
-      char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
-      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
-      char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
-      char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed
-      char la[4] = "LA"; la[2] = 48+s; la[3] = 0; //LED current
-      char ma[4] = "MA"; ma[2] = 48+s; ma[3] = 0; //max per-port PSU current
+      int offset = s < 10 ? 48 : 55;
+      char lp[4] = "L0"; lp[2] = offset+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lc[4] = "LC"; lc[2] = offset+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = offset+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = offset+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = offset+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = offset+s; cv[3] = 0; //strip reverse
+      char sl[4] = "SL"; sl[2] = offset+s; sl[3] = 0; //skip 1st LED
+      char rf[4] = "RF"; rf[2] = offset+s; rf[3] = 0; //off refresh
+      char aw[4] = "AW"; aw[2] = offset+s; aw[3] = 0; //auto white mode
+      char wo[4] = "WO"; wo[2] = offset+s; wo[3] = 0; //swap channels
+      char sp[4] = "SP"; sp[2] = offset+s; sp[3] = 0; //bus clock speed
+      char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED current
+      char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max per-port PSU current
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
-      uint8_t nPins = bus->getPins(pins);
-      for (uint8_t i = 0; i < nPins; i++) {
-        lp[1] = 48+i;
+      int nPins = bus->getPins(pins);
+      for (int i = 0; i < nPins; i++) {
+        lp[1] = offset+i;
         if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
@@ -395,7 +397,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',rf,bus->isOffRefreshRequired());
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
-      uint16_t speed = bus->getFrequency();
+      unsigned speed = bus->getFrequency();
       if (IS_PWM(bus->getType())) {
         switch (speed) {
           case WLED_PWM_FREQ/2    : speed = 0; break;
@@ -428,7 +430,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
     const ColorOrderMap& com = BusManager::getColorOrderMap();
-    for (uint8_t s=0; s < com.count(); s++) {
+    for (int s = 0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;
       oappend(SET_F("addCOM("));
@@ -459,7 +461,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
     sappend('c',SET_F("RO"),rlyOpenDrain);
-    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+    for (int i = 0; i < WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addBtn("));
       oappend(itoa(i,nS,10)); oappend(",");
       oappend(itoa(btnPin[i],nS,10)); oappend(",");
