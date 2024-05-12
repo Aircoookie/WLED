@@ -640,13 +640,13 @@ uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
 // Constants for mapping mode "Pinwheel"
 constexpr int Pinwheel_Steps_Small = 72;       // no holes up to 16x16;
 constexpr int Pinwheel_Size_Small = 16;       
-constexpr int Pinwheel_Steps_Medium = 200;     // no holes up to 32x32;  60fps
+constexpr int Pinwheel_Steps_Medium = 192;     // no holes up to 32x32;  60fps
 constexpr int Pinwheel_Size_Medium = 32;       // larger than this -> use "Big"
 constexpr int Pinwheel_Steps_Big = 296;        // no holes expected up to  58x58; 40fps
 constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...208 to Radians
 constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...208 to Radians
 constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...360 to Radians
-
+int prevRay = INT_MIN;
 
 // 1D strip
 uint16_t IRAM_ATTR Segment::virtualLength() const {
@@ -738,7 +738,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
         break;
       case M12_sPinwheel: {
-        // i = angle --> 0 through 359 (Big), OR 0 through 208 (Medium)
+        // i = angle --> 0 - 296  (Big), 0 - 192  (Medium), 0 - 72 (Small)
         float centerX = roundf((vW-1) / 2.0f);
         float centerY = roundf((vH-1) / 2.0f);
         float angleRad = (max(vW, vH) > Pinwheel_Size_Small ? (max(vW, vH) > Pinwheel_Size_Medium ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small); // angle in radians
@@ -759,6 +759,14 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
         int32_t maxX = vW * Fixed_Scale; // X edge in fixedpoint
         int32_t maxY = vH * Fixed_Scale; // Y edge in fixedpoint
+
+        // Odd rays start further from center if prevRay started at center.
+        if (i % 2 == 1 && (i - 1 == prevRay || i + 1 == prevRay)) {
+          posx = (posx + inc_x * (vW/4));
+          posy = (posy + inc_y * (vH/4));
+        }
+        prevRay = i;
+
         // draw ray until we hit any edge
         while ((posx > 0) && (posy > 0) && (posx < maxX)  && (posy < maxY))  {
           // scale down to integer (compiler will replace division with appropriate bitshift)
