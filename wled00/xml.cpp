@@ -351,7 +351,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));         oappend(",");
-    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,ns,10));
+    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);
@@ -363,8 +363,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
     sappend('c',SET_F("LD"),useGlobalLedBuffer);
 
-    uint16_t sumMa = 0;
-    for (uint8_t s=0; s < BusManager::getNumBusses(); s++) {
+    unsigned sumMa = 0;
+    for (int s = 0; s < BusManager::getNumBusses(); s++) {
       Bus* bus = BusManager::getBus(s);
       if (bus == nullptr) continue;
       int offset = s < 10 ? 48 : 55;
@@ -383,8 +383,8 @@ void getSettingsJS(byte subPage, char* dest)
       char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max per-port PSU current
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
-      uint8_t nPins = bus->getPins(pins);
-      for (uint8_t i = 0; i < nPins; i++) {
+      int nPins = bus->getPins(pins);
+      for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
         if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) sappend('v',lp,pins[i]);
       }
@@ -397,7 +397,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',rf,bus->isOffRefreshRequired());
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
-      uint16_t speed = bus->getFrequency();
+      unsigned speed = bus->getFrequency();
       if (IS_PWM(bus->getType())) {
         switch (speed) {
           case WLED_PWM_FREQ/2    : speed = 0; break;
