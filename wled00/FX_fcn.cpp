@@ -638,14 +638,14 @@ uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
 }
 
 // Constants for mapping mode "Pinwheel"
-constexpr int Pinwheel_Steps_Small = 72;       // no holes up to 16x16
+constexpr int Pinwheel_Steps_Small = 82;       // no holes up to 16x16
 constexpr int Pinwheel_Size_Small = 16;       
-constexpr int Pinwheel_Steps_Medium = 192;     // no holes up to 32x32
+constexpr int Pinwheel_Steps_Medium = 208;     // no holes up to 32x32
 constexpr int Pinwheel_Size_Medium = 32;       // larger than this -> use "Big"
-constexpr int Pinwheel_Steps_Big = 296;        // no holes expected up to  56x56
-constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...72 to Radians
-constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...192 to Radians
-constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...296 to Radians
+constexpr int Pinwheel_Steps_Big = 304;        // no holes expected up to  56x56
+constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...82 to Radians
+constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...208 to Radians
+constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...304 to Radians
 
 // 1D strip
 uint16_t IRAM_ATTR Segment::virtualLength() const {
