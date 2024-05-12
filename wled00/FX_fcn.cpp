@@ -745,10 +745,13 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         float cosVal = cos_t(angleRad);
         float sinVal = sin_t(angleRad);
 
+        // avoid re-painting the same pixel
+        int lastX = INT_MIN; // impossible position
+        int lastY = INT_MIN; // impossible position
         // draw line at angle, starting at center and ending at the segment edge
         // we use fixed point math for better speed. Starting distance is 0.5 for better rounding
         // int_fast16_t and int_fast32_t types changed to int, minimum bits commented
-        constexpr int Fixed_Scale = 512;  // fixpoint scaling factor 18 bit
+        constexpr int Fixed_Scale = 512;  // fixpoint scaling factor (9bit for fraction)
         int posx = (centerX + 0.5f * cosVal) * Fixed_Scale; // X starting position in fixed point 18 bit
         int posy = (centerY + 0.5f * sinVal) * Fixed_Scale; // Y starting position in fixed point 18 bit
         int inc_x = cosVal * Fixed_Scale; // X increment per step (fixed point) 10 bit
@@ -756,13 +759,20 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
         int32_t maxX = vW * Fixed_Scale; // X edge in fixedpoint
         int32_t maxY = vH * Fixed_Scale; // Y edge in fixedpoint
-        // draw until we hit any edge
+        // draw ray until we hit any edge
         while ((posx > 0) && (posy > 0) && (posx < maxX)  && (posy < maxY))  {
           // scale down to integer (compiler will replace division with appropriate bitshift)
           int x = posx / Fixed_Scale;
           int y = posy / Fixed_Scale;
+#if 1
           // set pixel
-          setPixelColorXY(x, y, col);
+          if (x != lastX || y != lastY) setPixelColorXY(x, y, col);  // only paint if pixel position is different
+#else
+          // experimental: only set pixel if color is different (trade getPC performance against setPC)
+          if ((x != lastX || y != lastY) && (getPixelColorXY(x, y) != col)) setPixelColorXY(x, y, col); // only paint if pixel color is different
+#endif
+          lastX = x;
+          lastY = y;
           // advance to next position
           posx += inc_x;
           posy += inc_y;
