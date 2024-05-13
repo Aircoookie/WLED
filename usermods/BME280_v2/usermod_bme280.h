@@ -28,7 +28,6 @@ private:
   bool UseCelsius = true;                 // Use Celsius for Reporting
   bool HomeAssistantDiscovery = false;    // Publish Home Assistant Device Information
   bool enabled = true;
-  BME280I2C::I2CAddr i2cAddress = BME280I2C::I2CAddr_0x76;  // Default i2c address for BME280
 
   // set the default pins based on the architecture, these get overridden by Usermod menu settings
   #ifdef ESP8266
@@ -49,7 +48,7 @@ private:
       BME280I2C::I2CAddr_0x76 // I2C address. I2C specific. Default 0x76
   };
 
-  BME280I2C bme;
+  BME280I2C bme{settings};
 
   uint8_t sensorType;
 
@@ -182,36 +181,38 @@ private:
       }
     }
 
+    void initializeBmeComms()
+    {
+      if (!bme.begin())
+      {
+        sensorType = 0;
+        DEBUG_PRINTLN(F("Could not find BME280 I2C sensor!"));
+      }
+      else
+      {
+        switch (bme.chipModel())
+        {
+        case BME280::ChipModel_BME280:
+          sensorType = 1;
+          DEBUG_PRINTLN(F("Found BME280 sensor! Success."));
+          break;
+        case BME280::ChipModel_BMP280:
+          sensorType = 2;
+          DEBUG_PRINTLN(F("Found BMP280 sensor! No Humidity available."));
+          break;
+        default:
+          sensorType = 0;
+          DEBUG_PRINTLN(F("Found UNKNOWN sensor! Error!"));
+        }
+      }
+    }
+
 public:
   void setup()
   {
     if (i2c_scl<0 || i2c_sda<0) { enabled = false; sensorType = 0; return; }
     
-    settings.bme280Addr = i2cAddress;
-    bme = BME280I2C(settings);
-
-    if (!bme.begin())
-    {
-      sensorType = 0;
-      DEBUG_PRINTLN(F("Could not find BME280 I2C sensor!"));
-    }
-    else
-    {
-      switch (bme.chipModel())
-      {
-      case BME280::ChipModel_BME280:
-        sensorType = 1;
-        DEBUG_PRINTLN(F("Found BME280 sensor! Success."));
-        break;
-      case BME280::ChipModel_BMP280:
-        sensorType = 2;
-        DEBUG_PRINTLN(F("Found BMP280 sensor! No Humidity available."));
-        break;
-      default:
-        sensorType = 0;
-        DEBUG_PRINTLN(F("Found UNKNOWN sensor! Error!"));
-      }
-    }
+    initializeBmeComms();
     initDone=true;
   }
 
@@ -369,7 +370,6 @@ public:
     }
     else if (sensorType==2) //BMP280
     {
-      
       JsonArray temperature_json = user.createNestedArray(F("Temperature"));
       JsonArray pressure_json = user.createNestedArray(F("Pressure"));
       temperature_json.add(roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
@@ -403,7 +403,7 @@ public:
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
     top[FPSTR(_enabled)] = enabled;
-    top[F("I2CAddress")] = i2cAddress;
+    top[F("I2CAddress")] = static_cast<uint8_t>(settings.bme280Addr);
     top[F("TemperatureDecimals")] = TemperatureDecimals;
     top[F("HumidityDecimals")] = HumidityDecimals;
     top[F("PressureDecimals")] = PressureDecimals;
@@ -433,8 +433,6 @@ public:
     // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
     uint8_t tmpI2cAddress;
     configComplete &= getJsonValue(top[F("I2CAddress")], tmpI2cAddress, 0x76);
-    i2cAddress = static_cast<BME280I2C::I2CAddr>(tmpI2cAddress);
-
     configComplete &= getJsonValue(top[F("TemperatureDecimals")], TemperatureDecimals, 1);
     configComplete &= getJsonValue(top[F("HumidityDecimals")], HumidityDecimals, 0);
     configComplete &= getJsonValue(top[F("PressureDecimals")], PressureDecimals, 0);
@@ -444,13 +442,31 @@ public:
     configComplete &= getJsonValue(top[F("UseCelsius")], UseCelsius, true);
     configComplete &= getJsonValue(top[F("HomeAssistantDiscovery")], HomeAssistantDiscovery, false);
 
+    settings.bme280Addr = static_cast<BME280I2C::I2CAddr>(tmpI2cAddress);
+    bme.setSettings(settings);
+
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
       // first run: reading from cfg.json
       DEBUG_PRINTLN(F(" config loaded."));
     } else {
-      DEBUG_PRINTLN(F(" config (re)loaded."));
       // changing parameters from settings page
+      DEBUG_PRINTLN(F(" config (re)loaded."));
+
+      // Reset all known values
+      sensorType = 0;
+      sensorTemperature = 0;
+      sensorHumidity = 0;
+      sensorHeatIndex = 0;
+      sensorDewPoint = 0;
+      sensorPressure = 0;
+      lastTemperature = 0;
+      lastHumidity = 0;
+      lastHeatIndex = 0;
+      lastDewPoint = 0;
+      lastPressure = 0;
+      
+      initializeBmeComms();
     }
 
     return configComplete;
