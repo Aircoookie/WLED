@@ -737,7 +737,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
         break;
       case M12_sPinwheel: {
-        static int prevRay = INT_MIN; // previous ray number
         // i = angle --> 0 - 296  (Big), 0 - 192  (Medium), 0 - 72 (Small)
         float centerX = roundf((vW-1) / 2.0f);
         float centerY = roundf((vH-1) / 2.0f);
@@ -761,6 +760,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         int32_t maxY = vH * Fixed_Scale; // Y edge in fixedpoint
 
         // Odd rays start further from center if prevRay started at center.
+        static int prevRay = INT_MIN; // previous ray number
         if ((i % 2 == 1) && (i - 1 == prevRay || i + 1 == prevRay)) {
           int jump = min(vW/3, vH/3);
           posx += inc_x * jump;
@@ -769,7 +769,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         prevRay = i;
 
         // draw ray until we hit any edge
-        while ((posx > 0) && (posy > 0) && (posx < maxX)  && (posy < maxY))  {
+        while ((posx >= 0) && (posy >= 0) && (posx < maxX)  && (posy < maxY))  {
           // scale down to integer (compiler will replace division with appropriate bitshift)
           int x = posx / Fixed_Scale;
           int y = posy / Fixed_Scale;
@@ -900,12 +900,17 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
         break;
       case M12_sPinwheel:
         // not 100% accurate, returns outer edge of circle
-        float distance = max(1.0f, min(vH-1, vW-1) / 2.0f);
+        int maxXY = max(vW, vH);   // max dimension
+        int minXY = min(vW, vH);   // circle diameter
+        float distance = max(1.0f, 0.5f * minXY) -0.5f;
         float centerX = (vW - 1) / 2.0f;
         float centerY = (vH - 1) / 2.0f;
-        float angleRad = (max(vW, vH) > Pinwheel_Size_Small ? (max(vW, vH) > Pinwheel_Size_Medium ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small); // angle in radians
+        float angleRad = (maxXY > Pinwheel_Size_Small) ? ((maxXY > Pinwheel_Size_Medium) ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small; // angle in radians
         int x = roundf(centerX + distance * cos_t(angleRad));
         int y = roundf(centerY + distance * sin_t(angleRad));
+        // move "slightly off" coordinates back into segment
+        x = max(0, min(x, int(vW) - 1));
+        y = max(0, min(y, int(vH) - 1));
         return getPixelColorXY(x, y);
         break;
       }
