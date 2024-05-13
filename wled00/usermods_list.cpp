@@ -217,6 +217,10 @@
   #include "../usermods/TetrisAI_v2/usermod_v2_tetrisai.h"
 #endif
 
+#ifdef USERMOD_AHT10
+  #include "../usermods/AHT10_v2/usermod_aht10.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -420,5 +424,9 @@ void registerUsermods()
 
   #ifdef USERMOD_TETRISAI
   usermods.add(new TetrisAIUsermod());
+  #endif
+
+  #ifdef USERMOD_AHT10
+  usermods.add(new UsermodAHT10());
   #endif
 }
