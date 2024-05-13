@@ -638,13 +638,13 @@ uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
 }
 
 // Constants for mapping mode "Pinwheel"
-constexpr int Pinwheel_Steps_Small = 82;       // no holes up to 16x16
+constexpr int Pinwheel_Steps_Small = 72;       // no holes up to 16x16
 constexpr int Pinwheel_Size_Small = 16;       
-constexpr int Pinwheel_Steps_Medium = 208;     // no holes up to 32x32
+constexpr int Pinwheel_Steps_Medium = 192;     // no holes up to 32x32
 constexpr int Pinwheel_Size_Medium = 32;       // larger than this -> use "Big"
 constexpr int Pinwheel_Steps_Big = 304;        // no holes expected up to  56x56
-constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...82 to Radians
-constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...208 to Radians
+constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...72 to Radians
+constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...192 to Radians
 constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...304 to Radians
 
 // 1D strip
@@ -762,7 +762,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         // Odd rays start further from center if prevRay started at center.
         static int prevRay = INT_MIN; // previous ray number
         if ((i % 2 == 1) && (i - 1 == prevRay || i + 1 == prevRay)) {
-          int jump = min(vW/3, vH/3);
+          int jump = min(vW/3, vH/3); // can add 2 if using medium pinwheel 
           posx += inc_x * jump;
           posy += inc_y * jump;
         }
@@ -900,17 +900,32 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
         break;
       case M12_sPinwheel:
         // not 100% accurate, returns outer edge of circle
-        int maxXY = max(vW, vH);   // max dimension
-        int minXY = min(vW, vH);   // circle diameter
-        float distance = max(1.0f, 0.5f * minXY) -0.5f;
-        float centerX = (vW - 1) / 2.0f;
-        float centerY = (vH - 1) / 2.0f;
-        float angleRad = (maxXY > Pinwheel_Size_Small) ? ((maxXY > Pinwheel_Size_Medium) ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small; // angle in radians
-        int x = roundf(centerX + distance * cos_t(angleRad));
-        int y = roundf(centerY + distance * sin_t(angleRad));
-        // move "slightly off" coordinates back into segment
-        x = max(0, min(x, int(vW) - 1));
-        y = max(0, min(y, int(vH) - 1));
+        // i = angle --> 0 - 296  (Big), 0 - 192  (Medium), 0 - 72 (Small)
+        float centerX = roundf((vW-1) / 2.0f);
+        float centerY = roundf((vH-1) / 2.0f);
+        float angleRad = (max(vW, vH) > Pinwheel_Size_Small ? (max(vW, vH) > Pinwheel_Size_Medium ? float(i) * Int_to_Rad_Big : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small); // angle in radians
+        float cosVal = cos_t(angleRad);
+        float sinVal = sin_t(angleRad);
+
+        constexpr int Fixed_Scale = 512;  // fixpoint scaling factor (9bit for fraction)
+        int posx = (centerX + 0.5f * cosVal) * Fixed_Scale; // X starting position in fixed point 18 bit
+        int posy = (centerY + 0.5f * sinVal) * Fixed_Scale; // Y starting position in fixed point 18 bit
+        int inc_x = cosVal * Fixed_Scale; // X increment per step (fixed point) 10 bit
+        int inc_y = sinVal * Fixed_Scale; // Y increment per step (fixed point) 10 bit
+
+        int32_t maxX = vW * Fixed_Scale; // X edge in fixedpoint
+        int32_t maxY = vH * Fixed_Scale; // Y edge in fixedpoint
+
+        int x = INT_MIN;
+        int y = INT_MIN;
+        while ((posx >= 0) && (posy >= 0) && (posx < maxX)  && (posy < maxY))  {
+          // scale down to integer (compiler will replace division with appropriate bitshift)
+          x = posx / Fixed_Scale;
+          y = posy / Fixed_Scale;
+          // advance to next position
+          posx += inc_x;
+          posy += inc_y;
+        }
         return getPixelColorXY(x, y);
         break;
       }
