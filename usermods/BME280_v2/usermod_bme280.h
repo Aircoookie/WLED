@@ -24,6 +24,7 @@ private:
   uint8_t  PressureDecimals = 0;    // Number of decimal places in published pressure values
   uint16_t TemperatureInterval = 5; // Interval to measure temperature (and humidity, dew point if available) in seconds
   uint16_t PressureInterval = 300;  // Interval to measure pressure in seconds
+  BME280I2C::I2CAddr I2CAddress = BME280I2C::I2CAddr_0x76;  // i2c address, defaults to 0x76
   bool PublishAlways = false;             // Publish values even when they have not changed
   bool UseCelsius = true;                 // Use Celsius for Reporting
   bool HomeAssistantDiscovery = false;    // Publish Home Assistant Device Information
@@ -35,20 +36,7 @@ private:
   #endif
   bool initDone = false;
 
-  // BME280 sensor settings
-  BME280I2C::Settings settings{
-      BME280::OSR_X16, // Temperature oversampling x16
-      BME280::OSR_X16, // Humidity oversampling x16
-      BME280::OSR_X16, // Pressure oversampling x16
-      // Defaults
-      BME280::Mode_Forced,
-      BME280::StandbyTime_1000ms,
-      BME280::Filter_Off,
-      BME280::SpiEnable_False,
-      BME280I2C::I2CAddr_0x76 // I2C address. I2C specific. Default 0x76
-  };
-
-  BME280I2C bme{settings};
+  BME280I2C bme;
 
   uint8_t sensorType;
 
@@ -183,6 +171,19 @@ private:
 
     void initializeBmeComms()
     {
+      BME280I2C::Settings settings{
+            BME280::OSR_X16,    // Temperature oversampling x16
+            BME280::OSR_X16,    // Humidity oversampling x16
+            BME280::OSR_X16,    // Pressure oversampling x16
+            BME280::Mode_Forced,
+            BME280::StandbyTime_1000ms,
+            BME280::Filter_Off,
+            BME280::SpiEnable_False,
+            I2CAddress
+        };
+
+      bme.setSettings(settings);
+      
       if (!bme.begin())
       {
         sensorType = 0;
@@ -213,7 +214,7 @@ public:
     if (i2c_scl<0 || i2c_sda<0) { enabled = false; sensorType = 0; return; }
     
     initializeBmeComms();
-    initDone=true;
+    initDone = true;
   }
 
   void loop()
@@ -403,7 +404,7 @@ public:
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
     top[FPSTR(_enabled)] = enabled;
-    top[F("I2CAddress")] = static_cast<uint8_t>(settings.bme280Addr);
+    top[F("I2CAddress")] = static_cast<uint8_t>(I2CAddress);
     top[F("TemperatureDecimals")] = TemperatureDecimals;
     top[F("HumidityDecimals")] = HumidityDecimals;
     top[F("PressureDecimals")] = PressureDecimals;
@@ -433,6 +434,8 @@ public:
     // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
     uint8_t tmpI2cAddress;
     configComplete &= getJsonValue(top[F("I2CAddress")], tmpI2cAddress, 0x76);
+    I2CAddress = static_cast<BME280I2C::I2CAddr>(tmpI2cAddress);
+
     configComplete &= getJsonValue(top[F("TemperatureDecimals")], TemperatureDecimals, 1);
     configComplete &= getJsonValue(top[F("HumidityDecimals")], HumidityDecimals, 0);
     configComplete &= getJsonValue(top[F("PressureDecimals")], PressureDecimals, 0);
@@ -441,9 +444,6 @@ public:
     configComplete &= getJsonValue(top[F("PublishAlways")], PublishAlways, false);
     configComplete &= getJsonValue(top[F("UseCelsius")], UseCelsius, true);
     configComplete &= getJsonValue(top[F("HomeAssistantDiscovery")], HomeAssistantDiscovery, false);
-
-    settings.bme280Addr = static_cast<BME280I2C::I2CAddr>(tmpI2cAddress);
-    bme.setSettings(settings);
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
