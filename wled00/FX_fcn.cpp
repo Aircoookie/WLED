@@ -660,7 +660,7 @@ static float getPinwheelAngle(int i, int vW, int vH) {
   if (maxXY <= Pinwheel_Size_Medium) return float(i) * Int_to_Rad_Med;
   if (maxXY <= Pinwheel_Size_Big)    return float(i) * Int_to_Rad_Big;
   // else
-  return Pinwheel_Steps_XL;
+  return float(i) * Int_to_Rad_XL;
 }
 // Pinwheel helper function: matrix dimensions to number of rays
 static int getPinwheelLength(int vW, int vH) {
