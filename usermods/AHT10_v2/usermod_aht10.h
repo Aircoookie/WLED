@@ -5,19 +5,26 @@
 
 #define AHT10_SUCCESS 1
 
+#define STATE_SETTING_ENABLED 0b00000001
+#define STATE_SETTING_MQTT_PUBLISH 0b00000010
+#define STATE_SETTING_MQTT_PUBLISHALWAYS 0b00000100
+#define STATE_SETTING_MQTT_HOMEASSISTANT 0b00001000
+#define STATE_INITDONE 0b00010000
+
+#define STATE_ISSET(stateFlags, state) (((stateFlags) & (state)) == (state))
+#define STATE_SET(stateFlags, state, set) ((set) ? ((stateFlags) |= (state)) : ((stateFlags) &= ~(state)))
+
 class UsermodAHT10 : public Usermod
 {
 private:
   static const char _name[];
 
   unsigned long _lastLoopCheck = 0;
-  bool _initDone = false;
+
+  // To avoid storing N bools, this flags field will handle all of those
+  uint8_t _stateFlags = 0;
 
   // Settings. Some of these are stored in a different format than they're user settings - so we don't have to convert at runtime
-  bool _enabled = false;
-  bool _mqttPublish = false;
-  bool _mqttPublishAlways = false;
-  bool _enableHomeassistantDiscovery = false;
   uint8_t _i2cAddress = AHT10_ADDRESS_0X38;
   ASAIR_I2C_SENSOR _ahtType = AHT10_SENSOR;
   uint16_t _checkInterval = 60000; // milliseconds, user settings is in seconds
@@ -58,7 +65,7 @@ private:
   void mqttInitialize()
   {
     // This is a generic "setup mqtt" function, So we must abort if we're not to do mqtt
-    if (!WLED_MQTT_CONNECTED || !_mqttPublish || !_enableHomeassistantDiscovery)
+    if (!WLED_MQTT_CONNECTED || !STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISH) || !STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_HOMEASSISTANT))
       return;
 
     char topic[128];
@@ -72,7 +79,7 @@ private:
   void mqttPublishIfChanged(const __FlashStringHelper *topic, float lastState, float state)
   {
     // Check if MQTT Connected, otherwise it will crash the 8266
-    if (WLED_MQTT_CONNECTED && _mqttPublish && (_mqttPublishAlways || lastState != state))
+    if (WLED_MQTT_CONNECTED && STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISH) && (STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISHALWAYS) || lastState != state))
     {
       char subuf[128];
       snprintf_P(subuf, 127, PSTR("%s/%s"), mqttDeviceTopic, (const char *)topic);
@@ -122,7 +129,7 @@ public:
   {
     // if usermod is disabled or called during strip updating just exit
     // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
-    if (!_enabled || strip.isUpdating())
+    if (!STATE_ISSET(_stateFlags, STATE_SETTING_ENABLED) || strip.isUpdating())
       return;
 
     // do your magic here
@@ -219,15 +226,15 @@ public:
   void addToConfig(JsonObject &root)
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
-    top[F("Enabled")] = _enabled;
+    top[F("Enabled")] = STATE_ISSET(_stateFlags, STATE_SETTING_ENABLED);
     top[F("I2CAddress")] = static_cast<uint8_t>(_i2cAddress);
     top[F("SensorType")] = _ahtType;
     top[F("CheckInterval")] = _checkInterval / 1000;
     top[F("Decimals")] = log10f(_decimalFactor);
 #ifndef WLED_DISABLE_MQTT
-    top[F("MqttPublish")] = _mqttPublish;
-    top[F("MqttPublishAlways")] = _mqttPublishAlways;
-    top[F("MqttHomeAssistantDiscovery")] = _enableHomeassistantDiscovery;
+    top[F("MqttPublish")] = STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISH);
+    top[F("MqttPublishAlways")] = STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISHALWAYS);
+    top[F("MqttHomeAssistantDiscovery")] = STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_HOMEASSISTANT);
 #endif
 
     DEBUG_PRINTLN(F("AHT10 config saved."));
@@ -244,7 +251,11 @@ public:
     if (!configComplete)
       return false;
 
-    configComplete &= getJsonValue(top[F("Enabled")], _enabled);
+    bool tmpBool = false;
+    configComplete &= getJsonValue(top[F("Enabled")], tmpBool);
+    if (configComplete)
+      STATE_SET(_stateFlags, STATE_SETTING_ENABLED, tmpBool);
+
     configComplete &= getJsonValue(top[F("I2CAddress")], _i2cAddress);
     configComplete &= getJsonValue(top[F("CheckInterval")], _checkInterval);
     if (configComplete)
@@ -278,12 +289,20 @@ public:
     }
 
 #ifndef WLED_DISABLE_MQTT
-    configComplete &= getJsonValue(top[F("MqttPublish")], _mqttPublish);
-    configComplete &= getJsonValue(top[F("MqttPublishAlways")], _mqttPublishAlways);
-    configComplete &= getJsonValue(top[F("MqttHomeAssistantDiscovery")], _enableHomeassistantDiscovery);
+    configComplete &= getJsonValue(top[F("MqttPublish")], tmpBool);
+    if (configComplete)
+      STATE_SET(_stateFlags, STATE_SETTING_MQTT_PUBLISH, tmpBool);
+
+    configComplete &= getJsonValue(top[F("MqttPublishAlways")], tmpBool);
+    if (configComplete)
+      STATE_SET(_stateFlags, STATE_SETTING_MQTT_PUBLISHALWAYS, tmpBool);
+
+    configComplete &= getJsonValue(top[F("MqttHomeAssistantDiscovery")], tmpBool);
+    if (configComplete)
+      STATE_SET(_stateFlags, STATE_SETTING_MQTT_HOMEASSISTANT, tmpBool);
 #endif
 
-    if (_initDone)
+    if (STATE_ISSET(_stateFlags, STATE_INITDONE))
     {
       // Reloading config
       initializeAht();
@@ -293,7 +312,7 @@ public:
 #endif
     }
 
-    _initDone = true;
+    STATE_SET(_stateFlags, STATE_INITDONE, true);
     return configComplete;
   }
 };
