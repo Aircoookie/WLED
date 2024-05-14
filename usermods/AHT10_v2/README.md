@@ -17,6 +17,9 @@ Dependencies, These must be added under `lib_deps` in your `platform.ini` (or `p
   - `enjoyneering/AHT10@~1.1.0` (by [enjoyneering](https://registry.platformio.org/libraries/enjoyneering/AHT10))
   - `Wire`
 
+## Author
+[@LordMike](https://github.com/LordMike)
+
 # Compiling
 
 To enable, compile with `USERMOD_AHT10` defined  (e.g. in `platformio_override.ini`)
