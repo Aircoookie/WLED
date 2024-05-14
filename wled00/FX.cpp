@@ -4874,6 +4874,12 @@ uint16_t mode_2DAnalogClock(void) {                  // By Andras Fekete (bandi1
   const int radius = min(centerX, centerY);
   const bool soft = radius > 6 && SEGMENT.check2;
 
+  if ((SEGENV.call == 0) && (SEGMENT.colors[0] == 0xFFA000) && (SEGMENT.colors[1] == BLACK) && (SEGMENT.colors[2] == BLACK)) { // set up defaults
+    SEGMENT.colors[0] = RED;
+    SEGMENT.colors[1] = GREEN;
+    SEGMENT.colors[2] = BLUE;
+  }
+
   SEGMENT.fadeToBlackBy(240);
   SEGMENT.drawCircle(centerX, centerY, radius, DARKGREY, soft);
   if (radius > 8) SEGMENT.drawCircle(centerX, centerY, radius-1, DARKGREY, soft); // thicker circle
