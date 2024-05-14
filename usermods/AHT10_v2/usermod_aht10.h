@@ -15,6 +15,9 @@ private:
 
   // Settings. Some of these are stored in a different format than they're user settings - so we don't have to convert at runtime
   bool _enabled = false;
+  bool _mqttPublish = false;
+  bool _mqttPublishAlways = false;
+  bool _enableHomeassistantDiscovery = false;
   uint8_t _i2cAddress = AHT10_ADDRESS_0X38;
   ASAIR_I2C_SENSOR _ahtType = AHT10_SENSOR;
   uint16_t _checkInterval = 60000; // milliseconds, user settings is in seconds
@@ -24,7 +27,7 @@ private:
   float _lastHumidity = 0;
   float _lastTemperature = 0;
 
-  AHT10* _aht = nullptr;
+  AHT10 *_aht = nullptr;
 
   float truncateDecimals(float val)
   {
@@ -50,6 +53,64 @@ private:
     delete _aht;
     _aht = nullptr;
   }
+
+#ifndef WLED_DISABLE_MQTT
+  void mqttInitialize()
+  {
+    // This is a generic "setup mqtt" function, So we must abort if we're not to do mqtt
+    if (!WLED_MQTT_CONNECTED || !_mqttPublish || !_enableHomeassistantDiscovery)
+      return;
+
+    char topic[128];
+    snprintf_P(topic, 127, "%s/temperature", mqttDeviceTopic);
+    mqttCreateHassSensor(F("Temperature"), topic, F("temperature"), F("°C"));
+
+    snprintf_P(topic, 127, "%s/humidity", mqttDeviceTopic);
+    mqttCreateHassSensor(F("Humidity"), topic, F("humidity"), F("%"));
+  }
+
+  void mqttPublishIfChanged(const __FlashStringHelper *topic, float lastState, float state)
+  {
+    // Check if MQTT Connected, otherwise it will crash the 8266
+    if (WLED_MQTT_CONNECTED && _mqttPublish && (_mqttPublishAlways || lastState != state))
+    {
+      char subuf[128];
+      snprintf_P(subuf, 127, PSTR("%s/%s"), mqttDeviceTopic, (const char *)topic);
+      mqtt->publish(subuf, 0, false, String(state).c_str());
+    }
+  }
+
+  // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
+  void mqttCreateHassSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
+  {
+    String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
+
+    StaticJsonDocument<600> doc;
+
+    doc[F("name")] = name;
+    doc[F("state_topic")] = topic;
+    doc[F("unique_id")] = String(mqttClientID) + name;
+    if (unitOfMeasurement != "")
+      doc[F("unit_of_measurement")] = unitOfMeasurement;
+    if (deviceClass != "")
+      doc[F("device_class")] = deviceClass;
+    doc[F("expire_after")] = 1800;
+
+    JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
+    device[F("name")] = serverDescription;
+    device[F("identifiers")] = "wled-sensor-" + String(mqttClientID);
+    device[F("manufacturer")] = F(WLED_BRAND);
+    device[F("model")] = F(WLED_PRODUCT_NAME);
+    device[F("sw_version")] = versionString;
+
+    String temp;
+    serializeJson(doc, temp);
+    DEBUG_PRINTLN(t);
+    DEBUG_PRINTLN(temp);
+
+    mqtt->publish(t.c_str(), 0, true, temp.c_str());
+  }
+#endif
 
 public:
   void setup()
@@ -91,20 +152,31 @@ public:
       float temperature = truncateDecimals(_aht->readTemperature(AHT10_USE_READ_DATA));
       float humidity = truncateDecimals(_aht->readHumidity(AHT10_USE_READ_DATA));
 
+#ifndef WLED_DISABLE_MQTT
       // Push to MQTT
+      mqttPublishIfChanged(F("temperature"), _lastTemperature, temperature);
+      mqttPublishIfChanged(F("humidity"), _lastHumidity, humidity);
+#endif
 
       // Store
-      _lastHumidity = humidity;
       _lastTemperature = temperature;
+      _lastHumidity = humidity;
     }
   }
+
+#ifndef WLED_DISABLE_MQTT
+  void onMqttConnect(bool sessionPresent)
+  {
+    mqttInitialize();
+  }
+#endif
 
   uint16_t getId()
   {
     return USERMOD_ID_AHT10;
   }
 
-  void addToJsonInfo(JsonObject& root) override
+  void addToJsonInfo(JsonObject &root) override
   {
     // if "u" object does not exist yet wee need to create it
     JsonObject user = root[F("u")];
@@ -112,14 +184,15 @@ public:
       user = root.createNestedObject(F("u"));
 
 #ifdef USERMOD_AHT10_DEBUG
-    JsonArray temp = user.createNestedArray(F("status"));
+    JsonArray temp = user.createNestedArray(F("AHT last loop"));
     temp.add(_lastLoopCheck);
-    temp.add(F(" / "));
+
+    temp = user.createNestedArray(F("AHT last status"));
     temp.add(_lastStatus);
 #endif
 
-    JsonArray jsonTemp = user.createNestedArray(F("AHT Temperature"));
-    JsonArray jsonHumidity = user.createNestedArray(F("AHT Humidity"));
+    JsonArray jsonTemp = user.createNestedArray(F("Temperature"));
+    JsonArray jsonHumidity = user.createNestedArray(F("Humidity"));
 
     if (_lastLoopCheck == 0)
     {
@@ -143,7 +216,7 @@ public:
     jsonHumidity.add(F("%"));
   }
 
-  void addToConfig(JsonObject& root)
+  void addToConfig(JsonObject &root)
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
     top[F("Enabled")] = _enabled;
@@ -151,11 +224,16 @@ public:
     top[F("SensorType")] = _ahtType;
     top[F("CheckInterval")] = _checkInterval / 1000;
     top[F("Decimals")] = log10f(_decimalFactor);
+#ifndef WLED_DISABLE_MQTT
+    top[F("MqttPublish")] = _mqttPublish;
+    top[F("MqttPublishAlways")] = _mqttPublishAlways;
+    top[F("MqttHomeAssistantDiscovery")] = _enableHomeassistantDiscovery;
+#endif
 
     DEBUG_PRINTLN(F("AHT10 config saved."));
   }
 
-  bool readFromConfig(JsonObject& root) override
+  bool readFromConfig(JsonObject &root) override
   {
     // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
     // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
@@ -199,10 +277,20 @@ public:
         _ahtType = ASAIR_I2C_SENSOR::AHT10_SENSOR;
     }
 
+#ifndef WLED_DISABLE_MQTT
+    configComplete &= getJsonValue(top[F("MqttPublish")], _mqttPublish);
+    configComplete &= getJsonValue(top[F("MqttPublishAlways")], _mqttPublishAlways);
+    configComplete &= getJsonValue(top[F("MqttHomeAssistantDiscovery")], _enableHomeassistantDiscovery);
+#endif
+
     if (_initDone)
     {
       // Reloading config
       initializeAht();
+
+#ifndef WLED_DISABLE_MQTT
+      mqttInitialize();
+#endif
     }
 
     _initDone = true;
