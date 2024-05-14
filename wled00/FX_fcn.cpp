@@ -640,23 +640,27 @@ uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
 // Constants for mapping mode "Pinwheel"
 #ifndef WLED_DISABLE_2D
 constexpr int Pinwheel_Steps_Small = 72;       // no holes up to 16x16
-constexpr int Pinwheel_Size_Small  = 16;       
+constexpr int Pinwheel_Size_Small  = 16;       // larger than this -> use "Medium"
 constexpr int Pinwheel_Steps_Medium = 192;     // no holes up to 32x32
 constexpr int Pinwheel_Size_Medium  = 32;      // larger than this -> use "Big"
 constexpr int Pinwheel_Steps_Big = 304;        // no holes up to 50x50
 constexpr int Pinwheel_Size_Big  = 50;         // larger than this -> use "XL"
 constexpr int Pinwheel_Steps_XL  = 368;
 constexpr float Int_to_Rad_Small = (DEG_TO_RAD * 360) / Pinwheel_Steps_Small;  // conversion: from 0...72 to Radians
-constexpr float Int_to_Rad_Med = (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium;   // conversion: from 0...192 to Radians
-constexpr float Int_to_Rad_Big = (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;      // conversion: from 0...304 to Radians
-constexpr float Int_to_Rad_XL = (DEG_TO_RAD * 360) / Pinwheel_Steps_XL;        // conversion: from 0...368 to Radians
+constexpr float Int_to_Rad_Med =   (DEG_TO_RAD * 360) / Pinwheel_Steps_Medium; // conversion: from 0...192 to Radians
+constexpr float Int_to_Rad_Big =   (DEG_TO_RAD * 360) / Pinwheel_Steps_Big;    // conversion: from 0...304 to Radians
+constexpr float Int_to_Rad_XL =    (DEG_TO_RAD * 360) / Pinwheel_Steps_XL;     // conversion: from 0...368 to Radians
 
 constexpr int Fixed_Scale = 512;               // fixpoint scaling factor (9bit for fraction)
 
 // Pinwheel helper function: pixel index to radians
 static float getPinwheelAngle(int i, int vW, int vH) {
   int maxXY = max(vW, vH);
-  return (maxXY > Pinwheel_Size_Small) ? ((maxXY > Pinwheel_Size_Medium) ? ((maxXY > Pinwheel_Size_Big) ? float(i) * Int_to_Rad_XL : float(i) * Int_to_Rad_Big) : float(i) * Int_to_Rad_Med) : float(i) * Int_to_Rad_Small;
+  if (maxXY <= Pinwheel_Size_Small)  return float(i) * Int_to_Rad_Small;
+  if (maxXY <= Pinwheel_Size_Medium) return float(i) * Int_to_Rad_Med;
+  if (maxXY <= Pinwheel_Size_Big)    return float(i) * Int_to_Rad_Big;
+  // else
+  return Pinwheel_Steps_XL;
 }
 // Pinwheel helper function: matrix dimensions to number of rays
 static int getPinwheelLength(int vW, int vH) {
