@@ -178,6 +178,7 @@
 #define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 46   //usermod "usermod_v2_HttpPullLightControl.h"
 #define USERMOD_ID_TETRISAI              47     //Usermod "usermod_v2_tetris.h"
 #define USERMOD_ID_MAX17048              48     //Usermod "usermod_max17048.h"
+#define USERMOD_ID_INA226                50     //Usermod "usermod_ina226.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
