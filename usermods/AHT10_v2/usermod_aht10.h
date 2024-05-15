@@ -12,15 +12,11 @@ private:
 
   unsigned long _lastLoopCheck = 0;
 
-  struct
-  {
-    bool settingEnabled : 1;    // Enable the usermod
-    bool mqttPublish : 1;       // Publish mqtt values
-    bool mqttPublishAlways : 1; // Publish always, regardless if there is a change
-    bool mqttHomeAssistant : 1; // Enable Home Assistant docs
-    bool initDone : 1;          // Initialization is done
-    unsigned : 3;
-  } _stateFlags;
+  bool _settingEnabled : 1;    // Enable the usermod
+  bool _mqttPublish : 1;       // Publish mqtt values
+  bool _mqttPublishAlways : 1; // Publish always, regardless if there is a change
+  bool _mqttHomeAssistant : 1; // Enable Home Assistant docs
+  bool _initDone : 1;          // Initialization is done
 
   // Settings. Some of these are stored in a different format than they're user settings - so we don't have to convert at runtime
   uint8_t _i2cAddress = AHT10_ADDRESS_0X38;
@@ -68,7 +64,7 @@ private:
   void mqttInitialize()
   {
     // This is a generic "setup mqtt" function, So we must abort if we're not to do mqtt
-    if (!WLED_MQTT_CONNECTED || !_stateFlags.mqttPublish || !_stateFlags.mqttHomeAssistant)
+    if (!WLED_MQTT_CONNECTED || !_mqttPublish || !_mqttHomeAssistant)
       return;
 
     char topic[128];
@@ -83,7 +79,7 @@ private:
   {
     // Check if MQTT Connected, otherwise it will crash the 8266
     // Only report if the change is larger than the required diff
-    if (WLED_MQTT_CONNECTED && _stateFlags.mqttPublish && (_stateFlags.mqttPublishAlways || fabsf(lastState - state) > minChange))
+    if (WLED_MQTT_CONNECTED && _mqttPublish && (_mqttPublishAlways || fabsf(lastState - state) > minChange))
     {
       char subuf[128];
       snprintf_P(subuf, 127, PSTR("%s/%s"), mqttDeviceTopic, (const char *)topic);
@@ -135,7 +131,7 @@ public:
   {
     // if usermod is disabled or called during strip updating just exit
     // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
-    if (!_stateFlags.settingEnabled || strip.isUpdating())
+    if (!_settingEnabled || strip.isUpdating())
       return;
 
     // do your magic here
@@ -237,15 +233,15 @@ public:
   void addToConfig(JsonObject &root)
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
-    top[F("Enabled")] = _stateFlags.settingEnabled;
+    top[F("Enabled")] = _settingEnabled;
     top[F("I2CAddress")] = static_cast<uint8_t>(_i2cAddress);
     top[F("SensorType")] = _ahtType;
     top[F("CheckInterval")] = _checkInterval / 1000;
     top[F("Decimals")] = log10f(_decimalFactor);
 #ifndef WLED_DISABLE_MQTT
-    top[F("MqttPublish")] = _stateFlags.mqttPublish;
-    top[F("MqttPublishAlways")] = _stateFlags.mqttPublishAlways;
-    top[F("MqttHomeAssistantDiscovery")] = _stateFlags.mqttHomeAssistant;
+    top[F("MqttPublish")] = _mqttPublish;
+    top[F("MqttPublishAlways")] = _mqttPublishAlways;
+    top[F("MqttHomeAssistantDiscovery")] = _mqttHomeAssistant;
 #endif
 
     DEBUG_PRINTLN(F("AHT10 config saved."));
@@ -265,7 +261,7 @@ public:
     bool tmpBool = false;
     configComplete &= getJsonValue(top[F("Enabled")], tmpBool);
     if (configComplete)
-      _stateFlags.settingEnabled = tmpBool;
+      _settingEnabled = tmpBool;
 
     configComplete &= getJsonValue(top[F("I2CAddress")], _i2cAddress);
     configComplete &= getJsonValue(top[F("CheckInterval")], _checkInterval);
@@ -302,18 +298,18 @@ public:
 #ifndef WLED_DISABLE_MQTT
     configComplete &= getJsonValue(top[F("MqttPublish")], tmpBool);
     if (configComplete)
-      _stateFlags.mqttPublish = tmpBool;
+      _mqttPublish = tmpBool;
 
     configComplete &= getJsonValue(top[F("MqttPublishAlways")], tmpBool);
     if (configComplete)
-      _stateFlags.mqttPublishAlways = tmpBool;
+      _mqttPublishAlways = tmpBool;
 
     configComplete &= getJsonValue(top[F("MqttHomeAssistantDiscovery")], tmpBool);
     if (configComplete)
-      _stateFlags.mqttHomeAssistant = tmpBool;
+      _mqttHomeAssistant = tmpBool;
 #endif
 
-    if (_stateFlags.initDone)
+    if (_initDone)
     {
       // Reloading config
       initializeAht();
@@ -323,7 +319,7 @@ public:
 #endif
     }
 
-    _stateFlags.initDone = true;
+    _initDone = true;
     return configComplete;
   }
 };
