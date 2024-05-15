@@ -448,18 +448,21 @@ uint32_t Segment::currentColor(uint8_t slot) {
 #endif
 }
 
-CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
-  loadPalette(targetPalette, pal);
+inline CRGBPalette16 &Segment::currentPalette(uint8_t pal) {
+  if ( SEGPALETTEIDX != pal ) {
+    loadPalette(SEGPALETTE, pal);
+    SEGPALETTEIDX = pal;
+  }
   uint16_t prog = progress();
   if (strip.paletteFade && prog < 0xFFFFU) {
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
     // minimum blend time is 100ms maximum is 65535ms
     uint16_t noOfBlends = ((255U * prog) / 0xFFFFU) - _t->_prevPaletteBlends;
-    for (int i=0; i<noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, targetPalette, 48);
-    targetPalette = _t->_palT; // copy transitioning/temporary palette
+    for (int i=0; i<noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, SEGPALETTE, 48);
+    return _t->_palT;
   }
-  return targetPalette;
+  return SEGPALETTE;
 }
 
 // relies on WS2812FX::service() to call it max every 8ms or more (MIN_SHOW_DELAY)
@@ -1078,11 +1081,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
   uint8_t paletteIndex = i;
   if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
   if (!wrap && strip.paletteBlend != 3) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
-  CRGBPalette16 curPal;
-  curPal = currentPalette(curPal, palette);
-  //if (isInTransition()) curPal = _t->_palT;
-  //else    loadPalette(curPal, palette);
-  CRGB fastled_col = ColorFromPalette(curPal, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
+  CRGB fastled_col = ColorFromPalette(currentPalette(palette), paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
 
   return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, 0);
 }
@@ -1187,7 +1186,7 @@ void WS2812FX::service() {
         _colors_t[0] = seg.currentColor(0);
         _colors_t[1] = seg.currentColor(1);
         _colors_t[2] = seg.currentColor(2);
-        seg.currentPalette(_currentPalette, seg.palette); // we need to pass reference
+        seg.currentPalette(seg.palette); // we need to pass reference
 
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(seg.currentBri(true), correctWB);
         for (int c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);

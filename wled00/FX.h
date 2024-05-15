@@ -92,6 +92,7 @@
 //#define SEGLEN           strip._segments[strip.getCurrSegmentId()].virtualLength()
 #define SEGCOLOR(x)      strip.segColor(x) /* saves us a few kbytes of code */
 #define SEGPALETTE       strip._currentPalette
+#define SEGPALETTEIDX    strip._currentPaletteIndex
 #define SEGLEN           strip._virtualSegmentLength /* saves us a few kbytes of code */
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
@@ -567,7 +568,7 @@ typedef struct Segment {
     uint8_t  currentMode(void);
     uint32_t currentColor(uint8_t slot);
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
-    CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
+    inline CRGBPalette16 &currentPalette(uint8_t paletteID);
 
     // 1D strip
     uint16_t virtualLength(void) const;
@@ -694,6 +695,7 @@ class WS2812FX {  // 96 bytes
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
+      _currentPaletteIndex(255),
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
       // true private variables
@@ -889,6 +891,7 @@ class WS2812FX {  // 96 bytes
 
     void loadCustomPalettes(void); // loads custom palettes from JSON
     CRGBPalette16 _currentPalette; // palette used for current effect (includes transition)
+    uint8_t _currentPaletteIndex;
     std::vector<CRGBPalette16> customPalettes; // TODO: move custom palettes out of WS2812FX class
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
