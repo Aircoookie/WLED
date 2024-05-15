@@ -32,6 +32,11 @@ private:
   float _lastHumidity = 0;
   float _lastTemperature = 0;
 
+#ifndef WLED_MQTT_DISABLE
+  float _lastHumiditySent = 0;
+  float _lastTemperatureSent = 0;
+#endif
+
   AHT10 *_aht = nullptr;
 
   float truncateDecimals(float val)
@@ -74,7 +79,7 @@ private:
     mqttCreateHassSensor(F("Humidity"), topic, F("humidity"), F("%"));
   }
 
-  void mqttPublishIfChanged(const __FlashStringHelper *topic, float lastState, float state, float minChange)
+  void mqttPublishIfChanged(const __FlashStringHelper *topic, float &lastState, float state, float minChange)
   {
     // Check if MQTT Connected, otherwise it will crash the 8266
     // Only report if the change is larger than the required diff
@@ -83,6 +88,8 @@ private:
       char subuf[128];
       snprintf_P(subuf, 127, PSTR("%s/%s"), mqttDeviceTopic, (const char *)topic);
       mqtt->publish(subuf, 0, false, String(state).c_str());
+
+      lastState = state;
     }
   }
 
@@ -163,10 +170,10 @@ public:
 
       // We can avoid reporting if the change is insignificant. The threshold chosen is below the level of accuracy, but way above 0.01 which is the precision of the value provided.
       // The AHT10/15/20 has an accuracy of 0.3C in the temperature readings
-      mqttPublishIfChanged(F("temperature"), _lastTemperature, temperature, 0.1f);
+      mqttPublishIfChanged(F("temperature"), _lastTemperatureSent, temperature, 0.1f);
 
       // The AHT10/15/20 has an accuracy in the humidity sensor of 2%
-      mqttPublishIfChanged(F("humidity"), _lastHumidity, humidity, 0.5f);
+      mqttPublishIfChanged(F("humidity"), _lastHumiditySent, humidity, 0.5f);
 #endif
 
       // Store

@@ -33,5 +33,4 @@ build_flags =
 lib_deps = 
   ${esp32.lib_deps}
   enjoyneering/AHT10@~1.1.0
-  Wire
 ```
