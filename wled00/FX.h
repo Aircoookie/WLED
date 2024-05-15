@@ -90,7 +90,7 @@
 //#define SEGCOLOR(x)      strip._segments[strip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
 //#define SEGLEN           strip._segments[strip.getCurrSegmentId()].virtualLength()
 #define SEGCOLOR(x)      strip.segColor(x) /* saves us a few kbytes of code */
-#define SEGPALETTE       strip._currentPalette
+#define SEGPALETTE       Segment::getCurrentPalette()
 #define SEGLEN           strip._virtualSegmentLength /* saves us a few kbytes of code */
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
@@ -324,7 +324,8 @@ typedef enum mapping1D2D {
   M12_Pixels = 0,
   M12_pBar = 1,
   M12_pArc = 2,
-  M12_pCorner = 3
+  M12_pCorner = 3,
+  M12_sPinwheel = 4
 } mapping1D2D_t;
 
 // segment, 80 bytes
@@ -417,6 +418,7 @@ typedef struct Segment {
     static uint16_t _usedSegmentData;
 
     // perhaps this should be per segment, not static
+    static CRGBPalette16 _currentPalette;     // palette used for current effect (includes transition, used in color_from_palette())
     static CRGBPalette16 _randomPalette;      // actual random palette
     static CRGBPalette16 _newRandomPalette;   // target random palette
     static uint16_t _lastPaletteChange;       // last random palette change time in millis()/1000
@@ -534,6 +536,7 @@ typedef struct Segment {
     static void     modeBlend(bool blend)       { _modeBlend = blend; }
     #endif
     static void     handleRandomPalette();
+    inline static const CRGBPalette16 &getCurrentPalette(void) { return Segment::_currentPalette; }
 
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
@@ -571,7 +574,7 @@ typedef struct Segment {
     uint8_t  currentMode(void);                 // currently active effect/mode (while in transition)
     uint32_t currentColor(uint8_t slot);        // currently active segment color (blended while in transition)
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
-    CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
+    void     setCurrentPalette(void);
 
     // 1D strip
     uint16_t virtualLength(void) const;
@@ -706,7 +709,6 @@ class WS2812FX {  // 96 bytes
       panels(1),
 #endif
       // semi-private (just obscured) used in effect functions through macros
-      _currentPalette(CRGBPalette16(CRGB::Black)),
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
       // true private variables
@@ -901,7 +903,6 @@ class WS2812FX {  // 96 bytes
   // end 2D support
 
     void loadCustomPalettes(void); // loads custom palettes from JSON
-    CRGBPalette16 _currentPalette; // palette used for current effect (includes transition)
     std::vector<CRGBPalette16> customPalettes; // TODO: move custom palettes out of WS2812FX class
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
