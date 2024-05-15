@@ -11,12 +11,15 @@ private:
     static const char _name[];
 
     unsigned long _lastLoopCheck = 0;
+    unsigned long _lastCheckTime = 0;
 
-    bool _settingEnabled : 1;    // Enable the usermod
-    bool _mqttPublish : 1;       // Publish MQTT values
-    bool _mqttPublishAlways : 1; // Publish always, regardless if there is a change
-    bool _mqttHomeAssistant : 1; // Enable Home Assistant docs
-    bool _initDone : 1;          // Initialization is done
+    bool _settingEnabled : 1;           // Enable the usermod
+    bool _mqttPublish : 1;              // Publish MQTT values
+    bool _mqttPublishAlways : 1;        // Publish always, regardless if there is a change
+    bool _mqttHomeAssistant : 1;        // Enable Home Assistant docs
+    bool _initDone : 1;                 // Initialization is done
+    bool _isTriggeredOperationMode : 1; // false = continuous, true = triggered
+    bool _measurementTriggered : 1;     // if triggered mode, then true indicates we're waiting for measurements
 
     uint8_t _i2cAddress = INA226_ADDRESS;
     uint16_t _checkInterval = 60000; // milliseconds, user settings is in seconds
@@ -32,6 +35,9 @@ private:
     bool _lastOverflow = false;
 
 #ifndef WLED_MQTT_DISABLE
+    uint16_t _debugAverages;
+    uint16_t _debugConversionTime;
+
     float _lastCurrentSent = 0;
     float _lastVoltageSent = 0;
     float _lastPowerSent = 0;
@@ -50,6 +56,8 @@ private:
     {
         INA226_AVERAGES avg;
         INA226_CONV_TIME conversionTime;
+        uint16_t debugAveragesValue = 0;
+        uint16_t debugConversionTimeValue = 0;
 
         // Identify the combination of samples and conversion times that will provide us with a measurement within our specified check interval.
         // The two values will define how stable a measurement is (number of samples) and how much time can be used to calculate on it
@@ -72,34 +80,63 @@ private:
         if (_checkInterval >= 5000)
         {
             avg = AVERAGE_1024;
+            debugAveragesValue = 1024;
             if (_checkInterval > 17000)
+            {
                 conversionTime = CONV_TIME_8244;
+                debugConversionTimeValue = 8244;
+            }
             else
+            {
                 conversionTime = CONV_TIME_4156;
+                debugConversionTimeValue = 4156;
+            }
         }
         else if (_checkInterval >= 2000)
         {
             avg = AVERAGE_512;
+            debugAveragesValue = 512;
             if (_checkInterval > 3000)
+            {
                 conversionTime = CONV_TIME_2116;
+                debugConversionTimeValue = 2116;
+            }
             else
+            {
                 conversionTime = CONV_TIME_1100;
+                debugConversionTimeValue = 1100;
+            }
         }
         else
         {
             // Always 1 second or more
 
             avg = AVERAGE_256;
+            debugAveragesValue = 256;
             if (_checkInterval >= 3000)
+            {
                 conversionTime = CONV_TIME_4156;
+                debugConversionTimeValue = 4156;
+            }
             else if (_checkInterval >= 2000)
+            {
                 conversionTime = CONV_TIME_2116;
+                debugConversionTimeValue = 2116;
+            }
             else
+            {
                 conversionTime = CONV_TIME_1100;
+                debugConversionTimeValue = 1100;
+            }
         }
 
         _ina226->setAverage(avg);
         _ina226->setConversionTime(conversionTime);
+
+#ifndef WLED_MQTT_DISABLE
+        _debugAverages = debugAveragesValue;
+        _debugConversionTime = debugConversionTimeValue;
+#endif
     }
 
     void initializeINA226()
@@ -117,8 +154,84 @@ private:
         }
         _ina226->setCorrectionFactor(1.0);
         setOptimalSettings();
-        _ina226->setMeasureMode(CONTINUOUS);
+
+        if (_checkInterval >= 20000)
+        {
+            // If we're only checking every 20s, we can use the triggered mode. This mode powers down the INA226 between measurements and saves energy this way.
+            _isTriggeredOperationMode = true;
+            _ina226->setMeasureMode(TRIGGERED);
+        }
+        else
+        {
+            // Continuous mode is simpler and will just keep values fresh in the chip.
+            _isTriggeredOperationMode = false;
+            _ina226->setMeasureMode(CONTINUOUS);
+        }
+
         _ina226->setResistorRange(static_cast<float>(_shuntResistor) / 1000.0, static_cast<float>(_currentRange) / 1000.0);
+    }
+
+    void fetchAndPushValues()
+    {
+        _lastStatus = _ina226->getI2cErrorCode();
+
+        if (_lastStatus != 0)
+            return;
+
+        float current = truncateDecimals(_ina226->getCurrent_mA() / 1000.0);
+        float voltage = truncateDecimals(_ina226->getBusVoltage_V());
+        float power = truncateDecimals(_ina226->getBusPower() / 1000.0);
+        float shuntVoltage = truncateDecimals(_ina226->getShuntVoltage_V());
+        bool overflow = _ina226->overflow;
+
+#ifndef WLED_DISABLE_MQTT
+        mqttPublishIfChanged(F("current"), _lastCurrentSent, current, 0.01f);
+        mqttPublishIfChanged(F("voltage"), _lastVoltageSent, voltage, 0.01f);
+        mqttPublishIfChanged(F("power"), _lastPowerSent, power, 0.1f);
+        mqttPublishIfChanged(F("shunt_voltage"), _lastShuntVoltageSent, shuntVoltage, 0.01f);
+        mqttPublishIfChanged(F("overflow"), _lastOverflowSent, overflow);
+#endif
+
+        _lastCurrent = current;
+        _lastVoltage = voltage;
+        _lastPower = power;
+        _lastShuntVoltage = shuntVoltage;
+        _lastOverflow = overflow;
+    }
+
+    void handleTriggeredMode(unsigned long currentTime)
+    {
+        if (_measurementTriggered)
+        {
+            if (currentTime - _lastCheckTime >= 400)
+            {
+                _lastCheckTime = currentTime;
+                if (_ina226->isBusy())
+                    return;
+
+                fetchAndPushValues();
+                _measurementTriggered = false;
+            }
+        }
+        else
+        {
+            if (currentTime - _lastLoopCheck >= _checkInterval)
+            {
+                _ina226->startSingleMeasurement();
+                _lastLoopCheck = currentTime;
+                _measurementTriggered = true;
+                _lastCheckTime = currentTime;
+            }
+        }
+    }
+
+    void handleContinuousMode(unsigned long currentTime)
+    {
+        if (currentTime - _lastLoopCheck >= _checkInterval)
+        {
+            _lastLoopCheck = currentTime;
+            fetchAndPushValues();
+        }
     }
 
     ~UsermodINA226()
@@ -243,33 +356,13 @@ public:
 
         unsigned long currentTime = millis();
 
-        if (currentTime - _lastLoopCheck < _checkInterval)
-            return;
-        _lastLoopCheck = currentTime;
-
-        _lastStatus = _ina226->getI2cErrorCode();
-
-        if (_lastStatus == 0)
+        if (_isTriggeredOperationMode)
         {
-            float current = truncateDecimals(_ina226->getCurrent_mA() / 1000.0);
-            float voltage = truncateDecimals(_ina226->getBusVoltage_V());
-            float power = truncateDecimals(_ina226->getBusPower() / 1000.0); // Correct power value to W
-            float shuntVoltage = truncateDecimals(_ina226->getShuntVoltage_V());
-            bool overflow = _ina226->overflow;
-
-#ifndef WLED_DISABLE_MQTT
-            mqttPublishIfChanged(F("current"), _lastCurrentSent, current, 0.01f);
-            mqttPublishIfChanged(F("voltage"), _lastVoltageSent, voltage, 0.01f);
-            mqttPublishIfChanged(F("power"), _lastPowerSent, power, 0.1f);
-            mqttPublishIfChanged(F("shunt_voltage"), _lastShuntVoltageSent, shuntVoltage, 0.01f);
-            mqttPublishIfChanged(F("overflow"), _lastOverflowSent, overflow);
-#endif
-
-            _lastCurrent = current;
-            _lastVoltage = voltage;
-            _lastPower = power;
-            _lastShuntVoltage = shuntVoltage;
-            _lastOverflow = overflow;
+            handleTriggeredMode(currentTime);
+        }
+        else
+        {
+            handleContinuousMode(currentTime);
         }
     }
 
@@ -290,6 +383,31 @@ public:
         JsonObject user = root["u"];
         if (user.isNull())
             user = root.createNestedObject("u");
+
+#ifdef USERMOD_INA226_DEBUG
+        JsonArray temp = user.createNestedArray(F("INA226 last loop"));
+        temp.add(_lastLoopCheck);
+
+        temp = user.createNestedArray(F("INA226 last status"));
+        temp.add(_lastStatus);
+
+        temp = user.createNestedArray(F("INA226 average samples"));
+        temp.add(_debugAverages);
+        temp.add(F("samples"));
+
+        temp = user.createNestedArray(F("INA226 conversion time"));
+        temp.add(_debugConversionTime);
+        temp.add(F("us"));
+
+        temp = user.createNestedArray(F("INA226 mode"));
+        temp.add(_isTriggeredOperationMode ? F("triggered") : F("continuous"));
+
+        if (_isTriggeredOperationMode)
+        {
+            temp = user.createNestedArray(F("INA226 triggered"));
+            temp.add(_measurementTriggered ? F("waiting for measurement") : F(""));
+        }
+#endif
 
         JsonArray jsonCurrent = user.createNestedArray(F("Current"));
         JsonArray jsonVoltage = user.createNestedArray(F("Voltage"));
