@@ -790,7 +790,7 @@ void serializeConfig() {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
     matrix[F("mpc")] = strip.panels;
     JsonArray panels = matrix.createNestedArray(F("panels"));
-    for (int i = 0; i < strip.panel.size(); i++) {
+    for (size_t i = 0; i < strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
       pnl["b"] = strip.panel[i].bottomStart;
       pnl["r"] = strip.panel[i].rightStart;
@@ -806,7 +806,7 @@ void serializeConfig() {
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
-  for (int s = 0; s < BusManager::getNumBusses(); s++) {
+  for (size_t s = 0; s < BusManager::getNumBusses(); s++) {
     Bus *bus = BusManager::getBus(s);
     if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
@@ -829,7 +829,7 @@ void serializeConfig() {
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
   const ColorOrderMap& com = BusManager::getColorOrderMap();
-  for (int s = 0; s < com.count(); s++) {
+  for (size_t s = 0; s < com.count(); s++) {
     const ColorOrderMapEntry *entry = com.get(s);
     if (!entry) break;
 
