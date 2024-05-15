@@ -5,15 +5,6 @@
 
 #define AHT10_SUCCESS 1
 
-#define STATE_SETTING_ENABLED 0b00000001
-#define STATE_SETTING_MQTT_PUBLISH 0b00000010
-#define STATE_SETTING_MQTT_PUBLISHALWAYS 0b00000100
-#define STATE_SETTING_MQTT_HOMEASSISTANT 0b00001000
-#define STATE_INITDONE 0b00010000
-
-#define STATE_ISSET(stateFlags, state) (((stateFlags) & (state)) == (state))
-#define STATE_SET(stateFlags, state, set) ((set) ? ((stateFlags) |= (state)) : ((stateFlags) &= ~(state)))
-
 class UsermodAHT10 : public Usermod
 {
 private:
@@ -21,8 +12,15 @@ private:
 
   unsigned long _lastLoopCheck = 0;
 
-  // To avoid storing N bools, this flags field will handle all of those
-  uint8_t _stateFlags = 0;
+  struct
+  {
+    bool settingEnabled : 1;    // Enable the usermod
+    bool mqttPublish : 1;       // Publish mqtt values
+    bool mqttPublishAlways : 1; // Publish always, regardless if there is a change
+    bool mqttHomeAssistant : 1; // Enable Home Assistant docs
+    bool initDone : 1;          // Initialization is done
+    unsigned : 3;
+  } _stateFlags;
 
   // Settings. Some of these are stored in a different format than they're user settings - so we don't have to convert at runtime
   uint8_t _i2cAddress = AHT10_ADDRESS_0X38;
@@ -65,7 +63,7 @@ private:
   void mqttInitialize()
   {
     // This is a generic "setup mqtt" function, So we must abort if we're not to do mqtt
-    if (!WLED_MQTT_CONNECTED || !STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISH) || !STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_HOMEASSISTANT))
+    if (!WLED_MQTT_CONNECTED || !_stateFlags.mqttPublish || !_stateFlags.mqttHomeAssistant)
       return;
 
     char topic[128];
@@ -79,7 +77,7 @@ private:
   void mqttPublishIfChanged(const __FlashStringHelper *topic, float lastState, float state)
   {
     // Check if MQTT Connected, otherwise it will crash the 8266
-    if (WLED_MQTT_CONNECTED && STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISH) && (STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISHALWAYS) || lastState != state))
+    if (WLED_MQTT_CONNECTED && _stateFlags.mqttPublish && (_stateFlags.mqttPublishAlways || lastState != state))
     {
       char subuf[128];
       snprintf_P(subuf, 127, PSTR("%s/%s"), mqttDeviceTopic, (const char *)topic);
@@ -90,7 +88,7 @@ private:
   // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void mqttCreateHassSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
   {
-    String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
+    String t = String(F("homeassistant/sensor/")) + mqttClientID + "/" + name + F("/config");
 
     StaticJsonDocument<600> doc;
 
@@ -129,7 +127,7 @@ public:
   {
     // if usermod is disabled or called during strip updating just exit
     // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
-    if (!STATE_ISSET(_stateFlags, STATE_SETTING_ENABLED) || strip.isUpdating())
+    if (!_stateFlags.settingEnabled || strip.isUpdating())
       return;
 
     // do your magic here
@@ -144,10 +142,10 @@ public:
     if (_lastStatus == AHT10_ERROR)
     {
       // Perform softReset and retry
-      DEBUG_PRINTLN("AHTxx returned error, doing softReset");
+      DEBUG_PRINTLN(F("AHTxx returned error, doing softReset"));
       if (!_aht->softReset())
       {
-        DEBUG_PRINTLN("softReset failed");
+        DEBUG_PRINTLN(F("softReset failed"));
         return;
       }
 
@@ -186,9 +184,9 @@ public:
   void addToJsonInfo(JsonObject &root) override
   {
     // if "u" object does not exist yet wee need to create it
-    JsonObject user = root[F("u")];
+    JsonObject user = root["u"];
     if (user.isNull())
-      user = root.createNestedObject(F("u"));
+      user = root.createNestedObject("u");
 
 #ifdef USERMOD_AHT10_DEBUG
     JsonArray temp = user.createNestedArray(F("AHT last loop"));
@@ -226,15 +224,15 @@ public:
   void addToConfig(JsonObject &root)
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
-    top[F("Enabled")] = STATE_ISSET(_stateFlags, STATE_SETTING_ENABLED);
+    top[F("Enabled")] = _stateFlags.settingEnabled;
     top[F("I2CAddress")] = static_cast<uint8_t>(_i2cAddress);
     top[F("SensorType")] = _ahtType;
     top[F("CheckInterval")] = _checkInterval / 1000;
     top[F("Decimals")] = log10f(_decimalFactor);
 #ifndef WLED_DISABLE_MQTT
-    top[F("MqttPublish")] = STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISH);
-    top[F("MqttPublishAlways")] = STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_PUBLISHALWAYS);
-    top[F("MqttHomeAssistantDiscovery")] = STATE_ISSET(_stateFlags, STATE_SETTING_MQTT_HOMEASSISTANT);
+    top[F("MqttPublish")] = _stateFlags.mqttPublish;
+    top[F("MqttPublishAlways")] = _stateFlags.mqttPublishAlways;
+    top[F("MqttHomeAssistantDiscovery")] = _stateFlags.mqttHomeAssistant;
 #endif
 
     DEBUG_PRINTLN(F("AHT10 config saved."));
@@ -254,7 +252,7 @@ public:
     bool tmpBool = false;
     configComplete &= getJsonValue(top[F("Enabled")], tmpBool);
     if (configComplete)
-      STATE_SET(_stateFlags, STATE_SETTING_ENABLED, tmpBool);
+      _stateFlags.settingEnabled = tmpBool;
 
     configComplete &= getJsonValue(top[F("I2CAddress")], _i2cAddress);
     configComplete &= getJsonValue(top[F("CheckInterval")], _checkInterval);
@@ -291,18 +289,18 @@ public:
 #ifndef WLED_DISABLE_MQTT
     configComplete &= getJsonValue(top[F("MqttPublish")], tmpBool);
     if (configComplete)
-      STATE_SET(_stateFlags, STATE_SETTING_MQTT_PUBLISH, tmpBool);
+      _stateFlags.mqttPublish = tmpBool;
 
     configComplete &= getJsonValue(top[F("MqttPublishAlways")], tmpBool);
     if (configComplete)
-      STATE_SET(_stateFlags, STATE_SETTING_MQTT_PUBLISHALWAYS, tmpBool);
+      _stateFlags.mqttPublishAlways = tmpBool;
 
     configComplete &= getJsonValue(top[F("MqttHomeAssistantDiscovery")], tmpBool);
     if (configComplete)
-      STATE_SET(_stateFlags, STATE_SETTING_MQTT_HOMEASSISTANT, tmpBool);
+      _stateFlags.mqttHomeAssistant = tmpBool;
 #endif
 
-    if (STATE_ISSET(_stateFlags, STATE_INITDONE))
+    if (_stateFlags.initDone)
     {
       // Reloading config
       initializeAht();
@@ -312,7 +310,7 @@ public:
 #endif
     }
 
-    STATE_SET(_stateFlags, STATE_INITDONE, true);
+    _stateFlags.initDone = true;
     return configComplete;
   }
 };
