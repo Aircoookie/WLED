@@ -5175,8 +5175,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = SEGMENT.length() / 8;
-  const uint16_t totalSize = dataSize*2 + sizeof(gameOfLife);
+  const size_t dataSize = (SEGMENT.length() / 8) + ((SEGMENT.length() % 8 != 0) ? 1 : 0); // add one byte when extra bits needed (length not a multiple of 8)
+  const size_t totalSize = dataSize*2 + sizeof(gameOfLife);
 
   if (!SEGENV.allocateData(totalSize)) return mode_static(); //allocation failed
   gameOfLife* gol = reinterpret_cast<gameOfLife*>(SEGENV.data);
@@ -5191,7 +5191,10 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   CRGB backgroundColor = SEGCOLOR(1);
   CRGB color;
 
-  if (SEGENV.call == 0) SEGMENT.setUpLeds();
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK); // to make sure that segment buffer and physical leds are aligned initially
+  }
   //start new game of life
   if ((SEGENV.call == 0 || generation == 0) && pauseFrames == 0) {
     SEGENV.step = strip.now; // .step = previous call time
@@ -5303,7 +5306,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       // mutate color chance
       if (random8() < SEGMENT.intensity) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
 
-      if (SEGMENT.check1) dominantColor = RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0); //WLEDMM support all colors)
+      if (SEGMENT.check1) dominantColor = RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0); //WLEDMM support all colors
       SEGMENT.setPixelColorXY(x,y, dominantColor);
     } 
   }
