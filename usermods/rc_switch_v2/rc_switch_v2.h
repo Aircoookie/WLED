@@ -28,6 +28,7 @@ class RcSwitchV2 : public Usermod {
 
     bool initDone = false;
     static const char _name[];
+    static const char _payload[];
 
   public:
 
@@ -46,14 +47,19 @@ class RcSwitchV2 : public Usermod {
       if (!initDone) return;  // prevent crash on boot applyPreset()
 
       JsonObject usermod = root[FPSTR(_name)];
-      if (!usermod.isNull()) {
-        mySwitch.send(usermod["rcswitch"]);
+      if (!usermod.isNull())
+      {
+        if (usermod[FPSTR(_payload)].is<const char*>())
+        {
+          mySwitch.send(usermod[FPSTR(_payload)].as<const char*>());
+        }
       }
     }
 
 #ifndef WLED_DISABLE_MQTT
     bool onMqttMessage(char* topic, char* payload) {
-      if (strlen(topic) == 8 && strncmp_P(topic, PSTR("/rcswitch"), 8) == 0) {
+      if (strlen(topic) == 9 && strncmp_P(topic, PSTR("/rcswitch"), 9) == 0)
+      {
         mySwitch.send(payload);
 
         return true;
@@ -69,4 +75,5 @@ class RcSwitchV2 : public Usermod {
     }
 };
 
-const char RcSwitchV2::_name[]    PROGMEM = "RcSwitchV2";
+const char RcSwitchV2::_name[]    PROGMEM = "RcSwitch";
+const char RcSwitchV2::_payload[] PROGMEM = "payload";
