@@ -28,11 +28,13 @@ class RcSwitchV2 : public Usermod {
 
     bool initDone = false;
     static const char _name[];
+    static const char _topic[];
     static const char _payload[];
 
   public:
 
-    void setup() {
+    void setup()
+    {
       mySwitch.enableTransmit(USERMOD_RC_SWITCH_PIN);
       mySwitch.setPulseLength(USERMOD_RC_SWITCH_PULSE_LENGTH);
       mySwitch.setProtocol(USERMOD_RC_SWITCH_PROTOCOL);
@@ -57,8 +59,9 @@ class RcSwitchV2 : public Usermod {
     }
 
 #ifndef WLED_DISABLE_MQTT
-    bool onMqttMessage(char* topic, char* payload) {
-      if (strlen(topic) == 9 && strncmp_P(topic, PSTR("/rcswitch"), 9) == 0)
+    bool onMqttMessage(char* topic, char* payload)
+    {
+      if (strlen(topic) == 9 && strncmp_P(topic, PSTR(_topic), 9) == 0)
       {
         mySwitch.send(payload);
 
@@ -66,6 +69,18 @@ class RcSwitchV2 : public Usermod {
       }
 
       return false;
+    }
+
+    void onMqttConnect(bool sessionPresent)
+    {
+      //(re)subscribe to required topics
+      char subuf[64];
+      if (mqttDeviceTopic[0] != 0)
+      {
+        strcpy(subuf, mqttDeviceTopic);
+        strcat_P(subuf, PSTR(_topic));
+        mqtt->subscribe(subuf, 0);
+      }
     }
 #endif
 
@@ -75,5 +90,6 @@ class RcSwitchV2 : public Usermod {
     }
 };
 
-const char RcSwitchV2::_name[]    PROGMEM = "RcSwitch";
+const char RcSwitchV2::_name[] PROGMEM = "RcSwitch";
+const char RcSwitchV2::_topic[] PROGMEM = "/rcswitch";
 const char RcSwitchV2::_payload[] PROGMEM = "payload";
