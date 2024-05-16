@@ -217,6 +217,10 @@
   #include "../usermods/TetrisAI_v2/usermod_v2_tetrisai.h"
 #endif
 
+#ifdef USERMOD_RC_SWITCH
+  #include "../usermods/rc_switch_v2/rc_switch_v2.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -420,5 +424,9 @@ void registerUsermods()
 
   #ifdef USERMOD_TETRISAI
   usermods.add(new TetrisAIUsermod());
+  #endif
+
+  #ifdef USERMOD_RC_SWITCH
+  usermods.add(new RcSwitchV2());
   #endif
 }
