@@ -52,7 +52,7 @@ INA226_CONV_TIME getConversionTimeEnum(uint16_t &timeUs)
 {
     for (const auto &setting : _inaSettingsLookup)
     {
-        // If a user supplies 9000 us, we serve up the highest possible value
+        // If a user supplies 9000 μs, we serve up the highest possible value
         if (timeUs >= setting.convTimeUs)
         {
             timeUs = setting.convTimeUs;
@@ -70,7 +70,7 @@ private:
     static const char _name[];
 
     unsigned long _lastLoopCheck = 0;
-    unsigned long _lastCheckTime = 0;
+    unsigned long _lastTriggerTime = 0;
 
     bool _settingEnabled : 1;                  // Enable the usermod
     bool _mqttPublish : 1;                     // Publish MQTT values
@@ -178,9 +178,9 @@ private:
         if (_measurementTriggered)
         {
             // Test if we have a measurement every 400ms
-            if (currentTime - _lastCheckTime >= 400)
+            if (currentTime - _lastTriggerTime >= 400)
             {
-                _lastCheckTime = currentTime;
+                _lastTriggerTime = currentTime;
                 if (_ina226->isBusy())
                     return;
 
@@ -192,10 +192,11 @@ private:
         {
             if (currentTime - _lastLoopCheck >= _checkInterval)
             {
-                _ina226->startSingleMeasurement();
+                // Start a measurement and use isBusy() later to determine when it is done
+                _ina226->startSingleMeasurementNoWait();
                 _lastLoopCheck = currentTime;
+                _lastTriggerTime = currentTime;
                 _measurementTriggered = true;
-                _lastCheckTime = currentTime;
             }
         }
     }
@@ -385,7 +386,7 @@ public:
 
         temp = user.createNestedArray(F("INA226 conversion time"));
         temp.add(_settingInaConversionTimeUs << 2);
-        temp.add(F("us"));
+        temp.add(F("μs"));
 
         // INA226 uses (2 * conversion time * samples) time to take a reading.
         temp = user.createNestedArray(F("INA226 expected sample time"));
