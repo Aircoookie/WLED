@@ -28,7 +28,9 @@ class RcSwitchV2 : public Usermod {
 
     bool initDone = false;
     static const char _name[];
+    #ifndef WLED_DISABLE_MQTT
     static const char _topic[];
+    #endif
     static const char _payload[];
 
   public:
@@ -91,5 +93,7 @@ class RcSwitchV2 : public Usermod {
 };
 
 const char RcSwitchV2::_name[] PROGMEM = "RcSwitch";
+#ifndef WLED_DISABLE_MQTT
 const char RcSwitchV2::_topic[] PROGMEM = "/rcswitch";
+#endif
 const char RcSwitchV2::_payload[] PROGMEM = "payload";
