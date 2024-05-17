@@ -5,6 +5,65 @@
 
 #define INA226_ADDRESS 0x40 // Default I2C address for INA226
 
+#define DEFAULT_CHECKINTERVAL 60000
+#define DEFAULT_INASAMPLES 128
+#define DEFAULT_INASAMPLESENUM AVERAGE_128
+#define DEFAULT_INACONVERSIONTIME 1100
+#define DEFAULT_INACONVERSIONTIMEENUM CONV_TIME_1100
+
+// A packed version of all INA settings enums and their human friendly counterparts packed into a 32 bit structure
+// Some values are shifted and need to be preprocessed before usage
+struct InaSettingLookup
+{
+    uint16_t avgSamples : 11;          // Max 1024, which could be in 10 bits if we shifted by 1; if we somehow handle the edge case with "1"
+    uint8_t avgEnum : 4;               // Shift by 8 to get the INA226_AVERAGES value, accepts 0x00 to 0x0F, we need 0x00 to 0x0E
+    uint16_t convTimeUs : 14;          // We could save 2 bits by shifting this, but we won't save anything at present.
+    INA226_CONV_TIME convTimeEnum : 3; // Only the lowest 3 bits are defined in the conversion time enumerations
+};
+
+const InaSettingLookup _inaSettingsLookup[] = {
+    {1024, AVERAGE_1024 >> 8, 8244, CONV_TIME_8244},
+    {512, AVERAGE_512 >> 8, 4156, CONV_TIME_4156},
+    {256, AVERAGE_256 >> 8, 2116, CONV_TIME_2116},
+    {128, AVERAGE_128 >> 8, 1100, CONV_TIME_1100},
+    {64, AVERAGE_64 >> 8, 588, CONV_TIME_588},
+    {16, AVERAGE_16 >> 8, 332, CONV_TIME_332},
+    {4, AVERAGE_4 >> 8, 204, CONV_TIME_204},
+    {1, AVERAGE_1 >> 8, 140, CONV_TIME_140}};
+
+// Note: Will update the provided arg to be the correct value
+INA226_AVERAGES getAverageEnum(uint16_t &samples)
+{
+    for (const auto &setting : _inaSettingsLookup)
+    {
+        // If a user supplies 2000 samples, we serve up the highest possible value
+        if (samples >= setting.avgSamples)
+        {
+            samples = setting.avgSamples;
+            return static_cast<INA226_AVERAGES>(setting.avgEnum << 8);
+        }
+    }
+    // Default value if not found
+    samples = DEFAULT_INASAMPLES;
+    return DEFAULT_INASAMPLESENUM;
+}
+
+INA226_CONV_TIME getConversionTimeEnum(uint16_t &timeUs)
+{
+    for (const auto &setting : _inaSettingsLookup)
+    {
+        // If a user supplies 9000 us, we serve up the highest possible value
+        if (timeUs >= setting.convTimeUs)
+        {
+            timeUs = setting.convTimeUs;
+            return setting.convTimeEnum;
+        }
+    }
+    // Default value if not found
+    timeUs = DEFAULT_INACONVERSIONTIME;
+    return DEFAULT_INACONVERSIONTIMEENUM;
+}
+
 class UsermodINA226 : public Usermod
 {
 private:
@@ -13,19 +72,21 @@ private:
     unsigned long _lastLoopCheck = 0;
     unsigned long _lastCheckTime = 0;
 
-    bool _settingEnabled : 1;           // Enable the usermod
-    bool _mqttPublish : 1;              // Publish MQTT values
-    bool _mqttPublishAlways : 1;        // Publish always, regardless if there is a change
-    bool _mqttHomeAssistant : 1;        // Enable Home Assistant docs
-    bool _initDone : 1;                 // Initialization is done
-    bool _isTriggeredOperationMode : 1; // false = continuous, true = triggered
-    bool _measurementTriggered : 1;     // if triggered mode, then true indicates we're waiting for measurements
+    bool _settingEnabled : 1;                  // Enable the usermod
+    bool _mqttPublish : 1;                     // Publish MQTT values
+    bool _mqttPublishAlways : 1;               // Publish always, regardless if there is a change
+    bool _mqttHomeAssistant : 1;               // Enable Home Assistant docs
+    bool _initDone : 1;                        // Initialization is done
+    bool _isTriggeredOperationMode : 1;        // false = continuous, true = triggered
+    bool _measurementTriggered : 1;            // if triggered mode, then true indicates we're waiting for measurements
+    uint16_t _settingInaConversionTimeUs : 12; // Conversion time, shift by 2
+    uint16_t _settingInaSamples : 11;          // Number of samples for averaging, max 1024
 
-    uint8_t _i2cAddress = INA226_ADDRESS;
-    uint16_t _checkInterval = 60000; // milliseconds, user settings is in seconds
-    float _decimalFactor = 100;      // a power of 10 factor. 1 would be no change, 10 is one decimal, 100 is two etc. User sees a power of 10 (0, 1, 2, ..)
-    uint16_t _shuntResistor = 1000;  // Shunt resistor value in milliohms
-    uint16_t _currentRange = 1000;   // Expected maximum current in milliamps
+    uint8_t _i2cAddress;
+    uint16_t _checkInterval; // milliseconds, user settings is in seconds
+    float _decimalFactor;    // a power of 10 factor. 1 would be no change, 10 is one decimal, 100 is two etc. User sees a power of 10 (0, 1, 2, ..)
+    uint16_t _shuntResistor; // Shunt resistor value in milliohms
+    uint16_t _currentRange;  // Expected maximum current in milliamps
 
     uint8_t _lastStatus = 0;
     float _lastCurrent = 0;
@@ -35,9 +96,6 @@ private:
     bool _lastOverflow = false;
 
 #ifndef WLED_MQTT_DISABLE
-    uint16_t _debugAverages;
-    uint16_t _debugConversionTime;
-
     float _lastCurrentSent = 0;
     float _lastVoltageSent = 0;
     float _lastPowerSent = 0;
@@ -50,93 +108,6 @@ private:
     float truncateDecimals(float val)
     {
         return roundf(val * _decimalFactor) / _decimalFactor;
-    }
-
-    void setOptimalSettings()
-    {
-        INA226_AVERAGES avg;
-        INA226_CONV_TIME conversionTime;
-        uint16_t debugAveragesValue = 0;
-        uint16_t debugConversionTimeValue = 0;
-
-        // Identify the combination of samples and conversion times that will provide us with a measurement within our specified check interval.
-        // The two values will define how stable a measurement is (number of samples) and how much time can be used to calculate on it
-        // (conversion time). The calculation is:
-        //    `Samples * ConversionTime * 2`
-        //
-        // This table shows all possible combinations and the time it'll take.
-        // | Conversion Time (μs) | 1 Sample | 4 Samples | 16 Samples | 64 Samples | 128 Samples | 256 Samples | 512 Samples | 1024 Samples |
-        // |----------------------|----------|-----------|------------|------------|-------------|-------------|-------------|--------------|
-        // | 140                  | 0.28 ms  | 1.12 ms   | 4.48 ms    | 17.92 ms   | 35.84 ms    | 71.68 ms    | 143.36 ms   | 286.72 ms    |
-        // | 204                  | 0.408 ms | 1.632 ms  | 6.528 ms   | 26.112 ms  | 52.224 ms   | 104.448 ms  | 208.896 ms  | 417.792 ms   |
-        // | 332                  | 0.664 ms | 2.656 ms  | 10.624 ms  | 42.496 ms  | 84.992 ms   | 169.984 ms  | 339.968 ms  | 679.936 ms   |
-        // | 588                  | 1.176 ms | 4.704 ms  | 18.816 ms  | 75.264 ms  | 150.528 ms  | 301.056 ms  | 602.112 ms  | 1204.224 ms  |
-        // | 1100                 | 2.2 ms   | 8.8 ms    | 35.2 ms    | 140.8 ms   | 281.6 ms    | 563.2 ms    | 1126.4 ms   | 2252.8 ms    |
-        // | 2116                 | 4.232 ms | 16.928 ms | 67.712 ms  | 270.848 ms | 541.696 ms  | 1083.392 ms | 2166.784 ms | 4333.568 ms  |
-        // | 4156                 | 8.312 ms | 33.248 ms | 132.992 ms | 531.968 ms | 1063.936 ms | 2127.872 ms | 4255.744 ms | 8511.488 ms  |
-        // | 8244                 | 16.488 ms| 65.952 ms | 263.808 ms | 1055.232 ms| 2110.464 ms | 4220.928 ms | 8441.856 ms | 16883.712 ms |
-
-        // The below determines which number of average samples to use, because this number is likely most important, and then finds the max conversion time.
-        if (_checkInterval >= 5000)
-        {
-            avg = AVERAGE_1024;
-            debugAveragesValue = 1024;
-            if (_checkInterval > 17000)
-            {
-                conversionTime = CONV_TIME_8244;
-                debugConversionTimeValue = 8244;
-            }
-            else
-            {
-                conversionTime = CONV_TIME_4156;
-                debugConversionTimeValue = 4156;
-            }
-        }
-        else if (_checkInterval >= 2000)
-        {
-            avg = AVERAGE_512;
-            debugAveragesValue = 512;
-            if (_checkInterval > 3000)
-            {
-                conversionTime = CONV_TIME_2116;
-                debugConversionTimeValue = 2116;
-            }
-            else
-            {
-                conversionTime = CONV_TIME_1100;
-                debugConversionTimeValue = 1100;
-            }
-        }
-        else
-        {
-            // Always 1 second or more
-
-            avg = AVERAGE_256;
-            debugAveragesValue = 256;
-            if (_checkInterval >= 3000)
-            {
-                conversionTime = CONV_TIME_4156;
-                debugConversionTimeValue = 4156;
-            }
-            else if (_checkInterval >= 2000)
-            {
-                conversionTime = CONV_TIME_2116;
-                debugConversionTimeValue = 2116;
-            }
-            else
-            {
-                conversionTime = CONV_TIME_1100;
-                debugConversionTimeValue = 1100;
-            }
-        }
-
-        _ina226->setAverage(avg);
-        _ina226->setConversionTime(conversionTime);
-
-#ifndef WLED_MQTT_DISABLE
-        _debugAverages = debugAveragesValue;
-        _debugConversionTime = debugConversionTimeValue;
-#endif
     }
 
     void initializeINA226()
@@ -153,17 +124,20 @@ private:
             return;
         }
         _ina226->setCorrectionFactor(1.0);
-        setOptimalSettings();
+
+        uint16_t tmpShort = _settingInaSamples;
+        _ina226->setAverage(getAverageEnum(tmpShort));
+
+        tmpShort = _settingInaConversionTimeUs << 2;
+        _ina226->setConversionTime(getConversionTimeEnum(tmpShort));
 
         if (_checkInterval >= 20000)
         {
-            // If we're only checking every 20s, we can use the triggered mode. This mode powers down the INA226 between measurements and saves energy this way.
             _isTriggeredOperationMode = true;
             _ina226->setMeasureMode(TRIGGERED);
         }
         else
         {
-            // Continuous mode is simpler and will just keep values fresh in the chip.
             _isTriggeredOperationMode = false;
             _ina226->setMeasureMode(CONTINUOUS);
         }
@@ -203,6 +177,7 @@ private:
     {
         if (_measurementTriggered)
         {
+            // Test if we have a measurement every 400ms
             if (currentTime - _lastCheckTime >= 400)
             {
                 _lastCheckTime = currentTime;
@@ -344,6 +319,19 @@ private:
 #endif
 
 public:
+    UsermodINA226()
+    {
+        // Default values
+        _settingInaSamples = DEFAULT_INASAMPLES;
+        _settingInaConversionTimeUs = DEFAULT_INACONVERSIONTIME;
+
+        _i2cAddress = INA226_ADDRESS;
+        _checkInterval = DEFAULT_CHECKINTERVAL;
+        _decimalFactor = 100;
+        _shuntResistor = 1000;
+        _currentRange = 1000;
+    }
+
     void setup()
     {
         initializeINA226();
@@ -392,12 +380,18 @@ public:
         temp.add(_lastStatus);
 
         temp = user.createNestedArray(F("INA226 average samples"));
-        temp.add(_debugAverages);
+        temp.add(_settingInaSamples);
         temp.add(F("samples"));
 
         temp = user.createNestedArray(F("INA226 conversion time"));
-        temp.add(_debugConversionTime);
+        temp.add(_settingInaConversionTimeUs << 2);
         temp.add(F("us"));
+
+        // INA226 uses (2 * conversion time * samples) time to take a reading.
+        temp = user.createNestedArray(F("INA226 expected sample time"));
+        uint32_t sampleTimeNeededUs = (static_cast<uint32_t>(_settingInaConversionTimeUs) << 2) * _settingInaSamples * 2;
+        temp.add(truncateDecimals(sampleTimeNeededUs / 1000.0));
+        temp.add(F("ms"));
 
         temp = user.createNestedArray(F("INA226 mode"));
         temp.add(_isTriggeredOperationMode ? F("triggered") : F("continuous"));
@@ -456,6 +450,8 @@ public:
         top[F("Enabled")] = _settingEnabled;
         top[F("I2CAddress")] = static_cast<uint8_t>(_i2cAddress);
         top[F("CheckInterval")] = _checkInterval / 1000;
+        top[F("INASamples")] = _settingInaSamples;
+        top[F("INAConversionTime")] = _settingInaConversionTimeUs << 2;
         top[F("Decimals")] = log10f(_decimalFactor);
         top[F("ShuntResistor")] = _shuntResistor;
         top[F("CurrentRange")] = _currentRange;
@@ -476,45 +472,70 @@ public:
         if (!configComplete)
             return false;
 
-        bool tmpBool = false;
-        configComplete &= getJsonValue(top[F("Enabled")], tmpBool);
-        if (configComplete)
+        bool tmpBool;
+        if (getJsonValue(top[F("Enabled")], tmpBool))
             _settingEnabled = tmpBool;
+        else
+            configComplete = false;
 
         configComplete &= getJsonValue(top[F("I2CAddress")], _i2cAddress);
-        configComplete &= getJsonValue(top[F("CheckInterval")], _checkInterval);
-        if (configComplete)
+        if (getJsonValue(top[F("CheckInterval")], _checkInterval))
         {
             if (1 <= _checkInterval && _checkInterval <= 600)
                 _checkInterval *= 1000;
             else
-                _checkInterval = 60000;
+                _checkInterval = DEFAULT_CHECKINTERVAL;
         }
+        else
+            configComplete = false;
 
-        configComplete &= getJsonValue(top[F("Decimals")], _decimalFactor);
-        if (configComplete)
+        uint16_t tmpShort;
+        if (getJsonValue(top[F("INASamples")], tmpShort))
+        {
+            // The method below will fix the provided value to a valid one
+            getAverageEnum(tmpShort);
+            _settingInaSamples = tmpShort;
+        }
+        else
+            configComplete = false;
+
+        if (getJsonValue(top[F("INAConversionTime")], tmpShort))
+        {
+            // The method below will fix the provided value to a valid one
+            getConversionTimeEnum(tmpShort);
+            _settingInaConversionTimeUs = tmpShort >> 2;
+        }
+        else
+            configComplete = false;
+
+        if (getJsonValue(top[F("Decimals")], _decimalFactor))
         {
             if (0 <= _decimalFactor && _decimalFactor <= 5)
                 _decimalFactor = pow10f(_decimalFactor);
             else
                 _decimalFactor = 100;
         }
+        else
+            configComplete = false;
 
         configComplete &= getJsonValue(top[F("ShuntResistor")], _shuntResistor);
         configComplete &= getJsonValue(top[F("CurrentRange")], _currentRange);
 
 #ifndef WLED_DISABLE_MQTT
-        configComplete &= getJsonValue(top[F("MqttPublish")], tmpBool);
-        if (configComplete)
+        if (getJsonValue(top[F("MqttPublish")], tmpBool))
             _mqttPublish = tmpBool;
+        else
+            configComplete = false;
 
-        configComplete &= getJsonValue(top[F("MqttPublishAlways")], tmpBool);
-        if (configComplete)
+        if (getJsonValue(top[F("MqttPublishAlways")], tmpBool))
             _mqttPublishAlways = tmpBool;
+        else
+            configComplete = false;
 
-        configComplete &= getJsonValue(top[F("MqttHomeAssistantDiscovery")], tmpBool);
-        if (configComplete)
+        if (getJsonValue(top[F("MqttHomeAssistantDiscovery")], tmpBool))
             _mqttHomeAssistant = tmpBool;
+        else
+            configComplete = false;
 #endif
 
         if (_initDone)
