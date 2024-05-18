@@ -1,6 +1,6 @@
 ## WLED changelog
 
-#### Build 240503
+#### Build 2405030
 -   Using brightness in analog clock overlay (#3944 by @paspiz85)
 -   Add Webpage shortcuts (#3945 by @w00000dy)
 -   ArtNet Poll reply (#3892 by @askask)
@@ -31,6 +31,11 @@
     - audioreactive always included for S3 & S2
 -   Fix for #3889
 -   BREAKING: Effect: modified KITT (Scanner) (#3763)
+
+#### Build 2404040
+-   WLED 0.14.3 release
+-   Fix for transition 0 (#3854, #3832, #3720)
+-   Fix for #3855 via #3873 (by @willmmiles)
 
 #### Build 2403280
 -   Individual color channel control for JSON API (fixes #3860)
