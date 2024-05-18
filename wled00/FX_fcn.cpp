@@ -1339,7 +1339,7 @@ void WS2812FX::service() {
   #endif
   if (doShow) {
     yield();
-    Segment::handleRandomPalette(); // slowly transtion random palette; move it into for loop when each segment has individual random palette
+    Segment::handleRandomPalette(); // slowly transition random palette; move it into for loop when each segment has individual random palette
     show();
   }
   #ifdef WLED_DEBUG
@@ -1593,7 +1593,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       segStops[s]  = segStarts[s] + b->getLength();
 
       #ifndef WLED_DISABLE_2D
-      if (isMatrix && segStops[s] < Segment::maxWidth*Segment::maxHeight) continue; // ignore buses comprising matrix
+      if (isMatrix && segStops[s] <= Segment::maxWidth*Segment::maxHeight) continue; // ignore buses comprising matrix
       if (isMatrix && segStarts[s] < Segment::maxWidth*Segment::maxHeight) segStarts[s] = Segment::maxWidth*Segment::maxHeight;
       #endif
 
@@ -1621,6 +1621,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
     for (size_t i = 1; i < s; i++) {
       _segments.push_back(Segment(segStarts[i], segStops[i]));
     }
+    DEBUG_PRINTF_P(PSTR("%d auto segments created.\n"), _segments.size());
 
   } else {
 
@@ -1666,6 +1667,8 @@ void WS2812FX::fixInvalidSegments() {
       if (_segments[i].stop  >  _length) _segments[i].stop = _length;
     }
   }
+  // if any segments were deleted free memory
+  purgeSegments();
   // this is always called as the last step after finalizeInit(), update covered bus types
   for (segment &seg : _segments)
     seg.refreshLightCapabilities();
@@ -1696,7 +1699,8 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col) {
 void WS2812FX::printSize() {
   size_t size = 0;
   for (const Segment &seg : _segments) size += seg.getSize();
-  DEBUG_PRINTF_P(PSTR("Segments: %d -> %uB\n"), _segments.size(), size);
+  DEBUG_PRINTF_P(PSTR("Segments: %d -> %u/%dB\n"), _segments.size(), size, Segment::getUsedSegmentData());
+  for (const Segment &seg : _segments) DEBUG_PRINTF_P(PSTR("  Seg: %d,%d [A=%d, 2D=%d, RGB=%d, W=%d, CCT=%d]\n"), seg.width(), seg.height(), seg.isActive(), seg.is2D(), seg.hasRGB(), seg.hasWhite(), seg.isCCT());
   DEBUG_PRINTF_P(PSTR("Modes: %d*%d=%uB\n"), sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF_P(PSTR("Data: %d*%d=%uB\n"), sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF_P(PSTR("Map: %d*%d=%uB\n"), sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));

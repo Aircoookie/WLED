@@ -416,7 +416,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       //bool didSet = false;
       for (size_t s = 0; s < strip.getSegmentsNum(); s++) {
         Segment &sg = strip.getSegment(s);
-        if (sg.isSelected()) {
+        if (sg.isActive() && sg.isSelected()) {
           deserializeSegment(segVar, s, presetId);
           //didSet = true;
         }
