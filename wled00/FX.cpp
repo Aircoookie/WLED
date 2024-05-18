@@ -3195,23 +3195,30 @@ static const char _data_FX_MODE_SINELON_RAINBOW[] PROGMEM = "Sinelon Rainbow@!,T
 
 // utility function that will add random glitter to SEGMENT
 void glitter_base(uint8_t intensity, uint32_t col = ULTRAWHITE) {
-  if (intensity > random8()) {
-    if (SEGMENT.is2D()) {
-      SEGMENT.setPixelColorXY(random16(SEGMENT.virtualWidth()),random16(SEGMENT.virtualHeight()), col);
-    } else {
-      SEGMENT.setPixelColor(random16(SEGLEN), col);
-    }
-  }
+  if (intensity > random8()) SEGMENT.setPixelColor(random16(SEGLEN), col);
 }
 
 //Glitter with palette background, inspired by https://gist.github.com/kriegsman/062e10f7f07ba8518af6
 uint16_t mode_glitter()
 {
-  if (!SEGMENT.check2) mode_palette(); // use "* Color 1" palette for solid background (replacing "Solid glitter")
+  if (!SEGMENT.check2) { // use "* Color 1" palette for solid background (replacing "Solid glitter")
+    unsigned counter = 0;
+    if (SEGMENT.speed != 0) {
+      counter = (strip.now * ((SEGMENT.speed >> 3) +1)) & 0xFFFF;
+      counter = counter >> 8;
+    }
+
+    bool noWrap = (strip.paletteBlend == 2 || (strip.paletteBlend == 0 && SEGMENT.speed == 0));
+    for (unsigned i = 0; i < SEGLEN; i++) {
+      unsigned colorIndex = (i * 255 / SEGLEN) - counter;
+      if (noWrap) colorIndex = map(colorIndex, 0, 255, 0, 240); //cut off blend at palette "end"
+      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, true, 255));
+    }
+  }
   glitter_base(SEGMENT.intensity, SEGCOLOR(2) ? SEGCOLOR(2) : ULTRAWHITE);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;1,2,Glitter color;!;;pal=0,m12=0"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;,,Glitter color;!;;pal=0,m12=0"; //pixels
 
 
 //Solid colour background with glitter (can be replaced by Glitter)
