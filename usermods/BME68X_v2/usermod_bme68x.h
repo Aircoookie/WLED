@@ -11,7 +11,7 @@
 
 #define UMOD_DEVICE "ESP32"                 			 // NOTE - Set your hardware here
 #define HARDWARE_VERSION "1.0"              			 // NOTE - Set your hardware version here
-#define UMOD_BME680X_SW_VERSION "1.0.0"     			 // NOTE - Version of the User Mod
+#define UMOD_BME680X_SW_VERSION "1.0.1"     			 // NOTE - Version of the User Mod
 #define CALIB_FILE_NAME "/BME680X-Calib.hex"			 // NOTE - Calibration file name
 #define UMOD_NAME "BME680X"                 			 // NOTE - User module name
 #define UMOD_DEBUG_NAME "UM-BME680X: "      			 // NOTE - Debug print module name addon
