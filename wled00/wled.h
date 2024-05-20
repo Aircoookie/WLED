@@ -213,6 +213,10 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
   #define WLED_AP_PASS DEFAULT_AP_PASS
 #endif
 
+#ifndef OTA_PASS
+  #define OTA_PASS DEFAULT_OTA_PASS
+#endif
+
 #ifndef SPIFFS_EDITOR_AIRCOOOKIE
   #error You are not using the Aircoookie fork of the ESPAsyncWebserver library.\
   Using upstream puts your WiFi password at risk of being served by the filesystem.\
@@ -273,7 +277,7 @@ WLED_GLOBAL char releaseString[] _INIT_PROGMEM(TOSTRING(WLED_RELEASE_NAME)); // 
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
-WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
+WLED_GLOBAL char otaPass[33] _INIT(OTA_PASS);
 
 // Hardware and pin config
 #ifndef BTNPIN
