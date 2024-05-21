@@ -53,6 +53,11 @@
   #include "../usermods/BME280_v2/usermod_bme280.h"
 #endif
 
+#ifdef USERMOD_BME68X
+  #include "../usermods/BME68X_v2/usermod_bme68x.h"
+#endif
+
+
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
 #endif
@@ -260,6 +265,10 @@ void registerUsermods()
 
   #ifdef USERMOD_BME280
   usermods.add(new UsermodBME280());
+  #endif
+
+  #ifdef USERMOD_BME68X
+  usermods.add(new UsermodBME68X());
   #endif
 
   #ifdef USERMOD_SENSORSTOMQTT
