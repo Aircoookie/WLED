@@ -329,7 +329,7 @@ void UsermodBME68X::setup() {
 	/* Check, if i2c is activated */
 	if (i2c_scl < 0 || i2c_sda < 0) {
 		settings.enabled = false;												// Disable usermod once i2c is not running
-		DEBUG_PRINTLN(F(UMOD_DEBUG_NAME "I2C ist nicht aktiviert. Bitte I2C zuerst aktivieren." FAIL));
+		DEBUG_PRINTLN(F(UMOD_DEBUG_NAME "I2C is not activated. Please activate I2C first." FAIL));
 		return;
 	}
 
