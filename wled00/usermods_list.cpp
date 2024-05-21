@@ -221,6 +221,10 @@
   #include "../usermods/AHT10_v2/usermod_aht10.h"
 #endif
 
+#ifdef USERMOD_INA226
+  #include "../usermods/INA226_v2/usermod_ina226.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -428,5 +432,9 @@ void registerUsermods()
 
   #ifdef USERMOD_AHT10
   usermods.add(new UsermodAHT10());
+  #endif
+
+  #ifdef USERMOD_INA226
+  usermods.add(new UsermodINA226());
   #endif
 }
