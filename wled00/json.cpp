@@ -897,9 +897,10 @@ String restartCode2Info(esp_reset_reason_t reason) {
 void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
-  root[F("rel")] = releaseString; //WLEDMM to add bin name
   root[F("vid")] = VERSION;
-  //root[F("cn")] = WLED_CODENAME;
+  //root[F("cn")] = F(WLED_CODENAME);    //WLEDMM removed
+  root[F("release")] = FPSTR(releaseString);
+  root[F("rel")] = FPSTR(releaseString); //WLEDMM to add bin name
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
@@ -1018,12 +1019,15 @@ void serializeInfo(JsonObject root)
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
     wifi_info[F("sleep")] = (bool) WiFi.getSleep();
   #endif
-  #if !defined(CONFIG_IDF_TARGET_ESP32C2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+  //#if !defined(CONFIG_IDF_TARGET_ESP32C2) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(CONFIG_IDF_TARGET_ESP32H2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+  #if CONFIG_IDF_TARGET_ESP32
     root[F("arch")] = "esp32";
   #else
     root[F("arch")] = ESP.getChipModel();
   #endif
   root[F("core")] = ESP.getSdkVersion();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG
     root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
@@ -1043,6 +1047,8 @@ void serializeInfo(JsonObject root)
   #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
+  root[F("clock")] = ESP.getCpuFreqMHz();
+  root[F("flash")] = (ESP.getFlashChipSize()/1024)/1024;
   //root[F("maxalloc")] = ESP.getMaxFreeBlockSize();
   #ifdef WLED_DEBUG
     root[F("resetReason")] = (int)ESP.getResetInfoPtr()->reason;

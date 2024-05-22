@@ -846,7 +846,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     olen -= 2; //delete ";
     oappend(versionString);
     oappend(SET_F(" "));
-    oappend(releaseString);
+    oappend((char*)FPSTR(releaseString));
     oappend(SET_F(".bin<br>("));
     #if defined(CONFIG_IDF_TARGET_ESP32C3)
     oappend(SET_F("ESP32-C3"));
