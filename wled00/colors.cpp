@@ -65,24 +65,30 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
  * fades color toward black
  * if using "video" method the resulting color will never become black unless it is already black
  */
+
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
-  uint8_t r = R(c1);
-  uint8_t g = G(c1);
-  uint8_t b = B(c1);
-  uint8_t w = W(c1);
-  if (video) {
-    r = scale8_video(r, amount);
-    g = scale8_video(g, amount);
-    b = scale8_video(b, amount);
-    w = scale8_video(w, amount);
-  } else {
-    r = scale8(r, amount);
-    g = scale8(g, amount);
-    b = scale8(b, amount);
-    w = scale8(w, amount);
+  uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
+  uint32_t r = R(c1);
+  uint32_t g = G(c1);
+  uint32_t b = B(c1);
+  uint32_t w = W(c1);
+  if (video)  {
+    uint32_t scale = amount; // 32bit for faster calculation
+    scaledcolor = (((r * scale) >> 8) << 16) + ((r && scale) ? 1 : 0);
+    scaledcolor |= (((g * scale) >> 8) << 8) + ((g && scale) ? 1 : 0);
+    scaledcolor |= ((b * scale) >> 8) + ((b && scale) ? 1 : 0);
+    scaledcolor |= (((w * scale) >> 8) << 24) + ((w && scale) ? 1 : 0);
+    return scaledcolor;
   }
-  return RGBW32(r, g, b, w);
+  else  {
+    uint32_t scale = 1 + amount;
+    scaledcolor = ((r * scale) >> 8) << 16;
+    scaledcolor |= ((g * scale) >> 8) << 8;
+    scaledcolor |= (b * scale) >> 8;
+    scaledcolor |= ((w * scale) >> 8) << 24;
+    return scaledcolor;
+  }
 }
 
 void setRandomColor(byte* rgb)

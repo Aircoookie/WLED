@@ -2506,7 +2506,7 @@ uint16_t ripple_base()
         uint16_t cx = rippleorigin >> 8;
         uint16_t cy = rippleorigin & 0xFF;
         uint8_t mag = scale8(sin8((propF>>2)), amp);
-        if (propI > 0) SEGMENT.draw_circle(cx, cy, propI, color_blend(SEGMENT.getPixelColorXY(cx + propI, cy), col, mag));
+        if (propI > 0) SEGMENT.drawCircle(cx, cy, propI, color_blend(SEGMENT.getPixelColorXY(cx + propI, cy), col, mag), true);
       } else
       #endif
       {
@@ -3018,8 +3018,12 @@ uint16_t mode_bouncing_balls(void) {
         }
 
         int pos = roundf(balls[i].height * (SEGLEN - 1));
+        #ifdef WLED_USE_AA_PIXELS
         if (SEGLEN<32) SEGMENT.setPixelColor(indexToVStrip(pos, stripNr), color); // encode virtual strip into index
         else           SEGMENT.setPixelColor(balls[i].height + (stripNr+1)*10.0f, color);
+        #else
+        SEGMENT.setPixelColor(indexToVStrip(pos, stripNr), color); // encode virtual strip into index
+        #endif
       }
     }
   };
@@ -3191,23 +3195,30 @@ static const char _data_FX_MODE_SINELON_RAINBOW[] PROGMEM = "Sinelon Rainbow@!,T
 
 // utility function that will add random glitter to SEGMENT
 void glitter_base(uint8_t intensity, uint32_t col = ULTRAWHITE) {
-  if (intensity > random8()) {
-    if (SEGMENT.is2D()) {
-      SEGMENT.setPixelColorXY(random16(SEGMENT.virtualWidth()),random16(SEGMENT.virtualHeight()), col);
-    } else {
-      SEGMENT.setPixelColor(random16(SEGLEN), col);
-    }
-  }
+  if (intensity > random8()) SEGMENT.setPixelColor(random16(SEGLEN), col);
 }
 
 //Glitter with palette background, inspired by https://gist.github.com/kriegsman/062e10f7f07ba8518af6
 uint16_t mode_glitter()
 {
-  if (!SEGMENT.check2) mode_palette(); // use "* Color 1" palette for solid background (replacing "Solid glitter")
+  if (!SEGMENT.check2) { // use "* Color 1" palette for solid background (replacing "Solid glitter")
+    unsigned counter = 0;
+    if (SEGMENT.speed != 0) {
+      counter = (strip.now * ((SEGMENT.speed >> 3) +1)) & 0xFFFF;
+      counter = counter >> 8;
+    }
+
+    bool noWrap = (strip.paletteBlend == 2 || (strip.paletteBlend == 0 && SEGMENT.speed == 0));
+    for (unsigned i = 0; i < SEGLEN; i++) {
+      unsigned colorIndex = (i * 255 / SEGLEN) - counter;
+      if (noWrap) colorIndex = map(colorIndex, 0, 255, 0, 240); //cut off blend at palette "end"
+      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, true, 255));
+    }
+  }
   glitter_base(SEGMENT.intensity, SEGCOLOR(2) ? SEGCOLOR(2) : ULTRAWHITE);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;1,2,Glitter color;!;;pal=0,m12=0"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;,,Glitter color;!;;pal=0,m12=0"; //pixels
 
 
 //Solid colour background with glitter (can be replaced by Glitter)
@@ -5050,25 +5061,25 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
     SEGMENT.fill(BLACK);
   }
 
-  uint16_t xscale = SEGMENT.intensity*4;
-  uint32_t yscale = SEGMENT.speed*8;
-  uint8_t indexx = 0;
+  unsigned xscale = SEGMENT.intensity*4;
+  unsigned yscale = SEGMENT.speed*8;
+  unsigned indexx = 0;
 
-  SEGPALETTE = CRGBPalette16( CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0),
-                              CRGB::Red, CRGB::Red, CRGB::Red, CRGB::DarkOrange,
-                              CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
-                              CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
+  CRGBPalette16 pal = SEGMENT.check1 ? SEGPALETTE : CRGBPalette16(CRGB::Black,     CRGB::Black,      CRGB::Black,  CRGB::Black,
+                                                                  CRGB::Red,       CRGB::Red,        CRGB::Red,    CRGB::DarkOrange,
+                                                                  CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
+                                                                  CRGB::Yellow,    CRGB::Orange,     CRGB::Yellow, CRGB::Yellow);
 
   for (int j=0; j < cols; j++) {
     for (int i=0; i < rows; i++) {
-      indexx = inoise8(j*yscale*rows/255, i*xscale+strip.now/4);                                           // We're moving along our Perlin map.
-      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(SEGPALETTE, min(i*(indexx)>>4, 255), i*255/cols, LINEARBLEND)); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+      indexx = inoise8(j*yscale*rows/255, i*xscale+strip.now/4);                                               // We're moving along our Perlin map.
+      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(pal, min(i*(indexx)>>4, 255U), i*255/cols, LINEARBLEND)); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     } // for i
   } // for j
 
   return FRAMETIME;
 } // mode_2Dfirenoise()
-static const char _data_FX_MODE_2DFIRENOISE[] PROGMEM = "Firenoise@X scale,Y scale;;!;2";
+static const char _data_FX_MODE_2DFIRENOISE[] PROGMEM = "Firenoise@X scale,Y scale,,,,Palette;;!;2;pal=66";
 
 
 //////////////////////////////
@@ -6052,8 +6063,8 @@ uint16_t mode_2Dfloatingblobs(void) {
       }
     }
     uint32_t c = SEGMENT.color_from_palette(blob->color[i], false, false, 0);
-    if (blob->r[i] > 1.f) SEGMENT.fill_circle(blob->x[i], blob->y[i], roundf(blob->r[i]), c);
-    else                  SEGMENT.setPixelColorXY(blob->x[i], blob->y[i], c);
+    if (blob->r[i] > 1.f) SEGMENT.fillCircle(roundf(blob->x[i]), roundf(blob->y[i]), roundf(blob->r[i]), c);
+    else                  SEGMENT.setPixelColorXY((int)roundf(blob->x[i]), (int)roundf(blob->y[i]), c);
     // move x
     if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005f));
     else if (blob->x[i] - blob->r[i] <= 0)   blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005f));
@@ -6639,7 +6650,6 @@ static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,
 //   * JUGGLES      //
 //////////////////////
 uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
-  if (SEGLEN == 1) return mode_static();
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
@@ -6651,12 +6661,13 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
   uint16_t my_sampleAgc = fmax(fmin(volumeSmth, 255.0), 0);
 
   for (size_t i=0; i<SEGMENT.intensity/32+1U; i++) {
+    // if SEGLEN equals 1, we will always set color to the first and only pixel, but the effect is still good looking
     SEGMENT.setPixelColor(beatsin16(SEGMENT.speed/4+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(strip.now/4+i*2, false, PALETTE_SOLID_WRAP, 0), my_sampleAgc));
   }
 
   return FRAMETIME;
 } // mode_juggles()
-static const char _data_FX_MODE_JUGGLES[] PROGMEM = "Juggles@!,# of balls;!,!;!;1v;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_JUGGLES[] PROGMEM = "Juggles@!,# of balls;!,!;!;01v;m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6757,7 +6768,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisefire()
-static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!,!;;;1v;m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!,!;;;01v;m12=2,si=0"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6867,7 +6878,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_plasmoid()
-static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;1v;sx=128,ix=128,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;01v;sx=128,ix=128,m12=0,si=0"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -7022,7 +7033,7 @@ static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz@Fade rate,Blur;!,Color 
 //   ** DJLight        //
 /////////////////////////
 uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Will Tatam.
-  if (SEGLEN == 1) return mode_static();
+  // No need to prevent from executing on single led strips, only mid will be set (mid = 0)
   const int mid = SEGLEN / 2;
 
   um_data_t *um_data;
@@ -7043,13 +7054,14 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
     CRGB color = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // 16-> 15 as 16 is out of bounds
     SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[4], 0, 255, 255, 4)));     // TODO - Update
 
+    // if SEGLEN equals 1 these loops won't execute
     for (int i = SEGLEN - 1; i > mid; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); // move to the left
     for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
 
   return FRAMETIME;
 } // mode_DJLight()
-static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed;;;1f;m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed;;;01f;m12=2,si=0"; // Circle, Beatsin
 
 
 ////////////////////
@@ -7093,7 +7105,7 @@ static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting 
 //   ** Freqmatrix   //
 ///////////////////////
 uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Pleschung.
-  if (SEGLEN == 1) return mode_static();
+  // No need to prevent from executing on single led strips, we simply change pixel 0 each time and avoid the shift
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
@@ -7136,12 +7148,13 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
     // shift the pixels one pixel up
     SEGMENT.setPixelColor(0, color);
+    // if SEGLEN equals 1 this loop won't execute
     for (int i = SEGLEN - 1; i > 0; i--) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
   }
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Speed,Sound effect,Low bin,High bin,Sensitivity;;;1f;m12=3,si=0"; // Corner, Beatsin
+static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Speed,Sound effect,Low bin,High bin,Sensitivity;;;01f;m12=3,si=0"; // Corner, Beatsin
 
 
 //////////////////////
@@ -7198,7 +7211,7 @@ static const char _data_FX_MODE_FREQPIXELS[] PROGMEM = "Freqpixels@Fade rate,Sta
 // As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
-  if (SEGLEN == 1) return mode_static();
+  // As before, this effect can also work on single pixels, we just lose the shifting effect
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
@@ -7242,13 +7255,14 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     SEGMENT.setPixelColor(SEGLEN/2, color);
 
     // shift the pixels one pixel outwards
+    // if SEGLEN equals 1 these loops won't execute
     for (int i = SEGLEN - 1; i > SEGLEN/2; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
     for (int i = 0; i < SEGLEN/2; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
 
   return FRAMETIME;
 } // mode_freqwave()
-static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Speed,Sound effect,Low bin,High bin,Pre-amp;;;1f;m12=2,si=0"; // Circle, Beatsin
+static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Speed,Sound effect,Low bin,High bin,Pre-amp;;;01f;m12=2,si=0"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7307,7 +7321,6 @@ static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sens
 //   ** Noisemove   //
 //////////////////////
 uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuline
-  if (SEGLEN == 1) return mode_static();
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
@@ -7321,20 +7334,20 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
   uint8_t numBins = map(SEGMENT.intensity,0,255,0,16);    // Map slider to fftResult bins.
   for (int i=0; i<numBins; i++) {                         // How many active bins are we using.
     uint16_t locn = inoise16(strip.now*SEGMENT.speed+i*50000, strip.now*SEGMENT.speed);   // Get a new pixel location from moving noise.
+    // if SEGLEN equals 1 locn will be always 0, hence we set the first pixel only
     locn = map(locn, 7500, 58000, 0, SEGLEN-1);           // Map that to the length of the strand, and ensure we don't go over.
     SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i % 16]*4));
   }
 
   return FRAMETIME;
 } // mode_noisemove()
-static const char _data_FX_MODE_NOISEMOVE[] PROGMEM = "Noisemove@Speed of perlin movement,Fade rate;!,!;!;1f;m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_NOISEMOVE[] PROGMEM = "Noisemove@Speed of perlin movement,Fade rate;!,!;!;01f;m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
 //   ** Rocktaves   //
 //////////////////////
 uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from each octave is same colour.    By: Andrew Tuline
-  if (SEGLEN == 1) return mode_static();
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
@@ -7362,12 +7375,13 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   frTemp  = fabsf(frTemp * 2.1f);                         // Fudge factors to compress octave range starting at 0 and going to 255;
 
   uint16_t i = map(beatsin8(8+octCount*4, 0, 255, 0, octCount*8), 0, 255, 0, SEGLEN-1);
+  // i will be always constrained between 0 and 0 if SEGLEN equals 1
   i = constrain(i, 0, SEGLEN-1);
   SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp));
 
   return FRAMETIME;
 } // mode_rocktaves()
-static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;!,!;!;1f;m12=1,si=0"; // Bar, Beatsin
+static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;!,!;!;01f;m12=1,si=0"; // Bar, Beatsin
 
 
 ///////////////////////
@@ -7375,8 +7389,8 @@ static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;!,!;!;1f;m12=1
 ///////////////////////
 // Combines peak detection with FFT_MajorPeak and FFT_Magnitude.
 uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tuline
-  if (SEGLEN == 1) return mode_static();
-
+  // effect can work on single pixels, we just lose the shifting effect
+  
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
@@ -7413,12 +7427,13 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
     } else {
       SEGMENT.setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)my_magnitude));
     }
+    // loop will not execute if SEGLEN equals 1
     for (int i = 0; i < SEGLEN-1; i++) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // shift left
   }
 
   return FRAMETIME;
 } // mode_waterfall()
-static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;1f;c2=0,m12=2,si=0"; // Circles, Beatsin
+static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;01f;c2=0,m12=2,si=0"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D

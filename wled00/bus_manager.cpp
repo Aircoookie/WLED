@@ -425,6 +425,7 @@ BusPwm::BusPwm(BusConfig &bc)
   }
   _data = _pwmdata; // avoid malloc() and use stack
   _valid = true;
+  DEBUG_PRINTF_P(PSTR("%successfully inited PWM strip with type %u and pins %u,%u,%u,%u,%u\n"), _valid?"S":"Uns", bc.type, _pins[0], _pins[1], _pins[2], _pins[3], _pins[4]);
 }
 
 void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
@@ -466,7 +467,22 @@ void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
 //does no index check
 uint32_t BusPwm::getPixelColor(uint16_t pix) {
   if (!_valid) return 0;
-  return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+  // TODO getting the reverse from CCT is involved (a quick approximation when CCT blending is ste to 0 implemented)
+  switch (_type) {
+    case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
+      return RGBW32(0, 0, 0, _data[0]);
+    case TYPE_ANALOG_2CH: //warm white + cold white
+      if (cctICused) return RGBW32(0, 0, 0, _data[0]);
+      else           return RGBW32(0, 0, 0, _data[0] + _data[1]);
+    case TYPE_ANALOG_5CH: //RGB + warm white + cold white
+      if (cctICused) return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+      else           return RGBW32(_data[0], _data[1], _data[2], _data[3] + _data[4]);
+    case TYPE_ANALOG_4CH: //RGBW
+      return RGBW32(_data[0], _data[1], _data[2], _data[3]);
+    case TYPE_ANALOG_3CH: //standard dumb RGB
+      return RGBW32(_data[0], _data[1], _data[2], 0);
+  }
+  return RGBW32(_data[0], _data[0], _data[0], _data[0]);
 }
 
 #ifndef ESP8266
@@ -560,6 +576,7 @@ BusOnOff::BusOnOff(BusConfig &bc)
   pinMode(_pin, OUTPUT);
   _data = &_onoffdata; // avoid malloc() and use stack
   _valid = true;
+  DEBUG_PRINTF_P(PSTR("%successfully inited On/Off strip with pin %u\n"), _valid?"S":"Uns", _pin);
 }
 
 void BusOnOff::setPixelColor(uint16_t pix, uint32_t c) {
@@ -614,6 +631,7 @@ BusNetwork::BusNetwork(BusConfig &bc)
   _UDPchannels = _rgbw ? 4 : 3;
   _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
   _valid = (allocData(_len * _UDPchannels) != nullptr);
+  DEBUG_PRINTF_P(PSTR("%successfully inited virtual strip with type %u and IP %u.%u.%u.%u\n"), _valid?"S":"Uns", bc.type, bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);
 }
 
 void BusNetwork::setPixelColor(uint16_t pix, uint32_t c) {
@@ -714,9 +732,8 @@ void BusManager::setStatusPixel(uint32_t c) {
 
 void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c) {
   for (unsigned i = 0; i < numBusses; i++) {
-    Bus* b = busses[i];
-    uint16_t bstart = b->getStart();
-    if (pix < bstart || pix >= bstart + b->getLength()) continue;
+    unsigned bstart = busses[i]->getStart();
+    if (pix < bstart || pix >= bstart + busses[i]->getLength()) continue;
     busses[i]->setPixelColor(pix - bstart, c);
   }
 }
@@ -738,10 +755,9 @@ void BusManager::setSegmentCCT(int16_t cct, bool allowWBCorrection) {
 
 uint32_t BusManager::getPixelColor(uint16_t pix) {
   for (unsigned i = 0; i < numBusses; i++) {
-    Bus* b = busses[i];
-    uint16_t bstart = b->getStart();
-    if (pix < bstart || pix >= bstart + b->getLength()) continue;
-    return b->getPixelColor(pix - bstart);
+    unsigned bstart = busses[i]->getStart();
+    if (pix < bstart || pix >= bstart + busses[i]->getLength()) continue;
+    return busses[i]->getPixelColor(pix - bstart);
   }
   return 0;
 }

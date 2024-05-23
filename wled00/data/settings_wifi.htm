@@ -52,40 +52,42 @@
 				}
 				scanLoops = 0;
 
-				let cs = d.querySelectorAll("#wifi_entries input[type=text]");
-				for (let input of (cs||[])) {
-					let found = false;
-					let select = cE("select");
-					select.id = input.id;
-					select.name = input.name;
-					select.setAttribute("onchange", "T(this)");
-					preScanSSID = input.value;
+				if (networks.length > 0) {
+					let cs = d.querySelectorAll("#wifi_entries input[type=text]");
+					for (let input of (cs||[])) {
+						let found = false;
+						let select = cE("select");
+						select.id = input.id;
+						select.name = input.name;
+						select.setAttribute("onchange", "T(this)");
+						preScanSSID = input.value;
 
-					for (let i = 0; i < select.children.length; i++) {
-						select.removeChild(select.children[i]);
-					}
-
-					for (let i = 0; i < networks.length; i++) {
-						const option = cE("option");
-
-						option.setAttribute("value", networks[i].ssid);
-						option.textContent = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
-
-						if (networks[i].ssid === input.value) {
-							option.setAttribute("selected", "selected");
-							found = true;
+						for (let i = 0; i < select.children.length; i++) {
+							select.removeChild(select.children[i]);
 						}
 
+						for (let i = 0; i < networks.length; i++) {
+							const option = cE("option");
+
+							option.setAttribute("value", networks[i].ssid);
+							option.textContent = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
+
+							if (networks[i].ssid === input.value) {
+								option.setAttribute("selected", "selected");
+								found = true;
+							}
+
+							select.appendChild(option);
+						}
+						const option = cE("option");
+
+						option.setAttribute("value", "!Cs");
+						option.textContent = "Other network...";
 						select.appendChild(option);
+
+						if (input.value === "" || input.value === "Your_Network" || found) input.replaceWith(select);
+						else select.remove(); 
 					}
-					const option = cE("option");
-
-					option.setAttribute("value", "!Cs");
-					option.textContent = "Other network...";
-					select.appendChild(option);
-
-					if (input.value === "" || input.value === "Your_Network" || found) input.replaceWith(select);
-					else select.remove(); 
 				}
 
 				button.disabled = false;

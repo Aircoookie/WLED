@@ -505,6 +505,13 @@ void WLED::setup()
   initServer();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
+#ifndef WLED_DISABLE_INFRARED
+  // init IR
+  DEBUG_PRINTLN(F("initIR"));
+  initIR();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+#endif
+
   // Seed FastLED random functions with an esp random value, which already works properly at this point.
 #if defined(ARDUINO_ARCH_ESP32)
   const uint32_t seed32 = esp_random();
