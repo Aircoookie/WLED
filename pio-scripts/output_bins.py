@@ -23,38 +23,75 @@ def _create_dirs(dirs=["firmware", "map"]):
             os.mkdir("{}{}".format(OUTPUT_DIR, d))
 
 
+# trick for py2/3 compatibility
+if 'basestring' not in globals():
+    basestring = str
+
+# WLEDMM : custom print function
+def print_my_item(items):
+    print("  ", end='')
+    if isinstance(items, basestring):
+        # print a single string
+        print(items, end='')
+    else:
+        # print a list
+        first = True
+        for item in items:
+            if not first: print("=", end='')
+            print(item, end='')
+            first = False
+
 # WLEDMM : dump out buildflags : usermods, disable, enable, use_..
 def wledmm_print_build_info(env):
+    all_flags = env["CPPDEFINES"]
     first = True
 
-    for item in env["CPPDEFINES"]: 
+    found = False
+    for item in all_flags:
+        if  'WLED_RELEASE_NAME' in item[0] or 'WLED_VERSION' in item[0] or 'ARDUINO_USB_CDC_ON_BOOT' in item[0]:
+            if first: print("\nUsermods and Features:")
+            print_my_item(item)
+            first = False
+            found = True
+    if found: print("")
+
+    found = False
+    for item in all_flags: 
         if 'USERMOD_' in item or 'UM_' in item:
             if first: print("\nUsermods and Features:")
-            print("  " + item, end='')
+            print_my_item(item)
             first = False
-    if not first: print("")
+            found = True
+    if found: print("")
 
-    for item in env["CPPDEFINES"]: 
-        if 'WLED_DISABLE' in item or 'NET_DEBUG_' in item or 'WIFI_FIX' in item:
+    found = False
+    for item in all_flags: 
+        if 'WLED_DISABLE' in item or 'WIFI_FIX' in item:
             if first: print("\nUsermods and Features:")
-            print("  " + item, end='')
+            print_my_item(item)
             first = False
-    if not first: print("")
+            found = True
+    if found: print("")
 
-    for item in env["CPPDEFINES"]:
-        if 'WLED_' in item and not 'WLED_USE_MY_CONFIG' in item and not 'WLED_RELEASE_NAME' in item and not 'WLED_VESION' in item and not 'WLED_WATCHDOG_TIMEOUT' in item and not 'WLED_DISABLE' in item and not 'ARDUINO_PARTITION' in item:
-            if first: print("\nUsermods and Features:")
-            print("  " + item, end='')
-            first = False
-    if not first: print("")
+    found = False
+    for item in all_flags:
+        if 'WLED_' in item or 'WLED_' in item[0] or 'MAX_LED' in item[0]:
+            if not 'WLED_RELEASE_NAME' in item[0] and not 'WLED_VERSION' in item[0] and not 'WLED_WATCHDOG_TIMEOUT' in item[0] and not 'WLED_DISABLE' in item and not 'WLED_USE_MY_CONFIG' in item and not 'ARDUINO_PARTITION' in item:
+                if first: print("\nUsermods and Features:")
+                print_my_item(item)
+                first = False
+                found = True
+    if found: print("")
 
     first = True
-    for item in env["CPPDEFINES"]: 
-        if 'WLEDMM_' in item or 'O2' in item or 'O3' in item or 'fast_' in item:
+    found = False
+    for item in all_flags: 
+        if 'WLEDMM_' in item[0] or 'WLEDMM_' in item or 'TROYHACKS' in item:
             if first: print("\nWLEDMM Features:")
-            print("  " + item, end='')
+            print_my_item(item)
             first = False
-    if not first: print("\n")
+            found = True
+    if found: print("\n")
 
 
 def bin_rename_copy(source, target, env):
