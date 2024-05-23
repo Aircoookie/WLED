@@ -28,8 +28,9 @@ if 'basestring' not in globals():
     basestring = str
 
 # WLEDMM : custom print function
-def print_my_item(items):
-    print("  ", end='')
+def print_my_item(items, flag = False):
+    if flag: print("  -D", end='')
+    else:    print("  ", end='')
     if isinstance(items, basestring):
         # print a single string
         print(items, end='')
@@ -93,6 +94,15 @@ def wledmm_print_build_info(env):
             found = True
     if found: print("\n")
 
+def wledmm_print_all_defines(env):
+    all_flags = env["CPPDEFINES"]
+    found = False
+    for item in all_flags:
+        if not found: print("\nBuild Flags:")
+        print_my_item(item, True)
+        found = True
+    if found: print("\n")
+
 
 def bin_rename_copy(source, target, env):
     _create_dirs()
@@ -128,6 +138,7 @@ def bin_rename_copy(source, target, env):
         print(f"Found linker mapfile {source_map}")
         shutil.copy(source_map, map_file)
 
+    # wledmm_print_all_defines(env)
     wledmm_print_build_info(env)
 
 def bin_gzip(source, target, env):
