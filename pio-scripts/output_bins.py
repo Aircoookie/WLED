@@ -22,6 +22,41 @@ def _create_dirs(dirs=["firmware", "map"]):
         if not os.path.isdir("{}{}".format(OUTPUT_DIR, d)):
             os.mkdir("{}{}".format(OUTPUT_DIR, d))
 
+
+# WLEDMM : dump out buildflags : usermods, disable, enable, use_..
+def wledmm_print_build_info(env):
+    first = True
+
+    for item in env["CPPDEFINES"]: 
+        if 'USERMOD_' in item or 'UM_' in item:
+            if first: print("\nUsermods and Features:")
+            print("  " + item, end='')
+            first = False
+    if not first: print("")
+
+    for item in env["CPPDEFINES"]: 
+        if 'WLED_DISABLE' in item or 'NET_DEBUG_' in item or 'WIFI_FIX' in item:
+            if first: print("\nUsermods and Features:")
+            print("  " + item, end='')
+            first = False
+    if not first: print("")
+
+    for item in env["CPPDEFINES"]:
+        if 'WLED_' in item and not 'WLED_USE_MY_CONFIG' in item and not 'WLED_RELEASE_NAME' in item and not 'WLED_VESION' in item and not 'WLED_WATCHDOG_TIMEOUT' in item and not 'WLED_DISABLE' in item and not 'ARDUINO_PARTITION' in item:
+            if first: print("\nUsermods and Features:")
+            print("  " + item, end='')
+            first = False
+    if not first: print("")
+
+    first = True
+    for item in env["CPPDEFINES"]: 
+        if 'WLEDMM_' in item or 'O2' in item or 'O3' in item or 'fast_' in item:
+            if first: print("\nWLEDMM Features:")
+            print("  " + item, end='')
+            first = False
+    if not first: print("\n")
+
+
 def bin_rename_copy(source, target, env):
     _create_dirs()
     variant = env["PIOENV"]
@@ -55,6 +90,8 @@ def bin_rename_copy(source, target, env):
     if os.path.isfile(source_map):
         print(f"Found linker mapfile {source_map}")
         shutil.copy(source_map, map_file)
+
+    wledmm_print_build_info(env)
 
 def bin_gzip(source, target, env):
     _create_dirs()
