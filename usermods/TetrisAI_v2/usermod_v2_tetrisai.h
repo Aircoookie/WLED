@@ -9,6 +9,8 @@
 
 typedef struct TetrisAI_data
 {
+  unsigned long lastTime = 0;
+  TetrisAIGame tetris;
   uint8_t   intelligence;
   uint8_t   rotate;
   bool      showNext;
@@ -16,6 +18,8 @@ typedef struct TetrisAI_data
   uint8_t   colorOffset;
   uint8_t   colorInc;
   uint8_t   mistaceCountdown;
+  uint16_t segcols;
+  uint16_t segrows;
 } tetrisai_data;
 
 void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
@@ -94,8 +98,6 @@ void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
 ////////////////////////////
 uint16_t mode_2DTetrisAI()
 {
-  static unsigned long lastTime = 0;
-
   if (!strip.isMatrix || !SEGENV.allocateData(sizeof(tetrisai_data)))
   {
     // not a 2D set-up
@@ -116,16 +118,17 @@ uint16_t mode_2DTetrisAI()
   //range 0 - 16
   tetrisai_data->colorInc = SEGMENT.custom2 >> 4;
 
-  static TetrisAIGame tetris(cols < 32 ? cols : 32, rows, 1, piecesData, numPieces);
-
-  if (tetris.nLookAhead != nLookAhead
+  if (tetrisai_data->tetris.nLookAhead != nLookAhead
+    || tetrisai_data->segcols != cols
+    || tetrisai_data->segrows != rows
     || tetrisai_data->showNext != SEGMENT.check1
     || tetrisai_data->showBorder != SEGMENT.check2
-    )
+  )
   {
+    tetrisai_data->segcols = cols;
+    tetrisai_data->segrows = rows;
     tetrisai_data->showNext = SEGMENT.check1;
     tetrisai_data->showBorder = SEGMENT.check2;
-    tetris.nLookAhead = nLookAhead;
 
     //not more than 32 as this is the limit of this implementation
     uint8_t gridWidth = cols < 32 ? cols : 32;
@@ -144,57 +147,59 @@ uint16_t mode_2DTetrisAI()
       }
     }
 
-    tetris = TetrisAIGame(gridWidth, gridHeight, nLookAhead, piecesData, numPieces);
+    tetrisai_data->tetris = TetrisAIGame(gridWidth, gridHeight, nLookAhead, piecesData, numPieces);
+    tetrisai_data->tetris.state = TetrisAIGame::States::INIT;
     SEGMENT.fill(SEGCOLOR(1));
   }
 
   if (tetrisai_data->intelligence != SEGMENT.custom1)
   {
     tetrisai_data->intelligence = SEGMENT.custom1;
-    double dui = 0.2 - (0.2 * (tetrisai_data->intelligence / 255.0));
+    float dui = 0.2 - (0.2 * (tetrisai_data->intelligence / 255.0));
 
-    tetris.ai.aHeight = -0.510066 + dui;
-    tetris.ai.fullLines = 0.760666 - dui;
-    tetris.ai.holes = -0.35663 + dui;
-    tetris.ai.bumpiness = -0.184483 + dui;
+    tetrisai_data->tetris.ai.aHeight = -0.510066f + dui;
+    tetrisai_data->tetris.ai.fullLines = 0.760666f - dui;
+    tetrisai_data->tetris.ai.holes = -0.35663f + dui;
+    tetrisai_data->tetris.ai.bumpiness = -0.184483f + dui;
   }
 
-  if (tetris.state == TetrisAIGame::ANIMATE_MOVE)
+  if (tetrisai_data->tetris.state == TetrisAIGame::ANIMATE_MOVE)
   {
-    if (millis() - lastTime > msDelayMove)
+    
+    if (strip.now - tetrisai_data->lastTime > msDelayMove)
     {
-      drawGrid(&tetris, tetrisai_data);
-      lastTime = millis();
-      tetris.poll();
+      drawGrid(&tetrisai_data->tetris, tetrisai_data);
+      tetrisai_data->lastTime = strip.now;
+      tetrisai_data->tetris.poll();
     }
   }
-  else if (tetris.state == TetrisAIGame::ANIMATE_GAME_OVER)
+  else if (tetrisai_data->tetris.state == TetrisAIGame::ANIMATE_GAME_OVER)
   {
-    if (millis() - lastTime > msDelayGameOver)
+    if (strip.now - tetrisai_data->lastTime > msDelayGameOver)
     {
-      drawGrid(&tetris, tetrisai_data);
-      lastTime = millis();
-      tetris.poll();
+      drawGrid(&tetrisai_data->tetris, tetrisai_data);
+      tetrisai_data->lastTime = strip.now;
+      tetrisai_data->tetris.poll();
     }
   }
-  else if (tetris.state == TetrisAIGame::FIND_BEST_MOVE)
+  else if (tetrisai_data->tetris.state == TetrisAIGame::FIND_BEST_MOVE)
   {
     if (SEGMENT.check3)
     {
       if(tetrisai_data->mistaceCountdown == 0)
       {
-        tetris.ai.findWorstMove = true;
-        tetris.poll();
-        tetris.ai.findWorstMove = false;
+        tetrisai_data->tetris.ai.findWorstMove = true;
+        tetrisai_data->tetris.poll();
+        tetrisai_data->tetris.ai.findWorstMove = false;
         tetrisai_data->mistaceCountdown = SEGMENT.custom3;
       }
       tetrisai_data->mistaceCountdown--;      
     }
-    tetris.poll();
+    tetrisai_data->tetris.poll();
   }
   else
   {
-    tetris.poll();
+    tetrisai_data->tetris.poll();
   }
 
   return FRAMETIME;

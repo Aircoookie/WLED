@@ -22,10 +22,10 @@ class TetrisAI
 {
 private:
 public:
-    double aHeight;
-    double fullLines;
-    double holes;
-    double bumpiness;
+    float aHeight;
+    float fullLines;
+    float holes;
+    float bumpiness;
     bool findWorstMove = false;
 
     uint8_t countOnes(uint32_t vector)
@@ -110,7 +110,7 @@ public:
     TetrisAI(): TetrisAI(-0.510066, 0.760666, -0.35663, -0.184483)
     {}
 
-    TetrisAI(double aHeight, double fullLines, double holes, double bumpiness):
+    TetrisAI(float aHeight, float fullLines, float holes, float bumpiness):
         aHeight(aHeight),
         fullLines(fullLines),
         holes(holes),

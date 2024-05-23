@@ -112,6 +112,17 @@ public:
     {
         return pixels[y] == (uint32_t)((1 << width) - 1);
     }
+
+    void reset()
+    {
+        if (width > 32)
+        {
+            throw std::invalid_argument("maximal width is 32");
+        }
+
+        pixels.clear();
+        pixels.resize(height);
+    }
 };
 
 #endif /* __GRIDBW_H__ */
