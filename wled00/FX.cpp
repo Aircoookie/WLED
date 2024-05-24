@@ -5161,30 +5161,22 @@ static void setBitValue(uint8_t* byteArray, size_t n, bool value) {
     else
         byteArray[byteIndex] &= ~(1 << bitIndex);
 }
-// create game of life struct to hold cells and future cells
-struct gameOfLife {
-  uint8_t* cells;
-  uint8_t* futureCells;
-  uint8_t gliderLength;
-  uint16_t oscillatorCRC;
-  uint16_t spaceshipCRC;
-};
+
 uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://natureofcode.com/book/chapter-7-cellular-automata/ 
                                    // and https://github.com/DougHaber/nlife-color , Modified By: Brandon Butler
   if (!strip.isMatrix) return mode_static(); // not a 2D set-up
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const size_t dataSize = (SEGMENT.length() / 8) + (((SEGMENT.length() % 8) != 0) ? 1 : 0); // add one byte when extra bits needed (length not a multiple of 8)
-  const size_t totalSize = dataSize*2 + sizeof(gameOfLife);
+  const size_t dataSize = ((SEGMENT.length() + 7) / 8); // round up to nearest byte
+  const size_t totalSize = dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t)*2; // 2 byte arrays, 1 uint8_t, 2 uint16_t
 
   if (!SEGENV.allocateData(totalSize)) return mode_static(); //allocation failed
-  gameOfLife* gol = reinterpret_cast<gameOfLife*>(SEGENV.data);
-
-  if (gol->cells == nullptr) {
-    gol->cells = new uint8_t[dataSize];
-    gol->futureCells = new uint8_t[dataSize];
-  }
+  byte *cells = reinterpret_cast<byte*>(SEGENV.data);
+  byte *futureCells = reinterpret_cast<byte*>(SEGENV.data + dataSize);
+  uint8_t *gliderLength = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize*2);
+  uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t));
+  uint16_t *spaceshipCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t));
 
   uint16_t &generation = SEGENV.aux0; //rename aux0 and aux1 for readability (not needed)
   uint16_t &pauseFrames = SEGENV.aux1;
@@ -5205,22 +5197,22 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       uint8_t state = (random8() < 82) ? 1 : 0; // ~32% chance of being alive
       if (state == 0) {
-        setBitValue(gol->cells, y * cols + x, false);
-        setBitValue(gol->futureCells, y * cols + x, false);
+        setBitValue(cells, y * cols + x, false);
+        setBitValue(futureCells, y * cols + x, false);
         if (SEGMENT.check2) continue;
         SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
       }
       else {
-        setBitValue(gol->cells, y * cols + x, true);
-        setBitValue(gol->futureCells, y * cols + x, true);
+        setBitValue(cells, y * cols + x, true);
+        setBitValue(futureCells, y * cols + x, true);
         color = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
         SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
       }
     }
 
     //Clear CRCs
-    gol->oscillatorCRC = 0;
-    gol->spaceshipCRC = 0;
+    *oscillatorCRC = 0;
+    *spaceshipCRC = 0;
 
     //Calculate glider length LCM(rows,cols)*4
     uint8_t a = rows;
@@ -5230,14 +5222,14 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       b = a % b;
       a = t;
     }
-    gol->gliderLength = cols * rows / a * 4;
+    *gliderLength = cols * rows / a * 4;
     return FRAMETIME;
   }
   //Redraw immediately if overlay to avoid flicker
   if (SEGMENT.check2) {
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       //redraw foreground/alive
-      if (getBitValue(gol->cells, y * cols + x)) {
+      if (getBitValue(cells, y * cols + x)) {
         color = SEGMENT.getPixelColorXY(x,y);
         SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
       }
@@ -5271,7 +5263,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       }
       cIndex = cY * cols + cX;
       // count neighbors and store upto 3 neighbor colors
-      if (getBitValue(gol->cells, cIndex)) { //if alive
+      if (getBitValue(cells, cIndex)) { //if alive
         neighbors++;
         color = SEGMENT.getPixelColorXY(cX, cY);
         if (color == backgroundColor) continue; //parent just died, color lost
@@ -5281,16 +5273,16 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     }
 
     // Rules of Life
-    bool cellValue = getBitValue(gol->cells, y * cols + x);
+    bool cellValue = getBitValue(cells, y * cols + x);
     if ((cellValue) && (neighbors < 2 || neighbors > 3)) {
       // Loneliness or overpopulation
       cellChanged = true;
-      setBitValue(gol->futureCells, y * cols + x, false);
+      setBitValue(futureCells, y * cols + x, false);
       if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
     } 
     else if (!(cellValue) && (neighbors == 3)) { 
       // Reproduction
-      setBitValue(gol->futureCells, y * cols + x, true);
+      setBitValue(futureCells, y * cols + x, true);
       cellChanged = true;
       // find dominant color and assign it to a cell
       // no longer storing colors, if parent dies the color is lost
@@ -5311,21 +5303,21 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     } 
   }
   //update cell values
-  memcpy(gol->cells, gol->futureCells, dataSize);
+  memcpy(cells, futureCells, dataSize);
 
   // Get current crc value
-  uint16_t crc = crc16((const unsigned char*)gol->cells, dataSize);
+  uint16_t crc = crc16((const unsigned char*)cells, dataSize);
 
   bool repetition = false;
-  if (!cellChanged || crc == gol->oscillatorCRC || crc == gol->spaceshipCRC) repetition = true; //check if cell changed this gen and compare previous stored crc values
+  if (!cellChanged || crc == *oscillatorCRC || crc == *spaceshipCRC) repetition = true; //check if cell changed this gen and compare previous stored crc values
   if (repetition) {
     generation = 0; // reset on next call
     pauseFrames = 50;
     return FRAMETIME;
   }
   // Update CRC values
-  if (generation % 16 == 0) gol->oscillatorCRC = crc;
-  if (generation % gol->gliderLength == 0) gol->spaceshipCRC = crc;
+  if (generation % 16 == 0) *oscillatorCRC = crc;
+  if (generation % *gliderLength == 0) *spaceshipCRC = crc;
 
   generation++;
   SEGENV.step = strip.now;
