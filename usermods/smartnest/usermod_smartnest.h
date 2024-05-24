@@ -109,11 +109,11 @@ public:
 
     if (subtopic == "powerState")
     {
-      if (strcmp(payload, "ON") == 0)
+      if (message_ == "ON")
       {
         turnOn();
       }
-      else if (strcmp(payload, "OFF") == 0)
+      else if (message_ == "OFF")
       {
         turnOff();
       }
@@ -122,7 +122,7 @@ public:
 
     if (subtopic == "percentage")
     {
-      int val = (int)strtoul(payload, NULL, 10);
+      int val = message_.toInt();
       if (val >= 0 && val <= 100)
       {
         setBrightness(map(val, 0, 100, 0, 255));
