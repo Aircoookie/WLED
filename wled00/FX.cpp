@@ -5178,8 +5178,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t));
   uint16_t *spaceshipCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t));
 
-  uint16_t &generation = SEGENV.aux0; //rename aux0 and aux1 for readability (not needed)
-  uint16_t &pauseFrames = SEGENV.aux1;
+  uint16_t &generation = SEGENV.aux0; //rename aux0 readability (not needed)
   CRGB bgColor = SEGCOLOR(1);
   CRGB color;
 
@@ -5188,10 +5187,9 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     SEGMENT.fill(BLACK); // to make sure that segment buffer and physical leds are aligned initially
   }
   //start new game of life
-  if ((SEGENV.call == 0 || generation == 0) && pauseFrames == 0) {
-    SEGENV.step = strip.now; // .step = previous call time
+  if ((SEGENV.call == 0 || generation == 0) && SEGENV.step < strip.now) {
+    SEGENV.step = strip.now + 1500; // show initial state for 1.5 seconds
     generation = 1;
-    pauseFrames = 75; // show initial state for longer
     random16_set_seed(strip.now>>2); //seed the random generator
     //Setup Grid
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
@@ -5235,8 +5233,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       }
     }
   }
-  if (pauseFrames || strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,2)) {
-    if(pauseFrames) pauseFrames--;
+  if (SEGENV.step > strip.now || strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,2)) {
     return FRAMETIME; //skip if not enough time has passed
   }
   //Update Game of Life
@@ -5316,7 +5313,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   if (!cellChanged || crc == *oscillatorCRC || crc == *spaceshipCRC) repetition = true; //check if cell changed this gen and compare previous stored crc values
   if (repetition) {
     generation = 0; // reset on next call
-    pauseFrames = 50;
+    SEGENV.step += 1000; // pause final generation for 1 second
     return FRAMETIME;
   }
   // Update CRC values
