@@ -6030,19 +6030,20 @@ static const char _data_FX_MODE_2DSPACESHIPS[] PROGMEM = "Spaceships@!,Blur;;!;2
 //     2D Crazy Bees   //
 /////////////////////////
 //// Crazy bees by stepko (c)12.02.21 [https://editor.soulmatelights.com/gallery/651-crazy-bees], adapted by Blaz Kristan (AKA blazoncek)
-#define MAX_BEES 5
+constexpr uint_fast16_t MAX_BEES = 5;
 uint16_t mode_2Dcrazybees(void) {
   if (!strip.isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint_fast16_t cols = SEGMENT.virtualWidth();
+  const uint_fast16_t rows = SEGMENT.virtualHeight();
 
-  byte n = MIN(MAX_BEES, (rows * cols) / 256 + 1);
+  const byte n = min(MAX_BEES, (rows * cols) / 256 + 1);
 
   typedef struct Bee {
     uint8_t posX, posY, aimX, aimY, hue;
-    int8_t deltaX, deltaY, signX, signY, error;
-    void aimed(uint16_t w, uint16_t h) {
+    int8_t signX, signY;
+    int16_t deltaX, deltaY, error;
+    void aimed(uint_fast16_t w, uint_fast16_t h) {
       if (!true) //WLEDMM SuperSync
         random16_set_seed(strip.now);
       aimX = random8(0, w);
@@ -6083,7 +6084,7 @@ uint16_t mode_2Dcrazybees(void) {
       SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY - 1, CHSV(bee[i].hue, 255, 255));
       if (bee[i].posX != bee[i].aimX || bee[i].posY != bee[i].aimY) {
         SEGMENT.setPixelColorXY(bee[i].posX, bee[i].posY, CRGB(CHSV(bee[i].hue, 60, 255)));
-        int8_t error2 = bee[i].error * 2;
+        int_fast16_t error2 = bee[i].error * 2;
         if (error2 > -bee[i].deltaY) {
           bee[i].error -= bee[i].deltaY;
           bee[i].posX += bee[i].signX;
