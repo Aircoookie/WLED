@@ -5188,23 +5188,22 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   }
   //start new game of life
   if ((SEGENV.call == 0 || generation == 0) && SEGENV.step < strip.now) {
-    SEGENV.step = strip.now + 1500; // show initial state for 1.5 seconds
+    SEGENV.step = strip.now + 1250; // show initial state for 1.25 seconds
     generation = 1;
     random16_set_seed(strip.now>>2); //seed the random generator
     //Setup Grid
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-      uint8_t state = (random8() < 82) ? 1 : 0; // ~32% chance of being alive
-      if (state == 0) {
-        setBitValue(cells, y * cols + x, false);
-        setBitValue(futureCells, y * cols + x, false);
-        if (SEGMENT.check2) continue;
-        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?bgColor : RGBW32(bgColor.r, bgColor.g, bgColor.b, 0));
-      }
-      else {
+      if (random8() < 82) { // ~32% chance of being alive
         setBitValue(cells, y * cols + x, true);
         setBitValue(futureCells, y * cols + x, true);
         color = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
         SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
+      }
+      else {
+        setBitValue(cells, y * cols + x, false);
+        setBitValue(futureCells, y * cols + x, false);
+        if (SEGMENT.check2) continue; //overlay
+        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?bgColor : RGBW32(bgColor.r, bgColor.g, bgColor.b, 0));
       }
     }
 
@@ -5250,7 +5249,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { // iterate through 3*3 matrix
       if (i==0 && j==0) continue; // ignore itself
-      if (!SEGMENT.check3 || generation % 1500 == 0) { //no wrap disable wrap every 1500 generations to prevent undetected repeats
+      if (!SEGMENT.check3 || generation % 1500 == 0) { //no wrap, disable wrap every 1500 generations to prevent undetected repeats
         cX = x+i;
         cY = y+j;
         if (cX < 0 || cY < 0 || cX >= cols || cY >= rows) continue; //skip if out of bounds
@@ -5265,7 +5264,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         if (!getBitValue(futureCells, cIndex)) continue; //parent just died, color lost
         color = SEGMENT.getPixelColorXY(cX, cY);
         if (color == bgColor) continue;
-        nColors[colorCount%3] = color;
+        nColors[colorCount % 3] = color;
         colorCount++;
       }
     }
@@ -5292,8 +5291,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         else dominantColor = nColors[random8()%3];
       }
       else if (colorCount == 2) dominantColor = nColors[random8()%2]; // 1 leading parent died
-      else if (colorCount == 1) dominantColor = nColors[0]; // 2 leading parents died
-      else dominantColor = color; // all parents died last used color
+      else if (colorCount == 1) dominantColor = nColors[0];           // 2 leading parents died
+      else dominantColor = color;                                     // all parents died last used color
       // mutate color chance
       if (random8() < SEGMENT.intensity || dominantColor == bgColor) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
       if (SEGMENT.check1) dominantColor = RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0); //WLEDMM support all colors
@@ -5312,7 +5311,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   bool repetition = false;
   if (!cellChanged || crc == *oscillatorCRC || crc == *spaceshipCRC) repetition = true; //check if cell changed this gen and compare previous stored crc values
   if (repetition) {
-    generation = 0; // reset on next call
+    generation = 0;      // reset on next call
     SEGENV.step += 1000; // pause final generation for 1 second
     return FRAMETIME;
   }
@@ -5324,7 +5323,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.step = strip.now;
   return FRAMETIME;
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=200,ix=12,c1=0,o3=1"; 
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=200,ix=12,c1=8,o3=1"; 
 
 /////////////////////////
 //     2D Hiphotic     //
