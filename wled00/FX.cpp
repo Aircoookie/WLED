@@ -5169,7 +5169,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
   const size_t dataSize = ((SEGMENT.length() + 7) / 8); // round up to nearest byte
-  const size_t totalSize = dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t)*2; // 2 byte arrays, 1 uint8_t, 2 uint16_t
+  const size_t detectionSize =  sizeof(uint8_t) + sizeof(uint16_t)*2; // 1 uint8_t (gliderLen), 2 uint16_t (2 CRCs)
+  const size_t totalSize = dataSize * 2 + detectionSize + sizeof(CRGB); //CRGB prevColor
 
   if (!SEGENV.allocateData(totalSize)) return mode_static(); //allocation failed
   byte *cells = reinterpret_cast<byte*>(SEGENV.data);
@@ -5177,6 +5178,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   uint8_t *gliderLength = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize*2);
   uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t));
   uint16_t *spaceshipCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t));
+  CRGB *prevColor = reinterpret_cast<CRGB*>(SEGENV.data + dataSize*2 + detectionSize);
 
   uint16_t &generation = SEGENV.aux0; //rename aux0 readability (not needed)
   CRGB bgColor = SEGCOLOR(1);
@@ -5235,6 +5237,17 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   if (SEGENV.step > strip.now || strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,2)) {
     return FRAMETIME; //skip if not enough time has passed
   }
+
+  //Recolor live cells if palette/color changed
+  if (SEGMENT.color_from_palette(0, false, PALETTE_SOLID_WRAP, 0) != *prevColor){
+    for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
+      if (getBitValue(cells, y * cols + x)) {
+        SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
+      }
+    }
+    *prevColor = SEGMENT.color_from_palette(0, false, PALETTE_SOLID_WRAP, 0);
+  }
+
   //Update Game of Life
   bool cellChanged = false; // Detect still live and dead grids
   //cell index and coordinates
