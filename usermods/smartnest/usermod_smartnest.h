@@ -9,29 +9,17 @@ private:
   unsigned long lastMqttReport = 0;
   const unsigned long mqttReportInterval = 60000; // Report every minute
 
-  // Function to send messages to MQTT broker
   void sendToBroker(const char *const topic, const char *const message)
   {
     if (!WLED_MQTT_CONNECTED)
     {
-      Serial.println("MQTT not connected");
       return;
     }
 
-    String topic_ = String(WLED_CFG_MQTT_CLIENT_ID) + "/" + String(topic);
-    bool result = mqtt->publish(topic_.c_str(), 0, true, message);
-    if (result) {
-      Serial.print("Published to topic ");
-      Serial.print(topic_);
-      Serial.print(": ");
-      Serial.println(message);
-    } else {
-      Serial.print("Failed to publish to topic ");
-      Serial.println(topic_);
-    }
+    String topic_ = String(mqttClientID) + "/" + String(topic);
+    mqtt->publish(topic_.c_str(), 0, true, message);
   }
 
-  // Function to turn off the light
   void turnOff()
   {
     setBrightness(0);
@@ -40,7 +28,6 @@ private:
     sendToBroker("report/powerState", "OFF");
   }
 
-  // Function to turn on the light
   void turnOn()
   {
     setBrightness(briLast);
@@ -49,7 +36,6 @@ private:
     sendToBroker("report/powerState", "ON");
   }
 
-  // Function to set brightness
   void setBrightness(int value)
   {
     if (value == 0 && bri > 0) briLast = bri;
@@ -57,7 +43,6 @@ private:
     stateUpdated(CALL_MODE_DIRECT_CHANGE);
   }
 
-  // Function to set color
   void setColor(int r, int g, int b)
   {
     strip.setColor(0, r, g, b);
@@ -67,7 +52,6 @@ private:
     sendToBroker("report/color", msg);
   }
 
-  // Function to split color message
   int splitColor(const char *const color, int * const rgb)
   {
     char *color_ = NULL;
@@ -99,13 +83,13 @@ public:
   // Functions called by WLED
 
   /**
-   * Handling of MQTT message
-   * Topic should look like: /<mqttClientID>/<Command>/<Message>
+   * handling of MQTT message
+   * topic should look like: /<mqttClientID>/<Command>/<Message>
    */
   bool onMqttMessage(char *topic, char *message)
   {
     String topic_{topic};
-    String topic_prefix{WLED_CFG_MQTT_CLIENT_ID + String("/directive/")};
+    String topic_prefix{mqttClientID + String("/directive/")};
 
     if (!topic_.startsWith(topic_prefix))
     {
@@ -114,11 +98,6 @@ public:
 
     String subtopic = topic_.substring(topic_prefix.length());
     String message_(message);
-
-    Serial.print("Received MQTT message on topic ");
-    Serial.print(topic);
-    Serial.print(": ");
-    Serial.println(message);
 
     if (subtopic == "powerState")
     {
@@ -160,16 +139,13 @@ public:
   }
 
   /**
-   * Subscribe to MQTT topic and send publish current status.
+   * subscribe to MQTT topic and send publish current status.
    */
   void onMqttConnect(bool sessionPresent)
   {
-    String topic = String(WLED_CFG_MQTT_CLIENT_ID) + "/#";
+    String topic = String(mqttClientID) + "/#";
 
-    Serial.print("Subscribing to topic: ");
-    Serial.println(topic);
     mqtt->subscribe(topic.c_str(), 0);
-
     sendToBroker("report/online", (bri ? "true" : "false")); // Reports that the device is online
     delay(100);
     sendToBroker("report/firmware", versionString); // Reports the firmware version
@@ -185,7 +161,7 @@ public:
   }
 
   /**
-   * GetId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
+   * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
    * This could be used in the future for the system to determine whether your usermod is installed.
    */
   uint16_t getId()
@@ -194,7 +170,7 @@ public:
   }
 
   /**
-   * Setup() is called once at startup to initialize the usermod.
+   * setup() is called once at startup to initialize the usermod.
    */
   void setup() {
     // Initialization code here
@@ -210,7 +186,7 @@ public:
   }
 
   /**
-   * Loop() is called continuously to keep the usermod running.
+   * loop() is called continuously to keep the usermod running.
    */
   void loop() {
     // Periodically report status to MQTT broker
