@@ -139,7 +139,7 @@ def bin_rename_copy(source, target, env):
         shutil.copy(source_map, map_file)
 
     # wledmm_print_all_defines(env)
-    wledmm_print_build_info(env)
+    # wledmm_print_build_info(env)
 
 def bin_gzip(source, target, env):
     _create_dirs()
