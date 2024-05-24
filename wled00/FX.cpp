@@ -5234,7 +5234,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       }
     }
   }
-  if (SEGENV.step > strip.now || strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,2)) {
+  if (SEGENV.step > strip.now || strip.now - SEGENV.step < 1000 / (uint32_t)map(SEGMENT.speed,0,255,1,64)) { // 1 - 64 updates per second
     return FRAMETIME; //skip if not enough time has passed
   }
 
@@ -5336,7 +5336,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.step = strip.now;
   return FRAMETIME;
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=200,ix=12,c1=8,o3=1"; 
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=82,ix=12,c1=8,o3=1"; 
 
 /////////////////////////
 //     2D Hiphotic     //
