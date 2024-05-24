@@ -5186,6 +5186,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   uint16_t &generation = SEGENV.aux0; //rename aux0 readability (not needed)
   CRGB bgColor = SEGCOLOR(1);
   CRGB color;
+  uint16_t cIndex; 
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
@@ -5198,15 +5199,16 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     random16_set_seed(strip.now>>2); //seed the random generator
     //Setup Grid
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
+      cIndex = y * cols + x;
       if (random8() < 82) { // ~32% chance of being alive
-        setBitValue(cells, y * cols + x, true);
-        setBitValue(futureCells, y * cols + x, true);
+        setBitValue(cells, cIndex, true);
+        setBitValue(futureCells, cIndex, true);
         color = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
         SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
       }
       else {
-        setBitValue(cells, y * cols + x, false);
-        setBitValue(futureCells, y * cols + x, false);
+        setBitValue(cells, cIndex, false);
+        setBitValue(futureCells, cIndex, false);
         if (SEGMENT.check2) continue; //overlay
         SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?bgColor : RGBW32(bgColor.r, bgColor.g, bgColor.b, 0));
       }
@@ -5231,7 +5233,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   if (SEGMENT.check2) {
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       //redraw foreground/alive
-      if (getBitValue(cells, y * cols + x)) {
+      cIndex = y * cols + x;
+      if (getBitValue(cells, cIndex)) {
         color = SEGMENT.getPixelColorXY(x,y);
         SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
       }
@@ -5244,7 +5247,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   //Recolor live cells if palette/color changed
   if (SEGMENT.color_from_palette(0, false, PALETTE_SOLID_WRAP, 0) != *prevColor){
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-      if (getBitValue(cells, y * cols + x)) {
+      cIndex = y * cols + x;
+      if (getBitValue(cells, cIndex)) {
         SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
       }
     }
@@ -5253,8 +5257,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
   //Update Game of Life
   bool cellChanged = false; // Detect still live and dead grids
-  //cell index and coordinates
-  uint16_t cIndex;
+  //cell coordinates
   uint16_t cX;
   uint16_t cY;
   //Loop through all cells. Count neighbors, apply rules, setPixel
@@ -5273,7 +5276,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         cX = (x+i+cols) % cols;
         cY = (y+j+rows) % rows;
       }
-      cIndex = cY * cols + cX;
+      cIndex = cY * cols + cX; //neighbor cell index
       // count neighbors and store upto 3 neighbor colors
       if (getBitValue(cells, cIndex)) { //if alive
         neighbors++;
@@ -5286,17 +5289,18 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     }
 
     // Rules of Life
-    bool cellValue = getBitValue(cells, y * cols + x);
+    cIndex = y * cols + x; //current cell index
+    bool cellValue = getBitValue(cells, cIndex);
     if ((cellValue) && (neighbors < 2 || neighbors > 3)) {
       // Loneliness or overpopulation
       cellChanged = true;
-      setBitValue(futureCells, y * cols + x, false);
+      setBitValue(futureCells, cIndex, false);
       // blur/turn off dying cells
       if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, map(SEGMENT.custom1, 0, 255, 255, 0)));
     } 
     else if (!(cellValue) && (neighbors == 3)) { 
       // Reproduction
-      setBitValue(futureCells, y * cols + x, true);
+      setBitValue(futureCells, cIndex, true);
       cellChanged = true;
       // find dominant color and assign it to a cell
       // no longer storing colors, if parent dies the color is lost
