@@ -9,6 +9,8 @@
 class Smartnest : public Usermod
 {
 private:
+  bool mqttInitialized = false;
+
   void sendToBroker(const char *const topic, const char *const message)
   {
     if (!WLED_MQTT_CONNECTED)
@@ -38,7 +40,10 @@ private:
 
   void setBrightness(int value)
   {
-    if (value == 0 && bri > 0) briLast = bri;
+    if (value == 0 && bri > 0)
+    {
+      briLast = bri;
+    }
     bri = value;
     stateUpdated(CALL_MODE_DIRECT_CHANGE);
   }
@@ -47,12 +52,12 @@ private:
   {
     strip.setColor(0, r, g, b);
     stateUpdated(CALL_MODE_DIRECT_CHANGE);
-    char msg[18] {};
+    char msg[18]{};
     sprintf(msg, "rgb(%d,%d,%d)", r, g, b);
     sendToBroker("report/color", msg);
   }
 
-  int splitColor(const char *const color, int * const rgb)
+  int splitColor(const char *const color, int *const rgb)
   {
     char *color_ = NULL;
     const char delim[] = ",";
@@ -60,9 +65,9 @@ private:
     char *token = NULL;
     int position = 0;
 
-    // We need to copy the string in order to keep it read only as strtok_r function requires mutable string
-    color_ = (char *)malloc(strlen(color));
-    if (NULL == color_) {
+    color_ = (char *)malloc(strlen(color) + 1); // +1 for null character
+    if (NULL == color_)
+    {
       return -1;
     }
 
@@ -79,14 +84,17 @@ private:
     return position;
   }
 
-public:
-  // Functions called by WLED
+  void mqttInit()
+  {
+    if (!mqtt)
+      return;
+    mqtt->onMessage(std::bind(&Smartnest::onMqttMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+    mqtt->onConnect(std::bind(&Smartnest::onMqttConnect, this, std::placeholders::_1));
+    mqttInitialized = true;
+  }
 
-  /**
-   * handling of MQTT message
-   * topic should look like: /<mqttClientID>/<Command>/<Message>
-   */
-  bool onMqttMessage(char *topic, char *message)
+public:
+  bool onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
   {
     String topic_{topic};
     String topic_prefix{mqttClientID + String("/directive/")};
@@ -97,15 +105,15 @@ public:
     }
 
     String subtopic = topic_.substring(topic_prefix.length());
-    String message_(message);
+    String message_(payload, len);
 
     if (subtopic == "powerState")
     {
-      if (strcmp(message, "ON") == 0)
+      if (strcmp(payload, "ON") == 0)
       {
         turnOn();
       }
-      else if (strcmp(message, "OFF") == 0)
+      else if (strcmp(payload, "OFF") == 0)
       {
         turnOff();
       }
@@ -114,7 +122,7 @@ public:
 
     if (subtopic == "percentage")
     {
-      int val = (int)strtoul(message, NULL, 10);
+      int val = (int)strtoul(payload, NULL, 10);
       if (val >= 0 && val <= 100)
       {
         setBrightness(map(val, 0, 100, 0, 255));
@@ -124,7 +132,6 @@ public:
 
     if (subtopic == "color")
     {
-      // Parse the message which is in the format "rgb(<0-255>,<0-255>,<0-255>)"
       int rgb[3] = {};
       String colors = message_.substring(String("rgb(").length(), message_.lastIndexOf(')'));
       if (3 != splitColor(colors.c_str(), rgb))
@@ -138,9 +145,6 @@ public:
     return false;
   }
 
-  /**
-   * subscribe to MQTT topic and send publish current status.
-   */
   void onMqttConnect(bool sessionPresent)
   {
     String topic = String(mqttClientID) + "/#";
@@ -160,10 +164,22 @@ public:
     delay(100);
   }
 
-  /**
-   * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
-   * This could be used in the future for the system to determine whether your usermod is installed.
-   */
+  void setup()
+  {
+    Serial.begin(115200);
+    mqttInit();
+  }
+
+  void loop()
+  {
+    if (!mqttInitialized)
+    {
+      mqttInit();
+      return; // Try again in next loop iteration
+    }
+    // Your additional loop code here
+  }
+
   uint16_t getId()
   {
     return USERMOD_ID_SMARTNEST;
