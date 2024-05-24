@@ -5180,7 +5180,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
   uint16_t &generation = SEGENV.aux0; //rename aux0 and aux1 for readability (not needed)
   uint16_t &pauseFrames = SEGENV.aux1;
-  CRGB backgroundColor = SEGCOLOR(1);
+  CRGB bgColor = SEGCOLOR(1);
   CRGB color;
 
   if (SEGENV.call == 0) {
@@ -5200,7 +5200,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         setBitValue(cells, y * cols + x, false);
         setBitValue(futureCells, y * cols + x, false);
         if (SEGMENT.check2) continue;
-        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
+        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?bgColor : RGBW32(bgColor.r, bgColor.g, bgColor.b, 0));
       }
       else {
         setBitValue(cells, y * cols + x, true);
@@ -5265,8 +5265,9 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       // count neighbors and store upto 3 neighbor colors
       if (getBitValue(cells, cIndex)) { //if alive
         neighbors++;
+        if (!getBitValue(futureCells, cIndex)) continue; //parent just died, color lost
         color = SEGMENT.getPixelColorXY(cX, cY);
-        if (color == backgroundColor) continue; //parent just died, color lost
+        if (color == bgColor) continue;
         nColors[colorCount%3] = color;
         colorCount++;
       }
@@ -5278,7 +5279,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       // Loneliness or overpopulation
       cellChanged = true;
       setBitValue(futureCells, y * cols + x, false);
-      if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?backgroundColor : RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0));
+      // blur/turn off dying cells
+      if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, map(SEGMENT.custom1, 0, 255, 255, 0)));
     } 
     else if (!(cellValue) && (neighbors == 3)) { 
       // Reproduction
@@ -5296,11 +5298,13 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       else if (colorCount == 1) dominantColor = nColors[0]; // 2 leading parents died
       else dominantColor = color; // all parents died last used color
       // mutate color chance
-      if (random8() < SEGMENT.intensity) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
-
+      if (random8() < SEGMENT.intensity || dominantColor == bgColor) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
       if (SEGMENT.check1) dominantColor = RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0); //WLEDMM support all colors
       SEGMENT.setPixelColorXY(x,y, dominantColor);
-    } 
+    }
+    else { // blur dead cells 
+      if (!cellValue && !SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, map(SEGMENT.custom1, 0, 255, 255, 0))); 
+    }
   }
   //update cell values
   memcpy(cells, futureCells, dataSize);
@@ -5323,7 +5327,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.step = strip.now;
   return FRAMETIME;
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=200,ix=12,c1=0,o3=1"; 
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=200,ix=12,c1=0,o3=1"; 
 
 /////////////////////////
 //     2D Hiphotic     //
