@@ -179,7 +179,7 @@ public:
   void setup() {
     // Initialization code here
     if (!initialized) {
-      DEBUG_PRINTSN("Smartnest usermod setup initializing...");
+      DEBUG_PRINTF("Smartnest usermod setup initializing...");
       
       // Publish initial status
       sendToBroker("report/status", "Smartnest usermod initialized");
