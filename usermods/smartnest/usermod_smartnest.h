@@ -1,7 +1,3 @@
-#ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
-#endif
-
 #pragma once
 
 #include "wled.h"
@@ -9,7 +5,9 @@
 class Smartnest : public Usermod
 {
 private:
-  bool mqttInitialized = false;
+  bool initialized = false;
+  unsigned long lastMqttReport = 0;
+  const unsigned long mqttReportInterval = 60000; // Report every minute
 
   void sendToBroker(const char *const topic, const char *const message)
   {
@@ -40,10 +38,7 @@ private:
 
   void setBrightness(int value)
   {
-    if (value == 0 && bri > 0)
-    {
-      briLast = bri;
-    }
+    if (value == 0 && bri > 0) briLast = bri;
     bri = value;
     stateUpdated(CALL_MODE_DIRECT_CHANGE);
   }
@@ -84,17 +79,14 @@ private:
     return position;
   }
 
-  void mqttInit()
-  {
-    if (!mqtt)
-      return;
-    mqtt->onMessage(std::bind(&Smartnest::onMqttMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-    mqtt->onConnect(std::bind(&Smartnest::onMqttConnect, this, std::placeholders::_1));
-    mqttInitialized = true;
-  }
-
 public:
-  bool onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
+  // Functions called by WLED
+
+  /**
+   * handling of MQTT message
+   * topic should look like: /<mqttClientID>/<Command>/<Message>
+   */
+  bool onMqttMessage(char *topic, char *message)
   {
     String topic_{topic};
     String topic_prefix{mqttClientID + String("/directive/")};
@@ -105,15 +97,15 @@ public:
     }
 
     String subtopic = topic_.substring(topic_prefix.length());
-    String message_(payload, len);
+    String message_(message);
 
     if (subtopic == "powerState")
     {
-      if (message_ == "ON")
+      if (strcmp(message, "ON") == 0)
       {
         turnOn();
       }
-      else if (message_ == "OFF")
+      else if (strcmp(message, "OFF") == 0)
       {
         turnOff();
       }
@@ -122,7 +114,7 @@ public:
 
     if (subtopic == "percentage")
     {
-      int val = message_.toInt();
+      int val = (int)strtoul(message, NULL, 10);
       if (val >= 0 && val <= 100)
       {
         setBrightness(map(val, 0, 100, 0, 255));
@@ -132,6 +124,7 @@ public:
 
     if (subtopic == "color")
     {
+      // Parse the message which is in the format "rgb(<0-255>,<0-255>,<0-255>)"
       int rgb[3] = {};
       String colors = message_.substring(String("rgb(").length(), message_.lastIndexOf(')'));
       if (3 != splitColor(colors.c_str(), rgb))
@@ -145,6 +138,9 @@ public:
     return false;
   }
 
+  /**
+   * subscribe to MQTT topic and send publish current status.
+   */
   void onMqttConnect(bool sessionPresent)
   {
     String topic = String(mqttClientID) + "/#";
@@ -164,24 +160,48 @@ public:
     delay(100);
   }
 
-  void setup()
-  {
-    Serial.begin(115200);
-    mqttInit();
-  }
-
-  void loop()
-  {
-    if (!mqttInitialized)
-    {
-      mqttInit();
-      return; // Try again in next loop iteration
-    }
-    // Your additional loop code here
-  }
-
+  /**
+   * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
+   * This could be used in the future for the system to determine whether your usermod is installed.
+   */
   uint16_t getId()
   {
     return USERMOD_ID_SMARTNEST;
+  }
+
+  /**
+   * setup() is called once at startup to initialize the usermod.
+   */
+  void setup() {
+    // Initialization code here
+    if (!initialized) {
+      Serial.begin(115200);
+      Serial.println("Smartnest usermod setup initializing...");
+      
+      // Publish initial status
+      sendToBroker("report/status", "Smartnest usermod initialized");
+      
+      initialized = true;
+    }
+  }
+
+  /**
+   * loop() is called continuously to keep the usermod running.
+   */
+  void loop() {
+    // Periodically report status to MQTT broker
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastMqttReport >= mqttReportInterval) {
+      lastMqttReport = currentMillis;
+      
+      // Report current brightness
+      char brightnessMsg[4];
+      sprintf(brightnessMsg, "%d", bri);
+      sendToBroker("report/brightness", brightnessMsg);
+      
+      // Report current signal strength
+      String signal(WiFi.RSSI(), 10);
+      sendToBroker("report/signal", signal.c_str());
+    }
   }
 };
