@@ -71,5 +71,4 @@ Wait `1 minute` after turning it on, as it usually takes a while.
  2024-05
 * Solved code.
 * Updated documentation.
- 2022-09
-* First implementation.
+* Second implementation.
