@@ -11,7 +11,7 @@ class Smartnest : public Usermod
 private:
   bool initialized = false;
   unsigned long lastMqttReport = 0;
-  const unsigned long mqttReportInterval = 60000; // Report every minute
+  unsigned long mqttReportInterval = 60000; // Report every minute
 
   void sendToBroker(const char *const topic, const char *const message)
   {
@@ -198,8 +198,8 @@ public:
       lastMqttReport = currentMillis;
       
       // Report current brightness
-      char brightnessMsg[4];
-      sprintf(brightnessMsg, "%d", bri);
+      char brightnessMsg[6];
+      sprintf(brightnessMsg, "%u", bri);
       sendToBroker("report/brightness", brightnessMsg);
       
       // Report current signal strength
