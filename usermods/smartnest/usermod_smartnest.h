@@ -175,8 +175,7 @@ public:
   void setup() {
     // Initialization code here
     if (!initialized) {
-      Serial.begin(115200);
-      Serial.println("Smartnest usermod setup initializing...");
+      DEBUG_PRINTSN("Smartnest usermod setup initializing...");
       
       // Publish initial status
       sendToBroker("report/status", "Smartnest usermod initialized");
