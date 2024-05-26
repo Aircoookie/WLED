@@ -117,7 +117,7 @@ public:
     {
         if (width > 32)
         {
-            throw std::invalid_argument("maximal width is 32");
+            width = 32;
         }
 
         pixels.clear();
