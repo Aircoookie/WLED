@@ -107,7 +107,7 @@ public:
         rating->score = (aHeight * (rating->aggregatedHeight)) + (fullLines * (rating->fullLines)) + (holes * (rating->holes)) + (bumpiness * (rating->bumpiness));
     }
 
-    TetrisAI(): TetrisAI(-0.510066, 0.760666, -0.35663, -0.184483)
+    TetrisAI(): TetrisAI(-0.510066f, 0.760666f, -0.35663f, -0.184483f)
     {}
 
     TetrisAI(float aHeight, float fullLines, float holes, float bumpiness):
@@ -178,9 +178,9 @@ public:
                 if(findWorstMove)
                 {
                     //init rating for worst
-                    if(bestRating->score == -DBL_MAX)
+                    if(bestRating->score == -FLT_MAX)
                     {
-                        bestRating->score = DBL_MAX;
+                        bestRating->score = FLT_MAX;
                     }
 
                     // update if we found a worse one

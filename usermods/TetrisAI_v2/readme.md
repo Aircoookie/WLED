@@ -10,7 +10,7 @@ Just activate the usermod with `-D USERMOD_TETRISAI` and the effect will become 
 
 ## Usage
 
-It is best to set the background color to black, the border color to light grey and the game over color (foreground) to dark grey.
+It is best to set the background color to black 🖤, the border color to light grey 🤍, the game over color (foreground) to dark grey 🩶, and color palette to 'Rainbow' 🌈.
 
 ### Sliders and boxes
 

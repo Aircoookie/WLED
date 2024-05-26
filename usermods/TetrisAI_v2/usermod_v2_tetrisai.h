@@ -155,7 +155,7 @@ uint16_t mode_2DTetrisAI()
   if (tetrisai_data->intelligence != SEGMENT.custom1)
   {
     tetrisai_data->intelligence = SEGMENT.custom1;
-    float dui = 0.2 - (0.2 * (tetrisai_data->intelligence / 255.0));
+    float dui = 0.2f - (0.2f * (tetrisai_data->intelligence / 255.0f));
 
     tetrisai_data->tetris.ai.aHeight = -0.510066f + dui;
     tetrisai_data->tetris.ai.fullLines = 0.760666f - dui;
