@@ -34,7 +34,7 @@ public:
     {
         if (width > 32)
         {
-            throw std::invalid_argument("maximal width is 32");
+            this->width = 32;
         }
     }
 

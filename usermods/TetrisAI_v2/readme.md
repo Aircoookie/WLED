@@ -31,3 +31,6 @@ It is best to set the background color to black 🖤, the border color to light 
 ## Best results
 
  If the speed is set to be a little bit faster than a good human could play with maximal intelligence and very few mistakes it makes people furious/happy at a party 😉.
+
+## Limits
+The game grid is limited to a maximum width of 32 and a maximum height of 255 due to the internal structure of the code.
