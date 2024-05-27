@@ -20,6 +20,10 @@ typedef struct TetrisAI_data
   uint8_t   mistaceCountdown;
   uint16_t segcols;
   uint16_t segrows;
+  uint16_t segOffsetX;
+  uint16_t segOffsetY;
+  uint16_t effectWidth;
+  uint16_t effectHeight;
 } tetrisai_data;
 
 void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
@@ -51,7 +55,7 @@ void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
         color = ColorFromPalette(SEGPALETTE, colorIndex, 255, NOBLEND);
       }
 
-      SEGMENT.setPixelColorXY(index_x, index_y - 4, color);
+      SEGMENT.setPixelColorXY(tetrisai_data->segOffsetX + index_x, tetrisai_data->segOffsetY + index_y - 4, color);
     }
   }
   tetrisai_data->colorOffset += tetrisai_data->colorInc;
@@ -63,14 +67,14 @@ void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
     if (tetrisai_data->showBorder)
     {
       //draw a line 6 pixels from right with the border color
-      for (auto index_y = 0; index_y < SEGMENT.virtualHeight(); index_y++)
+      for (auto index_y = 0; index_y < tetrisai_data->effectHeight; index_y++)
       {
-        SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() - 6, index_y, SEGCOLOR(2));
+        SEGMENT.setPixelColorXY(tetrisai_data->segOffsetX + tetrisai_data->effectWidth - 6, tetrisai_data->segOffsetY + index_y, SEGCOLOR(2));
       }
     }
 
     //NEXT PIECE
-    int piecesOffsetX = SEGMENT.virtualWidth() - 4;
+    int piecesOffsetX = tetrisai_data->effectWidth - 4;
     int piecesOffsetY = 1;
     for (uint8_t nextPieceIdx = 1; nextPieceIdx < tetris->nLookAhead; nextPieceIdx++)
     {
@@ -85,7 +89,7 @@ void drawGrid(TetrisAIGame* tetris, TetrisAI_data* tetrisai_data)
           if (piece.getPixel(pieceX, pieceY))
           {
             uint8_t colIdx = ((piece.pieceData->colorIndex * 32) + tetrisai_data->colorOffset);
-            SEGMENT.setPixelColorXY(piecesOffsetX + pieceX, piecesOffsetY + pieceNbrOffsetY + pieceY, ColorFromPalette(SEGPALETTE, colIdx, 255, NOBLEND));
+            SEGMENT.setPixelColorXY(tetrisai_data->segOffsetX + piecesOffsetX + pieceX, tetrisai_data->segOffsetY + piecesOffsetY + pieceNbrOffsetY + pieceY, ColorFromPalette(SEGPALETTE, colIdx, 255, NOBLEND));
           }
         }
       }
@@ -130,22 +134,41 @@ uint16_t mode_2DTetrisAI()
     tetrisai_data->showNext = SEGMENT.check1;
     tetrisai_data->showBorder = SEGMENT.check2;
 
-    //not more than 32 as this is the limit of this implementation
-    uint8_t gridWidth = cols < 32 ? cols : 32;
-    uint8_t gridHeight = rows;
+    //not more than 32 columns and 255 rows as this is the limit of this implementation
+    uint8_t gridWidth = cols > 32 ? 32 : cols;
+    uint8_t gridHeight = rows > 255 ? 255 : rows;
+
+    tetrisai_data->effectWidth = 0;
+    tetrisai_data->effectHeight = 0;
 
     // do we need space for the 'next' section?
     if (tetrisai_data->showNext)
     {
-      // make space for the piece and one pixel of space
-      gridWidth = gridWidth - 5;
+      //does it get to tight?
+      if (gridWidth + 5 > cols)
+      {
+        // yes, so make the grid smaller
+        // make space for the piece and one pixel of space
+        gridWidth = (gridWidth - ((gridWidth + 5) - cols));
+      }
+      tetrisai_data->effectWidth += 5;
 
       // do we need space for a border?
       if (tetrisai_data->showBorder)
       {
-        gridWidth = gridWidth - 1;
+        if (gridWidth + 5 + 1 > cols)
+        {
+          gridWidth -= 1;
+        }
+        tetrisai_data->effectWidth += 1;
       }
     }
+
+    tetrisai_data->effectWidth += gridWidth;
+    tetrisai_data->effectHeight += gridHeight;
+
+    tetrisai_data->segOffsetX = cols > tetrisai_data->effectWidth ? ((cols - tetrisai_data->effectWidth) / 2) : 0;
+    tetrisai_data->segOffsetY = rows > tetrisai_data->effectHeight ? ((rows - tetrisai_data->effectHeight) / 2) : 0;
 
     tetrisai_data->tetris = TetrisAIGame(gridWidth, gridHeight, nLookAhead, piecesData, numPieces);
     tetrisai_data->tetris.state = TetrisAIGame::States::INIT;

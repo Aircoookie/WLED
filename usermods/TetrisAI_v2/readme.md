@@ -6,7 +6,7 @@ Version 1.0
 
 ## Installation 
 
-Just activate the usermod with `-D USERMOD_TETRISAI` and the effect will become available under the name 'Tetris AI'.
+Just activate the usermod with `-D USERMOD_TETRISAI` and the effect will become available under the name 'Tetris AI'. If you are running out of flash memory, use a different memory layout (e.g. https://github.com/MoonModules/WLED/blob/mdev/tools/WLED_ESP32_4MB_256KB_FS.csv).
 
 ## Usage
 
@@ -33,4 +33,4 @@ It is best to set the background color to black 🖤, the border color to light 
  If the speed is set to be a little bit faster than a good human could play with maximal intelligence and very few mistakes it makes people furious/happy at a party 😉.
 
 ## Limits
-The game grid is limited to a maximum width of 32 and a maximum height of 255 due to the internal structure of the code.
+The game grid is limited to a maximum width of 32 and a maximum height of 255 due to the internal structure of the code. The canvas of the effect will be centred in the segment if the segment exceeds the maximum width or height.
