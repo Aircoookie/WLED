@@ -124,7 +124,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     CJSON(strip.panels, matrix[F("mpc")]);
     strip.panel.clear();
     JsonArray panels = matrix[F("panels")];
-    uint8_t s = 0;
+    int s = 0;
     if (!panels.isNull()) {
       strip.panel.reserve(max(1U,min((size_t)strip.panels,(size_t)WLED_MAX_PANELS)));  // pre-allocate memory for panels
       for (JsonObject pnl : panels) {
@@ -156,7 +156,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonArray ins = hw_led["ins"];
 
   if (fromFS || !ins.isNull()) {
-    uint8_t s = 0;  // bus iterator
+    int s = 0;  // bus iterator
     if (fromFS) BusManager::removeAll(); // can't safely manipulate busses directly in network callback
     uint32_t mem = 0, globalBufMem = 0;
     uint16_t maxlen = 0;
@@ -790,7 +790,7 @@ void serializeConfig() {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
     matrix[F("mpc")] = strip.panels;
     JsonArray panels = matrix.createNestedArray(F("panels"));
-    for (uint8_t i=0; i<strip.panel.size(); i++) {
+    for (size_t i = 0; i < strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
       pnl["b"] = strip.panel[i].bottomStart;
       pnl["r"] = strip.panel[i].rightStart;
@@ -806,7 +806,7 @@ void serializeConfig() {
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
-  for (uint8_t s = 0; s < BusManager::getNumBusses(); s++) {
+  for (size_t s = 0; s < BusManager::getNumBusses(); s++) {
     Bus *bus = BusManager::getBus(s);
     if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
@@ -815,7 +815,7 @@ void serializeConfig() {
     JsonArray ins_pin = ins.createNestedArray("pin");
     uint8_t pins[5];
     uint8_t nPins = bus->getPins(pins);
-    for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
+    for (int i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
     ins["rev"] = bus->isReversed();
     ins[F("skip")] = bus->skippedLeds();
@@ -829,7 +829,7 @@ void serializeConfig() {
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
   const ColorOrderMap& com = BusManager::getColorOrderMap();
-  for (uint8_t s = 0; s < com.count(); s++) {
+  for (size_t s = 0; s < com.count(); s++) {
     const ColorOrderMapEntry *entry = com.get(s);
     if (!entry) break;
 
@@ -846,7 +846,7 @@ void serializeConfig() {
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
   // configuration for all buttons
-  for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+  for (int i = 0; i < WLED_MAX_BUTTONS; i++) {
     JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
     hw_btn_ins_0["type"] = buttonType[i];
     JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");

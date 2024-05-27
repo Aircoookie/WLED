@@ -206,9 +206,9 @@ bool sendLiveLedsWs(uint32_t wsClient)
     uint8_t g = G(c);
     uint8_t b = B(c);
     uint8_t w = W(c);
-    buffer[pos++] = scale8(qadd8(w, r), strip.getBrightness()); //R, add white channel to RGB channels as a simple RGBW -> RGB map
-    buffer[pos++] = scale8(qadd8(w, g), strip.getBrightness()); //G
-    buffer[pos++] = scale8(qadd8(w, b), strip.getBrightness()); //B
+    buffer[pos++] = bri ? qadd8(w, r) : 0; //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    buffer[pos++] = bri ? qadd8(w, g) : 0; //G
+    buffer[pos++] = bri ? qadd8(w, b) : 0; //B
   }
 
   wsc->binary(std::move(wsBuf));
