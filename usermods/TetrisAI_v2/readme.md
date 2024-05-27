@@ -6,7 +6,7 @@ Version 1.0
 
 ## Installation 
 
-Just activate the usermod with `-D USERMOD_TETRISAI` and the effect will become available under the name 'Tetris AI'. If you are running out of flash memory, use a different memory layout (e.g. https://github.com/MoonModules/WLED/blob/mdev/tools/WLED_ESP32_4MB_256KB_FS.csv).
+Just activate the usermod with `-D USERMOD_TETRISAI` and the effect will become available under the name 'Tetris AI'. If you are running out of flash memory, use a different memory layout (e.g. [WLED_ESP32_4MB_256KB_FS.csv](https://github.com/Aircoookie/WLED/blob/0_15/tools/WLED_ESP32_4MB_256KB_FS.csv)).
 
 ## Usage
 
