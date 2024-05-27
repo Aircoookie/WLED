@@ -60,8 +60,12 @@
       #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
-      // the 10th digital bus (I2S0) will prevent Audioreactive usermod from functioning (it is last used though)
+      // the last digital bus (I2S0) will prevent Audioreactive usermod from functioning
+      #ifndef WLED_USE_PARALLEL_I2S
       #define WLED_MAX_BUSSES 10
+      #else
+      #define WLED_MAX_BUSSES 17
+      #endif
       #define WLED_MIN_VIRTUAL_BUSSES 0
     #endif
   #endif
@@ -174,6 +178,9 @@
 #define USERMOD_ID_HTTP_PULL_LIGHT_CONTROL 46   //usermod "usermod_v2_HttpPullLightControl.h"
 #define USERMOD_ID_TETRISAI              47     //Usermod "usermod_v2_tetris.h"
 #define USERMOD_ID_MAX17048              48     //Usermod "usermod_max17048.h"
+#define USERMOD_ID_BME68X                49     //Usermod "usermod_bme68x.h
+#define USERMOD_ID_INA226                50     //Usermod "usermod_ina226.h"
+#define USERMOD_ID_AHT10                 51     //Usermod "usermod_aht10.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -268,6 +275,7 @@
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
 #define TYPE_WS2805              32            //RGB + WW + CW
+#define TYPE_TM1914              33            //RGB
 //"Analog" types (40-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel

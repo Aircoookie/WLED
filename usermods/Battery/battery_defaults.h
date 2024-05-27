@@ -14,6 +14,12 @@
   #endif
 #endif
 
+// The initial delay before the first battery voltage reading after power-on.
+// This allows the voltage to stabilize before readings are taken, improving accuracy of initial reading.
+#ifndef USERMOD_BATTERY_INITIAL_DELAY
+  #define USERMOD_BATTERY_INITIAL_DELAY 10000 // (milliseconds)
+#endif
+
 // the frequency to check the battery, 30 sec
 #ifndef USERMOD_BATTERY_MEASUREMENT_INTERVAL
   #define USERMOD_BATTERY_MEASUREMENT_INTERVAL 30000

@@ -310,6 +310,7 @@ class Usermod {
     virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
     virtual void onMqttConnect(bool sessionPresent) {}                       // fired when MQTT connection is established (so usermod can subscribe)
     virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
+    virtual bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len) { return false; } // fired upon ESP-NOW message received
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
@@ -333,8 +334,13 @@ class UsermodManager {
     void readFromJsonState(JsonObject& obj);
     void addToConfig(JsonObject& obj);
     bool readFromConfig(JsonObject& obj);
+#ifndef WLED_DISABLE_MQTT
     void onMqttConnect(bool sessionPresent);
     bool onMqttMessage(char* topic, char* payload);
+#endif
+#ifndef WLED_DISABLE_ESPNOW
+    bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len);
+#endif
     void onUpdateBegin(bool);
     void onStateChange(uint8_t);
     bool add(Usermod* um);
@@ -398,7 +404,7 @@ void clearEEPROM();
 #endif
 
 //wled_math.cpp
-#ifndef WLED_USE_REAL_MATH
+#if defined(ESP8266) && !defined(WLED_USE_REAL_MATH)
   template <typename T> T atan_t(T x);
   float cos_t(float phi);
   float sin_t(float x);
@@ -409,14 +415,14 @@ void clearEEPROM();
   float fmod_t(float num, float denom);
 #else
   #include <math.h>
-  #define sin_t sin
-  #define cos_t cos
-  #define tan_t tan
-  #define asin_t asin
-  #define acos_t acos
-  #define atan_t atan
-  #define fmod_t fmod
-  #define floor_t floor
+  #define sin_t sinf
+  #define cos_t cosf
+  #define tan_t tanf
+  #define asin_t asinf
+  #define acos_t acosf
+  #define atan_t atanf
+  #define fmod_t fmodf
+  #define floor_t floorf
 #endif
 
 //wled_serial.cpp

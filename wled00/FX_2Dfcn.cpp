@@ -342,55 +342,36 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
 void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
   if (!isActive() || blur_amount == 0) return; // not active
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
-  const unsigned dim1 = vertical ? rows : cols;
-  const unsigned dim2 = vertical ? cols : rows;
+  const int cols = virtualWidth();
+  const int rows = virtualHeight();
+  const int dim1 = vertical ? rows : cols;
+  const int dim2 = vertical ? cols : rows;
   if (i >= dim2) return;
   const float seep = blur_amount/255.f;
   const float keep = 3.f - 2.f*seep;
   // 1D box blur
-  CRGB tmp[dim1];
-  for (unsigned j = 0; j < dim1; j++) {
-    unsigned x = vertical ? i : j;
-    unsigned y = vertical ? j : i;
-    int xp = vertical ? x : x-1;  // "signed" to prevent underflow
-    int yp = vertical ? y-1 : y;  // "signed" to prevent underflow
-    unsigned xn = vertical ? x : x+1;
-    unsigned yn = vertical ? y+1 : y;
-    CRGB curr = getPixelColorXY(x,y);
-    CRGB prev = (xp<0 || yp<0) ? CRGB::Black : getPixelColorXY(xp,yp);
-    CRGB next = ((vertical && yn>=dim1) || (!vertical && xn>=dim1)) ? CRGB::Black : getPixelColorXY(xn,yn);
-    unsigned r, g, b;
-    r = (curr.r*keep + (prev.r + next.r)*seep) / 3;
-    g = (curr.g*keep + (prev.g + next.g)*seep) / 3;
-    b = (curr.b*keep + (prev.b + next.b)*seep) / 3;
-    tmp[j] = CRGB(r,g,b);
+  uint32_t out[dim1], in[dim1];
+  for (int j = 0; j < dim1; j++) {
+    int x = vertical ? i : j;
+    int y = vertical ? j : i;
+    in[j] = getPixelColorXY(x, y);
   }
-  for (unsigned j = 0; j < dim1; j++) {
-    unsigned x = vertical ? i : j;
-    unsigned y = vertical ? j : i;
-    setPixelColorXY(x, y, tmp[j]);
+  for (int j = 0; j < dim1; j++) {
+    uint32_t curr = in[j];
+    uint32_t prev = j > 0      ? in[j-1] : BLACK;
+    uint32_t next = j < dim1-1 ? in[j+1] : BLACK;
+    uint8_t r, g, b, w;
+    r = (R(curr)*keep + (R(prev) + R(next))*seep) / 3;
+    g = (G(curr)*keep + (G(prev) + G(next))*seep) / 3;
+    b = (B(curr)*keep + (B(prev) + B(next))*seep) / 3;
+    w = (W(curr)*keep + (W(prev) + W(next))*seep) / 3;
+    out[j] = RGBW32(r,g,b,w);
   }
-}
-
-// blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
-// blur2d: two-dimensional blur filter. Spreads light to 8 XY neighbors.
-//
-//           0 = no spread at all
-//          64 = moderate spreading
-//         172 = maximum smooth, even spreading
-//
-//         173..255 = wider spreading, but increasing flicker
-//
-//         Total light is NOT entirely conserved, so many repeated
-//         calls to 'blur' will also result in the light fading,
-//         eventually all the way to black; this is by design so that
-//         it can be used to (slowly) clear the LEDs to black.
-
-void Segment::blur1d(fract8 blur_amount) {
-  const unsigned rows = virtualHeight();
-  for (unsigned y = 0; y < rows; y++) blurRow(y, blur_amount);
+  for (int j = 0; j < dim1; j++) {
+    int x = vertical ? i : j;
+    int y = vertical ? j : i;
+    setPixelColorXY(x, y, out[j]);
+  }
 }
 
 void Segment::moveX(int8_t delta, bool wrap) {
@@ -447,33 +428,67 @@ void Segment::move(uint8_t dir, uint8_t delta, bool wrap) {
   }
 }
 
-void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col, bool soft) {
   if (!isActive() || radius == 0) return; // not active
-  // Bresenham’s Algorithm
-  int d = 3 - (2*radius);
-  int y = radius, x = 0;
-  while (y >= x) {
-    setPixelColorXY(cx+x, cy+y, col);
-    setPixelColorXY(cx-x, cy+y, col);
-    setPixelColorXY(cx+x, cy-y, col);
-    setPixelColorXY(cx-x, cy-y, col);
-    setPixelColorXY(cx+y, cy+x, col);
-    setPixelColorXY(cx-y, cy+x, col);
-    setPixelColorXY(cx+y, cy-x, col);
-    setPixelColorXY(cx-y, cy-x, col);
-    x++;
-    if (d > 0) {
-      y--;
-      d += 4 * (x - y) + 10;
-    } else {
-      d += 4 * x + 6;
+  if (soft) {
+    // Xiaolin Wu’s algorithm
+    int rsq = radius*radius;
+    int x = 0;
+    int y = radius;
+    unsigned oldFade = 0;
+    while (x < y) {
+      float yf = sqrtf(float(rsq - x*x)); // needs to be floating point
+      unsigned fade = float(0xFFFF) * (ceilf(yf) - yf); // how much color to keep
+      if (oldFade > fade) y--;
+      oldFade = fade;
+      setPixelColorXY(cx+x, cy+y, color_blend(col, getPixelColorXY(cx+x, cy+y), fade, true));
+      setPixelColorXY(cx-x, cy+y, color_blend(col, getPixelColorXY(cx-x, cy+y), fade, true));
+      setPixelColorXY(cx+x, cy-y, color_blend(col, getPixelColorXY(cx+x, cy-y), fade, true));
+      setPixelColorXY(cx-x, cy-y, color_blend(col, getPixelColorXY(cx-x, cy-y), fade, true));
+      setPixelColorXY(cx+y, cy+x, color_blend(col, getPixelColorXY(cx+y, cy+x), fade, true));
+      setPixelColorXY(cx-y, cy+x, color_blend(col, getPixelColorXY(cx-y, cy+x), fade, true));
+      setPixelColorXY(cx+y, cy-x, color_blend(col, getPixelColorXY(cx+y, cy-x), fade, true));
+      setPixelColorXY(cx-y, cy-x, color_blend(col, getPixelColorXY(cx-y, cy-x), fade, true));
+      setPixelColorXY(cx+x, cy+y-1, color_blend(getPixelColorXY(cx+x, cy+y-1), col, fade, true));
+      setPixelColorXY(cx-x, cy+y-1, color_blend(getPixelColorXY(cx-x, cy+y-1), col, fade, true));
+      setPixelColorXY(cx+x, cy-y+1, color_blend(getPixelColorXY(cx+x, cy-y+1), col, fade, true));
+      setPixelColorXY(cx-x, cy-y+1, color_blend(getPixelColorXY(cx-x, cy-y+1), col, fade, true));
+      setPixelColorXY(cx+y-1, cy+x, color_blend(getPixelColorXY(cx+y-1, cy+x), col, fade, true));
+      setPixelColorXY(cx-y+1, cy+x, color_blend(getPixelColorXY(cx-y+1, cy+x), col, fade, true));
+      setPixelColorXY(cx+y-1, cy-x, color_blend(getPixelColorXY(cx+y-1, cy-x), col, fade, true));
+      setPixelColorXY(cx-y+1, cy-x, color_blend(getPixelColorXY(cx-y+1, cy-x), col, fade, true));
+      x++;
+    }
+  } else {
+    // Bresenham’s Algorithm
+    int d = 3 - (2*radius);
+    int y = radius, x = 0;
+    while (y >= x) {
+      setPixelColorXY(cx+x, cy+y, col);
+      setPixelColorXY(cx-x, cy+y, col);
+      setPixelColorXY(cx+x, cy-y, col);
+      setPixelColorXY(cx-x, cy-y, col);
+      setPixelColorXY(cx+y, cy+x, col);
+      setPixelColorXY(cx-y, cy+x, col);
+      setPixelColorXY(cx+y, cy-x, col);
+      setPixelColorXY(cx-y, cy-x, col);
+      x++;
+      if (d > 0) {
+        y--;
+        d += 4 * (x - y) + 10;
+      } else {
+        d += 4 * x + 6;
+      }
     }
   }
 }
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
-void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col, bool soft) {
   if (!isActive() || radius == 0) return; // not active
+  // draw soft bounding circle
+  if (soft) drawCircle(cx, cy, radius, col, soft);
+  // fill it
   const int cols = virtualWidth();
   const int rows = virtualHeight();
   for (int y = -radius; y <= radius; y++) {
@@ -486,30 +501,58 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   }
 }
 
-void Segment::nscale8(uint8_t scale) {
-  if (!isActive()) return; // not active
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
-  for (unsigned y = 0; y < rows; y++) for (unsigned x = 0; x < cols; x++) {
-    setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
-  }
-}
-
 //line function
-void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) {
+void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c, bool soft) {
   if (!isActive()) return; // not active
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
+  const int cols = virtualWidth();
+  const int rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
-  const int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  const int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
-  int err = (dx>dy ? dx : -dy)/2, e2;
-  for (;;) {
-    setPixelColorXY(x0,y0,c);
-    if (x0==x1 && y0==y1) break;
-    e2 = err;
-    if (e2 >-dx) { err -= dy; x0 += sx; }
-    if (e2 < dy) { err += dx; y0 += sy; }
+
+  const int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1; // x distance & step
+  const int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; // y distance & step
+
+  // single pixel (line length == 0)
+  if (dx+dy == 0) {
+    setPixelColorXY(x0, y0, c);
+    return;
+  }
+
+  if (soft) {
+    // Xiaolin Wu’s algorithm
+    const bool steep = dy > dx;
+    if (steep) {
+      // we need to go along longest dimension
+      std::swap(x0,y0);
+      std::swap(x1,y1);
+    }
+    if (x0 > x1) {
+      // we need to go in increasing fashion
+      std::swap(x0,x1);
+      std::swap(y0,y1);
+    }
+    float gradient = x1-x0 == 0 ? 1.0f : float(y1-y0) / float(x1-x0);
+    float intersectY = y0;
+    for (int x = x0; x <= x1; x++) {
+      unsigned keep = float(0xFFFF) * (intersectY-int(intersectY)); // how much color to keep
+      unsigned seep = 0xFFFF - keep; // how much background to keep
+      int y = int(intersectY);
+      if (steep) std::swap(x,y);  // temporaryly swap if steep
+      // pixel coverage is determined by fractional part of y co-ordinate
+      setPixelColorXY(x, y, color_blend(c, getPixelColorXY(x, y), keep, true));
+      setPixelColorXY(x+int(steep), y+int(!steep), color_blend(c, getPixelColorXY(x+int(steep), y+int(!steep)), seep, true));
+      intersectY += gradient;
+      if (steep) std::swap(x,y);  // restore if steep
+    }
+  } else {
+    // Bresenham's algorithm
+    int err = (dx>dy ? dx : -dy)/2;   // error direction
+    for (;;) {
+      setPixelColorXY(x0, y0, c);
+      if (x0==x1 && y0==y1) break;
+      int e2 = err;
+      if (e2 >-dx) { err -= dy; x0 += sx; }
+      if (e2 < dy) { err += dx; y0 += sy; }
+    }
   }
 }
 

@@ -22,6 +22,10 @@ class UsermodBattery : public Usermod
     UMBattery* bat = new UnkownUMBattery();
     batteryConfig cfg;
 
+    // Initial delay before first reading to allow voltage stabilization
+    unsigned long initialDelay = USERMOD_BATTERY_INITIAL_DELAY;
+    bool initialDelayComplete = false;
+    bool isFirstVoltageReading = true;
     // how often to read the battery voltage
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
     unsigned long nextReadTime = 0;
@@ -137,7 +141,6 @@ class UsermodBattery : public Usermod
           if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
-            bat->setVoltage(readVoltage());
           }
 
         if (!success) {
@@ -148,10 +151,10 @@ class UsermodBattery : public Usermod
         }
       #else //ESP8266 boards have only one analog input pin A0
         pinMode(batteryPin, INPUT);
-        bat->setVoltage(readVoltage());
       #endif
 
-      nextReadTime = millis() + readingInterval;
+      // First voltage reading is delayed to allow voltage stabilization after powering up
+      nextReadTime = millis() + initialDelay;
       lastReadTime = millis();
 
       initDone = true;
@@ -177,6 +180,25 @@ class UsermodBattery : public Usermod
       if(strip.isUpdating()) return;
 
       lowPowerIndicator();
+
+      // Handling the initial delay
+      if (!initialDelayComplete && millis() < nextReadTime)
+        return; // Continue to return until the initial delay is over
+
+      // Once the initial delay is over, set it as complete
+      if (!initialDelayComplete)
+        {
+          initialDelayComplete = true;
+          // Set the regular interval after initial delay
+          nextReadTime = millis() + readingInterval;
+        }
+
+      // Make the first voltage reading after the initial delay has elapsed
+      if (isFirstVoltageReading)
+        {
+          bat->setVoltage(readVoltage());
+          isFirstVoltageReading = false;
+        }
 
       // check the battery level every USERMOD_BATTERY_MEASUREMENT_INTERVAL (ms)
       if (millis() < nextReadTime) return;

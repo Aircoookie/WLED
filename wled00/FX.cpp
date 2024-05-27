@@ -2509,7 +2509,7 @@ uint16_t ripple_base()
         uint16_t cx = rippleorigin >> 8;
         uint16_t cy = rippleorigin & 0xFF;
         uint8_t mag = scale8(sin8((propF>>2)), amp);
-        if (propI > 0) SEGMENT.draw_circle(cx, cy, propI, color_blend(SEGMENT.getPixelColorXY(cx + propI, cy), col, mag));
+        if (propI > 0) SEGMENT.drawCircle(cx, cy, propI, color_blend(SEGMENT.getPixelColorXY(cx + propI, cy), col, mag), true);
       } else
       #endif
       {
@@ -3198,23 +3198,30 @@ static const char _data_FX_MODE_SINELON_RAINBOW[] PROGMEM = "Sinelon Rainbow@!,T
 
 // utility function that will add random glitter to SEGMENT
 void glitter_base(uint8_t intensity, uint32_t col = ULTRAWHITE) {
-  if (intensity > random8()) {
-    if (SEGMENT.is2D()) {
-      SEGMENT.setPixelColorXY(random16(SEGMENT.virtualWidth()),random16(SEGMENT.virtualHeight()), col);
-    } else {
-      SEGMENT.setPixelColor(random16(SEGLEN), col);
-    }
-  }
+  if (intensity > random8()) SEGMENT.setPixelColor(random16(SEGLEN), col);
 }
 
 //Glitter with palette background, inspired by https://gist.github.com/kriegsman/062e10f7f07ba8518af6
 uint16_t mode_glitter()
 {
-  if (!SEGMENT.check2) mode_palette(); // use "* Color 1" palette for solid background (replacing "Solid glitter")
+  if (!SEGMENT.check2) { // use "* Color 1" palette for solid background (replacing "Solid glitter")
+    unsigned counter = 0;
+    if (SEGMENT.speed != 0) {
+      counter = (strip.now * ((SEGMENT.speed >> 3) +1)) & 0xFFFF;
+      counter = counter >> 8;
+    }
+
+    bool noWrap = (strip.paletteBlend == 2 || (strip.paletteBlend == 0 && SEGMENT.speed == 0));
+    for (unsigned i = 0; i < SEGLEN; i++) {
+      unsigned colorIndex = (i * 255 / SEGLEN) - counter;
+      if (noWrap) colorIndex = map(colorIndex, 0, 255, 0, 240); //cut off blend at palette "end"
+      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, true, 255));
+    }
+  }
   glitter_base(SEGMENT.intensity, SEGCOLOR(2) ? SEGCOLOR(2) : ULTRAWHITE);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;1,2,Glitter color;!;;pal=0,m12=0"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;,,Glitter color;!;;pal=0,m12=0"; //pixels
 
 
 //Solid colour background with glitter (can be replaced by Glitter)
@@ -5057,25 +5064,25 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
     SEGMENT.fill(BLACK);
   }
 
-  uint16_t xscale = SEGMENT.intensity*4;
-  uint32_t yscale = SEGMENT.speed*8;
-  uint8_t indexx = 0;
+  unsigned xscale = SEGMENT.intensity*4;
+  unsigned yscale = SEGMENT.speed*8;
+  unsigned indexx = 0;
 
-  SEGPALETTE = CRGBPalette16( CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0),
-                              CRGB::Red, CRGB::Red, CRGB::Red, CRGB::DarkOrange,
-                              CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
-                              CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
+  CRGBPalette16 pal = SEGMENT.check1 ? SEGPALETTE : CRGBPalette16(CRGB::Black,     CRGB::Black,      CRGB::Black,  CRGB::Black,
+                                                                  CRGB::Red,       CRGB::Red,        CRGB::Red,    CRGB::DarkOrange,
+                                                                  CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
+                                                                  CRGB::Yellow,    CRGB::Orange,     CRGB::Yellow, CRGB::Yellow);
 
   for (int j=0; j < cols; j++) {
     for (int i=0; i < rows; i++) {
-      indexx = inoise8(j*yscale*rows/255, i*xscale+strip.now/4);                                           // We're moving along our Perlin map.
-      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(SEGPALETTE, min(i*(indexx)>>4, 255), i*255/cols, LINEARBLEND)); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+      indexx = inoise8(j*yscale*rows/255, i*xscale+strip.now/4);                                               // We're moving along our Perlin map.
+      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(pal, min(i*(indexx)>>4, 255U), i*255/cols, LINEARBLEND)); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     } // for i
   } // for j
 
   return FRAMETIME;
 } // mode_2Dfirenoise()
-static const char _data_FX_MODE_2DFIRENOISE[] PROGMEM = "Firenoise@X scale,Y scale;;!;2";
+static const char _data_FX_MODE_2DFIRENOISE[] PROGMEM = "Firenoise@X scale,Y scale,,,,Palette;;!;2;pal=66";
 
 
 //////////////////////////////
@@ -6061,7 +6068,7 @@ uint16_t mode_2Dfloatingblobs(void) {
       }
     }
     uint32_t c = SEGMENT.color_from_palette(blob->color[i], false, false, 0);
-    if (blob->r[i] > 1.f) SEGMENT.fill_circle(roundf(blob->x[i]), roundf(blob->y[i]), roundf(blob->r[i]), c);
+    if (blob->r[i] > 1.f) SEGMENT.fillCircle(roundf(blob->x[i]), roundf(blob->y[i]), roundf(blob->r[i]), c);
     else                  SEGMENT.setPixelColorXY((int)roundf(blob->x[i]), (int)roundf(blob->y[i]), c);
     // move x
     if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005f));
