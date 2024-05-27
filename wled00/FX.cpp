@@ -7910,8 +7910,8 @@ uint16_t mode_particlevortex(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
-  uint32_t i = 0;
-  uint32_t j = 0;
+  uint32_t i, j;
+
   if (SEGMENT.call == 0) // initialization 
   {
     if (!initParticleSystem(PartSys, NUMBEROFSOURCES))
@@ -8688,10 +8688,22 @@ uint16_t mode_particlebox(void)
     int32_t xgravity;
     int32_t ygravity;
     int32_t increment = (SEGMENT.speed >> 6) + 1;
-    if(SEGMENT.check2) // direction
+    
+    /*if(SEGMENT.check2) // direction
       SEGMENT.aux0 += increment; // update counter
     else
       SEGMENT.aux0 -= increment; 
+    */
+    
+    if(SEGMENT.check2) // washing machine
+    {
+      int speed = tristate_square8(strip.now >> 7, 90, 15) / ((400 - SEGMENT.speed) >> 3);
+      SEGMENT.aux0 += speed;
+      if(speed == 0) SEGMENT.aux0 = 190; //down (= 270°)  
+    }
+    else
+      SEGMENT.aux0 -= increment;
+    
 
     if(SEGMENT.check1) // random, use perlin noise
     {
@@ -8722,7 +8734,7 @@ uint16_t mode_particlebox(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,Tilt Strength,Hardness,Friction,Random,Direction,Sloshing;;!;2;pal=53,sx=120,ix=100,c1=100,c2=210,o1=1";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,Tilt Strength,Hardness,Friction,Random,Washing Machine,Sloshing;;!;2;pal=53,sx=120,ix=100,c1=100,c2=210,o1=1";
 
 /*
 Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
@@ -9015,17 +9027,36 @@ uint16_t mode_particleattractor(void)
   else
     PartSys->angleEmit(PartSys->sources[0], SEGMENT.aux0 + 0x7FFF, 12); // emit at 180° as well
   // apply force
+  #ifdef USERMOD_AUDIOREACTIVE        
+  um_data_t *um_data;
+  if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))          
+  {    
+    uint8_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]);
+    uint8_t strength = volumeSmth;
+    if(SEGMENT.check3) strength = SEGMENT.speed; //AR disabled
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) // update particles
+      {
+         PartSys->pointAttractor(i, attractor, strength, false);         
+      }
+  }
+  #else  
   for(i = 0; i < displayparticles; i++) 
   {
     PartSys->pointAttractor(i, attractor, SEGMENT.speed, SEGMENT.check3);
   }
+  #endif
+
   if (SEGMENT.call % (33 - SEGMENT.custom3) == 0)
     PartSys->applyFriction(2);
   PartSys->particleMoveUpdate(PartSys->sources[0].source, &sourcesettings); // move the source
   PartSys->update(); // update and render
   return FRAMETIME;
 }
+#ifdef USERMOD_AUDIOREACTIVE    
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Disable AR;;!;2v;pal=9,sx=100,ix=82,c1=0,c2=0,o1=0,o2=0,o3=0";
+#else
 static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=0,c2=0,o1=0,o2=0,o3=0";
+#endif
 
 
 /*
@@ -9326,7 +9357,7 @@ uint16_t mode_particleGEQ(void)
         PartSys->particles[i].ttl = 20 + map(SEGMENT.intensity, 0,255, emitspeed>>1, emitspeed + random16(emitspeed)) ; // set particle alive, particle lifespan is in number of frames
         PartSys->particles[i].x = xposition + random16(binwidth) - (binwidth>>1); // position randomly, deviating half a bin width
         PartSys->particles[i].y = PS_P_RADIUS; // start at the bottom (PS_P_RADIUS is minimum position a particle is fully in frame)
-        PartSys->particles[i].vx = random16(SEGMENT.custom1>>1)-(SEGMENT.custom1>>2) ; //x-speed variation: +/- custom1/4 TODO: ok to use random16 here? 
+        PartSys->particles[i].vx = random(SEGMENT.custom1>>1)-(SEGMENT.custom1>>2) ; //x-speed variation: +/- custom1/4
         PartSys->particles[i].vy = emitspeed;
         PartSys->particles[i].hue = (bin<<4) + random16(17) - 8; // color from palette according to bin
         emitparticles--;
@@ -9380,7 +9411,7 @@ if (SEGLEN == 1)
     DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data! 
   }
-
+   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   numSprays = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
 
   um_data_t *um_data;
@@ -9427,7 +9458,7 @@ if (SEGLEN == 1)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLECCIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;012;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
+static const char _data_FX_MODE_PARTICLECCIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
 
 /*
 Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
@@ -9509,7 +9540,12 @@ uint16_t mode_particleghostrider(void)
   // emit two particles
   PartSys->angleEmit(PartSys->sources[0], emitangle, speed);
   PartSys->angleEmit(PartSys->sources[0], emitangle, speed);
-  PartSys->sources[0].source.hue += SEGMENT.custom2 >> 3;
+  if (SEGMENT.call % (11 - (SEGMENT.custom2 / 25)) == 0) // every nth frame, cycle color and emit particles //TODO: make this a segment call % SEGMENT.custom2  for better control
+  {
+    PartSys->sources[0].source.hue++; 
+  }
+  if (SEGMENT.custom2 > 190) //fast color change
+    PartSys->sources[0].source.hue += (SEGMENT.custom2 - 190) >> 2; 
 
   PartSys->update(); // update and render
   return FRAMETIME;
