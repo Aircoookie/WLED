@@ -178,7 +178,7 @@ public:
 private: 
   //rendering functions
   void ParticleSys_render(bool firemode = false, uint32_t fireintensity = 128);
-  void renderParticle(CRGB **framebuffer, uint32_t particleindex, uint32_t brightess, CRGB color, CRGB **renderbuffer);
+  void renderParticle(CRGB **framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color, CRGB **renderbuffer);
   
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
@@ -217,9 +217,134 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint
 uint32_t calculateNumberOfParticles(bool advanced, bool sizecontrol);
 uint32_t calculateNumberOfSources(uint8_t requestedsources);
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool advanced, bool sizecontrol, uint16_t additionalbytes);
+
+#endif // WLED_DISABLE_PARTICLESYSTEM
+
 // color functions
 void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
 void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
 void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
 
-#endif // WLED_DISABLE_PARTICLESYSTEM
+
+////////////////////////
+// 1D Particle System //
+////////////////////////
+
+// memory allocation
+#define ESP8266_MAXPARTICLES_1D 400 
+#define ESP8266_MAXSOURCES_1D 8
+#define ESP32S2_MAXPARTICLES_1D 1900
+#define ESP32S2_MAXSOURCES_1D 16
+#define ESP32_MAXPARTICLES_1D 6000
+#define ESP32_MAXSOURCES_1D 32
+
+// particle dimensions (subpixel division)
+#define PS_P_RADIUS_1D 64 // subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
+#define PS_P_HALFRADIUS_1D 32
+#define PS_P_RADIUS_SHIFT_1D 6 //TODO: may need to adjust
+#define PS_P_SURFACE_1D 6 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
+#define PS_P_MINHARDRADIUS_1D 70 // minimum hard surface radius TODO: also needs tweaking
+
+//struct for a single particle (6 bytes)
+typedef struct {
+    int16_t x;  // x position in particle system
+    int8_t vx;  // horizontal velocity    
+    uint8_t hue;  // color hue
+    // two byte bit field:
+    uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
+    bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
+    bool collide : 1; // if set, particle takes part in collisions
+    bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
+    bool flag4 : 1; // unused flag
+} PSparticle1D;
+
+//struct for a particle source (17 bytes)
+typedef struct {
+  uint16_t minLife; // minimum ttl of emittet particles
+  uint16_t maxLife; // maximum ttl of emitted particles
+  PSparticle1D source; // use a particle as the emitter source (speed, position, color)
+  int8_t var; // variation of emitted speed (adds random(+/- var) to speed)
+  int8_t v; // emitting speed
+  uint8_t size; // particle size (advanced property) TODO: can be removed in case this is not being implemented
+} PSsource1D; 
+
+
+class ParticleSystem1D
+{
+public:
+  ParticleSystem1D(uint16_t length, uint16_t numberofparticles, uint16_t numberofsources); // constructor
+  // note: memory is allcated in the FX function, no deconstructor needed
+  void update(void); //update the particles according to set options and render to the matrix  
+  void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
+
+  // particle emitters
+  void sprayEmit(PSsource1D &emitter);  
+  void particleMoveUpdate(PSparticle1D &part, PSsettings *options = NULL); // move function
+  //particle physics
+  void applyGravity(PSparticle1D *part); // applies gravity to single particle (use this for sources)  
+  void applyFriction(int32_t coefficient); // apply friction to all used particles
+  
+  // set options
+  void setUsedParticles(uint16_t num);
+  void setCollisionHardness(uint8_t hardness); // hardness for particle collisions (255 means full hard)
+  void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set  
+  void setSize(uint16_t x); //set particle system size (= strip length)
+  void setWrap(bool enable);
+  void setBounce(bool enable);  
+  void setKillOutOfBounds(bool enable); // if enabled, particles outside of matrix instantly die
+ // void setSaturation(uint8_t sat); // set global color saturation
+  void setColorByAge(bool enable);
+  void setMotionBlur(uint8_t bluramount); // note: motion blur can only be used if 'particlesize' is set to zero 
+  void setParticleSize(uint8_t size); //size 0 = 1 pixel, size 1 = 2 pixels
+  void setGravity(int8_t force = 8);
+  void enableParticleCollisions(bool enable, uint8_t hardness = 255);
+    
+  PSparticle1D *particles; // pointer to particle array
+  PSsource1D *sources; // pointer to sources
+  //PSadvancedParticle *advPartProps; // pointer to advanced particle properties (can be NULL)
+  //PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
+  uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
+  uint16_t maxX; // particle system size i.e. width-1 
+  uint32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 
+  uint8_t numSources; // number of sources
+  uint16_t numParticles;  // number of particles available in this system
+  uint16_t usedParticles; // number of particles used in animation (can be smaller then numParticles)  
+
+private: 
+  //rendering functions
+  void ParticleSys_render(void);
+  void renderParticle(CRGB *framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color);
+  
+  //paricle physics applied by system if flags are set
+  void applyGravity(); // applies gravity to all particles
+  void handleCollisions();
+  void collideParticles(PSparticle1D *particle1, PSparticle1D *particle2); 
+
+  //utility functions
+  void updatePSpointers(void); // update the data pointers to current segment data space
+  //void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
+  //void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
+  void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); // bounce on a wall
+  CRGB *allocate1Dbuffer(uint32_t length);
+  int32_t calcForce_dv(int8_t force, uint8_t *counter); //TODO: same as 2D function, could share
+  int32_t limitSpeed(int32_t speed);  //TODO: same as 2D function, could share
+  // note: variables that are accessed often are 32bit for speed
+  PSsettings particlesettings; // settings used when updating particles 
+  uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
+  int32_t collisionHardness;
+  uint8_t wallHardness;  
+  uint8_t gforcecounter; // counter for global gravity
+  int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)  
+  uint8_t forcecounter; // counter for globally applied forces
+  uint8_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call?
+  // global particle properties for basic particles
+  uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, larger sizez TBD (TODO: need larger sizes?)
+  int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
+  uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
+};
+
+bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0);
+uint32_t calculateNumberOfParticles1D(void);
+uint32_t calculateNumberOfSources1D(uint8_t requestedsources);
+bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
+
