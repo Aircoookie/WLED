@@ -14,43 +14,6 @@ The API is described in the Smartnest [Github repo](https://github.com/aososam/S
 ## Usermod installation
 
 1. Use `#define USERMOD_SMARTNEST` in wled.h or `-D USERMOD_SMARTNEST` in your platformio.ini (recommended).
-   
-## It is not necessary since the main branch of WLED brings it with it
-
-2. Register the usermod by adding `#include "../usermods/smartnest/usermod_smartnest.h"` at the top and `usermods.add(new Smartnest());` at the bottom of `usermods_list.cpp`.
-or
-
-Example **usermods_list.cpp**:
-
-```cpp
-#include "wled.h"
-/*
- * Register your v2 usermods here!
- *   (for v1 usermods using just usermod.cpp, you can ignore this file)
- */
-
-/*
- * Add/uncomment your usermod filename here (and once more below)
- * || || ||
- * \/ \/ \/
- */
-//#include "usermod_v2_example.h"
-//#include "usermod_temperature.h"
-#include "../usermods/usermod_smartnest.h"
-
-void registerUsermods()
-{
-  /*
-   * Add your usermod class name here
-   * || || ||
-   * \/ \/ \/
-   */
-  //usermods.add(new MyExampleUsermod());
-  //usermods.add(new UsermodTemperature());
-  usermods.add(new Smartnest());
-
-}
-```
 
 ## Configuration
 
@@ -68,7 +31,11 @@ Under Config > Sync Interfaces > MQTT:
 Wait `1 minute` after turning it on, as it usually takes a while.  
 
 ## Change log
- 2024-05
-* Solved code.
-* Updated documentation.
-* Second implementation.
+
+2022-09
+ * First implementation.
+  
+2024-05
+ * Solved code.
+ * Updated documentation.
+ * Second implementation.
