@@ -316,8 +316,10 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings *options, P
     if ((newX < 0) || (newX > maxX)) // check if particle reached an edge (note: this also checks out of bounds and must not be skipped, even if bounce is enabled)
     {      
       if (options->wrapX)
-      {
-        newX = (uint16_t)newX % (maxX + 1); 
+      {        
+        newX = newX % (maxX + 1); 
+        if(newX < 0)
+          newX += maxX + 1;  
       }
       else if (((newX <= -PS_P_HALFRADIUS) || (newX > maxX + PS_P_HALFRADIUS))) // particle is leaving, set out of bounds if it has fully left
       {
@@ -355,7 +357,9 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings *options, P
     {
       if (options->wrapY)
       {
-        newY = (uint16_t)newY % (maxY + 1);
+        newY = newY % (maxY + 1); 
+        if(newY < 0)
+          newY += maxY + 1; 
       }
       else if (((newY <= -PS_P_HALFRADIUS) || (newY > maxY + PS_P_HALFRADIUS))) // particle is leaving, set out of bounds if it has fully left
       {
@@ -1717,8 +1721,6 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
     //bool usesize = false; // particle uses individual size rendering
     int32_t newX = part.x + (int16_t)part.vx;
     part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
-    Serial.print(part.x);
-    Serial.print(" ");
     // if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of view
     if (options->bounceX) 
     {
@@ -1732,12 +1734,13 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
             newX = maxX - particleHardRadius;
       }
     }
-    
     if ((newX < 0) || (newX > maxX)) // check if particle reached an edge (note: this also checks out of bounds and must not be skipped, even if bounce is enabled)
     {      
       if (options->wrapX)
-      {
-        newX = (uint16_t)newX % (maxX + 1); 
+      {      
+        newX = newX % (maxX + 1); 
+        if(newX < 0)
+          newX += maxX + 1; 
       }
       else if (((newX <= -PS_P_HALFRADIUS_1D) || (newX > maxX + PS_P_HALFRADIUS_1D))) // particle is leaving, set out of bounds if it has fully left
       {

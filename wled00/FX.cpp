@@ -9691,13 +9691,13 @@ uint16_t mode_particle1Dtest(void)
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  //PartSys->setBounce(!SEGMENT.check2);
+  PartSys->setBounce(!SEGMENT.check2);
   PartSys->setWrap(SEGMENT.check2);
   PartSys->setWallHardness(hardness);
   PartSys->setGravity(8 * SEGMENT.check1); // enable gravity if checked (8 is default strength)
   //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
     PartSys->sources[0].var = 0;//SEGMENT.speed/16;
-    PartSys->sources[0].v = SEGMENT.speed/2;
+    PartSys->sources[0].v = -SEGMENT.speed/2;
  // if (SEGMENT.check3) // collisions enabled
   //  PartSys->enableParticleCollisions(true, hardness); // enable collisions and set particle collision hardness
   //else
@@ -9723,7 +9723,7 @@ uint16_t mode_particle1Dtest(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLETEST[] PROGMEM = "PS 1D Testy@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;12v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLETEST[] PROGMEM = "PS 1D Testy@Speed,!,Position,Blur,Angle,Gravity,Cylinder/Square,Size;;!;12v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
 
 
 
