@@ -9652,6 +9652,81 @@ static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,
 #endif // WLED_DISABLE_2D
 
 
+////////
+// 1D PS test
+
+
+/*
+Particle Spray, just a particle spray with many parameters
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particle1Dtest(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;
+  //uint8_t numSprays;
+  const uint8_t hardness = 200; // collision hardness is fixed
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 4)) // init, no additional data needed
+      return mode_static(); // allocation failed; //allocation failed
+    PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
+    PartSys->sources[0].source.hue = random16();
+    PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
+
+
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  //PartSys->setBounce(!SEGMENT.check2);
+  PartSys->setWrap(SEGMENT.check2);
+  PartSys->setWallHardness(hardness);
+  PartSys->setGravity(8 * SEGMENT.check1); // enable gravity if checked (8 is default strength)
+  //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
+    PartSys->sources[0].var = 0;//SEGMENT.speed/16;
+    PartSys->sources[0].v = SEGMENT.speed/2;
+ // if (SEGMENT.check3) // collisions enabled
+  //  PartSys->enableParticleCollisions(true, hardness); // enable collisions and set particle collision hardness
+  //else
+  //  PartSys->enableParticleCollisions(false);
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+ if (SEGMENT.check3) // collisions enabled
+   PartSys->setParticleSize(1);
+  else
+  PartSys->setParticleSize(0);
+
+  //position according to sliders
+  PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);  
+  
+  // change source properties
+  if (SEGMENT.call % (64 - (SEGMENT.intensity / 4)) == 0) // every nth frame, cycle color and emit particles
+  {
+    PartSys->sources[0].maxLife = 300; // lifetime in frames
+    PartSys->sources[0].minLife = 100;
+    PartSys->sources[0].source.hue++; // = random16(); //change hue of spray source         
+    PartSys->sprayEmit(PartSys->sources[0]);
+  }
+
+  PartSys->update(); // update and render
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLETEST[] PROGMEM = "PS 1D Testy@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;12v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+
+
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
 static const char _data_RESERVED[] PROGMEM = "RSVD";
@@ -9907,6 +9982,9 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLEBLOBS, &mode_particleblobs, _data_FX_MODE_PARTICLEBLOBS);
   addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
 #endif // WLED_DISABLE_PARTICLESYSTEM
+
+addEffect(FX_MODE_PARTICLETEST, &mode_particle1Dtest, _data_FX_MODE_PARTICLETEST);
+
 
 #endif // WLED_DISABLE_2D
 

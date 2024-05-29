@@ -332,7 +332,8 @@
 #define FX_MODE_PARTICLECENTERGEQ      199
 #define FX_MODE_PARTICLEGHOSTRIDER     200 
 #define FX_MODE_PARTICLEBLOBS          201 
-#define MODE_COUNT                     202
+#define FX_MODE_PARTICLETEST           202
+#define MODE_COUNT                     203
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,

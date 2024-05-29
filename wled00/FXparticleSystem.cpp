@@ -1626,7 +1626,7 @@ void ParticleSystem1D::setCollisionHardness(uint8_t hardness)
 void ParticleSystem1D::setSize(uint16_t x)
 {
   maxXpixel = x - 1; // last physical pixel that can be drawn to
-  maxX = x * PS_P_RADIUS - 1;  // particle system boundary for movements
+  maxX = x * PS_P_RADIUS_1D - 1;  // particle system boundary for movements
 }
 
 void ParticleSystem1D::setWrap(bool enable)
@@ -1658,6 +1658,7 @@ void ParticleSystem1D::setMotionBlur(uint8_t bluramount)
 // render size using smearing (see blur function)
 void ParticleSystem1D::setParticleSize(uint8_t size)
 {
+  particleHardRadius = PS_P_RADIUS_1D; //TODO: need to set this properly for particle size
   particlesize = size;
 }
 // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is disable
@@ -1716,17 +1717,20 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
     //bool usesize = false; // particle uses individual size rendering
     int32_t newX = part.x + (int16_t)part.vx;
     part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
-
+    Serial.print(part.x);
+    Serial.print(" ");
     // if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of view
     if (options->bounceX) 
     {
       if ((newX < particleHardRadius) || (newX > maxX - particleHardRadius)) // reached a wall
+      {
           part.vx = -part.vx; //invert speed
-          part.vx = ((int32_t)-part.vx * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
+          part.vx = ((int32_t)part.vx * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
           if (newX < particleHardRadius)
             newX = particleHardRadius; // fast particles will never reach the edge if position is inverted, this looks better
           else
             newX = maxX - particleHardRadius;
+      }
     }
     
     if ((newX < 0) || (newX > maxX)) // check if particle reached an edge (note: this also checks out of bounds and must not be skipped, even if bounce is enabled)
@@ -1735,22 +1739,11 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
       {
         newX = (uint16_t)newX % (maxX + 1); 
       }
-      else if (((newX <= -PS_P_HALFRADIUS) || (newX > maxX + PS_P_HALFRADIUS))) // particle is leaving, set out of bounds if it has fully left
+      else if (((newX <= -PS_P_HALFRADIUS_1D) || (newX > maxX + PS_P_HALFRADIUS_1D))) // particle is leaving, set out of bounds if it has fully left
       {
-        bool isleaving = true; 
-        //TODO: need to update this once particle size is implemented
-        if (true) // using individual particle size
-        {
-          if (((newX > -particleHardRadius) && (newX < maxX + particleHardRadius))) // large particle is not yet leaving the view - note: this is not pixel perfect but good enough
-            isleaving = false; 
-        }
-        
-        if (isleaving)
-        {
           part.outofbounds = 1;
           if (options->killoutofbounds)
             part.ttl = 0;
-        }
       }
     }
     part.x = (int16_t)newX; // set new position
@@ -1888,18 +1881,16 @@ void ParticleSystem1D::ParticleSys_render()
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
 void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color)
 {
-  if(particlesize == 0) //single pixel particle
+  if(particlesize == 0) //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
   {
-    int32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT;
-    //no need to check out of frame, that is done by the move function
-    if (framebuffer)
-    {
-      fast_color_add(framebuffer[x], color, brightness); // order is: bottom left, bottom right, top right, top left      
-    }
-    else
-    {  
-      SEGMENT.addPixelColor(x, color.scale8((uint8_t)brightness));      
-    }
+    uint32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT;
+    if(x <= maxXpixel) //by making x unsigned there is no need to check < 0 as it will overflow
+    {    
+      if (framebuffer)      
+        fast_color_add(framebuffer[x], color, brightness); // order is: bottom left, bottom right, top right, top left            
+      else        
+        SEGMENT.addPixelColor(x, color.scale8((uint8_t)brightness));      
+    } 
   }
   else { //render larger particles
     int32_t pxlbrightness[2] = {0}; // note: pxlbrightness needs to be set to 0 or checking does not work
