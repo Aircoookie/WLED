@@ -177,15 +177,10 @@ public:
    * setup() is called once at startup to initialize the usermod.
    */
   void setup() {
-    // Initialization code here
-    if (!initialized) {
       DEBUG_PRINTF("Smartnest usermod setup initializing...");
       
       // Publish initial status
       sendToBroker("report/status", "Smartnest usermod initialized");
-      
-      initialized = true;
-    }
   }
 
   /**
@@ -198,7 +193,7 @@ public:
       lastMqttReport = currentMillis;
       
       // Report current brightness
-      char brightnessMsg[6];
+      char brightnessMsg[11];
       sprintf(brightnessMsg, "%u", bri);
       sendToBroker("report/brightness", brightnessMsg);
       
