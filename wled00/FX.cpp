@@ -4319,7 +4319,7 @@ uint16_t mode_chunchun(void)
 }
 static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!,!;!";
 
-/*
+
 //13 bytes
 typedef struct Spotlight {
   float speed;
@@ -4329,7 +4329,7 @@ typedef struct Spotlight {
   uint8_t width;
   uint8_t type;
 } spotlight;
-*/
+
 #define SPOT_TYPE_SOLID       0
 #define SPOT_TYPE_GRADIENT    1
 #define SPOT_TYPE_2X_GRADIENT 2
@@ -4350,7 +4350,7 @@ typedef struct Spotlight {
  *
  * By Steve Pomeroy @xxv
  */
- /*
+ 
 uint16_t mode_dancing_shadows(void)
 {
   if (SEGLEN == 1) return mode_static();
@@ -4467,7 +4467,7 @@ uint16_t mode_dancing_shadows(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!;!";
-*/
+
 
 /*
   Imitates a washing machine, rotating same waves forward, then pause, then backward.
@@ -9859,8 +9859,7 @@ uint16_t mode_particleDancingShadows(void)
   {
     if (!initParticleSystem1D(PartSys, 1)) // init, one source
       return mode_static(); // allocation failed; //allocation failed
-    //PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
-      PartSys->sources[0].maxLife = 1000; //set long life
+      PartSys->sources[0].maxLife = 1000; //set long life (kill out of bounds is done in custom way)
       PartSys->sources[0].minLife = PartSys->sources[0].maxLife;
   }
   else
@@ -9874,33 +9873,23 @@ uint16_t mode_particleDancingShadows(void)
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  //  PartSys->setBounce(!SEGMENT.check2);
-  // PartSys->setWrap(SEGMENT.check2);
-  // PartSys->setWallHardness(hardness);
-  // PartSys->setGravity(8 * SEGMENT.check1); // enable gravity if checked (8 is default strength)
-  //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
-  //  PartSys->sources[0].var = SEGMENT.custom3;//SEGMENT.speed/16;
-  //  PartSys->sources[0].v = SEGMENT.speed/2;
+  if (SEGMENT.check2) 
+    PartSys->setMotionBlur(255); //full motion blurring allows overlay (motion blur does not work with overlay)
+  else  
+    PartSys->setMotionBlur(SEGMENT.custom1);
+   if (SEGMENT.check3) // collisions enabled
+    PartSys->setParticleSize(1);
+   else
+    PartSys->setParticleSize(0);
 
-  //PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
- 
-  //if (SEGMENT.check3) // collisions enabled
-  //  PartSys->setParticleSize(1);
-  // else
-   PartSys->setParticleSize(0);
+  //note: updating speed on the fly is not possible, since it is unknown which particles are assigned to which spot
 
-  //position according to slider
-  //PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);  
-  
-  //TODO: overlay with blur=255
-  //TODO: set used particles?
-  
   //generate a spotlight: generates particles just outside of view
-  if (SEGMENT.call % (256 - (SEGMENT.intensity)) == 0) 
+  if (SEGMENT.call % (260 - (SEGMENT.intensity)) == 0) 
   {
     //random color, random type
     uint32_t type = random8(SPOT_TYPES_COUNT);
-    int8_t speed = random(20 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
+    int8_t speed = random(5 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
     uint32_t width = random8(1, 10);
     uint32_t ttl = 300; //ttl is particle brightness (if perpetual is set, it does not age, i.e. ttl stays at this value)
     int32_t position;
@@ -9922,10 +9911,12 @@ uint16_t mode_particleDancingShadows(void)
 
         case SPOT_TYPE_GRADIENT:
           ttl = cubicwave8(map(i, 0, width - 1, 0, 255));          
+          ttl = ttl*ttl >> 8; //make gradient more pronounced
         break;
 
         case SPOT_TYPE_2X_GRADIENT:
           ttl = cubicwave8(2 * map(i, 0, width - 1, 0, 255));    
+          ttl = ttl*ttl >> 8;
         break;
 
         case SPOT_TYPE_2X_DOT:
@@ -9946,18 +9937,22 @@ uint16_t mode_particleDancingShadows(void)
       //emit particle 
       //set the particle source position:
       PartSys->sources[0].source.x = position * PS_P_RADIUS_1D;
-      PartSys->sprayEmit(PartSys->sources[0]);
+      uint32_t partidx = PartSys->sprayEmit(PartSys->sources[0]);
+      PartSys->particles[partidx].ttl = ttl;
       position++; //do the next pixel
     }
   }
-
+  
+  //kill out of bounds and moving away plus change color 
   for (int i = 0; i < PartSys->usedParticles; i++)
   {
-    PartSys->particles[i].perpetual = true; //particles do not age
     if(PartSys->particles[i].outofbounds) //check if out of bounds particle move away from strip (i.e. vx < 0 && x > 0 or vx > 0 and x < 0)
     {  
       if((int32_t)PartSys->particles[i].vx * PartSys->particles[i].x > 0) PartSys->particles[i].ttl = 0; //particle is moving away, kill it
     }
+    PartSys->particles[i].perpetual = true; //particles do not age    
+    if (SEGMENT.call % (32 - (SEGMENT.custom2 >> 3)) == 0) 
+       PartSys->particles[i].hue += 2 + SEGMENT.custom2 >> 5;
   }
 
   PartSys->update(); // update and render
@@ -9972,7 +9967,7 @@ uint16_t mode_particleDancingShadows(void)
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS 1D Dancing Shadows@Speed,!,Position,Blur,Variation,Gravity,Cylinder/Square,Size;,!;!;12v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS 1D Dancing Shadows@Speed,!,Blur,Color Cycle,,,Overlay,Smooth;,!;!;12v;pal=0,sx=100,ix=180,c1=0,c2=0,o2=0,o3=0";
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
@@ -10119,7 +10114,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PHASEDNOISE, &mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
   addEffect(FX_MODE_FLOW, &mode_flow, _data_FX_MODE_FLOW);
   addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
- // addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
+  addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
 
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
