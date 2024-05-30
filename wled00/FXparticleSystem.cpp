@@ -341,15 +341,9 @@ void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings *options, P
 
     if (options->bounceY) 
     {
-      if ((newY < particleHardRadius) || (newY > maxY - particleHardRadius)) // reached floor / ceiling
-      {
-        if (newY < particleHardRadius) // bounce at bottom
-          bounce(part.vy, part.vx, newY, maxY);
-        else
-        {
-          if (!options->useGravity)
-            bounce(part.vy, part.vx, newY, maxY);
-        }
+      if ((newY < particleHardRadius) || ((newY > maxY - particleHardRadius) && !options->useGravity)) // reached floor / ceiling
+      {        
+         bounce(part.vy, part.vx, newY, maxY);        
       }
     }
     
@@ -1662,8 +1656,11 @@ void ParticleSystem1D::setMotionBlur(uint8_t bluramount)
 // render size using smearing (see blur function)
 void ParticleSystem1D::setParticleSize(uint8_t size)
 {
-  particleHardRadius = PS_P_RADIUS_1D; //TODO: need to set this properly for particle size
   particlesize = size;
+  if(particlesize)
+    particleHardRadius = PS_P_MINHARDRADIUS_1D + particlesize;  //TODO: set lower on 1pixel particles? or set in bounce? does not bounce at boarder but boarder +1
+  else
+    particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1; //1 pixel sized particles have half the radius (for collisions & bounce)
 }
 // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
@@ -1724,7 +1721,7 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
     // if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of view
     if (options->bounceX) 
     {
-      if ((newX < particleHardRadius) || (newX > maxX - particleHardRadius)) // reached a wall
+      if ((newX < particleHardRadius) || ((newX > maxX - particleHardRadius) && !options->useGravity)) // reached a wall
       {
           part.vx = -part.vx; //invert speed
           part.vx = ((int32_t)part.vx * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
@@ -1746,7 +1743,12 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
       {
           part.outofbounds = 1;
           if (options->killoutofbounds)
-            part.ttl = 0;
+          {
+            if (newX < 0) // if gravity is enabled, only kill particles below ground
+              part.ttl = 0;
+            else if (!options->useGravity)
+              part.ttl = 0;
+          }
       }
     }
     part.x = (int16_t)newX; // set new position
@@ -1964,15 +1966,15 @@ void ParticleSystem1D::handleCollisions()
   // detect and handle collisions
   uint32_t i, j;
   uint32_t startparticle = 0;
-  uint32_t endparticle = usedParticles >> 1; // do half the particles, significantly speeds things up
+  uint32_t endparticle = usedParticles;// >> 1; // do half the particles, significantly speeds things up
   // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame, less accurate but good enough)
   // if more accurate collisions are needed, just call it twice in a row
-  if (collisioncounter & 0x01) 
-  { 
-    startparticle = endparticle;
-    endparticle = usedParticles;
-  }  
-  collisioncounter++;
+  //if (collisioncounter & 0x01) 
+  //{ 
+   // startparticle = endparticle;
+   // endparticle = usedParticles;
+  //}  
+ // collisioncounter++;
 
   for (i = startparticle; i < endparticle; i++)
   {
@@ -1980,12 +1982,15 @@ void ParticleSystem1D::handleCollisions()
     if (particles[i].ttl > 0 && particles[i].outofbounds == 0  && particles[i].collide) // if particle is alive and does collide and is not out of view
     {
       int32_t dx; // distance to other particles
+      int32_t proximity;
       for (j = i + 1; j < usedParticles; j++) // check against higher number particles
       {                
         if (particles[j].ttl > 0) // if target particle is alive
         {
-          dx = particles[i].x - particles[j].x;    
-          if (dx < particleHardRadius && dx > -particleHardRadius) // check x direction, if close, check y direction
+          dx = particles[i].x - particles[j].x;  
+          int32_t  dv = (int32_t)particles[i].vx - (int32_t)particles[j].vx;
+          proximity = particleHardRadius + abs(dv); //add speed difference to catch fast particles
+          if (dx < proximity && dx > -proximity) // check if close
           {            
               collideParticles(&particles[i], &particles[j]);
           }
@@ -2192,8 +2197,6 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, 
   }
   //Serial.print("segment.data ptr");
   //Serial.println((uintptr_t)(SEGMENT.data));
-  uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   //Serial.println("calling constructor");
   PartSys = new (SEGMENT.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources); // particle system constructor
   //Serial.print("PS pointer at ");

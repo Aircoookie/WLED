@@ -9668,7 +9668,7 @@ uint16_t mode_particle1Dtest(void)
     return mode_static();
   ParticleSystem1D *PartSys = NULL;
   //uint8_t numSprays;
-  const uint8_t hardness = 200; // collision hardness is fixed
+  const uint8_t hardness = 150; // collision hardness is fixed
 
   if (SEGMENT.call == 0) // initialization 
   {
@@ -9677,8 +9677,6 @@ uint16_t mode_particle1Dtest(void)
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
     PartSys->sources[0].source.hue = random16();
     PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
-
-
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -9696,35 +9694,126 @@ uint16_t mode_particle1Dtest(void)
   PartSys->setWallHardness(hardness);
   PartSys->setGravity(8 * SEGMENT.check1); // enable gravity if checked (8 is default strength)
   //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
-    PartSys->sources[0].var = 0;//SEGMENT.speed/16;
-    PartSys->sources[0].v = -SEGMENT.speed/2;
- // if (SEGMENT.check3) // collisions enabled
-  //  PartSys->enableParticleCollisions(true, hardness); // enable collisions and set particle collision hardness
-  //else
-  //  PartSys->enableParticleCollisions(false);
-  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
- if (SEGMENT.check3) // collisions enabled
-   PartSys->setParticleSize(1);
+    PartSys->sources[0].var = SEGMENT.custom3;//SEGMENT.speed/16;
+    PartSys->sources[0].v = SEGMENT.speed/2;
+  if (SEGMENT.check3) // collisions enabled
+    PartSys->enableParticleCollisions(true, SEGMENT.custom1); // enable collisions and set particle collision hardness
   else
-  PartSys->setParticleSize(0);
+    PartSys->enableParticleCollisions(false);
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+ 
+ //if (SEGMENT.check3) // collisions enabled
+   PartSys->setParticleSize(1);
+ // else
+ // PartSys->setParticleSize(0);
 
-  //position according to sliders
-  PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);  
-  
+  //position according to slider
+  //PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);  
+
   // change source properties
-  if (SEGMENT.call % (64 - (SEGMENT.intensity / 4)) == 0) // every nth frame, cycle color and emit particles
+  if (SEGMENT.call % (256 - (SEGMENT.intensity)) == 0) // every nth frame, cycle color and emit particles
   {
-    PartSys->sources[0].maxLife = 300; // lifetime in frames
-    PartSys->sources[0].minLife = 100;
-    PartSys->sources[0].source.hue++; // = random16(); //change hue of spray source         
+    PartSys->sources[0].maxLife = 600; // lifetime in frames
+    PartSys->sources[0].minLife = 500;
+    PartSys->sources[0].source.hue = random16(); //change hue of spray source         
     PartSys->sprayEmit(PartSys->sources[0]);
   }
 
   PartSys->update(); // update and render
+  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
+  if(bg_color > 0) //if not black
+  {
+    for(uint32_t i = 0; i < PartSys->maxXpixel + 1; i++)
+    {    
+      SEGMENT.addPixelColor(i,bg_color); 
+    }
+  }
+  
+   
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLETEST[] PROGMEM = "PS 1D Testy@Speed,!,Position,Blur,Angle,Gravity,Cylinder/Square,Size;;!;12v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLETEST[] PROGMEM = "PS 1D Testy@Speed,!,Position,Blur,Variation,Gravity,Cylinder/Square,Size;,!;!;12v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
 
+
+/*
+Particle Spray, just a particle spray with many parameters
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particleBouncingBalls(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;
+  const uint8_t hardness = 150; // collision hardness is fixed
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 1)) // init, no additional data needed
+      return mode_static(); // allocation failed; //allocation failed   
+    PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
+    PartSys->sources[0].source.x = PS_P_RADIUS_1D;  //emit at bottom
+    PartSys->sources[0].maxLife = 700; // maximum lifetime in frames
+    PartSys->sources[0].minLife = PartSys->sources[0].maxLife;
+    PartSys->setBounce(true);
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  PartSys->setWallHardness(127 + (SEGMENT.custom1>>1));
+  PartSys->setGravity(1 + (SEGMENT.custom3>>1)); // set gravity (8 is default strength)
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+  if (SEGMENT.check2) PartSys->setMotionBlur(255); //full motion blurring allows overlay (motion blur does not work with overlay)
+  PartSys->sources[0].var = SEGMENT.speed >> 4;
+  PartSys->sources[0].v = SEGMENT.speed >> 1;// - SEGMENT.speed >> 4;
+  if (SEGMENT.check1) // collisions enabled
+    PartSys->enableParticleCollisions(true, 127 + (SEGMENT.custom1>>1)); // enable collisions and set particle collision hardness
+  else
+    PartSys->enableParticleCollisions(false);
+
+ if (SEGMENT.check3) 
+    PartSys->setParticleSize(1);
+  else
+    PartSys->setParticleSize(0);
+
+  //check for balls that are 'laying on the ground' and remove them
+  for(uint32_t i = 0; i < PartSys->usedParticles; i++)
+  {
+     if(PartSys->particles[i].vx == 0 && PartSys->particles[i].x < (PS_P_RADIUS_1D << 1))
+      PartSys->particles[i].ttl = 0;
+  }
+
+  // every nth frame emit a ball
+  if (SEGMENT.call % SEGMENT.aux0 == 0) 
+  {    
+    SEGMENT.aux0 = (300 - SEGMENT.intensity) + random(300 - SEGMENT.intensity);
+    PartSys->sources[0].source.hue = random16(); //set ball color       
+    PartSys->sprayEmit(PartSys->sources[0]);
+  }
+
+  PartSys->update(); // update and render
+  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
+  if(bg_color > 0) //if not black
+  {
+    for(uint32_t i = 0; i < PartSys->maxXpixel + 1; i++)
+    {    
+      SEGMENT.addPixelColor(i,bg_color); 
+    }
+  }
+  
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur,Gravity,Collide,Overlay,Size;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -9984,6 +10073,7 @@ void WS2812FX::setupEffectData() {
 #endif // WLED_DISABLE_PARTICLESYSTEM
 
 addEffect(FX_MODE_PARTICLETEST, &mode_particle1Dtest, _data_FX_MODE_PARTICLETEST);
+addEffect(FX_MODE_PSBOUNCINGBALLS, &mode_particleBouncingBalls, _data_FX_MODE_PSBOUNCINGBALLS);
 
 
 #endif // WLED_DISABLE_2D

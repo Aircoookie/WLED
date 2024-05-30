@@ -243,7 +243,7 @@ void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, 
 #define PS_P_HALFRADIUS_1D 32
 #define PS_P_RADIUS_SHIFT_1D 6 //TODO: may need to adjust
 #define PS_P_SURFACE_1D 6 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
-#define PS_P_MINHARDRADIUS_1D 70 // minimum hard surface radius TODO: also needs tweaking
+#define PS_P_MINHARDRADIUS_1D 64 // minimum hard surface radius TODO: also needs tweaking
 
 //struct for a single particle (6 bytes)
 typedef struct {
