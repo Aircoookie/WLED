@@ -334,7 +334,8 @@
 #define FX_MODE_PARTICLEBLOBS          201 
 #define FX_MODE_PARTICLETEST           202
 #define FX_MODE_PSBOUNCINGBALLS        203
-#define MODE_COUNT                     204
+#define FX_MODE_PSDANCINGSHADOWS       204
+#define MODE_COUNT                     205
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,

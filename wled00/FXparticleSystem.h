@@ -239,11 +239,11 @@ void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, 
 #define ESP32_MAXSOURCES_1D 32
 
 // particle dimensions (subpixel division)
-#define PS_P_RADIUS_1D 64 // subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
-#define PS_P_HALFRADIUS_1D 32
-#define PS_P_RADIUS_SHIFT_1D 6 //TODO: may need to adjust
-#define PS_P_SURFACE_1D 6 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
-#define PS_P_MINHARDRADIUS_1D 64 // minimum hard surface radius TODO: also needs tweaking
+#define PS_P_RADIUS_1D 32 // subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
+#define PS_P_HALFRADIUS_1D 16
+#define PS_P_RADIUS_SHIFT_1D 5 //TODO: may need to adjust
+#define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
+#define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius TODO: also needs tweaking
 
 //struct for a single particle (6 bytes)
 typedef struct {
@@ -278,7 +278,7 @@ public:
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
 
   // particle emitters
-  void sprayEmit(PSsource1D &emitter);  
+  int32_t sprayEmit(PSsource1D &emitter);  
   void particleMoveUpdate(PSparticle1D &part, PSsettings *options = NULL); // move function
   //particle physics
   void applyGravity(PSparticle1D *part); // applies gravity to single particle (use this for sources)  

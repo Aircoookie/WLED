@@ -1683,7 +1683,7 @@ void ParticleSystem1D::enableParticleCollisions(bool enable, uint8_t hardness) /
 }
 
 // emit one particle with variation, returns index of last emitted particle (or -1 if no particle emitted)
-void ParticleSystem1D::sprayEmit(PSsource1D &emitter)
+int32_t ParticleSystem1D::sprayEmit(PSsource1D &emitter)
 {
   for (int32_t i = 0; i < usedParticles; i++)
   {
@@ -1696,10 +1696,11 @@ void ParticleSystem1D::sprayEmit(PSsource1D &emitter)
       particles[emitIndex].x = emitter.source.x;         
       particles[emitIndex].hue = emitter.source.hue;        
       particles[emitIndex].collide = emitter.source.collide;
-      particles[emitIndex].ttl = random(emitter.minLife, emitter.maxLife);
-      break;
+      particles[emitIndex].ttl = random16(emitter.minLife, emitter.maxLife);
+      return emitIndex;
     }
-  }  
+  }
+  return -1;  
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
@@ -1888,7 +1889,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
 {
   if(particlesize == 0) //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
   {
-    uint32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT;
+    uint32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
     if(x <= maxXpixel) //by making x unsigned there is no need to check < 0 as it will overflow
     {    
       if (framebuffer)      
@@ -1901,9 +1902,9 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
     int32_t pxlbrightness[2] = {0}; // note: pxlbrightness needs to be set to 0 or checking does not work
     int32_t pixco[2]; // physical pixel coordinates of the two pixels representing a particle
     // subtract half a radius as the rendering algorithm always starts at the left, this makes calculations more efficient
-    int32_t xoffset = particles[particleindex].x - PS_P_HALFRADIUS;
-    int32_t dx = xoffset % PS_P_RADIUS; //relativ particle position in subpixel space
-    int32_t x = xoffset >> PS_P_RADIUS_SHIFT; // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
+    int32_t xoffset = particles[particleindex].x - PS_P_HALFRADIUS_1D;
+    int32_t dx = xoffset % PS_P_RADIUS_1D; //relativ particle position in subpixel space
+    int32_t x = xoffset >> PS_P_RADIUS_SHIFT_1D; // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
     
     // set the raw pixel coordinates
     pixco[0] = x;      // left pixel
@@ -1912,10 +1913,10 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
     // now check if any are out of frame. set values to -1 if they are so they can be easily checked after (no value calculation, no setting of pixelcolor if value < 0)  
     if (x < 0) // left pixels out of frame
     {
-      dx = PS_P_RADIUS + dx; // if x<0, xoffset becomes negative (and so does dx), must adjust dx as modulo will flip its value 
+      dx = PS_P_RADIUS_1D + dx; // if x<0, xoffset becomes negative (and so does dx), must adjust dx as modulo will flip its value 
       // note: due to inverted shift math, a particel at position -32 (xoffset = -64, dx = 64) is rendered at the wrong pixel position (it should be out of frame)
       // checking this above makes this algorithm slower (in frame pixels do not have to be checked), so just correct for it here:
-      if (dx == PS_P_RADIUS)
+      if (dx == PS_P_RADIUS_1D)
       {
         pxlbrightness[1] = -1; // pixel is actually out of matrix boundaries, do not render
       }
@@ -1936,7 +1937,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
 
     //calculate the values for pixels that are in frame
     if (pxlbrightness[0] >= 0)
-      pxlbrightness[0] = (((int32_t)PS_P_RADIUS - dx) * brightness) >> PS_P_SURFACE_1D; 
+      pxlbrightness[0] = (((int32_t)PS_P_RADIUS_1D - dx) * brightness) >> PS_P_SURFACE_1D; 
     if (pxlbrightness[1] >= 0)
       pxlbrightness[1] = (dx * brightness) >> PS_P_SURFACE_1D; 
   

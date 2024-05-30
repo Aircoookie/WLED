@@ -2954,17 +2954,18 @@ uint16_t mode_spots_fade()
 }
 static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width,,,,,Overlay;!,!;!";
 
-
+/*
 //each needs 12 bytes
 typedef struct Ball {
   unsigned long lastBounceTime;
   float impactVelocity;
   float height;
 } ball;
-
+*/
 /*
 *  Bouncing Balls Effect
 */
+/*
 uint16_t mode_bouncing_balls(void) {
   if (SEGLEN == 1) return mode_static();
   //allocate segment data
@@ -3037,13 +3038,14 @@ uint16_t mode_bouncing_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls,,,,,Overlay;!,!,!;!;1;m12=1"; //bar
-
+*/
 
 /*
  *  bouncing balls on a track track Effect modified from Aircoookie's bouncing balls
  *  Courtesy of pjhatch (https://github.com/pjhatch)
  *  https://github.com/Aircoookie/WLED/pull/1039
  */
+ /*
 // modified for balltrack mode
 typedef struct RollingBall {
   unsigned long lastBounceUpdate;
@@ -3138,7 +3140,7 @@ static uint16_t rolling_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
-
+*/
 
 /*
 * Sinelon stolen from FASTLED examples
@@ -3248,6 +3250,7 @@ typedef struct Spark {
 *  POPCORN
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
+/*
 uint16_t mode_popcorn(void) {
   if (SEGLEN == 1) return mode_static();
   //allocate segment data
@@ -3306,7 +3309,7 @@ uint16_t mode_popcorn(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,Overlay;!,!,!;!;;m12=1"; //bar
-
+*/
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
 //Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
@@ -4316,7 +4319,7 @@ uint16_t mode_chunchun(void)
 }
 static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!,!;!";
 
-
+/*
 //13 bytes
 typedef struct Spotlight {
   float speed;
@@ -4326,7 +4329,7 @@ typedef struct Spotlight {
   uint8_t width;
   uint8_t type;
 } spotlight;
-
+*/
 #define SPOT_TYPE_SOLID       0
 #define SPOT_TYPE_GRADIENT    1
 #define SPOT_TYPE_2X_GRADIENT 2
@@ -4347,6 +4350,7 @@ typedef struct Spotlight {
  *
  * By Steve Pomeroy @xxv
  */
+ /*
 uint16_t mode_dancing_shadows(void)
 {
   if (SEGLEN == 1) return mode_static();
@@ -4463,7 +4467,7 @@ uint16_t mode_dancing_shadows(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!;!";
-
+*/
 
 /*
   Imitates a washing machine, rotating same waves forward, then pause, then backward.
@@ -9755,9 +9759,11 @@ uint16_t mode_particleBouncingBalls(void)
       return mode_static(); // allocation failed; //allocation failed   
     PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
     PartSys->sources[0].source.x = PS_P_RADIUS_1D;  //emit at bottom
-    PartSys->sources[0].maxLife = 700; // maximum lifetime in frames
+    PartSys->sources[0].maxLife = 900; // maximum lifetime in frames
     PartSys->sources[0].minLife = PartSys->sources[0].maxLife;
     PartSys->setBounce(true);
+    SEGMENT.aux0 = 1;
+    SEGMENT.aux1 = 500; //set out of speed range to ensure uptate on first call
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -9774,31 +9780,57 @@ uint16_t mode_particleBouncingBalls(void)
   PartSys->setGravity(1 + (SEGMENT.custom3>>1)); // set gravity (8 is default strength)
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   if (SEGMENT.check2) PartSys->setMotionBlur(255); //full motion blurring allows overlay (motion blur does not work with overlay)
-  PartSys->sources[0].var = SEGMENT.speed >> 4;
-  PartSys->sources[0].v = SEGMENT.speed >> 1;// - SEGMENT.speed >> 4;
+  PartSys->sources[0].var = SEGMENT.speed >> 3;
+  PartSys->sources[0].v = (SEGMENT.speed >> 1) - (SEGMENT.speed >> 3);
   if (SEGMENT.check1) // collisions enabled
     PartSys->enableParticleCollisions(true, 127 + (SEGMENT.custom1>>1)); // enable collisions and set particle collision hardness
   else
     PartSys->enableParticleCollisions(false);
+  PartSys->setUsedParticles( 1 + (SEGMENT.intensity >> 3)); // 1 - 32
 
- if (SEGMENT.check3) 
-    PartSys->setParticleSize(1);
-  else
-    PartSys->setParticleSize(0);
+// if (SEGMENT.check3) 
+   // PartSys->setParticleSize(1); //2-pixel size (smoother for slow speeds)
+  //else
+  PartSys->setParticleSize(0); //single pixel size (classic look)
 
-  //check for balls that are 'laying on the ground' and remove them
-  for(uint32_t i = 0; i < PartSys->usedParticles; i++)
+  if(SEGMENT.check3) //rolling balls
   {
-     if(PartSys->particles[i].vx == 0 && PartSys->particles[i].x < (PS_P_RADIUS_1D << 1))
-      PartSys->particles[i].ttl = 0;
+    PartSys->setGravity(0);
+    bool updatespeed = false;
+    if(SEGMENT.aux1 != SEGMENT.speed)
+    {
+      SEGMENT.aux1 = SEGMENT.speed;
+      updatespeed = true;
+    }
+    
+    for(uint32_t i = 0; i < PartSys->usedParticles; i++)
+    {
+      if(PartSys->particles[i].vx > 5 || PartSys->particles[i].vx < -5) //let only slow particles die (ensures no stopped particles)
+        PartSys->particles[i].ttl = 300; //set alive at full intensity
+      if(updatespeed || PartSys->particles[i].ttl == 0) //speed changed or particle died, reset TTL and speed
+      {        
+        PartSys->particles[i].ttl = 300;
+        PartSys->particles[i].vx = random(20 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
+        PartSys->particles[i].hue = random16(); //set ball colors to random       
+      }
+    }
   }
+  else //bouncing balls / popcorn
+  {
+    //check for balls that are 'laying on the ground' and remove them
+    for(uint32_t i = 0; i < PartSys->usedParticles; i++)
+    {
+      if(PartSys->particles[i].vx == 0 && PartSys->particles[i].x < (PS_P_RADIUS_1D << 1))
+        PartSys->particles[i].ttl = 0;
+    }
 
-  // every nth frame emit a ball
-  if (SEGMENT.call % SEGMENT.aux0 == 0) 
-  {    
-    SEGMENT.aux0 = (300 - SEGMENT.intensity) + random(300 - SEGMENT.intensity);
-    PartSys->sources[0].source.hue = random16(); //set ball color       
-    PartSys->sprayEmit(PartSys->sources[0]);
+    // every nth frame emit a ball
+    if (SEGMENT.call % SEGMENT.aux0 == 0) 
+    {    
+      SEGMENT.aux0 = (260 - SEGMENT.intensity) + random(280 - SEGMENT.intensity);
+      PartSys->sources[0].source.hue = random16(); //set ball color       
+      PartSys->sprayEmit(PartSys->sources[0]);
+    }
   }
 
   PartSys->update(); // update and render
@@ -9813,8 +9845,134 @@ uint16_t mode_particleBouncingBalls(void)
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur,Gravity,Collide,Overlay,Size;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur,Gravity,Collide,Overlay,Rolling;,!;!;1;pal=0,sx=100,c1=240,c2=0,c3=8,o1=0,o2=0,o3=1";
 
+uint16_t mode_particleDancingShadows(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;
+  //uint8_t numSprays;
+  const uint8_t hardness = 150; // collision hardness is fixed
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 1)) // init, one source
+      return mode_static(); // allocation failed; //allocation failed
+    //PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
+      PartSys->sources[0].maxLife = 1000; //set long life
+      PartSys->sources[0].minLife = PartSys->sources[0].maxLife;
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  //  PartSys->setBounce(!SEGMENT.check2);
+  // PartSys->setWrap(SEGMENT.check2);
+  // PartSys->setWallHardness(hardness);
+  // PartSys->setGravity(8 * SEGMENT.check1); // enable gravity if checked (8 is default strength)
+  //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
+  //  PartSys->sources[0].var = SEGMENT.custom3;//SEGMENT.speed/16;
+  //  PartSys->sources[0].v = SEGMENT.speed/2;
+
+  //PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+ 
+  //if (SEGMENT.check3) // collisions enabled
+  //  PartSys->setParticleSize(1);
+  // else
+   PartSys->setParticleSize(0);
+
+  //position according to slider
+  //PartSys->sources[0].source.x = map(SEGMENT.custom1, 0, 255, 0, PartSys->maxX);  
+  
+  //TODO: overlay with blur=255
+  //TODO: set used particles?
+  
+  //generate a spotlight: generates particles just outside of view
+  if (SEGMENT.call % (256 - (SEGMENT.intensity)) == 0) 
+  {
+    //random color, random type
+    uint32_t type = random8(SPOT_TYPES_COUNT);
+    int8_t speed = random(20 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
+    uint32_t width = random8(1, 10);
+    uint32_t ttl = 300; //ttl is particle brightness (if perpetual is set, it does not age, i.e. ttl stays at this value)
+    int32_t position;
+    //choose random start position, left and right from the segment
+    if (random8(2)) {
+      position = PartSys->maxXpixel;
+      speed = -speed;
+    }else {
+      position = -width;
+    }
+    PartSys->sources[0].v = speed; //emitted particle speed
+    PartSys->sources[0].source.hue = random8(); //random spotlight color
+    for (int i = 0; i < width; i++)
+    {      
+      switch (type) {
+        case SPOT_TYPE_SOLID:
+          //nothing to do 
+        break;
+
+        case SPOT_TYPE_GRADIENT:
+          ttl = cubicwave8(map(i, 0, width - 1, 0, 255));          
+        break;
+
+        case SPOT_TYPE_2X_GRADIENT:
+          ttl = cubicwave8(2 * map(i, 0, width - 1, 0, 255));    
+        break;
+
+        case SPOT_TYPE_2X_DOT:
+          if(i > 0) position++; //skip one pixel
+          i++;
+        break;
+
+        case SPOT_TYPE_3X_DOT:
+          if(i > 0) position += 2; //skip two pixels
+          i+=2;
+        break;
+
+        case SPOT_TYPE_4X_DOT:
+          if(i > 0) position += 3; //skip three pixels
+          i+=3;
+        break;
+      }
+      //emit particle 
+      //set the particle source position:
+      PartSys->sources[0].source.x = position * PS_P_RADIUS_1D;
+      PartSys->sprayEmit(PartSys->sources[0]);
+      position++; //do the next pixel
+    }
+  }
+
+  for (int i = 0; i < PartSys->usedParticles; i++)
+  {
+    PartSys->particles[i].perpetual = true; //particles do not age
+    if(PartSys->particles[i].outofbounds) //check if out of bounds particle move away from strip (i.e. vx < 0 && x > 0 or vx > 0 and x < 0)
+    {  
+      if((int32_t)PartSys->particles[i].vx * PartSys->particles[i].x > 0) PartSys->particles[i].ttl = 0; //particle is moving away, kill it
+    }
+  }
+
+  PartSys->update(); // update and render
+  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
+  if(bg_color > 0) //if not black
+  {
+    for(uint32_t i = 0; i < PartSys->maxXpixel + 1; i++)
+    {    
+      SEGMENT.addPixelColor(i,bg_color); 
+    }
+  }
+  
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS 1D Dancing Shadows@Speed,!,Position,Blur,Variation,Gravity,Cylinder/Square,Size;,!;!;12v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
@@ -9896,7 +10054,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_FIRE_FLICKER, &mode_fire_flicker, _data_FX_MODE_FIRE_FLICKER);
   addEffect(FX_MODE_GRADIENT, &mode_gradient, _data_FX_MODE_GRADIENT);
   addEffect(FX_MODE_LOADING, &mode_loading, _data_FX_MODE_LOADING);
-  addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
+//  addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
 
   addEffect(FX_MODE_FAIRY, &mode_fairy, _data_FX_MODE_FAIRY);
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
@@ -9940,11 +10098,11 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_CANDLE, &mode_candle, _data_FX_MODE_CANDLE);
   addEffect(FX_MODE_STARBURST, &mode_starburst, _data_FX_MODE_STARBURST);
   addEffect(FX_MODE_EXPLODING_FIREWORKS, &mode_exploding_fireworks, _data_FX_MODE_EXPLODING_FIREWORKS);
-  addEffect(FX_MODE_BOUNCINGBALLS, &mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
+ // addEffect(FX_MODE_BOUNCINGBALLS, &mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
   addEffect(FX_MODE_SINELON, &mode_sinelon, _data_FX_MODE_SINELON);
   addEffect(FX_MODE_SINELON_DUAL, &mode_sinelon_dual, _data_FX_MODE_SINELON_DUAL);
   addEffect(FX_MODE_SINELON_RAINBOW, &mode_sinelon_rainbow, _data_FX_MODE_SINELON_RAINBOW);
-  addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
+  //addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
   addEffect(FX_MODE_DRIP, &mode_drip, _data_FX_MODE_DRIP);
   addEffect(FX_MODE_PLASMA, &mode_plasma, _data_FX_MODE_PLASMA);
   addEffect(FX_MODE_PERCENT, &mode_percent, _data_FX_MODE_PERCENT);
@@ -9961,7 +10119,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PHASEDNOISE, &mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
   addEffect(FX_MODE_FLOW, &mode_flow, _data_FX_MODE_FLOW);
   addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
-  addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
+ // addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
 
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
@@ -10073,7 +10231,8 @@ void WS2812FX::setupEffectData() {
 #endif // WLED_DISABLE_PARTICLESYSTEM
 
 addEffect(FX_MODE_PARTICLETEST, &mode_particle1Dtest, _data_FX_MODE_PARTICLETEST);
-addEffect(FX_MODE_PSBOUNCINGBALLS, &mode_particleBouncingBalls, _data_FX_MODE_PSBOUNCINGBALLS);
+addEffect(FX_MODE_PSBOUNCINGBALLS, &mode_particleBouncingBalls, _data_FX_MODE_PSBOUNCINGBALLS); //potential replacement for: bouncing balls, rollingballs, popcorn
+addEffect(FX_MODE_PSDANCINGSHADOWS, &mode_particleDancingShadows, _data_FX_MODE_PARTICLEDANCINGSHADOWS);
 
 
 #endif // WLED_DISABLE_2D
