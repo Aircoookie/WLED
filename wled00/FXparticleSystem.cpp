@@ -36,12 +36,14 @@
   -add an x/y struct, do particle rendering using that, much easier to read
 */
 
-#ifndef WLED_DISABLE_PARTICLESYSTEM
+
 
 #include "FXparticleSystem.h"
 #include "wled.h"
 #include "FastLED.h"
 #include "FX.h"
+
+#ifndef WLED_DISABLE_PARTICLESYSTEM2D
 
 ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced, bool sizecontrol)
 {
@@ -1248,38 +1250,6 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
   }
 }
 
-// calculate the delta speed (dV) value and update the counter for force calculation (is used several times, function saves on codesize)
-// force is in 3.4 fixedpoint notation, +/-127
-int32_t ParticleSystem::calcForce_dv(int8_t force, uint8_t* counter)
-{
-  if (force == 0) 
-    return 0;
-  // for small forces, need to use a delay counter
-  int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)
-  int32_t dv;
-  // for small forces, need to use a delay counter, apply force only if it overflows
-  if (force_abs < 16)
-  {
-    *counter += force_abs;
-    if (*counter > 15)
-    {
-      *counter -= 16;
-      dv = force < 0 ? -1 : 1; // force is either, 1 or -1 if it is small (zero force is handled above)
-    }
-  }
-  else
-  {
-    dv = force >> 4; // MSBs
-  }
-  return dv;
-}
-
-// limit speed to prevent overflows
-int32_t ParticleSystem::limitSpeed(int32_t speed)
-{
-  return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed);
-}
-
 // allocate memory for the 2D array in one contiguous block and set values to zero
 CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 {  
@@ -1344,6 +1314,67 @@ void ParticleSystem::updatePSpointers(bool isadvanced, bool sizecontrol)
   DEBUG_PRINTF_P(PSTR("end %p\n"), PSdataEnd);
   */
 }
+
+// blur a matrix in x and y direction, blur can be asymmetric in x and y
+// for speed, 32bit variables are used, make sure to limit them to 8bit (0-255) or result is undefined 
+// to blur a subset of the buffer, change the xsize/ysize and set xstart/ystart to the desired starting coordinates (default start is 0/0)
+void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear, uint32_t xstart, uint32_t ystart, bool isparticle)
+{
+  CRGB seeppart, carryover;
+  uint32_t seep = xblur >> 1;  
+  if (isparticle) //first and last row are always black in particle rendering
+  {
+    ystart++;
+    ysize--;
+  }
+  for(uint32_t y = ystart; y < ystart + ysize; y++)
+  {
+    carryover =  BLACK;
+    for(uint32_t x = xstart; x < xstart + xsize; x++)
+    {
+      seeppart = colorbuffer[x][y]; // create copy of current color
+      fast_color_scale(seeppart, seep); // scale it and seep to neighbours
+      if (!smear) // fade current pixel if smear is disabled
+        fast_color_scale(colorbuffer[x][y], 255 - xblur); 
+
+      if (x > 0)
+      {
+        fast_color_add(colorbuffer[x-1][y], seeppart);
+        fast_color_add(colorbuffer[x][y], carryover); // TODO: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
+      }
+      carryover = seeppart;
+    }
+    fast_color_add(colorbuffer[xsize-1][y], carryover); // set last pixel
+  }
+
+  if (isparticle) // now also do first and last row
+  {
+    ystart--;
+    ysize++;
+  }
+
+  seep = yblur >> 1;
+  for(uint32_t x = xstart; x < xstart + xsize; x++)
+  {
+    carryover = BLACK;
+    for(uint32_t y = ystart; y < ystart + ysize; y++)
+    {
+      seeppart = colorbuffer[x][y]; // create copy of current color
+      fast_color_scale(seeppart, seep); // scale it and seep to neighbours
+      if (!smear) // fade current pixel if smear is disabled
+        fast_color_scale(colorbuffer[x][y], 255 - yblur); 
+
+      if (y > 0)
+      {
+        fast_color_add(colorbuffer[x][y-1], seeppart);
+        fast_color_add(colorbuffer[x][y], carryover); // todo: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
+      }
+      carryover = seeppart;
+    }
+    fast_color_add(colorbuffer[x][ysize-1], carryover); // set last pixel
+  }
+}
+
 
 //non class functions to use for initialization
 uint32_t calculateNumberOfParticles(bool isadvanced, bool sizecontrol)
@@ -1434,121 +1465,13 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint
   return true;
 }
 
-///////////////////////
-// Utility Functions //
-///////////////////////
-
-// fastled color adding is very inaccurate in color preservation
-// a better color add function is implemented in colors.cpp but it uses 32bit RGBW. to use it colors need to be shifted just to then be shifted back by that function, which is slow
-// this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color (fastled scale8 can be made faster using native 32bit on ESP)
-// note: result is stored in c1, so c1 will contain the result. not using a return value is much faster as the struct does not need to be copied upon return
-void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale)
-{
-  uint32_t r, g, b;
-  if (scale < 255) {
-    r = c1.r + ((c2.r * scale) >> 8);
-    g = c1.g + ((c2.g * scale) >> 8);
-    b = c1.b + ((c2.b * scale) >> 8);
-  }
-  else {
-    r = c1.r + c2.r;
-    g = c1.g + c2.g;
-    b = c1.b + c2.b;
-  }
-  uint32_t max = r;
-  if (g > max) // note: using ? operator would be slower by 2 instructions
-    max = g;
-  if (b > max)
-    max = b;
-  if (max < 256)
-  {
-    c1.r = r; // save result to c1
-    c1.g = g;
-    c1.b = b;
-  }
-  else
-  {
-    c1.r = (r * 255) / max;
-    c1.g = (g * 255) / max;
-    c1.b = (b * 255) / max;
-  }
-}
-
-// faster than fastled color scaling as it uses a 32bit scale factor and pointer
-void fast_color_scale(CRGB &c, uint32_t scale)
-{
-  c.r = ((c.r * scale) >> 8);
-  c.g = ((c.g * scale) >> 8);
-  c.b = ((c.b * scale) >> 8);
-}
-
-// blur a matrix in x and y direction, blur can be asymmetric in x and y
-// for speed, 32bit variables are used, make sure to limit them to 8bit (0-255) or result is undefined 
-// to blur a subset of the buffer, change the xsize/ysize and set xstart/ystart to the desired starting coordinates (default start is 0/0)
-void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear, uint32_t xstart, uint32_t ystart, bool isparticle)
-{
-  CRGB seeppart, carryover;
-  uint32_t seep = xblur >> 1;  
-  if (isparticle) //first and last row are always black in particle rendering
-  {
-    ystart++;
-    ysize--;
-  }
-  for(uint32_t y = ystart; y < ystart + ysize; y++)
-  {
-    carryover =  BLACK;
-    for(uint32_t x = xstart; x < xstart + xsize; x++)
-    {
-      seeppart = colorbuffer[x][y]; // create copy of current color
-      fast_color_scale(seeppart, seep); // scale it and seep to neighbours
-      if (!smear) // fade current pixel if smear is disabled
-        fast_color_scale(colorbuffer[x][y], 255 - xblur); 
-
-      if (x > 0)
-      {
-        fast_color_add(colorbuffer[x-1][y], seeppart);
-        fast_color_add(colorbuffer[x][y], carryover); // TODO: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
-      }
-      carryover = seeppart;
-    }
-    fast_color_add(colorbuffer[xsize-1][y], carryover); // set last pixel
-  }
-
-  if (isparticle) // now also do first and last row
-  {
-    ystart--;
-    ysize++;
-  }
-
-  seep = yblur >> 1;
-  for(uint32_t x = xstart; x < xstart + xsize; x++)
-  {
-    carryover = BLACK;
-    for(uint32_t y = ystart; y < ystart + ysize; y++)
-    {
-      seeppart = colorbuffer[x][y]; // create copy of current color
-      fast_color_scale(seeppart, seep); // scale it and seep to neighbours
-      if (!smear) // fade current pixel if smear is disabled
-        fast_color_scale(colorbuffer[x][y], 255 - yblur); 
-
-      if (y > 0)
-      {
-        fast_color_add(colorbuffer[x][y-1], seeppart);
-        fast_color_add(colorbuffer[x][y], carryover); // todo: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
-      }
-      carryover = seeppart;
-    }
-    fast_color_add(colorbuffer[x][ysize-1], carryover); // set last pixel
-  }
-}
-
-#endif // WLED_DISABLE_PARTICLESYSTEM
+#endif // WLED_DISABLE_PARTICLESYSTEM2D
 
 
 ////////////////////////
 // 1D Particle System //
 ////////////////////////
-
+#ifndef WLED_DISABLE_PARTICLESYSTEM1D
 
 ParticleSystem1D::ParticleSystem1D(uint16_t length, uint16_t numberofparticles, uint16_t numberofsources) 
 {
@@ -1577,7 +1500,7 @@ ParticleSystem1D::ParticleSystem1D(uint16_t length, uint16_t numberofparticles, 
 // update function applies gravity, moves the particles, handles collisions and renders the particles
 void ParticleSystem1D::update(void)
 {
-  PSadvancedParticle *advprop = NULL; 
+  //PSadvancedParticle *advprop = NULL; 
   //apply gravity globally if enabled
   if (particlesettings.useGravity)
     applyGravity();
@@ -2060,39 +1983,6 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
   }
 }
 
-
-// calculate the delta speed (dV) value and update the counter for force calculation (is used several times, function saves on codesize)
-// force is in 3.4 fixedpoint notation, +/-127
-int32_t ParticleSystem1D::calcForce_dv(int8_t force, uint8_t* counter)
-{
-  if (force == 0) 
-    return 0;
-  // for small forces, need to use a delay counter
-  int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)
-  int32_t dv;
-  // for small forces, need to use a delay counter, apply force only if it overflows
-  if (force_abs < 16)
-  {
-    *counter += force_abs;
-    if (*counter > 15)
-    {
-      *counter -= 16;
-      dv = force < 0 ? -1 : 1; // force is either, 1 or -1 if it is small (zero force is handled above)
-    }
-  }
-  else
-  {
-    dv = force >> 4; // MSBs
-  }
-  return dv;
-}
-
-// limit speed to prevent overflows
-int32_t ParticleSystem1D::limitSpeed(int32_t speed)
-{
-  return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed);
-}
-
 // allocate memory for the 2D array in one contiguous block and set values to zero
 CRGB *ParticleSystem1D::allocate1Dbuffer(uint32_t length)
 {  
@@ -2172,8 +2062,8 @@ bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, 
 {
   uint32_t requiredmemory = sizeof(ParticleSystem1D);
   // functions above make sure these are a multiple of 4 bytes (to avoid alignment issues)
-  requiredmemory += sizeof(PSparticle) * numparticles;
-  requiredmemory += sizeof(PSsource) * numsources;
+  requiredmemory += sizeof(PSparticle1D) * numparticles;
+  requiredmemory += sizeof(PSsource1D) * numsources;
   requiredmemory += additionalbytes;
   //Serial.print("allocating: ");
   //Serial.print(requiredmemory);
@@ -2205,3 +2095,89 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, 
   return true;
 }
 
+#endif // WLED_DISABLE_PARTICLESYSTEM1D
+
+
+#if  !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)  
+
+//////////////////////////////
+// Shared Utility Functions //
+//////////////////////////////
+
+// calculate the delta speed (dV) value and update the counter for force calculation (is used several times, function saves on codesize)
+// force is in 3.4 fixedpoint notation, +/-127
+int32_t calcForce_dv(int8_t force, uint8_t* counter)
+{
+  if (force == 0) 
+    return 0;
+  // for small forces, need to use a delay counter
+  int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)
+  int32_t dv;
+  // for small forces, need to use a delay counter, apply force only if it overflows
+  if (force_abs < 16)
+  {
+    *counter += force_abs;
+    if (*counter > 15)
+    {
+      *counter -= 16;
+      dv = force < 0 ? -1 : 1; // force is either, 1 or -1 if it is small (zero force is handled above)
+    }
+  }
+  else
+  {
+    dv = force >> 4; // MSBs
+  }
+  return dv;
+}
+
+// limit speed to prevent overflows
+int32_t limitSpeed(int32_t speed)
+{
+  return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed);
+}
+
+// fastled color adding is very inaccurate in color preservation
+// a better color add function is implemented in colors.cpp but it uses 32bit RGBW. to use it colors need to be shifted just to then be shifted back by that function, which is slow
+// this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color (fastled scale8 can be made faster using native 32bit on ESP)
+// note: result is stored in c1, so c1 will contain the result. not using a return value is much faster as the struct does not need to be copied upon return
+void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale)
+{
+  uint32_t r, g, b;
+  if (scale < 255) {
+    r = c1.r + ((c2.r * scale) >> 8);
+    g = c1.g + ((c2.g * scale) >> 8);
+    b = c1.b + ((c2.b * scale) >> 8);
+  }
+  else {
+    r = c1.r + c2.r;
+    g = c1.g + c2.g;
+    b = c1.b + c2.b;
+  }
+  uint32_t max = r;
+  if (g > max) // note: using ? operator would be slower by 2 instructions
+    max = g;
+  if (b > max)
+    max = b;
+  if (max < 256)
+  {
+    c1.r = r; // save result to c1
+    c1.g = g;
+    c1.b = b;
+  }
+  else
+  {
+    c1.r = (r * 255) / max;
+    c1.g = (g * 255) / max;
+    c1.b = (b * 255) / max;
+  }
+}
+
+// faster than fastled color scaling as it uses a 32bit scale factor and pointer
+void fast_color_scale(CRGB &c, uint32_t scale)
+{
+  c.r = ((c.r * scale) >> 8);
+  c.g = ((c.g * scale) >> 8);
+  c.b = ((c.b * scale) >> 8);
+}
+
+#endif

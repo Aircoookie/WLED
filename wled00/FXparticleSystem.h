@@ -24,11 +24,40 @@
   THE SOFTWARE.
 */
 
-#ifndef WLED_DISABLE_PARTICLESYSTEM
+
 
 #include <stdint.h>
 #include "FastLED.h"
 
+#define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
+#define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
+
+#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)  
+//shared functions (used both in 1D and 2D system)
+int32_t calcForce_dv(int8_t force, uint8_t *counter); //TODO: same as 2D function, could share
+int32_t limitSpeed(int32_t speed);  //TODO: same as 2D function, could share
+void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
+void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
+
+// struct for PS settings (shared for 1D and 2D class)
+typedef union
+{
+  struct{
+  // one byte bit field:
+  bool wrapX : 1; 
+  bool wrapY : 1;
+  bool bounceX : 1;
+  bool bounceY : 1;
+  bool killoutofbounds : 1; // if set, out of bound particles are killed immediately
+  bool useGravity : 1; // set to 1 if gravity is used, disables bounceY at the top
+  bool useCollisions : 1;
+  bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
+  };
+  byte asByte; // order is: LSB is first entry in the list above
+} PSsettings;
+#endif
+
+#ifndef WLED_DISABLE_PARTICLESYSTEM2D
 // memory allocation
 #define ESP8266_MAXPARTICLES 180 // enough for one 16x16 segment with transitions
 #define ESP8266_MAXSOURCES 16
@@ -43,8 +72,6 @@
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_MINHARDRADIUS 70 // minimum hard surface radius
-#define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
-#define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 
 //struct for a single particle (10 bytes)
 typedef struct {
@@ -98,23 +125,6 @@ typedef struct {
   int8_t vy; 
   uint8_t size; // particle size (advanced property)
 } PSsource; 
-
-// struct for PS settings
-typedef union
-{
-  struct{
-  // one byte bit field:
-  bool wrapX : 1; 
-  bool wrapY : 1;
-  bool bounceX : 1;
-  bool bounceY : 1;
-  bool killoutofbounds : 1; // if set, out of bound particles are killed immediately
-  bool useGravity : 1; // set to 1 if gravity is used, disables bounceY at the top
-  bool useCollisions : 1;
-  bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
-  };
-  byte asByte; // order is: LSB is first entry in the list above
-} PSsettings;
 
 // class uses approximately 60 bytes
 class ParticleSystem
@@ -192,8 +202,6 @@ private:
   void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
   void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); // bounce on a wall
   int16_t wraparound(uint16_t p, uint32_t maxvalue);
-  int32_t calcForce_dv(int8_t force, uint8_t *counter);
-  int32_t limitSpeed(int32_t speed);
   CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
 
   // note: variables that are accessed often are 32bit for speed
@@ -212,24 +220,19 @@ private:
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
 
+void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
 // initialization functions (not part of class)
 bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0, bool largesizes = false, bool sizecontrol = false);
 uint32_t calculateNumberOfParticles(bool advanced, bool sizecontrol);
 uint32_t calculateNumberOfSources(uint8_t requestedsources);
 bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool advanced, bool sizecontrol, uint16_t additionalbytes);
 
-#endif // WLED_DISABLE_PARTICLESYSTEM
-
-// color functions
-void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
-void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
-void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
-
+#endif // WLED_DISABLE_PARTICLESYSTEM2D
 
 ////////////////////////
 // 1D Particle System //
 ////////////////////////
-
+#ifndef WLED_DISABLE_PARTICLESYSTEM1D
 // memory allocation
 #define ESP8266_MAXPARTICLES_1D 400 
 #define ESP8266_MAXSOURCES_1D 8
@@ -325,9 +328,7 @@ private:
   //void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
   //void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
   void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); // bounce on a wall
-  CRGB *allocate1Dbuffer(uint32_t length);
-  int32_t calcForce_dv(int8_t force, uint8_t *counter); //TODO: same as 2D function, could share
-  int32_t limitSpeed(int32_t speed);  //TODO: same as 2D function, could share
+  CRGB *allocate1Dbuffer(uint32_t length);  
   // note: variables that are accessed often are 32bit for speed
   PSsettings particlesettings; // settings used when updating particles 
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
@@ -336,7 +337,7 @@ private:
   uint8_t gforcecounter; // counter for global gravity
   int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)  
   uint8_t forcecounter; // counter for globally applied forces
-  uint8_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call?
+  //uint8_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call? -> currently unused
   // global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, larger sizez TBD (TODO: need larger sizes?)
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
@@ -348,3 +349,4 @@ uint32_t calculateNumberOfParticles1D(void);
 uint32_t calculateNumberOfSources1D(uint8_t requestedsources);
 bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
 
+#endif // WLED_DISABLE_PARTICLESYSTEM1D
