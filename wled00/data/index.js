@@ -1951,6 +1951,18 @@ function readState(s,command=false)
 	if (s.error && s.error != 0) {
 	  var errstr = "";
 	  switch (s.error) {
+		case  1:
+			errstr = "Denied!";
+			break;
+		case  3:
+			errstr = "Buffer locked!";
+			break;
+		case  8:
+			errstr = "Effect RAM depleted!";
+			break;
+		case  9:
+			errstr = "JSON parsing error!";
+			break;
 		case 10:
 		  errstr = "Could not mount filesystem!";
 		  break;
