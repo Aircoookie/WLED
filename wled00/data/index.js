@@ -1975,6 +1975,9 @@ function readState(s,command=false)
 		case 13:
 		  errstr = "Missing ir.json.";
 		  break;
+		case 14:
+		  errstr = "Missing remote.json.";
+		  break;
 		case 19:
 		  errstr = "A filesystem error has occured.";
 		  break;
