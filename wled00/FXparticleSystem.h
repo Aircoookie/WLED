@@ -24,7 +24,7 @@
   THE SOFTWARE.
 */
 
-
+#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)  
 
 #include <stdint.h>
 #include "FastLED.h"
@@ -32,7 +32,7 @@
 #define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 
-#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)  
+
 //shared functions (used both in 1D and 2D system)
 int32_t calcForce_dv(int8_t force, uint8_t *counter); //TODO: same as 2D function, could share
 int32_t limitSpeed(int32_t speed);  //TODO: same as 2D function, could share

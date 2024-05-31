@@ -29,7 +29,10 @@
 #include "wled.h"
 #include "FX.h"
 #include "fcn_declare.h"
+
+#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)  
 #include "FXparticleSystem.h"
+#endif
 
 #define IBN 5100
 
@@ -1254,7 +1257,7 @@ uint16_t mode_fireworks() {
 }
 static const char _data_FX_MODE_FIREWORKS[] PROGMEM = "Fireworks@,Frequency;!,!;!;12;ix=192,pal=11";
 
-
+/*
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
 uint16_t mode_rain() {
   if (SEGLEN == 1) return mode_static();
@@ -1288,7 +1291,7 @@ uint16_t mode_rain() {
   return mode_fireworks();
 }
 static const char _data_FX_MODE_RAIN[] PROGMEM = "Rain@!,Spawning rate;!,!;!;12;ix=128,pal=0";
-
+*/
 
 /*
  * Fire flicker function
@@ -1916,7 +1919,7 @@ uint16_t mode_pride_2015(void) {
 }
 static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 
-
+/*
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
   if (SEGLEN == 1) return mode_static();
@@ -1934,7 +1937,7 @@ uint16_t mode_juggle(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;;!;;sx=64,ix=128";
-
+*/
 
 uint16_t mode_palette() {
   // Set up some compile time constants so that we can handle integer and float based modes using the same code base.
@@ -2953,7 +2956,7 @@ uint16_t mode_spots_fade()
   return spots_base(tr);
 }
 static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width,,,,,Overlay;!,!;!";
-
+/*
 
 //each needs 12 bytes
 typedef struct Ball {
@@ -2961,11 +2964,11 @@ typedef struct Ball {
   float impactVelocity;
   float height;
 } ball;
-
+*/
 /*
 *  Bouncing Balls Effect
 */
-
+/*
 uint16_t mode_bouncing_balls(void) {
   if (SEGLEN == 1) return mode_static();
   //allocate segment data
@@ -3038,7 +3041,7 @@ uint16_t mode_bouncing_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls,,,,,Overlay;!,!,!;!;1;m12=1"; //bar
-
+*/
 
 /*
  *  bouncing balls on a track track Effect modified from Aircoookie's bouncing balls
@@ -3250,6 +3253,7 @@ typedef struct Spark {
 *  POPCORN
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
+/*
 uint16_t mode_popcorn(void) {
   if (SEGLEN == 1) return mode_static();
   //allocate segment data
@@ -3308,7 +3312,7 @@ uint16_t mode_popcorn(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,Overlay;!,!,!;!;;m12=1"; //bar
-
+*/
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
 //Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
@@ -3679,6 +3683,7 @@ static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gr
  * Drip Effect
  * ported of: https://www.youtube.com/watch?v=sru2fXh4r7k
  */
+ /*
 uint16_t mode_drip(void)
 {
   if (SEGLEN == 1) return mode_static();
@@ -3760,7 +3765,7 @@ uint16_t mode_drip(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,,,,,Overlay;!,!;!;;m12=1"; //bar
-
+*/
 
 /*
  * Tetris or Stacking (falling bricks) Effect
@@ -5922,7 +5927,7 @@ static const char _data_FX_MODE_2DCRAZYBEES[] PROGMEM = "Crazy Bees@!,Blur;;;2";
 //     2D Ghost Rider  //
 /////////////////////////
 //// Ghost Rider by stepko (c)2021 [https://editor.soulmatelights.com/gallery/716-ghost-rider], adapted by Blaz Kristan (AKA blazoncek)
-/*
+
 #define LIGHTERS_AM 64  // max lighters (adequate for 32x32 matrix)
 uint16_t mode_2Dghostrider(void) {
   if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
@@ -6007,13 +6012,13 @@ uint16_t mode_2Dghostrider(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_2DGHOSTRIDER[] PROGMEM = "Ghost Rider@Fade rate,Blur;;!;2";
-*/
+
 
 ////////////////////////////
 //     2D Floating Blobs  //
 ////////////////////////////
 //// Floating Blobs by stepko (c)2021 [https://editor.soulmatelights.com/gallery/573-blobs], adapted by Blaz Kristan (AKA blazoncek)
-/*
+
 #define MAX_BLOBS 8
 uint16_t mode_2Dfloatingblobs(void) {
   if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
@@ -6108,7 +6113,7 @@ uint16_t mode_2Dfloatingblobs(void) {
 }
 #undef MAX_BLOBS
 static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur,Trail;!;!;2;c1=8";
-*/
+
 
 ////////////////////////////
 //     2D Scrolling text  //
@@ -9655,8 +9660,9 @@ static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,
 #endif // WLED_DISABLE_2D
 
 
-////////
-// 1D PS tests
+///////////////////////////
+// 1D Particle System FX //
+///////////////////////////
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM1D
 /*
@@ -10025,6 +10031,7 @@ uint16_t mode_particleDancingShadows(void)
 }
 static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,,Overlay,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=0,c2=0,o2=0,o3=0";
 #endif //WLED_DISABLE_PARTICLESYSTEM1D
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
 static const char _data_RESERVED[] PROGMEM = "RSVD";
@@ -10100,12 +10107,12 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_LARSON_SCANNER, &mode_larson_scanner, _data_FX_MODE_LARSON_SCANNER);
   addEffect(FX_MODE_COMET, &mode_comet, _data_FX_MODE_COMET);
   addEffect(FX_MODE_FIREWORKS, &mode_fireworks, _data_FX_MODE_FIREWORKS);
-  addEffect(FX_MODE_RAIN, &mode_rain, _data_FX_MODE_RAIN);
+  //addEffect(FX_MODE_RAIN, &mode_rain, _data_FX_MODE_RAIN);
   addEffect(FX_MODE_TETRIX, &mode_tetrix, _data_FX_MODE_TETRIX);
   addEffect(FX_MODE_FIRE_FLICKER, &mode_fire_flicker, _data_FX_MODE_FIRE_FLICKER);
   addEffect(FX_MODE_GRADIENT, &mode_gradient, _data_FX_MODE_GRADIENT);
   addEffect(FX_MODE_LOADING, &mode_loading, _data_FX_MODE_LOADING);
-//  addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
+  //addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
 
   addEffect(FX_MODE_FAIRY, &mode_fairy, _data_FX_MODE_FAIRY);
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
@@ -10122,7 +10129,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_RANDOM_CHASE, &mode_random_chase, _data_FX_MODE_RANDOM_CHASE);
   addEffect(FX_MODE_OSCILLATE, &mode_oscillate, _data_FX_MODE_OSCILLATE);
   addEffect(FX_MODE_PRIDE_2015, &mode_pride_2015, _data_FX_MODE_PRIDE_2015);
-  addEffect(FX_MODE_JUGGLE, &mode_juggle, _data_FX_MODE_JUGGLE);
+  //addEffect(FX_MODE_JUGGLE, &mode_juggle, _data_FX_MODE_JUGGLE);
   addEffect(FX_MODE_PALETTE, &mode_palette, _data_FX_MODE_PALETTE);
   addEffect(FX_MODE_FIRE_2012, &mode_fire_2012, _data_FX_MODE_FIRE_2012);
   addEffect(FX_MODE_COLORWAVES, &mode_colorwaves, _data_FX_MODE_COLORWAVES);
@@ -10149,12 +10156,12 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_CANDLE, &mode_candle, _data_FX_MODE_CANDLE);
   addEffect(FX_MODE_STARBURST, &mode_starburst, _data_FX_MODE_STARBURST);
   addEffect(FX_MODE_EXPLODING_FIREWORKS, &mode_exploding_fireworks, _data_FX_MODE_EXPLODING_FIREWORKS);
-  addEffect(FX_MODE_BOUNCINGBALLS, &mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
+  //addEffect(FX_MODE_BOUNCINGBALLS, &mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
   addEffect(FX_MODE_SINELON, &mode_sinelon, _data_FX_MODE_SINELON);
   addEffect(FX_MODE_SINELON_DUAL, &mode_sinelon_dual, _data_FX_MODE_SINELON_DUAL);
   addEffect(FX_MODE_SINELON_RAINBOW, &mode_sinelon_rainbow, _data_FX_MODE_SINELON_RAINBOW);
-  addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
-  addEffect(FX_MODE_DRIP, &mode_drip, _data_FX_MODE_DRIP);
+  //addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
+  //addEffect(FX_MODE_DRIP, &mode_drip, _data_FX_MODE_DRIP);
   addEffect(FX_MODE_PLASMA, &mode_plasma, _data_FX_MODE_PLASMA);
   addEffect(FX_MODE_PERCENT, &mode_percent, _data_FX_MODE_PERCENT);
   addEffect(FX_MODE_RIPPLE_RAINBOW, &mode_ripple_rainbow, _data_FX_MODE_RIPPLE_RAINBOW);
@@ -10170,7 +10177,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PHASEDNOISE, &mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
   addEffect(FX_MODE_FLOW, &mode_flow, _data_FX_MODE_FLOW);
   addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
-  addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
+  //addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
 
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
@@ -10218,8 +10225,8 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DPLASMAROTOZOOM, &mode_2Dplasmarotozoom, _data_FX_MODE_2DPLASMAROTOZOOM);
   addEffect(FX_MODE_2DSPACESHIPS, &mode_2Dspaceships, _data_FX_MODE_2DSPACESHIPS);
   addEffect(FX_MODE_2DCRAZYBEES, &mode_2Dcrazybees, _data_FX_MODE_2DCRAZYBEES);
-  //addEffect(FX_MODE_2DGHOSTRIDER, &mode_2Dghostrider, _data_FX_MODE_2DGHOSTRIDER);
-  //addEffect(FX_MODE_2DBLOBS, &mode_2Dfloatingblobs, _data_FX_MODE_2DBLOBS);
+  addEffect(FX_MODE_2DGHOSTRIDER, &mode_2Dghostrider, _data_FX_MODE_2DGHOSTRIDER);
+  addEffect(FX_MODE_2DBLOBS, &mode_2Dfloatingblobs, _data_FX_MODE_2DBLOBS);
   addEffect(FX_MODE_2DSCROLLTEXT, &mode_2Dscrollingtext, _data_FX_MODE_2DSCROLLTEXT);
   addEffect(FX_MODE_2DDRIFTROSE, &mode_2Ddriftrose, _data_FX_MODE_2DDRIFTROSE);
   addEffect(FX_MODE_2DDISTORTIONWAVES, &mode_2Ddistortionwaves, _data_FX_MODE_2DDISTORTIONWAVES);
@@ -10281,11 +10288,11 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
 #endif // WLED_DISABLE_PARTICLESYSTEM2D
 
-addEffect(FX_MODE_PARTICLEDRIP, &mode_particleDrip, _data_FX_MODE_PARTICLEDRIP);
-addEffect(FX_MODE_PSBOUNCINGBALLS, &mode_particleBouncingBalls, _data_FX_MODE_PSBOUNCINGBALLS); //potential replacement for: bouncing balls, rollingballs, popcorn
-addEffect(FX_MODE_PSDANCINGSHADOWS, &mode_particleDancingShadows, _data_FX_MODE_PARTICLEDANCINGSHADOWS);
-
-
 #endif // WLED_DISABLE_2D
 
+#ifndef WLED_DISABLE_PARTICLESYSTEM1D
+addEffect(FX_MODE_PSDRIP, &mode_particleDrip, _data_FX_MODE_PARTICLEDRIP);
+addEffect(FX_MODE_PSBOUNCINGBALLS, &mode_particleBouncingBalls, _data_FX_MODE_PSBOUNCINGBALLS); //potential replacement for: bouncing balls, rollingballs, popcorn
+addEffect(FX_MODE_PSDANCINGSHADOWS, &mode_particleDancingShadows, _data_FX_MODE_PARTICLEDANCINGSHADOWS);
+#endif // WLED_DISABLE_PARTICLESYSTEM1D
 }

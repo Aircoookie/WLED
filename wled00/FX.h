@@ -332,7 +332,7 @@
 #define FX_MODE_PARTICLECENTERGEQ      199
 #define FX_MODE_PARTICLEGHOSTRIDER     200 
 #define FX_MODE_PARTICLEBLOBS          201 
-#define FX_MODE_PARTICLEDRIP           202
+#define FX_MODE_PSDRIP                 202
 #define FX_MODE_PSBOUNCINGBALLS        203
 #define FX_MODE_PSDANCINGSHADOWS       204
 #define MODE_COUNT                     205

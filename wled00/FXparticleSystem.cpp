@@ -37,11 +37,12 @@
 */
 
 
-
+#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)  
 #include "FXparticleSystem.h"
 #include "wled.h"
 #include "FastLED.h"
 #include "FX.h"
+#endif
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 
@@ -2180,4 +2181,4 @@ void fast_color_scale(CRGB &c, uint32_t scale)
   c.b = ((c.b * scale) >> 8);
 }
 
-#endif
+#endif  // !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)
