@@ -32,7 +32,7 @@ public:
     uint8_t fullLines;
     uint16_t bumpiness;
     uint16_t aggregatedHeight;
-    double score;
+    float score;
     uint8_t width;
     std::vector<uint8_t> lineHights;
 
@@ -57,7 +57,7 @@ public:
         this->fullLines = 0;
         this->bumpiness = 0;
         this->aggregatedHeight = 0;
-        this->score = -DBL_MAX;
+        this->score = -FLT_MAX;
     }
 };
 

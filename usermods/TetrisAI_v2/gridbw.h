@@ -34,7 +34,7 @@ public:
     {
         if (width > 32)
         {
-            throw std::invalid_argument("maximal width is 32");
+            this->width = 32;
         }
     }
 
@@ -111,6 +111,17 @@ public:
     bool isLineFull(uint8_t y)
     {
         return pixels[y] == (uint32_t)((1 << width) - 1);
+    }
+
+    void reset()
+    {
+        if (width > 32)
+        {
+            width = 32;
+        }
+
+        pixels.clear();
+        pixels.resize(height);
     }
 };
 

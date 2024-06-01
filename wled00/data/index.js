@@ -1501,6 +1501,12 @@ function readState(s,command=false)
 	if (s.error && s.error != 0) {
 		var errstr = "";
 		switch (s.error) {
+			case  1:
+				errstr = "Denied!";
+				break;
+			case  3:
+				errstr = "Buffer locked!";
+				break;
 			case  8:
 				errstr = "Effect RAM depleted!";
 				break;

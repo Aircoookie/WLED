@@ -1,6 +1,27 @@
 ## WLED changelog
 
-#### Build 240503
+#### Build 2405180
+-   Official 0.15.0-b3 release
+-   Merge 0.14.3 fixes
+-   Added Pinwheel Expand 1D->2D effect mapping mode (#3961 by @Brandon502)
+-   Add changeable i2c address to BME280 usermod (#3966 by @LordMike)
+-   Effect: Firenoise - add palette selection
+-   Experimental parallel I2S support for ESP32 (compile time option)
+    - increased outputs to 17
+    - increased max possible color order overrides
+    - use WLED_USE_PARALLEL_I2S during compile
+    WARNING: Do not set up more than 256 LEDs per output when using parallel I2S with NeoPixelBus less than 2.9.0
+-   Update Usermod: Battery (#3964 by @adamsthws)
+-   Update Usermod: BME280 (#3965 by @LordMike)
+-   TM1914 chip support (#3913)
+-   Ignore brightness in Peek
+-   Antialiased line & circle drawing functions
+-   Enabled some audioreactive effects for single pixel strips/segments (#3942 by @gaaat98)
+-   Usermod Battery: Added Support for different battery types, Optimized file structure (#3003 by @itCarl)
+-   Skip playlist entry API (#3946 by @freakintoddles2)
+-   various optimisations and bugfixes (#3987, #3978)
+
+#### Build 2405030
 -   Using brightness in analog clock overlay (#3944 by @paspiz85)
 -   Add Webpage shortcuts (#3945 by @w00000dy)
 -   ArtNet Poll reply (#3892 by @askask)
@@ -31,6 +52,11 @@
     - audioreactive always included for S3 & S2
 -   Fix for #3889
 -   BREAKING: Effect: modified KITT (Scanner) (#3763)
+
+#### Build 2404040
+-   WLED 0.14.3 release
+-   Fix for transition 0 (#3854, #3832, #3720)
+-   Fix for #3855 via #3873 (by @willmmiles)
 
 #### Build 2403280
 -   Individual color channel control for JSON API (fixes #3860)
