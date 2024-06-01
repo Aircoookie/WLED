@@ -9,6 +9,10 @@
 class Smartnest : public Usermod
 {
 private:
+  bool initialized = false;
+  unsigned long lastMqttReport = 0;
+  unsigned long mqttReportInterval = 60000; // Report every minute
+
   void sendToBroker(const char *const topic, const char *const message)
   {
     if (!WLED_MQTT_CONNECTED)
@@ -61,7 +65,7 @@ private:
     int position = 0;
 
     // We need to copy the string in order to keep it read only as strtok_r function requires mutable string
-    color_ = (char *)malloc(strlen(color));
+    color_ = (char *)malloc(strlen(color) + 1);
     if (NULL == color_) {
       return -1;
     }
@@ -150,7 +154,7 @@ public:
     delay(100);
     sendToBroker("report/firmware", versionString); // Reports the firmware version
     delay(100);
-    sendToBroker("report/ip", (char *)WiFi.localIP().toString().c_str()); // Reports the ip
+    sendToBroker("report/ip", (char *)WiFi.localIP().toString().c_str()); // Reports the IP
     delay(100);
     sendToBroker("report/network", (char *)WiFi.SSID().c_str()); // Reports the network name
     delay(100);
@@ -167,5 +171,35 @@ public:
   uint16_t getId()
   {
     return USERMOD_ID_SMARTNEST;
+  }
+
+  /**
+   * setup() is called once at startup to initialize the usermod.
+   */
+  void setup() {
+      DEBUG_PRINTF("Smartnest usermod setup initializing...");
+      
+      // Publish initial status
+      sendToBroker("report/status", "Smartnest usermod initialized");
+  }
+
+  /**
+   * loop() is called continuously to keep the usermod running.
+   */
+  void loop() {
+    // Periodically report status to MQTT broker
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastMqttReport >= mqttReportInterval) {
+      lastMqttReport = currentMillis;
+      
+      // Report current brightness
+      char brightnessMsg[11];
+      sprintf(brightnessMsg, "%u", bri);
+      sendToBroker("report/brightness", brightnessMsg);
+      
+      // Report current signal strength
+      String signal(WiFi.RSSI(), 10);
+      sendToBroker("report/signal", signal.c_str());
+    }
   }
 };
