@@ -457,6 +457,7 @@ typedef struct Segment {
       #else
       uint32_t      _colorT[NUM_COLORS];
       #endif
+      uint8_t       _palTid;      // previous palette
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
@@ -594,6 +595,7 @@ typedef struct Segment {
     uint16_t progress(void);                    // transition progression between 0-65535
     uint8_t  currentBri(bool useCct = false);   // current segment brightness/CCT (blended while in transition)
     uint8_t  currentMode(void);                 // currently active effect/mode (while in transition)
+    uint8_t  currentPalette(void);              // currently active palette (while in transition)
     uint32_t currentColor(uint8_t slot);        // currently active segment color (blended while in transition)
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
     void     setCurrentPalette(void);
