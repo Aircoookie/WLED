@@ -335,7 +335,8 @@
 #define FX_MODE_PSDRIP                 202
 #define FX_MODE_PSBOUNCINGBALLS        203
 #define FX_MODE_PSDANCINGSHADOWS       204
-#define MODE_COUNT                     205
+#define FX_MODE_PSFIREWORKS1D          205
+#define MODE_COUNT                     206
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,

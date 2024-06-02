@@ -3683,7 +3683,6 @@ static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gr
  * Drip Effect
  * ported of: https://www.youtube.com/watch?v=sru2fXh4r7k
  */
- /*
 uint16_t mode_drip(void)
 {
   if (SEGLEN == 1) return mode_static();
@@ -3765,7 +3764,6 @@ uint16_t mode_drip(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,,,,,Overlay;!,!;!;;m12=1"; //bar
-*/
 
 /*
  * Tetris or Stacking (falling bricks) Effect
@@ -7929,7 +7927,7 @@ uint16_t mode_particlevortex(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, NUMBEROFSOURCES))
+    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES))
       return mode_static(); // allocation failed
 
     //SEGMENT.aux0 = 0;  // starting angle
@@ -8074,7 +8072,7 @@ uint16_t mode_particlefireworks(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, NUMBEROFSOURCES, true)) // init with advanced particle properties
+    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES, true)) // init with advanced particle properties
       return mode_static(); // allocation failed
     PartSys->setKillOutOfBounds(true); //out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->setWallHardness(100); //ground bounce is fixed
@@ -8251,7 +8249,7 @@ uint16_t mode_particlevolcano(void)
 
   if (SEGMENT.call == 0) // initialization
   {
-    if (!initParticleSystem(PartSys, NUMBEROFSOURCES)) // init, no additional data needed
+    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES)) // init, no additional data needed
       return mode_static(); // allocation failed 
     PartSys->setBounceY(true);
     PartSys->setGravity(); // enable with default gforce
@@ -8329,7 +8327,7 @@ uint16_t mode_particlefire(void)
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    if (!initParticleSystem(PartSys, 25, 4)) //maximum number of source (PS will determine the exact number based on segment size) and need 4 additional bytes for time keeping (uint32_t lastcall)
+    if (!initParticleSystem2D(PartSys, 25, 4)) //maximum number of source (PS will determine the exact number based on segment size) and need 4 additional bytes for time keeping (uint32_t lastcall)
       return mode_static(); // allocation failed; //allocation failed
     SEGMENT.aux0 = random16(); // aux0 is wind position (index) in the perlin noise
     numFlames = PartSys->numSources; 
@@ -8448,7 +8446,7 @@ uint16_t mode_particlepit(void)
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    if (!initParticleSystem(PartSys, 1, 0, true)) // init, request one source (actually dont really need one TODO: test if using zero sources also works)
+    if (!initParticleSystem2D(PartSys, 1, 0, true)) // init, request one source (actually dont really need one TODO: test if using zero sources also works)
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true);
     PartSys->setGravity(); // enable with default gravity
@@ -8574,7 +8572,7 @@ uint16_t mode_particlewaterfall(void)
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    if (!initParticleSystem(PartSys, 12)) // init, request 12 sources, no additional data needed
+    if (!initParticleSystem2D(PartSys, 12)) // init, request 12 sources, no additional data needed
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setGravity();  // enable with default gforce
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
@@ -8661,7 +8659,7 @@ uint16_t mode_particlebox(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, 1)) // init
+    if (!initParticleSystem2D(PartSys, 1)) // init
       return mode_static(); // allocation failed
     PartSys->setBounceX(true);
     PartSys->setBounceY(true);
@@ -8764,7 +8762,7 @@ uint16_t mode_particleperlin(void)
   uint32_t i;
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    if (!initParticleSystem(PartSys, 1, 0, true)) // init with 1 source and advanced properties
+    if (!initParticleSystem2D(PartSys, 1, 0, true)) // init with 1 source and advanced properties
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true); // should never happen, but lets make sure there are no stray particles
     SEGMENT.aux0 = rand();
@@ -8839,7 +8837,7 @@ uint16_t mode_particleimpact(void)
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    if (!initParticleSystem(PartSys, NUMBEROFSOURCES)) // init, no additional data needed
+    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES)) // init, no additional data needed
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(false); // explosions out of frame ar allowed, set to true to save particles (TODO: better enable it in ESP8266?)
     PartSys->setGravity(); // enable default gravity
@@ -8974,7 +8972,7 @@ uint16_t mode_particleattractor(void)
   PSparticle *attractor; // particle pointer to the attractor
   if (SEGMENT.call == 0) // initialization
   {    
-    if (!initParticleSystem(PartSys, 1, 0, true)) // init using 1 source and advanced particle settings
+    if (!initParticleSystem2D(PartSys, 1, 0, true)) // init using 1 source and advanced particle settings
       return mode_static(); // allocation failed
     	//DEBUG_PRINTF_P(PSTR("sources in FX %p\n"), &PartSys->sources[0]);	
     PartSys->sources[0].source.hue = random16();
@@ -9095,7 +9093,7 @@ uint16_t mode_particleattractor(void)
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    if (!initParticleSystem(PartSys, 1, true))  // init, need one source. use advanced particles (with individual forces)
+    if (!initParticleSystem2D(PartSys, 1, true))  // init, need one source. use advanced particles (with individual forces)
       return mode_static();  // allocation failed; //allocation failed
 
     PartSys->sources[0].source.hue = random16();
@@ -9207,7 +9205,7 @@ uint16_t mode_particlespray(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, 1)) // init, no additional data needed
+    if (!initParticleSystem2D(PartSys, 1)) // init, no additional data needed
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->setBounceY(true); 
@@ -9305,7 +9303,7 @@ uint16_t mode_particleGEQ(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, 1)) // init
+    if (!initParticleSystem2D(PartSys, 1)) // init
       return mode_static(); // allocation failed
     PartSys->setKillOutOfBounds(true); 
     PartSys->setUsedParticles((PartSys->numParticles * 3) / 2); // use 2/3 of available particles
@@ -9405,7 +9403,7 @@ if (SEGLEN == 1)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, NUMBEROFSOURCES)) // init, request 16 sources
+    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES)) // init, request 16 sources
       return mode_static(); // allocation failed
     numSprays = min(PartSys->numSources, (uint8_t)NUMBEROFSOURCES);
     for (i = 0; i < numSprays; i++)
@@ -9489,7 +9487,7 @@ uint16_t mode_particleghostrider(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem(PartSys, 1)) // init, no additional data needed
+    if (!initParticleSystem2D(PartSys, 1)) // init, no additional data needed
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->sources[0].maxLife = 260; // lifetime in frames
@@ -9581,7 +9579,7 @@ uint16_t mode_particleblobs(void)
 
   if (SEGMENT.call == 0) 
   {
-    if (!initParticleSystem(PartSys, 1, 0, true, true)) //init, request one source, no additional bytes, advanced size & size control (actually dont really need one TODO: test if using zero sources also works)
+    if (!initParticleSystem2D(PartSys, 1, 0, true, true)) //init, request one source, no additional bytes, advanced size & size control (actually dont really need one TODO: test if using zero sources also works)
       return mode_static(); // allocation failed
       PartSys->setBounceX(true);
       PartSys->setBounceY(true);
@@ -9710,8 +9708,13 @@ uint16_t mode_particleDrip(void)
   else
     PartSys->setParticleSize(0);
 
-  PartSys->sources[0].maxLife = 300;
-  PartSys->sources[0].source.collide = true;
+    if(SEGMENT.check2)  //collisions enabled
+    PartSys->enableParticleCollisions(true); //enable, full hardness
+  else
+    PartSys->enableParticleCollisions(false);
+
+  
+  PartSys->sources[0].source.collide = false; //drops do not collide
 
   if(SEGMENT.check1) //rain mode, emit at random position, short life (3-8 seconds at 50fps)
   {
@@ -9721,13 +9724,15 @@ uint16_t mode_particleDrip(void)
     PartSys->sources[0].v = -(8 + (SEGMENT.speed >> 2)); //speed + var must be < 128, inverted speed (=down)  
  // lifetime in frames
     PartSys->sources[0].minLife = 100;
+    PartSys->sources[0].maxLife = 300;
     PartSys->sources[0].source.x = random(PartSys->maxX); //random emit position
   }
   else{ //drip
     PartSys->sources[0].var = 0;
     PartSys->sources[0].v = -(SEGMENT.speed >> 1); //speed + var must be < 128, inverted speed (=down)  
-    PartSys->sources[0].minLife = 400;
-    PartSys->sources[0].source.x = PartSys->maxX;      
+    PartSys->sources[0].minLife = 3000; 
+    PartSys->sources[0].maxLife = 3000;
+    PartSys->sources[0].source.x = PartSys->maxX - PS_P_RADIUS_1D;      
   } 
 
   // every nth frame emit a particle 
@@ -9741,11 +9746,10 @@ uint16_t mode_particleDrip(void)
   for (int i = 0; i < PartSys->usedParticles; i++)//check all particles
   {
   
-    if(PartSys->particles[i].ttl &&  PartSys->particles[i].collide) // use collision flag to identify splash particles
+    if(PartSys->particles[i].ttl &&  PartSys->particles[i].collide == false) // use collision flag to identify splash particles
     {
       if(SEGMENT.custom1 > 0 && PartSys->particles[i].x < (PS_P_RADIUS_1D << 1)) //splash enabled and reached bottom -> does not work this way, all splashes will splash again... need to mark particles
       {
-        Serial.println("splsh");
         PartSys->particles[i].ttl = 0; //kill origin particle
         PartSys->sources[0].maxLife = 80;
         PartSys->sources[0].minLife = 20;
@@ -9753,7 +9757,7 @@ uint16_t mode_particleDrip(void)
         PartSys->sources[0].v = 0;
         PartSys->sources[0].source.hue = PartSys->particles[i].hue;
         PartSys->sources[0].source.x = PS_P_RADIUS_1D;
-        PartSys->sources[0].source.collide = false; 
+        PartSys->sources[0].source.collide = true;  //splashes do collide if enabled
         for(int j = 0; j < 2 + (SEGMENT.custom1 >> 2); j++)
         {
           PartSys->sprayEmit(PartSys->sources[0]);  
@@ -9767,17 +9771,9 @@ uint16_t mode_particleDrip(void)
 
   PartSys->update(); // update and render
   uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
-  if(bg_color > 0) //if not black
-  {
-    for(uint32_t i = 0; i < PartSys->maxXpixel + 1; i++)
-    {    
-      SEGMENT.addPixelColor(i,bg_color); 
-    }
-  }
-  
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
 
 
 /*
@@ -9887,13 +9883,6 @@ uint16_t mode_particleBouncingBalls(void)
 
   PartSys->update(); // update and render
   uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
-  if(bg_color > 0) //if not black
-  {
-    for(uint32_t i = 0; i < PartSys->maxXpixel + 1; i++)
-    {    
-      SEGMENT.addPixelColor(i,bg_color); 
-    }
-  }
   
   return FRAMETIME;
 }
@@ -10018,18 +10007,152 @@ uint16_t mode_particleDancingShadows(void)
   }
 
   PartSys->update(); // update and render
-  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
-  if(bg_color > 0) //if not black
-  {
-    for(uint32_t i = 0; i < PartSys->maxXpixel + 1; i++)
-    {    
-      SEGMENT.addPixelColor(i,bg_color); 
-    }
-  }
   
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,,Overlay,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=0,c2=0,o2=0,o3=0";
+
+
+/*
+Particle Fireworks 1D replacement
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particleFireworks1D(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;
+  uint8_t numRockets;
+  uint8_t *forcecounter;
+  uint32_t i;
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 4, 4, true)) // init, no additional data needed
+      return mode_static(); // allocation failed; //allocation failed
+    PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
+    numRockets = PartSys->numSources;
+    for(i = 0; i < numRockets; i++)
+    {
+      PartSys->sources[i].source.perpetual = 1; //set rocket state to standby
+    }
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+
+  forcecounter = PartSys->PSdataEnd;
+
+  numRockets = PartSys->numSources;
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  //PartSys->setBounce(true);
+  //PartSys->setWallHardness(50);
+  //PartSys->setWrap(SEGMENT.check2);  
+  //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
+
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+  
+  if(!SEGMENT.check1) //gravity enabled for sparks
+   PartSys->setGravity(0); // disable
+  else
+   PartSys->setGravity(1 + (SEGMENT.speed>>4)); // set gravity
+
+  if (SEGMENT.check3) 
+    PartSys->setParticleSize(1);
+  else
+    PartSys->setParticleSize(0);
+
+  numRockets = 2;
+  //check Rockets, launch rockets
+  for(i = 0; i < numRockets; i++)
+    {
+      if(PartSys->sources[i].source.perpetual == 1) //rocket is on standby
+      {
+        PartSys->sources[i].source.ttl--;
+        if(PartSys->sources[i].source.ttl == 0) //time is up, relaunch
+        {
+          PartSys->sources[i].source.perpetual = 0; //flag abused for rocket state
+          PartSys->sources[i].source.hue = random16();   
+          PartSys->sources[i].var = 5;
+          PartSys->sources[i].v = 0;
+          PartSys->sources[i].minLife = 10;
+          PartSys->sources[i].maxLife = 30;
+          PartSys->sources[i].source.x = 0; //start from bottom
+          uint32_t speed = 8 + (((int)16 + (int)random16(20) + (int)random(SEGMENT.speed >> 3 , SEGMENT.speed >> 2)) * (int)PartSys->maxXpixel) / 140; //set speed such that rocket explods in frame, found by experimenting           
+          PartSys->sources[i].source.vx = min(speed, (uint32_t)127);
+          PartSys->sources[i].source.ttl = 400;//((PS_P_RADIUS_1D * PartSys->maxXpixel)/(SEGMENT.speed >> 1))<<1;            //todo: fix this properly
+          PartSys->sources[i].source.collide = false; //exhaust does not collide, also used to check if direction reversed
+          PartSys->sources[i].sat = 40; //low saturation exhaust 
+          //odd numbered rockets launch from top
+          if(i & 0x01) 
+          {
+            PartSys->sources[i].source.reversegrav = true;
+            PartSys->sources[i].source.x = PartSys->maxX; //start from top
+            PartSys->sources[i].source.vx = -PartSys->sources[i].source.vx; //revert direction
+          }
+        }
+      }
+      else //rocket is launched
+      {
+        int32_t rocketgravity = -(2 + (SEGMENT.speed>>4)); //-8
+        int32_t speed = PartSys->sources[i].source.vx;
+        if(i & 0x01) //negative speed rocket
+        {
+          rocketgravity = -rocketgravity;
+          speed = -speed;
+        }
+        PartSys->applyForce(&PartSys->sources[i].source, rocketgravity, &forcecounter[i]);
+        PartSys->particleMoveUpdate(PartSys->sources[i].source);
+    
+        if(speed < 0 && PartSys->sources[i].source.collide == false) //speed has reversed and not in 'explosion mode'
+        {
+          PartSys->sources[i].source.ttl = 75 - (SEGMENT.speed >> 2); //alive for a few more frames
+          PartSys->sources[i].source.collide = true; //set 'explosion mode'
+        }              
+
+        if(PartSys->sources[i].source.ttl == 0) //explode
+        {
+          PartSys->sources[i].source.perpetual = 1; // set standby state          
+          PartSys->sources[i].var = 10 + SEGMENT.intensity >> 2;
+          PartSys->sources[i].v = 0; //TODO can make global if this never changes
+          PartSys->sources[i].minLife = 60;
+          PartSys->sources[i].maxLife = 150;
+          if(i & 0x01)
+            PartSys->sources[i].source.ttl = SEGMENT.custom1 + random16((255 - SEGMENT.intensity)+SEGMENT.custom1); // standby time til next launch 
+          else
+            PartSys->sources[i].source.ttl = (255 - SEGMENT.custom1) + random16((255 - SEGMENT.intensity) + (255 - SEGMENT.custom1)); 
+          //PartSys->sources[i].source.ttl = 80 + random16(255 - SEGMENT.intensity); // 
+          PartSys->sources[i].sat = 7 + (SEGMENT.custom3 << 3); //color saturation
+          uint32_t explosionsize = 10 + random(SEGMENT.intensity >> 2, SEGMENT.intensity);
+          for(uint32_t e = 0; e < explosionsize; e++) //emit explosion particles
+          {
+            if(SEGMENT.check2)
+              PartSys->sources[i].source.hue = random16(); //random color for each particle  
+            PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
+          }
+          PartSys->sources[i].source.x = -500; //set out of frame until relaunch
+        }
+      }  
+      if(SEGMENT.call & 0x01) //every second frame
+        PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
+    }
+        Serial.println(" *");
+  PartSys->update(); // update and render
+
+  
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur/Overlay,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+
 #endif //WLED_DISABLE_PARTICLESYSTEM1D
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -10161,7 +10284,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SINELON_DUAL, &mode_sinelon_dual, _data_FX_MODE_SINELON_DUAL);
   addEffect(FX_MODE_SINELON_RAINBOW, &mode_sinelon_rainbow, _data_FX_MODE_SINELON_RAINBOW);
   //addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
-  //addEffect(FX_MODE_DRIP, &mode_drip, _data_FX_MODE_DRIP);
+  addEffect(FX_MODE_DRIP, &mode_drip, _data_FX_MODE_DRIP);
   addEffect(FX_MODE_PLASMA, &mode_plasma, _data_FX_MODE_PLASMA);
   addEffect(FX_MODE_PERCENT, &mode_percent, _data_FX_MODE_PERCENT);
   addEffect(FX_MODE_RIPPLE_RAINBOW, &mode_ripple_rainbow, _data_FX_MODE_RIPPLE_RAINBOW);
@@ -10294,5 +10417,7 @@ void WS2812FX::setupEffectData() {
 addEffect(FX_MODE_PSDRIP, &mode_particleDrip, _data_FX_MODE_PARTICLEDRIP);
 addEffect(FX_MODE_PSBOUNCINGBALLS, &mode_particleBouncingBalls, _data_FX_MODE_PSBOUNCINGBALLS); //potential replacement for: bouncing balls, rollingballs, popcorn
 addEffect(FX_MODE_PSDANCINGSHADOWS, &mode_particleDancingShadows, _data_FX_MODE_PARTICLEDANCINGSHADOWS);
+addEffect(FX_MODE_PSFIREWORKS1D, &mode_particleFireworks1D, _data_FX_MODE_PS_FIREWORKS1D);
+
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 }

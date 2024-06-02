@@ -578,16 +578,10 @@ void ParticleSystem::applyGravity()
 // function does not increment gravity counter, if gravity setting is disabled, this cannot be used
 void ParticleSystem::applyGravity(PSparticle *part)
 {
-  int32_t dv; // velocity increase
-  if (gforce > 15)
-    dv = (gforce >> 4); // apply the 4 MSBs
-  else
-    dv = 1;
-
-  if (gforcecounter + gforce > 15) //counter is updated in global update when applying gravity
-  {    
-    part->vy = limitSpeed((int32_t)part->vy - dv);
-  }
+  uint32_t counterbkp = gforcecounter;
+  int32_t dv = calcForce_dv(gforce, &gforcecounter);
+  gforcecounter = counterbkp; //save it back 
+  part->vy = limitSpeed((int32_t)part->vy - dv);
 }
 
 // slow down particle by friction, the higher the speed, the higher the friction. a high friction coefficient slows them more (255 means instant stop)
@@ -1127,7 +1121,7 @@ void ParticleSystem::handleCollisions()
       int32_t dx, dy; // distance to other particles
       for (j = i + 1; j < usedParticles; j++) // check against higher number particles
       {                
-        if (particles[j].ttl > 0) // if target particle is alive
+        if (particles[j].ttl > 0 && particles[j].collide) // if target particle is alive
         {
           dx = particles[i].x - particles[j].x;
           if (advPartProps) //may be using individual particle size
@@ -1378,7 +1372,7 @@ void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, 
 
 
 //non class functions to use for initialization
-uint32_t calculateNumberOfParticles(bool isadvanced, bool sizecontrol)
+uint32_t calculateNumberOfParticles2D(bool isadvanced, bool sizecontrol)
 {
   uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
@@ -1403,7 +1397,7 @@ uint32_t calculateNumberOfParticles(bool isadvanced, bool sizecontrol)
   return numberofParticles;
 }
 
-uint32_t calculateNumberOfSources(uint8_t requestedsources)
+uint32_t calculateNumberOfSources2D(uint8_t requestedsources)
 {
   uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
@@ -1423,7 +1417,7 @@ uint32_t calculateNumberOfSources(uint8_t requestedsources)
 }
 
 //allocate memory for particle system class, particles, sprays plus additional memory requested by FX
-bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool isadvanced, bool sizecontrol, uint16_t additionalbytes)
+bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, bool isadvanced, bool sizecontrol, uint16_t additionalbytes)
 {
   uint32_t requiredmemory = sizeof(ParticleSystem);
   // functions above make sure these are a multiple of 4 bytes (to avoid alignment issues)
@@ -1443,14 +1437,14 @@ bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bo
 }
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
-bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes, bool largesizes, bool sizecontrol)
+bool initParticleSystem2D(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes, bool advanced, bool sizecontrol)
 {
   //Serial.println("PS init function");
-  uint32_t numparticles = calculateNumberOfParticles(largesizes, sizecontrol);
-  uint32_t numsources = calculateNumberOfSources(requestedsources);
+  uint32_t numparticles = calculateNumberOfParticles2D(advanced, sizecontrol);
+  uint32_t numsources = calculateNumberOfSources2D(requestedsources);
   //Serial.print("numsources: ");
   //Serial.println(numsources);
-  if (!allocateParticleSystemMemory(numparticles, numsources, largesizes, sizecontrol, additionalbytes))
+  if (!allocateParticleSystemMemory2D(numparticles, numsources, advanced, sizecontrol, additionalbytes))
   {
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
@@ -1460,7 +1454,7 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint
   uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   //Serial.println("calling constructor");
-  PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources, largesizes, sizecontrol); // particle system constructor
+  PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources, advanced, sizecontrol); // particle system constructor
   //Serial.print("PS pointer at ");
   //Serial.println((uintptr_t)PartSys);
   return true;
@@ -1474,19 +1468,19 @@ bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint
 ////////////////////////
 #ifndef WLED_DISABLE_PARTICLESYSTEM1D
 
-ParticleSystem1D::ParticleSystem1D(uint16_t length, uint16_t numberofparticles, uint16_t numberofsources) 
+ParticleSystem1D::ParticleSystem1D(uint16_t length, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced) 
 {
   //Serial.println("PS Constructor");
   numSources = numberofsources;
   numParticles = numberofparticles; // set number of particles in the array
   usedParticles = numberofparticles; // use all particles by default
-  //advPartProps = NULL; //make sure we start out with null pointers (just in case memory was not cleared)
+  advPartProps = NULL; //make sure we start out with null pointers (just in case memory was not cleared)
   //advPartSize = NULL;
-  updatePSpointers(); // set the particle and sources pointer (call this before accessing sprays or particles)
+  updatePSpointers(isadvanced); // set the particle and sources pointer (call this before accessing sprays or particles)
   setSize(length);
   setWallHardness(255); // set default wall hardness to max  
   setGravity(0); //gravity disabled by default
-  //setParticleSize(0); // minimum size by default
+  setParticleSize(0); // minimum size by default
   motionBlur = 0; //no fading by default
   emitIndex = 0;
 
@@ -1527,6 +1521,15 @@ void ParticleSystem1D::update(void)
   Serial.println(aliveparticles);
   */
   ParticleSys_render();
+
+  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
+  if(bg_color > 0) //if not black
+  {
+    for(uint32_t i = 0; i < maxXpixel + 1; i++)
+    {    
+      SEGMENT.addPixelColor(i,bg_color); 
+    }
+  }
 }
 
 
@@ -1620,7 +1623,12 @@ int32_t ParticleSystem1D::sprayEmit(PSsource1D &emitter)
       particles[emitIndex].x = emitter.source.x;         
       particles[emitIndex].hue = emitter.source.hue;        
       particles[emitIndex].collide = emitter.source.collide;
+      particles[emitIndex].reversegrav = emitter.source.reversegrav;  
       particles[emitIndex].ttl = random16(emitter.minLife, emitter.maxLife);
+      if (advPartProps)
+        advPartProps[emitIndex].sat = emitter.sat;
+      return i;
+
       return emitIndex;
     }
   }
@@ -1680,15 +1688,26 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
   }
 }
 
+// apply a force in x direction to individual particle (or source)
+// caller needs to provide a 8bit counter (for each paticle) that holds its value between calls
+// force is in 3.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame
+void ParticleSystem1D::applyForce(PSparticle1D *part, int8_t xforce, uint8_t *counter)
+{
+  // velocity increase
+  int32_t dv = calcForce_dv(xforce, counter);
+  // apply the force to particle
+  part->vx = limitSpeed((int32_t)part->vx + dv);
+}
 
 // apply gravity to all particles using PS global gforce setting
-// force is in 3.4 fixed point notation, see note above
-// note: faster than apply force since direction is always down and counter is fixed for all particles
+// gforce is in 3.4 fixed point notation, see note above
 void ParticleSystem1D::applyGravity()
 {
-  int32_t dv = calcForce_dv(gforce, &gforcecounter);
+  int32_t dv_raw = calcForce_dv(gforce, &gforcecounter);
   for (uint32_t i = 0; i < usedParticles; i++)
   {
+    int32_t dv = dv_raw;
+    if(particles[i].reversegrav) dv = -dv_raw;
     // note: not checking if particle is dead is faster as most are usually alive and if few are alive, rendering is fast anyways
     particles[i].vx = limitSpeed((int32_t)particles[i].vx - dv);
   }  
@@ -1698,16 +1717,11 @@ void ParticleSystem1D::applyGravity()
 // function does not increment gravity counter, if gravity setting is disabled, this cannot be used
 void ParticleSystem1D::applyGravity(PSparticle1D *part)
 {
-  int32_t dv; // velocity increase
-  if (gforce > 15)
-    dv = (gforce >> 4); // apply the 4 MSBs
-  else
-    dv = 1;
-
-  if (gforcecounter + gforce > 15) //counter is updated in global update when applying gravity
-  {    
-    part->vx = limitSpeed((int32_t)part->vx - dv);
-  }
+  uint32_t counterbkp = gforcecounter;
+  int32_t dv = calcForce_dv(gforce, &gforcecounter);
+  if(part->reversegrav) dv = -dv; 
+  gforcecounter = counterbkp; //save it back 
+  part->vx = limitSpeed((int32_t)part->vx - dv);
 }
 
 
@@ -1787,14 +1801,16 @@ void ParticleSystem1D::ParticleSys_render()
     // generate RGB values for particle
     brightness = particles[i].ttl > 255 ? 255 : particles[i].ttl; //faster then using min()
     baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255, LINEARBLEND);
-    /*
-    if (particles[i].sat < 255) 
+    
+    if(advPartProps) //saturation is advanced property in 1D system
     {
-      CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to HSV
-      baseHSV.s = particles[i].sat; //set the saturation
-      baseRGB = (CRGB)baseHSV; // convert back to RGB
-    }*/
-  
+      if (advPartProps[i].sat < 255) 
+      {
+        CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to HSV
+        baseHSV.s = advPartProps[i].sat; //set the saturation
+        baseRGB = (CRGB)baseHSV; // convert back to RGB
+      }
+    }
     renderParticle(framebuffer, i, brightness, baseRGB);
   }
 
@@ -1910,7 +1926,7 @@ void ParticleSystem1D::handleCollisions()
       int32_t proximity;
       for (j = i + 1; j < usedParticles; j++) // check against higher number particles
       {                
-        if (particles[j].ttl > 0) // if target particle is alive
+        if (particles[j].ttl > 0  && particles[j].collide) // if target particle is alive
         {
           dx = particles[i].x - particles[j].x;  
           int32_t  dv = (int32_t)particles[i].vx - (int32_t)particles[j].vx;
@@ -1984,7 +2000,7 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
   }
 }
 
-// allocate memory for the 2D array in one contiguous block and set values to zero
+// allocate memory for the 1D array in one contiguous block and set values to zero
 CRGB *ParticleSystem1D::allocate1Dbuffer(uint32_t length)
 {  
   CRGB *array = (CRGB *)calloc(length, sizeof(CRGB));
@@ -1999,13 +2015,13 @@ void ParticleSystem1D::updateSystem(void)
 {
   // update size
   setSize(SEGMENT.virtualLength());
-  updatePSpointers();
+  updatePSpointers(advPartProps != NULL);
 }
 
 // set the pointers for the class (this only has to be done once and not on every FX call, only the class pointer needs to be reassigned to SEGENV.data every time)
 // function returns the pointer to the next byte available for the FX (if it assigned more memory for other stuff using the above allocate function)
 // FX handles the PSsources, need to tell this function how many there are
-void ParticleSystem1D::updatePSpointers(void)
+void ParticleSystem1D::updatePSpointers(bool isadvanced)
 {
   // DEBUG_PRINT(F("*** PS pointers ***"));
   // DEBUG_PRINTF_P(PSTR("this PS %p "), this);
@@ -2016,7 +2032,17 @@ void ParticleSystem1D::updatePSpointers(void)
   particles = reinterpret_cast<PSparticle1D *>(this + 1); // pointer to particle array at data+sizeof(ParticleSystem)
   sources = reinterpret_cast<PSsource1D *>(particles + numParticles); // pointer to source(s)
   PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources); // pointer to first available byte after the PS for FX additional data
-  //TODO: ist das alignment wirklich korrekt (immer!)?
+  if (isadvanced)
+  {
+    advPartProps = reinterpret_cast<PSadvancedParticle1D *>(sources + numSources);
+    PSdataEnd = reinterpret_cast<uint8_t *>(advPartProps + numParticles);
+    //if (sizecontrol)
+    //{
+    //  advPartSize = reinterpret_cast<PSsizeControl *>(advPartProps + numParticles);
+    //  PSdataEnd = reinterpret_cast<uint8_t *>(advPartSize + numParticles);
+    //}     
+  }
+  
   /*
   DEBUG_PRINTF_P(PSTR(" particles %p "), particles);
   DEBUG_PRINTF_P(PSTR(" sources %p "), sources);
@@ -2028,7 +2054,7 @@ void ParticleSystem1D::updatePSpointers(void)
 
 
 //non class functions to use for initialization
-uint32_t calculateNumberOfParticles1D(void)
+uint32_t calculateNumberOfParticles1D(bool isadvanced)
 {
    uint32_t numberofParticles = SEGMENT.virtualLength();  // one particle per pixel (if possible)
 #ifdef ESP8266
@@ -2039,6 +2065,8 @@ uint32_t calculateNumberOfParticles1D(void)
   uint32_t particlelimit = ESP32_MAXPARTICLES_1D; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
 #endif
   numberofParticles = max((uint32_t)1, min(numberofParticles, particlelimit));
+  if (isadvanced) // advanced property array needs ram, reduce number of particles to use the same amount
+    numberofParticles = (numberofParticles * sizeof(PSparticle1D)) / (sizeof(PSparticle1D) + sizeof(PSadvancedParticle1D));
   //make sure it is a multiple of 4 for proper memory alignment (easier than using padding bytes)
   numberofParticles = ((numberofParticles+3) >> 2) << 2;
   return numberofParticles;
@@ -2059,11 +2087,13 @@ uint32_t calculateNumberOfSources1D(uint8_t requestedsources)
 }
 
 //allocate memory for particle system class, particles, sprays plus additional memory requested by FX
-bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes)
+bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, bool isadvanced, uint16_t additionalbytes)
 {
   uint32_t requiredmemory = sizeof(ParticleSystem1D);
   // functions above make sure these are a multiple of 4 bytes (to avoid alignment issues)
   requiredmemory += sizeof(PSparticle1D) * numparticles;
+  if (isadvanced)
+    requiredmemory += sizeof(PSadvancedParticle1D) * numparticles;
   requiredmemory += sizeof(PSsource1D) * numsources;
   requiredmemory += additionalbytes;
   //Serial.print("allocating: ");
@@ -2075,14 +2105,14 @@ bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, 
 }
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
-bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes)
+bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes, bool advanced)
 {
   //Serial.println("PS init function");
-  uint32_t numparticles = calculateNumberOfParticles1D();
+  uint32_t numparticles = calculateNumberOfParticles1D(advanced);
   uint32_t numsources = calculateNumberOfSources1D(requestedsources);
   //Serial.print("numsources: ");
   //Serial.println(numsources);
-  if (!allocateParticleSystemMemory1D(numparticles, numsources, additionalbytes))
+  if (!allocateParticleSystemMemory1D(numparticles, numsources, advanced, additionalbytes))
   {
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
@@ -2090,7 +2120,7 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, 
   //Serial.print("segment.data ptr");
   //Serial.println((uintptr_t)(SEGMENT.data));
   //Serial.println("calling constructor");
-  PartSys = new (SEGMENT.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources); // particle system constructor
+  PartSys = new (SEGMENT.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources, advanced); // particle system constructor
   //Serial.print("PS pointer at ");
   //Serial.println((uintptr_t)PartSys);
   return true;
@@ -2112,8 +2142,8 @@ int32_t calcForce_dv(int8_t force, uint8_t* counter)
   if (force == 0) 
     return 0;
   // for small forces, need to use a delay counter
-  int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)
-  int32_t dv;
+  int32_t force_abs = abs(force); // absolute value (faster than lots of if's only 7 instructions)  
+  int32_t dv = 0;
   // for small forces, need to use a delay counter, apply force only if it overflows
   if (force_abs < 16)
   {

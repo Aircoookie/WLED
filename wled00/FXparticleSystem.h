@@ -86,7 +86,7 @@ typedef struct {
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
-    bool flag4 : 1; // unused flag
+    bool state : 1; //can be used by FX to track state, not used in PS
 } PSparticle;
 
 // struct for additional particle settings (optional)
@@ -135,14 +135,14 @@ public:
   void update(void); //update the particles according to set options and render to the matrix
   void updateFire(uint32_t intensity, bool renderonly = false); // update function for fire, if renderonly is set, particles are not updated (required to fix transitions with frameskips)
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
-
+  void particleMoveUpdate(PSparticle &part, PSsettings *options = NULL, PSadvancedParticle *advancedproperties = NULL); // move function
+  
   // particle emitters
   int32_t sprayEmit(PSsource &emitter, uint32_t amount = 1);
   void flameEmit(PSsource &emitter);
   void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed, uint32_t amount = 1);
 
 
-  void particleMoveUpdate(PSparticle &part, PSsettings *options = NULL, PSadvancedParticle *advancedproperties = NULL); // move function
   //particle physics
   void applyGravity(PSparticle *part); // applies gravity to single particle (use this for sources)
   void applyForce(PSparticle *part, int8_t xforce, int8_t yforce, uint8_t *counter);
@@ -222,10 +222,10 @@ private:
 
 void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, bool smear = true, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
 // initialization functions (not part of class)
-bool initParticleSystem(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0, bool largesizes = false, bool sizecontrol = false);
-uint32_t calculateNumberOfParticles(bool advanced, bool sizecontrol);
-uint32_t calculateNumberOfSources(uint8_t requestedsources);
-bool allocateParticleSystemMemory(uint16_t numparticles, uint16_t numsources, bool advanced, bool sizecontrol, uint16_t additionalbytes);
+bool initParticleSystem2D(ParticleSystem *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0, bool advanced = false, bool sizecontrol = false);
+uint32_t calculateNumberOfParticles2D(bool advanced, bool sizecontrol);
+uint32_t calculateNumberOfSources2D(uint8_t requestedsources);
+bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, bool advanced, bool sizecontrol, uint16_t additionalbytes);
 
 #endif // WLED_DISABLE_PARTICLESYSTEM2D
 
@@ -258,8 +258,16 @@ typedef struct {
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
-    bool flag4 : 1; // unused flag
+    bool reversegrav : 1; // if set, gravity is reversed on this particle
 } PSparticle1D;
+
+// struct for additional particle settings (optional)
+typedef struct
+{  
+  uint8_t sat; //color saturation
+  uint8_t size; // particle size, 255 means 10 pixels in diameter  
+  uint8_t forcecounter;
+} PSadvancedParticle1D;
 
 //struct for a particle source (17 bytes)
 typedef struct {
@@ -268,6 +276,7 @@ typedef struct {
   PSparticle1D source; // use a particle as the emitter source (speed, position, color)
   int8_t var; // variation of emitted speed (adds random(+/- var) to speed)
   int8_t v; // emitting speed
+  uint8_t sat; // color saturation (advanced property)
   uint8_t size; // particle size (advanced property) TODO: can be removed in case this is not being implemented
 } PSsource1D; 
 
@@ -275,7 +284,7 @@ typedef struct {
 class ParticleSystem1D
 {
 public:
-  ParticleSystem1D(uint16_t length, uint16_t numberofparticles, uint16_t numberofsources); // constructor
+  ParticleSystem1D(uint16_t length, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced = false); // constructor
   // note: memory is allcated in the FX function, no deconstructor needed
   void update(void); //update the particles according to set options and render to the matrix  
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
@@ -284,6 +293,7 @@ public:
   int32_t sprayEmit(PSsource1D &emitter);  
   void particleMoveUpdate(PSparticle1D &part, PSsettings *options = NULL); // move function
   //particle physics
+  void applyForce(PSparticle1D *part, int8_t xforce, uint8_t *counter); //apply a force to a single particle
   void applyGravity(PSparticle1D *part); // applies gravity to single particle (use this for sources)  
   void applyFriction(int32_t coefficient); // apply friction to all used particles
   
@@ -304,7 +314,7 @@ public:
     
   PSparticle1D *particles; // pointer to particle array
   PSsource1D *sources; // pointer to sources
-  //PSadvancedParticle *advPartProps; // pointer to advanced particle properties (can be NULL)
+  PSadvancedParticle1D *advPartProps; // pointer to advanced particle properties (can be NULL)
   //PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
   uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
   uint16_t maxX; // particle system size i.e. width-1 
@@ -317,14 +327,14 @@ private:
   //rendering functions
   void ParticleSys_render(void);
   void renderParticle(CRGB *framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color);
-  
+
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
   void handleCollisions();
   void collideParticles(PSparticle1D *particle1, PSparticle1D *particle2); 
 
   //utility functions
-  void updatePSpointers(void); // update the data pointers to current segment data space
+  void updatePSpointers(bool isadvanced); // update the data pointers to current segment data space
   //void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
   //void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
   void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); // bounce on a wall
@@ -344,9 +354,9 @@ private:
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
 
-bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0);
-uint32_t calculateNumberOfParticles1D(void);
+bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0, bool advanced = false);
+uint32_t calculateNumberOfParticles1D(bool isadvanced);
 uint32_t calculateNumberOfSources1D(uint8_t requestedsources);
-bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, uint16_t additionalbytes);
+bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, bool isadvanced, uint16_t additionalbytes);
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
