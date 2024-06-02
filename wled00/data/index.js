@@ -2826,8 +2826,9 @@ function search(field, listId = null) {
 	const search = field.value !== '';
 
 	// restore default preset sorting if no search term is entered
-	if (listId === 'pcont' && !search) {
-		populatePresets();
+	if (!search) {
+		if (listId === 'pcont') populatePresets();
+		if (listId === 'pallist') populatePalettes();
 		return;
 	}
 
