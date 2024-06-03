@@ -204,6 +204,11 @@
 #ifdef USERMOD_STAIRCASE_WIPE
 #include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
 #endif
+
+#ifdef USERMOD_LD2410
+#include "../usermods/LD2410_v2/usermod_ld2410.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -386,5 +391,9 @@ void registerUsermods()
 
   #ifdef USERMOD_STAIRCASE_WIPE
   usermods.add(new StairwayWipeUsermod());
+  #endif
+
+  #ifdef USERMOD_LD2410
+  usermods.add(new LD2410Usermod());
   #endif
 }
