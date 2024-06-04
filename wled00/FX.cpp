@@ -458,7 +458,7 @@ static const char _data_FX_MODE_RAINBOW_CYCLE[] PROGMEM = "Rainbow@!,Size;;!";
  * Alternating pixels running function.
  */
 static uint16_t running(uint32_t color1, uint32_t color2, bool theatre = false) {
-  unsigned width = (theatre ? 3 : 1) + (SEGMENT.intensity >> 4);  // window
+  int width = (theatre ? 3 : 1) + (SEGMENT.intensity >> 4);  // window
   uint32_t cycleTime = 50 + (255 - SEGMENT.speed);
   uint32_t it = strip.now / cycleTime;
   bool usePalette = color1 == SEGCOLOR(0);
@@ -3351,7 +3351,7 @@ uint16_t candle(bool multi)
       if (fadeStep == 0) fadeStep = 1;
     }
 
-     if (i > 0) {
+    if (i > 0) {
       SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), s));
 
       SEGENV.data[d] = s; SEGENV.data[d+1] = s_target; SEGENV.data[d+2] = fadeStep;

@@ -2827,9 +2827,8 @@ function search(field, listId = null) {
 
 	// restore default preset sorting if no search term is entered
 	if (!search) {
-		if (listId === 'pcont') populatePresets();
-		if (listId === 'pallist') populatePalettes();
-		return;
+		if (listId === 'pcont')   { populatePresets(); return; }
+		if (listId === 'pallist') { populatePalettes(); return; }
 	}
 
 	// clear filter if searching in fxlist
