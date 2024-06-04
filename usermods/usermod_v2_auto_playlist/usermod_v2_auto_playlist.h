@@ -322,6 +322,8 @@ class AutoPlaylistUsermod : public Usermod {
 
       if (bri == 0) return;
 
+      if(!functionality_enabled) return;
+
       um_data_t *um_data;
 
       if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
