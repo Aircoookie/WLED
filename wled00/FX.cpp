@@ -5173,50 +5173,54 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   const uint16_t rows = SEGMENT.virtualHeight();
   const size_t dataSize = ((SEGMENT.length() + 7) / 8); // round up to nearest byte
   const size_t detectionSize =  sizeof(uint8_t) + sizeof(uint16_t)*2; // 1 uint8_t (gliderLen), 2 uint16_t (2 CRCs)
-  const size_t totalSize = dataSize * 2 + detectionSize + sizeof(CRGB); //CRGB prevColor
+  const size_t totalSize = dataSize * 2 + detectionSize + sizeof(uint8_t);
 
   if (!SEGENV.allocateData(totalSize)) return mode_static(); //allocation failed
-  byte *cells = reinterpret_cast<byte*>(SEGENV.data);
+  byte *cells       = reinterpret_cast<byte*>(SEGENV.data);
   byte *futureCells = reinterpret_cast<byte*>(SEGENV.data + dataSize);
-  uint8_t *gliderLength = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize*2);
+  uint8_t *gliderLength   = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize*2);
   uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t));
-  uint16_t *spaceshipCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t));
-  CRGB *prevColor = reinterpret_cast<CRGB*>(SEGENV.data + dataSize*2 + detectionSize);
+  uint16_t *spaceshipCRC  = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t));
+  uint8_t *prevPalette = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize*2 + detectionSize);
 
-  uint16_t &generation = SEGENV.aux0; //rename aux0 readability (not needed)
-  CRGB bgColor = SEGCOLOR(1);
-  CRGB color;
+  uint16_t &generation = SEGENV.aux0; //Rename SEGENV/SEGMENT variables for readability
+  bool allColors   = SEGMENT.check1;
+  bool overlayBG   = SEGMENT.check2;
+  bool wrap        = SEGMENT.check3;
+  byte blur        = map(SEGMENT.custom1, 0, 255, 255, 0);
+  bool bgBlendMode = SEGMENT.custom1 > 220 && !overlayBG; // if blur is high and not overlaying, use bg blend mode
+  byte bgBlur      = map(SEGMENT.custom1 - 220, 0, 35, 255, 128);
+  CRGB bgColor     = SEGCOLOR(1);
+  CRGB color       = allColors ? random16() * random16() : SEGMENT.color_from_palette(0, false, PALETTE_SOLID_WRAP, 0);
   uint16_t cIndex; 
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK); // to make sure that segment buffer and physical leds are aligned initially
   }
-  //start new game of life
+  // Setup New Game of Life
   if ((SEGENV.call == 0 || generation == 0) && SEGENV.step < strip.now) {
     SEGENV.step = strip.now + 1250; // show initial state for 1.25 seconds
     generation = 1;
+    *prevPalette = SEGMENT.palette;
     random16_set_seed(strip.now>>2); //seed the random generator
     //Setup Grid
+    memset(cells, 0, dataSize);
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       cIndex = y * cols + x;
-      if (random8() < 82) { // ~32% chance of being alive
+      if (random8(100) < 32) { // ~32% chance of being alive
         setBitValue(cells, cIndex, true);
-        setBitValue(futureCells, cIndex, true);
         color = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
-        SEGMENT.setPixelColorXY(x,y,!SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
+        SEGMENT.setPixelColorXY(x,y, allColors ? random16() * random16() : color);
       }
-      else {
-        setBitValue(cells, cIndex, false);
-        setBitValue(futureCells, cIndex, false);
-        if (SEGMENT.check2) continue; //overlay
-        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?bgColor : RGBW32(bgColor.r, bgColor.g, bgColor.b, 0));
-      }
+      else if (!overlayBG) SEGMENT.setPixelColorXY(x,y, allColors ? RGBW32(bgColor.r, bgColor.g, bgColor.b, 0) : bgColor); // set background color if not overlaying
     }
-
-    //Clear CRCs
-    *oscillatorCRC = 0;
-    *spaceshipCRC = 0;
+    memcpy(futureCells, cells, dataSize); 
+    
+    //Set CRCs
+    uint16_t crc = crc16((const unsigned char*)cells, dataSize);
+    *oscillatorCRC = crc;
+    *spaceshipCRC  = crc;
 
     //Calculate glider length LCM(rows,cols)*4
     uint8_t a = rows;
@@ -5229,32 +5233,27 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     *gliderLength = cols * rows / a * 4;
     return FRAMETIME;
   }
-  //Redraw immediately if overlay to avoid flicker
-  if (SEGMENT.check2) {
+
+  // Redraw if paused (remove blur), palette changed, or overlaying background (avoid flicker)
+  bool palChanged = SEGMENT.palette != *prevPalette && !allColors;
+  bool blurDead = SEGENV.step > strip.now && !bgBlendMode && !overlayBG;
+  if (palChanged || blurDead || overlayBG) {
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-      //redraw foreground/alive
       cIndex = y * cols + x;
-      if (getBitValue(cells, cIndex)) {
+      bool alive = getBitValue(cells, cIndex);
+      if (palChanged && alive) SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
+      else if (overlayBG & alive) {
         color = SEGMENT.getPixelColorXY(x,y);
-        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?color : RGBW32(color.r, color.g, color.b, 0));
+        SEGMENT.setPixelColorXY(x,y, allColors ? RGBW32(color.r, color.g, color.b, 0) : color);
       }
+      if (palChanged && !alive && !overlayBG) SEGMENT.setPixelColorXY(x,y, bgColor); // remove blurred cells from previous palette
+      else if (blurDead && !alive) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, blur));
     }
-  }
-  if (SEGENV.step > strip.now || strip.now - SEGENV.step < 1000 / (uint32_t)map(SEGMENT.speed,0,255,1,64)) { // 1 - 64 updates per second
-    return FRAMETIME; //skip if not enough time has passed
+    if (palChanged) *prevPalette = SEGMENT.palette;
   }
 
-  //Recolor live cells if palette/color changed
-  if (SEGMENT.color_from_palette(0, false, PALETTE_SOLID_WRAP, 0) != *prevColor){
-    for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-      cIndex = y * cols + x;
-      if (getBitValue(cells, cIndex)) {
-        SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
-      }
-    }
-    *prevColor = SEGMENT.color_from_palette(0, false, PALETTE_SOLID_WRAP, 0);
-  }
-
+  if (SEGENV.step > strip.now || strip.now - SEGENV.step < 1000 / (uint32_t)map(SEGMENT.speed,0,255,1,64)) return FRAMETIME; //skip if not enough time has passed (1-64 updates/sec)
+  
   //Update Game of Life
   bool cellChanged = false; // Detect still live and dead grids
   //cell coordinates
@@ -5268,7 +5267,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { // iterate through 3*3 matrix
       if (i==0 && j==0) continue; // ignore itself
-      if (!SEGMENT.check3 || generation % 1500 == 0) { //no wrap, disable wrap every 1500 generations to prevent undetected repeats
+      if (!wrap || generation % 1500 == 0) { //no wrap, disable wrap every 1500 generations to prevent undetected repeats
         cX = x+i;
         cY = y+j;
         if (cX < 0 || cY < 0 || cX >= cols || cY >= rows) continue; //skip if out of bounds
@@ -5292,34 +5291,33 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     cIndex = y * cols + x; //current cell index
     bool cellValue = getBitValue(cells, cIndex);
     if ((cellValue) && (neighbors < 2 || neighbors > 3)) {
-      // Loneliness or overpopulation
+      // Loneliness or Overpopulation
       cellChanged = true;
       setBitValue(futureCells, cIndex, false);
-      // blur/turn off dying cells
-      if (!SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, map(SEGMENT.custom1, 0, 255, 255, 0)));
+      // Blur/turn off dying cells
+      if (!overlayBG) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, bgBlendMode ? bgBlur : blur));
     } 
     else if (!(cellValue) && (neighbors == 3)) { 
       // Reproduction
       setBitValue(futureCells, cIndex, true);
       cellChanged = true;
-      // find dominant color and assign it to a cell
-      // no longer storing colors, if parent dies the color is lost
-      CRGB dominantColor;
+      // find dominant color and assign it to a new born cell no longer storing colors, if parent dies the color is lost
+      CRGB dominantColor; 
       if (colorCount == 3) { //All parents survived
         if ((nColors[0] == nColors[1]) || (nColors[0] == nColors[2])) dominantColor = nColors[0];
         else if (nColors[1] == nColors[2]) dominantColor = nColors[1];
-        else dominantColor = nColors[random8()%3];
+        else dominantColor = nColors[random8(3)];
       }
-      else if (colorCount == 2) dominantColor = nColors[random8()%2]; // 1 leading parent died
-      else if (colorCount == 1) dominantColor = nColors[0];           // 2 leading parents died
-      else dominantColor = color;                                     // all parents died last used color
+      else if (colorCount == 2) dominantColor = nColors[random8(2)]; // 1 leading parent died
+      else if (colorCount == 1) dominantColor = nColors[0];          // 2 leading parents died
+      else dominantColor = color;                                    // all parents died last used color
       // mutate color chance
-      if (random8() < SEGMENT.intensity || dominantColor == bgColor) dominantColor = !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random16()*random16();
-      if (SEGMENT.check1) dominantColor = RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0); //WLEDMM support all colors
+      if (allColors) dominantColor = RGBW32(dominantColor.r, dominantColor.g, dominantColor.b, 0); //WLEDMM support all colors
+      if (random8() < SEGMENT.intensity || dominantColor == bgColor) dominantColor = allColors ? random16() * random16() : SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
       SEGMENT.setPixelColorXY(x,y, dominantColor);
     }
     else { // blur dead cells 
-      if (!cellValue && !SEGMENT.check2) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, map(SEGMENT.custom1, 0, 255, 255, 0))); 
+      if (!cellValue && !overlayBG && !bgBlendMode) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, bgBlendMode ? bgBlur : blur)); 
     }
   }
   //update cell values
@@ -5343,7 +5341,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.step = strip.now;
   return FRAMETIME;
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay ☾,Wrap ☾,;!,!;!;2;sx=82,ix=12,c1=8,o3=1"; 
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay BG ☾,Wrap ☾,;!,!;!;2;sx=82,ix=4,c1=48,o1=0,o2=0,o3=1"; 
 
 /////////////////////////
 //     2D Hiphotic     //
