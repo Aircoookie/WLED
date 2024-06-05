@@ -5172,16 +5172,16 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
   const size_t dataSize = ((SEGMENT.length() + 7) / 8); // round up to nearest byte
-  const size_t detectionSize =  sizeof(uint8_t) + sizeof(uint16_t)*2; // 1 uint8_t (gliderLen), 2 uint16_t (2 CRCs)
-  const size_t totalSize = dataSize * 2 + detectionSize + sizeof(uint8_t);
+  const size_t detectionSize =  sizeof(uint16_t) * 3; // 2 CRCs, gliderLength
+  const size_t totalSize = dataSize * 2 + detectionSize + sizeof(uint8_t); // detectionSize + prevPalette
 
   if (!SEGENV.allocateData(totalSize)) return mode_static(); //allocation failed
   byte *cells       = reinterpret_cast<byte*>(SEGENV.data);
   byte *futureCells = reinterpret_cast<byte*>(SEGENV.data + dataSize);
-  uint8_t *gliderLength   = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize*2);
-  uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t));
-  uint16_t *spaceshipCRC  = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize*2 + sizeof(uint8_t) + sizeof(uint16_t));
-  uint8_t *prevPalette = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize*2 + detectionSize);
+  uint16_t *gliderLength  = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2);
+  uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2 + sizeof(uint8_t));
+  uint16_t *spaceshipCRC  = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2 + sizeof(uint8_t) + sizeof(uint16_t));
+  uint8_t  *prevPalette   = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize * 2 + detectionSize);
 
   uint16_t &generation = SEGENV.aux0; //Rename SEGENV/SEGMENT variables for readability
   bool allColors   = SEGMENT.check1;
@@ -5234,7 +5234,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     return FRAMETIME;
   }
 
-  bool blurDead = SEGENV.step > strip.now && blur && !bgBlendMode && !overlayBG;
+  bool blurDead   = SEGENV.step > strip.now && blur && !bgBlendMode && !overlayBG;
   bool palChanged = SEGMENT.palette != *prevPalette && !allColors;
   if (palChanged) *prevPalette = SEGMENT.palette;
 
