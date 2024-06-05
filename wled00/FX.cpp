@@ -5179,8 +5179,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   byte *cells       = reinterpret_cast<byte*>(SEGENV.data);
   byte *futureCells = reinterpret_cast<byte*>(SEGENV.data + dataSize);
   uint16_t *gliderLength  = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2);
-  uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2 + sizeof(uint8_t));
-  uint16_t *spaceshipCRC  = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2 + sizeof(uint8_t) + sizeof(uint16_t));
+  uint16_t *oscillatorCRC = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2 + sizeof(uint16_t));
+  uint16_t *spaceshipCRC  = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize * 2 + sizeof(uint16_t) * 2);
   uint8_t  *prevPalette   = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize * 2 + detectionSize);
 
   uint16_t &generation = SEGENV.aux0; //Rename SEGENV/SEGMENT variables for readability
@@ -5216,7 +5216,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       else if (!overlayBG) SEGMENT.setPixelColorXY(x,y, allColors ? RGBW32(bgColor.r, bgColor.g, bgColor.b, 0) : bgColor); // set background color if not overlaying
     }
     memcpy(futureCells, cells, dataSize); 
-    
+
     //Set CRCs
     uint16_t crc = crc16((const unsigned char*)cells, dataSize);
     *oscillatorCRC = crc;
@@ -5334,7 +5334,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   }
   // Update CRC values
   if (generation % 16 == 0) *oscillatorCRC = crc;
-  if (generation % *gliderLength == 0) *spaceshipCRC = crc;
+  if (*gliderLength && generation % *gliderLength == 0) *spaceshipCRC = crc;
 
   generation++;
   SEGENV.step = strip.now;
