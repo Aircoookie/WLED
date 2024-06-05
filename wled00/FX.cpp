@@ -5234,24 +5234,23 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     return FRAMETIME;
   }
 
-  // Redraw if paused (remove blur), palette changed, or overlaying background (avoid flicker)
+  bool blurDead = SEGENV.step > strip.now && blur && !bgBlendMode && !overlayBG;
   bool palChanged = SEGMENT.palette != *prevPalette && !allColors;
-  bool blurDead = SEGENV.step > strip.now && !bgBlendMode && !overlayBG;
-  if (palChanged || blurDead || overlayBG) {
-    for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-      cIndex = y * cols + x;
-      bool alive = getBitValue(cells, cIndex);
-      if (palChanged && alive) SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
-      else if (overlayBG & alive) {
-        color = SEGMENT.getPixelColorXY(x,y);
-        SEGMENT.setPixelColorXY(x,y, allColors ? RGBW32(color.r, color.g, color.b, 0) : color);
-      }
-      if (palChanged && !alive && !overlayBG) SEGMENT.setPixelColorXY(x,y, bgColor); // remove blurred cells from previous palette
-      else if (blurDead && !alive) SEGMENT.setPixelColorXY(x,y, blend(SEGMENT.getPixelColorXY(x,y), bgColor, blur));
-    }
-    if (palChanged) *prevPalette = SEGMENT.palette;
-  }
+  if (palChanged) *prevPalette = SEGMENT.palette;
 
+  // Redraw if paused (remove blur), palette changed, overlaying background (avoid flicker), 
+  // always redraw dead cells if not overlaying background. Allows overlayFG by default.
+  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
+    cIndex = y * cols + x;
+    bool alive = getBitValue(cells, cIndex);
+    CRGB color = SEGMENT.getPixelColorXY(x,y);
+    if (palChanged && alive) SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0)); // Recolor alive cells
+    else if (overlayBG & alive) SEGMENT.setPixelColorXY(x,y, allColors ? RGBW32(color.r, color.g, color.b, 0) : color);         // Redraw alive cells for overlayBG
+    if (palChanged && !alive && !overlayBG) SEGMENT.setPixelColorXY(x,y, bgColor);                                              // Remove blurred cells from previous palette
+    else if (blurDead && !alive) SEGMENT.setPixelColorXY(x,y, blend(color, bgColor, blur));                                     // Blur dead cells (paused)
+    else if (!overlayBG && !alive) SEGMENT.setPixelColorXY(x,y, color);                                                         // Redraw dead cells for default overlayFG
+  }
+  
   if (SEGENV.step > strip.now || strip.now - SEGENV.step < 1000 / (uint32_t)map(SEGMENT.speed,0,255,1,64)) return FRAMETIME; //skip if not enough time has passed (1-64 updates/sec)
   
   //Update Game of Life
@@ -5266,14 +5265,14 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     CRGB nColors[3]; // track 3 colors, dying cells may overwrite but this wont be used
 
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { // iterate through 3*3 matrix
-      if (i==0 && j==0) continue; // ignore itself
+      if (i == 0 && j == 0) continue; // ignore itself
       if (!wrap || generation % 1500 == 0) { //no wrap, disable wrap every 1500 generations to prevent undetected repeats
-        cX = x+i;
-        cY = y+j;
+        cX = x + i;
+        cY = y + j;
         if (cX < 0 || cY < 0 || cX >= cols || cY >= rows) continue; //skip if out of bounds
       } else { //wrap around
-        cX = (x+i+cols) % cols;
-        cY = (y+j+rows) % rows;
+        cX = (x + i + cols) % cols;
+        cY = (y + j + rows) % rows;
       }
       cIndex = cY * cols + cX; //neighbor cell index
       // count neighbors and store upto 3 neighbor colors
@@ -5341,7 +5340,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.step = strip.now;
   return FRAMETIME;
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay BG ☾,Wrap ☾,;!,!;!;2;sx=82,ix=4,c1=48,o1=0,o2=0,o3=1"; 
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,Color Mutation ☾,Blur ☾,,,All Colors ☾,Overlay BG ☾,Wrap ☾,;!,!;!;2;sx=56,ix=2,c1=128,o1=0,o2=0,o3=1"; 
 
 /////////////////////////
 //     2D Hiphotic     //
