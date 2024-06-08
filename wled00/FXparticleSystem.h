@@ -29,8 +29,7 @@
 #include <stdint.h>
 #include "FastLED.h"
 
-#define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
-#define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
+#define PS_P_MAXSPEED 127 // maximum speed a particle can have (vx/vy is int8)
 
 
 //shared functions (used both in 1D and 2D system)
@@ -72,6 +71,7 @@ typedef union
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_MINHARDRADIUS 70 // minimum hard surface radius
+#define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 
 //struct for a single particle (10 bytes)
 typedef struct {
@@ -208,12 +208,12 @@ private:
   PSsettings particlesettings; // settings used when updating particles (can also used by FX to move sources), do not edit properties directly, use functions above
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
-  uint8_t wallHardness;
-  uint8_t wallRoughness;
+  uint32_t wallHardness;
+  uint32_t wallRoughness;
   uint8_t gforcecounter; // counter for global gravity
   int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)
-  uint8_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call?
-  uint8_t forcecounter; // counter for globally applied forces
+  uint32_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call?
+  uint32_t forcecounter; // counter for globally applied forces
   // global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
@@ -246,7 +246,8 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
 #define PS_P_HALFRADIUS_1D 16
 #define PS_P_RADIUS_SHIFT_1D 5 //TODO: may need to adjust
 #define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
-#define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius TODO: also needs tweaking
+#define PS_P_MINHARDRADIUS_1D 30 // minimum hard surface radius 
+#define PS_P_MINSURFACEHARDNESS_1D 0 // minimum hardness used in collision impulse calculation
 
 //struct for a single particle (6 bytes)
 typedef struct {
@@ -254,11 +255,12 @@ typedef struct {
     int8_t vx;  // horizontal velocity    
     uint8_t hue;  // color hue
     // two byte bit field:
-    uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
+    uint16_t ttl : 11; // time to live, 11 bit or 2047 max (which is 25s at 80FPS)
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
     bool reversegrav : 1; // if set, gravity is reversed on this particle
+    bool fixed : 1; // if set, particle does not move (and collisions make other particles revert direction)
 } PSparticle1D;
 
 // struct for additional particle settings (optional)
@@ -331,7 +333,7 @@ private:
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
   void handleCollisions();
-  void collideParticles(PSparticle1D *particle1, PSparticle1D *particle2); 
+  void collideParticles(PSparticle1D *particle1, PSparticle1D *particle2, int32_t dx, int32_t relativeVx); 
 
   //utility functions
   void updatePSpointers(bool isadvanced); // update the data pointers to current segment data space
@@ -343,7 +345,7 @@ private:
   PSsettings particlesettings; // settings used when updating particles 
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
-  uint8_t wallHardness;  
+  uint32_t wallHardness;  
   uint8_t gforcecounter; // counter for global gravity
   int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)  
   uint8_t forcecounter; // counter for globally applied forces
