@@ -5234,6 +5234,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     return FRAMETIME;
   }
 
+  int aliveCount = 0; // Solo glider detection
   bool blurDead   = SEGENV.step > strip.now && blur && !bgBlendMode && !overlayBG;
   bool palChanged = SEGMENT.palette != *prevPalette && !allColors;
   if (palChanged) *prevPalette = SEGMENT.palette;
@@ -5243,6 +5244,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
     cIndex = y * cols + x;
     bool alive = getBitValue(cells, cIndex);
+    if (alive) aliveCount++;
     CRGB color = SEGMENT.getPixelColorXY(x,y);
     if (palChanged && alive) SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0)); // Recolor alive cells
     else if (overlayBG & alive) SEGMENT.setPixelColorXY(x,y, allColors ? RGBW32(color.r, color.g, color.b, 0) : color);         // Redraw alive cells for overlayBG
@@ -5266,7 +5268,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { // iterate through 3*3 matrix
       if (i == 0 && j == 0) continue; // ignore itself
-      if (!wrap || generation % 1500 == 0) { //no wrap, disable wrap every 1500 generations to prevent undetected repeats
+      if (!wrap || generation % 1500 == 0 || aliveCount == 5) { //no wrap, disable wrap every 1500 generations to prevent undetected repeats
         cX = x + i;
         cY = y + j;
         if (cX < 0 || cY < 0 || cX >= cols || cY >= rows) continue; //skip if out of bounds
@@ -5278,9 +5280,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       // count neighbors and store upto 3 neighbor colors
       if (getBitValue(cells, cIndex)) { //if alive
         neighbors++;
-        if (!getBitValue(futureCells, cIndex)) continue; //parent just died, color lost
+        if (!getBitValue(futureCells, cIndex) || SEGMENT.getPixelColorXY(cX,cY) == bgColor) continue; //parent just died, color lost
         color = SEGMENT.getPixelColorXY(cX, cY);
-        if (color == bgColor) continue;
         nColors[colorCount % 3] = color;
         colorCount++;
       }
