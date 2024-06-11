@@ -9813,14 +9813,14 @@ uint16_t mode_particleBouncingBalls(void)
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  PartSys->setWallHardness(SEGMENT.custom1);
-  PartSys->setGravity(1 + (SEGMENT.custom3>>1)); // set gravity (8 is default strength)
+  PartSys->setWallHardness(240 + (SEGMENT.custom1>>4));
+  PartSys->setGravity(1 + (SEGMENT.custom3 >> 1)); // set gravity (8 is default strength)
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   //if (SEGMENT.check2) PartSys->setMotionBlur(255); //full motion blurring allows overlay (motion blur does not work with overlay)
   PartSys->sources[0].var = SEGMENT.speed >> 3;
   PartSys->sources[0].v = (SEGMENT.speed >> 1) - (SEGMENT.speed >> 3);
   if (SEGMENT.check1) // collisions enabled
-    PartSys->enableParticleCollisions(true, 127 + (SEGMENT.custom1>>1)); // enable collisions and set particle collision hardness
+    PartSys->enableParticleCollisions(true, 240 + (SEGMENT.custom1>>4)); // enable collisions and set particle collision hardness
   else
     PartSys->enableParticleCollisions(false);
   PartSys->setUsedParticles( 1 + (SEGMENT.intensity >> 3)); // 1 - 32
@@ -9842,11 +9842,11 @@ uint16_t mode_particleBouncingBalls(void)
     
     for(uint32_t i = 0; i < PartSys->usedParticles; i++)
     {
-      if(PartSys->particles[i].vx > 5 || PartSys->particles[i].vx < -5) //let only slow particles die (ensures no stopped particles)
-        PartSys->particles[i].ttl = 300; //set alive at full intensity
+      if(PartSys->particles[i].vx > 8 || PartSys->particles[i].vx < -8) //let only slow particles die (ensures no stopped particles)
+        PartSys->particles[i].ttl = 260; //set alive at full intensity
       if(updatespeed || PartSys->particles[i].ttl == 0) //speed changed or particle died, reset TTL and speed
       {        
-        PartSys->particles[i].ttl = 300;
+        PartSys->particles[i].ttl = 260;
         PartSys->particles[i].collide = true;
         int32_t newspeed = random(20 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
         PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? newspeed : -newspeed; //keep the direction
@@ -10227,7 +10227,7 @@ uint16_t mode_particleSparkler(void)
 
   for(i = 0; i < numSparklers; i++)
   { 
-    if((SEGMENT.call + random16(30))  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
+    if(random16()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
         PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
   }
   SEGMENT.aux0 = SEGMENT.check1;
@@ -10250,22 +10250,24 @@ uint16_t mode_particleHourglass(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem1D *PartSys = NULL;
-
+  int32_t positionoffset; // resting position offset 
+  bool* direction;
+  uint8_t* basehue;
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 1)) // init
+    if (!initParticleSystem1D(PartSys, 0, 2)) // init
       return mode_static(); // allocation failed
     PartSys->setBounce(true);
-    PartSys->setWallHardness(60);
+    PartSys->setWallHardness(80);
 
     for(uint32_t i = 0; i < PartSys->numParticles; i++)
     {
       PartSys->particles[i].collide = true; 
       PartSys->particles[i].ttl = 500; 
-      PartSys->particles[i].perpetual = true; 
-      PartSys->particles[i].x = PartSys->maxX - (i * PS_P_RADIUS_1D); //place particles, one at each pixel, highest number particles is lowest //TODO: need to reinit if number of particles changes
+      PartSys->particles[i].perpetual = true;       
     }
-    SEGMENT.aux0 = 0;
+    //SEGMENT.aux0 = 0;
+    SEGMENT.step = 0xFFFF;
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -10277,95 +10279,115 @@ uint16_t mode_particleHourglass(void)
   }
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  
-  PartSys->setUsedParticles(SEGMENT.intensity>>1);//SEGMENT.custom1);
-  
+  basehue = PartSys->PSdataEnd;  //assign data pointer
+  direction = reinterpret_cast<bool *>(PartSys->PSdataEnd + 1);  //assign data pointer
+  uint32_t numgrains = map(SEGMENT.intensity, 0, 255, 1, PartSys->maxXpixel + 1); // number of particles to use
+  PartSys->setUsedParticles(min(numgrains, (uint32_t)PartSys->numParticles));//SEGMENT.custom1);
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  PartSys->setGravity(2 + SEGMENT.custom3); //TODO: limit to 16max or things start flipping
-  PartSys->enableParticleCollisions(true,SEGMENT.custom1);
-  if(SEGMENT.aux1 == 0) //initialize
-  {
-    for(uint32_t i = 0; i < PartSys->usedParticles; i++)
-    {
-     // PartSys->particles[i].x = PartSys->maxX - (i * PS_P_RADIUS_1D ); //place particles, one at each pixel, highest order particles is lowest
-     // PartSys->particles[i].x = PS_P_RADIUS_1D*i;
-      PartSys->particles[i].hue = (i%2)*100;//(i * 255) / PartSys->usedParticles;
-      PartSys->particles[i].reversegrav = true; 
-    }
-    SEGMENT.aux0 = PartSys->usedParticles; //index of lowest particle (+1)
-    SEGMENT.aux1 = SEGMENT.speed<<1;
-  }
+  PartSys->setGravity(map(SEGMENT.custom3, 0, 31, 1, 30)); 
+  PartSys->enableParticleCollisions(true, 34); // fixed hardness, 34 is a value that works best in most settings (spent a long time optimizing)   SEGMENT.custom1);
+  
+  positionoffset = PS_P_RADIUS_1D / 2;
+  uint32_t colormode = SEGMENT.custom1 >> 5; // 0-7 
+  
 
-  if(SEGMENT.aux0 == 0)
-  { 
+  if(SEGMENT.intensity != SEGMENT.step) //initialize
+  {
+    *basehue = random16(); //choose new random color 
+    SEGMENT.step = SEGMENT.intensity;
     for(uint32_t i = 0; i < PartSys->usedParticles; i++)
-    {
+    {       
       PartSys->particles[i].reversegrav = true;
-      PartSys->particles[i].fixed = false;      
-    } 
-    SEGMENT.aux1--;
+      *direction = 0;
+      SEGMENT.aux1 = 1; //initialize below
+    }
+    SEGMENT.aux0 = PartSys->usedParticles - 1; //initial state, start with highest number particle
   }
   
-  else
+  for(uint32_t i = 0; i < PartSys->usedParticles; i++) //check if particle reached target position after falling 
   {
-    for(uint32_t i = SEGMENT.aux0; i < PartSys->usedParticles; i++) //fallen particles (but not the last few, a few particles stack nicely without pinning, after like 20 it oscillates)
+    uint32_t targetposition;
+    if (PartSys->particles[i].fixed == false)
     {
-          
-          uint32_t targetposition = ((PartSys->usedParticles - i) * PS_P_RADIUS_1D) - (PS_P_RADIUS_1D / 2); // target resting position 
-          if(PartSys->particles[i].x <= targetposition && PartSys->particles[i].vx == 0) //particle has come to rest, pin it (for some reason this is not needed in the opposite direction...)
-            PartSys->particles[i].fixed = true;
-        
-    } 
-  }
-
-/*
-  for(uint32_t i = PartSys->usedParticles + 1; i >= SEGMENT.aux0 ; i--) //fallen particles (but not the last few, a few particles stack nicely without pinning, after like 20 it oscillates)
-  {
-   Serial.print(PartSys->particles[i].x);   
-   Serial.print(" ");
-   Serial.print(PartSys->particles[i].vx);
-   Serial.print("|");
-  }
-   Serial.println(" ");*/
-/*
-  if(SEGMENT.call % 90 == 0)
-  {
-    for(uint32_t i = 0; i < PartSys->usedParticles; i++)
-    {
-        if(PartSys->particles[i].x - PartSys->particles[i+1].x > 0)
-        {
-          //Serial.print(i);
-          Serial.print("f");
-        }
-        if(SEGMENT.aux0 > i) Serial.print("*");
-        Serial.print(" ");
+      //calculate target position depending on direction       
+      if(PartSys->particles[i].reversegrav)
+        targetposition = PartSys->maxX - (i * PS_P_RADIUS_1D + positionoffset); // target resting position
+      else
+        targetposition = (PartSys->usedParticles - i) * PS_P_RADIUS_1D - positionoffset; // target resting position 
+      if(PartSys->particles[i].x == targetposition) //particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
+        PartSys->particles[i].fixed = true;
     }
-    Serial.println("x");
-  }*/
+    if(colormode == 7)
+      PartSys->particles[i].hue = (255 * (uint32_t)PartSys->particles[i].x) / PartSys->maxX; //color fixed by position
+    else
+    {      
+      switch(colormode) {
+        case 0: PartSys->particles[i].hue = 120; break; //fixed at 120, if flip is activated, this can make red and green (use palette 34)
+        case 1: PartSys->particles[i].hue = *basehue; break; //fixed random color         
+        case 2: 
+        case 3: PartSys->particles[i].hue = *basehue + (i % colormode)*70; break; // interleved colors (every 2 or 3 particles)
+        case 4: PartSys->particles[i].hue = *basehue + (i * 255) / PartSys->usedParticles;  break; // gradient palette colors
+        case 5: PartSys->particles[i].hue = *basehue + (i * 1024) / PartSys->usedParticles;  break; // multi gradient palette colors
+        case 6: PartSys->particles[i].hue = i + (strip.now >> 1);  break; // disco! fast moving color gradient
+        default: break; 
+      }
+    }
+    if(SEGMENT.check1 && !PartSys->particles[i].reversegrav) // flip color when fallen
+      PartSys->particles[i].hue += 120; 
+  } 
 
-  if(SEGMENT.call % (256 - SEGMENT.speed) == 0 && SEGMENT.aux0 > 0)
+
+  if(SEGMENT.aux1 == 1) //last countdown call before dropping starts, reset all particles
   {
-    SEGMENT.aux0--;
-    PartSys->particles[SEGMENT.aux0].reversegrav = false; //let this particle fall    
-    PartSys->particles[SEGMENT.aux0].hue += 100;
+    for(uint32_t i = 0; i < PartSys->usedParticles; i++) 
+    {
+      uint32_t targetposition;
+      //calculate target position depending on direction       
+      if(PartSys->particles[i].reversegrav)
+         targetposition = PartSys->maxX - (i * PS_P_RADIUS_1D + positionoffset); // target resting position 
+      else
+        targetposition = (PartSys->usedParticles - i) * PS_P_RADIUS_1D - positionoffset; // target resting position  -5 - PS_P_RADIUS_1D/2
+      
+      PartSys->particles[i].x = targetposition;
+      PartSys->particles[i].fixed = true;          
+    }
   }
 
- // PartSys->particles[PartSys->usedParticles - 1].fixed = true; //fix test
- // PartSys->particles[PartSys->usedParticles - 1].x = PS_P_RADIUS_1D * 5; //fix test
+  if(SEGMENT.aux1 == 0) //countdown passed, run
+  {
+    uint32_t interval = 257 - SEGMENT.speed; // drop interval in frames, 1 second is 'speed = (257 - FPS)' speed = 0 is one drop every 257 frames
+    if(SEGMENT.check3 && *direction) // fast reset
+      interval = 3;
+    if(SEGMENT.call % interval == 0) //drop a particle, do not drop more often than every second frame or particles tangle up quite badly
+    {
+      if(SEGMENT.aux0 < PartSys->usedParticles)
+      {
+        PartSys->particles[SEGMENT.aux0].reversegrav = *direction; //let this particle fall or rise
+        PartSys->particles[SEGMENT.aux0].fixed = false; // unpin
+      }
+      else //overflow, flip direction
+      {
+          *direction = !(*direction);
+          SEGMENT.aux1 = 300; //set countdown 
+      }
+      if(*direction == 0) //down              
+        SEGMENT.aux0--;            
+      else        
+        SEGMENT.aux0++;
+    }
+  }
+  else if(SEGMENT.check2) //auto reset
+    SEGMENT.aux1--; //countdown
 
- //if(SEGMENT.call % 4 == 0)
- //  PartSys->applyFriction(1); //keeps particles calm and stops mass collisions being handled improperly due to chaos
+ //if(SEGMENT.call % (SEGMENT.speed >> 5) == 0) //more friction on higher falling rate to keep particles behaved
+ //if(SEGMENT.call % 6 == 0)
+   //PartSys->applyFriction(1); //keeps particles calm and stops mass collisions being handled improperly due to chaos
 
-  if (SEGMENT.check3) 
-    PartSys->setParticleSize(1);
-  else
-    PartSys->setParticleSize(0);
-    
   PartSys->update(); // update and render
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Hardness,Blur/Overlay,Gravity,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=0,o2=1,o3=0";
+static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Color,Blur/Overlay,Gravity,Colorflip,Auto Reset,Fast Reset;,!;!;1;pal=34,sx=245,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
 
 
 #endif //WLED_DISABLE_PARTICLESYSTEM1D

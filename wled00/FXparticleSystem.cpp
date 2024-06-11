@@ -1580,7 +1580,7 @@ void ParticleSystem1D::setParticleSize(uint8_t size)
 {
   particlesize = size;
   if(particlesize)
-    particleHardRadius = PS_P_MINHARDRADIUS_1D + particlesize;  //TODO: set lower on 1pixel particles? or set in bounce? does not bounce at boarder but boarder +1
+    particleHardRadius = PS_P_MINHARDRADIUS_1D;  
   else
     particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1; //1 pixel sized particles have half the radius (for collisions & bounce)
 }
@@ -1643,12 +1643,6 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
     if (particlesettings.colorByAge)
       part.hue = part.ttl > 255 ? 255 : part.ttl; //set color to ttl
     
-    if(part.fixed)
-    {
-      part.vx = 0; //set speed to zero. note: üarticle can get speed in collisions, if unfixed, it should not speed away
-      return;
-    }
-
     //bool usesize = false; // particle uses individual size rendering
     int32_t newX = part.x + (int16_t)part.vx;
     part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
@@ -1681,8 +1675,6 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
             else
               newX = maxX - particleHardRadius;
           }
-
-          
       }
     }
     if ((newX < 0) || (newX > maxX)) // check if particle reached an edge (note: this also checks out of bounds and must not be skipped, even if bounce is enabled)
@@ -1705,7 +1697,10 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
           }
       }
     }
-    part.x = (int16_t)newX; // set new position
+    if(!part.fixed)
+      part.x = (int16_t)newX; // set new position
+    else
+      part.vx = 0; //set speed to zero. note: particle can get speed in collisions, if unfixed, it should not speed away
   }
 }
 
@@ -1947,14 +1942,14 @@ void ParticleSystem1D::handleCollisions()
     // go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
     if (particles[i].ttl > 0 && particles[i].outofbounds == 0  && particles[i].collide) // if particle is alive and does collide and is not out of view
     {
-      int32_t dx; // distance to other particles      
+      int32_t dx; // distance to other particles    
       for (j = i + 1; j < usedParticles; j++) // check against higher number particles
       {                
         if (particles[j].ttl > 0  && particles[j].collide) // if target particle is alive
         {
           dx = particles[j].x - particles[i].x;  
           int32_t  dv = (int32_t)particles[j].vx - (int32_t)particles[i].vx;        
-          if(dv > proximity) //particles would go past each other in next move upate
+          if(dv >= proximity) //particles would go past each other in next move upate
             proximity += abs(dv); //add speed difference to catch fast particles
           if (dx < proximity && dx > -proximity) // check if close
           {            
@@ -1970,21 +1965,6 @@ void ParticleSystem1D::handleCollisions()
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
 void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *particle2, int32_t dx, int32_t relativeVx) 
 {
- // int32_t dx = particle2->x - particle1->x;
-  // Calculate relative velocity (if it is zero, could exit but extra check does not overall speed but deminish it)
-  //int32_t relativeVx = (int32_t)particle2->vx - (int32_t)particle1->vx;
-  //Serial.print(" d"); Serial.print(dx); Serial.print(" v"); Serial.print(relativeVx); 
-/*
-  // if dx is zero (i.e. they meet at the center) give them an offset, if speeds are also zero, also offset them (pushes them apart if they are clumped before enabling collisions)
-  if (dx == 0) 
-  {
-    // Adjust positions based on relative velocity direction 
-    dx = -1; 
-    if (relativeVx < 0) // if true, particle2 is on the right side
-      dx = 1;
-    else if (relativeVx == 0) 
-      relativeVx = 1;
-  }*/
 
   // Calculate dot product of relative velocity and relative distance
   int32_t dotProduct = (dx * relativeVx); // is always negative if moving towards each other
@@ -1997,9 +1977,10 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
     uint32_t surfacehardness = collisionHardness < PS_P_MINSURFACEHARDNESS_1D ? PS_P_MINSURFACEHARDNESS_1D : collisionHardness; // if particles are soft, the impulse must stay above a limit or collisions slip through
     //TODO: if soft collisions are not needed, the above line can be done in sethardness function and skipped here.
     
+    
     //particles slow down due to collision losses
-    particle1->vx = ((int32_t)particle1->vx * surfacehardness) / 255; 
-    particle2->vx = ((int32_t)particle2->vx * surfacehardness) / 255;
+    //particle1->vx = ((int32_t)particle1->vx * surfacehardness) / 255; 
+    //particle2->vx = ((int32_t)particle2->vx * surfacehardness) / 255;
 
     //calculate (soft) collision impulse and add it to the speed
     //int32_t impulse = (((((relativeVx) << 15)) * surfacehardness) >> 23); //note: this calculation is biased slightly towards negative numbers due to bit shifts, which is not relevant in 1D system    
@@ -2009,21 +1990,23 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
     particle1->vx += impulse; 
     particle2->vx -= impulse;
 
-    //if one of the particles is fixed, transfer its impulse back to the other
+    //if one of the particles is fixed, transfer the impulse back so it bounces
     if(particle1->fixed)
-      particle2->vx -= impulse;
+      particle2->vx = -particle1->vx;
+      //particle2->vx -= impulse;
     else if(particle2->fixed)
-      particle1->vx += impulse;
+      particle1->vx = -particle2->vx;
+      //particle1->vx += impulse;
 
 //    particle1->vx = (particle1->vx < 5 && particle1->vx > -5) ? 0 : particle1->vx;
 //    particle2->vx = (particle2->vx < 5 && particle2->vx > -5) ? 0 : particle2->vx;
 
-
-  //  if (collisionHardness < surfacehardness) // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely)
-   // {
-     // const uint32_t coeff = collisionHardness;// + (255 - PS_P_MINSURFACEHARDNESS);
-     // particle1->vx = ((int32_t)particle1->vx * coeff) / 255; 
-     // particle2->vx = ((int32_t)particle2->vx * coeff) / 255;
+    if (collisionHardness < surfacehardness) // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and correctly)
+    {
+      const uint32_t coeff = collisionHardness + 100;//(255 - PS_P_MINSURFACEHARDNESS_1D);
+      particle1->vx = ((int32_t)particle1->vx * coeff) / 255; 
+      particle2->vx = ((int32_t)particle2->vx * coeff) / 255;
+    }
 /*
       if (collisionHardness < 100) // if they are very soft, stop slow particles completely to make them stick to each other
       {
@@ -2035,47 +2018,45 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
     
   }
 
+
   uint32_t distance = abs(dx);
   uint32_t collisiondistance = particleHardRadius;
   if(particlesize == 0) //single pixel particles
     collisiondistance = PS_P_RADIUS_1D; //single pixel particles have a radius of PS_P_RADIUS_1D/2, use diameter for proper stacking
-    // particles have volume, push particles apart if they are too close 
-    // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
-    // also need to give the top particle some speed to counteract gravity or stacks just collapse
-    if (distance <  collisiondistance) //particles are too close, push the upper particle away
-    {      
-      int32_t pushamount = 1 + (collisiondistance - distance)/2;
-      //int32_t pushamount = collisiondistance - distance;
-      //if(dotProduct > -30) pushamount++; //push harder if particles are very close
-      // + ((150 + dotProduct) >> 4); // the closer dotproduct is to zero, the closer the particles are
-     // int32_t push = 0;     
-      if (dx < 0)  // particle2.x < particle1.x
-      {
-          if (particle2->reversegrav)
-          {
-            particle2->x -= pushamount;
-           // particle2->vx--;
-          }
-          else if (particle1->reversegrav == false)
-          {          
-            particle1->x += pushamount;
-          //  particle1->vx++;
-          } 
-      }
-      else
-      {
-        if(particle1->reversegrav)
+  // particles have volume, push particles apart if they are too close 
+  // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
+  // also need to give the top particle some speed to counteract gravity or stacks just collapse
+  if (distance <  collisiondistance) //particles are too close, push the upper particle away
+  {      
+    int32_t pushamount = 1 + ((collisiondistance - distance) >> 1); //add half the remaining distance note: this works best, if less or more is added, it gets more chaotic
+    //int32_t pushamount = collisiondistance - distance;
+    if (dx < 0)  // particle2.x < particle1.x
+    {
+        if (particle2->reversegrav && !particle2->fixed)
         {
-          particle1->x -= pushamount;
-         // particle1->vx--;
+          particle2->x -= pushamount;
+          particle2->vx--;
         }
-        else if (particle2->reversegrav == false)
-        {
-          particle2->x += pushamount;
-         // particle2->vx++;
-        }
-      }          
+        else if (!particle1->reversegrav && !particle1->fixed)
+        {          
+          particle1->x += pushamount;
+          particle1->vx++;
+        } 
     }
+    else
+    {
+      if(particle1->reversegrav && !particle1->fixed)
+      {
+        particle1->x -= pushamount;
+        particle1->vx--;
+      }
+      else if (!particle2->reversegrav  && !particle2->fixed)
+      {
+        particle2->x += pushamount;
+        particle2->vx++;
+      }
+    }          
+  }
 }
 
 
@@ -2138,11 +2119,11 @@ uint32_t calculateNumberOfParticles1D(bool isadvanced)
 {
    uint32_t numberofParticles = SEGMENT.virtualLength();  // one particle per pixel (if possible)
 #ifdef ESP8266
-  uint32_t particlelimit = ESP8266_MAXPARTICLES_1D; // maximum number of paticles allowed (based on one segment of 16x16 and 4k effect ram)
+  uint32_t particlelimit = ESP8266_MAXPARTICLES_1D; // maximum number of paticles allowed 
 #elif ARDUINO_ARCH_ESP32S2
-  uint32_t particlelimit = ESP32S2_MAXPARTICLES_1D; // maximum number of paticles allowed (based on one segment of 32x32 and 24k effect ram)
+  uint32_t particlelimit = ESP32S2_MAXPARTICLES_1D; // maximum number of paticles allowed 
 #else
-  uint32_t particlelimit = ESP32_MAXPARTICLES_1D; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
+  uint32_t particlelimit = ESP32_MAXPARTICLES_1D; // maximum number of paticles allowed 
 #endif
   numberofParticles = max((uint32_t)1, min(numberofParticles, particlelimit));
   if (isadvanced) // advanced property array needs ram, reduce number of particles to use the same amount

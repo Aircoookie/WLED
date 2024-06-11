@@ -29,7 +29,7 @@
 #include <stdint.h>
 #include "FastLED.h"
 
-#define PS_P_MAXSPEED 127 // maximum speed a particle can have (vx/vy is int8)
+#define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 
 
 //shared functions (used both in 1D and 2D system)
@@ -234,6 +234,7 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
 ////////////////////////
 #ifndef WLED_DISABLE_PARTICLESYSTEM1D
 // memory allocation
+//MAX_SEGMENT_DATA
 #define ESP8266_MAXPARTICLES_1D 400 
 #define ESP8266_MAXSOURCES_1D 8
 #define ESP32S2_MAXPARTICLES_1D 1900
@@ -246,8 +247,8 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
 #define PS_P_HALFRADIUS_1D 16
 #define PS_P_RADIUS_SHIFT_1D 5 //TODO: may need to adjust
 #define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
-#define PS_P_MINHARDRADIUS_1D 30 // minimum hard surface radius 
-#define PS_P_MINSURFACEHARDNESS_1D 0 // minimum hardness used in collision impulse calculation
+#define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius 
+#define PS_P_MINSURFACEHARDNESS_1D 50 // minimum hardness used in collision impulse calculation
 
 //struct for a single particle (6 bytes)
 typedef struct {
@@ -260,7 +261,7 @@ typedef struct {
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
     bool reversegrav : 1; // if set, gravity is reversed on this particle
-    bool fixed : 1; // if set, particle does not move (and collisions make other particles revert direction)
+    bool fixed : 1; // if set, particle does not move (and collisions make other particles revert direction), 
 } PSparticle1D;
 
 // struct for additional particle settings (optional)
