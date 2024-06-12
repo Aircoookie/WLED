@@ -61,11 +61,7 @@
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       // the last digital bus (I2S0) will prevent Audioreactive usermod from functioning
-      #ifndef WLED_USE_PARALLEL_I2S
-      #define WLED_MAX_BUSSES 10
-      #else
       #define WLED_MAX_BUSSES 17
-      #endif
       #define WLED_MIN_VIRTUAL_BUSSES 0
     #endif
   #endif
@@ -76,10 +72,10 @@
     #endif
     #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSSES)
   #else
-    #if WLED_MAX_BUSES > 10
-      #error Maximum number of buses is 10.
+    #if WLED_MAX_BUSES > 17
+      #error Maximum number of buses is 17.
     #endif
-    #define WLED_MIN_VIRTUAL_BUSSES (10-WLED_MAX_BUSSES)
+    #define WLED_MIN_VIRTUAL_BUSSES (17-WLED_MAX_BUSSES)
   #endif
 #endif
 

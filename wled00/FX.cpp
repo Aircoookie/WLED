@@ -2103,7 +2103,7 @@ uint16_t mode_fire_2012() {
     }
   };
 
-  for (int stripNr=0; stripNr<strips; stripNr++)
+  for (unsigned stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &heat[stripNr * SEGLEN], it);
 
   if (SEGMENT.is2D()) SEGMENT.blur(32);
