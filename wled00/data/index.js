@@ -282,12 +282,12 @@ function onLoad()
 		// fill effect extra data array
 		loadFXData(()=>{
 			// load and populate effects
-			loadFX(()=>{
+			setTimeout(()=>{loadFX(()=>{
 				loadPalettesData(()=>{
 					requestJson();// will load presets and create WS
 					if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},50);
 				});
-			});
+			})},50);
 		});
 	});
 	resetUtil();
