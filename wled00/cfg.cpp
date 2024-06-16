@@ -156,18 +156,42 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonArray ins = hw_led["ins"];
 
   if (fromFS || !ins.isNull()) {
+    DEBUG_PRINTF_P(PSTR("Heap before buses: %d\n"), ESP.getFreeHeap());
     int s = 0;  // bus iterator
     if (fromFS) BusManager::removeAll(); // can't safely manipulate busses directly in network callback
-    uint32_t mem = 0, globalBufMem = 0;
-    uint16_t maxlen = 0;
+    uint32_t mem = 0;
     bool busesChanged = false;
+    // determine if it is sensible to use parallel I2S outputs on ESP32 (i.e. more than 5 outputs = 1 I2S + 4 RMT)
+    bool useParallel = false;
+    #if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ARCH_ESP32S2) && !defined(ARDUINO_ARCH_ESP32S3) && !defined(ARDUINO_ARCH_ESP32C3)
+    unsigned digitalCount = 0;
+    unsigned maxLeds = 0;
+    int oldType = 0;
+    int j = 0;
+    for (JsonObject elm : ins) {
+      unsigned type = elm["type"] | TYPE_WS2812_RGB;
+      unsigned len = elm["len"] | 30;
+      if (IS_DIGITAL(type) && !IS_2PIN(type)) digitalCount++;
+      if (len > maxLeds) maxLeds = len;
+      // we need to have all LEDs of the same type for parallel
+      if (j++ < 8 && oldType > 0 && oldType != type) oldType = -1;
+      else if (oldType == 0) oldType = type;
+    }
+    DEBUG_PRINTF_P(PSTR("Maximum LEDs on a bus: %u\nDigital buses: %u\nDifferent types: %d\n"), maxLeds, digitalCount, (int)(oldType == -1));
+    // we may remove 300 LEDs per bus limit when NeoPixelBus is updated beyond 2.9.0
+    if (/*oldType != -1 && */maxLeds <= 300 && digitalCount > 5) {
+      useParallel = true;
+      BusManager::useParallelOutput();
+      DEBUG_PRINTF_P(PSTR("Switching to parallel I2S with max. %d LEDs per ouptut.\n"), maxLeds);
+    }
+    #endif
     for (JsonObject elm : ins) {
       if (s >= WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES) break;
       uint8_t pins[5] = {255, 255, 255, 255, 255};
       JsonArray pinArr = elm["pin"];
       if (pinArr.size() == 0) continue;
       pins[0] = pinArr[0];
-      uint8_t i = 0;
+      unsigned i = 0;
       for (int p : pinArr) {
         pins[i++] = p;
         if (i>4) break;
@@ -193,12 +217,16 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
-        mem += BusManager::memUsage(bc);
-        if (useGlobalLedBuffer && start + length > maxlen) {
-          maxlen = start + length;
-          globalBufMem = maxlen * 4;
-        }
-        if (mem + globalBufMem <= MAX_LED_MEMORY) if (BusManager::add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
+        if (useParallel && s < 8) {
+          // we are using parallel I2S and memUsage() will include x8 allocation into account
+          if (s == 0)
+            mem = BusManager::memUsage(bc); // includes x8 memory allocation for parallel I2S
+          else
+            if (BusManager::memUsage(bc) > mem)
+              mem = BusManager::memUsage(bc); // if we have unequal LED count use the largest
+        } else
+          mem += BusManager::memUsage(bc); // includes global buffer
+        if (mem <= MAX_LED_MEMORY) if (BusManager::add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
@@ -206,6 +234,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
       s++;
     }
+    DEBUG_PRINTF_P(PSTR("LED buffer size: %uB\n"), mem);
+    DEBUG_PRINTF_P(PSTR("Heap after buses: %d\n"), ESP.getFreeHeap());
     doInitBusses = busesChanged;
     // finalization done in beginStrip()
   }
@@ -215,7 +245,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonArray hw_com = hw[F("com")];
   if (!hw_com.isNull()) {
     ColorOrderMap com = {};
-    uint8_t s = 0;
+    unsigned s = 0;
     for (JsonObject entry : hw_com) {
       if (s > WLED_MAX_COLOR_ORDER_MAPPINGS) break;
       uint16_t start = entry["start"] | 0;
@@ -234,10 +264,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   disablePullUp = !pull;
   JsonArray hw_btn_ins = btn_obj["ins"];
   if (!hw_btn_ins.isNull()) {
-    for (uint8_t b = 0; b < WLED_MAX_BUTTONS; b++) { // deallocate existing button pins
-      pinManager.deallocatePin(btnPin[b], PinOwner::Button); // does nothing if trying to deallocate a pin with PinOwner != Button
-    }
-    uint8_t s = 0;
+    // deallocate existing button pins
+    for (unsigned b = 0; b < WLED_MAX_BUTTONS; b++) pinManager.deallocatePin(btnPin[b], PinOwner::Button); // does nothing if trying to deallocate a pin with PinOwner != Button
+    unsigned s = 0;
     for (JsonObject btn : hw_btn_ins) {
       CJSON(buttonType[s], btn["type"]);
       int8_t pin = btn["pin"][0] | -1;

@@ -685,11 +685,11 @@ uint32_t BusManager::memUsage(BusConfig &bc) {
       if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
         multiplier = 5;
       }
-    #else //ESP32 RMT uses double buffer, I2S uses 5x buffer
-      multiplier = 2;
+    #else //ESP32 RMT uses double buffer, parallel I2S uses 8x buffer (3 times)
+      multiplier = PolyBus::isParallelI2S1Output() ? 24 : 2;
     #endif
   }
-  return len * channels * multiplier; //RGB
+  return (len * multiplier + bc.doubleBuffer * (bc.count + bc.skipAmount)) * channels;
 }
 
 int BusManager::add(BusConfig &bc) {
@@ -706,6 +706,10 @@ int BusManager::add(BusConfig &bc) {
   return numBusses++;
 }
 
+void BusManager::useParallelOutput(void) {
+  PolyBus::setParallelI2S1Output();
+}
+
 //do not call this method from system context (network callback)
 void BusManager::removeAll() {
   DEBUG_PRINTLN(F("Removing all."));
@@ -713,6 +717,7 @@ void BusManager::removeAll() {
   while (!canAllShow()) yield();
   for (unsigned i = 0; i < numBusses; i++) delete busses[i];
   numBusses = 0;
+  PolyBus::setParallelI2S1Output(false);
 }
 
 void BusManager::show() {
@@ -780,6 +785,8 @@ uint16_t BusManager::getTotalLength() {
   for (unsigned i=0; i<numBusses; i++) len += busses[i]->getLength();
   return len;
 }
+
+bool PolyBus::useParallelI2S = false;
 
 // Bus static member definition
 int16_t Bus::_cct = -1;

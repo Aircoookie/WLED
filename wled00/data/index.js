@@ -282,12 +282,12 @@ function onLoad()
 		// fill effect extra data array
 		loadFXData(()=>{
 			// load and populate effects
-			loadFX(()=>{
+			setTimeout(()=>{loadFX(()=>{
 				loadPalettesData(()=>{
 					requestJson();// will load presets and create WS
 					if (cfg.comp.css) setTimeout(()=>{loadSkinCSS('skinCss')},50);
 				});
-			});
+			})},50);
 		});
 	});
 	resetUtil();
@@ -2831,9 +2831,8 @@ function search(field, listId = null) {
 
 	// restore default preset sorting if no search term is entered
 	if (!search) {
-		if (listId === 'pcont') populatePresets();
-		if (listId === 'pallist') populatePalettes();
-		return;
+		if (listId === 'pcont')   { populatePresets(); return; }
+		if (listId === 'pallist') { populatePalettes(); return; }
 	}
 
 	// clear filter if searching in fxlist

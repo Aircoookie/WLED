@@ -215,7 +215,7 @@ bool requestJSONBufferLock(uint8_t module)
   }
   unsigned long now = millis();
 
-  while (jsonBufferLock && millis()-now < 100) delay(1); // wait for fraction for buffer lock
+  while (jsonBufferLock && millis()-now < 250) delay(1); // wait for fraction for buffer lock
 
   if (jsonBufferLock) {
     DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
