@@ -269,9 +269,9 @@ void appendGPIOinfo() {
 
   // add info about max. # of pins
   oappend(SET_F("d.max_gpio="));
-  #if defined(ESP32)
+  #if defined(ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     oappendi(NUM_DIGITAL_PINS - 1);
-  #else //8266
+  #else //8266 (max=17), or esp32-S3 (max=48)
     oappendi(NUM_DIGITAL_PINS); //WLEDMM include pin 17 for Analog
   #endif
   oappend(SET_F(";"));
