@@ -328,7 +328,7 @@
 #define BTN_TYPE_TOUCH_SWITCH     9
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        12
+#define WLED_NUM_ETH_TYPES        13
 
 #define WLED_ETH_NONE              0
 #define WLED_ETH_WT32_ETH01        1
@@ -342,6 +342,7 @@
 #define WLED_ETH_ABCWLEDV43ETH     9
 #define WLED_ETH_SERG74           10
 #define WLED_ETH_ESP32_POE_WROVER 11
+#define WLED_ETH_LILYGO_T_POE_PRO 12
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
