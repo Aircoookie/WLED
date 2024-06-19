@@ -5316,7 +5316,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       SEGMENT.setPixelColorXY(x,y, dominantColor);
     }
     else { // blur dead cells 
-      if (!cellValue && !overlayBG && !bgBlendMode) SEGMENT.setPixelColorXY(x,y, color_blend(SEGMENT.getPixelColorXY(x,y), bgColor, bgBlendMode ? bgBlur : blur)); 
+      if (!cellValue && !overlayBG && !bgBlendMode) SEGMENT.setPixelColorXY(x,y, color_blend(SEGMENT.getPixelColorXY(x,y), bgColor, blur)); 
     }
   }
   //update cell values
