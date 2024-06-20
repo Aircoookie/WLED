@@ -5210,10 +5210,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       cIndex = y * cols + x;
       if (random8(100) < 32) { // ~32% chance of being alive
         setBitValue(cells, cIndex, true);
-        color = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
-        SEGMENT.setPixelColorXY(x,y, allColors ? random16() * random16() : color);
+        SEGMENT.setPixelColorXY(x,y, bgColor); // Initial color set in redraw loop
       }
-      else if (!overlayBG) SEGMENT.setPixelColorXY(x,y, bgColor); // set background color if not overlaying
     }
     memcpy(futureCells, cells, dataSize); 
 
@@ -5231,7 +5229,6 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       a = t;
     }
     *gliderLength = cols * rows / a * 4;
-    return FRAMETIME;
   }
 
   int aliveCount  = 0; // Solo glider detection
@@ -5246,6 +5243,15 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     bool alive = getBitValue(cells, cIndex);
     if (alive) aliveCount++;
     uint32_t cellColor = SEGMENT.getPixelColorXY(x,y);
+    if (generation == 1) {// Spawn initial colors randomly
+      bool aliveBgColor = (alive && cellColor == bgColor);
+      if (aliveBgColor && !random(12)) SEGMENT.setPixelColorXY(x,y, allColors ? random16() * random16() : SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0)); // Color alive cell
+      else if (alive && !aliveBgColor) SEGMENT.setPixelColorXY(x,y, cellColor); // Redraw alive cells
+      else if (!alive && !overlayBG && !bgBlendMode) SEGMENT.setPixelColorXY(x,y, bgColor); // Redraw dead cells for default overlayFG
+      else if (!alive && !overlayBG) SEGMENT.setPixelColorXY(x,y, color_blend(cellColor, bgColor, 16)); // Fade dead cells (bgBlendMode)
+      continue;
+    }
+
     if      ( alive && palChanged) SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0)); // Recolor alive cells
     else if ( alive && overlayBG)  SEGMENT.setPixelColorXY(x,y, cellColor);                               // Redraw alive cells for overlayBG
     if      (!alive && palChanged && !overlayBG) SEGMENT.setPixelColorXY(x,y, bgColor);                   // Remove blurred cells from previous palette
