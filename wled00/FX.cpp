@@ -5210,7 +5210,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       cIndex = y * cols + x;
       if (random8(100) < 32) { // ~32% chance of being alive
         setBitValue(cells, cIndex, true);
-        SEGMENT.setPixelColorXY(x,y, bgColor); // Initial color set in redraw loop
+        if (!overlayBG) SEGMENT.setPixelColorXY(x,y, bgColor); // Initial color set in redraw loop
       }
     }
     memcpy(futureCells, cells, dataSize); 
@@ -5236,27 +5236,27 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   bool palChanged = SEGMENT.palette != *prevPalette && !allColors;
   if (palChanged) *prevPalette = SEGMENT.palette;
 
-  // Redraw if paused (remove blur), palette changed, overlaying background (avoid flicker), 
-  // always redraw dead cells if not overlaying background. Allows overlayFG by default.
+  // Redraw Loop
+  // Redraw if paused (remove blur), palette changed, overlaying background (avoid flicker) 
+  // Always redraw dead cells if not overlaying background. Allows overlayFG by default.
+  // Generation 1 draws alive cells randomly and fades dead cells
   for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
     cIndex = y * cols + x;
     bool alive = getBitValue(cells, cIndex);
     if (alive) aliveCount++;
     uint32_t cellColor = SEGMENT.getPixelColorXY(x,y);
-    if (generation == 1) {// Spawn initial colors randomly
-      bool aliveBgColor = (alive && cellColor == bgColor);
-      if (aliveBgColor && !random(12)) SEGMENT.setPixelColorXY(x,y, allColors ? random16() * random16() : SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0)); // Color alive cell
-      else if (alive && !aliveBgColor) SEGMENT.setPixelColorXY(x,y, cellColor); // Redraw alive cells
-      else if (!alive && !overlayBG && !bgBlendMode) SEGMENT.setPixelColorXY(x,y, bgColor); // Redraw dead cells for default overlayFG
-      else if (!alive && !overlayBG) SEGMENT.setPixelColorXY(x,y, color_blend(cellColor, bgColor, 16)); // Fade dead cells (bgBlendMode)
-      continue;
-    }
+    bool aliveBgColor = (alive && !overlayBG && generation == 1 && cellColor == bgColor);
 
-    if      ( alive && palChanged) SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0)); // Recolor alive cells
-    else if ( alive && overlayBG)  SEGMENT.setPixelColorXY(x,y, cellColor);                               // Redraw alive cells for overlayBG
-    if      (!alive && palChanged && !overlayBG) SEGMENT.setPixelColorXY(x,y, bgColor);                   // Remove blurred cells from previous palette
-    else if (!alive && blurDead)   SEGMENT.setPixelColorXY(x,y, color_blend(cellColor, bgColor, blur));   // Blur dead cells (paused)
-    else if (!alive && !overlayBG) SEGMENT.setPixelColorXY(x,y, cellColor);                               // Redraw dead cells for default overlayFG
+    if      ( alive && (palChanged || (aliveBgColor && !random(12)))) { // Palette change or spawn initial colors randomly
+      uint32_t randomColor = allColors ? random16() * random16() : SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
+      SEGMENT.setPixelColorXY(x,y, randomColor); // Recolor alive cells
+      aliveBgColor = false;
+    }
+    else if ( alive && overlayBG)                     SEGMENT.setPixelColorXY(x,y, cellColor);                            // Redraw alive cells for overlayBG
+    if      (!alive && palChanged && !overlayBG)      SEGMENT.setPixelColorXY(x,y, bgColor);                              // Remove blurred cells from previous palette
+    else if (!alive && blurDead)                      SEGMENT.setPixelColorXY(x,y, color_blend(cellColor, bgColor, blur));// Blur dead cells (paused)
+    else if ((!alive || aliveBgColor) && !overlayBG && !bgBlendMode) SEGMENT.setPixelColorXY(x,y, cellColor);             // Redraw dead cells/alive off cells for default overlayFG
+    else if (!alive && !overlayBG && generation == 1) SEGMENT.setPixelColorXY(x,y, color_blend(cellColor, bgColor, 16));  // Fade dead cells (bgBlendMode) on generation 1
   }
   
   if (SEGENV.step > strip.now || strip.now - SEGENV.step < 1000 / (uint32_t)map(SEGMENT.speed,0,255,1,64)) return FRAMETIME; //skip if not enough time has passed (1-64 updates/sec)
