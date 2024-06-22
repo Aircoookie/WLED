@@ -392,7 +392,7 @@ void ParticleSystem::updateSize(PSadvancedParticle *advprops, PSsizeControl *adv
   // grow/shrink particle
   int32_t newsize = advprops->size;
   uint32_t counter = advsize->sizecounter;
-  uint32_t increment;
+  uint32_t increment = 0;
   // calculate grow speed using 0-8 for low speeds and 9-15 for higher speeds
   if (advsize->grow) increment = advsize->growspeed;
   else if (advsize->shrink) increment = advsize->shrinkspeed;
@@ -476,13 +476,13 @@ void ParticleSystem::bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_
     position = maxposition - particleHardRadius;
   if (wallRoughness)
   {
-    int32_t totalspeed = abs(incomingspeed) + abs(parallelspeed);
+    int32_t incomingspeed_abs =  abs((int32_t)incomingspeed);
+    int32_t totalspeed = incomingspeed_abs + abs((int32_t)parallelspeed);
     // transfer an amount of incomingspeed speed to parallel speed
-    int32_t donatespeed = abs(incomingspeed);
-    donatespeed = (random(-donatespeed, donatespeed) * wallRoughness) / 255; //take random portion of + or - perpendicular speed, scaled by roughness 
+    int32_t donatespeed = (random(-incomingspeed_abs, incomingspeed_abs) * (int32_t)wallRoughness) / (int32_t)255; //take random portion of + or - perpendicular speed, scaled by roughness 
     parallelspeed = limitSpeed((int32_t)parallelspeed + donatespeed);
-    incomingspeed = limitSpeed((int32_t)incomingspeed - donatespeed);
-    donatespeed = totalspeed - abs(parallelspeed); // keep total speed the same
+    //give the remainder of the speed to perpendicular speed
+    donatespeed = int8_t(totalspeed - abs(parallelspeed)); // keep total speed the same
     incomingspeed = incomingspeed > 0 ? donatespeed : -donatespeed;
   }
 }

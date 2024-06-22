@@ -1257,7 +1257,7 @@ uint16_t mode_fireworks() {
 }
 static const char _data_FX_MODE_FIREWORKS[] PROGMEM = "Fireworks@,Frequency;!,!;!;12;ix=192,pal=11";
 
-/*
+
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
 uint16_t mode_rain() {
   if (SEGLEN == 1) return mode_static();
@@ -1291,7 +1291,7 @@ uint16_t mode_rain() {
   return mode_fireworks();
 }
 static const char _data_FX_MODE_RAIN[] PROGMEM = "Rain@!,Spawning rate;!,!;!;12;ix=128,pal=0";
-*/
+
 
 /*
  * Fire flicker function
@@ -1919,7 +1919,7 @@ uint16_t mode_pride_2015(void) {
 }
 static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
 
-/*
+
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
   if (SEGLEN == 1) return mode_static();
@@ -1937,7 +1937,7 @@ uint16_t mode_juggle(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;;!;;sx=64,ix=128";
-*/
+
 
 uint16_t mode_palette() {
   // Set up some compile time constants so that we can handle integer and float based modes using the same code base.
@@ -2956,7 +2956,7 @@ uint16_t mode_spots_fade()
   return spots_base(tr);
 }
 static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width,,,,,Overlay;!,!;!";
-/*
+
 
 //each needs 12 bytes
 typedef struct Ball {
@@ -2964,11 +2964,11 @@ typedef struct Ball {
   float impactVelocity;
   float height;
 } ball;
-*/
+
 /*
 *  Bouncing Balls Effect
 */
-/*
+
 uint16_t mode_bouncing_balls(void) {
   if (SEGLEN == 1) return mode_static();
   //allocate segment data
@@ -3041,14 +3041,14 @@ uint16_t mode_bouncing_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls,,,,,Overlay;!,!,!;!;1;m12=1"; //bar
-*/
+
 
 /*
  *  bouncing balls on a track track Effect modified from Aircoookie's bouncing balls
  *  Courtesy of pjhatch (https://github.com/pjhatch)
  *  https://github.com/Aircoookie/WLED/pull/1039
  */
- /*
+ 
 // modified for balltrack mode
 typedef struct RollingBall {
   unsigned long lastBounceUpdate;
@@ -3143,7 +3143,7 @@ static uint16_t rolling_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
-*/
+
 
 /*
 * Sinelon stolen from FASTLED examples
@@ -3253,7 +3253,7 @@ typedef struct Spark {
 *  POPCORN
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
-/*
+
 uint16_t mode_popcorn(void) {
   if (SEGLEN == 1) return mode_static();
   //allocate segment data
@@ -3312,7 +3312,7 @@ uint16_t mode_popcorn(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,Overlay;!,!,!;!;;m12=1"; //bar
-*/
+
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
 //Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
@@ -7995,7 +7995,7 @@ uint16_t mode_particlevortex(void)
  
   if (SEGMENT.custom2 > 0) // automatic direction change enabled
   {
-    uint16_t changeinterval = (270 - SEGMENT.custom2);
+    uint16_t changeinterval = 15 + 255 / SEGMENT.custom2;
     direction = SEGMENT.aux1 & 0x02; //set direction according to flag
 
     if (SEGMENT.check3) // random interval
@@ -8740,7 +8740,7 @@ uint16_t mode_particlebox(void)
     PartSys->applyForce(xgravity, ygravity);
   }
 
-  if (SEGMENT.call % (32-SEGMENT.custom3) == 0)
+  if (SEGMENT.call % (32 - SEGMENT.custom3) == 0)
     PartSys->applyFriction(2);
 
   PartSys->update();   // update and render
@@ -8966,7 +8966,6 @@ uint16_t mode_particleattractor(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
-  uint32_t i = 0;
   PSsettings sourcesettings;
   sourcesettings.asByte = 0b00001100; // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
   PSparticle *attractor; // particle pointer to the attractor
@@ -9467,7 +9466,6 @@ if (SEGLEN == 1)
       PartSys->angleEmit(PartSys->sources[j], emitangle, emitspeed);      
     j = (j + 1) % numSprays;
   }
-
   PartSys->update(); // update and render
   return FRAMETIME;
 }
@@ -9584,7 +9582,7 @@ uint16_t mode_particleblobs(void)
       PartSys->setBounceX(true);
       PartSys->setBounceY(true);
       PartSys->setWallHardness(255); 
-      PartSys->setWallRoughness(255);
+      PartSys->setWallRoughness(255);      
       PartSys->setCollisionHardness(255); 
       //PartSys->setParticleSize(0); //set global size to zero or motion blur cannot be used (is zero by default)
   }
@@ -9604,8 +9602,8 @@ uint16_t mode_particleblobs(void)
   {
     if(SEGMENT.aux0 != SEGMENT.speed || PartSys->particles[i].ttl == 0) // speed changed or dead
     {
-      PartSys->particles[i].vx = (int16_t)random(-(SEGMENT.speed >> 2), SEGMENT.speed >> 2); 
-      PartSys->particles[i].vy = (int16_t)random(-(SEGMENT.speed >> 2), SEGMENT.speed >> 2);
+      PartSys->particles[i].vx = (int8_t)random(-(SEGMENT.speed >> 2), SEGMENT.speed >> 2); 
+      PartSys->particles[i].vy = (int8_t)random(-(SEGMENT.speed >> 2), SEGMENT.speed >> 2);
     }
     if(SEGMENT.aux1 != SEGMENT.custom1 || PartSys->particles[i].ttl == 0) // size changed or dead
       PartSys->advPartSize[i].maxsize = 60 + (SEGMENT.custom1 >> 1) + random((SEGMENT.custom1 >> 2)); // set each particle to slightly randomized size
@@ -9675,14 +9673,13 @@ uint16_t mode_particleDrip(void)
     return mode_static();
   ParticleSystem1D *PartSys = NULL;
   //uint8_t numSprays;
-  const uint8_t hardness = 150; // collision hardness is fixed
-
   if (SEGMENT.call == 0) // initialization 
   {
     if (!initParticleSystem1D(PartSys, 4)) // init, no additional data needed
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
-    PartSys->sources[0].source.hue = random16();   
+    PartSys->sources[0].source.hue = random16();
+    SEGMENT.aux0 = 1; //must not be zero or "% 0" happens below which crashes on ESP32   
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -9738,14 +9735,14 @@ uint16_t mode_particleDrip(void)
   // every nth frame emit a particle 
   if (SEGMENT.call % SEGMENT.aux0 == 0) 
   { 
-    SEGMENT.aux0 = (256 - SEGMENT.intensity) + random(260 - SEGMENT.intensity);
+    int32_t interval = 256 / (SEGMENT.intensity + 1); 
+    SEGMENT.aux0 = interval + random(interval + 5);
     PartSys->sources[0].source.hue = random16(); //set random color  TODO: maybe also not random but color cycling? need another slider or checkmark for this.
     PartSys->sprayEmit(PartSys->sources[0]);
   }
   
   for (int i = 0; i < PartSys->usedParticles; i++)//check all particles
   {
-  
     if(PartSys->particles[i].ttl &&  PartSys->particles[i].collide == false) // use collision flag to identify splash particles
     {
       if(SEGMENT.custom1 > 0 && PartSys->particles[i].x < (PS_P_RADIUS_1D << 1)) //splash enabled and reached bottom -> does not work this way, all splashes will splash again... need to mark particles
@@ -9770,7 +9767,6 @@ uint16_t mode_particleDrip(void)
   }
 
   PartSys->update(); // update and render
-  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
@@ -9787,8 +9783,7 @@ uint16_t mode_particleBouncingBalls(void)
 {
   if (SEGLEN == 1)
     return mode_static();
-  ParticleSystem1D *PartSys = NULL;
-  const uint8_t hardness = 150; // collision hardness is fixed
+  ParticleSystem1D *PartSys = NULL;  
 
   if (SEGMENT.call == 0) // initialization 
   {
@@ -9881,9 +9876,7 @@ uint16_t mode_particleBouncingBalls(void)
     }
   }
 
-  PartSys->update(); // update and render
-  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
-  
+  PartSys->update(); // update and render  
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur/Overlay,Gravity,Collide,Smooth,Rolling;,!;!;1;pal=0,sx=100,c1=240,c2=0,c3=8,o1=0,o2=0,o3=1";
@@ -9903,8 +9896,6 @@ uint16_t mode_particleDancingShadows(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem1D *PartSys = NULL;
-  //uint8_t numSprays;
-  const uint8_t hardness = 150; // collision hardness is fixed
 
   if (SEGMENT.call == 0) // initialization 
   {
@@ -9924,25 +9915,21 @@ uint16_t mode_particleDancingShadows(void)
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  if (SEGMENT.check2) 
-    PartSys->setMotionBlur(255); //full motion blurring allows overlay (motion blur does not work with overlay)
-  else  
-    PartSys->setMotionBlur(SEGMENT.custom1);
+  PartSys->setMotionBlur(SEGMENT.custom1);
    if (SEGMENT.check3) // collisions enabled
     PartSys->setParticleSize(1);
    else
     PartSys->setParticleSize(0);
 
-  //note: updating speed on the fly is not possible, since it is unknown which particles are assigned to which spot
-
   //generate a spotlight: generates particles just outside of view
-  if (SEGMENT.call % (260 - (SEGMENT.intensity)) == 0) 
+  //if (SEGMENT.call % ((255 + 64) / (1 + SEGMENT.intensity + (SEGMENT.speed >> 4))) == 0) 
+  if (SEGMENT.call % (256 - SEGMENT.intensity) == 0) 
   {
     //random color, random type
     uint32_t type = random8(SPOT_TYPES_COUNT);
-    int8_t speed = random(5 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
+    int8_t speed = 2 + random(2 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
     uint32_t width = random8(1, 10);
-    uint32_t ttl = 300; //ttl is particle brightness (if perpetual is set, it does not age, i.e. ttl stays at this value)
+    uint32_t ttl = 300; //ttl is particle brightness (below perpetual is set so it does not age, i.e. ttl stays at this value)
     int32_t position;
     //choose random start position, left and right from the segment
     if (random8(2)) {
@@ -10002,15 +9989,22 @@ uint16_t mode_particleDancingShadows(void)
       if((int32_t)PartSys->particles[i].vx * PartSys->particles[i].x > 0) PartSys->particles[i].ttl = 0; //particle is moving away, kill it
     }
     PartSys->particles[i].perpetual = true; //particles do not age    
-    if (SEGMENT.call % (32 - (SEGMENT.custom2 >> 3)) == 0) 
-       PartSys->particles[i].hue += 2 + SEGMENT.custom2 >> 5;
+    if (SEGMENT.call % (32 / (1 + (SEGMENT.custom2 >> 3))) == 0) 
+       PartSys->particles[i].hue += 2 + (SEGMENT.custom2 >> 5);
+    //note: updating speed on the fly is not accurately possible, since it is unknown which particles are assigned to which spot
+    if(SEGMENT.aux0 != SEGMENT.speed) //speed changed
+    {      
+      //update all particle speed by setting them to current value 
+       PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? SEGMENT.speed >> 3 : -SEGMENT.speed >> 3;
+    }
   }
+  SEGMENT.aux0 = SEGMENT.speed;
 
   PartSys->update(); // update and render
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,,Overlay,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=0,c2=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur/Overlay,Color Cycle,,,,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=0,c2=0,o2=0,o3=0";
 
 
 /*
@@ -10118,7 +10112,7 @@ uint16_t mode_particleFireworks1D(void)
     if(PartSys->sources[0].source.ttl == 0) //explode
     {
       PartSys->sources[0].source.perpetual = 1; // set standby state          
-      PartSys->sources[0].var = 10 + SEGMENT.intensity >> 2;
+      PartSys->sources[0].var = 10 + (SEGMENT.intensity >> 2);
       PartSys->sources[0].v = 0; //TODO can make global if this never changes
       PartSys->sources[0].minLife = 60;
       PartSys->sources[0].maxLife = 150;
@@ -10194,7 +10188,7 @@ uint16_t mode_particleSparkler(void)
   {    
     PartSys->sources[i].source.hue = random16();   //TODO: make adjustable, maybe even colorcycle?
     PartSys->sources[i].var = SEGMENT.intensity >> 4 ;
-    PartSys->sources[i].minLife = 150 + SEGMENT.intensity >> 1;
+    PartSys->sources[i].minLife = 150 + (SEGMENT.intensity >> 1);
     PartSys->sources[i].maxLife = 200 + SEGMENT.intensity;    
     uint32_t speed = SEGMENT.speed >> 1;       
     PartSys->sources[i].source.vx = PartSys->sources[i].source.vx < 0 ? -speed : speed; //update speed, do not change direction
@@ -10467,12 +10461,12 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_LARSON_SCANNER, &mode_larson_scanner, _data_FX_MODE_LARSON_SCANNER);
   addEffect(FX_MODE_COMET, &mode_comet, _data_FX_MODE_COMET);
   addEffect(FX_MODE_FIREWORKS, &mode_fireworks, _data_FX_MODE_FIREWORKS);
-  //addEffect(FX_MODE_RAIN, &mode_rain, _data_FX_MODE_RAIN);
+  addEffect(FX_MODE_RAIN, &mode_rain, _data_FX_MODE_RAIN);
   addEffect(FX_MODE_TETRIX, &mode_tetrix, _data_FX_MODE_TETRIX);
   addEffect(FX_MODE_FIRE_FLICKER, &mode_fire_flicker, _data_FX_MODE_FIRE_FLICKER);
   addEffect(FX_MODE_GRADIENT, &mode_gradient, _data_FX_MODE_GRADIENT);
   addEffect(FX_MODE_LOADING, &mode_loading, _data_FX_MODE_LOADING);
-  //addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
+  addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
 
   addEffect(FX_MODE_FAIRY, &mode_fairy, _data_FX_MODE_FAIRY);
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
@@ -10489,7 +10483,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_RANDOM_CHASE, &mode_random_chase, _data_FX_MODE_RANDOM_CHASE);
   addEffect(FX_MODE_OSCILLATE, &mode_oscillate, _data_FX_MODE_OSCILLATE);
   addEffect(FX_MODE_PRIDE_2015, &mode_pride_2015, _data_FX_MODE_PRIDE_2015);
-  //addEffect(FX_MODE_JUGGLE, &mode_juggle, _data_FX_MODE_JUGGLE);
+  addEffect(FX_MODE_JUGGLE, &mode_juggle, _data_FX_MODE_JUGGLE);
   addEffect(FX_MODE_PALETTE, &mode_palette, _data_FX_MODE_PALETTE);
   addEffect(FX_MODE_FIRE_2012, &mode_fire_2012, _data_FX_MODE_FIRE_2012);
   addEffect(FX_MODE_COLORWAVES, &mode_colorwaves, _data_FX_MODE_COLORWAVES);
@@ -10516,11 +10510,11 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_CANDLE, &mode_candle, _data_FX_MODE_CANDLE);
   addEffect(FX_MODE_STARBURST, &mode_starburst, _data_FX_MODE_STARBURST);
   addEffect(FX_MODE_EXPLODING_FIREWORKS, &mode_exploding_fireworks, _data_FX_MODE_EXPLODING_FIREWORKS);
-  //addEffect(FX_MODE_BOUNCINGBALLS, &mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
+  addEffect(FX_MODE_BOUNCINGBALLS, &mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
   addEffect(FX_MODE_SINELON, &mode_sinelon, _data_FX_MODE_SINELON);
   addEffect(FX_MODE_SINELON_DUAL, &mode_sinelon_dual, _data_FX_MODE_SINELON_DUAL);
   addEffect(FX_MODE_SINELON_RAINBOW, &mode_sinelon_rainbow, _data_FX_MODE_SINELON_RAINBOW);
-  //addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
+  addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
   addEffect(FX_MODE_DRIP, &mode_drip, _data_FX_MODE_DRIP);
   addEffect(FX_MODE_PLASMA, &mode_plasma, _data_FX_MODE_PLASMA);
   addEffect(FX_MODE_PERCENT, &mode_percent, _data_FX_MODE_PERCENT);
@@ -10537,7 +10531,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PHASEDNOISE, &mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
   addEffect(FX_MODE_FLOW, &mode_flow, _data_FX_MODE_FLOW);
   addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
-  //addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
+  addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
 
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
