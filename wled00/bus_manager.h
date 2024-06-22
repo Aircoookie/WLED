@@ -21,10 +21,6 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb);
 #define IC_INDEX_WS2812_2CH_3X(i)  ((i)*2/3)
 #define WS2812_2CH_3X_SPANS_2_ICS(i) ((i)&0x01)    // every other LED zone is on two different ICs
 
-// flag for using double buffering in BusDigital
-extern bool useGlobalLedBuffer;
-
-
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
   uint8_t type;
@@ -363,6 +359,7 @@ class BusManager {
     static uint16_t ablMilliampsMax(void)  { return _milliAmpsMax; }
 
     static int add(BusConfig &bc);
+    static void useParallelOutput(void); // workaround for inaccessible PolyBus
 
     //do not call this method from system context (network callback)
     static void removeAll();

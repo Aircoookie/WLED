@@ -1705,8 +1705,6 @@ void WS2812FX::printSize() {
   DEBUG_PRINTF_P(PSTR("Modes: %d*%d=%uB\n"), sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF_P(PSTR("Data: %d*%d=%uB\n"), sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF_P(PSTR("Map: %d*%d=%uB\n"), sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));
-  size = getLengthTotal();
-  if (useGlobalLedBuffer) DEBUG_PRINTF_P(PSTR("Buffer: %d*%u=%uB\n"), sizeof(CRGB), size, size*sizeof(CRGB));
 }
 #endif
 
