@@ -669,18 +669,15 @@ function parseInfo(i) {
 	//syncTglRecv   = i.str;
 	maxSeg       = i.leds.maxseg;
 	pmt          = i.fs.pmt;
+	if (pcMode && !i.wifi.ap) gId('edit').classList.remove("hide"); else gId('edit').classList.add("hide");
 	gId('buttonNodes').style.display = lastinfo.ndc > 0 ? null:"none";
 	// do we have a matrix set-up
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) {
-		//gId("filter0D").classList.remove('hide');
-		//gId("filter1D").classList.add('hide');
 		gId("filter2D").classList.add('hide');
 	} else {
-		//gId("filter0D").classList.add('hide');
-		//gId("filter1D").classList.remove('hide');
 		gId("filter2D").classList.remove('hide');
 	}
 //	if (i.noaudio) {
@@ -745,10 +742,10 @@ ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
 </table>`;
 	gId('kv').innerHTML = cn;
 	//  update all sliders in Info
-	for (let sd of (d.querySelectorAll('#kv .sliderdisplay')||[])) {
+	d.querySelectorAll('#kv .sliderdisplay').forEach((sd,i) => {
 		let s = sd.previousElementSibling;
 		if (s) updateTrail(s);
-	}
+	});
 }
 
 function populateSegments(s)
@@ -895,8 +892,8 @@ function populateSegments(s)
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 
 	if (Array.isArray(li.maps) && li.maps.length>1) {
-		let cont = `Ledmap:&nbsp;<select class="sel-sg" onchange="requestJson({'ledmap':parseInt(this.value)})"><option value="" selected>Unchanged</option>`;
-		for (const k of (li.maps||[])) cont += `<option value="${k.id}">${k.id==0?'Default':(k.n?k.n:'ledmap'+k.id+'.json')}</option>`;
+		let cont = `Ledmap:&nbsp;<select class="sel-sg" onchange="requestJson({'ledmap':parseInt(this.value)})">`;
+		for (const k of li.maps) cont += `<option ${s.ledmap===k.id?"selected":""} value="${k.id}">${k.id==0?'Default':(k.n?k.n:'ledmap'+k.id+'.json')}</option>`;
 		cont += "</select></div>";
 		gId("ledmap").innerHTML = cont;
 		gId("ledmap").classList.remove('hide');
@@ -991,13 +988,12 @@ function populatePalettes()
 
 function redrawPalPrev()
 {
-	let palettes = d.querySelectorAll('#pallist .lstI');
-	for (var pal of (palettes||[])) {
+	d.querySelectorAll('#pallist .lstI').forEach((pal,i) =>{
 		let lP = pal.querySelector('.lstIprev');
 		if (lP) {
 			lP.style = genPalPrevCss(pal.dataset.id);
 		}
-	}
+	});
 }
 
 function genPalPrevCss(id)
@@ -1358,10 +1354,12 @@ function updateSelectedFx()
 		}
 
 		// hide 2D mapping and/or sound simulation options
-		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
-		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove('hide'); else seg.classList.add('hide');
-		var segs = gId("segcont").querySelectorAll(`div[data-snd="si"]`);
-		for (const seg of segs) if (selectedName.indexOf("\u266A")<0 && selectedName.indexOf("\u266B")<0) seg.classList.add('hide'); else seg.classList.remove('hide'); // also "♫ "?
+		gId("segcont").querySelectorAll(`div[data-map="map2D"]`).forEach((seg)=>{
+			if (selectedName.indexOf("\u25A6")<0) seg.classList.remove('hide'); else seg.classList.add('hide');
+		});
+		gId("segcont").querySelectorAll(`div[data-snd="si"]`).forEach((seg)=>{
+			if (selectedName.indexOf("\u266A")<0 && selectedName.indexOf("\u266B")<0) seg.classList.add('hide'); else seg.classList.remove('hide'); // also "♫ "?
+		});
 	}
 }
 
@@ -1571,8 +1569,7 @@ function setEffectParameters(idx)
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
 
 	// set html slider items on/off
-	let sliders = d.querySelectorAll("#sliders .sliderwrap");
-	sliders.forEach((slider, i)=>{
+	d.querySelectorAll("#sliders .sliderwrap").forEach((slider, i)=>{
 		let text = slider.getAttribute("title");
 		if ((!controlDefined && i<((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i]!="")) {
 			if (slOnOff.length>i && slOnOff[i]!="!") text = slOnOff[i];
@@ -1586,8 +1583,7 @@ function setEffectParameters(idx)
 
 	if (slOnOff.length > 5) { // up to 3 checkboxes
 		gId('fxopt').classList.remove('fade');
-		let checks = d.querySelectorAll("#sliders .ochkl");
-		checks.forEach((check, i)=>{
+		d.querySelectorAll("#sliders .ochkl").forEach((check, i)=>{
 			let text = check.getAttribute("title");
 			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
 				if (slOnOff.length>5+i && slOnOff[5+i]!="!") text = slOnOff[5+i];
@@ -2035,7 +2031,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>1) {
 			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">Unchanged</option>`;
-			for (const k of (lastinfo.maps||[])) content += `<option value="${k.id}"${(i>0 && pJson[i].ledmap==k.id)?" selected":""}>${k.id==0?'Default':(k.n?k.n:'ledmap'+k.id+'.json')}</option>`;
+			for (const k of lastinfo.maps) content += `<option value="${k.id}"${(i>0 && pJson[i].ledmap==k.id)?" selected":""}>${k.id==0?'Default':(k.n?k.n:'ledmap'+k.id+'.json')}</option>`;
 			content += "</select></div></div>";
 		}
 	}
@@ -2183,13 +2179,12 @@ function selGrp(g)
 {
 	event.preventDefault();
 	event.stopPropagation();
-	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
-	for (let s of (sel||[])) {
+	gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`).forEach((s)=>{
 		let i = parseInt(s.id.substring(3));
 		obj.seg[i] = {"id":i,"sel":true};
-	}
+	});
 	if (obj.seg.length) requestJson(obj);
 }
 
@@ -2843,15 +2838,14 @@ function search(field, listId = null) {
 	// do not search if filter is active
 	if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
 
-	const listItems = gId(listId).querySelectorAll('.lstI');
 	// filter list items but leave (Default & Solid) always visible
-	for (i = (listId === 'pcont' ? 0 : 1); i < listItems.length; i++) {
-		const listItem = listItems[i];
+	gId(listId).querySelectorAll('.lstI').forEach((listItem,i)=>{
+		if (listId!=='pcont' && i===0) return;
 		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
 		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
 		listItem.style.display = (searchIndex < 0) ? 'none' : '';
 		listItem.dataset.searchIndex = searchIndex;
-	}
+	});
 
 	// sort list items by search index and name
 	const sortedListItems = Array.from(listItems).sort((a, b) => {
@@ -2912,14 +2906,12 @@ function filterFx() {
 	inputField.value = '';
 	inputField.focus();
 	clean(inputField.nextElementSibling);
-	const listItems = gId("fxlist").querySelectorAll('.lstI');
-	for (let i = 1; i < listItems.length; i++) {
-		const listItem = listItems[i];
+	gId("fxlist").querySelectorAll('.lstI').forEach((listItem,i) => {
 		const listItemName = listItem.querySelector('.lstIname').innerText;
 		let hide = false;
 		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e) => { if (e.checked && !listItemName.includes(e.dataset.flt)) hide = true; });
 		listItem.style.display = hide ? 'none' : '';
-	}
+	});
 }
 
 function preventBlur(e) {
@@ -3070,6 +3062,7 @@ function size()
 
 function togglePcMode(fromB = false)
 {
+	let ap = (fromB && !lastinfo) || (lastinfo && lastinfo.wifi && lastinfo.witi.ap);
 	if (fromB) {
 		pcModeA = !pcModeA;
 		localStorage.setItem('pcm', pcModeA);
@@ -3079,6 +3072,7 @@ function togglePcMode(fromB = false)
 	if (!fromB && ((wW < 1024 && lastw < 1024) || (wW >= 1024 && lastw >= 1024))) return; // no change in size and called from size()
 	if (pcMode) openTab(0, true);
 	gId('buttonPcm').className = (pcMode) ? "active":"";
+	if (pcMode && !ap) gId('edit').classList.remove("hide"); else gId('edit').classList.add("hide");
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode || simplifiedUI)?'100%':'400%';
@@ -3104,8 +3098,7 @@ function mergeDeep(target, ...sources)
 
 function tooltip(cont=null)
 {
-	const elements = d.querySelectorAll((cont?cont+" ":"")+"[title]");
-	elements.forEach((element)=>{
+	d.querySelectorAll((cont?cont+" ":"")+"[title]").forEach((element)=>{
 		element.addEventListener("mouseover", ()=>{
 			// save title
 			element.setAttribute("data-title", element.getAttribute("title"));
@@ -3132,8 +3125,7 @@ function tooltip(cont=null)
 		});
 
 		element.addEventListener("mouseout", ()=>{
-			const tooltips = d.querySelectorAll('.tooltip');
-			tooltips.forEach((tooltip)=>{
+			d.querySelectorAll('.tooltip').forEach((tooltip)=>{
 				tooltip.classList.remove("visible");
 				d.body.removeChild(tooltip);
 			});

@@ -598,6 +598,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
     root["ps"] = (currentPreset > 0) ? currentPreset : -1;
     root[F("pl")] = currentPlaylist;
+    root[F("ledmap")] = currentLedmap;
 
     usermods.addToJsonState(root);
 
@@ -741,6 +742,7 @@ void serializeInfo(JsonObject root)
   wifi_info[F("rssi")] = qrssi;
   wifi_info[F("signal")] = getSignalQuality(qrssi);
   wifi_info[F("channel")] = WiFi.channel();
+  wifi_info[F("ap")] = apActive;
 
   JsonObject fs_info = root.createNestedObject("fs");
   fs_info["u"] = fsBytesUsed / 1000;
