@@ -8460,7 +8460,7 @@ uint16_t mode_particlepit(void)
       {
         // emit particle at random position over the top of the matrix (random16 is not random enough)
         PartSys->particles[i].ttl = 1500 - (SEGMENT.speed << 2) + random16(500); // if speed is higher, make them die sooner
-        PartSys->particles[i].x = random(PartSys->maxX >> 1) + (PartSys->maxX >> 2);
+        PartSys->particles[i].x = random(PartSys->maxX); //random(PartSys->maxX >> 1) + (PartSys->maxX >> 2);
         PartSys->particles[i].y = (PartSys->maxY<<1); // particles appear somewhere above the matrix, maximum is double the height
         PartSys->particles[i].vx = (int16_t)random(SEGMENT.speed >> 1) - (SEGMENT.speed >> 2); // side speed is +/- 
         PartSys->particles[i].vy = map(SEGMENT.speed, 0, 255, -5, -100); // downward speed
@@ -8487,8 +8487,6 @@ uint16_t mode_particlepit(void)
   if (SEGMENT.speed < 50) // for low speeds, apply more friction
     frictioncoefficient = 50 - SEGMENT.speed;
 
-  //if (SEGMENT.call % (3 + (SEGMENT.custom2 >> 2)) == 0)
-  //if (SEGMENT.call % (3 + (SEGMENT.speed >> 2)) == 0)
   if (SEGMENT.call % 6 == 0)// (3 + max(3, (SEGMENT.speed >> 2))) == 0) // note: if friction is too low, hard particles uncontrollably 'wander' left and right if wrapX is enabled
     PartSys->applyFriction(frictioncoefficient);
 
@@ -9029,8 +9027,15 @@ uint16_t mode_particleattractor(void)
          PartSys->pointAttractor(i, attractor, strength, false);         
       }
   }
+  else //no data, do classic attractor
+  {
+    for(uint32_t i = 0; i < displayparticles; i++) 
+    {
+      PartSys->pointAttractor(i, attractor, SEGMENT.speed, SEGMENT.check3);
+    }
+  }
   #else  
-  for(i = 0; i < displayparticles; i++) 
+  for(uint32_t i = 0; i < displayparticles; i++) 
   {
     PartSys->pointAttractor(i, attractor, SEGMENT.speed, SEGMENT.check3);
   }
