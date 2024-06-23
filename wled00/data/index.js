@@ -677,8 +677,10 @@ function parseInfo(i) {
 	isM = mw>0 && mh>0;
 	if (!isM) {
 		gId("filter2D").classList.add('hide');
+		gId('bs').querySelectorAll('option[data-type="2D"]').forEach((o,i)=>{o.style.display='none';});
 	} else {
 		gId("filter2D").classList.remove('hide');
+		gId('bs').querySelectorAll('option[data-type="2D"]').forEach((o,i)=>{o.style.display='';});
 	}
 //	if (i.noaudio) {
 //		gId("filterVol").classList.add("hide");
