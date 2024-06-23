@@ -6,6 +6,7 @@
 	<title>LED Settings</title>
 	<script>
 		var d=document,laprev=55,maxB=1,maxV=0,maxM=4000,maxPB=4096,maxL=1333,maxCO=10,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var oMaxB=1;
 		d.um_p = [];
 		d.rsvd = [];
 		d.ro_gpio = [];
@@ -58,7 +59,13 @@
 			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 		}
 		function bLimits(b,v,p,m,l,o) {
-			maxB = b; maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
+			// maxB - max buses (can be changed if using ESP32 parallel I2S)
+			// maxV - min virtual buses
+			// maxPB - max LEDs per bus
+			// maxM - max LED memory
+			// maxL - max LEDs
+			// maxCO - max Color Order mappings
+			oMaxB = maxB = b; maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
 		function pinsOK() {
 			var ok = true;
@@ -211,6 +218,7 @@
 			let busMA = 0;
 			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
 			const ablEN = d.Sf.ABL.checked;
+			maxB = oMaxB; // TODO make sure we start with all possible buses
 
 			// enable/disable LED fields
 			d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((s)=>{
@@ -275,6 +283,7 @@
 				// do we have a led count field
 				if (nm=="LC") {
 					let c = parseInt(LC.value,10); //get LED count
+					if (c > 300 && i < 8) maxB = min(oMaxB,10); //TODO: hard limit for buses when using ESP32 parallel I2S
 					if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
 					gId("ls"+n).disabled = !customStarts; //enable/disable field editing
 					if (c) {
@@ -827,7 +836,8 @@ Swap: <select id="xw${s}" name="XW${s}">
 		Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
 		<div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
 		<a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
-		Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span> Invert <input type="checkbox" name="RM"> Open drain <input type="checkbox" name="RO"><br>
+		Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
+		Invert <input type="checkbox" name="RM"> Open drain <input type="checkbox" name="RO"><br>
 		<hr class="sml">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
