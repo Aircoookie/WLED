@@ -277,9 +277,10 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
     // WLEDMM begin: preview with color gamma correction
     if (gammaCorrectPreview) {
       uint8_t w = W(c);  // not sure why, but it looks better if using "white" without corrections
-      buffer[pos++] = qadd8(w, unGamma8(R(c))); //R, add white channel to RGB channels as a simple RGBW -> RGB map
-      buffer[pos++] = qadd8(w, unGamma8(G(c))); //G
-      buffer[pos++] = qadd8(w, unGamma8(B(c))); //B
+      if (w>0) c = color_add(c, RGBW32(w, w, w, 0), false); // add white channel to RGB channels - color_add() will prevent over-saturation
+      buffer[pos++] = unGamma8(R(c)); //R
+      buffer[pos++] = unGamma8(G(c)); //G
+      buffer[pos++] = unGamma8(B(c)); //B
     } else {
     // WLEDMM end
       uint8_t w = W(c);  // WLEDMM small optimization
