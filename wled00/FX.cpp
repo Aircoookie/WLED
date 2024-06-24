@@ -8492,46 +8492,9 @@ uint16_t mode_particlepit(void)
 
   PartSys->update(); // update and render
 
-/*
-//rotat image (just a test, non working yet)
-    float angle = PI/3;
-    // Calculate sine and cosine of the angle
-    float cosTheta = cos(angle);
-    float sinTheta = sin(angle);
-
-    // Center of rotation
-    int centerX = cols / 2;
-    int centerY = rows / 2;
-
-    // Iterate over each pixel in the output image
-    for (int y = 0; y < rows; y++)
-    {
-      for (int x = 0; x < cols; x++)
-      {
-        int relX = x - centerX;
-        int relY = y - centerY;
-
-        // Apply rotation using axis symmetry
-        int origX = round(relX * cosTheta - relY * sinTheta) + centerX;
-        int origY = round(relX * sinTheta + relY * cosTheta) + centerY;
-
-        // Check if original coordinates are within bounds
-        if (origX >= 0 && origX < rows && origY >= 0 && origY < cols)
-        {
-          // Copy pixel value from original image to rotated image
-          SEGMENT.setPixelColorXY(x, y, SEGMENT.getPixelColorXY(origX, origY));
-        }
-
-        // Copy pixel values from original image to rotated image
-        rotatedImage[origY][origX] = image[y][x];
-        rotatedImage[origY][cols - 1 - origX] = image[y][cols - 1 - x];
-        rotatedImage[rows - 1 - origY][origX] = image[rows - 1 - y][x];
-        rotatedImage[rows - 1 - origY][cols - 1 - origX] = image[rows - 1 - y][cols - 1 - x];
-      }
-    }*/
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=200,c1=120,c2=130,c3=31,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=220,c1=120,c2=130,c3=31,o1=0,o2=0,o3=1";
 
 /*
  * Particle Waterfall
@@ -9627,8 +9590,47 @@ uint16_t mode_particleblobs(void)
       }
   }
   #endif
+
   PartSys->setMotionBlur(((SEGMENT.custom3) << 3) + 7);
   PartSys->update(); // update and render
+
+  /*
+//rotat image (just a test, non working yet)
+    float angle = PI/3;
+    // Calculate sine and cosine of the angle
+    float cosTheta = cos(angle);
+    float sinTheta = sin(angle);
+
+    // Center of rotation
+    int centerX = cols / 2;
+    int centerY = rows / 2;
+
+    // Iterate over each pixel in the output image
+    for (int y = 0; y < rows; y++)
+    {
+      for (int x = 0; x < cols; x++)
+      {
+        int relX = x - centerX;
+        int relY = y - centerY;
+
+        // Apply rotation using axis symmetry
+        int origX = round(relX * cosTheta - relY * sinTheta) + centerX;
+        int origY = round(relX * sinTheta + relY * cosTheta) + centerY;
+
+        // Check if original coordinates are within bounds
+        if (origX >= 0 && origX < rows && origY >= 0 && origY < cols)
+        {
+          // Copy pixel value from original image to rotated image
+          SEGMENT.setPixelColorXY(x, y, SEGMENT.getPixelColorXY(origX, origY));
+        }
+
+        // Copy pixel values from original image to rotated image
+        rotatedImage[origY][origX] = image[y][x];
+        rotatedImage[origY][cols - 1 - origX] = image[y][cols - 1 - x];
+        rotatedImage[rows - 1 - origY][origX] = image[rows - 1 - y][x];
+        rotatedImage[rows - 1 - origY][cols - 1 - origX] = image[rows - 1 - y][cols - 1 - x];
+      }
+    }*/
 
   return FRAMETIME;
 }
@@ -10025,12 +10027,10 @@ uint16_t mode_particleFireworks1D(void)
     return mode_static(); // something went wrong, no data!
   }
 
-  forcecounter = PartSys->PSdataEnd;
-  //numRockets = PartSys->numSources;
-
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-
+  forcecounter = PartSys->PSdataEnd;
+  //numRockets = PartSys->numSources;
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   
   if(!SEGMENT.check1) //gravity enabled for sparks
@@ -10150,15 +10150,13 @@ uint16_t mode_particleSparkler(void)
     DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data!
   }
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
 
   sparklersettings.wrapX = SEGMENT.check2;   
   sparklersettings.bounceX = !SEGMENT.check2; 
 
   numSparklers = PartSys->numSources;
-
-  // Particle System settings
-  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   
 
@@ -10174,12 +10172,10 @@ uint16_t mode_particleSparkler(void)
     PartSys->sources[i].minLife = 150 + (SEGMENT.intensity >> 1);
     PartSys->sources[i].maxLife = 200 + SEGMENT.intensity;    
     uint32_t speed = SEGMENT.speed >> 1;       
-    PartSys->sources[i].source.vx = PartSys->sources[i].source.vx < 0 ? -speed : speed; //update speed, do not change direction
-    if(SEGMENT.aux0 != SEGMENT.check1)
-    {
-      PartSys->sources[i].source.vx = -PartSys->sources[i].source.vx; //invert direction
-    }
-    PartSys->sources[i].source.ttl = 400; //replenish its life (could make it perpetual)
+    if(SEGMENT.check1) //invert spray speed
+      speed = -speed;      
+    PartSys->sources[i].source.vx = speed; //update speed, do not change direction
+    PartSys->sources[i].source.ttl = 400; //replenish its life (setting it perpetual uses more code)
     PartSys->sources[i].sat = SEGMENT.custom1; //color saturation
     PartSys->particleMoveUpdate(PartSys->sources[i].source, &sparklersettings); //move sparkler    
   }
@@ -10204,16 +10200,16 @@ uint16_t mode_particleSparkler(void)
 
   for(i = 0; i < numSparklers; i++)
   { 
-    if(random16()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
+    if(random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
         PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
   }
-  SEGMENT.aux0 = SEGMENT.check1;
+
     
   PartSys->update(); // update and render
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur/Overlay,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=0,o2=1,o3=0";
+static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur/Overlay,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1,o3=0";
 
 
 /*
@@ -10365,6 +10361,169 @@ uint16_t mode_particleHourglass(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Color,Blur/Overlay,Gravity,Colorflip,Auto Reset,Fast Reset;,!;!;1;pal=34,sx=245,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
+
+
+
+/*
+Particle based Spray effect (like a volcano, possible replacement for popcorn)
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particle1Dspray(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;  
+  uint32_t i;
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 1)) // init
+      return mode_static(); // allocation failed
+    PartSys->setKillOutOfBounds(true);
+    PartSys->setWallHardness(150);
+    PartSys->setParticleSize(1);
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  PartSys->setBounce(SEGMENT.check2);
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+  int32_t gravity = (int32_t)SEGMENT.custom3 - 15;  //gravity setting, 0-14 is negative, 16 - 31 is positive
+  PartSys->setGravity(abs(gravity)); // use reversgrav setting to invert gravity (for proper 'floor' and out of bounce handling)
+
+  PartSys->sources[i].source.hue = random16();  //TODO: add colormodes like in hourglass?
+  PartSys->sources[0].var = 20;  
+  PartSys->sources[0].minLife = 200;//PartSys->maxXpixel;
+  PartSys->sources[0].maxLife = 400;//PartSys->maxXpixel << 1;        
+  PartSys->sources[0].source.x = map(SEGMENT.custom1, 0 , 255, 0, PartSys->maxX); // spray position
+  PartSys->sources[0].v = map(SEGMENT.speed, 0 , 255, -127 + PartSys->sources[0].var, 127 - PartSys->sources[0].var); // particle emit speed
+  PartSys->sources[0].source.reversegrav = false;
+  if(gravity < 0) 
+    PartSys->sources[0].source.reversegrav = true;
+
+  //if(SEGMENT.call % (1 + ((255 - SEGMENT.intensity) >> 2)) == 0) 
+    //  PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
+  
+  if(random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
+        PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
+
+  //update color settings
+  PartSys->setColorByAge(SEGMENT.check1); //overrules the color by position
+
+  for(i = 0; i < PartSys->usedParticles; i++) 
+  { 
+    if(SEGMENT.check3) //color by position       
+      PartSys->particles[i].hue = (255 * (uint32_t)PartSys->particles[i].x) / PartSys->maxX; //color fixed by position    
+    PartSys->particles[i].reversegrav = PartSys->sources[0].source.reversegrav; //update gravity direction
+  }
+  PartSys->update(); // update and render
+  
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur/Overlay,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
+
+
+/*
+Particle based gravity balance (1D pendent to 2D particle box)
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particleBalance(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;  
+  uint32_t i;
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 1)) // init, no additional data needed
+      return mode_static(); // allocation failed
+    //PartSys->setKillOutOfBounds(true);    
+    PartSys->setParticleSize(1);
+    for(i = 0; i < PartSys->numParticles; i++) 
+    { 
+      PartSys->particles[i].x = i * PS_P_RADIUS;
+      PartSys->particles[i].hue = (i * 1024) / PartSys->usedParticles; // multi gradient distribution
+      PartSys->particles[i].ttl = 300;
+      PartSys->particles[i].perpetual = true;
+      PartSys->particles[i].collide = true;      
+    }
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+  //TODO: wenn collisions ausgeschaltet ist, müssen die partikel sterben und neu eingefügt werden, sonst klumpt das komplett, oder: random friction wäre auch eine möglichkeit
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+  PartSys->setBounce(!SEGMENT.check2);
+  PartSys->setWrap(SEGMENT.check2);
+  uint8_t hardness = map(SEGMENT.custom1, 0, 255, 50, 250);
+  PartSys->setWallHardness(hardness);
+  PartSys->enableParticleCollisions(SEGMENT.custom1, hardness); // enable collisions if custom1 > 0
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, PartSys->numParticles));     
+
+  if (SEGMENT.call % (((255 - SEGMENT.speed) >> 6) + 1) == 0) // how often the force is applied depends on speed setting
+  {
+    int32_t xgravity;    
+    int32_t increment = (SEGMENT.speed >> 6) + 1;
+    
+    SEGMENT.aux0 += increment;
+    
+    if(SEGMENT.check3) // random, use perlin noise    
+      xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127);     
+    else // sinusoidal           
+      xgravity = (int16_t)cos8(SEGMENT.aux0) - 127;//((int32_t)(SEGMENT.custom3 << 2) * cos8(SEGMENT.aux0)
+    
+    // scale the force 
+    xgravity = (xgravity * SEGMENT.custom3 << 2) / 128; 
+
+    PartSys->applyForce(xgravity);
+  }
+ // if(SEGMENT.check2) //collisions enabled
+ // {
+  //  if (SEGMENT.call % 3 == 0)
+  //    PartSys->applyFriction(2); //apply some friction
+//  }
+ // else //no collisions,
+  {
+    uint32_t randomindex = random(PartSys->usedParticles);
+    PartSys->particles[randomindex].vx = ((int32_t)PartSys->particles[randomindex].vx * 200) / 255;  // apply friction to random particle to reduce clumping (without collisions) 
+  }
+
+//update colors
+  for(i = 0; i < PartSys->usedParticles; i++) 
+  { 
+    if(SEGMENT.check1) //color by position       
+      PartSys->particles[i].hue = (255 * (uint32_t)PartSys->particles[i].x) / PartSys->maxX; //color fixed by position
+    else    
+      PartSys->particles[i].hue = (255 * i) / PartSys->usedParticles; //color by particle index  
+  }
+
+  PartSys->update(); // update and render
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
+
+
 
 
 #endif //WLED_DISABLE_PARTICLESYSTEM1D
@@ -10634,6 +10793,8 @@ addEffect(FX_MODE_PSDANCINGSHADOWS, &mode_particleDancingShadows, _data_FX_MODE_
 addEffect(FX_MODE_PSFIREWORKS1D, &mode_particleFireworks1D, _data_FX_MODE_PS_FIREWORKS1D);
 addEffect(FX_MODE_PSSPARKLER, &mode_particleSparkler, _data_FX_MODE_PS_SPARKLER);
 addEffect(FX_MODE_PSHOURGLASS, &mode_particleHourglass, _data_FX_MODE_PS_HOURGLASS);
+addEffect(FX_MODE_PS1DSPRAY, &mode_particle1Dspray, _data_FX_MODE_PS_1DSPRAY);
+addEffect(FX_MODE_PSBALANCE, &mode_particleBalance, _data_FX_MODE_PS_BALANCE);
 
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D

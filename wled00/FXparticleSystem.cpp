@@ -199,7 +199,7 @@ void ParticleSystem::setParticleSize(uint8_t size)
   particleHardRadius = PS_P_MINHARDRADIUS + particlesize; // note: this sets size if not using advanced props
   motionBlur = 0; // disable motion blur if particle size is set
 }
-// enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is disable
+// enable/disable gravity, optionally, set the force (force=8 is default) can be -127 to +127, 0 is disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
 // force is in 3.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame (gives good results)
 void ParticleSystem::setGravity(int8_t force) 
@@ -1189,7 +1189,7 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
     particle2->vx -= ximpulse;
     particle2->vy -= yimpulse;
 
-    if (collisionHardness < surfacehardness) // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely)
+    if (collisionHardness < surfacehardness) // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and stop sloshing around)
     {
       const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS);
       particle1->vx = ((int32_t)particle1->vx * coeff) / 255; 
@@ -1197,7 +1197,7 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 
       particle2->vx = ((int32_t)particle2->vx * coeff) / 255;
       particle2->vy = ((int32_t)particle2->vy * coeff) / 255;
-
+/*
       if (collisionHardness < 10) // if they are very soft, stop slow particles completely to make them stick to each other
       {
         particle1->vx = (particle1->vx < 3 && particle1->vx > -3) ? 0 : particle1->vx;
@@ -1205,7 +1205,7 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
 
         particle2->vx = (particle2->vx < 3 && particle2->vx > -3) ? 0 : particle2->vx;
         particle2->vy = (particle2->vy < 3 && particle2->vy > -3) ? 0 : particle2->vy;
-      }
+      }*/
     }
     
     // particles have volume, push particles apart if they are too close
@@ -1241,6 +1241,16 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
       }
       particle1->vy += push;
       // note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame, if bounce is disabled: bye bye
+      if (collisionHardness < 16) // if they are very soft, stop slow particles completely to make them stick to each other
+      {
+        particle1->vx = 0;
+        particle1->vy = 0;
+        particle2->vx = 0; 
+        particle2->vy = 0;
+        //push them apart
+        particle1->x += push;
+        particle1->y += push;
+      }
     }
   }
 }
@@ -1495,14 +1505,14 @@ ParticleSystem1D::ParticleSystem1D(uint16_t length, uint16_t numberofparticles, 
 // update function applies gravity, moves the particles, handles collisions and renders the particles
 void ParticleSystem1D::update(void)
 {
-  //PSadvancedParticle *advprop = NULL; 
-  //apply gravity globally if enabled
-  if (particlesettings.useGravity)
-    applyGravity();
-  
+
   // handle collisions (can push particles, must be done before updating particles or they can render out of bounds, causing a crash if using local buffer for speed)
   if (particlesettings.useCollisions)
     handleCollisions();
+
+  //apply gravity globally if enabled
+  if (particlesettings.useGravity) //note: in 1D system, applying gravity after collisions also works TODO: which one is really better for stacking / oscillations?
+    applyGravity();
 
   //move all particles
   for (int i = 0; i < usedParticles; i++)
@@ -1584,7 +1594,7 @@ void ParticleSystem1D::setParticleSize(uint8_t size)
   else
     particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1; //1 pixel sized particles have half the radius (for collisions & bounce)
 }
-// enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is disable
+// enable/disable gravity, optionally, set the force (force=8 is default) can be -127 to +127, 0 is disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
 // force is in 3.4 fixed point notation so force=16 means apply v+1 each frame default of 8 is every other frame (gives good results)
 void ParticleSystem1D::setGravity(int8_t force) 
@@ -1641,7 +1651,7 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
     if (!part.perpetual) 
       part.ttl--; // age
     if (particlesettings.colorByAge)
-      part.hue = part.ttl > 255 ? 255 : part.ttl; //set color to ttl
+      part.hue = part.ttl > 250 ? 250 : part.ttl; //set color to ttl 
     
     //bool usesize = false; // particle uses individual size rendering
     int32_t newX = part.x + (int16_t)part.vx;
@@ -1689,11 +1699,23 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *option
       {
           part.outofbounds = 1;
           if (options->killoutofbounds)
-          {
-           // if (newX < 0) // if gravity is enabled, only kill particles below ground
-           //   part.ttl = 0;
-           // else if (!options->useGravity)
-              part.ttl = 0;
+          {      
+            bool killthis = true;
+            if(options->useGravity) //if gravity is used, only kill below 'floor level'
+            {
+              if(part.reversegrav) //skip at x = 0            
+              {
+                if(newX < 0) 
+                  killthis = false;          
+              }
+              else //skip at x = max                   
+              {
+                if(newX > 0) 
+                  killthis = false;
+              }
+            }
+            if(killthis)
+              part.ttl = 0;            
           }
       }
     }
@@ -1713,6 +1735,21 @@ void ParticleSystem1D::applyForce(PSparticle1D *part, int8_t xforce, uint8_t *co
   int32_t dv = calcForce_dv(xforce, counter);
   // apply the force to particle
   part->vx = limitSpeed((int32_t)part->vx + dv);
+}
+
+// apply a force to all particles
+// force is in 3.4 fixed point notation (see above)
+void ParticleSystem1D::applyForce(int8_t xforce)
+{
+  // for small forces, need to use a delay counter
+  uint8_t tempcounter;
+  // note: this is not the most compuatationally efficient way to do this, but it saves on duplacte code and is fast enough
+  for (uint i = 0; i < usedParticles; i++)
+  {
+    tempcounter = forcecounter;
+    applyForce(&particles[i], xforce, &tempcounter);
+  }  
+  forcecounter = tempcounter; //save value back
 }
 
 // apply gravity to all particles using PS global gforce setting
@@ -1986,9 +2023,12 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
     //int32_t impulse = (((((relativeVx) << 15)) * surfacehardness) >> 23); //note: this calculation is biased slightly towards negative numbers due to bit shifts, which is not relevant in 1D system    
     //int32_t impulse = (((((relativeVx) << 15)) * surfacehardness) / 8388607); 
     int32_t impulse = relativeVx * surfacehardness / 255; 
+    //int32_t impulse = relativeVx; //note: applying full impulse and hardness afterwards results in mid-movement stopping, so no good!
 
     particle1->vx += impulse; 
     particle2->vx -= impulse;
+    //particle1->vx = particle1->vx * surfacehardness / 255; //apply hardness 
+    //particle2->vx = particle2->vx * surfacehardness / 255;
 
     //if one of the particles is fixed, transfer the impulse back so it bounces
     if(particle1->fixed)
@@ -2001,9 +2041,9 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
 //    particle1->vx = (particle1->vx < 5 && particle1->vx > -5) ? 0 : particle1->vx;
 //    particle2->vx = (particle2->vx < 5 && particle2->vx > -5) ? 0 : particle2->vx;
 
-    if (collisionHardness < surfacehardness) // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and correctly)
+    if (collisionHardness < PS_P_MINSURFACEHARDNESS_1D) // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and correctly)
     {
-      const uint32_t coeff = collisionHardness + 100;//(255 - PS_P_MINSURFACEHARDNESS_1D);
+      const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS_1D);
       particle1->vx = ((int32_t)particle1->vx * coeff) / 255; 
       particle2->vx = ((int32_t)particle2->vx * coeff) / 255;
     }
@@ -2030,32 +2070,44 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
   {      
     int32_t pushamount = 1 + ((collisiondistance - distance) >> 1); //add half the remaining distance note: this works best, if less or more is added, it gets more chaotic
     //int32_t pushamount = collisiondistance - distance;
-    if (dx < 0)  // particle2.x < particle1.x
+    if(particlesettings.useGravity) //using gravity, push the 'upper' particle only
     {
-        if (particle2->reversegrav && !particle2->fixed)
+      if (dx < 0)  // particle2.x < particle1.x
+      {
+          if (particle2->reversegrav && !particle2->fixed)
+          {
+            particle2->x -= pushamount;
+            particle2->vx--;
+          }
+          else if (!particle1->reversegrav && !particle1->fixed)
+          {          
+            particle1->x += pushamount;
+            particle1->vx++;
+          } 
+      }
+      else
+      {
+        if(particle1->reversegrav && !particle1->fixed)
         {
-          particle2->x -= pushamount;
-          particle2->vx--;
+          particle1->x -= pushamount;
+          particle1->vx--;
         }
-        else if (!particle1->reversegrav && !particle1->fixed)
-        {          
-          particle1->x += pushamount;
-          particle1->vx++;
-        } 
+        else if (!particle2->reversegrav  && !particle2->fixed)
+        {
+          particle2->x += pushamount;
+          particle2->vx++;
+        }
+      }
     }
-    else
+    else //not using gravity, push both particles by applying a velocity (like in 2D system), results in much nicer stacking
     {
-      if(particle1->reversegrav && !particle1->fixed)
-      {
-        particle1->x -= pushamount;
-        particle1->vx--;
-      }
-      else if (!particle2->reversegrav  && !particle2->fixed)
-      {
-        particle2->x += pushamount;
-        particle2->vx++;
-      }
-    }          
+      pushamount = 1 + (pushamount >> 2);
+      if (dx < 0)  // particle2.x < particle1.x
+        pushamount = -pushamount;
+
+      particle1->vx -= pushamount;
+      particle2->vx += pushamount;
+    }     
   }
 }
 

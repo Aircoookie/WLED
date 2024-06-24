@@ -213,7 +213,7 @@ private:
   uint8_t gforcecounter; // counter for global gravity
   int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)
   uint32_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call?
-  uint32_t forcecounter; // counter for globally applied forces
+  uint8_t forcecounter; // counter for globally applied forces
   // global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
   int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
@@ -297,12 +297,12 @@ public:
   void particleMoveUpdate(PSparticle1D &part, PSsettings *options = NULL); // move function
   //particle physics
   void applyForce(PSparticle1D *part, int8_t xforce, uint8_t *counter); //apply a force to a single particle
+  void applyForce(int8_t xforce); // apply a force to all particles
   void applyGravity(PSparticle1D *part); // applies gravity to single particle (use this for sources)  
   void applyFriction(int32_t coefficient); // apply friction to all used particles
   
   // set options
-  void setUsedParticles(uint16_t num);
-  void setCollisionHardness(uint8_t hardness); // hardness for particle collisions (255 means full hard)
+  void setUsedParticles(uint16_t num);  
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set  
   void setSize(uint16_t x); //set particle system size (= strip length)
   void setWrap(bool enable);
