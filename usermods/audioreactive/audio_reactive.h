@@ -1050,7 +1050,7 @@ class AudioReactive : public Usermod {
     // new "V2" audiosync struct - 44 Bytes
     struct __attribute__ ((packed)) audioSyncPacket {  // WLEDMM "packed" ensures that there are no additional gaps
       char    header[6];      //  06 Bytes  offset 0
-      uint8_t gap1[2];        // gap added by compiler: 02 Bytes, offset 6
+      uint8_t pressure[2];    //  02 Bytes, offset 6  - sound pressure as fixed point (8bit integer,  8bit fraction) 
       float   sampleRaw;      //  04 Bytes  offset 8  - either "sampleRaw" or "rawSampleAgc" depending on soundAgc setting
       float   sampleSmth;     //  04 Bytes  offset 12 - either "sampleAvg" or "sampleAgc" depending on soundAgc setting
       uint8_t samplePeak;     //  01 Bytes  offset 16 - 0 no peak; >=1 peak detected. In future, this will also provide peak Magnitude
@@ -1065,8 +1065,8 @@ class AudioReactive : public Usermod {
     struct audioSyncPacket_v1 {
       char header[6];         //  06 Bytes
       uint8_t myVals[32];     //  32 Bytes
-      int sampleAgc;          //  04 Bytes
-      int sampleRaw;          //  04 Bytes
+      int32_t sampleAgc;          //  04 Bytes
+      int32_t sampleRaw;          //  04 Bytes
       float sampleAvg;        //  04 Bytes
       bool samplePeak;        //  01 Bytes
       uint8_t fftResult[16];  //  16 Bytes
@@ -1602,6 +1602,14 @@ class AudioReactive : public Usermod {
         transmitData.fftResult[i] = fftResult[i];
       }
 
+      // WLEDMM transmit soundPressure as 16 bit fixed point
+      uint32_t pressure16bit = max(0.0f, soundPressure) * 256.0f; // convert to fixed point, remove negative values
+      uint16_t pressInt   = pressure16bit / 256;          // integer part
+      uint16_t pressFract = pressure16bit % 256;          // faction part
+      if (pressInt > 255) pressInt = 255;                 // saturation at 255
+      transmitData.pressure[0] = (uint8_t)pressInt;
+      transmitData.pressure[1] = (uint8_t)pressFract;
+
       transmitData.FFT_Magnitude = my_magnitude;
       transmitData.FFT_MajorPeak = FFT_MajorPeak;
 
@@ -1622,30 +1630,33 @@ class AudioReactive : public Usermod {
 
     bool decodeAudioData(int packetSize, uint8_t *fftBuff) {
       if((0 == packetSize) || (nullptr == fftBuff)) return false; // sanity check
-      audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
+      //audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
+      audioSyncPacket receivedPacket;
+      memset(&receivedPacket, 0, sizeof(receivedPacket));                                  // start clean
+      memcpy(&receivedPacket, fftBuff, min((unsigned)packetSize, (unsigned)sizeof(receivedPacket))); // don't violate alignment - thanks @willmmiles
 
       // validate sequence, discard out-of-sequence packets
       static uint8_t lastFrameCounter = 0;
       // add info for UI
-      if ((receivedPacket->frameCounter > 0) && (lastFrameCounter > 0)) receivedFormat = 3; // v2+
+      if ((receivedPacket.frameCounter > 0) && (lastFrameCounter > 0)) receivedFormat = 3; // v2+
       else receivedFormat = 2; // v2
       // check sequence
       bool sequenceOK = false;
-      if(receivedPacket->frameCounter > lastFrameCounter) sequenceOK = true;                  // sequence OK
-      if((lastFrameCounter < 12) && (receivedPacket->frameCounter > 248)) sequenceOK = false; // prevent sequence "roll-back" due to late packets (1->254)
-      if((lastFrameCounter > 248) && (receivedPacket->frameCounter < 12)) sequenceOK = true;  // handle roll-over (255 -> 0)
+      if(receivedPacket.frameCounter > lastFrameCounter) sequenceOK = true;                  // sequence OK
+      if((lastFrameCounter < 12) && (receivedPacket.frameCounter > 248)) sequenceOK = false; // prevent sequence "roll-back" due to late packets (1->254)
+      if((lastFrameCounter > 248) && (receivedPacket.frameCounter < 12)) sequenceOK = true;  // handle roll-over (255 -> 0)
       if(audioSyncSequence == false) sequenceOK = true;                                       // sequence checking disabled by user
-      if((sequenceOK == false) && (receivedPacket->frameCounter != 0)) {                      // always accept "0" - its the legacy value
-        DEBUGSR_PRINTF("Skipping audio frame out of order or duplicated - %u vs %u\n", lastFrameCounter, receivedPacket->frameCounter);
+      if((sequenceOK == false) && (receivedPacket.frameCounter != 0)) {                      // always accept "0" - its the legacy value
+        DEBUGSR_PRINTF("Skipping audio frame out of order or duplicated - %u vs %u\n", lastFrameCounter, receivedPacket.frameCounter);
         return false;   // reject out-of sequence frame
       }
       else {
-        lastFrameCounter = receivedPacket->frameCounter;
+        lastFrameCounter = receivedPacket.frameCounter;
       }
 
       // update samples for effects
-      volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
-      volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
+      volumeSmth   = fmaxf(receivedPacket.sampleSmth, 0.0f);
+      volumeRaw    = fmaxf(receivedPacket.sampleRaw, 0.0f);
 #ifdef ARDUINO_ARCH_ESP32
       // update internal samples
       sampleRaw    = volumeRaw;
@@ -1658,18 +1669,26 @@ class AudioReactive : public Usermod {
       // If it's true already, then the animation still needs to respond.
       autoResetPeak();
       if (!samplePeak) {
-            samplePeak = receivedPacket->samplePeak >0 ? true:false;
+            samplePeak = receivedPacket.samplePeak >0 ? true:false;
             if (samplePeak) timeOfPeak = millis();
             //userVar1 = samplePeak;
       }
       //These values are only computed by ESP32
-      for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket->fftResult[i];
-      my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
+      for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket.fftResult[i];
+      my_magnitude  = fmaxf(receivedPacket.FFT_Magnitude, 0.0f);
       FFT_Magnitude = my_magnitude;
-      FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
-      soundPressure = volumeSmth; // substitute - V2 format does not (yet) include this value
-      agcSensitivity = 128.0f; // substitute - V2 format does not (yet) include this value
-      zeroCrossingCount = receivedPacket->zeroCrossingCount;
+      FFT_MajorPeak = constrain(receivedPacket.FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
+      agcSensitivity = 128.0f; // substitute - V2 format does not include this value
+      zeroCrossingCount = receivedPacket.zeroCrossingCount;
+
+      // WLEDMM extract soundPressure
+      if ((receivedPacket.pressure[0] != 0) || (receivedPacket.pressure[1] != 0)) {
+        // found something in gap "reserved2"
+        soundPressure  = float(receivedPacket.pressure[1]) / 256.0f; // fractional part
+        soundPressure += float(receivedPacket.pressure[0]);          // integer part
+      } else {
+        soundPressure = volumeSmth; // fallback
+      }
 
       return true;
     }
@@ -1786,36 +1805,23 @@ class AudioReactive : public Usermod {
         um_data->u_type[4] = UMT_FLOAT;
         um_data->u_data[5] = &my_magnitude;    // used (New)
         um_data->u_type[5] = UMT_FLOAT;
-#ifdef ARDUINO_ARCH_ESP32
         um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[6] = UMT_BYTE;
         um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[7] = UMT_BYTE;
+#ifdef ARDUINO_ARCH_ESP32
         um_data->u_data[8] = &FFT_MajPeakSmth; // new
         um_data->u_type[8] = UMT_FLOAT;
+#else
+        um_data->u_data[8] = &FFT_MajorPeak;   // substitute for 8266
+        um_data->u_type[8] = UMT_FLOAT;
+#endif
         um_data->u_data[9]  = &soundPressure;  // used (New)
         um_data->u_type[9]  = UMT_FLOAT;
-        um_data->u_data[10] = &agcSensitivity; // used (New)
+        um_data->u_data[10] = &agcSensitivity; // used (New) - dummy value on 8266
         um_data->u_type[10] = UMT_FLOAT;
-        um_data->u_data[11] = &zeroCrossingCount;
+        um_data->u_data[11] = &zeroCrossingCount; // for auto playlist usermod
         um_data->u_type[11] = UMT_UINT16;
-#else
-       // ESP8266 
-        // See https://github.com/MoonModules/WLED/pull/60#issuecomment-1666972133 for explanation of these alternative sources of data
-
-        um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
-        um_data->u_type[6] = UMT_BYTE;
-        um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
-        um_data->u_type[7] = UMT_BYTE;
-        um_data->u_data[8] = &FFT_MajorPeak; // new - substitute for FFT_MajPeakSmth
-        um_data->u_type[8] = UMT_FLOAT;
-        um_data->u_data[9]  = &volumeSmth;  // used (New) - substitute for soundPressure
-        um_data->u_type[9]  = UMT_FLOAT;
-        um_data->u_data[10] = &agcSensitivity; // used (New) - dummy value (128 => 50%)
-        um_data->u_type[10] = UMT_FLOAT;
-        um_data->u_data[11] = &zeroCrossingCount;
-        um_data->u_type[11] = UMT_UINT16;
-#endif
       }
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -2201,7 +2207,7 @@ class AudioReactive : public Usermod {
         volumeSmth =0.0f;
         volumeRaw =0;
         my_magnitude = 0.1; FFT_Magnitude = 0.01; FFT_MajorPeak = 2;
-	soundPressure = 1.0f;
+        soundPressure = 1.0f;
         agcSensitivity = 64.0f;
 #ifdef ARDUINO_ARCH_ESP32
         multAgc = 1;
