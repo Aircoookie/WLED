@@ -8219,7 +8219,7 @@ uint16_t mode_particlevolcano(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
-  PSsettings volcanosettings; 
+  PSsettings2D volcanosettings; 
   volcanosettings.asByte = 0b00000100; // PS settings for volcano movement: bounceX is enabled
   uint8_t numSprays; // note: so far only one tested but more is possible
   uint32_t i = 0;
@@ -8771,7 +8771,7 @@ uint16_t mode_particleimpact(void)
   ParticleSystem *PartSys = NULL;
   uint32_t i = 0;
   uint8_t MaxNumMeteors;
-  PSsettings meteorsettings; 
+  PSsettings2D meteorsettings; 
   meteorsettings.asByte = 0b00101000; // PS settings for meteors: bounceY and gravity enabled  
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
@@ -8905,7 +8905,7 @@ uint16_t mode_particleattractor(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
-  PSsettings sourcesettings;
+  PSsettings2D sourcesettings;
   sourcesettings.asByte = 0b00001100; // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
   PSparticle *attractor; // particle pointer to the attractor
   if (SEGMENT.call == 0) // initialization
@@ -9426,7 +9426,7 @@ uint16_t mode_particleghostrider(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem *PartSys = NULL;
-  PSsettings ghostsettings;
+  PSsettings2D ghostsettings;
   ghostsettings.asByte = 0b0000011; //enable wrapX and wrapY
 
   if (SEGMENT.call == 0) // initialization 
@@ -10134,7 +10134,7 @@ uint16_t mode_particleSparkler(void)
   ParticleSystem1D *PartSys = NULL;
   uint8_t numSparklers;
   uint32_t i;
-  PSsettings sparklersettings;
+  PSsettings1D sparklersettings;
   sparklersettings.asByte = 0; // PS settings for sparkler (set below)
 
   if (SEGMENT.call == 0) // initialization 
@@ -10290,9 +10290,10 @@ uint16_t mode_particleHourglass(void)
         PartSys->particles[i].fixed = true;
     }
     if(colormode == 7)
-      PartSys->particles[i].hue = (255 * (uint32_t)PartSys->particles[i].x) / PartSys->maxX; //color fixed by position
+      PartSys->setColorByPosition(true); //color fixed by position
     else
-    {      
+    { 
+      PartSys->setColorByPosition(false);     
       switch(colormode) {
         case 0: PartSys->particles[i].hue = 120; break; //fixed at 120, if flip is activated, this can make red and green (use palette 34)
         case 1: PartSys->particles[i].hue = *basehue; break; //fixed random color         
@@ -10417,12 +10418,10 @@ uint16_t mode_particle1Dspray(void)
         PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
 
   //update color settings
-  PartSys->setColorByAge(SEGMENT.check1); //overrules the color by position
-
+  PartSys->setColorByAge(SEGMENT.check1); //overruled by 'color by position'
+  PartSys->setColorByPosition(SEGMENT.check3);  
   for(i = 0; i < PartSys->usedParticles; i++) 
-  { 
-    if(SEGMENT.check3) //color by position       
-      PartSys->particles[i].hue = (255 * (uint32_t)PartSys->particles[i].x) / PartSys->maxX; //color fixed by position    
+  {     
     PartSys->particles[i].reversegrav = PartSys->sources[0].source.reversegrav; //update gravity direction
   }
   PartSys->update(); // update and render
@@ -10507,14 +10506,14 @@ uint16_t mode_particleBalance(void)
   }
 
 //update colors
-  for(i = 0; i < PartSys->usedParticles; i++) 
-  { 
-    if(SEGMENT.check1) //color by position       
-      PartSys->particles[i].hue = (255 * (uint32_t)PartSys->particles[i].x) / PartSys->maxX; //color fixed by position
-    else    
-      PartSys->particles[i].hue = (255 * i) / PartSys->usedParticles; //color by particle index  
+  PartSys->setColorByPosition(SEGMENT.check1);  
+  if(!SEGMENT.check1) 
+  {
+    for(i = 0; i < PartSys->usedParticles; i++) 
+    {         
+        PartSys->particles[i].hue = (255 * i) / PartSys->usedParticles; //color by particle index  
+    }
   }
-
   PartSys->update(); // update and render
   return FRAMETIME;
 }

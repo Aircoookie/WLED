@@ -287,7 +287,7 @@ void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, 
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
 // uses passed settings to set bounce or wrap, if useGravity is set, it will never bounce at the top and killoutofbounds is not applied over the top
-void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings *options, PSadvancedParticle *advancedproperties)
+void ParticleSystem::particleMoveUpdate(PSparticle &part, PSsettings2D *options, PSadvancedParticle *advancedproperties)
 {
   if (options == NULL)
     options = &particlesettings; //use PS system settings by default
@@ -1520,16 +1520,14 @@ void ParticleSystem1D::update(void)
     particleMoveUpdate(particles[i], &particlesettings);
   }
 
-  /*TODO remove this
-  Serial.print("alive particles: ");
-  uint32_t aliveparticles = 0;
-  for (int i = 0; i < numParticles; i++)
+  if(particlesettings.colorByPosition)
   {
-    if (particles[i].ttl)
-    aliveparticles++;
+    for (int i = 0; i < usedParticles; i++)
+    {
+      particles[i].hue = (255 * (uint32_t)particles[i].x) / maxX;
+    }
   }
-  Serial.println(aliveparticles);
-  */
+
   ParticleSys_render();
 
   uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
@@ -1577,6 +1575,11 @@ void ParticleSystem1D::setKillOutOfBounds(bool enable)
 void ParticleSystem1D::setColorByAge(bool enable)
 {
   particlesettings.colorByAge = enable;
+}
+
+void ParticleSystem1D::setColorByPosition(bool enable)
+{
+  particlesettings.colorByPosition = enable;
 }
 
 void ParticleSystem1D::setMotionBlur(uint8_t bluramount)
@@ -1642,7 +1645,7 @@ int32_t ParticleSystem1D::sprayEmit(PSsource1D &emitter)
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
 // uses passed settings to set bounce or wrap, if useGravity is set, it will never bounce at the top and killoutofbounds is not applied over the top
-void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings *options)
+void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *options)
 {
   if (options == NULL)
     options = &particlesettings; //use PS system settings by default
@@ -1803,7 +1806,7 @@ void ParticleSystem1D::ParticleSys_render()
   //CRGB **renderbuffer = NULL; //local particle render buffer for advanced particles
   uint32_t i;
   uint32_t brightness; // particle brightness, fades if dying
-
+  
   if (useLocalBuffer)
   {    
     /*

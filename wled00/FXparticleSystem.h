@@ -38,22 +38,6 @@ int32_t limitSpeed(int32_t speed);  //TODO: same as 2D function, could share
 void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
 void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
 
-// struct for PS settings (shared for 1D and 2D class)
-typedef union
-{
-  struct{
-  // one byte bit field:
-  bool wrapX : 1; 
-  bool wrapY : 1;
-  bool bounceX : 1;
-  bool bounceY : 1;
-  bool killoutofbounds : 1; // if set, out of bound particles are killed immediately
-  bool useGravity : 1; // set to 1 if gravity is used, disables bounceY at the top
-  bool useCollisions : 1;
-  bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
-  };
-  byte asByte; // order is: LSB is first entry in the list above
-} PSsettings;
 #endif
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
@@ -72,6 +56,23 @@ typedef union
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
 #define PS_P_MINHARDRADIUS 70 // minimum hard surface radius
 #define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
+
+// struct for PS settings (shared for 1D and 2D class)
+typedef union
+{
+  struct{
+  // one byte bit field for 2D settings
+  bool wrapX : 1; 
+  bool wrapY : 1;
+  bool bounceX : 1;
+  bool bounceY : 1;
+  bool killoutofbounds : 1; // if set, out of bound particles are killed immediately
+  bool useGravity : 1; // set to 1 if gravity is used, disables bounceY at the top
+  bool useCollisions : 1;
+  bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
+  };
+  byte asByte; // access as a byte, order is: LSB is first entry in the list above
+} PSsettings2D;
 
 //struct for a single particle (10 bytes)
 typedef struct {
@@ -135,7 +136,7 @@ public:
   void update(void); //update the particles according to set options and render to the matrix
   void updateFire(uint32_t intensity, bool renderonly = false); // update function for fire, if renderonly is set, particles are not updated (required to fix transitions with frameskips)
   void updateSystem(void); // call at the beginning of every FX, updates pointers and dimensions
-  void particleMoveUpdate(PSparticle &part, PSsettings *options = NULL, PSadvancedParticle *advancedproperties = NULL); // move function
+  void particleMoveUpdate(PSparticle &part, PSsettings2D *options = NULL, PSadvancedParticle *advancedproperties = NULL); // move function
   
   // particle emitters
   int32_t sprayEmit(PSsource &emitter, uint32_t amount = 1);
@@ -205,7 +206,7 @@ private:
   CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
 
   // note: variables that are accessed often are 32bit for speed
-  PSsettings particlesettings; // settings used when updating particles (can also used by FX to move sources), do not edit properties directly, use functions above
+  PSsettings2D particlesettings; // settings used when updating particles (can also used by FX to move sources), do not edit properties directly, use functions above
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
   uint32_t wallHardness;
@@ -249,6 +250,23 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
 #define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
 #define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius 
 #define PS_P_MINSURFACEHARDNESS_1D 50 // minimum hardness used in collision impulse calculation
+
+// struct for PS settings (shared for 1D and 2D class)
+typedef union
+{  
+  struct{
+  // one byte bit field for 1D settings
+  bool wrapX : 1; 
+  bool bounceX : 1;  
+  bool killoutofbounds : 1; // if set, out of bound particles are killed immediately
+  bool useGravity : 1; // set to 1 if gravity is used, disables bounceY at the top
+  bool useCollisions : 1;
+  bool colorByAge : 1; // if set, particle hue is set by ttl value in render function
+  bool colorByPosition : 1; // if set, particle hue is set by its position in the strip segment
+  bool unused : 1;
+  };
+  byte asByte; // access as a byte, order is: LSB is first entry in the list above
+} PSsettings1D;
 
 //struct for a single particle (6 bytes)
 typedef struct {
@@ -294,7 +312,7 @@ public:
 
   // particle emitters
   int32_t sprayEmit(PSsource1D &emitter);  
-  void particleMoveUpdate(PSparticle1D &part, PSsettings *options = NULL); // move function
+  void particleMoveUpdate(PSparticle1D &part, PSsettings1D *options = NULL); // move function
   //particle physics
   void applyForce(PSparticle1D *part, int8_t xforce, uint8_t *counter); //apply a force to a single particle
   void applyForce(int8_t xforce); // apply a force to all particles
@@ -310,6 +328,7 @@ public:
   void setKillOutOfBounds(bool enable); // if enabled, particles outside of matrix instantly die
  // void setSaturation(uint8_t sat); // set global color saturation
   void setColorByAge(bool enable);
+  void setColorByPosition(bool enable);
   void setMotionBlur(uint8_t bluramount); // note: motion blur can only be used if 'particlesize' is set to zero 
   void setParticleSize(uint8_t size); //size 0 = 1 pixel, size 1 = 2 pixels
   void setGravity(int8_t force = 8);
@@ -343,7 +362,7 @@ private:
   void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); // bounce on a wall
   CRGB *allocate1Dbuffer(uint32_t length);  
   // note: variables that are accessed often are 32bit for speed
-  PSsettings particlesettings; // settings used when updating particles 
+  PSsettings1D particlesettings; // settings used when updating particles 
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
   uint32_t wallHardness;  
