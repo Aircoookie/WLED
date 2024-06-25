@@ -2269,7 +2269,7 @@ int32_t calcForce_dv(int8_t force, uint8_t* counter)
   }
   else
   {
-    dv = force >> 4; // MSBs
+    dv = force / 16; // MSBs note: cannot use bitshift as dv can be negative
   }
   return dv;
 }

@@ -10200,10 +10200,9 @@ uint16_t mode_particleSparkler(void)
 
   for(i = 0; i < numSparklers; i++)
   { 
-    if(random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
+    if(random(255)  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
         PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
   }
-
     
   PartSys->update(); // update and render
   
@@ -10414,7 +10413,7 @@ uint16_t mode_particle1Dspray(void)
   //if(SEGMENT.call % (1 + ((255 - SEGMENT.intensity) >> 2)) == 0) 
     //  PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
   
-  if(random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
+  if(random(255)  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
         PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
 
   //update color settings
@@ -10477,25 +10476,23 @@ uint16_t mode_particleBalance(void)
   PartSys->setBounce(!SEGMENT.check2);
   PartSys->setWrap(SEGMENT.check2);
   uint8_t hardness = map(SEGMENT.custom1, 0, 255, 50, 250);
-  PartSys->setWallHardness(hardness);
   PartSys->enableParticleCollisions(SEGMENT.custom1, hardness); // enable collisions if custom1 > 0
+  if(SEGMENT.custom1 == 0) //collisions disabled, make the walls hard
+    hardness = 200;
+  PartSys->setWallHardness(hardness);
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, PartSys->numParticles));     
 
   if (SEGMENT.call % (((255 - SEGMENT.speed) >> 6) + 1) == 0) // how often the force is applied depends on speed setting
   {
     int32_t xgravity;    
     int32_t increment = (SEGMENT.speed >> 6) + 1;
-    
     SEGMENT.aux0 += increment;
-    
     if(SEGMENT.check3) // random, use perlin noise    
-      xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 127);     
+      xgravity = ((int16_t)inoise8(SEGMENT.aux0) - 128);     
     else // sinusoidal           
-      xgravity = (int16_t)cos8(SEGMENT.aux0) - 127;//((int32_t)(SEGMENT.custom3 << 2) * cos8(SEGMENT.aux0)
-    
+      xgravity = (int16_t)cos8(SEGMENT.aux0) - 128;//((int32_t)(SEGMENT.custom3 << 2) * cos8(SEGMENT.aux0)
     // scale the force 
-    xgravity = (xgravity * SEGMENT.custom3 << 2) / 128; 
-
+    xgravity = (xgravity * ((SEGMENT.custom3+1) << 2)) / 128; 
     PartSys->applyForce(xgravity);
   }
  // if(SEGMENT.check2) //collisions enabled
