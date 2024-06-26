@@ -632,7 +632,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       unsigned keep = float(0xFFFF) * (intersectY-int(intersectY)); // how much color to keep
       unsigned seep = 0xFFFF - keep; // how much background to keep
       int y = int(intersectY);
-      if (steep) std::swap(x,y);  // temporaryly swap if steep
+      if (steep) std::swap(x,y);  // temporarily swap if steep
       // pixel coverage is determined by fractional part of y co-ordinate
       setPixelColorXY(x, y, color_blend(c, getPixelColorXY(x, y), keep, true));
       setPixelColorXY(x+int(steep), y+int(!steep), color_blend(c, getPixelColorXY(x+int(steep), y+int(!steep)), seep, true));
