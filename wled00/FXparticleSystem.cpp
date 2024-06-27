@@ -846,13 +846,13 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
   {
     if (advPartProps[particleindex].size > 0)
     {
-      if (renderbuffer)
+      if (renderbuffer && framebuffer)
       {
         advancedrender = true;
         memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); // clear the buffer, renderbuffer is 10x10 pixels
       }
       else
-        return; // cannot render without buffer, advanced size particles are allowed out of frame
+        return; // cannot render without buffers
     }      
   }
 
@@ -956,7 +956,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
         bitshift = 1;
       rendersize += 2;
       offset--;
-      blur2D(renderbuffer, rendersize, rendersize, xsize << bitshift, ysize << bitshift, true, offset, offset, true); //blur to 4x4
+      blur2D(renderbuffer, rendersize, rendersize, xsize << bitshift, ysize << bitshift, true, offset, offset, true);
       xsize = xsize > 64 ? xsize - 64 : 0; 
       ysize = ysize > 64 ? ysize - 64 : 0;
     }
@@ -1634,7 +1634,10 @@ int32_t ParticleSystem1D::sprayEmit(PSsource1D &emitter)
       particles[emitIndex].reversegrav = emitter.source.reversegrav;  
       particles[emitIndex].ttl = random16(emitter.minLife, emitter.maxLife);
       if (advPartProps)
+      {
         advPartProps[emitIndex].sat = emitter.sat;
+        advPartProps[emitIndex].size = emitter.size;
+      }
       return i;
 
       return emitIndex;
@@ -1803,19 +1806,12 @@ void ParticleSystem1D::ParticleSys_render()
   CRGB baseRGB;
   bool useLocalBuffer = true; //use local rendering buffer, gives huge speed boost (at least 30% more FPS)
   CRGB *framebuffer = NULL; //local frame buffer
-  //CRGB **renderbuffer = NULL; //local particle render buffer for advanced particles
+  CRGB *renderbuffer = NULL; //local particle render buffer for advanced particles
   uint32_t i;
   uint32_t brightness; // particle brightness, fades if dying
   
   if (useLocalBuffer)
   {    
-    /*
-    //memory fragmentation check:
-    Serial.print("heap: ");
-    Serial.print(heap_caps_get_free_size(MALLOC_CAP_8BIT));
-    Serial.print(" block: ");
-    Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-    */
 
     // allocate empty memory for the local renderbuffer
     framebuffer = allocate1Dbuffer(maxXpixel + 1);
@@ -1825,10 +1821,10 @@ void ParticleSystem1D::ParticleSys_render()
       useLocalBuffer = false; //render to segment pixels directly if not enough memory
     }
     else{
-      //if (advPartProps)
-      //{  
-      //  renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0. note: null checking is done when accessing it
-      //}
+      if (advPartProps)
+      {  
+        renderbuffer = allocate1Dbuffer(10); //buffer to render individual particles to if size > 0. note: null checking is done when accessing it
+      }
       if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
       {        
         for (uint32_t x = 0; x <= maxXpixel; x++)
@@ -1867,7 +1863,7 @@ void ParticleSystem1D::ParticleSys_render()
         baseRGB = (CRGB)baseHSV; // convert back to RGB
       }
     }
-    renderParticle(framebuffer, i, brightness, baseRGB);
+    renderParticle(framebuffer, i, brightness, baseRGB, renderbuffer);
   }
 
   if (useLocalBuffer) // transfer local buffer back to segment
@@ -1881,7 +1877,7 @@ void ParticleSystem1D::ParticleSys_render()
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
-void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color)
+void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color, CRGB *renderbuffer)
 {
   if(particlesize == 0) //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
   {
@@ -1896,7 +1892,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
   }
   else { //render larger particles
     int32_t pxlbrightness[2] = {0}; // note: pxlbrightness needs to be set to 0 or checking does not work
-    int32_t pixco[2]; // physical pixel coordinates of the two pixels representing a particle
+    int32_t pixco[2]; // physical pixel coordinates of the two pixels representing a particle    
     // subtract half a radius as the rendering algorithm always starts at the left, this makes calculations more efficient
     int32_t xoffset = particles[particleindex].x - PS_P_HALFRADIUS_1D;
     int32_t dx = xoffset % PS_P_RADIUS_1D; //relativ particle position in subpixel space
@@ -1936,9 +1932,57 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
       pxlbrightness[0] = (((int32_t)PS_P_RADIUS_1D - dx) * brightness) >> PS_P_SURFACE_1D; 
     if (pxlbrightness[1] >= 0)
       pxlbrightness[1] = (dx * brightness) >> PS_P_SURFACE_1D; 
-  
-  // standard rendering (2 pixels per particle)
-    if (framebuffer)
+
+    // check if particle has advanced size properties and buffer is available
+    if (advPartProps && advPartProps[particleindex].size > 1)
+    {
+      if (renderbuffer && framebuffer)
+      {
+        memset(renderbuffer, 0, 10 * sizeof(CRGB)); // clear the buffer, renderbuffer is 10 pixels
+      }
+      else
+        return; // cannot render advanced particles without buffer
+    
+
+      //render par ticle to a bigger size
+      //particle size to pixels: < 64 is 4 pixels, < 128 is 6pixels, < 192 is 8 pixels, bigger is 10 pixels
+      //first, render the pixel to the center of the renderbuffer, then apply 1D blurring
+      fast_color_add(renderbuffer[4], color, pxlbrightness[0]); 
+      fast_color_add(renderbuffer[5], color, pxlbrightness[1]);      
+      uint32_t rendersize = 2; // initialize render size, minimum is 4x4 pixels, it is incremented int he loop below to start with 4
+      uint32_t offset = 4; // offset to zero coordinate to write/read data in renderbuffer (actually needs to be 3, is decremented in the loop below)
+      uint32_t size = advPartProps[particleindex].size; 
+      uint32_t blurpasses = size/64 + 1; // number of blur passes depends on size, four passes max
+      uint32_t bitshift = 0;
+      for(int i = 0; i < blurpasses; i++)
+      {
+        if (i == 2) //for the last two passes, use higher amount of blur (results in a nicer brightness gradient with soft edges)
+          bitshift = 1;
+        rendersize += 2;
+        offset--;
+        blur1D(renderbuffer, rendersize, size << bitshift, true, offset); 
+        size = size > 64 ? size - 64 : 0; 
+      }
+      
+      // calculate origin coordinates to render the particle to in the framebuffer
+      uint32_t xfb_orig = x - (rendersize>>1) + 1 - offset;
+      uint32_t xfb; // coordinates in frame buffer to write to note: by making this uint, only overflow has to be checked
+
+      // transfer particle renderbuffer to framebuffer
+      for(uint32_t xrb = offset; xrb < rendersize+offset; xrb++)
+      {
+        xfb = xfb_orig + xrb;
+        if (xfb > maxXpixel)
+        {
+          if (particlesettings.wrapX) // wrap x to the other side if required
+            xfb = xfb % (maxXpixel + 1);
+          else
+            continue;
+        }
+        fast_color_add(framebuffer[xfb], renderbuffer[xrb]); 
+      }
+    }
+    else if (framebuffer) // standard rendering (2 pixels per particle)
     {
       for(uint32_t i = 0; i < 2; i++)
       {
@@ -2241,6 +2285,34 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, 
   //Serial.println((uintptr_t)PartSys);
   return true;
 }
+
+
+// blur a 1D buffer, sub-size blurring can be done using start and size 
+// for speed, 32bit variables are used, make sure to limit them to 8bit (0-255) or result is undefined 
+// to blur a subset of the buffer, change the size and set start to the desired starting coordinates (default start is 0/0)
+void blur1D(CRGB *colorbuffer, uint32_t size, uint32_t blur, bool smear, uint32_t start)
+{
+  CRGB seeppart, carryover;
+  uint32_t seep = blur >> 1;  
+
+    carryover =  BLACK;
+    for(uint32_t x = start; x < start + size; x++)
+    {
+      seeppart = colorbuffer[x]; // create copy of current color
+      fast_color_scale(seeppart, seep); // scale it and seep to neighbours
+      if (!smear) // fade current pixel if smear is disabled
+        fast_color_scale(colorbuffer[x], 255 - blur); 
+
+      if (x > 0)
+      {
+        fast_color_add(colorbuffer[x-1], seeppart);
+        fast_color_add(colorbuffer[x], carryover); 
+      }
+      carryover = seeppart;
+    }
+    fast_color_add(colorbuffer[size-1], carryover); // set last pixel
+}
+
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 

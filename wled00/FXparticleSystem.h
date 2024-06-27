@@ -298,7 +298,7 @@ typedef struct {
   int8_t var; // variation of emitted speed (adds random(+/- var) to speed)
   int8_t v; // emitting speed
   uint8_t sat; // color saturation (advanced property)
-  uint8_t size; // particle size (advanced property) TODO: can be removed in case this is not being implemented
+  uint8_t size; // particle size (advanced property) 
 } PSsource1D; 
 
 
@@ -348,7 +348,7 @@ public:
 private: 
   //rendering functions
   void ParticleSys_render(void);
-  void renderParticle(CRGB *framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color);
+  void renderParticle(CRGB *framebuffer, uint32_t particleindex, uint32_t brightness, CRGB color, CRGB *renderbuffer);
 
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
@@ -380,5 +380,5 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, 
 uint32_t calculateNumberOfParticles1D(bool isadvanced);
 uint32_t calculateNumberOfSources1D(uint8_t requestedsources);
 bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, bool isadvanced, uint16_t additionalbytes);
-
+void blur1D(CRGB *colorbuffer, uint32_t size, uint32_t blur, bool smear = true, uint32_t start = 0);
 #endif // WLED_DISABLE_PARTICLESYSTEM1D

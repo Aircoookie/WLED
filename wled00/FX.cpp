@@ -10009,7 +10009,7 @@ uint16_t mode_particleFireworks1D(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 4, 4, true)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 4, 4, true)) // init
       return mode_static(); // allocation failed
     PartSys->setKillOutOfBounds(true);
     //numRockets = PartSys->numSources;
@@ -10065,6 +10065,7 @@ uint16_t mode_particleFireworks1D(void)
       PartSys->sources[0].source.ttl = 400;
       PartSys->sources[0].source.collide = false; //exhaust does not collide, also used to check if direction reversed
       PartSys->sources[0].sat = 40; //low saturation exhaust 
+     // PartSys->sources[0].size = 200; //size render test !!!
       
       if(SEGMENT.aux0)  //inverted rockets launch from end
       {
