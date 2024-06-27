@@ -1,13 +1,8 @@
 # Internal Temperature Usermod
 
+![Screenshot of WLED info page](assets/screenshot-info.png =700x)
 
-<p align="left">
-  <img width="700" src="assets/screenshot-info.png">
-</p>
-
-<p align="left">
-  <img width="700" src="assets/screenshot-settings.png">
-</p>
+![Screenshot of WLED usermod settings page](assets/screenshot-settings.png =700x)
 
 ## Features
  - &nbsp;🌡️&nbsp; Adds the internal temperature readout of the chip to the `Info` tab

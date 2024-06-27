@@ -6,13 +6,13 @@ class InternalTemperatureUsermod : public Usermod
 {
 
 private:
-  static const unsigned long minLoopInterval = 1000;  // minimum allowable interval (ms)
+  static constexpr unsigned long minLoopInterval = 1000;  // minimum allowable interval (ms)
   unsigned long loopInterval = 10000;
   unsigned long lastTime = 0;
   bool isEnabled = false;
   float temperature = 0;
-  int presetToActivate = -1;            // Preset to activate when temp goes above threshold (-1 = disabled)
-  float activationThreshold = 95.0;     // Temperature threshold to trigger high-temperature actions
+  int presetToActivate = 0;             // Preset to activate when temp goes above threshold (0 = disabled)
+  float activationThreshold = 95.0f;    // Temperature threshold to trigger high-temperature actions
   float resetMargin = 2.0;              // Margin below the activation threshold (Prevents frequent toggling when close to threshold)
   bool isAboveThreshold = false;        // Flag to track if the high temperature preset is currently active
 
@@ -33,7 +33,6 @@ private:
 public:
   void setup()
   {
-    setSafeLoopInterval(loopInterval);  // Initialize with a safe loop interval
   }
 
   void loop()
@@ -62,8 +61,8 @@ public:
         isAboveThreshold = true;
         }
       // Activate the 'over-threshold' preset if it's not already active
-      if (presetToActivate != -1 && currentPreset != presetToActivate) {
-        saveTemporaryPreset();  // Save the current preset to allow re-activation later
+      if (presetToActivate != 0 && currentPreset != presetToActivate) {
+        saveTemporaryPreset();  // Save current state to a temporary preset to allow re-activation later
         applyPreset(presetToActivate);
         }
       }
@@ -75,7 +74,7 @@ public:
         }
       // Revert back to the original preset
       if (currentPreset == presetToActivate){
-        applyTemporaryPreset(); // Restore the previously stored active preset
+        applyTemporaryPreset(); // Restore the previous state which was stored to the temporary preset
         }
       }
 
@@ -129,8 +128,8 @@ public:
     oappend(SET_F("addInfo('Internal Temperature:Loop Interval', 1, 'ms');"));
     // Display '°C' next to the 'Activation Threshold' setting
     oappend(SET_F("addInfo('Internal Temperature:Activation Threshold', 1, '°C');"));
-    // Display '-1 = Disabled' next to the 'Preset To Activate' setting
-    oappend(SET_F("addInfo('Internal Temperature:Preset To Activate', 1, '-1 = disabled');"));
+    // Display '0 = Disabled' next to the 'Preset To Activate' setting
+    oappend(SET_F("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');"));
     }
 
   bool readFromConfig(JsonObject &root)
