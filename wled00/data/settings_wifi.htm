@@ -224,8 +224,23 @@ Static subnet mask:<br>
 		<h3>Experimental</h3>
 		Force 802.11g mode (ESP8266 only): <input type="checkbox" name="FG"><br>
 		Disable WiFi sleep: <input type="checkbox" name="WS"><br>
-		<i>Can help with connectivity issues.<br>
-		Do not enable if WiFi is working correctly, increases power consumption.</i>
+		<i>Can help with connectivity issues and Audioreactive sync.<br>
+		Disabling WiFi sleep increases power consumption.</i><br>
+		<div id="tx">TX power: <select name="TX">
+			<option value="78">19.5 dBm</option>
+			<option value="76">19 dBm</option>
+			<option value="74">18.5 dBm</option>
+			<option value="68">17 dBm</option>
+			<option value="60">15 dBm</option>
+			<option value="52">13 dBm</option>
+			<option value="44">11 dBm</option>
+			<option value="34">8.5 dBm</option>
+			<option value="28">7 dBm</option>
+			<option value="20">5 dBm</option>
+			<option value="8">2 dBm</option>
+		</select><br>
+		<i class="warn">WARNING: Modifying TX power may render device unreachable.</i>
+		</div>
 
 		<h3>ESP-NOW Wireless</h3>
 		<div id="NoESPNOW" class="hide">
@@ -248,6 +263,7 @@ Static subnet mask:<br>
 				<option value="11">ESP32-POE-WROVER</option>
 				<option value="6">ESP32Deux/RGB2Go Tetra</option>
 				<option value="7">KIT-VE</option>
+				<option value="12">LILYGO T-POE Pro</option>
 				<option value="8">QuinLED-Dig-Octa & T-ETH-POE</option>
 				<option value="4">QuinLED-ESP32</option>
 				<option value="10">Serg74-ETH32</option>

@@ -1205,6 +1205,7 @@ void WS2812FX::finalizeInit(void) {
   // for the lack of better place enumerate ledmaps here
   // if we do it in json.cpp (serializeInfo()) we are getting flashes on LEDs
   // unfortunately this means we do not get updates after uploads
+  // the other option is saving UI settings which will cause enumeration
   enumerateLedmaps();
 
   _hasWhiteChannel = _isOffRefreshRequired = false;
@@ -1248,11 +1249,12 @@ void WS2812FX::finalizeInit(void) {
     unsigned busEnd = bus->getStart() + bus->getLength();
     if (busEnd > _length) _length = busEnd;
     #ifdef ESP8266
-    if ((!IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType()))) continue;
-    uint8_t pins[5];
-    if (!bus->getPins(pins)) continue;
-    BusDigital* bd = static_cast<BusDigital*>(bus);
-    if (pins[0] == 3) bd->reinit();
+    // why do we need to reinitialise GPIO3???
+    //if ((!IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType()))) continue;
+    //uint8_t pins[5];
+    //if (!bus->getPins(pins)) continue;
+    //BusDigital* bd = static_cast<BusDigital*>(bus);
+    //if (pins[0] == 3) bd->reinit();
     #endif
   }
 
@@ -1768,13 +1770,15 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   bool isFile = WLED_FS.exists(fileName);
 
   customMappingSize = 0; // prevent use of mapping if anything goes wrong
+  currentLedmap = 0;
+  if (n == 0 || isFile) interfaceUpdateCallMode = CALL_MODE_WS_SEND; // schedule WS update (to inform UI)
 
   if (!isFile && n==0 && isMatrix) {
     setUpMatrix();
     return false;
   }
 
-  if (!isFile || !requestJSONBufferLock(7)) return false; // this will trigger setUpMatrix() when called from wled.cpp
+  if (!isFile || !requestJSONBufferLock(7)) return false;
 
   if (!readObjectFromFile(fileName, nullptr, pDoc)) {
     DEBUG_PRINT(F("ERROR Invalid ledmap in ")); DEBUG_PRINTLN(fileName);
@@ -1798,6 +1802,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     if (!map.isNull() && map.size()) {  // not an empty map
       customMappingSize = min((unsigned)map.size(), (unsigned)getLengthTotal());
       for (unsigned i=0; i<customMappingSize; i++) customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+      currentLedmap = n;
     }
   } else {
     DEBUG_PRINTLN(F("ERROR LED map allocation error."));

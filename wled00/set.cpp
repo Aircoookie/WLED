@@ -77,6 +77,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t != apChannel) forceReconnect = true;
     if (t > 0 && t < 14) apChannel = t;
 
+    #ifdef ARDUINO_ARCH_ESP32
+    int tx = request->arg(F("TX")).toInt();
+    txPower = min(max(tx, (int)WIFI_POWER_2dBm), (int)WIFI_POWER_19_5dBm);
+    #endif
+
     force802_3g = request->hasArg(F("FG"));
     noWifiSleep = request->hasArg(F("WS"));
 

@@ -283,6 +283,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AP"),fapass);
 
     sappend('v',SET_F("AC"),apChannel);
+    #ifdef ARDUINO_ARCH_ESP32
+    sappend('v',SET_F("TX"),txPower);
+    #else
+    oappend(SET_F("gId('tx').style.display='none';"));
+    #endif
     sappend('c',SET_F("FG"),force802_3g);
     sappend('c',SET_F("WS"),noWifiSleep);
 
@@ -298,7 +303,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("ETH"),ethernetType);
     #else
     //hide ethernet setting if not compiled in
-    oappend(SET_F("document.getElementById('ethd').style.display='none';"));
+    oappend(SET_F("gId('ethd').style.display='none';"));
     #endif
 
     if (Network.isConnected()) //is connected

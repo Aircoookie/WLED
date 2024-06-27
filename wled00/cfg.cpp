@@ -79,15 +79,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(apSSID, ap[F("ssid")], 33);
   getStringFromJson(apPass, ap["psk"] , 65); //normally not present due to security
   //int ap_pskl = ap[F("pskl")];
-
   CJSON(apChannel, ap[F("chan")]);
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
-
   CJSON(apHide, ap[F("hide")]);
   if (apHide > 1) apHide = 1;
-
   CJSON(apBehavior, ap[F("behav")]);
-
   /*
   JsonArray ap_ip = ap["ip"];
   for (byte i = 0; i < 4; i++) {
@@ -95,9 +91,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
   */
 
-  noWifiSleep = doc[F("wifi")][F("sleep")] | !noWifiSleep; // inverted
-  noWifiSleep = !noWifiSleep;
-  force802_3g = doc[F("wifi")][F("phy")] | force802_3g; //force phy mode g?
+  JsonObject wifi = doc[F("wifi")];
+  noWifiSleep = !(wifi[F("sleep")] | !noWifiSleep); // inverted
+  //noWifiSleep = !noWifiSleep;
+  CJSON(force802_3g, wifi[F("phy")]); //force phy mode g?
+#ifdef ARDUINO_ARCH_ESP32
+  CJSON(txPower, wifi[F("txpwr")]);
+  txPower = min(max((int)txPower, (int)WIFI_POWER_2dBm), (int)WIFI_POWER_19_5dBm);
+#endif
 
   JsonObject hw = doc[F("hw")];
 
@@ -774,8 +775,11 @@ void serializeConfig() {
   JsonObject wifi = root.createNestedObject(F("wifi"));
   wifi[F("sleep")] = !noWifiSleep;
   wifi[F("phy")] = force802_3g;
+#ifdef ARDUINO_ARCH_ESP32
+  wifi[F("txpwr")] = txPower;
+#endif
 
-  #ifdef WLED_USE_ETHERNET
+#ifdef WLED_USE_ETHERNET
   JsonObject ethernet = root.createNestedObject("eth");
   ethernet["type"] = ethernetType;
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
@@ -797,7 +801,7 @@ void serializeConfig() {
         break;
     }
   }
-  #endif
+#endif
 
   JsonObject hw = root.createNestedObject(F("hw"));
 

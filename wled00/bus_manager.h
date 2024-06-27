@@ -364,6 +364,9 @@ class BusManager {
     //do not call this method from system context (network callback)
     static void removeAll();
 
+    static void on(void);
+    static void off(void);
+
     static void show();
     static bool canAllShow();
     static void setStatusPixel(uint32_t c);
@@ -391,7 +394,11 @@ class BusManager {
     static ColorOrderMap colorOrderMap;
     static uint16_t _milliAmpsUsed;
     static uint16_t _milliAmpsMax;
+    static uint8_t _parallelOutputs;
 
+    #ifdef ESP32_DATA_IDLE_HIGH
+    static void    esp32RMTInvertIdle();
+    #endif
     static uint8_t getNumVirtualBusses() {
       int j = 0;
       for (int i=0; i<numBusses; i++) if (busses[i]->getType() >= TYPE_NET_DDP_RGB && busses[i]->getType() < 96) j++;

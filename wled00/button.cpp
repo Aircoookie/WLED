@@ -358,69 +358,35 @@ void handleButton()
   }
 }
 
-// If enabled, RMT idle level is set to HIGH when off
-// to prevent leakage current when using an N-channel MOSFET to toggle LED power
-#ifdef ESP32_DATA_IDLE_HIGH
-void esp32RMTInvertIdle()
-{
-  bool idle_out;
-  for (uint8_t u = 0; u < BusManager::getNumBusses(); u++)
-  {
-    if (u > 7) return; // only 8 RMT channels, TODO: ESP32 variants have less RMT channels
-    Bus *bus = BusManager::getBus(u);
-    if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType())) continue;
-    //assumes that bus number to rmt channel mapping stays 1:1
-    rmt_channel_t ch = static_cast<rmt_channel_t>(u);
-    rmt_idle_level_t lvl;
-    rmt_get_idle_level(ch, &idle_out, &lvl);
-    if (lvl == RMT_IDLE_LEVEL_HIGH) lvl = RMT_IDLE_LEVEL_LOW;
-    else if (lvl == RMT_IDLE_LEVEL_LOW) lvl = RMT_IDLE_LEVEL_HIGH;
-    else continue;
-    rmt_set_idle_level(ch, idle_out, lvl);
-  }
-}
-#endif
-
+// handleIO() happens *after* handleTransitions() (see wled.cpp) which may change bri/briT but *before* strip.service()
+// where actual LED painting occurrs
+// this is important for relay control and in the event of turning off on-board LED
 void handleIO()
 {
   handleButton();
 
-  //set relay when LEDs turn on
-  if (strip.getBrightness())
-  {
+  // if we want to control on-board LED (ESP8266) or relay we have to do it here as the final show() may not happen until
+  // next loop() cycle
+  if (strip.getBrightness()) {
     lastOnTime = millis();
-    if (offMode)
-    {
-      #ifdef ESP32_DATA_IDLE_HIGH
-      esp32RMTInvertIdle();
-      #endif
+    if (offMode) {
+      BusManager::on();
       if (rlyPin>=0) {
         pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, rlyMde);
       }
       offMode = false;
     }
-  } else if (millis() - lastOnTime > 600)
-  {
+  } else if (millis() - lastOnTime > 600 && !strip.needsUpdate()) {
+    // for turning LED or relay off we need to wait until strip no longer needs updates (strip.trigger())
     if (!offMode) {
-      #ifdef ESP8266
-      // turn off built-in LED if strip is turned off
-      // this will break digital bus so will need to be re-initialised on On
-      PinOwner ledPinOwner = pinManager.getPinOwner(LED_BUILTIN);
-      if (!strip.isOffRefreshRequired() && (ledPinOwner == PinOwner::None || ledPinOwner == PinOwner::BusDigital)) {
-        pinMode(LED_BUILTIN, OUTPUT);
-        digitalWrite(LED_BUILTIN, HIGH);
-      }
-      #endif
-      #ifdef ESP32_DATA_IDLE_HIGH
-      esp32RMTInvertIdle();
-      #endif
+      BusManager::off();
       if (rlyPin>=0) {
         pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, !rlyMde);
       }
+      offMode = true;
     }
-    offMode = true;
   }
 }
 
