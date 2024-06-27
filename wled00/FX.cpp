@@ -10026,7 +10026,6 @@ uint16_t mode_particleFireworks1D(void)
     DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
     return mode_static(); // something went wrong, no data!
   }
-
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   forcecounter = PartSys->PSdataEnd;
@@ -10042,7 +10041,6 @@ uint16_t mode_particleFireworks1D(void)
     PartSys->setParticleSize(1);
   else
     PartSys->setParticleSize(0);
-
   if(PartSys->sources[0].source.perpetual == 1) //rocket is on standby
   {
     PartSys->sources[0].source.ttl--;
@@ -10059,13 +10057,13 @@ uint16_t mode_particleFireworks1D(void)
       PartSys->sources[0].v = 0;
       PartSys->sources[0].minLife = 10;
       PartSys->sources[0].maxLife = 30;
-      PartSys->sources[0].source.x = 0; //start from bottom
+      PartSys->sources[0].source.x = 0; // start from bottom
       uint32_t speed = 8 + (((int)16 + (int)random16(20) + (int)random(SEGMENT.speed >> 3 , SEGMENT.speed >> 2)) * (int)PartSys->maxXpixel) / 150; //set speed such that rocket explods in frame, found by experimenting           
       PartSys->sources[0].source.vx = min(speed, (uint32_t)127);
       PartSys->sources[0].source.ttl = 400;
-      PartSys->sources[0].source.collide = false; //exhaust does not collide, also used to check if direction reversed
-      PartSys->sources[0].sat = 40; //low saturation exhaust 
-     // PartSys->sources[0].size = 200; //size render test !!!
+      PartSys->sources[0].source.collide = false; // exhaust does not collide, also used to check if direction reversed
+      PartSys->sources[0].sat = 40; // low saturation exhaust 
+      PartSys->sources[0].size = 0; // default size
       
       if(SEGMENT.aux0)  //inverted rockets launch from end
       {
@@ -10102,6 +10100,7 @@ uint16_t mode_particleFireworks1D(void)
       PartSys->sources[0].maxLife = 150;
       PartSys->sources[0].source.ttl = 100 + random16(256 - SEGMENT.intensity); // standby time til next launch 
       PartSys->sources[0].sat = 7 + (SEGMENT.custom3 << 3); //color saturation
+      PartSys->sources[0].size = random16(255); // random particle size in explosion
       uint32_t explosionsize = 10 + random(SEGMENT.intensity >> 2, SEGMENT.intensity);
       for(uint32_t e = 0; e < explosionsize; e++) //emit explosion particles
       {
@@ -10114,9 +10113,8 @@ uint16_t mode_particleFireworks1D(void)
   }  
   if(SEGMENT.call & 0x01) //every second frame
     PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
-    
+
   PartSys->update(); // update and render
-  
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur/Overlay,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
@@ -10518,7 +10516,7 @@ uint16_t mode_particleBalance(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=200,ix=40,c1=200,c2=0,c3=5,o1=1,o2=0,o3=1";
 
 
 

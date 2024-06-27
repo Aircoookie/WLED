@@ -1871,9 +1871,11 @@ void ParticleSystem1D::ParticleSys_render()
     for (int x = 0; x <= maxXpixel; x++)
     {
       SEGMENT.setPixelColor(x, framebuffer[x]);
-    }
+    }    
     free(framebuffer); 
   }
+  if (renderbuffer)
+    free(renderbuffer); 
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
