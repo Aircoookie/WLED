@@ -158,7 +158,7 @@ public:
   void lineAttractor(uint16_t particleindex, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t strength);
 
   // set options
-  void setUsedParticles(uint16_t num);
+  void setUsedParticles(uint32_t num);
   void setCollisionHardness(uint8_t hardness); // hardness for particle collisions (255 means full hard)
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set
   void setWallRoughness(uint8_t roughness); // wall roughness randomizes wall collisions
@@ -180,11 +180,11 @@ public:
   PSadvancedParticle *advPartProps; // pointer to advanced particle properties (can be NULL)
   PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
   uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
-  uint16_t maxX, maxY; // particle system size i.e. width-1 / height-1 in subpixels
-  uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
-  uint8_t numSources; // number of sources
-  uint16_t numParticles;  // number of particles available in this system
-  uint16_t usedParticles; // number of particles used in animation (can be smaller then numParticles)  
+  int32_t maxX, maxY; // particle system size i.e. width-1 / height-1 in subpixels
+  int32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
+  uint32_t numSources; // number of sources
+  uint32_t numParticles;  // number of particles available in this system
+  uint32_t usedParticles; // number of particles used in animation (can be smaller then numParticles)  
 
 private: 
   //rendering functions
@@ -320,7 +320,7 @@ public:
   void applyFriction(int32_t coefficient); // apply friction to all used particles
   
   // set options
-  void setUsedParticles(uint16_t num);  
+  void setUsedParticles(uint32_t num);  
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set  
   void setSize(uint16_t x); //set particle system size (= strip length)
   void setWrap(bool enable);
@@ -339,11 +339,11 @@ public:
   PSadvancedParticle1D *advPartProps; // pointer to advanced particle properties (can be NULL)
   //PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
   uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
-  uint16_t maxX; // particle system size i.e. width-1 
-  uint32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 
-  uint8_t numSources; // number of sources
-  uint16_t numParticles;  // number of particles available in this system
-  uint16_t usedParticles; // number of particles used in animation (can be smaller then numParticles)  
+  int32_t maxX; // particle system size i.e. width-1 
+  int32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 
+  uint32_t numSources; // number of sources
+  uint32_t numParticles;  // number of particles available in this system
+  uint32_t usedParticles; // number of particles used in animation (can be smaller then numParticles)  
 
 private: 
   //rendering functions

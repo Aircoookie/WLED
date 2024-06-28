@@ -128,7 +128,7 @@ void ParticleSystem::updateFire(uint32_t intensity, bool renderonly)
   ParticleSys_render(true, intensity);
 }
 
-void ParticleSystem::setUsedParticles(uint16_t num)
+void ParticleSystem::setUsedParticles(uint32_t num)
 {
   usedParticles = min(num, numParticles); //limit to max particles
 }
@@ -973,11 +973,11 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
       if (xfb > maxXpixel)
       {
         if (particlesettings.wrapX) // wrap x to the other side if required
-          xfb = xfb % (maxXpixel + 1);
+          xfb = xfb % (maxXpixel + 1); //TODO: this did not work in 1D system but appears to work in 2D (wrapped pixels were offset) under which conditions does this not work?
         else
           continue;
       }
-      
+
       for(uint32_t yrb = offset; yrb < rendersize+offset; yrb++)
       {
         yfb = yfb_orig + yrb;
@@ -1541,7 +1541,7 @@ void ParticleSystem1D::update(void)
 }
 
 
-void ParticleSystem1D::setUsedParticles(uint16_t num)
+void ParticleSystem1D::setUsedParticles(uint32_t num)
 {
   usedParticles = min(num, numParticles); //limit to max particles
 }
@@ -1700,6 +1700,7 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
         newX = newX % (maxX + 1); 
         if(newX < 0)
           newX += maxX + 1; 
+          Serial.println(newX/32);
       }
       else if (((newX <= -PS_P_HALFRADIUS_1D) || (newX > maxX + PS_P_HALFRADIUS_1D))) // particle is leaving, set out of bounds if it has fully left
       {
@@ -1946,7 +1947,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
         return; // cannot render advanced particles without buffer
     
 
-      //render par ticle to a bigger size
+      //render particle to a bigger size
       //particle size to pixels: < 64 is 4 pixels, < 128 is 6pixels, < 192 is 8 pixels, bigger is 10 pixels
       //first, render the pixel to the center of the renderbuffer, then apply 1D blurring
       fast_color_add(renderbuffer[4], color, pxlbrightness[0]); 
@@ -1977,7 +1978,12 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
         if (xfb > maxXpixel)
         {
           if (particlesettings.wrapX) // wrap x to the other side if required
-            xfb = xfb % (maxXpixel + 1);
+          {           
+            if(xfb > maxXpixel << 1) // xfb is "negative" (note: for some reason, this is needed in 1D but works without in 2D...)
+              xfb = (maxXpixel +1) + (int32_t)xfb;
+            else
+              xfb = xfb % (maxXpixel + 1); 
+          }
           else
             continue;
         }
