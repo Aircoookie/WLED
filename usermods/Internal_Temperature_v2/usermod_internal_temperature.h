@@ -10,10 +10,10 @@ private:
   unsigned long loopInterval = 10000;
   unsigned long lastTime = 0;
   bool isEnabled = false;
-  float temperature = 0;
-  int presetToActivate = 0;             // Preset to activate when temp goes above threshold (0 = disabled)
+  float temperature = 0.0f;
+  uint8_t presetToActivate = 0;         // Preset to activate when temp goes above threshold (0 = disabled)
   float activationThreshold = 95.0f;    // Temperature threshold to trigger high-temperature actions
-  float resetMargin = 2.0;              // Margin below the activation threshold (Prevents frequent toggling when close to threshold)
+  float resetMargin = 2.0f;             // Margin below the activation threshold (Prevents frequent toggling when close to threshold)
   bool isAboveThreshold = false;        // Flag to track if the high temperature preset is currently active
 
   static const char _name[];
