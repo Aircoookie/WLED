@@ -10527,7 +10527,6 @@ uint16_t mode_particleChase(void)
   {
     if (!initParticleSystem1D(PartSys, 1, 0, true)) // init, no additional data needed
       return mode_static(); // allocation failed
-    PartSys->setParticleSize(1); //advanced size
     PartSys->setWrap(true); 
     for(i = 0; i < PartSys->numParticles; i++)
     {             
@@ -10570,9 +10569,10 @@ uint16_t mode_particleChase(void)
       PartSys->particles[i].vx = speed;
       PartSys->advPartProps[i].size = SEGMENT.custom1;
     } 
+    PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets rendering size to one pixel
     SEGMENT.aux0 = settingssum;  
   }
-
+PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets rendering size to one pixel
   PartSys->update(); // update and render
   return FRAMETIME;
 }

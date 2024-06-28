@@ -1584,8 +1584,9 @@ void ParticleSystem1D::setColorByPosition(bool enable)
 
 void ParticleSystem1D::setMotionBlur(uint8_t bluramount)
 {
-  if (particlesize < 2) // only allwo motion blurring on default particle size or advanced size(cannot combine motion blur with normal blurring used for particlesize, would require another buffer)
-    motionBlur = bluramount;
+  //TODO: currently normal blurring is not used in 1D system. should it be added? advanced rendering is quite fast and allows for motion blurring
+ // if (particlesize < 2) // only allwo motion blurring on default particle size or advanced size(cannot combine motion blur with normal blurring used for particlesize, would require another buffer)
+    motionBlur = bluramount; 
 }
 
 // render size using smearing (see blur function)
@@ -1979,7 +1980,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
         {
           if (particlesettings.wrapX) // wrap x to the other side if required
           {           
-            if(xfb > maxXpixel << 1) // xfb is "negative" (note: for some reason, this is needed in 1D but works without in 2D...)
+            if(xfb > maxXpixel << 1) // xfb is "negative" (note: for some reason, this check is needed in 1D but works without in 2D...)
               xfb = (maxXpixel +1) + (int32_t)xfb;
             else
               xfb = xfb % (maxXpixel + 1); 
