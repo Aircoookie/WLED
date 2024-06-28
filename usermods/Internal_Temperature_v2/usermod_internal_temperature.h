@@ -25,11 +25,6 @@ private:
   // any private methods should go here (non-inline method should be defined out of class)
   void publishMqtt(const char *state, bool retain = false); // example for publishing MQTT message
 
-  //  Makes sure the measurement interval can't be set too low
-  void setSafeLoopInterval(unsigned long newInterval) {
-    loopInterval = max(newInterval, minLoopInterval);
-    }
-
 public:
   void setup()
   {
@@ -138,7 +133,7 @@ public:
     bool configComplete = !top.isNull();
     configComplete &= getJsonValue(top[FPSTR(_enabled)], isEnabled);
     configComplete &= getJsonValue(top[FPSTR(_loopInterval)], loopInterval);
-    setSafeLoopInterval(loopInterval);                                                  // Makes sure the loop interval isn't too small.
+    loopInterval = max(loopInterval, minLoopInterval);    // Makes sure the loop interval isn't too small.
     configComplete &= getJsonValue(top[FPSTR(_presetToActivate)], presetToActivate);
     configComplete &= getJsonValue(top[FPSTR(_activationThreshold)], activationThreshold);
     return configComplete;
