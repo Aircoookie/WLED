@@ -1,7 +1,5 @@
 ## WLED changelog
 
-#### Build 2405180
-
 #### Build 2406290
 -   WLED 0.15.0-b4 release
 -   LED settings bus management update (WARNING only allow available outputs)
@@ -40,8 +38,10 @@
     - reduces code by 1kB
 
 #### Build 2405180
+-   WLED 0.14.4 release
+-   Fix for #3978
 -   Official 0.15.0-b3 release
--   Merge 0.14.3 fixes
+-   Merge 0.14.3 fixes into 0_15
 -   Added Pinwheel Expand 1D->2D effect mapping mode (#3961 by @Brandon502)
 -   Add changeable i2c address to BME280 usermod (#3966 by @LordMike)
 -   Effect: Firenoise - add palette selection
