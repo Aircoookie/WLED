@@ -67,7 +67,7 @@
 	function Cs() { gId("cac").style.display=(gN("OL").checked)?"block":"none"; }
 	function BTa()
 	{
-		var ih="<thead><tr><th>En.</th><th>Hour</th><th>Minute</th><th>Preset</th><th></th></tr></thead>";
+		var ih="<thead><tr><th>En.</th><th>Hour</th><th>Minute</th><th>Preset</th><th>Sunset</th><th>Sunrise</th><th></th></tr></thead>";
 		for (i=0;i<8;i++) {
 			ih+=`<tr><td><input name="W${i}" id="W${i}" type="hidden"><input id="W${i}0" type="checkbox"></td>
 <td><input name="H${i}" class="xs" type="number" min="0" max="24"></td>
