@@ -46,58 +46,36 @@
 
 #ifndef WLED_MAX_BUSSES
   #ifdef ESP8266
-    #define WLED_MAX_DIGITAL_CHANNELS 3
-    #define WLED_MAX_ANALOG_CHANNELS 5
-    #define WLED_MAX_BUSSES 4                 // will allow 3 digital & 1 analog RGB
+    #define WLED_MAX_BUSSES 3
     #define WLED_MIN_VIRTUAL_BUSSES 2
   #else
     #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
-      #define WLED_MAX_BUSSES 4               // will allow 2 digital & 2 analog RGB
-      #define WLED_MAX_DIGITAL_CHANNELS 2
-      #define WLED_MAX_ANALOG_CHANNELS 6
+      #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
       // the 5th bus (I2S) will prevent Audioreactive usermod from functioning (it is last used though)
-      #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog RGB
-      #define WLED_MAX_DIGITAL_CHANNELS 5
-      #define WLED_MAX_ANALOG_CHANNELS 8
+      #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
-      #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog RGB
-      #define WLED_MAX_DIGITAL_CHANNELS 4
-      #define WLED_MAX_ANALOG_CHANNELS 8
+      #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       // the last digital bus (I2S0) will prevent Audioreactive usermod from functioning
-      #define WLED_MAX_BUSSES 20              // will allow 17 digital & 3 analog RGB
-      #define WLED_MAX_DIGITAL_CHANNELS 17
-      #define WLED_MAX_ANALOG_CHANNELS 10
-      #define WLED_MIN_VIRTUAL_BUSSES 4
+      #define WLED_MAX_BUSSES 17
+      #define WLED_MIN_VIRTUAL_BUSSES 0
     #endif
   #endif
 #else
   #ifdef ESP8266
-    #if WLED_MAX_BUSSES > 5
+    #if WLED_MAX_BUSES > 5
       #error Maximum number of buses is 5.
-    #endif
-    #ifndef WLED_MAX_ANALOG_CHANNELS
-      #error You must also define WLED_MAX_ANALOG_CHANNELS.
-    #endif
-    #ifndef WLED_MAX_DIGITAL_CHANNELS
-      #error You must also define WLED_MAX_DIGITAL_CHANNELS.
     #endif
     #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSSES)
   #else
-    #if WLED_MAX_BUSSES > 20
-      #error Maximum number of buses is 20.
+    #if WLED_MAX_BUSES > 17
+      #error Maximum number of buses is 17.
     #endif
-    #ifndef WLED_MAX_ANALOG_CHANNELS
-      #error You must also define WLED_MAX_ANALOG_CHANNELS.
-    #endif
-    #ifndef WLED_MAX_DIGITAL_CHANNELS
-      #error You must also define WLED_MAX_DIGITAL_CHANNELS.
-    #endif
-    #define WLED_MIN_VIRTUAL_BUSSES (20-WLED_MAX_BUSSES)
+    #define WLED_MIN_VIRTUAL_BUSSES (17-WLED_MAX_BUSSES)
   #endif
 #endif
 
@@ -499,16 +477,6 @@
   #elif ABL_MILLIAMPS_DEFAULT < 250   // make sure value is at least 250
    #warning "make sure value is at least 250"
    #define ABL_MILLIAMPS_DEFAULT 250
-  #endif
-#endif
-
-#ifndef LED_MILLIAMPS_DEFAULT
-  #define LED_MILLIAMPS_DEFAULT 55    // common WS2812B
-#else
-  #if LED_MILLIAMPS_DEFAULT < 1 || LED_MILLIAMPS_DEFAULT > 100
-   #warning "Unusual LED mA current, overriding with default value."
-   #undef LED_MILLIAMPS_DEFAULT
-   #define LED_MILLIAMPS_DEFAULT 55
   #endif
 #endif
 

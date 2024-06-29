@@ -2794,9 +2794,8 @@ function getPalettesData(page, callback)
 		return res.json();
 	})
 	.then(json => {
-		retry = false;
 		palettesData = Object.assign({}, palettesData, json.p);
-		if (page < json.m) setTimeout(()=>{ getPalettesData(page + 1, callback); }, 75);
+		if (page < json.m) setTimeout(()=>{ getPalettesData(page + 1, callback); }, 50);
 		else callback();
 	})
 	.catch((error)=>{
@@ -2836,8 +2835,7 @@ function search(field, listId = null) {
 	if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
 
 	// filter list items but leave (Default & Solid) always visible
-	const listItems = gId("fxlist").querySelectorAll('.lstI');
-	listItems.forEach((listItem,i)=>{
+	gId(listId).querySelectorAll('.lstI').forEach((listItem,i)=>{
 		if (listId!=='pcont' && i===0) return;
 		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
 		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
@@ -3060,7 +3058,7 @@ function size()
 
 function togglePcMode(fromB = false)
 {
-	let ap = (fromB && !lastinfo) || (lastinfo && lastinfo.wifi && lastinfo.wifi.ap);
+	let ap = (fromB && !lastinfo) || (lastinfo && lastinfo.wifi && lastinfo.witi.ap);
 	if (fromB) {
 		pcModeA = !pcModeA;
 		localStorage.setItem('pcm', pcModeA);
