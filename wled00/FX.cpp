@@ -9685,10 +9685,7 @@ uint16_t mode_particleDrip(void)
 
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   PartSys->setGravity(SEGMENT.custom3>>1); // set gravity (8 is default strength)
-  if (SEGMENT.check3) // collisions enabled
-    PartSys->setParticleSize(1);
-  else
-    PartSys->setParticleSize(0);
+  PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
     if(SEGMENT.check2)  //collisions enabled
     PartSys->enableParticleCollisions(true); //enable, full hardness
@@ -9805,10 +9802,7 @@ uint16_t mode_particleBouncingBalls(void)
     PartSys->enableParticleCollisions(false);
   PartSys->setUsedParticles( 1 + (SEGMENT.intensity >> 3)); // 1 - 32
 
-  if (SEGMENT.check2) 
-   PartSys->setParticleSize(1); //2-pixel size (smoother for slow speeds)
-  else
-   PartSys->setParticleSize(0); //single pixel size (classic look)
+  PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
   if(SEGMENT.check3) //rolling balls
   {
@@ -9901,10 +9895,7 @@ uint16_t mode_particleDancingShadows(void)
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setMotionBlur(SEGMENT.custom1);
-   if (SEGMENT.check3) // collisions enabled
-    PartSys->setParticleSize(1);
-   else
-    PartSys->setParticleSize(0);
+  PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
   //generate a spotlight: generates particles just outside of view
   //if (SEGMENT.call % ((255 + 64) / (1 + SEGMENT.intensity + (SEGMENT.speed >> 4))) == 0) 
@@ -10029,18 +10020,14 @@ uint16_t mode_particleFireworks1D(void)
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   forcecounter = PartSys->PSdataEnd;
-  //numRockets = PartSys->numSources;
+  PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   
   if(!SEGMENT.check1) //gravity enabled for sparks
    PartSys->setGravity(0); // disable
   else
-   PartSys->setGravity(1 + (SEGMENT.speed>>4)); // set gravity
+   PartSys->setGravity(1 + (SEGMENT.speed>>4)); // set gravity  
 
-  if (SEGMENT.check3) 
-    PartSys->setParticleSize(1);
-  else
-    PartSys->setParticleSize(0);
   if(PartSys->sources[0].source.perpetual == 1) //rocket is on standby
   {
     PartSys->sources[0].source.ttl--;
@@ -10131,7 +10118,7 @@ uint16_t mode_particleSparkler(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem1D *PartSys = NULL;
-  uint8_t numSparklers;
+  uint32_t numSparklers;
   uint32_t i;
   PSsettings1D sparklersettings;
   sparklersettings.asByte = 0; // PS settings for sparkler (set below)
@@ -10157,12 +10144,7 @@ uint16_t mode_particleSparkler(void)
 
   numSparklers = PartSys->numSources;
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  
-
-  if (SEGMENT.check3) 
-    PartSys->setParticleSize(1);
-  else
-    PartSys->setParticleSize(0);
+  PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
   for(i = 0; i < numSparklers; i++)
   {    
@@ -10579,6 +10561,174 @@ PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets renderin
 static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Color,Blur/Overlay,Direction,,Color by Position;,!;!;1;pal=53,sx=50,ix=100,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 
+/*
+Particle Fireworks Starburst replacement (smoother rendering, more settings)
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particleStarburst(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;  
+  uint32_t i;
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 1, 0, true)) // init
+      return mode_static(); // allocation failed
+    PartSys->setKillOutOfBounds(true);     
+    PartSys->enableParticleCollisions(true, 250);        
+    PartSys->sources[0].source.ttl = 1; // set initial stanby time
+    PartSys->sources[0].sat = 0; // emitted particles start out white
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)  
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur  
+  PartSys->setGravity(SEGMENT.check1 * 8); // enable gravity
+
+  if(PartSys->sources[0].source.ttl-- == 0) // stanby time elapsed TODO: make it a timer?
+  {                  
+      uint32_t explosionsize = 4 + random(SEGMENT.intensity >> 2);
+      PartSys->sources[0].source.hue = random16();   
+      PartSys->sources[0].var = 10 + (explosionsize << 1);
+      PartSys->sources[0].minLife = 250;
+      PartSys->sources[0].maxLife = 300;
+      PartSys->sources[0].source.x = random(PartSys->maxX); //random explosion position
+      PartSys->sources[0].source.ttl = 10 + random16(255 - SEGMENT.speed);            
+      PartSys->sources[0].size = SEGMENT.custom1; // Fragment size      
+      PartSys->setParticleSize(SEGMENT.custom1); // enable advanced size rendering 
+      PartSys->sources[0].source.collide = SEGMENT.check3;
+      for(uint32_t e = 0; e < explosionsize; e++) // emit particles
+      {        
+        if(SEGMENT.check2)
+          PartSys->sources[0].source.hue = random16(); //random color for each particle  
+        PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
+      }
+  }
+  //shrink all particles
+  for(i = 0; i < PartSys->usedParticles; i++)
+  {        
+    if(PartSys->advPartProps[i].size)
+      PartSys->advPartProps[i].size--;
+    if(PartSys->advPartProps[i].sat < 251)
+      PartSys->advPartProps[i].sat += 1 + (SEGMENT.custom3 >> 2); //note: it should be >> 3, the >> 2 creates overflows resulting in blinking if custom3 > 27, which is a bonus feature 
+  } 
+  
+  if(SEGMENT.call % 5 == 0)
+  {
+    PartSys->applyFriction(1); //slow down particles
+  }
+
+  PartSys->update(); // update and render
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Fragment Size,Blur/Overlay,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21,o1=0,o2=0,o3=0";
+
+
+
+/*
+Particle based 1D GEQ effect, each frequency bin gets an emitter, distributed over the strip
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particle1DGEQ(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;
+  uint32_t numSources;
+  uint32_t i;
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 16, 0, true)) // init, no additional data needed
+      return mode_static(); // allocation failed
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+  {
+    DEBUG_PRINT(F("ERROR: FX PartSys nullpointer"));
+    return mode_static(); // something went wrong, no data!
+  }
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  numSources = PartSys->numSources;
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur  
+
+  uint32_t spacing = PartSys->maxX / numSources;
+  for(i = 0; i < numSources; i++)
+  {    
+    PartSys->sources[i].source.hue = i * 16;//random16();   //TODO: make adjustable, maybe even colorcycle?
+    PartSys->sources[i].var = SEGMENT.speed >> 3;
+    PartSys->sources[i].minLife = 180 + (SEGMENT.intensity >> 1);
+    PartSys->sources[i].maxLife = 240 + SEGMENT.intensity;
+    PartSys->sources[i].sat = 255;
+    PartSys->sources[i].size = SEGMENT.custom1;
+    PartSys->setParticleSize(SEGMENT.custom1);
+    PartSys->sources[i].source.x = (spacing >> 1) + spacing * i; //distribute evenly 
+  }
+
+  for(i = 0; i < PartSys->usedParticles; i++)
+  { 
+    if(PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short lifespan 
+    else PartSys->particles[i].ttl = 0;
+  }
+  
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))  
+    um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
+  
+  uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
+
+  //map the bands into 16 positions on x axis, emit some particles according to frequency loudness
+  i = 0;
+  uint32_t bin; //current bin  
+  uint32_t threshold = 300 - SEGMENT.intensity;
+
+
+  for (bin = 0; bin < numSources; bin++)
+  {    
+    uint32_t emitparticle = 0;
+    uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 9; // emit speed according to loudness of band (127 max!)
+    if (fftResult[bin] > threshold)
+    {
+      emitparticle = 1;
+    }
+    else if(fftResult[bin] > 0)// band has low volue
+    {
+      uint32_t restvolume = ((threshold - fftResult[bin])>>2) + 2;
+      if (random16() % restvolume == 0)
+      {
+        emitparticle = 1;
+      }
+    }
+
+    if(emitparticle)
+    {
+      PartSys->sprayEmit(PartSys->sources[bin]); 
+    }
+  }
+  //TODO: add color control?
+    
+  PartSys->update(); // update and render
+  
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur/Overlay,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1,o3=0";
+
 
 #endif //WLED_DISABLE_PARTICLESYSTEM1D
 
@@ -10850,6 +11000,8 @@ addEffect(FX_MODE_PSHOURGLASS, &mode_particleHourglass, _data_FX_MODE_PS_HOURGLA
 addEffect(FX_MODE_PS1DSPRAY, &mode_particle1Dspray, _data_FX_MODE_PS_1DSPRAY);
 addEffect(FX_MODE_PSBALANCE, &mode_particleBalance, _data_FX_MODE_PS_BALANCE);
 addEffect(FX_MODE_PSCHASE, &mode_particleChase, _data_FX_MODE_PS_CHASE);
+addEffect(FX_MODE_PSSTARBURST, &mode_particleStarburst, _data_FX_MODE_PS_STARBURST);
+addEffect(FX_MODE_PS1DGEQ, &mode_particle1DGEQ, _data_FX_MODE_PS_1D_GEQ);
 
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
