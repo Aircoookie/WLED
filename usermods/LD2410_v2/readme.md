@@ -31,3 +31,6 @@ lib_deps =
 The Usermod screen allows you to:
 - enable/disable the usermod
 - Configure the RX/TX pins
+
+## Change log
+-  2024-06 Created by @wesleygas (https://github.com/wesleygas/)
