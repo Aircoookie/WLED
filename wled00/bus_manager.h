@@ -37,7 +37,7 @@ struct BusConfig {
   uint8_t milliAmpsPerLed;
   uint16_t milliAmpsMax;
 
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false, uint8_t maPerLed=55, uint16_t maMax=ABL_MILLIAMPS_DEFAULT)
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, bool dblBfr=false, uint8_t maPerLed=LED_MILLIAMPS_DEFAULT, uint16_t maMax=ABL_MILLIAMPS_DEFAULT)
   : count(len)
   , start(pstart)
   , colorOrder(pcolorOrder)
@@ -129,7 +129,7 @@ class Bus {
     virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
     virtual void     setBrightness(uint8_t b)    { _bri = b; };
     virtual uint8_t  getPins(uint8_t* pinArray)  { return 0; }
-    virtual uint16_t getLength()                 { return _len; }
+    virtual uint16_t getLength()                 { return isOk() ? _len : 0; }
     virtual void     setColorOrder(uint8_t co)   {}
     virtual uint8_t  getColorOrder()             { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds()               { return 0; }

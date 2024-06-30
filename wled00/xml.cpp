@@ -356,7 +356,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));         oappend(",");
-    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
+    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10)); oappend(",");
+    oappend(itoa(WLED_MAX_DIGITAL_CHANNELS,nS,10)); oappend(",");
+    oappend(itoa(WLED_MAX_ANALOG_CHANNELS,nS,10));
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);

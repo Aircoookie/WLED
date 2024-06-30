@@ -4875,7 +4875,7 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   // central white dot
   SEGMENT.setPixelColorXY(cols/2, rows/2, WHITE);
   // blur everything a bit
-  SEGMENT.blur(16);
+  SEGMENT.blur(cols*rows > 100 ? 16 : 0);
 
   return FRAMETIME;
 } // mode_2DBlackHole()
@@ -5671,8 +5671,7 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
   const uint8_t kBorderWidth = 2;
 
   SEGMENT.fadeToBlackBy(24);
-  uint8_t blurAmount = SEGMENT.custom3>>1; // reduced resolution slider
-  SEGMENT.blur(blurAmount);
+  SEGMENT.blur(SEGMENT.custom3>>1);
 
   // Use two out-of-sync sine waves
   int i = beatsin8(19, kBorderWidth, cols-kBorderWidth);
@@ -6461,7 +6460,7 @@ uint16_t mode_2DWaverly(void) {
       SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
-  SEGMENT.blur(16);
+  SEGMENT.blur(cols*rows > 100 ? 16 : 0);
 
   return FRAMETIME;
 } // mode_2DWaverly()
