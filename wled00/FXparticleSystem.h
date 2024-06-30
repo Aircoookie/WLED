@@ -312,7 +312,7 @@ public:
 
   // particle emitters
   int32_t sprayEmit(PSsource1D &emitter);  
-  void particleMoveUpdate(PSparticle1D &part, PSsettings1D *options = NULL); // move function
+  void particleMoveUpdate(PSparticle1D &part, PSsettings1D *options = NULL, PSadvancedParticle1D *advancedproperties = NULL); // move function
   //particle physics
   void applyForce(PSparticle1D *part, int8_t xforce, uint8_t *counter); //apply a force to a single particle
   void applyForce(int8_t xforce); // apply a force to all particles
@@ -330,7 +330,7 @@ public:
   void setColorByAge(bool enable);
   void setColorByPosition(bool enable);
   void setMotionBlur(uint8_t bluramount); // note: motion blur can only be used if 'particlesize' is set to zero 
-  void setParticleSize(uint8_t size); //size 0 = 1 pixel, size 1 = 2 pixels
+  void setParticleSize(uint8_t size); //size 0 = 1 pixel, size 1 = 2 pixels, is overruled by advanced particle size
   void setGravity(int8_t force = 8);
   void enableParticleCollisions(bool enable, uint8_t hardness = 255);
     
@@ -353,7 +353,7 @@ private:
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
   void handleCollisions();
-  void collideParticles(PSparticle1D *particle1, PSparticle1D *particle2, int32_t dx, int32_t relativeVx); 
+  void collideParticles(PSparticle1D *particle1, PSparticle1D *particle2, int32_t dx, int32_t relativeV, uint32_t collisiondistance); 
 
   //utility functions
   void updatePSpointers(bool isadvanced); // update the data pointers to current segment data space

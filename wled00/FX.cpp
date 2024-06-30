@@ -9796,15 +9796,11 @@ uint16_t mode_particleBouncingBalls(void)
   //if (SEGMENT.check2) PartSys->setMotionBlur(255); //full motion blurring allows overlay (motion blur does not work with overlay)
   PartSys->sources[0].var = SEGMENT.speed >> 3;
   PartSys->sources[0].v = (SEGMENT.speed >> 1) - (SEGMENT.speed >> 3);
-  if (SEGMENT.check1) // collisions enabled
-    PartSys->enableParticleCollisions(true, 240 + (SEGMENT.custom1>>4)); // enable collisions and set particle collision hardness
-  else
-    PartSys->enableParticleCollisions(false);
+  PartSys->enableParticleCollisions(SEGMENT.check1, 240 + (SEGMENT.custom1>>4)); // enable collisions and set particle collision hardness
   PartSys->setUsedParticles( 1 + (SEGMENT.intensity >> 3)); // 1 - 32
-
   PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
-  if(SEGMENT.check3) //rolling balls
+  if(SEGMENT.check2) //rolling balls
   {
     PartSys->setGravity(0);
     bool updatespeed = false;
@@ -9858,7 +9854,7 @@ uint16_t mode_particleBouncingBalls(void)
   PartSys->update(); // update and render  
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur/Overlay,Gravity,Collide,Smooth,Rolling;,!;!;1;pal=0,sx=100,c1=240,c2=0,c3=8,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur/Overlay,Gravity,Collide,Rolling,Smooth;,!;!;1;pal=0,sx=100,c1=240,c2=0,c3=8,o1=0,o2=0,o3=1";
 
 /*
 Particle Replacement for original Dancing Shadows:
@@ -10488,7 +10484,7 @@ uint16_t mode_particleBalance(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=200,ix=40,c1=200,c2=0,c3=5,o1=1,o2=0,o3=1";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=200,ix=40,c1=200,c2=0,c3=5,o1=1,o2=0,o3=0";
 
 
 
@@ -10579,7 +10575,7 @@ uint16_t mode_particleStarburst(void)
     if (!initParticleSystem1D(PartSys, 1, 0, true)) // init
       return mode_static(); // allocation failed
     PartSys->setKillOutOfBounds(true);     
-    PartSys->enableParticleCollisions(true, 250);        
+    PartSys->enableParticleCollisions(true, 200);        
     PartSys->sources[0].source.ttl = 1; // set initial stanby time
     PartSys->sources[0].sat = 0; // emitted particles start out white
   }
