@@ -10416,7 +10416,7 @@ static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position
 
 
 /*
-Particle based gravity balance (1D pendent to 2D particle box)
+Particle based balance: particles move back and forth (1D pendent to 2D particle box)
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
@@ -10494,7 +10494,7 @@ uint16_t mode_particleBalance(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=200,ix=40,c1=200,c2=0,c3=5,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1,o2=0,o3=0";
 
 
 
