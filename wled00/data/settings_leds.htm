@@ -290,7 +290,7 @@
 				// do we have a led count field
 				if (nm=="LC") {
 					let c = parseInt(LC.value,10); //get LED count
-					if (c > 300 && i < 8) maxB = min(oMaxB,10); //TODO: hard limit for buses when using ESP32 parallel I2S
+					if (c > 300 && i < 8) maxB = oMaxB - max(maxD-7,0); //TODO: hard limit for buses when using ESP32 parallel I2S
 					if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
 					gId("ls"+n).disabled = !customStarts; //enable/disable field editing
 					if (c) {

@@ -588,7 +588,7 @@ function loadFXData(callback = null)
 		fxdata = [];
 		if (!retry) {
 			retry = true;
-			setTimeout(loadFXData, 500); // retry
+			setTimeout(()=>{loadFXData(loadFX);}, 500); // retry
 		}
 		showToast(e, true);
 	})
@@ -1707,9 +1707,7 @@ function requestJson(command=null)
 
 	fetch(getURL('/json/si'), {
 		method: type,
-		headers: {
-			"Content-type": "application/json; charset=UTF-8"
-		},
+		headers: {"Content-Type": "application/json; charset=UTF-8"},
 		body: req
 	})
 	.then(res => {
@@ -2692,7 +2690,9 @@ function setBalance(b)
 function rmtTgl(ip,i) {
 	event.preventDefault();
 	event.stopPropagation();
-	fetch(`http://${ip}/win&T=2`, {method: 'get'})
+	fetch(`http://${ip}/win&T=2`, {
+		method: 'get'
+	})
 	.then((r)=>{
 		return r.text();
 	})
@@ -2784,10 +2784,7 @@ function loadPalettesData(callback = null)
 function getPalettesData(page, callback)
 {
 	fetch(getURL(`/json/palx?page=${page}`), {
-		method: 'get',
-		headers: {
-			"Content-type": "application/json; charset=UTF-8"
-		}
+		method: 'get'
 	})
 	.then(res => {
 		if (!res.ok) showErrorToast();
@@ -2800,6 +2797,10 @@ function getPalettesData(page, callback)
 		else callback();
 	})
 	.catch((error)=>{
+		if (!retry) {
+			retry = true;
+			setTimeout(()=>{getPalettesData(page,callback);}, 500); // retry
+		}
 		showToast(error, true);
 	});
 }
