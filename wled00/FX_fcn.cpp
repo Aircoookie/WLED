@@ -1109,11 +1109,16 @@ void WS2812FX::finalizeInit(void)
     DEBUG_PRINTLN(F("No busses, init default"));
     const uint8_t defDataPins[] = {DATA_PINS};
     const uint16_t defCounts[] = {PIXEL_COUNTS};
-    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const uint8_t pinsPerBus = getNumPins(DEFAULT_LED_TYPE);
+    const uint8_t defNumBusses = ((sizeof defDataPins) / pinsPerBus);
     const uint8_t defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
     uint16_t prevLen = 0;
     for (int i = 0; i < defNumBusses && i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
-      uint8_t defPin[] = {defDataPins[i]};
+      uint8_t defPin[pinsPerBus];
+      for (int j = 0; j < pinsPerBus; j++) {
+        uint8_t pin = j + i * pinsPerBus;
+        defPin[j] = defDataPins[pin]; 
+      }
       uint16_t start = prevLen;
       uint16_t count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
@@ -1442,6 +1447,18 @@ uint8_t WS2812FX::getFirstSelectedSegId(void)
   }
   // if none selected, use the main segment
   return getMainSegmentId();
+}
+
+uint8_t WS2812FX::getNumPins(uint8_t busType) {
+  if (IS_PWM(busType)) {
+    return NUM_PWM_PINS(busType);
+  }
+  else if (IS_2PIN(busType)) {
+    return 2;
+  }
+  else {
+    return 1;
+  }
 }
 
 void WS2812FX::setMainSegmentId(uint8_t n) {
