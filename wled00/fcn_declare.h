@@ -169,7 +169,6 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 void setValuesFromSegment(uint8_t s);
 void setValuesFromMainSeg();
 void setValuesFromFirstSelectedSeg();
-void resetTimebase();
 void toggleOnOff();
 void applyBri();
 void applyFinalBri();
@@ -378,6 +377,7 @@ uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
 uint8_t get_random_wheel_index(uint8_t pos);
+uint32_t hashInt(uint32_t s);
 
 // RAII guard class for the JSON Buffer lock
 // Modeled after std::lock_guard

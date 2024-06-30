@@ -168,10 +168,41 @@ uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y)
   return isActive() ? (x%width) + (y%height) * width : 0;
 }
 
+// pixel is clipped if it falls outside clipping range (_modeBlend==true) or is inside clipping range (_modeBlend==false)
+// if clipping start > stop the clipping range is inverted
+// _modeBlend==true  -> old effect during transition
+// _modeBlend==false -> new effect during transition
+bool IRAM_ATTR Segment::isPixelXYClipped(int x, int y) {
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (_clipStart != _clipStop && blendingStyle > BLEND_STYLE_FADE) {
+    const bool invertX    = _clipStart > _clipStop;
+    const bool invertY    = _clipStartY > _clipStopY;
+    const int startX = invertX ? _clipStop : _clipStart;
+    const int stopX  = invertX ? _clipStart : _clipStop;
+    const int startY = invertY ? _clipStopY : _clipStartY;
+    const int stopY  = invertY ? _clipStartY : _clipStopY;
+    if (blendingStyle == BLEND_STYLE_FAIRY_DUST) {
+      const unsigned width = stopX - startX;          // assumes full segment width (faster than virtualWidth())
+      const unsigned len = width * (stopY - startY);  // assumes full segment height (faster than virtualHeight())
+      if (len < 2) return false;
+      const unsigned shuffled = hashInt(x + y * width) % len;
+      const unsigned pos = (shuffled * 0xFFFFU) / len;
+      return progress() <= pos;
+    }
+    bool xInside = (x >= startX && x < stopX); if (invertX) xInside = !xInside;
+    bool yInside = (y >= startY && y < stopY); if (invertY) yInside = !yInside;
+    const bool clip = (invertX && invertY) ? !_modeBlend : _modeBlend;
+    if (xInside && yInside) return clip; // covers window & corners (inverted)
+    return !clip;
+  }
+#endif
+  return false;
+}
+
 void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
+  if (x >= virtualWidth() || y >= virtualHeight() || x < 0 || y < 0 || isPixelXYClipped(x,y)) return;  // if pixel would fall out of virtual segment just exit
 
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
@@ -263,7 +294,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 // returns RGBW values of pixel
 uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
   if (!isActive()) return 0; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
+  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0 || isPixelXYClipped(x,y)) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
   if (transpose) { unsigned t = x; x = y; y = t; } // swap X & Y if segment transposed
