@@ -1619,7 +1619,7 @@ void ParticleSystem1D::setGravity(int8_t force)
 void ParticleSystem1D::enableParticleCollisions(bool enable, uint8_t hardness) // enable/disable gravity, optionally, set the force (force=8 is default) can be 1-255, 0 is also disable
 {
   particlesettings.useCollisions = enable;
-  collisionHardness = hardness + 1;
+  collisionHardness = hardness;
 }
 
 // emit one particle with variation, returns index of last emitted particle (or -1 if no particle emitted)
@@ -2067,7 +2067,7 @@ void ParticleSystem1D::handleCollisions()
         {
           if (advPartProps) // use advanced size properties
           {
-            collisiondistance = PS_P_MINHARDRADIUS_1D + (((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1);
+            collisiondistance += ((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1;
           }
           dx = particles[j].x - particles[i].x;  
           int32_t  dv = (int32_t)particles[j].vx - (int32_t)particles[i].vx;        
@@ -2115,13 +2115,10 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
       const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS_1D);
       particle1->vx = ((int32_t)particle1->vx * coeff) / 255; 
       particle2->vx = ((int32_t)particle2->vx * coeff) / 255;
-    }
-    
+    }    
   }
 
-
-  uint32_t distance = abs(dx);
-
+  uint32_t distance = abs(dx);  
   // particles have volume, push particles apart if they are too close 
   // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
   // also need to give the top particle some speed to counteract gravity or stacks just collapse
@@ -2158,11 +2155,11 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
         }
       }
     }
-    else //not using gravity, push both particles by applying a velocity (like in 2D system), results in much nicer stacking
+    else //not using gravity, push both particles by applying a little velocity (like in 2D system), results in much nicer stacking when applying forces
     {
-      pushamount = 1 + (pushamount >> 2);
+      pushamount = 1;
       if (dx < 0)  // particle2.x < particle1.x
-        pushamount = -pushamount;
+        pushamount = -1;
 
       particle1->vx -= pushamount;
       particle2->vx += pushamount;

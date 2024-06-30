@@ -9664,7 +9664,7 @@ uint16_t mode_particleDrip(void)
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
     PartSys->sources[0].source.hue = random16();
-    SEGMENT.aux0 = 1; //must not be zero or "% 0" happens below which crashes on ESP32   
+    SEGMENT.aux1 = 0xFFFF; // invalidate
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -9679,9 +9679,6 @@ uint16_t mode_particleDrip(void)
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setBounce(true);
   PartSys->setWallHardness(50);
-  // PartSys->setWrap(SEGMENT.check2);
-  
-  //numSprays = min(PartSys->numSources, (uint8_t)1); // number of sprays
 
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   PartSys->setGravity(SEGMENT.custom3>>1); // set gravity (8 is default strength)
@@ -9692,7 +9689,6 @@ uint16_t mode_particleDrip(void)
   else
     PartSys->enableParticleCollisions(false);
 
-  
   PartSys->sources[0].source.collide = false; //drops do not collide
 
   if(SEGMENT.check1) //rain mode, emit at random position, short life (3-8 seconds at 50fps)
@@ -9714,11 +9710,15 @@ uint16_t mode_particleDrip(void)
     PartSys->sources[0].source.x = PartSys->maxX - PS_P_RADIUS_1D;      
   } 
 
+  if(SEGMENT.aux1 != SEGMENT.intensity) //slider changed
+    SEGMENT.aux0 = 1; //must not be zero or "% 0" happens below which crashes on ESP32
+  SEGMENT.aux1 = SEGMENT.intensity;
+
   // every nth frame emit a particle 
   if (SEGMENT.call % SEGMENT.aux0 == 0) 
   { 
-    int32_t interval = 256 / (SEGMENT.intensity + 1); 
-    SEGMENT.aux0 = interval + random(interval + 5);
+    int32_t interval = 1024 / ((SEGMENT.intensity) + 1); 
+    SEGMENT.aux0 = interval + random(interval + 5); 
     PartSys->sources[0].source.hue = random16(); //set random color  TODO: maybe also not random but color cycling? need another slider or checkmark for this.
     PartSys->sprayEmit(PartSys->sources[0]);
   }
@@ -9727,7 +9727,7 @@ uint16_t mode_particleDrip(void)
   {
     if(PartSys->particles[i].ttl &&  PartSys->particles[i].collide == false) // use collision flag to identify splash particles
     {
-      if(SEGMENT.custom1 > 0 && PartSys->particles[i].x < (PS_P_RADIUS_1D << 1)) //splash enabled and reached bottom -> does not work this way, all splashes will splash again... need to mark particles
+      if(SEGMENT.custom1 > 0 && PartSys->particles[i].x < (PS_P_RADIUS_1D << 1)) //splash enabled and reached bottom
       {
         PartSys->particles[i].ttl = 0; //kill origin particle
         PartSys->sources[0].maxLife = 80;
@@ -9751,7 +9751,7 @@ uint16_t mode_particleDrip(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=25,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
 
 
 /*
@@ -9789,14 +9789,14 @@ uint16_t mode_particleBouncingBalls(void)
   }
 
   // Particle System settings
+  uint32_t hardness = 240 + (SEGMENT.custom1>>4);
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  PartSys->setWallHardness(240 + (SEGMENT.custom1>>4));
+  PartSys->setWallHardness(hardness);
   PartSys->setGravity(1 + (SEGMENT.custom3 >> 1)); // set gravity (8 is default strength)
-  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  //if (SEGMENT.check2) PartSys->setMotionBlur(255); //full motion blurring allows overlay (motion blur does not work with overlay)
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur  
   PartSys->sources[0].var = SEGMENT.speed >> 3;
   PartSys->sources[0].v = (SEGMENT.speed >> 1) - (SEGMENT.speed >> 3);
-  PartSys->enableParticleCollisions(SEGMENT.check1, 240 + (SEGMENT.custom1>>4)); // enable collisions and set particle collision hardness
+  PartSys->enableParticleCollisions(SEGMENT.check1, hardness - 1); // enable collisions and set particle collision hardness (do not use full hardness or particles speed up due to pushing, can not be made perfectly balanced)
   PartSys->setUsedParticles( 1 + (SEGMENT.intensity >> 3)); // 1 - 32
   PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
@@ -9816,7 +9816,7 @@ uint16_t mode_particleBouncingBalls(void)
         PartSys->particles[i].ttl = 260; //set alive at full intensity
       if(updatespeed || PartSys->particles[i].ttl == 0) //speed changed or particle died, reset TTL and speed
       {        
-        PartSys->particles[i].ttl = 260;
+        PartSys->particles[i].ttl = 260 + SEGMENT.speed;
         PartSys->particles[i].collide = true;
         int32_t newspeed = random(20 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
         PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? newspeed : -newspeed; //keep the direction
@@ -9854,7 +9854,7 @@ uint16_t mode_particleBouncingBalls(void)
   PartSys->update(); // update and render  
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur/Overlay,Gravity,Collide,Rolling,Smooth;,!;!;1;pal=0,sx=100,c1=240,c2=0,c3=8,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur/Overlay,Gravity,Collide,Rolling,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=240,c2=0,c3=8,o1=0,o2=0,o3=1";
 
 /*
 Particle Replacement for original Dancing Shadows:
@@ -10100,7 +10100,7 @@ uint16_t mode_particleFireworks1D(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur/Overlay,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur/Overlay,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=1,o3=0";
 
 
 /*
