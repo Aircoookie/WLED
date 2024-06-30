@@ -416,7 +416,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       //bool didSet = false;
       for (size_t s = 0; s < strip.getSegmentsNum(); s++) {
         Segment &sg = strip.getSegment(s);
-        if (sg.isSelected()) {
+        if (sg.isActive() && sg.isSelected()) {
           deserializeSegment(segVar, s, presetId);
           //didSet = true;
         }
@@ -590,6 +590,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
     root["ps"] = (currentPreset > 0) ? currentPreset : -1;
     root[F("pl")] = currentPlaylist;
+    root[F("ledmap")] = currentLedmap;
 
     usermods.addToJsonState(root);
 
@@ -598,7 +599,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     nl["dur"] = nightlightDelayMins;
     nl["mode"] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
-    nl[F("rem")] = nightlightActive ? (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000 : -1; // seconds remaining
+    nl[F("rem")] = nightlightActive ? (int)(nightlightDelayMs - (millis() - nightlightStartTime)) / 1000 : -1; // seconds remaining
 
     JsonObject udpn = root.createNestedObject("udpn");
     udpn[F("send")] = sendNotificationsRT;
@@ -638,7 +639,7 @@ void serializeInfo(JsonObject root)
   root[F("ver")] = versionString;
   root[F("vid")] = VERSION;
   root[F("cn")] = F(WLED_CODENAME);
-  root[F("release")] = FPSTR(releaseString);
+  root[F("release")] = releaseString;
 
   JsonObject leds = root.createNestedObject(F("leds"));
   leds[F("count")] = strip.getLengthTotal();
@@ -733,6 +734,7 @@ void serializeInfo(JsonObject root)
   wifi_info[F("rssi")] = qrssi;
   wifi_info[F("signal")] = getSignalQuality(qrssi);
   wifi_info[F("channel")] = WiFi.channel();
+  wifi_info[F("ap")] = apActive;
 
   JsonObject fs_info = root.createNestedObject("fs");
   fs_info["u"] = fsBytesUsed / 1000;
