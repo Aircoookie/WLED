@@ -270,12 +270,6 @@ bool BusDigital::canShow() {
 
 void BusDigital::setBrightness(uint8_t b) {
   if (_bri == b) return;
-  //Fix for turning off onboard LED breaking bus
-  #ifdef LED_BUILTIN
-  if (_bri == 0) { // && b > 0, covered by guard if above
-    if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) reinit();
-  }
-  #endif
   Bus::setBrightness(b);
   PolyBus::setBrightness(_busPtr, _iType, b);
 }
@@ -391,14 +385,14 @@ BusPwm::BusPwm(BusConfig &bc)
   uint8_t numPins = NUM_PWM_PINS(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
 
-  #ifdef ESP8266
+#ifdef ESP8266
   // duty cycle resolution (_depth) can be extracted from this formula: 1MHz > _frequency * 2^_depth
   if      (_frequency > 1760) _depth =  8;
   else if (_frequency >  880) _depth =  9;
   else                        _depth = 10; // WLED_PWM_FREQ <= 880Hz
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
-  #else
+#else
   _ledcStart = pinManager.allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
@@ -408,7 +402,7 @@ BusPwm::BusPwm(BusConfig &bc)
   else if (_frequency > 39062) _depth = 10;
   else if (_frequency > 19531) _depth = 11;
   else                         _depth = 12; // WLED_PWM_FREQ <= 19531Hz
-  #endif
+#endif
 
   for (unsigned i = 0; i < numPins; i++) {
     uint8_t currentPin = bc.pins[i];
@@ -685,11 +679,11 @@ uint32_t BusManager::memUsage(BusConfig &bc) {
       if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
         multiplier = 5;
       }
-    #else //ESP32 RMT uses double buffer, I2S uses 5x buffer
-      multiplier = 2;
+    #else //ESP32 RMT uses double buffer, parallel I2S uses 8x buffer (3 times)
+      multiplier = PolyBus::isParallelI2S1Output() ? 24 : 2;
     #endif
   }
-  return len * channels * multiplier; //RGB
+  return (len * multiplier + bc.doubleBuffer * (bc.count + bc.skipAmount)) * channels;
 }
 
 int BusManager::add(BusConfig &bc) {
@@ -706,6 +700,11 @@ int BusManager::add(BusConfig &bc) {
   return numBusses++;
 }
 
+void BusManager::useParallelOutput(void) {
+  _parallelOutputs = 8; // hardcoded since we use NPB I2S x8 methods
+  PolyBus::setParallelI2S1Output();
+}
+
 //do not call this method from system context (network callback)
 void BusManager::removeAll() {
   DEBUG_PRINTLN(F("Removing all."));
@@ -713,6 +712,79 @@ void BusManager::removeAll() {
   while (!canAllShow()) yield();
   for (unsigned i = 0; i < numBusses; i++) delete busses[i];
   numBusses = 0;
+  _parallelOutputs = 1;
+  PolyBus::setParallelI2S1Output(false);
+}
+
+#ifdef ESP32_DATA_IDLE_HIGH
+// #2478
+// If enabled, RMT idle level is set to HIGH when off
+// to prevent leakage current when using an N-channel MOSFET to toggle LED power
+void BusManager::esp32RMTInvertIdle() {
+  bool idle_out;
+  unsigned rmt = 0;
+  for (unsigned u = 0; u < numBusses(); u++) {
+    #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, only has 1 I2S but NPB does not support it ATM
+      if (u > 1) return;
+      rmt = u;
+    #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, only has 1 I2S bus, supported in NPB
+      if (u > 3) return;
+      rmt = u;
+    #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, has 2 I2S but NPB does not support them ATM
+      if (u > 3) return;
+      rmt = u;
+    #else
+      if (u < _parallelOutputs) continue;
+      if (u >= _parallelOutputs + 8) return; // only 8 RMT channels
+      rmt = u - _parallelOutputs;
+    #endif
+    if (busses[u]->getLength()==0 || !IS_DIGITAL(busses[u]->getType()) || IS_2PIN(busses[u]->getType())) continue;
+    //assumes that bus number to rmt channel mapping stays 1:1
+    rmt_channel_t ch = static_cast<rmt_channel_t>(rmt);
+    rmt_idle_level_t lvl;
+    rmt_get_idle_level(ch, &idle_out, &lvl);
+    if (lvl == RMT_IDLE_LEVEL_HIGH) lvl = RMT_IDLE_LEVEL_LOW;
+    else if (lvl == RMT_IDLE_LEVEL_LOW) lvl = RMT_IDLE_LEVEL_HIGH;
+    else continue;
+    rmt_set_idle_level(ch, idle_out, lvl);
+  }
+}
+#endif
+
+void BusManager::on() {
+  #ifdef ESP8266
+  //Fix for turning off onboard LED breaking bus
+  if (pinManager.getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
+    for (unsigned i = 0; i < numBusses; i++) {
+      uint8_t pins[2] = {255,255};
+      if (IS_DIGITAL(busses[i]->getType()) && busses[i]->getPins(pins)) {
+        if (pins[0] == LED_BUILTIN || pins[1] == LED_BUILTIN) {
+          BusDigital *bus = static_cast<BusDigital*>(busses[i]);
+          bus->reinit();
+          break;
+        }
+      }
+    }
+  }
+  #endif
+  #ifdef ESP32_DATA_IDLE_HIGH
+  esp32RMTInvertIdle();
+  #endif
+}
+
+void BusManager::off() {
+  #ifdef ESP8266
+  // turn off built-in LED if strip is turned off
+  // this will break digital bus so will need to be re-initialised on On
+  if (pinManager.getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
+    for (unsigned i = 0; i < numBusses; i++) if (busses[i]->isOffRefreshRequired()) return;
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+  #endif
+  #ifdef ESP32_DATA_IDLE_HIGH
+  esp32RMTInvertIdle();
+  #endif
 }
 
 void BusManager::show() {
@@ -781,6 +853,8 @@ uint16_t BusManager::getTotalLength() {
   return len;
 }
 
+bool PolyBus::useParallelI2S = false;
+
 // Bus static member definition
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
@@ -793,3 +867,4 @@ Bus*          BusManager::busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
 ColorOrderMap BusManager::colorOrderMap = {};
 uint16_t      BusManager::_milliAmpsUsed = 0;
 uint16_t      BusManager::_milliAmpsMax = ABL_MILLIAMPS_DEFAULT;
+uint8_t       BusManager::_parallelOutputs = 1;

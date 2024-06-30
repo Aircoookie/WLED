@@ -208,13 +208,13 @@ CRGBPalette16 generateRandomPalette(void)  //generate fully random palette
 
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 {
-  float h = ((float)hue)/65535.0f;
+  float h = ((float)hue)/10922.5f; // hue*6/65535
   float s = ((float)sat)/255.0f;
-  int   i = floorf(h*6);
-  float f = h * 6.0f - i;
+  int   i = int(h);
+  float f = h - i;
   int   p = int(255.0f * (1.0f-s));
-  int   q = int(255.0f * (1.0f-f*s));
-  int   t = int(255.0f * (1.0f-(1.0f-f)*s));
+  int   q = int(255.0f * (1.0f-s*f));
+  int   t = int(255.0f * (1.0f-s*(1.0f-f)));
   p = constrain(p, 0, 255);
   q = constrain(q, 0, 255);
   t = constrain(t, 0, 255);

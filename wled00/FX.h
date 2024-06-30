@@ -332,7 +332,18 @@
 #define FX_MODE_PARTICLECENTERGEQ      199
 #define FX_MODE_PARTICLEGHOSTRIDER     200 
 #define FX_MODE_PARTICLEBLOBS          201 
-#define MODE_COUNT                     202
+#define FX_MODE_PSDRIP                 202
+#define FX_MODE_PSBOUNCINGBALLS        203
+#define FX_MODE_PSDANCINGSHADOWS       204
+#define FX_MODE_PSFIREWORKS1D          205
+#define FX_MODE_PSSPARKLER             206
+#define FX_MODE_PSHOURGLASS            207
+#define FX_MODE_PS1DSPRAY              208
+#define FX_MODE_PSBALANCE              209
+#define FX_MODE_PSCHASE                210
+#define FX_MODE_PSSTARBURST            211
+#define FX_MODE_PS1DGEQ                212
+#define MODE_COUNT                     213
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -876,7 +887,7 @@ class WS2812FX {  // 96 bytes
       isMatrix;
 
 #ifndef WLED_DISABLE_2D
-    #define WLED_MAX_PANELS 64
+    #define WLED_MAX_PANELS 18
     uint8_t
       panels;
 

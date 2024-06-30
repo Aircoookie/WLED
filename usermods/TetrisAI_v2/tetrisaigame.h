@@ -54,6 +54,7 @@ public:
     uint8_t width;
     uint8_t height;
     uint8_t nLookAhead;
+    uint8_t nPieces;
     TetrisBag bag;
     GridColor grid;
     TetrisAI ai;
@@ -65,6 +66,7 @@ public:
         width(width),
         height(height),
         nLookAhead(nLookAhead),
+        nPieces(nPieces),
         bag(nPieces, 1, nLookAhead),
         grid(width, height + 4),
         ai(),
@@ -142,8 +144,10 @@ public:
 
     void reset()
     {
-        grid.clear();
-        bag.init();
+        grid.width = width;
+        grid.height = height + 4;
+        grid.reset();
+        bag.reset();
     }
 };
 

@@ -5,7 +5,8 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>LED Settings</title>
 	<script>
-		var d=document,laprev=55,maxB=1,maxV=0,maxM=4000,maxPB=4096,maxL=1333,maxCO=10,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var d=document,laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=4096,maxL=1333,maxCO=10,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var oMaxB=1;
 		d.um_p = [];
 		d.rsvd = [];
 		d.ro_gpio = [];
@@ -57,8 +58,16 @@
 			x.style.animation = 'none';
 			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 		}
-		function bLimits(b,v,p,m,l,o) {
-			maxB = b; maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
+		function bLimits(b,v,p,m,l,o=5,d=2,a=6) {
+			// maxB - max buses (can be changed if using ESP32 parallel I2S)
+			// maxD - max digital channels (can be changed if using ESP32 parallel I2S)
+			// maxA - max analog channels
+			// maxV - min virtual buses
+			// maxPB - max LEDs per bus
+			// maxM - max LED memory
+			// maxL - max LEDs
+			// maxCO - max Color Order mappings
+			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
 		function pinsOK() {
 			var ok = true;
@@ -117,7 +126,10 @@
 			if (!pinsOK()) {e.stopPropagation();return false;} // Prevent form submission and contact with server
 			if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
 			if (!d.Sf.ABL.checked || d.Sf.PPL.checked) d.Sf.MA.value = 0; // submit 0 as ABL (PPL will handle it)
-			if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
+			if (d.Sf.checkValidity()) {
+				d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((s)=>{s.disabled=false;}); // just in case
+				d.Sf.submit(); //https://stackoverflow.com/q/37323914
+			}
 		}
 		function enABL()
 		{
@@ -211,9 +223,12 @@
 			let busMA = 0;
 			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
 			const ablEN = d.Sf.ABL.checked;
+			maxB = oMaxB; // TODO make sure we start with all possible buses
 
 			// enable/disable LED fields
-			d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((s)=>{
+			let LTs = d.Sf.querySelectorAll("#mLC select[name^=LT]");
+			LTs.forEach((s,i)=>{
+				if (i < LTs.length-1) s.disabled = true; // prevent changing type (as we can't update options)
 				// is the field a LED type?
 				var n = s.name.substring(2);
 				var t = parseInt(s.value);
@@ -275,6 +290,7 @@
 				// do we have a led count field
 				if (nm=="LC") {
 					let c = parseInt(LC.value,10); //get LED count
+					if (c > 300 && i < 8) maxB = oMaxB - max(maxD-7,0); //TODO: hard limit for buses when using ESP32 parallel I2S
 					if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
 					gId("ls"+n).disabled = !customStarts; //enable/disable field editing
 					if (c) {
@@ -365,53 +381,62 @@
 			v = parseInt(d.getElementsByName("LS"+s)[0].value) + parseInt(d.getElementsByName("LC"+s)[0].value);
 			var t = parseInt(d.getElementsByName("LT"+s)[0].value);
 			if (isPWM(t)) v = 1; //PWM busses
-			if (isNaN(v)) return 0;
-			return v;
+			return isNaN(v) ? 0 : v;
 		}
 		function addLEDs(n,init=true)
 		{
 			var o = d.getElementsByClassName("iST");
 			var i = o.length;
+			let disable = (sel,opt) => { sel.querySelectorAll(opt).forEach((o)=>{o.disabled=true;}); }
+
+			var f = gId("mLC");
+			let digitalB = 0, analogB = 0, twopinB = 0, virtB = 0;
+			f.querySelectorAll("select[name^=LT]").forEach((s)=>{
+				let t = s.value;
+				if (isDig(t) && !isD2P(t)) digitalB++;
+				if (isD2P(t)) twopinB++;
+				if (isPWM(t)) analogB += t-40; // type defines PWM pins
+				if (isVir(t)) virtB++;
+			});
 
 			if ((n==1 && i>=maxB+maxV) || (n==-1 && i==0)) return;
 			var s = String.fromCharCode((i<10?48:55)+i);
 
-			var f = gId("mLC");
 			if (n==1) {
 // npm run build has trouble minimizing spaces inside string
 				var cn = `<div class="iST">
 <hr class="sml">
 ${i+1}:
-<select name="LT${s}" onchange="UI(true)">${i>=maxB ? '' :
-'<option value="22" selected>WS281x</option>\
-<option value="30">SK6812/WS2814 RGBW</option>\
-<option value="31">TM1814</option>\
-<option value="24">400kHz</option>\
-<option value="25">TM1829</option>\
-<option value="26">UCS8903</option>\
-<option value="27">APA106/PL9823</option>\
-<option value="33">TM1914</option>\
-<option value="28">FW1906 GRBCW</option>\
-<option value="29">UCS8904 RGBW</option>\
-<option value="32">WS2805 RGBCW</option>\
-<option value="50">WS2801</option>\
-<option value="51">APA102</option>\
-<option value="52">LPD8806</option>\
-<option value="54">LPD6803</option>\
-<option value="53">P9813</option>\
-<option value="19">WS2811 White</option>\
+<select name="LT${s}" onchange="UI(true)">${i>=maxB && false ? '' :
+'<option value="22" data-type="D">WS281x</option>\
+<option value="30" data-type="D">SK6812/WS2814 RGBW</option>\
+<option value="31" data-type="D">TM1814</option>\
+<option value="24" data-type="D">400kHz</option>\
+<option value="25" data-type="D">TM1829</option>\
+<option value="26" data-type="D">UCS8903</option>\
+<option value="27" data-type="D">APA106/PL9823</option>\
+<option value="33" data-type="D">TM1914</option>\
+<option value="28" data-type="D">FW1906 GRBCW</option>\
+<option value="29" data-type="D">UCS8904 RGBW</option>\
+<option value="32" data-type="D">WS2805 RGBCW</option>\
+<option value="50" data-type="2P">WS2801</option>\
+<option value="51" data-type="2P">APA102</option>\
+<option value="52" data-type="2P">LPD8806</option>\
+<option value="54" data-type="2P">LPD6803</option>\
+<option value="53" data-type="2P">P9813</option>\
+<option value="19" data-type="D">WS2811 White</option>\
 <option value="40">On/Off</option>\
-<option value="41">PWM White</option>\
-<option value="42">PWM CCT</option>\
-<option value="43">PWM RGB</option>\
-<option value="44">PWM RGBW</option>\
-<option value="45">PWM RGB+CCT</option>\
-<!--option value="46">PWM RGB+DCCT</option-->'}
-<option value="80">DDP RGB (network)</option>
-<!--option value="81">E1.31 RGB (network)</option-->
-<option value="82">Art-Net RGB (network)</option>
-<option value="88">DDP RGBW (network)</option>
-<option value="89">Art-Net RGBW (network)</option>
+<option value="41" data-type="A">PWM White</option>\
+<option value="42" data-type="AA">PWM CCT</option>\
+<option value="43" data-type="AAA">PWM RGB</option>\
+<option value="44" data-type="AAAA">PWM RGBW</option>\
+<option value="45" data-type="AAAAA">PWM RGB+CCT</option>\
+<!--option value="46" data-type="AAAAAA">PWM RGB+DCCT</option-->'}
+<option value="80" data-type="V">DDP RGB (network)</option>
+<!--option value="81" data-type="V">E1.31 RGB (network)</option-->
+<option value="82" data-type="V">Art-Net RGB (network)</option>
+<option value="88" data-type="V">DDP RGBW (network)</option>
+<option value="89" data-type="V">Art-Net RGBW (network)</option>
 </select><br>
 <div id="abl${s}">
 mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
@@ -451,6 +476,11 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <div id="dig${s}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
+				let sel = d.getElementsByName("LT"+s)[0]
+				if (i >= maxB || digitalB >= maxD) disable(sel,'option[data-type="D"]');
+				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]');
+				disable(sel,`option[data-type^="${'A'.repeat(maxA-analogB+1)}"]`);
+				sel.selectedIndex = sel.querySelector('option:not(:disabled)').index;
 			}
 			if (n==-1) {
 				o[--i].remove();--i;
@@ -813,6 +843,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<div id="btns"></div>
 		Disable internal pull-up/down: <input type="checkbox" name="IP"><br>
 		Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
+		<hr class="sml">
 		IR GPIO: <input type="number" min="-1" max="48" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
 		<option value=0>Remote disabled</option>
 		<option value=1>24-key RGB</option>
@@ -827,7 +858,9 @@ Swap: <select id="xw${s}" name="XW${s}">
 		Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
 		<div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
 		<a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
-		Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span> Invert <input type="checkbox" name="RM"> Open drain <input type="checkbox" name="RO"><br>
+		<hr class="sml">
+		Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
+		Invert <input type="checkbox" name="RM"> Open drain <input type="checkbox" name="RO"><br>
 		<hr class="sml">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>

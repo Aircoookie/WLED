@@ -46,40 +46,58 @@
 
 #ifndef WLED_MAX_BUSSES
   #ifdef ESP8266
-    #define WLED_MAX_BUSSES 3
+    #define WLED_MAX_DIGITAL_CHANNELS 3
+    #define WLED_MAX_ANALOG_CHANNELS 5
+    #define WLED_MAX_BUSSES 4                 // will allow 3 digital & 1 analog RGB
     #define WLED_MIN_VIRTUAL_BUSSES 2
   #else
     #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
-      #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
+      #define WLED_MAX_BUSSES 4               // will allow 2 digital & 2 analog RGB
+      #define WLED_MAX_DIGITAL_CHANNELS 2
+      #define WLED_MAX_ANALOG_CHANNELS 6
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
       // the 5th bus (I2S) will prevent Audioreactive usermod from functioning (it is last used though)
-      #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog
+      #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog RGB
+      #define WLED_MAX_DIGITAL_CHANNELS 5
+      #define WLED_MAX_ANALOG_CHANNELS 8
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
-      #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
+      #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog RGB
+      #define WLED_MAX_DIGITAL_CHANNELS 4
+      #define WLED_MAX_ANALOG_CHANNELS 8
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       // the last digital bus (I2S0) will prevent Audioreactive usermod from functioning
-      #ifndef WLED_USE_PARALLEL_I2S
-      #define WLED_MAX_BUSSES 10
-      #else
-      #define WLED_MAX_BUSSES 17
-      #endif
-      #define WLED_MIN_VIRTUAL_BUSSES 0
+      #define WLED_MAX_BUSSES 20              // will allow 17 digital & 3 analog RGB
+      #define WLED_MAX_DIGITAL_CHANNELS 17
+      #define WLED_MAX_ANALOG_CHANNELS 10
+      #define WLED_MIN_VIRTUAL_BUSSES 4
     #endif
   #endif
 #else
   #ifdef ESP8266
-    #if WLED_MAX_BUSES > 5
+    #if WLED_MAX_BUSSES > 5
       #error Maximum number of buses is 5.
+    #endif
+    #ifndef WLED_MAX_ANALOG_CHANNELS
+      #error You must also define WLED_MAX_ANALOG_CHANNELS.
+    #endif
+    #ifndef WLED_MAX_DIGITAL_CHANNELS
+      #error You must also define WLED_MAX_DIGITAL_CHANNELS.
     #endif
     #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSSES)
   #else
-    #if WLED_MAX_BUSES > 10
-      #error Maximum number of buses is 10.
+    #if WLED_MAX_BUSSES > 20
+      #error Maximum number of buses is 20.
     #endif
-    #define WLED_MIN_VIRTUAL_BUSSES (10-WLED_MAX_BUSSES)
+    #ifndef WLED_MAX_ANALOG_CHANNELS
+      #error You must also define WLED_MAX_ANALOG_CHANNELS.
+    #endif
+    #ifndef WLED_MAX_DIGITAL_CHANNELS
+      #error You must also define WLED_MAX_DIGITAL_CHANNELS.
+    #endif
+    #define WLED_MIN_VIRTUAL_BUSSES (20-WLED_MAX_BUSSES)
   #endif
 #endif
 
@@ -181,6 +199,7 @@
 #define USERMOD_ID_BME68X                49     //Usermod "usermod_bme68x.h
 #define USERMOD_ID_INA226                50     //Usermod "usermod_ina226.h"
 #define USERMOD_ID_AHT10                 51     //Usermod "usermod_aht10.h"
+#define USERMOD_ID_LD2410                52     //Usermod "usermod_ld2410.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -196,9 +215,9 @@
 #define CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
 #define CALL_MODE_DIRECT_CHANGE  1
 #define CALL_MODE_BUTTON         2     //default button actions applied to selected segments
-#define CALL_MODE_NOTIFICATION   3
-#define CALL_MODE_NIGHTLIGHT     4
-#define CALL_MODE_NO_NOTIFY      5
+#define CALL_MODE_NOTIFICATION   3     //caused by incoming notification (UDP or DMX preset)
+#define CALL_MODE_NIGHTLIGHT     4     //nightlight progress
+#define CALL_MODE_NO_NOTIFY      5     //change state but do not send notifications (UDP)
 #define CALL_MODE_FX_CHANGED     6     //no longer used
 #define CALL_MODE_HUE            7
 #define CALL_MODE_PRESET_CYCLE   8     //no longer used
@@ -332,7 +351,7 @@
 #define BTN_TYPE_TOUCH_SWITCH     9
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        12
+#define WLED_NUM_ETH_TYPES        13
 
 #define WLED_ETH_NONE              0
 #define WLED_ETH_WT32_ETH01        1
@@ -346,6 +365,7 @@
 #define WLED_ETH_ABCWLEDV43ETH     9
 #define WLED_ETH_SERG74           10
 #define WLED_ETH_ESP32_POE_WROVER 11
+#define WLED_ETH_LILYGO_T_POE_PRO 12
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
@@ -479,6 +499,16 @@
   #elif ABL_MILLIAMPS_DEFAULT < 250   // make sure value is at least 250
    #warning "make sure value is at least 250"
    #define ABL_MILLIAMPS_DEFAULT 250
+  #endif
+#endif
+
+#ifndef LED_MILLIAMPS_DEFAULT
+  #define LED_MILLIAMPS_DEFAULT 55    // common WS2812B
+#else
+  #if LED_MILLIAMPS_DEFAULT < 1 || LED_MILLIAMPS_DEFAULT > 100
+   #warning "Unusual LED mA current, overriding with default value."
+   #undef LED_MILLIAMPS_DEFAULT
+   #define LED_MILLIAMPS_DEFAULT 55
   #endif
 #endif
 

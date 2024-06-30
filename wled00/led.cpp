@@ -195,7 +195,7 @@ void handleTransitions()
       applyFinalBri();
       return;
     }
-    if (tper - tperLast < 0.004f) return;
+    if (tper - tperLast < 0.004f) return; // less than 1 bit change (1/255)
     tperLast = tper;
     briT = briOld + ((bri - briOld) * tper);
 

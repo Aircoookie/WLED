@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.15.0-b3
+   @version 0.15.0-b4
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2405180
+#define VERSION 2406290
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -268,7 +268,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
-WLED_GLOBAL char releaseString[] _INIT_PROGMEM(TOSTRING(WLED_RELEASE_NAME)); // somehow this will not work if using "const char releaseString[]
+WLED_GLOBAL char releaseString[] _INIT(TOSTRING(WLED_RELEASE_NAME)); // somehow this will not work if using "const char releaseString[]
 #define WLED_CODENAME "Kōsen"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -333,6 +333,13 @@ WLED_GLOBAL byte apBehavior      _INIT(AP_BEHAVIOR_BOOT_NO_CONN); // access poin
 WLED_GLOBAL bool noWifiSleep _INIT(true);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
 #else
 WLED_GLOBAL bool noWifiSleep _INIT(false);
+#endif
+#ifdef ARDUINO_ARCH_ESP32
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
+WLED_GLOBAL uint8_t txPower _INIT(WIFI_POWER_8_5dBm);
+  #else
+WLED_GLOBAL uint8_t txPower _INIT(WIFI_POWER_19_5dBm);
+  #endif
 #endif
 WLED_GLOBAL bool force802_3g _INIT(false);
 #define WLED_WIFI_CONFIGURED (strlen(multiWiFi[0].clientSSID) >= 1 && strcmp(multiWiFi[0].clientSSID, DEFAULT_CLIENT_SSID) != 0)
@@ -755,6 +762,7 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+WLED_GLOBAL uint8_t currentLedmap _INIT(0);
 #ifndef ESP8266
 WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
 #endif

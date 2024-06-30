@@ -127,6 +127,14 @@ public:
             }
         }
     }
+
+    void reset()
+    {
+        gridBW.reset();
+        pixels.clear();
+        pixels.resize(width* height);
+        clear();
+    }
 };
 
 #endif /* __GRIDCOLOR_H__ */

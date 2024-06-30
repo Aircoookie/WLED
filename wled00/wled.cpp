@@ -175,19 +175,44 @@ void WLED::loop()
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
     BusManager::removeAll();
-    uint32_t mem = 0, globalBufMem = 0;
-    uint16_t maxlen = 0;
-    for (uint8_t i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
+    // determine if it is sensible to use parallel I2S outputs on ESP32 (i.e. more than 5 outputs = 1 I2S + 4 RMT)
+    bool useParallel = false;
+    #if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ARCH_ESP32S2) && !defined(ARDUINO_ARCH_ESP32S3) && !defined(ARDUINO_ARCH_ESP32C3)
+    unsigned digitalCount = 0;
+    unsigned maxLeds = 0;
+    int oldType = 0;
+    for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
-      mem += BusManager::memUsage(*busConfigs[i]);
-      if (useGlobalLedBuffer && busConfigs[i]->start + busConfigs[i]->count > maxlen) {
-          maxlen = busConfigs[i]->start + busConfigs[i]->count;
-          globalBufMem = maxlen * 4;
-      }
-      if (mem + globalBufMem <= MAX_LED_MEMORY) {
-        BusManager::add(*busConfigs[i]);
-      }
-      delete busConfigs[i]; busConfigs[i] = nullptr;
+      if (IS_DIGITAL(busConfigs[i]->type) && !IS_2PIN(busConfigs[i]->type)) digitalCount++;
+      if (busConfigs[i]->count > maxLeds) maxLeds = busConfigs[i]->count;
+      // we need to have all LEDs of the same type for parallel
+      if (i < 8 && oldType > 0 && oldType != busConfigs[i]->type) oldType = -1;
+      else if (oldType == 0) oldType = busConfigs[i]->type;
+    }
+    DEBUG_PRINTF_P(PSTR("Maximum LEDs on a bus: %u\nDigital buses: %u\nDifferent types: %d\n"), maxLeds, digitalCount, (int)(oldType == -1));
+    // we may remove 300 LEDs per bus limit when NeoPixelBus is updated beyond 2.9.0
+    if (/*oldType != -1 && */maxLeds <= 300 && digitalCount > 5) {
+      useParallel = true;
+      BusManager::useParallelOutput();
+      DEBUG_PRINTF_P(PSTR("Switching to parallel I2S with max. %d LEDs per ouptut.\n"), maxLeds);
+    }
+    #endif
+    // create buses/outputs
+    unsigned mem = 0;
+    for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
+      if (busConfigs[i] == nullptr || (!useParallel && i > 10)) break;
+      if (useParallel && i < 8) {
+        // we are using parallel I2S and memUsage() will include x8 allocation into account
+        if (i == 0)
+          mem = BusManager::memUsage(*busConfigs[i]); // includes x8 memory allocation for parallel I2S
+        else
+          if (BusManager::memUsage(*busConfigs[i]) > mem)
+            mem = BusManager::memUsage(*busConfigs[i]); // if we have unequal LED count use the largest
+      } else
+        mem += BusManager::memUsage(*busConfigs[i]); // includes global buffer
+      if (mem <= MAX_LED_MEMORY) BusManager::add(*busConfigs[i]);
+      delete busConfigs[i];
+      busConfigs[i] = nullptr;
     }
     strip.finalizeInit(); // also loads default ledmap if present
     if (aligned) strip.makeAutoSegments();
@@ -242,12 +267,12 @@ void WLED::loop()
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
     #if defined(ARDUINO_ARCH_ESP32)
     if (psramFound()) {
-      DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
-      DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINTF_P(PSTR("PSRAM: %dkB/%dkB\n"), ESP.getFreePsram()/1024, ESP.getPsramSize()/1024);
       if (!psramSafe) DEBUG_PRINTLN(F("Not using PSRAM."));
     }
+    DEBUG_PRINTF_P(PSTR("TX power: %d/%d\n"), WiFi.getTxPower(), txPower);
     #endif
-    DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
+    DEBUG_PRINTF_P(PSTR("Wifi state: %d\n"), WiFi.status());
     #ifndef WLED_DISABLE_ESPNOW
     DEBUG_PRINT(F("ESP-NOW state: "));   DEBUG_PRINTLN(statusESPNow);
     #endif
@@ -378,9 +403,9 @@ void WLED::setup()
   DEBUG_PRINT(F("JSON buffer allocated: ")); DEBUG_PRINTLN((psramSafe && psramFound() ? 2 : 1)*JSON_BUFFER_SIZE);
   // if the above fails requestJsonBufferLock() will always return false preventing crashes
   if (psramFound()) {
-    DEBUG_PRINT(F("Total PSRAM: ")); DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
-    DEBUG_PRINT(F("Free PSRAM : ")); DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+    DEBUG_PRINTF_P(PSTR("PSRAM: %dkB/%dkB\n"), ESP.getFreePsram()/1024, ESP.getPsramSize()/1024);
   }
+  DEBUG_PRINTF_P(PSTR("TX power: %d/%d\n"), WiFi.getTxPower(), txPower);
 #endif
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
@@ -558,11 +583,13 @@ void WLED::beginStrip()
   if (bootPreset > 0) {
     applyPreset(bootPreset, CALL_MODE_INIT);
   }
-  colorUpdated(CALL_MODE_INIT);
+  colorUpdated(CALL_MODE_INIT); // will not send notification
 
   // init relay pin
-  if (rlyPin>=0)
+  if (rlyPin >= 0) {
+    pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
     digitalWrite(rlyPin, (rlyMde ? bri : !bri));
+  }
 }
 
 void WLED::initAP(bool resetAP)
@@ -578,8 +605,8 @@ void WLED::initAP(bool resetAP)
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  #ifdef ARDUINO_ARCH_ESP32
+  WiFi.setTxPower(wifi_power_t(txPower));
   #endif
 
   if (!apActive) // start captive portal if AP active
@@ -802,9 +829,7 @@ void WLED::initConnection()
     WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass); // no harm if called multiple times
 
 #ifdef ARDUINO_ARCH_ESP32
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
-    WiFi.setTxPower(WIFI_POWER_8_5dBm);
-  #endif
+    WiFi.setTxPower(wifi_power_t(txPower));
     WiFi.setSleep(!noWifiSleep);
     WiFi.setHostname(hostname);
 #else

@@ -283,6 +283,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AP"),fapass);
 
     sappend('v',SET_F("AC"),apChannel);
+    #ifdef ARDUINO_ARCH_ESP32
+    sappend('v',SET_F("TX"),txPower);
+    #else
+    oappend(SET_F("gId('tx').style.display='none';"));
+    #endif
     sappend('c',SET_F("FG"),force802_3g);
     sappend('c',SET_F("WS"),noWifiSleep);
 
@@ -298,7 +303,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("ETH"),ethernetType);
     #else
     //hide ethernet setting if not compiled in
-    oappend(SET_F("document.getElementById('ethd').style.display='none';"));
+    oappend(SET_F("gId('ethd').style.display='none';"));
     #endif
 
     if (Network.isConnected()) //is connected
@@ -351,7 +356,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));         oappend(",");
-    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
+    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10)); oappend(",");
+    oappend(itoa(WLED_MAX_DIGITAL_CHANNELS,nS,10)); oappend(",");
+    oappend(itoa(WLED_MAX_ANALOG_CHANNELS,nS,10));
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);
@@ -726,7 +733,7 @@ void getSettingsJS(byte subPage, char* dest)
     olen -= 2; //delete ";
     oappend(versionString);
     oappend(SET_F("<br>"));
-    oappend((char*)FPSTR(releaseString));
+    oappend(releaseString);
     oappend(SET_F("<br>("));
     #if defined(ARDUINO_ARCH_ESP32)
     oappend(ESP.getChipModel());
