@@ -8,6 +8,8 @@
 #include "soc/rtc_cntl_reg.h"
 #endif
 
+extern "C" void usePWMFixedNMI();
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
@@ -406,6 +408,10 @@ void WLED::setup()
     DEBUG_PRINTF_P(PSTR("PSRAM: %dkB/%dkB\n"), ESP.getFreePsram()/1024, ESP.getPsramSize()/1024);
   }
   DEBUG_PRINTF_P(PSTR("TX power: %d/%d\n"), WiFi.getTxPower(), txPower);
+#endif
+
+#ifdef ESP8266
+  usePWMFixedNMI(); // link the NMI fix
 #endif
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
