@@ -817,7 +817,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
       yflipped = maxYpixel - y;
       for (int32_t x = 0; x <= maxXpixel; x++)
       {
-        SEGMENT.setPixelColorXY(x, yflipped, framebuffer[x][y]);
+        SEGMENT.setPixelColorXY((int)x, (int)yflipped, framebuffer[x][y]);
       }
     }
     free(framebuffer); 
