@@ -230,6 +230,10 @@
   #include "../usermods/INA226_v2/usermod_ina226.h"
 #endif
 
+#ifdef USERMOD_LD2410
+#include "../usermods/LD2410_v2/usermod_ld2410.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -445,5 +449,9 @@ void registerUsermods()
 
   #ifdef USERMOD_INA226
   usermods.add(new UsermodINA226());
+  #endif
+  
+  #ifdef USERMOD_LD2410
+  usermods.add(new LD2410Usermod());
   #endif
 }

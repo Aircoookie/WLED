@@ -923,6 +923,7 @@ select.sel-p, select.sel-pl, select.sel-ple {
 	margin: 5px 0;
 	width: 100%;
 	height: 40px;
+	padding: 0 20px 0 8px;
 }
 div.sel-p {
 	position: relative;

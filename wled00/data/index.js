@@ -588,7 +588,7 @@ function loadFXData(callback = null)
 		fxdata = [];
 		if (!retry) {
 			retry = true;
-			setTimeout(loadFXData, 500); // retry
+			setTimeout(()=>{loadFXData(loadFX);}, 500); // retry
 		}
 		showToast(e, true);
 	})
@@ -1707,9 +1707,7 @@ function requestJson(command=null)
 
 	fetch(getURL('/json/si'), {
 		method: type,
-		headers: {
-			"Content-type": "application/json; charset=UTF-8"
-		},
+		headers: {"Content-Type": "application/json; charset=UTF-8"},
 		body: req
 	})
 	.then(res => {
@@ -2692,7 +2690,9 @@ function setBalance(b)
 function rmtTgl(ip,i) {
 	event.preventDefault();
 	event.stopPropagation();
-	fetch(`http://${ip}/win&T=2`, {method: 'get'})
+	fetch(`http://${ip}/win&T=2`, {
+		method: 'get'
+	})
 	.then((r)=>{
 		return r.text();
 	})
@@ -2784,21 +2784,23 @@ function loadPalettesData(callback = null)
 function getPalettesData(page, callback)
 {
 	fetch(getURL(`/json/palx?page=${page}`), {
-		method: 'get',
-		headers: {
-			"Content-type": "application/json; charset=UTF-8"
-		}
+		method: 'get'
 	})
 	.then(res => {
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
+		retry = false;
 		palettesData = Object.assign({}, palettesData, json.p);
-		if (page < json.m) setTimeout(()=>{ getPalettesData(page + 1, callback); }, 50);
+		if (page < json.m) setTimeout(()=>{ getPalettesData(page + 1, callback); }, 75);
 		else callback();
 	})
 	.catch((error)=>{
+		if (!retry) {
+			retry = true;
+			setTimeout(()=>{getPalettesData(page,callback);}, 500); // retry
+		}
 		showToast(error, true);
 	});
 }
@@ -2835,7 +2837,8 @@ function search(field, listId = null) {
 	if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
 
 	// filter list items but leave (Default & Solid) always visible
-	gId(listId).querySelectorAll('.lstI').forEach((listItem,i)=>{
+	const listItems = gId("fxlist").querySelectorAll('.lstI');
+	listItems.forEach((listItem,i)=>{
 		if (listId!=='pcont' && i===0) return;
 		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
 		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
@@ -3058,7 +3061,7 @@ function size()
 
 function togglePcMode(fromB = false)
 {
-	let ap = (fromB && !lastinfo) || (lastinfo && lastinfo.wifi && lastinfo.witi.ap);
+	let ap = (fromB && !lastinfo) || (lastinfo && lastinfo.wifi && lastinfo.wifi.ap);
 	if (fromB) {
 		pcModeA = !pcModeA;
 		localStorage.setItem('pcm', pcModeA);

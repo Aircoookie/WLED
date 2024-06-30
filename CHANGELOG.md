@@ -1,8 +1,47 @@
 ## WLED changelog
 
+#### Build 2406290
+-   WLED 0.15.0-b4 release
+-   LED settings bus management update (WARNING only allow available outputs)
+-   Add ETH support for LILYGO-POE-Pro (#4030 by @rorosaurus)
+-   Update usermod_sn_photoresistor (#4017 by @xkvmoto)
+-   Several internal fixes and optimisations
+    - move LED_BUILTIN handling to BusManager class
+    - reduce max panels (web server limitation)
+    - edit WiFi TX power (ESP32)
+    - keep current ledmap ID in UI
+    - limit outputs in UI based on length
+    - wifi.ap addition to JSON Info (JSON API)
+    - relay pin init bugfix
+    - file editor button in UI
+    - ESP8266: update was restarting device on some occasions
+    - a bit of throttling in UI (for ESP8266)
+
+#### Build 2406120
+-   Update NeoPixelBus to v2.8.0
+-   Increased LED outputs one ESP32 using parallel I2S (up to 17)
+    - use single/mono I2S + 4x RMT for 5 outputs or less
+    - use parallel x8 I2S + 8x RMT for >5 outputs (limit of 300 LEDs per output)
+-   Fixed code of Smartnest and updated documentation (#4001 by @DevilPro1)
+-   ESP32-S3 WiFi fix (#4010 by @cstruck)
+-   TetrisAI usermod fix (#3897 by @muebau)
+-   ESP-NOW usermod hook
+-   Update wled.h regarding OTA Password (#3993 by @gsieben)
+-   Usermod BME68X Sensor Implementation (#3994 by @gsieben)
+-   Add a usermod for AHT10, AHT15 and AHT20 temperature/humidity sensors (#3977 by @LordMike)
+-   Update Battery usermod documentation (#3968 by @adamsthws)
+-   Add INA226 usermod for reading current and power over i2c (#3986 by @LordMike)
+-   Bugfixes: #3991
+-   Several internal fixes and optimisations (WARNING: some effects may be broken that rely on overflow/narrow width)
+    - replace uint8_t and uint16_t with unsigned
+    - replace in8_t and int16_t with int
+    - reduces code by 1kB
+
 #### Build 2405180
+-   WLED 0.14.4 release
+-   Fix for #3978
 -   Official 0.15.0-b3 release
--   Merge 0.14.3 fixes
+-   Merge 0.14.3 fixes into 0_15
 -   Added Pinwheel Expand 1D->2D effect mapping mode (#3961 by @Brandon502)
 -   Add changeable i2c address to BME280 usermod (#3966 by @LordMike)
 -   Effect: Firenoise - add palette selection
