@@ -64,12 +64,12 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
   emitIndex = 0;
 
   //initialize some default non-zero values most FX use
-  for (int i = 0; i < numSources; i++)
+  for (uint32_t i = 0; i < numSources; i++)
   {
     sources[i].source.sat = 255; //set saturation to max by default
     sources[i].source.ttl = 1; //set source alive
   }
-  for (int i = 0; i < numParticles; i++)
+  for (uint32_t i = 0; i < numParticles; i++)
   {
      particles[i].sat = 255; // full saturation
   }
@@ -87,7 +87,7 @@ void ParticleSystem::update(void)
   //update size settings before handling collisions
   if (advPartSize)
   {
-    for (int i = 0; i < usedParticles; i++)
+    for (uint32_t i = 0; i < usedParticles; i++)
     {      
       updateSize(&advPartProps[i], &advPartSize[i]);
     }
@@ -98,7 +98,7 @@ void ParticleSystem::update(void)
     handleCollisions();
 
   //move all particles
-  for (int i = 0; i < usedParticles; i++)
+  for (uint32_t i = 0; i < usedParticles; i++)
   {
     if (advPartProps)
     {
@@ -224,7 +224,7 @@ int32_t ParticleSystem::sprayEmit(PSsource &emitter, uint32_t amount)
 {
  for (uint32_t a = 0; a < amount; a++)
   {
-    for (int32_t i = 0; i < usedParticles; i++)
+    for (uint32_t i = 0; i < usedParticles; i++)
     {
       emitIndex++;
       if (emitIndex >= usedParticles)
@@ -734,10 +734,10 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
       if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
       {
         uint32_t yflipped;
-        for (uint32_t y = 0; y <= maxYpixel; y++)
+        for (int32_t y = 0; y <= maxYpixel; y++)
         {
           yflipped = maxYpixel - y;
-          for (uint32_t x = 0; x <= maxXpixel; x++)
+          for (int32_t x = 0; x <= maxXpixel; x++)
           {
             framebuffer[x][y] = SEGMENT.getPixelColorXY(x, yflipped); //copy to local buffer
             fast_color_scale(framebuffer[x][y], motionBlur);
@@ -796,7 +796,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
     uint32_t bluramount = particlesize; 
     uint32_t bitshift = 0;
   
-    for(int i = 0; i < passes; i++)
+    for(uint32_t i = 0; i < passes; i++)
     {
       if (i == 2) // for the last two passes, use higher amount of blur (results in a nicer brightness gradient with soft edges)
         bitshift = 1;
@@ -812,10 +812,10 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
   if (useLocalBuffer) // transfer local buffer back to segment
   {
     int32_t yflipped;
-    for (int y = 0; y <= maxYpixel; y++)
+    for (int32_t y = 0; y <= maxYpixel; y++)
     {
       yflipped = maxYpixel - y;
-      for (int x = 0; x <= maxXpixel; x++)
+      for (int32_t x = 0; x <= maxXpixel; x++)
       {
         SEGMENT.setPixelColorXY(x, yflipped, framebuffer[x][y]);
       }

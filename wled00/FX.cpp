@@ -1189,7 +1189,7 @@ uint16_t mode_dual_larson_scanner(void){
 }
 static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Trail,Delay,,,Dual,Bi-delay;!,!,!;!;;m12=0,c1=0";
 
-
+#ifndef DISABLE_1D_PS_REPLACEMENTS
 /*
  * Firing comets from one end. "Lighthouse"
  */
@@ -1216,7 +1216,7 @@ uint16_t mode_comet(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!,!;!";
-
+#endif // DISABLE_1D_PS_REPLACEMENTS
 
 /*
  * Fireworks function.
@@ -1258,7 +1258,7 @@ uint16_t mode_fireworks() {
 }
 static const char _data_FX_MODE_FIREWORKS[] PROGMEM = "Fireworks@,Frequency;!,!;!;12;ix=192,pal=11";
 
-
+#ifndef DISABLE_1D_PS_REPLACEMENTS
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
 uint16_t mode_rain() {
   if (SEGLEN == 1) return mode_static();
@@ -1292,7 +1292,7 @@ uint16_t mode_rain() {
   return mode_fireworks();
 }
 static const char _data_FX_MODE_RAIN[] PROGMEM = "Rain@!,Spawning rate;!,!;!;12;ix=128,pal=0";
-
+#endif //DISABLE_1D_PS_REPLACEMENTS
 
 /*
  * Fire flicker function
@@ -2038,7 +2038,7 @@ uint16_t mode_palette() {
 }
 static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;c1=128,c2=128,c3=128,o1=1,o2=1,o3=0";
 
-
+#ifndef DISABLE_2D_PS_REPLACEMENTS
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
 // Fire2012 by Mark Kriegsman, July 2012
 // as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
@@ -2120,7 +2120,7 @@ uint16_t mode_fire_2012() {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,,Boost;;!;1;sx=64,ix=160,m12=1"; // bars
-
+#endif //DISABLE_2D_PS_REPLACEMENTS
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
 // This function draws color waves with an ever-changing,
@@ -2939,7 +2939,7 @@ uint16_t mode_spots_fade()
 }
 static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width,,,,,Overlay;!,!;!";
 
-
+#ifndef DISABLE_1D_PS_REPLACEMENTS
 //each needs 12 bytes
 typedef struct Ball {
   unsigned long lastBounceTime;
@@ -3125,7 +3125,7 @@ static uint16_t rolling_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
-
+#endif //DISABLE_1D_PS_REPLACEMENTS
 
 /*
 * Sinelon stolen from FASTLED examples
@@ -3220,7 +3220,7 @@ uint16_t mode_solid_glitter()
 }
 static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;Bg,,Glitter color;;;m12=0";
 
-
+#ifndef DISABLE_1D_PS_REPLACEMENTS
 //each needs 20 bytes
 //Spark type is used for popcorn, 1D fireworks, and drip
 typedef struct Spark {
@@ -3297,6 +3297,7 @@ uint16_t mode_popcorn(void) {
 }
 static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,Overlay;!,!,!;!;;m12=1"; //bar
 
+#endif // DISABLE_1D_PS_REPLACEMENTS
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
 //Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
@@ -3390,7 +3391,7 @@ uint16_t mode_candle_multi()
 }
 static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@!,!;!,!;!;;sx=96,ix=224,pal=0";
 
-
+#ifndef DISABLE_1D_PS_REPLACEMENTS
 /*
 / Fireworks in starburst effect
 / based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
@@ -3523,7 +3524,6 @@ uint16_t mode_starburst(void) {
 }
 #undef STARBURST_MAX_FRAG
 static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments,,,,,Overlay;,!;!;;pal=11,m12=0";
-
 
 /*
  * Exploding fireworks effect
@@ -3662,7 +3662,6 @@ uint16_t mode_exploding_fireworks(void)
 #undef MAX_SPARKS
 static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side;!,!;!;12;pal=11,ix=128";
 
-
 /*
  * Drip Effect
  * ported of: https://www.youtube.com/watch?v=sru2fXh4r7k
@@ -3748,7 +3747,7 @@ uint16_t mode_drip(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,,,,,Overlay;!,!;!;;m12=1"; //bar
-
+#endif // DISABLE_1D_PS_REPLACEMENTS
 /*
  * Tetris or Stacking (falling bricks) Effect
  * by Blaz Kristan (AKA blazoncek) (https://github.com/blazoncek, https://blaz.at/home)
@@ -4303,17 +4302,6 @@ uint16_t mode_chunchun(void)
 }
 static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!,!;!";
 
-
-//13 bytes
-typedef struct Spotlight {
-  float speed;
-  uint8_t colorIdx;
-  int16_t position;
-  unsigned long lastUpdateTime;
-  uint8_t width;
-  uint8_t type;
-} spotlight;
-
 #define SPOT_TYPE_SOLID       0
 #define SPOT_TYPE_GRADIENT    1
 #define SPOT_TYPE_2X_GRADIENT 2
@@ -4326,6 +4314,17 @@ typedef struct Spotlight {
 #else
   #define SPOT_MAX_COUNT 49          //Number of simultaneous waves
 #endif
+
+#ifndef DISABLE_1D_PS_REPLACEMENTS
+//13 bytes
+typedef struct Spotlight {
+  float speed;
+  uint8_t colorIdx;
+  int16_t position;
+  unsigned long lastUpdateTime;
+  uint8_t width;
+  uint8_t type;
+} spotlight;
 
 /*
  * Spotlights moving back and forth that cast dancing shadows.
@@ -4451,7 +4450,7 @@ uint16_t mode_dancing_shadows(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!;!";
-
+#endif //DISABLE_1D_PS_REPLACEMENTS
 
 /*
   Imitates a washing machine, rotating same waves forward, then pause, then backward.
@@ -5902,6 +5901,7 @@ uint16_t mode_2Dcrazybees(void) {
 static const char _data_FX_MODE_2DCRAZYBEES[] PROGMEM = "Crazy Bees@!,Blur;;;2";
 #undef MAX_BEES
 
+#ifndef DISABLE_2D_PS_REPLACEMENTS
 /////////////////////////
 //     2D Ghost Rider  //
 /////////////////////////
@@ -5992,7 +5992,9 @@ uint16_t mode_2Dghostrider(void) {
 }
 static const char _data_FX_MODE_2DGHOSTRIDER[] PROGMEM = "Ghost Rider@Fade rate,Blur;;!;2";
 #undef LIGHTERS_AM
+#endif //DISABLE_2D_PS_REPLACEMENTS
 
+#ifndef DISABLE_2D_PS_REPLACEMENTS
 ////////////////////////////
 //     2D Floating Blobs  //
 ////////////////////////////
@@ -6092,7 +6094,7 @@ uint16_t mode_2Dfloatingblobs(void) {
 }
 static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur,Trail;!;!;2;c1=8";
 #undef MAX_BLOBS
-
+#endif //DISABLE_2D_PS_REPLACEMENTS
 
 ////////////////////////////
 //     2D Scrolling text  //
@@ -8603,7 +8605,7 @@ uint16_t mode_particlebox(void)
     PartSys->setBounceY(true);
     // set max number of particles and save to aux1 for later
     #ifdef ESP8266
-    SEGMENT.aux1 = min((uint16_t)((PartSys->maxXpixel * PartSys->maxYpixel) >> 1), PartSys->numParticles); 
+    SEGMENT.aux1 = min((uint32_t)((PartSys->maxXpixel * PartSys->maxYpixel) >> 1), PartSys->numParticles); 
     #else
     SEGMENT.aux1 = min((uint32_t)((PartSys->maxXpixel * PartSys->maxYpixel)), PartSys->numParticles); // max number of particles
     #endif
@@ -9471,7 +9473,7 @@ uint16_t mode_particleghostrider(void)
   // color by age (PS 'color by age' always starts with hue = 255, don't want that here)
   if(SEGMENT.check1)
   {
-    for(int i = 0; i < PartSys->usedParticles; i++)
+    for(uint32_t i = 0; i < PartSys->usedParticles; i++)
     {
       PartSys->particles[i].hue = PartSys->sources[0].source.hue + (PartSys->particles[i].ttl<<2);
     }      
@@ -9697,8 +9699,8 @@ uint16_t mode_particleDrip(void)
     PartSys->sources[0].var = 5;
     PartSys->sources[0].v = -(8 + (SEGMENT.speed >> 2)); //speed + var must be < 128, inverted speed (=down)  
  // lifetime in frames
-    PartSys->sources[0].minLife = 100;
-    PartSys->sources[0].maxLife = 300;
+    PartSys->sources[0].minLife = 30;
+    PartSys->sources[0].maxLife = 200;
     PartSys->sources[0].source.x = random(PartSys->maxX); //random emit position
   }
   else{ //drip
@@ -9716,13 +9718,16 @@ uint16_t mode_particleDrip(void)
   // every nth frame emit a particle 
   if (SEGMENT.call % SEGMENT.aux0 == 0) 
   { 
-    int32_t interval = 1024 / ((SEGMENT.intensity) + 1); 
+    int32_t interval = 300 / ((SEGMENT.intensity) + 1); 
     SEGMENT.aux0 = interval + random(interval + 5); 
+   // if(SEGMENT.check1) // rain mode
+   //   PartSys->sources[0].source.hue = 0;
+   // else
     PartSys->sources[0].source.hue = random16(); //set random color  TODO: maybe also not random but color cycling? need another slider or checkmark for this.
     PartSys->sprayEmit(PartSys->sources[0]);
   }
   
-  for (int i = 0; i < PartSys->usedParticles; i++)//check all particles
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++)//check all particles
   {
     if(PartSys->particles[i].ttl &&  PartSys->particles[i].collide == false) // use collision flag to identify splash particles
     {
@@ -9741,7 +9746,13 @@ uint16_t mode_particleDrip(void)
           PartSys->sprayEmit(PartSys->sources[0]);  
         }
       }
-    }  
+    }
+
+    if(SEGMENT.check1) //rain mode, fade hue to max
+    {
+      if(PartSys->particles[i].hue < 245)
+        PartSys->particles[i].hue += 8;
+    }
     //increase speed on high settings by calling the move function twice
     if(SEGMENT.speed > 200)    
       PartSys->particleMoveUpdate(PartSys->particles[i]);        
@@ -9844,7 +9855,7 @@ uint16_t mode_particleBouncingBalls(void)
   //increase speed on high settings by calling the move function twice
   if(SEGMENT.speed > 200)
   {     
-    for (int i = 0; i < PartSys->usedParticles; i++)//move all particles
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++)//move all particles
     {
       PartSys->particleMoveUpdate(PartSys->particles[i]);
     }
@@ -9911,7 +9922,7 @@ uint16_t mode_particleDancingShadows(void)
     }
     PartSys->sources[0].v = speed; //emitted particle speed
     PartSys->sources[0].source.hue = random8(); //random spotlight color
-    for (int i = 0; i < width; i++)
+    for (uint32_t i = 0; i < width; i++)
     {      
       switch (type) {
         case SPOT_TYPE_SOLID:
@@ -9953,7 +9964,7 @@ uint16_t mode_particleDancingShadows(void)
   }
   
   //kill out of bounds and moving away plus change color 
-  for (int i = 0; i < PartSys->usedParticles; i++)
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++)
   {
     if(PartSys->particles[i].outofbounds) //check if out of bounds particle move away from strip (i.e. vx < 0 && x > 0 or vx > 0 and x < 0)
     {  
@@ -10120,7 +10131,7 @@ uint16_t mode_particleSparkler(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 8, 0, true)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 16, 0, true)) // init, no additional data needed
       return mode_static(); // allocation failed
   }
   else
@@ -10254,7 +10265,7 @@ uint16_t mode_particleHourglass(void)
   
   for(uint32_t i = 0; i < PartSys->usedParticles; i++) //check if particle reached target position after falling 
   {
-    uint32_t targetposition;
+    int32_t targetposition;
     if (PartSys->particles[i].fixed == false)
     {
       //calculate target position depending on direction       
@@ -10379,8 +10390,8 @@ uint16_t mode_particle1Dspray(void)
 
   PartSys->sources[i].source.hue = random16();  //TODO: add colormodes like in hourglass?
   PartSys->sources[0].var = 20;  
-  PartSys->sources[0].minLife = 200;//PartSys->maxXpixel;
-  PartSys->sources[0].maxLife = 400;//PartSys->maxXpixel << 1;        
+  PartSys->sources[0].minLife = 200 + SEGMENT.speed;
+  PartSys->sources[0].maxLife = 400 + SEGMENT.speed;
   PartSys->sources[0].source.x = map(SEGMENT.custom1, 0 , 255, 0, PartSys->maxX); // spray position
   PartSys->sources[0].v = map(SEGMENT.speed, 0 , 255, -127 + PartSys->sources[0].var, 127 - PartSys->sources[0].var); // particle emit speed
   PartSys->sources[0].source.reversegrav = false;
@@ -10425,7 +10436,7 @@ uint16_t mode_particleBalance(void)
     PartSys->setParticleSize(1);
     for(i = 0; i < PartSys->numParticles; i++) 
     { 
-      PartSys->particles[i].x = i * PS_P_RADIUS;
+      PartSys->particles[i].x = i * PS_P_RADIUS_1D;
       PartSys->particles[i].hue = (i * 1024) / PartSys->usedParticles; // multi gradient distribution
       PartSys->particles[i].ttl = 300;
       PartSys->particles[i].perpetual = true;
@@ -10697,7 +10708,7 @@ uint16_t mode_particle1DGEQ(void)
   for (bin = 0; bin < numSources; bin++)
   {    
     uint32_t emitparticle = 0;
-    uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 9; // emit speed according to loudness of band (127 max!)
+    //uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 9; // emit speed according to loudness of band (127 max!)
     if (fftResult[bin] > threshold)
     {
       emitparticle = 1;
@@ -10800,14 +10811,16 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_AURORA, &mode_aurora, _data_FX_MODE_AURORA);
   addEffect(FX_MODE_RUNNING_RANDOM, &mode_running_random, _data_FX_MODE_RUNNING_RANDOM);
   addEffect(FX_MODE_LARSON_SCANNER, &mode_larson_scanner, _data_FX_MODE_LARSON_SCANNER);
+  #ifndef DISABLE_1D_PS_REPLACEMENTS
   addEffect(FX_MODE_COMET, &mode_comet, _data_FX_MODE_COMET);
-  addEffect(FX_MODE_FIREWORKS, &mode_fireworks, _data_FX_MODE_FIREWORKS);
   addEffect(FX_MODE_RAIN, &mode_rain, _data_FX_MODE_RAIN);
+  addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
+  #endif
+  addEffect(FX_MODE_FIREWORKS, &mode_fireworks, _data_FX_MODE_FIREWORKS);
   addEffect(FX_MODE_TETRIX, &mode_tetrix, _data_FX_MODE_TETRIX);
   addEffect(FX_MODE_FIRE_FLICKER, &mode_fire_flicker, _data_FX_MODE_FIRE_FLICKER);
   addEffect(FX_MODE_GRADIENT, &mode_gradient, _data_FX_MODE_GRADIENT);
-  addEffect(FX_MODE_LOADING, &mode_loading, _data_FX_MODE_LOADING);
-  addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
+  addEffect(FX_MODE_LOADING, &mode_loading, _data_FX_MODE_LOADING);  
 
   addEffect(FX_MODE_FAIRY, &mode_fairy, _data_FX_MODE_FAIRY);
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
@@ -10826,7 +10839,9 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PRIDE_2015, &mode_pride_2015, _data_FX_MODE_PRIDE_2015);
   addEffect(FX_MODE_JUGGLE, &mode_juggle, _data_FX_MODE_JUGGLE);
   addEffect(FX_MODE_PALETTE, &mode_palette, _data_FX_MODE_PALETTE);
+  #ifndef DISABLE_2D_PS_REPLACEMENTS
   addEffect(FX_MODE_FIRE_2012, &mode_fire_2012, _data_FX_MODE_FIRE_2012);
+  #endif
   addEffect(FX_MODE_COLORWAVES, &mode_colorwaves, _data_FX_MODE_COLORWAVES);
   addEffect(FX_MODE_BPM, &mode_bpm, _data_FX_MODE_BPM);
   addEffect(FX_MODE_FILLNOISE8, &mode_fillnoise8, _data_FX_MODE_FILLNOISE8);
@@ -10849,14 +10864,17 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SPOTS_FADE, &mode_spots_fade, _data_FX_MODE_SPOTS_FADE);
   addEffect(FX_MODE_GLITTER, &mode_glitter, _data_FX_MODE_GLITTER);
   addEffect(FX_MODE_CANDLE, &mode_candle, _data_FX_MODE_CANDLE);
+  #ifndef DISABLE_1D_PS_REPLACEMENTS
   addEffect(FX_MODE_STARBURST, &mode_starburst, _data_FX_MODE_STARBURST);
-  addEffect(FX_MODE_EXPLODING_FIREWORKS, &mode_exploding_fireworks, _data_FX_MODE_EXPLODING_FIREWORKS);
   addEffect(FX_MODE_BOUNCINGBALLS, &mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
-  addEffect(FX_MODE_SINELON, &mode_sinelon, _data_FX_MODE_SINELON);
-  addEffect(FX_MODE_SINELON_DUAL, &mode_sinelon_dual, _data_FX_MODE_SINELON_DUAL);
-  addEffect(FX_MODE_SINELON_RAINBOW, &mode_sinelon_rainbow, _data_FX_MODE_SINELON_RAINBOW);
   addEffect(FX_MODE_POPCORN, &mode_popcorn, _data_FX_MODE_POPCORN);
   addEffect(FX_MODE_DRIP, &mode_drip, _data_FX_MODE_DRIP);
+  addEffect(FX_MODE_EXPLODING_FIREWORKS, &mode_exploding_fireworks, _data_FX_MODE_EXPLODING_FIREWORKS);  
+  addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
+  #endif
+  addEffect(FX_MODE_SINELON, &mode_sinelon, _data_FX_MODE_SINELON);
+  addEffect(FX_MODE_SINELON_DUAL, &mode_sinelon_dual, _data_FX_MODE_SINELON_DUAL);
+  addEffect(FX_MODE_SINELON_RAINBOW, &mode_sinelon_rainbow, _data_FX_MODE_SINELON_RAINBOW);  
   addEffect(FX_MODE_PLASMA, &mode_plasma, _data_FX_MODE_PLASMA);
   addEffect(FX_MODE_PERCENT, &mode_percent, _data_FX_MODE_PERCENT);
   addEffect(FX_MODE_RIPPLE_RAINBOW, &mode_ripple_rainbow, _data_FX_MODE_RIPPLE_RAINBOW);
@@ -10871,8 +10889,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SINEWAVE, &mode_sinewave, _data_FX_MODE_SINEWAVE);
   addEffect(FX_MODE_PHASEDNOISE, &mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
   addEffect(FX_MODE_FLOW, &mode_flow, _data_FX_MODE_FLOW);
-  addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
-  addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
+  addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);  
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
 
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
@@ -10920,8 +10937,10 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DPLASMAROTOZOOM, &mode_2Dplasmarotozoom, _data_FX_MODE_2DPLASMAROTOZOOM);
   addEffect(FX_MODE_2DSPACESHIPS, &mode_2Dspaceships, _data_FX_MODE_2DSPACESHIPS);
   addEffect(FX_MODE_2DCRAZYBEES, &mode_2Dcrazybees, _data_FX_MODE_2DCRAZYBEES);
+  #ifndef DISABLE_2D_PS_REPLACEMENTS
   addEffect(FX_MODE_2DGHOSTRIDER, &mode_2Dghostrider, _data_FX_MODE_2DGHOSTRIDER);
   addEffect(FX_MODE_2DBLOBS, &mode_2Dfloatingblobs, _data_FX_MODE_2DBLOBS);
+  #endif
   addEffect(FX_MODE_2DSCROLLTEXT, &mode_2Dscrollingtext, _data_FX_MODE_2DSCROLLTEXT);
   addEffect(FX_MODE_2DDRIFTROSE, &mode_2Ddriftrose, _data_FX_MODE_2DDRIFTROSE);
   addEffect(FX_MODE_2DDISTORTIONWAVES, &mode_2Ddistortionwaves, _data_FX_MODE_2DDISTORTIONWAVES);
