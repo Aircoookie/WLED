@@ -90,7 +90,7 @@
 //#define SEGCOLOR(x)      strip._segments[strip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
 //#define SEGLEN           strip._segments[strip.getCurrSegmentId()].virtualLength()
 #define SEGCOLOR(x)      strip.segColor(x) /* saves us a few kbytes of code */
-#define SEGPALETTE       strip._currentPalette
+#define SEGPALETTE       Segment::getCurrentPalette()
 #define SEGLEN           strip._virtualSegmentLength /* saves us a few kbytes of code */
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
@@ -106,6 +106,10 @@
 #define PURPLE     (uint32_t)0x400080
 #define ORANGE     (uint32_t)0xFF3000
 #define PINK       (uint32_t)0xFF1493
+#define GREY       (uint32_t)0x808080
+#define GRAY       GREY
+#define DARKGREY   (uint32_t)0x333333
+#define DARKGRAY   DARKGREY
 #define ULTRAWHITE (uint32_t)0xFFFFFFFF
 #define DARKSLATEGRAY (uint32_t)0x2F4F4F
 #define DARKSLATEGREY DARKSLATEGRAY
@@ -320,7 +324,8 @@ typedef enum mapping1D2D {
   M12_Pixels = 0,
   M12_pBar = 1,
   M12_pArc = 2,
-  M12_pCorner = 3
+  M12_pCorner = 3,
+  M12_sPinwheel = 4
 } mapping1D2D_t;
 
 // segment, 80 bytes
@@ -413,6 +418,7 @@ typedef struct Segment {
     static uint16_t _usedSegmentData;
 
     // perhaps this should be per segment, not static
+    static CRGBPalette16 _currentPalette;     // palette used for current effect (includes transition, used in color_from_palette())
     static CRGBPalette16 _randomPalette;      // actual random palette
     static CRGBPalette16 _newRandomPalette;   // target random palette
     static uint16_t _lastPaletteChange;       // last random palette change time in millis()/1000
@@ -530,6 +536,7 @@ typedef struct Segment {
     static void     modeBlend(bool blend)       { _modeBlend = blend; }
     #endif
     static void     handleRandomPalette();
+    inline static const CRGBPalette16 &getCurrentPalette(void) { return Segment::_currentPalette; }
 
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
@@ -567,7 +574,7 @@ typedef struct Segment {
     uint8_t  currentMode(void);                 // currently active effect/mode (while in transition)
     uint32_t currentColor(uint8_t slot);        // currently active segment color (blended while in transition)
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
-    CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
+    void     setCurrentPalette(void);
 
     // 1D strip
     uint16_t virtualLength(void) const;
@@ -605,6 +612,7 @@ typedef struct Segment {
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColorXY(int(x), int(y), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
+    inline void setPixelColorXY(unsigned x, unsigned y, CRGB c)                   { setPixelColorXY(int(x), int(y), RGBW32(c.r,c.g,c.b,0)); }
     #ifdef WLED_USE_AA_PIXELS
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
@@ -624,24 +632,25 @@ typedef struct Segment {
     void moveX(int8_t delta, bool wrap = false);
     void moveY(int8_t delta, bool wrap = false);
     void move(uint8_t dir, uint8_t delta, bool wrap = false);
-    void draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
-    void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
-    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c);
-    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
+    void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false);
+    inline void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) { drawCircle(cx, cy, radius, RGBW32(c.r,c.g,c.b,0), soft); }
+    void fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false);
+    inline void fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) { fillCircle(cx, cy, radius, RGBW32(c.r,c.g,c.b,0), soft); }
+    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c, bool soft = false);
+    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, bool soft = false) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0), soft); } // automatic inline
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0, int8_t rotate = 0);
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, int8_t rotate = 0) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0), rotate); } // automatic inline
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
-    void blur1d(fract8 blur_amount); // blur all rows in 1 dimension
     inline void blur2d(fract8 blur_amount) { blur(blur_amount); }
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
-    void nscale8(uint8_t scale);
   #else
     inline uint16_t XY(uint16_t x, uint16_t y)                                    { return x; }
     inline void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColor(int(x), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColor(x, RGBW32(c.r,c.g,c.b,0)); }
+    inline void setPixelColorXY(unsigned x, unsigned y, CRGB c)                   { setPixelColor(int(x), RGBW32(c.r,c.g,c.b,0)); }
     #ifdef WLED_USE_AA_PIXELS
     inline void setPixelColorXY(float x, float y, uint32_t c, bool aa = true)     { setPixelColor(x, c, aa); }
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColor(x, RGBW32(r,g,b,w), aa); }
@@ -660,9 +669,12 @@ typedef struct Segment {
     inline void moveX(int8_t delta, bool wrap = false) {}
     inline void moveY(int8_t delta, bool wrap = false) {}
     inline void move(uint8_t dir, uint8_t delta, bool wrap = false) {}
-    inline void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c) {}
-    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) {}
-    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) {}
+    inline void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false) {}
+    inline void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) {}
+    inline void fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false) {}
+    inline void fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) {}
+    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c, bool soft = false) {}
+    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, bool soft = false) {}
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t = 0, int8_t = 0) {}
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color) {}
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, int8_t rotate = 0) {}
@@ -697,7 +709,6 @@ class WS2812FX {  // 96 bytes
       panels(1),
 #endif
       // semi-private (just obscured) used in effect functions through macros
-      _currentPalette(CRGBPalette16(CRGB::Black)),
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
       // true private variables
@@ -851,7 +862,7 @@ class WS2812FX {  // 96 bytes
       isMatrix;
 
 #ifndef WLED_DISABLE_2D
-    #define WLED_MAX_PANELS 64
+    #define WLED_MAX_PANELS 18
     uint8_t
       panels;
 
@@ -892,7 +903,6 @@ class WS2812FX {  // 96 bytes
   // end 2D support
 
     void loadCustomPalettes(void); // loads custom palettes from JSON
-    CRGBPalette16 _currentPalette; // palette used for current effect (includes transition)
     std::vector<CRGBPalette16> customPalettes; // TODO: move custom palettes out of WS2812FX class
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)

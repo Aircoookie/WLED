@@ -34,11 +34,19 @@ bool UsermodManager::readFromConfig(JsonObject& obj)    {
   }
   return allComplete;
 }
+#ifndef WLED_DISABLE_MQTT
 void UsermodManager::onMqttConnect(bool sessionPresent) { for (byte i = 0; i < numMods; i++) ums[i]->onMqttConnect(sessionPresent); }
 bool UsermodManager::onMqttMessage(char* topic, char* payload) {
   for (byte i = 0; i < numMods; i++) if (ums[i]->onMqttMessage(topic, payload)) return true;
   return false;
 }
+#endif
+#ifndef WLED_DISABLE_ESPNOW
+bool UsermodManager::onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len) {
+  for (byte i = 0; i < numMods; i++) if (ums[i]->onEspNowMessage(sender, payload, len)) return true;
+  return false;
+}
+#endif
 void UsermodManager::onUpdateBegin(bool init) { for (byte i = 0; i < numMods; i++) ums[i]->onUpdateBegin(init); } // notify usermods that update is to begin
 void UsermodManager::onStateChange(uint8_t mode) { for (byte i = 0; i < numMods; i++) ums[i]->onStateChange(mode); } // notify usermods that WLED state changed
 

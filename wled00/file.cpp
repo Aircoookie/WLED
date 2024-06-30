@@ -381,11 +381,15 @@ void updateFSInfo() {
 // original idea by @akaricchi (https://github.com/Akaricchi)
 // returns a pointer to the PSRAM buffer, updates size parameter
 static const uint8_t *getPresetCache(size_t &size) {
-  static unsigned long presetsCachedTime;
-  static uint8_t *presetsCached;
-  static size_t presetsCachedSize;
+  static unsigned long presetsCachedTime = 0;
+  static uint8_t *presetsCached = nullptr;
+  static size_t presetsCachedSize = 0;
+  static byte presetsCachedValidate = 0;
 
-  if (presetsModifiedTime != presetsCachedTime) {
+  //if (presetsModifiedTime != presetsCachedTime) DEBUG_PRINTLN(F("getPresetCache(): presetsModifiedTime changed."));
+  //if (presetsCachedValidate != cacheInvalidate) DEBUG_PRINTLN(F("getPresetCache(): cacheInvalidate changed."));
+
+  if ((presetsModifiedTime != presetsCachedTime) || (presetsCachedValidate != cacheInvalidate)) {
     if (presetsCached) {
       free(presetsCached);
       presetsCached = nullptr;
@@ -396,6 +400,7 @@ static const uint8_t *getPresetCache(size_t &size) {
     File file = WLED_FS.open(FPSTR(getPresetsFileName()), "r");
     if (file) {
       presetsCachedTime = presetsModifiedTime;
+      presetsCachedValidate = cacheInvalidate;
       presetsCachedSize = 0;
       presetsCached = (uint8_t*)ps_malloc(file.size() + 1);
       if (presetsCached) {

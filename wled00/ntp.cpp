@@ -2,20 +2,8 @@
 #include "wled.h"
 #include "fcn_declare.h"
 
-// on esp8266, building with `-D WLED_USE_UNREAL_MATH` saves around 7Kb flash and 1KB RAM
-//  warning: causes errors in sunset calculations, see #3400
-#if defined(WLED_USE_UNREAL_MATH)
-#define sinf sin_t
-#define asinf asin_t
-#define cosf cos_t
-#define acosf acos_t
-#define tanf tan_t
-#define atanf atan_t
-#define fmodf fmod_t
-#define floorf floor_t
-#else
-#include <math.h>
-#endif
+// WARNING: may cause errors in sunset calculations on ESP8266, see #3400
+// building with `-D WLED_USE_REAL_MATH` will prevent those errors at the expense of flash and RAM
 
 /*
  * Acquires time from NTP server
@@ -439,7 +427,7 @@ static int getSunriseUTC(int year, int month, int day, float lat, float lon, boo
   //1. first calculate the day of the year
   float N1 = 275 * month / 9;
   float N2 = (month + 9) / 12;
-  float N3 = (1.0f + floorf((year - 4 * floorf(year / 4) + 2.0f) / 3.0f));
+  float N3 = (1.0f + floor_t((year - 4 * floor_t(year / 4) + 2.0f) / 3.0f));
   float N = N1 - (N2 * N3) + day - 30.0f;
 
   //2. convert the longitude to hour value and calculate an approximate time
@@ -450,37 +438,37 @@ static int getSunriseUTC(int year, int month, int day, float lat, float lon, boo
   float M = (0.9856f * t) - 3.289f;
 
   //4. calculate the Sun's true longitude
-  float L = fmodf(M + (1.916f * sinf(DEG_TO_RAD*M)) + (0.02f * sinf(2*DEG_TO_RAD*M)) + 282.634f, 360.0f);
+  float L = fmod_t(M + (1.916f * sin_t(DEG_TO_RAD*M)) + (0.02f * sin_t(2*DEG_TO_RAD*M)) + 282.634f, 360.0f);
 
   //5a. calculate the Sun's right ascension
-  float RA = fmodf(RAD_TO_DEG*atanf(0.91764f * tanf(DEG_TO_RAD*L)), 360.0f);
+  float RA = fmod_t(RAD_TO_DEG*atan_t(0.91764f * tan_t(DEG_TO_RAD*L)), 360.0f);
 
   //5b. right ascension value needs to be in the same quadrant as L
-  float Lquadrant  = floorf( L/90) * 90;
-  float RAquadrant = floorf(RA/90) * 90;
+  float Lquadrant  = floor_t( L/90) * 90;
+  float RAquadrant = floor_t(RA/90) * 90;
   RA = RA + (Lquadrant - RAquadrant);
 
   //5c. right ascension value needs to be converted into hours
   RA /= 15.0f;
 
   //6. calculate the Sun's declination
-  float sinDec = 0.39782f * sinf(DEG_TO_RAD*L);
-  float cosDec = cosf(asinf(sinDec));
+  float sinDec = 0.39782f * sin_t(DEG_TO_RAD*L);
+  float cosDec = cos_t(asin_t(sinDec));
 
   //7a. calculate the Sun's local hour angle
-  float cosH = (sinf(DEG_TO_RAD*ZENITH) - (sinDec * sinf(DEG_TO_RAD*lat))) / (cosDec * cosf(DEG_TO_RAD*lat));
+  float cosH = (sin_t(DEG_TO_RAD*ZENITH) - (sinDec * sin_t(DEG_TO_RAD*lat))) / (cosDec * cos_t(DEG_TO_RAD*lat));
   if ((cosH > 1.0f) && !sunset) return INT16_MAX;  // the sun never rises on this location (on the specified date)
   if ((cosH < -1.0f) && sunset) return INT16_MAX;  // the sun never sets on this location (on the specified date)
 
   //7b. finish calculating H and convert into hours
-  float H = sunset ? RAD_TO_DEG*acosf(cosH) : 360 - RAD_TO_DEG*acosf(cosH);
+  float H = sunset ? RAD_TO_DEG*acos_t(cosH) : 360 - RAD_TO_DEG*acos_t(cosH);
   H /= 15.0f;
 
   //8. calculate local mean time of rising/setting
   float T = H + RA - (0.06571f * t) - 6.622f;
 
   //9. adjust back to UTC
-  float UT = fmodf(T - lngHour, 24.0f);
+  float UT = fmod_t(T - lngHour, 24.0f);
 
   // return in minutes from midnight
 	return UT*60;

@@ -77,6 +77,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t != apChannel) forceReconnect = true;
     if (t > 0 && t < 14) apChannel = t;
 
+    #ifdef ARDUINO_ARCH_ESP32
+    int tx = request->arg(F("TX")).toInt();
+    txPower = min(max(tx, (int)WIFI_POWER_2dBm), (int)WIFI_POWER_19_5dBm);
+    #endif
+
     force802_3g = request->hasArg(F("FG"));
     noWifiSleep = request->hasArg(F("WS"));
 
@@ -104,7 +109,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
-       pinManager.deallocatePin(irPin, PinOwner::IR);
+      deInitIR();
+      pinManager.deallocatePin(irPin, PinOwner::IR);
     }
     #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
@@ -135,27 +141,28 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     useGlobalLedBuffer = request->hasArg(F("LD"));
 
     bool busesChanged = false;
-    for (uint8_t s = 0; s < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; s++) {
-      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
-      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
-      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
-      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
-      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
-      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip first N LEDs
-      char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
-      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
-      char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
-      char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed (DotStar & PWM)
-      char la[4] = "LA"; la[2] = 48+s; la[3] = 0; //LED mA
-      char ma[4] = "MA"; ma[2] = 48+s; ma[3] = 0; //max mA
+    for (int s = 0; s < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; s++) {
+      int offset = s < 10 ? 48 : 55;
+      char lp[4] = "L0"; lp[2] = offset+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lc[4] = "LC"; lc[2] = offset+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = offset+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = offset+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = offset+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = offset+s; cv[3] = 0; //strip reverse
+      char sl[4] = "SL"; sl[2] = offset+s; sl[3] = 0; //skip first N LEDs
+      char rf[4] = "RF"; rf[2] = offset+s; rf[3] = 0; //refresh required
+      char aw[4] = "AW"; aw[2] = offset+s; aw[3] = 0; //auto white mode
+      char wo[4] = "WO"; wo[2] = offset+s; wo[3] = 0; //channel swap
+      char sp[4] = "SP"; sp[2] = offset+s; sp[3] = 0; //bus clock speed (DotStar & PWM)
+      char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED mA
+      char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max mA
       if (!request->hasArg(lp)) {
         DEBUG_PRINT(F("No data for "));
         DEBUG_PRINTLN(s);
         break;
       }
-      for (uint8_t i = 0; i < 5; i++) {
-        lp[1] = 48+i;
+      for (int i = 0; i < 5; i++) {
+        lp[1] = offset+i;
         if (!request->hasArg(lp)) break;
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
@@ -209,11 +216,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
     ColorOrderMap com = {};
-    for (uint8_t s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
-      char xs[4] = "XS"; xs[2] = 48+s; xs[3] = 0; //start LED
-      char xc[4] = "XC"; xc[2] = 48+s; xc[3] = 0; //strip length
-      char xo[4] = "XO"; xo[2] = 48+s; xo[3] = 0; //color order
-      char xw[4] = "XW"; xw[2] = 48+s; xw[3] = 0; //W swap
+    for (int s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
+      int offset = s < 10 ? 48 : 55;
+      char xs[4] = "XS"; xs[2] = offset+s; xs[3] = 0; //start LED
+      char xc[4] = "XC"; xc[2] = offset+s; xc[3] = 0; //strip length
+      char xo[4] = "XO"; xo[2] = offset+s; xo[3] = 0; //color order
+      char xw[4] = "XW"; xw[2] = offset+s; xw[3] = 0; //W swap
       if (request->hasArg(xs)) {
         start = request->arg(xs).toInt();
         length = request->arg(xc).toInt();
@@ -233,6 +241,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    initIR();
     #endif
     irApplyToAllSelected = !request->hasArg(F("MSO"));
 
@@ -247,9 +256,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     disablePullUp = (bool)request->hasArg(F("IP"));
     touchThreshold = request->arg(F("TT")).toInt();
-    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
-      char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
-      char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
+    for (int i = 0; i < WLED_MAX_BUTTONS; i++) {
+      int offset = i < 10 ? 48 : 55;
+      char bt[4] = "BT"; bt[2] = offset+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
+      char be[4] = "BE"; be[2] = offset+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
       int hw_btn_pin = request->arg(bt).toInt();
       if (hw_btn_pin >= 0 && pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
@@ -901,6 +911,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     applyPreset(presetCycCurr);
   }
 
+  pos = req.indexOf(F("NP")); //advances to next preset in a playlist
+  if (pos > 0) doAdvancePlaylist = true;
+  
   //set brightness
   updateVal(req.c_str(), "&A=", &bri);
 

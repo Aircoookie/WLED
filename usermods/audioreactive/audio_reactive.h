@@ -183,7 +183,6 @@ constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT resul
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
 static float vReal[samplesFFT] = {0.0f};       // FFT sample inputs / freq output -  these are our raw result bins
 static float vImag[samplesFFT] = {0.0f};       // imaginary parts
-static float windowWeighingFactors[samplesFFT] = {0.0f};
 
 // Create FFT object
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
@@ -196,7 +195,8 @@ static float windowWeighingFactors[samplesFFT] = {0.0f};
 
 #include <arduinoFFT.h>
 
-static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, windowWeighingFactors);
+/* Create FFT object with weighing factor storage */
+static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, true);
 
 // Helper functions
 
@@ -282,6 +282,7 @@ void FFTcode(void * parameter)
       //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
       FFT.compute( FFTDirection::Forward );                       // Compute FFT
       FFT.complexToMagnitude();                                   // Compute magnitudes
+      vReal[0] = 0;   // The remaining DC offset on the signal produces a strong spike on position 0 that should be eliminated to avoid issues.
 
       FFT.majorPeak(&FFT_MajorPeak, &FFT_Magnitude);                // let the effects know which freq was most dominant
       FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
@@ -1121,6 +1122,11 @@ class AudioReactive : public Usermod {
       delay(100);         // Give that poor microphone some time to setup.
 
       useBandPassFilter = false;
+
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+        if ((i2sckPin == I2S_PIN_NO_CHANGE) && (i2ssdPin >= 0) && (i2swsPin >= 0) && ((dmType == 1) || (dmType == 4)) ) dmType = 5;   // dummy user support: SCK == -1 --means--> PDM microphone
+      #endif
+
       switch (dmType) {
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
         // stub cases for not-yet-supported I2S modes on other ESP32 chips

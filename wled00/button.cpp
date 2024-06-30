@@ -7,11 +7,13 @@
 #define WLED_DEBOUNCE_THRESHOLD      50 // only consider button input of at least 50ms as valid (debouncing)
 #define WLED_LONG_PRESS             600 // long press if button is released after held for at least 600ms
 #define WLED_DOUBLE_PRESS           350 // double press if another press within 350ms after a short press
-#define WLED_LONG_REPEATED_ACTION   300 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+#define WLED_LONG_REPEATED_ACTION   400 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
 #define WLED_LONG_AP               5000 // how long button 0 needs to be held to activate WLED-AP
 #define WLED_LONG_FACTORY_RESET   10000 // how long button 0 needs to be held to trigger a factory reset
+#define WLED_LONG_BRI_STEPS          16 // how much to increase/decrease the brightness with each long press repetition
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+static bool buttonBriDirection = false; // true: increase brightness, false: decrease brightness
 
 void shortPressAction(uint8_t b)
 {
@@ -39,7 +41,19 @@ void longPressAction(uint8_t b)
   if (!macroLongPress[b]) {
     switch (b) {
       case 0: setRandomColor(col); colorUpdated(CALL_MODE_BUTTON); break;
-      case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
+      case 1: 
+        if(buttonBriDirection) {
+          if (bri == 255) break; // avoid unnecessary updates to brightness
+          if (bri >= 255 - WLED_LONG_BRI_STEPS) bri = 255;
+          else bri += WLED_LONG_BRI_STEPS;
+        } else {
+          if (bri == 1) break; // avoid unnecessary updates to brightness
+          if (bri <= WLED_LONG_BRI_STEPS) bri = 1;
+          else bri -= WLED_LONG_BRI_STEPS;
+        }
+        stateUpdated(CALL_MODE_BUTTON); 
+        buttonPressedTime[b] = millis();         
+        break; // repeatable action
     }
   } else {
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
@@ -284,10 +298,12 @@ void handleButton()
       buttonPressedBefore[b] = true;
 
       if (now - buttonPressedTime[b] > WLED_LONG_PRESS) { //long press
-        if (!buttonLongPressed[b]) longPressAction(b);
-        else if (b) { //repeatable action (~3 times per s) on button > 0
+        if (!buttonLongPressed[b]) {
+          buttonBriDirection = !buttonBriDirection; //toggle brightness direction on long press
           longPressAction(b);
-          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //333ms
+        } else if (b) { //repeatable action (~5 times per s) on button > 0
+          longPressAction(b);
+          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //200ms
         }
         buttonLongPressed[b] = true;
       }
@@ -342,69 +358,35 @@ void handleButton()
   }
 }
 
-// If enabled, RMT idle level is set to HIGH when off
-// to prevent leakage current when using an N-channel MOSFET to toggle LED power
-#ifdef ESP32_DATA_IDLE_HIGH
-void esp32RMTInvertIdle()
-{
-  bool idle_out;
-  for (uint8_t u = 0; u < BusManager::getNumBusses(); u++)
-  {
-    if (u > 7) return; // only 8 RMT channels, TODO: ESP32 variants have less RMT channels
-    Bus *bus = BusManager::getBus(u);
-    if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType())) continue;
-    //assumes that bus number to rmt channel mapping stays 1:1
-    rmt_channel_t ch = static_cast<rmt_channel_t>(u);
-    rmt_idle_level_t lvl;
-    rmt_get_idle_level(ch, &idle_out, &lvl);
-    if (lvl == RMT_IDLE_LEVEL_HIGH) lvl = RMT_IDLE_LEVEL_LOW;
-    else if (lvl == RMT_IDLE_LEVEL_LOW) lvl = RMT_IDLE_LEVEL_HIGH;
-    else continue;
-    rmt_set_idle_level(ch, idle_out, lvl);
-  }
-}
-#endif
-
+// handleIO() happens *after* handleTransitions() (see wled.cpp) which may change bri/briT but *before* strip.service()
+// where actual LED painting occurrs
+// this is important for relay control and in the event of turning off on-board LED
 void handleIO()
 {
   handleButton();
 
-  //set relay when LEDs turn on
-  if (strip.getBrightness())
-  {
+  // if we want to control on-board LED (ESP8266) or relay we have to do it here as the final show() may not happen until
+  // next loop() cycle
+  if (strip.getBrightness()) {
     lastOnTime = millis();
-    if (offMode)
-    {
-      #ifdef ESP32_DATA_IDLE_HIGH
-      esp32RMTInvertIdle();
-      #endif
+    if (offMode) {
+      BusManager::on();
       if (rlyPin>=0) {
         pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, rlyMde);
       }
       offMode = false;
     }
-  } else if (millis() - lastOnTime > 600)
-  {
+  } else if (millis() - lastOnTime > 600 && !strip.needsUpdate()) {
+    // for turning LED or relay off we need to wait until strip no longer needs updates (strip.trigger())
     if (!offMode) {
-      #ifdef ESP8266
-      // turn off built-in LED if strip is turned off
-      // this will break digital bus so will need to be re-initialised on On
-      PinOwner ledPinOwner = pinManager.getPinOwner(LED_BUILTIN);
-      if (!strip.isOffRefreshRequired() && (ledPinOwner == PinOwner::None || ledPinOwner == PinOwner::BusDigital)) {
-        pinMode(LED_BUILTIN, OUTPUT);
-        digitalWrite(LED_BUILTIN, HIGH);
-      }
-      #endif
-      #ifdef ESP32_DATA_IDLE_HIGH
-      esp32RMTInvertIdle();
-      #endif
+      BusManager::off();
       if (rlyPin>=0) {
         pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, !rlyMde);
       }
+      offMode = true;
     }
-    offMode = true;
   }
 }
 
