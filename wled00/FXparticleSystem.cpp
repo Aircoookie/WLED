@@ -950,7 +950,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
     }
     maxsize = maxsize/64 + 1; // number of blur passes depends on maxsize, four passes max
     uint32_t bitshift = 0;
-    for(int i = 0; i < maxsize; i++)
+    for(uint32_t i = 0; i < maxsize; i++)
     {
       if (i == 2) //for the last two passes, use higher amount of blur (results in a nicer brightness gradient with soft edges)
         bitshift = 1;
@@ -964,7 +964,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
     // calculate origin coordinates to render the particle to in the framebuffer
     uint32_t xfb_orig = x - (rendersize>>1) + 1 - offset;
     uint32_t yfb_orig = y - (rendersize>>1) + 1 - offset;
-    uint32_t xfb, yfb; // coordinates in frame buffer to write to note: by making this uint, only overflow has to be checked
+    uint32_t xfb, yfb; // coordinates in frame buffer to write to note: by making this uint, only overflow has to be checked (spits a warning though)
 
     // transfer particle renderbuffer to framebuffer
     for(uint32_t xrb = offset; xrb < rendersize+offset; xrb++)
@@ -1180,7 +1180,7 @@ void ParticleSystem::collideParticles(PSparticle *particle1, PSparticle *particl
     // overflow check: dx/dy are 7bit, relativV are 8bit -> dotproduct is 15bit, dotproduct/distsquared ist 8b, multiplied by collisionhardness of 8bit. so a 16bit shift is ok, make it 15 to be sure no overflows happen
     // note: cannot use right shifts as bit shifting in right direction is asymmetrical for positive and negative numbers and this needs to be accurate! the trick is: only shift positive numers
     // Calculate new velocities after collision
-    uint32_t surfacehardness = collisionHardness < PS_P_MINSURFACEHARDNESS ? PS_P_MINSURFACEHARDNESS : collisionHardness; // if particles are soft, the impulse must stay above a limit or collisions slip through at higher speeds, 170 seems to be a good value
+    int32_t surfacehardness = collisionHardness < PS_P_MINSURFACEHARDNESS ? PS_P_MINSURFACEHARDNESS : collisionHardness; // if particles are soft, the impulse must stay above a limit or collisions slip through at higher speeds, 170 seems to be a good value
     int32_t impulse = -(((((-dotProduct) << 15) / distanceSquared) * surfacehardness) >> 8); // note: inverting before bitshift corrects for asymmetry in right-shifts (and is slightly faster)
     int32_t ximpulse = ((impulse) * dx) / 32767; // cannot use bit shifts here, it can be negative, use division by 2^bitshift
     int32_t yimpulse = ((impulse) * dy) / 32767;
@@ -1495,7 +1495,7 @@ ParticleSystem1D::ParticleSystem1D(uint16_t length, uint16_t numberofparticles, 
   emitIndex = 0;
 
   //initialize some default non-zero values most FX use
-  for (int i = 0; i < numSources; i++)
+  for (uint32_t i = 0; i < numSources; i++)
   {    
     sources[i].source.ttl = 1; //set source alive
   }  
@@ -1515,7 +1515,7 @@ void ParticleSystem1D::update(void)
     applyGravity();
 
   //move all particles
-  for (int i = 0; i < usedParticles; i++)
+  for (uint32_t i = 0; i < usedParticles; i++)
   {
     if (advPartProps)
     {
@@ -1526,7 +1526,7 @@ void ParticleSystem1D::update(void)
 
   if (particlesettings.colorByPosition)
   {
-    for (int i = 0; i < usedParticles; i++)
+    for (uint32_t i = 0; i < usedParticles; i++)
     {
       particles[i].hue = (255 * (uint32_t)particles[i].x) / maxX;
     }
@@ -1537,7 +1537,7 @@ void ParticleSystem1D::update(void)
   uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
   if (bg_color > 0) //if not black
   {
-    for(uint32_t i = 0; i < maxXpixel + 1; i++)
+    for(int32_t i = 0; i < maxXpixel + 1; i++)
     {    
       SEGMENT.addPixelColor(i,bg_color); 
     }
@@ -1914,7 +1914,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
   }
   if (size == 0) //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
   {
-    uint32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
+    int32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
     if (x <= maxXpixel) //by making x unsigned there is no need to check < 0 as it will overflow
     {    
       if (framebuffer)      

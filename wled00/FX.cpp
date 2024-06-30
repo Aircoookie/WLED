@@ -8147,10 +8147,10 @@ uint16_t mode_particlefireworks(void)
       else
       { 
       /*
-        //TODO: this does not look good. adjust or remove completely
+        
         if( PartSys->sources[j].source.vy < 0) //explosion is ongoing
         {
-        if(i < (emitparticles>>2)) //set 1/4 of particles to larger size
+        if(i < (emitparticles>>2)) //set 1/4 of particles to larger size  //TODO: this does not look good. adjust or remove completely
           PartSys->sources[j].size = 50+random16(140);
         else
           PartSys->sources[j].size = 0;
@@ -10388,10 +10388,10 @@ uint16_t mode_particle1Dspray(void)
   int32_t gravity = (int32_t)SEGMENT.custom3 - 15;  //gravity setting, 0-14 is negative, 16 - 31 is positive
   PartSys->setGravity(abs(gravity)); // use reversgrav setting to invert gravity (for proper 'floor' and out of bounce handling)
 
-  PartSys->sources[i].source.hue = random16();  //TODO: add colormodes like in hourglass?
+  PartSys->sources[0].source.hue = random16();  //TODO: add colormodes like in hourglass?
   PartSys->sources[0].var = 20;  
-  PartSys->sources[0].minLife = 200 + SEGMENT.speed;
-  PartSys->sources[0].maxLife = 400 + SEGMENT.speed;
+  PartSys->sources[0].minLife = 200; 
+  PartSys->sources[0].maxLife = 400; 
   PartSys->sources[0].source.x = map(SEGMENT.custom1, 0 , 255, 0, PartSys->maxX); // spray position
   PartSys->sources[0].v = map(SEGMENT.speed, 0 , 255, -127 + PartSys->sources[0].var, 127 - PartSys->sources[0].var); // particle emit speed
   PartSys->sources[0].source.reversegrav = false;
