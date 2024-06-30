@@ -11,6 +11,8 @@ private:
   unsigned long lastTime = 0;
   bool isEnabled = false;
   float temperature = 0.0f;
+  uint8_t previousPlaylist = 0;         // Stores the playlist that was active before high-temperature activation
+  uint8_t previousPreset = 0;           // Stores the preset that was active before high-temperature activation
   uint8_t presetToActivate = 0;         // Preset to activate when temp goes above threshold (0 = disabled)
   float activationThreshold = 95.0f;    // Temperature threshold to trigger high-temperature actions
   float resetMargin = 2.0f;             // Margin below the activation threshold (Prevents frequent toggling when close to threshold)
@@ -49,15 +51,26 @@ public:
     temperature = roundf(temperatureRead() * 10) / 10;
 #endif
 
-    // Check if temperature has gone above the threshold
+    // Check if temperature has exceeded the activation threshold
     if (temperature >= activationThreshold) {
       // Update the state flag if not already set
-      if (!isAboveThreshold){
+      if (!isAboveThreshold) {
         isAboveThreshold = true;
         }
-      // Activate the 'over-threshold' preset if it's not already active
+      // Check if a 'high temperature' preset is configured and it's not already active
       if (presetToActivate != 0 && currentPreset != presetToActivate) {
-        saveTemporaryPreset();  // Save current state to a temporary preset to allow re-activation later
+        // If a playlist is active, store it for reactivation later
+        if (currentPlaylist > 0) {
+          previousPlaylist = currentPlaylist;
+        }
+        // If a preset is active, store it for reactivation later
+        else if (currentPreset > 0) {
+          previousPreset = currentPreset;
+        // If no playlist or preset is active, save current state for reactivation later
+        } else {
+          saveTemporaryPreset();
+        }
+        // Activate the 'high temperature' preset
         applyPreset(presetToActivate);
         }
       }
@@ -67,9 +80,25 @@ public:
       if (isAboveThreshold){
         isAboveThreshold = false;
         }
-      // Revert back to the original preset
-      if (currentPreset == presetToActivate){
-        applyTemporaryPreset(); // Restore the previous state which was stored to the temporary preset
+      // Check if the 'high temperature' preset is active
+      if (currentPreset == presetToActivate) {
+        // Check if a previous playlist was stored
+        if (previousPlaylist > 0) {
+          // Reactivate the stored playlist
+          applyPreset(previousPlaylist);
+          // Clear the stored playlist
+          previousPlaylist = 0;
+          }
+        // Check if a previous preset was stored
+        else if (previousPreset > 0) {
+          // Reactivate the stored preset
+          applyPreset(previousPreset);
+          // Clear the stored preset
+          previousPreset = 0;
+          // If no previous playlist or preset was stored, revert to the stored state
+        } else {
+          applyTemporaryPreset();
+          }
         }
       }
 
