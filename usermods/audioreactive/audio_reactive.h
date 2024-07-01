@@ -562,12 +562,14 @@ void FFTcode(void * parameter)
 
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
+   bool doDCRemoval = false; // DCRemove is only necessary if we don't use any kind of low-cut filtering
    if ((useInputFilter > 0) && (useInputFilter < 99)) {
       switch(useInputFilter) {
         case 1: runMicFilter(samplesFFT, vReal); break;                   // PDM microphone bandpass
         case 2: runDCBlocker(samplesFFT, vReal); break;                   // generic Low-Cut + DC blocker (~40hz cut-off)
+        default: doDCRemoval = true; break;
       }
-    }
+    } else doDCRemoval = true;
 
     // set imaginary parts to 0
     memset(vImag, 0, sizeof(vImag));
@@ -617,7 +619,7 @@ void FFTcode(void * parameter)
       if ((skipSecondFFT == false) || (isFirstRun == true)) {
         // run FFT (takes 2-3ms on ESP32, ~12ms on ESP32-S2, ~30ms on -C3)
         #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-        FFT.dcRemoval();                                            // remove DC offset
+        if (doDCRemoval) FFT.dcRemoval();                                            // remove DC offset
         #if !defined(FFT_PREFER_EXACT_PEAKS)
           FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward);        // Weigh data using "Flat Top" function - better amplitude accuracy
         #else
