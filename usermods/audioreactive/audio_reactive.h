@@ -2738,7 +2738,8 @@ class AudioReactive : public Usermod {
 
     void appendConfigData()
     {
-      oappend(SET_F("ux='AudioReactive';")); // fingers crossed that "ux" isn't already used as JS var, html post parameter or css style
+      oappend(SET_F("ux='AudioReactive';"));        // ux = shortcut for Audioreactive - fingers crossed that "ux" isn't already used as JS var, html post parameter or css style
+      oappend(SET_F("uxp=ux+':digitalmic:pin[]';")); // uxp = shortcut for AudioReactive:digitalmic:pin[]
       oappend(SET_F("addInfo(ux+':help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/soundreactive/Sound-Settings&quot;\" type=\"button\">?</button>');"));
 #ifdef ARDUINO_ARCH_ESP32      
       //WLEDMM: add defaults
@@ -2919,45 +2920,45 @@ class AudioReactive : public Usermod {
 
       oappend(SET_F("addInfo(ux+':digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
 #ifdef ARDUINO_ARCH_ESP32
-      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
+      oappend(SET_F("addInfo(uxp,0,'<i>sd/data/dout</i>','I2S SD');"));
       #ifdef I2S_SDPIN
-        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',0,' ⎌',")); oappendi(I2S_SDPIN); oappend(");"); 
+        oappend(SET_F("xOpt(uxp,0,' ⎌',")); oappendi(I2S_SDPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
-      oappend(SET_F("dRO(ux+':digitalmic:pin[]',1);")); // disable read only pins
+      oappend(SET_F("addInfo(uxp,1,'<i>ws/clk/lrck</i>','I2S WS');"));
+      oappend(SET_F("dRO(uxp,1);")); // disable read only pins
       #ifdef I2S_WSPIN
-        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
+        oappend(SET_F("xOpt(uxp,1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
-      oappend(SET_F("dRO(ux+':digitalmic:pin[]',2);")); // disable read only pins
+      oappend(SET_F("addInfo(uxp,2,'<i>sck/bclk</i>','I2S SCK');"));
+      oappend(SET_F("dRO(uxp,2);")); // disable read only pins
       #ifdef I2S_CKPIN
-        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
+        oappend(SET_F("xOpt(uxp,2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',3,'<i>master clock</i>','I2S MCLK');"));
-      oappend(SET_F("dRO(ux+':digitalmic:pin[]',3);")); // disable read only pins
+      oappend(SET_F("addInfo(uxp,3,'<i>master clock</i>','I2S MCLK');"));
+      oappend(SET_F("dRO(uxp,3);")); // disable read only pins
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("dOpt(ux+':digitalmic:pin[]',3,2,2);")); //only use -1, 0, 1 or 3
-        oappend(SET_F("dOpt(ux+':digitalmic:pin[]',3,4,39);")); //only use -1, 0, 1 or 3
+        oappend(SET_F("dOpt(uxp,3,2,2);")); //only use -1, 0, 1 or 3
+        oappend(SET_F("dOpt(uxp,3,4,39);")); //only use -1, 0, 1 or 3
       #endif
       #ifdef MCLK_PIN
-        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',3,' ⎌',")); oappendi(MCLK_PIN); oappend(");"); 
+        oappend(SET_F("xOpt(uxp,3,' ⎌',")); oappendi(MCLK_PIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',4,'','I2C SDA');"));
-      oappend(SET_F("rOpt(ux+':digitalmic:pin[]',4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+      oappend(SET_F("addInfo(uxp,4,'','I2C SDA');"));
+      oappend(SET_F("rOpt(uxp,4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
       #ifdef ES7243_SDAPIN
-        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',4,' ⎌',")); oappendi(ES7243_SDAPIN); oappend(");"); 
+        oappend(SET_F("xOpt(uxp,4,' ⎌',")); oappendi(ES7243_SDAPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',5,'','I2C SCL');"));
-      oappend(SET_F("rOpt(ux+':digitalmic:pin[]',5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+      oappend(SET_F("addInfo(uxp,5,'','I2C SCL');"));
+      oappend(SET_F("rOpt(uxp,5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
       #ifdef ES7243_SCLPIN
-        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
+        oappend(SET_F("xOpt(uxp,5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
       #endif
-      oappend(SET_F("dRO(ux+':digitalmic:pin[]',5);")); // disable read only pins
+      oappend(SET_F("dRO(uxp,5);")); // disable read only pins
 #endif
     }
 
