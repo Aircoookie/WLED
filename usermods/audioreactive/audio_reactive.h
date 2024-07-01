@@ -2744,12 +2744,12 @@ class AudioReactive : public Usermod {
       //WLEDMM: add defaults
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)  // -S3/-S2/-C3 don't support analog audio
       #ifdef AUDIOPIN
-        oappend(SET_F("xOpt('AudioReactive:analogmic:pin',1,' ⎌',")); oappendi(AUDIOPIN); oappend(");"); 
+        oappend(SET_F("xOpt(ux+':analogmic:pin',1,' ⎌',")); oappendi(AUDIOPIN); oappend(");"); 
       #endif
-      oappend(SET_F("aOpt('AudioReactive:analogmic:pin',1);")); //only analog options
+      oappend(SET_F("aOpt(ux+':analogmic:pin',1);")); //only analog options
       #endif
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
+      oappend(SET_F("dd=addDropdown(ux,'digitalmic:type');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
         #if SR_DMTYPE==0
           oappend(SET_F("addOption(dd,'Generic Analog (⎌)',0);"));
@@ -2800,50 +2800,50 @@ class AudioReactive : public Usermod {
         oappend(SET_F("addOption(dd,'WM8978 ☾',7);"));
       #endif
       #ifdef SR_SQUELCH
-        oappend(SET_F("addInfo('AudioReactive:config:squelch',1,'<i>&#9100; ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo(ux+':config:squelch',1,'<i>&#9100; ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field
       #endif
       #ifdef SR_GAIN
-        oappend(SET_F("addInfo('AudioReactive:config:gain',1,'<i>&#9100; ")); oappendi(SR_GAIN); oappend("</i>');");  // 0 is field type, 1 is actual field
+        oappend(SET_F("addInfo(ux+':config:gain',1,'<i>&#9100; ")); oappendi(SR_GAIN); oappend("</i>');");  // 0 is field type, 1 is actual field
       #endif
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','config:AGC');"));
+      oappend(SET_F("dd=addDropdown(ux,'config:AGC');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
 
       //WLEDMM: experimental settings
-      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:micLev');"));
+      oappend(SET_F("dd=addDropdown(ux,'experiments:micLev');"));
       oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'Freeze',1);"));
       oappend(SET_F("addOption(dd,'Fast Freeze',2);"));
-      oappend(SET_F("addInfo('AudioReactive:experiments:micLev',1,'☾');"));
+      oappend(SET_F("addInfo(ux+':experiments:micLev',1,'☾');"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqDist');"));
+      oappend(SET_F("dd=addDropdown(ux,'experiments:freqDist');"));
       oappend(SET_F("addOption(dd,'Normal  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'RightShift',1);"));
-      oappend(SET_F("addInfo('AudioReactive:experiments:freqDist',1,'☾');"));
+      oappend(SET_F("addInfo(ux+':experiments:freqDist',1,'☾');"));
 
-      //oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
+      //oappend(SET_F("dd=addDropdown(ux,'experiments:freqRMS');"));
       //oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
       //oappend(SET_F("addOption(dd,'On',1);"));
-      //oappend(SET_F("addInfo('AudioReactive:experiments:freqRMS',1,'☾');"));
+      //oappend(SET_F("addInfo(ux+':experiments:freqRMS',1,'☾');"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
+      oappend(SET_F("dd=addDropdown(ux,'dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'On',1);"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:limiter',0,' On ');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:dynamics:rise',1,'ms <i>(&#x266A; effects only)</i>');"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:fall',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo(ux+':dynamics:limiter',0,' On ');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo(ux+':dynamics:rise',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo(ux+':dynamics:fall',1,'ms <i>(&#x266A; effects only)</i>');"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','frequency:scale');"));
+      oappend(SET_F("dd=addDropdown(ux,'frequency:scale');"));
       oappend(SET_F("addOption(dd,'None',0);"));
       oappend(SET_F("addOption(dd,'Linear (Amplitude)',2);"));
       oappend(SET_F("addOption(dd,'Square Root (Energy)',3);"));
       oappend(SET_F("addOption(dd,'Logarithmic (Loudness)',1);"));
 
       //WLEDMM add defaults
-      oappend(SET_F("dd=addDropdown('AudioReactive','frequency:profile');"));
+      oappend(SET_F("dd=addDropdown(ux,'frequency:profile');"));
       #if SR_FREQ_PROF==0
         oappend(SET_F("addOption(dd,'Generic Microphone (⎌)',0);"));
       #else
@@ -2899,9 +2899,9 @@ class AudioReactive : public Usermod {
       #else
         oappend(SET_F("addOption(dd,'userdefined #2',9);"));
       #endif
-      oappend(SET_F("addInfo('AudioReactive:frequency:profile',1,'☾');"));
+      oappend(SET_F("addInfo(ux+':frequency:profile',1,'☾');"));
 #endif
-      oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
+      oappend(SET_F("dd=addDropdown(ux,'sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));               // AUDIOSYNC_NONE
 #ifdef ARDUINO_ARCH_ESP32
       oappend(SET_F("addOption(dd,'Send',1);"));              // AUDIOSYNC_SEND
@@ -2911,53 +2911,53 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Receive or Local',6);"));  // AUDIOSYNC_REC_PLUS
 #endif
       // check_sequence: Receiver skips out-of-sequence packets when enabled
-      oappend(SET_F("dd=addDropdown('AudioReactive','sync:check_sequence');"));
+      oappend(SET_F("dd=addDropdown(ux,'sync:check_sequence');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'On',1);"));
 
-      oappend(SET_F("addInfo('AudioReactive:sync:check_sequence',1,'<i>when receiving</i> ☾<br> Sync audio data with other WLEDs');"));  // must append this to the last field of 'sync'
+      oappend(SET_F("addInfo(ux+':sync:check_sequence',1,'<i>when receiving</i> ☾<br> Sync audio data with other WLEDs');"));  // must append this to the last field of 'sync'
 
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo(ux+':digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
 #ifdef ARDUINO_ARCH_ESP32
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
+      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
       #ifdef I2S_SDPIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',0,' ⎌',")); oappendi(I2S_SDPIN); oappend(");"); 
+        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',0,' ⎌',")); oappendi(I2S_SDPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
-      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',1);")); // disable read only pins
+      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
+      oappend(SET_F("dRO(ux+':digitalmic:pin[]',1);")); // disable read only pins
       #ifdef I2S_WSPIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
+        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
-      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',2);")); // disable read only pins
+      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
+      oappend(SET_F("dRO(ux+':digitalmic:pin[]',2);")); // disable read only pins
       #ifdef I2S_CKPIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
+        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'<i>master clock</i>','I2S MCLK');"));
-      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',3);")); // disable read only pins
+      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',3,'<i>master clock</i>','I2S MCLK');"));
+      oappend(SET_F("dRO(ux+':digitalmic:pin[]',3);")); // disable read only pins
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("dOpt('AudioReactive:digitalmic:pin[]',3,2,2);")); //only use -1, 0, 1 or 3
-        oappend(SET_F("dOpt('AudioReactive:digitalmic:pin[]',3,4,39);")); //only use -1, 0, 1 or 3
+        oappend(SET_F("dOpt(ux+':digitalmic:pin[]',3,2,2);")); //only use -1, 0, 1 or 3
+        oappend(SET_F("dOpt(ux+':digitalmic:pin[]',3,4,39);")); //only use -1, 0, 1 or 3
       #endif
       #ifdef MCLK_PIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',3,' ⎌',")); oappendi(MCLK_PIN); oappend(");"); 
+        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',3,' ⎌',")); oappendi(MCLK_PIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'','I2C SDA');"));
-      oappend(SET_F("rOpt('AudioReactive:digitalmic:pin[]',4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',4,'','I2C SDA');"));
+      oappend(SET_F("rOpt(ux+':digitalmic:pin[]',4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
       #ifdef ES7243_SDAPIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',4,' ⎌',")); oappendi(ES7243_SDAPIN); oappend(");"); 
+        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',4,' ⎌',")); oappendi(ES7243_SDAPIN); oappend(");"); 
       #endif
 
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'','I2C SCL');"));
-      oappend(SET_F("rOpt('AudioReactive:digitalmic:pin[]',5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+      oappend(SET_F("addInfo(ux+':digitalmic:pin[]',5,'','I2C SCL');"));
+      oappend(SET_F("rOpt(ux+':digitalmic:pin[]',5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
       #ifdef ES7243_SCLPIN
-        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
+        oappend(SET_F("xOpt(ux+':digitalmic:pin[]',5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
       #endif
-      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',5);")); // disable read only pins
+      oappend(SET_F("dRO(ux+':digitalmic:pin[]',5);")); // disable read only pins
 #endif
     }
 
