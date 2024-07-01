@@ -237,9 +237,9 @@ static uint8_t useInputFilter = 0;                        // enables low-cut fil
 //WLEDMM add experimental settings
 static uint8_t micLevelMethod = 0;                        // 0=old "floating" miclev, 1=new  "freeze" mode, 2=fast freeze mode (mode 2 may not work for you)
 #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
-static uint8_t averageByRMS = false;                      // false: use mean value, true: use RMS (root mean squared). use simpler method on slower MCUs.
+static constexpr uint8_t averageByRMS = false;                      // false: use mean value, true: use RMS (root mean squared). use simpler method on slower MCUs.
 #else
-static uint8_t averageByRMS = true;                       // false: use mean value, true: use RMS (root mean squared). use better method on fast MCUs.
+static constexpr uint8_t averageByRMS = true;                       // false: use mean value, true: use RMS (root mean squared). use better method on fast MCUs.
 #endif
 static uint8_t freqDist = 0;                              // 0=old 1=rightshift mode
 
@@ -436,7 +436,7 @@ static float fftAddAvgRMS(int from, int to) {
 
 static float fftAddAvg(int from, int to) {
   if (from == to) return vReal[from];              // small optimization
-  if (averageByRMS) return fftAddAvgRMS(from, to); // use SMS
+  if (averageByRMS) return fftAddAvgRMS(from, to); // use RMS
   else return fftAddAvgLin(from, to);              // use linear average
 }
 
@@ -2657,7 +2657,7 @@ class AudioReactive : public Usermod {
       JsonObject poweruser = top.createNestedObject("experiments");
       poweruser[F("micLev")] = micLevelMethod;
       poweruser[F("freqDist")] = freqDist;
-      poweruser[F("freqRMS")] = averageByRMS;
+      //poweruser[F("freqRMS")] = averageByRMS;
 
       JsonObject freqScale = top.createNestedObject("frequency");
       freqScale[F("scale")] = FFTScalingMode;
@@ -2729,7 +2729,7 @@ class AudioReactive : public Usermod {
       //WLEDMM: experimental settings
       configComplete &= getJsonValue(top["experiments"][F("micLev")], micLevelMethod);
       configComplete &= getJsonValue(top["experiments"][F("freqDist")], freqDist);
-      configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
+      //configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
 
       configComplete &= getJsonValue(top["frequency"][F("scale")], FFTScalingMode);
       configComplete &= getJsonValue(top["frequency"][F("profile")], pinkIndex);  //WLEDMM
@@ -2833,10 +2833,10 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'RightShift',1);"));
       oappend(SET_F("addInfo('AudioReactive:experiments:freqDist',1,'☾');"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
-      oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
-      oappend(SET_F("addOption(dd,'On',1);"));
-      oappend(SET_F("addInfo('AudioReactive:experiments:freqRMS',1,'☾');"));
+      //oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
+      //oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
+      //oappend(SET_F("addOption(dd,'On',1);"));
+      //oappend(SET_F("addInfo('AudioReactive:experiments:freqRMS',1,'☾');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
