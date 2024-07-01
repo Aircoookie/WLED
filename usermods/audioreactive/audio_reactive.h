@@ -330,6 +330,7 @@ static float FFT_MajPeakSmth = 1.0f;            // FFT: (peak) frequency, smooth
 static float fftTaskCycle = 0;      // avg cycle time for FFT task
 static float fftTime = 0;           // avg time for single FFT
 static float sampleTime = 0;        // avg (blocked) time for reading I2S samples
+static float filterTime = 0;        // avg time for filtering I2S samples
 #endif
 
 // FFT Task variables (filtering and post-processing)
@@ -525,7 +526,7 @@ void FFTcode(void * parameter)
       uint64_t sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10.0; // smooth
     }
-    start = esp_timer_get_time(); // start measuring FFT time
+    start = esp_timer_get_time(); // start measuring filter time
 #endif
 
     xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
@@ -561,6 +562,15 @@ void FFTcode(void * parameter)
         default: doDCRemoval = true; break;
       }
     } else doDCRemoval = true;
+
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
+    // timing measurement
+    if (start < esp_timer_get_time()) { // filter out overflows
+      uint64_t filterTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      filterTime = (filterTimeInMillis*3 + filterTime*7)/10.0; // smooth
+    }
+    start = esp_timer_get_time(); // start measuring FFT time
+#endif
 
     // set imaginary parts to 0
     memset(vImag, 0, sizeof(vImag));
@@ -2246,7 +2256,7 @@ class AudioReactive : public Usermod {
     void onUpdateBegin(bool init)
     {
 #ifdef WLED_DEBUG
-      fftTime = sampleTime = 0;
+      fftTime = sampleTime filterTime = 0;
 #endif
       // gracefully suspend FFT task (if running)
       disableSoundProcessing = true;
@@ -2507,17 +2517,22 @@ class AudioReactive : public Usermod {
         infoArr.add(roundf(sampleTime)/100.0f);
         infoArr.add(" ms");
 
+        infoArr = user.createNestedArray(F("Filtering time"));
+        infoArr.add(roundf(filterTime)/100.0f);
+        infoArr.add(" ms");
+
         infoArr = user.createNestedArray(F("FFT time"));
         infoArr.add(roundf(fftTime)/100.0f);
         if ((fftTime/100) >= FFT_MIN_CYCLE) // FFT time over budget -> I2S buffer will overflow 
           infoArr.add("<b style=\"color:red;\">! ms</b>");
-        else if ((fftTime/80 + sampleTime/80) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
+        else if ((fftTime/85 + filterTime/85 + sampleTime/85) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
           infoArr.add("<b style=\"color:orange;\"> ms!</b>");
         else
           infoArr.add(" ms");
 
         DEBUGSR_PRINTF("AR I2S cycle time: %5.2f ms\n", roundf(fftTaskCycle)/100.0f);
         DEBUGSR_PRINTF("AR Sampling time : %5.2f ms\n", roundf(sampleTime)/100.0f);
+        DEBUGSR_PRINTF("AR filter time   : %5.2f ms\n", roundf(filterTime)/100.0f);
         DEBUGSR_PRINTF("AR FFT time      : %5.2f ms\n", roundf(fftTime)/100.0f);
         #endif
         #endif
