@@ -41,6 +41,12 @@
  * ....
  */
 
+
+#if defined(WLEDMM_FASTPATH) && defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32)
+#define FFT_USE_SLIDING_WINDOW             // perform FFT with sliding window =  50% overlap
+#endif
+
+
 #define FFT_PREFER_EXACT_PEAKS  // use different FFT windowing -> results in "sharper" peaks and less "leaking" into other frequencies
 //#define SR_STATS
 
@@ -172,8 +178,13 @@ static bool limiterOn = false;                 // bool: enable / disable dynamic
 #else
 static bool limiterOn = true;
 #endif
+#ifdef FFT_USE_SLIDING_WINDOW
+static uint16_t attackTime = 14;              // int: attack time in milliseconds. Default 0.014sec
+static uint16_t decayTime = 250;              // int: decay time in milliseconds.  New default 250ms.
+#else
 static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
 static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
+#endif
 
 // peak detection
 #ifdef ARDUINO_ARCH_ESP32
@@ -242,7 +253,9 @@ static constexpr uint8_t averageByRMS = false;                      // false: us
 static constexpr uint8_t averageByRMS = true;                       // false: use mean value, true: use RMS (root mean squared). use better method on fast MCUs.
 #endif
 static uint8_t freqDist = 0;                              // 0=old 1=rightshift mode
-
+#ifdef FFT_USE_SLIDING_WINDOW
+static uint8_t doSlidingFFT = 1;                            // 1 = use sliding window FFT (faster & more accurate)
+#endif
 
 // variables used in effects
 //static int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
@@ -345,7 +358,11 @@ constexpr SRate_t SAMPLE_RATE = 22050;        // Base sample rate in Hz - 22Khz 
 #ifndef WLEDMM_FASTPATH
 #define FFT_MIN_CYCLE 21                      // minimum time before FFT task is repeated. Use with 22Khz sampling
 #else
-#define FFT_MIN_CYCLE 15                      // reduce min time, to allow faster catch-up when I2S is lagging 
+  #ifdef FFT_USE_SLIDING_WINDOW
+    #define FFT_MIN_CYCLE 8                      // we only have 12ms to take 1/2 batch of samples
+  #else
+    #define FFT_MIN_CYCLE 15                      // reduce min time, to allow faster catch-up when I2S is lagging 
+  #endif
 #endif
 //#define FFT_MIN_CYCLE 30                      // Use with 16Khz sampling
 //#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated. Use with 20Khz sampling
@@ -363,7 +380,7 @@ constexpr SRate_t SAMPLE_RATE = 18000;          // 18Khz; Physical sample time -
 
 // FFT Constants
 constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
-constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
+constexpr uint16_t samplesFFT_2 = 256;          // meaningful part of FFT results - only the "lower half" contains useful information.
 // the following are observed values, supported by a bit of "educated guessing"
 //#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
 //#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
@@ -473,6 +490,12 @@ void FFTcode(void * parameter)
   const TickType_t xFrequencyDouble = FFT_MIN_CYCLE * portTICK_PERIOD_MS * 2;  
   static bool isFirstRun = false;
 
+#ifdef FFT_USE_SLIDING_WINDOW
+  static float oldSamples[samplesFFT_2] = {0.0f}; // previous 50% of samples
+  static bool haveOldSamples = false; // for sliding window FFT
+  bool usingOldSamples = false;
+#endif
+
   #ifdef FFT_MAJORPEAK_HUMAN_EAR
   // pre-compute pink noise scaling table
   for(uint_fast16_t binInd = 0; binInd < samplesFFT; binInd++) {
@@ -492,6 +515,9 @@ void FFTcode(void * parameter)
     // Don't run FFT computing code if we're in Receive mode or in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled == AUDIOSYNC_REC)) {
       isFirstRun = false;
+      #ifdef FFT_USE_SLIDING_WINDOW
+        haveOldSamples = false;
+      #endif
       vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
       continue;
     }
@@ -511,7 +537,26 @@ void FFTcode(void * parameter)
 #endif
 
     // get a fresh batch of samples from I2S
+    memset(vReal, 0, sizeof(vReal)); // start clean
+#ifdef FFT_USE_SLIDING_WINDOW
+    uint16_t readOffset;
+    if (haveOldSamples && (doSlidingFFT > 0)) {
+      memcpy(vReal, oldSamples, sizeof(float) * samplesFFT_2);                     // copy first 50% from buffer
+      usingOldSamples = true;
+      readOffset = samplesFFT_2;
+    } else {
+      usingOldSamples = false;
+      readOffset = 0;
+    }
+    // read fresh samples, in chunks of 50%
+    do {
+      // this looks a bit cumbersome, but it onlyworks this way - any second instance of the getSamples() call delivers junk data.
+      if (audioSource) audioSource->getSamples(vReal+readOffset, samplesFFT_2);
+      readOffset += samplesFFT_2;
+    } while (readOffset < samplesFFT);
+#else
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
+#endif
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     // debug info in case that stack usage changes
@@ -552,13 +597,23 @@ void FFTcode(void * parameter)
     if (strip.isServicing()) delay(2);
 #endif
 
+    // normal mode: filter everything
+    float *samplesStart = vReal;
+    uint16_t sampleCount = samplesFFT;
+    #ifdef FFT_USE_SLIDING_WINDOW
+    if (usingOldSamples) {
+      // sliding window mode: only latest 50% need filtering
+      samplesStart = vReal + samplesFFT_2;
+      sampleCount = samplesFFT_2;
+    }
+    #endif
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
    bool doDCRemoval = false; // DCRemove is only necessary if we don't use any kind of low-cut filtering
    if ((useInputFilter > 0) && (useInputFilter < 99)) {
       switch(useInputFilter) {
-        case 1: runMicFilter(samplesFFT, vReal); break;                   // PDM microphone bandpass
-        case 2: runDCBlocker(samplesFFT, vReal); break;                   // generic Low-Cut + DC blocker (~40hz cut-off)
+        case 1: runMicFilter(sampleCount, samplesStart); break;                   // PDM microphone bandpass
+        case 2: runDCBlocker(sampleCount, samplesStart); break;                   // generic Low-Cut + DC blocker (~40hz cut-off)
         default: doDCRemoval = true; break;
       }
     } else doDCRemoval = true;
@@ -575,14 +630,24 @@ void FFTcode(void * parameter)
     // set imaginary parts to 0
     memset(vImag, 0, sizeof(vImag));
 
+    #ifdef FFT_USE_SLIDING_WINDOW
+    memcpy(oldSamples, vReal+samplesFFT_2, sizeof(float) * samplesFFT_2);  // copy last 50% to buffer (for sliding window FFT)
+    haveOldSamples = true;
+    #endif
+
     // find highest sample in the batch, and count zero crossings
     float maxSample = 0.0f;                         // max sample from FFT batch
     uint_fast16_t newZeroCrossingCount = 0;
     for (int i=0; i < samplesFFT; i++) {
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
-	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
+	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024))) { //skip extreme values - normally these are artefacts
+      #ifdef FFT_USE_SLIDING_WINDOW
+        if (usingOldSamples) {
+          if ((i >= samplesFFT_2) && (fabsf(vReal[i]) > maxSample)) maxSample = fabsf(vReal[i]);  // only look at newest 50%
+        } else
+      #endif
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
-
+      }
       // WLED-MM/TroyHacks: Calculate zero crossings
       //
       if (i < (samplesFFT-1)) {
@@ -812,6 +877,11 @@ void FFTcode(void * parameter)
     if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
     #endif
     {
+  #ifdef FFT_USE_SLIDING_WINDOW
+      if (!usingOldSamples) {
+        vTaskDelayUntil( &xLastWakeTime, xFrequencyDouble); // we need a double wait when no old data was used
+      } else
+  #endif
       if ((skipSecondFFT == false) || (fabsf(volumeSmth) < 0.25f)) {
         vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
       } else if (isFirstRun == true) {
@@ -2523,9 +2593,15 @@ class AudioReactive : public Usermod {
 
         infoArr = user.createNestedArray(F("FFT time"));
         infoArr.add(roundf(fftTime)/100.0f);
-        if ((fftTime/100) >= FFT_MIN_CYCLE) // FFT time over budget -> I2S buffer will overflow 
+
+#ifdef FFT_USE_SLIDING_WINDOW
+        unsigned timeBudget = doSlidingFFT ? (FFT_MIN_CYCLE) : fftTaskCycle / 115;
+#else
+        unsigned timeBudget = (FFT_MIN_CYCLE);
+#endif
+        if ((fftTime/100) >= timeBudget) // FFT time over budget -> I2S buffer will overflow 
           infoArr.add("<b style=\"color:red;\">! ms</b>");
-        else if ((fftTime/85 + filterTime/85 + sampleTime/85) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
+        else if ((fftTime/85 + filterTime/85 + sampleTime/85) >= timeBudget) // FFT time >75% of budget -> risk of instability
           infoArr.add("<b style=\"color:orange;\"> ms!</b>");
         else
           infoArr.add(" ms");
@@ -2649,6 +2725,9 @@ class AudioReactive : public Usermod {
       poweruser[F("freqDist")] = freqDist;
       //poweruser[F("freqRMS")] = averageByRMS;
 
+#ifdef FFT_USE_SLIDING_WINDOW
+      poweruser[F("I2S_FastPath")] = doSlidingFFT;
+#endif
       JsonObject freqScale = top.createNestedObject("frequency");
       freqScale[F("scale")] = FFTScalingMode;
       freqScale[F("profile")] = pinkIndex; //WLEDMM
@@ -2720,6 +2799,9 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["experiments"][F("micLev")], micLevelMethod);
       configComplete &= getJsonValue(top["experiments"][F("freqDist")], freqDist);
       //configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
+#ifdef FFT_USE_SLIDING_WINDOW
+      configComplete &= getJsonValue(top["experiments"][F("I2S_FastPath")], doSlidingFFT);
+#endif
 
       configComplete &= getJsonValue(top["frequency"][F("scale")], FFTScalingMode);
       configComplete &= getJsonValue(top["frequency"][F("profile")], pinkIndex);  //WLEDMM
@@ -2828,6 +2910,13 @@ class AudioReactive : public Usermod {
       //oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
       //oappend(SET_F("addOption(dd,'On',1);"));
       //oappend(SET_F("addInfo('AudioReactive:experiments:freqRMS',1,'☾');"));
+
+#ifdef FFT_USE_SLIDING_WINDOW
+      oappend(SET_F("dd=addDropdown(ux,'experiments:I2S_FastPath');"));
+      oappend(SET_F("addOption(dd,'Off',0);"));
+      oappend(SET_F("addOption(dd,'On  (⎌)',1);"));
+      oappend(SET_F("addInfo(ux+':experiments:I2S_FastPath',1,'☾');"));
+#endif
 
       oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
