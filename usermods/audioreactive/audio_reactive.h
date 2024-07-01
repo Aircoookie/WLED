@@ -239,7 +239,11 @@ const double agcFollowFast[AGC_NUM_PRESETS]   = { 1/192.f, 1/128.f, 1/256.f}; //
 const double agcFollowSlow[AGC_NUM_PRESETS]   = {1/6144.f,1/4096.f,1/8192.f}; // slowly follow setpoint  - ~2-15 secs
 const double agcControlKp[AGC_NUM_PRESETS]    = {    0.6f,    1.5f,   0.65f}; // AGC - PI control, proportional gain parameter
 const double agcControlKi[AGC_NUM_PRESETS]    = {    1.7f,   1.85f,    1.2f}; // AGC - PI control, integral gain parameter
+#if defined(WLEDMM_FASTPATH)
+const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/6.f,   1/5.f,  1/10.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
+#else
 const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
+#endif
 // AGC presets end
 
 static AudioSource *audioSource = nullptr;
@@ -594,7 +598,9 @@ void FFTcode(void * parameter)
 
 #if defined(WLEDMM_FASTPATH) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && defined(ARDUINO_ARCH_ESP32)
     // experimental - be nice to LED update task (trying to avoid flickering) - dual core only
-    if (strip.isServicing()) delay(2);
+#if FFTTASK_PRIORITY > 1
+    if (strip.isServicing()) delay(1);
+#endif
 #endif
 
     // normal mode: filter everything
@@ -1364,7 +1370,11 @@ class AudioReactive : public Usermod {
 
       // update global vars ONCE - multAgc, sampleAGC, rawSampleAgc
       multAgc = multAgcTemp;
+#if defined(WLEDMM_FASTPATH)
+      rawSampleAgc = 0.65f * tmpAgc + 0.35f * (float)rawSampleAgc;
+#else
       rawSampleAgc = 0.8f * tmpAgc + 0.2f * (float)rawSampleAgc;
+#endif
       // update smoothed AGC sample
       if (fabsf(tmpAgc) < 1.0f) 
         sampleAgc =  0.5f * tmpAgc + 0.5f * sampleAgc;    // fast path to zero
@@ -1483,7 +1493,11 @@ class AudioReactive : public Usermod {
       }
       if (sampleMax < 0.5f) sampleMax = 0.0f;
 
+#if defined(WLEDMM_FASTPATH)
+      sampleAvg = ((sampleAvg * 7.0f) + sampleAdj) / 8.0f;   // make reactions a bit more "crisp" in fastpath mode 
+#else
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
+#endif
       sampleAvg = fabsf(sampleAvg);                            // make sure we have a positive value
     } // getSample()
 
