@@ -381,7 +381,6 @@ constexpr float binWidth = SAMPLE_RATE / (float)samplesFFT; // frequency range o
 
 
 // Create FFT object
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
 #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
 // these options actually cause slow-down on -S2 (-S2 doesn't have floating point hardware)
@@ -390,13 +389,8 @@ constexpr float binWidth = SAMPLE_RATE / (float)samplesFFT; // frequency range o
 #endif
 #define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 10-50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
 #define sqrt_internal sqrtf          // see https://github.com/kosme/arduinoFFT/pull/83
-#else
-  // around 50% slower on -S2
-// lib_deps += https://github.com/blazoncek/arduinoFFT.git
-#endif
 #include <arduinoFFT.h>
 
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 #if defined(FFT_LIB_REV) && FFT_LIB_REV > 0x19
   // arduinoFFT 2.x has a slightly different API
   static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, true);
@@ -404,9 +398,6 @@ constexpr float binWidth = SAMPLE_RATE / (float)samplesFFT; // frequency range o
   // recommended version optimized by @softhack007 (API version 1.9)
   static float windowWeighingFactors[samplesFFT] = {0.0f}; // cache for FFT windowing factors
   static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, windowWeighingFactors);
-#endif
-#else
-static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
 #endif
 
 // Helper functions
@@ -618,7 +609,6 @@ void FFTcode(void * parameter)
     if (fabsf(volumeSmth) > 0.25f) { // noise gate open
       if ((skipSecondFFT == false) || (isFirstRun == true)) {
         // run FFT (takes 2-3ms on ESP32, ~12ms on ESP32-S2, ~30ms on -C3)
-        #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
         if (doDCRemoval) FFT.dcRemoval();                                            // remove DC offset
         #if !defined(FFT_PREFER_EXACT_PEAKS)
           FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward);        // Weigh data using "Flat Top" function - better amplitude accuracy
@@ -628,19 +618,6 @@ void FFTcode(void * parameter)
         FFT.compute( FFTDirection::Forward );                       // Compute FFT
         FFT.complexToMagnitude();                                   // Compute magnitudes
         vReal[0] = 0;   // The remaining DC offset on the signal produces a strong spike on position 0 that should be eliminated to avoid issues.
-        #else
-        FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
-
-        //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
-        //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
-        #if !defined(FFT_PREFER_EXACT_PEAKS)
-          FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );        // Flat Top Window - better amplitude accuracy
-        #else
-          FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
-        #endif
-        FFT.Compute( FFT_FORWARD );                             // Compute FFT
-        FFT.ComplexToMagnitude();                               // Compute magnitudes
-        #endif
 
         float last_majorpeak = FFT_MajorPeak;
         float last_magnitude = FFT_Magnitude;
@@ -651,15 +628,11 @@ void FFTcode(void * parameter)
           vReal[binInd] *= pinkFactors[binInd];
         #endif
 
-        #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
         #if defined(FFT_LIB_REV) && FFT_LIB_REV > 0x19
           // arduinoFFT 2.x has a slightly different API
           FFT.majorPeak(&FFT_MajorPeak, &FFT_Magnitude);
         #else
           FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
-        #endif
-        #else
-          FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);
         #endif
 
         if (FFT_MajorPeak < (SAMPLE_RATE /  samplesFFT)) {FFT_MajorPeak = 1.0f; FFT_Magnitude = 0;}                  // too low - use zero
