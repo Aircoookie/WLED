@@ -2256,7 +2256,7 @@ class AudioReactive : public Usermod {
     void onUpdateBegin(bool init)
     {
 #ifdef WLED_DEBUG
-      fftTime = sampleTime filterTime = 0;
+      fftTime = sampleTime = filterTime = 0;
 #endif
       // gracefully suspend FFT task (if running)
       disableSoundProcessing = true;
