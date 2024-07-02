@@ -1058,7 +1058,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 // particles move upwards faster if ttl is high (i.e. they are hotter)
 void ParticleSystem::fireParticleupdate()
 {
-  //TODO: cleanup this function? check if normal move is much slower, change move function to check y first then this function just needs to add ttl to y befor calling normal move function  
+  //TODO: cleanup this function? check if normal move is much slower, change move function to check y first then this function just needs to add ttl to y befor calling normal move function  (this function uses 274bytes of flash)
   uint32_t i = 0;
 
   for (i = 0; i < usedParticles; i++)
@@ -1716,7 +1716,6 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
         newX = newX % (maxX + 1); 
         if (newX < 0)
           newX += maxX + 1; 
-          Serial.println(newX/32);
       }
       else if (((newX <= -PS_P_HALFRADIUS_1D) || (newX > maxX + PS_P_HALFRADIUS_1D))) // particle is leaving, set out of bounds if it has fully left
       {
@@ -1914,7 +1913,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
   }
   if (size == 0) //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
   {
-    int32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
+    uint32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
     if (x <= maxXpixel) //by making x unsigned there is no need to check < 0 as it will overflow
     {    
       if (framebuffer)      

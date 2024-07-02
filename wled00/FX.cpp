@@ -8517,8 +8517,7 @@ uint16_t mode_particlewaterfall(void)
     PartSys->setGravity();  // enable with default gforce
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->setMotionBlur(190); // anable motion blur
-    numSprays = min((int32_t)PartSys->numSources, min(PartSys->maxXpixel/5, (int32_t)2)); // number of sprays
-    for (i = 0; i < numSprays; i++)
+    for (i = 0; i < PartSys->numSources; i++)
     {
       PartSys->sources[i].source.hue = random16();
       PartSys->sources[i].source.collide = true; // seeded particles will collide
@@ -8545,8 +8544,7 @@ uint16_t mode_particlewaterfall(void)
   PartSys->setBounceX(SEGMENT.check2); // walls
   PartSys->setBounceY(SEGMENT.check3); // ground
   PartSys->setWallHardness(SEGMENT.custom2);
-  numSprays = min((int32_t)PartSys->numSources, min(PartSys->maxXpixel / 5, (int32_t)2)); // number of sprays depends on segment width
-
+  numSprays = min((int32_t)PartSys->numSources, max(PartSys->maxXpixel / 6, (int32_t)2)); // number of sprays depends on segment width
   if (SEGMENT.custom2 > 0) // collisions enabled
     PartSys->enableParticleCollisions(true, SEGMENT.custom2); // enable collisions and set particle collision hardness
   else
@@ -8565,16 +8563,14 @@ uint16_t mode_particlewaterfall(void)
     for (i = 0; i < numSprays; i++)
     {
       PartSys->sources[i].vy = -SEGMENT.speed >> 3; // emitting speed, down
-      PartSys->sources[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (PartSys->maxXpixel - numSprays * 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
+      //PartSys->sources[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (PartSys->maxXpixel - numSprays * 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
+      PartSys->sources[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (PartSys->maxXpixel - numSprays) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
       PartSys->sources[i].source.y = PartSys->maxY + (PS_P_RADIUS * ((i<<2) + 4)); // source y position, few pixels above the top to increase spreading before entering the matrix
       PartSys->sources[i].var = (SEGMENT.custom1 >> 3); // emiting variation 0-32
-    }
-
-    for (i = 0; i < numSprays; i++)
-    {
       PartSys->sprayEmit(PartSys->sources[i]); 
     }
   }
+  
 
   if (SEGMENT.call % 20 == 0)
     PartSys->applyFriction(1); // add just a tiny amount of friction to help smooth things
@@ -10362,7 +10358,6 @@ uint16_t mode_particle1Dspray(void)
   if (SEGLEN == 1)
     return mode_static();
   ParticleSystem1D *PartSys = NULL;  
-  uint32_t i;
 
   if (SEGMENT.call == 0) // initialization 
   {
@@ -10399,12 +10394,12 @@ uint16_t mode_particle1Dspray(void)
     PartSys->sources[0].source.reversegrav = true;
   
   if(random(255)  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) 
-        PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
+        PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
 
   //update color settings
   PartSys->setColorByAge(SEGMENT.check1); //overruled by 'color by position'
   PartSys->setColorByPosition(SEGMENT.check3);  
-  for(i = 0; i < PartSys->usedParticles; i++) 
+  for(uint i = 0; i < PartSys->usedParticles; i++) 
   {     
     PartSys->particles[i].reversegrav = PartSys->sources[0].source.reversegrav; //update gravity direction
   }
