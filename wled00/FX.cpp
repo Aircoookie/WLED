@@ -10540,26 +10540,38 @@ uint16_t mode_particleChase(void)
     PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (64 + (SEGMENT.custom1 >> 1)), (int32_t)(PartSys->numParticles)))); //depends on intensity and particle size (custom1)
     for(i = 0; i < PartSys->usedParticles; i++)
     {
-      PartSys->particles[i].x = i * (PartSys->maxX / (PartSys->usedParticles)); // distribute evenly      
-      if(SEGMENT.custom2 == 0)
-        PartSys->particles[i].hue = (i * 256) / PartSys->usedParticles; // gradient distribution
-      else if(SEGMENT.custom2 == 255)
+      PartSys->particles[i].x = i * (PartSys->maxX / (PartSys->usedParticles - 1)); // distribute evenly      
+      if(SEGMENT.custom2 < 255)
+        PartSys->particles[i].hue = (i * (SEGMENT.custom2 << 3)) / PartSys->usedParticles; // gradient distribution
+      else 
         PartSys->particles[i].hue = random16();
-      else
-        PartSys->particles[i].hue = SEGMENT.custom2;
-      int32_t speed = SEGMENT.speed >> 1; 
-      if(SEGMENT.check1) speed = -speed;
-      PartSys->particles[i].vx = speed;
+      
+      PartSys->particles[i].vx =  SEGMENT.speed >> 1;
       PartSys->advPartProps[i].size = SEGMENT.custom1;
     } 
     PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets rendering size to one pixel
     SEGMENT.aux0 = settingssum;  
   }
+  if(SEGMENT.check1) // pride rainbow colors
+  {
+   for(i = 0; i < PartSys->usedParticles; i++)
+    {
+
+    }
+  }
+  if((SEGMENT.check2 || SEGMENT.check1) && SEGMENT.call % (192 / ((SEGMENT.speed >> 2) + 128)) == 0) // color waves
+  {
+   for(i = 0; i < PartSys->usedParticles; i++)
+    {
+         PartSys->particles[i].hue -= 2; 
+    }
+  }
+  
 PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets rendering size to one pixel
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Color,Blur/Overlay,Direction,,Color by Position;,!;!;1;pal=53,sx=50,ix=100,c2=0,c3=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur/Overlay,Pride,Color Waves,Color by Position;,!;!;1;pal=53,sx=50,ix=100,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 
 /*
@@ -10684,7 +10696,7 @@ uint16_t mode_particle1DGEQ(void)
 
   for(i = 0; i < PartSys->usedParticles; i++)
   { 
-    if(PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short lifespan 
+    if(PartSys->particles[i].ttl > 20) PartSys->particles[i].ttl -= 20; //ttl is linked to brightness, this allows to use higher brightness but still a short lifespan 
     else PartSys->particles[i].ttl = 0;
   }
   
@@ -10696,14 +10708,15 @@ uint16_t mode_particle1DGEQ(void)
 
   //map the bands into 16 positions on x axis, emit some particles according to frequency loudness
   i = 0;
-  uint32_t bin; //current bin  
+  uint32_t bin = random(numSources);; //current bin , start with random one to distribute available particles fairly
   uint32_t threshold = 300 - SEGMENT.intensity;
 
-
-  for (bin = 0; bin < numSources; bin++)
-  {    
+  for (i = 0; i < numSources; i++)
+  { 
+    bin ++;
+    bin = bin % numSources;
     uint32_t emitparticle = 0;
-    //uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 9; // emit speed according to loudness of band (127 max!)
+    uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 10; // emit speed according to loudness of band (127 max!)
     if (fftResult[bin] > threshold)
     {
       emitparticle = 1;
