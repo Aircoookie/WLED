@@ -736,6 +736,180 @@ class WM8978Source : public I2SSource {
 
 };
 
+class AC101Source : public I2SSource {
+  private:
+    // I2C initialization functions for WM8978
+    void _ac101I2cBegin() {
+      Wire.setClock(400000);
+    }
+
+    void _ac101I2cWrite(uint8_t reg_addr, uint16_t val) {
+      #ifndef AC101_ADDR
+        #define AC101_ADDR 0x1A
+      #endif
+      char send_buff[3];
+      send_buff[0] = reg_addr;
+      send_buff[1] = (val >> 8) & 0xff;
+      send_buff[2] = val & 0xff;
+      Wire.beginTransmission(AC101_ADDR);
+      Wire.write((const uint8_t*)send_buff, 3);
+      uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
+      if (i2cErr != 0) {
+        DEBUGSR_PRINTF("AR: AC101 I2C write failed with error=%d  (addr=0x%X, reg 0x%X, val 0x%X).\n", i2cErr, AC101_ADDR, reg_addr, val);
+      }
+    }
+
+    void _ac101InitAdc() {
+      // https://files.seeedstudio.com/wiki/ReSpeaker_6-Mics_Circular_Array_kit_for_Raspberry_Pi/reg/AC101_User_Manual_v1.1.pdf
+      //
+      _ac101I2cBegin(); 
+
+      #define CHIP_AUDIO_RS	  	0x00
+      #define PLL_CTRL1			    0x01
+      #define PLL_CTRL2			    0x02
+      #define SYSCLK_CTRL		  	0x03
+      #define MOD_CLK_ENA		  	0x04
+      #define MOD_RST_CTRL	  	0x05
+      #define I2S_SR_CTRL		  	0x06
+      #define I2S1LCK_CTRL		  0x10
+      #define I2S1_SDOUT_CTRL	  0x11
+      #define I2S1_SDIN_CTRL	  0x12
+      #define I2S1_MXR_SRC	  	0x13
+      #define I2S1_VOL_CTRL1  	0x14
+      #define I2S1_VOL_CTRL2  	0x15
+      #define I2S1_VOL_CTRL3  	0x16
+      #define I2S1_VOL_CTRL4  	0x17
+      #define I2S1_MXR_GAIN	  	0x18
+      #define ADC_DIG_CTRL	  	0x40
+      #define ADC_VOL_CTRL	  	0x41
+      #define HMIC_CTRL1		  	0x44
+      #define HMIC_CTRL2		  	0x45
+      #define HMIC_STATUS	  		0x46
+      #define DAC_DIG_CTRL	  	0x48
+      #define DAC_VOL_CTRL	  	0x49
+      #define DAC_MXR_SRC		  	0x4c
+      #define DAC_MXR_GAIN	  	0x4d
+      #define ADC_APC_CTRL		  0x50
+      #define ADC_SRC				    0x51
+      #define ADC_SRCBST_CTRL	  0x52
+      #define OMIXER_DACA_CTRL  0x53
+      #define OMIXER_SR			    0x54
+      #define OMIXER_BST1_CTRL	0x55
+      #define HPOUT_CTRL			  0x56
+      #define SPKOUT_CTRL			  0x58
+      #define AC_DAC_DAPCTRL		0xa0
+      #define AC_DAC_DAPHHPFC 	0xa1
+      #define AC_DAC_DAPLHPFC 	0xa2
+      #define AC_DAC_DAPLHAVC 	0xa3
+      #define AC_DAC_DAPLLAVC 	0xa4
+      #define AC_DAC_DAPRHAVC 	0xa5
+      #define AC_DAC_DAPRLAVC 	0xa6
+      #define AC_DAC_DAPHGDEC 	0xa7
+      #define AC_DAC_DAPLGDEC 	0xa8
+      #define AC_DAC_DAPHGATC 	0xa9
+      #define AC_DAC_DAPLGATC 	0xaa
+      #define AC_DAC_DAPHETHD 	0xab
+      #define AC_DAC_DAPLETHD 	0xac
+      #define AC_DAC_DAPHGKPA 	0xad
+      #define AC_DAC_DAPLGKPA 	0xae
+      #define AC_DAC_DAPHGOPA 	0xaf
+      #define AC_DAC_DAPLGOPA 	0xb0
+      #define AC_DAC_DAPOPT   	0xb1
+      #define DAC_DAP_ENA     	0xb5
+
+      _ac101I2cWrite(CHIP_AUDIO_RS, 0x123); // Reset (any value written does a reset)
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      _ac101I2cWrite(SPKOUT_CTRL, 0xe880);
+
+      //Enable the PLL from 256*44.1KHz MCLK source
+      _ac101I2cWrite(PLL_CTRL1, 0x014f);
+      //res |= ac101_write_reg(PLL_CTRL2, 0x83c0);
+      _ac101I2cWrite(PLL_CTRL2, 0x8600);
+
+      //Clocking system
+      _ac101I2cWrite(SYSCLK_CTRL, 0x8b08);
+      _ac101I2cWrite(MOD_CLK_ENA, 0x800c);
+      _ac101I2cWrite(MOD_RST_CTRL, 0x800c);
+      _ac101I2cWrite(I2S_SR_CTRL, 0b0111000000000000); //sample rate 22050 Hz
+      //AIF config
+      _ac101I2cWrite(I2S1LCK_CTRL, 0x8850);	//BCLK/LRCK
+      _ac101I2cWrite(I2S1_SDOUT_CTRL, 0xc000); //
+      _ac101I2cWrite(I2S1_SDIN_CTRL, 0xc000);
+      _ac101I2cWrite(I2S1_MXR_SRC, 0x2200); //
+
+      _ac101I2cWrite(ADC_SRCBST_CTRL, 0xccc4);
+      _ac101I2cWrite(ADC_SRC, 0x2020);
+      _ac101I2cWrite(ADC_DIG_CTRL, 0x8000);
+      _ac101I2cWrite(ADC_APC_CTRL, 0xbbc3);
+
+      //Path Configuration
+      _ac101I2cWrite(DAC_MXR_SRC, 0xcc00);
+      _ac101I2cWrite(DAC_DIG_CTRL, 0x8000);
+      _ac101I2cWrite(OMIXER_SR, 0x0081);
+      _ac101I2cWrite(OMIXER_DACA_CTRL, 0xf080); //}
+
+      //* Enable Speaker output
+      // _ac101I2cWrite(0x58, 0xeabd);
+
+      _ac101I2cWrite(ADC_SRC, 0b0000010000001000); // Line-in to ADC
+      _ac101I2cWrite(ADC_DIG_CTRL, 0x8000);
+      _ac101I2cWrite(ADC_APC_CTRL, 0x3bc0);
+      //I2S1_SDOUT_CTRL
+      //res |= _ac101I2cWrite(PLL_CTRL2, 0x8120);
+      _ac101I2cWrite(MOD_CLK_ENA, 0x800c);
+      _ac101I2cWrite(MOD_RST_CTRL, 0x800c);
+      //res |= _ac101I2cWrite(0x06, 0x3000);
+      //* Enable Headphoe output
+      _ac101I2cWrite(OMIXER_DACA_CTRL, 0xff80);
+      _ac101I2cWrite(HPOUT_CTRL, 0xc3c1);
+      _ac101I2cWrite(HPOUT_CTRL, 0xcb00);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      _ac101I2cWrite(HPOUT_CTRL, 0xfbc0);
+
+      _ac101I2cWrite(OMIXER_SR, 0b0000010000001000); // default all 0
+
+      //* Enable Speaker output
+      _ac101I2cWrite(SPKOUT_CTRL, 0xeabd);
+
+
+    }
+
+  public:
+    AC101Source(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
+      I2SSource(sampleRate, blockSize, sampleScale, i2sMaster) {
+      _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    };
+
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      DEBUGSR_PRINTLN("AC101Source:: initialize();");
+
+      // if ((i2sckPin < 0) || (mclkPin < 0)) { // WLEDMM not sure if this check is needed here, too
+      //    ERRORSR_PRINTF("\nAR: invalid I2S WM8978 pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+      //    return;
+      // }
+      // BUG: "use global I2C pins" are valid as -1, and -1 is seen as invalid here.
+      // Workaround: Set I2C pins here, which will also set them globally.
+      // Bug also exists in ES7243.
+       if ((i2c_sda < 0) || (i2c_scl < 0)) {  // check that global I2C pins are not "undefined"
+        ERRORSR_PRINTF("\nAR: invalid AC101 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
+        return;
+      }
+      if (!pinManager.joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
+        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
+        return;
+      }
+
+      // First route mclk, then configure ADC over I2C, then configure I2S
+      _ac101InitAdc();
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+    }
+
+    void deinitialize() {
+      I2SSource::deinitialize();
+    }
+
+};
+
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
 #if !defined(SOC_I2S_SUPPORTS_ADC) && !defined(SOC_I2S_SUPPORTS_ADC_DAC)
   #warning this MCU does not support analog sound input
