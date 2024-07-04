@@ -946,27 +946,33 @@ static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels) // p
         if(fftCalc[i] < 0) fftCalc[i] = 0;
       }
 
-      // smooth results - rise fast, fall slower
-      if(fftCalc[i] > fftAvg[i])   // rise fast 
-        fftAvg[i] = fftCalc[i] *0.78f + 0.22f*fftAvg[i];  // will need approx 1-2 cycles (50ms) for converging against fftCalc[i]
-      else {                       // fall slow
-        if (decayTime < 250)      fftAvg[i] = fftCalc[i]*0.4f + 0.6f*fftAvg[i]; 
-        else if (decayTime < 500)  fftAvg[i] = fftCalc[i]*0.33f + 0.67f*fftAvg[i]; 
-        else if (decayTime < 1000) fftAvg[i] = fftCalc[i]*0.22f + 0.78f*fftAvg[i];  // approx  5 cycles (225ms) for falling to zero
-        else if (decayTime < 2000) fftAvg[i] = fftCalc[i]*0.17f + 0.83f*fftAvg[i];  // default - approx  9 cycles (225ms) for falling to zero
-        else if (decayTime < 3000) fftAvg[i] = fftCalc[i]*0.14f + 0.86f*fftAvg[i];  // approx 14 cycles (350ms) for falling to zero
-        else if (decayTime < 4000) fftAvg[i] = fftCalc[i]*0.1f  + 0.9f*fftAvg[i];
-        else fftAvg[i] = fftCalc[i]*0.05f  + 0.95f*fftAvg[i];
-      }
-      // constrain internal vars - just to be sure
-      fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
-      fftAvg[i] = constrain(fftAvg[i], 0.0f, 1023.0f);
-
       float currentResult;
-      if(limiterOn == true)
+      if(limiterOn == true) {
+        // Limiter ON -> smooth results -> rise fast, fall slower
+        if(fftCalc[i] > fftAvg[i]) {  // rise fast
+          fftAvg[i] += 0.78f * (fftCalc[i] - fftAvg[i]);  // will need approx 1-2 cycles (50ms) for converging against fftCalc[i]
+        } else {                       // fall slow
+          if (decayTime < 150)       fftAvg[i] += 0.50f * (fftCalc[i] - fftAvg[i]); 
+          else if (decayTime < 250)  fftAvg[i] += 0.40f * (fftCalc[i] - fftAvg[i]); 
+          else if (decayTime < 500)  fftAvg[i] += 0.33f * (fftCalc[i] - fftAvg[i]); 
+          else if (decayTime < 1000) fftAvg[i] += 0.22f * (fftCalc[i] - fftAvg[i]);  // approx  5 cycles (225ms) for falling to zero
+          else if (decayTime < 2000) fftAvg[i] += 0.17f * (fftCalc[i] - fftAvg[i]);  // default - approx  9 cycles (225ms) for falling to zero
+          else if (decayTime < 3000) fftAvg[i] += 0.14f * (fftCalc[i] - fftAvg[i]);  // approx 14 cycles (350ms) for falling to zero
+          else if (decayTime < 4000) fftAvg[i] += 0.10f * (fftCalc[i] - fftAvg[i]);
+          else fftAvg[i] += 0.05f * (fftCalc[i] - fftAvg[i]);
+        }
+        // constrain internal vars - just to be sure
+        fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
+        fftAvg[i] = constrain(fftAvg[i], 0.0f, 1023.0f);
+        // use filtered result
         currentResult = fftAvg[i];
-      else
+      } else {
+        // Limiter OFF -> no adjustments
+        fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
+        fftAvg[i] = fftCalc[i]; // keep filters up-to-date
+        // use not filtered result
         currentResult = fftCalc[i];
+      }
 
       switch (FFTScalingMode) {
         case 1:
