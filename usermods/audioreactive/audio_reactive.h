@@ -285,7 +285,7 @@ static float mapf(float x, float in_min, float in_max, float out_min, float out_
 static float fftAddAvg(int from, int to);   // average of several FFT result bins
 void FFTcode(void * parameter);      // audio processing task: read samples, run FFT, fill GEQ channels from FFT results
 static void runMicFilter(uint16_t numSamples, float *sampleBuffer);          // pre-filtering of raw samples (band-pass)
-static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels); // post-processing and post-amp of GEQ channels
+static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels, bool i2sFastpath); // post-processing and post-amp of GEQ channels
 
 
 static TaskHandle_t FFT_Task = nullptr;
@@ -860,8 +860,8 @@ void FFTcode(void * parameter)
 
     // post-processing of frequency channels (pink noise adjustment, AGC, smoothing, scaling)
     if (pinkIndex > MAX_PINK) pinkIndex = MAX_PINK;
-    //postProcessFFTResults((fabsf(sampleAvg) > 0.25f)? true : false , NUM_GEQ_CHANNELS);
-    postProcessFFTResults((fabsf(volumeSmth)>0.25f)? true : false , NUM_GEQ_CHANNELS);    // this function modifies fftCalc, fftAvg and fftResult
+
+    postProcessFFTResults((fabsf(volumeSmth) > 0.25f)? true : false, NUM_GEQ_CHANNELS, usingOldSamples);    // this function modifies fftCalc, fftAvg and fftResult
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     // timing
@@ -933,7 +933,7 @@ static void runMicFilter(uint16_t numSamples, float *sampleBuffer)          // p
   }
 }
 
-static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels) // post-processing and post-amp of GEQ channels
+static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels, bool i2sFastpath) // post-processing and post-amp of GEQ channels
 {
     for (int i=0; i < numberOfChannels; i++) {
 
@@ -946,33 +946,41 @@ static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels) // p
         if(fftCalc[i] < 0) fftCalc[i] = 0;
       }
 
-      float currentResult;
+      float speed = 1.0f;  // filter correction for sampling speed ->  1.0 in normal mode (43hz)
+      if (i2sFastpath) speed = 0.6931471805599453094f * 1.1f;  //  ->  ln(2) from math, *1.1 from my gut feeling ;-) in fast mode (86hz)
+
       if(limiterOn == true) {
-        // Limiter ON -> smooth results -> rise fast, fall slower
+        // Limiter ON -> smooth results
         if(fftCalc[i] > fftAvg[i]) {  // rise fast
-          fftAvg[i] += 0.78f * (fftCalc[i] - fftAvg[i]);  // will need approx 1-2 cycles (50ms) for converging against fftCalc[i]
+          fftAvg[i] += speed * 0.78f * (fftCalc[i] - fftAvg[i]);  // will need approx 1-2 cycles (50ms) for converging against fftCalc[i]
         } else {                       // fall slow
-          if (decayTime < 150)       fftAvg[i] += 0.50f * (fftCalc[i] - fftAvg[i]); 
-          else if (decayTime < 250)  fftAvg[i] += 0.40f * (fftCalc[i] - fftAvg[i]); 
-          else if (decayTime < 500)  fftAvg[i] += 0.33f * (fftCalc[i] - fftAvg[i]); 
-          else if (decayTime < 1000) fftAvg[i] += 0.22f * (fftCalc[i] - fftAvg[i]);  // approx  5 cycles (225ms) for falling to zero
-          else if (decayTime < 2000) fftAvg[i] += 0.17f * (fftCalc[i] - fftAvg[i]);  // default - approx  9 cycles (225ms) for falling to zero
-          else if (decayTime < 3000) fftAvg[i] += 0.14f * (fftCalc[i] - fftAvg[i]);  // approx 14 cycles (350ms) for falling to zero
-          else if (decayTime < 4000) fftAvg[i] += 0.10f * (fftCalc[i] - fftAvg[i]);
-          else fftAvg[i] += 0.05f * (fftCalc[i] - fftAvg[i]);
+          if (decayTime < 150)       fftAvg[i] += speed * 0.50f * (fftCalc[i] - fftAvg[i]); 
+          else if (decayTime < 250)  fftAvg[i] += speed * 0.40f * (fftCalc[i] - fftAvg[i]); 
+          else if (decayTime < 500)  fftAvg[i] += speed * 0.33f * (fftCalc[i] - fftAvg[i]); 
+          else if (decayTime < 1000) fftAvg[i] += speed * 0.22f * (fftCalc[i] - fftAvg[i]);  // approx  5 cycles (225ms) for falling to zero
+          else if (decayTime < 2000) fftAvg[i] += speed * 0.17f * (fftCalc[i] - fftAvg[i]);  // default - approx  9 cycles (225ms) for falling to zero
+          else if (decayTime < 3000) fftAvg[i] += speed * 0.14f * (fftCalc[i] - fftAvg[i]);  // approx 14 cycles (350ms) for falling to zero
+          else if (decayTime < 4000) fftAvg[i] += speed * 0.10f * (fftCalc[i] - fftAvg[i]);
+          else fftAvg[i] += speed * 0.05f * (fftCalc[i] - fftAvg[i]);
         }
-        // constrain internal vars - just to be sure
-        fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
-        fftAvg[i] = constrain(fftAvg[i], 0.0f, 1023.0f);
-        // use filtered result
-        currentResult = fftAvg[i];
       } else {
-        // Limiter OFF -> no adjustments
-        fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
-        fftAvg[i] = fftCalc[i]; // keep filters up-to-date
-        // use not filtered result
-        currentResult = fftCalc[i];
+        // Limiter OFF
+        if (i2sFastpath) { 
+          // fast mode -> average last two results
+          float tmp = fftCalc[i];
+          fftCalc[i] = 0.7f * tmp + 0.3f * fftAvg[i];
+          fftAvg[i] = tmp; // store current sample for next run
+        } else {
+          // normal mode -> no adjustments
+          fftAvg[i] = fftCalc[i]; // keep filters up-to-date
+        }
       }
+
+      // constrain internal vars - just to be sure
+      fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
+      fftAvg[i] = constrain(fftAvg[i], 0.0f, 1023.0f);
+
+      float currentResult = limiterOn ? fftAvg[i] : fftCalc[i]; // continue with filtered result (limiter on) or unfiltered result (limiter off)
 
       switch (FFTScalingMode) {
         case 1:
