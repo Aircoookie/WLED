@@ -9775,13 +9775,13 @@ uint16_t mode_particleBouncingBalls(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 1)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 1, 0, true)) // init
       return mode_static(); // allocation failed; //allocation failed   
     PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
     PartSys->sources[0].source.x = PS_P_RADIUS_1D;  //emit at bottom
     PartSys->sources[0].maxLife = 900; // maximum lifetime in frames
     PartSys->sources[0].minLife = PartSys->sources[0].maxLife;
-    PartSys->setBounce(true);
+    PartSys->setBounce(true);    
     SEGMENT.aux0 = 1;
     SEGMENT.aux1 = 500; //set out of speed range to ensure uptate on first call
   }
@@ -9795,43 +9795,43 @@ uint16_t mode_particleBouncingBalls(void)
   }
 
   // Particle System settings
-  uint32_t hardness = 240 + (SEGMENT.custom1>>4);
-  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  PartSys->setWallHardness(hardness);
+  //uint32_t hardness = 240 + (SEGMENT.custom1>>4);
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)  
   PartSys->setGravity(1 + (SEGMENT.custom3 >> 1)); // set gravity (8 is default strength)
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur  
   PartSys->sources[0].var = SEGMENT.speed >> 3;
   PartSys->sources[0].v = (SEGMENT.speed >> 1) - (SEGMENT.speed >> 3);
-  PartSys->enableParticleCollisions(SEGMENT.check1, hardness - 1); // enable collisions and set particle collision hardness (do not use full hardness or particles speed up due to pushing, can not be made perfectly balanced)
-  PartSys->setUsedParticles( 1 + (SEGMENT.intensity >> 3)); // 1 - 32
-  PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
+  PartSys->enableParticleCollisions(SEGMENT.check1, 254); // enable collisions and set particle collision hardness (do not use full hardness or particles speed up due to pushing, can not be made perfectly balanced)
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, PartSys->numParticles >> 1)); 
+  PartSys->setColorByPosition(SEGMENT.check3);  
 
   if(SEGMENT.check2) //rolling balls
   {
     PartSys->setGravity(0);
-    bool updatespeed = false;
-    if(SEGMENT.aux1 != SEGMENT.speed)
-    {
-      SEGMENT.aux1 = SEGMENT.speed;
-      updatespeed = true;
-    }
-    
+    PartSys->setWallHardness(255);
+    bool updateballs = false;
+    if(SEGMENT.aux1 != SEGMENT.speed + SEGMENT.check2 + SEGMENT.custom1) //speed changed or check was just enabled or size changed
+      updateballs = true;
+
     for(uint32_t i = 0; i < PartSys->usedParticles; i++)
-    {
-      if(PartSys->particles[i].vx > 8 || PartSys->particles[i].vx < -8) //let only slow particles die (ensures no stopped particles)
+    {      
+      if((PartSys->particles[i].vx > 8 || PartSys->particles[i].vx < -8) && PartSys->particles[i].ttl > 150) //let only slow particles die (ensures no stopped particles)
         PartSys->particles[i].ttl = 260; //set alive at full intensity
-      if(updatespeed || PartSys->particles[i].ttl == 0) //speed changed or particle died, reset TTL and speed
+      if(updateballs || PartSys->particles[i].ttl == 0) //speed changed or particle died, set particle properties
       {        
         PartSys->particles[i].ttl = 260 + SEGMENT.speed;
         PartSys->particles[i].collide = true;
         int32_t newspeed = random(20 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
         PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? newspeed : -newspeed; //keep the direction
-        PartSys->particles[i].hue = random16(); //set ball colors to random       
+        PartSys->particles[i].hue = random16(); //set ball colors to random
+        PartSys->advPartProps[i].sat = 255;
+        PartSys->advPartProps[i].size = random16(SEGMENT.custom1 >> 1, SEGMENT.custom1);       
       }
     }
   }
-  else //bouncing balls / popcorn
+  else //bouncing balls
   {
+    PartSys->setWallHardness(220);
     //check for balls that are 'laying on the ground' and remove them
     for(uint32_t i = 0; i < PartSys->usedParticles; i++)
     {
@@ -9844,23 +9844,24 @@ uint16_t mode_particleBouncingBalls(void)
     {    
       SEGMENT.aux0 = (260 - SEGMENT.intensity) + random(280 - SEGMENT.intensity);
       PartSys->sources[0].source.hue = random16(); //set ball color       
+      PartSys->sources[0].sat = 255;
+      PartSys->sources[0].size = random16(SEGMENT.custom1 >> 1, SEGMENT.custom1);
       PartSys->sprayEmit(PartSys->sources[0]);
     }
   }
-
-  //increase speed on high settings by calling the move function twice
-  if(SEGMENT.speed > 200)
-  {     
-    for (uint32_t i = 0; i < PartSys->usedParticles; i++)//move all particles
-    {
-      PartSys->particleMoveUpdate(PartSys->particles[i]);
-    }
+  SEGMENT.aux1 = SEGMENT.speed + SEGMENT.check2 + SEGMENT.custom1;  
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++)
+  {
+    
+    if(SEGMENT.speed > 200)
+      PartSys->particleMoveUpdate(PartSys->particles[i]); //increase speed on high settings by calling the move function twice
   }
+  
 
   PartSys->update(); // update and render  
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Hardness,Blur/Overlay,Gravity,Collide,Rolling,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=240,c2=0,c3=8,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Size,Blur/Overlay,Gravity,Collide,Rolling,Color by Position;,!;!;1;pal=0,sx=100,ix=180,c1=240,c2=0,c3=8,o1=0,o2=0,o3=0";
 
 /*
 Particle Replacement for original Dancing Shadows:
@@ -10508,7 +10509,7 @@ uint16_t mode_particleChase(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 1, 0, true)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 1, 3, true)) // init
       return mode_static(); // allocation failed
     PartSys->setWrap(true); 
     for(i = 0; i < PartSys->numParticles; i++)
@@ -10518,6 +10519,8 @@ uint16_t mode_particleChase(void)
       PartSys->particles[i].perpetual = true; 
     }
     SEGMENT.aux0 = 0xFFFF; // invalidate
+    *PartSys->PSdataEnd = 1;
+    *(PartSys->PSdataEnd + 1) = 1;
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGMENT.data); // if not first call, just set the pointer to the PS
@@ -10530,48 +10533,79 @@ uint16_t mode_particleChase(void)
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setColorByPosition(SEGMENT.check3); 
-  PartSys->setMotionBlur(7 + (SEGMENT.custom3 << 3)); // anable motion blur 
+  PartSys->setMotionBlur(7 + (SEGMENT.custom3 << 3)); // anable motion blur
+  uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer     
 
  //PartSys->setBounce(SEGMENT.check2);  
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3; 
-
   if(SEGMENT.aux0 != settingssum)  //settings changed changed, update
   {
     PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (64 + (SEGMENT.custom1 >> 1)), (int32_t)(PartSys->numParticles)))); //depends on intensity and particle size (custom1)
+    SEGMENT.step = ((PartSys->maxX << 8) / (PartSys->usedParticles)) >> 8; //spacing between particles
+    uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGMENT.step); // unused spacing, distribute this 
     for(i = 0; i < PartSys->usedParticles; i++)
     {
-      PartSys->particles[i].x = i * (PartSys->maxX / (PartSys->usedParticles - 1)); // distribute evenly      
-      if(SEGMENT.custom2 < 255)
-        PartSys->particles[i].hue = (i * (SEGMENT.custom2 << 3)) / PartSys->usedParticles; // gradient distribution
-      else 
-        PartSys->particles[i].hue = random16();
-      
+      PartSys->particles[i].x = (i - 1) * SEGMENT.step + (((i + 1) * remainder) / PartSys->usedParticles); // distribute evenly   
       PartSys->particles[i].vx =  SEGMENT.speed >> 1;
       PartSys->advPartProps[i].size = SEGMENT.custom1;
     } 
     PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets rendering size to one pixel
     SEGMENT.aux0 = settingssum;  
   }
-  if(SEGMENT.check1) // pride rainbow colors
-  {
-   for(i = 0; i < PartSys->usedParticles; i++)
-    {
 
+  if(SEGMENT.check1) // pride rainbow colors
+  { 
+    int8_t* huedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd);  //assign data pointer   
+    int8_t* sizedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd + 1);  //assign data pointer    
+    int32_t sizechange = 0;
+
+    if(PartSys->advPartProps[0].size >= 254)
+      *sizedir = -1;
+    else if(PartSys->advPartProps[0].size <= SEGMENT.custom1 / 3)
+      *sizedir = 1;
+
+    if(SEGMENT.aux1 > 2048)
+      *huedir = -1;
+    else if(SEGMENT.aux1 < 1)
+      *huedir = 1;
+
+    if(SEGMENT.call % (255 / (SEGMENT.speed >> 3)) == 0)    
+      SEGMENT.aux1 += *huedir;
+    if(SEGMENT.call % (255 / (SEGMENT.speed >> 2)) == 0)    
+      sizechange = *sizedir;
+  
+    for(i = 0; i < PartSys->usedParticles; i++)
+    {
+      PartSys->particles[i].hue = *basehue + (i * (SEGMENT.aux1)) / PartSys->usedParticles; // gradient distribution      
+      PartSys->advPartProps[i].size += sizechange;
     }
   }
   if((SEGMENT.check2 || SEGMENT.check1) && SEGMENT.call % (192 / ((SEGMENT.speed >> 2) + 128)) == 0) // color waves
   {
-   for(i = 0; i < PartSys->usedParticles; i++)
+    for(i = 0; i < PartSys->usedParticles; i++)
     {
-         PartSys->particles[i].hue -= 2; 
+         PartSys->particles[i].hue -= 2;          
     }
   }
+  // wrap around (cannot use particle system wrap if distributing colors manually, it also wraps rendering which does not look good)
+ // TODO: disable wrap, start at -1 and go to maxX + 1, wrap manually, need to set x to particle[i+1].x - spacing when wrapping
+  for(i = 0; i < PartSys->usedParticles; i++)
+  {
+    //if(PartSys->particles[i].x > ;
+    
+    if(SEGMENT.custom2 < 255)    
+      PartSys->particles[i].hue = (i * (SEGMENT.custom2 << 3)) / PartSys->usedParticles; // gradient distribution
+    else 
+      PartSys->particles[i].hue = random16();
+                
+  }
+  //SEGMENT.step 
   
 PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets rendering size to one pixel
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur/Overlay,Pride,Color Waves,Color by Position;,!;!;1;pal=53,sx=50,ix=100,c2=0,c3=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur/Overlay,Pride,Color Waves,Color by Position;,!;!;1;pal=11,sx=50,ix=100,c2=0,c3=0,o1=0,o2=0,o3=0";
 
 
 /*

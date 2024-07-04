@@ -1669,7 +1669,7 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
     part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
     if (advancedproperties) //using individual particle size?
     {    
-      particleHardRadius = PS_P_MINHARDRADIUS_1D + advancedproperties->size;
+      particleHardRadius = PS_P_MINHARDRADIUS_1D + (advancedproperties->size >> 1);
       if (advancedproperties->size > 1)
       {
         usesize = true; // note: variable eases out of frame checking below
@@ -1983,7 +1983,6 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
       fast_color_add(renderbuffer[5], color, pxlbrightness[1]);      
       uint32_t rendersize = 2; // initialize render size, minimum is 4x4 pixels, it is incremented int he loop below to start with 4
       uint32_t offset = 4; // offset to zero coordinate to write/read data in renderbuffer (actually needs to be 3, is decremented in the loop below)
-      uint32_t size = advPartProps[particleindex].size; 
       uint32_t blurpasses = size/64 + 1; // number of blur passes depends on size, four passes max
       uint32_t bitshift = 0;
       for(int i = 0; i < blurpasses; i++)
@@ -2066,7 +2065,7 @@ void ParticleSystem1D::handleCollisions()
         {
           if (advPartProps) // use advanced size properties
           {
-            collisiondistance += ((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1;
+            collisiondistance = PS_P_MINHARDRADIUS_1D + ((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1;
           }
           dx = particles[j].x - particles[i].x;  
           int32_t  dv = (int32_t)particles[j].vx - (int32_t)particles[i].vx;        
@@ -2310,17 +2309,15 @@ void blur1D(CRGB *colorbuffer, uint32_t size, uint32_t blur, bool smear, uint32_
       fast_color_scale(seeppart, seep); // scale it and seep to neighbours
       if (!smear) // fade current pixel if smear is disabled
         fast_color_scale(colorbuffer[x], 255 - blur); 
-
       if (x > 0)
       {
-        fast_color_add(colorbuffer[x-1], seeppart);
-        fast_color_add(colorbuffer[x], carryover); 
+        fast_color_add(colorbuffer[x-1], seeppart);        
+        fast_color_add(colorbuffer[x], carryover); // is black on first pass
       }
       carryover = seeppart;
     }
     fast_color_add(colorbuffer[size-1], carryover); // set last pixel
 }
-
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 
