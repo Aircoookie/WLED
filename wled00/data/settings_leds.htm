@@ -290,7 +290,7 @@
 				// do we have a led count field
 				if (nm=="LC") {
 					let c = parseInt(LC.value,10); //get LED count
-					if (c > 300 && i < 8) maxB = oMaxB - max(maxD-7,0); //TODO: hard limit for buses when using ESP32 parallel I2S
+					if (c > 300 && i < 8) maxB = oMaxB - Math.max(maxD-7,0); //TODO: hard limit for buses when using ESP32 parallel I2S
 					if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
 					gId("ls"+n).disabled = !customStarts; //enable/disable field editing
 					if (c) {
@@ -864,7 +864,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<hr class="sml">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
-		Default brightness: <input name="CA" type="number" class="m" min="0" max="255" required> (0-255)<br><br>
+		Default brightness: <input name="CA" type="number" class="m" min="1" max="255" required> (1-255)<br><br>
 		Apply preset <input name="BP" type="number" class="m" min="0" max="250" required> at boot (0 uses defaults)
 		<br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
