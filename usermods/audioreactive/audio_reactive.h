@@ -178,6 +178,7 @@ static bool limiterOn = false;                 // bool: enable / disable dynamic
 #else
 static bool limiterOn = true;
 #endif
+static uint8_t micQuality = 0;   // affects input filtering; 0 normal, 1 minimal filtering, 2 no filtering
 #ifdef FFT_USE_SLIDING_WINDOW
 static uint16_t attackTime = 24;              // int: attack time in milliseconds. Default 0.024sec
 static uint16_t decayTime = 250;              // int: decay time in milliseconds.  New default 250ms.
@@ -690,7 +691,6 @@ void FFTcode(void * parameter)
     float wc = 1.0; // FFT window correction factor, relative to Blackman_Harris
 
     // run FFT (takes 3-5ms on ESP32)
-    //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
     if (fabsf(volumeSmth) > 0.25f) { // noise gate open
       if ((skipSecondFFT == false) || (isFirstRun == true)) {
         // run FFT (takes 2-3ms on ESP32, ~12ms on ESP32-S2, ~30ms on -C3)
@@ -776,7 +776,6 @@ void FFTcode(void * parameter)
     }
 
     if ((skipSecondFFT == false) || (isFirstRun == true)) {
-
       for (int i = 0; i < samplesFFT; i++) {
         float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
         vReal[i] = t / 16.0f;                           // Reduce magnitude. Want end result to be scaled linear and ~4096 max.
@@ -785,102 +784,72 @@ void FFTcode(void * parameter)
       // mapping of FFT result bins to frequency channels
       //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
       if (fabsf(volumeSmth) > 0.25f) { // noise gate open
-#if 0
-    /* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
-    *
-    * Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samplesFFT = 512 and some overlap.
-    * Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
-    * Now, Take the 60Hz and multiply by 1.320367784 to get the next frequency and so on until the end. Then determine the bins.
-    * End frequency = Start frequency * multiplier ^ 16
-    * Multiplier = (End frequency/ Start frequency) ^ 1/16
-    * Multiplier = 1.320367784
-    */                                         //  Range
-      fftCalc[ 0] = wc * fftAddAvg(2,4);       // 60 - 100
-      fftCalc[ 1] = wc * fftAddAvg(4,5);       // 80 - 120
-      fftCalc[ 2] = wc * fftAddAvg(5,7);       // 100 - 160
-      fftCalc[ 3] = wc * fftAddAvg(7,9);       // 140 - 200
-      fftCalc[ 4] = wc * fftAddAvg(9,12);      // 180 - 260
-      fftCalc[ 5] = wc * fftAddAvg(12,16);     // 240 - 340
-      fftCalc[ 6] = wc * fftAddAvg(16,21);     // 320 - 440
-      fftCalc[ 7] = wc * fftAddAvg(21,29);     // 420 - 600
-      fftCalc[ 8] = wc * fftAddAvg(29,37);     // 580 - 760
-      fftCalc[ 9] = wc * fftAddAvg(37,48);     // 740 - 980
-      fftCalc[10] = wc * fftAddAvg(48,64);     // 960 - 1300
-      fftCalc[11] = wc * fftAddAvg(64,84);     // 1280 - 1700
-      fftCalc[12] = wc * fftAddAvg(84,111);    // 1680 - 2240
-      fftCalc[13] = wc * fftAddAvg(111,147);   // 2220 - 2960
-      fftCalc[14] = wc * fftAddAvg(147,194);   // 2940 - 3900
-      fftCalc[15] = wc * fftAddAvg(194,250);   // 3880 - 5000 // avoid the last 5 bins, which are usually inaccurate
-#else
-  //WLEDMM: different distributions
-  if (freqDist == 0) {
-      /* new mapping, optimized for 22050 Hz by softhack007 --- update: removed overlap */
-                                                    // bins frequency  range
-      if (useInputFilter==1) {
-        // skip frequencies below 100hz
-        fftCalc[ 0] = wc * 0.8f * fftAddAvg(3,3);
-        fftCalc[ 1] = wc * 0.9f * fftAddAvg(4,4);
-        fftCalc[ 2] = wc * fftAddAvg(5,5);
-        fftCalc[ 3] = wc * fftAddAvg(6,6);
-        // don't use the last bins from 206 to 255. 
-        fftCalc[15] = wc * fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
-      } else {
-        fftCalc[ 0] = wc * fftAddAvg(1,1);               // 1    43 - 86   sub-bass
-        fftCalc[ 1] = wc * fftAddAvg(2,2);               // 1    86 - 129  bass
-        fftCalc[ 2] = wc * fftAddAvg(3,4);               // 2   129 - 216  bass
-        fftCalc[ 3] = wc * fftAddAvg(5,6);               // 2   216 - 301  bass + midrange
-        // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
-        fftCalc[15] = wc * fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
-      }
-      fftCalc[ 4] = wc * fftAddAvg(7,9);                // 3   301 - 430  midrange
-      fftCalc[ 5] = wc * fftAddAvg(10,12);               // 3   430 - 560  midrange
-      fftCalc[ 6] = wc * fftAddAvg(13,18);               // 5   560 - 818  midrange
-      fftCalc[ 7] = wc * fftAddAvg(19,25);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
-      fftCalc[ 8] = wc * fftAddAvg(26,32);               // 7  1120 - 1421 midrange
-      fftCalc[ 9] = wc * fftAddAvg(33,43);               // 9  1421 - 1895 midrange
-      fftCalc[10] = wc * fftAddAvg(44,55);               // 12 1895 - 2412 midrange + high mid
-      fftCalc[11] = wc * fftAddAvg(56,69);               // 14 2412 - 3015 high mid
-      fftCalc[12] = wc * fftAddAvg(70,85);               // 16 3015 - 3704 high mid
-      fftCalc[13] = wc * fftAddAvg(86,103);              // 18 3704 - 4479 high mid
-      fftCalc[14] = wc * fftAddAvg(104,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
-  }
-  else if (freqDist == 1) { //WLEDMM: Rightshift: note ewowi: frequencies in comments are not correct
-      if (useInputFilter==1) {
-        // skip frequencies below 100hz
-        fftCalc[ 0] = wc * 0.8f * fftAddAvg(1,1);
-        fftCalc[ 1] = wc * 0.9f * fftAddAvg(2,2);
-        fftCalc[ 2] = wc * fftAddAvg(3,3);
-        fftCalc[ 3] = wc * fftAddAvg(4,4);
-        // don't use the last bins from 206 to 255. 
-        fftCalc[15] = wc * fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
-      } else {
-        fftCalc[ 0] = wc * fftAddAvg(1,1);               // 1    43 - 86   sub-bass
-        fftCalc[ 1] = wc * fftAddAvg(2,2);               // 1    86 - 129  bass
-        fftCalc[ 2] = wc * fftAddAvg(3,3);               // 2   129 - 216  bass
-        fftCalc[ 3] = wc * fftAddAvg(4,4);               // 2   216 - 301  bass + midrange
-        // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
-        fftCalc[15] = wc * fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
-      }
-      fftCalc[ 4] = wc * fftAddAvg(5,6);                // 3   301 - 430  midrange
-      fftCalc[ 5] = wc * fftAddAvg(7,8);               // 3   430 - 560  midrange
-      fftCalc[ 6] = wc * fftAddAvg(9,10);               // 5   560 - 818  midrange
-      fftCalc[ 7] = wc * fftAddAvg(11,13);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
-      fftCalc[ 8] = wc * fftAddAvg(14,18);               // 7  1120 - 1421 midrange
-      fftCalc[ 9] = wc * fftAddAvg(19,25);               // 9  1421 - 1895 midrange
-      fftCalc[10] = wc * fftAddAvg(26,36);               // 12 1895 - 2412 midrange + high mid
-      fftCalc[11] = wc * fftAddAvg(37,45);               // 14 2412 - 3015 high mid
-      fftCalc[12] = wc * fftAddAvg(46,66);               // 16 3015 - 3704 high mid
-      fftCalc[13] = wc * fftAddAvg(67,97);              // 18 3704 - 4479 high mid
-      fftCalc[14] = wc * fftAddAvg(98,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
-  }
-#endif
-      } else {  // noise gate closed - just decay old values
-        isFirstRun = false;
-        for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
-          fftCalc[i] *= 0.85f;  // decay to zero
-          if (fftCalc[i] < 4.0f) fftCalc[i] = 0.0f;
+        //WLEDMM: different distributions
+        if (freqDist == 0) {
+          /* new mapping, optimized for 22050 Hz by softhack007 --- update: removed overlap */
+                                                         // bins frequency  range
+          if (useInputFilter==1) {
+            // skip frequencies below 100hz
+            fftCalc[ 0] = wc * 0.8f * fftAddAvg(3,3);
+            fftCalc[ 1] = wc * 0.9f * fftAddAvg(4,4);
+            fftCalc[ 2] = wc * fftAddAvg(5,5);
+            fftCalc[ 3] = wc * fftAddAvg(6,6);
+            // don't use the last bins from 206 to 255. 
+            fftCalc[15] = wc * fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
+          } else {
+            fftCalc[ 0] = wc * fftAddAvg(1,1);               // 1    43 - 86   sub-bass
+            fftCalc[ 1] = wc * fftAddAvg(2,2);               // 1    86 - 129  bass
+            fftCalc[ 2] = wc * fftAddAvg(3,4);               // 2   129 - 216  bass
+            fftCalc[ 3] = wc * fftAddAvg(5,6);               // 2   216 - 301  bass + midrange
+            // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
+            fftCalc[15] = wc * fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
+          }
+          fftCalc[ 4] = wc * fftAddAvg(7,9);                 // 3   301 - 430  midrange
+          fftCalc[ 5] = wc * fftAddAvg(10,12);               // 3   430 - 560  midrange
+          fftCalc[ 6] = wc * fftAddAvg(13,18);               // 5   560 - 818  midrange
+          fftCalc[ 7] = wc * fftAddAvg(19,25);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+          fftCalc[ 8] = wc * fftAddAvg(26,32);               // 7  1120 - 1421 midrange
+          fftCalc[ 9] = wc * fftAddAvg(33,43);               // 9  1421 - 1895 midrange
+          fftCalc[10] = wc * fftAddAvg(44,55);               // 12 1895 - 2412 midrange + high mid
+          fftCalc[11] = wc * fftAddAvg(56,69);               // 14 2412 - 3015 high mid
+          fftCalc[12] = wc * fftAddAvg(70,85);               // 16 3015 - 3704 high mid
+          fftCalc[13] = wc * fftAddAvg(86,103);              // 18 3704 - 4479 high mid
+          fftCalc[14] = wc * fftAddAvg(104,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+      } else if (freqDist == 1) { //WLEDMM: Rightshift: note ewowi: frequencies in comments are not correct
+        if (useInputFilter==1) {
+          // skip frequencies below 100hz
+          fftCalc[ 0] = wc * 0.8f * fftAddAvg(1,1);
+          fftCalc[ 1] = wc * 0.9f * fftAddAvg(2,2);
+          fftCalc[ 2] = wc * fftAddAvg(3,3);
+          fftCalc[ 3] = wc * fftAddAvg(4,4);
+          // don't use the last bins from 206 to 255. 
+          fftCalc[15] = wc * fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
+        } else {
+          fftCalc[ 0] = wc * fftAddAvg(1,1);               // 1    43 - 86   sub-bass
+          fftCalc[ 1] = wc * fftAddAvg(2,2);               // 1    86 - 129  bass
+          fftCalc[ 2] = wc * fftAddAvg(3,3);               // 2   129 - 216  bass
+          fftCalc[ 3] = wc * fftAddAvg(4,4);               // 2   216 - 301  bass + midrange
+          // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
+          fftCalc[15] = wc * fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
         }
+        fftCalc[ 4] = wc * fftAddAvg(5,6);                 // 3   301 - 430  midrange
+        fftCalc[ 5] = wc * fftAddAvg(7,8);                 // 3   430 - 560  midrange
+        fftCalc[ 6] = wc * fftAddAvg(9,10);                // 5   560 - 818  midrange
+        fftCalc[ 7] = wc * fftAddAvg(11,13);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+        fftCalc[ 8] = wc * fftAddAvg(14,18);               // 7  1120 - 1421 midrange
+        fftCalc[ 9] = wc * fftAddAvg(19,25);               // 9  1421 - 1895 midrange
+        fftCalc[10] = wc * fftAddAvg(26,36);               // 12 1895 - 2412 midrange + high mid
+        fftCalc[11] = wc * fftAddAvg(37,45);               // 14 2412 - 3015 high mid
+        fftCalc[12] = wc * fftAddAvg(46,66);               // 16 3015 - 3704 high mid
+        fftCalc[13] = wc * fftAddAvg(67,97);               // 18 3704 - 4479 high mid
+        fftCalc[14] = wc * fftAddAvg(98,164) * 0.88f;      // 61 4479 - 7106 high mid + high  -- with slight damping
       }
+    } else {  // noise gate closed - just decay old values
+      isFirstRun = false;
+      for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
+        fftCalc[i] *= 0.85f;  // decay to zero
+        if (fftCalc[i] < 4.0f) fftCalc[i] = 0.0f;
+    } }
 
       memcpy(lastFftCalc, fftCalc, sizeof(lastFftCalc)); // make a backup of last "good" channels
 
@@ -1211,7 +1180,6 @@ class AudioReactive : public Usermod {
     double   control_integrated = 0.0;   // persistent across calls to agcAvg(); "integrator control" = accumulated error
 
     // variables used by getSample() and agcAvg()
-    int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controller.
     double   micLev = 0.0;        // Used to convert returned value to have '0' as minimum. A leveller
     float    expAdjF = 0.0f;      // Used for exponential filter.
@@ -1268,7 +1236,6 @@ class AudioReactive : public Usermod {
       //PLOT_PRINT("sampleAgc:");   PLOT_PRINT(sampleAgc);   PLOT_PRINT("\t");
       //PLOT_PRINT("sampleAvg:");   PLOT_PRINT(sampleAvg);   PLOT_PRINT("\t");
       //PLOT_PRINT("sampleReal:");  PLOT_PRINT(sampleReal);  PLOT_PRINT("\t");
-      //PLOT_PRINT("micIn:");       PLOT_PRINT(micIn);       PLOT_PRINT("\t");
       //PLOT_PRINT("sample:");      PLOT_PRINT(sample);      PLOT_PRINT("\t");
       //PLOT_PRINT("sampleMax:");   PLOT_PRINT(sampleMax);   PLOT_PRINT("\t");
       //PLOT_PRINT("multAgc:");     PLOT_PRINT(multAgc, 4);  PLOT_PRINT("\t");
@@ -1418,6 +1385,15 @@ class AudioReactive : public Usermod {
 
       // update global vars ONCE - multAgc, sampleAGC, rawSampleAgc
       multAgc = multAgcTemp;
+      if (micQuality > 0) {
+        if (micQuality > 1) {
+          rawSampleAgc = 0.95f * tmpAgc + 0.05f * (float)rawSampleAgc; // raw path
+          sampleAgc += 0.95f * (tmpAgc - sampleAgc); // smooth path
+        } else {
+          rawSampleAgc = 0.70f * tmpAgc + 0.30f * (float)rawSampleAgc; // min filtering path
+          sampleAgc += 0.70f * (tmpAgc - sampleAgc);
+        }
+      } else {
 #if defined(WLEDMM_FASTPATH)
       rawSampleAgc = 0.65f * tmpAgc + 0.35f * (float)rawSampleAgc;
 #else
@@ -1428,7 +1404,7 @@ class AudioReactive : public Usermod {
         sampleAgc =  0.5f * tmpAgc + 0.5f * sampleAgc;    // fast path to zero
       else
         sampleAgc += agcSampleSmooth[AGC_preset] * (tmpAgc - sampleAgc); // smooth path
-
+      }
       sampleAgc = fabsf(sampleAgc);                                      // // make sure we have a positive value
       last_soundAgc = soundAgc;
     } // agcAvg()
@@ -1446,27 +1422,6 @@ class AudioReactive : public Usermod {
       static unsigned long lastSoundTime = 0; // for delaying un-freeze
       static unsigned long startuptime = 0;   // "fast freeze" mode: do not interfere during first 12 seconds (filter startup time) 
 
-      #ifdef WLED_DISABLE_SOUND
-        micIn = inoise8(millis(), millis());          // Simulated analog read
-        micDataReal = micIn;
-      #else
-        #ifdef ARDUINO_ARCH_ESP32
-        micIn = int(micDataReal);      // micDataSm = ((micData * 3) + micData)/4;
-        #else
-        // this is the minimal code for reading analog mic input on 8266.
-        // warning!! Absolutely experimental code. Audio on 8266 is still not working. Expects a million follow-on problems. 
-        static unsigned long lastAnalogTime = 0;
-        static float lastAnalogValue = 0.0f;
-        if (millis() - lastAnalogTime > 20) {
-            micDataReal = analogRead(A0); // read one sample with 10bit resolution. This is a dirty hack, supporting volumereactive effects only.
-            lastAnalogTime = millis();
-            lastAnalogValue = micDataReal;
-            yield();
-        } else micDataReal = lastAnalogValue;
-        micIn = int(micDataReal);
-        #endif
-      #endif
-
       if (startuptime == 0) startuptime = millis();   // fast freeze mode - remember filter startup time
       if ((micLevelMethod < 1) || !isFrozen) {        // following the input level, UNLESS mic Level was frozen
         micLev += (micDataReal-micLev) / 12288.0f;
@@ -1477,7 +1432,6 @@ class AudioReactive : public Usermod {
         if (!haveSilence) isFrozen = true;                 // freeze mode: freeze micLevel so it cannot rise again
       }
 
-      micIn -= micLev;                                  // Let's center it to 0 now
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
       float micInNoDC = fabsf(micDataReal - micLev);
 
@@ -1511,10 +1465,15 @@ class AudioReactive : public Usermod {
       if ((micLevelMethod == 2) && (millis() - startuptime < 12000)) isFrozen = false;   // fast freeze: no freeze in first 12 seconds (filter startup phase)
 
       tmpSample = expAdjF;
-      micIn = abs(micIn);                               // And get the absolute value of each sample
 
-      sampleAdj = tmpSample * sampleGain / 40.0f * inputLevel/128.0f + tmpSample / 16.0f; // Adjust the gain. with inputLevel adjustment
-      sampleReal = tmpSample;
+      // Adjust the gain. with inputLevel adjustment.
+      if (micQuality > 0) {
+        sampleAdj = micInNoDC * sampleGain / 40.0f * inputLevel/128.0f + micInNoDC / 16.0f; // ... using unfiltered sample
+        sampleReal = micInNoDC;
+      } else {
+        sampleAdj = tmpSample * sampleGain / 40.0f * inputLevel/128.0f + tmpSample / 16.0f; // ... using pre-filtered sample
+        sampleReal = tmpSample;
+      }
 
       sampleAdj = fmax(fmin(sampleAdj, 255.0f), 0.0f);        // Question: why are we limiting the value to 8 bits ???
       sampleRaw = (int16_t)sampleAdj;                   // ONLY update sample ONCE!!!!
@@ -1538,11 +1497,16 @@ class AudioReactive : public Usermod {
       }
       if (sampleMax < 0.5f) sampleMax = 0.0f;
 
+      if (micQuality > 0) {
+        if (micQuality > 1) sampleAvg += 0.95f * (sampleAdj - sampleAvg);
+        else sampleAvg += 0.70f * (sampleAdj - sampleAvg);
+      } else {
 #if defined(WLEDMM_FASTPATH)
       sampleAvg = ((sampleAvg * 11.0f) + sampleAdj) / 12.0f;   // make reactions a bit more "crisp" in fastpath mode 
 #else
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
 #endif
+      }
       sampleAvg = fabsf(sampleAvg);                            // make sure we have a positive value
     } // getSample()
 
@@ -2784,6 +2748,7 @@ class AudioReactive : public Usermod {
       //WLEDMM: experimental settings
       JsonObject poweruser = top.createNestedObject("experiments");
       poweruser[F("micLev")] = micLevelMethod;
+      poweruser[F("Mic_Quality")] = micQuality;
       poweruser[F("freqDist")] = freqDist;
       //poweruser[F("freqRMS")] = averageByRMS;
       poweruser[F("FFT_Window")] = fftWindow;
@@ -2859,6 +2824,7 @@ class AudioReactive : public Usermod {
 
       //WLEDMM: experimental settings
       configComplete &= getJsonValue(top["experiments"][F("micLev")], micLevelMethod);
+      configComplete &= getJsonValue(top["experiments"][F("Mic_Quality")], micQuality);
       configComplete &= getJsonValue(top["experiments"][F("freqDist")], freqDist);
       //configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
       configComplete &= getJsonValue(top["experiments"][F("FFT_Window")], fftWindow);
@@ -2959,23 +2925,29 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Lazy',3);"));
 
       //WLEDMM: experimental settings
-      oappend(SET_F("dd=addDropdown(ux,'experiments:micLev');"));
+      oappend(SET_F("xx='experiments';")); // shortcut
+      oappend(SET_F("dd=addDropdown(ux,xx+':micLev');"));
       oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'Freeze',1);"));
       oappend(SET_F("addOption(dd,'Fast Freeze',2);"));
-      oappend(SET_F("addInfo(ux+':experiments:micLev',1,'☾');"));
+      oappend(SET_F("addInfo(ux+':'+xx+':micLev',1,'☾');"));
 
-      oappend(SET_F("dd=addDropdown(ux,'experiments:freqDist');"));
+      oappend(SET_F("dd=addDropdown(ux,xx+':Mic_Quality');"));
+      oappend(SET_F("addOption(dd,'average (standard)',0);"));
+      oappend(SET_F("addOption(dd,'low noise',1);"));
+      oappend(SET_F("addOption(dd,'perfect',2);"));
+
+      oappend(SET_F("dd=addDropdown(ux,xx+':freqDist');"));
       oappend(SET_F("addOption(dd,'Normal  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'RightShift',1);"));
-      oappend(SET_F("addInfo(ux+':experiments:freqDist',1,'☾');"));
+      oappend(SET_F("addInfo(ux+':'+xx+':freqDist',1,'☾');"));
 
-      //oappend(SET_F("dd=addDropdown(ux,'experiments:freqRMS');"));
+      //oappend(SET_F("dd=addDropdown(ux,xx+':freqRMS');"));
       //oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
       //oappend(SET_F("addOption(dd,'On',1);"));
       //oappend(SET_F("addInfo(ux+':experiments:freqRMS',1,'☾');"));
 
-      oappend(SET_F("dd=addDropdown(ux,'experiments:FFT_Window');"));
+      oappend(SET_F("dd=addDropdown(ux,xx+':FFT_Window');"));
       oappend(SET_F("addOption(dd,'Blackman-Harris (MM standard)',0);"));
       oappend(SET_F("addOption(dd,'Hann (balanced)',1);"));
       oappend(SET_F("addOption(dd,'Nuttall (more accurate)',2);"));
@@ -2984,10 +2956,10 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Flat-Top (AC WLED, inaccurate)',4);"));
 
 #ifdef FFT_USE_SLIDING_WINDOW
-      oappend(SET_F("dd=addDropdown(ux,'experiments:I2S_FastPath');"));
+      oappend(SET_F("dd=addDropdown(ux,xx+':I2S_FastPath');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'On  (⎌)',1);"));
-      oappend(SET_F("addInfo(ux+':experiments:I2S_FastPath',1,'☾');"));
+      oappend(SET_F("addInfo(ux+':'+xx+':I2S_FastPath',1,'☾');"));
 #endif
 
       oappend(SET_F("dd=addDropdown(ux,'dynamics:limiter');"));
