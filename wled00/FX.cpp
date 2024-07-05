@@ -10102,7 +10102,7 @@ uint16_t mode_particleFireworks1D(void)
     }
   }  
   if(SEGMENT.call & 0x01) //every second frame
-    PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
+    PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
 
   PartSys->update(); // update and render
   return FRAMETIME;
@@ -10535,12 +10535,12 @@ uint16_t mode_particleChase(void)
   PartSys->setColorByPosition(SEGMENT.check3); 
   PartSys->setMotionBlur(7 + (SEGMENT.custom3 << 3)); // anable motion blur
   uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer     
-
+  uint32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
  //PartSys->setBounce(SEGMENT.check2);  
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3; 
   if(SEGMENT.aux0 != settingssum)  //settings changed changed, update
   {
-    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (64 + (SEGMENT.custom1 >> 1)), (int32_t)(PartSys->numParticles)))); //depends on intensity and particle size (custom1)
+    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), (int32_t)(PartSys->numParticles)))); //depends on intensity and particle size (custom1)
     SEGMENT.step = (PartSys->maxX + (PS_P_RADIUS_1D << 4)) / PartSys->usedParticles; //spacing between particles
    // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGMENT.step); // unused spacing, distribute this 
     for(i = 0; i < PartSys->usedParticles; i++)
@@ -10557,45 +10557,50 @@ uint16_t mode_particleChase(void)
     SEGMENT.aux0 = settingssum;  
   }
 
+
   if(SEGMENT.check1) // pride rainbow colors
   { 
+    //TODO: orignal FX also changes movement speed
+    // also the color change is too fast
     int8_t* huedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd);  //assign data pointer   
     int8_t* sizedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd + 1);  //assign data pointer    
     int32_t sizechange = 0;
 
     if(PartSys->advPartProps[0].size >= 254)
       *sizedir = -1;
-    else if(PartSys->advPartProps[0].size <= SEGMENT.custom1 / 3)
+    else if(PartSys->advPartProps[0].size <= (SEGMENT.custom1 >> 2))
       *sizedir = 1;
 
-    if(SEGMENT.aux1 > 2048)
+    if(SEGMENT.aux1 > 64)
       *huedir = -1;
     else if(SEGMENT.aux1 < 1)
       *huedir = 1;
 
-    if(SEGMENT.call % (255 / (SEGMENT.speed >> 3)) == 0)    
+    if(SEGMENT.call % (1024 / (1 + (SEGMENT.speed >> 3))) == 0)    
       SEGMENT.aux1 += *huedir;
-    if(SEGMENT.call % (255 / (SEGMENT.speed >> 2)) == 0)    
+    huestep = SEGMENT.aux1; // changes gradient spread
+    
+    if(SEGMENT.call % (255 / (1 + (SEGMENT.speed >> 2))) == 0)    
       sizechange = *sizedir;
   
     for(i = 0; i < PartSys->usedParticles; i++)
     {
-      PartSys->particles[i].hue = *basehue + (i * (SEGMENT.aux1)) / PartSys->usedParticles; // gradient distribution      
+     // PartSys->particles[i].hue = *basehue + (i * (SEGMENT.aux1)) / PartSys->usedParticles; // gradient distribution      
       PartSys->advPartProps[i].size += sizechange;
     }
-    *basehue++;
   }
-  if((SEGMENT.check2 || SEGMENT.check1) && SEGMENT.call % (192 / ((SEGMENT.speed >> 2) + 128)) == 0) // color waves
+  if((SEGMENT.check2 || SEGMENT.check1) && SEGMENT.call % (160 / ((SEGMENT.speed >> 3) + 128)) == 0) // color waves
   {
+    int32_t decrement = 2;
+    if(SEGMENT.check1)
+      decrement = 1; //slower hue change in pride mode
     for(i = 0; i < PartSys->usedParticles; i++)
     {
-         PartSys->particles[i].hue -= 2;          
+         PartSys->particles[i].hue -= decrement;          
     }
   }
   // wrap around (cannot use particle system wrap if distributing colors manually, it also wraps rendering which does not look good)
  // TODO: disable wrap, start at -1 and go to maxX + 1, wrap manually, need to set x to particle[i+1].x - spacing when wrapping
-
-  uint32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
 
   for(i = 0; i < PartSys->usedParticles; i++)
   {
