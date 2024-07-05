@@ -704,6 +704,10 @@ void FFTcode(void * parameter)
             FFT.windowing( FFTWindow::Nuttall, FFTDirection::Forward);
             wc = 0.9916873881f;     // 2.8163172034 * 2.0
           break;
+          case 5:
+            FFT.windowing( FFTWindow::Blackman, FFTDirection::Forward);
+            wc = 0.84762867875f;     // 2.3673474360 * 2.0
+          break;
           case 3:
             FFT.windowing( FFTWindow::Hamming, FFTDirection::Forward);
             wc = 0.664159180663f;   // 1.8549343278 * 2.0
@@ -2975,6 +2979,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Blackman-Harris (MM standard)',0);"));
       oappend(SET_F("addOption(dd,'Hann (balanced)',1);"));
       oappend(SET_F("addOption(dd,'Nuttall (more accurate)',2);"));
+      oappend(SET_F("addOption(dd,'Blackman',5);"));
       oappend(SET_F("addOption(dd,'Hamming',3);"));
       oappend(SET_F("addOption(dd,'Flat-Top (AC WLED, inaccurate)',4);"));
 
