@@ -240,7 +240,7 @@ const double agcFollowSlow[AGC_NUM_PRESETS]   = {1/6144.f,1/4096.f,1/8192.f}; //
 const double agcControlKp[AGC_NUM_PRESETS]    = {    0.6f,    1.5f,   0.65f}; // AGC - PI control, proportional gain parameter
 const double agcControlKi[AGC_NUM_PRESETS]    = {    1.7f,   1.85f,    1.2f}; // AGC - PI control, integral gain parameter
 #if defined(WLEDMM_FASTPATH)
-const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/6.f,   1/5.f,  1/10.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
+const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/8.f,   1/5.f,  1/12.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
 #else
 const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
 #endif
@@ -1434,13 +1434,8 @@ class AudioReactive : public Usermod {
     {
       float    sampleAdj;           // Gain adjusted sample value
       float    tmpSample;           // An interim sample variable used for calculations.
-#ifdef WLEDMM_FASTPATH
-      constexpr float weighting = 0.35f;  // slightly reduced filter strength, to reduce audio latency
-      constexpr float weighting2 = 0.25f;
-#else
-      const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
+      const float weighting = 0.18f; // Exponential filter weighting. Will be adjustable in a future release.
       const float weighting2 = 0.073f; // Exponential filter weighting, for rising signal (a bit more robust against spikes)
-#endif
       const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
       static bool isFrozen = false;
       static bool haveSilence = true;
@@ -1492,9 +1487,11 @@ class AudioReactive : public Usermod {
       if ((micLevelMethod == 2) && !haveSilence && (expAdjF >= (1.5f * float(soundSquelch)))) 
         isFrozen = true;    // fast freeze mode: freeze micLevel once the volume rises 50% above squelch
 
-      //expAdjF = (micInNoDC <= soundSquelch) ? 0: expAdjF; // simple noise gate - experimental
-      expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
-      if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
+      // simple noise gate
+      if ((expAdjF <= soundSquelch) || ((soundSquelch == 0) && (expAdjF < 0.25f))) {
+        expAdjF = 0.0f;
+        micInNoDC = 0.0f;
+      }
 
       if (expAdjF <= 0.5f) 
         haveSilence = true;
@@ -1515,7 +1512,7 @@ class AudioReactive : public Usermod {
       sampleAdj = tmpSample * sampleGain / 40.0f * inputLevel/128.0f + tmpSample / 16.0f; // Adjust the gain. with inputLevel adjustment
       sampleReal = tmpSample;
 
-      sampleAdj = fmax(fmin(sampleAdj, 255), 0);        // Question: why are we limiting the value to 8 bits ???
+      sampleAdj = fmax(fmin(sampleAdj, 255.0f), 0.0f);        // Question: why are we limiting the value to 8 bits ???
       sampleRaw = (int16_t)sampleAdj;                   // ONLY update sample ONCE!!!!
 
       // keep "peak" sample, but decay value if current sample is below peak
@@ -1538,7 +1535,7 @@ class AudioReactive : public Usermod {
       if (sampleMax < 0.5f) sampleMax = 0.0f;
 
 #if defined(WLEDMM_FASTPATH)
-      sampleAvg = ((sampleAvg * 7.0f) + sampleAdj) / 8.0f;   // make reactions a bit more "crisp" in fastpath mode 
+      sampleAvg = ((sampleAvg * 11.0f) + sampleAdj) / 12.0f;   // make reactions a bit more "crisp" in fastpath mode 
 #else
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
 #endif
@@ -1791,6 +1788,9 @@ class AudioReactive : public Usermod {
       my_magnitude  = fmaxf(receivedPacket.FFT_Magnitude, 0.0f);
       FFT_Magnitude = my_magnitude;
       FFT_MajorPeak = constrain(receivedPacket.FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
+#ifdef ARDUINO_ARCH_ESP32
+      FFT_MajPeakSmth = FFT_MajPeakSmth + 0.42f * (FFT_MajorPeak - FFT_MajPeakSmth); // simulate smooth value
+#endif
       agcSensitivity = 128.0f; // substitute - V2 format does not include this value
       zeroCrossingCount = receivedPacket.zeroCrossingCount;
 
