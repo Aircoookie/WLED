@@ -1274,7 +1274,7 @@ CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 }
 
 // update size and pointers (memory location and size can change dynamically)
-// note: do not access the PS class in FX befor running this function (or it messes up SEGMENT.data)
+// note: do not access the PS class in FX befor running this function (or it messes up SEGENV.data)
 void ParticleSystem::updateSystem(void)
 {
   // update matrix size
@@ -1442,7 +1442,7 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
   //Serial.print(requiredmemory);
   //Serial.println("Bytes");
   //Serial.print("allocating for segment at");
-  //Serial.println((uintptr_t)SEGMENT.data);
+  //Serial.println((uintptr_t)SEGENV.data);
   return(SEGMENT.allocateData(requiredmemory));
 }
 
@@ -1459,12 +1459,12 @@ bool initParticleSystem2D(ParticleSystem *&PartSys, uint8_t requestedsources, ui
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
   }
-  //Serial.print("segment.data ptr");
-  //Serial.println((uintptr_t)(SEGMENT.data));
+  //Serial.print("SEGENV.data ptr");
+  //Serial.println((uintptr_t)(SEGENV.data));
   uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   //Serial.println("calling constructor");
-  PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources, advanced, sizecontrol); // particle system constructor
+  PartSys = new (SEGENV.data) ParticleSystem(cols, rows, numparticles, numsources, advanced, sizecontrol); // particle system constructor
   //Serial.print("PS pointer at ");
   //Serial.println((uintptr_t)PartSys);
   return true;
@@ -2177,7 +2177,7 @@ CRGB *ParticleSystem1D::allocate1Dbuffer(uint32_t length)
 }
 
 // update size and pointers (memory location and size can change dynamically)
-// note: do not access the PS class in FX befor running this function (or it messes up SEGMENT.data)
+// note: do not access the PS class in FX befor running this function (or it messes up SEGENV.data)
 void ParticleSystem1D::updateSystem(void)
 {
   // update size
@@ -2267,7 +2267,7 @@ bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, 
   //Serial.print(requiredmemory);
   //Serial.println("Bytes");
   //Serial.print("allocating for segment at");
-  //Serial.println((uintptr_t)SEGMENT.data);
+  //Serial.println((uintptr_t)SEGENV.data);
   return(SEGMENT.allocateData(requiredmemory));
 }
 
@@ -2284,10 +2284,10 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, 
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
   }
-  //Serial.print("segment.data ptr");
-  //Serial.println((uintptr_t)(SEGMENT.data));
+  //Serial.print("SEGENV.data ptr");
+  //Serial.println((uintptr_t)(SEGENV.data));
   //Serial.println("calling constructor");
-  PartSys = new (SEGMENT.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources, advanced); // particle system constructor
+  PartSys = new (SEGENV.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources, advanced); // particle system constructor
   //Serial.print("PS pointer at ");
   //Serial.println((uintptr_t)PartSys);
   return true;
