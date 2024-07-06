@@ -1878,7 +1878,7 @@ uint16_t mode_lightning(void) {
 }
 static const char _data_FX_MODE_LIGHTNING[] PROGMEM = "Lightning@!,!,,,,,Overlay;!,!;!";
 
-
+#ifndef DISABLE_1D_PS_REPLACEMENTS
 // Pride2015
 // Animated, ever-changing rainbows.
 // by Mark Kriegsman: https://gist.github.com/kriegsman/964de772d64c502760e5
@@ -1919,7 +1919,7 @@ uint16_t mode_pride_2015(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PRIDE_2015[] PROGMEM = "Pride 2015@!;;";
-
+#endif // DISABLE_1D_PS_REPLACEMENTS
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t mode_juggle(void) {
@@ -2122,6 +2122,7 @@ uint16_t mode_fire_2012() {
 static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,,Boost;;!;1;sx=64,ix=160,m12=1"; // bars
 #endif //DISABLE_2D_PS_REPLACEMENTS
 
+#ifndef DISABLE_1D_PS_REPLACEMENTS
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
 // This function draws color waves with an ever-changing,
 // widely-varying set of parameters, using a color palette.
@@ -2166,7 +2167,7 @@ uint16_t mode_colorwaves() {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue;!;!";
-
+#endif // DISABLE_1D_PS_REPLACEMENTS
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
 uint16_t mode_bpm() {
