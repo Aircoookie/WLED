@@ -84,11 +84,11 @@ static void changeEffect(uint8_t fx)
     for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
-      strip.setMode(i, fx);
+      seg.setMode(fx);
     }
     setValuesFromFirstSelectedSeg();
   } else {
-    strip.setMode(strip.getMainSegmentId(), fx);
+    strip.getSegment(strip.getMainSegmentId()).setMode(fx);
     setValuesFromMainSeg();
   }
   stateChanged = true;

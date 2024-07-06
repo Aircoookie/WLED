@@ -817,7 +817,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
       yflipped = maxYpixel - y;
       for (int32_t x = 0; x <= maxXpixel; x++)
       {
-        SEGMENT.setPixelColorXY(x, yflipped, framebuffer[x][y]);
+        SEGMENT.setPixelColorXY((int)x, (int)yflipped, framebuffer[x][y]);
       }
     }
     free(framebuffer); 
@@ -1058,7 +1058,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
 // particles move upwards faster if ttl is high (i.e. they are hotter)
 void ParticleSystem::fireParticleupdate()
 {
-  //TODO: cleanup this function? check if normal move is much slower, change move function to check y first then this function just needs to add ttl to y befor calling normal move function  
+  //TODO: cleanup this function? check if normal move is much slower, change move function to check y first then this function just needs to add ttl to y befor calling normal move function  (this function uses 274bytes of flash)
   uint32_t i = 0;
 
   for (i = 0; i < usedParticles; i++)
@@ -1274,7 +1274,7 @@ CRGB **ParticleSystem::allocate2Dbuffer(uint32_t cols, uint32_t rows)
 }
 
 // update size and pointers (memory location and size can change dynamically)
-// note: do not access the PS class in FX befor running this function (or it messes up SEGMENT.data)
+// note: do not access the PS class in FX befor running this function (or it messes up SEGENV.data)
 void ParticleSystem::updateSystem(void)
 {
   // update matrix size
@@ -1442,7 +1442,7 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
   //Serial.print(requiredmemory);
   //Serial.println("Bytes");
   //Serial.print("allocating for segment at");
-  //Serial.println((uintptr_t)SEGMENT.data);
+  //Serial.println((uintptr_t)SEGENV.data);
   return(SEGMENT.allocateData(requiredmemory));
 }
 
@@ -1459,12 +1459,12 @@ bool initParticleSystem2D(ParticleSystem *&PartSys, uint8_t requestedsources, ui
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
   }
-  //Serial.print("segment.data ptr");
-  //Serial.println((uintptr_t)(SEGMENT.data));
+  //Serial.print("SEGENV.data ptr");
+  //Serial.println((uintptr_t)(SEGENV.data));
   uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
   uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
   //Serial.println("calling constructor");
-  PartSys = new (SEGMENT.data) ParticleSystem(cols, rows, numparticles, numsources, advanced, sizecontrol); // particle system constructor
+  PartSys = new (SEGENV.data) ParticleSystem(cols, rows, numparticles, numsources, advanced, sizecontrol); // particle system constructor
   //Serial.print("PS pointer at ");
   //Serial.println((uintptr_t)PartSys);
   return true;
@@ -1669,7 +1669,7 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
     part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
     if (advancedproperties) //using individual particle size?
     {    
-      particleHardRadius = PS_P_MINHARDRADIUS_1D + advancedproperties->size;
+      particleHardRadius = PS_P_MINHARDRADIUS_1D + (advancedproperties->size >> 1);
       if (advancedproperties->size > 1)
       {
         usesize = true; // note: variable eases out of frame checking below
@@ -1716,7 +1716,6 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
         newX = newX % (maxX + 1); 
         if (newX < 0)
           newX += maxX + 1; 
-          Serial.println(newX/32);
       }
       else if (((newX <= -PS_P_HALFRADIUS_1D) || (newX > maxX + PS_P_HALFRADIUS_1D))) // particle is leaving, set out of bounds if it has fully left
       {
@@ -1914,7 +1913,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
   }
   if (size == 0) //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
   {
-    int32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
+    uint32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
     if (x <= maxXpixel) //by making x unsigned there is no need to check < 0 as it will overflow
     {    
       if (framebuffer)      
@@ -1984,7 +1983,6 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
       fast_color_add(renderbuffer[5], color, pxlbrightness[1]);      
       uint32_t rendersize = 2; // initialize render size, minimum is 4x4 pixels, it is incremented int he loop below to start with 4
       uint32_t offset = 4; // offset to zero coordinate to write/read data in renderbuffer (actually needs to be 3, is decremented in the loop below)
-      uint32_t size = advPartProps[particleindex].size; 
       uint32_t blurpasses = size/64 + 1; // number of blur passes depends on size, four passes max
       uint32_t bitshift = 0;
       for(int i = 0; i < blurpasses; i++)
@@ -2067,7 +2065,7 @@ void ParticleSystem1D::handleCollisions()
         {
           if (advPartProps) // use advanced size properties
           {
-            collisiondistance += ((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1;
+            collisiondistance = PS_P_MINHARDRADIUS_1D + ((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1;
           }
           dx = particles[j].x - particles[i].x;  
           int32_t  dv = (int32_t)particles[j].vx - (int32_t)particles[i].vx;        
@@ -2179,7 +2177,7 @@ CRGB *ParticleSystem1D::allocate1Dbuffer(uint32_t length)
 }
 
 // update size and pointers (memory location and size can change dynamically)
-// note: do not access the PS class in FX befor running this function (or it messes up SEGMENT.data)
+// note: do not access the PS class in FX befor running this function (or it messes up SEGENV.data)
 void ParticleSystem1D::updateSystem(void)
 {
   // update size
@@ -2269,7 +2267,7 @@ bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, 
   //Serial.print(requiredmemory);
   //Serial.println("Bytes");
   //Serial.print("allocating for segment at");
-  //Serial.println((uintptr_t)SEGMENT.data);
+  //Serial.println((uintptr_t)SEGENV.data);
   return(SEGMENT.allocateData(requiredmemory));
 }
 
@@ -2286,10 +2284,10 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, 
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
   }
-  //Serial.print("segment.data ptr");
-  //Serial.println((uintptr_t)(SEGMENT.data));
+  //Serial.print("SEGENV.data ptr");
+  //Serial.println((uintptr_t)(SEGENV.data));
   //Serial.println("calling constructor");
-  PartSys = new (SEGMENT.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources, advanced); // particle system constructor
+  PartSys = new (SEGENV.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources, advanced); // particle system constructor
   //Serial.print("PS pointer at ");
   //Serial.println((uintptr_t)PartSys);
   return true;
@@ -2311,17 +2309,15 @@ void blur1D(CRGB *colorbuffer, uint32_t size, uint32_t blur, bool smear, uint32_
       fast_color_scale(seeppart, seep); // scale it and seep to neighbours
       if (!smear) // fade current pixel if smear is disabled
         fast_color_scale(colorbuffer[x], 255 - blur); 
-
       if (x > 0)
       {
-        fast_color_add(colorbuffer[x-1], seeppart);
-        fast_color_add(colorbuffer[x], carryover); 
+        fast_color_add(colorbuffer[x-1], seeppart);        
+        fast_color_add(colorbuffer[x], carryover); // is black on first pass
       }
       carryover = seeppart;
     }
     fast_color_add(colorbuffer[size-1], carryover); // set last pixel
 }
-
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 
