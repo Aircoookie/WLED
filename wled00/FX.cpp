@@ -9953,7 +9953,6 @@ uint16_t mode_particleFireworks1D(void)
   ParticleSystem1D *PartSys = NULL;
   //uint8_t numRockets;
   uint8_t *forcecounter;
-  uint32_t i;
 
   if (SEGMENT.call == 0) // initialization 
   {
@@ -10473,7 +10472,7 @@ uint16_t mode_particleChase(void)
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setColorByPosition(SEGMENT.check3); 
   PartSys->setMotionBlur(7 + (SEGMENT.custom3 << 3)); // anable motion blur
-  uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer     
+  //uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer     
   uint32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
  //PartSys->setBounce(SEGMENT.check2);  
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3; 
@@ -10699,7 +10698,7 @@ uint16_t mode_particle1DGEQ(void)
     bin ++;
     bin = bin % numSources;
     uint32_t emitparticle = 0;
-    uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 10; // emit speed according to loudness of band (127 max!)
+   // uint8_t emitspeed = ((uint32_t)fftResult[bin] * (uint32_t)SEGMENT.speed) >> 10; // emit speed according to loudness of band (127 max!)
     if (fftResult[bin] > threshold)
     {
       emitparticle = 1;
