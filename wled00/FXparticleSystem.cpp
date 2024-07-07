@@ -871,6 +871,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
     if (dx == PS_P_RADIUS)
     {
       pxlbrightness[1] = pxlbrightness[2] = -1; // pixel is actually out of matrix boundaries, do not render
+      dx = 2; // fix for advanced renderer (it does render slightly out of frame particles)
     }
     if (particlesettings.wrapX) // wrap x to the other side if required
       pixco[0][0] = pixco[3][0] = maxXpixel;
@@ -891,6 +892,7 @@ void ParticleSystem::renderParticle(CRGB **framebuffer, uint32_t particleindex, 
     if (dy == PS_P_RADIUS)
     {
       pxlbrightness[2] = pxlbrightness[3] = -1; // pixel is actually out of matrix boundaries, do not render
+      dy = 2; // fix for advanced renderer (it does render slightly out of frame particles)
     }
     if (particlesettings.wrapY) // wrap y to the other side if required
       pixco[0][1] = pixco[1][1] = maxYpixel;
@@ -1901,6 +1903,7 @@ void ParticleSystem1D::ParticleSys_render()
   }
   if (renderbuffer)
     free(renderbuffer); 
+    Serial.println("*");
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -1923,13 +1926,15 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
     } 
   }
   else { //render larger particles
-    int32_t pxlbrightness[2] = {0}; // note: pxlbrightness needs to be set to 0 or checking does not work
+    bool pxlisinframe[2] = {true, true};
+    int32_t pxlbrightness[2]; 
     int32_t pixco[2]; // physical pixel coordinates of the two pixels representing a particle    
     // subtract half a radius as the rendering algorithm always starts at the left, this makes calculations more efficient
     int32_t xoffset = particles[particleindex].x - PS_P_HALFRADIUS_1D;
     int32_t dx = xoffset % PS_P_RADIUS_1D; //relativ particle position in subpixel space
-    int32_t x = xoffset >> PS_P_RADIUS_SHIFT_1D; // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
+    int32_t x = xoffset >> PS_P_RADIUS_SHIFT_1D; // divide by PS_P_RADIUS, bitshift of negative number stays negative -> checking below for x < 0 works (but does not when using division)
     
+
     // set the raw pixel coordinates
     pixco[0] = x;      // left pixel
     pixco[1] = x + 1;  // right pixel
@@ -1938,32 +1943,39 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
     if (x < 0) // left pixels out of frame
     {
       dx = PS_P_RADIUS_1D + dx; // if x<0, xoffset becomes negative (and so does dx), must adjust dx as modulo will flip its value 
-      // note: due to inverted shift math, a particel at position -32 (xoffset = -64, dx = 64) is rendered at the wrong pixel position (it should be out of frame)
-      // checking this above makes this algorithm slower (in frame pixels do not have to be checked), so just correct for it here:
+      // note: due to inverted shift math, a particel at position -16 (xoffset = -32, dx = 32) is rendered at the wrong pixel position (it should be out of frame)
+      // checking this above would make this algorithm slower (in frame pixels do not have to be checked), so just correct for it here:
       if (dx == PS_P_RADIUS_1D)
       {
-        pxlbrightness[1] = -1; // pixel is actually out of matrix boundaries, do not render
+        pxlisinframe[1] = false; // pixel is actually out of matrix boundaries, do not render
+        dx = 0; // fix for out of frame advanced particles (dx=0 is changed to dx=PS_P_RADIUS_1D in above statement, 0 is correct)
       }
       if (particlesettings.wrapX) // wrap x to the other side if required
         pixco[0] = maxXpixel;
       else
-        pxlbrightness[0] = -1; // pixel is out of matrix boundaries, do not render
+        pxlisinframe[0] = false; // pixel is out of matrix boundaries, do not render
     }
     else if (pixco[1] > maxXpixel) // right pixel, only has to be checkt if left pixel did not overflow
     {
       if (particlesettings.wrapX) // wrap y to the other side if required
         pixco[1] = 0;
       else
-        pxlbrightness[1] = -1;
+        pxlisinframe[1] = false;
     }
 
-    // calculate brightness values for the two pixels representing a particle using linear interpolation
+    if(xoffset < 500)
+    {
+      Serial.print(xoffset);
+      Serial.print(" ");
+      Serial.print(dx);
+      Serial.print(" ");
+      Serial.print(x);
+      Serial.print("/");
+    }
 
-    //calculate the values for pixels that are in frame
-    if (pxlbrightness[0] >= 0)
-      pxlbrightness[0] = (((int32_t)PS_P_RADIUS_1D - dx) * brightness) >> PS_P_SURFACE_1D; 
-    if (pxlbrightness[1] >= 0)
-      pxlbrightness[1] = (dx * brightness) >> PS_P_SURFACE_1D; 
+    //calculate the brightness values for both pixels using linear interpolation (note: in standard rendering out of frame pixels could be skipped but if checks add more clock cycles over all)
+    pxlbrightness[0] = (((int32_t)PS_P_RADIUS_1D - dx) * brightness) >> PS_P_SURFACE_1D; 
+    pxlbrightness[1] = (dx * brightness) >> PS_P_SURFACE_1D; 
 
     // check if particle has advanced size properties and buffer is available
     if (advPartProps && advPartProps[particleindex].size > 1)
@@ -1977,11 +1989,11 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
     
 
       //render particle to a bigger size
-      //particle size to pixels: < 64 is 4 pixels, < 128 is 6pixels, < 192 is 8 pixels, bigger is 10 pixels
+      //particle size to pixels: 2 - 63 is 4 pixels, < 128 is 6pixels, < 192 is 8 pixels, bigger is 10 pixels
       //first, render the pixel to the center of the renderbuffer, then apply 1D blurring
       fast_color_add(renderbuffer[4], color, pxlbrightness[0]); 
       fast_color_add(renderbuffer[5], color, pxlbrightness[1]);      
-      uint32_t rendersize = 2; // initialize render size, minimum is 4x4 pixels, it is incremented int he loop below to start with 4
+      uint32_t rendersize = 2; // initialize render size, minimum is 4 pixels, it is incremented int he loop below to start with 4
       uint32_t offset = 4; // offset to zero coordinate to write/read data in renderbuffer (actually needs to be 3, is decremented in the loop below)
       uint32_t blurpasses = size/64 + 1; // number of blur passes depends on size, four passes max
       uint32_t bitshift = 0;
@@ -1996,7 +2008,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
       }
       
       // calculate origin coordinates to render the particle to in the framebuffer
-      uint32_t xfb_orig = x - (rendersize>>1) + 1 - offset;
+      uint32_t xfb_orig = x - (rendersize>>1) + 1 - offset; //note: using uint is fine
       uint32_t xfb; // coordinates in frame buffer to write to note: by making this uint, only overflow has to be checked
 
       // transfer particle renderbuffer to framebuffer
@@ -2018,20 +2030,17 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
         fast_color_add(framebuffer[xfb], renderbuffer[xrb]); 
       }
     }
-    else if (framebuffer) // standard rendering (2 pixels per particle)
+    else // standard rendering (2 pixels per particle)
     {
       for(uint32_t i = 0; i < 2; i++)
       {
-        if (pxlbrightness[i] > 0)
-          fast_color_add(framebuffer[pixco[i]], color, pxlbrightness[i]); // order is: bottom left, bottom right, top right, top left
-      }
-    }
-    else
-    {  
-      for(uint32_t i = 0; i < 2; i++)
-      {
-        if (pxlbrightness[i] > 0)
-          SEGMENT.addPixelColor(pixco[i], color.scale8((uint8_t)pxlbrightness[i])); 
+        if (pxlisinframe[i])
+        {
+          if (framebuffer)
+            fast_color_add(framebuffer[pixco[i]], color, pxlbrightness[i]); 
+          else
+             SEGMENT.addPixelColor(pixco[i], color.scale8((uint8_t)pxlbrightness[i])); 
+        }
       }
     }
   }
@@ -2272,10 +2281,11 @@ bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, 
 }
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
-bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes, bool advanced)
+// note: requestedparticles is relative, 127 = 50%, 255 = 100% (deafaults to 100% meaning one particle per pixel)
+bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint32_t requestedsources, uint32_t requestedparticles, uint16_t additionalbytes, bool advanced)
 {
   //Serial.println("PS init function");
-  uint32_t numparticles = calculateNumberOfParticles1D(advanced);
+  uint32_t numparticles = (requestedparticles * calculateNumberOfParticles1D(advanced)) / 255;
   uint32_t numsources = calculateNumberOfSources1D(requestedsources);
   //Serial.print("numsources: ");
   //Serial.println(numsources);

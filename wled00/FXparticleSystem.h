@@ -376,7 +376,7 @@ private:
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
 
-bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0, bool advanced = false);
+bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint32_t requestedsources, uint32_t requestedparticles = 255, uint16_t additionalbytes = 0, bool advanced = false);
 uint32_t calculateNumberOfParticles1D(bool isadvanced);
 uint32_t calculateNumberOfSources1D(uint8_t requestedsources);
 bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, bool isadvanced, uint16_t additionalbytes);

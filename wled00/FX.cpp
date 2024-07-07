@@ -9629,7 +9629,7 @@ uint16_t mode_particleDrip(void)
   //uint8_t numSprays;
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 4)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 4)) // init
       return mode_static(); // allocation failed; //allocation failed
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)    
     PartSys->sources[0].source.hue = random16();
@@ -9744,7 +9744,7 @@ uint16_t mode_particleBouncingBalls(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 1, 0, true)) // init
+    if (!initParticleSystem1D(PartSys, 1, 128, 0, true)) // init
       return mode_static(); // allocation failed; //allocation failed   
     PartSys->sources[0].source.collide = true; // seeded particles will collide (if enabled)
     PartSys->sources[0].source.x = PS_P_RADIUS_1D;  //emit at bottom
@@ -9768,7 +9768,7 @@ uint16_t mode_particleBouncingBalls(void)
   PartSys->sources[0].var = SEGMENT.speed >> 3;
   PartSys->sources[0].v = (SEGMENT.speed >> 1) - (SEGMENT.speed >> 3);
   PartSys->enableParticleCollisions(SEGMENT.check1, 254); // enable collisions and set particle collision hardness (do not use full hardness or particles speed up due to pushing, can not be made perfectly balanced)
-  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, PartSys->numParticles >> 1)); 
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, PartSys->numParticles)); 
   PartSys->setColorByPosition(SEGMENT.check3);  
 
   if(SEGMENT.check2) //rolling balls
@@ -9966,7 +9966,7 @@ uint16_t mode_particleFireworks1D(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 4, 4, true)) // init
+    if (!initParticleSystem1D(PartSys, 4, 150, 4, true)) // init
       return mode_static(); // allocation failed
     PartSys->setKillOutOfBounds(true);
     //numRockets = PartSys->numSources;
@@ -10089,7 +10089,7 @@ uint16_t mode_particleSparkler(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 16, 0, true)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 16, 128 ,0, true)) // init, no additional data needed
       return mode_static(); // allocation failed
   }
   else
@@ -10170,7 +10170,7 @@ uint16_t mode_particleHourglass(void)
   uint8_t* basehue;
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 0, 2)) // init
+    if (!initParticleSystem1D(PartSys, 0, 255, 2, false)) // init
       return mode_static(); // allocation failed
     PartSys->setBounce(true);
     PartSys->setWallHardness(80);
@@ -10459,9 +10459,8 @@ uint16_t mode_particleChase(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 1, 3, true)) // init
+    if (!initParticleSystem1D(PartSys, 1, 255, 3, true)) // init
       return mode_static(); // allocation failed
-   // PartSys->setWrap(true); 
     for(i = 0; i < PartSys->numParticles; i++)
     {             
       PartSys->advPartProps[i].sat = 255;
@@ -10481,9 +10480,9 @@ uint16_t mode_particleChase(void)
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setColorByPosition(SEGMENT.check3); 
-  PartSys->setMotionBlur(7 + (SEGMENT.custom3 << 3)); // anable motion blur
+  PartSys->setMotionBlur(SEGMENT.custom3 << 3); // anable motion blur
   //uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer     
-  uint32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
+  
  //PartSys->setBounce(SEGMENT.check2);  
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3; 
   if(SEGENV.aux0 != settingssum)  //settings changed changed, update
@@ -10505,6 +10504,7 @@ uint16_t mode_particleChase(void)
     SEGENV.aux0 = settingssum;  
   }
 
+  uint32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
 
   if(SEGMENT.check1) // pride rainbow colors
   { 
@@ -10585,7 +10585,7 @@ uint16_t mode_particleStarburst(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 1, 0, true)) // init
+    if (!initParticleSystem1D(PartSys, 1, 200, 0, true)) // init
       return mode_static(); // allocation failed
     PartSys->setKillOutOfBounds(true);     
     PartSys->enableParticleCollisions(true, 200);        
@@ -10659,7 +10659,7 @@ uint16_t mode_particle1DGEQ(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 16, 0, true)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 16, 255, 0, true)) // init, no additional data needed
       return mode_static(); // allocation failed
   }
   else
