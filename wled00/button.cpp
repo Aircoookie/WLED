@@ -178,7 +178,7 @@ void handleAnalog(uint8_t b)
   #ifdef ESP8266
   rawReading = analogRead(A0) << 2;   // convert 10bit read to 12bit
   #else
-  if ((btnPin[b] < 0) || (digitalPinToAnalogChannel(btnPin[b]) < 0)) return; // pin must support analog ADC - newer esp32 frameworks throw lots of warnings otherwise
+  if ((btnPin[b] < 0) /*|| (digitalPinToAnalogChannel(btnPin[b]) < 0)*/) return; // pin must support analog ADC - newer esp32 frameworks throw lots of warnings otherwise
   rawReading = analogRead(btnPin[b]); // collect at full 12bit resolution
   #endif
   yield();                            // keep WiFi task running - analog read may take several millis on ESP8266

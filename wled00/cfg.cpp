@@ -160,44 +160,46 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     DEBUG_PRINTF_P(PSTR("Heap before buses: %d\n"), ESP.getFreeHeap());
     int s = 0;  // bus iterator
     if (fromFS) BusManager::removeAll(); // can't safely manipulate busses directly in network callback
-    uint32_t mem = 0;
-    bool busesChanged = false;
+    unsigned mem = 0;
+
     // determine if it is sensible to use parallel I2S outputs on ESP32 (i.e. more than 5 outputs = 1 I2S + 4 RMT)
     bool useParallel = false;
     #if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ARCH_ESP32S2) && !defined(ARDUINO_ARCH_ESP32S3) && !defined(ARDUINO_ARCH_ESP32C3)
     unsigned digitalCount = 0;
-    unsigned maxLeds = 0;
-    int oldType = 0;
-    int j = 0;
+    unsigned maxLedsOnBus = 0;
+    unsigned maxChannels = 0;
     for (JsonObject elm : ins) {
       unsigned type = elm["type"] | TYPE_WS2812_RGB;
-      unsigned len = elm["len"] | 30;
-      if (IS_DIGITAL(type) && !IS_2PIN(type)) digitalCount++;
-      if (len > maxLeds) maxLeds = len;
-      // we need to have all LEDs of the same type for parallel
-      if (j++ < 8 && oldType > 0 && oldType != type) oldType = -1;
-      else if (oldType == 0) oldType = type;
+      unsigned len = elm["len"] | DEFAULT_LED_COUNT;
+      if (!IS_DIGITAL(type)) continue;
+      if (!IS_2PIN(type)) {
+        digitalCount++;
+        unsigned channels = Bus::getNumberOfChannels(type);
+        if (len > maxLedsOnBus)     maxLedsOnBus = len;
+        if (channels > maxChannels) maxChannels  = channels;
+      }
     }
-    DEBUG_PRINTF_P(PSTR("Maximum LEDs on a bus: %u\nDigital buses: %u\nDifferent types: %d\n"), maxLeds, digitalCount, (int)(oldType == -1));
+    DEBUG_PRINTF_P(PSTR("Maximum LEDs on a bus: %u\nDigital buses: %u\n"), maxLedsOnBus, digitalCount);
     // we may remove 300 LEDs per bus limit when NeoPixelBus is updated beyond 2.9.0
-    if (/*oldType != -1 && */maxLeds <= 300 && digitalCount > 5) {
+    if (maxLedsOnBus <= 300 && digitalCount > 5) {
+      DEBUG_PRINTLN(F("Switching to parallel I2S."));
       useParallel = true;
       BusManager::useParallelOutput();
-      DEBUG_PRINTF_P(PSTR("Switching to parallel I2S with max. %d LEDs per ouptut.\n"), maxLeds);
+      mem = BusManager::memUsage(maxChannels, maxLedsOnBus, 8); // use alternate memory calculation
     }
     #endif
+
     for (JsonObject elm : ins) {
       if (s >= WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES) break;
       uint8_t pins[5] = {255, 255, 255, 255, 255};
       JsonArray pinArr = elm["pin"];
       if (pinArr.size() == 0) continue;
-      pins[0] = pinArr[0];
+      //pins[0] = pinArr[0];
       unsigned i = 0;
       for (int p : pinArr) {
         pins[i++] = p;
         if (i>4) break;
       }
-
       uint16_t length = elm["len"] | 1;
       uint8_t colorOrder = (int)elm[F("order")]; // contains white channel swap option in upper nibble
       uint8_t skipFirst = elm[F("skip")];
@@ -208,7 +210,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool refresh = elm["ref"] | false;
       uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM
       uint8_t AWmode = elm[F("rgbwm")] | RGBW_MODE_MANUAL_ONLY;
-      uint8_t maPerLed = elm[F("ledma")] | 55;
+      uint8_t maPerLed = elm[F("ledma")] | LED_MILLIAMPS_DEFAULT;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
       if (IS_PWM(ledType) || IS_ONOFF(ledType) || IS_VIRTUAL(ledType)) { // analog and virtual
@@ -219,26 +221,21 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
         if (useParallel && s < 8) {
-          // we are using parallel I2S and memUsage() will include x8 allocation into account
-          if (s == 0)
-            mem = BusManager::memUsage(bc); // includes x8 memory allocation for parallel I2S
-          else
-            if (BusManager::memUsage(bc) > mem)
-              mem = BusManager::memUsage(bc); // if we have unequal LED count use the largest
+          // if for some unexplained reason the above pre-calculation was wrong, update
+          unsigned memT = BusManager::memUsage(bc); // includes x8 memory allocation for parallel I2S
+          if (memT > mem) mem = memT; // if we have unequal LED count use the largest
         } else
           mem += BusManager::memUsage(bc); // includes global buffer
         if (mem <= MAX_LED_MEMORY) if (BusManager::add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
-        busesChanged = true;
+        doInitBusses = true;  // finalization done in beginStrip()
       }
       s++;
     }
     DEBUG_PRINTF_P(PSTR("LED buffer size: %uB\n"), mem);
     DEBUG_PRINTF_P(PSTR("Heap after buses: %d\n"), ESP.getFreeHeap());
-    doInitBusses = busesChanged;
-    // finalization done in beginStrip()
   }
   if (hw_led["rev"]) BusManager::getBus(0)->setReversed(true); //set 0.11 global reversed setting for first bus
 
@@ -275,22 +272,34 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         btnPin[s] = pin;
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
-        if (((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[s]) < 0))
-        {
-          // not an ADC analog pin
-          DEBUG_PRINT(F("PIN ALLOC error: GPIO")); DEBUG_PRINT(btnPin[s]);
-          DEBUG_PRINT(F("for analog button #")); DEBUG_PRINT(s);
-          DEBUG_PRINTLN(F(" is not an analog pin!"));
-          btnPin[s] = -1;
-          pinManager.deallocatePin(pin,PinOwner::Button);
+        if ((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) {
+          if (digitalPinToAnalogChannel(btnPin[s]) < 0) {
+            // not an ADC analog pin
+            DEBUG_PRINT(F("PIN ALLOC error: GPIO")); DEBUG_PRINT(btnPin[s]);
+            DEBUG_PRINT(F("for analog button #")); DEBUG_PRINT(s);
+            DEBUG_PRINTLN(F(" is not an analog pin!"));
+            btnPin[s] = -1;
+            pinManager.deallocatePin(pin,PinOwner::Button);
+          } else {
+            analogReadResolution(12); // see #4040
+          }
         }
-        //if touch pin, enable the touch interrupt on ESP32 S2 & S3
-        #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
-        if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH)) 
+        else if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH))
         {
-          touchAttachInterrupt(btnPin[s], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+          if (digitalPinToTouchChannel(btnPin[s]) < 0) {
+            // not a touch pin
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[s], s);
+            btnPin[s] = -1;
+            pinManager.deallocatePin(pin,PinOwner::Button);
+          }          
+          //if touch pin, enable the touch interrupt on ESP32 S2 & S3
+          #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a function to check touch state but need to attach an interrupt to do so
+          else
+          {
+            touchAttachInterrupt(btnPin[s], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+          }
+          #endif
         }
-        #endif 
         else
       #endif
         {

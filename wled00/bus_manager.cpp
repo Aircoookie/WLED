@@ -670,9 +670,9 @@ void BusNetwork::cleanup() {
 uint32_t BusManager::memUsage(BusConfig &bc) {
   if (bc.type == TYPE_ONOFF || IS_PWM(bc.type)) return 5;
 
-  uint16_t len = bc.count + bc.skipAmount;
-  uint16_t channels = Bus::getNumberOfChannels(bc.type);
-  uint16_t multiplier = 1;
+  unsigned len = bc.count + bc.skipAmount;
+  unsigned channels = Bus::getNumberOfChannels(bc.type);
+  unsigned multiplier = 1;
   if (IS_DIGITAL(bc.type)) { // digital types
     if (IS_16BIT(bc.type)) len *= 2; // 16-bit LEDs
     #ifdef ESP8266
@@ -684,6 +684,12 @@ uint32_t BusManager::memUsage(BusConfig &bc) {
     #endif
   }
   return (len * multiplier + bc.doubleBuffer * (bc.count + bc.skipAmount)) * channels;
+}
+
+uint32_t BusManager::memUsage(unsigned maxChannels, unsigned maxCount, unsigned minBuses) {
+  //ESP32 RMT uses double buffer, parallel I2S uses 8x buffer (3 times)
+  unsigned multiplier = PolyBus::isParallelI2S1Output() ? 3 : 2;
+  return (maxChannels * maxCount * minBuses * multiplier);
 }
 
 int BusManager::add(BusConfig &bc) {

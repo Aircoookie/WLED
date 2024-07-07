@@ -266,12 +266,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         buttonType[i] = request->arg(be).toInt();
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that button pin is a valid gpio
-        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
+        if ((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED))
         {
-          // not an ADC analog pin
-          DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[i], i);
-          btnPin[i] = -1;
-          pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+          if (digitalPinToAnalogChannel(btnPin[i]) < 0) {
+            // not an ADC analog pin
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[i], i);
+            btnPin[i] = -1;
+            pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+          } else {
+            analogReadResolution(12); // see #4040
+          }
         }
         else if ((buttonType[i] == BTN_TYPE_TOUCH || buttonType[i] == BTN_TYPE_TOUCH_SWITCH))
         {

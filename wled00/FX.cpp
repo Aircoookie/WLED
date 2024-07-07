@@ -2367,7 +2367,7 @@ uint16_t mode_meteor() {
   }
 
   // draw meteor
-  for (int j = 0; j < meteorSize; j++) {
+  for (unsigned j = 0; j < meteorSize; j++) {
     int index = (in + j) % SEGLEN;
     int idx = 255;
     int i = trail[index] = max;
