@@ -37,14 +37,14 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
   //DEBUG_PRINTF_P(PSTR("--  Duplicate segment: %p (%p)\n"), &prev, prev.data);
 
-  uint16_t start = elem["start"] | seg.start;
+  unsigned start = elem["start"] | seg.start;
   if (stop < 0) {
     int len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
   }
   // 2D segments
-  uint16_t startY = elem["startY"] | seg.startY;
-  uint16_t stopY = elem["stopY"] | seg.stopY;
+  unsigned startY = elem["startY"] | seg.startY;
+  unsigned stopY = elem["stopY"] | seg.stopY;
 
   //repeat, multiplies segment until all LEDs are used, or max segments reached
   bool repeat = elem["rpt"] | false;
@@ -52,7 +52,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     elem.remove("id");  // remove for recursive call
     elem.remove("rpt"); // remove for recursive call
     elem.remove("n");   // remove for recursive call
-    uint16_t len = stop - start;
+    unsigned len = stop - start;
     for (size_t i=id+1; i<strip.getMaxSegments(); i++) {
       start = start + len;
       if (start >= strip.getLengthTotal()) break;
@@ -105,7 +105,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t set = elem[F("set")] | seg.set;
   seg.set = constrain(set, 0, 3);
 
-  uint16_t len = 1;
+  unsigned len = 1;
   if (stop > start) len = stop - start;
   int offset = elem[F("of")] | INT32_MAX;
   if (offset != INT32_MAX) {
@@ -659,12 +659,12 @@ void serializeInfo(JsonObject root)
   }
   #endif
 
-  uint8_t totalLC = 0;
+  unsigned totalLC = 0;
   JsonArray lcarr = leds.createNestedArray(F("seglc"));
   size_t nSegs = strip.getSegmentsNum();
   for (size_t s = 0; s < nSegs; s++) {
     if (!strip.getSegment(s).isActive()) continue;
-    uint8_t lc = strip.getSegment(s).getLightCapabilities();
+    unsigned lc = strip.getSegment(s).getLightCapabilities();
     totalLC |= lc;
     lcarr.add(lc);
   }
@@ -847,7 +847,7 @@ void setPaletteColors(JsonArray json, byte* tcp)
     TRGBGradientPaletteEntryUnion u;
 
     // Count entries
-    uint16_t count = 0;
+    unsigned count = 0;
     do {
         u = *(ent + count);
         count++;
@@ -1166,8 +1166,8 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   }
   #endif
 
-  uint16_t used = strip.getLengthTotal();
-  uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
+  unsigned used = strip.getLengthTotal();
+  unsigned n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     // ignore anything behid matrix (i.e. extra strip)

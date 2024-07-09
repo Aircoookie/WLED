@@ -106,7 +106,7 @@ void notify(byte callMode, bool followUp)
   for (size_t i = 0; i < nsegs; i++) {
     Segment &selseg = strip.getSegment(i);
     if (!selseg.isActive()) continue;
-    uint16_t ofs = 41 + s*UDP_SEG_SIZE; //start of segment offset byte
+    unsigned ofs = 41 + s*UDP_SEG_SIZE; //start of segment offset byte
     udpOut[0 +ofs] = s;
     udpOut[1 +ofs] = selseg.start >> 8;
     udpOut[2 +ofs] = selseg.start & 0xFF;
@@ -241,7 +241,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
     if (version > 6) {
       strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
       if (version > 9 && udpIn[37] < 255) { // valid CCT/Kelvin value
-        uint16_t cct = udpIn[38];
+        unsigned cct = udpIn[38];
         if (udpIn[37] > 0) { //Kelvin
           cct |= (udpIn[37] << 8);
         }
@@ -255,7 +255,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
   bool applyEffects = (receiveNotificationEffects || !someSel);
   if (applyEffects && currentPlaylist >= 0) unloadPlaylist();
   if (version > 10 && (receiveSegmentOptions || receiveSegmentBounds)) {
-    uint8_t numSrcSegs = udpIn[39];
+    unsigned numSrcSegs = udpIn[39];
     DEBUG_PRINT(F("UDP segments: ")); DEBUG_PRINTLN(numSrcSegs);
     // are we syncing bounds and slave has more active segments than master?
     if (receiveSegmentBounds && numSrcSegs < strip.getActiveSegmentsNum()) {
@@ -268,8 +268,8 @@ void parseNotifyPacket(uint8_t *udpIn) {
     }
     size_t inactiveSegs = 0;
     for (size_t i = 0; i < numSrcSegs && i < strip.getMaxSegments(); i++) {
-      uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
-      uint8_t id = udpIn[0 +ofs];
+      unsigned ofs = 41 + i*udpIn[40]; //start of segment offset byte
+      unsigned id = udpIn[0 +ofs];
       DEBUG_PRINT(F("UDP segment received: ")); DEBUG_PRINTLN(id);
       if      (id >  strip.getSegmentsNum()) break;
       else if (id == strip.getSegmentsNum()) {
@@ -405,7 +405,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode && !realtimeOverride) {
-    uint16_t stop, start;
+    unsigned stop, start;
     if (useMainSegmentOnly) {
       Segment& mainseg = strip.getMainSegment();
       start = mainseg.start;
@@ -505,8 +505,8 @@ void handleNotifications()
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
       if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
-      uint16_t id = 0;
-      uint16_t totalLen = strip.getLengthTotal();
+      unsigned id = 0;
+      unsigned totalLen = strip.getLengthTotal();
       for (size_t i = 0; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
@@ -523,7 +523,7 @@ void handleNotifications()
   if (!isSupp && notifierUdp.remoteIP() == localIP) return; //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
-  uint16_t len;
+  unsigned len;
   if (isSupp) len = notifier2Udp.read(udpIn, packetSize);
   else        len =  notifierUdp.read(udpIn, packetSize);
 
@@ -531,7 +531,7 @@ void handleNotifications()
   if (isSupp && udpIn[0] == 255 && udpIn[1] == 1 && len >= 40) {
     if (!nodeListEnabled || notifier2Udp.remoteIP() == localIP) return;
 
-    uint8_t unit = udpIn[39];
+    unsigned unit = udpIn[39];
     NodesMap::iterator it = Nodes.find(unit);
     if (it == Nodes.end() && Nodes.size() < WLED_MAX_NODES) { // Create a new element when not present
       Nodes[unit].age = 0;
@@ -588,8 +588,8 @@ void handleNotifications()
     byte packetNum = udpIn[4]; //starts with 1!
     byte numPackets = udpIn[5];
 
-    uint16_t id = (tpmPayloadFrameSize/3)*(packetNum-1); //start LED
-    uint16_t totalLen = strip.getLengthTotal();
+    unsigned id = (tpmPayloadFrameSize/3)*(packetNum-1); //start LED
+    unsigned totalLen = strip.getLengthTotal();
     for (size_t i = 6; i < tpmPayloadFrameSize + 4U; i += 3)
     {
       if (id < totalLen)
@@ -623,7 +623,7 @@ void handleNotifications()
     }
     if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
-    uint16_t totalLen = strip.getLengthTotal();
+    unsigned totalLen = strip.getLengthTotal();
     if (udpIn[0] == 1 && packetSize > 5) //warls
     {
       for (size_t i = 2; i < packetSize -3; i += 4)
@@ -632,7 +632,7 @@ void handleNotifications()
       }
     } else if (udpIn[0] == 2 && packetSize > 4) //drgb
     {
-      uint16_t id = 0;
+      unsigned id = 0;
       for (size_t i = 2; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
@@ -641,7 +641,7 @@ void handleNotifications()
       }
     } else if (udpIn[0] == 3 && packetSize > 6) //drgbw
     {
-      uint16_t id = 0;
+      unsigned id = 0;
       for (size_t i = 2; i < packetSize -3; i += 4)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
@@ -650,7 +650,7 @@ void handleNotifications()
       }
     } else if (udpIn[0] == 4 && packetSize > 7) //dnrgb
     {
-      uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+      unsigned id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (size_t i = 4; i < packetSize -2; i += 3)
       {
         if (id >= totalLen) break;
@@ -659,7 +659,7 @@ void handleNotifications()
       }
     } else if (udpIn[0] == 5 && packetSize > 8) //dnrgbw
     {
-      uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+      unsigned id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (size_t i = 4; i < packetSize -2; i += 4)
       {
         if (id >= totalLen) break;
@@ -691,7 +691,7 @@ void handleNotifications()
 
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  uint16_t pix = i + arlsOffset;
+  unsigned pix = i + arlsOffset;
   if (pix < strip.getLengthTotal()) {
     if (!arlsDisableGammaCorrection && gammaCorrectCol) {
       r = gamma8(r);

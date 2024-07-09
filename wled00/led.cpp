@@ -29,9 +29,9 @@ void setValuesFromSegment(uint8_t s)
 void applyValuesToSelectedSegs()
 {
   // copy of first selected segment to tell if value was updated
-  uint8_t firstSel = strip.getFirstSelectedSegId();
+  unsigned firstSel = strip.getFirstSelectedSegId();
   Segment selsegPrev = strip.getSegment(firstSel);
-  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+  for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
@@ -70,7 +70,7 @@ void toggleOnOff()
 //scales the brightness with the briMultiplier factor
 byte scaledBri(byte in)
 {
-  uint16_t val = ((uint16_t)in*briMultiplier)/100;
+  unsigned val = ((uint16_t)in*briMultiplier)/100;
   if (val > 255) val = 255;
   return (byte)val;
 }
