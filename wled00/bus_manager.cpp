@@ -650,12 +650,18 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   
   switch(bc.type) {
     case 105:
-      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_32PX_HIGH");
+      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_32PX_HIGH - 32x32");
       fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 32, 32);
       fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
       fourScanPanel->setRotation(0);
       break;
     case 106:
+      USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_32PX_HIGH - 64x32");
+      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 64, 32);
+      fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
+      fourScanPanel->setRotation(0);
+      break;
+    case 107:
       USER_PRINTLN("MatrixPanel_I2S_DMA FOUR_SCAN_64PX_HIGH");
       fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, 64, 64);
       fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_64PX_HIGH);
