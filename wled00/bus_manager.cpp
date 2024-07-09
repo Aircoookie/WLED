@@ -518,9 +518,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
       break;
   }
 
-  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[0], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
-
-  if(mxconfig.mx_width >= 64 && (bc.pins[0] > 1)) {
+  if(mxconfig.mx_height >= 64 && (bc.pins[0] > 1)) {
     USER_PRINT("WARNING, only single panel can be used of 64 pixel boards due to memory")
     mxconfig.chain_length = 1;
   }
@@ -609,6 +607,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
 #endif
 
+  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[0], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
 
   USER_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
 
