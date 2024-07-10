@@ -749,8 +749,8 @@ class AC101Source : public I2SSource {
       #endif
       char send_buff[3];
       send_buff[0] = reg_addr;
-      send_buff[1] = (val >> 8) & 0xff;
-      send_buff[2] = val & 0xff;
+      send_buff[1] = uint8_t((val >> 8) & 0xff);
+      send_buff[2] = uint8_t(val & 0xff);
       Wire.beginTransmission(AC101_ADDR);
       Wire.write((const uint8_t*)send_buff, 3);
       uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
@@ -765,112 +765,39 @@ class AC101Source : public I2SSource {
       _ac101I2cBegin(); 
 
       #define CHIP_AUDIO_RS	  	0x00
-      #define PLL_CTRL1			    0x01
-      #define PLL_CTRL2			    0x02
       #define SYSCLK_CTRL		  	0x03
       #define MOD_CLK_ENA		  	0x04
       #define MOD_RST_CTRL	  	0x05
       #define I2S_SR_CTRL		  	0x06
       #define I2S1LCK_CTRL		  0x10
       #define I2S1_SDOUT_CTRL	  0x11
-      #define I2S1_SDIN_CTRL	  0x12
       #define I2S1_MXR_SRC	  	0x13
-      #define I2S1_VOL_CTRL1  	0x14
-      #define I2S1_VOL_CTRL2  	0x15
-      #define I2S1_VOL_CTRL3  	0x16
-      #define I2S1_VOL_CTRL4  	0x17
-      #define I2S1_MXR_GAIN	  	0x18
       #define ADC_DIG_CTRL	  	0x40
-      #define ADC_VOL_CTRL	  	0x41
-      #define HMIC_CTRL1		  	0x44
-      #define HMIC_CTRL2		  	0x45
-      #define HMIC_STATUS	  		0x46
-      #define DAC_DIG_CTRL	  	0x48
-      #define DAC_VOL_CTRL	  	0x49
-      #define DAC_MXR_SRC		  	0x4c
-      #define DAC_MXR_GAIN	  	0x4d
       #define ADC_APC_CTRL		  0x50
       #define ADC_SRC				    0x51
       #define ADC_SRCBST_CTRL	  0x52
       #define OMIXER_DACA_CTRL  0x53
       #define OMIXER_SR			    0x54
-      #define OMIXER_BST1_CTRL	0x55
       #define HPOUT_CTRL			  0x56
-      #define SPKOUT_CTRL			  0x58
-      #define AC_DAC_DAPCTRL		0xa0
-      #define AC_DAC_DAPHHPFC 	0xa1
-      #define AC_DAC_DAPLHPFC 	0xa2
-      #define AC_DAC_DAPLHAVC 	0xa3
-      #define AC_DAC_DAPLLAVC 	0xa4
-      #define AC_DAC_DAPRHAVC 	0xa5
-      #define AC_DAC_DAPRLAVC 	0xa6
-      #define AC_DAC_DAPHGDEC 	0xa7
-      #define AC_DAC_DAPLGDEC 	0xa8
-      #define AC_DAC_DAPHGATC 	0xa9
-      #define AC_DAC_DAPLGATC 	0xaa
-      #define AC_DAC_DAPHETHD 	0xab
-      #define AC_DAC_DAPLETHD 	0xac
-      #define AC_DAC_DAPHGKPA 	0xad
-      #define AC_DAC_DAPLGKPA 	0xae
-      #define AC_DAC_DAPHGOPA 	0xaf
-      #define AC_DAC_DAPLGOPA 	0xb0
-      #define AC_DAC_DAPOPT   	0xb1
-      #define DAC_DAP_ENA     	0xb5
 
-      _ac101I2cWrite(CHIP_AUDIO_RS, 0x123); // Reset (any value written does a reset)
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
-      _ac101I2cWrite(SPKOUT_CTRL, 0xe880);
+      _ac101I2cWrite(CHIP_AUDIO_RS, 0x123); // I think anything written here is a reset as 0x123 is kinda suss.
+      
+      delay(100);
 
-      //Enable the PLL from 256*44.1KHz MCLK source
-      _ac101I2cWrite(PLL_CTRL1, 0x014f);
-      //res |= ac101_write_reg(PLL_CTRL2, 0x83c0);
-      _ac101I2cWrite(PLL_CTRL2, 0x8600);
-
-      //Clocking system
-      _ac101I2cWrite(SYSCLK_CTRL, 0x8b08);
-      _ac101I2cWrite(MOD_CLK_ENA, 0x800c);
-      _ac101I2cWrite(MOD_RST_CTRL, 0x800c);
-      _ac101I2cWrite(I2S_SR_CTRL, 0b0111000000000000); //sample rate 22050 Hz
-      //AIF config
-      _ac101I2cWrite(I2S1LCK_CTRL, 0x8850);	//BCLK/LRCK
-      _ac101I2cWrite(I2S1_SDOUT_CTRL, 0xc000); //
-      _ac101I2cWrite(I2S1_SDIN_CTRL, 0xc000);
-      _ac101I2cWrite(I2S1_MXR_SRC, 0x2200); //
-
-      _ac101I2cWrite(ADC_SRCBST_CTRL, 0xccc4);
-      _ac101I2cWrite(ADC_SRC, 0x2020);
-      _ac101I2cWrite(ADC_DIG_CTRL, 0x8000);
-      _ac101I2cWrite(ADC_APC_CTRL, 0xbbc3);
-
-      //Path Configuration
-      _ac101I2cWrite(DAC_MXR_SRC, 0xcc00);
-      _ac101I2cWrite(DAC_DIG_CTRL, 0x8000);
-      _ac101I2cWrite(OMIXER_SR, 0x0081);
-      _ac101I2cWrite(OMIXER_DACA_CTRL, 0xf080); //}
-
-      //* Enable Speaker output
-      // _ac101I2cWrite(0x58, 0xeabd);
-
-      _ac101I2cWrite(ADC_SRC, 0b0000010000001000); // Line-in to ADC
-      _ac101I2cWrite(ADC_DIG_CTRL, 0x8000);
-      _ac101I2cWrite(ADC_APC_CTRL, 0x3bc0);
-      //I2S1_SDOUT_CTRL
-      //res |= _ac101I2cWrite(PLL_CTRL2, 0x8120);
-      _ac101I2cWrite(MOD_CLK_ENA, 0x800c);
-      _ac101I2cWrite(MOD_RST_CTRL, 0x800c);
-      //res |= _ac101I2cWrite(0x06, 0x3000);
-      //* Enable Headphoe output
-      _ac101I2cWrite(OMIXER_DACA_CTRL, 0xff80);
-      _ac101I2cWrite(HPOUT_CTRL, 0xc3c1);
-      _ac101I2cWrite(HPOUT_CTRL, 0xcb00);
-      vTaskDelay(100 / portTICK_PERIOD_MS);
-      _ac101I2cWrite(HPOUT_CTRL, 0xfbc0);
-
-      _ac101I2cWrite(OMIXER_SR, 0b0000010000001000); // default all 0
-
-      //* Enable Speaker output
-      _ac101I2cWrite(SPKOUT_CTRL, 0xeabd);
-
+      _ac101I2cWrite(SYSCLK_CTRL,       0b0000100000001000); // System Clock is I2S MCLK
+      _ac101I2cWrite(MOD_CLK_ENA,       0b1000000000001000); // I2S and ADC Clock Enable
+      _ac101I2cWrite(MOD_RST_CTRL,      0b1000000000001000); // I2S and ADC Clock Enable
+      _ac101I2cWrite(I2S_SR_CTRL,       0b0100000000000000); // set to 22050hz just in case
+      _ac101I2cWrite(I2S1LCK_CTRL,      0b1000000000110000); // set I2S slave mode, 24-bit word size
+      _ac101I2cWrite(I2S1_SDOUT_CTRL,   0b1100000000000000); // I2S enable Left/Right channels
+      _ac101I2cWrite(I2S1_MXR_SRC,      0b0010001000000000); // I2S digital Mixer, ADC L/R data
+      _ac101I2cWrite(ADC_SRCBST_CTRL,   0b0000000000000100); // mute all boosts. last 3 bits are reserved/default
+      _ac101I2cWrite(OMIXER_SR,         0b0000010000001000); // Line L/R to output mixer
+      _ac101I2cWrite(ADC_SRC,           0b0000010000001000); // Line L/R to ADC
+      _ac101I2cWrite(ADC_DIG_CTRL,      0b1000000000000000); // Enable ADC
+      _ac101I2cWrite(ADC_APC_CTRL,      0b1011100100000000); // ADC L/R enabled, 0dB gain
+      _ac101I2cWrite(OMIXER_DACA_CTRL,  0b0011111110000000); // L/R Analog Output Mixer enabled, headphone DC offset default
+      _ac101I2cWrite(HPOUT_CTRL,        0b1111101111110001); // Headphone out from Analog Mixer stage, no reduction in volume
 
     }
 
