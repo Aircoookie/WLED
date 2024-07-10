@@ -625,4 +625,14 @@
   #define HW_PIN_MISOSPI MISO
 #endif
 
+#ifdef WLED_DEBUG_ALL
+  #define WLED_DEBUG 1
+  #define WLED_DEBUG_FX 1
+  #define WLED_DEBUG_FS 1
+  #define WLED_DEBUG_BUS 1
+  #define WLED_DEBUG_PINMANAGER 1
+  #define WLED_DEBUG_USERMODS 1
+  #define WLED_DEBUG_MATH 1
+#endif
+
 #endif
