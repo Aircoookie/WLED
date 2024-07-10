@@ -2013,11 +2013,7 @@ class AudioReactive : public Usermod {
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 8:
-        #ifdef use_ac101_mic
-          DEBUGSR_PRINTLN(F("AR: AC101 Source (Mic)"));
-        #else
           DEBUGSR_PRINTLN(F("AR: AC101 Source (Line-In)"));
-        #endif
           audioSource = new AC101Source(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
           //useInputFilter = 0; // to disable low-cut software filtering and restore previous behaviour
           delay(100);
