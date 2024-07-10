@@ -761,27 +761,29 @@ class AC101Source : public I2SSource {
 
     void _ac101InitAdc() {
       // https://files.seeedstudio.com/wiki/ReSpeaker_6-Mics_Circular_Array_kit_for_Raspberry_Pi/reg/AC101_User_Manual_v1.1.pdf
-      //
-      _ac101I2cBegin(); 
+      // This supports mostly the older AI Thinkier AudioKit A1S that has an AC101 chip
+      // Newer versions use the ES3833 chip - which we also support.
 
-      #define CHIP_AUDIO_RS	  	0x00
-      #define SYSCLK_CTRL		  	0x03
-      #define MOD_CLK_ENA		  	0x04
-      #define MOD_RST_CTRL	  	0x05
-      #define I2S_SR_CTRL		  	0x06
-      #define I2S1LCK_CTRL		  0x10
-      #define I2S1_SDOUT_CTRL	  0x11
-      #define I2S1_MXR_SRC	  	0x13
-      #define ADC_DIG_CTRL	  	0x40
-      #define ADC_APC_CTRL		  0x50
-      #define ADC_SRC				    0x51
-      #define ADC_SRCBST_CTRL	  0x52
+      _ac101I2cBegin();
+
+      #define CHIP_AUDIO_RS     0x00
+      #define SYSCLK_CTRL       0x03
+      #define MOD_CLK_ENA       0x04
+      #define MOD_RST_CTRL      0x05
+      #define I2S_SR_CTRL       0x06
+      #define I2S1LCK_CTRL      0x10
+      #define I2S1_SDOUT_CTRL   0x11
+      #define I2S1_MXR_SRC      0x13
+      #define ADC_DIG_CTRL      0x40
+      #define ADC_APC_CTRL      0x50
+      #define ADC_SRC           0x51
+      #define ADC_SRCBST_CTRL   0x52
       #define OMIXER_DACA_CTRL  0x53
-      #define OMIXER_SR			    0x54
-      #define HPOUT_CTRL			  0x56
+      #define OMIXER_SR         0x54
+      #define HPOUT_CTRL        0x56
 
       _ac101I2cWrite(CHIP_AUDIO_RS, 0x123); // I think anything written here is a reset as 0x123 is kinda suss.
-      
+
       delay(100);
 
       _ac101I2cWrite(SYSCLK_CTRL,       0b0000100000001000); // System Clock is I2S MCLK
