@@ -87,11 +87,11 @@ class MPU6050Driver : public Usermod {
       int16_t accel_offset[3];
     };
     config_t config;
+    bool configDirty = true; // does the configuration need an update?
 
     // MPU control/status vars
     bool irqBound = false; // set true if we have bound the IRQ pin
     bool dmpReady = false;  // set true if DMP init was successful
-    uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
     uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
     uint16_t fifoCount;     // count of all bytes currently in FIFO
     uint8_t fifoBuffer[64]; // FIFO storage buffer
@@ -157,7 +157,10 @@ class MPU6050Driver : public Usermod {
         um_data.u_type[8] = UMT_UINT32;
       }
 
+      configDirty = false;  // we have now accepted the current configuration, success or not
+      
       if (!config.enabled) return;
+      // TODO: notice if these have changed ??
       if (i2c_scl<0 || i2c_sda<0) { DEBUG_PRINTLN(F("MPU6050: I2C is no good."));  return; }
       // Check the interrupt pin
       if (config.interruptPin >= 0) {
@@ -182,7 +185,7 @@ class MPU6050Driver : public Usermod {
 
       // load and configure the DMP
       DEBUG_PRINTLN(F("Initializing DMP..."));
-      devStatus = mpu.dmpInitialize();
+      auto devStatus = mpu.dmpInitialize();
 
       // set offsets (from config)
       mpu.setXGyroOffset(config.gyro_offset[0]);
@@ -241,6 +244,8 @@ class MPU6050Driver : public Usermod {
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
     void loop() {
+      if (configDirty) setup();
+
       // if programming failed, don't try to do anything
       if (!config.enabled || !dmpReady || strip.isUpdating()) return;
 
@@ -407,8 +412,8 @@ class MPU6050Driver : public Usermod {
           irqBound = false;
         }
 
-        // Just re-init
-        setup();
+        // Re-call setup on the next loop()
+        configDirty = true;
       }
 
       return configComplete;
