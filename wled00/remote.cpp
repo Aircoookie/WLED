@@ -68,7 +68,7 @@ static bool resetNightMode() {
 static void brightnessUp() {
   if (nightModeActive()) return;
   // dumb incremental search is efficient enough for so few items
-  for (uint8_t index = 0; index < numBrightnessSteps; ++index) {
+  for (unsigned index = 0; index < numBrightnessSteps; ++index) {
     if (brightnessSteps[index] > bri) {
       bri = brightnessSteps[index];
       break;

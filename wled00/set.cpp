@@ -113,7 +113,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       pinManager.deallocatePin(irPin, PinOwner::IR);
     }
     #endif
-    for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
+    for (unsigned s=0; s<WLED_MAX_BUTTONS; s++) {
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
         pinManager.deallocatePin(btnPin[s], PinOwner::Button);
         #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a function to check touch state, detach interrupt
@@ -123,11 +123,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip, awmode, channelSwap, maPerLed;
-    uint16_t length, start, maMax;
+    unsigned colorOrder, type, skip, awmode, channelSwap, maPerLed;
+    unsigned length, start, maMax;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
-    uint16_t ablMilliampsMax = request->arg(F("MA")).toInt();
+    unsigned ablMilliampsMax = request->arg(F("MA")).toInt();
     BusManager::setMilliampsMax(ablMilliampsMax);
 
     autoSegments = request->hasArg(F("MS"));
@@ -505,7 +505,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     macroAlexaOff = request->arg(F("A1")).toInt();
     macroCountdown = request->arg(F("MC")).toInt();
     macroNl = request->arg(F("MN")).toInt();
-    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+    for (unsigned i=0; i<WLED_MAX_BUTTONS; i++) {
       char mp[4] = "MP"; mp[2] = (i<10?48:55)+i; mp[3] = 0; // short
       char ml[4] = "ML"; ml[2] = (i<10?48:55)+i; ml[3] = 0; // long
       char md[4] = "MD"; md[2] = (i<10?48:55)+i; md[3] = 0; // double
@@ -555,10 +555,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     if (request->hasArg(F("PIN"))) {
       const char *pin = request->arg(F("PIN")).c_str();
-      uint8_t pinLen = strlen(pin);
+      unsigned pinLen = strlen(pin);
       if (pinLen == 4 || pinLen == 0) {
-        uint8_t numZeros = 0;
-        for (uint8_t i = 0; i < pinLen; i++) numZeros += (pin[i] == '0');
+        unsigned numZeros = 0;
+        for (unsigned i = 0; i < pinLen; i++) numZeros += (pin[i] == '0');
         if (numZeros < pinLen || pinLen == 0) { // ignore 0000 input (placeholder)
           strlcpy(settingsPIN, pin, 5);
         }
@@ -682,7 +682,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     JsonObject um = pDoc->createNestedObject("um");
 
     size_t args = request->args();
-    uint16_t j=0;
+    unsigned j=0;
     for (size_t i=0; i<args; i++) {
       String name = request->argName(i);
       String value = request->arg(i);
@@ -763,12 +763,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (strip.isMatrix) {
       strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
       strip.panel.reserve(strip.panels); // pre-allocate memory
-      for (uint8_t i=0; i<strip.panels; i++) {
+      for (unsigned i=0; i<strip.panels; i++) {
         WS2812FX::Panel p;
         char pO[8] = { '\0' };
         snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
         pO[7] = '\0';
-        uint8_t l = strlen(pO);
+        unsigned l = strlen(pO);
         // create P0B, P1B, ..., P63B, etc for other PxxX
         pO[l] = 'B'; if (!request->hasArg(pO)) break;
         pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
@@ -822,7 +822,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
-    byte t = getNumVal(&req, pos);
+    unsigned t = getNumVal(&req, pos);
     if (t < strip.getSegmentsNum()) {
       selectedSeg = t;
       singleSegment = true;
@@ -832,8 +832,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   Segment& selseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
-    byte t = getNumVal(&req, pos);
-    if (t == 2) for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).selected = false; // unselect other segments
+    unsigned t = getNumVal(&req, pos);
+    if (t == 2) for (unsigned i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).selected = false; // unselect other segments
     selseg.selected = t;
   }
 
@@ -1009,7 +1009,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SC"));
   if (pos > 0) {
     byte temp;
-    for (uint8_t i=0; i<4; i++) {
+    for (unsigned i=0; i<4; i++) {
       temp        = colIn[i];
       colIn[i]    = colInSec[i];
       colInSec[i] = temp;
@@ -1050,7 +1050,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged || custom1Changed || custom2Changed || custom3Changed || check1Changed || check2Changed || check3Changed);
 
   // apply to main and all selected segments to prevent #1618.
-  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+  for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
     if (fxModeChanged)    seg.setMode(effectIn, req.indexOf(F("FXD="))>0);  // apply defaults if FXD= is specified

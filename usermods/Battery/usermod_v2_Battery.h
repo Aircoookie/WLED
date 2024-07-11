@@ -5,7 +5,7 @@
 #include "UMBattery.h"
 #include "types/UnkownUMBattery.h"
 #include "types/LionUMBattery.h"
-#include "types/LiPoUMBattery.h"
+#include "types/LipoUMBattery.h"
 
 /*
  * Usermod by Maximilian Mewes

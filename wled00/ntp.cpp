@@ -377,7 +377,7 @@ void checkTimers()
     if (!hour(localTime) && minute(localTime)==1) calculateSunriseAndSunset();
 
     DEBUG_PRINTF_P(PSTR("Local time: %02d:%02d\n"), hour(localTime), minute(localTime));
-    for (uint8_t i = 0; i < 8; i++)
+    for (unsigned i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
           && (timerWeekday[i] & 0x01) //timer is enabled

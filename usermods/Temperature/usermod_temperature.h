@@ -113,7 +113,7 @@ float UsermodTemperature::readDallas() {
     #ifdef WLED_DEBUG_USERMODS
     if (OneWire::crc8(data,8) != data[8]) {
       DEBUGUM_PRINTLN(F("CRC error reading temperature."));
-      for (byte i=0; i < 9; i++) DEBUGUM_PRINTF_P(PSTR("0x%02X "), data[i]);
+      for (unsigend i=0; i < 9; i++) DEBUGUM_PRINTF_P(PSTR("0x%02X "), data[i]);
       DEBUGUM_PRINT(F(" => "));
       DEBUGUM_PRINTF_P(PSTR("0x%02X\n"), OneWire::crc8(data,8));
     }
@@ -133,7 +133,7 @@ float UsermodTemperature::readDallas() {
         break;
     }
   }
-  for (byte i=1; i<9; i++) data[0] &= data[i];
+  for (unsigned i=1; i<9; i++) data[0] &= data[i];
   return data[0]==0xFF ? -127.0f : retVal;
 }
 
