@@ -86,7 +86,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(apBehavior, ap[F("behav")]);
   /*
   JsonArray ap_ip = ap["ip"];
-  for (byte i = 0; i < 4; i++) {
+  for (unsigned i = 0; i < 4; i++) {
     apIP[i] = ap_ip;
   }
   */
@@ -565,7 +565,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonArray if_hue_ip = if_hue["ip"];
 
-  for (byte i = 0; i < 4; i++)
+  for (unsigned i = 0; i < 4; i++)
     CJSON(hueIP[i], if_hue_ip[i]);
 #endif
 
@@ -793,7 +793,7 @@ void serializeConfig() {
   ethernet["type"] = ethernetType;
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     JsonArray pins = ethernet.createNestedArray("pin");
-    for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) pins.add(esp32_nonconfigurable_ethernet_pins[p].pin);
+    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) pins.add(esp32_nonconfigurable_ethernet_pins[p].pin);
     if (ethernetBoards[ethernetType].eth_power>=0)     pins.add(ethernetBoards[ethernetType].eth_power);
     if (ethernetBoards[ethernetType].eth_mdc>=0)       pins.add(ethernetBoards[ethernetType].eth_mdc);
     if (ethernetBoards[ethernetType].eth_mdio>=0)      pins.add(ethernetBoards[ethernetType].eth_mdio);
@@ -1046,7 +1046,7 @@ void serializeConfig() {
   if_hue_recv["col"] = hueApplyColor;
 
   JsonArray if_hue_ip = if_hue.createNestedArray("ip");
-  for (byte i = 0; i < 4; i++) {
+  for (unsigned i = 0; i < 4; i++) {
     if_hue_ip.add(hueIP[i]);
   }
 #endif
@@ -1081,7 +1081,7 @@ void serializeConfig() {
 
   JsonArray timers_ins = timers.createNestedArray("ins");
 
-  for (byte i = 0; i < 10; i++) {
+  for (unsigned i = 0; i < 10; i++) {
     if (timerMacro[i] == 0 && timerHours[i] == 0 && timerMinutes[i] == 0) continue; // sunrise/sunset get saved always (timerHours=255)
     JsonObject timers_ins0 = timers_ins.createNestedObject();
     timers_ins0["en"] = (timerWeekday[i] & 0x01);
@@ -1113,7 +1113,7 @@ void serializeConfig() {
   dmx[F("start-led")] = DMXStartLED;
 
   JsonArray dmx_fixmap = dmx.createNestedArray(F("fixmap"));
-  for (byte i = 0; i < 15; i++) {
+  for (unsigned i = 0; i < 15; i++) {
     dmx_fixmap.add(DMXFixtureMap[i]);
   }
 

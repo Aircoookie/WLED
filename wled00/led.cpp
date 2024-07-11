@@ -226,7 +226,7 @@ void handleNightlight()
       nightlightDelayMs = (unsigned)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
-      for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
+      for (unsigned i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
       if (nightlightMode == NL_MODE_SUN)
       {
         //save current
@@ -251,7 +251,7 @@ void handleNightlight()
       bri = briNlT + ((nightlightTargetBri - briNlT)*nper);
       if (nightlightMode == NL_MODE_COLORFADE)                                         // color fading only is enabled with "NF=2"
       {
-        for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
+        for (unsigned i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
       }
       colorUpdated(CALL_MODE_NO_NOTIFY);
     }

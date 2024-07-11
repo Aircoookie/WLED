@@ -197,7 +197,7 @@ void prepareHostname(char* hostname)
 
 bool isAsterisksOnly(const char* str, byte maxLen)
 {
-  for (byte i = 0; i < maxLen; i++) {
+  for (unsigned i = 0; i < maxLen; i++) {
     if (str[i] == 0) break;
     if (str[i] != '*') return false;
   }

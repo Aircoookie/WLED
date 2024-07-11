@@ -445,8 +445,8 @@ void FourLineDisplayUsermod::setPowerSave(uint8_t save) {
 
 void FourLineDisplayUsermod::center(String &line, uint8_t width) {
   int len = line.length();
-  if (len<width) for (byte i=(width-len)/2; i>0; i--) line = ' ' + line;
-  for (byte i=line.length(); i<width; i++) line += ' ';
+  if (len<width) for (unsigned i=(width-len)/2; i>0; i--) line = ' ' + line;
+  for (unsigned i=line.length(); i<width; i++) line += ' ';
 }
 
 void FourLineDisplayUsermod::draw2x2GlyphIcons() {
@@ -819,28 +819,28 @@ void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const c
   if (overlayUntil == 0) {
     lockRedraw = true;
     // Find the mode name in JSON
-    uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
+    unsigned printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
     if (lineBuffer[0]=='*' && lineBuffer[1]==' ') {
       // remove "* " from dynamic palettes
-      for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
+      for (unsigned i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
       printedChars -= 2;
     } else if ((lineBuffer[0]==' ' && lineBuffer[1]>127)) {
       // remove note symbol from effect names
-      for (byte i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
+      for (unsigned i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
       printedChars -= 5;
     }
     if (lineHeight == 2) {                                 // use this code for 8 line display
       char smallBuffer1[MAX_MODE_LINE_SPACE];
       char smallBuffer2[MAX_MODE_LINE_SPACE];
-      uint8_t smallChars1 = 0;
-      uint8_t smallChars2 = 0;
+      unsigned smallChars1 = 0;
+      unsigned smallChars2 = 0;
       if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
         while (printedChars < (MAX_MODE_LINE_SPACE-1)) lineBuffer[printedChars++]=' ';
         lineBuffer[printedChars] = 0;
         drawString(1, row*lineHeight, lineBuffer);
       } else {                                             // for long names divide the text into 2 lines and print them small
         bool spaceHit = false;
-        for (uint8_t i = 0; i < printedChars; i++) {
+        for (unsigned i = 0; i < printedChars; i++) {
           switch (lineBuffer[i]) {
             case ' ':
               if (i > 4 && !spaceHit) {
@@ -865,8 +865,8 @@ void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const c
       }
     } else {                                             // use this code for 4 ling displays
       char smallBuffer3[MAX_MODE_LINE_SPACE+1];          // uses 1x1 icon for mode/palette
-      uint8_t smallChars3 = 0;
-      for (uint8_t i = 0; i < MAX_MODE_LINE_SPACE; i++) smallBuffer3[smallChars3++] = (i >= printedChars) ? ' ' : lineBuffer[i];
+      unsigned smallChars3 = 0;
+      for (unsigned i = 0; i < MAX_MODE_LINE_SPACE; i++) smallBuffer3[smallChars3++] = (i >= printedChars) ? ' ' : lineBuffer[i];
       smallBuffer3[smallChars3] = 0;
       drawString(1, row*lineHeight, smallBuffer3, true);
     }
@@ -1265,7 +1265,7 @@ void FourLineDisplayUsermod::addToConfig(JsonObject& root) {
 bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
   bool needsRedraw    = false;
   DisplayType newType = type;
-  int8_t oldPin[3]; for (byte i=0; i<3; i++) oldPin[i] = ioPin[i];
+  int8_t oldPin[3]; for (unsigned i=0; i<3; i++) oldPin[i] = ioPin[i];
 
   JsonObject top = root[FPSTR(_name)];
   if (top.isNull()) {
@@ -1276,7 +1276,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
 
   enabled       = top[FPSTR(_enabled)] | enabled;
   newType       = top["type"] | newType;
-  for (byte i=0; i<3; i++) ioPin[i] = top["pin"][i] | ioPin[i];
+  for (unsigned i=0; i<3; i++) ioPin[i] = top["pin"][i] | ioPin[i];
   flip          = top[FPSTR(_flip)] | flip;
   contrast      = top[FPSTR(_contrast)] | contrast;
   #ifndef ARDUINO_ARCH_ESP32
@@ -1302,7 +1302,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
     DEBUG_PRINTLN(F(" config (re)loaded."));
     // changing parameters from settings page
     bool pinsChanged = false;
-    for (byte i=0; i<3; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
+    for (unsigned i=0; i<3; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
     if (pinsChanged || type!=newType) {
       bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type == SSD1309_SPI64);
       bool newSPI = (newType == SSD1306_SPI || newType == SSD1306_SPI64 || newType == SSD1309_SPI64);

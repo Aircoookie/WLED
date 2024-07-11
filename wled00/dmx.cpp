@@ -22,7 +22,7 @@ void handleDMX()
   bool calc_brightness = true;
 
    // check if no shutter channel is set
-   for (byte i = 0; i < DMXChannels; i++)
+   for (unsigned i = 0; i < DMXChannels; i++)
    {
      if (DMXFixtureMap[i] == 5) calc_brightness = false;
    }
