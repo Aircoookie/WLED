@@ -1294,8 +1294,9 @@ void WS2812FX::finalizeInit(void) {
     const unsigned defDataPins[] = {DATA_PINS};
     const unsigned defCounts[] = {PIXEL_COUNTS};
     const unsigned defNumPins = ((sizeof defDataPins) / (sizeof defDataPins[0]));
-    const unsigned defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
-    const unsigned defNumBusses = defNumPins > defNumCounts && defNumCounts > 1 && defNumPins%defNumCounts == 0 ? defNumCounts : defNumPins;
+    const unsigned defNumCounts = ((sizeof defCounts) / (sizeof defCounts[0]));
+    // if number of pins is divisible by counts, use number of counts to determine number of buses, otherwise use pins
+    const unsigned defNumBusses = defNumPins > defNumCounts && defNumPins%defNumCounts == 0 ? defNumCounts : defNumPins;
     const unsigned pinsPerBus = defNumPins / defNumBusses;
     unsigned prevLen = 0;
     for (unsigned i = 0; i < defNumBusses && i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
@@ -1308,6 +1309,7 @@ void WS2812FX::finalizeInit(void) {
         while (pinManager.isPinAllocated(defPin[0]) && defPin[0] < WLED_NUM_PINS) defPin[0]++;
       }
       unsigned start = prevLen;
+      // if we have less counts than pins and they do not align, use last known count to set current count
       unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
       BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, useGlobalLedBuffer);

@@ -156,7 +156,7 @@ bool oappendi(int i)
 
 bool oappend(const char* txt)
 {
-  uint16_t len = strlen(txt);
+  unsigned len = strlen(txt);
   if ((obuf == nullptr) || (olen + len >= SETTINGS_STACK_BUF_SIZE)) { // sanity checks
 #ifdef WLED_DEBUG
     DEBUG_PRINT(F("oappend() buffer overflow. Cannot append "));
@@ -175,7 +175,7 @@ void prepareHostname(char* hostname)
 {
   sprintf_P(hostname, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
-  uint8_t pos = 5;          // keep "wled-"
+  unsigned pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length
     if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
       hostname[pos] = *pC;
@@ -197,7 +197,7 @@ void prepareHostname(char* hostname)
 
 bool isAsterisksOnly(const char* str, byte maxLen)
 {
-  for (byte i = 0; i < maxLen; i++) {
+  for (unsigned i = 0; i < maxLen; i++) {
     if (str[i] == 0) break;
     if (str[i] != '*') return false;
   }
@@ -269,9 +269,9 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
     return strlen(dest);
   }
 
-  uint8_t qComma = 0;
+  unsigned qComma = 0;
   bool insideQuotes = false;
-  uint8_t printedChars = 0;
+  unsigned printedChars = 0;
   char singleJsonSymbol;
   size_t len = strlen_P(src);
 
@@ -308,11 +308,11 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
   if (mode < strip.getModeCount()) {
     String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
-      int16_t start = lineBuffer.indexOf('@');
-      int16_t stop  = lineBuffer.indexOf(';', start);
+      unsigned start = lineBuffer.indexOf('@');
+      unsigned stop  = lineBuffer.indexOf(';', start);
       if (start>0 && stop>0) {
         String names = lineBuffer.substring(start, stop); // include @
-        int16_t nameBegin = 1, nameEnd, nameDefault;
+        unsigned nameBegin = 1, nameEnd, nameDefault;
         if (slider < 10) {
           for (size_t i=0; i<=slider; i++) {
             const char *tmpstr;

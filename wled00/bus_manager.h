@@ -356,6 +356,7 @@ class BusManager {
 
     //utility to get the approx. memory usage of a given BusConfig
     static uint32_t memUsage(BusConfig &bc);
+    static uint32_t memUsage(unsigned channels, unsigned count, unsigned buses = 1);
     static uint16_t currentMilliamps(void) { return _milliAmpsUsed; }
     static uint16_t ablMilliampsMax(void)  { return _milliAmpsMax; }
 

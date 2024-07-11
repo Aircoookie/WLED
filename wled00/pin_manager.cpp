@@ -295,7 +295,7 @@ byte PinManagerClass::allocateLedc(byte channels)
 {
   if (channels > MAX_LED_CHANNELS || channels == 0) return 255;
   byte ca = 0;
-  for (byte i = 0; i < MAX_LED_CHANNELS; i++) {
+  for (unsigned i = 0; i < MAX_LED_CHANNELS; i++) {
     byte by = i >> 3;
     byte bi = i - 8*by;
     if (bitRead(ledcAlloc[by], bi)) { //found occupied pin
@@ -305,7 +305,7 @@ byte PinManagerClass::allocateLedc(byte channels)
     }
     if (ca >= channels) { //enough free channels
       byte in = (i + 1) - ca;
-      for (byte j = 0; j < ca; j++) {
+      for (unsigned j = 0; j < ca; j++) {
         byte bChan = in + j;
         byte byChan = bChan >> 3;
         byte biChan = bChan - 8*byChan;
@@ -319,7 +319,7 @@ byte PinManagerClass::allocateLedc(byte channels)
 
 void PinManagerClass::deallocateLedc(byte pos, byte channels)
 {
-  for (byte j = pos; j < pos + channels; j++) {
+  for (unsigned j = pos; j < pos + channels; j++) {
     if (j > MAX_LED_CHANNELS) return;
     byte by = j >> 3;
     byte bi = j - 8*by;
