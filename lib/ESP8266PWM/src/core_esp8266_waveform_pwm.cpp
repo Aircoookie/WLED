@@ -1,6 +1,8 @@
 /* esp8266_waveform imported from platform source code
    Modified for WLED to work around a fault in the NMI handling,
    which can result in the system locking up and hard WDT crashes.
+
+   Imported from https://github.com/esp8266/Arduino/blob/7e0d20e2b9034994f573a236364e0aef17fd66de/cores/esp8266/core_esp8266_waveform_pwm.cpp
 */
 
 /*
@@ -497,6 +499,7 @@ static inline IRAM_ATTR uint32_t earliest(uint32_t a, uint32_t b) {
     return (da < db) ? a : b;
 }
 
+// ----- @willmmiles begin patch -----
 // NMI crash workaround
 // Sometimes the NMI fails to return, stalling the CPU.  When this happens,
 // the next NMI gets a return address /inside the NMI handler function/.
@@ -519,6 +522,7 @@ static inline IRAM_ATTR void nmiCrashWorkaround() {
     __asm__ __volatile__("wsr %0,epc3; wsr %1,eps3"::"a"(epc3_backup),"a"(eps3_backup));
   }
 }
+// ----- @willmmiles end patch -----
 
 
 // The SDK and hardware take some time to actually get to our NMI code, so
@@ -540,7 +544,9 @@ static inline IRAM_ATTR void nmiCrashWorkaround() {
 #define MINIRQTIME microsecondsToClockCycles(6)
 
 static IRAM_ATTR void timer1Interrupt() {
+  // ----- @willmmiles begin patch -----
   nmiCrashWorkaround();
+  // ----- @willmmiles end patch -----
 
   // Flag if the core is at 160 MHz, for use by adjust()
   bool turbo = (*(uint32_t*)0x3FF00014) & 1 ? true : false;
