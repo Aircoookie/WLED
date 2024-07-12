@@ -214,7 +214,10 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM: IRAM_ATTR conditionally
 {
   if (Segment::maxHeight==1) return; // not a matrix set-up
-  if (x<0 || y<0 || x >= virtualWidth() || y >= virtualHeight()) return;  // if pixel would fall out of virtual segment just exit
+  const int_fast16_t cols = virtualWidth();  // WLEDMM optimization
+  const int_fast16_t rows = virtualHeight();
+
+  if (x<0 || y<0 || x >= cols || y >= rows) return;  // if pixel would fall out of virtual segment just exit
 
   unsigned i = UINT_MAX;
   bool sameColor = false;
@@ -231,11 +234,11 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM:
   }
 
 #if 0 // this is a dangerous optimization
-  if ((i < UINT_MAX) && sameColor && (call > 0) && (ledsrgb[i] == CRGB(col)) && (_globalLeds == nullptr)) return; // WLEDMM looks like nothing to do (but we don't trust globalleds)
+  if ((i < UINT_MAX) && sameColor && (call > 0) && (!transitional) && (ledsrgb[i] == CRGB(col)) && (_globalLeds == nullptr)) return; // WLEDMM looks like nothing to do (but we don't trust globalleds)
 #endif
 
-  if (reverse  ) x = virtualWidth()  - x - 1;
-  if (reverse_y) y = virtualHeight() - y - 1;
+  if (reverse  ) x = cols  - x - 1;
+  if (reverse_y) y = rows - y - 1;
   if (transpose) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
   // WLEDMM shortcut when no grouping/spacing used
@@ -245,27 +248,32 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM:
     return;
   }
 
-  x *= groupLength(); // expand to physical pixels
-  y *= groupLength(); // expand to physical pixels
-  if (x >= width() || y >= height()) return;  // if pixel would fall out of segment just exit
+  const int_fast16_t glen_ = groupLength(); // WLEDMM optimization
+  const int_fast16_t wid_ =  width();
+  const int_fast16_t hei_ = height();
 
-  for (int j = 0; j < grouping; j++) {   // groupping vertically
-    for (int g = 0; g < grouping; g++) { // groupping horizontally
+  x *= glen_; // expand to physical pixels
+  y *= glen_; // expand to physical pixels
+  if (x >= wid_ || y >= hei_) return;  // if pixel would fall out of segment just exit
+
+  const int grp_ = grouping; // WLEDMM optimization
+  for (int j = 0; j < grp_; j++) {   // groupping vertically
+    for (int g = 0; g < grp_; g++) { // groupping horizontally
       uint_fast16_t xX = (x+g), yY = (y+j);    //WLEDMM: use fast types
-      if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
+      if (xX >= wid_ || yY >= hei_) continue; // we have reached one dimension's end
 
       strip.setPixelColorXY(start + xX, startY + yY, col);
 
       if (mirror) { //set the corresponding horizontally mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
-        else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
+        if (transpose) strip.setPixelColorXY(start + xX, startY + hei_ - yY - 1, col);
+        else           strip.setPixelColorXY(start + wid_ - xX - 1, startY + yY, col);
       }
       if (mirror_y) { //set the corresponding vertically mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
-        else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
+        if (transpose) strip.setPixelColorXY(start + wid_ - xX - 1, startY + yY, col);
+        else           strip.setPixelColorXY(start + xX, startY + hei_ - yY - 1, col);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, col);
+        strip.setPixelColorXY(wid_ - xX - 1, hei_ - yY - 1, col);
       }
     }
   }
