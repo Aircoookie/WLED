@@ -76,7 +76,7 @@ static uint8_t  soundAgc = 0;                   // Automagic gain control: 0 - n
 static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
 static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
-static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
+static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same time as samplePeak, but reset by transmitAudioData
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 
@@ -94,7 +94,7 @@ static uint16_t decayTime = 1400;             // int: decay time in milliseconds
 
 // peak detection
 #ifdef ARDUINO_ARCH_ESP32
-static void detectSamplePeak(void);  // peak detection function (needs scaled FFT reasults in vReal[]) - no used for 8266 receive-only mode
+static void detectSamplePeak(void);  // peak detection function (needs scaled FFT results in vReal[]) - no used for 8266 receive-only mode
 #endif
 static void autoResetPeak(void);     // peak auto-reset function
 static uint8_t maxVol = 31;          // (was 10) Reasonable value for constant volume for 'peak detector', as it won't always trigger  (deprecated)
@@ -587,19 +587,21 @@ class AudioReactive : public Usermod {
     #endif
 #endif
 
-    // new "V2" audiosync struct - 40 Bytes
-    struct audioSyncPacket {
-      char    header[6];      //  06 Bytes
-      float   sampleRaw;      //  04 Bytes  - either "sampleRaw" or "rawSampleAgc" depending on soundAgc setting
-      float   sampleSmth;     //  04 Bytes  - either "sampleAvg" or "sampleAgc" depending on soundAgc setting
-      uint8_t samplePeak;     //  01 Bytes  - 0 no peak; >=1 peak detected. In future, this will also provide peak Magnitude
-      uint8_t reserved1;      //  01 Bytes  - for future extensions - not used yet
-      uint8_t fftResult[16];  //  16 Bytes
-      float  FFT_Magnitude;   //  04 Bytes
-      float  FFT_MajorPeak;   //  04 Bytes
+    // new "V2" audiosync struct - 44 Bytes
+    struct __attribute__ ((packed)) audioSyncPacket {  // "packed" ensures that there are no additional gaps
+      char    header[6];      //  06 Bytes  offset 0
+      uint8_t reserved1[2];   //  02 Bytes, offset 6  - gap required by the compiler - not used yet 
+      float   sampleRaw;      //  04 Bytes  offset 8  - either "sampleRaw" or "rawSampleAgc" depending on soundAgc setting
+      float   sampleSmth;     //  04 Bytes  offset 12 - either "sampleAvg" or "sampleAgc" depending on soundAgc setting
+      uint8_t samplePeak;     //  01 Bytes  offset 16 - 0 no peak; >=1 peak detected. In future, this will also provide peak Magnitude
+      uint8_t reserved2;      //  01 Bytes  offset 17 - for future extensions - not used yet
+      uint8_t fftResult[16];  //  16 Bytes  offset 18
+      uint16_t reserved3;     //  02 Bytes, offset 34 - gap required by the compiler - not used yet
+      float  FFT_Magnitude;   //  04 Bytes  offset 36
+      float  FFT_MajorPeak;   //  04 Bytes  offset 40
     };
 
-    // old "V1" audiosync struct - 83 Bytes - for backwards compatibility
+    // old "V1" audiosync struct - 83 Bytes payload, 88 bytes total (with padding added by compiler) - for backwards compatibility
     struct audioSyncPacket_v1 {
       char header[6];         //  06 Bytes
       uint8_t myVals[32];     //  32 Bytes
@@ -611,6 +613,8 @@ class AudioReactive : public Usermod {
       double FFT_Magnitude;   //  08 Bytes
       double FFT_MajorPeak;   //  08 Bytes
     };
+
+    #define UDPSOUND_MAX_PACKET 88 // max packet size for audiosync
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
     #ifdef UM_AUDIOREACTIVE_ENABLE
@@ -997,7 +1001,6 @@ class AudioReactive : public Usermod {
       transmitData.sampleSmth  = (soundAgc) ? sampleAgc   : sampleAvg;
       transmitData.samplePeak  = udpSamplePeak ? 1:0;
       udpSamplePeak            = false;           // Reset udpSamplePeak after we've transmitted it
-      transmitData.reserved1   = 0;
 
       for (int i = 0; i < NUM_GEQ_CHANNELS; i++) {
         transmitData.fftResult[i] = (uint8_t)constrain(fftResult[i], 0, 254);
@@ -1023,10 +1026,13 @@ class AudioReactive : public Usermod {
     }
 
     void decodeAudioData(int packetSize, uint8_t *fftBuff) {
-      audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
+      audioSyncPacket receivedPacket;
+      memset(&receivedPacket, 0, sizeof(receivedPacket));                                  // start clean
+      memcpy(&receivedPacket, fftBuff, min((unsigned)packetSize, (unsigned)sizeof(receivedPacket))); // don't violate alignment - thanks @willmmiles#
+
       // update samples for effects
-      volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
-      volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
+      volumeSmth   = fmaxf(receivedPacket.sampleSmth, 0.0f);
+      volumeRaw    = fmaxf(receivedPacket.sampleRaw, 0.0f);
 #ifdef ARDUINO_ARCH_ESP32
       // update internal samples
       sampleRaw    = volumeRaw;
@@ -1039,15 +1045,15 @@ class AudioReactive : public Usermod {
       // If it's true already, then the animation still needs to respond.
       autoResetPeak();
       if (!samplePeak) {
-            samplePeak = receivedPacket->samplePeak >0 ? true:false;
+            samplePeak = receivedPacket.samplePeak >0 ? true:false;
             if (samplePeak) timeOfPeak = millis();
             //userVar1 = samplePeak;
       }
       //These values are only computed by ESP32
-      for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket->fftResult[i];
-      my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
+      for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket.fftResult[i];
+      my_magnitude  = fmaxf(receivedPacket.FFT_Magnitude, 0.0f);
       FFT_Magnitude = my_magnitude;
-      FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
+      FFT_MajorPeak = constrain(receivedPacket.FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
     }
 
     void decodeAudioData_v1(int packetSize, uint8_t *fftBuff) {
@@ -1084,9 +1090,12 @@ class AudioReactive : public Usermod {
       bool haveFreshData = false;
 
       size_t packetSize = fftUdp.parsePacket();
-      if (packetSize > 5) {
+#ifdef ARDUINO_ARCH_ESP32
+      if ((packetSize > 0) && ((packetSize < 5) || (packetSize > UDPSOUND_MAX_PACKET))) fftUdp.flush(); // discard invalid packets (too small or too big) - only works on esp32
+#endif
+      if ((packetSize > 5) && (packetSize <= UDPSOUND_MAX_PACKET)) {
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
-        uint8_t fftBuff[packetSize];
+        static uint8_t fftBuff[UDPSOUND_MAX_PACKET+1] = { 0 }; // static buffer for receiving, to reuse the same memory and avoid heap fragmentation
         fftUdp.read(fftBuff, packetSize);
 
         // VERIFY THAT THIS IS A COMPATIBLE PACKET
@@ -1229,7 +1238,7 @@ class AudioReactive : public Usermod {
 
       if (!audioSource) enabled = false;                 // audio failed to initialise
 #endif
-      if (enabled) onUpdateBegin(false);                 // create FFT task, and initailize network
+      if (enabled) onUpdateBegin(false);                 // create FFT task, and initialize network
 
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -1243,7 +1252,7 @@ class AudioReactive : public Usermod {
         disableSoundProcessing = true;
       }
 #endif
-            if (enabled) disableSoundProcessing = false;       // all good - enable audio processing
+      if (enabled) disableSoundProcessing = false;       // all good - enable audio processing
       if (enabled) connectUDPSoundSync();
       if (enabled && addPalettes) createAudioPalettes();
       initDone = true;
@@ -1803,7 +1812,6 @@ class AudioReactive : public Usermod {
       dynLim[F("rise")] = attackTime;
       dynLim[F("fall")] = decayTime;
 
-
       JsonObject sync = top.createNestedObject("sync");
       sync["port"] = audioSyncPort;
       sync["mode"] = audioSyncEnabled;
@@ -2008,8 +2016,8 @@ CRGB AudioReactive::getCRGBForBand(int x, int pal) {
 void AudioReactive::fillAudioPalettes() {
   if (!palettes) return;
   size_t lastCustPalette = strip.customPalettes.size();
-  if (lastCustPalette >= palettes) lastCustPalette -= palettes;
-  for (size_t pal=0; pal<palettes; pal++) {
+  if (int(lastCustPalette) >= palettes) lastCustPalette -= palettes;
+  for (int pal=0; pal<palettes; pal++) {
     uint8_t tcp[16];  // Needs to be 4 times however many colors are being used.
                       // 3 colors = 12, 4 colors = 16, etc.
 
