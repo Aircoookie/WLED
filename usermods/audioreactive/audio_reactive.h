@@ -1095,7 +1095,7 @@ class AudioReactive : public Usermod {
 #endif
       if ((packetSize > 5) && (packetSize <= UDPSOUND_MAX_PACKET)) {
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
-        static uint8_t fftBuff[UDPSOUND_MAX_PACKET+1] = { 0 }; // static buffer for receiving, to reuse the same memory and avoid heap fragmentation
+        uint8_t fftBuff[UDPSOUND_MAX_PACKET+1] = { 0 }; // fixed-size buffer for receiving (stack), to avoid heap fragmentation caused by variable sized arrays
         fftUdp.read(fftBuff, packetSize);
 
         // VERIFY THAT THIS IS A COMPATIBLE PACKET
