@@ -945,13 +945,13 @@ String BusManager::getLEDTypes() {
 
   std::vector<LEDType> busTypes;
 
+  busTypes = BusOnOff::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+
   busTypes = BusPwm::getLEDTypes();
   types.insert(types.end(), busTypes.begin(), busTypes.end());
 
   busTypes = BusNetwork::getLEDTypes();
-  types.insert(types.end(), busTypes.begin(), busTypes.end());
-
-  busTypes = BusOnOff::getLEDTypes();
   types.insert(types.end(), busTypes.begin(), busTypes.end());
 
   for(int t = 0; t < types.size(); t++) {
