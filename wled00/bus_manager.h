@@ -6,6 +6,7 @@
  */
 
 #include "const.h"
+#include <vector>
 
 //colors.cpp
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
