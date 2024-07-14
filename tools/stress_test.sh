@@ -18,8 +18,9 @@ JSON_TARGETS=('json/state' 'json/info' 'json/si', 'json/palettes' 'json/fxdata' 
 FILE_TARGETS=('' 'iro.js' 'rangetouch.js' 'settings' 'settings/wifi')
 # Replicate one target many times
 function replicate() {
-  printf "${1}?%d " {1..8}
+  printf "${1}?%d " {1..40}
 }
+read -a JSON_TINY_TARGETS <<< $(replicate "json/nodes")
 read -a JSON_SMALL_TARGETS <<< $(replicate "json/info")
 read -a JSON_LARGE_TARGETS <<< $(replicate "json/si")
 read -a JSON_LARGER_TARGETS <<< $(replicate "json/fxdata")
