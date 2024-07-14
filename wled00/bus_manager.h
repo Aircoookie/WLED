@@ -263,6 +263,7 @@ class BusDigital : public Bus {
     uint16_t getMaxCurrent() override  { return _milliAmpsMax; }
     void reinit();
     void cleanup();
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     uint8_t _skip;

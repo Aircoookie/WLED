@@ -70,6 +70,7 @@
 			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
 		function addLEDTypes(config) {
+			var config = getLEDTypes();
 			console.log("addLEDTypes")
 			console.log(config);
 			var s = d.getElementsByTagName("select");
@@ -429,23 +430,7 @@
 <hr class="sml">
 ${i+1}:
 <select name="LT${s}" onchange="UI(true)">${i>=maxB && false ? '' :
-'<option value="22" data-type="D">WS281x</option>\
-<option value="30" data-type="D">SK6812/WS2814 RGBW</option>\
-<option value="31" data-type="D">TM1814</option>\
-<option value="24" data-type="D">400kHz</option>\
-<option value="25" data-type="D">TM1829</option>\
-<option value="26" data-type="D">UCS8903</option>\
-<option value="27" data-type="D">APA106/PL9823</option>\
-<option value="33" data-type="D">TM1914</option>\
-<option value="28" data-type="D">FW1906 GRBCW</option>\
-<option value="29" data-type="D">UCS8904 RGBW</option>\
-<option value="32" data-type="D">WS2805 RGBCW</option>\
-<option value="50" data-type="2P">WS2801</option>\
-<option value="51" data-type="2P">APA102</option>\
-<option value="52" data-type="2P">LPD8806</option>\
-<option value="54" data-type="2P">LPD6803</option>\
-<option value="53" data-type="2P">P9813</option>\
-<option value="19" data-type="D">WS2811 White</option>'}
+''}
 </select><br>
 <div id="abl${s}">
 mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
@@ -485,6 +470,7 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <div id="dig${s}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
+				addLEDTypes();
 				let sel = d.getElementsByName("LT"+s)[0]
 				if (i >= maxB || digitalB >= maxD) disable(sel,'option[data-type="D"]');
 				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]');

@@ -433,8 +433,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
     sappend('c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
-    oappend(SET_F("addLEDTypes(")); oappend(BusManager::getLEDTypes().c_str()); oappend(SET_F(");"));
-
     oappend(SET_F("resetCOM("));
     oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
     oappend(SET_F(");"));
@@ -484,6 +482,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("IT"),irEnabled);
 #endif    
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
+
+    oappend(SET_F("} function getLEDTypes(){ return ")); oappend(BusManager::getLEDTypes().c_str()); oappend(SET_F(";"));
   }
 
   if (subPage == SUBPAGE_UI)
