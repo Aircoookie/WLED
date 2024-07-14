@@ -10,7 +10,9 @@
 HOST=$1
 declare -n TARGET_STR="${2:-JSON_LARGER}_TARGETS"
 
-CURL_ARGS="--compressed --parallel --parallel-immediate --parallel-max 50"
+PARALLEL_MAX=${PARALLEL_MAX:-50}
+
+CURL_ARGS="--compressed --parallel --parallel-immediate --parallel-max ${PARALLEL_MAX}"
 
 JSON_TARGETS=('json/state' 'json/info' 'json/si', 'json/palettes' 'json/fxdata' 'settings/s.js?p=2')
 FILE_TARGETS=('' 'iro.js' 'rangetouch.js' 'settings' 'settings/wifi')
@@ -18,6 +20,7 @@ FILE_TARGETS=('' 'iro.js' 'rangetouch.js' 'settings' 'settings/wifi')
 function replicate() {
   printf "${1}?%d " {1..8}
 }
+read -a JSON_SMALL_TARGETS <<< $(replicate "json/info")
 read -a JSON_LARGE_TARGETS <<< $(replicate "json/si")
 read -a JSON_LARGER_TARGETS <<< $(replicate "json/fxdata")
 
