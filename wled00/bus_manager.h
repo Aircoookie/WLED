@@ -104,7 +104,7 @@ struct ColorOrderMap {
 };
 
 struct LEDType {
-  String id;
+  uint8_t id;
   String type;
   String name;
 };
