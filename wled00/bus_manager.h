@@ -103,6 +103,11 @@ struct ColorOrderMap {
     ColorOrderMapEntry _mappings[WLED_MAX_COLOR_ORDER_MAPPINGS];
 };
 
+struct LEDType {
+  String id;
+  String type;
+  String name;
+};
 
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
@@ -320,6 +325,7 @@ class BusOnOff : public Bus {
     uint8_t  getPins(uint8_t* pinArray) override;
     void show() override;
     void cleanup() { pinManager.deallocatePin(_pin, PinOwner::BusOnOff); }
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     uint8_t _pin;
@@ -340,6 +346,7 @@ class BusNetwork : public Bus {
     uint8_t  getPins(uint8_t* pinArray) override;
     void show() override;
     void cleanup();
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     IPAddress _client;
@@ -386,6 +393,7 @@ class BusManager {
     //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
     static uint16_t getTotalLength();
     static uint8_t getNumBusses() { return numBusses; }
+    static String getLEDTypes();
 
     static void                 updateColorOrderMap(const ColorOrderMap &com) { memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap)); }
     static const ColorOrderMap& getColorOrderMap() { return colorOrderMap; }

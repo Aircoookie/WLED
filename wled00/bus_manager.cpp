@@ -599,6 +599,17 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) {
   return 1;
 }
 
+std::vector<LEDType> BusOnOff::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+  ledType.id = "40";
+  ledType.name = "On/Off";
+  ledType.type = "";
+  result.push_back(ledType);
+  return result;
+
+}
+
 
 BusNetwork::BusNetwork(BusConfig &bc)
 : Bus(bc.type, bc.start, bc.autoWhite, bc.count)
@@ -657,6 +668,38 @@ uint8_t BusNetwork::getPins(uint8_t* pinArray) {
     pinArray[i] = _client[i];
   }
   return 4;
+}
+
+std::vector<LEDType> BusNetwork::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+
+  ledType.id = "80";
+  ledType.name = "DDP RGB (network)";
+  ledType.type = "V";
+  result.push_back(ledType);
+
+  // ledType.id = "81";
+  // ledType.name = "E1.31 RGB (network)";
+  // ledType.type = "V";
+  // result.push_back(ledType);
+
+  ledType.id = "82";
+  ledType.name = "Art-Net RGB (network)";
+  ledType.type = "V";
+  result.push_back(ledType);
+
+  ledType.id = "88";
+  ledType.name = "DDP RGBW (network)";
+  ledType.type = "V";
+  result.push_back(ledType);
+
+  ledType.id = "89";
+  ledType.name = "Art-Net RGBW (network)";
+  ledType.type = "V";
+  result.push_back(ledType);
+
+  return result;
 }
 
 void BusNetwork::cleanup() {
@@ -857,6 +900,27 @@ uint16_t BusManager::getTotalLength() {
   unsigned len = 0;
   for (unsigned i=0; i<numBusses; i++) len += busses[i]->getLength();
   return len;
+}
+
+String BusManager::getLEDTypes() {
+  std::vector<LEDType> types;
+  String json = "[";
+
+  std::vector<LEDType> busTypes;
+
+  busTypes = BusNetwork::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+
+  busTypes = BusOnOff::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+
+  for(int t = 0; t < types.size(); t++) {
+    LEDType type = types.at(t);
+    json += "{\"id\":"+type.id+",\"type\":\""+type.type+"\",\"name\":\""+type.name+"\"},";
+  }
+
+  json += "]";
+  return json;
 }
 
 bool PolyBus::useParallelI2S = false;
