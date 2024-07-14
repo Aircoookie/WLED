@@ -15,6 +15,7 @@ REPLICATE_COUNT=$(("${3:-10}"))
 PARALLEL_MAX=${PARALLEL_MAX:-50}
 
 CURL_ARGS="--compressed --parallel --parallel-immediate --parallel-max ${PARALLEL_MAX}"
+CURL_PRINT_RESPONSE_ARGS="-w %{http_code}\n"
 
 JSON_TARGETS=('json/state' 'json/info' 'json/si', 'json/palettes' 'json/fxdata' 'settings/s.js?p=2')
 FILE_TARGETS=('' 'iro.js' 'rangetouch.js' 'settings' 'settings/wifi')
