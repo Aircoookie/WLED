@@ -301,6 +301,7 @@ class BusPwm : public Bus {
     uint16_t getFrequency() override { return _frequency; }
     void show() override;
     void cleanup() { deallocatePins(); }
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     uint8_t _pins[5];

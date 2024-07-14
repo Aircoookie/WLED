@@ -555,6 +555,43 @@ void BusPwm::deallocatePins() {
   #endif
 }
 
+std::vector<LEDType> BusPwm::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+
+  ledType.id = "41";
+  ledType.name = "PWM White";
+  ledType.type = "A";
+  result.push_back(ledType);
+
+  ledType.id = "42";
+  ledType.name = "PWM CCT";
+  ledType.type = "AA";
+  result.push_back(ledType);
+
+  ledType.id = "43";
+  ledType.name = "PWM RGB";
+  ledType.type = "AAA";
+  result.push_back(ledType);
+
+  ledType.id = "44";
+  ledType.name = "PWM RGBW";
+  ledType.type = "AAAA";
+  result.push_back(ledType);
+
+  ledType.id = "45";
+  ledType.name = "PWM RGB+CCT";
+  ledType.type = "AAAAA";
+  result.push_back(ledType);
+
+  // ledType.id = "46";
+  // ledType.name = "PWM RGB+DCCT";
+  // ledType.type = "AAAAAA";
+  // result.push_back(ledType);
+
+  return result;
+}
+
 
 BusOnOff::BusOnOff(BusConfig &bc)
 : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
@@ -907,6 +944,9 @@ String BusManager::getLEDTypes() {
   String json = "[";
 
   std::vector<LEDType> busTypes;
+
+  busTypes = BusPwm::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
 
   busTypes = BusNetwork::getLEDTypes();
   types.insert(types.end(), busTypes.begin(), busTypes.end());
