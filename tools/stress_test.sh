@@ -4,11 +4,13 @@
 # Perform a large number of parallel requests, stress testing the web server
 # TODO: some kind of performance metrics
 
-# Accepts two command line arguments:
+# Accepts three command line arguments:
 # - first argument - mandatory - IP or hostname of target server
-# - second argument - targert type
+# - second argument - target type (optional)
+# - third argument - xfer count (for replicated targets) (optional)
 HOST=$1
 declare -n TARGET_STR="${2:-JSON_LARGER}_TARGETS"
+REPLICATE_COUNT=$(("${3:-10}"))
 
 PARALLEL_MAX=${PARALLEL_MAX:-50}
 
@@ -18,7 +20,7 @@ JSON_TARGETS=('json/state' 'json/info' 'json/si', 'json/palettes' 'json/fxdata' 
 FILE_TARGETS=('' 'iro.js' 'rangetouch.js' 'settings' 'settings/wifi')
 # Replicate one target many times
 function replicate() {
-  printf "${1}?%d " {1..40}
+  printf "${1}?%d " $(seq 1 ${REPLICATE_COUNT})
 }
 read -a JSON_TINY_TARGETS <<< $(replicate "json/nodes")
 read -a JSON_SMALL_TARGETS <<< $(replicate "json/info")
