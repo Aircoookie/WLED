@@ -108,6 +108,7 @@ struct LEDType {
   uint8_t id;
   String type;
   String name;
+  String config = F("{}");
 };
 
 //parent class of BusDigital, BusPwm, and BusNetwork

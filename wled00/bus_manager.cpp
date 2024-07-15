@@ -382,6 +382,7 @@ std::vector<LEDType> BusDigital::getLEDTypes() {
   LEDType ledType;
 
   ledType.type = F("D");
+  ledType.config = F("{\"pins\":[\"Data GPIO\"]}");
 
   ledType.id = 22;
   ledType.name = F("WS281x");
@@ -433,6 +434,8 @@ std::vector<LEDType> BusDigital::getLEDTypes() {
 
 
   ledType.type = F("2P");
+  ledType.config = F("{\"pins\":[\"Data GPIO\",\"Clk GPIO\"]}");
+
 
   ledType.id = 50;
   ledType.name = F("WS2801");
@@ -639,10 +642,14 @@ std::vector<LEDType> BusPwm::getLEDTypes() {
   std::vector<LEDType> result;
   LEDType ledType;
 
+  ledType.config = F("{\"pins\":[\"GPIO Pin\"]}"); 
+
   ledType.id = 41;
   ledType.name = F("PWM White");
   ledType.type = F("A");
   result.push_back(ledType);
+
+  ledType.config = F("{\"pins\":[\"GPIO Pins\"]}"); 
 
   ledType.id = 42;
   ledType.name = F("PWM CCT");
@@ -722,6 +729,7 @@ std::vector<LEDType> BusOnOff::getLEDTypes() {
   ledType.id = 40;
   ledType.name = F("On/Off");
   ledType.type = "";
+  ledType.config = F("{\"pins\":[\"GPIO Pin\"]}");
   result.push_back(ledType);
   return result;
 
@@ -790,6 +798,8 @@ uint8_t BusNetwork::getPins(uint8_t* pinArray) {
 std::vector<LEDType> BusNetwork::getLEDTypes() {
   std::vector<LEDType> result;
   LEDType ledType;
+
+  ledType.config = F("{\"pins\":[\"IP address\"]}");
 
   ledType.type = F("V");
 
@@ -884,7 +894,7 @@ String BusManager::getLEDTypes() {
   for(int t = 0; t < types.size(); t++) {
     LEDType type = types.at(t);
     String id = String(type.id);
-    json += "{\"id\":"+id+",\"type\":\""+type.type+"\",\"name\":\""+type.name+"\"},";
+    json += "{\"id\":"+id+",\"type\":\""+type.type+"\",\"name\":\""+type.name+"\",\"config\":"+type.config+"},";
   }
 
   json += "]";
