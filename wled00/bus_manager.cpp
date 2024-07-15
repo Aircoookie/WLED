@@ -719,7 +719,7 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) {
 std::vector<LEDType> BusOnOff::getLEDTypes() {
   std::vector<LEDType> result;
   LEDType ledType;
-  ledType.id = 40;
+  ledType.id = TYPE_ONOFF;
   ledType.name = F("On/Off");
   ledType.type = "";
   result.push_back(ledType);
@@ -793,7 +793,7 @@ std::vector<LEDType> BusNetwork::getLEDTypes() {
 
   ledType.type = F("V");
 
-  ledType.id = 80;
+  ledType.id = TYPE_NET_DDP_RGB;
   ledType.name = F("DDP RGB (network)");
   result.push_back(ledType);
 
@@ -801,15 +801,15 @@ std::vector<LEDType> BusNetwork::getLEDTypes() {
   // ledType.name = F("E1.31 RGB (network)");
   // result.push_back(ledType);
 
-  ledType.id = 82;
+  ledType.id = TYPE_NET_ARTNET_RGB;
   ledType.name = F("Art-Net RGB (network)");
   result.push_back(ledType);
 
-  ledType.id = 88;
+  ledType.id = TYPE_NET_DDP_RGBW;
   ledType.name = F("DDP RGBW (network)");
   result.push_back(ledType);
 
-  ledType.id = 89;
+  ledType.id = TYPE_NET_ARTNET_RGBW;
   ledType.name = F("Art-Net RGBW (network)");
   result.push_back(ledType);
 
