@@ -799,7 +799,7 @@ std::vector<LEDType> BusNetwork::getLEDTypes() {
   std::vector<LEDType> result;
   LEDType ledType;
 
-  ledType.config = F("{\"pins\":[\"IP address\"]}");
+  ledType.config = F("{\"pins\":[\"IP Address\"]}");
 
   ledType.type = F("V");
 

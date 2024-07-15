@@ -69,17 +69,17 @@
 			// maxCO - max Color Order mappings
 			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
-		function addLEDTypes(config) {
-			var config = getLEDTypes();
+		function addLEDTypes() {
+			var types = getLEDTypes();
 			console.log("addLEDTypes")
-			console.log(config);
+			console.log(types);
 			var s = d.getElementsByTagName("select");
 			for (i=0; i<s.length; i++) {
 				// is the field a LED type?
 				if (s[i].name.substring(0,2)=="LT") {
 					var sel = s[i];
-					for(var t = 0; t < config.length; t++) {
-						var type = config[t];
+					for(var t = 0; t < types.length; t++) {
+						var type = types[t];
 						let opt = d.createElement("option");
 						opt.value = type.id;
 						opt.text = type.name;
@@ -239,6 +239,17 @@
 			return len * ch * mul + dbl;
 		}
 
+		function getLEDTypeConfig(id) {
+			var types = getLEDTypes();
+			for(var i = 0; types.length; i++) {
+				var type = types[i];
+				if(type.id == id) {
+					return type.config;
+				}
+			}
+			console.error("Failed to find LED type " + id);
+			return {"pins":[]};
+		}
 		function UI(change=false)
 		{
 			let gRGBW = false, memu = 0;
@@ -254,8 +265,11 @@
 				// is the field a LED type?
 				var n = s.name.substring(2);
 				var t = parseInt(s.value);
-				gId("p0d"+n).innerHTML = isVir(t) ? "IP address:" : isD2P(t) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
-				gId("p1d"+n).innerHTML = isD2P(t) ? "Clk GPIO:" : "";
+				var config = getLEDTypeConfig(t);
+				console.log("led config");
+				console.log(config);
+				gId("p0d"+n).innerHTML = (config.pins != undefined && config.pins.length > 0) ? config.pins[0] + ":" : "UNKNOWN";
+				gId("p1d"+n).innerHTML = (config.pins != undefined && config.pins.length > 1) ? config.pins[1] + ":" : "";
 				gId("abl"+n).style.display = (!ablEN || isVir(t) || isAna(t)) ? "none" : "inline";
 				//var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
