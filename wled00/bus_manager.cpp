@@ -884,7 +884,7 @@ String BusManager::getLEDTypes() {
   for(int t = 0; t < types.size(); t++) {
     LEDType type = types.at(t);
     String id = String(type.id);
-    json += "{\"id\":"+id+",\"type\":\""+type.type+"\",\"name\":\""+type.name+"\"},";
+    json += "{\"i\":"+id+",\"t\":\""+type.type+"\",\"n\":\""+type.name+"\"},";
   }
 
   json += "]";

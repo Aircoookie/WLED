@@ -81,10 +81,10 @@
 					for(var t = 0; t < config.length; t++) {
 						var type = config[t];
 						let opt = d.createElement("option");
-						opt.value = type.id;
-						opt.text = type.name;
-						if(type.type != undefined && type.type != "") {
-							opt.setAttribute('data-type', type.type);
+						opt.value = type.i;
+						opt.text = type.n;
+						if(type.t != undefined && type.t != "") {
+							opt.setAttribute('data-type', type.t);
 						}
 						sel.appendChild(opt);			
 					}
