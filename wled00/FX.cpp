@@ -8333,7 +8333,7 @@ uint16_t mode_particlefire(void)
     {
       SEGMENT.call--; //skipping a frame, decrement the counter (on call0, this is never executed as lastcall is 0, so its fine to not check if >0)
       //still need to render the frame or flickering will occur in transitions
-      PartSys->updateFire(SEGMENT.intensity, true); // render the fire without updating it
+      PartSys->updateFire(SEGMENT.intensity, true); // render the fire without updating particles (render only)
       return FRAMETIME; //do not update this frame
     }
     *lastcall = strip.now;
@@ -10736,6 +10736,69 @@ uint16_t mode_particle1DGEQ(void)
 static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur/Overlay,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1,o3=0";
 
 
+/*
+Particle based Fire effect 
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particleFire1D(void)
+{
+  if (SEGLEN == 1)
+    return mode_static();
+  ParticleSystem1D *PartSys = NULL;  
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem1D(PartSys, 4)) // init
+      return mode_static(); // allocation failed
+    PartSys->setKillOutOfBounds(true);
+    PartSys->setParticleSize(1);
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+    return mode_static(); // something went wrong, no data!
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+  for(uint i = 0; i < PartSys->numSources; i++) 
+  { 
+    PartSys->sources[i].var = 1 + (SEGMENT.speed >> 4);  
+    PartSys->sources[i].minLife = 50 + SEGMENT.intensity; 
+    PartSys->sources[i].maxLife = 200 + (SEGMENT.intensity << 1); 
+    PartSys->sources[i].source.x = map(SEGMENT.custom1, 0 , 255, 0, PartSys->maxX); // spray position
+    //PartSys->sources[0].v = map(SEGMENT.speed, 0 , 255, 1, (inoise16(SEGENV.call) >> 8)); // particle emit speed
+    //PartSys->sources[i].v = 2 + ((((SEGMENT.speed >> (2 + i))) * (int16_t)inoise8(SEGENV.aux0)) >> 7);
+    PartSys->sources[i].v = 2 + (SEGMENT.speed >> (2 + (i<<1)));
+    //if(random(4) == 0) 
+      PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
+  }
+if (SEGMENT.call & 0x01) // update noise position every second frames, also add wind
+  {  
+        SEGENV.aux0++;
+  }
+
+  //update color settings
+  PartSys->setColorByAge(SEGMENT.check1); 
+ // PartSys->setColorByPosition(SEGMENT.check3);  
+  for(uint i = 0; i < PartSys->usedParticles; i++) 
+  {     
+    PartSys->particles[i].x += PartSys->particles[i].ttl >> 7; // 'hot' particles are faster, apply some extra velocity
+    if(PartSys->particles[i].ttl > 150)
+    PartSys->particles[i].ttl -= map(SEGMENT.intensity, 0, 255, 5 , 0); // age faster
+  }
+
+  PartSys->update(); // update and render
+  
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Position,Blur/Overlay,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
+
+
+
 #endif //WLED_DISABLE_PARTICLESYSTEM1D
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -11016,6 +11079,7 @@ addEffect(FX_MODE_PSBALANCE, &mode_particleBalance, _data_FX_MODE_PS_BALANCE);
 addEffect(FX_MODE_PSCHASE, &mode_particleChase, _data_FX_MODE_PS_CHASE);
 addEffect(FX_MODE_PSSTARBURST, &mode_particleStarburst, _data_FX_MODE_PS_STARBURST);
 addEffect(FX_MODE_PS1DGEQ, &mode_particle1DGEQ, _data_FX_MODE_PS_1D_GEQ);
+addEffect(FX_MODE_PSFIRE1D, &mode_particleFire1D, _data_FX_MODE_PS_FIRE1D);
 
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D

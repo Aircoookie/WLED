@@ -1903,7 +1903,6 @@ void ParticleSystem1D::ParticleSys_render()
   }
   if (renderbuffer)
     free(renderbuffer); 
-    Serial.println("*");
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -1961,16 +1960,6 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, uint32_t particleindex,
         pixco[1] = 0;
       else
         pxlisinframe[1] = false;
-    }
-
-    if(xoffset < 500)
-    {
-      Serial.print(xoffset);
-      Serial.print(" ");
-      Serial.print(dx);
-      Serial.print(" ");
-      Serial.print(x);
-      Serial.print("/");
     }
 
     //calculate the brightness values for both pixels using linear interpolation (note: in standard rendering out of frame pixels could be skipped but if checks add more clock cycles over all)

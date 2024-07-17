@@ -343,7 +343,8 @@
 #define FX_MODE_PSCHASE                210
 #define FX_MODE_PSSTARBURST            211
 #define FX_MODE_PS1DGEQ                212
-#define MODE_COUNT                     213
+#define FX_MODE_PSFIRE1D               213
+#define MODE_COUNT                     214
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
