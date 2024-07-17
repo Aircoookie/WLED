@@ -484,6 +484,7 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 			}
 			if (n==-1) {
 				o[--i].remove();--i;
+				o[i].querySelector("[name^=LT]").disabled = false;
 			}
 
 			gId("+").style.display = (i<maxB+maxV-1) ? "inline":"none";
