@@ -67,7 +67,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
   for (uint32_t i = 0; i < numSources; i++)
   {
     sources[i].source.sat = 255; //set saturation to max by default
-    sources[i].source.ttl = 1; //set source alive
+    sources[i].source.ttl = 255; //set source alive
   }
   for (uint32_t i = 0; i < numParticles; i++)
   {
@@ -222,7 +222,8 @@ void ParticleSystem::enableParticleCollisions(bool enable, uint8_t hardness) // 
 // emit one particle with variation, returns index of last emitted particle (or -1 if no particle emitted)
 int32_t ParticleSystem::sprayEmit(PSsource &emitter, uint32_t amount)
 {
- for (uint32_t a = 0; a < amount; a++)
+  bool success = false;
+  for (uint32_t a = 0; a < amount; a++)
   {
     for (uint32_t i = 0; i < usedParticles; i++)
     {
@@ -231,6 +232,7 @@ int32_t ParticleSystem::sprayEmit(PSsource &emitter, uint32_t amount)
         emitIndex = 0;
       if (particles[emitIndex].ttl == 0) // find a dead particle
       {
+        success = true;
         particles[emitIndex].vx = emitter.vx + random(-emitter.var, emitter.var); 
         particles[emitIndex].vy = emitter.vy + random(-emitter.var, emitter.var);
         particles[emitIndex].x = emitter.source.x; 
@@ -240,12 +242,15 @@ int32_t ParticleSystem::sprayEmit(PSsource &emitter, uint32_t amount)
         particles[emitIndex].collide = emitter.source.collide;
         particles[emitIndex].ttl = random(emitter.minLife, emitter.maxLife);
         if (advPartProps)
-          advPartProps[emitIndex].size = emitter.size;
-        return i;
+          advPartProps[emitIndex].size = emitter.size;     
+        break;
       }
     }
   }
-  return -1;
+  if(success)
+    return emitIndex;
+  else
+    return -1;
 }
 
 // Spray emitter for particles used for flames (particle TTL depends on source TTL)
@@ -278,11 +283,11 @@ void ParticleSystem::flameEmit(PSsource &emitter)
 
 // Emits a particle at given angle and speed, angle is from 0-65535 (=0-360deg), speed is also affected by emitter->var
 // angle = 0 means in positive x-direction (i.e. to the right)
-void ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, uint32_t amount)
+int32_t ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, uint32_t amount)
 {
   emitter.vx = ((int32_t)cos16(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding 
   emitter.vy = ((int32_t)sin16(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
-  sprayEmit(emitter, amount);
+  return sprayEmit(emitter, amount);
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0

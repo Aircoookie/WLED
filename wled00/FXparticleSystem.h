@@ -141,7 +141,7 @@ public:
   // particle emitters
   int32_t sprayEmit(PSsource &emitter, uint32_t amount = 1);
   void flameEmit(PSsource &emitter);
-  void angleEmit(PSsource& emitter, uint16_t angle, int8_t speed, uint32_t amount = 1);
+  int32_t angleEmit(PSsource& emitter, uint16_t angle, int8_t speed, uint32_t amount = 1);
 
 
   //particle physics

@@ -9388,7 +9388,7 @@ if (SEGLEN == 1)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLECCIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
+static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
 
 /*
 Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
@@ -9604,6 +9604,88 @@ uint16_t mode_particleblobs(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o1=0,o2=0,o3=1";
+
+/*
+ * Particle Fractal
+ * particles move, then split to form a fractal tree EXPERIMENTAL!
+ * by DedeHai (Damian Schneider)
+ */
+
+uint16_t mode_particlefractal(void)
+{
+if (SEGLEN == 1)
+    return mode_static();
+
+  ParticleSystem *PartSys = NULL;
+  uint32_t i;
+
+  if (SEGMENT.call == 0) // initialization 
+  {
+    if (!initParticleSystem2D(PartSys, 1, 0, true, false)) // init, use advanced particles
+      return mode_static(); // allocation failed
+    PartSys->setKillOutOfBounds(true); 
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem *>(SEGENV.data); // if not first call, just set the pointer to the PS
+
+  if (PartSys == NULL)
+    return mode_static(); // something went wrong, no data! 
+
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+
+  if (SEGMENT.check2)
+    SEGENV.aux0 += SEGMENT.custom1 << 2;
+  else
+    SEGENV.aux0 -= SEGMENT.custom1 << 2;
+
+  int16_t angleoffset = SEGMENT.custom2 << 6;
+  int8_t emitspeed = SEGMENT.speed >> 2;
+  
+  //check particle age, emit 2 particles at the end of the branch
+  for (i = 0; i < PartSys->numParticles; i++)
+  {
+    if(PartSys->particles[i].ttl > 0 && PartSys->particles[i].ttl < 260) //alive and ripe
+    {
+      PartSys->particles[i].ttl = 0;
+      uint16_t currentangle =  ((uint32_t)PartSys->advPartProps[i].forcecounter) << 7; // abuse forcecounter to track the angle
+      PartSys->sources[0].source.x = PartSys->particles[i].x;
+      PartSys->sources[0].source.y = PartSys->particles[i].y;;
+      PartSys->sources[0].source.hue = PartSys->particles[i].hue + 50; // todo: make color schemes    
+      uint16_t angle = currentangle - angleoffset;
+      int32_t index = PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);     //upward TODO: make angle adjustable
+      Serial.print("branch emit1 at idx = ");
+      Serial.println(index);
+      //TODO: check if index >=0!!!
+      PartSys->advPartProps[index].forcecounter = angle >> 7;
+      angle = currentangle + angleoffset;
+      index = PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);      
+      Serial.print("branch emit2 at idx = ");
+      Serial.println(index);
+      PartSys->advPartProps[index].forcecounter = angle >> 7;
+    }
+    
+
+  }
+  if(SEGENV.call % (256-SEGMENT.intensity) == 0)
+  {
+    PartSys->sources[0].source.x = (PartSys->maxX + 1) >> 1;
+    PartSys->sources[0].source.y = 5;
+    PartSys->sources[0].source.hue = 0; // todo: make color schemes
+    PartSys->sources[0].maxLife = 275;
+    PartSys->sources[0].minLife = 270;
+    uint32_t angle = ((uint32_t)SEGMENT.custom1) << 7; //16 bit angle, 0° to 180°
+    int32_t index = PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);     //upward TODO: make angle adjustable
+    Serial.print("base emit at idx = ");
+    Serial.println(index);
+    //set the forcecounter to track the angle (only 8 bit precision...)
+    PartSys->advPartProps[index].forcecounter = angle >> 7;
+  } 
+  
+  PartSys->setMotionBlur(((SEGMENT.custom3) << 3) + 7);
+  PartSys->update(); // update and render
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PARTICLEFRACTAL[] PROGMEM = "PS fractal (exp)@Speed,Intensity,Base angle,branch angle,Blur,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
 
 #endif //WLED_DISABLE_PARTICLESYSTEM2D
 
@@ -11062,7 +11144,9 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
   addEffect(FX_MODE_PARTICLEGHOSTRIDER, &mode_particleghostrider, _data_FX_MODE_PARTICLEGHOSTRIDER);
   addEffect(FX_MODE_PARTICLEBLOBS, &mode_particleblobs, _data_FX_MODE_PARTICLEBLOBS);
-  addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECCIRCULARGEQ);
+  addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECIRCULARGEQ);
+  addEffect(FX_MODE_PSFRACTAL, &mode_particlefractal, _data_FX_MODE_PARTICLEFRACTAL);
+  
 #endif // WLED_DISABLE_PARTICLESYSTEM2D
 
 #endif // WLED_DISABLE_2D
