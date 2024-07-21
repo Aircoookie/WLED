@@ -969,10 +969,14 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
     DEBUG_PRINTLN();
   #endif
 
-#ifndef WLED_DISABLE_ESPNOW
   // usermods hook can override processing
   if (usermods.onEspNowMessage(address, data, len)) return;
-#endif
+
+  // only handle messages from linked master/remote
+  if (strlen(linked_remote) < 12 || strcmp(last_signal_src, linked_remote) != 0) {
+    DEBUG_PRINTLN(F("ESP-NOW unpaired remote sender."));
+    return;
+  }
 
   // handle WiZ Mote data
   if (data[0] == 0x91 || data[0] == 0x81 || data[0] == 0x80) {
@@ -980,8 +984,10 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
     return;
   }
 
-  if (strlen(linked_remote) == 12 && strcmp(last_signal_src, linked_remote) != 0) {
-    DEBUG_PRINTLN(F("ESP-NOW unpaired remote sender."));
+  // is received packet a master's heartbeat
+  if (len == 12 && strncmp_P((const char *)data, PSTR("WLED MASTER."), 12) == 0) {
+    DEBUG_PRINTLN(F("ESP-NOW master heartbeat heard."));
+    scanESPNow = millis(); // disable scanning for next 10s and do no futrher processing
     return;
   }
 

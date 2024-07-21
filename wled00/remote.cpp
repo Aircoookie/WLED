@@ -179,12 +179,6 @@ static bool remoteJson(int button)
 void handleRemote(uint8_t *incomingData, size_t len) {
   message_structure_t *incoming = reinterpret_cast<message_structure_t *>(incomingData);
 
-  if (strcmp(last_signal_src, linked_remote) != 0) {
-    DEBUG_PRINT(F("ESP Now Message Received from Unlinked Sender: "));
-    DEBUG_PRINTLN(last_signal_src);
-    return;
-  }
-
   if (len != sizeof(message_structure_t)) {
     DEBUG_PRINT(F("Unknown incoming ESP Now message received of length "));
     DEBUG_PRINTLN(len);
