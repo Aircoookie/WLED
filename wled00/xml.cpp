@@ -130,6 +130,17 @@ void appendGPIOinfo() {
     oappend(","); oappend(itoa(spi_mosi,nS,10));
     oappend(","); oappend(itoa(spi_sclk,nS,10));
   }
+  // Find any additional pins allocated by usermods
+  for (uint8_t i = 0; i < WLED_NUM_PINS; i++) {
+    if (pinManager.isPinOk(i) && pinManager.isPinAllocated(i)){
+      // High bit is set for all built-in pin owners
+      bool owner_is_um = static_cast<uint8_t>(pinManager.getPinOwner(i)) < 0x80;
+      if (owner_is_um) {
+        oappend(","); oappend(itoa(i,nS,10));
+      }
+    }
+  }
+
   // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
