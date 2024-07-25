@@ -190,12 +190,7 @@ void handleRemote(uint8_t *incomingData, size_t len) {
     return;
   }
 
-  DEBUG_PRINT(F("Incoming ESP Now Packet ["));
-  DEBUG_PRINT(cur_seq);
-  DEBUG_PRINT(F("] from sender ["));
-  DEBUG_PRINT(last_signal_src);
-  DEBUG_PRINT(F("] button: "));
-  DEBUG_PRINTLN(incoming->button);
+  DEBUG_PRINTF_P(PSTR("Incoming ESP Now Packet [%d] button: %d\n"), cur_seq, incoming->button);
 
   if (!remoteJson(incoming->button))
     switch (incoming->button) {

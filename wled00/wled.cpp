@@ -606,6 +606,14 @@ void WLED::initAP(bool resetAP)
   if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP)
     return;
 
+#ifndef WLED_DISABLE_ESPNOW
+  if (statusESPNow == ESP_NOW_STATE_ON) {
+    DEBUG_PRINTLN(F("ESP-NOW stopping."));
+    quickEspNow.stop();
+    statusESPNow = ESP_NOW_STATE_UNINIT;
+  }
+#endif
+
   if (resetAP) {
     WLED_SET_AP_SSID();
     strcpy_P(apPass, PSTR(WLED_AP_PASS));
@@ -650,6 +658,8 @@ void WLED::initAP(bool resetAP)
       #endif //ESP32
       bool espNowOK = quickEspNow.begin(apChannel, WIFI_IF_AP);  // Same channel must be used for both AP and ESP-NOW
       statusESPNow = espNowOK ? ESP_NOW_STATE_ON : ESP_NOW_STATE_ERROR;
+      channelESPNow = apChannel;
+      DEBUG_PRINTF_P(PSTR("ESP-NOW%sinited in AP mode (wifi: %d/%d).\n"), espNowOK ? " " : " NOT ", WiFi.channel(), (int)apChannel);
     }
 #endif
   }
@@ -801,19 +811,11 @@ int8_t WLED::findWiFi(bool doScan) {
 void WLED::initConnection()
 {
   DEBUG_PRINTLN(F("initConnection() called."));
+  bool WiFiConfigured = WLED_WIFI_CONFIGURED;
 
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
-
-#ifndef WLED_DISABLE_ESPNOW
-  if (statusESPNow == ESP_NOW_STATE_ON) {
-    DEBUG_PRINTLN(F("ESP-NOW stopping."));
-    quickEspNow.stop();
-    statusESPNow = ESP_NOW_STATE_UNINIT;
-    scanESPNow = millis();
-  }
-#endif
 
   WiFi.disconnect(true); // close old connections
 #ifdef ESP8266
@@ -828,21 +830,20 @@ void WLED::initConnection()
 
   lastReconnectAttempt = millis();
 
-  if (!WLED_WIFI_CONFIGURED) {
-    DEBUG_PRINTLN(F("No connection configured."));
-    if (!apActive) initAP();        // instantly go to ap mode
-  } else if (!apActive) {
-    if (apBehavior == AP_BEHAVIOR_ALWAYS) {
-      DEBUG_PRINTLN(F("Access point ALWAYS enabled."));
-      initAP();
-    } else {
+  if (!apActive) {
       DEBUG_PRINTLN(F("Access point disabled (init)."));
+#ifndef WLED_DISABLE_ESPNOW
+      if (statusESPNow == ESP_NOW_STATE_ON) {
+        DEBUG_PRINTLN(F("ESP-NOW stopping."));
+        quickEspNow.stop();
+        statusESPNow = ESP_NOW_STATE_UNINIT;
+      }
+#endif
       WiFi.softAPdisconnect(true);
       WiFi.mode(WIFI_STA);
-    }
   }
 
-  if (WLED_WIFI_CONFIGURED) {
+  if (WiFiConfigured) {
     showWelcomePage = false;
     
     DEBUG_PRINT(F("Connecting to "));
@@ -868,6 +869,14 @@ void WLED::initConnection()
 void WLED::initInterfaces()
 {
   DEBUG_PRINTLN(F("Init STA interfaces"));
+
+#ifndef WLED_DISABLE_ESPNOW
+  if (statusESPNow == ESP_NOW_STATE_ON) {
+    DEBUG_PRINTLN(F("ESP-NOW stopping."));
+    quickEspNow.stop();
+    statusESPNow = ESP_NOW_STATE_UNINIT;
+  }
+#endif
 
 #ifndef WLED_DISABLE_HUESYNC
   IPAddress ipAddress = Network.localIP();
@@ -915,12 +924,13 @@ void WLED::initInterfaces()
 
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   ddp.begin(false, DDP_DEFAULT_PORT);
+
+#ifndef WLED_DISABLE_HUESYNC
   reconnectHue();
+#endif
 #ifndef WLED_DISABLE_MQTT
   initMqtt();
 #endif
-  interfacesInited = true;
-  wasConnected = true;
 
 #ifndef WLED_DISABLE_ESPNOW
   // we are connected to WiFi and ESP-NOW will only be used on master for sending out packets
@@ -928,11 +938,15 @@ void WLED::initInterfaces()
   if (enableESPNow) {
     quickEspNow.onDataSent(espNowSentCB);     // see udp.cpp
     quickEspNow.onDataRcvd(espNowReceiveCB);  // see udp.cpp
-    DEBUG_PRINTLN(F("ESP-NOW initing in STA mode."));
+    DEBUG_PRINTF_P(PSTR("ESP-NOW initing in STA mode, channel %d.\n"), WiFi.channel());
     bool espNowOK = quickEspNow.begin(); // Use no parameters to start ESP-NOW on same channel as WiFi, in STA mode
     statusESPNow = espNowOK ? ESP_NOW_STATE_ON : ESP_NOW_STATE_ERROR;
+    scanESPNow = millis() + 5000;
   }
 #endif
+
+  interfacesInited = true;
+  wasConnected = true;
 }
 
 void WLED::handleConnection()
@@ -959,6 +973,7 @@ void WLED::handleConnection()
 
   byte stac = 0;
   if (apActive) {
+    // determine number of connected clients (if any) to AP
 #ifdef ESP8266
     stac = wifi_softap_get_station_num();
 #else
@@ -967,6 +982,7 @@ void WLED::handleConnection()
     stac = stationList.num;
 #endif
     if (stac != stacO) {
+      // if number of clients changed, do something
       stacO = stac;
       DEBUG_PRINT(F("Connected AP clients: "));
       DEBUG_PRINTLN(stac);
@@ -980,6 +996,16 @@ void WLED::handleConnection()
   }
 
   if (!Network.isConnected()) {
+    if (!wifiConfigured && !apActive) {
+      DEBUG_PRINTLN(F("WiFi not configured!"));
+      initAP();        // instantly go to ap mode
+      return;
+    }
+    if (!apActive && apBehavior == AP_BEHAVIOR_ALWAYS) {
+      DEBUG_PRINTLN(F("Access point ALWAYS enabled."));
+      WiFi.mode(WIFI_MODE_APSTA);
+      initAP();
+    }
     if (interfacesInited) {
       // we were connected but diconnect happened
       if (scanDone && multiWiFi.size() > 1) {
@@ -999,12 +1025,13 @@ void WLED::handleConnection()
       sendImprovStateResponse(0x03, true);
       improvActive = 2;
     }
-    // try to reconnect if not able to connect for 30s or 18s
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && wifiConfigured) {
+    // try to reconnect if not connected after 300s if clients connected to wifi or 60s otherwise
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 60000) && wifiConfigured) {
       if (improvActive == 2) improvActive = 3;
       DEBUG_PRINTLN(F("Last reconnect too old."));
       if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // we couldn't connect, try with another network from the list
       initConnection();
+      return;
     }
     // open AP if this is after boot or forced (_NO_CONN)
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
@@ -1023,7 +1050,7 @@ void WLED::handleConnection()
           DEBUG_PRINTLN(F("ESP-NOW stopping on AP stop."));
           quickEspNow.stop();
           statusESPNow = ESP_NOW_STATE_UNINIT;
-          scanESPNow = now;
+          scanESPNow = now + 5000; // postpone searching for a bit
         }
 #endif
         dnsServer.stop();
@@ -1033,21 +1060,30 @@ void WLED::handleConnection()
       }
     }
 #ifndef WLED_DISABLE_ESPNOW
-    // we are still not connected to WiFi and we may have AP active or not. if AP is active we will listen on its channel for ESP-NOW packets
-    // otherwise we'll try to find our master by hopping channels and wait 10s on each channel
-    if (!apActive && apBehavior == AP_BEHAVIOR_TEMPORARY && enableESPNow && wifiConfigured && !sendNotificationsRT) {
+    // we are still not connected to WiFi and we may have AP active or not. if AP is active we will listen (and broadcast pings) on its channel for ESP-NOW packets
+    // otherwise we'll try to find our master by hopping channels and PINGing it (masterEspNow), a successful delivery (unicast) is indicated in callback function
+    bool isMasterDefined = masterESPNow[0] | masterESPNow[1] | masterESPNow[2] | masterESPNow[3] | masterESPNow[4] | masterESPNow[5];
+    if (!apActive && apBehavior == AP_BEHAVIOR_TEMPORARY && enableESPNow && wifiConfigured && !sendNotificationsRT && isMasterDefined && now - lastReconnectAttempt > 7000) {
       if (statusESPNow == ESP_NOW_STATE_UNINIT) {
         quickEspNow.onDataSent(espNowSentCB);     // see udp.cpp
         quickEspNow.onDataRcvd(espNowReceiveCB);  // see udp.cpp
-        DEBUG_PRINTLN(F("ESP-NOW initing in unconnected STA mode."));
-        bool espNowOK = quickEspNow.begin(channelESPNow); // use changeable channel STA mode
+        DEBUG_PRINTF_P(PSTR("ESP-NOW initing in unconnected AP/STA mode (channel %d).\n"), (int)channelESPNow);
+        WiFi.mode(WIFI_AP);
+        bool espNowOK = quickEspNow.begin(channelESPNow, WIFI_IF_AP); // use changeable channel STA mode
         statusESPNow = espNowOK ? ESP_NOW_STATE_ON : ESP_NOW_STATE_ERROR;
-        scanESPNow = now;
+        scanESPNow = now; // prevent immediate change of channel
+//        char buffer[5]; strcpy_P(buffer, PSTR("PING"));
+//        quickEspNow.send(masterESPNow, (uint8_t*)buffer, sizeof(buffer));
       }
-      if (statusESPNow == ESP_NOW_STATE_ON && now - scanESPNow > 10000) {
-        if (++channelESPNow > 13) channelESPNow = 1;
-        quickEspNow.setChannel(channelESPNow);
-        scanESPNow = now;
+      if (statusESPNow == ESP_NOW_STATE_ON) {
+        if (now > 4000 + scanESPNow) {
+          if (++channelESPNow > 13) channelESPNow = 1;
+          if (!quickEspNow.setChannel(channelESPNow)) DEBUG_PRINTLN(F("ESP-NOW Unable to set channel."));
+          else DEBUG_PRINTF_P(PSTR("ESP-NOW channel %d set (wifi: %d).\n"), (int)channelESPNow, WiFi.channel());
+          scanESPNow = now;
+//          char buffer[5]; strcpy_P(buffer, PSTR("PING"));
+//          quickEspNow.send(masterESPNow, (uint8_t*)buffer, sizeof(buffer));
+        }
       }
     }
 #endif
@@ -1074,12 +1110,17 @@ void WLED::handleConnection()
     }
   } else {
 #ifndef WLED_DISABLE_ESPNOW
-    // already established connection, send ESP-NOW beacon every 5s if we are in sync mode (AKA master device)
-    if (useESPNowSync && statusESPNow == ESP_NOW_STATE_ON && sendNotificationsRT && now - scanESPNow > 5000) {
-      uint8_t buffer[12];
-      memcpy_P(buffer, PSTR("WLED MASTER."), 12); // use PROGMEM for string
-      quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, buffer, 12);
+    // already established connection, send ESP-NOW beacon every 2s if we are in sync mode (AKA master device)
+    // beacon will contain current/intended channel and local time (for loose synchronisation purposes)
+    if (useESPNowSync && statusESPNow == ESP_NOW_STATE_ON && sendNotificationsRT && now > 2000 + scanESPNow) {
+      EspNowBeacon buffer;
+      strcpy(buffer.header, "WLED");
+      buffer.version = 0; // not intended to change beyond 15 (0 means unspecified/irrelevant)
+      buffer.channel = WiFi.channel();
+      buffer.time = toki.second();
+      quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<uint8_t*>(&buffer), sizeof(buffer));
       scanESPNow = now;
+      DEBUG_PRINTF_P(PSTR("ESP-NOW beacon on channel %d.\n"), WiFi.channel());
     }
 #endif
   }

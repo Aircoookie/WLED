@@ -292,6 +292,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("WS"),noWifiSleep);
 
     #ifndef WLED_DISABLE_ESPNOW
+    char linked_remote[13];
+    sprintf_P(linked_remote, PSTR("%02x%02x%02x%02x%02x%02x"), MAC2STR(masterESPNow));
     sappend('c',SET_F("RE"),enableESPNow);
     sappends('s',SET_F("RMAC"),linked_remote);
     #else
@@ -333,7 +335,9 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     #ifndef WLED_DISABLE_ESPNOW
-    if (strlen(last_signal_src) > 0) { //Have seen an ESP-NOW Remote
+    if (senderESPNow[0] | senderESPNow[1] | senderESPNow[2] | senderESPNow[3] | senderESPNow[4] | senderESPNow[5]) { //Have seen an ESP-NOW Remote
+      char last_signal_src[13];
+      sprintf_P(last_signal_src, PSTR("%02x%02x%02x%02x%02x%02x"), MAC2STR(senderESPNow));
       sappends('m',SET_F("(\"rlid\")[0]"),last_signal_src);
     } else if (!enableESPNow) {
       sappends('m',SET_F("(\"rlid\")[0]"),(char*)F("(Enable ESP-NOW to listen)"));
