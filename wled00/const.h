@@ -108,9 +108,16 @@
     #define WLED_MAX_BUTTONS 4
   #endif
 #else
-  #if WLED_MAX_BUTTONS < 2
-    #undef WLED_MAX_BUTTONS
-    #define WLED_MAX_BUTTONS 2
+  #ifdef ESP8266
+    #if WLED_MAX_BUTTONS < 2
+      #undef WLED_MAX_BUTTONS
+      #define WLED_MAX_BUTTONS 2
+    #endif
+  #else
+    #if WLED_MAX_BUTTONS < 4
+      #undef WLED_MAX_BUTTONS
+      #define WLED_MAX_BUTTONS 4
+    #endif
   #endif
 #endif
 
