@@ -277,10 +277,14 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware and pin config
 #ifndef BTNPIN
-  #define BTNPIN 0,-1
+  #ifdef ESP8266
+    #define BTNPIN 0,-1
+  #else
+    #define BTNPIN 0,-1,-1,-1
+  #endif
 #endif
 #ifndef BTNTYPE
-  #define BTNTYPE BTN_TYPE_PUSH,BTN_TYPE_NONE
+  #define BTNTYPE BTN_TYPE_PUSH
 #endif
 #ifndef RLYPIN
 WLED_GLOBAL int8_t rlyPin _INIT(-1);
