@@ -10,12 +10,6 @@
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
-typedef struct PartialEspNowPacket {
-  uint8_t magic;
-  uint8_t packet;
-  uint8_t noOfPackets;
-  uint8_t data[247];
-} partial_packet_t;
 
 void notify(byte callMode, bool followUp)
 {
@@ -151,7 +145,7 @@ void notify(byte callMode, bool followUp)
 
 #ifndef WLED_DISABLE_ESPNOW
   if (enableESPNow && useESPNowSync && statusESPNow == ESP_NOW_STATE_ON) {
-    partial_packet_t buffer = {'W', 0, 1, {0}};
+    EspNowPartialPacket buffer = {{'W','L','E','D'}, 0, 1, {0}};
     // send global data
     DEBUG_PRINTLN(F("ESP-NOW sending first packet."));
     const size_t bufferSize = sizeof(buffer.data)/sizeof(uint8_t);
@@ -983,24 +977,25 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
   // usermods hook can override processing
   if (usermods.onEspNowMessage(address, data, len)) return;
 
-  // only handle messages from linked master/remote (ignore PING messages)
-  bool isMasterDefined = masterESPNow[0] | masterESPNow[1] | masterESPNow[2] | masterESPNow[3] | masterESPNow[4] | masterESPNow[5];
-  if (!isMasterDefined || memcmp(senderESPNow, masterESPNow, 6) != 0) {
+  // only handle messages from linked master/remote (ignore PING messages) or any master/remote if 0xFFFFFFFFFFFF
+  uint8_t anyMaster[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  if (memcmp(senderESPNow, masterESPNow, 6) != 0 && memcmp(masterESPNow, anyMaster, 6) != 0) {
     DEBUG_PRINTF_P(PSTR("ESP-NOW unpaired remote sender (expected " MACSTR ").\n"), MAC2STR(masterESPNow));
     return;
   }
 
   // is received packet a master's heartbeat
-  if (len == sizeof(EspNowBeacon) && memcmp(data, "WLED", 4) == 0) {
+  EspNowBeacon *master = reinterpret_cast<EspNowBeacon *>(data);
+  if (len == sizeof(EspNowBeacon) && memcmp(master->magic, "WLED", 4) == 0) {
     DEBUG_PRINTF_P(PSTR("ESP-NOW master heartbeat (wifi: %d).\n"), WiFi.channel());
-    EspNowBeacon master;
-    memcpy(&master, data, sizeof(EspNowBeacon));
-    toki.setTime(master.time, TOKI_NO_MS_ACCURACY, TOKI_TS_SEC);
+    toki.setTime(master->time, TOKI_NO_MS_ACCURACY, TOKI_TS_SEC);
     updateLocalTime(); // we can assume that slave does not have access to NTP
-    scanESPNow = millis() + 60000; // disable scanning for a few seconds and do no futrher processing
+    if (!WLED_CONNECTED) lastReconnectAttempt = millis();            // prevent reconnecting to WiFi if configured (due to channel switching)
+    scanESPNow = millis() + 60000;  // disable scanning for a few seconds and do no futrher processing
+    channelESPNow = master->channel;
     // if/when master will allow roaming and could inform slaves the following can be used
     //if (master.channel != WiFi.channel()) {
-    //  channelESPNow = master.channel;
+    //  channelESPNow = master->channel;
     //  quickEspNow.setChannel(channelESPNow);
     //  scanESPNow = millis();
     //}
@@ -1013,8 +1008,8 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
     return;
   }
 
-  partial_packet_t *buffer = reinterpret_cast<partial_packet_t *>(data);
-  if (len < 3 || !broadcast || buffer->magic != 'W' || !useESPNowSync || WLED_CONNECTED) {
+  EspNowPartialPacket *buffer = reinterpret_cast<EspNowPartialPacket *>(data);
+  if (len < 6 || !broadcast || !useESPNowSync || memcmp(buffer->magic, "WLED", 4) != 0 || WLED_CONNECTED) {
     DEBUG_PRINTLN(F("ESP-NOW unexpected packet, not syncing or connected to WiFi."));
     return;
   }
