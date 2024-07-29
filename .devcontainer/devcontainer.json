@@ -13,6 +13,8 @@
 	},
 
 	// To give the container access to a device serial port, you can uncomment one of the following lines.
+	// Note: If running on Windows, you will have to do some additional steps:
+	// https://stackoverflow.com/questions/68527888/how-can-i-use-a-usb-com-port-inside-of-a-vscode-development-container
 	//
 	// You can explicitly just forward the port you want to connect to. Replace `/dev/ttyACM0` with the serial port for
 	// your device. This will only work if the device is plugged in from the start without reconnecting. Adding the
