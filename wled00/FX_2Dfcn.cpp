@@ -202,15 +202,39 @@ bool IRAM_ATTR Segment::isPixelXYClipped(int x, int y) {
 void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x < 0 || y < 0 || isPixelXYClipped(x,y)) return;  // if pixel would fall out of virtual segment just exit
+
+  int vW = virtualWidth();
+  int vH = virtualHeight();
+
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (!_modeBlend &&
+     (blendingStyle == BLEND_STYLE_PUSH_RIGHT ||
+      blendingStyle == BLEND_STYLE_PUSH_LEFT ||
+      blendingStyle == BLEND_STYLE_PUSH_UP ||
+      blendingStyle == BLEND_STYLE_PUSH_DOWN ||
+      blendingStyle == BLEND_STYLE_PUSH_TL ||
+      blendingStyle == BLEND_STYLE_PUSH_TR ||
+      blendingStyle == BLEND_STYLE_PUSH_BR ||
+      blendingStyle == BLEND_STYLE_PUSH_BL)) {
+    unsigned prog = 0xFFFF - progress();
+    unsigned dX = (blendingStyle == BLEND_STYLE_PUSH_UP   || blendingStyle == BLEND_STYLE_PUSH_DOWN)  ? 0 : prog * vW / 0xFFFF;
+    unsigned dY = (blendingStyle == BLEND_STYLE_PUSH_LEFT || blendingStyle == BLEND_STYLE_PUSH_RIGHT) ? 0 : prog * vH / 0xFFFF;
+    if (blendingStyle == BLEND_STYLE_PUSH_LEFT || blendingStyle == BLEND_STYLE_PUSH_TL || blendingStyle == BLEND_STYLE_PUSH_BL) x -= dX;
+    else                                                                                                                        x += dX;
+    if (blendingStyle == BLEND_STYLE_PUSH_DOWN || blendingStyle == BLEND_STYLE_PUSH_TL || blendingStyle == BLEND_STYLE_PUSH_TR) y -= dY;
+    else                                                                                                                        y += dY;
+  }
+#endif
+
+  if (x >= vW || y >= vH || x < 0 || y < 0 || isPixelXYClipped(x,y)) return;  // if pixel would fall out of virtual segment just exit
 
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
     col = color_fade(col, _bri_t);
   }
 
-  if (reverse  ) x = virtualWidth()  - x - 1;
-  if (reverse_y) y = virtualHeight() - y - 1;
+  if (reverse  ) x = vW - x - 1;
+  if (reverse_y) y = vH - y - 1;
   if (transpose) { unsigned t = x; x = y; y = t; } // swap X & Y if segment transposed
 
   x *= groupLength(); // expand to physical pixels
@@ -294,9 +318,34 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 // returns RGBW values of pixel
 uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
   if (!isActive()) return 0; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0 || isPixelXYClipped(x,y)) return 0;  // if pixel would fall out of virtual segment just exit
-  if (reverse  ) x = virtualWidth()  - x - 1;
-  if (reverse_y) y = virtualHeight() - y - 1;
+
+  int vW = virtualWidth();
+  int vH = virtualHeight();
+
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (!_modeBlend &&
+     (blendingStyle == BLEND_STYLE_PUSH_RIGHT ||
+      blendingStyle == BLEND_STYLE_PUSH_LEFT ||
+      blendingStyle == BLEND_STYLE_PUSH_UP ||
+      blendingStyle == BLEND_STYLE_PUSH_DOWN ||
+      blendingStyle == BLEND_STYLE_PUSH_TL ||
+      blendingStyle == BLEND_STYLE_PUSH_TR ||
+      blendingStyle == BLEND_STYLE_PUSH_BR ||
+      blendingStyle == BLEND_STYLE_PUSH_BL)) {
+    unsigned prog = 0xFFFF - progress();
+    unsigned dX = (blendingStyle == BLEND_STYLE_PUSH_UP   || blendingStyle == BLEND_STYLE_PUSH_DOWN)  ? 0 : prog * vW / 0xFFFF;
+    unsigned dY = (blendingStyle == BLEND_STYLE_PUSH_LEFT || blendingStyle == BLEND_STYLE_PUSH_RIGHT) ? 0 : prog * vH / 0xFFFF;
+    if (blendingStyle == BLEND_STYLE_PUSH_LEFT || blendingStyle == BLEND_STYLE_PUSH_TL || blendingStyle == BLEND_STYLE_PUSH_BL) x -= dX;
+    else                                                                                                                        x += dX;
+    if (blendingStyle == BLEND_STYLE_PUSH_DOWN || blendingStyle == BLEND_STYLE_PUSH_TL || blendingStyle == BLEND_STYLE_PUSH_TR) y -= dY;
+    else                                                                                                                        y += dY;
+  }
+#endif
+
+  if (x >= vW || y >= vH || x<0 || y<0 || isPixelXYClipped(x,y)) return 0;  // if pixel would fall out of virtual segment just exit
+
+  if (reverse  ) x = vW  - x - 1;
+  if (reverse_y) y = vH - y - 1;
   if (transpose) { unsigned t = x; x = y; y = t; } // swap X & Y if segment transposed
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels

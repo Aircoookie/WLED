@@ -782,7 +782,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 #endif
   i &= 0xFFFF;
 
-  if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
+  int vL = virtualLength();
+  if (i >= vL || i < 0) return;  // if pixel would fall out of segment just exit
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
@@ -890,7 +891,16 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
-  if (isPixelClipped(i)) return; // handle clipping on 1D
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (!_modeBlend && (blendingStyle == BLEND_STYLE_PUSH_RIGHT || blendingStyle == BLEND_STYLE_PUSH_LEFT)) {
+    unsigned prog = 0xFFFF - progress();
+    unsigned dI = prog * vL / 0xFFFF;
+    if (blendingStyle == BLEND_STYLE_PUSH_RIGHT) i -= dI;
+    else                                         i += dI;
+  }
+#endif
+
+  if (i >= vL || i < 0 || isPixelClipped(i)) return; // handle clipping on 1D
 
   unsigned len = length();
   uint8_t _bri_t = currentBri();
@@ -978,6 +988,9 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
 #endif
   i &= 0xFFFF;
 
+  int vL = virtualLength();
+  if (i >= vL || i < 0) return 0;
+
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     unsigned vH = virtualHeight();  // segment height in logical pixels
@@ -1029,9 +1042,18 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
   }
 #endif
 
-  if (isPixelClipped(i)) return 0; // handle clipping on 1D
+#ifndef WLED_DISABLE_MODE_BLEND
+  if (!_modeBlend && (blendingStyle == BLEND_STYLE_PUSH_RIGHT || blendingStyle == BLEND_STYLE_PUSH_LEFT)) {
+    unsigned prog = 0xFFFF - progress();
+    unsigned dI = prog * vL / 0xFFFF;
+    if (blendingStyle == BLEND_STYLE_PUSH_RIGHT) i -= dI;
+    else                                         i += dI;
+  }
+#endif
 
-  if (reverse) i = virtualLength() - i - 1;
+  if (i >= vL || i < 0 || isPixelClipped(i)) return 0; // handle clipping on 1D
+
+  if (reverse) i = vL - i - 1;
   i *= groupLength();
   i += start;
   /* offset/phase */

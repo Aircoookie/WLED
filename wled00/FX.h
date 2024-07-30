@@ -325,18 +325,22 @@
 #define BLEND_STYLE_FAIRY_DUST      1
 #define BLEND_STYLE_SWIPE_RIGHT     2
 #define BLEND_STYLE_SWIPE_LEFT      3
-#define BLEND_STYLE_PINCH_OUT       4
-#define BLEND_STYLE_INSIDE_OUT      5
-#define BLEND_STYLE_SWIPE_UP        6
-#define BLEND_STYLE_SWIPE_DOWN      7
-#define BLEND_STYLE_OPEN_H          8
-#define BLEND_STYLE_OPEN_V          9
-#define BLEND_STYLE_PUSH_TL         10
-#define BLEND_STYLE_PUSH_TR         11
-#define BLEND_STYLE_PUSH_BR         12
-#define BLEND_STYLE_PUSH_BL         13
+#define BLEND_STYLE_PUSH_RIGHT      4
+#define BLEND_STYLE_PUSH_LEFT       5
+#define BLEND_STYLE_PINCH_OUT       6
+#define BLEND_STYLE_INSIDE_OUT      7
+#define BLEND_STYLE_SWIPE_UP        8
+#define BLEND_STYLE_SWIPE_DOWN      9
+#define BLEND_STYLE_OPEN_H          10
+#define BLEND_STYLE_OPEN_V          11
+#define BLEND_STYLE_PUSH_UP         12
+#define BLEND_STYLE_PUSH_DOWN       13
+#define BLEND_STYLE_PUSH_TL         14
+#define BLEND_STYLE_PUSH_TR         15
+#define BLEND_STYLE_PUSH_BR         16
+#define BLEND_STYLE_PUSH_BL         17
 
-#define BLEND_STYLE_COUNT           14
+#define BLEND_STYLE_COUNT           18
 
 
 typedef enum mapping1D2D {
