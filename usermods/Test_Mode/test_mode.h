@@ -10,6 +10,10 @@
   #define TEST_BRIGHTNESS 60
 #endif
 
+#ifndef TEST_COLOR
+  #define TEST_COLOR ULTRAWHITE
+#endif
+
 #ifndef TEST_EFFECT
   #define TEST_EFFECT FX_MODE_FADE
 #endif
@@ -52,15 +56,14 @@ void TestModeUsermod::loop() {
       }
     }
     if (heldButtons >= TEST_BUTTONS_NUMBER) {
-      DEBUG_PRINT(F("Test Mode activated"));
+      DEBUG_PRINTLN(F("Test Mode activated"));
       testModeActivated = true;
 
       bri = TEST_BRIGHTNESS;
+      Segment& seg = strip.getMainSegment();
+      seg.setMode(TEST_EFFECT, false);
+      seg.setColor(0, TEST_COLOR);
       stateUpdated(CALL_MODE_DIRECT_CHANGE);
-      effectCurrent = TEST_EFFECT;
-      colorUpdated(CALL_MODE_FX_CHANGED);
-      strip.setColor(0, ULTRAWHITE);
-      colorUpdated(CALL_MODE_DIRECT_CHANGE);
 
       enable(false);
       serializeConfig();
