@@ -40,6 +40,19 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte 
   #define DEBUG_PRINTF_P(x...)
 #endif
 
+// ESP8266 has 1 MHz clock
+#ifdef ESP8266
+  #define CLOCK_FREQUENCY 1e6f
+#else
+  // Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
+  // https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
+  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+    #define CLOCK_FREQUENCY 40e6f
+  #else
+    #define CLOCK_FREQUENCY 80e6f
+  #endif
+#endif
+
 //color mangling macros
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 #define R(c) (byte((c) >> 16))
@@ -384,12 +397,10 @@ BusPwm::BusPwm(BusConfig &bc)
   if (!IS_PWM(bc.type)) return;
   unsigned numPins = NUM_PWM_PINS(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
+  // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
+  _depth = uint8_t(log((float)CLOCK_FREQUENCY / (float)_frequency) / log(2.0));
 
 #ifdef ESP8266
-  // duty cycle resolution (_depth) can be extracted from this formula: 1MHz > _frequency * 2^_depth
-  if      (_frequency > 1760) _depth =  8;
-  else if (_frequency >  880) _depth =  9;
-  else                        _depth = 10; // WLED_PWM_FREQ <= 880Hz
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
 #else
@@ -397,11 +408,6 @@ BusPwm::BusPwm(BusConfig &bc)
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
   }
-  // duty cycle resolution (_depth) can be extracted from this formula: 80MHz > _frequency * 2^_depth
-  if      (_frequency > 78124) _depth =  9;
-  else if (_frequency > 39062) _depth = 10;
-  else if (_frequency > 19531) _depth = 11;
-  else                         _depth = 12; // WLED_PWM_FREQ <= 19531Hz
 #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -419,7 +425,7 @@ BusPwm::BusPwm(BusConfig &bc)
   }
   _data = _pwmdata; // avoid malloc() and use stack
   _valid = true;
-  DEBUG_PRINTF_P(PSTR("%successfully inited PWM strip with type %u and pins %u,%u,%u,%u,%u\n"), _valid?"S":"Uns", bc.type, _pins[0], _pins[1], _pins[2], _pins[3], _pins[4]);
+  DEBUG_PRINTF_P(PSTR("%successfully inited PWM strip with type %u, frequency %u, bit depth %u and pins %u,%u,%u,%u,%u\n"), _valid?"S":"Uns", bc.type, _frequency, _depth, _pins[0], _pins[1], _pins[2], _pins[3], _pins[4]);
 }
 
 void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {
