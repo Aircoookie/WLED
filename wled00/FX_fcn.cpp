@@ -754,7 +754,7 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
 bool IRAM_ATTR Segment::isPixelClipped(int i) {
 #ifndef WLED_DISABLE_MODE_BLEND
   if (_clipStart != _clipStop && blendingStyle > BLEND_STYLE_FADE) {
-    bool invert    = _clipStart > _clipStop;  // ineverted start & stop
+    bool invert = _clipStart > _clipStop;  // ineverted start & stop
     int start = invert ? _clipStop : _clipStart;
     int stop  = invert ? _clipStart : _clipStop;
     if (blendingStyle == BLEND_STYLE_FAIRY_DUST) {
@@ -892,7 +892,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 #endif
 
 #ifndef WLED_DISABLE_MODE_BLEND
-  if (!_modeBlend && (blendingStyle == BLEND_STYLE_PUSH_RIGHT || blendingStyle == BLEND_STYLE_PUSH_LEFT)) {
+  // if we blend using "push" style we need to "shift" new mode to left or right
+  if (isInTransition() && !_modeBlend && (blendingStyle == BLEND_STYLE_PUSH_RIGHT || blendingStyle == BLEND_STYLE_PUSH_LEFT)) {
     unsigned prog = 0xFFFF - progress();
     unsigned dI = prog * vL / 0xFFFF;
     if (blendingStyle == BLEND_STYLE_PUSH_RIGHT) i -= dI;
@@ -1043,7 +1044,7 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i)
 #endif
 
 #ifndef WLED_DISABLE_MODE_BLEND
-  if (!_modeBlend && (blendingStyle == BLEND_STYLE_PUSH_RIGHT || blendingStyle == BLEND_STYLE_PUSH_LEFT)) {
+  if (isInTransition() && !_modeBlend && (blendingStyle == BLEND_STYLE_PUSH_RIGHT || blendingStyle == BLEND_STYLE_PUSH_LEFT)) {
     unsigned prog = 0xFFFF - progress();
     unsigned dI = prog * vL / 0xFFFF;
     if (blendingStyle == BLEND_STYLE_PUSH_RIGHT) i -= dI;
@@ -1425,43 +1426,47 @@ void WS2812FX::service() {
           unsigned dw = p * w / 0xFFFFU + 1;
           unsigned dh = p * h / 0xFFFFU + 1;
           switch (blendingStyle) {
-            case BLEND_STYLE_FAIRY_DUST: // fairy dust (must set entire segment, see isPixelXYClipped())
+            case BLEND_STYLE_FAIRY_DUST:  // fairy dust (must set entire segment, see isPixelXYClipped())
               Segment::setClippingRect(0, w, 0, h);
               break;
             case BLEND_STYLE_SWIPE_RIGHT: // left-to-right
+            case BLEND_STYLE_PUSH_RIGHT:  // left-to-right
               Segment::setClippingRect(0, dw, 0, h);
               break;
-            case BLEND_STYLE_SWIPE_LEFT: // right-to-left
+            case BLEND_STYLE_SWIPE_LEFT:  // right-to-left
+            case BLEND_STYLE_PUSH_LEFT:   // right-to-left
               Segment::setClippingRect(w - dw, w, 0, h);
               break;
-            case BLEND_STYLE_PINCH_OUT: // corners
+            case BLEND_STYLE_PINCH_OUT:   // corners
               Segment::setClippingRect((w + dw)/2, (w - dw)/2, (h + dh)/2, (h - dh)/2); // inverted!!
               break;
-            case BLEND_STYLE_INSIDE_OUT: // outward
+            case BLEND_STYLE_INSIDE_OUT:  // outward
               Segment::setClippingRect((w - dw)/2, (w + dw)/2, (h - dh)/2, (h + dh)/2);
               break;
-            case BLEND_STYLE_SWIPE_DOWN: // top-to-bottom (2D)
+            case BLEND_STYLE_SWIPE_DOWN:  // top-to-bottom (2D)
+            case BLEND_STYLE_PUSH_DOWN:   // top-to-bottom (2D)
               Segment::setClippingRect(0, w, 0, dh);
               break;
-            case BLEND_STYLE_SWIPE_UP: // bottom-to-top (2D)
+            case BLEND_STYLE_SWIPE_UP:    // bottom-to-top (2D)
+            case BLEND_STYLE_PUSH_UP:     // bottom-to-top (2D)
               Segment::setClippingRect(0, w, h - dh, h);
               break;
-            case BLEND_STYLE_OPEN_H: // horizontal-outward (2D) same look as INSIDE_OUT on 1D
+            case BLEND_STYLE_OPEN_H:      // horizontal-outward (2D) same look as INSIDE_OUT on 1D
               Segment::setClippingRect((w - dw)/2, (w + dw)/2, 0, h);
               break;
-            case BLEND_STYLE_OPEN_V: // vertical-outward (2D)
+            case BLEND_STYLE_OPEN_V:      // vertical-outward (2D)
               Segment::setClippingRect(0, w, (h - dh)/2, (h + dh)/2);
               break;
-            case BLEND_STYLE_PUSH_TL: // TL-to-BR (2D)
+            case BLEND_STYLE_PUSH_TL:     // TL-to-BR (2D)
               Segment::setClippingRect(0, dw, 0, dh);
               break;
-            case BLEND_STYLE_PUSH_TR: // TR-to-BL (2D)
+            case BLEND_STYLE_PUSH_TR:     // TR-to-BL (2D)
               Segment::setClippingRect(w - dw, w, 0, dh);
               break;
-            case BLEND_STYLE_PUSH_BR: // BR-to-TL (2D)
+            case BLEND_STYLE_PUSH_BR:     // BR-to-TL (2D)
               Segment::setClippingRect(w - dw, w, h - dh, h);
               break;
-            case BLEND_STYLE_PUSH_BL: // BL-to-TR (2D)
+            case BLEND_STYLE_PUSH_BL:     // BL-to-TR (2D)
               Segment::setClippingRect(0, dw, h - dh, h);
               break;
           }

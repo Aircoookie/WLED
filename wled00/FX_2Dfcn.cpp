@@ -161,8 +161,7 @@ void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y)
-{
+uint16_t IRAM_ATTR Segment::XY(int x, int y) {
   unsigned width  = virtualWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   unsigned height = virtualHeight();  // segment height in logical pixels (is always >= 1)
   return isActive() ? (x%width) + (y%height) * width : 0;
@@ -207,7 +206,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   int vH = virtualHeight();
 
 #ifndef WLED_DISABLE_MODE_BLEND
-  if (!_modeBlend &&
+  if (isInTransition() && !_modeBlend &&
      (blendingStyle == BLEND_STYLE_PUSH_RIGHT ||
       blendingStyle == BLEND_STYLE_PUSH_LEFT ||
       blendingStyle == BLEND_STYLE_PUSH_UP ||
@@ -239,13 +238,16 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
-  if (x >= width() || y >= height()) return;  // if pixel would fall out of segment just exit
+
+  int W = width();
+  int H = height();
+  if (x >= W || y >= H) return;  // if pixel would fall out of segment just exit
 
   uint32_t tmpCol = col;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
     for (int g = 0; g < grouping; g++) { // groupping horizontally
       unsigned xX = (x+g), yY = (y+j);
-      if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
+      if (xX >= W || yY >= H) continue;  // we have reached one dimension's end
 
 #ifndef WLED_DISABLE_MODE_BLEND
       // if blending modes, blend with underlying pixel
@@ -255,15 +257,15 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
       strip.setPixelColorXY(start + xX, startY + yY, tmpCol);
 
       if (mirror) { //set the corresponding horizontally mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
-        else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, tmpCol);
+        if (transpose) strip.setPixelColorXY(start + xX, startY + H - yY - 1, tmpCol);
+        else           strip.setPixelColorXY(start + W - xX - 1, startY + yY, tmpCol);
       }
       if (mirror_y) { //set the corresponding vertically mirrored pixel
-        if (transpose) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, tmpCol);
-        else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
+        if (transpose) strip.setPixelColorXY(start + W - xX - 1, startY + yY, tmpCol);
+        else           strip.setPixelColorXY(start + xX, startY + H - yY - 1, tmpCol);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, tmpCol);
+        strip.setPixelColorXY(W - xX - 1, H - yY - 1, tmpCol);
       }
     }
   }
