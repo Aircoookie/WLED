@@ -21,17 +21,22 @@
 void handleRemote(){}
 #else
 
+// This is kind of an esoteric strucure because it's pulled from the "Wizmote"
+// product spec. That remote is used as the baseline for behavior and availability
+// since it's broadly commercially available and works out of the box as a drop-in
+
 typedef struct message_structure {
-  uint8_t program;      
-  uint8_t seq[4];       
-  uint8_t byte5 = 32;   
-  uint8_t button;       
-  uint8_t byte8 = 1; 
-  uint8_t byte9 = 100; 
-  uint8_t byte10;  
-  uint8_t byte11;  
-  uint8_t byte12; 
-  uint8_t byte13; 
+  uint8_t program;      // 0x91 for ON button, 0x81 for all others
+  uint8_t seq[4];       // Incremental sequence number 32 bit unsigned integer LSB first
+  uint8_t byte5 = 32;   // Unknown
+  uint8_t button;       // Identifies which button is being pressed
+  uint8_t byte8 = 1;    // Unknown, but always 0x01
+  uint8_t byte9 = 100;  // Unknown, but always 0x64
+
+  uint8_t byte10;  // Unknown, maybe checksum
+  uint8_t byte11;  // Unknown, maybe checksum
+  uint8_t byte12;  // Unknown, maybe checksum
+  uint8_t byte13;  // Unknown, maybe checksum
 } message_structure;
 
 static int esp_now_state = ESP_NOW_STATE_UNINIT;
@@ -39,6 +44,7 @@ static uint32_t last_seq = UINT32_MAX;
 static int brightnessBeforeNightMode = NIGHT_MODE_DEACTIVATED;
 static message_structure incoming;
 
+// Pulled from the IR Remote logic but reduced to 10 steps with a constant of 3
 static const byte brightnessSteps[] = {
   6, 9, 14, 22, 33, 50, 75, 113, 170, 255
 };
@@ -62,8 +68,10 @@ static bool resetNightMode() {
   return true;
 }
 
+// increment `bri` to the next `brightnessSteps` value
 static void brightnessUp() {
   if (nightModeActive()) { return; }
+  // dumb incremental search is efficient enough for so few items
   for (uint8_t index = 0; index < numBrightnessSteps; ++index) {
     if (brightnessSteps[index] > bri) {
       bri = brightnessSteps[index];
@@ -72,8 +80,10 @@ static void brightnessUp() {
   }
 }
 
+// decrement `bri` to the next `brightnessSteps` value
 static void brightnessDown() {
   if (nightModeActive()) { return; }
+  // dumb incremental search is efficient enough for so few items
   for (int index = numBrightnessSteps - 1; index >= 0; --index) {
     if (brightnessSteps[index] < bri) {
       bri = brightnessSteps[index];
