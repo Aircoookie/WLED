@@ -21,21 +21,17 @@
 void handleRemote(){}
 #else
 
-// This is kind of an esoteric strucure because it's pulled from the "Wizmote"
-// product spec. That remote is used as the baseline for behavior and availability
-// since it's broadly commercially available and works out of the box as a drop-in
 typedef struct message_structure {
-  uint8_t program;      // 0x91 for ON button, 0x81 for all others
-  uint8_t seq[4];       // Incremental sequence number 32 bit unsigned integer LSB first
-  uint8_t byte5 = 32;   // Unknown
-  uint8_t button;       // Identifies which button is being pressed
-  uint8_t byte8 = 1;    // Unknown, but always 0x01
-  uint8_t byte9 = 100;  // Unknown, but always 0x64
-
-  uint8_t byte10;  // Unknown, maybe checksum
-  uint8_t byte11;  // Unknown, maybe checksum
-  uint8_t byte12;  // Unknown, maybe checksum
-  uint8_t byte13;  // Unknown, maybe checksum
+  uint8_t program;      
+  uint8_t seq[4];       
+  uint8_t byte5 = 32;   
+  uint8_t button;       
+  uint8_t byte8 = 1; 
+  uint8_t byte9 = 100; 
+  uint8_t byte10;  
+  uint8_t byte11;  
+  uint8_t byte12; 
+  uint8_t byte13; 
 } message_structure;
 
 static int esp_now_state = ESP_NOW_STATE_UNINIT;
@@ -43,7 +39,6 @@ static uint32_t last_seq = UINT32_MAX;
 static int brightnessBeforeNightMode = NIGHT_MODE_DEACTIVATED;
 static message_structure incoming;
 
-// Pulled from the IR Remote logic but reduced to 10 steps with a constant of 3
 static const byte brightnessSteps[] = {
   6, 9, 14, 22, 33, 50, 75, 113, 170, 255
 };
@@ -67,10 +62,8 @@ static bool resetNightMode() {
   return true;
 }
 
-// increment `bri` to the next `brightnessSteps` value
 static void brightnessUp() {
   if (nightModeActive()) { return; }
-  // dumb incremental search is efficient enough for so few items
   for (uint8_t index = 0; index < numBrightnessSteps; ++index) {
     if (brightnessSteps[index] > bri) {
       bri = brightnessSteps[index];
@@ -79,10 +72,8 @@ static void brightnessUp() {
   }
 }
 
-// decrement `bri` to the next `brightnessSteps` value
 static void brightnessDown() {
   if (nightModeActive()) { return; }
-  // dumb incremental search is efficient enough for so few items
   for (int index = numBrightnessSteps - 1; index >= 0; --index) {
     if (brightnessSteps[index] < bri) {
       bri = brightnessSteps[index];
@@ -114,7 +105,18 @@ static void presetWithFallback(uint8_t presetID, uint8_t effectID, uint8_t palet
   unloadPlaylist();
   applyPresetWithFallback(presetID, CALL_MODE_BUTTON_PRESET, effectID, paletteID);
 }
- 
+
+bool parsePayload(const char* jsonStr) {
+  // Use WLED's built-in JSON handling functions
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, jsonStr);
+  if (error) {
+    return false;
+  }
+  JsonObject root = doc.as<JsonObject>();
+  return deserializeState(root, CALL_MODE_BUTTON);
+}
+
 // Callback function that will be executed when data is received
 #ifdef ESP8266
 void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
@@ -134,6 +136,17 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   if (len != sizeof(incoming)) {
     DEBUG_PRINT(F("Unknown incoming ESP Now message received of length "));
     DEBUG_PRINTLN(len);
+    
+    char jsonStr[len + 1];
+    memcpy(jsonStr, incomingData, len);
+    jsonStr[len] = '\0';
+
+    if (!parsePayload(jsonStr)) {
+      DEBUG_PRINTLN(F("Failed to parse JSON"));
+      return;
+    }
+
+    stateUpdated(CALL_MODE_BUTTON);
     return;
   }
 
@@ -143,7 +156,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   if (cur_seq == last_seq) {
     return;
   }
-
 
   DEBUG_PRINT(F("Incoming ESP Now Packet["));
   DEBUG_PRINT(cur_seq);
@@ -162,7 +174,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     case WIZMOTE_BUTTON_BRIGHT_UP      : brightnessUp();                                  stateUpdated(CALL_MODE_BUTTON); break;
     case WIZMOTE_BUTTON_BRIGHT_DOWN    : brightnessDown();                                stateUpdated(CALL_MODE_BUTTON); break;
     default: break;
-
   }
 
   last_seq = cur_seq;
@@ -170,7 +181,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 void handleRemote() {
   if (enable_espnow_remote) {
-    if ((esp_now_state == ESP_NOW_STATE_UNINIT) && (interfacesInited || apActive)) { // ESPNOW requires Wifi to be initialized (either STA, or AP Mode) 
+    if ((esp_now_state == ESP_NOW_STATE_UNINIT) && (interfacesInited || apActive)) {
       DEBUG_PRINTLN(F("Initializing ESP_NOW listener"));
       // Init ESP-NOW
       if (esp_now_init() != 0) {
