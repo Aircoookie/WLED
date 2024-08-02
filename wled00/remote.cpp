@@ -24,6 +24,7 @@ void handleRemote(){}
 // This is kind of an esoteric strucure because it's pulled from the "Wizmote"
 // product spec. That remote is used as the baseline for behavior and availability
 // since it's broadly commercially available and works out of the box as a drop-in
+
 typedef struct message_structure {
   uint8_t program;      // 0x91 for ON button, 0x81 for all others
   uint8_t seq[4];       // Incremental sequence number 32 bit unsigned integer LSB first
@@ -114,7 +115,18 @@ static void presetWithFallback(uint8_t presetID, uint8_t effectID, uint8_t palet
   unloadPlaylist();
   applyPresetWithFallback(presetID, CALL_MODE_BUTTON_PRESET, effectID, paletteID);
 }
- 
+
+bool parsePayload(const char* jsonStr) {
+  // Use WLED's built-in JSON handling functions
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, jsonStr);
+  if (error) {
+    return false;
+  }
+  JsonObject root = doc.as<JsonObject>();
+  return deserializeState(root, CALL_MODE_BUTTON);
+}
+
 // Callback function that will be executed when data is received
 #ifdef ESP8266
 void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
@@ -134,6 +146,17 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   if (len != sizeof(incoming)) {
     DEBUG_PRINT(F("Unknown incoming ESP Now message received of length "));
     DEBUG_PRINTLN(len);
+    
+    char jsonStr[len + 1];
+    memcpy(jsonStr, incomingData, len);
+    jsonStr[len] = '\0';
+
+    if (!parsePayload(jsonStr)) {
+      DEBUG_PRINTLN(F("Failed to parse JSON"));
+      return;
+    }
+
+    stateUpdated(CALL_MODE_BUTTON);
     return;
   }
 
@@ -143,7 +166,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   if (cur_seq == last_seq) {
     return;
   }
-
 
   DEBUG_PRINT(F("Incoming ESP Now Packet["));
   DEBUG_PRINT(cur_seq);
@@ -162,7 +184,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     case WIZMOTE_BUTTON_BRIGHT_UP      : brightnessUp();                                  stateUpdated(CALL_MODE_BUTTON); break;
     case WIZMOTE_BUTTON_BRIGHT_DOWN    : brightnessDown();                                stateUpdated(CALL_MODE_BUTTON); break;
     default: break;
-
   }
 
   last_seq = cur_seq;
