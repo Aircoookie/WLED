@@ -2,20 +2,24 @@
 
 #include "wled.h"
 
-#ifndef TEST_BUTTONS_NUMBER
-  #define TEST_BUTTONS_NUMBER 0
+#ifndef TEST_MODE_BUTTONS
+  #define TEST_MODE_BUTTONS 2
 #endif
 
-#ifndef TEST_BRIGHTNESS
-  #define TEST_BRIGHTNESS 60
+#ifndef TEST_MODE_BRIGHTNESS
+  #define TEST_MODE_BRIGHTNESS 60
 #endif
 
-#ifndef TEST_COLOR
-  #define TEST_COLOR ULTRAWHITE
+#ifndef TEST_MODE_COLOR
+  #define TEST_MODE_COLOR ULTRAWHITE
 #endif
 
-#ifndef TEST_EFFECT
-  #define TEST_EFFECT FX_MODE_FADE
+#ifndef TEST_MODE_EFFECT
+  #define TEST_MODE_EFFECT FX_MODE_FADE
+#endif
+
+#ifndef TEST_MODE_PALETTE
+  #define TEST_MODE_PALETTE 0
 #endif
 
 class TestModeUsermod : public Usermod {
@@ -45,7 +49,7 @@ class TestModeUsermod : public Usermod {
 };
 
 void TestModeUsermod::loop() {
-  if (!enabled || TEST_BUTTONS_NUMBER < 1) { return; }
+  if (!enabled || TEST_MODE_BUTTONS < 1) { return; }
 
   if (millis() - lastTime > 1000) {
     lastTime = millis();
@@ -55,16 +59,18 @@ void TestModeUsermod::loop() {
         heldButtons += 1;
       }
     }
-    if (heldButtons >= TEST_BUTTONS_NUMBER) {
+    if (heldButtons >= TEST_MODE_BUTTONS) {
       DEBUG_PRINTLN(F("Test Mode activated"));
       testModeActivated = true;
 
-      bri = TEST_BRIGHTNESS;
+      bri = TEST_MODE_BRIGHTNESS;
       Segment& seg = strip.getMainSegment();
-      seg.setMode(TEST_EFFECT, false);
-      seg.setColor(0, TEST_COLOR);
+      seg.setMode(TEST_MODE_EFFECT, false);
+      seg.setColor(0, TEST_MODE_COLOR);
+      seg.setPalette(TEST_MODE_PALETTE);
       stateUpdated(CALL_MODE_DIRECT_CHANGE);
 
+      // Disable usermod so next boot is clean
       enable(false);
       serializeConfig();
     }
@@ -129,4 +135,4 @@ uint16_t TestModeUsermod::getId() { return USERMOD_ID_TEST_MODE; }
 
 // add more strings here to reduce flash memory usage
 const char TestModeUsermod::_name[]    PROGMEM = "Test Mode";
-const char TestModeUsermod::_enabled[] PROGMEM = "enabled";
+const char TestModeUsermod::_enabled[] PROGMEM = "Enabled";
