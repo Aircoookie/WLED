@@ -544,7 +544,7 @@
       // C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
       #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM 
     #else
-      // ESP32: 32 bit
+      // ESP32: 20 bit
       #define MAX_BIT_WIDTH 20
     #endif
   #endif
