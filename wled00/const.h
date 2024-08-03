@@ -528,6 +528,35 @@
 #endif
 #endif
 
+#ifndef CLOCK_FREQUENCY
+  #ifdef ESP8266
+    // 1 MHz clock
+    #define CLOCK_FREQUENCY 1e6f
+  #else
+    // Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
+    // https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
+    #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+      #define CLOCK_FREQUENCY 40e6f
+    #else
+      #define CLOCK_FREQUENCY 80e6f
+    #endif
+  #endif
+#endif
+
+#ifndef MAX_BIT_WIDTH
+  #ifdef ESP8266
+    #define MAX_BIT_WIDTH 10
+  #else
+    #ifdef SOC_LEDC_TIMER_BIT_WIDE_NUM
+      // C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
+      #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM 
+    #else
+      // ESP32: 32 bit
+      #define MAX_BIT_WIDTH 20
+    #endif
+  #endif
+#endif
+
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
 
 // Size of buffer for API JSON object (increase for more segments)
