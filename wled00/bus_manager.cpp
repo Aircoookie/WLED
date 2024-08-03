@@ -40,19 +40,6 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte 
   #define DEBUG_PRINTF_P(x...)
 #endif
 
-// ESP8266 has 1 MHz clock
-#ifdef ESP8266
-  #define CLOCK_FREQUENCY 1e6f
-#else
-  // Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
-  // https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
-  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
-    #define CLOCK_FREQUENCY 40e6f
-  #else
-    #define CLOCK_FREQUENCY 80e6f
-  #endif
-#endif
-
 //color mangling macros
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 #define R(c) (byte((c) >> 16))
@@ -398,7 +385,7 @@ BusPwm::BusPwm(BusConfig &bc)
   unsigned numPins = NUM_PWM_PINS(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
-  _depth = uint8_t(log((float)CLOCK_FREQUENCY / (float)_frequency) / log(2.0));
+  for (_depth=MAX_BIT_WIDTH; _depth>8; _depth--) if (((uint32_t(CLOCK_FREQUENCY)/_frequency)>>_depth) > 0) break;
 
 #ifdef ESP8266
   analogWriteRange((1<<_depth)-1);
