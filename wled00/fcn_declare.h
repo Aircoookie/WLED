@@ -269,6 +269,7 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
 
 //network.cpp
 int getSignalQuality(int rssi);
+int8_t findWiFi(bool doScan = false);
 void WiFiEvent(WiFiEvent_t event);
 
 //um_manager.cpp

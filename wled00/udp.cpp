@@ -989,16 +989,12 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
   if (len == sizeof(EspNowBeacon) && memcmp(master->magic, "WLED", 4) == 0) {
     DEBUG_PRINTF_P(PSTR("ESP-NOW master heartbeat (wifi: %d).\n"), WiFi.channel());
     toki.setTime(master->time, TOKI_NO_MS_ACCURACY, TOKI_TS_SEC);
-    updateLocalTime(); // we can assume that slave does not have access to NTP
-    if (!WLED_CONNECTED) lastReconnectAttempt = millis();            // prevent reconnecting to WiFi if configured (due to channel switching)
-    scanESPNow = millis() + 60000;  // disable scanning for a few seconds and do no futrher processing
-    channelESPNow = master->channel;
-    // if/when master will allow roaming and could inform slaves the following can be used
-    //if (master.channel != WiFi.channel()) {
-    //  channelESPNow = master->channel;
-    //  quickEspNow.setChannel(channelESPNow);
-    //  scanESPNow = millis();
-    //}
+    updateLocalTime();                                    // we can assume that slave does not have access to NTP
+    if (!heartbeatESPNow) calculateSunriseAndSunset();    // if this is first heartbeat update sunrise/sunset
+    if (!WLED_CONNECTED) lastReconnectAttempt = millis(); // prevent reconnecting to WiFi if configured (due to channel switching)
+    heartbeatESPNow = millis();                           // update heartbeat time
+    scanESPNow = heartbeatESPNow + 30000;                 // disable scanning for a few seconds
+    channelESPNow = master->channel;                      // pre-configure if heartbeat is heard while scanning for WiFi
     return;
   }
 
