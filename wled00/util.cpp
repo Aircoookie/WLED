@@ -213,15 +213,31 @@ bool requestJSONBufferLock(uint8_t module)
     DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
     return false;
   }
-  unsigned long now = millis();
 
-  while (jsonBufferLock && millis()-now < 250) delay(1); // wait for fraction for buffer lock
-
+#if defined(ARDUINO_ARCH_ESP32)
+  // Use a recursive mutex type in case our task is the one holding the JSON buffer.
+  // This can happen during large JSON web transactions.  In this case, we continue immediately
+  // and then will return out below if the lock is still held.
+  if (xSemaphoreTakeRecursive(jsonBufferLockMutex, 250) == pdFALSE) return false;  // timed out waiting
+#elif defined(ARDUINO_ARCH_ESP8266)
+  // If we're in system context, delay() won't return control to the user context, so there's
+  // no point in waiting.
+  if (can_yield()) {
+    unsigned long now = millis();
+    while (jsonBufferLock && (millis()-now < 250)) delay(1); // wait for fraction for buffer lock
+  }
+#else
+  #error Unsupported task framework - fix requestJSONBufferLock
+#endif  
+  // If the lock is still held - by us, or by another task
   if (jsonBufferLock) {
     DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
     DEBUG_PRINT(jsonBufferLock);
     DEBUG_PRINTLN(")");
-    return false; // waiting time-outed
+#ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif
+    return false;
   }
 
   jsonBufferLock = module ? module : 255;
@@ -239,6 +255,9 @@ void releaseJSONBufferLock()
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
   jsonBufferLock = 0;
+#ifdef ARDUINO_ARCH_ESP32
+  xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif  
 }
 
 
