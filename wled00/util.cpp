@@ -231,7 +231,9 @@ bool requestJSONBufferLock(uint8_t module)
 #endif  
   // If the lock is still held - by us, or by another task
   if (jsonBufferLock) {
-    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
+    DEBUG_PRINT(F("ERROR: Locking JSON buffer ("));
+    DEBUG_PRINT(module);
+    DEBUG_PRINT(F(") failed! (still locked by "));
     DEBUG_PRINT(jsonBufferLock);
     DEBUG_PRINTLN(")");
 #ifdef ARDUINO_ARCH_ESP32
