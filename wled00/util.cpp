@@ -231,11 +231,7 @@ bool requestJSONBufferLock(uint8_t module)
 #endif  
   // If the lock is still held - by us, or by another task
   if (jsonBufferLock) {
-    DEBUG_PRINT(F("ERROR: Locking JSON buffer ("));
-    DEBUG_PRINT(module);
-    DEBUG_PRINT(F(") failed! (still locked by "));
-    DEBUG_PRINT(jsonBufferLock);
-    DEBUG_PRINTLN(")");
+    DEBUG_PRINTF_P(PSTR("ERROR: Locking JSON buffer (%d) failed! (still locked by %d)\n"), module, jsonBufferLock);
 #ifdef ARDUINO_ARCH_ESP32
     xSemaphoreGiveRecursive(jsonBufferLockMutex);
 #endif
@@ -243,9 +239,7 @@ bool requestJSONBufferLock(uint8_t module)
   }
 
   jsonBufferLock = module ? module : 255;
-  DEBUG_PRINT(F("JSON buffer locked. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
+  DEBUG_PRINTF_P(PSTR("JSON buffer locked. (%d)\n"), jsonBufferLock);
   pDoc->clear();
   return true;
 }
@@ -253,9 +247,7 @@ bool requestJSONBufferLock(uint8_t module)
 
 void releaseJSONBufferLock()
 {
-  DEBUG_PRINT(F("JSON buffer released. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
+  DEBUG_PRINTF_P(PSTR("JSON buffer released. (%d)\n"), jsonBufferLock);
   jsonBufferLock = 0;
 #ifdef ARDUINO_ARCH_ESP32
   xSemaphoreGiveRecursive(jsonBufferLockMutex);
