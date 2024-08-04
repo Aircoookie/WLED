@@ -537,8 +537,16 @@
   #endif
 #endif
 
-//#define MIN_HEAP_SIZE (8k for AsyncWebServer)
-#define MIN_HEAP_SIZE 8192
+//#define MIN_HEAP_SIZE
+#define MIN_HEAP_SIZE 2048
+
+// Web server limits
+// Minimum heap remaining before queuing a request
+#define WLED_REQUEST_MIN_HEAP (6*1024)
+// Estimated maximum heap required by any one request
+#define WLED_REQUEST_HEAP_USAGE (6*1024)
+// Maximum number of requests in queue; absolute cap on web server resource usage.
+#define WLED_REQUEST_MAX_QUEUE 10
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
