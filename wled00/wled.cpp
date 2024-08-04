@@ -293,6 +293,7 @@ void WLED::loop()
       DEBUG_PRINT(F("Strip time[ms]: "));  DEBUG_PRINT(avgStripMillis/loops); DEBUG_PRINT("/"); DEBUG_PRINTLN(maxStripMillis);
     }
     strip.printSize();
+    server.printStatus(DEBUGOUT);
     loops = 0;
     maxLoopMillis = 0;
     maxUsermodMillis = 0;
