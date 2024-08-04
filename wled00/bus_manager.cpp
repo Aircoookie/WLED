@@ -378,6 +378,31 @@ void BusDigital::cleanup() {
 }
 
 
+#ifdef ESP8266
+  // 1 MHz clock
+  #define CLOCK_FREQUENCY 1000000UL
+#else
+  // Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
+  // https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
+  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+    #define CLOCK_FREQUENCY 40000000UL
+  #else
+    #define CLOCK_FREQUENCY 80000000UL
+  #endif
+#endif
+
+#ifdef ESP8266
+  #define MAX_BIT_WIDTH 10
+#else
+  #ifdef SOC_LEDC_TIMER_BIT_WIDE_NUM
+    // C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
+    #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM 
+  #else
+    // ESP32: 20 bit (but in reality we would never go beyond 16 bit as the frequency would be to low)
+    #define MAX_BIT_WIDTH 20
+  #endif
+#endif
+
 BusPwm::BusPwm(BusConfig &bc)
 : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
 {
@@ -385,7 +410,7 @@ BusPwm::BusPwm(BusConfig &bc)
   unsigned numPins = NUM_PWM_PINS(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
-  for (_depth=MAX_BIT_WIDTH; _depth>8; _depth--) if (((uint32_t(CLOCK_FREQUENCY)/_frequency)>>_depth) > 0) break;
+  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
 
 #ifdef ESP8266
   analogWriteRange((1<<_depth)-1);
