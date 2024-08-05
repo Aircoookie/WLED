@@ -8,10 +8,10 @@
  * color blend function
  */
 uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
-  if(blend == 0)   return color1;
+  if (blend == 0) return color1;
   unsigned blendmax = b16 ? 0xFFFF : 0xFF;
-  if(blend == blendmax) return color2;
-  uint8_t shift = b16 ? 16 : 8;
+  if (blend == blendmax) return color2;
+  unsigned shift = b16 ? 16 : 8;
 
   uint32_t w1 = W(color1);
   uint32_t r1 = R(color1);
@@ -73,22 +73,19 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
   uint32_t g = G(c1);
   uint32_t b = B(c1);
   uint32_t w = W(c1);
-  if (video)  {
-    uint32_t scale = amount; // 32bit for faster calculation
-    scaledcolor = (((r * scale) >> 8) << 16) + ((r && scale) ? 1 : 0);
-    scaledcolor |= (((g * scale) >> 8) << 8) + ((g && scale) ? 1 : 0);
-    scaledcolor |= ((b * scale) >> 8) + ((b && scale) ? 1 : 0);
+  uint32_t scale = amount + !video; // 32bit for faster calculation
+  if (video) {
+    scaledcolor  = (((r * scale) >> 8) << 16) + ((r && scale) ? 1 : 0);
+    scaledcolor |= (((g * scale) >> 8) << 8)  + ((g && scale) ? 1 : 0);
+    scaledcolor |=  ((b * scale) >> 8)        + ((b && scale) ? 1 : 0);
     scaledcolor |= (((w * scale) >> 8) << 24) + ((w && scale) ? 1 : 0);
-    return scaledcolor;
-  }
-  else  {
-    uint32_t scale = 1 + amount;
-    scaledcolor = ((r * scale) >> 8) << 16;
+  } else {
+    scaledcolor  = ((r * scale) >> 8) << 16;
     scaledcolor |= ((g * scale) >> 8) << 8;
-    scaledcolor |= (b * scale) >> 8;
+    scaledcolor |=  (b * scale) >> 8;
     scaledcolor |= ((w * scale) >> 8) << 24;
-    return scaledcolor;
   }
+  return scaledcolor;
 }
 
 void setRandomColor(byte* rgb)
@@ -140,25 +137,25 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
     case 1: // triadic
       harmonics[0] = basehue + 113 + random8(15);
       harmonics[1] = basehue + 233 + random8(15);
-      harmonics[2] = basehue -7 + random8(15);
+      harmonics[2] = basehue -   7 + random8(15);
       break;
 
     case 2: // split-complementary
       harmonics[0] = basehue + 145 + random8(10);
       harmonics[1] = basehue + 205 + random8(10);
-      harmonics[2] = basehue - 5 + random8(10);
+      harmonics[2] = basehue -   5 + random8(10);
       break;
     
     case 3: // square
-      harmonics[0] = basehue + 85 + random8(10);
+      harmonics[0] = basehue +  85 + random8(10);
       harmonics[1] = basehue + 175 + random8(10);
       harmonics[2] = basehue + 265 + random8(10);
      break;
 
     case 4: // tetradic
-      harmonics[0] = basehue + 80 + random8(20);
+      harmonics[0] = basehue +  80 + random8(20);
       harmonics[1] = basehue + 170 + random8(20);
-      harmonics[2] = basehue + random8(30)-15;
+      harmonics[2] = basehue -  15 + random8(30);
      break;
   }
 
@@ -384,13 +381,13 @@ bool colorFromHexString(byte* rgb, const char* in) {
   return true;
 }
 
-float minf (float v, float w)
+static inline float minf(float v, float w)
 {
   if (w > v) return v;
   return w;
 }
 
-float maxf (float v, float w)
+static inline float maxf(float v, float w)
 {
   if (w > v) return w;
   return v;

@@ -2106,14 +2106,17 @@ uint16_t mode_fire_2012() {
   for (unsigned stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &heat[stripNr * SEGLEN], it);
 
-  if (SEGMENT.is2D()) SEGMENT.blur(32);
+  if (SEGMENT.is2D()) {
+    uint8_t blurAmount = SEGMENT.custom2 >> 2;
+    SEGMENT.blur(blurAmount);
+  }
 
   if (it != SEGENV.step)
     SEGENV.step = it;
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,,Boost;;!;1;sx=64,ix=160,m12=1"; // bars
+static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,2D Blur,Boost;;!;1;sx=64,ix=160,m12=1,c2=128"; // bars
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -7456,7 +7459,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
   for (int x=0; x < cols; x++) {
-    uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
+    uint8_t  band       = map(x, 0, cols, 0, NUM_BANDS);
     if (NUM_BANDS < 16) band = map(band, 0, NUM_BANDS - 1, 0, 15); // always use full range. comment out this line to get the previous behaviour.
     band = constrain(band, 0, 15);
     unsigned colorIndex = band * 17;

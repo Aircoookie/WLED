@@ -378,18 +378,41 @@ void BusDigital::cleanup() {
 }
 
 
+#ifdef ESP8266
+  // 1 MHz clock
+  #define CLOCK_FREQUENCY 1000000UL
+#else
+  // Use XTAL clock if possible to avoid timer frequency error when setting APB clock < 80 Mhz
+  // https://github.com/espressif/arduino-esp32/blob/2.0.2/cores/esp32/esp32-hal-ledc.c
+  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+    #define CLOCK_FREQUENCY 40000000UL
+  #else
+    #define CLOCK_FREQUENCY 80000000UL
+  #endif
+#endif
+
+#ifdef ESP8266
+  #define MAX_BIT_WIDTH 10
+#else
+  #ifdef SOC_LEDC_TIMER_BIT_WIDE_NUM
+    // C6/H2/P4: 20 bit, S2/S3/C2/C3: 14 bit
+    #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM 
+  #else
+    // ESP32: 20 bit (but in reality we would never go beyond 16 bit as the frequency would be to low)
+    #define MAX_BIT_WIDTH 20
+  #endif
+#endif
+
 BusPwm::BusPwm(BusConfig &bc)
 : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
 {
   if (!IS_PWM(bc.type)) return;
   unsigned numPins = NUM_PWM_PINS(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
+  // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
+  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
 
 #ifdef ESP8266
-  // duty cycle resolution (_depth) can be extracted from this formula: 1MHz > _frequency * 2^_depth
-  if      (_frequency > 1760) _depth =  8;
-  else if (_frequency >  880) _depth =  9;
-  else                        _depth = 10; // WLED_PWM_FREQ <= 880Hz
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
 #else
@@ -397,11 +420,6 @@ BusPwm::BusPwm(BusConfig &bc)
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
   }
-  // duty cycle resolution (_depth) can be extracted from this formula: 80MHz > _frequency * 2^_depth
-  if      (_frequency > 78124) _depth =  9;
-  else if (_frequency > 39062) _depth = 10;
-  else if (_frequency > 19531) _depth = 11;
-  else                         _depth = 12; // WLED_PWM_FREQ <= 19531Hz
 #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -419,7 +437,7 @@ BusPwm::BusPwm(BusConfig &bc)
   }
   _data = _pwmdata; // avoid malloc() and use stack
   _valid = true;
-  DEBUG_PRINTF_P(PSTR("%successfully inited PWM strip with type %u and pins %u,%u,%u,%u,%u\n"), _valid?"S":"Uns", bc.type, _pins[0], _pins[1], _pins[2], _pins[3], _pins[4]);
+  DEBUG_PRINTF_P(PSTR("%successfully inited PWM strip with type %u, frequency %u, bit depth %u and pins %u,%u,%u,%u,%u\n"), _valid?"S":"Uns", bc.type, _frequency, _depth, _pins[0], _pins[1], _pins[2], _pins[3], _pins[4]);
 }
 
 void BusPwm::setPixelColor(uint16_t pix, uint32_t c) {

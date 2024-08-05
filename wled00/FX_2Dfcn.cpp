@@ -171,7 +171,7 @@ uint16_t IRAM_ATTR Segment::XY(int x, int y) {
 // if clipping start > stop the clipping range is inverted
 // _modeBlend==true  -> old effect during transition
 // _modeBlend==false -> new effect during transition
-bool IRAM_ATTR Segment::isPixelXYClipped(int x, int y) {
+bool IRAM_ATTR Segment::isPixelXYClipped(int x, int y) const {
 #ifndef WLED_DISABLE_MODE_BLEND
   if (_clipStart != _clipStop && blendingStyle > BLEND_STYLE_FADE) {
     const bool invertX    = _clipStart > _clipStop;
@@ -234,7 +234,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 
   if (reverse  ) x = vW - x - 1;
   if (reverse_y) y = vH - y - 1;
-  if (transpose) { unsigned t = x; x = y; y = t; } // swap X & Y if segment transposed
+  if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
 
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
@@ -318,7 +318,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 #endif
 
 // returns RGBW values of pixel
-uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
+uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) const {
   if (!isActive()) return 0; // not active
 
   int vW = virtualWidth();
@@ -346,9 +346,9 @@ uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
 
   if (x >= vW || y >= vH || x<0 || y<0 || isPixelXYClipped(x,y)) return 0;  // if pixel would fall out of virtual segment just exit
 
-  if (reverse  ) x = vW  - x - 1;
+  if (reverse  ) x = vW - x - 1;
   if (reverse_y) y = vH - y - 1;
-  if (transpose) { unsigned t = x; x = y; y = t; } // swap X & Y if segment transposed
+  if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
