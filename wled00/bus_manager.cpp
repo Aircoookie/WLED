@@ -377,6 +377,89 @@ void BusDigital::cleanup() {
   pinManager.deallocatePin(_pins[0], PinOwner::BusDigital);
 }
 
+std::vector<LEDType> BusDigital::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+
+  ledType.type = F("D");
+  ledType.config = F("{\"pins\":[\"Data GPIO\"]}");
+
+  ledType.id = 22;
+  ledType.name = F("WS281x");
+  result.push_back(ledType);
+
+  ledType.id = 30;
+  ledType.name = F("SK6812/WS2814 RGBW");
+  result.push_back(ledType);
+
+  ledType.id = 31;
+  ledType.name = F("TM1814");
+  result.push_back(ledType);
+
+  ledType.id = 24;
+  ledType.name = F("400kHz");
+  result.push_back(ledType);
+
+  ledType.id = 25;
+  ledType.name = F("TM1829");
+  result.push_back(ledType);
+
+  ledType.id = 26;
+  ledType.name = F("UCS8903");
+  result.push_back(ledType);
+
+  ledType.id = 27;
+  ledType.name = F("APA106/PL9823");
+  result.push_back(ledType);
+
+  ledType.id = 33;
+  ledType.name = F("TM1914");
+  result.push_back(ledType);
+
+  ledType.id = 28;
+  ledType.name = F("FW1906 GRBCW");
+  result.push_back(ledType);
+
+  ledType.id = 29;
+  ledType.name = F("UCS8904 RGBW");
+  result.push_back(ledType);
+
+  ledType.id = 32;
+  ledType.name = F("WS2805 RGBCW");
+  result.push_back(ledType);
+
+  ledType.id = 19;
+  ledType.name = F("WS2811 White");
+  result.push_back(ledType);
+
+
+  ledType.type = F("2P");
+  ledType.config = F("{\"pins\":[\"Data GPIO\",\"Clk GPIO\"]}");
+
+
+  ledType.id = 50;
+  ledType.name = F("WS2801");
+  result.push_back(ledType);
+
+  ledType.id = 51;
+  ledType.name = F("APA102");
+  result.push_back(ledType);
+
+  ledType.id = 52;
+  ledType.name = F("LPD8806");
+  result.push_back(ledType);
+
+  ledType.id = 54;
+  ledType.name = F("LPD6803");
+  result.push_back(ledType);
+
+  ledType.id = 53;
+  ledType.name = F("PP9813");
+  result.push_back(ledType);
+
+  return result;
+}
+
 
 #ifdef ESP8266
   // 1 MHz clock
@@ -573,6 +656,47 @@ void BusPwm::deallocatePins() {
   #endif
 }
 
+std::vector<LEDType> BusPwm::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+
+  ledType.config = F("{\"pins\":[\"GPIO Pin\"]}"); 
+
+  ledType.id = 41;
+  ledType.name = F("PWM White");
+  ledType.type = F("A");
+  result.push_back(ledType);
+
+  ledType.config = F("{\"pins\":[\"GPIO Pins\"]}"); 
+
+  ledType.id = 42;
+  ledType.name = F("PWM CCT");
+  ledType.type = F("AA");
+  result.push_back(ledType);
+
+  ledType.id = 43;
+  ledType.name = F("PWM RGB");
+  ledType.type = F("AAA");
+  result.push_back(ledType);
+
+  ledType.id = 44;
+  ledType.name = F("PWM RGBW");
+  ledType.type = F("AAAA");
+  result.push_back(ledType);
+
+  ledType.id = 45;
+  ledType.name = F("PWM RGB+CCT");
+  ledType.type = F("AAAAA");
+  result.push_back(ledType);
+
+  // ledType.id = 46;
+  // ledType.name = F("PWM RGB+DCCT");
+  // ledType.type = F("AAAAAA");
+  // result.push_back(ledType);
+
+  return result;
+}
+
 
 BusOnOff::BusOnOff(BusConfig &bc)
 : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
@@ -615,6 +739,18 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) {
   if (!_valid) return 0;
   pinArray[0] = _pin;
   return 1;
+}
+
+std::vector<LEDType> BusOnOff::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+  ledType.id = 40;
+  ledType.name = F("On/Off");
+  ledType.type = "";
+  ledType.config = F("{\"pins\":[\"GPIO Pin\"]}");
+  result.push_back(ledType);
+  return result;
+
 }
 
 
@@ -677,12 +813,238 @@ uint8_t BusNetwork::getPins(uint8_t* pinArray) {
   return 4;
 }
 
+std::vector<LEDType> BusNetwork::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+
+  ledType.config = F("{\"pins\":[\"IP Address\"]}");
+
+  ledType.type = F("V");
+
+  ledType.id = 80;
+  ledType.name = F("DDP RGB (network)");
+  result.push_back(ledType);
+
+  // ledType.id = 81";
+  // ledType.name = F("E1.31 RGB (network)");
+  // result.push_back(ledType);
+
+  ledType.id = 82;
+  ledType.name = F("Art-Net RGB (network)");
+  result.push_back(ledType);
+
+  ledType.id = 88;
+  ledType.name = F("DDP RGBW (network)");
+  result.push_back(ledType);
+
+  ledType.id = 89;
+  ledType.name = F("Art-Net RGBW (network)");
+  result.push_back(ledType);
+
+  return result;
+}
+
 void BusNetwork::cleanup() {
   _type = I_NONE;
   _valid = false;
   freeData();
 }
 
+// ***************************************************************************
+
+#ifdef WLED_ENABLE_HUB75MATRIX
+
+BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+
+  mxconfig.double_buff = true; // <------------- Turn on double buffer
+
+  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[0], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
+
+  mxconfig.mx_width = bc.pins[1];
+  mxconfig.mx_height = bc.pins[2];
+
+  if(mxconfig.mx_width >= 64 && (bc.pins[0] > 1)) {
+    DEBUG_PRINTF("WARNING, only single panel can be used of 64 pixel boards due to memory")
+    mxconfig.chain_length = 1;
+  }
+
+  // mxconfig.driver   = HUB75_I2S_CFG::SHIFTREG;
+
+#if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3) // MatrixPortal ESP32-S3
+
+  // https://www.adafruit.com/product/5778
+
+  DEBUG_PRINTF("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
+
+  mxconfig.gpio.r1 = 42;
+  mxconfig.gpio.g1 = 41;
+  mxconfig.gpio.b1 = 40;
+  mxconfig.gpio.r2 = 38;
+  mxconfig.gpio.g2 = 39;
+  mxconfig.gpio.b2 = 37; 
+
+  mxconfig.gpio.lat = 47;
+  mxconfig.gpio.oe  = 14;
+  mxconfig.gpio.clk = 2;
+
+  mxconfig.gpio.a = 45;
+  mxconfig.gpio.b = 36;
+  mxconfig.gpio.c = 48;
+  mxconfig.gpio.d = 35;
+  mxconfig.gpio.e = 21;
+
+#elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
+
+  DEBUG_PRINTLN("MatrixPanel_I2S_DMA - ESP32_FORUM_PINOUT");
+
+/*
+    ESP32 with SmartMatrix's default pinout - ESP32_FORUM_PINOUT
+    
+    https://github.com/pixelmatix/SmartMatrix/blob/teensylc/src/MatrixHardware_ESP32_V0.h
+
+    Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
+*/
+
+  mxconfig.gpio.r1 = 2;
+  mxconfig.gpio.g1 = 15;
+  mxconfig.gpio.b1 = 4;
+  mxconfig.gpio.r2 = 16;
+  mxconfig.gpio.g2 = 27;
+  mxconfig.gpio.b2 = 17; 
+
+  mxconfig.gpio.lat = 26;
+  mxconfig.gpio.oe  = 25;
+  mxconfig.gpio.clk = 22;
+
+  mxconfig.gpio.a = 5;
+  mxconfig.gpio.b = 18;
+  mxconfig.gpio.c = 19;
+  mxconfig.gpio.d = 21;
+  mxconfig.gpio.e = 12;
+
+#else
+  DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Default pins");
+  /*
+   https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA?tab=readme-ov-file
+
+   Boards
+
+   https://esp32trinity.com/
+   https://www.electrodragon.com/product/rgb-matrix-panel-drive-interface-board-for-esp32-dma/
+   
+  */
+  mxconfig.gpio.r1 = 25;
+  mxconfig.gpio.g1 = 26;
+  mxconfig.gpio.b1 = 27;
+  mxconfig.gpio.r2 = 14;
+  mxconfig.gpio.g2 = 12;
+  mxconfig.gpio.b2 = 13;
+
+  mxconfig.gpio.lat = 4;
+  mxconfig.gpio.oe  = 15;
+  mxconfig.gpio.clk = 16;
+
+  mxconfig.gpio.a = 23;
+  mxconfig.gpio.b = 19;
+  mxconfig.gpio.c = 5;
+  mxconfig.gpio.d = 17;
+  mxconfig.gpio.e = 18;
+
+#endif
+
+
+  DEBUG_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
+
+  // OK, now we can create our matrix object
+  display = new MatrixPanel_I2S_DMA(mxconfig);
+
+  this->_len = (display->width() * display->height());
+
+  pinManager.allocatePin(mxconfig.gpio.r1, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.g1, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.b1, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.r2, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.g2, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.b2, true, PinOwner::HUB75);
+
+  pinManager.allocatePin(mxconfig.gpio.lat, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.oe, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.clk, true, PinOwner::HUB75);
+
+  pinManager.allocatePin(mxconfig.gpio.a, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.b, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.c, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.d, true, PinOwner::HUB75);
+  pinManager.allocatePin(mxconfig.gpio.e, true, PinOwner::HUB75);
+
+  // display->setLatBlanking(4);
+
+  DEBUG_PRINTF("MatrixPanel_I2S_DMA created");
+  // let's adjust default brightness
+  display->setBrightness8(25);    // range is 0-255, 0 - 0%, 255 - 100%
+
+  // Allocate memory and start DMA display
+  if( not display->begin() ) {
+      DEBUG_PRINTF("****** MatrixPanel_I2S_DMA !KABOOM! I2S memory allocation failed ***********");
+      return;
+  }
+  else {
+    _valid = true;
+  }
+  
+  DEBUG_PRINTF("MatrixPanel_I2S_DMA started");
+}
+
+void BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
+  r = R(c);
+  g = G(c);
+  b = B(c);
+  x = pix % display->width();
+  y = floor(pix / display->width());
+  display->drawPixelRGB888(x, y, r, g, b);
+}
+
+void BusHub75Matrix::setBrightness(uint8_t b, bool immediate) {
+  this->display->setBrightness(b);
+}
+
+void BusHub75Matrix::deallocatePins() {
+
+  pinManager.deallocatePin(mxconfig.gpio.r1, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.g1, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.b1, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.r2, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.g2, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.b2, PinOwner::HUB75);
+
+  pinManager.deallocatePin(mxconfig.gpio.lat, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.oe, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.clk, PinOwner::HUB75);
+
+  pinManager.deallocatePin(mxconfig.gpio.a, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.b, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.c, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.d, PinOwner::HUB75);
+  pinManager.deallocatePin(mxconfig.gpio.e, PinOwner::HUB75);
+
+}
+
+std::vector<LEDType> BusHub75Matrix::getLEDTypes() {
+  std::vector<LEDType> result;
+  LEDType ledType;
+
+  ledType.type = "H";
+  ledType.config = F("{\"pins\":[\"Chain Length\",\"Width x Height\",\"x\"]}");
+
+  ledType.id = TYPE_HUB75MATRIX;
+  ledType.name = "HUB 75 Matrix";
+  result.push_back(ledType);
+
+  return result;
+}
+
+#endif
+// ***************************************************************************
 
 //utility to get the approx. memory usage of a given BusConfig
 uint32_t BusManager::memUsage(BusConfig &bc) {
@@ -714,6 +1076,10 @@ int BusManager::add(BusConfig &bc) {
   if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
   if (IS_VIRTUAL(bc.type)) {
     busses[numBusses] = new BusNetwork(bc);
+#ifdef WLED_ENABLE_HUB75MATRIX
+  } else if (bc.type >= TYPE_HUB75MATRIX && bc.type <= (TYPE_HUB75MATRIX + 10)) {
+    busses[numBusses] = new BusHub75Matrix(bc);
+#endif
   } else if (IS_DIGITAL(bc.type)) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
   } else if (bc.type == TYPE_ONOFF) {
@@ -723,6 +1089,40 @@ int BusManager::add(BusConfig &bc) {
   }
   return numBusses++;
 }
+
+String BusManager::getLEDTypes() {
+  std::vector<LEDType> types;
+  String json = "[";
+
+  std::vector<LEDType> busTypes;
+
+  busTypes = BusDigital::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+
+  busTypes = BusOnOff::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+
+  busTypes = BusPwm::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+
+  busTypes = BusNetwork::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+
+#ifdef WLED_ENABLE_HUB75MATRIX
+  busTypes = BusHub75Matrix::getLEDTypes();
+  types.insert(types.end(), busTypes.begin(), busTypes.end());
+#endif
+
+  for(int t = 0; t < types.size(); t++) {
+    LEDType type = types.at(t);
+    String id = String(type.id);
+    json += "{\"id\":"+id+",\"type\":\""+type.type+"\",\"name\":\""+type.name+"\",\"config\":"+type.config+"},";
+  }
+
+  json += "]";
+  return json;
+}
+
 
 void BusManager::useParallelOutput(void) {
   _parallelOutputs = 8; // hardcoded since we use NPB I2S x8 methods
@@ -876,6 +1276,7 @@ uint16_t BusManager::getTotalLength() {
   for (unsigned i=0; i<numBusses; i++) len += busses[i]->getLength();
   return len;
 }
+
 
 bool PolyBus::useParallelI2S = false;
 

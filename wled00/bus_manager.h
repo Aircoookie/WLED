@@ -1,11 +1,15 @@
 #ifndef BusManager_h
 #define BusManager_h
 
+#ifdef WLED_ENABLE_HUB75MATRIX
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#endif
 /*
  * Class for addressing various light types
  */
 
 #include "const.h"
+#include <vector>
 
 //colors.cpp
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
@@ -55,6 +59,7 @@ struct BusConfig {
     if (IS_VIRTUAL(type))   nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (IS_2PIN(type)) nPins = 2;
     else if (IS_PWM(type))  nPins = NUM_PWM_PINS(type);
+    else if (type >= TYPE_HUB75MATRIX && type <= (TYPE_HUB75MATRIX + 10)) nPins = 0;
     for (size_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
@@ -103,6 +108,12 @@ struct ColorOrderMap {
     ColorOrderMapEntry _mappings[WLED_MAX_COLOR_ORDER_MAPPINGS];
 };
 
+struct LEDType {
+  uint8_t id;
+  String type;
+  String name;
+  String config = F("{}");
+};
 
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
@@ -258,6 +269,7 @@ class BusDigital : public Bus {
     uint16_t getMaxCurrent() override  { return _milliAmpsMax; }
     void reinit();
     void cleanup();
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     uint8_t _skip;
@@ -296,6 +308,7 @@ class BusPwm : public Bus {
     uint16_t getFrequency() override { return _frequency; }
     void show() override;
     void cleanup() { deallocatePins(); }
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     uint8_t _pins[5];
@@ -320,6 +333,7 @@ class BusOnOff : public Bus {
     uint8_t  getPins(uint8_t* pinArray) override;
     void show() override;
     void cleanup() { pinManager.deallocatePin(_pin, PinOwner::BusOnOff); }
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     uint8_t _pin;
@@ -340,6 +354,7 @@ class BusNetwork : public Bus {
     uint8_t  getPins(uint8_t* pinArray) override;
     void show() override;
     void cleanup();
+    static std::vector<LEDType> getLEDTypes();
 
   private:
     IPAddress _client;
@@ -349,6 +364,51 @@ class BusNetwork : public Bus {
     bool      _broadcastLock;
 };
 
+#ifdef WLED_ENABLE_HUB75MATRIX
+class BusHub75Matrix : public Bus {
+  public:
+    BusHub75Matrix(BusConfig &bc);
+
+    bool hasRGB() { return true; }
+    bool hasWhite() { return false; }
+    static std::vector<LEDType> getLEDTypes();
+
+    void setPixelColor(uint16_t pix, uint32_t c);
+
+    void show() {
+      if(mxconfig.double_buff) {
+        display->flipDMABuffer(); // Show the back buffer, set currently output buffer to the back (i.e. no longer being sent to LED panels)
+        display->clearScreen();   // Now clear the back-buffer
+      }
+    }
+
+    void setBrightness(uint8_t b, bool immediate);
+
+    uint8_t getPins(uint8_t* pinArray) {
+      pinArray[0] = mxconfig.chain_length;
+      return 1;
+    } // Fake value due to keep finaliseInit happy
+
+    void deallocatePins();
+
+    void cleanup() {
+      deallocatePins();
+      delete display;
+      _valid = false;
+    }
+
+    ~BusHub75Matrix() {
+      cleanup();
+    }
+
+  private:
+    MatrixPanel_I2S_DMA *display = nullptr;
+    HUB75_I2S_CFG mxconfig;
+    uint_fast8_t r, g, b;
+    uint_fast16_t x, y;
+    
+};
+#endif
 
 class BusManager {
   public:
@@ -386,6 +446,7 @@ class BusManager {
     //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
     static uint16_t getTotalLength();
     static uint8_t getNumBusses() { return numBusses; }
+    static String getLEDTypes();
 
     static void                 updateColorOrderMap(const ColorOrderMap &com) { memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap)); }
     static const ColorOrderMap& getColorOrderMap() { return colorOrderMap; }
