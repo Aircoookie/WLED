@@ -69,6 +69,28 @@
 			// maxCO - max Color Order mappings
 			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
+		function addLEDTypes(config) {
+			var config = getLEDTypes();
+			console.log("addLEDTypes")
+			console.log(config);
+			var s = d.getElementsByTagName("select");
+			for (i=0; i<s.length; i++) {
+				// is the field a LED type?
+				if (s[i].name.substring(0,2)=="LT") {
+					var sel = s[i];
+					for(var t = 0; t < config.length; t++) {
+						var type = config[t];
+						let opt = d.createElement("option");
+						opt.value = type.i;
+						opt.text = type.n;
+						if(type.t != undefined && type.t != "") {
+							opt.setAttribute('data-type', type.t);
+						}
+						sel.appendChild(opt);			
+					}
+				}
+			}
+		}
 		function pinsOK() {
 			var ok = true;
 			var nList = d.Sf.querySelectorAll("#mLC input[name^=L]");
@@ -408,35 +430,7 @@
 <hr class="sml">
 ${i+1}:
 <select name="LT${s}" onchange="UI(true)">${i>=maxB && false ? '' :
-'<option value="22" data-type="D">WS281x</option>\
-<option value="30" data-type="D">SK6812/WS2814 RGBW</option>\
-<option value="31" data-type="D">TM1814</option>\
-<option value="24" data-type="D">400kHz</option>\
-<option value="25" data-type="D">TM1829</option>\
-<option value="26" data-type="D">UCS8903</option>\
-<option value="27" data-type="D">APA106/PL9823</option>\
-<option value="33" data-type="D">TM1914</option>\
-<option value="28" data-type="D">FW1906 GRBCW</option>\
-<option value="29" data-type="D">UCS8904 RGBW</option>\
-<option value="32" data-type="D">WS2805 RGBCW</option>\
-<option value="50" data-type="2P">WS2801</option>\
-<option value="51" data-type="2P">APA102</option>\
-<option value="52" data-type="2P">LPD8806</option>\
-<option value="54" data-type="2P">LPD6803</option>\
-<option value="53" data-type="2P">P9813</option>\
-<option value="19" data-type="D">WS2811 White</option>\
-<option value="40">On/Off</option>\
-<option value="41" data-type="A">PWM White</option>\
-<option value="42" data-type="AA">PWM CCT</option>\
-<option value="43" data-type="AAA">PWM RGB</option>\
-<option value="44" data-type="AAAA">PWM RGBW</option>\
-<option value="45" data-type="AAAAA">PWM RGB+CCT</option>\
-<!--option value="46" data-type="AAAAAA">PWM RGB+DCCT</option-->'}
-<option value="80" data-type="V">DDP RGB (network)</option>
-<!--option value="81" data-type="V">E1.31 RGB (network)</option-->
-<option value="82" data-type="V">Art-Net RGB (network)</option>
-<option value="88" data-type="V">DDP RGBW (network)</option>
-<option value="89" data-type="V">Art-Net RGBW (network)</option>
+''}
 </select><br>
 <div id="abl${s}">
 mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
@@ -476,6 +470,7 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <div id="dig${s}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
+				addLEDTypes();
 				let sel = d.getElementsByName("LT"+s)[0]
 				if (i >= maxB || digitalB >= maxD) disable(sel,'option[data-type="D"]');
 				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]');
