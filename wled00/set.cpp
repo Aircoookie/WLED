@@ -860,20 +860,19 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   uint16_t spcI    = selseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
   if (pos > 0) {
-    startI = getNumVal(&req, pos);
+    startI = std::abs(getNumVal(&req, pos));
   }
   pos = req.indexOf(F("S2=")); //segment stop
   if (pos > 0) {
-    stopI = getNumVal(&req, pos);
+    stopI = std::abs(getNumVal(&req, pos));
   }
   pos = req.indexOf(F("GP=")); //segment grouping
   if (pos > 0) {
-    grpI = getNumVal(&req, pos);
-    if (grpI == 0) grpI = 1;
+    grpI = std::max(1,getNumVal(&req, pos));
   }
   pos = req.indexOf(F("SP=")); //segment spacing
   if (pos > 0) {
-    spcI = getNumVal(&req, pos);
+    spcI = std::max(0,getNumVal(&req, pos));
   }
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 

@@ -327,13 +327,8 @@ void Segment::stopTransition() {
   }
 }
 
-void Segment::handleTransition() {
-  unsigned _progress = progress();
-  if (_progress == 0xFFFFU) stopTransition();
-}
-
 // transition progression between 0-65535
-uint16_t IRAM_ATTR Segment::progress() {
+uint16_t IRAM_ATTR Segment::progress() const {
   if (isInTransition()) {
     unsigned diff = millis() - _t->_start;
     if (_t->_dur > 0 && diff < _t->_dur) return diff * 0xFFFFU / _t->_dur;
@@ -412,7 +407,7 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 }
 #endif
 
-uint8_t IRAM_ATTR Segment::currentBri(bool useCct) {
+uint8_t IRAM_ATTR Segment::currentBri(bool useCct) const {
   unsigned prog = progress();
   if (prog < 0xFFFFU) {
     unsigned curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
@@ -422,7 +417,7 @@ uint8_t IRAM_ATTR Segment::currentBri(bool useCct) {
   return (useCct ? cct : (on ? opacity : 0));
 }
 
-uint8_t IRAM_ATTR Segment::currentMode() {
+uint8_t IRAM_ATTR Segment::currentMode() const {
 #ifndef WLED_DISABLE_MODE_BLEND
   unsigned prog = progress();
   if (modeBlending && prog < 0xFFFFU) return _t->_modeT;
@@ -430,7 +425,7 @@ uint8_t IRAM_ATTR Segment::currentMode() {
   return mode;
 }
 
-uint32_t IRAM_ATTR Segment::currentColor(uint8_t slot) {
+uint32_t IRAM_ATTR Segment::currentColor(uint8_t slot) const {
   if (slot >= NUM_COLORS) slot = 0;
 #ifndef WLED_DISABLE_MODE_BLEND
   return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];
@@ -685,8 +680,10 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
         vLen = vH;
         break;
       case M12_pCorner:
-      case M12_pArc:
         vLen = max(vW,vH); // get the longest dimension
+        break;
+      case M12_pArc:
+        vLen = sqrt16(vH*vH + vW*vW); // use diagonal
         break;
       case M12_sPinwheel:
         vLen = getPinwheelLength(vW, vH);
@@ -730,12 +727,14 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         if (i==0)
           setPixelColorXY(0, 0, col);
         else {
-          float step = HALF_PI / (2.85f*i);
-          for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
-            // may want to try float version as well (with or without antialiasing)
-            int x = roundf(sin_t(rad) * i);
-            int y = roundf(cos_t(rad) * i);
+          float r = i;
+          float step = HALF_PI / (2.8284f * r + 4); // we only need (PI/4)/(r/sqrt(2)+1) steps
+          for (float rad = 0.0f; rad <= (HALF_PI/2)+step/2; rad += step) {
+            int x = roundf(sin_t(rad) * r);
+            int y = roundf(cos_t(rad) * r);
+            // exploit symmetry
             setPixelColorXY(x, y, col);
+            setPixelColorXY(y, x, col);
           }
           // Bresenham’s Algorithm (may not fill every pixel)
           //int d = 3 - (2*i);
@@ -893,7 +892,7 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 }
 #endif
 
-uint32_t IRAM_ATTR Segment::getPixelColor(int i)
+uint32_t IRAM_ATTR Segment::getPixelColor(int i) const
 {
   if (!isActive()) return 0; // not active
 #ifndef WLED_DISABLE_2D
@@ -1059,7 +1058,7 @@ void Segment::fade_out(uint8_t rate) {
   const int rows = virtualHeight(); // will be 1 for 1D
 
   rate = (255-rate) >> 1;
-  float mappedRate = float(rate) +1.1f;
+  float mappedRate = 1.0f / (float(rate) + 1.1f);
 
   uint32_t color = colors[1]; // SEGCOLOR(1); // target color
   int w2 = W(color);
@@ -1069,15 +1068,16 @@ void Segment::fade_out(uint8_t rate) {
 
   for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
     color = is2D() ? getPixelColorXY(x, y) : getPixelColor(x);
+    if (color == colors[1]) continue; // already at target color
     int w1 = W(color);
     int r1 = R(color);
     int g1 = G(color);
     int b1 = B(color);
 
-    int wdelta = (w2 - w1) / mappedRate;
-    int rdelta = (r2 - r1) / mappedRate;
-    int gdelta = (g2 - g1) / mappedRate;
-    int bdelta = (b2 - b1) / mappedRate;
+    int wdelta = (w2 - w1) * mappedRate;
+    int rdelta = (r2 - r1) * mappedRate;
+    int gdelta = (g2 - g1) * mappedRate;
+    int bdelta = (b2 - b1) * mappedRate;
 
     // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
     wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
@@ -1149,7 +1149,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
  * The colours are a transition r -> g -> b -> back to r
  * Inspired by the Adafruit examples.
  */
-uint32_t Segment::color_wheel(uint8_t pos) {
+uint32_t Segment::color_wheel(uint8_t pos) const {
   if (palette) return color_from_palette(pos, false, true, 0); // perhaps "strip.paletteBlend < 2" should be better instead of "true"
   uint8_t w = W(currentColor(0));
   pos = 255 - pos;
@@ -1173,7 +1173,7 @@ uint32_t Segment::color_wheel(uint8_t pos) {
  * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
  * @returns Single color from palette
  */
-uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri) {
+uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri) const {
   uint32_t color = gamma32(currentColor(mcol));
 
   // default palette or no RGB support on segment
