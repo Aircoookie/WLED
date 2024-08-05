@@ -79,6 +79,8 @@
     #include <espnow.h>
     #define WIFI_MODE_STA WIFI_STA
     #define WIFI_MODE_AP WIFI_AP
+    #define WIFI_MODE_APSTA WIFI_AP_STA
+    #define ESP_NOW_SEND_SUCCESS 0
     #include <QuickEspNow.h>
   #endif
 #else // ESP32
@@ -328,7 +330,11 @@ WLED_GLOBAL char cmDNS[33]       _INIT(MDNS_NAME);                // mDNS addres
 WLED_GLOBAL char apSSID[33]      _INIT("");                       // AP off by default (unless setup)
 WLED_GLOBAL byte apChannel       _INIT(1);                        // 2.4GHz WiFi AP channel (1-13)
 WLED_GLOBAL byte apHide          _INIT(0);                        // hidden AP SSID
+#ifndef WLED_AP_TIMEOUT
 WLED_GLOBAL byte apBehavior      _INIT(AP_BEHAVIOR_BOOT_NO_CONN); // access point opens when no connection after boot by default
+#else
+WLED_GLOBAL byte apBehavior      _INIT(AP_BEHAVIOR_TEMPORARY); // access point opens when no connection after boot by default
+#endif
 #ifdef ARDUINO_ARCH_ESP32
 WLED_GLOBAL bool noWifiSleep _INIT(true);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
 #else
@@ -502,8 +508,11 @@ WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 10
 WLED_GLOBAL bool enableESPNow        _INIT(false);  // global on/off for ESP-NOW
 WLED_GLOBAL byte statusESPNow        _INIT(ESP_NOW_STATE_UNINIT); // state of ESP-NOW stack (0 uninitialised, 1 initialised, 2 error)
 WLED_GLOBAL bool useESPNowSync       _INIT(false);  // use ESP-NOW wireless technology for sync
-WLED_GLOBAL char linked_remote[13]   _INIT("");     // MAC of ESP-NOW remote (Wiz Mote)
-WLED_GLOBAL char last_signal_src[13] _INIT("");     // last seen ESP-NOW sender
+WLED_GLOBAL byte masterESPNow[6]     _INIT_N(({0,0,0,0,0,0})); // MAC of ESP-NOW sync master or linked remote (Wiz Mote)
+WLED_GLOBAL byte senderESPNow[6]     _INIT_N(({0,0,0,0,0,0})); // last seen ESP-NOW sender
+WLED_GLOBAL byte channelESPNow       _INIT(1);      // last channel used when searching for master
+WLED_GLOBAL unsigned long scanESPNow _INIT(0UL);
+WLED_GLOBAL unsigned long heartbeatESPNow _INIT(0UL); // last heartbeat/beacon millis()
 #endif
 
 // Time CONFIG
@@ -554,6 +563,7 @@ WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use i
 // internal global variable declarations
 // wifi
 WLED_GLOBAL bool apActive _INIT(false);
+WLED_GLOBAL byte apClients _INIT(0);
 WLED_GLOBAL bool forceReconnect _INIT(false);
 WLED_GLOBAL unsigned long lastReconnectAttempt _INIT(0);
 WLED_GLOBAL bool interfacesInited _INIT(false);
@@ -916,10 +926,10 @@ public:
   void beginStrip();
   void handleConnection();
   bool initEthernet(); // result is informational
+  void stopAP(bool stopESPNow = true);
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
-  int8_t findWiFi(bool doScan = false);
   #if defined(STATUSLED)
   void handleStatusLED();
   #endif

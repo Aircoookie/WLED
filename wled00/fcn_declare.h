@@ -248,12 +248,28 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
 #ifndef WLED_DISABLE_ESPNOW
+typedef struct {
+  char    magic[4];     // enough to store "WLED"
+  uint8_t packet:4;     // packet sequence
+  uint8_t noOfPackets:4;// total number of packets
+  uint8_t data[245];    // payload
+} __attribute__((packed, aligned(1))) EspNowPartialPacket;
+
+typedef struct {
+  char     magic[4];    // enough to store "WLED"
+  uint8_t  version:4;   // message packet version (changes when packet size changes); not intended to change beyond 15 (0 means unspecified/irrelevant)
+  uint8_t  channel:4;   // master's WiFi channel used
+  uint32_t time;        // may be used for time synchronisation (NOTE: time_t varies in size on ESP32 and ESP8266)
+  uint8_t  reserved[7]; // 7 bytes reserved for future use
+} __attribute__((packed, aligned(1))) EspNowBeacon;
+
 void espNowSentCB(uint8_t* address, uint8_t status);
 void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast);
 #endif
 
 //network.cpp
 int getSignalQuality(int rssi);
+int8_t findWiFi(bool doScan = false);
 void WiFiEvent(WiFiEvent_t event);
 
 //um_manager.cpp

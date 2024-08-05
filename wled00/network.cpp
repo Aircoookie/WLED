@@ -170,11 +170,116 @@ int getSignalQuality(int rssi)
 }
 
 
+// performs asynchronous scan for available networks (which may take couple of seconds to finish)
+// returns configured WiFi ID with the strongest signal (or default if no configured networks available)
+int8_t findWiFi(bool doScan) {
+  if (multiWiFi.size() <= 1) {
+    DEBUG_PRINTLN(F("Defaulf WiFi used."));
+    return 0;
+  }
+
+  if (doScan) WiFi.scanDelete();  // restart scan
+
+  int status = WiFi.scanComplete(); // complete scan may take as much as several seconds (usually <3s with not very crowded air)
+
+  if (status == WIFI_SCAN_FAILED) {
+    DEBUG_PRINTLN(F("WiFi scan started."));
+    WiFi.scanNetworks(true);  // start scanning in asynchronous mode
+  } else if (status >= 0) {   // status contains number of found networks
+    DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
+    int rssi = -9999;
+    unsigned selected = selectedWiFi;
+    for (int o = 0; o < status; o++) {
+      DEBUG_PRINT(F(" WiFi available: ")); DEBUG_PRINT(WiFi.SSID(o));
+      DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(WiFi.RSSI(o)); DEBUG_PRINTLN(F("dB"));
+      for (unsigned n = 0; n < multiWiFi.size(); n++)
+        if (!strcmp(WiFi.SSID(o).c_str(), multiWiFi[n].clientSSID)) {
+          // find the WiFi with the strongest signal (but keep priority of entry if signal difference is not big)
+          if ((n < selected && WiFi.RSSI(o) > rssi-10) || WiFi.RSSI(o) > rssi) {
+            rssi = WiFi.RSSI(o);
+            selected = n;
+          }
+          break;
+        }
+    }
+    DEBUG_PRINT(F("Selected: ")); DEBUG_PRINT(multiWiFi[selected].clientSSID);
+    DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(rssi); DEBUG_PRINTLN(F("dB"));
+    return selected;
+  }
+  //DEBUG_PRINT(F("WiFi scan running."));
+  return status; // scan is still running or there was an error
+}
+
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
   switch (event) {
-#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+#ifdef ESP8266
+    case WIFI_EVENT_STAMODE_GOT_IP:
+      DEBUG_PRINTLN();
+      DEBUG_PRINT(F("IP address: ")); DEBUG_PRINTLN(Network.localIP());
+      break;
+    case WIFI_EVENT_STAMODE_CONNECTED:
+      DEBUG_PRINTLN(F("WiFi: Connected!"));
+      wasConnected = true;
+      break;
+    case WIFI_EVENT_STAMODE_DISCONNECTED:
+      // called quite often (when not connected to WiFi)
+      if (wasConnected) {
+        DEBUG_PRINTLN(F("WiFi: Disconnected"));
+        interfacesInited = false;
+        findWiFi(true); // reinit WiFi scan
+        forceReconnect = true;
+      }
+      break;
+    case WIFI_EVENT_SOFTAPMODE_STACONNECTED:
+      // AP client connected
+      DEBUG_PRINTLN(F("WiFi: AP Client Connected"));
+      apClients++;
+      DEBUG_PRINTLN(apClients);
+      break;
+    case WIFI_EVENT_SOFTAPMODE_STADISCONNECTED:
+      // AP client disconnected
+      DEBUG_PRINTLN(F("WiFi: AP Client Disconnected"));
+      if (--apClients == 0 && WLED_WIFI_CONFIGURED) forceReconnect = true; // no clients reconnect WiFi if awailable
+      DEBUG_PRINTLN(apClients);
+      break;
+#else
+    case SYSTEM_EVENT_AP_STADISCONNECTED:
+      // AP client disconnected
+      DEBUG_PRINTLN(F("WiFi: AP Client Disconnected"));
+      if (--apClients == 0 && WLED_WIFI_CONFIGURED) forceReconnect = true; // no clients reconnect WiFi if awailable
+      DEBUG_PRINTLN(apClients);
+      break;
+    case SYSTEM_EVENT_AP_STACONNECTED:
+      // AP client connected
+      DEBUG_PRINTLN(F("WiFi: AP Client Connected"));
+      apClients++;
+      DEBUG_PRINTLN(apClients);
+      break;
+    case SYSTEM_EVENT_STA_GOT_IP:
+      DEBUG_PRINTLN();
+      DEBUG_PRINT(F("IP address: ")); DEBUG_PRINTLN(Network.localIP());
+      break;
+    case SYSTEM_EVENT_STA_CONNECTED:
+      DEBUG_PRINTLN(F("WiFi: Connected!"));
+      wasConnected = true;
+      break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+      if (wasConnected) {
+        DEBUG_PRINTLN(F("WiFi: Disconnected"));
+        interfacesInited = false;
+        findWiFi(true); // reinit WiFi scan
+        forceReconnect = true;
+      }
+      break;
+    case SYSTEM_EVENT_AP_START:
+      DEBUG_PRINTLN(F("WiFi: AP Started"));
+      break;
+    case SYSTEM_EVENT_AP_STOP:
+      DEBUG_PRINTLN(F("WiFi: AP Started"));
+      break;
+  #if defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
       DEBUG_PRINTLN(F("ETH Started"));
       break;
@@ -205,6 +310,7 @@ void WiFiEvent(WiFiEvent_t event)
       // alternative access to the device.
       forceReconnect = true;
       break;
+  #endif
 #endif
     default:
       break;

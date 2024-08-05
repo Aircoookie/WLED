@@ -89,8 +89,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     bool oldESPNow = enableESPNow;
     enableESPNow = request->hasArg(F("RE"));
     if (oldESPNow != enableESPNow) forceReconnect = true;
+    char linked_remote[13];
     strlcpy(linked_remote, request->arg(F("RMAC")).c_str(), 13);
-    strlwr(linked_remote);  //Normalize MAC format to lowercase
+    #define hex2int(a) (((a)>='0' && (a)<='9') ? (a)-'0' : ((a)>='A' && (a)<='F') ? (a)-'A'+10 : ((a)>='a' && (a)<='f') ? (a)-'a'+10 : 0)
+    for (int i=0; i<6; i++) masterESPNow[i] = (hex2int(linked_remote[i*2])<<4) | hex2int(linked_remote[i*2+1]);
+    DEBUG_PRINTF_P(PSTR("ESP-NOW linked remote: " MACSTR "\n"), MAC2STR(masterESPNow));
     #endif
 
     #ifdef WLED_USE_ETHERNET

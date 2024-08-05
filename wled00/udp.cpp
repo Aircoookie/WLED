@@ -10,12 +10,6 @@
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
-typedef struct PartialEspNowPacket {
-  uint8_t magic;
-  uint8_t packet;
-  uint8_t noOfPackets;
-  uint8_t data[247];
-} partial_packet_t;
 
 void notify(byte callMode, bool followUp)
 {
@@ -151,7 +145,7 @@ void notify(byte callMode, bool followUp)
 
 #ifndef WLED_DISABLE_ESPNOW
   if (enableESPNow && useESPNowSync && statusESPNow == ESP_NOW_STATE_ON) {
-    partial_packet_t buffer = {'W', 0, 1, {0}};
+    EspNowPartialPacket buffer = {{'W','L','E','D'}, 0, 1, {0}};
     // send global data
     DEBUG_PRINTLN(F("ESP-NOW sending first packet."));
     const size_t bufferSize = sizeof(buffer.data)/sizeof(uint8_t);
@@ -955,24 +949,54 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
 
 #ifndef WLED_DISABLE_ESPNOW
 // ESP-NOW message sent callback function
+// if used with unicast messages (PING to master) status will contain success of delivery. this can be used to find master's channel
 void espNowSentCB(uint8_t* address, uint8_t status) {
-    DEBUG_PRINTF_P(PSTR("Message sent to " MACSTR ", status: %d\n"), MAC2STR(address), status);
+  DEBUG_PRINTF_P(PSTR("Message sent to " MACSTR ", status: %d (wifi: %d)\n"), MAC2STR(address), status, WiFi.channel());
+//  if (!sendNotificationsRT && status == ESP_NOW_SEND_SUCCESS) {
+//    if (memcmp(address, masterESPNow, 6) == 0) {
+//      // we sent message to master successfully, use current channel
+//      scanESPNow = millis() + 30000; // disable scanning for a few seconds
+//    }
+//  }
 }
 
 // ESP-NOW message receive callback function
 void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast) {
-  sprintf_P(last_signal_src, PSTR("%02x%02x%02x%02x%02x%02x"), address[0], address[1], address[2], address[3], address[4], address[5]);
+  //sprintf_P(last_signal_src, PSTR("%02x%02x%02x%02x%02x%02x"), address[0], address[1], address[2], address[3], address[4], address[5]);
+  memcpy(senderESPNow, address, sizeof(senderESPNow));
 
   #ifdef WLED_DEBUG
-    DEBUG_PRINT(F("ESP-NOW: ")); DEBUG_PRINT(last_signal_src); DEBUG_PRINT(F(" -> ")); DEBUG_PRINTLN(len);
-    for (int i=0; i<len; i++) DEBUG_PRINTF_P(PSTR("%02x "), data[i]);
+    DEBUG_PRINTF_P(PSTR("ESP-NOW packet from: " MACSTR " [%dB]\n"), MAC2STR(senderESPNow), len);
+    for (int i=0; i<len; i++) {
+      DEBUG_PRINTF_P(PSTR("%02x "), data[i]);
+      if (len % 16 == 15) DEBUG_PRINTLN();
+    }
     DEBUG_PRINTLN();
   #endif
 
-#ifndef WLED_DISABLE_ESPNOW
   // usermods hook can override processing
   if (usermods.onEspNowMessage(address, data, len)) return;
-#endif
+
+  // only handle messages from linked master/remote (ignore PING messages) or any master/remote if 0xFFFFFFFFFFFF
+  uint8_t anyMaster[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  if (memcmp(senderESPNow, masterESPNow, 6) != 0 && memcmp(masterESPNow, anyMaster, 6) != 0) {
+    DEBUG_PRINTF_P(PSTR("ESP-NOW unpaired remote sender (expected " MACSTR ").\n"), MAC2STR(masterESPNow));
+    return;
+  }
+
+  // is received packet a master's heartbeat
+  EspNowBeacon *master = reinterpret_cast<EspNowBeacon *>(data);
+  if (len == sizeof(EspNowBeacon) && memcmp(master->magic, "WLED", 4) == 0) {
+    DEBUG_PRINTF_P(PSTR("ESP-NOW master heartbeat (wifi: %d).\n"), WiFi.channel());
+    toki.setTime(master->time, TOKI_NO_MS_ACCURACY, TOKI_TS_SEC);
+    updateLocalTime();                                    // we can assume that slave does not have access to NTP
+    if (!heartbeatESPNow) calculateSunriseAndSunset();    // if this is first heartbeat update sunrise/sunset
+    if (!WLED_CONNECTED) lastReconnectAttempt = millis(); // prevent reconnecting to WiFi if configured (due to channel switching)
+    heartbeatESPNow = millis();                           // update heartbeat time
+    scanESPNow = heartbeatESPNow + 30000;                 // disable scanning for a few seconds
+    channelESPNow = master->channel;                      // pre-configure if heartbeat is heard while scanning for WiFi
+    return;
+  }
 
   // handle WiZ Mote data
   if (data[0] == 0x91 || data[0] == 0x81 || data[0] == 0x80) {
@@ -980,13 +1004,8 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
     return;
   }
 
-  if (strlen(linked_remote) == 12 && strcmp(last_signal_src, linked_remote) != 0) {
-    DEBUG_PRINTLN(F("ESP-NOW unpaired remote sender."));
-    return;
-  }
-
-  partial_packet_t *buffer = reinterpret_cast<partial_packet_t *>(data);
-  if (len < 3 || !broadcast || buffer->magic != 'W' || !useESPNowSync || WLED_CONNECTED) {
+  EspNowPartialPacket *buffer = reinterpret_cast<EspNowPartialPacket *>(data);
+  if (len < 6 || !broadcast || !useESPNowSync || memcmp(buffer->magic, "WLED", 4) != 0 || WLED_CONNECTED) {
     DEBUG_PRINTLN(F("ESP-NOW unexpected packet, not syncing or connected to WiFi."));
     return;
   }
