@@ -148,7 +148,7 @@ void sappends(char stype, const char* key, char* val)
 
 bool oappendi(int i)
 {
-  char s[11];
+  char s[12]; // 32bit signed number can have 10 digits plus - sign
   sprintf(s, "%d", i);
   return oappend(s);
 }

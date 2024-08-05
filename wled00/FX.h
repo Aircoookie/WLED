@@ -563,16 +563,16 @@ typedef struct Segment {
 
     // transition functions
     void     startTransition(uint16_t dur);     // transition has to start before actual segment values change
-    void     stopTransition(void);              // ends transition mode by destroying transition structure
-    void     handleTransition(void);
+    void     stopTransition(void);              // ends transition mode by destroying transition structure (does nothing if not in transition)
+    inline void handleTransition(void) { if (progress() == 0xFFFFU) stopTransition(); }
     #ifndef WLED_DISABLE_MODE_BLEND
     void     swapSegenv(tmpsegd_t &tmpSegD);    // copies segment data into specifed buffer, if buffer is not a transition buffer, segment data is overwritten from transition buffer
     void     restoreSegenv(tmpsegd_t &tmpSegD); // restores segment data from buffer, if buffer is not transition buffer, changed values are copied to transition buffer
     #endif
-    uint16_t progress(void);                    // transition progression between 0-65535
-    uint8_t  currentBri(bool useCct = false);   // current segment brightness/CCT (blended while in transition)
-    uint8_t  currentMode(void);                 // currently active effect/mode (while in transition)
-    uint32_t currentColor(uint8_t slot);        // currently active segment color (blended while in transition)
+    uint16_t progress(void) const;                  // transition progression between 0-65535
+    uint8_t  currentBri(bool useCct = false) const; // current segment brightness/CCT (blended while in transition)
+    uint8_t  currentMode(void) const;               // currently active effect/mode (while in transition)
+    uint32_t currentColor(uint8_t slot) const;      // currently active segment color (blended while in transition)
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
     void     setCurrentPalette(void);
 
@@ -587,7 +587,7 @@ typedef struct Segment {
     inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
-    uint32_t getPixelColor(int i);
+    uint32_t getPixelColor(int i) const;
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t, bool smear = false);
     void fill(uint32_t c);
@@ -599,8 +599,8 @@ typedef struct Segment {
     inline void addPixelColor(int n, byte r, byte g, byte b, byte w = 0, bool fast = false) { addPixelColor(n, RGBW32(r,g,b,w), fast); }
     inline void addPixelColor(int n, CRGB c, bool fast = false)          { addPixelColor(n, RGBW32(c.r,c.g,c.b,0), fast); }
     inline void fadePixelColor(uint16_t n, uint8_t fade)                 { setPixelColor(n, color_fade(getPixelColor(n), fade, true)); }
-    uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
-    uint32_t color_wheel(uint8_t pos);
+    uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255) const;
+    uint32_t color_wheel(uint8_t pos) const;
 
     // 2D matrix
     uint16_t virtualWidth(void)  const; // segment width in virtual pixels (accounts for groupping and spacing)
@@ -618,7 +618,7 @@ typedef struct Segment {
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
-    uint32_t getPixelColorXY(int x, int y);
+    uint32_t getPixelColorXY(int x, int y) const;
     // 2D support functions
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) { setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend)); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)         { blendPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), blend); }
@@ -729,15 +729,7 @@ class WS2812FX {  // 96 bytes
       customMappingSize(0),
       _lastShow(0),
       _segment_index(0),
-      _mainSegment(0),
-      _queuedChangesSegId(255),
-      _qStart(0),
-      _qStop(0),
-      _qStartY(0),
-      _qStopY(0),
-      _qGrouping(0),
-      _qSpacing(0),
-      _qOffset(0)
+      _mainSegment(0)
     {
       WS2812FX::instance = this;
       _mode.reserve(_modeCount);     // allocate memory to prevent initial fragmentation (does not increase size())
@@ -945,14 +937,6 @@ class WS2812FX {  // 96 bytes
 
     uint8_t _segment_index;
     uint8_t _mainSegment;
-    uint8_t _queuedChangesSegId;
-    uint16_t _qStart, _qStop, _qStartY, _qStopY;
-    uint8_t _qGrouping, _qSpacing;
-    uint16_t _qOffset;
-/*
-    void
-      setUpSegmentFromQueuedChanges(void);
-*/
 };
 
 extern const char JSON_mode_names[];
