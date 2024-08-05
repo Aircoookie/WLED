@@ -22,10 +22,10 @@
 		function isAna(t) { return t == 40 || isPWM(t); }                   // is analog type
 		function isDig(t) { return (t > 15 && t < 40) || isD2P(t); }        // is digital type
 		function isD2P(t) { return t > 47 && t < 64; }                      // is digital 2 pin type
-		function is16b(t) { return t == 26 || t == 29 }                     // is digital 16 bit type
+		function is16b(t) { return t == 26 || t == 29 || t == 34; }         // is digital 16 bit type
 		function isVir(t) { return t >= 80 && t < 96; }                     // is virtual type
-		function hasW(t)  { return (t >= 18 && t <= 21) || (t >= 28 && t <= 32) || (t >= 44 && t <= 45) || (t >= 88 && t <= 89); }
-		function hasCCT(t) { return t == 20 || t == 21 || t == 42 || t == 45 || t == 28 || t == 32; }
+		function hasW(t)  { return (t >= 18 && t <= 21) || (t >= 28 && t <= 32) || t == 34 || (t >= 44 && t <= 45) || (t >= 88 && t <= 89); }
+		function hasCCT(t) { return t == 20 || t == 21 || t == 42 || t == 45 || t == 28 || t == 32 || t == 34; }
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -264,7 +264,8 @@
 				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
 				gRGBW |= hasW(t); // RGBW checkbox, TYPE_xxxx values from const.h
 				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide color order for PWM
-				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none";  // show swap channels dropdown
+				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none"; // show swap channels dropdown
+				gId("dig"+n+"w").querySelector("[data-opt=CCT]").disabled = !hasCCT(t);   // disable WW/CW swapping	
 				if (!(isDig(t) && hasW(t))) d.Sf["WO"+n].value = 0; // reset swapping
 				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";  // hide count for analog
 				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";  // hide reversed for virtual
@@ -419,6 +420,7 @@ ${i+1}:
 <option value="28" data-type="D">FW1906 GRBCW</option>\
 <option value="29" data-type="D">UCS8904 RGBW</option>\
 <option value="32" data-type="D">WS2805 RGBCW</option>\
+<option value="34" data-type="D">SM16825 RGBCW</option>\
 <option value="50" data-type="2P">WS2801</option>\
 <option value="51" data-type="2P">APA102</option>\
 <option value="52" data-type="2P">LPD8806</option>\
@@ -459,7 +461,7 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <option value="4">BGR</option>
 <option value="5">GBR</option>
 </select></div>
-<div id="dig${s}w" style="display:none">Swap: <select name="WO${s}"><option value="0">None</option><option value="1">W & B</option><option value="2">W & G</option><option value="3">W & R</option></select></div>
+<div id="dig${s}w" style="display:none">Swap: <select name="WO${s}"><option value="0">None</option><option value="1">W & B</option><option value="2">W & G</option><option value="3">W & R</option><option data-opt="CCT" value="4">WW & CW</option></select></div>
 <div id="dig${s}l" style="display:none">Clock: <select name="SP${s}"><option value="0">Slowest</option><option value="1">Slow</option><option value="2">Normal</option><option value="3">Fast</option><option value="4">Fastest</option></select></div>
 <div>
 <span id="psd${s}">Start:</span> <input type="number" name="LS${s}" id="ls${s}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
