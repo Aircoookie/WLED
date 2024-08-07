@@ -17,7 +17,10 @@ const commonRules = {
     "no-control-regex": "warn",
     "no-redeclare": "warn",
     "no-constant-condition": "warn",
-    "no-useless-escape": "warn"
+    "no-useless-escape": "warn",
+
+    // style rules:
+    "@stylistic/js/function-call-spacing": ["error", "never"]
 }
 
 export default [

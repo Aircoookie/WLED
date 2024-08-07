@@ -53,7 +53,7 @@ var cpick = new iro.ColorPicker("#picker", {
 	}]
 });
 
-function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
+function handleVisibilityChange() {if (!d.hidden && new Date() - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
 function gEBCN(c) {return d.getElementsByClassName(c);}
