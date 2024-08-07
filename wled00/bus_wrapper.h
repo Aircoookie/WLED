@@ -286,10 +286,10 @@
 #define B_32_I1_TM1914_3 NeoPixelBusLg<NeoGrbTm1914Feature, NeoEsp32I2s1Tm1914Method, NeoGammaNullMethod>
 #define B_32_I1_TM1914_3P NeoPixelBusLg<NeoGrbTm1914Feature, NeoEsp32I2s1X8Tm1914Method, NeoGammaNullMethod> // parallel I2S
 //Sm16825 (RGBWC)
-#define B_32_RN_SM16825_5 NeoPixelBusLg<NeoRgbwcSm16825eFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
-#define B_32_I0_SM16825_5 NeoPixelBusLg<NeoRgbwcSm16825eFeature, NeoEsp32I2s0Ws2812xMethod, NeoGammaNullMethod>
-#define B_32_I1_SM16825_5 NeoPixelBusLg<NeoRgbwcSm16825eFeature, NeoEsp32I2s1Ws2812xMethod, NeoGammaNullMethod>
-#define B_32_I1_SM16825_5P NeoPixelBusLg<NeoRgbwcSm16825eFeature, NeoEsp32I2s1X8Ws2812xMethod, NeoGammaNullMethod> // parallel I2S
+#define B_32_RN_SM16825_5 NeoPixelBusLg<NeoRgbcwSm16825eFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
+#define B_32_I0_SM16825_5 NeoPixelBusLg<NeoRgbcwSm16825eFeature, NeoEsp32I2s0Ws2812xMethod, NeoGammaNullMethod>
+#define B_32_I1_SM16825_5 NeoPixelBusLg<NeoRgbcwSm16825eFeature, NeoEsp32I2s1Ws2812xMethod, NeoGammaNullMethod>
+#define B_32_I1_SM16825_5P NeoPixelBusLg<NeoRgbcwSm16825eFeature, NeoEsp32I2s1X8Ws2812xMethod, NeoGammaNullMethod> // parallel I2S
 #endif
 
 //APA102
