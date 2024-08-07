@@ -14,9 +14,9 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
     }
     //canvas.height = w.innerWidth;
 
-    let pixelSize = Math.floor(canvas.width/widthPixels);
+    let pixelSize = Math.floor(canvas.width / widthPixels);
 
-    let xOffset = (w.innerWidth - (widthPixels * pixelSize))/2
+    let xOffset = (w.innerWidth - (widthPixels * pixelSize)) / 2
 
     //Set the canvas height to fit the right number of pixelrows
     canvas.height = (pixelSize * heightPixels) + 10
@@ -26,7 +26,7 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
         for (let x = 0; x < widthPixels; x++) {
 
             // Calculate the index of the current pixel
-            let i = (y*widthPixels) + x;
+            let i = (y * widthPixels) + x;
             
             //Gets the RGB of the current pixel
             let pixel = inputPixelArray[i];
@@ -51,7 +51,7 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
             ctx.fillStyle = textColor;
             ctx.textAlign = "center";
             ctx.textBaseline = 'middle';
-            ctx.fillText((pixel[4] + 1), (x * pixelSize) + (pixelSize /2), (y * pixelSize) + (pixelSize /2));
+            ctx.fillText((pixel[4] + 1), (x * pixelSize) + (pixelSize / 2), (y * pixelSize) + (pixelSize / 2));
         }
     }
     var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);

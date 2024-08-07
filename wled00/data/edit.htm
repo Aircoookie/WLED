@@ -175,17 +175,17 @@ QueuedRequester.prototype = {
     } else if (req.params instanceof Object) {
       for (var key in req.params) {
         if (p === "")
-          p += (req.method === "GET")?"?":"";
+          p += (req.method === "GET") ? "?" : "";
         else
           p += "&";
-        p += encodeURIComponent(key+"="+req.params[key]);
+        p += encodeURIComponent(key + "=" + req.params[key]);
       }
     }
     
     this.xmlhttp = new XMLHttpRequest();
     this.xmlhttp.onreadystatechange = ajaxCb(this.xmlhttp, req);
     if (req.method === "GET") {
-      this.xmlhttp.open(req.method, req.url+p, true);
+      this.xmlhttp.open(req.method, req.url + p, true);
       this.xmlhttp.send();
     } else {
       this.xmlhttp.open(req.method, req.url, true);
@@ -236,7 +236,7 @@ function createFileUploader(element, tree, editor) {
 
   function httpPostProcessRequest(status, responseText) {
     if (status != 200)
-      alert("ERROR "+status+": "+responseText);
+      alert("ERROR " + status + ": " + responseText);
     else
       tree.refreshPath(path.value);
   }
@@ -278,9 +278,9 @@ function createFileUploader(element, tree, editor) {
       filename = filename + "." + ext;
     }
     if (path.value === "/" || path.value.lastIndexOf("/") === 0) {
-      path.value = "/"+filename;
+      path.value = "/" + filename;
     } else {
-      path.value = path.value.substring(0, path.value.lastIndexOf("/")+1)+filename;
+      path.value = path.value.substring(0, path.value.lastIndexOf("/") + 1) + filename;
     }
   };
 }
@@ -292,13 +292,13 @@ function createTree(element, editor) {
   ge(element).appendChild(treeRoot);
 
   function loadDownload(path) {
-    ge('download-frame').src = "/edit?download="+path;
+    ge('download-frame').src = "/edit?download=" + path;
   }
 
   function loadPreview(path) {
     ge("editor").style.display = "none";
     preview.style.display = "block";
-    preview.innerHTML = '<img src="/edit?edit='+path+'&_cb='+Date.now()+'" style="max-width:100%; max-height:100%; margin:auto; display:block;" />';
+    preview.innerHTML = '<img src="/edit?edit=' + path + '&_cb=' + Date.now() + '" style="max-width:100%; max-height:100%; margin:auto; display:block;" />';
   }
 
   function fillFileMenu(el, path) {
@@ -358,7 +358,7 @@ function createTree(element, editor) {
 
   function createTreeLeaf(path, name, size) {
     var leaf = ce("li");
-    leaf.id = (((path == "/")?"":path)+"/"+name);
+    leaf.id = (((path == "/") ? "" : path) + "/" + name);
     var label = ce("span");
     label.innerHTML = name;
     leaf.appendChild(label);
@@ -433,7 +433,7 @@ function createTree(element, editor) {
   function delCb(path) {
     return function(status, responseText) {
       if (status != 200) {
-        alert("ERROR "+status+": "+responseText);
+        alert("ERROR " + status + ": " + responseText);
       } else {
         treeRoot.removeChild(treeRoot.childNodes[0]);
         httpGet(treeRoot, "/");
@@ -498,13 +498,13 @@ function createEditor(element, file, lang, theme, type) {
   if (typeof theme === "undefined") theme = "monokai";
 
   if (typeof type === "undefined") {
-    type = "text/"+lang;
+    type = "text/" + lang;
     if (lang === "c_cpp") type = "text/plain";
   }
 
   var editor = ace.edit(element);
   function httpPostProcessRequest(status, responseText) {
-    if (status != 200) alert("ERROR "+status+": "+responseText);
+    if (status != 200) alert("ERROR " + status + ": " + responseText);
   }
   function httpPost(filename, data, type) {
     var formData = new FormData();
@@ -524,8 +524,8 @@ function createEditor(element, file, lang, theme, type) {
       requests.add("GET", "/edit", { edit: theUrl }, httpGetProcessRequest);
   }
 
-  if (lang !== "plain") editor.getSession().setMode("ace/mode/"+lang);
-  editor.setTheme("ace/theme/"+theme);
+  if (lang !== "plain") editor.getSession().setMode("ace/mode/" + lang);
+  editor.setTheme("ace/theme/" + theme);
   editor.$blockScrolling = Infinity;
   editor.getSession().setUseSoftTabs(true);
   editor.getSession().setTabSize(2);
@@ -535,7 +535,7 @@ function createEditor(element, file, lang, theme, type) {
       name: 'saveCommand',
       bindKey: {win: 'Ctrl-S',  mac: 'Command-S'},
       exec: function(editor) {
-        httpPost(file, editor.getValue()+"", type);
+        httpPost(file, editor.getValue() + "", type);
       },
       readOnly: false
   });
@@ -559,8 +559,8 @@ function createEditor(element, file, lang, theme, type) {
   editor.loadUrl = function(filename) {
     file = filename;
     lang = getLangFromFilename(file);
-    type = "text/"+lang;
-    if (lang !== "plain") editor.getSession().setMode("ace/mode/"+lang);
+    type = "text/" + lang;
+    if (lang !== "plain") editor.getSession().setMode("ace/mode/" + lang);
     httpGet(file);
   };
   return editor;

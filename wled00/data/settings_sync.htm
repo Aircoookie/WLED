@@ -4,10 +4,10 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<meta charset="utf-8">
 	<title>Sync Settings</title>
-	<script>var d=document;
+	<script>var d = document;
 	var loc = false, locip, locproto = "http:";
 	function gId(s) {return d.getElementById(s);}
-	function toggle(el) {gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
+	function toggle(el) {gId(el).classList.toggle("hide"); gId('No' + el).classList.toggle("hide");}
 	function H() {window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
 	function B() {window.open(getURL("/settings"),"_self");}
 	function adj() {if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
@@ -32,27 +32,27 @@
 	}
 	function FC()
 	{
-		for (j=0;j<8;j++)
+		for (j = 0;j < 8;j++)
 		{
-			gId("G"+(j+1)).checked=gId("GS").value>>j&1;
-			gId("R"+(j+1)).checked=gId("GR").value>>j&1;
+			gId("G" + (j + 1)).checked = gId("GS").value >> j & 1;
+			gId("R" + (j + 1)).checked = gId("GR").value >> j & 1;
 		}
 	}
 	function GC()
 	{
-		var a=0, b=0;
+		var a = 0, b = 0;
 
-		var m=1;
-		for (j=0;j<8;j++)
+		var m = 1;
+		for (j = 0;j < 8;j++)
 		{
-			a+=gId("G"+(j+1)).checked*m;
-			b+=gId("R"+(j+1)).checked*m;
-			m*=2;
+			a += gId("G" + (j + 1)).checked * m;
+			b += gId("R" + (j + 1)).checked * m;
+			m *= 2;
 		}
-		gId("GS").value=a;
-		gId("GR").value=b;
+		gId("GS").value = a;
+		gId("GR").value = b;
 	}
-	function SP() {var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
+	function SP() {var p = d.Sf.DI.value; gId("xp").style.display = (p > 0) ? "none" : "block"; if (p > 0) d.Sf.EP.value = p;}
 	function SetVal() {switch (parseInt(d.Sf.EP.value)) {case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; } SP();FC();}
 	function S() {
 		let l = window.location;
@@ -65,7 +65,7 @@
 			}
 		} else {
 			// detect reverse proxy
-			let paths = l.pathname.slice(1,l.pathname.endsWith('/')?-1:undefined).split("/");
+			let paths = l.pathname.slice(1,l.pathname.endsWith('/') ? -1 : undefined).split("/");
 			if (paths.length > 2) {
 				paths.pop(); // remove "sync"
 				paths.pop(); // remove "settings"

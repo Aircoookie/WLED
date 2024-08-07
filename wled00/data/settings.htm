@@ -5,7 +5,7 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>WLED Settings</title>
 	<script>
-		var d=document;
+		var d = document;
 		var loc = false, locip, locproto = "http:";
 		function gId(n) {return d.getElementById(n);}
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -38,7 +38,7 @@
 			} else {
 				// detect reverse proxy
 				let path = l.pathname;
-				let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+				let paths = path.slice(1,path.endsWith('/') ? -1 : undefined).split("/");
 				if (paths.length > 1) {
 					paths.pop(); // remove "settings"
 					locproto = l.protocol;

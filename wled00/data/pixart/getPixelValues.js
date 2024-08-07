@@ -109,8 +109,8 @@ function getPixelRGBValues(base64Image) {
       var b = pixelData[i + 2];
       var a = pixelData[i + 3];
 
-      let pixel = i/4
-      let row = Math.floor(pixel/sizeX);
+      let pixel = i / 4
+      let row = Math.floor(pixel / sizeX);
       let led = pixel;
       if (ledSetupSelection == 'matrix') {
           //Do nothing, the matrix is set upp like the index in the image

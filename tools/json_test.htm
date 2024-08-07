@@ -84,14 +84,14 @@ function rq(cm)
   {
     if (h.readyState == 4)
     {
-      if (h.status==200)
+      if (h.status == 200)
       {
-        document.cf.rsp.value="Bad JSON: "+h.responseText
-        document.cf.rsp.value=JSON.stringify(JSON.parse(h.responseText), null, '\t');
+        document.cf.rsp.value = "Bad JSON: " + h.responseText
+        document.cf.rsp.value = JSON.stringify(JSON.parse(h.responseText), null, '\t');
       }
       else
       {
-        document.cf.rsp.value="Error "+h.status+"\r\n\n"+h.responseText;
+        document.cf.rsp.value = "Error " + h.status + "\r\n\n" + h.responseText;
       }
     }
   }

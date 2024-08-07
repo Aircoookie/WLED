@@ -98,7 +98,7 @@ gId("sendJSONledbutton").addEventListener('click', async () => {
 
 brgh.oninput = () => {
   brgV.textContent = brgh.value;
-  let perc = parseInt(brgh.value)*100/255;
+  let perc = parseInt(brgh.value) * 100 / 255;
   var val = `linear-gradient(90deg, #bbb ${perc}%, #333 ${perc}%)`;
   brgh.style.backgroundImage = val;
 }
@@ -106,7 +106,7 @@ brgh.oninput = () => {
 cLN.oninput = () => {
   let cln = cLN;
   cLV.textContent = cln.value;
-  let perc = parseInt(cln.value)*100/512;
+  let perc = parseInt(cln.value) * 100 / 512;
   var val = `linear-gradient(90deg, #bbb ${perc}%, #333 ${perc}%)`;
   cln.style.backgroundImage = val;
 }
@@ -126,7 +126,7 @@ async function postPixels() {
     try {
       if (devMode) console.log(i);
       if (devMode) console.log(i.length);
-      const response = await fetch('http://'+gId('curlUrl').value+'/json/state', {
+      const response = await fetch('http://' + gId('curlUrl').value + '/json/state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -228,7 +228,7 @@ function isValidBase64Gif(string) {
   const base64webpPattern = /^data:image\/webp;base64,([A-Za-z0-9+/:]{4})*([A-Za-z0-9+/:]{3}=|[A-Za-z0-9+/:]{2}==)?$/;
   */
   //REMOVED, Any image appear to work as long as it can be drawn to the canvas. Leaving code in for future use, possibly
-  if (1==1 || base64gifPattern.test(string) || base64pngPattern.test(string) || base64jpgPattern.test(string) || base64webpPattern.test(string)) {
+  if (1 == 1 || base64gifPattern.test(string) || base64pngPattern.test(string) || base64jpgPattern.test(string) || base64webpPattern.test(string)) {
     return true;
   } else {
     //Not OK
@@ -292,7 +292,7 @@ async function getSegments() {
   if (cv.length > 0 ) {
     try {
       var arr = [];
-      const response = await fetch('http://'+cv+'/json/state');
+      const response = await fetch('http://' + cv + '/json/state');
       const json = await response.json();
       let ids = json.seg.map(sg => ({id: sg.id, n: sg.n, xs: sg.start, xe: sg.stop, ys: sg.startY, ye: sg.stopY}));
       for (var i = 0; i < ids.length; i++) {

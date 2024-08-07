@@ -31,7 +31,7 @@
 		scE.addEventListener("load", () => {
 			GetV();
 			for (let r of d.rsvd) { pins.push(r); pinO.push("rsvd"); } // reserved pins
-			if (d.um_p[0]==-1) d.um_p.shift();	// remove filler
+			if (d.um_p[0] == -1) d.um_p.shift();	// remove filler
 			d.Sf.SDA.max = d.Sf.SCL.max = d.Sf.MOSI.max = d.Sf.SCLK.max = d.Sf.MISO.max = d.max_gpio;
 			//for (let i of d.getElementsByTagName("input")) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
 			pinDD(); // convert INPUT to SELECT for pins
@@ -54,7 +54,7 @@
 		} else {
 			// detect reverse proxy
 			let path = l.pathname;
-			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			let paths = path.slice(1,path.endsWith('/') ? -1 : undefined).split("/");
 			if (paths.length > 2) {
 				paths.pop(); // remove "um"
 				paths.pop(); // remove "settings"
@@ -71,8 +71,8 @@
 		return (loc ? locproto + "//" + locip : "") + path;
 	}
 	// https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
-	function isF(n) { return n === +n && n !== (n|0); }
-	function isI(n) { return n === +n && n === (n|0); }
+	function isF(n) { return n === +n && n !== (n | 0); }
+	function isI(n) { return n === +n && n === (n | 0); }
 	function check(o,k) {   // input object, pin owner key
 		/* no longer necessary with pin dropdown fields
 		var n = o.name.replace("[]","").substr(-3);
@@ -109,14 +109,14 @@
 					owner = oldO;
 					continue;
 				}
-				if (k.replace("[]","").substr(-3)=="pin") {
+				if (k.replace("[]","").substr(-3) == "pin") {
 					if (Array.isArray(v)) {
-						for (var i=0; i<v.length; i++) if (v[i]>=0) { pins.push(v[i]); pinO.push(owner); }
+						for (var i = 0; i < v.length; i++) if (v[i] >= 0) { pins.push(v[i]); pinO.push(owner); }
 					} else {
-						if (v>=0) { pins.push(v); pinO.push(owner); }
+						if (v >= 0) { pins.push(v); pinO.push(owner); }
 					}
 				} else if (Array.isArray(v)) {
-					for (var i=0; i<v.length; i++) getPins(v[i]);
+					for (var i = 0; i < v.length; i++) getPins(v[i]);
 				}
 			}
 		}
@@ -126,17 +126,17 @@
 		// https://www.freecodecamp.org/news/how-to-capitalize-words-in-javascript/
 		return s.replace(/[\W_]/g,' ').replace(/(^\w{1})|(\s+\w{1})/g, l=>l.toUpperCase()); // replace - and _ with space, capitalize every 1st letter
 	}
-	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
+	function addField(k,f,o,a = false) {  //key, field, (sub)object, isArray
 		if (isO(o)) {
 			urows += '<hr class="sml">';
-			if (f!=='unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; //show group title
+			if (f !== 'unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; //show group title
 			for (const [s,v] of Object.entries(o)) {
 				// possibility to nest objects (only 1 level)
-				if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
+				if (f !== 'unknown' && !k.includes(":")) addField(k + ":" + f,s,v);
 				else addField(k,s,v);
 			}
 		} else if (Array.isArray(o)) {
-			for (var j=0; j<o.length; j++) {
+			for (var j = 0; j < o.length; j++) {
 				addField(k,f,o[j],true);
 			}
 		} else {
@@ -147,7 +147,7 @@
 					break;
 				case "number":
 					c = `value="${o}"`;
-					if (f.substr(-3)==="pin") {
+					if (f.substr(-3) === "pin") {
 						c += ` max="${d.max_gpio}" min="-1" class="s"`;
 						t = "int";
 					} else {
@@ -160,9 +160,9 @@
 			}
 			urows += ` ${initCap(f)} `; //only show field (key is shown in grouping)
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
-			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
-			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
-			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
+			if (t == "checkbox") urows += `<input type="hidden" name="${k}:${f}${a ? "[]" : ""}" value="false">`;
+			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a ? "[]" : ""}" value="${t}">`;
+			urows += `<input type="${t === "int" ? "number" : t}" name="${k}:${f}${a ? "[]" : ""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":") + 1)}')"><br>`;
 		}
 	}
 	function pinDD() {
@@ -174,7 +174,7 @@
 					if (d.rsvd.includes(j)) continue;
 					let foundPin = pins.indexOf(j);
 					let txt = (j === -1) ? "unused" : `${j}`;
-					if (foundPin >= 0 && j !== v) txt += ` ${pinO[foundPin]=="if"?"global":pinO[foundPin]}`; // already reserved pin
+					if (foundPin >= 0 && j !== v) txt += ` ${pinO[foundPin] == "if" ? "global" : pinO[foundPin]}`; // already reserved pin
 					if (d.ro_gpio.includes(j)) txt += " (R/O)";
 					let opt = addO(sel, txt, j);
 					if (j === v) opt.selected = true; // this is "our" pin
@@ -184,7 +184,7 @@
 				d.extra.forEach((o)=>{
 					if (o[um] && o[um].pin) o[um].pin.forEach((e)=>{
 						let opt = addO(sel,e[0],e[1]);
-						if (e[1]==v) opt.selected = true;
+						if (e[1] == v) opt.selected = true;
 					});
 				});
 			}
@@ -194,22 +194,22 @@
 		// update changed select options across all usermods
 		let oldV = parseInt(e.dataset.val);
 		e.dataset.val = e.value;
-		let txt = e.name.split(":")[e.name.split(":").length-2];
+		let txt = e.name.split(":")[e.name.split(":").length - 2];
 		let selects = d.Sf.querySelectorAll("select[class='pin']");
 		for (let sel of selects) {
 			if (sel == e) continue
 			Array.from(sel.options).forEach((i)=>{
-				if (!(i.value==oldV || i.value==e.value)) return;
+				if (!(i.value == oldV || i.value == e.value)) return;
 				if (i.value == -1) {
 					i.text = "unused";
 					return
 				}
-				if (i.value<100) { // TODO remove this hack and use d.extra
+				if (i.value < 100) { // TODO remove this hack and use d.extra
 					i.text = i.value;
-					if (i.value==oldV) {
+					if (i.value == oldV) {
 						i.disabled = false;
 					}
-					if (i.value==e.value) {
+					if (i.value == e.value) {
 						i.disabled = true;
 						i.text += ` ${txt}`;
 					}
@@ -223,11 +223,11 @@
 		let sel = d.createElement('select');
 		if (typeof(fld) === "string") {	// parameter from usermod (field name)
 			if (fld.includes("pin")) sel.classList.add("pin");
-			um += ":"+fld;
+			um += ":" + fld;
 		} else if (typeof(fld) === "number") sel.classList.add("pin"); // a hack to add a class
 		let arr = d.getElementsByName(um);
-		let idx = arr[0].type==="hidden"?1:0; // ignore hidden field
-		if (arr.length > 1+idx) {
+		let idx = arr[0].type === "hidden" ? 1 : 0; // ignore hidden field
+		if (arr.length > 1 + idx) {
 			// we have array of values (usually pins)
 			for (let i of arr) {
 				if (i.nodeName === "INPUT" && i.type === "number") break;
@@ -257,12 +257,12 @@
 	}
 	var addDropdown = addDD; // backwards compatibility
 	function addO(sel,txt,val) {
-		if (sel===null) return; // select object missing
+		if (sel === null) return; // select object missing
 		let opt = d.createElement("option");
 		opt.value = val;
 		opt.text = txt;
 		sel.appendChild(opt);
-		for (let i=0; i<sel.childNodes.length; i++) {
+		for (let i = 0; i < sel.childNodes.length; i++) {
 			let c = sel.childNodes[i];
 			if (c.value == sel.dataset.val) sel.selectedIndex = i;
 		}
@@ -270,13 +270,13 @@
 	}
 	var addOption = addO; // backwards compatibility
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
-	function addI(name,el,txt, txt2="") {
+	function addI(name,el,txt, txt2 = "") {
 		let obj = d.getElementsByName(name);
 		if (!obj.length) return;
 		if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
 		else if (obj[el]) {
-			if (txt!="") obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
-			if (txt2!="") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
+			if (txt != "") obj[el].insertAdjacentHTML('afterend', '&nbsp;' + txt);
+			if (txt2 != "") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
 		}
 	}
 	var addInfo = addI; // backwards compatibility
@@ -296,14 +296,14 @@
 		.then(json => {
 			umCfg = json.um;
 			getPins(json);
-			urows="";
+			urows = "";
 			if (isO(umCfg)) {
 				for (const [k,o] of Object.entries(umCfg)) {
 					urows += `<hr><h3>${k}</h3>`;
 					addField(k,'unknown',o);
 				}
 			}
-			if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
+			if (urows === "") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
 			gId("um").innerHTML = urows;
 			loadJS(getURL('/settings/s.js?p=8'), false);	// If we set async false, file is loaded and executed, then next statement is processed
 		})

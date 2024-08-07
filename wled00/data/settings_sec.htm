@@ -37,7 +37,7 @@
 		{
 			var x = gId("toast");
 			x.innerHTML = text;
-			x.classList.add(error ? "error":"show");
+			x.classList.add(error ? "error" : "show");
 			clearTimeout(timeout);
 			x.style.animation = 'none';
 			timeout = setTimeout(function() { x.classList.remove("show"); }, 2900);
@@ -61,7 +61,7 @@
 			return false;
 		}
 		function setBckFilename(x) {
-			x.setAttribute("download","wled_" + x.getAttribute("download") + (sd=="WLED"?"":("_" +sd)));
+			x.setAttribute("download","wled_" + x.getAttribute("download") + (sd == "WLED" ? "" : ("_" + sd)));
 		}
 		function S() {
 			let l = window.location;
@@ -75,7 +75,7 @@
 			} else {
 				// detect reverse proxy
 				let path = l.pathname;
-				let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+				let paths = path.slice(1,path.endsWith('/') ? -1 : undefined).split("/");
 				if (paths.length > 2) {
 					paths.pop(); // remove "sec"
 					paths.pop(); // remove "settings"

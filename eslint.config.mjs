@@ -25,7 +25,8 @@ const commonRules = {
     "@stylistic/js/keyword-spacing": "error",
     "@stylistic/js/no-extra-semi": "error",
     "@stylistic/js/no-whitespace-before-property": "error",
-    "@stylistic/js/space-before-blocks": "error"
+    "@stylistic/js/space-before-blocks": "error",
+    "@stylistic/js/space-infix-ops": "error"
 }
 
 export default [

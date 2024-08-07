@@ -82,13 +82,13 @@
             var trs = document.querySelectorAll('.trs');
             var chks = document.querySelectorAll('.fxcheck');
             for (let i = 0; i < trs.length; i++) {
-                trs[i].style.display = (h && !chks[i].checked) ? "none":"table-row";
+                trs[i].style.display = (h && !chks[i].checked) ? "none" : "table-row";
             }
         }
         function run(init) {
             if (init) {
                 running = !running;
-                document.getElementById('runbtn').innerText = running ? 'Stop':'Run';
+                document.getElementById('runbtn').innerText = running ? 'Stop' : 'Run';
                 if (running) {pos = 0; prev = -1; min = 999; max = 0; fpslist = []; names_checked = []; hide(true);}
                 clearTimeout(to);
                 if (!running) {req({seg: {fx: 0},v: true,stop: true}); return;}
@@ -119,7 +119,7 @@
             if (!ip) {alert("Please enter WLED IP"); return;}
             if (ip != localStorage.getItem('locIpFps')) localStorage.setItem('locIpFps', document.getElementById('ip').value);
             var url = command ? `http://${ip}/json/si` : `http://${ip}/json/effects`;
-            var type = command ? 'post':'get';
+            var type = command ? 'post' : 'get';
             var req = undefined;
             if (command)
             {
@@ -176,12 +176,12 @@
                         sum /= fpslist.length;
                         document.getElementById('fps_min').innerText = min;
                         document.getElementById('fps_max').innerText = max;
-                        document.getElementById('fps_avg').innerText = Math.round(sum*10)/10;
+                        document.getElementById('fps_avg').innerText = Math.round(sum * 10) / 10;
                         var fpsb = document.querySelectorAll('.fps');
                         fpsb[prev].innerHTML = lastfps;
                     }
                     prev = pos;
-                    var delay = parseInt(document.getElementById('secs').value)*1000;
+                    var delay = parseInt(document.getElementById('secs').value) * 1000;
                     delay = Math.min(Math.max(delay, 2000), 15000)
                     if (!command.stop) to = setTimeout(run,delay);
                 }

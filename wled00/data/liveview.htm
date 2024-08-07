@@ -72,12 +72,12 @@
         //console.info("Peek WS opening");
         let l = window.location;
         let pathn = l.pathname;
-        let paths = pathn.slice(1,pathn.endsWith('/')?-1:undefined).split("/");
+        let paths = pathn.slice(1,pathn.endsWith('/') ? -1 : undefined).split("/");
         let url = l.origin.replace("http","ws");
         if (paths.length > 1) {
           url +=  "/" + paths[0];
         }
-        ws = new WebSocket(url+"/ws");
+        ws = new WebSocket(url + "/ws");
         ws.onopen = function () {
           //console.info("Peek WS open");
           ws.send("{'lv':true}");
@@ -90,7 +90,7 @@
             let leds = new Uint8Array(event.data);
             if (leds[0] != 76) return; //'L'
             // leds[1] = 1: 1D; leds[1] = 2: 1D/2D (leds[2]=w, leds[3]=h)
-            draw(leds[1]==2 ? 4 : 2, 3, leds, (a,i) => `rgb(${a[i]},${a[i+1]},${a[i+2]})`);
+            draw(leds[1] == 2 ? 4 : 2, 3, leds, (a,i) => `rgb(${a[i]},${a[i + 1]},${a[i + 2]})`);
           }
         } catch (err) {
           console.error("Peek WS error:",err);

@@ -226,7 +226,7 @@
 
   function clikOnGradient(e) {
     removeTrashcan(e);
-    addC(Math.round((e.offsetX/gradientLength)*256));
+    addC(Math.round((e.offsetX / gradientLength) * 256));
   }
 
   ///////// Add a new colorMarker
@@ -247,7 +247,7 @@
     if (truePos > 0 && truePos < 255) {
       //calculate first available > 0
       for (var i = 1; i <= 16 && position < 1; i++) {
-        if (!gId("colorMarker"+i)) {
+        if (!gId("colorMarker" + i)) {
           position = i;
         }
       }
@@ -265,7 +265,7 @@
     colorMarker.setAttribute("data-truecol", thisColor); //Used to hold the color of the position in the gradient connected to a true position
     colorMarker.setAttribute("data-offset", mOffs);
     colorMarker.addEventListener('click', stopFurtherProp); //Added to prevent the gradient click to fire when covered by a marker
-    colorMarker.style.left = `${Math.round((gradientLength / 256) * truePos)+mOffs}px`;
+    colorMarker.style.left = `${Math.round((gradientLength / 256) * truePos) + mOffs}px`;
     
     const colorPicker = cE('input');
     colorPicker.type = 'color';
@@ -319,7 +319,7 @@
       colorMarkers[index].style.backgroundColor = colorToSet;
       colorMarkers[index].setAttribute("data-truecol", colorToSet);
       const tPos = colorMarkers[index].getAttribute("data-truepos");
-      const gradientPos = Math.round((gradientLength / 256)*tPos);
+      const gradientPos = Math.round((gradientLength / 256) * tPos);
       pxCol[gradientPos] = colorToSet;
       tCol[tPos] = colorToSet;
     });
@@ -387,7 +387,7 @@
       mousePos = clientX;
       mousePosInGradient = mousePos - (minX + 1)
       
-      truePos = Math.round((mousePosInGradient/gradientLength)*256);
+      truePos = Math.round((mousePosInGradient / gradientLength) * 256);
       oldTruePos = elmnt.getAttribute("data-truepos");
       // set the element's new position if new position within min/max limits:
       if (truePos > 0 && truePos < 255 && oldTruePos != truePos) {
@@ -396,9 +396,9 @@
         } else if (truePos > 192) {
           thisOffset = 7;
         } else {
-          thisOffset=3;
+          thisOffset = 3;
         }
-        elmnt.style.left = (Math.round((gradientLength/256)*truePos)+mOffs) + "px";
+        elmnt.style.left = (Math.round((gradientLength / 256) * truePos) + mOffs) + "px";
         gId(elmnt.id.replace('colorMarker', 'colorPickerMarker')).style.left = elmnt.style.left;
         gId(elmnt.id.replace('colorMarker', 'deleteMarker')).style.left = elmnt.style.left;
         gId(elmnt.id.replace('colorMarker', 'colorPicker')).style.left = elmnt.style.left;
@@ -521,12 +521,12 @@
     if (hst.length > 0 ) {
       try {
         var arr = [];
-        const responseInfo = await fetch('http://'+hst+'/json/info');
-        const responsePalettes = await fetch('http://'+hst+'/json/palettes');
+        const responseInfo = await fetch('http://' + hst + '/json/info');
+        const responsePalettes = await fetch('http://' + hst + '/json/palettes');
         const json = await responseInfo.json();
         paletteName = await responsePalettes.json();
         cpalc = json.cpalcount;
-        fetchPalettes(cpalc-1);
+        fetchPalettes(cpalc - 1);
       } catch (error) {
         console.error(error);
       }
@@ -653,13 +653,13 @@
 
       for (let j = 0; j < palette[thisKey].length; j += 2) {
         const position = palette[thisKey][j];
-        if (typeof(palette[thisKey][j+1]) === "string") {
-          gradientColors += `#${palette[thisKey][j+1]} ${position/255*100}%, `;
+        if (typeof(palette[thisKey][j + 1]) === "string") {
+          gradientColors += `#${palette[thisKey][j + 1]} ${position / 255 * 100}%, `;
         } else {
           const red = palette[thisKey][j + 1];
           const green = palette[thisKey][j + 2];
           const blue = palette[thisKey][j + 3];
-          gradientColors += `rgba(${red}, ${green}, ${blue}, 1) ${position/255*100}%, `;
+          gradientColors += `rgba(${red}, ${green}, ${blue}, 1) ${position / 255 * 100}%, `;
           j += 2;
         }
       }
@@ -672,7 +672,7 @@
       } else {
         editSpan.style.marginLeft = "25px";
       }
-      if (i!=cpalc) {
+      if (i != cpalc) {
         buttonsDiv.appendChild(editSpan); //Dont offer to edit the empty spot
       }
       paletteDiv.appendChild(gradientDiv);
@@ -698,8 +698,8 @@
     for (let j = 0; j < colArray.length; j += 2) {
       const position = colArray[j];
       let hex;
-      if (typeof(colArray[j+1]) === "string") {
-        hex = `#${colArray[j+1]}`;
+      if (typeof(colArray[j + 1]) === "string") {
+        hex = `#${colArray[j + 1]}`;
       } else {
         const red = colArray[j + 1];
         const green = colArray[j + 2];
