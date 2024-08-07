@@ -102,8 +102,8 @@
   #include "../usermods/rgb-rotary-encoder/rgb-rotary-encoder.h"
 #endif
 
-#ifdef USERMOD_ST7789_DISPLAY
-  #include "../usermods/ST7789_display/ST7789_Display.h"
+#ifdef USERMOD_TFT_DISPLAY
+  #include "../usermods/TFT_display/TFT_display.h"
 #endif
 
 #ifdef USERMOD_SEVEN_SEGMENT
@@ -327,8 +327,8 @@ void registerUsermods()
   usermods.add(new RgbRotaryEncoderUsermod());
   #endif
 
-  #ifdef USERMOD_ST7789_DISPLAY
-  usermods.add(new St7789DisplayUsermod());
+  #ifdef USERMOD_TFT_DISPLAY
+  usermods.add(new TFTDisplayUsermod());
   #endif
 
   #ifdef USERMOD_SEVEN_SEGMENT
