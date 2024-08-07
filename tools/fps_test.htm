@@ -91,7 +91,7 @@
                 document.getElementById('runbtn').innerText = running ? 'Stop':'Run';
                 if (running) {pos = 0; prev = -1; min = 999; max = 0; fpslist = []; names_checked = []; hide(true);}
                 clearTimeout(to);
-                if (!running) {req({seg:{fx:0},v:true,stop:true}); return;}
+                if (!running) {req({seg: {fx: 0},v: true,stop: true}); return;}
             }
             if (!gotfx) {req(false); return;}
             var chks = document.querySelectorAll('.fxcheck');
@@ -110,7 +110,7 @@
             } catch (e) {
 
             }
-            var cmd = {seg:{fx:pos},v:true};
+            var cmd = {seg: {fx: pos},v: true};
             Object.assign(cmd, extra);
             req(cmd);
         }

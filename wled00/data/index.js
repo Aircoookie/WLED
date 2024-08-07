@@ -27,10 +27,10 @@ var lastinfo = {};
 var isM = false, mw = 0, mh=0;
 var ws, wsRpt=0;
 var cfg = {
-	theme:{base:"dark", bg:{url:"", rnd: false, rndGrayscale: false, rndBlur: false}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
-	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
-		  css:true, hdays:false, fxdef:true, on:0, off:0, idsort: false}
+	theme: {base: "dark", bg: {url: "", rnd: false, rndGrayscale: false, rndBlur: false}, alpha: {bg: 0.6,tab: 0.8}, color: {bg: ""}},
+	comp: {colors: {picker: true, rgb: false, quick: true, hex: false},
+		  labels: true, pcmbot: false, pid: true, seglen: false, segpwr: false, segexp: false,
+		  css: true, hdays: false, fxdef: true, on: 0, off: 0, idsort: false}
 };
 // [year, month (0 -> January, 11 -> December), day, duration in days, image url]
 var hol = [
@@ -496,7 +496,7 @@ function loadPresets(callback = null)
 		method: 'get'
 	})
 	.then(res => {
-		if (res.status=="404") return {"0":{}};
+		if (res.status=="404") return {"0": {}};
 		//if (!res.ok) showErrorToast();
 		return res.json();
 	})
@@ -912,7 +912,7 @@ function populateEffects()
 	for (let i = 0; i < effects.length; i++) {
 		effects[i] = {
 			id: effects[i][0],
-			name:effects[i][1]
+			name: effects[i][1]
 		};
 	}
 	effects.sort((a,b) => (a.name).localeCompare(b.name));
@@ -2152,15 +2152,15 @@ function tglSegn(s)
 
 function selSegAll(o)
 {
-	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":o.checked});
+	var obj = {"seg": []};
+	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id": i,"sel": o.checked});
 	requestJson(obj);
 }
 
 function selSegEx(s)
 {
-	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":(i==s)});
+	var obj = {"seg": []};
+	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id": i,"sel": (i==s)});
 	obj.mainseg = s;
 	requestJson(obj);
 }
@@ -2176,11 +2176,11 @@ function selGrp(g)
 {
 	event.preventDefault();
 	event.stopPropagation();
-	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id":i,"sel":false});
+	var obj = {"seg": []};
+	for (let i=0; i<=lSeg; i++) if (gId(`seg${i}`)) obj.seg.push({"id": i,"sel": false});
 	gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`).forEach((s)=>{
 		let i = parseInt(s.id.substring(3));
-		obj.seg[i] = {"id":i,"sel":true};
+		obj.seg[i] = {"id": i,"sel": true};
 	});
 	if (obj.seg.length) requestJson(obj);
 }
@@ -2332,7 +2332,7 @@ function tglFreeze(s=null)
 	if (s!==null) {
 		obj.seg.id = s;
 		// if live segment, enter live override (which also unfreezes)
-		if (lastinfo && s==lastinfo.liveseg && lastinfo.live) obj = {"lor":1};
+		if (lastinfo && s==lastinfo.liveseg && lastinfo.live) obj = {"lor": 1};
 	}
 	requestJson(obj);
 }
@@ -2418,11 +2418,11 @@ function setLor(i)
 
 function setPreset(i)
 {
-	var obj = {"ps":i};
+	var obj = {"ps": i};
 	if (!isPlaylist(i) && pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
 		// we will send the complete preset content as to avoid delay introduced by
 		// async nature of applyPreset() and having to read the preset from file system.
-		obj = {"pd":i}; // use "pd" instead of "ps" to indicate that we are sending the preset content directly
+		obj = {"pd": i}; // use "pd" instead of "ps" to indicate that we are sending the preset content directly
 		Object.assign(obj, pJson[i]);
 		delete obj.ql; // no need for quick load
 		delete obj.n;  // no need for name
@@ -2485,7 +2485,7 @@ function saveP(i,pl)
 		delete pJson[pI].v;
 		delete pJson[pI].time;
 	} else {
-		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
+		pJson[pI] = {"n": pN, "win": "Please refresh the page to see this newly saved command."};
 		if (obj.win) pJson[pI].win = obj.win;
 		if (obj.ql)  pJson[pI].ql = obj.ql;
 	}
@@ -2510,7 +2510,7 @@ function testPl(i,bt) {
 }
 
 function stopPl() {
-	requestJson({playlist:{}})
+	requestJson({playlist: {}})
 }
 
 function delP(i) {
@@ -2582,10 +2582,10 @@ function updatePSliders() {
 	gId("sliderS").value = s;
 	gId('sliderV').value = v;
 
-	c = iro.Color.hsvToRgb({"h":h,"s":100,"v":100});
+	c = iro.Color.hsvToRgb({"h": h,"s": 100,"v": 100});
 	gId("sliderS").nextElementSibling.style.backgroundImage = 'linear-gradient(90deg, #aaa -15%, rgb('+c.r+','+c.g+','+c.b+'))';
 
-	c = iro.Color.hsvToRgb({"h":h,"s":s,"v":100});
+	c = iro.Color.hsvToRgb({"h": h,"s": s,"v": 100});
 	gId('sliderV').nextElementSibling.style.backgroundImage = 'linear-gradient(90deg, #000 -15%, rgb('+c.r+','+c.g+','+c.b+'))';
 
 	// update Kelvin slider
@@ -2747,13 +2747,13 @@ function rSegs()
 	cnfrS = false;
 	bt.style.color = "var(--c-f)";
 	bt.innerHTML = "Reset segments";
-	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
+	var obj = {"seg": [{"start": 0,"stop": ledCount,"sel": true}]};
 	if (isM) {
 		obj.seg[0].stop = mw;
 		obj.seg[0].startX = 0;
 		obj.seg[0].stopY = mh;
 	}
-	for (let i=1; i<=lSeg; i++) obj.seg.push({"stop":0});
+	for (let i=1; i<=lSeg; i++) obj.seg.push({"stop": 0});
 	requestJson(obj);
 }
 

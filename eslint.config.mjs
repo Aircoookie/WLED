@@ -20,7 +20,8 @@ const commonRules = {
     "no-useless-escape": "warn",
 
     // style rules:
-    "@stylistic/js/function-call-spacing": ["error", "never"]
+    "@stylistic/js/function-call-spacing": ["error", "never"],
+    "@stylistic/js/key-spacing": "error"
 }
 
 export default [

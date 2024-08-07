@@ -201,7 +201,7 @@ QueuedRequester.prototype = {
     }
   },
   add: function(method, url, params, callback){
-    this.queue.push({url:url,method:method,params:params,callback:callback});
+    this.queue.push({url: url,method: method,params: params,callback: callback});
     if(!this.running){
       this._request(this.queue.shift());
     }
