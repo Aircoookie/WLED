@@ -5,7 +5,7 @@ function getPixelRGBValues(base64Image) {
   //Which object holds the secret to the segment ID
 
   let segID = 0;
-  if (tSg.style.display == "flex"){
+  if (tSg.style.display == "flex") {
     segID = tSg.value
   } else {
     segID = sID.value;
@@ -27,15 +27,15 @@ function getPixelRGBValues(base64Image) {
 
   selectedIndex = cFS.selectedIndex;
   let hexValueCheck = true;
-  if (cFS.options[selectedIndex].value == 'dec'){
+  if (cFS.options[selectedIndex].value == 'dec') {
     hexValueCheck = false
   }
 
   selectedIndex = aS.selectedIndex;
   let segmentValueCheck = true; //If Range or Hybrid
-  if (aS.options[selectedIndex].value == 'single'){
+  if (aS.options[selectedIndex].value == 'single') {
     segmentValueCheck = false
-  } else if (aS.options[selectedIndex].value == 'hybrid'){
+  } else if (aS.options[selectedIndex].value == 'hybrid') {
     hybridAddressing = true;
   }
 
@@ -44,7 +44,7 @@ function getPixelRGBValues(base64Image) {
 
   let colorSeparatorStart = '"';
   let colorSeparatorEnd = '"';
-  if (!hexValueCheck){
+  if (!hexValueCheck) {
     colorSeparatorStart = '[';
     colorSeparatorEnd = ']';
   }
@@ -68,7 +68,7 @@ function getPixelRGBValues(base64Image) {
     let sizeX = szX.value;
     let sizeY = szY.value;
 
-    if (color != accentColor || sizeX < 1 || sizeY < 1){
+    if (color != accentColor || sizeX < 1 || sizeY < 1) {
       //image will not be resized Set desired size to original size
       sizeX = image.width;
       sizeY = image.height;
@@ -98,7 +98,7 @@ function getPixelRGBValues(base64Image) {
     // If the first row of the led matrix is right -> left
     let right2leftAdjust = 1;
           
-    if (ledSetupSelection == 'l2r'){
+    if (ledSetupSelection == 'l2r') {
       right2leftAdjust = 0;
     }
 
@@ -112,7 +112,7 @@ function getPixelRGBValues(base64Image) {
       let pixel = i/4
       let row = Math.floor(pixel/sizeX);
       let led = pixel;
-      if (ledSetupSelection == 'matrix'){
+      if (ledSetupSelection == 'matrix') {
           //Do nothing, the matrix is set upp like the index in the image
           //Every row starts from the left, i.e. no zigzagging
       }
@@ -163,24 +163,24 @@ function getPixelRGBValues(base64Image) {
       let segmentString = '';
       let segmentEnd = -1;
 
-      if (segmentValueCheck){
-        if (segmentStart < 0){
+      if (segmentValueCheck) {
+        if (segmentStart < 0) {
           //This is the first led of a new segment
           segmentStart = i;
         } //Else we allready have a start index
         
-        if (i < maxi - 1){ 
+        if (i < maxi - 1) { 
           
           let iNext = i + 1;
           let nextPixel = ledRGBValues[iNext];
 
-          if (nextPixel[0] != r || nextPixel[1] != g || nextPixel[2] != b ){
+          if (nextPixel[0] != r || nextPixel[1] != g || nextPixel[2] != b ) {
             //Next pixel has new color
             //The current segment ends with this pixel
             segmentEnd = i + 1 //WLED wants the NEXT LED as the stop led...
-            if (segmentStart == i && hybridAddressing){
+            if (segmentStart == i && hybridAddressing) {
               //If only one led/pixel, no segment info needed
-              if (JSONledString == ''){
+              if (JSONledString == '') {
                 //If addressing is single, we need to start every command with a starting possition
                 segmentString = '' + i + ',';
                 //Fixed to b2
@@ -197,9 +197,9 @@ function getPixelRGBValues(base64Image) {
           //This is the last pixel, so the segment must end
           segmentEnd = i + 1;
 
-          if (segmentStart + 1 == segmentEnd && hybridAddressing){
+          if (segmentStart + 1 == segmentEnd && hybridAddressing) {
             //If only one led/pixel, no segment info needed
-            if (JSONledString == ''){
+            if (JSONledString == '') {
               //If addressing is single, we need to start every command with a starting possition
               segmentString = '' + i + ',';
               //Fixed to b2
@@ -213,7 +213,7 @@ function getPixelRGBValues(base64Image) {
         }
       } else {
         //Write every pixel
-        if (JSONledString == ''){
+        if (JSONledString == '') {
           //If addressing is single, we need to start every command with a starting possition
           JSONledString = i
           //Fixed to b2
@@ -224,16 +224,16 @@ function getPixelRGBValues(base64Image) {
         //Segment string should be empty for when addressing single. So no need to set it again.       
       }
 
-      if (a < 255){
+      if (a < 255) {
         hasTransparency = true; //If ANY pixel has alpha < 255 then this is set to true to warn the user
       }
 
-      if (segmentEnd > -1){
+      if (segmentEnd > -1) {
         //This is the last pixel in the segment, write to the JSONledString
         //Return color value in selected format
         let colorValueString = r + ',' + g + ',' + b ;
 
-        if (hexValueCheck){
+        if (hexValueCheck) {
           const [red, green, blue] = [r, g, b];
           colorValueString = `${[red, green, blue].map(x => x.toString(16).padStart(2, '0')).join('')}`;
         } else {
@@ -272,7 +272,7 @@ function getPixelRGBValues(base64Image) {
       let thiscurlString = `curl -X POST "http://${gurl.value}/json/state" -d \'${thisJSONledString}\' -H "Content-Type: application/json"`;
       
       //Aggregated Strings That should be returned to the user
-      if (i > 0){
+      if (i > 0) {
         JSONledString = JSONledString + '\n<NEXT COMMAND (multiple commands not supported in API/preset setup)>\n';
         curlString = curlString + ' && ';
       }
@@ -292,11 +292,11 @@ function getPixelRGBValues(base64Image) {
       command_off: >
         curl -X POST "http://${gurl.value}/json/state" -d \'{"on":false}\' -H "Content-Type: application/json"`;
 
-    if (formatSelection == 'wled'){
+    if (formatSelection == 'wled') {
       JLD.value = JSONledString;
-    } else if (formatSelection == 'curl'){
+    } else if (formatSelection == 'curl') {
       JLD.value = curlString;
-    } else if (formatSelection == 'ha'){
+    } else if (formatSelection == 'ha') {
       JLD.value = haString;
     } else {
       JLD.value = 'ERROR!/n' + formatSelection + ' is an unknown format.'
@@ -306,7 +306,7 @@ function getPixelRGBValues(base64Image) {
 
     let infoDiv = imin;
     let canvasDiv = imin;
-    if (hasTransparency){
+    if (hasTransparency) {
       imageInfo = imageInfo + '<p><b>WARNING!</b> Transparency info detected in image. Transparency (alpha) has been ignored. To ensure you get the result you desire, use only solid colors in your image.</p>'
     }
     

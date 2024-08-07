@@ -9,16 +9,16 @@ let devMode =  false; //Remove
 gurl.value = location.host;
 
 const urlParams = new URLSearchParams(window.location.search);
-if (gurl.value.length < 1){
+if (gurl.value.length < 1) {
   gurl.value = "Missing_Host";
 }
 
-function gen(){
+function gen() {
   //Generate image if enough info is in place
   //Is host non empty
   //Is image loaded
   //is scale > 0
-  if (((szX.value > 0 && szY.value > 0) || szDiv.style.display == 'none') && gurl.value.length > 0 && prw.style.display != 'none'){
+  if (((szX.value > 0 && szY.value > 0) || szDiv.style.display == 'none') && gurl.value.length > 0 && prw.style.display != 'none') {
     //regenerate
     let base64Image = prw.src;
     if (isValidBase64Gif(base64Image)) {
@@ -36,7 +36,7 @@ function gen(){
     }
   }
   
-  if (gurl.value.length > 0){
+  if (gurl.value.length > 0) {
     gId("sSg").setAttribute("fill", accentColor);
   } else {
     gId("sSg").setAttribute("fill", accentTextColor);
@@ -141,16 +141,16 @@ async function postPixels() {
       er = true;
     }
   }
-  if (er){
+  if (er) {
     //Something went wrong
     ss.setAttribute("fill", redColor);
-    setTimeout(function(){ 
+    setTimeout(function() { 
       ss.setAttribute("fill", accentTextColor);
     }, 1000);
   } else {
     // A, OK
     ss.setAttribute("fill", greenColor);
-    setTimeout(function(){ 
+    setTimeout(function() { 
       ss.setAttribute("fill", accentColor);
     }, 1000);
   }
@@ -289,7 +289,7 @@ function generateSegmentOptions(array) {
 // Get segments from device
 async function getSegments() {
   cv = gurl.value;
-  if (cv.length > 0 ){
+  if (cv.length > 0 ) {
     try {
       var arr = [];
       const response = await fetch('http://'+cv+'/json/state');
@@ -307,14 +307,14 @@ async function getSegments() {
       tSg.style.display = "flex";
       sID.style.display = "none";
       gId("sSg").setAttribute("fill", greenColor);
-      setTimeout(function(){ 
+      setTimeout(function() { 
         gId("sSg").setAttribute("fill", accentColor);
       }, 1000);
 
     } catch (error) {
       console.error(error);
       gId("sSg").setAttribute("fill", redColor);
-      setTimeout(function(){ 
+      setTimeout(function() { 
         gId("sSg").setAttribute("fill", accentColor);
       }, 1000);
       tSg.style.display = "none";
@@ -322,7 +322,7 @@ async function getSegments() {
     }
   } else {
     gId("sSg").setAttribute("fill", redColor);
-    setTimeout(function(){ 
+    setTimeout(function() { 
       gId("sSg").setAttribute("fill", accentTextColor);
     }, 1000);
     tSg.style.display = "none";
@@ -358,7 +358,7 @@ gId("sendJSONledbutton").innerHTML =
 
 //After everything is loaded, check if we have a possible IP/host
 
-if (gurl.value.length > 0){
+if (gurl.value.length > 0) {
   // Needs to be addressed directly here so the object actually exists
   gId("sSg").setAttribute("fill", accentColor);
 }

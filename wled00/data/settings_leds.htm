@@ -13,10 +13,10 @@
 		d.max_gpio = 50;
 		var customStarts=false,startsDirty=[];
 		var loc = false, locip, locproto = "http:";
-		function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
-		function B(){window.open(getURL("/settings"),"_self");}
-		function gId(n){return d.getElementById(n);}
-		function off(n){d.getElementsByName(n)[0].value = -1;}
+		function H() {window.open("https://kno.wled.ge/features/settings/#led-settings");}
+		function B() {window.open(getURL("/settings"),"_self");}
+		function gId(n) {return d.getElementById(n);}
+		function off(n) {d.getElementsByName(n)[0].value = -1;}
 		// these functions correspond to C macros found in const.h
 		function isPWM(t) { return t > 40 && t < 46; }                      // is PWM type
 		function isAna(t) { return t == 40 || isPWM(t); }                   // is analog type
@@ -56,7 +56,7 @@
 			x.className = error ? "error":"show";
 			clearTimeout(timeout);
 			x.style.animation = 'none';
-			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+			timeout = setTimeout(function() { x.className = x.className.replace("show", ""); }, 2900);
 		}
 		function bLimits(b,v,p,m,l,o=5,d=2,a=6) {
 			// maxB - max buses (can be changed if using ESP32 parallel I2S)
@@ -585,8 +585,8 @@ Swap: <select id="xw${s}" name="XW${s}">
 		}
 		function uploadFile(name) {
 			var req = new XMLHttpRequest();
-			req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
-			req.addEventListener('error', function(e){showToast(e.stack,true);});
+			req.addEventListener('load', function() {showToast(this.responseText,this.status >= 400)});
+			req.addEventListener('error', function(e) {showToast(e.stack,true);});
 			req.open("POST", "/upload");
 			var formData = new FormData();
 			formData.append("data", d.Sf.data.files[0], name);

@@ -9,10 +9,10 @@
 	var loc = false, locip, locproto = "http:";
 	var maxPanels=64;
 	var ctx = null; // WLEDMM
-	function H(){window.open("https://kno.wled.ge/features/2D");}
-	function B(){window.open(getURL("/settings"),"_self");}
-	function gId(n){return d.getElementById(n);}
-	function fS(){d.Sf.submit();} // <button type=submit> sometimes didn't work
+	function H() {window.open("https://kno.wled.ge/features/2D");}
+	function B() {window.open(getURL("/settings"),"_self");}
+	function gId(n) {return d.getElementById(n);}
+	function fS() {d.Sf.submit();} // <button type=submit> sometimes didn't work
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 	function loadJS(FILE_URL, async = true) {
 		let scE = d.createElement("script");
@@ -79,13 +79,13 @@
 		x.className = error ? "error":"show";
 		clearTimeout(timeout);
 		x.style.animation = 'none';
-		timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+		timeout = setTimeout(function() { x.className = x.className.replace("show", ""); }, 2900);
 	}
 
 	function uploadFile(name) {
 		var req = new XMLHttpRequest();
-		req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
-		req.addEventListener('error', function(e){showToast(e.stack,true);});
+		req.addEventListener('load', function() {showToast(this.responseText,this.status >= 400)});
+		req.addEventListener('error', function(e) {showToast(e.stack,true);});
 		req.open("POST", "/upload");
 		var formData = new FormData();
 		formData.append("data", d.Sf.data.files[0], name);

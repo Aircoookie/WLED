@@ -467,8 +467,8 @@ function presetError(empty)
 
 function restore(txt) {
 	var req = new XMLHttpRequest();
-	req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
-	req.addEventListener('error', function(e){showToast(e.stack,true);});
+	req.addEventListener('load', function() {showToast(this.responseText,this.status >= 400)});
+	req.addEventListener('error', function(e) {showToast(e.stack,true);});
 	req.open("POST", getURL("/upload"));
 	var formData = new FormData();
 	var b = new Blob([txt], {type: "application/json"});
