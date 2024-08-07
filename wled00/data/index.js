@@ -1701,7 +1701,7 @@ function requestJson(command=null)
 		req = JSON.stringify(command);
 		if (req.length > 1340) useWs = false; // do not send very long requests over websocket
 		if (req.length >  500 && lastinfo && lastinfo.arch == "esp8266") useWs = false; // esp8266 can only handle 500 bytes
-	};
+	}
 
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
@@ -3135,7 +3135,7 @@ function tooltip(cont=null)
 			element.setAttribute("title", element.getAttribute("data-title"));
 		});
 	});
-};
+}
 
 // Transforms the default UI into the simple UI
 function simplifyUI() {
@@ -3171,7 +3171,7 @@ function simplifyUI() {
 			dialog.inert = false;
 			clean(dialog.firstElementChild.children[1]);
 			dialog.scrollTop = 0;
-		};
+		}
 		btn.addEventListener("click", toggleDialog);
 		dialog.addEventListener("click", toggleDialog);
 

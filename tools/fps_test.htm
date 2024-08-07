@@ -96,7 +96,7 @@
             if (!gotfx) {req(false); return;}
             var chks = document.querySelectorAll('.fxcheck');
             var fpsb = document.querySelectorAll('.fps');
-            if (prev >= 0) {pos++};
+            if (prev >= 0) {pos++}
             if (pos >= chks.length) {run(true); return;} //end
             while (!chks[pos].checked) {
                 fpsb[pos].innerText = "-";

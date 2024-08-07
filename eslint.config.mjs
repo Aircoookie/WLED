@@ -22,7 +22,8 @@ const commonRules = {
     // style rules:
     "@stylistic/js/function-call-spacing": ["error", "never"],
     "@stylistic/js/key-spacing": "error",
-    "@stylistic/js/keyword-spacing": "error"
+    "@stylistic/js/keyword-spacing": "error",
+    "@stylistic/js/no-extra-semi": "error"
 }
 
 export default [
