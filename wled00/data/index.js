@@ -1187,7 +1187,7 @@ function updateLen(s)
 					let sN = sE.querySelector(".lstIname").innerText;
 					let seg = gId(`seg${s}map2D`);
 					if (seg) {
-						if(sN.indexOf("\u25A6")<0) seg.classList.remove('hide'); // unhide mapping for 1D effects (| in name)
+						if (sN.indexOf("\u25A6")<0) seg.classList.remove('hide'); // unhide mapping for 1D effects (| in name)
 						else seg.classList.add('hide');	// hide mapping otherwise
 					}
 				}
@@ -2594,11 +2594,11 @@ function updatePSliders() {
 
 function hexEnter()
 {
-	if(event.keyCode == 13) fromHex();
+	if (event.keyCode == 13) fromHex();
 }
 
 function segEnter(s) {
-	if(event.keyCode == 13) setSeg(s);
+	if (event.keyCode == 13) setSeg(s);
 }
 
 function fromHex()
@@ -3030,13 +3030,13 @@ function lock(e)
 //required by rangetouch.js
 function move(e)
 {
-	if(!locked || pcMode || simplifiedUI) return;
+	if (!locked || pcMode || simplifiedUI) return;
 	var clientX = unify(e).clientX;
 	var dx = clientX - x0;
 	var s = Math.sign(dx);
 	var f = +(s*dx/wW).toFixed(2);
 
-	if((clientX != 0) &&
+	if ((clientX != 0) &&
 		(iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
 		f > 0.12 &&
 		gEBCN("tabcontent")[iSlide].scrollTop == scrollS)

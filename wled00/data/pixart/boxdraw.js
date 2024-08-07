@@ -9,7 +9,7 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
     if (w.innerHeight < w.innerWidth) {
         canvas.width = Math.floor(w.innerHeight * 0.98);
     }
-    else{
+    else {
         canvas.width = Math.floor(w.innerWidth * 0.98);
     }
     //canvas.height = w.innerWidth;

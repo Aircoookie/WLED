@@ -5,7 +5,7 @@ function getPixelRGBValues(base64Image) {
   //Which object holds the secret to the segment ID
 
   let segID = 0;
-  if(tSg.style.display == "flex"){
+  if (tSg.style.display == "flex"){
     segID = tSg.value
   } else {
     segID = sID.value;
@@ -163,7 +163,7 @@ function getPixelRGBValues(base64Image) {
       let segmentString = '';
       let segmentEnd = -1;
 
-      if(segmentValueCheck){
+      if (segmentValueCheck){
         if (segmentStart < 0){
           //This is the first led of a new segment
           segmentStart = i;
@@ -184,7 +184,7 @@ function getPixelRGBValues(base64Image) {
                 //If addressing is single, we need to start every command with a starting possition
                 segmentString = '' + i + ',';
                 //Fixed to b2
-              } else{
+              } else {
                 segmentString = ''
               }
             }
@@ -203,7 +203,7 @@ function getPixelRGBValues(base64Image) {
               //If addressing is single, we need to start every command with a starting possition
               segmentString = '' + i + ',';
               //Fixed to b2
-            } else{
+            } else {
               segmentString = ''
             }
           }
@@ -211,7 +211,7 @@ function getPixelRGBValues(base64Image) {
             segmentString = segmentStart + ',' + segmentEnd + ','; 
           }
         }
-      } else{
+      } else {
         //Write every pixel
         if (JSONledString == ''){
           //If addressing is single, we need to start every command with a starting possition
@@ -236,7 +236,7 @@ function getPixelRGBValues(base64Image) {
         if (hexValueCheck){
           const [red, green, blue] = [r, g, b];
           colorValueString = `${[red, green, blue].map(x => x.toString(16).padStart(2, '0')).join('')}`;
-        } else{
+        } else {
           //do nothing, allready set
         }
 

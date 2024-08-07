@@ -104,10 +104,10 @@
 	}
 	function FC()
 	{
-		for(i=0;i<10;i++)
+		for (i=0;i<10;i++)
 		{
 			let wd = gId("W"+i).value;
-			for(j=0;j<8;j++) {
+			for (j=0;j<8;j++) {
 				gId("W"+i+j).checked=wd>>j&1;
 			}
 			if ((wd&254) != 254 || (i<8 && (gN("M"+i).value != 1 || gN("D"+i).value != 1 || gN("P"+i).value != 12 || gN("E"+i).value != 31))) {
@@ -120,7 +120,7 @@
 		a = [0,0,0,0,0,0,0,0,0,0];
 		for (i=0; i<10; i++) {
 			m=1;
-			for(j=0;j<8;j++) { a[i]+=gId(("W"+i)+j).checked*m; m*=2;}
+			for (j=0;j<8;j++) { a[i]+=gId(("W"+i)+j).checked*m; m*=2;}
 			gId("W"+i).value=a[i];
 		}
 		if (d.Sf.LTR.value==="S") { d.Sf.LT.value = -1*parseFloat(d.Sf.LT.value); }

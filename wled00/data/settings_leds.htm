@@ -85,7 +85,7 @@
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4")
 					if (LC.value!="" && LC.value!="-1") {
 						let p = d.rsvd.concat(d.um_p); // used pin array
-						d.Sf.querySelectorAll("select.pin").forEach((e)=>{if(e.value>-1)p.push(parseInt(e.value));}) // buttons, IR & relay
+						d.Sf.querySelectorAll("select.pin").forEach((e)=>{if (e.value>-1)p.push(parseInt(e.value));}) // buttons, IR & relay
 						if (p.some((e)=>e==parseInt(LC.value))) {
 							alert(`Sorry, pins ${JSON.stringify(p)} can't be used.`);
 							LC.value="";
@@ -327,7 +327,7 @@
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4")
 					if (LC.value!="" && LC.value!="-1") {
 						let p = d.rsvd.concat(d.um_p); // used pin array
-						d.Sf.querySelectorAll("select.pin").forEach((e)=>{if(e.value>-1)p.push(parseInt(e.value));}) // buttons, IR & relay
+						d.Sf.querySelectorAll("select.pin").forEach((e)=>{if (e.value>-1)p.push(parseInt(e.value));}) // buttons, IR & relay
 						for (j=0; j<nList.length; j++) {
 							if (i==j) continue;
 							let n2 = nList[j].name.substring(0,2);
@@ -634,7 +634,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 							d.getElementsByName("CV"+i)[0].checked = v.rev;
 						});
 					}
-					if(c.hw.com) {
+					if (c.hw.com) {
 						resetCOM();
 						c.hw.com.forEach(e => {
 							addCOM(e.start, e.len, e.order);

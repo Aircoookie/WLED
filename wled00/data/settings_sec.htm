@@ -56,7 +56,7 @@
 		function checkNum(o) {
 			const specialkeys = ["Backspace", "Tab", "Enter", "Shift", "Control", "Alt", "Pause", "CapsLock", "Escape", "Space", "PageUp", "PageDown", "End", "Home", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown", "Insert", "Delete"];
 			// true if key is a number or a special key
-			if(event.key.match(/[0-9]/) || specialkeys.includes(event.key)) return true;
+			if (event.key.match(/[0-9]/) || specialkeys.includes(event.key)) return true;
 			event.preventDefault();
 			return false;
 		}
