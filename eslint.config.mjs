@@ -23,7 +23,8 @@ const commonRules = {
     "@stylistic/js/function-call-spacing": ["error", "never"],
     "@stylistic/js/key-spacing": "error",
     "@stylistic/js/keyword-spacing": "error",
-    "@stylistic/js/no-extra-semi": "error"
+    "@stylistic/js/no-extra-semi": "error",
+    "@stylistic/js/no-whitespace-before-property": "error"
 }
 
 export default [
