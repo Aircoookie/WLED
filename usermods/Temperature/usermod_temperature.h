@@ -110,12 +110,12 @@ float UsermodTemperature::readDallas() {
     oneWire->skip();                      // skip ROM
     oneWire->write(0xBE);                 // read (temperature) from EEPROM
     oneWire->read_bytes(data, 9);         // first 2 bytes contain temperature
-    #ifdef WLED_DEBUG
+    #ifdef WLED_DEBUG_USERMODS
     if (OneWire::crc8(data,8) != data[8]) {
-      DEBUG_PRINTLN(F("CRC error reading temperature."));
-      for (unsigned i=0; i < 9; i++) DEBUG_PRINTF_P(PSTR("0x%02X "), data[i]);
-      DEBUG_PRINT(F(" => "));
-      DEBUG_PRINTF_P(PSTR("0x%02X\n"), OneWire::crc8(data,8));
+      DEBUGUM_PRINTLN(F("CRC error reading temperature."));
+      for (unsigend i=0; i < 9; i++) DEBUGUM_PRINTF_P(PSTR("0x%02X "), data[i]);
+      DEBUGUM_PRINT(F(" => "));
+      DEBUGUM_PRINTF_P(PSTR("0x%02X\n"), OneWire::crc8(data,8));
     }
     #endif
     switch(sensorFound) {
@@ -138,7 +138,7 @@ float UsermodTemperature::readDallas() {
 }
 
 void UsermodTemperature::requestTemperatures() {
-  DEBUG_PRINTLN(F("Requesting temperature."));
+  DEBUGUM_PRINTLN(F("Requesting temperature."));
   oneWire->reset();
   oneWire->skip();                        // skip ROM
   oneWire->write(0x44,parasite);          // request new temperature reading
@@ -152,19 +152,19 @@ void UsermodTemperature::readTemperature() {
   temperature = readDallas();
   lastMeasurement = millis();
   waitingForConversion = false;
-  //DEBUG_PRINTF_P(PSTR("Read temperature %2.1f.\n"), temperature); // does not work properly on 8266
-  DEBUG_PRINT(F("Read temperature "));
-  DEBUG_PRINTLN(temperature);
+  //DEBUGUM_PRINTF_P(PSTR("Read temperature %2.1f.\n"), temperature); // does not work properly on 8266
+  DEBUGUM_PRINT(F("Read temperature "));
+  DEBUGUM_PRINTLN(temperature);
 }
 
 bool UsermodTemperature::findSensor() {
-  DEBUG_PRINTLN(F("Searching for sensor..."));
+  DEBUGUM_PRINTLN(F("Searching for sensor..."));
   uint8_t deviceAddress[8] = {0,0,0,0,0,0,0,0};
   // find out if we have DS18xxx sensor attached
   oneWire->reset_search();
   delay(10);
   while (oneWire->search(deviceAddress)) {
-    DEBUG_PRINTLN(F("Found something..."));
+    DEBUGUM_PRINTLN(F("Found something..."));
     if (oneWire->crc8(deviceAddress, 7) == deviceAddress[7]) {
       switch (deviceAddress[0]) {
         case 0x10:  // DS18S20
@@ -172,14 +172,14 @@ bool UsermodTemperature::findSensor() {
         case 0x28:  // DS1822
         case 0x3B:  // DS1825
         case 0x42:  // DS28EA00
-          DEBUG_PRINTLN(F("Sensor found."));
+          DEBUGUM_PRINTLN(F("Sensor found."));
           sensorFound = deviceAddress[0];
-          DEBUG_PRINTF_P(PSTR("0x%02X\n"), sensorFound);
+          DEBUGUM_PRINTF_P(PSTR("0x%02X\n"), sensorFound);
           return true;
       }
     }
   }
-  DEBUG_PRINTLN(F("Sensor NOT found."));
+  DEBUGUM_PRINTLN(F("Sensor NOT found."));
   return false;
 }
 
@@ -213,7 +213,7 @@ void UsermodTemperature::setup() {
   temperature = -127.0f; // default to -127, DS18B20 only goes down to -50C
   if (enabled) {
     // config says we are enabled
-    DEBUG_PRINTLN(F("Allocating temperature pin..."));
+    DEBUGUM_PRINTLN(F("Allocating temperature pin..."));
     // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
     if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
       oneWire = new OneWire(temperaturePin);
@@ -230,7 +230,7 @@ void UsermodTemperature::setup() {
       }
     } else {
       if (temperaturePin >= 0) {
-        DEBUG_PRINTLN(F("Temperature pin allocation failed."));
+        DEBUGUM_PRINTLN(F("Temperature pin allocation failed."));
       }
       temperaturePin = -1;  // allocation failed
     }
@@ -375,7 +375,7 @@ void UsermodTemperature::addToConfig(JsonObject &root) {
   top[FPSTR(_parasite)] = parasite;
   top[FPSTR(_parasitePin)] = parasitePin;
   top[FPSTR(_domoticzIDX)] = idx;
-  DEBUG_PRINTLN(F("Temperature config saved."));
+  DEBUGUM_PRINTLN(F("Temperature config saved."));
 }
 
 /**
@@ -386,11 +386,11 @@ void UsermodTemperature::addToConfig(JsonObject &root) {
 bool UsermodTemperature::readFromConfig(JsonObject &root) {
   // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
   int8_t newTemperaturePin = temperaturePin;
-  DEBUG_PRINT(FPSTR(_name));
+  DEBUGUM_PRINT(FPSTR(_name));
 
   JsonObject top = root[FPSTR(_name)];
   if (top.isNull()) {
-    DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+    DEBUGUM_PRINTLN(F(": No config found. (Using defaults.)"));
     return false;
   }
 
@@ -406,12 +406,12 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
   if (!initDone) {
     // first run: reading from cfg.json
     temperaturePin = newTemperaturePin;
-    DEBUG_PRINTLN(F(" config loaded."));
+    DEBUGUM_PRINTLN(F(" config loaded."));
   } else {
-    DEBUG_PRINTLN(F(" config (re)loaded."));
+    DEBUGUM_PRINTLN(F(" config (re)loaded."));
     // changing paramters from settings page
     if (newTemperaturePin != temperaturePin) {
-      DEBUG_PRINTLN(F("Re-init temperature."));
+      DEBUGUM_PRINTLN(F("Re-init temperature."));
       // deallocate pin and release memory
       delete oneWire;
       pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);

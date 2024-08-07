@@ -160,7 +160,7 @@ void appendGPIOinfo() {
   oappend(SET_F(",2")); // DMX hardcoded pin
   #endif
 
-  #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
+  #if (defined(WLED_DEBUG) || defined(WLED_DEBUG_FX) || defined(WLED_DEBUG_FS) || defined(WLED_DEBUG_BUS) || defined(WLED_DEBUG_PINMANAGER) || defined(WLED_DEBUG_USERMODS)) && !defined(WLED_DEBUG_HOST)
   oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10)); // debug output (TX) pin
   #endif
 

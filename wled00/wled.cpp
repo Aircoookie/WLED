@@ -292,7 +292,9 @@ void WLED::loop()
       DEBUG_PRINT(F("UM time[ms]: "));     DEBUG_PRINT(avgUsermodMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxUsermodMillis);
       DEBUG_PRINT(F("Strip time[ms]: "));  DEBUG_PRINT(avgStripMillis/loops); DEBUG_PRINT("/"); DEBUG_PRINTLN(maxStripMillis);
     }
+    #ifdef WLED_DEBUG_FX
     strip.printSize();
+    #endif
     loops = 0;
     maxLoopMillis = 0;
     maxUsermodMillis = 0;
@@ -336,27 +338,26 @@ void WLED::disableWatchdog() {
 
 void WLED::setup()
 {
-  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detection
-  #endif
+#endif
 
-  #ifdef ARDUINO_ARCH_ESP32
+#ifdef ARDUINO_ARCH_ESP32
   pinMode(hardwareRX, INPUT_PULLDOWN); delay(1);        // suppress noise in case RX pin is floating (at low noise energy) - see issue #3128
-  #endif
-  #ifdef WLED_BOOTUPDELAY
+#endif
+#ifdef WLED_BOOTUPDELAY
   delay(WLED_BOOTUPDELAY); // delay to let voltage stabilize, helps with boot issues on some setups
-  #endif
+#endif
   Serial.begin(115200);
-  #if !ARDUINO_USB_CDC_ON_BOOT
+#if !ARDUINO_USB_CDC_ON_BOOT
   Serial.setTimeout(50);  // this causes troubles on new MCUs that have a "virtual" USB Serial (HWCDC)
-  #else
-  #endif
-  #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
+#endif
+#if (defined(WLED_DEBUG) || defined(WLED_DEBUG_FX) || defined(WLED_DEBUG_FS) || defined(WLED_DEBUG_BUS) || defined(WLED_DEBUG_PINMANAGER) || defined(WLED_DEBUG_USERMODS)) && defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
   delay(2500);  // allow CDC USB serial to initialise
-  #endif
-  #if !defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && !defined(WLED_DEBUG_HOST) && ARDUINO_USB_CDC_ON_BOOT
+#endif
+#if !(defined(WLED_DEBUG) || defined(WLED_DEBUG_FX) || defined(WLED_DEBUG_FS) || defined(WLED_DEBUG_BUS) || defined(WLED_DEBUG_PINMANAGER) || defined(WLED_DEBUG_USERMODS)) && defined(ARDUINO_ARCH_ESP32) && !defined(WLED_DEBUG_HOST) && ARDUINO_USB_CDC_ON_BOOT
   Serial.setDebugOutput(false); // switch off kernel messages when using USBCDC
-  #endif
+#endif
   DEBUG_PRINTLN();
   DEBUG_PRINT(F("---WLED "));
   DEBUG_PRINT(versionString);
@@ -417,7 +418,7 @@ void WLED::setup()
   usePWMFixedNMI(); // link the NMI fix
 #endif
 
-#if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
+#if (defined(WLED_DEBUG) || defined(WLED_DEBUG_FX) || defined(WLED_DEBUG_FS) || defined(WLED_DEBUG_BUS) || defined(WLED_DEBUG_PINMANAGER) || defined(WLED_DEBUG_USERMODS)) && !defined(WLED_DEBUG_HOST)
   pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
 #endif
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
