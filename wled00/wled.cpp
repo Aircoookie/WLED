@@ -579,10 +579,10 @@ void WLED::beginStrip()
   } else {
     // fix for #3196
     if (bootPreset > 0) {
-      bool oldTransition = fadeTransition;    // workaround if transitions are enabled
-      fadeTransition = false;                 // ignore transitions temporarily
+      uint16_t oldTransition = strip.getTransition(); // workaround if transitions are enabled
+      strip.setTransition(0);                 // ignore transitions temporarily
       strip.setColor(0, BLACK);               // set all segments black
-      fadeTransition = oldTransition;         // restore transitions
+      strip.setTransition(oldTransition);     // restore transitions
       col[0] = col[1] = col[2] = col[3] = 0;  // needed for colorUpdated()
     }
     briLast = briS; bri = 0;
