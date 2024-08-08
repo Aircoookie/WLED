@@ -246,7 +246,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   uint32_t tmpCol = col;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
     for (int g = 0; g < grouping; g++) { // groupping horizontally
-      unsigned xX = (x+g), yY = (y+j);
+      int xX = (x+g), yY = (y+j);
       if (xX >= W || yY >= H) continue;  // we have reached one dimension's end
 
 #ifndef WLED_DISABLE_MODE_BLEND
