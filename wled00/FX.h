@@ -602,6 +602,16 @@ typedef struct Segment {
     uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255) const;
     uint32_t color_wheel(uint8_t pos) const;
 
+    // 2D Blur: shortcuts for bluring columns or rows only (50% faster than full 2D blur)
+    inline void blurCols(fract8 blur_amount, bool smear = false) { // blur all columns
+      const unsigned cols = virtualWidth();
+      for (unsigned k = 0; k < cols; k++) blurCol(k, blur_amount, smear); 
+    }
+    inline void blurRows(fract8 blur_amount, bool smear = false) { // blur all rows
+      const unsigned rows = virtualHeight();
+      for ( unsigned i = 0; i < rows; i++) blurRow(i, blur_amount, smear); 
+    }
+
     // 2D matrix
     uint16_t virtualWidth(void)  const; // segment width in virtual pixels (accounts for groupping and spacing)
     uint16_t virtualHeight(void) const; // segment height in virtual pixels (accounts for groupping and spacing)
