@@ -81,7 +81,7 @@ jobs:
 
 
   testCdata:
-    name: Test cdata.js
+    name: Test & Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,3 +92,4 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm test
+      - run: npm run lint

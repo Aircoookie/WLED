@@ -1,3 +1,4 @@
+/* eslint-disable -- disable eslint in this lib */
 // ==========================================================================
 // rangetouch.js v2.0.1
 // Making <input type="range"> work on touch devices

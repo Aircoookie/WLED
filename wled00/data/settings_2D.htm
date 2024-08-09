@@ -5,14 +5,14 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>2D Set-up</title>
 	<script>
-	var d=document;
+	var d = document;
 	var loc = false, locip, locproto = "http:";
-	var maxPanels=64;
+	var maxPanels = 64;
 	var ctx = null; // WLEDMM
-	function H(){window.open("https://kno.wled.ge/features/2D");}
-	function B(){window.open(getURL("/settings"),"_self");}
-	function gId(n){return d.getElementById(n);}
-	function fS(){d.Sf.submit();} // <button type=submit> sometimes didn't work
+	function H() {window.open("https://kno.wled.ge/features/2D");}
+	function B() {window.open(getURL("/settings"),"_self");}
+	function gId(n) {return d.getElementById(n);}
+	function fS() {d.Sf.submit();} // <button type=submit> sometimes didn't work
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 	function loadJS(FILE_URL, async = true) {
 		let scE = d.createElement("script");
@@ -22,7 +22,7 @@
 		d.body.appendChild(scE);
 		// success event 
 		scE.addEventListener("load", () => {
-			//console.log("File loaded");
+			// console.log("File loaded");
 			GetV();
 			UI();
 			Sf.MPC.setAttribute("max",maxPanels);
@@ -45,7 +45,7 @@
 		} else {
 			// detect reverse proxy
 			let path = l.pathname;
-			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			let paths = path.slice(1,path.endsWith('/') ? -1 : undefined).split("/");
 			if (paths.length > 2) {
 				paths.pop(); // remove "2d"
 				paths.pop(); // remove "settings"
@@ -76,16 +76,16 @@
 	{
 		var x = gId("toast");
 		x.innerHTML = text;
-		x.className = error ? "error":"show";
+		x.className = error ? "error" : "show";
 		clearTimeout(timeout);
 		x.style.animation = 'none';
-		timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+		timeout = setTimeout(function() { x.className = x.className.replace("show", ""); }, 2900);
 	}
 
 	function uploadFile(name) {
 		var req = new XMLHttpRequest();
-		req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
-		req.addEventListener('error', function(e){showToast(e.stack,true);});
+		req.addEventListener('load', function() {showToast(this.responseText,this.status >= 400)});
+		req.addEventListener('error', function(e) {showToast(e.stack,true);});
 		req.open("POST", "/upload");
 		var formData = new FormData();
 		formData.append("data", d.Sf.data.files[0], name);
@@ -97,11 +97,11 @@
 	function addPanels() {
 		let c = parseInt(d.Sf.MPC.value);
 		let i = gId("panels").children.length;
-		if (i<c) for (let j=i; j<c; j++) addPanel(j);
-		if (i>c) for (let j=i; j>c; j--) remPanel();
+		if (i < c) for (let j = i; j < c; j++) addPanel(j);
+		if (i > c) for (let j = i; j > c; j--) remPanel();
 	}
 
-	function addPanel(i=0) {
+	function addPanel(i = 0) {
 		let p = gId("panels");
 		if (p.children.length >= maxPanels) return;
 		var pw = parseInt(d.Sf.PW.value);
@@ -130,13 +130,13 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 		let p = gId("panels").children;
 	  	var i = p.length;
 	  	if (i <= 1) return;
-	  	p[i-1].remove();
+	  	p[i - 1].remove();
 	}
 
 	function resetPanels() {
 		d.Sf.MPC.value = 1;
 		let e = gId("panels").children
-		for (let i = e.length; i>0; i--) e[i-1].remove();
+		for (let i = e.length; i > 0; i--) e[i - 1].remove();
 	}
 /*
 	function btnPanel(i) {
@@ -149,13 +149,13 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 
 		var pansH = parseInt(Sf.MPH.value);
 		var pansV = parseInt(Sf.MPV.value);
-		var c = pansH*pansV;
+		var c = pansH * pansV;
 		Sf.MPC.value = c; // number of panels
 
 		var ps = Sf.PS.checked;
-		var pv = Sf.PV.value==="1";
-		var pb = Sf.PB.value==="1";
-		var pr = Sf.PR.value==="1";
+		var pv = Sf.PV.value === "1";
+		var pb = Sf.PB.value === "1";
+		var pr = Sf.PR.value === "1";
 		var pw = parseInt(Sf.PW.value);
 		var ph = parseInt(Sf.PH.value);
 
@@ -163,12 +163,12 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 		var v = pv ? pansH : pansV;
 		for (let j = 0, p = 0; j < v; j++) {
 			for (let i = 0; i < h; i++, p++) {
-				if (j*i < maxPanels) addPanel(p);
-				var y = (pv?pr:pb) ? v-j-1: j;
-				var x = (pv?pb:pr) ? h-i-1 : i;
-				x = ps && j%2 ? h-x-1 : x;
-				Sf[`P${p}X`].value = (pv?y:x) * pw;
-				Sf[`P${p}Y`].value = (pv?x:y) * ph
+				if (j * i < maxPanels) addPanel(p);
+				var y = (pv ? pr : pb) ? v - j - 1 : j;
+				var x = (pv ? pb : pr) ? h - i - 1 : i;
+				x = ps && j % 2 ? h - x - 1 : x;
+				Sf[`P${p}X`].value = (pv ? y : x) * pw;
+				Sf[`P${p}Y`].value = (pv ? x : y) * ph
 				Sf[`P${p}W`].value = pw;
 				Sf[`P${p}H`].value = ph;
 			}
@@ -177,128 +177,128 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 
 	function expand(o,i)
 	{
-		i.style.display = i.style.display!=="none" ? "none" : "";
-		o.style.rotate = i.style.display==="none" ? "none" : "90deg";
+		i.style.display = i.style.display !== "none" ? "none" : "";
+		o.style.rotate = i.style.display === "none" ? "none" : "90deg";
 	}
 
 	function draw() {
 
 		if (!ctx) {
-			//WLEDMM: add canvas, initialize and set UI
+			// WLEDMM: add canvas, initialize and set UI
 			var canvas = gId("canvas");
-			canvas.width  = window.innerWidth > 640?640:400; //Mobile gets 400, pc 640
+			canvas.width  = window.innerWidth > 640 ? 640 : 400; // Mobile gets 400, pc 640
 			canvas.height = canvas.width;
 			ctx = canvas.getContext('2d');
 
 			// window.requestAnimationFrame(animate);
 		}
 
-		//calc max height and width
+		// calc max height and width
 		var maxWidth = 0;
 		var maxHeight = 0;
-		for (let p=0; p<gId("panels").children.length; p++) {
-			var px = parseInt(Sf[`P${p}X`].value); //first led x
-			var py = parseInt(Sf[`P${p}Y`].value); //first led y
-			var pw = parseInt(Sf[`P${p}W`].value); //width
-			var ph = parseInt(Sf[`P${p}H`].value); //height
+		for (let p = 0; p < gId("panels").children.length; p++) {
+			var px = parseInt(Sf[`P${p}X`].value); // first led x
+			var py = parseInt(Sf[`P${p}Y`].value); // first led y
+			var pw = parseInt(Sf[`P${p}W`].value); // width
+			var ph = parseInt(Sf[`P${p}H`].value); // height
 			maxWidth = Math.max(maxWidth, px + pw);
 			maxHeight = Math.max(maxHeight, py + ph);
 		}
 
 		ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-		var space=0; // space between panels + margin
-		var ppL = (ctx.canvas.width  - space * 2) / maxWidth; //pixels per led
+		var space = 0; // space between panels + margin
+		var ppL = (ctx.canvas.width  - space * 2) / maxWidth; // pixels per led
 
 		ctx.lineWidth = 1;
-		ctx.strokeStyle="yellow";
+		ctx.strokeStyle = "yellow";
 		ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height); // add space between panels
 
-		for (let p=0; p<gId("panels").children.length; p++) {
-			var px = parseInt(Sf[`P${p}X`].value); //first led x
-			var py = parseInt(Sf[`P${p}Y`].value); //first led y
-			var pw = parseInt(Sf[`P${p}W`].value); //width
-			var ph = parseInt(Sf[`P${p}H`].value); //height
+		for (let p = 0; p < gId("panels").children.length; p++) {
+			var px = parseInt(Sf[`P${p}X`].value); // first led x
+			var py = parseInt(Sf[`P${p}Y`].value); // first led y
+			var pw = parseInt(Sf[`P${p}W`].value); // width
+			var ph = parseInt(Sf[`P${p}H`].value); // height
 
-			var pb = Sf[`P${p}B`].value == "1"; //bottom
-			var pr = Sf[`P${p}R`].value == "1"; //right
-			var pv = Sf[`P${p}V`].value == "1"; //vertical
-			var ps = Sf[`P${p}S`].checked; //serpentine
+			var pb = Sf[`P${p}B`].value == "1"; // bottom
+			var pr = Sf[`P${p}R`].value == "1"; // right
+			var pv = Sf[`P${p}V`].value == "1"; // vertical
+			var ps = Sf[`P${p}S`].checked; // serpentine
 
-			var topLeftX = px*ppL + space; //left margin
-			var topLeftY = py*ppL + space; //top margin
+			var topLeftX = px * ppL + space; // left margin
+			var topLeftY = py * ppL + space; // top margin
 
 			ctx.lineWidth = 3;
-			ctx.strokeStyle="white";
-			ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL); // add space between panels
+			ctx.strokeStyle = "white";
+			ctx.strokeRect(topLeftX, topLeftY, pw * ppL, ph * ppL); // add space between panels
 
 			var lnX;
 			var lnY;
 
-			//find start led
-			if (pb) //bottom
-				lnY = topLeftY + ph*ppL - ppL/2;
-			else //top
-				lnY = topLeftY + ppL/2;
-			if (pr) //right
-				lnX = topLeftX + pw*ppL - ppL/2;
-			else //left
-				lnX = topLeftX + ppL/2;
+			// find start led
+			if (pb) // bottom
+				lnY = topLeftY + ph * ppL - ppL / 2;
+			else // top
+				lnY = topLeftY + ppL / 2;
+			if (pr) // right
+				lnX = topLeftX + pw * ppL - ppL / 2;
+			else // left
+				lnX = topLeftX + ppL / 2;
 
-			//first led
+			// first led
 			ctx.fillStyle = "green";
 			ctx.beginPath();
-			ctx.arc(lnX, lnY, ppL*0.5, 0, 2 * Math.PI);
+			ctx.arc(lnX, lnY, ppL * 0.5, 0, 2 * Math.PI);
 			ctx.fill();
 
-			//start line
+			// start line
 			ctx.lineWidth = 1;
 			ctx.beginPath();
 			ctx.moveTo(lnX, lnY);
 
-			var longLineLength = (pv?ph:pw)*ppL - ppL;
-			for (let ln=0; ln<(pv?pw:ph); ln++) { //loop over panelwidth (or height of vertical?)
+			var longLineLength = (pv ? ph : pw) * ppL - ppL;
+			for (let ln = 0; ln < (pv ? pw : ph); ln++) { // loop over panelwidth (or height of vertical?)
 
-				var serpLine = ps && ln%2!=0; //serp: turn around if even line
+				var serpLine = ps && ln % 2 != 0; // serp: turn around if even line
 
-				if (pv) //if vertical
-					lnY += (pb?-1:1) * longLineLength * (serpLine?-1:1); //if vertical change the Y
+				if (pv) // if vertical
+					lnY += (pb ? -1 : 1) * longLineLength * (serpLine ? -1 : 1); // if vertical change the Y
 				else
-					lnX += (pr?-1:1) * longLineLength * (serpLine?-1:1); //if horizontal change the X
+					lnX += (pr ? -1 : 1) * longLineLength * (serpLine ? -1 : 1); // if horizontal change the X
 
-				ctx.lineTo(lnX, lnY); //draw the long line
+				ctx.lineTo(lnX, lnY); // draw the long line
 
-				if (ln<(pv?pw:ph)-1) { //not the last
-					//find the small line end point
-					if (pv) //vertical
-						lnX += (pr?-1:1) * ppL;
-					else //horizontal
-						lnY += (pb?-1:1) * ppL;
+				if (ln < (pv ? pw : ph) - 1) { // not the last
+					// find the small line end point
+					if (pv) // vertical
+						lnX += (pr ? -1 : 1) * ppL;
+					else // horizontal
+						lnY += (pb ? -1 : 1) * ppL;
 
-					//if serpentine go next else go down
-					if (ps) { //serpentine
-						ctx.lineTo(lnX, lnY); //draw the serpentine line
+					// if serpentine go next else go down
+					if (ps) { // serpentine
+						ctx.lineTo(lnX, lnY); // draw the serpentine line
 					} else { 
-						//find the other end of the long line
-						if (pv) //vertical
-							lnY += (pb?1:-1) * longLineLength * (serpLine?-1:1); //min as we go back
-						else //horizontal
-							lnX += (pr?1:-1) * longLineLength * (serpLine?-1:1);
-						ctx.moveTo(lnX, lnY); //move to the start point of the next long line
+						// find the other end of the long line
+						if (pv) // vertical
+							lnY += (pb ? 1 : -1) * longLineLength * (serpLine ? -1 : 1); // min as we go back
+						else // horizontal
+							lnX += (pr ? 1 : -1) * longLineLength * (serpLine ? -1 : 1);
+						ctx.moveTo(lnX, lnY); // move to the start point of the next long line
 					}
 				}
 			}
 			ctx.stroke();
 
-			//last led
+			// last led
 			ctx.fillStyle = "red";
 			ctx.beginPath();
-			ctx.arc(lnX, lnY, ppL*0.5, 0, 2 * Math.PI);
+			ctx.arc(lnX, lnY, ppL * 0.5, 0, 2 * Math.PI);
 			ctx.fill();
 
 			ctx.font = '40px Arial'; 
 			ctx.fillStyle = "orange";
-			ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
+			ctx.fillText(p, topLeftX + pw / 2 * ppL - 10, topLeftY + ph / 2 * ppL + 10);
 		}
 		gId("MD").innerHTML = "Matrix Dimensions (W*H=LC): " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
 	}

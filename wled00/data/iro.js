@@ -1,3 +1,4 @@
+/* eslint-disable -- disable eslint in this lib */
 /*!
  * iro.js v5.5.2
  * 2016-2021 James Daniel

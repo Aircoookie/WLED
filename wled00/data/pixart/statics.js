@@ -1,4 +1,4 @@
-//elements
+// elements
 var gurl = gId('curlUrl'); 
 var szX = gId("sizeX"); 
 var szY = gId("sizeY");
@@ -23,14 +23,14 @@ var imin = gId('image-info');
 var imcn = gId('image-container');
 var bcn = gId("button-container");
 var im = gId('image');
-//var ss = gId("sendSvgP");
+// var ss = gId("sendSvgP");
 var scDiv = gId("scaleDiv");
 var w = window;
 var canvas = gId('pixelCanvas');
 var brgV = gId("brightnessValue");
 var cLV = gId("colorLimitValue")
 
-//vars
+// vars
 var httpArray = [];
 var fileJSON = '';
 

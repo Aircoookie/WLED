@@ -68,40 +68,40 @@
                 chks[i].checked = (c == 255);
             }
             if (c == 1 && chks.length > 100) {
-                chks[1].checked = true;  //Blink
-                chks[15].checked = true; //Running
-                chks[16].checked = true; //Saw
-                chks[37].checked = true; //Running 2
-                chks[44].checked = true; //Tetrix
-                chks[63].checked = true; //Pride 2015
-                chks[74].checked = true; //Colortwinkles
-                chks[101].checked = true;//Pacifica
+                chks[1].checked = true;  // Blink
+                chks[15].checked = true; // Running
+                chks[16].checked = true; // Saw
+                chks[37].checked = true; // Running 2
+                chks[44].checked = true; // Tetrix
+                chks[63].checked = true; // Pride 2015
+                chks[74].checked = true; // Colortwinkles
+                chks[101].checked = true;// Pacifica
             }
         }
         function hide(h) {
             var trs = document.querySelectorAll('.trs');
             var chks = document.querySelectorAll('.fxcheck');
             for (let i = 0; i < trs.length; i++) {
-                trs[i].style.display = (h && !chks[i].checked) ? "none":"table-row";
+                trs[i].style.display = (h && !chks[i].checked) ? "none" : "table-row";
             }
         }
         function run(init) {
             if (init) {
                 running = !running;
-                document.getElementById('runbtn').innerText = running ? 'Stop':'Run';
+                document.getElementById('runbtn').innerText = running ? 'Stop' : 'Run';
                 if (running) {pos = 0; prev = -1; min = 999; max = 0; fpslist = []; names_checked = []; hide(true);}
                 clearTimeout(to);
-                if (!running) {req({seg:{fx:0},v:true,stop:true}); return;}
+                if (!running) {req({seg: {fx: 0},v: true,stop: true}); return;}
             }
             if (!gotfx) {req(false); return;}
             var chks = document.querySelectorAll('.fxcheck');
             var fpsb = document.querySelectorAll('.fps');
-            if (prev >= 0) {pos++};
-            if (pos >= chks.length) {run(true); return;} //end
+            if (prev >= 0) {pos++}
+            if (pos >= chks.length) {run(true); return;} // end
             while (!chks[pos].checked) {
                 fpsb[pos].innerText = "-";
                 pos++;
-                if (pos >= chks.length) {run(true); return;} //end
+                if (pos >= chks.length) {run(true); return;} // end
             }
             names_checked.push(names[pos]);
             var extra = {};
@@ -110,7 +110,7 @@
             } catch (e) {
 
             }
-            var cmd = {seg:{fx:pos},v:true};
+            var cmd = {seg: {fx: pos},v: true};
             Object.assign(cmd, extra);
             req(cmd);
         }
@@ -119,14 +119,13 @@
             if (!ip) {alert("Please enter WLED IP"); return;}
             if (ip != localStorage.getItem('locIpFps')) localStorage.setItem('locIpFps', document.getElementById('ip').value);
             var url = command ? `http://${ip}/json/si` : `http://${ip}/json/effects`;
-            var type = command ? 'post':'get';
+            var type = command ? 'post' : 'get';
             var req = undefined;
             if (command)
             {
                 req = JSON.stringify(command);
             }
-            fetch
-            (url, {
+            fetch(url, {
                 method: type,
                 headers: {
                     "Content-type": "application/json; charset=UTF-8"
@@ -166,7 +165,7 @@
                     document.getElementById('seg').innerText = json.state.seg[0].len;
                     document.getElementById('bri').innerText = json.state.bri;
                     if (prev >= 0) {
-                        var lastfps = parseInt(json.info.leds.fps); //previous FX
+                        var lastfps = parseInt(json.info.leds.fps); // previous FX
                         if (lastfps < min) min = lastfps;
                         if (lastfps > max) max = lastfps;
                         fpslist.push(lastfps);
@@ -177,12 +176,12 @@
                         sum /= fpslist.length;
                         document.getElementById('fps_min').innerText = min;
                         document.getElementById('fps_max').innerText = max;
-                        document.getElementById('fps_avg').innerText = Math.round(sum*10)/10;
+                        document.getElementById('fps_avg').innerText = Math.round(sum * 10) / 10;
                         var fpsb = document.querySelectorAll('.fps');
                         fpsb[prev].innerHTML = lastfps;
                     }
                     prev = pos;
-                    var delay = parseInt(document.getElementById('secs').value)*1000;
+                    var delay = parseInt(document.getElementById('secs').value) * 1000;
                     delay = Math.min(Math.max(delay, 2000), 15000)
                     if (!command.stop) to = setTimeout(run,delay);
                 }

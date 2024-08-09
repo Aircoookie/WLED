@@ -5,32 +5,32 @@
 	<meta charset="utf-8">
 	<title>DMX Settings</title>
 	<script>
-	var d=document;
+	var d = document;
 	var loc = false, locip, locproto = "http:";
-	function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}
-	function B(){window.open(getURL("/settings"),"_self");}
+	function H() {window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}
+	function B() {window.open(getURL("/settings"),"_self");}
 	function GCH(num) {
 		d.getElementById('dmxchannels').innerHTML += "";
-		for (i=0;i<num;i++) {
-			d.getElementById('dmxchannels').innerHTML += "<span id=CH" + (i+1) + "s >Channel " + (i+1) + ": <select name=CH" + (i+1) + " id=\"CH" + (i+1) + "\"><option value=0>Set to 0</option><option value=1>Red</option><option value=2>Green</option><option value=3>Blue</option><option value=4>White</option><option value=5>Shutter (Brightness)</option><option value=6>Set to 255</option></select></span><br />\n";
+		for (i = 0;i < num;i++) {
+			d.getElementById('dmxchannels').innerHTML += "<span id=CH" + (i + 1) + "s >Channel " + (i + 1) + ": <select name=CH" + (i + 1) + " id=\"CH" + (i + 1) + "\"><option value=0>Set to 0</option><option value=1>Red</option><option value=2>Green</option><option value=3>Blue</option><option value=4>White</option><option value=5>Shutter (Brightness)</option><option value=6>Set to 255</option></select></span><br />\n";
 		}
 	}
-	function mMap(){
-		numCh=document.Sf.CN.value;
-		numGap=document.Sf.CG.value;
-		if (parseInt(numCh)>parseInt(numGap)) {
-			d.getElementById("gapwarning").style.display="block";
+	function mMap() {
+		numCh = document.Sf.CN.value;
+		numGap = document.Sf.CG.value;
+		if (parseInt(numCh) > parseInt(numGap)) {
+			d.getElementById("gapwarning").style.display = "block";
 		} else {
-			d.getElementById("gapwarning").style.display="none";
+			d.getElementById("gapwarning").style.display = "none";
 		}
-		for (i=0;i<15;i++) {
-			if (i>=numCh) {
-				d.getElementById("CH"+(i+1) + "s").style.opacity = "0.5";
-				d.getElementById("CH"+(i+1)).disabled = true;
+		for (i = 0;i < 15;i++) {
+			if (i >= numCh) {
+				d.getElementById("CH" + (i + 1) + "s").style.opacity = "0.5";
+				d.getElementById("CH" + (i + 1)).disabled = true;
 				
 			} else {
-				d.getElementById("CH"+(i+1) + "s").style.opacity = "1";
-				d.getElementById("CH"+(i+1)).disabled = false;
+				d.getElementById("CH" + (i + 1) + "s").style.opacity = "1";
+				d.getElementById("CH" + (i + 1)).disabled = false;
 			}
 		}
 	}
@@ -43,7 +43,7 @@
 		d.body.appendChild(scE);
 		// success event 
 		scE.addEventListener("load", () => {
-			//console.log("File loaded");
+			// console.log("File loaded");
 			GCH(15);GetV();mMap();
 		});
 		// error event
@@ -52,7 +52,7 @@
 			alert("Loading of configuration script failed.\nIncomplete page data!");
 		});
 	}
-	function S(){
+	function S() {
 		let l = window.location;
 		if (l.protocol == "file:") {
 			loc = true;
@@ -64,7 +64,7 @@
 		} else {
 			// detect reverse proxy
 			let path = l.pathname;
-			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
+			let paths = path.slice(1,path.endsWith('/') ? -1 : undefined).split("/");
 			if (paths.length > 2) {
 				paths.pop(); // remove "dmx"
 				paths.pop(); // remove "settings"
