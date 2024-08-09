@@ -21,6 +21,8 @@ Please make all PRs against the `0_15` branch.
 When in doubt, it is easiest to replicate the code style you find in the files you want to edit :)
 Below are the guidelines we use in the WLED repository.
 
+For javscript content you can use `npm lint` (or just the normal `npm run build` that also executes lint) to make sure you ather to our style.
+
 #### Indentation
 
 We use tabs for Indentation in Web files (.html/.css/.js) and spaces (2 per indentation level) for all other files.  
