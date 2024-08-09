@@ -22,7 +22,7 @@
 		d.body.appendChild(scE);
 		// success event 
 		scE.addEventListener("load", () => {
-			//console.log("File loaded");
+			// console.log("File loaded");
 			BTa();GetV();updLoc();Cs();FC();
 		});
 		// error event
@@ -111,7 +111,7 @@
 				gId("W" + i + j).checked = wd >> j & 1;
 			}
 			if ((wd & 254) != 254 || (i < 8 && (gN("M" + i).value != 1 || gN("D" + i).value != 1 || gN("P" + i).value != 12 || gN("E" + i).value != 31))) {
-				expand(gId("CB" + i),i); //expand macros with custom DOW or date range set
+				expand(gId("CB" + i),i); // expand macros with custom DOW or date range set
 			}
 		}
 	}

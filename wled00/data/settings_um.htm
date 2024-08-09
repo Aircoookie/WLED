@@ -33,7 +33,7 @@
 			for (let r of d.rsvd) { pins.push(r); pinO.push("rsvd"); } // reserved pins
 			if (d.um_p[0] == -1) d.um_p.shift();	// remove filler
 			d.Sf.SDA.max = d.Sf.SCL.max = d.Sf.MOSI.max = d.Sf.SCLK.max = d.Sf.MISO.max = d.max_gpio;
-			//for (let i of d.getElementsByTagName("input")) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
+			// for (let i of d.getElementsByTagName("input")) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
 			pinDD(); // convert INPUT to SELECT for pins
 		});
 		// error event
@@ -126,10 +126,10 @@
 		// https://www.freecodecamp.org/news/how-to-capitalize-words-in-javascript/
 		return s.replace(/[\W_]/g,' ').replace(/(^\w{1})|(\s+\w{1})/g, l=>l.toUpperCase()); // replace - and _ with space, capitalize every 1st letter
 	}
-	function addField(k,f,o,a = false) {  //key, field, (sub)object, isArray
+	function addField(k,f,o,a = false) {  // key, field, (sub)object, isArray
 		if (isO(o)) {
 			urows += '<hr class="sml">';
-			if (f !== 'unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; //show group title
+			if (f !== 'unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; // show group title
 			for (const [s,v] of Object.entries(o)) {
 				// possibility to nest objects (only 1 level)
 				if (f !== 'unknown' && !k.includes(":")) addField(k + ":" + f,s,v);
@@ -158,7 +158,7 @@
 					t = "text"; c = `value="${o}" style="width:250px;"`;
 					break;
 			}
-			urows += ` ${initCap(f)} `; //only show field (key is shown in grouping)
+			urows += ` ${initCap(f)} `; // only show field (key is shown in grouping)
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
 			if (t == "checkbox") urows += `<input type="hidden" name="${k}:${f}${a ? "[]" : ""}" value="false">`;
 			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a ? "[]" : ""}" value="${t}">`;
@@ -167,7 +167,7 @@
 	}
 	function pinDD() {
 		for (let i of d.Sf.elements) {
-			if (i.type === "number" && (i.name.includes("pin") || ["SDA","SCL","MOSI","MISO","SCLK"].includes(i.name))) { //select all pin select elements
+			if (i.type === "number" && (i.name.includes("pin") || ["SDA","SCL","MOSI","MISO","SCLK"].includes(i.name))) { // select all pin select elements
 				let v = parseInt(i.value);
 				let sel = addDD(i.name,0);
 				for (var j = -1; j <= d.max_gpio; j++) {
@@ -276,7 +276,7 @@
 		if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
 		else if (obj[el]) {
 			if (txt != "") obj[el].insertAdjacentHTML('afterend', '&nbsp;' + txt);
-			if (txt2 != "") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
+			if (txt2 != "") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  // add pre texts
 		}
 	}
 	var addInfo = addI; // backwards compatibility
@@ -314,7 +314,7 @@
 	}
 	function svS(e) {
 		e.preventDefault();
-		if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
+		if (d.Sf.checkValidity()) d.Sf.submit(); // https://stackoverflow.com/q/37323914
 	}
 	</script>
 	<style>@import url("style.css");</style>

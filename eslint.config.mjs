@@ -26,7 +26,8 @@ const commonRules = {
     "@stylistic/js/no-extra-semi": "error",
     "@stylistic/js/no-whitespace-before-property": "error",
     "@stylistic/js/space-before-blocks": "error",
-    "@stylistic/js/space-infix-ops": "error"
+    "@stylistic/js/space-infix-ops": "error",
+    "@stylistic/js/spaced-comment": "error"
 }
 
 export default [

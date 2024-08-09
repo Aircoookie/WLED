@@ -22,7 +22,7 @@
 		d.body.appendChild(scE);
 		// success event 
 		scE.addEventListener("load", () => {
-			//console.log("File loaded");
+			// console.log("File loaded");
 			GetV();
 			UI();
 			Sf.MPC.setAttribute("max",maxPanels);
@@ -184,23 +184,23 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 	function draw() {
 
 		if (!ctx) {
-			//WLEDMM: add canvas, initialize and set UI
+			// WLEDMM: add canvas, initialize and set UI
 			var canvas = gId("canvas");
-			canvas.width  = window.innerWidth > 640 ? 640 : 400; //Mobile gets 400, pc 640
+			canvas.width  = window.innerWidth > 640 ? 640 : 400; // Mobile gets 400, pc 640
 			canvas.height = canvas.width;
 			ctx = canvas.getContext('2d');
 
 			// window.requestAnimationFrame(animate);
 		}
 
-		//calc max height and width
+		// calc max height and width
 		var maxWidth = 0;
 		var maxHeight = 0;
 		for (let p = 0; p < gId("panels").children.length; p++) {
-			var px = parseInt(Sf[`P${p}X`].value); //first led x
-			var py = parseInt(Sf[`P${p}Y`].value); //first led y
-			var pw = parseInt(Sf[`P${p}W`].value); //width
-			var ph = parseInt(Sf[`P${p}H`].value); //height
+			var px = parseInt(Sf[`P${p}X`].value); // first led x
+			var py = parseInt(Sf[`P${p}Y`].value); // first led y
+			var pw = parseInt(Sf[`P${p}W`].value); // width
+			var ph = parseInt(Sf[`P${p}H`].value); // height
 			maxWidth = Math.max(maxWidth, px + pw);
 			maxHeight = Math.max(maxHeight, py + ph);
 		}
@@ -208,25 +208,25 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 		ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 		var space = 0; // space between panels + margin
-		var ppL = (ctx.canvas.width  - space * 2) / maxWidth; //pixels per led
+		var ppL = (ctx.canvas.width  - space * 2) / maxWidth; // pixels per led
 
 		ctx.lineWidth = 1;
 		ctx.strokeStyle = "yellow";
 		ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height); // add space between panels
 
 		for (let p = 0; p < gId("panels").children.length; p++) {
-			var px = parseInt(Sf[`P${p}X`].value); //first led x
-			var py = parseInt(Sf[`P${p}Y`].value); //first led y
-			var pw = parseInt(Sf[`P${p}W`].value); //width
-			var ph = parseInt(Sf[`P${p}H`].value); //height
+			var px = parseInt(Sf[`P${p}X`].value); // first led x
+			var py = parseInt(Sf[`P${p}Y`].value); // first led y
+			var pw = parseInt(Sf[`P${p}W`].value); // width
+			var ph = parseInt(Sf[`P${p}H`].value); // height
 
-			var pb = Sf[`P${p}B`].value == "1"; //bottom
-			var pr = Sf[`P${p}R`].value == "1"; //right
-			var pv = Sf[`P${p}V`].value == "1"; //vertical
-			var ps = Sf[`P${p}S`].checked; //serpentine
+			var pb = Sf[`P${p}B`].value == "1"; // bottom
+			var pr = Sf[`P${p}R`].value == "1"; // right
+			var pv = Sf[`P${p}V`].value == "1"; // vertical
+			var ps = Sf[`P${p}S`].checked; // serpentine
 
-			var topLeftX = px * ppL + space; //left margin
-			var topLeftY = py * ppL + space; //top margin
+			var topLeftX = px * ppL + space; // left margin
+			var topLeftY = py * ppL + space; // top margin
 
 			ctx.lineWidth = 3;
 			ctx.strokeStyle = "white";
@@ -235,62 +235,62 @@ Y:<input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()">
 			var lnX;
 			var lnY;
 
-			//find start led
-			if (pb) //bottom
+			// find start led
+			if (pb) // bottom
 				lnY = topLeftY + ph * ppL - ppL / 2;
-			else //top
+			else // top
 				lnY = topLeftY + ppL / 2;
-			if (pr) //right
+			if (pr) // right
 				lnX = topLeftX + pw * ppL - ppL / 2;
-			else //left
+			else // left
 				lnX = topLeftX + ppL / 2;
 
-			//first led
+			// first led
 			ctx.fillStyle = "green";
 			ctx.beginPath();
 			ctx.arc(lnX, lnY, ppL * 0.5, 0, 2 * Math.PI);
 			ctx.fill();
 
-			//start line
+			// start line
 			ctx.lineWidth = 1;
 			ctx.beginPath();
 			ctx.moveTo(lnX, lnY);
 
 			var longLineLength = (pv ? ph : pw) * ppL - ppL;
-			for (let ln = 0; ln < (pv ? pw : ph); ln++) { //loop over panelwidth (or height of vertical?)
+			for (let ln = 0; ln < (pv ? pw : ph); ln++) { // loop over panelwidth (or height of vertical?)
 
-				var serpLine = ps && ln % 2 != 0; //serp: turn around if even line
+				var serpLine = ps && ln % 2 != 0; // serp: turn around if even line
 
-				if (pv) //if vertical
-					lnY += (pb ? -1 : 1) * longLineLength * (serpLine ? -1 : 1); //if vertical change the Y
+				if (pv) // if vertical
+					lnY += (pb ? -1 : 1) * longLineLength * (serpLine ? -1 : 1); // if vertical change the Y
 				else
-					lnX += (pr ? -1 : 1) * longLineLength * (serpLine ? -1 : 1); //if horizontal change the X
+					lnX += (pr ? -1 : 1) * longLineLength * (serpLine ? -1 : 1); // if horizontal change the X
 
-				ctx.lineTo(lnX, lnY); //draw the long line
+				ctx.lineTo(lnX, lnY); // draw the long line
 
-				if (ln < (pv ? pw : ph) - 1) { //not the last
-					//find the small line end point
-					if (pv) //vertical
+				if (ln < (pv ? pw : ph) - 1) { // not the last
+					// find the small line end point
+					if (pv) // vertical
 						lnX += (pr ? -1 : 1) * ppL;
-					else //horizontal
+					else // horizontal
 						lnY += (pb ? -1 : 1) * ppL;
 
-					//if serpentine go next else go down
-					if (ps) { //serpentine
-						ctx.lineTo(lnX, lnY); //draw the serpentine line
+					// if serpentine go next else go down
+					if (ps) { // serpentine
+						ctx.lineTo(lnX, lnY); // draw the serpentine line
 					} else { 
-						//find the other end of the long line
-						if (pv) //vertical
-							lnY += (pb ? 1 : -1) * longLineLength * (serpLine ? -1 : 1); //min as we go back
-						else //horizontal
+						// find the other end of the long line
+						if (pv) // vertical
+							lnY += (pb ? 1 : -1) * longLineLength * (serpLine ? -1 : 1); // min as we go back
+						else // horizontal
 							lnX += (pr ? 1 : -1) * longLineLength * (serpLine ? -1 : 1);
-						ctx.moveTo(lnX, lnY); //move to the start point of the next long line
+						ctx.moveTo(lnX, lnY); // move to the start point of the next long line
 					}
 				}
 			}
 			ctx.stroke();
 
-			//last led
+			// last led
 			ctx.fillStyle = "red";
 			ctx.beginPath();
 			ctx.arc(lnX, lnY, ppL * 0.5, 0, 2 * Math.PI);

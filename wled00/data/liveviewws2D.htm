@@ -18,8 +18,8 @@
 		var leds = "";
 		var throttled = false;
 		function setCanvas() {
-			c.width  = window.innerWidth * 0.98; //remove scroll bars
-			c.height = window.innerHeight * 0.98; //remove scroll bars
+			c.width  = window.innerWidth * 0.98; // remove scroll bars
+			c.height = window.innerHeight * 0.98; // remove scroll bars
 		}
 		setCanvas();
 		// Check for canvas support
@@ -50,11 +50,11 @@
 				try {
 					if (toString.call(e.data) === '[object ArrayBuffer]') {
 						let leds = new Uint8Array(event.data);
-						if (leds[0] != 76 || leds[1] != 2 || !ctx) return; //'L', set in ws.cpp
+						if (leds[0] != 76 || leds[1] != 2 || !ctx) return; // 'L', set in ws.cpp
 						let mW = leds[2]; // matrix width
 						let mH = leds[3]; // matrix height
 						let pPL = Math.min(c.width / mW, c.height / mH); // pixels per LED (width of circle)
-						let lOf = Math.floor((c.width - pPL * mW) / 2); //left offset (to center matrix)
+						let lOf = Math.floor((c.width - pPL * mW) / 2); // left offset (to center matrix)
 						var i = 4;
 						for (y = 0.5;y < mH;y++) for (x = 0.5; x < mW; x++) {
 							ctx.fillStyle = `rgb(${leds[i]},${leds[i + 1]},${leds[i + 2]})`;

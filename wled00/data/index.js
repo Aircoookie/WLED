@@ -1,6 +1,6 @@
-//page js
+// page js
 var loc = false, locip, locproto = "http:";
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false/*, syncTglRecv = true*/;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false/* , syncTglRecv = true*/;
 var hasWhite = false, hasRGB = false, hasCCT = false, has2D = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -249,17 +249,17 @@ function onLoad()
 
 	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
 	applyCfg();
-	if (cfg.comp.hdays) { //load custom holiday list
+	if (cfg.comp.hdays) { // load custom holiday list
 		fetch(getURL("/holidays.json"), {	// may be loaded from external source
 			method: 'get'
 		})
 		.then((res)=>{
-			//if (!res.ok) showErrorToast();
+			// if (!res.ok) showErrorToast();
 			return res.json();
 		})
 		.then((json)=>{
 			if (Array.isArray(json)) hol = json;
-			//TODO: do some parsing first
+			// TODO: do some parsing first
 		})
 		.catch((e)=>{
 			console.log("No array of holidays in holidays.json. Defaults loaded.");
@@ -293,7 +293,7 @@ function onLoad()
 	resetUtil();
 
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
-	//size();
+	// size();
 	gId("cv").style.opacity = 0;
 	d.querySelectorAll('input[type="range"]').forEach((sl)=>{
 		sl.addEventListener('touchstart', toggleBubble);
@@ -336,7 +336,7 @@ var timeout;
 function showToast(text, error = false)
 {
 	var x = gId('toast');
-	//if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
+	// if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
 	x.innerHTML = text;
 	x.classList.add(error ? 'error' : 'show');
 	clearTimeout(timeout);
@@ -497,7 +497,7 @@ function loadPresets(callback = null)
 	})
 	.then(res => {
 		if (res.status == "404") return {"0": {}};
-		//if (!res.ok) showErrorToast();
+		// if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
@@ -506,7 +506,7 @@ function loadPresets(callback = null)
 		populatePresets();
 	})
 	.catch((e)=>{
-		//showToast(e, true);
+		// showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
@@ -666,7 +666,7 @@ function parseInfo(i) {
 	d.title      = name;
 	simplifiedUI = i.simplifiedui;
 	ledCount     = i.leds.count;
-	//syncTglRecv   = i.str;
+	// syncTglRecv   = i.str;
 	maxSeg       = i.leds.maxseg;
 	pmt          = i.fs.pmt;
 	if (pcMode && !i.wifi.ap) gId('edit').classList.remove("hide"); else gId('edit').classList.add("hide");
@@ -690,8 +690,8 @@ function parseInfo(i) {
 //	}
 }
 
-//https://stackoverflow.com/questions/2592092/executing-script-elements-inserted-with-innerhtml
-//var setInnerHTML = function(elm, html) {
+// https://stackoverflow.com/questions/2592092/executing-script-elements-inserted-with-innerhtml
+// var setInnerHTML = function(elm, html) {
 //	elm.innerHTML = html;
 //	Array.from(elm.querySelectorAll("script")).forEach( oldScript => {
 //	  const newScript = document.createElement("script");
@@ -700,8 +700,8 @@ function parseInfo(i) {
 //	  newScript.appendChild(document.createTextNode(oldScript.innerHTML));
 //	  oldScript.parentNode.replaceChild(newScript, oldScript);
 //	});
-//}
-//setInnerHTML(obj, html);
+// }
+// setInnerHTML(obj, html);
 
 function populateInfo(i)
 {
@@ -1228,7 +1228,7 @@ function updatePA()
 	ps = gEBCN("psts"); for (let p of ps) p.classList.remove('selected');
 	if (currentPreset > 0) {
 		var acv = gId(`p${currentPreset}o`);
-		if (acv /*&& !acv.classList.contains('expanded')*/) {
+		if (acv /* && !acv.classList.contains('expanded')*/) {
 			acv.classList.add('selected');
 			/*
 			// scroll selected preset into view (on WS refresh)
@@ -1279,8 +1279,8 @@ function updateUI()
 	gId('kwrap').style.display   = (hasRGB && !hasCCT) ? "block" : "none";      // Kelvin slider
 	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block" : "none";     // RGB sliders
 	gId('qcs-w').style.display   = (hasRGB && ccfg.quick) ? "block" : "none";   // quick selection
-	//gId('csl').style.display     = (hasRGB || hasWhite) ? "block":"none";     // color selectors (hide for On/Off bus)
-	//gId('palw').style.display    = (hasRGB) ? "inline-block":"none";          // palettes are shown/hidden in setEffectParameters()
+	// gId('csl').style.display     = (hasRGB || hasWhite) ? "block":"none";     // color selectors (hide for On/Off bus)
+	// gId('palw').style.display    = (hasRGB) ? "inline-block":"none";          // palettes are shown/hidden in setEffectParameters()
 
 	updatePA();
 	updatePSliders();
@@ -1414,7 +1414,7 @@ function makeWS() {
 		ws = null;
 	}
 	ws.onopen = (e)=>{
-		//ws.send("{'v':true}"); // unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
+		// ws.send("{'v':true}"); // unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
 		wsRpt = 0;
 		reqsLegal = true;
 	}
@@ -1671,12 +1671,12 @@ function setEffectParameters(idx)
 	pall.innerHTML = icon + text;
 	// not all color selectors shown, hide palettes created from color selectors
 	// NOTE: this will disallow user to select "* Color ..." palettes which may be undesirable in some cases or for some users
-	//for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
+	// for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
 	//	let fltr = "* C";
 	//	if (cslCnt==1 && csel==0) fltr = "* Colors";
 	//	else if (cslCnt==2) fltr = "* Colors Only";
 	//	if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf(fltr)>=0) e.classList.add('hide'); else e.classList.remove('hide');
-	//}
+	// }
 }
 
 var jsonTimeout;
@@ -1735,7 +1735,7 @@ function requestJson(command = null)
 		var s = json.state ? json.state : json;
 		readState(s);
 
-		//load presets and open websocket sequentially
+		// load presets and open websocket sequentially
 		if (!pJson || isEmpty(pJson)) setTimeout(()=>{
 			loadPresets(()=>{
 				wsRpt = 0;
@@ -1787,7 +1787,7 @@ function toggleSync()
 	if (syncSend) showToast('Other lights in the network will now sync to this one.');
 	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
-	//if (syncTglRecv) obj.udpn.recv = syncSend;
+	// if (syncTglRecv) obj.udpn.recv = syncSend;
 	requestJson(obj);
 }
 
@@ -2106,7 +2106,7 @@ function makePlEntry(p,i)
 function makePlUtil()
 {
 	if (pNum < 2) {
-		showToast("You need at least 2 presets to make a playlist!"); //return;
+		showToast("You need at least 2 presets to make a playlist!"); // return;
 	}
 	let p = gId('putil');
 	p.classList.remove('staybot');
@@ -2187,7 +2187,7 @@ function selGrp(g)
 
 function rptSeg(s)
 {
-	//TODO: 2D support
+	// TODO: 2D support
 	var name = gId(`seg${s}t`).value;
 	var start = parseInt(gId(`seg${s}s`).value);
 	var stop = parseInt(gId(`seg${s}e`).value);
@@ -2404,9 +2404,9 @@ function setOption(i = 1, v = false)
 {
 	if (i < 1 || i > 3) return;
 	var obj = {"seg": {}};
-	if      (i === 3) obj.seg.o3 = !(!v); //make sure it is bool
-	else if (i === 2) obj.seg.o2 = !(!v); //make sure it is bool
-	else            obj.seg.o1 = !(!v); //make sure it is bool
+	if      (i === 3) obj.seg.o3 = !(!v); // make sure it is bool
+	else if (i === 2) obj.seg.o2 = !(!v); // make sure it is bool
+	else            obj.seg.o1 = !(!v); // make sure it is bool
 	requestJson(obj);
 }
 
@@ -3013,7 +3013,7 @@ function hasIroClass(classList)
 	}
 	return false;
 }
-//required by rangetouch.js
+// required by rangetouch.js
 function lock(e)
 {
 	if (pcMode || simplifiedUI) return;
@@ -3027,7 +3027,7 @@ function lock(e)
 
 	_C.classList.toggle('smooth', !(locked = true));
 }
-//required by rangetouch.js
+// required by rangetouch.js
 function move(e)
 {
 	if (!locked || pcMode || simplifiedUI) return;

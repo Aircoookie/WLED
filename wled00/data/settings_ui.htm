@@ -88,7 +88,7 @@
 				else if (s[i + 'LABEL']) lb = s[i + 'LABEL'];
 				if (i.indexOf('LABEL') > 0) continue;
 				var t = typeof s[i];
-				if (gId(fk)) { //already exists
+				if (gId(fk)) { // already exists
 					if (t === 'boolean')
 					{
 						gId(fk).checked = s[i];
@@ -171,7 +171,7 @@
 	
 	function Save() {
 		SetLS();
-		if (d.Sf.DS.value != initial_ds || /*d.Sf.ST.checked != initial_st ||*/ d.Sf.SU.checked != initial_su) d.Sf.submit();
+		if (d.Sf.DS.value != initial_ds || /* d.Sf.ST.checked != initial_st ||*/ d.Sf.SU.checked != initial_su) d.Sf.submit();
 	}
 	
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -183,10 +183,10 @@
 		d.body.appendChild(scE);
 		// success event 
 		scE.addEventListener("load", () => {
-			//console.log("File loaded");
+			// console.log("File loaded");
 			GetV(); 
 			initial_ds = d.Sf.DS.value;
-			//initial_st = d.Sf.ST.checked;
+			// initial_st = d.Sf.ST.checked;
 			initial_su = d.Sf.SU.checked;
 			GetLS();
 		});
