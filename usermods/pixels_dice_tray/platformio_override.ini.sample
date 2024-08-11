@@ -1,10 +1,10 @@
 [platformio]
-default_envs = t_qt_pro_8MB, esp32s3dev_8MB_qspi
+default_envs = t_qt_pro_8MB_dice, esp32s3dev_8MB_qspi_dice
 
 # ------------------------------------------------------------------------------
 # T-QT Pro 8MB with integrated 128x128 TFT screen
 # ------------------------------------------------------------------------------
-[env:t_qt_pro_8MB]
+[env:t_qt_pro_8MB_dice]
 board = esp32-s3-devkitc-1 ;; generic dev board;
 platform = ${esp32s3.platform}
 upload_speed = 921600
@@ -66,7 +66,7 @@ lib_deps = ${esp32s3.lib_deps}
 # ------------------------------------------------------------------------------
 # ESP32S3 dev board with 8MB flash and no extended RAM.
 # ------------------------------------------------------------------------------
-[env:esp32s3dev_8MB_qspi]
+[env:esp32s3dev_8MB_qspi_dice]
 board = esp32-s3-devkitc-1 ;; generic dev board;
 platform = ${esp32s3.platform}
 upload_speed = 921600
@@ -103,7 +103,8 @@ lib_deps = ${esp32s3.lib_deps}
 # ESP32S3 would be causing this, though they do run different BLE versions.
 # May be related to some of the issues discussed in:
 # https://github.com/Aircoookie/WLED/issues/1382
-; [env:esp32dev]
+; [env:esp32dev_dice]
+; extends = env:esp32dev
 ; build_flags = ${common.build_flags} ${esp32.build_flags} -D WLED_RELEASE_NAME=ESP32
 ;   ; Enable Pixels dice mod
 ;   -D USERMOD_PIXELS_DICE_TRAY

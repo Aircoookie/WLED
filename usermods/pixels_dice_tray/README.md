@@ -63,6 +63,8 @@ The main purpose of this mod is to support [Pixels Dice](https://gamewithpixels.
 
 The only other ESP32 variant I tested was the ESP32-S3, which worked without issue. While there's still concern over the contention between BLE and WiFi for the radio, I haven't noticed any performance impact in practice. The only special behavior that was needed was setting `noWifiSleep = false;` to allow the OS to sleep the WiFi when the BLE is active.
 
+In addition, the BLE stack requires a lot of flash. This build takes 1.9MB with the TFT code, or 1.85MB without it. This makes it too big to fit in the `tools/WLED_ESP32_4MB_256KB_FS.csv` partition layout, and I needed to make a `WLED_ESP32_4MB_64KB_FS.csv` to even fit on 4MB devices. This only has 64KB of file system space, which is functional, but users with more than a handful of presets would run into problems with 64KB only. This means that while 4MB can be supported, larger flash sizes are needed for full functionality. 
+
 The basic build of this usermod doesn't require any special hardware. However, the LCD status GUI was specifically designed for the [LILYGO T-QT Pro](https://www.lilygo.cc/products/t-qt-pro).
 
 It should be relatively easy to support other displays, though the positioning of the text may need to be adjusted.
@@ -245,7 +247,7 @@ This usermod is in support of a particular dice box project, but it would be fai
 
 I really wanted to have this work on the original ESP32 boards to lower the barrier to entry, but there were several issues.
 
-First, the BLE stack requires a lot of flash. I had to make a special partitioning plan `WLED_ESP32_4MB_64KB_FS.csv` to even fit the build on 4MB devices. This only has 64KB of file system space, which is limited, but still functional.
+First there are the issues with the partition sizes for 4MB mentioned in the [Hardware](#hardware) section.
 
 The bigger issue is that the build consistently crashes if the BLE scan task starts up. It's a bit unclear to me exactly what is failing since the backtrace is showing an exception in `new[]` memory allocation in the UDP stack. There appears to be a ton of heap available, so my guess is that this is a synchronization issue of some sort from the tasks running in parallel. I tried messing with the task core affinity a bit but didn't make much progress. It's not really clear what difference between the ESP32S3 and ESP32 would cause this difference.
 
