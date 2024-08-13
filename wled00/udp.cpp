@@ -149,7 +149,7 @@ void notify(byte callMode, bool followUp)
     // send global data
     DEBUG_PRINTLN(F("ESP-NOW sending first packet."));
     const size_t bufferSize = sizeof(buffer.data)/sizeof(uint8_t);
-    size_t packetSize = 41;
+    size_t packetSize = 41; // size of static UDP data (excluding segments)
     size_t s0 = 0;
     memcpy(buffer.data, udpOut, packetSize);
     // stuff as many segments in first packet as possible (normally up to 5)
@@ -159,7 +159,7 @@ void notify(byte callMode, bool followUp)
       s0++;
     }
     if (s > s0) buffer.noOfPackets += 1 + ((s - s0) * UDP_SEG_SIZE) / bufferSize; // set number of packets
-    auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+    auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize + sizeof(EspNowPartialPacket) - sizeof(EspNowPartialPacket::data));
     if (!err && s0 < s) {
       // send rest of the segments
       buffer.packet++;
@@ -172,7 +172,7 @@ void notify(byte callMode, bool followUp)
         packetSize += UDP_SEG_SIZE;
         if (packetSize + UDP_SEG_SIZE < bufferSize) continue;
         DEBUG_PRINTF_P(PSTR("ESP-NOW sending packet: %d (%d)\n"), (int)buffer.packet, packetSize+3);
-        err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+        err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize + sizeof(EspNowPartialPacket) - sizeof(EspNowPartialPacket::data));
         buffer.packet++;
         packetSize = 0;
         if (err) break;
@@ -978,8 +978,8 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
   if (usermods.onEspNowMessage(address, data, len)) return;
 
   // only handle messages from linked master/remote (ignore PING messages) or any master/remote if 0xFFFFFFFFFFFF
-  uint8_t anyMaster[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-  if (memcmp(senderESPNow, masterESPNow, 6) != 0 && memcmp(masterESPNow, anyMaster, 6) != 0) {
+  //uint8_t anyMaster[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  if (memcmp(senderESPNow, masterESPNow, 6) != 0 && memcmp(masterESPNow, ESPNOW_BROADCAST_ADDRESS, 6) != 0) {
     DEBUG_PRINTF_P(PSTR("ESP-NOW unpaired remote sender (expected " MACSTR ").\n"), MAC2STR(masterESPNow));
     return;
   }
