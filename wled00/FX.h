@@ -772,7 +772,6 @@ class WS2812FX {  // 96 bytes
       show(void),                                 // initiates LED output
       setTargetFps(uint8_t fps),
       setupEffectData(void);                      // add default effects to the list; defined in FX.cpp
-      uint8_t addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name); // add effect to the list; defined in FX.cpp
 
     inline void restartRuntime()          { for (Segment &seg : _segments) seg.markForReset(); }
     inline void setTransitionMode(bool t) { for (Segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0); }
@@ -808,7 +807,8 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
-      getActiveSegsLightCapabilities(bool selectedOnly = false);
+      getActiveSegsLightCapabilities(bool selectedOnly = false),
+      addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name);   // add effect to the list; defined in FX.cpp
 
     inline uint8_t getBrightness(void)    { return _brightness; }       // returns current strip brightness
     inline uint8_t getMaxSegments(void)   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)

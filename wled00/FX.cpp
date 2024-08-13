@@ -7909,11 +7909,13 @@ uint8_t WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name)
     _mode[id]     = mode_fn;
     _modeData[id] = mode_name;
     return id;
-  } else {
+  } else if(_mode.size() < 255) { // 255 is reserved for indicating the effect wasn't added
     _mode.push_back(mode_fn);
     _modeData.push_back(mode_name);
     if (_modeCount < _mode.size()) _modeCount++;
-    return (_mode.size() <= 255) ? _mode.size() - 1 : 255;
+    return _mode.size() - 1;
+  } else {
+    return 255; // The vector is full so return 255
   }
 }
 
