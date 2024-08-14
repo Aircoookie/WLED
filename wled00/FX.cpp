@@ -1226,15 +1226,18 @@ uint16_t mode_fireworks() {
   }
   SEGMENT.fade_out(128);
 
-  bool valid1 = (SEGENV.aux0 < width*height);
-  bool valid2 = (SEGENV.aux1 < width*height);
   uint8_t x = SEGENV.aux0%width, y = SEGENV.aux0/width; // 2D coordinates stored in upper and lower byte
-  uint32_t sv1 = 0, sv2 = 0;
-  if (valid1) sv1 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux0); // get spark color
-  if (valid2) sv2 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux1);
-  if (!SEGENV.step) SEGMENT.blur(16);
-  if (valid1) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv1); else SEGMENT.setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
-  if (valid2) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv2); else SEGMENT.setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
+  if (!SEGENV.step) {
+    // fireworks mode (blur flares)
+    bool valid1 = (SEGENV.aux0 < width*height);
+    bool valid2 = (SEGENV.aux1 < width*height);
+    uint32_t sv1 = 0, sv2 = 0;
+    if (valid1) sv1 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux0); // get spark color
+    if (valid2) sv2 = SEGMENT.is2D() ? SEGMENT.getPixelColorXY(x, y) : SEGMENT.getPixelColor(SEGENV.aux1);
+    SEGMENT.blur(16); // used in mode_rain()
+    if (valid1) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv1); else SEGMENT.setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
+    if (valid2) { if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(x, y, sv2); else SEGMENT.setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
+  }
 
   for (int i=0; i<max(1, width/20); i++) {
     if (random8(129 - (SEGMENT.intensity >> 1)) == 0) {
@@ -1261,7 +1264,7 @@ uint16_t mode_rain() {
   SEGENV.step += FRAMETIME;
   if (SEGENV.call && SEGENV.step > SPEED_FORMULA_L) {
     SEGENV.step = 1;
-    if (strip.isMatrix) {
+    if (SEGMENT.is2D()) {
       //uint32_t ctemp[width];
       //for (int i = 0; i<width; i++) ctemp[i] = SEGMENT.getPixelColorXY(i, height-1);
       SEGMENT.move(6, 1, true);  // move all pixels down
@@ -3651,7 +3654,7 @@ uint16_t mode_exploding_fireworks(void)
           else                SEGMENT.setPixelColor(int(sparks[i].posX) ? rows - int(sparks[i].pos) - 1 : int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
-      SEGMENT.blur(16);
+      if (SEGMENT.check3) SEGMENT.blur(16);
       *dying_gravity *= .8f; // as sparks burn out they fall slower
     } else {
       SEGENV.aux0 = 6 + random8(10); //wait for this many frames
@@ -3666,7 +3669,7 @@ uint16_t mode_exploding_fireworks(void)
   return FRAMETIME;
 }
 #undef MAX_SPARKS
-static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side;!,!;!;12;pal=11,ix=128";
+static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side,,,,,,Blur;!,!;!;12;pal=11,ix=128";
 
 
 /*
@@ -4890,11 +4893,11 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   // central white dot
   SEGMENT.setPixelColorXY(cols/2, rows/2, WHITE);
   // blur everything a bit
-  SEGMENT.blur(cols*rows > 100 ? 16 : 0);
+  if (SEGMENT.check3) SEGMENT.blur(16, cols*rows < 100);
 
   return FRAMETIME;
 } // mode_2DBlackHole()
-static const char _data_FX_MODE_2DBLACKHOLE[] PROGMEM = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.,Solid;!;!;2;pal=11";
+static const char _data_FX_MODE_2DBLACKHOLE[] PROGMEM = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.,Solid,,Blur;!;!;2;pal=11";
 
 
 ////////////////////////////
@@ -5636,7 +5639,7 @@ uint16_t mode_2DPulser(void) {                       // By: ldirko   https://edi
   int y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
   SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND));
 
-  SEGMENT.blur(1 + (SEGMENT.intensity>>4));
+  SEGMENT.blur(SEGMENT.intensity>>4);
 
   return FRAMETIME;
 } // mode_2DPulser()
@@ -6219,7 +6222,7 @@ uint16_t mode_2Ddriftrose(void) {
     uint32_t y = (CY + (cos_t(angle) * (beatsin8(i, 0, L*2)-L))) * 255.f;
     SEGMENT.wu_pixel(x, y, CHSV(i * 10, 255, 255));
   }
-  SEGMENT.blur((SEGMENT.intensity>>4)+1);
+  SEGMENT.blur(SEGMENT.intensity>>4);
 
   return FRAMETIME;
 }
@@ -6475,11 +6478,11 @@ uint16_t mode_2DWaverly(void) {
       SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
-  SEGMENT.blur(cols*rows > 100 ? 16 : 0);
+  if (SEGMENT.check3) SEGMENT.blur(16, cols*rows < 100);
 
   return FRAMETIME;
 } // mode_2DWaverly()
-static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity;;!;2v;ix=64,si=0"; // Beatsin
+static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity,,,,,Blur;;!;2v;ix=64,si=0"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
