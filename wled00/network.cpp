@@ -227,8 +227,8 @@ void WiFiEvent(WiFiEvent_t event)
       // called quite often (when not connected to WiFi)
       if (wasConnected) {
         DEBUG_PRINTLN(F("WiFi: Disconnected"));
+        if (interfacesInited && WiFi.scanComplete() >= 0) findWiFi(true); // reinit WiFi scan
         interfacesInited = false;
-        findWiFi(true); // reinit WiFi scan
         forceReconnect = true;
       }
       break;
@@ -268,8 +268,8 @@ void WiFiEvent(WiFiEvent_t event)
     case SYSTEM_EVENT_STA_DISCONNECTED:
       if (wasConnected) {
         DEBUG_PRINTLN(F("WiFi: Disconnected"));
+        if (interfacesInited && WiFi.scanComplete() >= 0) findWiFi(true); // reinit WiFi scan
         interfacesInited = false;
-        findWiFi(true); // reinit WiFi scan
         forceReconnect = true;
       }
       break;
