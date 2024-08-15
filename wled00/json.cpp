@@ -197,11 +197,11 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // lx parser
   #ifdef WLED_ENABLE_LOXONE
   int lx = elem[F("lx")] | -1;
-  if (lx > 0) {
+  if (lx >= 0) {
     parseLxJson(lx, id, false);
   }
   int ly = elem[F("ly")] | -1;
-  if (ly > 0) {
+  if (ly >= 0) {
     parseLxJson(ly, id, true);
   }
   #endif
