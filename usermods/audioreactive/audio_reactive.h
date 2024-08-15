@@ -1017,8 +1017,9 @@ class AudioReactive : public Usermod {
         EspNowPartialPacket buffer = {{'W','L','E','D'}, 0, 1, {0}};
         //DEBUGSR_PRINTLN(F("ESP-NOW Sending audio packet."));
         size_t packetSize = sizeof(EspNowPartialPacket) - sizeof(EspNowPartialPacket::data) + sizeof(transmitData);
-        memcpy(buffer.data, &transmitData, sizeof(transmitData));
-        quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize);
+        memcpy_P(buffer.data, PSTR("AUD"), 3); // prepend Audio sugnature
+        memcpy(buffer.data+3, &transmitData, sizeof(transmitData));
+        quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize + 3);
       }
 #endif
 
@@ -2069,10 +2070,14 @@ bool AudioReactive::onEspNowMessage(uint8_t *senderESPNow, uint8_t *data, uint8_
     return false;
   }
 
+  uint8_t *fftBuff = buffer->data;
+  // check for Audio signature
+  if (memcmp_P(fftBuff, PSTR("AUD"), 3) == 0) fftBuff += 3; // skip signature
+  else return false;
+
   //DEBUGSR_PRINTLN("ESP-NOW Received Audio Sync Packet");
   bool haveFreshData = false;
-  uint8_t *fftBuff = buffer->data;
-  len -= sizeof(EspNowPartialPacket) - sizeof(EspNowPartialPacket::data); // adjust size
+  len -= sizeof(EspNowPartialPacket) - sizeof(EspNowPartialPacket::data) - 3; // adjust size
 
   // VERIFY THAT THIS IS A COMPATIBLE PACKET
   if (len == sizeof(audioSyncPacket) && (isValidUdpSyncVersion((const char *)fftBuff))) {
@@ -2080,9 +2085,9 @@ bool AudioReactive::onEspNowMessage(uint8_t *senderESPNow, uint8_t *data, uint8_
     haveFreshData = true;
     receivedFormat = 2;
   } else if (len == sizeof(audioSyncPacket_v1) && (isValidUdpSyncVersion_v1((const char *)fftBuff))) {
-      decodeAudioData_v1(len, fftBuff);
-      haveFreshData = true;
-      receivedFormat = 1;
+    decodeAudioData_v1(len, fftBuff);
+    haveFreshData = true;
+    receivedFormat = 1;
   } else receivedFormat = 0; // unknown format
 
   if (haveFreshData) {
@@ -2105,5 +2110,5 @@ const char AudioReactive::_analogmic[]  PROGMEM = "analogmic";
 #endif
 const char AudioReactive::_digitalmic[] PROGMEM = "digitalmic";
 const char AudioReactive::_addPalettes[]       PROGMEM = "add-palettes";
-const char AudioReactive::UDP_SYNC_HEADER[]    PROGMEM = "AUD02"; // new sync header version, as format no longer compatible with previous structure
+const char AudioReactive::UDP_SYNC_HEADER[]    PROGMEM = "00002"; // new sync header version, as format no longer compatible with previous structure
 const char AudioReactive::UDP_SYNC_HEADER_v1[] PROGMEM = "00001"; // old sync header version - need to add backwards-compatibility feature
