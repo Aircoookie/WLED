@@ -541,7 +541,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
     #endif
 
-    #ifdef WLED_ENABLE_MQTT
+    #ifndef WLED_DISABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
     sappends('s',SET_F("MS"),mqttServer);
     sappend('v',SET_F("MQPORT"),mqttPort);

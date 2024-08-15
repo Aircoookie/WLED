@@ -145,7 +145,7 @@
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #endif
 

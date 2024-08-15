@@ -537,7 +537,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   CJSON(alexaNumPresets, interfaces["va"]["p"]);
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   CJSON(mqttEnabled, if_mqtt["en"]);
   getStringFromJson(mqttServer, if_mqtt[F("broker")], MQTT_MAX_SERVER_LEN+1);
@@ -1019,7 +1019,7 @@ void serializeConfig() {
   if_va["p"] = alexaNumPresets;
 #endif
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["en"] = mqttEnabled;
   if_mqtt[F("broker")] = mqttServer;
@@ -1165,7 +1165,7 @@ bool deserializeConfigSec() {
 
   [[maybe_unused]] JsonObject interfaces = root["if"];
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   getStringFromJson(mqttPass, if_mqtt["psk"], 65);
 #endif
@@ -1206,7 +1206,7 @@ void serializeConfigSec() {
   ap["psk"] = apPass;
 
   [[maybe_unused]] JsonObject interfaces = root.createNestedObject("if");
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;
 #endif
