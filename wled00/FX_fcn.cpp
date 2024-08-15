@@ -674,7 +674,7 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
   if (is2D()) {
     unsigned vW = virtualWidth();
     unsigned vH = virtualHeight();
-    unsigned vLen = vW * vH; // use all pixels from segment
+    unsigned vLen;
     switch (map1D2D) {
       case M12_pBar:
         vLen = vH;
@@ -687,6 +687,9 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
         break;
       case M12_sPinwheel:
         vLen = getPinwheelLength(vW, vH);
+        break;
+      default:
+        vLen = vW * vH; // use all pixels from segment
         break;
     }
     return vLen;
@@ -913,6 +916,10 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i) const
         else          return getPixelColorXY(0, vH - i -1);
         break;
       case M12_pArc:
+        if (i >= vW && i >= vH) {
+          unsigned vI = sqrt16(i*i/2);
+          return getPixelColorXY(vI,vI); // use diagonal
+        }
       case M12_pCorner:
         // use longest dimension
         return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
