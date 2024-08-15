@@ -1451,7 +1451,7 @@ class AudioReactive : public Usermod {
 #ifdef ARDUINO_ARCH_ESP32
     void onUpdateBegin(bool init) override
     {
-  #if defined(WLED_DEBUG_USERMODS) && defined(SR_DEBUG)
+  #if defined(WLED_DEBUG) || defined(SR_DEBUG)
       fftTime = sampleTime = 0;
   #endif
       // gracefully suspend FFT task (if running)
@@ -1673,7 +1673,7 @@ class AudioReactive : public Usermod {
         }
 
 #ifdef ARDUINO_ARCH_ESP32
-  #if defined(WLED_DEBUG_USERMODS) && defined(SR_DEBUG)
+  #if defined(WLED_DEBUG) || defined(SR_DEBUG)
         infoArr = user.createNestedArray(F("Sampling time"));
         infoArr.add(float(sampleTime)/100.0f);
         infoArr.add(" ms");
