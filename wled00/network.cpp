@@ -293,8 +293,12 @@ void WiFiEvent(WiFiEvent_t event)
       {
       DEBUG_PRINTLN(F("ETH Connected"));
       if (!apActive) {
+    #ifndef WLED_DISABLE_ESPNOW
         if (useESPNowSync && statusESPNow == ESP_NOW_STATE_ON) WiFi.disconnect(); // if using ESP-NOW just disconnect from current SSID
         else WiFi.disconnect(true); // otherwise disable WiFi entirely
+    #else
+        WiFi.disconnect(true); // disable WiFi entirely
+    #endif
       }
       if (multiWiFi[0].staticIP != (uint32_t)0x00000000 && multiWiFi[0].staticGW != (uint32_t)0x00000000) {
         ETH.config(multiWiFi[0].staticIP, multiWiFi[0].staticGW, multiWiFi[0].staticSN, dnsAddress);
