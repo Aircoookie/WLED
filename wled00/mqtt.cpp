@@ -4,10 +4,10 @@
  * MQTT communication protocol for home automation
  */
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
 #define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds
 
-void parseMQTTBriPayload(char* payload)
+static void parseMQTTBriPayload(char* payload)
 {
   if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; stateUpdated(CALL_MODE_DIRECT_CHANGE);}
   else if (strstr(payload, "T" ) || strstr(payload, "t" )) {toggleOnOff(); stateUpdated(CALL_MODE_DIRECT_CHANGE);}
@@ -20,7 +20,7 @@ void parseMQTTBriPayload(char* payload)
 }
 
 
-void onMqttConnect(bool sessionPresent)
+static void onMqttConnect(bool sessionPresent)
 {
   //(re)subscribe to required topics
   char subuf[38];
@@ -52,7 +52,7 @@ void onMqttConnect(bool sessionPresent)
 }
 
 
-void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
   static char *payloadStr;
 
   DEBUG_PRINT(F("MQTT msg: "));
@@ -166,6 +166,7 @@ bool initMqtt()
 
   if (mqtt == nullptr) {
     mqtt = new AsyncMqttClient();
+    if (!mqtt) return false;
     mqtt->onMessage(onMqttMessage);
     mqtt->onConnect(onMqttConnect);
   }

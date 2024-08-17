@@ -720,7 +720,7 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
   if (is2D()) {
     unsigned vW = virtualWidth();
     unsigned vH = virtualHeight();
-    unsigned vLen = vW * vH; // use all pixels from segment
+    unsigned vLen;
     switch (map1D2D) {
       case M12_pBar:
         vLen = vH;
@@ -733,6 +733,9 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
         break;
       case M12_sPinwheel:
         vLen = getPinwheelLength(vW, vH);
+        break;
+      default:
+        vLen = vW * vH; // use all pixels from segment
         break;
     }
     return vLen;
@@ -1004,6 +1007,10 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i) const
         else          return getPixelColorXY(0, vH - i -1);
         break;
       case M12_pArc:
+        if (i >= vW && i >= vH) {
+          unsigned vI = sqrt16(i*i/2);
+          return getPixelColorXY(vI,vI); // use diagonal
+        }
       case M12_pCorner:
         // use longest dimension
         return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
@@ -1056,9 +1063,9 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i) const
   if (reverse) i = vL - i - 1;
   i *= groupLength();
   i += start;
-  /* offset/phase */
+  // offset/phase
   i += offset;
-  if ((i >= stop) && (stop>0)) i -= length(); // avoids negative pixel index (stop = 0 is a possible value)
+  if (i >= stop) i -= length();
   return strip.getPixelColor(i);
 }
 
@@ -1123,9 +1130,9 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() + bus->getLength() <= segStartIdx) continue;
 
     //uint8_t type = bus->getType();
-    if (bus->hasRGB() || (cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
-    if (!cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
-    if (correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
+    if (bus->hasRGB() || (strip.cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
+    if (!strip.cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
+    if (strip.correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
     if (bus->hasWhite()) {
       unsigned aWM = Bus::getGlobalAWMode() == AW_GLOBAL_DISABLED ? bus->getAutoWhiteMode() : Bus::getGlobalAWMode();
       bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
@@ -1212,15 +1219,13 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     // compatibility with 2D
-    const unsigned cols = virtualWidth();
-    const unsigned rows = virtualHeight();
-    for (unsigned i = 0; i < rows; i++) blurRow(i, blur_amount, smear); // blur all rows
-    for (unsigned k = 0; k < cols; k++) blurCol(k, blur_amount, smear); // blur all columns
+    blur2D(blur_amount, smear);
+    //box_blur(map(blur_amount,1,255,1,3), smear);
     return;
   }
 #endif
   uint8_t keep = smear ? 255 : 255 - blur_amount;
-  uint8_t seep = blur_amount >> 1;
+  uint8_t seep = blur_amount >> (1 + smear);
   unsigned vlength = virtualLength();
   uint32_t carryover = BLACK;
   uint32_t lastnew;
@@ -1231,13 +1236,11 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
     uint32_t part = color_fade(cur, seep);
     curnew = color_fade(cur, keep);
     if (i > 0) {
-      if (carryover)
-        curnew = color_add(curnew, carryover, true);
+      if (carryover) curnew = color_add(curnew, carryover, true);
       uint32_t prev = color_add(lastnew, part, true);
-      if (last != prev) // optimization: only set pixel if color has changed
-        setPixelColor(i - 1, prev);
-    }
-    else // first pixel
+      // optimization: only set pixel if color has changed
+      if (last != prev) setPixelColor(i - 1, prev);
+    } else // first pixel
       setPixelColor(i, curnew);
     lastnew = curnew;
     last = cur; // save original value for comparison on next iteration
@@ -1525,7 +1528,7 @@ void IRAM_ATTR WS2812FX::setPixelColor(unsigned i, uint32_t col) {
   BusManager::setPixelColor(i, col);
 }
 
-uint32_t IRAM_ATTR WS2812FX::getPixelColor(uint16_t i) {
+uint32_t IRAM_ATTR WS2812FX::getPixelColor(uint16_t i) const {
   i = getMappedPixelIndex(i);
   if (i >= _length) return 0;
   return BusManager::getPixelColor(i);
@@ -1553,7 +1556,7 @@ void WS2812FX::show(void) {
  * Returns a true value if any of the strips are still being updated.
  * On some hardware (ESP32), strip updates are done asynchronously.
  */
-bool WS2812FX::isUpdating() {
+bool WS2812FX::isUpdating() const {
   return !BusManager::canAllShow();
 }
 
@@ -1561,7 +1564,7 @@ bool WS2812FX::isUpdating() {
  * Returns the refresh rate of the LED strip. Useful for finding out whether a given setup is fast enough.
  * Only updates on show() or is set to 0 fps if last show is more than 2 secs ago, so accuracy varies
  */
-uint16_t WS2812FX::getFps() {
+uint16_t WS2812FX::getFps() const {
   if (millis() - _lastShow > 2000) return 0;
   return _cumulativeFps +1;
 }
@@ -1620,17 +1623,17 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   }
 }
 
-uint8_t WS2812FX::getActiveSegsLightCapabilities(bool selectedOnly) {
+uint8_t WS2812FX::getActiveSegsLightCapabilities(bool selectedOnly) const {
   uint8_t totalLC = 0;
-  for (segment &seg : _segments) {
+  for (const segment &seg : _segments) {
     if (seg.isActive() && (!selectedOnly || seg.isSelected())) totalLC |= seg.getLightCapabilities();
   }
   return totalLC;
 }
 
-uint8_t WS2812FX::getFirstSelectedSegId(void) {
+uint8_t WS2812FX::getFirstSelectedSegId(void) const {
   size_t i = 0;
-  for (segment &seg : _segments) {
+  for (const segment &seg : _segments) {
     if (seg.isActive() && seg.isSelected()) return i;
     i++;
   }
@@ -1646,14 +1649,14 @@ void WS2812FX::setMainSegmentId(uint8_t n) {
   return;
 }
 
-uint8_t WS2812FX::getLastActiveSegmentId(void) {
+uint8_t WS2812FX::getLastActiveSegmentId(void) const {
   for (size_t i = _segments.size() -1; i > 0; i--) {
     if (_segments[i].isActive()) return i;
   }
   return 0;
 }
 
-uint8_t WS2812FX::getActiveSegmentsNum(void) {
+uint8_t WS2812FX::getActiveSegmentsNum(void) const {
   uint8_t c = 0;
   for (size_t i = 0; i < _segments.size(); i++) {
     if (_segments[i].isActive()) c++;
@@ -1661,13 +1664,13 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
   return c;
 }
 
-uint16_t WS2812FX::getLengthTotal(void) {
+uint16_t WS2812FX::getLengthTotal(void) const {
   unsigned len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
   if (isMatrix && _length > len) len = _length; // for 2D with trailing strip
   return len;
 }
 
-uint16_t WS2812FX::getLengthPhysical(void) {
+uint16_t WS2812FX::getLengthPhysical(void) const {
   unsigned len = 0;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
@@ -1680,7 +1683,7 @@ uint16_t WS2812FX::getLengthPhysical(void) {
 //used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
 //returns if there is an RGBW bus (supports RGB and White, not only white)
 //not influenced by auto-white mode, also true if white slider does not affect output white channel
-bool WS2812FX::hasRGBWBus(void) {
+bool WS2812FX::hasRGBWBus(void) const {
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
@@ -1689,7 +1692,7 @@ bool WS2812FX::hasRGBWBus(void) {
   return false;
 }
 
-bool WS2812FX::hasCCTBus(void) {
+bool WS2812FX::hasCCTBus(void) const {
   if (cctFromRgb && !correctWB) return false;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
@@ -1981,7 +1984,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   return (customMappingSize > 0);
 }
 
-uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) {
+uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) const {
   // convert logical address to physical
   if (index < customMappingSize
     && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];

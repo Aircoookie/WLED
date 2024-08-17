@@ -20,17 +20,19 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   //long vid = doc[F("vid")]; // 2010020
 
-  #ifdef WLED_USE_ETHERNET
+#ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc[F("eth")];
   CJSON(ethernetType, ethernet["type"]);
   // NOTE: Ethernet configuration takes priority over other use of pins
   WLED::instance().initEthernet();
-  #endif
+#endif
 
   JsonObject id = doc["id"];
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
+#ifndef WLED_DISABLE_ALEXA
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
+#endif
   CJSON(simplifiedUI, id[F("sui")]);
 
   JsonObject nw = doc["nw"];
@@ -109,8 +111,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint16_t ablMilliampsMax = hw_led[F("maxpwr")] | BusManager::ablMilliampsMax();
   BusManager::setMilliampsMax(ablMilliampsMax);
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | AW_GLOBAL_DISABLED);
-  CJSON(correctWB, hw_led["cct"]);
-  CJSON(cctFromRgb, hw_led[F("cr")]);
+  CJSON(strip.correctWB, hw_led["cct"]);
+  CJSON(strip.cctFromRgb, hw_led[F("cr")]);
   CJSON(cctICused, hw_led[F("ic")]);
   uint8_t cctBlending = hw_led[F("cb")] | Bus::getCCTBlend();
   Bus::setCCTBlend(cctBlending);
@@ -431,7 +433,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject light = doc[F("light")];
   CJSON(briMultiplier, light[F("scale-bri")]);
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
-  CJSON(autoSegments, light[F("aseg")]);
+  CJSON(strip.autoSegments, light[F("aseg")]);
 
   CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.8
   float light_gc_bri = light["gc"]["bri"];
@@ -527,14 +529,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(arlsDisableGammaCorrection, if_live[F("no-gc")]); // false
   CJSON(arlsOffset, if_live[F("offset")]); // 0
 
+#ifndef WLED_DISABLE_ALEXA
   CJSON(alexaEnabled, interfaces["va"][F("alexa")]); // false
-
   CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
-
   CJSON(alexaNumPresets, interfaces["va"]["p"]);
+#endif
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   CJSON(mqttEnabled, if_mqtt["en"]);
   getStringFromJson(mqttServer, if_mqtt[F("broker")], MQTT_MAX_SERVER_LEN+1);
@@ -736,7 +738,9 @@ void serializeConfig() {
   JsonObject id = root.createNestedObject("id");
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
+#ifndef WLED_DISABLE_ALEXA
   id[F("inv")] = alexaInvocationName;
+#endif
   id[F("sui")] = simplifiedUI;
 
   JsonObject nw = root.createNestedObject("nw");
@@ -815,8 +819,8 @@ void serializeConfig() {
   hw_led[F("total")] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
   hw_led[F("maxpwr")] = BusManager::ablMilliampsMax();
   hw_led[F("ledma")] = 0; // no longer used
-  hw_led["cct"] = correctWB;
-  hw_led[F("cr")] = cctFromRgb;
+  hw_led["cct"] = strip.correctWB;
+  hw_led[F("cr")] = strip.cctFromRgb;
   hw_led[F("ic")] = cctICused;
   hw_led[F("cb")] = Bus::getCCTBlend();
   hw_led["fps"] = strip.getTargetFps();
@@ -928,7 +932,7 @@ void serializeConfig() {
   JsonObject light = root.createNestedObject(F("light"));
   light[F("scale-bri")] = briMultiplier;
   light[F("pal-mode")] = strip.paletteBlend;
-  light[F("aseg")] = autoSegments;
+  light[F("aseg")] = strip.autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
   light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
@@ -1013,7 +1017,7 @@ void serializeConfig() {
   if_va["p"] = alexaNumPresets;
 #endif
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["en"] = mqttEnabled;
   if_mqtt[F("broker")] = mqttServer;
@@ -1159,7 +1163,7 @@ bool deserializeConfigSec() {
 
   [[maybe_unused]] JsonObject interfaces = root["if"];
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   getStringFromJson(mqttPass, if_mqtt["psk"], 65);
 #endif
@@ -1200,7 +1204,7 @@ void serializeConfigSec() {
   ap["psk"] = apPass;
 
   [[maybe_unused]] JsonObject interfaces = root.createNestedObject("if");
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;
 #endif

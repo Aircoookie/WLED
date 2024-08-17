@@ -634,6 +634,16 @@ typedef struct Segment {
     uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255) const;
     uint32_t color_wheel(uint8_t pos) const;
 
+    // 2D Blur: shortcuts for bluring columns or rows only (50% faster than full 2D blur)
+    inline void blurCols(fract8 blur_amount, bool smear = false) { // blur all columns
+      const unsigned cols = virtualWidth();
+      for (unsigned k = 0; k < cols; k++) blurCol(k, blur_amount, smear); 
+    }
+    inline void blurRows(fract8 blur_amount, bool smear = false) { // blur all rows
+      const unsigned rows = virtualHeight();
+      for ( unsigned i = 0; i < rows; i++) blurRow(i, blur_amount, smear); 
+    }
+
     // 2D matrix
     uint16_t virtualWidth(void)  const; // segment width in virtual pixels (accounts for groupping and spacing)
     uint16_t virtualHeight(void) const; // segment height in virtual pixels (accounts for groupping and spacing)
@@ -659,7 +669,8 @@ typedef struct Segment {
     inline void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0, bool fast = false) { addPixelColorXY(x, y, RGBW32(r,g,b,w), fast); }
     inline void addPixelColorXY(int x, int y, CRGB c, bool fast = false)                             { addPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), fast); }
     inline void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)                               { setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), fade, true)); }
-    void box_blur(uint16_t i, bool vertical, fract8 blur_amount); // 1D box blur (with weight)
+    void box_blur(unsigned r = 1U, bool smear = false); // 2D box blur
+    void blur2D(uint8_t blur_amount, bool smear = false);
     void blurRow(uint32_t row, fract8 blur_amount, bool smear = false);
     void blurCol(uint32_t col, fract8 blur_amount, bool smear = false);
     void moveX(int8_t delta, bool wrap = false);
@@ -690,14 +701,15 @@ typedef struct Segment {
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
     inline bool isPixelXYClipped(int x, int y)                                    { return isPixelClipped(x); }
-    inline uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
+    inline uint32_t getPixelColorXY(int x, int y)                                 { return getPixelColor(x); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColor(x, RGBW32(c.r,c.g,c.b,0), blend); }
     inline void addPixelColorXY(int x, int y, uint32_t color, bool fast = false)  { addPixelColor(x, color, fast); }
     inline void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0, bool fast = false) { addPixelColor(x, RGBW32(r,g,b,w), fast); }
     inline void addPixelColorXY(int x, int y, CRGB c, bool fast = false)          { addPixelColor(x, RGBW32(c.r,c.g,c.b,0), fast); }
     inline void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)            { fadePixelColor(x, fade); }
-    inline void box_blur(uint16_t i, bool vertical, fract8 blur_amount) {}
+    inline void box_blur(unsigned i, bool vertical, fract8 blur_amount) {}
+    inline void blur2D(uint8_t blur_amount, bool smear = false) {}
     inline void blurRow(uint32_t row, fract8 blur_amount, bool smear = false) {}
     inline void blurCol(uint32_t col, fract8 blur_amount, bool smear = false) {}
     inline void moveX(int8_t delta, bool wrap = false) {}
@@ -740,6 +752,9 @@ class WS2812FX {  // 96 bytes
 #ifndef WLED_DISABLE_2D
       panels(1),
 #endif
+      autoSegments(false),
+      correctWB(false),
+      cctFromRgb(false),
       // semi-private (just obscured) used in effect functions through macros
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
@@ -822,55 +837,54 @@ class WS2812FX {  // 96 bytes
 
     bool
       checkSegmentAlignment(void),
-      hasRGBWBus(void),
-      hasCCTBus(void),
-      // return true if the strip is being sent pixel updates
-      isUpdating(void),
+      hasRGBWBus(void) const,
+      hasCCTBus(void) const,
+      isUpdating(void) const, // return true if the strip is being sent pixel updates
       deserializeMap(uint8_t n=0);
 
-    inline bool isServicing(void)          { return _isServicing; }           // returns true if strip.service() is executing
-    inline bool hasWhiteChannel(void)      { return _hasWhiteChannel; }       // returns true if strip contains separate white chanel
-    inline bool isOffRefreshRequired(void) { return _isOffRefreshRequired; }  // returns true if strip requires regular updates (i.e. TM1814 chipset)
-    inline bool isSuspended(void)          { return _suspend; }               // returns true if strip.service() execution is suspended
-    inline bool needsUpdate(void)          { return _triggered; }             // returns true if strip received a trigger() request
+    inline bool isServicing(void) const          { return _isServicing; }           // returns true if strip.service() is executing
+    inline bool hasWhiteChannel(void) const      { return _hasWhiteChannel; }       // returns true if strip contains separate white chanel
+    inline bool isOffRefreshRequired(void) const { return _isOffRefreshRequired; }  // returns true if strip requires regular updates (i.e. TM1814 chipset)
+    inline bool isSuspended(void) const          { return _suspend; }               // returns true if strip.service() execution is suspended
+    inline bool needsUpdate(void) const          { return _triggered; }             // returns true if strip received a trigger() request
 
     uint8_t
       paletteBlend,
-      getActiveSegmentsNum(void),
-      getFirstSelectedSegId(void),
-      getLastActiveSegmentId(void),
-      getActiveSegsLightCapabilities(bool selectedOnly = false);
+      getActiveSegmentsNum(void) const,
+      getFirstSelectedSegId(void) const,
+      getLastActiveSegmentId(void) const,
+      getActiveSegsLightCapabilities(bool selectedOnly = false) const;
 
-    inline uint8_t getBrightness(void)    { return _brightness; }       // returns current strip brightness
-    inline uint8_t getMaxSegments(void)   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
-    inline uint8_t getSegmentsNum(void)   { return _segments.size(); }  // returns currently present segments
-    inline uint8_t getCurrSegmentId(void) { return _segment_index; }    // returns current segment index (only valid while strip.isServicing())
-    inline uint8_t getMainSegmentId(void) { return _mainSegment; }      // returns main segment index
-    inline uint8_t getPaletteCount()      { return 13 + GRADIENT_PALETTE_COUNT + customPalettes.size(); }
-    inline uint8_t getTargetFps()         { return _targetFps; }        // returns rough FPS value for las 2s interval
-    inline uint8_t getModeCount()         { return _modeCount; }        // returns number of registered modes/effects
+    inline uint8_t getBrightness(void) const    { return _brightness; }       // returns current strip brightness
+    inline uint8_t getMaxSegments(void) const   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
+    inline uint8_t getSegmentsNum(void) const   { return _segments.size(); }  // returns currently present segments
+    inline uint8_t getCurrSegmentId(void) const { return _segment_index; }    // returns current segment index (only valid while strip.isServicing())
+    inline uint8_t getMainSegmentId(void) const { return _mainSegment; }      // returns main segment index
+    inline uint8_t getPaletteCount() const      { return 13 + GRADIENT_PALETTE_COUNT + customPalettes.size(); }
+    inline uint8_t getTargetFps() const         { return _targetFps; }        // returns rough FPS value for las 2s interval
+    inline uint8_t getModeCount() const         { return _modeCount; }        // returns number of registered modes/effects
 
     uint16_t
-      getLengthPhysical(void),
-      getLengthTotal(void), // will include virtual/nonexistent pixels in matrix
-      getFps(),
-      getMappedPixelIndex(uint16_t index);
+      getLengthPhysical(void) const,
+      getLengthTotal(void) const, // will include virtual/nonexistent pixels in matrix
+      getFps() const,
+      getMappedPixelIndex(uint16_t index) const;
 
-    inline uint16_t getFrameTime(void)    { return _frametime; }        // returns amount of time a frame should take (in ms)
-    inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }    // returns minimum amount of time strip.service() can be delayed (constant)
-    inline uint16_t getLength(void)       { return _length; }           // returns actual amount of LEDs on a strip (2D matrix may have less LEDs than W*H)
-    inline uint16_t getTransition(void)   { return _transitionDur; }    // returns currently set transition time (in ms)
+    inline uint16_t getFrameTime(void) const    { return _frametime; }        // returns amount of time a frame should take (in ms)
+    inline uint16_t getMinShowDelay(void) const { return MIN_SHOW_DELAY; }    // returns minimum amount of time strip.service() can be delayed (constant)
+    inline uint16_t getLength(void) const       { return _length; }           // returns actual amount of LEDs on a strip (2D matrix may have less LEDs than W*H)
+    inline uint16_t getTransition(void) const   { return _transitionDur; }    // returns currently set transition time (in ms)
 
     uint32_t
       now,
       timebase,
-      getPixelColor(uint16_t);
+      getPixelColor(uint16_t) const;
 
-    inline uint32_t getLastShow(void)   { return _lastShow; }           // returns millis() timestamp of last strip.show() call
-    inline uint32_t segColor(uint8_t i) { return _colors_t[i]; }        // returns currently valid color (for slot i) AKA SEGCOLOR(); may be blended between two colors while in transition
+    inline uint32_t getLastShow(void) const   { return _lastShow; }           // returns millis() timestamp of last strip.show() call
+    inline uint32_t segColor(uint8_t i) const { return _colors_t[i]; }        // returns currently valid color (for slot i) AKA SEGCOLOR(); may be blended between two colors while in transition
 
     const char *
-      getModeData(uint8_t id = 0) { return (id && id<_modeCount) ? _modeData[id] : PSTR("Solid"); }
+      getModeData(uint8_t id = 0) const { return (id && id<_modeCount) ? _modeData[id] : PSTR("Solid"); }
 
     const char **
       getModeDataSrc(void) { return &(_modeData[0]); } // vectors use arrays for underlying data
@@ -921,12 +935,18 @@ class WS2812FX {  // 96 bytes
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)       { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
 
-    inline uint32_t getPixelColorXY(uint16_t x, uint16_t y) { return getPixelColor(isMatrix ? y * Segment::maxWidth + x : x);}
+    inline uint32_t getPixelColorXY(int x, int y) const     { return getPixelColor(isMatrix ? y * Segment::maxWidth + x : x); }
 
   // end 2D support
 
     void loadCustomPalettes(void); // loads custom palettes from JSON
     std::vector<CRGBPalette16> customPalettes; // TODO: move custom palettes out of WS2812FX class
+
+    struct {
+      bool autoSegments : 1;
+      bool correctWB    : 1;
+      bool cctFromRgb   : 1;
+    };
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
     // and color transitions
