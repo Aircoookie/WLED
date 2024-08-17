@@ -542,7 +542,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappend('v',SET_F("AP"),alexaNumPresets);
-    #elese
+    #else
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
     #endif
 
