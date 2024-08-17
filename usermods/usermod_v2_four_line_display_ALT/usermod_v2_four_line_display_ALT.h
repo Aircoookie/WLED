@@ -625,7 +625,7 @@ void FourLineDisplayUsermod::redraw(bool forceRedraw) {
   while (drawing && millis()-now < 25) delay(1); // wait if someone else is drawing
   if (drawing || lockRedraw) return;
 
-  if (apActive && WLED_WIFI_CONFIGURED && now<15000) {
+  if (apActive && isWiFiConfigured() && now < 15000) {
     knownSsid = apSSID;
     networkOverlay(PSTR("NETWORK INFO"),30000);
     return;

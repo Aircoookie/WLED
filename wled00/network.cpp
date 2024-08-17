@@ -210,6 +210,12 @@ int8_t findWiFi(bool doScan) {
   return status; // scan is still running or there was an error
 }
 
+
+bool isWiFiConfigured() {
+  return multiWiFi.size() > 1 || (strlen(multiWiFi[0].clientSSID) >= 1 && strcmp_P(multiWiFi[0].clientSSID, PSTR(DEFAULT_CLIENT_SSID)) != 0);
+}
+
+
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
@@ -241,14 +247,14 @@ void WiFiEvent(WiFiEvent_t event)
     case WIFI_EVENT_SOFTAPMODE_STADISCONNECTED:
       // AP client disconnected
       DEBUG_PRINTLN(F("WiFi: AP Client Disconnected"));
-      if (--apClients == 0 && WLED_WIFI_CONFIGURED) forceReconnect = true; // no clients reconnect WiFi if awailable
+      if (--apClients == 0 && isWiFiConfigured()) forceReconnect = true; // no clients reconnect WiFi if awailable
       DEBUG_PRINTLN(apClients);
       break;
 #else
     case SYSTEM_EVENT_AP_STADISCONNECTED:
       // AP client disconnected
       DEBUG_PRINTLN(F("WiFi: AP Client Disconnected"));
-      if (--apClients == 0 && WLED_WIFI_CONFIGURED) forceReconnect = true; // no clients reconnect WiFi if awailable
+      if (--apClients == 0 && isWiFiConfigured()) forceReconnect = true; // no clients reconnect WiFi if awailable
       DEBUG_PRINTLN(apClients);
       break;
     case SYSTEM_EVENT_AP_STACONNECTED:
@@ -277,7 +283,7 @@ void WiFiEvent(WiFiEvent_t event)
       DEBUG_PRINTLN(F("WiFi: AP Started"));
       break;
     case SYSTEM_EVENT_AP_STOP:
-      DEBUG_PRINTLN(F("WiFi: AP Started"));
+      DEBUG_PRINTLN(F("WiFi: AP Stopped"));
       break;
   #if defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
@@ -287,7 +293,8 @@ void WiFiEvent(WiFiEvent_t event)
       {
       DEBUG_PRINTLN(F("ETH Connected"));
       if (!apActive) {
-        WiFi.disconnect(true);
+        if (useESPNowSync && statusESPNow == ESP_NOW_STATE_ON) WiFi.disconnect(); // if using ESP-NOW just disconnect from current SSID
+        else WiFi.disconnect(true); // otherwise disable WiFi entirely
       }
       if (multiWiFi[0].staticIP != (uint32_t)0x00000000 && multiWiFi[0].staticGW != (uint32_t)0x00000000) {
         ETH.config(multiWiFi[0].staticIP, multiWiFi[0].staticGW, multiWiFi[0].staticSN, dnsAddress);
@@ -308,6 +315,7 @@ void WiFiEvent(WiFiEvent_t event)
       // may be necessary to reconnect the WiFi when
       // ethernet disconnects, as a way to provide
       // alternative access to the device.
+      if (interfacesInited && WiFi.scanComplete() >= 0) findWiFi(true); // reinit WiFi scan
       forceReconnect = true;
       break;
   #endif
