@@ -37,14 +37,14 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
   //DEBUG_PRINTF_P(PSTR("--  Duplicate segment: %p (%p)\n"), &prev, prev.data);
 
-  unsigned start = elem["start"] | seg.start;
+  int start = elem["start"] | seg.start;
   if (stop < 0) {
     int len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
   }
   // 2D segments
-  unsigned startY = elem["startY"] | seg.startY;
-  unsigned stopY = elem["stopY"] | seg.stopY;
+  int startY = elem["startY"] | seg.startY;
+  int stopY = elem["stopY"] | seg.stopY;
 
   //repeat, multiplies segment until all LEDs are used, or max segments reached
   bool repeat = elem["rpt"] | false;
@@ -105,7 +105,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t set = elem[F("set")] | seg.set;
   seg.set = constrain(set, 0, 3);
 
-  unsigned len = 1;
+  int len = 1;
   if (stop > start) len = stop - start;
   int offset = elem[F("of")] | INT32_MAX;
   if (offset != INT32_MAX) {
@@ -197,11 +197,11 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // lx parser
   #ifdef WLED_ENABLE_LOXONE
   int lx = elem[F("lx")] | -1;
-  if (lx > 0) {
+  if (lx >= 0) {
     parseLxJson(lx, id, false);
   }
   int ly = elem[F("ly")] | -1;
-  if (ly > 0) {
+  if (ly >= 0) {
     parseLxJson(ly, id, true);
   }
   #endif
