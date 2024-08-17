@@ -56,9 +56,9 @@ void handleDDPPacket(e131_packet_t* p) {
 //E1.31 and Art-Net protocol support
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
-  unsigned uni = 0, dmxChannels = 0;
+  int uni = 0, dmxChannels = 0;
   uint8_t* e131_data = nullptr;
-  unsigned seq = 0, mde = REALTIME_MODE_E131;
+  int seq = 0, mde = REALTIME_MODE_E131;
 
   if (protocol == P_ARTNET)
   {
@@ -179,7 +179,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         if (uni != e131Universe || availDMXLen < 2) return;
 
         // limit max. selectable preset to 250, even though DMX max. val is 255
-        unsigned dmxValPreset = (e131_data[dataOffset+1] > 250 ? 250 : e131_data[dataOffset+1]);
+        int dmxValPreset = (e131_data[dataOffset+1] > 250 ? 250 : e131_data[dataOffset+1]);
         
         // only apply preset if value changed 
         if (dmxValPreset != 0 && dmxValPreset != currentPreset &&  
@@ -254,7 +254,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           // Set segment opacity or global brightness
           if (isSegmentMode) {
             if (e131_data[dataOffset] != seg.opacity) seg.setOpacity(e131_data[dataOffset]);
-          } else if ( id == strip.getSegmentsNum()-1 ) {
+          } else if ( id == strip.getSegmentsNum()-1U ) {
             if (bri != e131_data[dataOffset]) {
               bri = e131_data[dataOffset];
               strip.setBrightness(bri, true);

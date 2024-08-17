@@ -720,6 +720,9 @@ class WS2812FX {  // 96 bytes
 #ifndef WLED_DISABLE_2D
       panels(1),
 #endif
+      autoSegments(false),
+      correctWB(false),
+      cctFromRgb(false),
       // semi-private (just obscured) used in effect functions through macros
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
@@ -907,6 +910,12 @@ class WS2812FX {  // 96 bytes
 
     void loadCustomPalettes(void); // loads custom palettes from JSON
     std::vector<CRGBPalette16> customPalettes; // TODO: move custom palettes out of WS2812FX class
+
+    struct {
+      bool autoSegments : 1;
+      bool correctWB    : 1;
+      bool cctFromRgb   : 1;
+    };
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
     // and color transitions
