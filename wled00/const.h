@@ -200,7 +200,8 @@
 #define USERMOD_ID_INA226                50     //Usermod "usermod_ina226.h"
 #define USERMOD_ID_AHT10                 51     //Usermod "usermod_aht10.h"
 #define USERMOD_ID_LD2410                52     //Usermod "usermod_ld2410.h"
-#define USERMOD_ID_PIXELS_DICE_TRAY      53     //Usermod "pixels_dice_tray.h"
+#define USERMOD_ID_POV_DISPLAY           53     //Usermod "usermod_pov_display.h"
+#define USERMOD_ID_PIXELS_DICE_TRAY      54     //Usermod "pixels_dice_tray.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -296,6 +297,7 @@
 #define TYPE_TM1814              31
 #define TYPE_WS2805              32            //RGB + WW + CW
 #define TYPE_TM1914              33            //RGB
+#define TYPE_SM16825             34            //RGB + WW + CW
 //"Analog" types (40-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel

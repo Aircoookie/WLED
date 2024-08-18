@@ -361,10 +361,10 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(WLED_MAX_ANALOG_CHANNELS,nS,10));
     oappend(SET_F(");"));
 
-    sappend('c',SET_F("MS"),autoSegments);
-    sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("MS"),strip.autoSegments);
+    sappend('c',SET_F("CCT"),strip.correctWB);
     sappend('c',SET_F("IC"),cctICused);
-    sappend('c',SET_F("CR"),cctFromRgb);
+    sappend('c',SET_F("CR"),strip.cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
@@ -533,15 +533,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("FB"),arlsForceMaxBri);
     sappend('c',SET_F("RG"),arlsDisableGammaCorrection);
     sappend('v',SET_F("WO"),arlsOffset);
+    #ifndef WLED_DISABLE_ALEXA
     sappend('c',SET_F("AL"),alexaEnabled);
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappend('v',SET_F("AP"),alexaNumPresets);
-    #ifdef WLED_DISABLE_ALEXA
+    #else
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
     #endif
 
-    #ifdef WLED_ENABLE_MQTT
+    #ifndef WLED_DISABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
     sappends('s',SET_F("MS"),mqttServer);
     sappend('v',SET_F("MQPORT"),mqttPort);
