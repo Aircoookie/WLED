@@ -612,7 +612,7 @@ void WLED::beginStrip()
 
 // stop AP (optionally also stop ESP-NOW)
 void WLED::stopAP(bool stopESPNow) {
-  DEBUG_PRINTLN(F("WiFi: Stopping AP."));
+  DEBUG_PRINTF_P(PSTR("WiFi: Stopping AP. @ %lu ms\r\n"), millis());
 #ifndef WLED_DISABLE_ESPNOW
   // we need to stop ESP-NOW as we are stopping AP
   if (stopESPNow && statusESPNow == ESP_NOW_STATE_ON) {
@@ -644,8 +644,7 @@ void WLED::initAP(bool resetAP)
     WLED_SET_AP_SSID();
     strcpy_P(apPass, PSTR(WLED_AP_PASS));
   }
-  DEBUG_PRINT(F("WiFi: Opening access point "));
-  DEBUG_PRINTLN(apSSID);
+  DEBUG_PRINTF_P(PSTR("WiFi: Opening access point %s @ %lu ms\r\n"), apSSID, millis());
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide); // WiFi mode can be either WIFI_MODE_AP or WIFI_MODE_APSTA
   #ifdef ARDUINO_ARCH_ESP32
@@ -654,7 +653,7 @@ void WLED::initAP(bool resetAP)
 
   if (!apActive) // start captive portal if AP active
   {
-    DEBUG_PRINTLN(F("WiFi: Init AP interfaces"));
+    DEBUG_PRINTF_P(PSTR("WiFi: Init AP interfaces @ %lu ms\r\n"), millis());
     server.begin();
     if (udpPort > 0 && udpPort != ntpLocalPort) {
       udpConnected = notifierUdp.begin(udpPort);
@@ -806,13 +805,13 @@ void WLED::initConnection()
   lastReconnectAttempt = millis();
 
   if (!apActive) {
-    //DEBUG_PRINTLN(F("WiFi: Access point disabled (init)."));
+    //DEBUG_PRINTF_P(PSTR("WiFi: Access point disabled (init). @ %lu ms\r\n"), millis());
     //stopAP(true);
     WiFi.mode(WIFI_MODE_STA);
   }
 
   if (WiFiConfigured) {
-    DEBUG_PRINTF_P(PSTR("WiFi: Connecting to %s...\r\n"), multiWiFi[selectedWiFi].clientSSID);
+    DEBUG_PRINTF_P(PSTR("WiFi: Connecting to %s... @ %lu ms\r\n"), multiWiFi[selectedWiFi].clientSSID, millis());
 
     if (multiWiFi[selectedWiFi].staticIP != 0U && multiWiFi[selectedWiFi].staticGW != 0U) {
       WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN, dnsAddress);
@@ -937,7 +936,7 @@ void WLED::handleConnection()
 
   if (wifiConfigured && (lastReconnectAttempt == 0 || forceReconnect)) {
     // this is first attempt at connecting to SSID or we were forced to reconnect
-    DEBUG_PRINTLN(F("WiFi: Initial connect or forced reconnect."));
+    DEBUG_PRINTF_P(PSTR("WiFi: Initial connect or forced reconnect. @ %lu ms\r\n"), millis());
     selectedWiFi = findWiFi(); // find strongest WiFi
     initConnection();
     interfacesInited = false;
@@ -947,12 +946,12 @@ void WLED::handleConnection()
 
   if (!Network.isConnected()) {
     if (!wifiConfigured && !apActive) {
-      DEBUG_PRINTLN(F("WiFi: Not configured, opening AP!"));
+      DEBUG_PRINTF_P(PSTR("WiFi: Not configured, opening AP! @ %lu ms\r\n"), millis());
       initAP(); // instantly go to AP mode
       return;
     }
     if (!apActive && apBehavior == AP_BEHAVIOR_ALWAYS) {
-      DEBUG_PRINTLN(F("WiFi: AP ALWAYS enabled."));
+      DEBUG_PRINTF_P(PSTR("WiFi: AP ALWAYS enabled. @ %lu ms\r\n"), millis());
       WiFi.mode(WIFI_MODE_APSTA); // this will keep AP's channel in sync with STA channel
       initAP();
     }
@@ -971,7 +970,7 @@ void WLED::handleConnection()
 #endif
       {
       if (improvActive == 2) improvActive = 3;
-      DEBUG_PRINTF_P(PSTR("WiFi: Last reconnect too old. %lu\r\n"), now);
+      DEBUG_PRINTF_P(PSTR("WiFi: Last reconnect too old @ %lu ms\r\n"), now);
       if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // we couldn't connect, try with another network from the list
       initConnection();
       // postpone searching for 2 min after last SSID from list and rely on auto reconnect
@@ -983,7 +982,7 @@ void WLED::handleConnection()
     // !wasConnected means this is after boot and we haven't yet successfully connected to SSID
     if (!apActive && now > lastReconnectAttempt + 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
       if (!(apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT)) {
-        DEBUG_PRINTLN(F("WiFi: Opening not connected AP."));
+        DEBUG_PRINTF_P(PSTR("WiFi: Opening not connected AP. @ %lu ms\r\n"), millis());
         WiFi.mode(WIFI_MODE_AP);
         initAP();  // start temporary AP only within first 5min
         return;
@@ -993,7 +992,7 @@ void WLED::handleConnection()
     if (apActive && apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT && apClients == 0) {
       // if AP was enabled more than 10min after boot or if client was connected more than 10min after boot do not disconnect AP mode
       if (now < 2*WLED_AP_TIMEOUT) {
-        DEBUG_PRINTLN(F("WiFi: Temporary AP disabled."));
+        DEBUG_PRINTF_P(PSTR("WiFi: Temporary AP disabled. @ %lu ms\r\n"), millis());
         stopAP();
         WiFi.mode(WIFI_MODE_STA);
         return;
@@ -1055,7 +1054,7 @@ void WLED::handleConnection()
     // shut down AP
     if (apBehavior != AP_BEHAVIOR_ALWAYS && apActive) {
       stopAP(false); // do not stop ESP-NOW
-      DEBUG_PRINTLN(F("WiFi: AP disabled (connected)."));
+      DEBUG_PRINTF_P(PSTR("WiFi: AP disabled (connected). @ %lu ms\r\n"), millis());
     }
   }
 #ifndef WLED_DISABLE_ESPNOW

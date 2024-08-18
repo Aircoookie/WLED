@@ -178,15 +178,15 @@ int8_t findWiFi(bool doScan) {
     return 0;
   }
 
-  if (doScan) WiFi.scanDelete();  // restart scan
+  if (doScan) WiFi.scanDelete();    // restart scan
 
-  int status = WiFi.scanComplete(); // complete scan may take as much as several seconds (usually <3s with not very crowded air)
+  int status = WiFi.scanComplete(); // complete scan may take as much as several seconds (usually <6s with not very crowded air)
 
   if (status == WIFI_SCAN_FAILED) {
-    DEBUG_PRINTLN(F("WiFi scan started."));
+    DEBUG_PRINTF_P(PSTR("WiFi: Scan started. @ %lu ms\r\n"), millis());
     WiFi.scanNetworks(true);  // start scanning in asynchronous mode
-  } else if (status >= 0) {   // status contains number of found networks
-    DEBUG_PRINT(F("WiFi scan completed: ")); DEBUG_PRINTLN(status);
+  } else if (status >= 0) {   // status contains number of found networks (including duplicate SSIDs with different BSSID)
+    DEBUG_PRINTF_P(PSTR("WiFi: Scan completed: %d @ %lu ms\r\n"), status, millis());
     int rssi = -9999;
     unsigned selected = selectedWiFi;
     for (int o = 0; o < status; o++) {
@@ -202,7 +202,7 @@ int8_t findWiFi(bool doScan) {
           break;
         }
     }
-    DEBUG_PRINT(F("Selected: ")); DEBUG_PRINT(multiWiFi[selected].clientSSID);
+    DEBUG_PRINT(F("Selected SSID: ")); DEBUG_PRINT(multiWiFi[selected].clientSSID);
     DEBUG_PRINT(F(" RSSI: ")); DEBUG_PRINT(rssi); DEBUG_PRINTLN(F("dB"));
     return selected;
   }
@@ -226,7 +226,7 @@ void WiFiEvent(WiFiEvent_t event)
       DEBUG_PRINT(F("IP address: ")); DEBUG_PRINTLN(Network.localIP());
       break;
     case WIFI_EVENT_STAMODE_CONNECTED:
-      DEBUG_PRINTLN(F("WiFi: Connected!"));
+      DEBUG_PRINTF_P(PSTR("WiFi: Connected! @ %lu ms\r\n"), millis());
       wasConnected = true;
       break;
     case WIFI_EVENT_STAMODE_DISCONNECTED:
@@ -268,7 +268,7 @@ void WiFiEvent(WiFiEvent_t event)
       DEBUG_PRINT(F("IP address: ")); DEBUG_PRINTLN(Network.localIP());
       break;
     case SYSTEM_EVENT_STA_CONNECTED:
-      DEBUG_PRINTLN(F("WiFi: Connected!"));
+      DEBUG_PRINTF_P(PSTR("WiFi: Connected! @ %lu ms\r\n"), millis());
       wasConnected = true;
       break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
