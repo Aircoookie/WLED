@@ -185,14 +185,14 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
 
-  unsigned W = width();
-  unsigned H = height();
+  int W = width();
+  int H = height();
   if (x >= W || y >= H) return;  // if pixel would fall out of segment just exit
 
   uint32_t tmpCol = col;
-  for (unsigned j = 0; j < grouping; j++) {   // groupping vertically
-    for (unsigned g = 0; g < grouping; g++) { // groupping horizontally
-      unsigned xX = (x+g), yY = (y+j);
+  for (int j = 0; j < grouping; j++) {   // groupping vertically
+    for (int g = 0; g < grouping; g++) { // groupping horizontally
+      int xX = (x+g), yY = (y+j);
       if (xX >= W || yY >= H) continue;  // we have reached one dimension's end
 
 #ifndef WLED_DISABLE_MODE_BLEND

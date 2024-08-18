@@ -905,8 +905,8 @@ uint32_t IRAM_ATTR Segment::getPixelColor(int i) const
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
-    unsigned vH = virtualHeight();  // segment height in logical pixels
-    unsigned vW = virtualWidth();
+    int vH = virtualHeight();  // segment height in logical pixels
+    int vW = virtualWidth();
     switch (map1D2D) {
       case M12_Pixels:
         return getPixelColorXY(i % vW, i / vW);
