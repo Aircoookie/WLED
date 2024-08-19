@@ -115,6 +115,58 @@ class UsermodBattery : public Usermod
       #endif
     }
 
+#ifndef WLED_DISABLE_MQTT
+    void addMqttSensor(const String &name, const String &type, const String &topic, const String &deviceClass, const String &unitOfMeasurement = "", const bool &isDiagnostic = false)
+    {
+      // String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
+      
+      StaticJsonDocument<600> doc;
+      char uid[128], json_str[1024], buf[128];
+
+      doc[F("name")] = name;
+      doc[F("stat_t")] = topic;
+      sprintf_P(uid, PSTR("%s_%s_sensor"), name, escapedMac.c_str());
+      doc[F("uniq_id")] = uid;
+      doc[F("dev_cla")] = deviceClass;
+      // doc[F("exp_aft")] = 1800;
+
+      if(type == "binary_sensor") {
+        doc[F("pl_on")]  = "on";
+        doc[F("pl_off")] = "off";
+      }
+
+      if(unitOfMeasurement != "")
+        doc[F("unit_of_measurement")] = unitOfMeasurement;
+
+      if(isDiagnostic)
+        doc[F("entity_category")] = "diagnostic";
+
+
+      JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
+      device[F("name")] = serverDescription;
+      device[F("ids")]  = String(F("wled-sensor-")) + mqttClientID;
+      device[F("mf")]   = F(WLED_BRAND);
+      device[F("mdl")]  = F(WLED_PRODUCT_NAME);
+      device[F("sw")]   = versionString;
+
+      sprintf_P(buf, PSTR("homeassistant/%s/%s/%s/config"), type, mqttClientID, uid);
+      DEBUG_PRINTLN(buf);
+      size_t payload_size = serializeJson(doc, json_str);
+      DEBUG_PRINTLN(json_str);
+
+      mqtt->publish(buf, 0, true, json_str, payload_size);
+    }
+
+    void publishMqtt(const char* topic, const char* state)
+    {
+      if (WLED_MQTT_CONNECTED) {
+        char buf[128];
+        snprintf_P(buf, 127, PSTR("%s/%s"), mqttDeviceTopic, topic);
+        mqtt->publish(buf, 0, false, state);
+      }
+    }
+#endif
+
   public:
     //Functions called by WLED
 
@@ -223,13 +275,8 @@ class UsermodBattery : public Usermod
         turnOff();
 
 #ifndef WLED_DISABLE_MQTT
-      // SmartHome stuff
-      // still don't know much about MQTT and/or HA
-      if (WLED_MQTT_CONNECTED) {
-        char buf[64]; // buffer for snprintf()
-        snprintf_P(buf, 63, PSTR("%s/voltage"), mqttDeviceTopic);
-        mqtt->publish(buf, 0, false, String(bat->getVoltage()).c_str());
-      }
+      publishMqtt("battery", String(bat->getLevel(), 0).c_str());
+      publishMqtt("voltage", String(bat->getVoltage()).c_str());
 #endif
 
     }
@@ -512,6 +559,23 @@ class UsermodBattery : public Usermod
 
       return !battery[FPSTR(_readInterval)].isNull();
     }
+
+#ifndef WLED_DISABLE_MQTT
+    void onMqttConnect(bool sessionPresent)
+    {
+      // Home Assistant Autodiscovery
+
+      // battery percentage
+      char mqttBatteryTopic[128];
+      snprintf_P(mqttBatteryTopic, 127, PSTR("%s/battery"), mqttDeviceTopic);
+      this->addMqttSensor(F("Battery"), "sensor", mqttBatteryTopic, "battery", "%", true);
+
+      // voltage
+      char mqttVoltageTopic[128];
+      snprintf_P(mqttVoltageTopic, 127, PSTR("%s/voltage"), mqttDeviceTopic);
+      this->addMqttSensor(F("Voltage"), "sensor", mqttVoltageTopic, "voltage", "V", true);
+    }
+#endif
 
     /**
      * TBD: Generate a preset sample for low power indication
