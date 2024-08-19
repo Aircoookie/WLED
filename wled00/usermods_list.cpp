@@ -186,6 +186,10 @@
   #include "../usermods/Power_Measurement/Power_Measurement.h"
 #endif
 
+#ifdef USERMOD_POWER_MEASUREMENT
+  #include "../usermods/Power_Measurement/Power_Measurement.h"
+#endif
+
 #if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI)
 // This include of SD.h and SD_MMC.h must happen here, else they won't be
 // resolved correctly (when included in mod's header only)
