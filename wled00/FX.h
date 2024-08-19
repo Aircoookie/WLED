@@ -786,7 +786,6 @@ class WS2812FX {  // 96 bytes
       setPixelColor(unsigned n, uint32_t c),      // paints absolute strip pixel with index n and color c
       show(void),                                 // initiates LED output
       setTargetFps(uint8_t fps),
-      addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name), // add effect to the list; defined in FX.cpp
       setupEffectData(void);                      // add default effects to the list; defined in FX.cpp
 
     inline void restartRuntime()          { for (Segment &seg : _segments) seg.markForReset(); }
@@ -822,7 +821,8 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void) const,
       getFirstSelectedSegId(void) const,
       getLastActiveSegmentId(void) const,
-      getActiveSegsLightCapabilities(bool selectedOnly = false) const;
+      getActiveSegsLightCapabilities(bool selectedOnly = false) const,
+      addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name);         // add effect to the list; defined in FX.cpp;
 
     inline uint8_t getBrightness(void) const    { return _brightness; }       // returns current strip brightness
     inline uint8_t getMaxSegments(void) const   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
