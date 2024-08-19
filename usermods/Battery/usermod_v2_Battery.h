@@ -117,9 +117,7 @@ class UsermodBattery : public Usermod
 
 #ifndef WLED_DISABLE_MQTT
     void addMqttSensor(const String &name, const String &type, const String &topic, const String &deviceClass, const String &unitOfMeasurement = "", const bool &isDiagnostic = false)
-    {
-      // String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
-      
+    {      
       StaticJsonDocument<600> doc;
       char uid[128], json_str[1024], buf[128];
 
@@ -128,11 +126,11 @@ class UsermodBattery : public Usermod
       sprintf_P(uid, PSTR("%s_%s_sensor"), name, escapedMac.c_str());
       doc[F("uniq_id")] = uid;
       doc[F("dev_cla")] = deviceClass;
-      // doc[F("exp_aft")] = 1800;
 
       if(type == "binary_sensor") {
         doc[F("pl_on")]  = "on";
         doc[F("pl_off")] = "off";
+        doc[F("exp_aft")] = 1800;
       }
 
       if(unitOfMeasurement != "")
@@ -140,7 +138,6 @@ class UsermodBattery : public Usermod
 
       if(isDiagnostic)
         doc[F("entity_category")] = "diagnostic";
-
 
       JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
       device[F("name")] = serverDescription;
@@ -525,7 +522,6 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
-      // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
       setMinBatteryVoltage(battery[F("min-voltage")] | bat->getMinVoltage());
       setMaxBatteryVoltage(battery[F("max-voltage")] | bat->getMaxVoltage());
       setCalibration(battery[F("calibration")] | bat->getCalibration());
@@ -575,40 +571,7 @@ class UsermodBattery : public Usermod
       snprintf_P(mqttVoltageTopic, 127, PSTR("%s/voltage"), mqttDeviceTopic);
       this->addMqttSensor(F("Voltage"), "sensor", mqttVoltageTopic, "voltage", "V", true);
     }
-#endif
-
-    /**
-     * TBD: Generate a preset sample for low power indication
-     * a button on the config page would be cool, currently not possible
-     */
-    void generateExamplePreset()
-    {
-      // StaticJsonDocument<300> j;
-      // JsonObject preset = j.createNestedObject();
-      // preset["mainseg"] = 0;
-      // JsonArray seg = preset.createNestedArray("seg");
-      // JsonObject seg0 = seg.createNestedObject();
-      // seg0["id"] = 0;
-      // seg0["start"] = 0;
-      // seg0["stop"] = 60;
-      // seg0["grp"] = 0;
-      // seg0["spc"] = 0;
-      // seg0["on"] = true;
-      // seg0["bri"] = 255;
-
-      // JsonArray col0 = seg0.createNestedArray("col");
-      // JsonArray col00 = col0.createNestedArray();
-      // col00.add(255);
-      // col00.add(0);
-      // col00.add(0);
-
-      // seg0["fx"] = 1;
-      // seg0["sx"] = 128;
-      // seg0["ix"] = 128;
-
-      // savePreset(199, "Low power Indicator", preset);
-    }
-   
+#endif   
 
     /*
      *
