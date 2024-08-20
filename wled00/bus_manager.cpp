@@ -378,83 +378,28 @@ void BusDigital::cleanup() {
 }
 
 std::vector<LEDType> BusDigital::getLEDTypes() {
-  std::vector<LEDType> result;
-  LEDType ledType;
+  std::vector<LEDType> types;
+  types.push_back({TYPE_WS2812_RGB, "D", PSTR("WS281x")});
+  types.push_back({TYPE_SK6812_RGBW, "D", PSTR("SK6812/WS2814 RGBW")});
+  types.push_back({TYPE_TM1814, "D", PSTR("TM1814")});
+  types.push_back({TYPE_WS2811_400KHZ, "D", PSTR("400kHz")});
+  types.push_back({TYPE_TM1829, "D", PSTR("TM1829")});
+  types.push_back({TYPE_UCS8903, "D", PSTR("UCS8903")});
+  types.push_back({TYPE_APA106, "D", PSTR("APA106/PL9823")});
+  types.push_back({TYPE_TM1914, "D", PSTR("TM1914")});
+  types.push_back({TYPE_FW1906, "D", PSTR("FW1906 GRBCW")});
+  types.push_back({TYPE_UCS8904, "D", PSTR("UCS8904 RGBW")});
+  types.push_back({TYPE_WS2805, "D", PSTR("WS2805 RGBCW")});
+  types.push_back({TYPE_WS2812_1CH_X3, "D", PSTR("WS2811 White")});
+    //{TYPE_WS2812_2CH_X3, "D", PSTR("WS2811 CCT")},
+    //{TYPE_WS2812_WWA, "D", PSTR("WS2811 WWA")},
+  types.push_back({TYPE_WS2801, "2P", PSTR("WS2801")});
+  types.push_back({TYPE_APA102, "2P", PSTR("APA102")});
+  types.push_back({TYPE_LPD8806, "2P", PSTR("LPD8806")});
+  types.push_back({TYPE_LPD6803, "2P", PSTR("LPD6803")});
+  types.push_back({TYPE_P9813, "2P", PSTR("PP9813")});
 
-  ledType.type = F("D");
-
-  ledType.id = 22;
-  ledType.name = F("WS281x");
-  result.push_back(ledType);
-
-  ledType.id = 30;
-  ledType.name = F("SK6812/WS2814 RGBW");
-  result.push_back(ledType);
-
-  ledType.id = 31;
-  ledType.name = F("TM1814");
-  result.push_back(ledType);
-
-  ledType.id = 24;
-  ledType.name = F("400kHz");
-  result.push_back(ledType);
-
-  ledType.id = 25;
-  ledType.name = F("TM1829");
-  result.push_back(ledType);
-
-  ledType.id = 26;
-  ledType.name = F("UCS8903");
-  result.push_back(ledType);
-
-  ledType.id = 27;
-  ledType.name = F("APA106/PL9823");
-  result.push_back(ledType);
-
-  ledType.id = 33;
-  ledType.name = F("TM1914");
-  result.push_back(ledType);
-
-  ledType.id = 28;
-  ledType.name = F("FW1906 GRBCW");
-  result.push_back(ledType);
-
-  ledType.id = 29;
-  ledType.name = F("UCS8904 RGBW");
-  result.push_back(ledType);
-
-  ledType.id = 32;
-  ledType.name = F("WS2805 RGBCW");
-  result.push_back(ledType);
-
-  ledType.id = 19;
-  ledType.name = F("WS2811 White");
-  result.push_back(ledType);
-
-
-  ledType.type = F("2P");
-
-  ledType.id = 50;
-  ledType.name = F("WS2801");
-  result.push_back(ledType);
-
-  ledType.id = 51;
-  ledType.name = F("APA102");
-  result.push_back(ledType);
-
-  ledType.id = 52;
-  ledType.name = F("LPD8806");
-  result.push_back(ledType);
-
-  ledType.id = 54;
-  ledType.name = F("LPD6803");
-  result.push_back(ledType);
-
-  ledType.id = 53;
-  ledType.name = F("PP9813");
-  result.push_back(ledType);
-
-  return result;
+  return types;
 }
 
 
@@ -636,40 +581,14 @@ void BusPwm::deallocatePins() {
 }
 
 std::vector<LEDType> BusPwm::getLEDTypes() {
-  std::vector<LEDType> result;
-  LEDType ledType;
-
-  ledType.id = 41;
-  ledType.name = F("PWM White");
-  ledType.type = F("A");
-  result.push_back(ledType);
-
-  ledType.id = 42;
-  ledType.name = F("PWM CCT");
-  ledType.type = F("AA");
-  result.push_back(ledType);
-
-  ledType.id = 43;
-  ledType.name = F("PWM RGB");
-  ledType.type = F("AAA");
-  result.push_back(ledType);
-
-  ledType.id = 44;
-  ledType.name = F("PWM RGBW");
-  ledType.type = F("AAAA");
-  result.push_back(ledType);
-
-  ledType.id = 45;
-  ledType.name = F("PWM RGB+CCT");
-  ledType.type = F("AAAAA");
-  result.push_back(ledType);
-
-  // ledType.id = 46;
-  // ledType.name = F("PWM RGB+DCCT");
-  // ledType.type = F("AAAAAA");
-  // result.push_back(ledType);
-
-  return result;
+  std::vector<LEDType> types;
+  types.push_back({TYPE_ANALOG_1CH, "A", PSTR("PWM White")});
+  types.push_back({TYPE_ANALOG_2CH, "AA", PSTR("PWM CCT")});
+  types.push_back({TYPE_ANALOG_3CH, "AAA", PSTR("PWM RGB")});
+  types.push_back({TYPE_ANALOG_4CH, "AAAA", PSTR("PWM RGBW")});
+  types.push_back({TYPE_ANALOG_5CH, "AAAAA", PSTR("PWM RGB+CCT")});
+    //{TYPE_ANALOG_6CH, "AAAAAA", PSTR("PWM RGB+DCCT")},
+  return types;
 }
 
 
@@ -717,14 +636,9 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) {
 }
 
 std::vector<LEDType> BusOnOff::getLEDTypes() {
-  std::vector<LEDType> result;
-  LEDType ledType;
-  ledType.id = TYPE_ONOFF;
-  ledType.name = F("On/Off");
-  ledType.type = "";
-  result.push_back(ledType);
-  return result;
-
+  std::vector<LEDType> types;
+  types.push_back({TYPE_ONOFF, "", PSTR("On/Off")});
+  return types;
 }
 
 
@@ -788,32 +702,12 @@ uint8_t BusNetwork::getPins(uint8_t* pinArray) {
 }
 
 std::vector<LEDType> BusNetwork::getLEDTypes() {
-  std::vector<LEDType> result;
-  LEDType ledType;
-
-  ledType.type = F("V");
-
-  ledType.id = TYPE_NET_DDP_RGB;
-  ledType.name = F("DDP RGB (network)");
-  result.push_back(ledType);
-
-  // ledType.id = 81";
-  // ledType.name = F("E1.31 RGB (network)");
-  // result.push_back(ledType);
-
-  ledType.id = TYPE_NET_ARTNET_RGB;
-  ledType.name = F("Art-Net RGB (network)");
-  result.push_back(ledType);
-
-  ledType.id = TYPE_NET_DDP_RGBW;
-  ledType.name = F("DDP RGBW (network)");
-  result.push_back(ledType);
-
-  ledType.id = TYPE_NET_ARTNET_RGBW;
-  ledType.name = F("Art-Net RGBW (network)");
-  result.push_back(ledType);
-
-  return result;
+  std::vector<LEDType> types;
+  types.push_back({TYPE_NET_DDP_RGB, "V", PSTR("DDP RGB (network)")});
+  types.push_back({TYPE_NET_ARTNET_RGB, "V", PSTR("Art-Net RGB (network)")});
+  types.push_back({TYPE_NET_DDP_RGBW, "V", PSTR("DDP RGBW (network)")});
+  types.push_back({TYPE_NET_ARTNET_RGBW, "V", PSTR("Art-Net RGBW (network)")});
+  return types;
 }
 
 void BusNetwork::cleanup() {
@@ -884,7 +778,7 @@ String BusManager::getLEDTypes() {
   for(int t = 0; t < types.size(); t++) {
     LEDType type = types.at(t);
     String id = String(type.id);
-    json += "{\"i\":"+id+",\"t\":\""+type.type+"\",\"n\":\""+type.name+"\"},";
+    json += "{i:" + id + F(",t:\"") + FPSTR(type.type) + F("\",n:\"") + FPSTR(type.name) + F("\"},");
   }
 
   json += "]";

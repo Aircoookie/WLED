@@ -104,11 +104,11 @@ struct ColorOrderMap {
     ColorOrderMapEntry _mappings[WLED_MAX_COLOR_ORDER_MAPPINGS];
 };
 
-struct LEDType {
+typedef struct {
   uint8_t id;
-  String type;
-  String name;
-};
+  const char *type;
+  const char *name;
+} LEDType;
 
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
