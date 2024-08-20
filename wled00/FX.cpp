@@ -10832,9 +10832,9 @@ uint16_t mode_particleFire1D(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 4)) // init
+    if (!initParticleSystem1D(PartSys, 8)) // init
       return mode_static(); // allocation failed
-    PartSys->setKillOutOfBounds(true);
+    //PartSys->setKillOutOfBounds(true);
     PartSys->setParticleSize(1);
   }
   else
@@ -10845,17 +10845,16 @@ uint16_t mode_particleFire1D(void)
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
+  PartSys->setMotionBlur(128 + (SEGMENT.custom2 >> 1)); // anable motion blur
+  PartSys->setColorByAge(true); 
   for(uint i = 0; i < PartSys->numSources; i++) 
   { 
     PartSys->sources[i].var = 1 + (SEGMENT.speed >> 4);  
-    PartSys->sources[i].minLife = 50 + SEGMENT.intensity; 
-    PartSys->sources[i].maxLife = 200 + (SEGMENT.intensity << 1); 
-    PartSys->sources[i].source.x = map(SEGMENT.custom1, 0 , 255, 0, PartSys->maxX); // spray position
-    //PartSys->sources[0].v = map(SEGMENT.speed, 0 , 255, 1, (inoise16(SEGENV.call) >> 8)); // particle emit speed
-    //PartSys->sources[i].v = 2 + ((((SEGMENT.speed >> (2 + i))) * (int16_t)inoise8(SEGENV.aux0)) >> 7);
+    PartSys->sources[i].minLife = 200 + SEGMENT.intensity + (i << 3); 
+    PartSys->sources[i].maxLife = 300 + SEGMENT.intensity + (i << 4); 
+    PartSys->sources[i].source.x = -256; // source position below strip start
     PartSys->sources[i].v = 2 + (SEGMENT.speed >> (2 + (i<<1)));
-    //if(random(4) == 0) 
+    if(SEGMENT.call % 3 == 0) 
       PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
   }
 if (SEGMENT.call & 0x01) // update noise position every second frames, also add wind
@@ -10864,7 +10863,7 @@ if (SEGMENT.call & 0x01) // update noise position every second frames, also add 
   }
 
   //update color settings
-  PartSys->setColorByAge(SEGMENT.check1); 
+  
  // PartSys->setColorByPosition(SEGMENT.check3);  
   for(uint i = 0; i < PartSys->usedParticles; i++) 
   {     
@@ -10877,7 +10876,7 @@ if (SEGMENT.call & 0x01) // update noise position every second frames, also add 
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Position,Blur/Overlay,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,,Blur/Overlay;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
 
 
 

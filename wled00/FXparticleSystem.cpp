@@ -1600,14 +1600,14 @@ void ParticleSystem1D::setMotionBlur(uint8_t bluramount)
     motionBlur = bluramount; 
 }
 
-// render size using smearing (see blur function)
+// render size, 0 = 1 pixel, 1 = 2 pixel (interpolated), bigger sizes require adanced properties 
+// note: if size is set larger than 1 without advanced properties, weird things may happen
 void ParticleSystem1D::setParticleSize(uint8_t size)
 {
   particlesize = size;
   particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1; // 1 pixel sized particles have half the radius (for bounce, not for collisions)
   if (particlesize)
     particleHardRadius = particleHardRadius << 1; // 2 pixel sized particles 
-  //TODO: since global size rendering is always 1 or 2 pixels, this could maybe be made simpler with a bool 'singlepixelsize'
 }
 // enable/disable gravity, optionally, set the force (force=8 is default) can be -127 to +127, 0 is disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
