@@ -50,6 +50,7 @@ class UsermodBattery : public Usermod
     //
     bool initDone = false;
     bool initializing = true;
+    bool HomeAssistantDiscovery = false;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -59,6 +60,7 @@ class UsermodBattery : public Usermod
     static const char _preset[];
     static const char _duration[];
     static const char _init[];
+    static const char _haDiscovery[];
 
     /**
      * Helper for rounding floating point values 
@@ -67,6 +69,17 @@ class UsermodBattery : public Usermod
     {
       float nx = (int)(x * 100 + .5);
       return (float)(nx / 100);
+    }
+
+    /**
+     * Helper for converting a string to lowercase
+     */
+    String stringToLower(String str)
+    {
+      for(int i = 0; i < str.length(); i++)
+        if(str[i] >= 'A' && str[i] <= 'Z')
+            str[i] += 32;
+      return str;
     }
 
     /**
@@ -123,14 +136,14 @@ class UsermodBattery : public Usermod
 
       doc[F("name")] = name;
       doc[F("stat_t")] = topic;
-      sprintf_P(uid, PSTR("%s_%s_sensor"), name, escapedMac.c_str());
+      sprintf_P(uid, PSTR("%s_%s_%s"), escapedMac.c_str(), stringToLower(name).c_str(), type);
       doc[F("uniq_id")] = uid;
       doc[F("dev_cla")] = deviceClass;
+      doc[F("exp_aft")] = 1800;
 
       if(type == "binary_sensor") {
         doc[F("pl_on")]  = "on";
         doc[F("pl_off")] = "off";
-        doc[F("exp_aft")] = 1800;
       }
 
       if(unitOfMeasurement != "")
@@ -332,6 +345,7 @@ class UsermodBattery : public Usermod
       battery[F("calibration")] = bat->getCalibration();
       battery[F("voltage-multiplier")] = bat->getVoltageMultiplier();
       battery[FPSTR(_readInterval)] = readingInterval;
+      battery[FPSTR(_haDiscovery)] = HomeAssistantDiscovery;
 
       JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
       ao[FPSTR(_enabled)] = autoOffEnabled;
@@ -351,8 +365,8 @@ class UsermodBattery : public Usermod
       getJsonValue(battery[F("max-voltage")], cfg.maxVoltage);
       getJsonValue(battery[F("calibration")], cfg.calibration);
       getJsonValue(battery[F("voltage-multiplier")], cfg.voltageMultiplier);
-    
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
+      setHomeAssistantDiscovery(battery[FPSTR(_haDiscovery)] | HomeAssistantDiscovery);
 
       JsonObject ao = battery[F("auto-off")];
       setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
@@ -464,17 +478,18 @@ class UsermodBattery : public Usermod
     void appendConfigData()
     {
       // Total: 462 Bytes
-      oappend(SET_F("td=addDropdown('Battery', 'type');"));               // 35 Bytes
-      oappend(SET_F("addOption(td, 'Unkown', '0');"));                    // 30 Bytes
-      oappend(SET_F("addOption(td, 'LiPo', '1');"));                      // 28 Bytes
-      oappend(SET_F("addOption(td, 'LiOn', '2');"));                      // 28 Bytes
+      oappend(SET_F("td=addDropdown('Battery','type');"));              // 34 Bytes
+      oappend(SET_F("addOption(td,'Unkown','0');"));                    // 28 Bytes
+      oappend(SET_F("addOption(td,'LiPo','1');"));                      // 26 Bytes
+      oappend(SET_F("addOption(td,'LiOn','2');"));                      // 26 Bytes
       oappend(SET_F("addInfo('Battery:type',1,'<small style=\"color:orange\">requires reboot</small>');")); // 81 Bytes
-      oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));          // 40 Bytes
-      oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));          // 40 Bytes
-      oappend(SET_F("addInfo('Battery:interval', 1, 'ms');"));            // 38 Bytes
-      oappend(SET_F("addInfo('Battery:auto-off:threshold', 1, '%');"));   // 47 Bytes
-      oappend(SET_F("addInfo('Battery:indicator:threshold', 1, '%');"));  // 48 Bytes
-      oappend(SET_F("addInfo('Battery:indicator:duration', 1, 's');"));   // 47 Bytes
+      oappend(SET_F("addInfo('Battery:min-voltage',1,'v');"));          // 38 Bytes
+      oappend(SET_F("addInfo('Battery:max-voltage',1,'v');"));          // 38 Bytes
+      oappend(SET_F("addInfo('Battery:interval',1,'ms');"));            // 36 Bytes
+      oappend(SET_F("addInfo('Battery:HA-discovery',1,'');"));          // 38 Bytes
+      oappend(SET_F("addInfo('Battery:auto-off:threshold',1,'%');"));   // 45 Bytes
+      oappend(SET_F("addInfo('Battery:indicator:threshold',1,'%');"));  // 46 Bytes
+      oappend(SET_F("addInfo('Battery:indicator:duration',1,'s');"));   // 45 Bytes
       
       // this option list would exeed the oappend() buffer
       // a list of all presets to select one from
@@ -527,6 +542,7 @@ class UsermodBattery : public Usermod
       setCalibration(battery[F("calibration")] | bat->getCalibration());
       setVoltageMultiplier(battery[F("voltage-multiplier")] | bat->getVoltageMultiplier());
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
+      setHomeAssistantDiscovery(battery[FPSTR(_haDiscovery)] | HomeAssistantDiscovery);
 
       getUsermodConfigFromJsonObject(battery);
 
@@ -560,6 +576,8 @@ class UsermodBattery : public Usermod
     void onMqttConnect(bool sessionPresent)
     {
       // Home Assistant Autodiscovery
+      if (!HomeAssistantDiscovery)
+        return;
 
       // battery percentage
       char mqttBatteryTopic[128];
@@ -812,6 +830,22 @@ class UsermodBattery : public Usermod
     {
       return lowPowerIndicationDone;
     }
+
+    /**
+     * Set Home Assistant auto discovery
+     */
+    void setHomeAssistantDiscovery(bool enable)
+    {
+      HomeAssistantDiscovery = enable;
+    }
+
+    /**
+     * Get Home Assistant auto discovery
+     */
+    bool getHomeAssistantDiscovery()
+    {
+      return HomeAssistantDiscovery;
+    }
 };
 
 // strings to reduce flash memory usage (used more than twice)
@@ -822,3 +856,4 @@ const char UsermodBattery::_threshold[]     PROGMEM = "threshold";
 const char UsermodBattery::_preset[]        PROGMEM = "preset";
 const char UsermodBattery::_duration[]      PROGMEM = "duration";
 const char UsermodBattery::_init[]          PROGMEM = "init";
+const char UsermodBattery::_haDiscovery[]   PROGMEM = "HA-discovery";
