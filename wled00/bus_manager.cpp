@@ -756,29 +756,23 @@ int BusManager::add(BusConfig &bc) {
   return numBusses++;
 }
 
+static String LEDTypesToJson(const std::vector<LEDType>& types) {
+  String json;
+  for(auto& type: types) {
+    String id = String(type.id);
+    json += "{i:" + id + F(",t:\"") + FPSTR(type.type) + F("\",n:\"") + FPSTR(type.name) + F("\"},");
+  }
+  return json;
+}
+
 String BusManager::getLEDTypes() {
   std::vector<LEDType> types;
   String json = "[";
 
-  std::vector<LEDType> busTypes;
-
-  busTypes = BusDigital::getLEDTypes();
-  types.insert(types.end(), busTypes.begin(), busTypes.end());
-
-  busTypes = BusOnOff::getLEDTypes();
-  types.insert(types.end(), busTypes.begin(), busTypes.end());
-
-  busTypes = BusPwm::getLEDTypes();
-  types.insert(types.end(), busTypes.begin(), busTypes.end());
-
-  busTypes = BusNetwork::getLEDTypes();
-  types.insert(types.end(), busTypes.begin(), busTypes.end());
-
-  for(int t = 0; t < types.size(); t++) {
-    LEDType type = types.at(t);
-    String id = String(type.id);
-    json += "{i:" + id + F(",t:\"") + FPSTR(type.type) + F("\",n:\"") + FPSTR(type.name) + F("\"},");
-  }
+  json += LEDTypesToJson(BusDigital::getLEDTypes());
+  json += LEDTypesToJson(BusOnOff::getLEDTypes());
+  json += LEDTypesToJson(BusPwm::getLEDTypes());
+  json += LEDTypesToJson(BusNetwork::getLEDTypes());
 
   json += "]";
   return json;
