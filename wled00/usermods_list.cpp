@@ -106,6 +106,10 @@
   #include "../usermods/ST7789_display/ST7789_Display.h"
 #endif
 
+#ifdef USERMOD_PIXELS_DICE_TRAY
+  #include "../usermods/pixels_dice_tray/pixels_dice_tray.h"
+#endif
+
 #ifdef USERMOD_SEVEN_SEGMENT
   #include "../usermods/seven_segment_display/usermod_v2_seven_segment_display.h"
 #endif
@@ -208,6 +212,10 @@
 
 #ifdef USERMOD_LDR_DUSK_DAWN
   #include "../usermods/LDR_Dusk_Dawn_v2/usermod_LDR_Dusk_Dawn_v2.h"
+#endif
+
+#ifdef USERMOD_POV_DISPLAY
+  #include "../usermods/pov_display/usermod_pov_display.h"
 #endif
 
 #ifdef USERMOD_STAIRCASE_WIPE
@@ -329,6 +337,10 @@ void registerUsermods()
 
   #ifdef USERMOD_ST7789_DISPLAY
   usermods.add(new St7789DisplayUsermod());
+  #endif
+
+  #ifdef USERMOD_PIXELS_DICE_TRAY
+    usermods.add(new PixelsDiceTrayUsermod());
   #endif
 
   #ifdef USERMOD_SEVEN_SEGMENT
@@ -453,5 +465,9 @@ void registerUsermods()
   
   #ifdef USERMOD_LD2410
   usermods.add(new LD2410Usermod());
+  #endif
+
+  #ifdef USERMOD_POV_DISPLAY
+  usermods.add(new PovDisplayUsermod());
   #endif
 }

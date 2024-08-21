@@ -20,17 +20,19 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   //long vid = doc[F("vid")]; // 2010020
 
-  #ifdef WLED_USE_ETHERNET
+#ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc[F("eth")];
   CJSON(ethernetType, ethernet["type"]);
   // NOTE: Ethernet configuration takes priority over other use of pins
   WLED::instance().initEthernet();
-  #endif
+#endif
 
   JsonObject id = doc["id"];
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
+#ifndef WLED_DISABLE_ALEXA
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
+#endif
   CJSON(simplifiedUI, id[F("sui")]);
 
   JsonObject nw = doc["nw"];
@@ -86,7 +88,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(apBehavior, ap[F("behav")]);
   /*
   JsonArray ap_ip = ap["ip"];
-  for (byte i = 0; i < 4; i++) {
+  for (unsigned i = 0; i < 4; i++) {
     apIP[i] = ap_ip;
   }
   */
@@ -109,8 +111,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint16_t ablMilliampsMax = hw_led[F("maxpwr")] | BusManager::ablMilliampsMax();
   BusManager::setMilliampsMax(ablMilliampsMax);
   Bus::setGlobalAWMode(hw_led[F("rgbwm")] | AW_GLOBAL_DISABLED);
-  CJSON(correctWB, hw_led["cct"]);
-  CJSON(cctFromRgb, hw_led[F("cr")]);
+  CJSON(strip.correctWB, hw_led["cct"]);
+  CJSON(strip.cctFromRgb, hw_led[F("cr")]);
   CJSON(cctICused, hw_led[F("ic")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
   Bus::setCCTBlend(strip.cctBlending);
@@ -160,44 +162,46 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     DEBUG_PRINTF_P(PSTR("Heap before buses: %d\n"), ESP.getFreeHeap());
     int s = 0;  // bus iterator
     if (fromFS) BusManager::removeAll(); // can't safely manipulate busses directly in network callback
-    uint32_t mem = 0;
-    bool busesChanged = false;
+    unsigned mem = 0;
+
     // determine if it is sensible to use parallel I2S outputs on ESP32 (i.e. more than 5 outputs = 1 I2S + 4 RMT)
     bool useParallel = false;
     #if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ARCH_ESP32S2) && !defined(ARDUINO_ARCH_ESP32S3) && !defined(ARDUINO_ARCH_ESP32C3)
     unsigned digitalCount = 0;
-    unsigned maxLeds = 0;
-    int oldType = 0;
-    int j = 0;
+    unsigned maxLedsOnBus = 0;
+    unsigned maxChannels = 0;
     for (JsonObject elm : ins) {
       unsigned type = elm["type"] | TYPE_WS2812_RGB;
-      unsigned len = elm["len"] | 30;
-      if (IS_DIGITAL(type) && !IS_2PIN(type)) digitalCount++;
-      if (len > maxLeds) maxLeds = len;
-      // we need to have all LEDs of the same type for parallel
-      if (j++ < 8 && oldType > 0 && oldType != type) oldType = -1;
-      else if (oldType == 0) oldType = type;
+      unsigned len = elm["len"] | DEFAULT_LED_COUNT;
+      if (!IS_DIGITAL(type)) continue;
+      if (!IS_2PIN(type)) {
+        digitalCount++;
+        unsigned channels = Bus::getNumberOfChannels(type);
+        if (len > maxLedsOnBus)     maxLedsOnBus = len;
+        if (channels > maxChannels) maxChannels  = channels;
+      }
     }
-    DEBUG_PRINTF_P(PSTR("Maximum LEDs on a bus: %u\nDigital buses: %u\nDifferent types: %d\n"), maxLeds, digitalCount, (int)(oldType == -1));
+    DEBUG_PRINTF_P(PSTR("Maximum LEDs on a bus: %u\nDigital buses: %u\n"), maxLedsOnBus, digitalCount);
     // we may remove 300 LEDs per bus limit when NeoPixelBus is updated beyond 2.9.0
-    if (/*oldType != -1 && */maxLeds <= 300 && digitalCount > 5) {
+    if (maxLedsOnBus <= 300 && digitalCount > 5) {
+      DEBUG_PRINTLN(F("Switching to parallel I2S."));
       useParallel = true;
       BusManager::useParallelOutput();
-      DEBUG_PRINTF_P(PSTR("Switching to parallel I2S with max. %d LEDs per ouptut.\n"), maxLeds);
+      mem = BusManager::memUsage(maxChannels, maxLedsOnBus, 8); // use alternate memory calculation
     }
     #endif
+
     for (JsonObject elm : ins) {
       if (s >= WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES) break;
       uint8_t pins[5] = {255, 255, 255, 255, 255};
       JsonArray pinArr = elm["pin"];
       if (pinArr.size() == 0) continue;
-      pins[0] = pinArr[0];
+      //pins[0] = pinArr[0];
       unsigned i = 0;
       for (int p : pinArr) {
         pins[i++] = p;
         if (i>4) break;
       }
-
       uint16_t length = elm["len"] | 1;
       uint8_t colorOrder = (int)elm[F("order")]; // contains white channel swap option in upper nibble
       uint8_t skipFirst = elm[F("skip")];
@@ -208,7 +212,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool refresh = elm["ref"] | false;
       uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM
       uint8_t AWmode = elm[F("rgbwm")] | RGBW_MODE_MANUAL_ONLY;
-      uint8_t maPerLed = elm[F("ledma")] | 55;
+      uint8_t maPerLed = elm[F("ledma")] | LED_MILLIAMPS_DEFAULT;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
       if (IS_PWM(ledType) || IS_ONOFF(ledType) || IS_VIRTUAL(ledType)) { // analog and virtual
@@ -219,26 +223,21 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
         if (useParallel && s < 8) {
-          // we are using parallel I2S and memUsage() will include x8 allocation into account
-          if (s == 0)
-            mem = BusManager::memUsage(bc); // includes x8 memory allocation for parallel I2S
-          else
-            if (BusManager::memUsage(bc) > mem)
-              mem = BusManager::memUsage(bc); // if we have unequal LED count use the largest
+          // if for some unexplained reason the above pre-calculation was wrong, update
+          unsigned memT = BusManager::memUsage(bc); // includes x8 memory allocation for parallel I2S
+          if (memT > mem) mem = memT; // if we have unequal LED count use the largest
         } else
           mem += BusManager::memUsage(bc); // includes global buffer
         if (mem <= MAX_LED_MEMORY) if (BusManager::add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
-        busesChanged = true;
+        doInitBusses = true;  // finalization done in beginStrip()
       }
       s++;
     }
     DEBUG_PRINTF_P(PSTR("LED buffer size: %uB\n"), mem);
     DEBUG_PRINTF_P(PSTR("Heap after buses: %d\n"), ESP.getFreeHeap());
-    doInitBusses = busesChanged;
-    // finalization done in beginStrip()
   }
   if (hw_led["rev"]) BusManager::getBus(0)->setReversed(true); //set 0.11 global reversed setting for first bus
 
@@ -275,22 +274,34 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         btnPin[s] = pin;
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
-        if (((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[s]) < 0))
-        {
-          // not an ADC analog pin
-          DEBUG_PRINT(F("PIN ALLOC error: GPIO")); DEBUG_PRINT(btnPin[s]);
-          DEBUG_PRINT(F("for analog button #")); DEBUG_PRINT(s);
-          DEBUG_PRINTLN(F(" is not an analog pin!"));
-          btnPin[s] = -1;
-          pinManager.deallocatePin(pin,PinOwner::Button);
+        if ((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) {
+          if (digitalPinToAnalogChannel(btnPin[s]) < 0) {
+            // not an ADC analog pin
+            DEBUG_PRINT(F("PIN ALLOC error: GPIO")); DEBUG_PRINT(btnPin[s]);
+            DEBUG_PRINT(F("for analog button #")); DEBUG_PRINT(s);
+            DEBUG_PRINTLN(F(" is not an analog pin!"));
+            btnPin[s] = -1;
+            pinManager.deallocatePin(pin,PinOwner::Button);
+          } else {
+            analogReadResolution(12); // see #4040
+          }
         }
-        //if touch pin, enable the touch interrupt on ESP32 S2 & S3
-        #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
-        if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH)) 
+        else if ((buttonType[s] == BTN_TYPE_TOUCH || buttonType[s] == BTN_TYPE_TOUCH_SWITCH))
         {
-          touchAttachInterrupt(btnPin[s], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+          if (digitalPinToTouchChannel(btnPin[s]) < 0) {
+            // not a touch pin
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[s], s);
+            btnPin[s] = -1;
+            pinManager.deallocatePin(pin,PinOwner::Button);
+          }          
+          //if touch pin, enable the touch interrupt on ESP32 S2 & S3
+          #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a function to check touch state but need to attach an interrupt to do so
+          else
+          {
+            touchAttachInterrupt(btnPin[s], touchButtonISR, touchThreshold << 4); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+          }
+          #endif
         }
-        #endif 
         else
       #endif
         {
@@ -422,7 +433,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject light = doc[F("light")];
   CJSON(briMultiplier, light[F("scale-bri")]);
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
-  CJSON(autoSegments, light[F("aseg")]);
+  CJSON(strip.autoSegments, light[F("aseg")]);
 
   CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.8
   float light_gc_bri = light["gc"]["bri"];
@@ -521,14 +532,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(arlsDisableGammaCorrection, if_live[F("no-gc")]); // false
   CJSON(arlsOffset, if_live[F("offset")]); // 0
 
+#ifndef WLED_DISABLE_ALEXA
   CJSON(alexaEnabled, interfaces["va"][F("alexa")]); // false
-
   CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
-
   CJSON(alexaNumPresets, interfaces["va"]["p"]);
+#endif
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   CJSON(mqttEnabled, if_mqtt["en"]);
   getStringFromJson(mqttServer, if_mqtt[F("broker")], MQTT_MAX_SERVER_LEN+1);
@@ -556,7 +567,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonArray if_hue_ip = if_hue["ip"];
 
-  for (byte i = 0; i < 4; i++)
+  for (unsigned i = 0; i < 4; i++)
     CJSON(hueIP[i], if_hue_ip[i]);
 #endif
 
@@ -730,7 +741,9 @@ void serializeConfig() {
   JsonObject id = root.createNestedObject("id");
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
+#ifndef WLED_DISABLE_ALEXA
   id[F("inv")] = alexaInvocationName;
+#endif
   id[F("sui")] = simplifiedUI;
 
   JsonObject nw = root.createNestedObject("nw");
@@ -784,7 +797,7 @@ void serializeConfig() {
   ethernet["type"] = ethernetType;
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     JsonArray pins = ethernet.createNestedArray("pin");
-    for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) pins.add(esp32_nonconfigurable_ethernet_pins[p].pin);
+    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) pins.add(esp32_nonconfigurable_ethernet_pins[p].pin);
     if (ethernetBoards[ethernetType].eth_power>=0)     pins.add(ethernetBoards[ethernetType].eth_power);
     if (ethernetBoards[ethernetType].eth_mdc>=0)       pins.add(ethernetBoards[ethernetType].eth_mdc);
     if (ethernetBoards[ethernetType].eth_mdio>=0)      pins.add(ethernetBoards[ethernetType].eth_mdio);
@@ -809,8 +822,8 @@ void serializeConfig() {
   hw_led[F("total")] = strip.getLengthTotal(); //provided for compatibility on downgrade and per-output ABL
   hw_led[F("maxpwr")] = BusManager::ablMilliampsMax();
   hw_led[F("ledma")] = 0; // no longer used
-  hw_led["cct"] = correctWB;
-  hw_led[F("cr")] = cctFromRgb;
+  hw_led["cct"] = strip.correctWB;
+  hw_led[F("cr")] = strip.cctFromRgb;
   hw_led[F("ic")] = cctICused;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
@@ -922,7 +935,7 @@ void serializeConfig() {
   JsonObject light = root.createNestedObject(F("light"));
   light[F("scale-bri")] = briMultiplier;
   light[F("pal-mode")] = strip.paletteBlend;
-  light[F("aseg")] = autoSegments;
+  light[F("aseg")] = strip.autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
   light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
@@ -1010,7 +1023,7 @@ void serializeConfig() {
   if_va["p"] = alexaNumPresets;
 #endif
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["en"] = mqttEnabled;
   if_mqtt[F("broker")] = mqttServer;
@@ -1037,7 +1050,7 @@ void serializeConfig() {
   if_hue_recv["col"] = hueApplyColor;
 
   JsonArray if_hue_ip = if_hue.createNestedArray("ip");
-  for (byte i = 0; i < 4; i++) {
+  for (unsigned i = 0; i < 4; i++) {
     if_hue_ip.add(hueIP[i]);
   }
 #endif
@@ -1072,7 +1085,7 @@ void serializeConfig() {
 
   JsonArray timers_ins = timers.createNestedArray("ins");
 
-  for (byte i = 0; i < 10; i++) {
+  for (unsigned i = 0; i < 10; i++) {
     if (timerMacro[i] == 0 && timerHours[i] == 0 && timerMinutes[i] == 0) continue; // sunrise/sunset get saved always (timerHours=255)
     JsonObject timers_ins0 = timers_ins.createNestedObject();
     timers_ins0["en"] = (timerWeekday[i] & 0x01);
@@ -1104,7 +1117,7 @@ void serializeConfig() {
   dmx[F("start-led")] = DMXStartLED;
 
   JsonArray dmx_fixmap = dmx.createNestedArray(F("fixmap"));
-  for (byte i = 0; i < 15; i++) {
+  for (unsigned i = 0; i < 15; i++) {
     dmx_fixmap.add(DMXFixtureMap[i]);
   }
 
@@ -1156,7 +1169,7 @@ bool deserializeConfigSec() {
 
   [[maybe_unused]] JsonObject interfaces = root["if"];
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   getStringFromJson(mqttPass, if_mqtt["psk"], 65);
 #endif
@@ -1197,7 +1210,7 @@ void serializeConfigSec() {
   ap["psk"] = apPass;
 
   [[maybe_unused]] JsonObject interfaces = root.createNestedObject("if");
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;
 #endif

@@ -168,7 +168,7 @@ void appendGPIOinfo() {
 
   #ifdef WLED_USE_ETHERNET
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-    for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { oappend(","); oappend(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); }
+    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { oappend(","); oappend(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); }
     if (ethernetBoards[ethernetType].eth_power>=0)     { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
     if (ethernetBoards[ethernetType].eth_mdc>=0)       { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
     if (ethernetBoards[ethernetType].eth_mdio>=0)      { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
@@ -361,10 +361,10 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(WLED_MAX_ANALOG_CHANNELS,nS,10));
     oappend(SET_F(");"));
 
-    sappend('c',SET_F("MS"),autoSegments);
-    sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("MS"),strip.autoSegments);
+    sappend('c',SET_F("CCT"),strip.correctWB);
     sappend('c',SET_F("IC"),cctICused);
-    sappend('c',SET_F("CR"),cctFromRgb);
+    sappend('c',SET_F("CR"),strip.cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
@@ -533,15 +533,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("FB"),arlsForceMaxBri);
     sappend('c',SET_F("RG"),arlsDisableGammaCorrection);
     sappend('v',SET_F("WO"),arlsOffset);
+    #ifndef WLED_DISABLE_ALEXA
     sappend('c',SET_F("AL"),alexaEnabled);
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappend('v',SET_F("AP"),alexaNumPresets);
-    #ifdef WLED_DISABLE_ALEXA
+    #else
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
     #endif
 
-    #ifdef WLED_ENABLE_MQTT
+    #ifndef WLED_DISABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
     sappends('s',SET_F("MS"),mqttServer);
     sappend('v',SET_F("MQPORT"),mqttPort);
@@ -632,7 +633,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("A1"),macroAlexaOff);
     sappend('v',SET_F("MC"),macroCountdown);
     sappend('v',SET_F("MN"),macroNl);
-    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+    for (unsigned i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addRow("));
       oappend(itoa(i,tm,10));  oappend(",");
       oappend(itoa(macroButton[i],tm,10)); oappend(",");
@@ -758,7 +759,7 @@ void getSettingsJS(byte subPage, char* dest)
       }
       sappend('v',SET_F("MPC"),strip.panels);
       // panels
-      for (uint8_t i=0; i<strip.panels; i++) {
+      for (unsigned i=0; i<strip.panels; i++) {
         char n[5];
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
@@ -766,7 +767,7 @@ void getSettingsJS(byte subPage, char* dest)
         char pO[8] = { '\0' };
         snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
         pO[7] = '\0';
-        uint8_t l = strlen(pO);
+        unsigned l = strlen(pO);
         // create P0B, P1B, ..., P63B, etc for other PxxX
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);

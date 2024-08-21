@@ -93,7 +93,7 @@ void doublePressAction(uint8_t b)
 bool isButtonPressed(uint8_t i)
 {
   if (btnPin[i]<0) return false;
-  uint8_t pin = btnPin[i];
+  unsigned pin = btnPin[i];
 
   switch (buttonType[i]) {
     case BTN_TYPE_NONE:
@@ -171,20 +171,20 @@ void handleAnalog(uint8_t b)
 {
   static uint8_t oldRead[WLED_MAX_BUTTONS] = {0};
   static float filteredReading[WLED_MAX_BUTTONS] = {0.0f};
-  uint16_t rawReading;    // raw value from analogRead, scaled to 12bit
+  unsigned rawReading;    // raw value from analogRead, scaled to 12bit
 
   DEBUG_PRINT(F("Analog: Reading button ")); DEBUG_PRINTLN(b);
 
   #ifdef ESP8266
   rawReading = analogRead(A0) << 2;   // convert 10bit read to 12bit
   #else
-  if ((btnPin[b] < 0) || (digitalPinToAnalogChannel(btnPin[b]) < 0)) return; // pin must support analog ADC - newer esp32 frameworks throw lots of warnings otherwise
+  if ((btnPin[b] < 0) /*|| (digitalPinToAnalogChannel(btnPin[b]) < 0)*/) return; // pin must support analog ADC - newer esp32 frameworks throw lots of warnings otherwise
   rawReading = analogRead(btnPin[b]); // collect at full 12bit resolution
   #endif
   yield();                            // keep WiFi task running - analog read may take several millis on ESP8266
 
   filteredReading[b] += POT_SMOOTHING * ((float(rawReading) / 16.0f) - filteredReading[b]); // filter raw input, and scale to [0..255]
-  uint16_t aRead = max(min(int(filteredReading[b]), 255), 0);                               // squash into 8bit
+  unsigned aRead = max(min(int(filteredReading[b]), 255), 0);                               // squash into 8bit
   if(aRead <= POT_SENSITIVITY) aRead = 0;                                                   // make sure that 0 and 255 are used
   if(aRead >= 255-POT_SENSITIVITY) aRead = 255;
 
@@ -260,7 +260,7 @@ void handleButton()
   if (strip.isUpdating() && (now - lastRun < ANALOG_BTN_READ_CYCLE+1)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
   lastRun = now;
 
-  for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
+  for (unsigned b=0; b<WLED_MAX_BUTTONS; b++) {
     #ifdef ESP8266
     if ((btnPin[b]<0 && !(buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED)) || buttonType[b] == BTN_TYPE_NONE) continue;
     #else
