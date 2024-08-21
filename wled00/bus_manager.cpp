@@ -501,9 +501,7 @@ void BusPwm::show() {
   if (!_valid) return;
   unsigned numPins = NUM_PWM_PINS(_type);
   unsigned maxBri = (1<<_depth) - 1;
-  #ifdef ESP8266
-  unsigned pwmBri = (unsigned)(roundf(powf((float)_bri / 255.0f, 1.7f) * (float)maxBri)); // using gamma 1.7 to extrapolate PWM duty cycle
-  #else  // use CIE brightness formula
+  // use CIE brightness formula
   unsigned pwmBri = (unsigned)_bri * 100;  
   if(pwmBri < 2040) pwmBri = ((pwmBri << _depth) + 115043) / 230087; //adding '0.5' before division for correct rounding
   else {  
@@ -512,8 +510,6 @@ void BusPwm::show() {
     temp = temp * temp * temp * (1<<_depth) - 1; 
     pwmBri = (unsigned)temp;
   }
-  Serial.println(pwmBri);
-  #endif
   for (unsigned i = 0; i < numPins; i++) {
     unsigned scaled = (_data[i] * pwmBri) / 255;
     if (_reversed) scaled = maxBri - scaled;
