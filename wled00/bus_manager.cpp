@@ -378,28 +378,27 @@ void BusDigital::cleanup() {
 }
 
 std::vector<LEDType> BusDigital::getLEDTypes() {
-  std::vector<LEDType> types;
-  types.push_back({TYPE_WS2812_RGB, "D", PSTR("WS281x")});
-  types.push_back({TYPE_SK6812_RGBW, "D", PSTR("SK6812/WS2814 RGBW")});
-  types.push_back({TYPE_TM1814, "D", PSTR("TM1814")});
-  types.push_back({TYPE_WS2811_400KHZ, "D", PSTR("400kHz")});
-  types.push_back({TYPE_TM1829, "D", PSTR("TM1829")});
-  types.push_back({TYPE_UCS8903, "D", PSTR("UCS8903")});
-  types.push_back({TYPE_APA106, "D", PSTR("APA106/PL9823")});
-  types.push_back({TYPE_TM1914, "D", PSTR("TM1914")});
-  types.push_back({TYPE_FW1906, "D", PSTR("FW1906 GRBCW")});
-  types.push_back({TYPE_UCS8904, "D", PSTR("UCS8904 RGBW")});
-  types.push_back({TYPE_WS2805, "D", PSTR("WS2805 RGBCW")});
-  types.push_back({TYPE_WS2812_1CH_X3, "D", PSTR("WS2811 White")});
-    //{TYPE_WS2812_2CH_X3, "D", PSTR("WS2811 CCT")},
-    //{TYPE_WS2812_WWA, "D", PSTR("WS2811 WWA")},
-  types.push_back({TYPE_WS2801, "2P", PSTR("WS2801")});
-  types.push_back({TYPE_APA102, "2P", PSTR("APA102")});
-  types.push_back({TYPE_LPD8806, "2P", PSTR("LPD8806")});
-  types.push_back({TYPE_LPD6803, "2P", PSTR("LPD6803")});
-  types.push_back({TYPE_P9813, "2P", PSTR("PP9813")});
-
-  return types;
+  return {
+    {TYPE_WS2812_RGB, "D", PSTR("WS281x")},
+    {TYPE_SK6812_RGBW, "D", PSTR("SK6812/WS2814 RGBW")},
+    {TYPE_TM1814, "D", PSTR("TM1814")},
+    {TYPE_WS2811_400KHZ, "D", PSTR("400kHz")},
+    {TYPE_TM1829, "D", PSTR("TM1829")},
+    {TYPE_UCS8903, "D", PSTR("UCS8903")},
+    {TYPE_APA106, "D", PSTR("APA106/PL9823")},
+    {TYPE_TM1914, "D", PSTR("TM1914")},
+    {TYPE_FW1906, "D", PSTR("FW1906 GRBCW")},
+    {TYPE_UCS8904, "D", PSTR("UCS8904 RGBW")},
+    {TYPE_WS2805, "D", PSTR("WS2805 RGBCW")},
+    {TYPE_WS2812_1CH_X3, "D", PSTR("WS2811 White")},
+      //{TYPE_WS2812_2CH_X3, "D", PSTR("WS2811 CCT")},
+      //{TYPE_WS2812_WWA, "D", PSTR("WS2811 WWA")},
+    {TYPE_WS2801, "2P", PSTR("WS2801")},
+    {TYPE_APA102, "2P", PSTR("APA102")},
+    {TYPE_LPD8806, "2P", PSTR("LPD8806")},
+    {TYPE_LPD6803, "2P", PSTR("LPD6803")},
+    {TYPE_P9813, "2P", PSTR("PP9813")}
+  };
 }
 
 
@@ -581,14 +580,14 @@ void BusPwm::deallocatePins() {
 }
 
 std::vector<LEDType> BusPwm::getLEDTypes() {
-  std::vector<LEDType> types;
-  types.push_back({TYPE_ANALOG_1CH, "A", PSTR("PWM White")});
-  types.push_back({TYPE_ANALOG_2CH, "AA", PSTR("PWM CCT")});
-  types.push_back({TYPE_ANALOG_3CH, "AAA", PSTR("PWM RGB")});
-  types.push_back({TYPE_ANALOG_4CH, "AAAA", PSTR("PWM RGBW")});
-  types.push_back({TYPE_ANALOG_5CH, "AAAAA", PSTR("PWM RGB+CCT")});
-    //{TYPE_ANALOG_6CH, "AAAAAA", PSTR("PWM RGB+DCCT")},
-  return types;
+  return {
+    {TYPE_ANALOG_1CH, "A", PSTR("PWM White")},
+    {TYPE_ANALOG_2CH, "AA", PSTR("PWM CCT")},
+    {TYPE_ANALOG_3CH, "AAA", PSTR("PWM RGB")},
+    {TYPE_ANALOG_4CH, "AAAA", PSTR("PWM RGBW")},
+    {TYPE_ANALOG_5CH, "AAAAA", PSTR("PWM RGB+CCT")},
+      //{TYPE_ANALOG_6CH, "AAAAAA", PSTR("PWM RGB+DCCT")},
+  };
 }
 
 
@@ -636,9 +635,9 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) {
 }
 
 std::vector<LEDType> BusOnOff::getLEDTypes() {
-  std::vector<LEDType> types;
-  types.push_back({TYPE_ONOFF, "", PSTR("On/Off")});
-  return types;
+  return {
+    {TYPE_ONOFF, "", PSTR("On/Off")}
+  };
 }
 
 
@@ -702,12 +701,12 @@ uint8_t BusNetwork::getPins(uint8_t* pinArray) {
 }
 
 std::vector<LEDType> BusNetwork::getLEDTypes() {
-  std::vector<LEDType> types;
-  types.push_back({TYPE_NET_DDP_RGB, "V", PSTR("DDP RGB (network)")});
-  types.push_back({TYPE_NET_ARTNET_RGB, "V", PSTR("Art-Net RGB (network)")});
-  types.push_back({TYPE_NET_DDP_RGBW, "V", PSTR("DDP RGBW (network)")});
-  types.push_back({TYPE_NET_ARTNET_RGBW, "V", PSTR("Art-Net RGBW (network)")});
-  return types;
+  return {
+    {TYPE_NET_DDP_RGB, "V", PSTR("DDP RGB (network)")},
+    {TYPE_NET_ARTNET_RGB, "V", PSTR("Art-Net RGB (network)")},
+    {TYPE_NET_DDP_RGBW, "V", PSTR("DDP RGBW (network)")},
+    {TYPE_NET_ARTNET_RGBW, "V", PSTR("Art-Net RGBW (network)")}
+  };
 }
 
 void BusNetwork::cleanup() {
