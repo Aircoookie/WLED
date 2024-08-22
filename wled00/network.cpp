@@ -215,81 +215,74 @@ bool isWiFiConfigured() {
   return multiWiFi.size() > 1 || (strlen(multiWiFi[0].clientSSID) >= 1 && strcmp_P(multiWiFi[0].clientSSID, PSTR(DEFAULT_CLIENT_SSID)) != 0);
 }
 
+#if defined(ESP8266)
+  #define ARDUINO_EVENT_WIFI_AP_STADISCONNECTED WIFI_EVENT_SOFTAPMODE_STADISCONNECTED
+  #define ARDUINO_EVENT_WIFI_AP_STACONNECTED    WIFI_EVENT_SOFTAPMODE_STACONNECTED
+  #define ARDUINO_EVENT_WIFI_STA_GOT_IP         WIFI_EVENT_STAMODE_GOT_IP
+  #define ARDUINO_EVENT_WIFI_STA_CONNECTED      WIFI_EVENT_STAMODE_CONNECTED
+  #define ARDUINO_EVENT_WIFI_STA_DISCONNECTED   WIFI_EVENT_STAMODE_DISCONNECTED
+#elif defined(ESP32) && !defined(ESP_ARDUINO_VERSION_MAJOR) //ESP_IDF_VERSION_MAJOR==3
+  // not strictly IDF v3 but Arduino core related
+  #define ARDUINO_EVENT_WIFI_AP_STADISCONNECTED SYSTEM_EVENT_AP_STADISCONNECTED
+  #define ARDUINO_EVENT_WIFI_AP_STACONNECTED    SYSTEM_EVENT_AP_STACONNECTED
+  #define ARDUINO_EVENT_WIFI_STA_GOT_IP         SYSTEM_EVENT_STA_GOT_IP
+  #define ARDUINO_EVENT_WIFI_STA_CONNECTED      SYSTEM_EVENT_STA_CONNECTED
+  #define ARDUINO_EVENT_WIFI_STA_DISCONNECTED   SYSTEM_EVENT_STA_DISCONNECTED
+  #define ARDUINO_EVENT_WIFI_AP_START           SYSTEM_EVENT_AP_START
+  #define ARDUINO_EVENT_WIFI_AP_STOP            SYSTEM_EVENT_AP_STOP
+  #define ARDUINO_EVENT_ETH_START               SYSTEM_EVENT_ETH_START
+  #define ARDUINO_EVENT_ETH_CONNECTED           SYSTEM_EVENT_ETH_CONNECTED
+  #define ARDUINO_EVENT_ETH_DISCONNECTED        SYSTEM_EVENT_ETH_DISCONNECTED
+#endif
 
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
   switch (event) {
-#ifdef ESP8266
-    case WIFI_EVENT_STAMODE_GOT_IP:
-      DEBUG_PRINTLN();
-      DEBUG_PRINT(F("IP address: ")); DEBUG_PRINTLN(Network.localIP());
-      break;
-    case WIFI_EVENT_STAMODE_CONNECTED:
-      DEBUG_PRINTF_P(PSTR("WiFi: Connected! @ %lu ms\r\n"), millis());
-      wasConnected = true;
-      break;
-    case WIFI_EVENT_STAMODE_DISCONNECTED:
-      // called quite often (when not connected to WiFi)
-      if (wasConnected) {
-        DEBUG_PRINTLN(F("WiFi: Disconnected"));
-        if (interfacesInited && WiFi.scanComplete() >= 0) findWiFi(true); // reinit WiFi scan
-        interfacesInited = false;
-        forceReconnect = true;
-      }
-      break;
-    case WIFI_EVENT_SOFTAPMODE_STACONNECTED:
-      // AP client connected
-      DEBUG_PRINTLN(F("WiFi: AP Client Connected"));
-      apClients++;
-      DEBUG_PRINTLN(apClients);
-      break;
-    case WIFI_EVENT_SOFTAPMODE_STADISCONNECTED:
+    case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
       // AP client disconnected
       DEBUG_PRINTLN(F("WiFi: AP Client Disconnected"));
       if (--apClients == 0 && isWiFiConfigured()) forceReconnect = true; // no clients reconnect WiFi if awailable
       DEBUG_PRINTLN(apClients);
       break;
-#else
-    case SYSTEM_EVENT_AP_STADISCONNECTED:
-      // AP client disconnected
-      DEBUG_PRINTLN(F("WiFi: AP Client Disconnected"));
-      if (--apClients == 0 && isWiFiConfigured()) forceReconnect = true; // no clients reconnect WiFi if awailable
-      DEBUG_PRINTLN(apClients);
-      break;
-    case SYSTEM_EVENT_AP_STACONNECTED:
+    case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
       // AP client connected
+      // it looks like this doesn't work as expected
       DEBUG_PRINTLN(F("WiFi: AP Client Connected"));
       apClients++;
       DEBUG_PRINTLN(apClients);
       break;
-    case SYSTEM_EVENT_STA_GOT_IP:
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
       DEBUG_PRINTLN();
       DEBUG_PRINT(F("IP address: ")); DEBUG_PRINTLN(Network.localIP());
       break;
-    case SYSTEM_EVENT_STA_CONNECTED:
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
       DEBUG_PRINTF_P(PSTR("WiFi: Connected! @ %lu ms\r\n"), millis());
       wasConnected = true;
       break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-      if (wasConnected) {
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      if (wasConnected && interfacesInited) {
         DEBUG_PRINTLN(F("WiFi: Disconnected"));
-        if (interfacesInited && WiFi.scanComplete() >= 0) findWiFi(true); // reinit WiFi scan
+        if (interfacesInited && WiFi.scanComplete() >= 0) {
+          findWiFi(true); // reinit WiFi scan
+          forceReconnect = true;
+        }
         interfacesInited = false;
-        forceReconnect = true;
       }
       break;
-    case SYSTEM_EVENT_AP_START:
+  #ifdef ESP32
+    case ARDUINO_EVENT_WIFI_AP_START:
       DEBUG_PRINTLN(F("WiFi: AP Started"));
       break;
-    case SYSTEM_EVENT_AP_STOP:
+    case ARDUINO_EVENT_WIFI_AP_STOP:
       DEBUG_PRINTLN(F("WiFi: AP Stopped"));
       break;
+  #endif
   #if defined(WLED_USE_ETHERNET)
-    case SYSTEM_EVENT_ETH_START:
+    case ARDUINO_EVENT_ETH_START:
       DEBUG_PRINTLN(F("ETH Started"));
       break;
-    case SYSTEM_EVENT_ETH_CONNECTED:
+    case ARDUINO_EVENT_ETH_CONNECTED:
       {
       DEBUG_PRINTLN(F("ETH Connected"));
       if (!apActive) {
@@ -312,7 +305,7 @@ void WiFiEvent(WiFiEvent_t event)
       showWelcomePage = false;
       break;
       }
-    case SYSTEM_EVENT_ETH_DISCONNECTED:
+    case ARDUINO_EVENT_ETH_DISCONNECTED:
       DEBUG_PRINTLN(F("ETH Disconnected"));
       // This doesn't really affect ethernet per se,
       // as it's only configured once.  Rather, it
@@ -323,7 +316,6 @@ void WiFiEvent(WiFiEvent_t event)
       forceReconnect = true;
       break;
   #endif
-#endif
     default:
       break;
   }

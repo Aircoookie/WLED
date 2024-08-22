@@ -653,6 +653,9 @@ void WLED::initAP(bool resetAP)
 
   if (!apActive) // start captive portal if AP active
   {
+    #ifdef WLED_ENABLE_WEBSOCKETS
+    ws.onEvent(wsEvent);
+    #endif
     DEBUG_PRINTF_P(PSTR("WiFi: Init AP interfaces @ %lu ms\r\n"), millis());
     server.begin();
     if (udpPort > 0 && udpPort != ntpLocalPort) {
@@ -960,22 +963,34 @@ void WLED::handleConnection()
       sendImprovStateResponse(0x03, true);
       improvActive = 2;
     }
+/*
+    #ifdef ESP8266
+    int staClients = wifi_softap_get_station_num();
+    #else
+    wifi_sta_list_t stationList;
+    esp_wifi_ap_get_sta_list(&stationList);
+    int staClients = stationList.num;
+    #endif
+*/
     // WiFi is configured with multiple networks; try to reconnect if not connected after 15s or 300s if clients connected to AP
     // this will cycle through all configured SSIDs (findWiFi() sorted SSIDs by signal strength)
     // ESP usually connects to WiFi within 10s but we should give it a bit of time before attempting another network
-    if (wifiConfigured && multiWiFi.size() > 1 && now > lastReconnectAttempt + ((apClients) ? 300000 : 15000)) {
-#ifndef WLED_DISABLE_ESPNOW
-      // wait for 3 skipped heartbeats if ESP-NOW sync is enabled
-      if (now > 12000 + heartbeatESPNow)
-#endif
-      {
-      if (improvActive == 2) improvActive = 3;
-      DEBUG_PRINTF_P(PSTR("WiFi: Last reconnect too old @ %lu ms\r\n"), now);
-      if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // we couldn't connect, try with another network from the list
-      initConnection();
-      // postpone searching for 2 min after last SSID from list and rely on auto reconnect
-      if (selectedWiFi + 1U == multiWiFi.size()) lastReconnectAttempt += 120000;
-      return;
+    // when a disconnect happens (see onEvent()) the WiFi scan is reinitiated and forced reconnect scheduled
+    if (wifiConfigured && multiWiFi.size() > 1 && now > lastReconnectAttempt + ((apActive) ? WLED_AP_TIMEOUT : 15000)) {
+      if ((!apActive || apClients == 0)
+        #ifndef WLED_DISABLE_ESPNOW
+        // wait for 3 skipped heartbeats if ESP-NOW sync is enabled
+        && now > 12000 + heartbeatESPNow
+        #endif
+        ) {
+        if (improvActive == 2) improvActive = 3;
+        DEBUG_PRINTF_P(PSTR("WiFi: Last reconnect too old @ %lu ms\r\n"), now);
+        if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // we couldn't connect, try with another network from the list
+        stopAP(true);
+        initConnection();
+        // postpone searching for 2 min after last SSID from list and rely on auto reconnect
+        if (selectedWiFi + 1U == multiWiFi.size()) lastReconnectAttempt += 120000;
+        return;
       }
     }
     // open AP if this is 12s after boot connect attempt or 12s after any disconnect (_NO_CONN)
@@ -983,17 +998,18 @@ void WLED::handleConnection()
     if (!apActive && now > lastReconnectAttempt + 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
       if (!(apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT)) {
         DEBUG_PRINTF_P(PSTR("WiFi: Opening not connected AP. @ %lu ms\r\n"), millis());
+        WiFi.disconnect(true); // prevent connecting to WiFi while AP is open (may be reset above)
         WiFi.mode(WIFI_MODE_AP);
         initAP();  // start temporary AP only within first 5min
         return;
       }
     }
     // disconnect AP after 5min if no clients connected and mode TEMPORARY
-    if (apActive && apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT && apClients == 0) {
+    if (apActive && apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT) {
       // if AP was enabled more than 10min after boot or if client was connected more than 10min after boot do not disconnect AP mode
-      if (now < 2*WLED_AP_TIMEOUT) {
+      if (apClients == 0 && now < 2*WLED_AP_TIMEOUT) {
         DEBUG_PRINTF_P(PSTR("WiFi: Temporary AP disabled. @ %lu ms\r\n"), millis());
-        stopAP();
+        stopAP(true);
         WiFi.mode(WIFI_MODE_STA);
         return;
       }
