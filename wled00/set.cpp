@@ -215,7 +215,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
-    ColorOrderMap com = {};
     for (int s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
       int offset = s < 10 ? 48 : 55;
       char xs[4] = "XS"; xs[2] = offset+s; xs[3] = 0; //start LED
@@ -227,10 +226,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         length = request->arg(xc).toInt();
         colorOrder = request->arg(xo).toInt() & 0x0F;
         colorOrder |= (request->arg(xw).toInt() & 0x0F) << 4; // add W swap information
-        com.add(start, length, colorOrder);
+        if (!BusManager::getColorOrderMap().add(start, length, colorOrder)) break;
       }
     }
-    BusManager::updateColorOrderMap(com);
 
     // update other pins
     #ifndef WLED_DISABLE_INFRARED

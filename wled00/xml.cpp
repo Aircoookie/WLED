@@ -349,6 +349,8 @@ void getSettingsJS(byte subPage, char* dest)
 
     appendGPIOinfo();
 
+    oappend(SET_F("d.ledTypes=")); oappend(BusManager::getLEDTypesJSONString().c_str()); oappend(";");
+
     // set limits
     oappend(SET_F("bLimits("));
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
