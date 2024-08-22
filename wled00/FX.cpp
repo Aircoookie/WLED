@@ -10759,12 +10759,12 @@ uint16_t mode_particleFire1D(void)
   PartSys->setColorByAge(true); 
   for(uint i = 0; i < PartSys->numSources; i++) 
   { 
-    PartSys->sources[i].var = 1 + (SEGMENT.speed >> 4);  
+    PartSys->sources[i].var = 2 + (SEGMENT.speed >> 4);  
     PartSys->sources[i].minLife = 200 + SEGMENT.intensity + (i << 3); 
     PartSys->sources[i].maxLife = 300 + SEGMENT.intensity + (i << 4); 
     PartSys->sources[i].source.x = -256; // source position below strip start
-    PartSys->sources[i].v = 2 + (SEGMENT.speed >> (2 + (i<<1)));
-    if(SEGMENT.call % 3 == 0) 
+    PartSys->sources[i].v = (SEGMENT.speed >> (2 + (i<<1)));
+    if(SEGMENT.call % 4 == 0) 
       PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
   }
 if (SEGMENT.call & 0x01) // update noise position every second frames, also add wind
@@ -10787,9 +10787,6 @@ if (SEGMENT.call & 0x01) // update noise position every second frames, also add 
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,,Blur/Overlay;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
-
-
-
 #endif //WLED_DISABLE_PARTICLESYSTEM1D
 
 //////////////////////////////////////////////////////////////////////////////////////////
