@@ -96,6 +96,8 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     //pong message was received (in response to a ping request maybe)
     DEBUG_PRINTLN(F("WS pong."));
 
+  } else {
+    DEBUG_PRINTLN(F("WS unknown event."));
   }
 }
 
@@ -104,10 +106,11 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
 
   if (!requestJSONBufferLock(12)) {
+    const char* error = PSTR("{\"error\":3}");
     if (client) {
-      client->text(F("{\"error\":3}")); // ERR_NOBUF
+      client->text(FPSTR(error)); // ERR_NOBUF
     } else {
-      ws.textAll(F("{\"error\":3}")); // ERR_NOBUF
+      ws.textAll(FPSTR(error)); // ERR_NOBUF
     }
     return;
   }
@@ -120,6 +123,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   size_t len = measureJson(*pDoc);
   DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for WS request (%u).\n"), pDoc->memoryUsage(), len);
 
+  // the following may no longer be necessary as heap management has been fixed by @willmmiles in AWS
   size_t heap1 = ESP.getFreeHeap();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
   #ifdef ESP8266
