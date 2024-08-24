@@ -350,7 +350,6 @@ struct BusConfig {
     else if (Bus::is2Pin(type)) nPins = 2;
     else if (Bus::isPWM(type))  nPins = Bus::numPWMPins(type);
     for (size_t i = 0; i < nPins; i++) pins[i] = ppins[i];
-    DEBUGBUS_PRINTF_P(PSTR("BusConfig type %d pins: %u\r\n"), (int)type, (int)Bus::isVirtual(type), nPins);
   }
 
   //validates start and length and extends total if needed
