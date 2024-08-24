@@ -4,6 +4,9 @@
 
 #include <Arduino.h>
 #include <IPAddress.h>
+#ifdef ARDUINO_ARCH_ESP32
+#include "driver/ledc.h"
+#endif
 #include "const.h"
 #include "pin_manager.h"
 #include "bus_wrapper.h"
@@ -96,11 +99,11 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
 , _milliAmpsMax(bc.milliAmpsMax)
 , _colorOrderMap(com)
 {
-  if (!IS_DIGITAL(bc.type) || !bc.count) return;
+  if (!isDigital(bc.type) || !bc.count) return;
   if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
   _frequencykHz = 0U;
   _pins[0] = bc.pins[0];
-  if (IS_2PIN(bc.type)) {
+  if (is2Pin(bc.type)) {
     if (!pinManager.allocatePin(bc.pins[1], true, PinOwner::BusDigital)) {
       cleanup();
       return;
@@ -110,13 +113,16 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   }
   _iType = PolyBus::getI(bc.type, _pins, nr);
   if (_iType == I_NONE) return;
+  _hasRgb = hasRGB(bc.type);
+  _hasWhite = hasWhite(bc.type);
+  _hasCCT = hasCCT(bc.type);
   if (bc.doubleBuffer && !allocateData(bc.count * Bus::getNumberOfChannels(bc.type))) return;
   //_buffering = bc.doubleBuffer;
   uint16_t lenToCreate = bc.count;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
   _valid = (_busPtr != nullptr);
-  DEBUG_PRINTF_P(PSTR("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n"), _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], IS_2PIN(bc.type)?_pins[1]:255, _iType, _milliAmpsPerLed, _milliAmpsMax);
+  DEBUG_PRINTF_P(PSTR("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n"), _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], is2Pin(bc.type)?_pins[1]:255, _iType, _milliAmpsPerLed, _milliAmpsMax);
 }
 
 //fine tune power estimation constants for your setup
@@ -337,7 +343,7 @@ uint32_t IRAM_ATTR BusDigital::getPixelColor(uint16_t pix) const {
 }
 
 uint8_t BusDigital::getPins(uint8_t* pinArray) const {
-  unsigned numPins = IS_2PIN(_type) ? 2 : 1;
+  unsigned numPins = is2Pin(_type) + 1;
   if (pinArray) for (unsigned i = 0; i < numPins; i++) pinArray[i] = _pins[i];
   return numPins;
 }
@@ -391,10 +397,10 @@ void BusDigital::cleanup(void) {
 #endif
 
 BusPwm::BusPwm(BusConfig &bc)
-: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
+: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed, bc.refreshReq) // hijack Off refresh flag to indicate usage of phase shifting
 {
-  if (!IS_PWM(bc.type)) return;
-  unsigned numPins = NUM_PWM_PINS(bc.type);
+  if (!isPWM(bc.type)) return;
+  unsigned numPins = numPWMPins(bc.type);
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
   for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
@@ -422,6 +428,9 @@ BusPwm::BusPwm(BusConfig &bc)
     ledcAttachPin(_pins[i], _ledcStart + i);
     #endif
   }
+  _hasRgb = hasRGB(bc.type);
+  _hasWhite = hasWhite(bc.type);
+  _hasCCT = hasCCT(bc.type);
   _data = _pwmdata; // avoid malloc() and use stack
   _valid = true;
   DEBUG_PRINTF_P(PSTR("%successfully inited PWM strip with type %u, frequency %u, bit depth %u and pins %u,%u,%u,%u,%u\n"), _valid?"S":"Uns", bc.type, _frequency, _depth, _pins[0], _pins[1], _pins[2], _pins[3], _pins[4]);
@@ -484,6 +493,7 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
   return RGBW32(_data[0], _data[0], _data[0], _data[0]);
 }
 
+/*
 #ifndef ESP8266
 static const uint16_t cieLUT[256] = {
 	0, 2, 4, 5, 7, 9, 11, 13, 15, 16, 
@@ -514,11 +524,13 @@ static const uint16_t cieLUT[256] = {
 	3890, 3930, 3971, 4012, 4053, 4095
 };
 #endif
+*/
 
 void BusPwm::show(void) {
   if (!_valid) return;
-  unsigned numPins = NUM_PWM_PINS(_type);
+  unsigned numPins = getPins();
   unsigned maxBri = (1<<_depth) - 1;
+/*
   #ifdef ESP8266
   unsigned pwmBri = (unsigned)(roundf(powf((float)_bri / 255.0f, 1.7f) * (float)maxBri)); // using gamma 1.7 to extrapolate PWM duty cycle
   #else
@@ -533,17 +545,43 @@ void BusPwm::show(void) {
     ledcWrite(_ledcStart + i, scaled);
     #endif
   }
+*/
+  // use CIE brightness formula (credit @dedehai)
+  unsigned pwmBri = (unsigned)_bri * 100;  
+  if (pwmBri < 2040) pwmBri = ((pwmBri << _depth) + 115043U) / 230087U; //adding '0.5' before division for correct rounding
+  else {
+    pwmBri += 4080;
+    float temp = (float)pwmBri / 29580.0f;
+    temp = temp * temp * temp * (1<<_depth) - 1;
+    pwmBri = (unsigned)temp;
+  }
+  // determine phase shift POC (credit @dedehai)
+  [[maybe_unused]] uint32_t phaseOffset = maxBri / numPins;
+  for (unsigned i = 0; i < numPins; i++) {
+    unsigned scaled = (_data[i] * pwmBri) / 255;
+    if (_reversed) scaled = maxBri - scaled;
+    #ifdef ESP8266
+    analogWrite(_pins[i], scaled);
+    #else
+    if (_needsRefresh) { // hacked to determine if phase shifted PWM is requested
+      uint8_t group = ((_ledcStart + i) / 8), channel = ((_ledcStart + i) % 8); // _ledcStart + i is always less than MAX_LED_CHANNELS/LEDC_CHANNELS
+      ledc_set_duty_with_hpoint((ledc_mode_t)group, (ledc_channel_t)channel, scaled, phaseOffset*i);
+      ledc_update_duty((ledc_mode_t)group, (ledc_channel_t)channel);
+    } else
+      ledcWrite(_ledcStart + i, scaled);
+    #endif
+  }
 }
 
 uint8_t BusPwm::getPins(uint8_t* pinArray) const {
   if (!_valid) return 0;
-  unsigned numPins = NUM_PWM_PINS(_type);
+  unsigned numPins = numPWMPins(_type);
   if (pinArray) for (unsigned i = 0; i < numPins; i++) pinArray[i] = _pins[i];
   return numPins;
 }
 
 void BusPwm::deallocatePins(void) {
-  unsigned numPins = NUM_PWM_PINS(_type);
+  unsigned numPins = getPins();
   for (unsigned i = 0; i < numPins; i++) {
     pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
     if (!pinManager.isPinOk(_pins[i])) continue;
@@ -571,6 +609,9 @@ BusOnOff::BusOnOff(BusConfig &bc)
   }
   _pin = currentPin; //store only after allocatePin() succeeds
   pinMode(_pin, OUTPUT);
+  _hasRgb = false;
+  _hasWhite = false;
+  _hasCCT = false;
   _data = &_onoffdata; // avoid malloc() and use stack
   _valid = true;
   DEBUG_PRINTF_P(PSTR("%successfully inited On/Off strip with pin %u\n"), _valid?"S":"Uns", _pin);
@@ -609,23 +650,22 @@ BusNetwork::BusNetwork(BusConfig &bc)
 {
   switch (bc.type) {
     case TYPE_NET_ARTNET_RGB:
-      _rgbw = false;
       _UDPtype = 2;
       break;
     case TYPE_NET_ARTNET_RGBW:
-      _rgbw = true;
       _UDPtype = 2;
       break;
     case TYPE_NET_E131_RGB:
-      _rgbw = false;
       _UDPtype = 1;
       break;
     default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
-      _rgbw = bc.type == TYPE_NET_DDP_RGBW;
       _UDPtype = 0;
       break;
   }
-  _UDPchannels = _rgbw ? 4 : 3;
+  _hasRgb = hasRGB(bc.type);
+  _hasWhite = hasWhite(bc.type);
+  _hasCCT = false;
+  _UDPchannels = _hasWhite + 3;
   _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
   _valid = (allocateData(_len * _UDPchannels) != nullptr);
   DEBUG_PRINTF_P(PSTR("%successfully inited virtual strip with type %u and IP %u.%u.%u.%u\n"), _valid?"S":"Uns", bc.type, bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);
@@ -633,25 +673,25 @@ BusNetwork::BusNetwork(BusConfig &bc)
 
 void BusNetwork::setPixelColor(uint16_t pix, uint32_t c) {
   if (!_valid || pix >= _len) return;
-  if (_rgbw) c = autoWhiteCalc(c);
+  if (_hasWhite) c = autoWhiteCalc(c);
   if (Bus::_cct >= 1900) c = colorBalanceFromKelvin(Bus::_cct, c); //color correction from CCT
   unsigned offset = pix * _UDPchannels;
   _data[offset]   = R(c);
   _data[offset+1] = G(c);
   _data[offset+2] = B(c);
-  if (_rgbw) _data[offset+3] = W(c);
+  if (_hasWhite) _data[offset+3] = W(c);
 }
 
 uint32_t BusNetwork::getPixelColor(uint16_t pix) const {
   if (!_valid || pix >= _len) return 0;
   unsigned offset = pix * _UDPchannels;
-  return RGBW32(_data[offset], _data[offset+1], _data[offset+2], (_rgbw ? _data[offset+3] : 0));
+  return RGBW32(_data[offset], _data[offset+1], _data[offset+2], (hasWhite() ? _data[offset+3] : 0));
 }
 
 void BusNetwork::show(void) {
   if (!_valid || !canShow()) return;
   _broadcastLock = true;
-  realtimeBroadcast(_UDPtype, _client, _len, _data, _bri, _rgbw);
+  realtimeBroadcast(_UDPtype, _client, _len, _data, _bri, hasWhite());
   _broadcastLock = false;
 }
 
@@ -669,13 +709,13 @@ void BusNetwork::cleanup(void) {
 
 //utility to get the approx. memory usage of a given BusConfig
 uint32_t BusManager::memUsage(BusConfig &bc) {
-  if (bc.type == TYPE_ONOFF || IS_PWM(bc.type)) return 5;
+  if (Bus::isOnOff(bc.type) || Bus::isPWM(bc.type)) return 5;
 
   unsigned len = bc.count + bc.skipAmount;
   unsigned channels = Bus::getNumberOfChannels(bc.type);
   unsigned multiplier = 1;
-  if (IS_DIGITAL(bc.type)) { // digital types
-    if (IS_16BIT(bc.type)) len *= 2; // 16-bit LEDs
+  if (Bus::isDigital(bc.type)) { // digital types
+    if (Bus::is16bit(bc.type)) len *= 2; // 16-bit LEDs
     #ifdef ESP8266
       if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
         multiplier = 5;
@@ -695,11 +735,11 @@ uint32_t BusManager::memUsage(unsigned maxChannels, unsigned maxCount, unsigned 
 
 int BusManager::add(BusConfig &bc) {
   if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
-  if (IS_VIRTUAL(bc.type)) {
+  if (Bus::isVirtual(bc.type)) {
     busses[numBusses] = new BusNetwork(bc);
-  } else if (IS_DIGITAL(bc.type)) {
+  } else if (Bus::isDigital(bc.type)) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
-  } else if (bc.type == TYPE_ONOFF) {
+  } else if (Bus::isOnOff(bc.type)) {
     busses[numBusses] = new BusOnOff(bc);
   } else {
     busses[numBusses] = new BusPwm(bc);
@@ -749,10 +789,10 @@ String BusManager::getLEDTypesJSONString(void) {
   String json = "[";
   for (const auto &type : types) {
     String id = String(type.id);
+    // capabilities follows similar pattern as JSON API 
+    int capabilities = Bus::hasRGB(type.id) | Bus::hasWhite(type.id)<<1 | Bus::hasCCT(type.id)<<2 | Bus::is16bit(type.id)<<4;
     json += "{i:" + id
-      + F(",w:") + String((int)Bus::hasWhite(type.id))
-      + F(",c:") + String((int)Bus::hasCCT(type.id))
-      + F(",s:") + String((int)Bus::is16bit(type.id))
+      + F(",c:") + String(capabilities)
       + F(",t:\"") + FPSTR(type.type)
       + F("\",n:\"") + FPSTR(type.name) + F("\"},");
   }
@@ -799,7 +839,7 @@ void BusManager::esp32RMTInvertIdle(void) {
       if (u >= _parallelOutputs + 8) return; // only 8 RMT channels
       rmt = u - _parallelOutputs;
     #endif
-    if (busses[u]->getLength()==0 || !IS_DIGITAL(busses[u]->getType()) || IS_2PIN(busses[u]->getType())) continue;
+    if (busses[u]->getLength()==0 || !Bus::isDigital(busses[u]->getType()) || IS_2PIN(busses[u]->getType())) continue;
     //assumes that bus number to rmt channel mapping stays 1:1
     rmt_channel_t ch = static_cast<rmt_channel_t>(rmt);
     rmt_idle_level_t lvl;
@@ -818,7 +858,7 @@ void BusManager::on(void) {
   if (pinManager.getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
     for (unsigned i = 0; i < numBusses; i++) {
       uint8_t pins[2] = {255,255};
-      if (IS_DIGITAL(busses[i]->getType()) && busses[i]->getPins(pins)) {
+      if (Bus::isDigital(busses[i]->getType()) && busses[i]->getPins(pins)) {
         if (pins[0] == LED_BUILTIN || pins[1] == LED_BUILTIN) {
           BusDigital *bus = static_cast<BusDigital*>(busses[i]);
           bus->reinit();

@@ -281,6 +281,7 @@
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
 //Digital types (data pin only) (16-39)
+#define TYPE_DIGITAL_MIN         16            // first usable digital type
 #define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
 #define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
 #define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
@@ -298,26 +299,36 @@
 #define TYPE_WS2805              32            //RGB + WW + CW
 #define TYPE_TM1914              33            //RGB
 #define TYPE_SM16825             34            //RGB + WW + CW
+#define TYPE_DIGITAL_MAX         39            // last usable digital type
 //"Analog" types (40-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
+#define TYPE_ANALOG_MIN          41            // first usable analog type
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
 #define TYPE_ANALOG_2CH          42            //analog WW + CW
 #define TYPE_ANALOG_3CH          43            //analog RGB
 #define TYPE_ANALOG_4CH          44            //analog RGBW
 #define TYPE_ANALOG_5CH          45            //analog RGB + WW + CW
+#define TYPE_ANALOG_6CH          46            //analog RGB + A + WW + CW
+#define TYPE_ANALOG_MAX          47            // last usable analog type
 //Digital types (data + clock / SPI) (48-63)
+#define TYPE_2PIN_MIN            48
 #define TYPE_WS2801              50
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
 #define TYPE_LPD6803             54
+#define TYPE_2PIN_MAX            63
 //Network types (master broadcast) (80-95)
+#define TYPE_VIRTUAL_MIN         80
 #define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
 #define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus, unused)
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 #define TYPE_NET_ARTNET_RGBW     89            //network ArtNet RGB bus (master broadcast bus, unused)
+#define TYPE_VIRTUAL_MAX         95
 
+/*
+// old macros that have been moved to Bus class
 #define IS_TYPE_VALID(t) ((t) > 15 && (t) < 128)
 #define IS_DIGITAL(t)    (((t) > 15 && (t) < 40) || ((t) > 47 && (t) < 64)) //digital are 16-39 and 48-63
 #define IS_2PIN(t)       ((t) > 47 && (t) < 64)
@@ -326,6 +337,7 @@
 #define IS_PWM(t)        ((t) > 40 && (t) < 46)     //does not include on/Off type
 #define NUM_PWM_PINS(t)  ((t) - 40)                 //for analog PWM 41-45 only
 #define IS_VIRTUAL(t)    ((t) >= 80 && (t) < 96)    //this was a poor choice a better would be 96-111
+*/
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut

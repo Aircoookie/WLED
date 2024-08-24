@@ -186,8 +186,8 @@ void WLED::loop()
     unsigned maxChannels = 0;
     for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
-      if (!IS_DIGITAL(busConfigs[i]->type)) continue;
-      if (!IS_2PIN(busConfigs[i]->type)) {
+      if (!Bus::isDigital(busConfigs[i]->type)) continue;
+      if (!Bus::is2Pin(busConfigs[i]->type)) {
         digitalCount++;
         unsigned channels = Bus::getNumberOfChannels(busConfigs[i]->type);
         if (busConfigs[i]->count > maxLedsOnBus) maxLedsOnBus = busConfigs[i]->count;

@@ -177,7 +177,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       awmode = request->arg(aw).toInt();
       uint16_t freq = request->arg(sp).toInt();
-      if (IS_PWM(type)) {
+      if (Bus::isPWM(type)) {
         switch (freq) {
           case 0 : freq = WLED_PWM_FREQ/2;    break;
           case 1 : freq = WLED_PWM_FREQ*2/3;  break;
@@ -186,7 +186,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           case 3 : freq = WLED_PWM_FREQ*2;    break;
           case 4 : freq = WLED_PWM_FREQ*10/3; break; // uint16_t max (19531 * 3.333)
         }
-      } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
+      } else if (Bus::is2Pin(type)) {
         switch (freq) {
           default:
           case 0 : freq =  1000; break;
@@ -199,7 +199,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         freq = 0;
       }
       channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
-      if (type == TYPE_ONOFF || IS_PWM(type) || IS_VIRTUAL(type)) { // analog and virtual
+      if (Bus::isOnOff(type) || Bus::isPWM(type) || Bus::isVirtual(type)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       } else {

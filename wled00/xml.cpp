@@ -395,7 +395,7 @@ void getSettingsJS(byte subPage, char* dest)
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) sappend('v',lp,pins[i]);
+        if (pinManager.isPinOk(pins[i]) || bus->isVirtual()) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
@@ -407,7 +407,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
       unsigned speed = bus->getFrequency();
-      if (IS_PWM(bus->getType())) {
+      if (bus->isPWM()) {
         switch (speed) {
           case WLED_PWM_FREQ/2    : speed = 0; break;
           case WLED_PWM_FREQ*2/3  : speed = 1; break;
@@ -416,7 +416,7 @@ void getSettingsJS(byte subPage, char* dest)
           case WLED_PWM_FREQ*2    : speed = 3; break;
           case WLED_PWM_FREQ*10/3 : speed = 4; break; // uint16_t max (19531 * 3.333)
         }
-      } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
+      } else if (bus->is2Pin()) {
         switch (speed) {
           case  1000 : speed = 0; break;
           case  2000 : speed = 1; break;

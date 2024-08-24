@@ -1249,12 +1249,12 @@ void WS2812FX::finalizeInit(void) {
     //RGBW mode is enabled if at least one of the strips is RGBW
     _hasWhiteChannel |= bus->hasWhite();
     //refresh is required to remain off if at least one of the strips requires the refresh.
-    _isOffRefreshRequired |= bus->isOffRefreshRequired();
+    _isOffRefreshRequired |= bus->isOffRefreshRequired() && !bus->isPWM(); // use refresh bit for phase shift with analog
     unsigned busEnd = bus->getStart() + bus->getLength();
     if (busEnd > _length) _length = busEnd;
     #ifdef ESP8266
     // why do we need to reinitialise GPIO3???
-    //if ((!IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType()))) continue;
+    //if (!bus->isDigital() || bus->is2Pin()) continue;
     //uint8_t pins[5];
     //if (!bus->getPins(pins)) continue;
     //BusDigital* bd = static_cast<BusDigital*>(bus);

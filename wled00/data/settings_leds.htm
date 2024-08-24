@@ -25,9 +25,10 @@
 		function isDig(t)  { return gT(t).t === "D" || isD2P(t); }  // is digital type
 		function isD2P(t)  { return gT(t).t === "2P"; }             // is digital 2 pin type
 		function isVir(t)  { return gT(t).t === "V"; }              // is virtual type
-		function hasW(t)   { return gT(t).w == 1; }                 // has white channel
-		function hasCCT(t) { return gT(t).c == 1; }                 // is white CCT enabled
-		function is16b(t)  { return gT(t).s == 1; }                 // is digital 16 bit type
+		function hasRGB(t) { return !!(gT(t).c & 0x01); }           // has RGB
+		function hasW(t)   { return !!(gT(t).c & 0x02); }           // has white channel
+		function hasCCT(t) { return !!(gT(t).c & 0x04); }           // is white CCT enabled
+		function is16b(t)  { return !!(gT(t).c & 0x10); }           // is digital 16 bit type
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -229,24 +230,29 @@
 			let setPinConfig = (n,t) => {
 				let p0d = "GPIO:";
 				let p1d = "";
+				let off = "Off Refresh";
 				switch (gT(t).t.charAt(0)) {
 					case '2':
-						p1d = "Clk "+p0d;
+						p1d = "Clock "+p0d;
 					case 'D':
 						p0d = "Data "+p0d;
 						break;
 					case 'A':
-						if (gT(t).t.length > 1) p0d = "GPIOs:";
+						if (gT(t).t.length > 1) {
+							p0d = "GPIOs:";
+							off = "Phase shift";
+						} else gId(`dig${n}f`).style.display = "none";
 						break;
 					case 'V':
 						p0d = "IP address:";
 						break;
 				}
-				gId("p0d"+n).innerHTML = p0d;
-				gId("p1d"+n).innerHTML = p1d;
+				gId("p0d"+n).innerText = p0d;
+				gId("p1d"+n).innerText = p1d;
+				gId("off"+n).innerText = off;
 				// secondary pins show/hide (type string length is equivalent to number of pins used; except for virtual and on/off)
 				let pins = gT(t).t.length + 3*isVir(t); // fixes virtual pins to 4
-				if (pins == 0) pins = 1;                  // fixes on/off pin
+				if (pins == 0) pins = 1;                // fixes on/off pin
 				for (let p=1; p<5; p++) {
 					var LK = d.Sf["L"+p+n];
 					if (!LK) continue;
@@ -281,7 +287,7 @@
 				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";              // hide count for analog
 				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";              // hide reversed for virtual
 				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
-				gId("dig"+n+"f").style.display = (isDig(t)) ? "inline":"none";              // hide refresh
+				gId("dig"+n+"f").style.display = (isDig(t) || isPWM(t)) ? "inline":"none";  // hide refresh (PWM hijacks reffresh for phase shifting)
 				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";               // auto calculate white
 				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
 				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed";           // change reverse text for analog else (rotated 180°)
@@ -454,8 +460,8 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <span id="p4d${s}"></span><input type="number" name="L4${s}" class="s" onchange="UI();pinUpd(this);"/>
 <div id="dig${s}r" style="display:inline"><br><span id="rev${s}">Reversed</span>: <input type="checkbox" name="CV${s}"></div>
 <div id="dig${s}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${s}" min="0" max="255" value="0" oninput="UI()"></div>
-<div id="dig${s}f" style="display:inline"><br>Off Refresh: <input id="rf${s}" type="checkbox" name="RF${s}"></div>
-<div id="dig${s}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
+<div id="dig${s}f" style="display:inline"><br><span id="off${s}">Off Refresh</span>: <input id="rf${s}" type="checkbox" name="RF${s}"></div>
+<div id="dig${s}a" style="display:inline"><br>Auto-calculate W channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
 				// fill led types (credit @netmindz)
