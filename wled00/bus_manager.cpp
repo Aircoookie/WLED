@@ -6,6 +6,7 @@
 #include <IPAddress.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include "driver/ledc.h"
+#include "soc/ledc_struct.h"
 #endif
 #include "const.h"
 #include "pin_manager.h"
@@ -401,14 +402,23 @@ BusPwm::BusPwm(BusConfig &bc)
 {
   if (!isPWM(bc.type)) return;
   unsigned numPins = numPWMPins(bc.type);
+#ifdef ESP8266
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
-  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
-
-#ifdef ESP8266
+  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;  
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
 #else
+  _depth = 12; // set to 12bit resolution by default
+  unsigned ditheringbits = 4;
+  switch (bc.frequency) { // TODO: this is not the proper way to handle this, could just save the type instead of frequency
+    case WLED_PWM_FREQ/2    : _frequency = WLED_PWM_FREQ/2; break; // slow, 10kHz, 8bit + 4bit dithering
+    case WLED_PWM_FREQ*2/3  : _frequency = WLED_PWM_FREQ; _depth = 11; break;   // medium, 20kHz, 7bit + 4bit dithering
+    default:
+    case WLED_PWM_FREQ      : _frequency = WLED_PWM_FREQ*2; break; // fast, 40kHz, 8bit + 4bit dithering
+    case WLED_PWM_FREQ*2    : _frequency = WLED_PWM_FREQ*3; break; // ultra fast, 60kHz, 8bit + 4bit dithering
+    case WLED_PWM_FREQ*10/3 : _frequency = WLED_PWM_FREQ*4/3; _depth = 10; ditheringbits = 0; break; // no dithering, 26kHz, 10bit 
+  }
   _ledcStart = pinManager.allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
@@ -424,8 +434,14 @@ BusPwm::BusPwm(BusConfig &bc)
     #ifdef ESP8266
     pinMode(_pins[i], OUTPUT);
     #else
-    ledcSetup(_ledcStart + i, _frequency, _depth);
+    ledcSetup(_ledcStart + i, _frequency, _depth - ditheringbits); // TODO: if this is a CCT 2 pin strip, first channel must fulfill ch%2==0 so both use the same timer!
     ledcAttachPin(_pins[i], _ledcStart + i);
+    //#endif
+  }
+  // sync the timers (not perfect but better than unsynced)
+  for (unsigned i = 0; i < numPins; i++) {
+    uint8_t group = ((_ledcStart + i)/8), timer = (((_ledcStart + i) / 2) % 4);
+    ledc_timer_rst((ledc_mode_t)group, (ledc_timer_t)timer); // reset timer so PWM channels are in sync
     #endif
   }
   _hasRgb = hasRGB(bc.type);
@@ -496,32 +512,70 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
 void BusPwm::show() {
   if (!_valid) return;
   unsigned numPins = getPins();
-  unsigned maxBri = (1<<_depth) - 1;
-  // use CIE brightness formula
+  unsigned maxBri = (1<<_depth); // note: not subtraciting 1 ensures full on when set to max (no gpio glitching)
+  unsigned* scaledBri = new unsigned[numPins]; // TODO: could use stack with a fixed size if maximum number of pins is known (or is a #define)
+  unsigned total_dutycycle = maxBri >> 3; // start value to get better distribution 
+  unsigned offsetSum = 0;
+  [[maybe_unused]] unsigned deadtime = 0;
+  unsigned ditheringbits = 4;
+  if(_frequency == WLED_PWM_FREQ*4/3) ditheringbits = 0; // no dithering TODO: POC only, this needs to be a checkmark option or some other identifier as frequency assignment may change
+  if(numPins == 2) //for CCT, add some dead time to prevent overlapping (TODO: in principle this is only required on reverse polarity CCT)
+  {
+    deadtime = 2 + (3 << ditheringbits);
+    maxBri -= deadtime; 
+    total_dutycycle = 0; // need accurate offset calculation
+  }
+  // use CIE brightness formula (credit @dedehai)
   unsigned pwmBri = (unsigned)_bri * 100;  
   if(pwmBri < 2040) pwmBri = ((pwmBri << _depth) + 115043) / 230087; //adding '0.5' before division for correct rounding
   else {  
     pwmBri += 4080;
     float temp = (float)pwmBri / 29580;
-    temp = temp * temp * temp * (1<<_depth) - 1; 
+    temp = temp * temp * temp * maxBri; 
     pwmBri = (unsigned)temp;
   }
-  // determine phase shift POC (credit @dedehai)
-  [[maybe_unused]] uint32_t phaseOffset = maxBri / numPins;
+  // determine phase shift to distribute load (credit @dedehai)
+ for (unsigned i = 0; i < numPins; i++) {
+      scaledBri[i] = (_data[i] * pwmBri) / 255;
+      if (_reversed) scaledBri[i] = maxBri - scaledBri[i];
+      #ifndef ESP8266
+      total_dutycycle += scaledBri[i];
+      #endif
+  }
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned scaled = (_data[i] * pwmBri) / 255;
-    if (_reversed) scaled = maxBri - scaled;
     #ifdef ESP8266
-    analogWrite(_pins[i], scaled);
+    analogWrite(_pins[i], scaledBri[i]);
     #else
-    if (_needsRefresh) { // hacked to determine if phase shifted PWM is requested
-      uint8_t group = ((_ledcStart + i) / 8), channel = ((_ledcStart + i) % 8); // _ledcStart + i is always less than MAX_LED_CHANNELS/LEDC_CHANNELS
-      ledc_set_duty_with_hpoint((ledc_mode_t)group, (ledc_channel_t)channel, scaled, phaseOffset*i);
-      ledc_update_duty((ledc_mode_t)group, (ledc_channel_t)channel);
-    } else
-      ledcWrite(_ledcStart + i, scaled);
+    // Calculate phase offsets to distribute signals evenly        
+    unsigned phaseoffset = offsetSum;
+    if(numPins == 2) {  // CCT    
+      offsetSum = scaledBri[i] + deadtime / 2 + (maxBri - total_dutycycle) / 2; // fixed 180° out of phase
+      scaledBri[i] = scaledBri[i] >= maxBri ? 1 << _depth : scaledBri[i]; // scale to full on
+    }
+    else
+      offsetSum += (scaledBri[i]<<_depth) / total_dutycycle;
+      //phaseoffset = 0;// (maxBri / numPins)*i; // for debugging, can be removed
+    uint8_t group=((_ledcStart + i)/8), channel=((_ledcStart + i)%8);             
+    //directly write to LEDc struct, no checking is done (assumes correctly assigned channels)
+    LEDC.channel_group[group].channel[channel].duty.duty = scaledBri[i] << (4 - ditheringbits);
+    LEDC.channel_group[group].channel[channel].hpoint.hpoint = phaseoffset >> ditheringbits; // offset works with MSBs only    
+    ledc_update_duty((ledc_mode_t)group, (ledc_channel_t)channel);
+    /*
+    Serial.print("IO");    
+    Serial.print(_pins[i]);
+    Serial.print("\t group:");    
+    Serial.print(group);
+    Serial.print("\t CH");
+    Serial.print(channel);
+    Serial.print("\t duty: ");
+    Serial.print(scaledBri[i]);
+    Serial.print("\t offset: ");
+    Serial.println(phaseoffset);  
+    */ 
     #endif
   }
+    //  Serial.println("***");  
+   delete[] scaledBri;
 }
 
 uint8_t BusPwm::getPins(uint8_t* pinArray) const {
