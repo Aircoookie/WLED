@@ -109,6 +109,7 @@ class Bus {
     inline  bool     isOffRefreshRequired(void) const             { return _needsRefresh; }
     inline  bool     containsPixel(uint16_t pix) const            { return pix >= _start && pix < _start + _len; }
 
+    static constexpr uint8_t getNumberOfPins(uint8_t type)        { return isVirtual(type) ? 4 : isPWM(type) ? numPWMPins(type) : is2Pin(type) + 1; } // credit @PaoloTK
     static constexpr uint8_t getNumberOfChannels(uint8_t type)    { return hasWhite(type) + 3*hasRGB(type) + hasCCT(type); }
     static constexpr bool hasRGB(uint8_t type) {
       return !((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_ANALOG_1CH || type == TYPE_ANALOG_2CH || type == TYPE_ONOFF);
