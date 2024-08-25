@@ -10742,9 +10742,9 @@ uint16_t mode_particleFire1D(void)
 
   if (SEGMENT.call == 0) // initialization 
   {
-    if (!initParticleSystem1D(PartSys, 8)) // init
+    if (!initParticleSystem1D(PartSys, 5)) // init
       return mode_static(); // allocation failed
-    //PartSys->setKillOutOfBounds(true);
+    PartSys->setKillOutOfBounds(true);
     PartSys->setParticleSize(1);
   }
   else
@@ -10757,36 +10757,54 @@ uint16_t mode_particleFire1D(void)
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setMotionBlur(128 + (SEGMENT.custom2 >> 1)); // anable motion blur
   PartSys->setColorByAge(true); 
+  uint32_t emitparticles = 1;
+  uint32_t j = random16();
+  for(uint i = 0; i < 3; i++) 
+  { 
+    if(PartSys->sources[i].source.ttl > 50)
+      PartSys->sources[i].source.ttl -= 10;
+    else  
+       PartSys->sources[i].source.ttl = 100 + random16(200);
+  }
+  
+  
   for(uint i = 0; i < PartSys->numSources; i++) 
   { 
-    PartSys->sources[i].var = 2 + (SEGMENT.speed >> 4);  
-    PartSys->sources[i].minLife = 200 + SEGMENT.intensity + (i << 3); 
-    PartSys->sources[i].maxLife = 300 + SEGMENT.intensity + (i << 4); 
-    PartSys->sources[i].source.x = -256; // source position below strip start
-    PartSys->sources[i].v = (SEGMENT.speed >> (2 + (i<<1)));
-    if(SEGMENT.call % 4 == 0) 
-      PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
-  }
-if (SEGMENT.call & 0x01) // update noise position every second frames, also add wind
-  {  
-        SEGENV.aux0++;
+    j = (j + 1) % PartSys->numSources;
+    PartSys->sources[j].source.x = 0; 
+    PartSys->sources[j].var = 2 + (SEGMENT.speed >> 4);  
+    //base flames
+    if(j > 2) {
+      PartSys->sources[j].minLife = 150 + SEGMENT.intensity + (j << 2); 
+      PartSys->sources[j].maxLife = 200 + SEGMENT.intensity + (j << 3); 
+      PartSys->sources[j].v = (SEGMENT.speed >> (2 + (j<<1)));
+      if(emitparticles)
+      {
+        emitparticles--;
+        PartSys->sprayEmit(PartSys->sources[j]); //emit a particle
+      }
+    }
+    else{
+      PartSys->sources[j].minLife = PartSys->sources[j].source.ttl + SEGMENT.intensity; 
+      PartSys->sources[j].maxLife = PartSys->sources[j].minLife + 50; 
+      PartSys->sources[j].v = SEGMENT.speed >> 2;
+      if(SEGENV.call & 0x01) //every second frame
+        PartSys->sprayEmit(PartSys->sources[j]); //emit a particle
+    }
   }
 
-  //update color settings
-  
- // PartSys->setColorByPosition(SEGMENT.check3);  
   for(uint i = 0; i < PartSys->usedParticles; i++) 
   {     
     PartSys->particles[i].x += PartSys->particles[i].ttl >> 7; // 'hot' particles are faster, apply some extra velocity
-    if(PartSys->particles[i].ttl > 150)
-    PartSys->particles[i].ttl -= map(SEGMENT.intensity, 0, 255, 5 , 0); // age faster
+    if(PartSys->particles[i].ttl > 3 + ((255 - SEGMENT.custom1) >> 1))
+      PartSys->particles[i].ttl -= map(SEGMENT.custom1, 0, 255, 1 , 3); // age faster
   }
 
   PartSys->update(); // update and render
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,,Blur/Overlay;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Blur/Overlay;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1,o3=0";
 #endif //WLED_DISABLE_PARTICLESYSTEM1D
 
 //////////////////////////////////////////////////////////////////////////////////////////
