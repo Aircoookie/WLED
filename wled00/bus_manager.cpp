@@ -402,13 +402,21 @@ BusPwm::BusPwm(BusConfig &bc)
 {
   if (!isPWM(bc.type)) return;
   unsigned numPins = numPWMPins(bc.type);
-#ifdef ESP8266
+  #ifdef ESP8266
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
   for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;  
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
-#else
+  for (unsigned i = 0; i < numPins; i++) {
+  uint8_t currentPin = bc.pins[i];
+  if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
+    deallocatePins(); return;
+  }
+  _pins[i] = currentPin; //store only after allocatePin() succeeds  
+  pinMode(_pins[i], OUTPUT);
+  }
+  #else
   _depth = 12; // set to 12bit resolution by default
   unsigned ditheringbits = 4;
   switch (bc.frequency) { // TODO: this is not the proper way to handle this, could just save the type instead of frequency
@@ -423,27 +431,21 @@ BusPwm::BusPwm(BusConfig &bc)
   if (_ledcStart == 255) { //no more free LEDC channels
     deallocatePins(); return;
   }
-#endif
-
   for (unsigned i = 0; i < numPins; i++) {
     uint8_t currentPin = bc.pins[i];
     if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
       deallocatePins(); return;
     }
     _pins[i] = currentPin; //store only after allocatePin() succeeds
-    #ifdef ESP8266
-    pinMode(_pins[i], OUTPUT);
-    #else
     ledcSetup(_ledcStart + i, _frequency, _depth - ditheringbits); // TODO: if this is a CCT 2 pin strip, first channel must fulfill ch%2==0 so both use the same timer!
     ledcAttachPin(_pins[i], _ledcStart + i);
-    //#endif
   }
   // sync the timers (not perfect but better than unsynced)
   for (unsigned i = 0; i < numPins; i++) {
     uint8_t group = ((_ledcStart + i)/8), timer = (((_ledcStart + i) / 2) % 4);
     ledc_timer_rst((ledc_mode_t)group, (ledc_timer_t)timer); // reset timer so PWM channels are in sync
-    #endif
   }
+  #endif
   _hasRgb = hasRGB(bc.type);
   _hasWhite = hasWhite(bc.type);
   _hasCCT = hasCCT(bc.type);
@@ -513,7 +515,7 @@ void BusPwm::show() {
   if (!_valid) return;
   unsigned numPins = getPins();
   unsigned maxBri = (1<<_depth); // note: not subtraciting 1 ensures full on when set to max (no gpio glitching)
-  unsigned* scaledBri = new unsigned[numPins]; // TODO: could use stack with a fixed size if maximum number of pins is known (or is a #define)
+  unsigned scaledBri[numPins];
   unsigned total_dutycycle = maxBri >> 3; // start value to get better distribution 
   unsigned offsetSum = 0;
   [[maybe_unused]] unsigned deadtime = 0;
@@ -538,7 +540,7 @@ void BusPwm::show() {
  for (unsigned i = 0; i < numPins; i++) {
       scaledBri[i] = (_data[i] * pwmBri) / 255;
       if (_reversed) scaledBri[i] = maxBri - scaledBri[i];
-      #ifndef ESP8266
+      #ifdef ARDUINO_ARCH_ESP32
       total_dutycycle += scaledBri[i];
       #endif
   }
@@ -556,11 +558,12 @@ void BusPwm::show() {
       offsetSum += (scaledBri[i]<<_depth) / total_dutycycle;
       //phaseoffset = 0;// (maxBri / numPins)*i; // for debugging, can be removed
     uint8_t group=((_ledcStart + i)/8), channel=((_ledcStart + i)%8);             
-    //directly write to LEDc struct, no checking is done (assumes correctly assigned channels)
+    //directly write to LEDc struct as there is no HAL exposed function for dithering. note: no checking is done (assumes correctly assigned channels)
     LEDC.channel_group[group].channel[channel].duty.duty = scaledBri[i] << (4 - ditheringbits);
     LEDC.channel_group[group].channel[channel].hpoint.hpoint = phaseoffset >> ditheringbits; // offset works with MSBs only    
     ledc_update_duty((ledc_mode_t)group, (ledc_channel_t)channel);
     /*
+    // debug output, can be removed
     Serial.print("IO");    
     Serial.print(_pins[i]);
     Serial.print("\t group:");    
@@ -575,7 +578,6 @@ void BusPwm::show() {
     #endif
   }
     //  Serial.println("***");  
-   delete[] scaledBri;
 }
 
 uint8_t BusPwm::getPins(uint8_t* pinArray) const {
