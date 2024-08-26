@@ -405,22 +405,23 @@ BusPwm::BusPwm(BusConfig &bc)
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
   for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
 
+  managed_pin_type pins[numPins];
+  for (unsigned i = 0; i < numPins; i++) pins[i] = {(int8_t)bc.pins[i], true};
+  if (!pinManager.allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) return;
+
 #ifdef ESP8266
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
 #else
   _ledcStart = pinManager.allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
-    deallocatePins(); return;
+    pinManager.deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
+    return;
   }
 #endif
 
   for (unsigned i = 0; i < numPins; i++) {
-    uint8_t currentPin = bc.pins[i];
-    if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
-      deallocatePins(); return;
-    }
-    _pins[i] = currentPin; //store only after allocatePin() succeeds
+    _pins[i] = bc.pins[i]; // store only after allocateMultiplePins() succeeded
     #ifdef ESP8266
     pinMode(_pins[i], OUTPUT);
     #else
@@ -539,7 +540,7 @@ void BusPwm::deallocatePins(void) {
     #ifdef ESP8266
     digitalWrite(_pins[i], LOW); //turn off PWM interrupt
     #else
-    if (_ledcStart < 16) ledcDetachPin(_pins[i]);
+    if (_ledcStart < WLED_MAX_ANALOG_CHANNELS) ledcDetachPin(_pins[i]);
     #endif
   }
   #ifdef ARDUINO_ARCH_ESP32
