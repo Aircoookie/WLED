@@ -402,21 +402,27 @@ BusPwm::BusPwm(BusConfig &bc)
 {
   if (!isPWM(bc.type)) return;
   unsigned numPins = numPWMPins(bc.type);
-  #ifdef ESP8266
+
+  managed_pin_type pins[numPins];
+  for (unsigned i = 0; i < numPins; i++) pins[i] = {(int8_t)bc.pins[i], true};
+  if (!pinManager.allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) return;
+
+#ifdef ESP8266
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
-  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;  
+  for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
   for (unsigned i = 0; i < numPins; i++) {
-  uint8_t currentPin = bc.pins[i];
-  if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
-    deallocatePins(); return;
+    _pins[i] = bc.pins[i]; //store only after allocatePin() succeeds  
+    pinMode(_pins[i], OUTPUT);
   }
-  _pins[i] = currentPin; //store only after allocatePin() succeeds  
-  pinMode(_pins[i], OUTPUT);
+#else
+  _ledcStart = pinManager.allocateLedc(numPins);
+  if (_ledcStart == 255) { //no more free LEDC channels
+    pinManager.deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
+    return;
   }
-  #else
   _depth = 12; // set to 12bit resolution by default
   unsigned ditheringbits = 4;
   switch (bc.frequency) { // TODO: this is not the proper way to handle this, could just save the type instead of frequency
@@ -427,25 +433,15 @@ BusPwm::BusPwm(BusConfig &bc)
     case WLED_PWM_FREQ*2    : _frequency = WLED_PWM_FREQ*3; break; // ultra fast, 60kHz, 8bit + 4bit dithering
     case WLED_PWM_FREQ*10/3 : _frequency = WLED_PWM_FREQ*4/3; _depth = 10; ditheringbits = 0; break; // no dithering, 26kHz, 10bit 
   }
-  _ledcStart = pinManager.allocateLedc(numPins);
-  if (_ledcStart == 255) { //no more free LEDC channels
-    deallocatePins(); return;
-  }
   for (unsigned i = 0; i < numPins; i++) {
-    uint8_t currentPin = bc.pins[i];
-    if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
-      deallocatePins(); return;
-    }
-    _pins[i] = currentPin; //store only after allocatePin() succeeds
+    _pins[i] = bc.pins[i]; // store only after allocateMultiplePins() succeeded
     ledcSetup(_ledcStart + i, _frequency, _depth - ditheringbits); // TODO: if this is a CCT 2 pin strip, first channel must fulfill ch%2==0 so both use the same timer!
     ledcAttachPin(_pins[i], _ledcStart + i);
-  }
-  // sync the timers (not perfect but better than unsynced)
-  for (unsigned i = 0; i < numPins; i++) {
+    // sync the timers (not perfect but better than unsynced)
     uint8_t group = ((_ledcStart + i)/8), timer = (((_ledcStart + i) / 2) % 4);
     ledc_timer_rst((ledc_mode_t)group, (ledc_timer_t)timer); // reset timer so PWM channels are in sync
   }
-  #endif
+#endif
   _hasRgb = hasRGB(bc.type);
   _hasWhite = hasWhite(bc.type);
   _hasCCT = hasCCT(bc.type);
@@ -595,7 +591,7 @@ void BusPwm::deallocatePins(void) {
     #ifdef ESP8266
     digitalWrite(_pins[i], LOW); //turn off PWM interrupt
     #else
-    if (_ledcStart < 16) ledcDetachPin(_pins[i]);
+    if (_ledcStart < WLED_MAX_ANALOG_CHANNELS) ledcDetachPin(_pins[i]);
     #endif
   }
   #ifdef ARDUINO_ARCH_ESP32
