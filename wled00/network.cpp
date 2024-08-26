@@ -3,7 +3,7 @@
 #include "wled_ethernet.h"
 
 
-#ifdef WLED_USE_ETHERNET
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
 // The following six pins are neither configurable nor
 // can they be re-assigned through IOMUX / GPIO matrix.
 // See https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/esp32/get-started-ethernet-kit-v1.1.html#ip101gri-phy-interface
@@ -221,7 +221,7 @@ bool isWiFiConfigured() {
   #define ARDUINO_EVENT_WIFI_STA_GOT_IP         WIFI_EVENT_STAMODE_GOT_IP
   #define ARDUINO_EVENT_WIFI_STA_CONNECTED      WIFI_EVENT_STAMODE_CONNECTED
   #define ARDUINO_EVENT_WIFI_STA_DISCONNECTED   WIFI_EVENT_STAMODE_DISCONNECTED
-#elif defined(ESP32) && !defined(ESP_ARDUINO_VERSION_MAJOR) //ESP_IDF_VERSION_MAJOR==3
+#elif defined(ARDUINO_ARCH_ESP32) && !defined(ESP_ARDUINO_VERSION_MAJOR) //ESP_IDF_VERSION_MAJOR==3
   // not strictly IDF v3 but Arduino core related
   #define ARDUINO_EVENT_WIFI_AP_STADISCONNECTED SYSTEM_EVENT_AP_STADISCONNECTED
   #define ARDUINO_EVENT_WIFI_AP_STACONNECTED    SYSTEM_EVENT_AP_STACONNECTED
@@ -270,15 +270,14 @@ void WiFiEvent(WiFiEvent_t event)
         interfacesInited = false;
       }
       break;
-  #ifdef ESP32
+  #ifdef ARDUINO_ARCH_ESP32
     case ARDUINO_EVENT_WIFI_AP_START:
       DEBUG_PRINTLN(F("WiFi: AP Started"));
       break;
     case ARDUINO_EVENT_WIFI_AP_STOP:
       DEBUG_PRINTLN(F("WiFi: AP Stopped"));
       break;
-  #endif
-  #if defined(WLED_USE_ETHERNET)
+    #if defined(WLED_USE_ETHERNET)
     case ARDUINO_EVENT_ETH_START:
       DEBUG_PRINTLN(F("ETH Started"));
       break;
@@ -286,12 +285,21 @@ void WiFiEvent(WiFiEvent_t event)
       {
       DEBUG_PRINTLN(F("ETH Connected"));
       if (!apActive) {
-    #ifndef WLED_DISABLE_ESPNOW
-        if (useESPNowSync && statusESPNow == ESP_NOW_STATE_ON) WiFi.disconnect(); // if using ESP-NOW just disconnect from current SSID
-        else WiFi.disconnect(true); // otherwise disable WiFi entirely
-    #else
+      #ifndef WLED_DISABLE_ESPNOW
+        if (useESPNowSync && statusESPNow == ESP_NOW_STATE_ON) {
+          DEBUG_PRINTLN(F("ESP-NOW restarting on ETH connected."));
+          quickEspNow.stop();
+          WiFi.disconnect(true); // disconnect from WiFi and disengage STA mode
+          WiFi.mode(WIFI_MODE_AP);
+          quickEspNow.onDataSent(espNowSentCB);     // see udp.cpp
+          quickEspNow.onDataRcvd(espNowReceiveCB);  // see udp.cpp
+          quickEspNow.setWiFiBandwidth(WIFI_IF_AP, WIFI_BW_HT20); // Only needed for ESP32 in case you need coexistence with ESP8266 in the same network
+          bool espNowOK = quickEspNow.begin(channelESPNow, WIFI_IF_AP);  // Same channel must be used for both AP and ESP-NOW
+          statusESPNow = espNowOK ? ESP_NOW_STATE_ON : ESP_NOW_STATE_ERROR;
+        } else WiFi.disconnect(true); // otherwise disable WiFi entirely
+      #else
         WiFi.disconnect(true); // disable WiFi entirely
-    #endif
+      #endif
       }
       if (multiWiFi[0].staticIP != (uint32_t)0x00000000 && multiWiFi[0].staticGW != (uint32_t)0x00000000) {
         ETH.config(multiWiFi[0].staticIP, multiWiFi[0].staticGW, multiWiFi[0].staticSN, dnsAddress);
@@ -315,6 +323,7 @@ void WiFiEvent(WiFiEvent_t event)
       if (interfacesInited && WiFi.scanComplete() >= 0) findWiFi(true); // reinit WiFi scan
       forceReconnect = true;
       break;
+    #endif
   #endif
     default:
       break;
