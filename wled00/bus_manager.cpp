@@ -425,11 +425,12 @@ BusPwm::BusPwm(BusConfig &bc)
     #ifdef ESP8266
     pinMode(_pins[i], OUTPUT);
     #else
-    ledcSetup(_ledcStart + i, _frequency, _depth);
-    ledcAttachPin(_pins[i], _ledcStart + i);
+    unsigned channel = _ledcStart + i;
+    ledcSetup(channel, _frequency, _depth);
+    ledcAttachPin(_pins[i], channel);
     // LEDC timer reset credit @dedehai
-    uint8_t group = ((_ledcStart + i) / 8), channel = ((_ledcStart + i) % 8); // _ledcStart + i is always less than MAX_LED_CHANNELS/LEDC_CHANNELS
-    ledc_timer_rst((ledc_mode_t)group, (ledc_channel_t)channel); // reset timer so all timers are almost in sync (for phase shift)
+    uint8_t group = (channel / 8), timer = ((channel / 2) % 4); // same fromula as in ledcSetup()
+    ledc_timer_rst((ledc_mode_t)group, (ledc_timer_t)timer); // reset timer so all timers are almost in sync (for phase shift)
     #endif
   }
   _hasRgb = hasRGB(bc.type);
@@ -501,30 +502,37 @@ void BusPwm::show() {
   if (!_valid) return;
   const unsigned numPins = getPins();
   const unsigned maxBri = (1<<_depth);
+
   // use CIE brightness formula
   unsigned pwmBri = (unsigned)_bri * 100;  
   if (pwmBri < 2040)
     pwmBri = ((pwmBri << _depth) + 115043) / 230087; //adding '0.5' before division for correct rounding
   else {  
     pwmBri += 4080;
-    float temp = (float)pwmBri / 29580;
+    float temp = (float)pwmBri / 29580.0f;
     temp = temp * temp * temp * maxBri; 
     pwmBri = (unsigned)temp;
   }
-  // determine phase shift POC (credit @dedehai)
+
   for (unsigned i = 0; i < numPins; i++) {
     unsigned scaled = (_data[i] * pwmBri) / 255;
     if (_reversed) scaled = maxBri - scaled;
     #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
-    // CCT blending has to be 0 for phse shift to work (WW & CW must not overlap)
+    unsigned channel = _ledcStart + i;
+    // determine phase shift POC for PWM CCT (credit @dedehai)
+    // phase shifting (180°) is only available for PWM CCT LED type if _needsRefresh is true (UI hack)
+    // and CCT blending is 0 (WW & CW must not overlap)
+    // this will allow using H-bridge to drive reverse-polarity CCT LED strip (2 wires)
+    // NOTE/TODO: if this has no side effects we may forego UI hack and the need for _needsRefresh
+    // we may even use phase shift to evenly distribute power across different pins
     if (_type == TYPE_ANALOG_2CH && _needsRefresh && Bus::getCCTBlend() == 0) { // hacked to determine if phase shifted PWM is requested
-      if (scaled >= maxBri/2) scaled = maxBri/2 - 1; // safety check & add dead time of 1 pulse
-      uint8_t group = ((_ledcStart + i) / 8), channel = ((_ledcStart + i) % 8); // _ledcStart + i is always less than MAX_LED_CHANNELS/LEDC_CHANNELS
-      ledc_set_duty_and_update((ledc_mode_t)group, (ledc_channel_t)channel, scaled, (maxBri / numPins)*i);
+      unsigned maxDuty = (maxBri / numPins);        // numPins is 2
+      if (scaled >= maxDuty) scaled = maxDuty - 1;  // safety check & add dead time of 1 pulse when brightness is at 50%
+      ledc_set_duty_and_update((ledc_mode_t)(channel / 8), (ledc_channel_t)(channel % 8), scaled, maxDuty*i);
     } else
-      ledcWrite(_ledcStart + i, scaled);
+      ledcWrite(channel, scaled);
     #endif
   }
 }
