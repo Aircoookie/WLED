@@ -427,6 +427,9 @@ BusPwm::BusPwm(BusConfig &bc)
     #else
     ledcSetup(_ledcStart + i, _frequency, _depth);
     ledcAttachPin(_pins[i], _ledcStart + i);
+    // LEDC timer reset credit @dedehai
+    uint8_t group = ((_ledcStart + i) / 8), channel = ((_ledcStart + i) % 8); // _ledcStart + i is always less than MAX_LED_CHANNELS/LEDC_CHANNELS
+    ledc_timer_rst((ledc_mode_t)group, (ledc_channel_t)channel); // reset timer so all timers are almost in sync (for phase shift)
     #endif
   }
   _hasRgb = hasRGB(bc.type);
@@ -496,29 +499,30 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
 
 void BusPwm::show() {
   if (!_valid) return;
-  unsigned numPins = getPins();
-  unsigned maxBri = (1<<_depth) - 1;
+  const unsigned numPins = getPins();
+  const unsigned maxBri = (1<<_depth);
   // use CIE brightness formula
   unsigned pwmBri = (unsigned)_bri * 100;  
-  if(pwmBri < 2040) pwmBri = ((pwmBri << _depth) + 115043) / 230087; //adding '0.5' before division for correct rounding
+  if (pwmBri < 2040)
+    pwmBri = ((pwmBri << _depth) + 115043) / 230087; //adding '0.5' before division for correct rounding
   else {  
     pwmBri += 4080;
     float temp = (float)pwmBri / 29580;
-    temp = temp * temp * temp * (1<<_depth) - 1; 
+    temp = temp * temp * temp * maxBri; 
     pwmBri = (unsigned)temp;
   }
   // determine phase shift POC (credit @dedehai)
-  [[maybe_unused]] uint32_t phaseOffset = maxBri / numPins;
   for (unsigned i = 0; i < numPins; i++) {
     unsigned scaled = (_data[i] * pwmBri) / 255;
     if (_reversed) scaled = maxBri - scaled;
     #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
-    if (_needsRefresh) { // hacked to determine if phase shifted PWM is requested
+    // CCT blending has to be 0 for phse shift to work (WW & CW must not overlap)
+    if (_type == TYPE_ANALOG_2CH && _needsRefresh && Bus::getCCTBlend() == 0) { // hacked to determine if phase shifted PWM is requested
+      if (scaled >= maxBri/2) scaled = maxBri/2 - 1; // safety check & add dead time of 1 pulse
       uint8_t group = ((_ledcStart + i) / 8), channel = ((_ledcStart + i) % 8); // _ledcStart + i is always less than MAX_LED_CHANNELS/LEDC_CHANNELS
-      ledc_set_duty_with_hpoint((ledc_mode_t)group, (ledc_channel_t)channel, scaled, phaseOffset*i);
-      ledc_update_duty((ledc_mode_t)group, (ledc_channel_t)channel);
+      ledc_set_duty_and_update((ledc_mode_t)group, (ledc_channel_t)channel, scaled, (maxBri / numPins)*i);
     } else
       ledcWrite(_ledcStart + i, scaled);
     #endif
@@ -719,8 +723,8 @@ String BusManager::getLEDTypesJSONString(void) {
     {TYPE_WS2805,          "D",      PSTR("WS2805 RGBCW")},
     {TYPE_SM16825,         "D",      PSTR("SM16825 RGBCW")},
     {TYPE_WS2812_1CH_X3,   "D",      PSTR("WS2811 White")},
-    //{TYPE_WS2812_2CH_X3,   "D",      PSTR("WS2811 CCT")},
-    //{TYPE_WS2812_WWA,      "D",      PSTR("WS2811 WWA")},
+    //{TYPE_WS2812_2CH_X3,   "D",      PSTR("WS2811 CCT")}, // not implemented
+    //{TYPE_WS2812_WWA,      "D",      PSTR("WS2811 WWA")}, // not implemented
     {TYPE_WS2801,          "2P",     PSTR("WS2801")},
     {TYPE_APA102,          "2P",     PSTR("APA102")},
     {TYPE_LPD8806,         "2P",     PSTR("LPD8806")},
@@ -732,11 +736,15 @@ String BusManager::getLEDTypesJSONString(void) {
     {TYPE_ANALOG_3CH,      "AAA",    PSTR("PWM RGB")},
     {TYPE_ANALOG_4CH,      "AAAA",   PSTR("PWM RGBW")},
     {TYPE_ANALOG_5CH,      "AAAAA",  PSTR("PWM RGB+CCT")},
-    //{TYPE_ANALOG_6CH,      "AAAAAA", PSTR("PWM RGB+DCCT")},
-    {TYPE_NET_DDP_RGB,     "V",      PSTR("DDP RGB (network)")},
-    {TYPE_NET_ARTNET_RGB,  "V",      PSTR("Art-Net RGB (network)")},
-    {TYPE_NET_DDP_RGBW,    "V",      PSTR("DDP RGBW (network)")},
-    {TYPE_NET_ARTNET_RGBW, "V",      PSTR("Art-Net RGBW (network)")}
+    //{TYPE_ANALOG_6CH,      "AAAAAA", PSTR("PWM RGB+DCCT")}, // unimplementable ATM
+    {TYPE_NET_DDP_RGB,     "N",      PSTR("DDP RGB (network)")},
+    {TYPE_NET_ARTNET_RGB,  "N",      PSTR("Art-Net RGB (network)")},
+    {TYPE_NET_DDP_RGBW,    "N",      PSTR("DDP RGBW (network)")},
+    {TYPE_NET_ARTNET_RGBW, "N",      PSTR("Art-Net RGBW (network)")},
+    // hypothetical extensions
+    //{TYPE_VIRTUAL_I2C_W,   "V",     PSTR("I2C White (virtual)")}, // allows setting I2C address in _pin[0]
+    //{TYPE_VIRTUAL_I2C_CCT, "V",     PSTR("I2C CCT (virtual)")}, // allows setting I2C address in _pin[0]
+    //{TYPE_VIRTUAL_I2C_RGB, "V",     PSTR("I2C RGB (virtual)")}, // allows setting I2C address in _pin[0]
   };
   String json = "[";
   for (const auto &type : types) {
