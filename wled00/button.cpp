@@ -308,7 +308,7 @@ void handleButton()
         buttonLongPressed[b] = true;
       }
 
-    } else if (!isButtonPressed(b) && buttonPressedBefore[b]) { //released
+    } else if (buttonPressedBefore[b]) { //released
       long dur = now - buttonPressedTime[b];
 
       // released after rising-edge short press action
