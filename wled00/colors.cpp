@@ -225,6 +225,32 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
   }
 }
 
+CHSV rgb2hsv(const CRGB& rgb) // convert rgb to hsv, more accurate and faster than fastled version
+{
+    int32_t r = rgb.r;
+    int32_t g = rgb.g;
+    int32_t b = rgb.b;
+    CHSV hsv = CHSV(0, 0, 0);
+    int32_t minval, maxval, delta;
+    minval = min(r, g);
+    minval = min(minval, b); 
+    maxval = max(r, g);
+    maxval = max(maxval, b);
+    if (maxval == 0)  return hsv; // black
+    hsv.v = maxval;
+    delta = maxval - minval;
+    hsv.s = (255 * delta) / maxval;
+    if (hsv.s == 0)  return hsv; // gray value    
+    int32_t h; //calculate hue
+    if (maxval == r) 
+        h = (43 * (g - b)) / delta; 
+    else if (maxval == g) h = 85 + (43 * (b - r)) / delta; 
+    else  h = 171 + (43 * (r - g)) / delta; 
+    if(h < 0) h += 256;
+    hsv.h = h;
+    return hsv;
+}
+
 //get RGB values from color temperature in K (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)
 void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
 {

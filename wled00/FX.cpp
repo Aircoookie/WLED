@@ -82,6 +82,7 @@ static um_data_t* getAudioData() {
   return um_data;
 }
 
+
 // effect functions
 
 /*
@@ -93,7 +94,58 @@ uint16_t mode_static(void) {
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 
+/*
+ * Copy selected segment 
+ */
+uint16_t mode_copy_segment(void) {
 
+  uint32_t sourceid = SEGMENT.custom1;
+  SEGMENT.fadeToBlackBy(16); // fades out unused pixels, still allows overlay (also fades out if invalid ID is set)
+  if (sourceid >= strip._segments.size() || sourceid == strip.getCurrSegmentId()) return FRAMETIME; // invalid source
+  CRGB sourcecolor;
+  if (strip._segments[sourceid].isActive()) {
+    // note: copying 1D to 2D as well as 2D to 1D is not supported
+    if(SEGMENT.is2D() && strip._segments[sourceid].is2D()) { // 2D setup
+      uint32_t cx, cy; // sizes to copy
+      cx = std::min(strip._segments[sourceid].virtualWidth(), SEGMENT.virtualWidth()); // get smaller width
+      cy = std::min(strip._segments[sourceid].virtualHeight(), SEGMENT.virtualHeight()); // get smaller height
+      for (unsigned x = 0; x < cx; x++) {
+        for (unsigned y = 0; y < cy; y++) {
+          sourcecolor = strip._segments[sourceid].getPixelColorXY(x, y);   
+          if(SEGMENT.custom2 > 0) // color shifting enabled
+          {
+            CHSV pxHSV = rgb2hsv(sourcecolor); //convert to HSV
+            pxHSV.h += SEGMENT.custom2; // shift hue
+            hsv2rgb_spectrum(pxHSV, sourcecolor); // convert back to RGB 
+            
+          }
+          SEGMENT.setPixelColorXY(x, y, sourcecolor);
+          //SEGMENT.setPixelColorXY(x, y, strip._segments[sourceid].getPixelColorXY(x, y)); //use this for no colorshift option
+        }
+     
+      }
+    }
+    else if(!SEGMENT.is2D() && !strip._segments[sourceid].is2D()) { // 1D strip
+      uint32_t cl; // length to copy
+      cl = std::min(strip._segments[sourceid].virtualLength(), SEGMENT.virtualLength()); // get smaller length
+      for (unsigned i = 0; i < cl; i++) {              
+        sourcecolor = strip._segments[sourceid].getPixelColor(i);          
+        if(SEGMENT.custom2 > 0) // color shifting enabled
+        {
+          CHSV pxHSV = rgb2hsv(sourcecolor); //convert to HSV
+          pxHSV.h += SEGMENT.custom2; // shift hue
+          sourcecolor = (CRGB)pxHSV; // convert back to RGB
+        }        
+        SEGMENT.setPixelColor(i,  sourcecolor);
+       // SEGMENT.setPixelColor(i, strip._segments[sourceid].getPixelColor(i)); //use this for no colorshift option
+      }
+    }
+  }
+  return FRAMETIME;
+}
+//static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,,ID;;;12;c1=0,c2=0";
+static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,,ID,Color shift;;;12;c1=0,c2=0";
+  
 /*
  * Blink/strobe function
  * Alternate between color1 and color2
@@ -7835,6 +7887,7 @@ void WS2812FX::setupEffectData() {
     _modeData.push_back(_data_RESERVED);
   }
   // now replace all pre-allocated effects
+  addEffect(FX_MODE_COPY, &mode_copy_segment, _data_FX_MODE_COPY);
   // --- 1D non-audio effects ---
   addEffect(FX_MODE_BLINK, &mode_blink, _data_FX_MODE_BLINK);
   addEffect(FX_MODE_BREATH, &mode_breath, _data_FX_MODE_BREATH);
