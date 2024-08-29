@@ -466,6 +466,9 @@
 #define NTP_PACKET_SIZE 48       // size of NTP receive buffer
 #define NTP_MIN_PACKET_SIZE 48   // min expected size - NTP v4 allows for "extended information" appended to the standard fields
 
+// Maximum number of pins per output. 5 for RGBCCT analog LEDs.
+#define OUTPUT_MAX_PINS 5
+
 //maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
 #ifndef MAX_LEDS
 #ifdef ESP8266
@@ -575,6 +578,10 @@
   #define LEDPIN 1
   #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 1."
 #endif
+#endif
+
+#ifndef DEFAULT_LED_TYPE
+  #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 #endif
 
 #ifndef DEFAULT_LED_COUNT

@@ -673,7 +673,7 @@ void BusNetwork::cleanup(void) {
 
 //utility to get the approx. memory usage of a given BusConfig
 uint32_t BusManager::memUsage(BusConfig &bc) {
-  if (Bus::isOnOff(bc.type) || Bus::isPWM(bc.type)) return 5;
+  if (Bus::isOnOff(bc.type) || Bus::isPWM(bc.type)) return OUTPUT_MAX_PINS;
 
   unsigned len = bc.count + bc.skipAmount;
   unsigned channels = Bus::getNumberOfChannels(bc.type);

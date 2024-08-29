@@ -44,8 +44,8 @@
 */
 
 //factory defaults LED setup
-//#define PIXEL_COUNTS 30, 30, 30, 30
-//#define DATA_PINS 16, 1, 3, 4
+//#define PIXEL_COUNTS 30
+//#define DATA_PINS 2 (8266/C3) or 16 
 //#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 
 #ifndef PIXEL_COUNTS
@@ -56,8 +56,8 @@
   #define DATA_PINS LEDPIN
 #endif
 
-#ifndef DEFAULT_LED_TYPE
-  #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#ifndef LED_TYPES
+  #define LED_TYPES DEFAULT_LED_TYPE
 #endif
 
 #ifndef DEFAULT_LED_COLOR_ORDER
@@ -1215,17 +1215,30 @@ void WS2812FX::finalizeInit(void) {
   //if busses failed to load, add default (fresh install, FS issue, ...)
   if (BusManager::getNumBusses() == 0) {
     DEBUG_PRINTLN(F("No busses, init default"));
+    constexpr unsigned defDataTypes[] = {LED_TYPES};
     const unsigned defDataPins[] = {DATA_PINS};
     const unsigned defCounts[] = {PIXEL_COUNTS};
-    const unsigned defNumPins = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const unsigned defNumTypes = ((sizeof defDataTypes) / (sizeof defDataTypes[0]));
+    constexpr unsigned defNumPins = ((sizeof defDataPins) / (sizeof defDataPins[0]));
     const unsigned defNumCounts = ((sizeof defCounts) / (sizeof defCounts[0]));
-    // if number of pins is divisible by counts, use number of counts to determine number of buses, otherwise use pins
-    const unsigned defNumBusses = defNumPins > defNumCounts && defNumPins%defNumCounts == 0 ? defNumCounts : defNumPins;
-    const unsigned pinsPerBus = defNumPins / defNumBusses;
+
+    static_assert(Bus::getNumberOfPins(defDataTypes[0]) <= defNumPins,
+                  "The first LED type configured requires more pins than have been defined!");
+
     unsigned prevLen = 0;
-    for (unsigned i = 0; i < defNumBusses && i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
-      uint8_t defPin[5]; // max 5 pins
-      for (unsigned j = 0; j < pinsPerBus; j++) defPin[j] = defDataPins[i*pinsPerBus + j];
+    unsigned pinsIndex = 0;
+    for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
+      uint8_t defPin[OUTPUT_MAX_PINS]; // max 5 pins
+      // if we have less types than requested outputs and they do not align, use last known type to set current type
+      unsigned dataType = defDataTypes[(i < defNumTypes) ? i : defNumTypes -1];
+      unsigned busPins = Bus::getNumberOfPins(dataType);
+      // check if we have enough pins left to configure an output of this type
+      if (pinsIndex + busPins > defNumPins) {
+        DEBUG_PRINTLN(F("LED outputs misaligned with defined pins. Some pins will remain unused."));
+        break;
+      }
+      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) defPin[j] = defDataPins[pinsIndex + j];
+      pinsIndex += busPins;
       // when booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
       // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), etc
       if (pinManager.isPinAllocated(defPin[0])) {
@@ -1235,8 +1248,10 @@ void WS2812FX::finalizeInit(void) {
       unsigned start = prevLen;
       // if we have less counts than pins and they do not align, use last known count to set current count
       unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
+      // analog always has length 1
+      if (Bus::isPWM(dataType)) count = 1;
       prevLen += count;
-      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, useGlobalLedBuffer);
+      BusConfig defCfg = BusConfig(dataType, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, useGlobalLedBuffer);
       if (BusManager::add(defCfg) == -1) break;
     }
   }

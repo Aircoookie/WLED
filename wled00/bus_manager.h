@@ -267,8 +267,8 @@ class BusPwm : public Bus {
     void cleanup(void) { deallocatePins(); }
 
   private:
-    uint8_t _pins[5];
-    uint8_t _pwmdata[5];
+    uint8_t _pins[OUTPUT_MAX_PINS];
+    uint8_t _pwmdata[OUTPUT_MAX_PINS];
     #ifdef ARDUINO_ARCH_ESP32
     uint8_t _ledcStart;
     #endif
@@ -346,10 +346,7 @@ struct BusConfig {
   {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    size_t nPins = 1;
-    if (Bus::isVirtual(type))   nPins = 4; //virtual network bus. 4 "pins" store IP address
-    else if (Bus::is2Pin(type)) nPins = 2;
-    else if (Bus::isPWM(type))  nPins = Bus::numPWMPins(type);
+    size_t nPins = Bus::getNumberOfPins(type);
     for (size_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
