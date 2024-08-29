@@ -11,6 +11,7 @@
 #include "pin_manager.h"
 #include "bus_wrapper.h"
 #include "bus_manager.h"
+#include "bus_usermod.h"
 
 extern bool cctICused;
 
@@ -699,7 +700,9 @@ uint32_t BusManager::memUsage(unsigned maxChannels, unsigned maxCount, unsigned 
 
 int BusManager::add(BusConfig &bc) {
   if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
-  if (Bus::isVirtual(bc.type)) {
+  if (bc.type == TYPE_USERMOD) {
+    busses[numBusses] = new BusUsermod(bc);
+  } else if (Bus::isVirtual(bc.type)) {
     busses[numBusses] = new BusNetwork(bc);
   } else if (Bus::isDigital(bc.type)) {
     busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
@@ -753,6 +756,7 @@ String BusManager::getLEDTypesJSONString(void) {
     //{TYPE_VIRTUAL_I2C_W,   "V",     PSTR("I2C White (virtual)")}, // allows setting I2C address in _pin[0]
     //{TYPE_VIRTUAL_I2C_CCT, "V",     PSTR("I2C CCT (virtual)")}, // allows setting I2C address in _pin[0]
     //{TYPE_VIRTUAL_I2C_RGB, "V",     PSTR("I2C RGB (virtual)")}, // allows setting I2C address in _pin[0]
+    {TYPE_USERMOD,         "V",  PSTR("Usermod (virtual)")}, // virtual bus for usermods
   };
   String json = "[";
   for (const auto &type : types) {

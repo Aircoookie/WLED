@@ -81,8 +81,8 @@
 				let nm = LC.name.substring(0,2);
 				let n = LC.name.substring(2);
 				let t = parseInt(d.Sf["LT"+n].value, 10); // LED type SELECT
-				// ignore IP address
-				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
+				// ignore IP address and virtual usermod
+				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4") {
 					if (t>=80) return;
 				}
 				//check for pin conflicts
@@ -259,7 +259,7 @@
 				gId("p1d"+n).innerText = p1d;
 				gId("off"+n).innerText = off;
 				// secondary pins show/hide (type string length is equivalent to number of pins used; except for network and on/off)
-				let pins = Math.min(gT(t).t.length,1) + 3*isNet(t); // fixes network pins to 4
+				let pins = Math.min(gT(t).t.length,1) + 4*isVir(t) - 1*isNet(t); // fixes network pins to 4, other virtual to 5
 				for (let p=1; p<5; p++) {
 					var LK = d.Sf["L"+p+n];
 					if (!LK) continue;

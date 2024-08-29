@@ -204,6 +204,10 @@
 #define USERMOD_ID_POV_DISPLAY           53     //Usermod "usermod_pov_display.h"
 #define USERMOD_ID_PIXELS_DICE_TRAY      54     //Usermod "pixels_dice_tray.h"
 
+#define USERMOD_ID_AT8870_I2C_PSPWM      55
+
+
+
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
 #define AP_BEHAVIOR_NO_CONN               1     //Open when no connection (either after boot or if connection is lost)
@@ -326,6 +330,7 @@
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 #define TYPE_NET_ARTNET_RGBW     89            //network ArtNet RGB bus (master broadcast bus, unused)
+#define TYPE_USERMOD             95            //virtual type for usermods
 #define TYPE_VIRTUAL_MAX         95
 
 /*

@@ -242,6 +242,11 @@
 #include "../usermods/LD2410_v2/usermod_ld2410.h"
 #endif
 
+#ifdef USERMOD_AT8870_I2C_PSPWM
+#include "../usermods/AT8870_I2C_PSPWM_v2/usermod.h"
+#endif
+
+
 void registerUsermods()
 {
 /*
@@ -469,5 +474,9 @@ void registerUsermods()
 
   #ifdef USERMOD_POV_DISPLAY
   usermods.add(new PovDisplayUsermod());
+  #endif
+
+  #ifdef USERMOD_AT8870_I2C_PSPWM
+  usermods.add(new UMB_AT8870_I2C_PSPWM());
   #endif
 }
