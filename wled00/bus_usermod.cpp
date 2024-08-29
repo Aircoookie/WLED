@@ -66,6 +66,8 @@ void UsermodBus::setup() {
     for ( busNr = 0; busNr < busses.getNumBusses(); busNr++ ) {
         BusUsermod* bus = static_cast<BusUsermod*> (busses.getBus(busNr));
         if ( bus->getType() == TYPE_USERMOD ) {
+            if ( bus->_usermod ) continue;
+            if ( bus->_pins[0] != getId() ) continue;
             bus->_usermod = this;
             initBus(bus);
         }
