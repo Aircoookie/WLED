@@ -752,14 +752,12 @@ String BusManager::getLEDTypesJSONString(void) {
     {TYPE_NET_ARTNET_RGB,  "N",      PSTR("Art-Net RGB (network)")},
     {TYPE_NET_DDP_RGBW,    "N",      PSTR("DDP RGBW (network)")},
     {TYPE_NET_ARTNET_RGBW, "N",      PSTR("Art-Net RGBW (network)")},
-    // hypothetical extensions
-    //{TYPE_VIRTUAL_I2C_W,   "V",     PSTR("I2C White (virtual)")}, // allows setting I2C address in _pin[0]
-    //{TYPE_VIRTUAL_I2C_CCT, "V",     PSTR("I2C CCT (virtual)")}, // allows setting I2C address in _pin[0]
-    //{TYPE_VIRTUAL_I2C_RGB, "V",     PSTR("I2C RGB (virtual)")}, // allows setting I2C address in _pin[0]
-    {TYPE_USERMOD,         "V",  PSTR("Usermod (virtual)")}, // virtual bus for usermods
+    {TYPE_USERMOD,         "V",      PSTR("Usermod (virtual)")}, // virtual bus for usermods
   };
   String json = "[";
   for (const auto &type : types) {
+    extern UsermodManager usermods;
+    if ( (type.id == TYPE_USERMOD) && (!usermods.lookup(USERMOD_ID_BUS))) continue;
     String id = String(type.id);
     // capabilities follows similar pattern as JSON API 
     int capabilities = Bus::hasRGB(type.id) | Bus::hasWhite(type.id)<<1 | Bus::hasCCT(type.id)<<2 | Bus::is16bit(type.id)<<4;

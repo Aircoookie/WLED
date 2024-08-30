@@ -39,8 +39,8 @@ BusUsermod::BusUsermod(BusConfig &bc)
 
   _valid = 1;
 // error: 'dynamic_cast' not permitted with '-fno-rtti'
-//  _usermod = dynamic_cast<UsermodBus*> (usermods.lookup(_pins[0]));
-  _usermod = static_cast<UsermodBus*> (usermods.lookup(_pins[0]));
+//  _usermod = dynamic_cast<UsermodBus*> (usermods.lookup(USERMOD_ID_BUS));
+  _usermod = static_cast<UsermodBus*> (usermods.lookup(USERMOD_ID_BUS));
 
   if ( _usermod ) {
     _usermod->initBus(this);
@@ -67,7 +67,6 @@ void UsermodBus::setup() {
         BusUsermod* bus = static_cast<BusUsermod*> (busses.getBus(busNr));
         if ( bus->getType() == TYPE_USERMOD ) {
             if ( bus->_usermod ) continue;
-            if ( bus->_pins[0] != getId() ) continue;
             bus->_usermod = this;
             initBus(bus);
         }

@@ -8,7 +8,7 @@ class UMB_AT8870_I2C_PSPWM : public UsermodBus
 {
   public:
 
-    uint16_t         getId() override { return USERMOD_ID_AT8870_I2C_PSPWM; }
+    uint16_t         getId() override { return USERMOD_ID_BUS; }
     void             loop() override {}
 
     void             initBus(BusUsermod* bus) override
@@ -48,7 +48,7 @@ class UMB_AT8870_I2C_PSPWM : public UsermodBus
       uint8_t bri = getBusBrightness(bus);
       
 
-      Wire.beginTransmission(pins[1]);
+      Wire.beginTransmission(pins[0]);
 
       Wire.write(16);                           // 16 == start of PWM addresses
 
