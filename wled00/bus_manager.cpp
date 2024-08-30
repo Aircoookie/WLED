@@ -6,6 +6,7 @@
 #include <IPAddress.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include "driver/ledc.h"
+#include "soc/ledc_struct.h"
 #endif
 #include "const.h"
 #include "pin_manager.h"
@@ -392,7 +393,7 @@ void BusDigital::cleanup(void) {
     #define MAX_BIT_WIDTH SOC_LEDC_TIMER_BIT_WIDE_NUM 
   #else
     // ESP32: 20 bit (but in reality we would never go beyond 16 bit as the frequency would be to low)
-    #define MAX_BIT_WIDTH 20
+    #define MAX_BIT_WIDTH 14
   #endif
 #endif
 
@@ -413,11 +414,13 @@ BusPwm::BusPwm(BusConfig &bc)
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
 #else
+  // for 2 pin PWM CCT strip pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
   _ledcStart = pinManager.allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
     pinManager.deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
     return;
   }
+  if (_needsRefresh) _depth = 8; // fixed 8 bit depth with 4 bit dithering (ESP8266 has no hardware to support dithering)
 #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -501,38 +504,62 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
 void BusPwm::show() {
   if (!_valid) return;
   const unsigned numPins = getPins();
-  const unsigned maxBri = (1<<_depth);
+  const unsigned maxBri = (1<<_depth); // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
 
-  // use CIE brightness formula
-  unsigned pwmBri = (unsigned)_bri * 100;  
-  if (pwmBri < 2040)
-    pwmBri = ((pwmBri << _depth) + 115043) / 230087; //adding '0.5' before division for correct rounding
-  else {  
+  // use CIE brightness formula to fit (or approximate linearity of) human eye perceived brightness
+  // the formula is based on 12 bit resolution as there is no need for greater precision
+  unsigned pwmBri = (unsigned)_bri * 100;  // enlarge to use integer math for linear response
+  if (pwmBri < 2040) {
+    // linear response for values [0-20]
+    pwmBri = ((pwmBri << 12) + 115043) / 230087; //adding '0.5' before division for correct rounding
+  } else {
+    // cubic response for values [21-255]
     pwmBri += 4080;
     float temp = (float)pwmBri / 29580.0f;
-    temp = temp * temp * temp * maxBri; 
+    temp = temp * temp * temp * 4095.0f; 
     pwmBri = (unsigned)temp;
   }
+  // pwmBri is in range [0-4095]
+
+  // determine phase shift
+  [[maybe_unused]] unsigned phaseOffset = maxBri / numPins; // (maxBri is at _depth resolution)
+  // we will be phase shifting every channel by fixed amount (i times /2 or /3 or /4 or /5)
+  // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type (with 180° phase)
+  // CCT additive blending must be 0 (WW & CW must not overlap) in such case
+  // for all other cases it will just try to "spread" the load on PSU
 
   for (unsigned i = 0; i < numPins; i++) {
     unsigned scaled = (_data[i] * pwmBri) / 255;
-    if (_reversed) scaled = maxBri - scaled;
+    // adjust "scaled" value (to fit resolution bounds)
+    if (_depth < 12 && !_needsRefresh) scaled >>= 12 - _depth; // normalize scaled value (if not using dithering)
+    else if (_depth > 12)              scaled <<= _depth - 12; // scale to _depth if using >12 bit
+    if (_reversed)                     scaled = maxBri - scaled;
+
     #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
     unsigned channel = _ledcStart + i;
-    // determine phase shift POC for PWM CCT (credit @dedehai)
-    // phase shifting (180°) is only available for PWM CCT LED type if _needsRefresh is true (UI hack)
-    // and CCT blending is 0 (WW & CW must not overlap)
-    // this will allow using H-bridge to drive reverse-polarity CCT LED strip (2 wires)
-    // NOTE/TODO: if this has no side effects we may forego UI hack and the need for _needsRefresh
-    // we may even use phase shift to evenly distribute power across different pins
-    if (_type == TYPE_ANALOG_2CH && _needsRefresh && Bus::getCCTBlend() == 0) { // hacked to determine if phase shifted PWM is requested
-      unsigned maxDuty = (maxBri / numPins);        // numPins is 2
-      if (scaled >= maxDuty) scaled = maxDuty - 1;  // safety check & add dead time of 1 pulse when brightness is at 50%
-      ledc_set_duty_and_update((ledc_mode_t)(channel / 8), (ledc_channel_t)(channel % 8), scaled, maxDuty*i);
-    } else
-      ledcWrite(channel, scaled);
+    if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {
+      // pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
+      unsigned briLimit = phaseOffset << (_needsRefresh*4); // expand limit if using dithering (_depth==8, scaled is at 12 bit)
+      if (scaled >= briLimit) scaled = briLimit - 1;        // safety check & 1 pulse dead time when brightness is at 50%
+    }
+    unsigned gr = channel/8;  // high/low speed group
+    unsigned ch = channel%8;  // group channel
+    if (_needsRefresh) {
+      // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
+      // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
+      // directly write to LEDC struct as there is no HAL exposed function for dithering
+      // duty has 20 bit resolution with 4 fractional bits (24 bits in total)
+      // _depth is 8 bit in this case (and maxBri==256), scaled is still at 12 bit
+      LEDC.channel_group[gr].channel[ch].duty.duty = scaled; // write full 12 bit value (4 dithering bits)
+      LEDC.channel_group[gr].channel[ch].hpoint.hpoint = phaseOffset*i; // phaseOffset is at _depth resolution (8 bit)
+      ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
+    } else {
+      // scaled will be [0-((1<<_depth)-1)] and hpoint evenly distributed
+      ledc_set_duty_and_update((ledc_mode_t)gr, (ledc_channel_t)ch, scaled, phaseOffset*i);
+      //ledcWrite(channel, scaled);
+    }
     #endif
   }
 }

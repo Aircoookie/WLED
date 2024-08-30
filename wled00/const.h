@@ -533,7 +533,11 @@
 #ifdef ESP8266
   #define WLED_PWM_FREQ    880 //PWM frequency proven as good for LEDs
 #else
-  #define WLED_PWM_FREQ  19531
+  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+    #define WLED_PWM_FREQ 9765    // XTAL clock is 40MHz (this will allow 12 bit resolution)
+  #else
+    #define WLED_PWM_FREQ  19531  // APB clock is 80MHz
+  #endif
 #endif
 #endif
 

@@ -5,9 +5,9 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>LED Settings</title>
 	<script>
-		var d=document,laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=4096,maxL=1333,maxCO=10,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var d=document,laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var oMaxB=1;
-		d.ledTypes = []; // filled from GetV()
+		d.ledTypes = [/*{i:22,c:1,t:"D",n:"WS2812"},{i:42,c:6,t:"AA",n:"PWM CCT"}*/]; // filled from GetV()
 		d.um_p = [];
 		d.rsvd = [];
 		d.ro_gpio = [];
@@ -60,7 +60,7 @@
 			x.className = error ? "error":"show";
 			clearTimeout(timeout);
 			x.style.animation = 'none';
-			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+			timeout = setTimeout(()=>{ x.className = x.className.replace("show", ""); }, 2900);
 		}
 		function bLimits(b,v,p,m,l,o=5,d=2,a=6) {
 			// maxB - max buses (can be changed if using ESP32 parallel I2S)
@@ -69,7 +69,7 @@
 			// maxV - min virtual buses
 			// maxPB - max LEDs per bus
 			// maxM - max LED memory
-			// maxL - max LEDs
+			// maxL - max LEDs (will serve to determine ESP >1664 == ESP32)
 			// maxCO - max Color Order mappings
 			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
@@ -237,16 +237,8 @@
 						p0d = "Data "+p0d;
 						break;
 					case 'A': // PWM analog
-						switch (gT(t).t.length) { // type length determines number of GPIO used
-							case  1: break;
-							case  2: off = "Phase shift";
-								if (d.Sf["CB"].value != 0) gId(`rf${n}`).checked = 0; // disable phase shifting
-								gId(`rf${n}`).disabled = (d.Sf["CB"].value != 0);     // prevent changes
-								// fallthrough
-							default: p0d = "GPIOs:"; break;
-						}
-						// PWM CCT allows phase shifting
-						gId(`dig${n}f`).style.display = (gT(t).t.length != 2) ? "none" : "inline";
+						if (gT(t).t.length > 1) p0d = "GPIOs:";
+						off = "Dithering";
 						break;
 					case 'N': // network
 						p0d = "IP address:";
@@ -259,7 +251,7 @@
 				gId("p1d"+n).innerText = p1d;
 				gId("off"+n).innerText = off;
 				// secondary pins show/hide (type string length is equivalent to number of pins used; except for network and on/off)
-				let pins = Math.min(gT(t).t.length,1) + 3*isNet(t); // fixes network pins to 4
+				let pins = Math.max(gT(t).t.length,1) + 3*isNet(t); // fixes network pins to 4
 				for (let p=1; p<5; p++) {
 					var LK = d.Sf["L"+p+n];
 					if (!LK) continue;
@@ -294,7 +286,7 @@
 				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";              // hide count for analog
 				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";              // hide reversed for virtual
 				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
-				gId("dig"+n+"f").style.display = (isDig(t) || isPWM(t)) ? "inline":"none";  // hide refresh (PWM hijacks reffresh for phase shifting)
+				gId("dig"+n+"f").style.display = (isDig(t) || (isPWM(t) && maxL>2048)) ? "inline":"none"; // hide refresh (PWM hijacks reffresh for dithering on ESP32)
 				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";               // auto calculate white
 				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
 				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed";           // change reverse text for analog else (rotated 180°)
@@ -916,7 +908,8 @@ Swap: <select id="xw${s}" name="XW${s}">
 			<br>
 			Calculate CCT from RGB: <input type="checkbox" name="CR"><br>
 			CCT IC used (Athom 15W): <input type="checkbox" name="IC"><br>
-			CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" onchange="UI()" required> %
+			CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" onchange="UI()" required> %<br>
+			<i class="warn">WARNING: When using H-bridge for reverse polarity (2-wire) CCT LED strip<br><b>make sure this value is 0</b>.<br>(ESP32 variants only, ESP8266 does not support H-bridges)</i>
 		</div>
 		<h3>Advanced</h3>
 		Palette blending:
