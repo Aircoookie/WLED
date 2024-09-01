@@ -271,7 +271,7 @@ unsigned *PinManagerClass::getReadOnlyPins()
 {
   #ifdef READ_ONLY_PINS
     static unsigned readOnlyPins[] = {READ_ONLY_PINS};
-  #elif
+  #else
     static unsigned readOnlyPins[] = 255;
   #endif
   return readOnlyPins;
