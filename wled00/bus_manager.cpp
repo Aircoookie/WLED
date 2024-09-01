@@ -7,9 +7,14 @@
 #ifdef ARDUINO_ARCH_ESP32
 #include "driver/ledc.h"
 #include "soc/ledc_struct.h"
-#define LEDC_MUTEX_LOCK()    do {} while (xSemaphoreTake(_ledc_sys_lock, portMAX_DELAY) != pdPASS)
-#define LEDC_MUTEX_UNLOCK()  xSemaphoreGive(_ledc_sys_lock)
-extern xSemaphoreHandle _ledc_sys_lock;
+  #if !(defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3))
+    #define LEDC_MUTEX_LOCK()    do {} while (xSemaphoreTake(_ledc_sys_lock, portMAX_DELAY) != pdPASS)
+    #define LEDC_MUTEX_UNLOCK()  xSemaphoreGive(_ledc_sys_lock)
+    extern xSemaphoreHandle _ledc_sys_lock;
+  #else
+    #define LEDC_MUTEX_LOCK()
+    #define LEDC_MUTEX_UNLOCK()
+  #endif
 #endif
 #include "const.h"
 #include "pin_manager.h"
@@ -531,7 +536,7 @@ void BusPwm::show() {
   // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type (with 180° phase)
   // CCT additive blending must be 0 (WW & CW must not overlap) in such case
   // for all other cases it will just try to "spread" the load on PSU
-  bool cctOverlap = (_type == TYPE_ANALOG_2CH) && (_data[0]+_data[1] >= 254);
+  [[maybe_unused]] bool cctOverlap = (_type == TYPE_ANALOG_2CH) && (_data[0]+_data[1] >= 254);
 
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
   // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
