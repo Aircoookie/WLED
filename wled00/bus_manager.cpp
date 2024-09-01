@@ -7,6 +7,9 @@
 #ifdef ARDUINO_ARCH_ESP32
 #include "driver/ledc.h"
 #include "soc/ledc_struct.h"
+#define LEDC_MUTEX_LOCK()    do {} while (xSemaphoreTake(_ledc_sys_lock, portMAX_DELAY) != pdPASS)
+#define LEDC_MUTEX_UNLOCK()  xSemaphoreGive(_ledc_sys_lock)
+extern xSemaphoreHandle _ledc_sys_lock;
 #endif
 #include "const.h"
 #include "pin_manager.h"
@@ -506,8 +509,9 @@ void BusPwm::show() {
   const unsigned numPins = getPins();
   const unsigned maxBri = (1<<_depth); // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
 
-  // use CIE brightness formula to fit (or approximate linearity of) human eye perceived brightness
+  // use CIE brightness formula (cubic) to fit (or approximate linearity of) human eye perceived brightness
   // the formula is based on 12 bit resolution as there is no need for greater precision
+  // see: https://en.wikipedia.org/wiki/Lightness
   unsigned pwmBri = (unsigned)_bri * 100;  // enlarge to use integer math for linear response
   if (pwmBri < 2040) {
     // linear response for values [0-20]
@@ -527,39 +531,41 @@ void BusPwm::show() {
   // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type (with 180° phase)
   // CCT additive blending must be 0 (WW & CW must not overlap) in such case
   // for all other cases it will just try to "spread" the load on PSU
+  bool cctOverlap = (_type == TYPE_ANALOG_2CH) && (_data[0]+_data[1] >= 254);
+
+  // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
+  // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
+  bool dithering = _needsRefresh;                           // avoid working with bitfield
 
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned scaled = (_data[i] * pwmBri) / 255;
+    unsigned scaled = (_data[i] * pwmBri) / 255;            // scaled is at 12 bit depth (same as pwmBri)
     // adjust "scaled" value (to fit resolution bounds)
-    if (_depth < 12 && !_needsRefresh) scaled >>= 12 - _depth; // normalize scaled value (if not using dithering)
-    else if (_depth > 12)              scaled <<= _depth - 12; // scale to _depth if using >12 bit
-    if (_reversed)                     scaled = maxBri - scaled;
-
+    if (_depth < 12 && !dithering) scaled >>= 12 - _depth;  // normalize scaled value (if not using dithering)
+    else if (_depth > 12)          scaled <<= _depth - 12;  // scale to _depth if using >12 bit
+    if (_reversed)                 scaled = maxBri - scaled;
+    // scaled is now at _depth resolution (8-14 bits) except when using dithering, 12 bit in such case
     #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
     unsigned channel = _ledcStart + i;
-    if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {
-      // pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
-      unsigned briLimit = phaseOffset << (_needsRefresh*4); // expand limit if using dithering (_depth==8, scaled is at 12 bit)
-      if (scaled >= briLimit) scaled = briLimit - 1;        // safety check & 1 pulse dead time when brightness is at 50%
+    // prevent overlapping PWM signals for H-bridge
+    // pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
+    // so we only need to take care of shortening the signal at 50% distribution for 1 pulse
+    if (cctOverlap && Bus::getCCTBlend() == 0) {
+      unsigned shift = (dithering*4);
+      unsigned briLimit = phaseOffset << shift;               // expand limit if using dithering
+      if (scaled >= briLimit) scaled = briLimit - (1<<shift); // safety check & 1 pulse dead time when brightness is at 50%
     }
     unsigned gr = channel/8;  // high/low speed group
     unsigned ch = channel%8;  // group channel
-    if (_needsRefresh) {
-      // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
-      // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
-      // directly write to LEDC struct as there is no HAL exposed function for dithering
-      // duty has 20 bit resolution with 4 fractional bits (24 bits in total)
-      // _depth is 8 bit in this case (and maxBri==256), scaled is still at 12 bit
-      LEDC.channel_group[gr].channel[ch].duty.duty = scaled; // write full 12 bit value (4 dithering bits)
-      LEDC.channel_group[gr].channel[ch].hpoint.hpoint = phaseOffset*i; // phaseOffset is at _depth resolution (8 bit)
-      ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
-    } else {
-      // scaled will be [0-((1<<_depth)-1)] and hpoint evenly distributed
-      ledc_set_duty_and_update((ledc_mode_t)gr, (ledc_channel_t)ch, scaled, phaseOffset*i);
-      //ledcWrite(channel, scaled);
-    }
+    // directly write to LEDC struct as there is no HAL exposed function for dithering
+    // duty has 20 bit resolution with 4 fractional bits (24 bits in total)
+    // _depth is 8 bit in this case (and maxBri==256), scaled is still at 12 bit
+    LEDC_MUTEX_LOCK();
+    LEDC.channel_group[gr].channel[ch].duty.duty = scaled << ((!dithering)*4); // write full 12 bit value (4 dithering bits)
+    LEDC.channel_group[gr].channel[ch].hpoint.hpoint = phaseOffset*i; // phaseOffset is at _depth resolution (8 bit)
+    LEDC_MUTEX_UNLOCK();
+    ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
     #endif
   }
 }
