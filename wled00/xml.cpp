@@ -192,7 +192,7 @@ void appendGPIOinfo() {
   // add info for read-only GPIO
   oappend(SET_F("d.ro_gpio=["));
   const unsigned* readOnlyPins = pinManager.getReadOnlyPins();
-  const unsigned numReadOnlyPins = ((sizeof readOnlyPins) / (sizeof readOnlyPins[0]));
+  const unsigned numReadOnlyPins = (sizeof *readOnlyPins) / (sizeof readOnlyPins[0]);
   for (unsigned i = 0; i < numReadOnlyPins; i++) {
     // Ignore 255
     if (readOnlyPins[i] <= WLED_NUM_PINS) {

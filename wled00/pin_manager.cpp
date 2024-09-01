@@ -272,7 +272,7 @@ unsigned *PinManagerClass::getReadOnlyPins()
   #ifdef READ_ONLY_PINS
     static unsigned readOnlyPins[] = {READ_ONLY_PINS};
   #else
-    static unsigned readOnlyPins[] = 255;
+    static unsigned readOnlyPins[] = {255};
   #endif
   return readOnlyPins;
 }
@@ -280,7 +280,7 @@ unsigned *PinManagerClass::getReadOnlyPins()
 bool PinManagerClass::isReadOnlyPin(byte gpio)
 {
   const unsigned* pins = PinManagerClass::getReadOnlyPins();
-  const unsigned numPins = sizeof(pins) / sizeof(pins[0]);
+  const unsigned numPins = (sizeof *pins) / (sizeof pins[0]);
 
   for (unsigned i = 0; i < numPins; i++) {
     if (pins[i] == gpio) {
