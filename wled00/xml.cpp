@@ -191,17 +191,15 @@ void appendGPIOinfo() {
 
   // add info for read-only GPIO
   oappend(SET_F("d.ro_gpio=["));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  oappendi(46);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  // none for S3
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  // none for C3
-  #elif defined(ESP32)
-  oappend(SET_F("34,35,36,37,38,39"));
-  #else
-  // none for ESP8266
-  #endif
+  const unsigned* readOnlyPins = pinManager.getReadOnlyPins();
+  const unsigned numReadOnlyPins = ((sizeof readOnlyPins) / (sizeof readOnlyPins[0]));
+  for (unsigned i = 0; i < numReadOnlyPins; i++) {
+    // Ignore 255
+    if (readOnlyPins[i] <= WLED_NUM_PINS) {
+      oappendi(readOnlyPins[i]);
+      if (i != numReadOnlyPins) oappend(SET_F(","));
+    } 
+  }
   oappend(SET_F("];"));
 
   // add info about max. # of pins

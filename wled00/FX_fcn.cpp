@@ -1216,11 +1216,11 @@ void WS2812FX::finalizeInit(void) {
   if (BusManager::getNumBusses() == 0) {
     DEBUG_PRINTLN(F("No busses, init default"));
     constexpr unsigned defDataTypes[] = {LED_TYPES};
-    const unsigned defDataPins[] = {DATA_PINS};
-    const unsigned defCounts[] = {PIXEL_COUNTS};
-    const unsigned defNumTypes = ((sizeof defDataTypes) / (sizeof defDataTypes[0]));
+    constexpr unsigned defDataPins[] = {DATA_PINS};
+    constexpr unsigned defCounts[] = {PIXEL_COUNTS};
+    constexpr unsigned defNumTypes = ((sizeof defDataTypes) / (sizeof defDataTypes[0]));
     constexpr unsigned defNumPins = ((sizeof defDataPins) / (sizeof defDataPins[0]));
-    const unsigned defNumCounts = ((sizeof defCounts) / (sizeof defCounts[0]));
+    constexpr unsigned defNumCounts = ((sizeof defCounts) / (sizeof defCounts[0]));
 
     static_assert(Bus::getNumberOfPins(defDataTypes[0]) <= defNumPins,
                   "The first LED type configured requires more pins than have been defined!");
@@ -1237,14 +1237,18 @@ void WS2812FX::finalizeInit(void) {
         DEBUG_PRINTLN(F("LED outputs misaligned with defined pins. Some pins will remain unused."));
         break;
       }
-      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) defPin[j] = defDataPins[pinsIndex + j];
-      pinsIndex += busPins;
-      // when booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
-      // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), etc
-      if (pinManager.isPinAllocated(defPin[0])) {
-        defPin[0] = 1; // start with GPIO1 and work upwards
-        while (pinManager.isPinAllocated(defPin[0]) && defPin[0] < WLED_NUM_PINS) defPin[0]++;
+      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
+        defPin[j] = defDataPins[pinsIndex + j];
+
+        // when booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
+        // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
+        if (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) {
+          defPin[j] = 1; // start with GPIO1 and work upwards
+          while (pinManager.isPinAllocated(defPin[j]) && pinManager.isReadOnlyPin(defPin[j]) && defPin[j] < WLED_NUM_PINS) defPin[j]++;
+        }
       }
+      pinsIndex += busPins;
+
       unsigned start = prevLen;
       // if we have less counts than pins and they do not align, use last known count to set current count
       unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];

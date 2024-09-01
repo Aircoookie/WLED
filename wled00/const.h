@@ -572,6 +572,19 @@
 #endif
 #endif
 
+// List of read only pins. Cannot be used for LED outputs.
+#if defined(CONFIG_IDF_TARGET_ESP32S2)
+  #define READ_ONLY_PINS 46
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+// none for S3
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+// none for C3
+#elif defined(ESP32)
+  #define READ_ONLY_PINS 34,35,36,37,38,39
+#else
+// none for ESP8266
+#endif
+
 #ifdef WLED_ENABLE_DMX
 #if (LEDPIN == 2)
   #undef LEDPIN

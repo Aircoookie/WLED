@@ -112,6 +112,9 @@ class PinManagerClass {
   // will return false for reserved pins
   bool isPinOk(byte gpio, bool output = true) const;
 
+  static unsigned* getReadOnlyPins();
+  static bool isReadOnlyPin(byte gpio);
+
   PinOwner getPinOwner(byte gpio) const;
 
   #ifdef ARDUINO_ARCH_ESP32
