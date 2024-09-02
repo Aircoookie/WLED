@@ -533,13 +533,8 @@ void BusPwm::show() {
     pwmBri += 4080;
     float temp = (float)pwmBri / 29580.0f;
     temp = temp * temp * temp * (float)maxBri; 
-    pwmBri = (unsigned)temp;
+    pwmBri = (unsigned)temp;  // pwmBri is in range [0-maxBri] 
   }
-  // pwmBri is in range [0-4095]
-
-  // determine phase shift
-  [[maybe_unused]] unsigned phaseOffset = maxBri / numPins; // (maxBri is at _depth resolution)
-
   unsigned phaseOffset = 0; 
   // we will be phase shifting every channel by previous pulse length (plus dead time if required)
   // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type 
@@ -575,27 +570,10 @@ void BusPwm::show() {
     LEDC_MUTEX_UNLOCK();
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
 
-    
-    phaseOffset += ((scaled + (maxBri - scaled) / 2) >> bithsift) + 1; // fixed 180°, add 1 pulse for dead time (min pulse with dithering is 8bit)
     phaseOffset += 2 + (scaled >> bithsift); // offset to cascade the signals, dithering requires two pulses and in non-dithering the extra pulse does not hurt
-    if(phaseOffset >= maxBri >> bithsift) phaseOffset = 0; // offset it out of bounds, reset
-      
-    Serial.print(" maxbri = ");
-    Serial.print(maxBri);
-    Serial.print(" offset = ");
-    Serial.print(phaseOffset);
-    Serial.print(" bit depth = ");
-    Serial.print(_depth);
-    Serial.print(" freq = ");
-    Serial.print(_frequency);
-    Serial.print(" scaled= ");
-    Serial.println(scaled);
-    Serial.print(" duty = ");
-    Serial.println(LEDC.channel_group[gr].channel[ch].duty.duty);
-
+    if(phaseOffset >= maxBri >> bithsift) phaseOffset = 0; // offset it out of bounds, reset TODO: maybe this should be (maxBri-1), need to test
     #endif
   }
-  Serial.println("*********");
 }
 
 uint8_t BusPwm::getPins(uint8_t* pinArray) const {
