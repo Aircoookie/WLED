@@ -410,6 +410,7 @@ BusPwm::BusPwm(BusConfig &bc)
 {
   if (!isPWM(bc.type)) return;
   unsigned numPins = numPWMPins(bc.type);
+  unsigned dithering = 0;
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
   for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
@@ -428,7 +429,10 @@ BusPwm::BusPwm(BusConfig &bc)
     pinManager.deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
     return;
   }
-  if (_needsRefresh) _depth = 8; // fixed 8 bit depth with 4 bit dithering (ESP8266 has no hardware to support dithering)
+  if (_needsRefresh) {
+    _depth = 12; // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
+    dithering = 4;
+  }
 #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -437,7 +441,7 @@ BusPwm::BusPwm(BusConfig &bc)
     pinMode(_pins[i], OUTPUT);
     #else
     unsigned channel = _ledcStart + i;
-    ledcSetup(channel, _frequency, _depth);
+    ledcSetup(channel, _frequency, _depth - dithering);
     ledcAttachPin(_pins[i], channel);
     // LEDC timer reset credit @dedehai
     uint8_t group = (channel / 8), timer = ((channel / 2) % 4); // same fromula as in ledcSetup()
@@ -511,8 +515,11 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
 
 void BusPwm::show() {
   if (!_valid) return;
+  bool dithering = _needsRefresh;      // avoid working with bitfield
   const unsigned numPins = getPins();
-  const unsigned maxBri = (1<<_depth); // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
+  const unsigned maxBri = (1<<_depth) + 1; // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8) note: +1 ensures 'full on' (else there is one low pulse period at 100% dutycycle)
+  const unsigned bithsift = dithering * 4; 
+  //const unsigned maxBri = (1<<_depth) << (dithering*4); // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
 
   // use CIE brightness formula (cubic) to fit (or approximate linearity of) human eye perceived brightness
   // the formula is based on 12 bit resolution as there is no need for greater precision
@@ -525,41 +532,37 @@ void BusPwm::show() {
     // cubic response for values [21-255]
     pwmBri += 4080;
     float temp = (float)pwmBri / 29580.0f;
-    temp = temp * temp * temp * 4095.0f; 
+    temp = temp * temp * temp * (float)maxBri; 
     pwmBri = (unsigned)temp;
   }
   // pwmBri is in range [0-4095]
 
   // determine phase shift
   [[maybe_unused]] unsigned phaseOffset = maxBri / numPins; // (maxBri is at _depth resolution)
-  // we will be phase shifting every channel by fixed amount (i times /2 or /3 or /4 or /5)
-  // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type (with 180° phase)
+
+  unsigned phaseOffset = 0; 
+  // we will be phase shifting every channel by previous pulse length (plus dead time if required)
+  // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type 
   // CCT additive blending must be 0 (WW & CW must not overlap) in such case
   // for all other cases it will just try to "spread" the load on PSU
-  [[maybe_unused]] bool cctOverlap = (_type == TYPE_ANALOG_2CH) && (_data[0]+_data[1] >= 254);
 
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
   // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
-  bool dithering = _needsRefresh;                           // avoid working with bitfield
 
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned scaled = (_data[i] * pwmBri) / 255;            // scaled is at 12 bit depth (same as pwmBri)
-    // adjust "scaled" value (to fit resolution bounds)
-    if (_depth < 12 && !dithering) scaled >>= 12 - _depth;  // normalize scaled value (if not using dithering)
-    else if (_depth > 12)          scaled <<= _depth - 12;  // scale to _depth if using >12 bit
-    if (_reversed)                 scaled = maxBri - scaled;
+    unsigned scaled = (_data[i] * pwmBri) / 255;   
+    if (_reversed)                 scaled = maxBri - scaled; 
     // scaled is now at _depth resolution (8-14 bits) except when using dithering, 12 bit in such case
     #ifdef ESP8266
     analogWrite(_pins[i], scaled);
     #else
     unsigned channel = _ledcStart + i;
-    // prevent overlapping PWM signals for H-bridge
-    // pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
-    // so we only need to take care of shortening the signal at 50% distribution for 1 pulse
-    if (cctOverlap && Bus::getCCTBlend() == 0) {
-      unsigned shift = (dithering*4);
-      unsigned briLimit = phaseOffset << shift;               // expand limit if using dithering
-      if (scaled >= briLimit) scaled = briLimit - (1<<shift); // safety check & 1 pulse dead time when brightness is at 50%
+    // prevent overlapping PWM signals (required for H-bridge driven CCT strips)
+    // pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer (i.e. they are in sync)
+    // we only need to take care of shortening the signal at full brightness, otherwise the pulses cannot overlap with CCTBlend() == 0
+    if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {    
+      if (_bri==255) scaled -= 2 << bithsift;  // add dead time when brightness is 100% (when using dithering, two full 8bit pulses are required, in non-dithering one extra pulse does not hurt at all    note: actually could add dead time only if global brightness is also at 255
+      //another way (maybe more elegant?) of doing this would be to limit bus brightness to 254 if CCT is enabled with zero blending (
     }
     unsigned gr = channel/8;  // high/low speed group
     unsigned ch = channel%8;  // group channel
@@ -571,8 +574,28 @@ void BusPwm::show() {
     LEDC.channel_group[gr].channel[ch].hpoint.hpoint = phaseOffset*i; // phaseOffset is at _depth resolution (8 bit)
     LEDC_MUTEX_UNLOCK();
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
+
+    
+    phaseOffset += ((scaled + (maxBri - scaled) / 2) >> bithsift) + 1; // fixed 180°, add 1 pulse for dead time (min pulse with dithering is 8bit)
+    phaseOffset += 2 + (scaled >> bithsift); // offset to cascade the signals, dithering requires two pulses and in non-dithering the extra pulse does not hurt
+    if(phaseOffset >= maxBri >> bithsift) phaseOffset = 0; // offset it out of bounds, reset
+      
+    Serial.print(" maxbri = ");
+    Serial.print(maxBri);
+    Serial.print(" offset = ");
+    Serial.print(phaseOffset);
+    Serial.print(" bit depth = ");
+    Serial.print(_depth);
+    Serial.print(" freq = ");
+    Serial.print(_frequency);
+    Serial.print(" scaled= ");
+    Serial.println(scaled);
+    Serial.print(" duty = ");
+    Serial.println(LEDC.channel_group[gr].channel[ch].duty.duty);
+
     #endif
   }
+  Serial.println("*********");
 }
 
 uint8_t BusPwm::getPins(uint8_t* pinArray) const {
