@@ -267,26 +267,17 @@ bool PinManagerClass::isPinOk(byte gpio, bool output) const
   return false;
 }
 
-unsigned *PinManagerClass::getReadOnlyPins()
-{
-  #ifdef READ_ONLY_PINS
-    static unsigned readOnlyPins[] = {READ_ONLY_PINS};
-  #else
-    static unsigned readOnlyPins[] = {255};
-  #endif
-  return readOnlyPins;
-}
-
 bool PinManagerClass::isReadOnlyPin(byte gpio)
 {
-  const unsigned* pins = PinManagerClass::getReadOnlyPins();
-  const unsigned numPins = (sizeof *pins) / (sizeof pins[0]);
+  #ifdef READ_ONLY_PINS
+  const unsigned pins[] = {READ_ONLY_PINS};
+  const unsigned numPins = ((sizeof pins) / (sizeof pins[0]));
 
-  for (unsigned i = 0; i < numPins; i++) {
-    if (pins[i] == gpio) {
-      return true;
-    }
+  if (gpio <= WLED_NUM_PINS) {
+    for (unsigned i = 0; i < numPins; i++) if (gpio == pins[i]) return true;
   }
+  #endif
+
   return false;
 }
 

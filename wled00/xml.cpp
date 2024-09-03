@@ -191,14 +191,14 @@ void appendGPIOinfo() {
 
   // add info for read-only GPIO
   oappend(SET_F("d.ro_gpio=["));
-  const unsigned* readOnlyPins = pinManager.getReadOnlyPins();
-  const unsigned numReadOnlyPins = (sizeof *readOnlyPins) / (sizeof readOnlyPins[0]);
-  for (unsigned i = 0; i < numReadOnlyPins; i++) {
-    // Ignore 255
-    if (readOnlyPins[i] <= WLED_NUM_PINS) {
-      oappendi(readOnlyPins[i]);
-      if (i != numReadOnlyPins) oappend(SET_F(","));
-    } 
+  bool firstPin = true;
+  for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
+    if (pinManager.isReadOnlyPin(i)) {
+      // No comma before the first pin
+      if (!firstPin) oappend(SET_F(","));
+      oappendi(i);
+      firstPin = false;
+    }
   }
   oappend(SET_F("];"));
 
