@@ -1428,6 +1428,8 @@ void WS2812FX::service() {
           unsigned h = seg.virtualHeight();
           unsigned dw = p * w / 0xFFFFU + 1;
           unsigned dh = p * h / 0xFFFFU + 1;
+          unsigned orgBS = blendingStyle;
+          if (w*h == 1) blendingStyle = BLEND_STYLE_FADE; // disable belending for single pixel segments (use fade instead)
           switch (blendingStyle) {
             case BLEND_STYLE_FAIRY_DUST:  // fairy dust (must set entire segment, see isPixelXYClipped())
               Segment::setClippingRect(0, w, 0, h);
@@ -1473,9 +1475,8 @@ void WS2812FX::service() {
               Segment::setClippingRect(0, dw, h - dh, h);
               break;
           }
-        }
-        delay = (*_mode[seg.currentMode()])();  // run new/current mode
-        if (seg.isInTransition()) {
+          delay = (*_mode[seg.currentMode()])();  // run new/current mode
+          // now run old/previous mode
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
@@ -1491,10 +1492,10 @@ void WS2812FX::service() {
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay
           Segment::modeBlend(false);          // unset semaphore
-        }
-#else
-        delay = (*_mode[seg.mode])();         // run effect mode
+          blendingStyle = orgBS;              // restore blending style if it was modified for single pixel segment
+        } else
 #endif
+        delay = (*_mode[seg.mode])();         // run effect mode (not in transition)
         seg.call++;
         if (seg.isInTransition() && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
         BusManager::setSegmentCCT(oldCCT);    // restore old CCT for ABL adjustments
