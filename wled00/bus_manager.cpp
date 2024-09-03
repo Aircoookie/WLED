@@ -429,6 +429,7 @@ BusPwm::BusPwm(BusConfig &bc)
     pinManager.deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
     return;
   }
+  // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
   if (_needsRefresh) {
     _depth = 12; // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
     dithering = 4;
@@ -515,10 +516,13 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
 
 void BusPwm::show() {
   if (!_valid) return;
-  bool dithering = _needsRefresh;      // avoid working with bitfield
+  // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
+  // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
+  const bool     dithering = _needsRefresh; // avoid working with bitfield
   const unsigned numPins = getPins();
-  const unsigned maxBri = (1<<_depth); // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8) 
-  const unsigned bithsift = dithering * 4; 
+  const unsigned maxBri = (1<<_depth);      // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8) 
+  const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
+
   // use CIE brightness formula (cubic) to fit (or approximate linearity of) human eye perceived brightness
   // the formula is based on 12 bit resolution as there is no need for greater precision
   // see: https://en.wikipedia.org/wiki/Lightness
@@ -533,42 +537,37 @@ void BusPwm::show() {
     temp = temp * temp * temp * (float)maxBri; 
     pwmBri = (unsigned)temp;  // pwmBri is in range [0-maxBri] 
   }
-  unsigned phaseOffset = 0; 
+
+  [[maybe_unused]] unsigned hPoint = 0;  // phase shift (0 - maxBri)
   // we will be phase shifting every channel by previous pulse length (plus dead time if required)
   // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type 
-  // CCT additive blending must be 0 (WW & CW must not overlap) in such case
+  // CCT additive blending must be 0 (WW & CW will not overlap) otherwise signals *will* overlap
   // for all other cases it will just try to "spread" the load on PSU
-  // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
-  // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
+  // Phase shifting requires that LEDC timers are synchronised (see setup()). For PWM CCT (and H-bridge) it is
+  // also mandatory that both channels use the same timer (pinManager takes care of that).
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned scaled = (_data[i] * pwmBri) / 255;   
-    // prevent overlapping PWM signals (required for H-bridge driven CCT strips)
-    // pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer (i.e. they are in sync)
-    // we only need to take care of shortening the signal at full brightness, otherwise the pulses overlap with CCTBlend() == 0
-    signed deadtime = 0; // add dead time when brightness is 100% (when using dithering, two full 8bit pulses are required, in non-dithering one extra pulse does not hurt at all    note: actually could add dead time only if global brightness is also at 255    
-    if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {      
-      deadtime = 2 << bithsift;  
-      if (_bri == 255 && scaled >= deadtime) scaled -= deadtime;  
-      //another way (maybe more elegant?) of doing this would be to limit bus brightness to 254 if CCT is enabled with zero blending 
-      if(_reversed) deadtime = -deadtime; // need to invert dead time at this point: phaseshift needs to go the opposite way so low signals dont overlap
-    }
-    if (_reversed) scaled = maxBri - scaled; 
-    // scaled is now at _depth resolution (8-14 bits) except when using dithering, 12 bit in such case
+    unsigned duty = (_data[i] * pwmBri) / 255;
+    if (_reversed) duty = maxBri - duty;
     #ifdef ESP8266
-    analogWrite(_pins[i], scaled);
+    analogWrite(_pins[i], duty);
     #else
-    unsigned channel = _ledcStart + i;    
+    unsigned deadTime = 0;
+    if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {
+      // add dead time between signals (when using dithering, two full 8bit pulses are required)
+      deadTime = (1+dithering) << bitShift;
+      // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overflow hPoint
+      if (_bri >= 254 && duty + deadTime + hPoint >= maxBri) duty = maxBri - hPoint - deadTime; // shorten duty if overflowing
+    }
+    unsigned channel = _ledcStart + i;
     unsigned gr = channel/8;  // high/low speed group
     unsigned ch = channel%8;  // group channel
     // directly write to LEDC struct as there is no HAL exposed function for dithering
     // duty has 20 bit resolution with 4 fractional bits (24 bits in total)
-    LEDC_MUTEX_LOCK();
-    LEDC.channel_group[gr].channel[ch].duty.duty = scaled << ((!dithering)*4); // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
-    LEDC.channel_group[gr].channel[ch].hpoint.hpoint = phaseOffset; 
-    LEDC_MUTEX_UNLOCK();
+    LEDC.channel_group[gr].channel[ch].duty.duty = duty << ((!dithering)*4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
+    LEDC.channel_group[gr].channel[ch].hpoint.hpoint = hPoint >> bitShift;    // hPoint is at _depth resolution (needs shifting if dithering)
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
-    phaseOffset += ((scaled + deadtime) >> bithsift); // offset to cascade the signals, add dead time if required (to ensure pulses do not overlap)
-    if(phaseOffset >= maxBri >> bithsift) phaseOffset = 0; // offset it out of bounds, reset    
+    hPoint += duty + deadTime;        // offset to cascade the signals
+    if (hPoint >= maxBri) hPoint = 0; // offset it out of bounds, reset
     #endif
   }
 }
