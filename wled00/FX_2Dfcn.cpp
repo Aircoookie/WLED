@@ -211,7 +211,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
         else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, tmpCol);
+        strip.setPixelColorXY(start + width() - xX - 1, startY + height() - yY - 1, tmpCol);
       }
     }
   }
