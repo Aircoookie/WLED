@@ -69,6 +69,18 @@
   #error "Max segments must be at least max number of busses!"
 #endif
 
+static constexpr unsigned sumPinsRequired(const unsigned* current, size_t count) {
+ return (count > 0) ? (Bus::getNumberOfPins(*current) + sumPinsRequired(current+1,count-1)) : 0;
+}
+
+static constexpr bool validatePinsAndTypes(const unsigned* types, unsigned numTypes, unsigned numPins ) {
+  // Pins provided < pins required -> always invalid
+  // Pins provided = pins required -> always valid
+  // Pins provided > pins required -> last type will repeat until we run out of pins, make sure excess pins modulo last type pins == 0
+  return (sumPinsRequired(types, numTypes) > numPins) ? false :
+          (numPins - sumPinsRequired(types, numTypes)) % Bus::getNumberOfPins(types[numTypes-1]) == 0;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation
@@ -1222,9 +1234,9 @@ void WS2812FX::finalizeInit(void) {
     constexpr unsigned defNumPins = ((sizeof defDataPins) / (sizeof defDataPins[0]));
     constexpr unsigned defNumCounts = ((sizeof defCounts) / (sizeof defCounts[0]));
 
-    static_assert(Bus::getNumberOfPins(defDataTypes[0]) <= defNumPins,
-                  "The first LED type configured requires more pins than have been defined!");
-
+    static_assert(validatePinsAndTypes(defDataTypes, defNumTypes, defNumPins),
+                  "The default pin list defined in DATA_PINS does not match the pin requirements for the default buses defined in LED_TYPES");
+    
     unsigned prevLen = 0;
     unsigned pinsIndex = 0;
     for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
@@ -1232,7 +1244,9 @@ void WS2812FX::finalizeInit(void) {
       // if we have less types than requested outputs and they do not align, use last known type to set current type
       unsigned dataType = defDataTypes[(i < defNumTypes) ? i : defNumTypes -1];
       unsigned busPins = Bus::getNumberOfPins(dataType);
+
       // check if we have enough pins left to configure an output of this type
+      // should never happen due to static assert above
       if (pinsIndex + busPins > defNumPins) {
         DEBUG_PRINTLN(F("LED outputs misaligned with defined pins. Some pins will remain unused."));
         break;
@@ -1245,6 +1259,7 @@ void WS2812FX::finalizeInit(void) {
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
         if (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) {
           defPin[j] = 1; // start with GPIO1 and work upwards
+          // @FIX pins are allocated after the loop, so if we reassign to a pin that's already in the array for this output 2 fields will have the same pin
           while ((pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) && defPin[j] < WLED_NUM_PINS) defPin[j]++;
         }
       }
