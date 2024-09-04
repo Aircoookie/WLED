@@ -1237,6 +1237,7 @@ void WS2812FX::finalizeInit(void) {
         DEBUG_PRINTLN(F("LED outputs misaligned with defined pins. Some pins will remain unused."));
         break;
       }
+      
       for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
         defPin[j] = defDataPins[pinsIndex + j];
 
@@ -1244,7 +1245,7 @@ void WS2812FX::finalizeInit(void) {
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
         if (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) {
           defPin[j] = 1; // start with GPIO1 and work upwards
-          while (pinManager.isPinAllocated(defPin[j]) && pinManager.isReadOnlyPin(defPin[j]) && defPin[j] < WLED_NUM_PINS) defPin[j]++;
+          while ((pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) && defPin[j] < WLED_NUM_PINS) defPin[j]++;
         }
       }
       pinsIndex += busPins;
