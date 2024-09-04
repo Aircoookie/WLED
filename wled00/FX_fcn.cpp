@@ -145,6 +145,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 }
 
 bool Segment::allocateData(size_t len) {
+  if (len == 0) return false; // nothing to do
   if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
     if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
     return true;
@@ -659,7 +660,7 @@ uint16_t Segment::virtualLength() const {
   return vLength;
 }
 
-void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 {
   if (!isActive()) return; // not active
 #ifndef WLED_DISABLE_2D
