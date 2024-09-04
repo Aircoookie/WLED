@@ -546,18 +546,20 @@ void BusPwm::show() {
   // Phase shifting requires that LEDC timers are synchronised (see setup()). For PWM CCT (and H-bridge) it is
   // also mandatory that both channels use the same timer (pinManager takes care of that).
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned duty = (_data[i] * pwmBri) / 255;
-    if (_reversed) duty = maxBri - duty;
+    unsigned duty = (_data[i] * pwmBri) / 255;    
     #ifdef ESP8266
+    if (_reversed) duty = maxBri - duty;
     analogWrite(_pins[i], duty);
     #else
     unsigned deadTime = 0;
     if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {
       // add dead time between signals (when using dithering, two full 8bit pulses are required)
       deadTime = (1+dithering) << bitShift;
-      // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overflow hPoint
-      if (_bri >= 254 && duty + deadTime + hPoint >= maxBri) duty = maxBri - hPoint - deadTime; // shorten duty if overflowing
+      // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overlap
+      if (_bri >= 254 && duty >= maxBri / 2 && duty < maxBri) duty -= deadTime << 1; // shorten duty of larger signal except if full on
+      if(_reversed) deadTime = -deadTime; // need to invert dead time to make phaseshift go the opposite way so low signals dont overlap
     }
+    if (_reversed) duty = maxBri - duty;
     unsigned channel = _ledcStart + i;
     unsigned gr = channel/8;  // high/low speed group
     unsigned ch = channel%8;  // group channel
