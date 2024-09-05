@@ -410,6 +410,7 @@ BusPwm::BusPwm(BusConfig &bc)
 {
   if (!isPWM(bc.type)) return;
   unsigned numPins = numPWMPins(bc.type);
+  unsigned dithering = 0;
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
   for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
@@ -428,7 +429,11 @@ BusPwm::BusPwm(BusConfig &bc)
     pinManager.deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
     return;
   }
-  if (_needsRefresh) _depth = 8; // fixed 8 bit depth with 4 bit dithering (ESP8266 has no hardware to support dithering)
+  // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
+  if (_needsRefresh) {
+    _depth = 12; // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
+    dithering = 4;
+  }
 #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -437,7 +442,7 @@ BusPwm::BusPwm(BusConfig &bc)
     pinMode(_pins[i], OUTPUT);
     #else
     unsigned channel = _ledcStart + i;
-    ledcSetup(channel, _frequency, _depth);
+    ledcSetup(channel, _frequency, _depth - dithering);
     ledcAttachPin(_pins[i], channel);
     // LEDC timer reset credit @dedehai
     uint8_t group = (channel / 8), timer = ((channel / 2) % 4); // same fromula as in ledcSetup()
@@ -511,8 +516,12 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
 
 void BusPwm::show() {
   if (!_valid) return;
+  // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
+  // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
+  const bool     dithering = _needsRefresh; // avoid working with bitfield
   const unsigned numPins = getPins();
-  const unsigned maxBri = (1<<_depth); // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8)
+  const unsigned maxBri = (1<<_depth);      // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8) 
+  const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
 
   // use CIE brightness formula (cubic) to fit (or approximate linearity of) human eye perceived brightness
   // the formula is based on 12 bit resolution as there is no need for greater precision
@@ -525,52 +534,42 @@ void BusPwm::show() {
     // cubic response for values [21-255]
     pwmBri += 4080;
     float temp = (float)pwmBri / 29580.0f;
-    temp = temp * temp * temp * 4095.0f; 
-    pwmBri = (unsigned)temp;
+    temp = temp * temp * temp * (float)maxBri; 
+    pwmBri = (unsigned)temp;  // pwmBri is in range [0-maxBri] 
   }
-  // pwmBri is in range [0-4095]
 
-  // determine phase shift
-  [[maybe_unused]] unsigned phaseOffset = maxBri / numPins; // (maxBri is at _depth resolution)
-  // we will be phase shifting every channel by fixed amount (i times /2 or /3 or /4 or /5)
-  // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type (with 180° phase)
-  // CCT additive blending must be 0 (WW & CW must not overlap) in such case
+  [[maybe_unused]] unsigned hPoint = 0;  // phase shift (0 - maxBri)
+  // we will be phase shifting every channel by previous pulse length (plus dead time if required)
+  // phase shifting is only mandatory when using H-bridge to drive reverse-polarity PWM CCT (2 wire) LED type 
+  // CCT additive blending must be 0 (WW & CW will not overlap) otherwise signals *will* overlap
   // for all other cases it will just try to "spread" the load on PSU
-  [[maybe_unused]] bool cctOverlap = (_type == TYPE_ANALOG_2CH) && (_data[0]+_data[1] >= 254);
-
-  // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
-  // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
-  bool dithering = _needsRefresh;                           // avoid working with bitfield
-
+  // Phase shifting requires that LEDC timers are synchronised (see setup()). For PWM CCT (and H-bridge) it is
+  // also mandatory that both channels use the same timer (pinManager takes care of that).
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned scaled = (_data[i] * pwmBri) / 255;            // scaled is at 12 bit depth (same as pwmBri)
-    // adjust "scaled" value (to fit resolution bounds)
-    if (_depth < 12 && !dithering) scaled >>= 12 - _depth;  // normalize scaled value (if not using dithering)
-    else if (_depth > 12)          scaled <<= _depth - 12;  // scale to _depth if using >12 bit
-    if (_reversed)                 scaled = maxBri - scaled;
-    // scaled is now at _depth resolution (8-14 bits) except when using dithering, 12 bit in such case
+    unsigned duty = (_data[i] * pwmBri) / 255;    
     #ifdef ESP8266
-    analogWrite(_pins[i], scaled);
+    if (_reversed) duty = maxBri - duty;
+    analogWrite(_pins[i], duty);
     #else
-    unsigned channel = _ledcStart + i;
-    // prevent overlapping PWM signals for H-bridge
-    // pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
-    // so we only need to take care of shortening the signal at 50% distribution for 1 pulse
-    if (cctOverlap && Bus::getCCTBlend() == 0) {
-      unsigned shift = (dithering*4);
-      unsigned briLimit = phaseOffset << shift;               // expand limit if using dithering
-      if (scaled >= briLimit) scaled = briLimit - (1<<shift); // safety check & 1 pulse dead time when brightness is at 50%
+    int deadTime = 0;
+    if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {
+      // add dead time between signals (when using dithering, two full 8bit pulses are required)
+      deadTime = (1+dithering) << bitShift;
+      // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overlap
+      if (_bri >= 254 && duty >= maxBri / 2 && duty < maxBri) duty -= deadTime << 1; // shorten duty of larger signal except if full on
+      if (_reversed) deadTime = -deadTime; // need to invert dead time to make phaseshift go the opposite way so low signals dont overlap
     }
+    if (_reversed) duty = maxBri - duty;
+    unsigned channel = _ledcStart + i;
     unsigned gr = channel/8;  // high/low speed group
     unsigned ch = channel%8;  // group channel
     // directly write to LEDC struct as there is no HAL exposed function for dithering
     // duty has 20 bit resolution with 4 fractional bits (24 bits in total)
-    // _depth is 8 bit in this case (and maxBri==256), scaled is still at 12 bit
-    LEDC_MUTEX_LOCK();
-    LEDC.channel_group[gr].channel[ch].duty.duty = scaled << ((!dithering)*4); // write full 12 bit value (4 dithering bits)
-    LEDC.channel_group[gr].channel[ch].hpoint.hpoint = phaseOffset*i; // phaseOffset is at _depth resolution (8 bit)
-    LEDC_MUTEX_UNLOCK();
+    LEDC.channel_group[gr].channel[ch].duty.duty = duty << ((!dithering)*4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
+    LEDC.channel_group[gr].channel[ch].hpoint.hpoint = hPoint >> bitShift;    // hPoint is at _depth resolution (needs shifting if dithering)
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
+    hPoint += duty + deadTime;        // offset to cascade the signals
+    if (hPoint >= maxBri) hPoint = 0; // offset it out of bounds, reset
     #endif
   }
 }
