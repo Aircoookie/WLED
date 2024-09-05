@@ -363,6 +363,32 @@ void BusDigital::setColorOrder(uint8_t colorOrder) {
   _colorOrder = colorOrder;
 }
 
+// credit @willmmiles & @netmindz https://github.com/Aircoookie/WLED/pull/4056
+std::vector<LEDType> BusDigital::getLEDTypes() {
+  return {
+    {TYPE_WS2812_RGB,    "D",  PSTR("WS281x")},
+    {TYPE_SK6812_RGBW,   "D",  PSTR("SK6812/WS2814 RGBW")},
+    {TYPE_TM1814,        "D",  PSTR("TM1814")},
+    {TYPE_WS2811_400KHZ, "D",  PSTR("400kHz")},
+    {TYPE_TM1829,        "D",  PSTR("TM1829")},
+    {TYPE_UCS8903,       "D",  PSTR("UCS8903")},
+    {TYPE_APA106,        "D",  PSTR("APA106/PL9823")},
+    {TYPE_TM1914,        "D",  PSTR("TM1914")},
+    {TYPE_FW1906,        "D",  PSTR("FW1906 GRBCW")},
+    {TYPE_UCS8904,       "D",  PSTR("UCS8904 RGBW")},
+    {TYPE_WS2805,        "D",  PSTR("WS2805 RGBCW")},
+    {TYPE_SM16825,       "D",  PSTR("SM16825 RGBCW")},
+    {TYPE_WS2812_1CH_X3, "D",  PSTR("WS2811 White")},
+    //{TYPE_WS2812_2CH_X3, "D",  PSTR("WS2811 CCT")}, // not implemented
+    //{TYPE_WS2812_WWA,    "D",  PSTR("WS2811 WWA")}, // not implemented
+    {TYPE_WS2801,        "2P", PSTR("WS2801")},
+    {TYPE_APA102,        "2P", PSTR("APA102")},
+    {TYPE_LPD8806,       "2P", PSTR("LPD8806")},
+    {TYPE_LPD6803,       "2P", PSTR("LPD6803")},
+    {TYPE_P9813,         "2P", PSTR("PP9813")},
+  };
+}
+
 void BusDigital::reinit(void) {
   if (!_valid) return;
   PolyBus::begin(_busPtr, _iType, _pins);
@@ -406,11 +432,11 @@ void BusDigital::cleanup(void) {
 #endif
 
 BusPwm::BusPwm(BusConfig &bc)
-: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed, bc.refreshReq) // hijack Off refresh flag to indicate usage of phase shifting
+: Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed, bc.refreshReq) // hijack Off refresh flag to indicate usage of dithering
 {
   if (!isPWM(bc.type)) return;
   unsigned numPins = numPWMPins(bc.type);
-  unsigned dithering = 0;
+  [[maybe_unused]] const bool dithering = _needsRefresh;
   _frequency = bc.frequency ? bc.frequency : WLED_PWM_FREQ;
   // duty cycle resolution (_depth) can be extracted from this formula: CLOCK_FREQUENCY > _frequency * 2^_depth
   for (_depth = MAX_BIT_WIDTH; _depth > 8; _depth--) if (((CLOCK_FREQUENCY/_frequency) >> _depth) > 0) break;
@@ -430,10 +456,7 @@ BusPwm::BusPwm(BusConfig &bc)
     return;
   }
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
-  if (_needsRefresh) {
-    _depth = 12; // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
-    dithering = 4;
-  }
+  if (dithering) _depth = 12; // fixed 8 bit depth PWM with 4 bit dithering (ESP8266 has no hardware to support dithering)
 #endif
 
   for (unsigned i = 0; i < numPins; i++) {
@@ -442,7 +465,7 @@ BusPwm::BusPwm(BusConfig &bc)
     pinMode(_pins[i], OUTPUT);
     #else
     unsigned channel = _ledcStart + i;
-    ledcSetup(channel, _frequency, _depth - dithering);
+    ledcSetup(channel, _frequency, _depth - (dithering*4)); // with dithering _frequency doesn't really matter as resolution is 8 bit
     ledcAttachPin(_pins[i], channel);
     // LEDC timer reset credit @dedehai
     uint8_t group = (channel / 8), timer = ((channel / 2) % 4); // same fromula as in ledcSetup()
@@ -521,7 +544,7 @@ void BusPwm::show() {
   const bool     dithering = _needsRefresh; // avoid working with bitfield
   const unsigned numPins = getPins();
   const unsigned maxBri = (1<<_depth);      // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8) 
-  const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
+  [[maybe_unused]] const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
 
   // use CIE brightness formula (cubic) to fit (or approximate linearity of) human eye perceived brightness
   // the formula is based on 12 bit resolution as there is no need for greater precision
@@ -581,6 +604,18 @@ uint8_t BusPwm::getPins(uint8_t* pinArray) const {
   return numPins;
 }
 
+// credit @willmmiles & @netmindz https://github.com/Aircoookie/WLED/pull/4056
+std::vector<LEDType> BusPwm::getLEDTypes() {
+  return {
+    {TYPE_ANALOG_1CH, "A",      PSTR("PWM White")},
+    {TYPE_ANALOG_2CH, "AA",     PSTR("PWM CCT")},
+    {TYPE_ANALOG_3CH, "AAA",    PSTR("PWM RGB")},
+    {TYPE_ANALOG_4CH, "AAAA",   PSTR("PWM RGBW")},
+    {TYPE_ANALOG_5CH, "AAAAA",  PSTR("PWM RGB+CCT")},
+    //{TYPE_ANALOG_6CH, "AAAAAA", PSTR("PWM RGB+DCCT")}, // unimplementable ATM
+  };
+}
+
 void BusPwm::deallocatePins(void) {
   unsigned numPins = getPins();
   for (unsigned i = 0; i < numPins; i++) {
@@ -602,7 +637,7 @@ BusOnOff::BusOnOff(BusConfig &bc)
 : Bus(bc.type, bc.start, bc.autoWhite, 1, bc.reversed)
 , _onoffdata(0)
 {
-  if (bc.type != TYPE_ONOFF) return;
+  if (!Bus::isOnOff(bc.type)) return;
 
   uint8_t currentPin = bc.pins[0];
   if (!pinManager.allocatePin(currentPin, true, PinOwner::BusOnOff)) {
@@ -644,6 +679,12 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) const {
   return 1;
 }
 
+// credit @willmmiles & @netmindz https://github.com/Aircoookie/WLED/pull/4056
+std::vector<LEDType> BusOnOff::getLEDTypes() {
+  return {
+    {TYPE_ONOFF, "", PSTR("On/Off")},
+  };
+}
 
 BusNetwork::BusNetwork(BusConfig &bc)
 : Bus(bc.type, bc.start, bc.autoWhite, bc.count)
@@ -701,6 +742,21 @@ uint8_t BusNetwork::getPins(uint8_t* pinArray) const {
   return 4;
 }
 
+// credit @willmmiles & @netmindz https://github.com/Aircoookie/WLED/pull/4056
+std::vector<LEDType> BusNetwork::getLEDTypes() {
+  return {
+    {TYPE_NET_DDP_RGB,     "N",     PSTR("DDP RGB (network)")},      // should be "NNNN" to determine 4 "pin" fields
+    {TYPE_NET_ARTNET_RGB,  "N",     PSTR("Art-Net RGB (network)")},
+    {TYPE_NET_DDP_RGBW,    "N",     PSTR("DDP RGBW (network)")},
+    {TYPE_NET_ARTNET_RGBW, "N",     PSTR("Art-Net RGBW (network)")},
+    // hypothetical extensions
+    //{TYPE_VIRTUAL_I2C_W,   "V",     PSTR("I2C White (virtual)")}, // allows setting I2C address in _pin[0]
+    //{TYPE_VIRTUAL_I2C_CCT, "V",     PSTR("I2C CCT (virtual)")}, // allows setting I2C address in _pin[0]
+    //{TYPE_VIRTUAL_I2C_RGB, "VVV",   PSTR("I2C RGB (virtual)")}, // allows setting I2C address in _pin[0] and 2 additional values in _pin[1] & _pin[2]
+    //{TYPE_USERMOD,         "VVVVV", PSTR("Usermod (virtual)")}, // 5 data fields (see https://github.com/Aircoookie/WLED/pull/4123)
+  };
+}
+
 void BusNetwork::cleanup(void) {
   _type = I_NONE;
   _valid = false;
@@ -748,63 +804,30 @@ int BusManager::add(BusConfig &bc) {
   return numBusses++;
 }
 
-// idea by @netmindz https://github.com/Aircoookie/WLED/pull/4056
-String BusManager::getLEDTypesJSONString(void) {
-  struct LEDType {
-    uint8_t id;
-    const char *type;
-    const char *name;
-  } types[] = {
-    {TYPE_WS2812_RGB,      "D",      PSTR("WS281x")},
-    {TYPE_SK6812_RGBW,     "D",      PSTR("SK6812/WS2814 RGBW")},
-    {TYPE_TM1814,          "D",      PSTR("TM1814")},
-    {TYPE_WS2811_400KHZ,   "D",      PSTR("400kHz")},
-    {TYPE_TM1829,          "D",      PSTR("TM1829")},
-    {TYPE_UCS8903,         "D",      PSTR("UCS8903")},
-    {TYPE_APA106,          "D",      PSTR("APA106/PL9823")},
-    {TYPE_TM1914,          "D",      PSTR("TM1914")},
-    {TYPE_FW1906,          "D",      PSTR("FW1906 GRBCW")},
-    {TYPE_UCS8904,         "D",      PSTR("UCS8904 RGBW")},
-    {TYPE_WS2805,          "D",      PSTR("WS2805 RGBCW")},
-    {TYPE_SM16825,         "D",      PSTR("SM16825 RGBCW")},
-    {TYPE_WS2812_1CH_X3,   "D",      PSTR("WS2811 White")},
-    //{TYPE_WS2812_2CH_X3,   "D",      PSTR("WS2811 CCT")}, // not implemented
-    //{TYPE_WS2812_WWA,      "D",      PSTR("WS2811 WWA")}, // not implemented
-    {TYPE_WS2801,          "2P",     PSTR("WS2801")},
-    {TYPE_APA102,          "2P",     PSTR("APA102")},
-    {TYPE_LPD8806,         "2P",     PSTR("LPD8806")},
-    {TYPE_LPD6803,         "2P",     PSTR("LPD6803")},
-    {TYPE_P9813,           "2P",     PSTR("PP9813")},
-    {TYPE_ONOFF,           "",       PSTR("On/Off")},
-    {TYPE_ANALOG_1CH,      "A",      PSTR("PWM White")},
-    {TYPE_ANALOG_2CH,      "AA",     PSTR("PWM CCT")},
-    {TYPE_ANALOG_3CH,      "AAA",    PSTR("PWM RGB")},
-    {TYPE_ANALOG_4CH,      "AAAA",   PSTR("PWM RGBW")},
-    {TYPE_ANALOG_5CH,      "AAAAA",  PSTR("PWM RGB+CCT")},
-    //{TYPE_ANALOG_6CH,      "AAAAAA", PSTR("PWM RGB+DCCT")}, // unimplementable ATM
-    {TYPE_NET_DDP_RGB,     "N",      PSTR("DDP RGB (network)")},
-    {TYPE_NET_ARTNET_RGB,  "N",      PSTR("Art-Net RGB (network)")},
-    {TYPE_NET_DDP_RGBW,    "N",      PSTR("DDP RGBW (network)")},
-    {TYPE_NET_ARTNET_RGBW, "N",      PSTR("Art-Net RGBW (network)")},
-    // hypothetical extensions
-    //{TYPE_VIRTUAL_I2C_W,   "V",     PSTR("I2C White (virtual)")}, // allows setting I2C address in _pin[0]
-    //{TYPE_VIRTUAL_I2C_CCT, "V",     PSTR("I2C CCT (virtual)")}, // allows setting I2C address in _pin[0]
-    //{TYPE_VIRTUAL_I2C_RGB, "V",     PSTR("I2C RGB (virtual)")}, // allows setting I2C address in _pin[0]
-  };
-  String json = "[";
+// credit @willmmiles
+static String LEDTypesToJson(const std::vector<LEDType>& types) {
+  String json;
   for (const auto &type : types) {
-    String id = String(type.id);
-    // capabilities follows similar pattern as JSON API 
+    // capabilities follows similar pattern as JSON API
     int capabilities = Bus::hasRGB(type.id) | Bus::hasWhite(type.id)<<1 | Bus::hasCCT(type.id)<<2 | Bus::is16bit(type.id)<<4;
-    json += "{i:" + id
-      + F(",c:") + String(capabilities)
-      + F(",t:\"") + FPSTR(type.type)
-      + F("\",n:\"") + FPSTR(type.name) + F("\"},");
+    char str[256];
+    sprintf_P(str, PSTR("{i:%d,c:%d,t:\"%s\",n:\"%s\"},"), type.id, capabilities, type.type, type.name);
+    json += str;
   }
-  json.setCharAt(json.length()-1, ']'); // replace last comma with bracket
   return json;
 }
 
+// credit @willmmiles & @netmindz https://github.com/Aircoookie/WLED/pull/4056
+String BusManager::getLEDTypesJSONString(void) {
+  String json = "[";
+  json += LEDTypesToJson(BusDigital::getLEDTypes());
+  json += LEDTypesToJson(BusOnOff::getLEDTypes());
+  json += LEDTypesToJson(BusPwm::getLEDTypes());
+  json += LEDTypesToJson(BusNetwork::getLEDTypes());
+  //json += LEDTypesToJson(BusVirtual::getLEDTypes());
+  json.setCharAt(json.length()-1, ']'); // replace last comma with bracket
+  return json;
+}
 
 void BusManager::useParallelOutput(void) {
   _parallelOutputs = 8; // hardcoded since we use NPB I2S x8 methods
@@ -844,7 +867,7 @@ void BusManager::esp32RMTInvertIdle(void) {
       if (u >= _parallelOutputs + 8) return; // only 8 RMT channels
       rmt = u - _parallelOutputs;
     #endif
-    if (busses[u]->getLength()==0 || !Bus::isDigital(busses[u]->getType()) || IS_2PIN(busses[u]->getType())) continue;
+    if (busses[u]->getLength()==0 || !busses[u]->isDigital() || busses[u]->is2Pin()) continue;
     //assumes that bus number to rmt channel mapping stays 1:1
     rmt_channel_t ch = static_cast<rmt_channel_t>(rmt);
     rmt_idle_level_t lvl;
@@ -863,7 +886,7 @@ void BusManager::on(void) {
   if (pinManager.getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
     for (unsigned i = 0; i < numBusses; i++) {
       uint8_t pins[2] = {255,255};
-      if (Bus::isDigital(busses[i]->getType()) && busses[i]->getPins(pins)) {
+      if (busses[i]->isDigital() && busses[i]->getPins(pins)) {
         if (pins[0] == LED_BUILTIN || pins[1] == LED_BUILTIN) {
           BusDigital *bus = static_cast<BusDigital*>(busses[i]);
           bus->reinit();

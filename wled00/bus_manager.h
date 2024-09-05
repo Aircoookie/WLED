@@ -54,6 +54,13 @@ struct ColorOrderMap {
 };
 
 
+typedef struct {
+  uint8_t id;
+  const char *type;
+  const char *name;
+} LEDType;
+
+
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
   public:
@@ -109,6 +116,7 @@ class Bus {
     inline  bool     isOffRefreshRequired(void) const             { return _needsRefresh; }
     inline  bool     containsPixel(uint16_t pix) const            { return pix >= _start && pix < _start + _len; }
 
+    static std::vector<LEDType> getLEDTypes(void)                 { return {{TYPE_NONE, "", PSTR("None")}}; }
     static constexpr uint8_t getNumberOfPins(uint8_t type)        { return isVirtual(type) ? 4 : isPWM(type) ? numPWMPins(type) : is2Pin(type) + 1; } // credit @PaoloTK
     static constexpr uint8_t getNumberOfChannels(uint8_t type)    { return hasWhite(type) + 3*hasRGB(type) + hasCCT(type); }
     static constexpr bool hasRGB(uint8_t type) {
@@ -226,6 +234,8 @@ class BusDigital : public Bus {
     void reinit(void);
     void cleanup(void);
 
+    static std::vector<LEDType> getLEDTypes(void);
+
   private:
     uint8_t _skip;
     uint8_t _colorOrder;
@@ -266,6 +276,8 @@ class BusPwm : public Bus {
     void show(void) override;
     void cleanup(void) { deallocatePins(); }
 
+    static std::vector<LEDType> getLEDTypes(void);
+
   private:
     uint8_t _pins[5];
     uint8_t _pwmdata[5];
@@ -290,6 +302,8 @@ class BusOnOff : public Bus {
     void show(void) override;
     void cleanup(void) { pinManager.deallocatePin(_pin, PinOwner::BusOnOff); }
 
+    static std::vector<LEDType> getLEDTypes(void);
+
   private:
     uint8_t _pin;
     uint8_t _onoffdata;
@@ -307,6 +321,8 @@ class BusNetwork : public Bus {
     uint8_t  getPins(uint8_t* pinArray = nullptr) const override;
     void show(void) override;
     void cleanup(void);
+
+    static std::vector<LEDType> getLEDTypes(void);
 
   private:
     IPAddress _client;
@@ -346,10 +362,7 @@ struct BusConfig {
   {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    size_t nPins = 1;
-    if (Bus::isVirtual(type))   nPins = 4; //virtual network bus. 4 "pins" store IP address
-    else if (Bus::is2Pin(type)) nPins = 2;
-    else if (Bus::isPWM(type))  nPins = Bus::numPWMPins(type);
+    size_t nPins = Bus::getNumberOfPins(type);
     for (size_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 
@@ -420,7 +433,7 @@ class BusManager {
     #endif
     static uint8_t getNumVirtualBusses(void) {
       int j = 0;
-      for (int i=0; i<numBusses; i++) if (busses[i]->getType() >= TYPE_NET_DDP_RGB && busses[i]->getType() < 96) j++;
+      for (int i=0; i<numBusses; i++) if (busses[i]->isVirtual()) j++;
       return j;
     }
 };
