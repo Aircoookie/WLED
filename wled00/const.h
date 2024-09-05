@@ -493,7 +493,7 @@
 
 // string temp buffer (now stored in stack locally)
 #ifdef ESP8266
-#define SETTINGS_STACK_BUF_SIZE 2048
+#define SETTINGS_STACK_BUF_SIZE 2560
 #else
 #define SETTINGS_STACK_BUF_SIZE 3840  // warning: quite a large value for stack (640 * WLED_MAX_USERMODS)
 #endif
