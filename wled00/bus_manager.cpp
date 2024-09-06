@@ -78,6 +78,27 @@ uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaul
 }
 
 
+void Bus::calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
+  unsigned cct = 0; //0 - full warm white, 255 - full cold white
+  unsigned w = W(c);
+
+  if (_cct > -1) {                                    // using RGB?
+    if (_cct >= 1900)    cct = (_cct - 1900) >> 5;    // convert K in relative format
+    else if (_cct < 256) cct = _cct;                  // already relative
+  } else {
+    cct = (approximateKelvinFromRGB(c) - 1900) >> 5;  // convert K (from RGB value) to relative format
+  }
+  
+  //0 - linear (CCT 127 = 50% warm, 50% cold), 127 - additive CCT blending (CCT 127 = 100% warm, 100% cold)
+  if (cct       < _cctBlend) ww = 255;
+  else                       ww = ((255-cct) * 255) / (255 - _cctBlend);
+  if ((255-cct) < _cctBlend) cw = 255;
+  else                       cw = (cct * 255) / (255 - _cctBlend);
+
+  ww = (w * ww) / 255; //brightness scaling
+  cw = (w * cw) / 255;
+}
+
 uint32_t Bus::autoWhiteCalc(uint32_t c) const {
   unsigned aWM = _autoWhiteMode;
   if (_gAWM < AW_GLOBAL_DISABLED) aWM = _gAWM;

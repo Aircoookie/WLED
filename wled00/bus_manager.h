@@ -6,7 +6,6 @@
  */
 
 #include "const.h"
-#include <array>
 #include <vector>
 
 //colors.cpp
@@ -116,7 +115,7 @@ class Bus {
     inline  bool     isOffRefreshRequired(void) const             { return _needsRefresh; }
     inline  bool     containsPixel(uint16_t pix) const            { return pix >= _start && pix < _start + _len; }
 
-    static std::vector<LEDType> getLEDTypes(void)                 { return {{TYPE_NONE, "", PSTR("None")}}; }
+    static inline std::vector<LEDType> getLEDTypes(void)          { return {{TYPE_NONE, "", PSTR("None")}}; } // not used. just for reference for derived classes
     static constexpr uint8_t getNumberOfPins(uint8_t type)        { return isVirtual(type) ? 4 : isPWM(type) ? numPWMPins(type) : is2Pin(type) + 1; } // credit @PaoloTK
     static constexpr uint8_t getNumberOfChannels(uint8_t type)    { return hasWhite(type) + 3*hasRGB(type) + hasCCT(type); }
     static constexpr bool hasRGB(uint8_t type) {
@@ -149,34 +148,14 @@ class Bus {
     static inline uint8_t  getGlobalAWMode(void)      { return _gAWM; }
     static inline void     setCCT(int16_t cct)        { _cct = cct; }
     static inline uint8_t  getCCTBlend(void)          { return _cctBlend; }
-    static void setCCTBlend(uint8_t b) {
-      if (b > 100) b = 100;
-      _cctBlend = (b * 127) / 100;
+    static inline void setCCTBlend(uint8_t b) {
+      _cctBlend = (std::min((int)b,100) * 127) / 100;
       //compile-time limiter for hardware that can't power both white channels at max
       #ifdef WLED_MAX_CCT_BLEND
         if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
       #endif
     }
-    static void calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw) {
-      uint8_t cct = 0; //0 - full warm white, 255 - full cold white
-      uint8_t w = byte(c >> 24);
-
-      if (_cct > -1) {
-        if (_cct >= 1900)    cct = (_cct - 1900) >> 5;
-        else if (_cct < 256) cct = _cct;
-      } else {
-        cct = (approximateKelvinFromRGB(c) - 1900) >> 5;
-      }
-      
-      //0 - linear (CCT 127 = 50% warm, 50% cold), 127 - additive CCT blending (CCT 127 = 100% warm, 100% cold)
-      if (cct       < _cctBlend) ww = 255;
-      else                       ww = ((255-cct) * 255) / (255 - _cctBlend);
-      if ((255-cct) < _cctBlend) cw = 255;
-      else                       cw = (cct * 255) / (255 - _cctBlend);
-
-      ww = (w * ww) / 255; //brightness scaling
-      cw = (w * cw) / 255;
-    }
+    static void calculateCCT(uint32_t c, uint8_t &ww, uint8_t &cw);
 
   protected:
     uint8_t  _type;
