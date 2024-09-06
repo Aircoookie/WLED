@@ -236,6 +236,8 @@ private:
   }
 
   void _setLeds(int lednr, int lastSeenLedNr, bool range, int countSegments, int number, bool colon) {
+    if ((lednr < 0) || (lednr >= umSSDRLength)) return;                                   // prevent array bounds violation
+    if ((number < 0) || (countSegments < 0) || (lastSeenLedNr <0)) return; // prevent array out of range access
 
     if ((colon && umSSDRColonblink) || umSSDRNumbers[number][countSegments]) {
       
