@@ -431,10 +431,10 @@ class WordClockUsermod : public Usermod
       top[F("Norddeutsch")] = nord;
     }
 
-    void appendConfigData()
+    void appendConfigData(Print& dest)
     {
-      oappend(SET_F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
-      oappend(SET_F("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');"));
+      dest.print(F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
+      dest.print(F("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');"));
     }
 
     /*

@@ -424,11 +424,11 @@ class Animated_Staircase : public Usermod {
       }
     }
 
-    void appendConfigData() {
-      //oappend(SET_F("dd=addDropdown('staircase','selectfield');"));
-      //oappend(SET_F("addOption(dd,'1st value',0);"));
-      //oappend(SET_F("addOption(dd,'2nd value',1);"));
-      //oappend(SET_F("addInfo('staircase:selectfield',1,'additional info');"));  // 0 is field type, 1 is actual field
+    void appendConfigData(Print& dest) {
+      //dest.print(F("dd=addDropdown('staircase','selectfield');"));
+      //dest.print(F("addOption(dd,'1st value',0);"));
+      //dest.print(F("addOption(dd,'2nd value',1);"));
+      //dest.print(F("addInfo('staircase:selectfield',1,'additional info');"));  // 0 is field type, 1 is actual field
     }
 
 

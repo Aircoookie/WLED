@@ -475,32 +475,32 @@ class UsermodBattery : public Usermod
       DEBUG_PRINTLN(F("Battery config saved."));
     }
 
-    void appendConfigData()
+    void appendConfigData(Print& dest)
     {
       // Total: 462 Bytes
-      oappend(SET_F("td=addDropdown('Battery','type');"));              // 34 Bytes
-      oappend(SET_F("addOption(td,'Unkown','0');"));                    // 28 Bytes
-      oappend(SET_F("addOption(td,'LiPo','1');"));                      // 26 Bytes
-      oappend(SET_F("addOption(td,'LiOn','2');"));                      // 26 Bytes
-      oappend(SET_F("addInfo('Battery:type',1,'<small style=\"color:orange\">requires reboot</small>');")); // 81 Bytes
-      oappend(SET_F("addInfo('Battery:min-voltage',1,'v');"));          // 38 Bytes
-      oappend(SET_F("addInfo('Battery:max-voltage',1,'v');"));          // 38 Bytes
-      oappend(SET_F("addInfo('Battery:interval',1,'ms');"));            // 36 Bytes
-      oappend(SET_F("addInfo('Battery:HA-discovery',1,'');"));          // 38 Bytes
-      oappend(SET_F("addInfo('Battery:auto-off:threshold',1,'%');"));   // 45 Bytes
-      oappend(SET_F("addInfo('Battery:indicator:threshold',1,'%');"));  // 46 Bytes
-      oappend(SET_F("addInfo('Battery:indicator:duration',1,'s');"));   // 45 Bytes
+      dest.print(F("td=addDropdown('Battery','type');"));              // 34 Bytes
+      dest.print(F("addOption(td,'Unkown','0');"));                    // 28 Bytes
+      dest.print(F("addOption(td,'LiPo','1');"));                      // 26 Bytes
+      dest.print(F("addOption(td,'LiOn','2');"));                      // 26 Bytes
+      dest.print(F("addInfo('Battery:type',1,'<small style=\"color:orange\">requires reboot</small>');")); // 81 Bytes
+      dest.print(F("addInfo('Battery:min-voltage',1,'v');"));          // 38 Bytes
+      dest.print(F("addInfo('Battery:max-voltage',1,'v');"));          // 38 Bytes
+      dest.print(F("addInfo('Battery:interval',1,'ms');"));            // 36 Bytes
+      dest.print(F("addInfo('Battery:HA-discovery',1,'');"));          // 38 Bytes
+      dest.print(F("addInfo('Battery:auto-off:threshold',1,'%');"));   // 45 Bytes
+      dest.print(F("addInfo('Battery:indicator:threshold',1,'%');"));  // 46 Bytes
+      dest.print(F("addInfo('Battery:indicator:duration',1,'s');"));   // 45 Bytes
       
-      // this option list would exeed the oappend() buffer
+      // this option list would exeed the dest.print() buffer
       // a list of all presets to select one from
-      // oappend(SET_F("bd=addDropdown('Battery:low-power-indicator', 'preset');"));
-      // the loop generates: oappend(SET_F("addOption(bd, 'preset name', preset id);"));
+      // dest.print(F("bd=addDropdown('Battery:low-power-indicator', 'preset');"));
+      // the loop generates: dest.print(F("addOption(bd, 'preset name', preset id);"));
       // for(int8_t i=1; i < 42; i++) {
-      //   oappend(SET_F("addOption(bd, 'Preset#"));
-      //   oappendi(i);
-      //   oappend(SET_F("',"));
-      //   oappendi(i);
-      //   oappend(SET_F(");"));
+      //   dest.print(F("addOption(bd, 'Preset#"));
+      //   dest.print(i);
+      //   dest.print(F("',"));
+      //   dest.print(i);
+      //   dest.print(F(");"));
       // }
     }
 

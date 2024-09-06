@@ -53,7 +53,7 @@ class ShtUsermod : public Usermod
     void setup();
     void loop();
     void onMqttConnect(bool sessionPresent);
-    void appendConfigData();
+    void appendConfigData(Print& dest);
     void addToConfig(JsonObject &root);
     bool readFromConfig(JsonObject &root);
     void addToJsonInfo(JsonObject& root);
@@ -304,28 +304,28 @@ void ShtUsermod::onMqttConnect(bool sessionPresent) {
 /**
  * Add dropdown for sensor type and unit to UM config page.
  *
- * @see Usermod::appendConfigData()
- * @see UsermodManager::appendConfigData()
+ * @see Usermod::appendConfigData(Print& dest)
+ * @see UsermodManager::appendConfigData(Print& dest)
  *
  * @return void
  */
-void ShtUsermod::appendConfigData() {
-  oappend(SET_F("dd=addDropdown('"));
-  oappend(_name);
-  oappend(SET_F("','"));
-  oappend(_shtType);
-  oappend(SET_F("');"));
-  oappend(SET_F("addOption(dd,'SHT30',0);"));
-  oappend(SET_F("addOption(dd,'SHT31',1);"));
-  oappend(SET_F("addOption(dd,'SHT35',2);"));
-  oappend(SET_F("addOption(dd,'SHT85',3);"));
-  oappend(SET_F("dd=addDropdown('"));
-  oappend(_name);
-  oappend(SET_F("','"));
-  oappend(_unitOfTemp);
-  oappend(SET_F("');"));
-  oappend(SET_F("addOption(dd,'Celsius',0);"));
-  oappend(SET_F("addOption(dd,'Fahrenheit',1);"));
+void ShtUsermod::appendConfigData(Print& dest) {
+  dest.print(F("dd=addDropdown('"));
+  dest.print(_name);
+  dest.print(F("','"));
+  dest.print(_shtType);
+  dest.print(F("');"));
+  dest.print(F("addOption(dd,'SHT30',0);"));
+  dest.print(F("addOption(dd,'SHT31',1);"));
+  dest.print(F("addOption(dd,'SHT35',2);"));
+  dest.print(F("addOption(dd,'SHT85',3);"));
+  dest.print(F("dd=addDropdown('"));
+  dest.print(_name);
+  dest.print(F("','"));
+  dest.print(_unitOfTemp);
+  dest.print(F("');"));
+  dest.print(F("addOption(dd,'Celsius',0);"));
+  dest.print(F("addOption(dd,'Fahrenheit',1);"));
 }
 
 /**

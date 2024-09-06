@@ -347,7 +347,7 @@ class RotaryEncoderUIUsermod : public Usermod {
      */
     void addToConfig(JsonObject &root) override;
 
-    void appendConfigData() override;
+    void appendConfigData(Print& dest) override;
 
     /**
      * restore the changeable values
@@ -1089,9 +1089,9 @@ void RotaryEncoderUIUsermod::addToConfig(JsonObject &root) {
   DEBUG_PRINTLN(F("Rotary Encoder config saved."));
 }
 
-void RotaryEncoderUIUsermod::appendConfigData() {
-  oappend(SET_F("addInfo('Rotary-Encoder:PCF8574-address',1,'<i>(not hex!)</i>');"));
-  oappend(SET_F("d.extra.push({'Rotary-Encoder':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
+void RotaryEncoderUIUsermod::appendConfigData(Print& dest) {
+  dest.print(F("addInfo('Rotary-Encoder:PCF8574-address',1,'<i>(not hex!)</i>');"));
+  dest.print(F("d.extra.push({'Rotary-Encoder':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
 }
 
 /**

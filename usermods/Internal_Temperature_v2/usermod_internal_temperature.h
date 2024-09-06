@@ -146,14 +146,14 @@ public:
   }
 
     // Append useful info to the usermod settings gui
-    void appendConfigData()
+    void appendConfigData(Print& dest)
     {
     // Display 'ms' next to the 'Loop Interval' setting
-    oappend(SET_F("addInfo('Internal Temperature:Loop Interval', 1, 'ms');"));
+    dest.print(F("addInfo('Internal Temperature:Loop Interval', 1, 'ms');"));
     // Display '°C' next to the 'Activation Threshold' setting
-    oappend(SET_F("addInfo('Internal Temperature:Activation Threshold', 1, '°C');"));
+    dest.print(F("addInfo('Internal Temperature:Activation Threshold', 1, '°C');"));
     // Display '0 = Disabled' next to the 'Preset To Activate' setting
-    oappend(SET_F("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');"));
+    dest.print(F("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');"));
     }
 
   bool readFromConfig(JsonObject &root)

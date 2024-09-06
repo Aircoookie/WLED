@@ -211,7 +211,7 @@ class MultiRelay : public Usermod {
      */
     void addToConfig(JsonObject &root) override;
 
-    void appendConfigData() override;
+    void appendConfigData(Print& dest) override;
 
     /**
      * restore the changeable values
@@ -764,11 +764,11 @@ void MultiRelay::addToConfig(JsonObject &root) {
   DEBUG_PRINTLN(F("MultiRelay config saved."));
 }
 
-void MultiRelay::appendConfigData() {
-  oappend(SET_F("addInfo('MultiRelay:PCF8574-address',1,'<i>(not hex!)</i>');"));
-  oappend(SET_F("addInfo('MultiRelay:broadcast-sec',1,'(MQTT message)');"));
-  //oappend(SET_F("addInfo('MultiRelay:relay-0:pin',1,'(use -1 for PCF8574)');"));
-  oappend(SET_F("d.extra.push({'MultiRelay':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
+void MultiRelay::appendConfigData(Print& dest) {
+  dest.print(F("addInfo('MultiRelay:PCF8574-address',1,'<i>(not hex!)</i>');"));
+  dest.print(F("addInfo('MultiRelay:broadcast-sec',1,'(MQTT message)');"));
+  //dest.print(F("addInfo('MultiRelay:relay-0:pin',1,'(use -1 for PCF8574)');"));
+  dest.print(F("d.extra.push({'MultiRelay':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
 }
 
 /**

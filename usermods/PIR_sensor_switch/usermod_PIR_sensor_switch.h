@@ -174,7 +174,7 @@ public:
   /**
    * provide UI information and allow extending UI options
    */
-  void appendConfigData() override;
+  void appendConfigData(Print& dest) override;
 
   /**
    * restore the changeable values
@@ -509,14 +509,14 @@ void PIRsensorSwitch::addToConfig(JsonObject &root)
   DEBUG_PRINTLN(F("PIR config saved."));
 }
 
-void PIRsensorSwitch::appendConfigData()
+void PIRsensorSwitch::appendConfigData(Print& dest)
 {
-  oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
-  oappend(SET_F("addInfo('PIRsensorSwitch:override',1,'Cancel timer on change');"));    // 0 is field type, 1 is actual field
+  dest.print(F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
+  dest.print(F("addInfo('PIRsensorSwitch:override',1,'Cancel timer on change');"));    // 0 is field type, 1 is actual field
   for (int i = 0; i < PIR_SENSOR_MAX_SENSORS; i++) {
     char str[128];
     sprintf_P(str, PSTR("addInfo('PIRsensorSwitch:pin[]',%d,'','#%d');"), i, i);
-    oappend(str);
+    dest.print(str);
   }
 }
 

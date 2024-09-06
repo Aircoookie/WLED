@@ -52,7 +52,7 @@ class UsermodBME68X : public Usermod {
 	void loop();								// Loop of the user module called by wled main in loop
 	void setup();								// Setup of the user module called by wled main
 	void addToConfig(JsonObject& root);			// Extends the settings/user module settings page to include the user module requirements. The settings are written from the wled core to the configuration file.
-	void appendConfigData();					// Adds extra info to the config page of weld
+	void appendConfigData(Print& dest);					// Adds extra info to the config page of weld
 	bool readFromConfig(JsonObject& root);		// Reads config values
 	void addToJsonInfo(JsonObject& root);		// Adds user module info to the weld info page
 
@@ -756,33 +756,33 @@ void UsermodBME68X::addToConfig(JsonObject& root) {
 
 /**
  * @brief Called by WLED: Add dropdown and additional infos / structure
- * @see Usermod::appendConfigData()
- * @see UsermodManager::appendConfigData()
+ * @see Usermod::appendConfigData(Print& dest)
+ * @see UsermodManager::appendConfigData(Print& dest)
  */
-void UsermodBME68X::appendConfigData() {
-	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'read interval [seconds]');"), UMOD_NAME, _nameInterval); oappend(charbuffer);
-	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'only if value changes');"), UMOD_NAME, _namePublishChange); oappend(charbuffer);
-	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'maximum age of a message in seconds');"), UMOD_NAME, _nameMaxAge); oappend(charbuffer);
-	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'Gas related values are only published after the gas sensor has been calibrated');"), UMOD_NAME, _namePubAfterCalib); oappend(charbuffer);
-	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'*) Set to minus to deactivate (all sensors)');"), UMOD_NAME, _nameTemp); oappend(charbuffer);
+void UsermodBME68X::appendConfigData(Print& dest) {
+	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'read interval [seconds]');"), UMOD_NAME, _nameInterval); dest.print(charbuffer);
+	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'only if value changes');"), UMOD_NAME, _namePublishChange); dest.print(charbuffer);
+	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'maximum age of a message in seconds');"), UMOD_NAME, _nameMaxAge); dest.print(charbuffer);
+	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'Gas related values are only published after the gas sensor has been calibrated');"), UMOD_NAME, _namePubAfterCalib); dest.print(charbuffer);
+	// snprintf_P(charbuffer, 127, PSTR("addInfo('%s:%s',1,'*) Set to minus to deactivate (all sensors)');"), UMOD_NAME, _nameTemp); dest.print(charbuffer);
 
 	/* Dropdown for Celsius/Fahrenheit*/
-	oappend(SET_F("dd=addDropdown('"));
-	oappend(UMOD_NAME);
-	oappend(SET_F("','"));
-	oappend(_nameTempScale);
-	oappend(SET_F("');"));
-	oappend(SET_F("addOption(dd,'Celsius',0);"));
-	oappend(SET_F("addOption(dd,'Fahrenheit',1);"));
+	dest.print(F("dd=addDropdown('"));
+	dest.print(UMOD_NAME);
+	dest.print(F("','"));
+	dest.print(_nameTempScale);
+	dest.print(F("');"));
+	dest.print(F("addOption(dd,'Celsius',0);"));
+	dest.print(F("addOption(dd,'Fahrenheit',1);"));
 
 	/* i²C Address*/
-	oappend(SET_F("dd=addDropdown('"));
-	oappend(UMOD_NAME);
-	oappend(SET_F("','"));
-	oappend(_nameI2CAdr);
-	oappend(SET_F("');"));
-	oappend(SET_F("addOption(dd,'0x76',0x76);"));
-	oappend(SET_F("addOption(dd,'0x77',0x77);"));
+	dest.print(F("dd=addDropdown('"));
+	dest.print(UMOD_NAME);
+	dest.print(F("','"));
+	dest.print(_nameI2CAdr);
+	dest.print(F("');"));
+	dest.print(F("addOption(dd,'0x76',0x76);"));
+	dest.print(F("addOption(dd,'0x77',0x77);"));
 }
 
 /**

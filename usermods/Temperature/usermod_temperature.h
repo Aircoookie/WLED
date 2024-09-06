@@ -98,7 +98,7 @@ class UsermodTemperature : public Usermod {
     void addToConfig(JsonObject &root) override;
     bool readFromConfig(JsonObject &root) override;
 
-    void appendConfigData() override;
+    void appendConfigData(Print& dest) override;
 };
 
 //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
@@ -425,11 +425,11 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
   return !top[FPSTR(_domoticzIDX)].isNull();
 }
 
-void UsermodTemperature::appendConfigData() {
-  oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasite)).c_str());
-  oappend(SET_F("',1,'<i>(if no Vcc connected)</i>');"));  // 0 is field type, 1 is actual field
-  oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasitePin)).c_str());
-  oappend(SET_F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
+void UsermodTemperature::appendConfigData(Print& dest) {
+  dest.print(F("addInfo('")); dest.print(String(FPSTR(_name)).c_str()); dest.print(F(":")); dest.print(String(FPSTR(_parasite)).c_str());
+  dest.print(F("',1,'<i>(if no Vcc connected)</i>');"));  // 0 is field type, 1 is actual field
+  dest.print(F("addInfo('")); dest.print(String(FPSTR(_name)).c_str()); dest.print(F(":")); dest.print(String(FPSTR(_parasitePin)).c_str());
+  dest.print(F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
 }
 
 float UsermodTemperature::getTemperature() {

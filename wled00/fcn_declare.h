@@ -302,7 +302,7 @@ class Usermod {
     virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
     virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
     virtual void connected() {}                                              // called when WiFi is (re)connected
-    virtual void appendConfigData() {}                                       // helper function called from usermod settings page to add metadata for entry fields
+    virtual void appendConfigData(Print&) {}                                       // helper function called from usermod settings page to add metadata for entry fields
     virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
     virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
     virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
@@ -328,7 +328,7 @@ class UsermodManager {
     bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
     void setup();
     void connected();
-    void appendConfigData();
+    void appendConfigData(Print&);
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
@@ -362,10 +362,8 @@ void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
 bool getBoolVal(JsonVariant elem, bool dflt);
 bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
-bool oappend(const char* txt); // append new c string to temp buffer efficiently
-bool oappendi(int i);          // append new number to temp buffer efficiently
-void sappend(char stype, const char* key, int val);
-void sappends(char stype, const char* key, char* val);
+void sappend(Print& dest, char stype, const char* key, int val);
+void sappends(Print& dest, char stype, const char* key, char* val);
 void prepareHostname(char* hostname);
 bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
@@ -443,7 +441,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 void sendDataWs(AsyncWebSocketClient * client = nullptr);
 
 //xml.cpp
-void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
-void getSettingsJS(byte subPage, char* dest);
+void XML_response(Print& dest);
+void getSettingsJS(byte subPage, Print& dest);
 
 #endif

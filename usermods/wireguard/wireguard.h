@@ -53,14 +53,14 @@ class WireguardUsermod : public Usermod {
         if (is_enabled) infoArr.add(uiDomString);
     }
 
-    void appendConfigData() {
-        oappend(SET_F("addInfo('WireGuard:host',1,'Server Hostname');"));           // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:port',1,'Server Port');"));               // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:ip',1,'Device IP');"));                   // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:psk',1,'Pre Shared Key (optional)');"));  // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:pem',1,'Private Key');"));                // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:pub',1,'Public Key');"));                 // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:tz',1,'POSIX timezone string');"));       // 0 is field type, 1 is actual field
+    void appendConfigData(Print& dest) {
+        dest.print(F("addInfo('WireGuard:host',1,'Server Hostname');"));           // 0 is field type, 1 is actual field
+        dest.print(F("addInfo('WireGuard:port',1,'Server Port');"));               // 0 is field type, 1 is actual field
+        dest.print(F("addInfo('WireGuard:ip',1,'Device IP');"));                   // 0 is field type, 1 is actual field
+        dest.print(F("addInfo('WireGuard:psk',1,'Pre Shared Key (optional)');"));  // 0 is field type, 1 is actual field
+        dest.print(F("addInfo('WireGuard:pem',1,'Private Key');"));                // 0 is field type, 1 is actual field
+        dest.print(F("addInfo('WireGuard:pub',1,'Public Key');"));                 // 0 is field type, 1 is actual field
+        dest.print(F("addInfo('WireGuard:tz',1,'POSIX timezone string');"));       // 0 is field type, 1 is actual field
     }
 
     void addToConfig(JsonObject& root) {

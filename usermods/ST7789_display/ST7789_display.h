@@ -376,11 +376,11 @@ class St7789DisplayUsermod : public Usermod {
     }
 
 
-    void appendConfigData() override {
-      oappend(SET_F("addInfo('ST7789:pin[]',0,'','SPI CS');"));
-      oappend(SET_F("addInfo('ST7789:pin[]',1,'','SPI DC');"));
-      oappend(SET_F("addInfo('ST7789:pin[]',2,'','SPI RST');"));
-      oappend(SET_F("addInfo('ST7789:pin[]',3,'','SPI BL');"));
+    void appendConfigData(Print& dest) override {
+      dest.print(F("addInfo('ST7789:pin[]',0,'','SPI CS');"));
+      dest.print(F("addInfo('ST7789:pin[]',1,'','SPI DC');"));
+      dest.print(F("addInfo('ST7789:pin[]',2,'','SPI RST');"));
+      dest.print(F("addInfo('ST7789:pin[]',3,'','SPI BL');"));
     }
 
     /*
