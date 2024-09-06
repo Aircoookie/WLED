@@ -89,85 +89,40 @@ bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv
 
 
 //append a numeric setting to string buffer
-void sappend(char stype, const char* key, int val)
+void sappend(Print& dest, char stype, const char* key, int val)
 {
-  char ds[] = "d.Sf.";
-
+  const __FlashStringHelper* type_str;
   switch(stype)
   {
     case 'c': //checkbox
-      oappend(ds);
-      oappend(key);
-      oappend(".checked=");
-      oappendi(val);
-      oappend(";");
+      type_str = F(".checked=");
       break;
     case 'v': //numeric
-      oappend(ds);
-      oappend(key);
-      oappend(".value=");
-      oappendi(val);
-      oappend(";");
+      type_str = F(".value=");
       break;
     case 'i': //selectedIndex
-      oappend(ds);
-      oappend(key);
-      oappend(SET_F(".selectedIndex="));
-      oappendi(val);
-      oappend(";");
+      type_str = F(".selectedIndex=");
       break;
+    default:
+      return; //???
   }
+  
+  dest.printf_P(PSTR("d.Sf.%s%s%d;"), key, type_str, val);
 }
 
 
 //append a string setting to buffer
-void sappends(char stype, const char* key, char* val)
+void sappends(Print& dest, char stype, const char* key, char* val)
 {
   switch(stype)
   {
     case 's': {//string (we can interpret val as char*)
-      String buf = val;
-      //convert "%" to "%%" to make EspAsyncWebServer happy
-      //buf.replace("%","%%");
-      oappend("d.Sf.");
-      oappend(key);
-      oappend(".value=\"");
-      oappend(buf.c_str());
-      oappend("\";");
+      dest.printf_P(PSTR("d.Sf.%s.value=\"%s\";"),key,val);
       break;}
     case 'm': //message
-      oappend(SET_F("d.getElementsByClassName"));
-      oappend(key);
-      oappend(SET_F(".innerHTML=\""));
-      oappend(val);
-      oappend("\";");
+      dest.printf_P(PSTR("d.getElementsByClassName%s.innerHTML=\"%s\";"), key, val);
       break;
   }
-}
-
-
-bool oappendi(int i)
-{
-  char s[12]; // 32bit signed number can have 10 digits plus - sign
-  sprintf(s, "%d", i);
-  return oappend(s);
-}
-
-
-bool oappend(const char* txt)
-{
-  unsigned len = strlen(txt);
-  if ((obuf == nullptr) || (olen + len >= SETTINGS_STACK_BUF_SIZE)) { // sanity checks
-#ifdef WLED_DEBUG
-    DEBUG_PRINT(F("oappend() buffer overflow. Cannot append "));
-    DEBUG_PRINT(len); DEBUG_PRINT(F(" bytes \t\""));
-    DEBUG_PRINT(txt); DEBUG_PRINTLN(F("\""));
-#endif
-    return false;        // buffer full
-  }
-  strcpy(obuf + olen, txt);
-  olen += len;
-  return true;
 }
 
 
