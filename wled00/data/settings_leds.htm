@@ -69,28 +69,6 @@
 			// maxCO - max Color Order mappings
 			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
-		function addLEDTypes(config) {
-			var config = getLEDTypes();
-			console.log("addLEDTypes")
-			console.log(config);
-			var s = d.getElementsByTagName("select");
-			for (i=0; i<s.length; i++) {
-				// is the field a LED type?
-				if (s[i].name.substring(0,2)=="LT") {
-					var sel = s[i];
-					for(var t = 0; t < config.length; t++) {
-						var type = config[t];
-						let opt = d.createElement("option");
-						opt.value = type.i;
-						opt.text = type.n;
-						if(type.t != undefined && type.t != "") {
-							opt.setAttribute('data-type', type.t);
-						}
-						sel.appendChild(opt);			
-					}
-				}
-			}
-		}
 		function pinsOK() {
 			var ok = true;
 			var nList = d.Sf.querySelectorAll("#mLC input[name^=L]");
@@ -470,7 +448,6 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <div id="dig${s}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
-				addLEDTypes();
 				let sel = d.getElementsByName("LT"+s)[0]
 				if (i >= maxB || digitalB >= maxD) disable(sel,'option[data-type="D"]');
 				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]');

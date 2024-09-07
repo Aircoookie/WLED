@@ -482,8 +482,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("IT"),irEnabled);
 #endif    
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
-
-    oappend(SET_F("} function getLEDTypes(){ return ")); oappend(BusManager::getLEDTypes().c_str()); oappend(SET_F(";"));
   }
 
   if (subPage == SUBPAGE_UI)
