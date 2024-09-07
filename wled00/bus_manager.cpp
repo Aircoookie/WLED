@@ -810,7 +810,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[0], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
 
   if(mxconfig.mx_width >= 64 && (bc.pins[0] > 1)) {
-    DEBUG_PRINTF("WARNING, only single panel can be used of 64 pixel boards due to memory")
+    DEBUG_PRINTLN("WARNING, only single panel can be used of 64 pixel boards due to memory")
     mxconfig.chain_length = 1;
   }
 
@@ -820,7 +820,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   // https://www.adafruit.com/product/5778
 
-  DEBUG_PRINTF("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
+  DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
 
   mxconfig.gpio.r1 = 42;
   mxconfig.gpio.g1 = 41;
@@ -841,7 +841,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
 #elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
 
-  USER_PRINTLN("MatrixPanel_I2S_DMA - ESP32_FORUM_PINOUT");
+  DEBUG_PRINTLN("MatrixPanel_I2S_DMA - ESP32_FORUM_PINOUT");
 
 /*
     ESP32 with SmartMatrix's default pinout - ESP32_FORUM_PINOUT
@@ -869,7 +869,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   mxconfig.gpio.e = 12;
 
 #else
-  USER_PRINTLN("MatrixPanel_I2S_DMA - Default pins");
+  DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Default pins");
   /*
    https://github.com/mrfaptastic/ESP32-HUB75-MatrixPanel-DMA?tab=readme-ov-file
 
@@ -925,20 +925,20 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   // display->setLatBlanking(4);
 
-  DEBUG_PRINTF("MatrixPanel_I2S_DMA created");
+  DEBUG_PRINTLN("MatrixPanel_I2S_DMA created");
   // let's adjust default brightness
   display->setBrightness8(25);    // range is 0-255, 0 - 0%, 255 - 100%
 
   // Allocate memory and start DMA display
   if( not display->begin() ) {
-      DEBUG_PRINTF("****** MatrixPanel_I2S_DMA !KABOOM! I2S memory allocation failed ***********");
+      DEBUG_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! I2S memory allocation failed ***********");
       return;
   }
   else {
     _valid = true;
   }
   
-  DEBUG_PRINTF("MatrixPanel_I2S_DMA started");
+  DEBUG_PRINTLN("MatrixPanel_I2S_DMA started");
 }
 
 void BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
@@ -974,6 +974,16 @@ void BusHub75Matrix::deallocatePins() {
   pinManager.deallocatePin(mxconfig.gpio.e, PinOwner::HUB75);
 
 }
+
+std::vector<LEDType> BusHub75Matrix::getLEDTypes() {
+  return {
+    {TYPE_HUB75MATRIX + 1,     "H",     PSTR("HUB75 32x32")},
+    {TYPE_HUB75MATRIX + 2,     "H",     PSTR("HUB75 64x32")},
+    {TYPE_HUB75MATRIX + 3,     "H",     PSTR("HUB75 64x64")},
+  };
+}
+
+
 #endif
 // ***************************************************************************
 
@@ -1042,6 +1052,10 @@ String BusManager::getLEDTypesJSONString(void) {
   json += LEDTypesToJson(BusPwm::getLEDTypes());
   json += LEDTypesToJson(BusNetwork::getLEDTypes());
   //json += LEDTypesToJson(BusVirtual::getLEDTypes());
+  #ifdef WLED_ENABLE_HUB75MATRIX
+  json += LEDTypesToJson(BusHub75Matrix::getLEDTypes());
+  #endif
+
   json.setCharAt(json.length()-1, ']'); // replace last comma with bracket
   return json;
 }
