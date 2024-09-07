@@ -8,63 +8,22 @@
 //build XML response to HTTP /win API request
 void XML_response(Print& dest)
 {
-  dest.print(F("<?xml version=\"1.0\" ?><vs><ac>"));
-  dest.print((nightlightActive && nightlightMode > NL_MODE_SET) ? briT : bri);
-  dest.print(F("</ac>"));
-
+  dest.printf_P(PSTR("<?xml version=\"1.0\" ?><vs><ac>%d</ac>"), (nightlightActive && nightlightMode > NL_MODE_SET) ? briT : bri);
   for (int i = 0; i < 3; i++)
   {
-   dest.print("<cl>");
-   dest.print(col[i]);
-   dest.print("</cl>");
+   dest.printf_P(PSTR("<cl>%d</cl>"), col[i]);
   }
   for (int i = 0; i < 3; i++)
   {
-   dest.print("<cs>");
-   dest.print(colSec[i]);
-   dest.print("</cs>");
+    dest.printf_P(PSTR("<cs>%d</cs>"), colSec[i]);
   }
-  dest.print(F("<ns>"));
-  dest.print(notifyDirect);
-  dest.print(F("</ns><nr>"));
-  dest.print(receiveGroups!=0);
-  dest.print(F("</nr><nl>"));
-  dest.print(nightlightActive);
-  dest.print(F("</nl><nf>"));
-  dest.print(nightlightMode > NL_MODE_SET);
-  dest.print(F("</nf><nd>"));
-  dest.print(nightlightDelayMins);
-  dest.print(F("</nd><nt>"));
-  dest.print(nightlightTargetBri);
-  dest.print(F("</nt><fx>"));
-  dest.print(effectCurrent);
-  dest.print(F("</fx><sx>"));
-  dest.print(effectSpeed);
-  dest.print(F("</sx><ix>"));
-  dest.print(effectIntensity);
-  dest.print(F("</ix><fp>"));
-  dest.print(effectPalette);
-  dest.print(F("</fp><wv>"));
-  if (strip.hasWhiteChannel()) {
-   dest.print(col[3]);
-  } else {
-   dest.print("-1");
-  }
-  dest.print(F("</wv><ws>"));
-  dest.print(colSec[3]);
-  dest.print(F("</ws><ps>"));
-  dest.print(currentPreset);
-  dest.print(F("</ps><cy>"));
-  dest.print(currentPlaylist >= 0);
-  dest.print(F("</cy><ds>"));
-  dest.print(serverDescription);
-  if (realtimeMode)
-  {
-    dest.print(F(" (live)"));
-  }
-  dest.print(F("</ds><ss>"));
-  dest.print(strip.getFirstSelectedSegId());
-  dest.print(F("</ss></vs>"));
+  dest.printf_P(PSTR("<ns>%d</ns><nr>%d</nr><nl>%d</nl><nf>%d</nf><nd>%d</nd><nt>%d</nt><fx>%d</fx><sx>%d</sx><ix>%d</ix><fp>%d</fp><wv>%d</wv><ws>%d</ws><ps>%d</ps><cy>%d</cy><ds>%s%s</ds><ss>%d</ss></vs>"),
+    notifyDirect, receiveGroups!=0, nightlightActive, nightlightMode > NL_MODE_SET, nightlightDelayMins,
+    nightlightTargetBri, effectCurrent, effectSpeed, effectIntensity, effectPalette,
+    strip.hasWhiteChannel() ? col[3] : -1, colSec[3], currentPreset, currentPlaylist >= 0,
+    serverDescription, realtimeMode ? PSTR(" (live)") : "",
+    strip.getFirstSelectedSegId()
+  );
 }
 
 static void extractPin(Print& dest, JsonObject &obj, const char *key) {
@@ -114,16 +73,12 @@ void fillUMPins(Print& dest, JsonObject &mods)
 }
 
 void appendGPIOinfo(Print& dest) {
-  char nS[8];
-
   dest.print(F("d.um_p=[-1")); // has to have 1 element
   if (i2c_sda > -1 && i2c_scl > -1) {
-    dest.print(","); dest.print(itoa(i2c_sda,nS,10));
-    dest.print(","); dest.print(itoa(i2c_scl,nS,10));
+    dest.printf_P(PSTR(",%d,%d"), i2c_sda, i2c_scl);
   }
   if (spi_mosi > -1 && spi_sclk > -1) {
-    dest.print(","); dest.print(itoa(spi_mosi,nS,10));
-    dest.print(","); dest.print(itoa(spi_sclk,nS,10));
+    dest.printf_P(PSTR(",%d,%d"), spi_mosi, spi_sclk);
   }
   // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
   if (requestJSONBufferLock(6)) {
@@ -156,17 +111,17 @@ void appendGPIOinfo(Print& dest) {
   #endif
 
   #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
-  dest.print(F(",")); dest.print(itoa(hardwareTX,nS,10)); // debug output (TX) pin
+  dest.printf_P(PSTR(",%d"),hardwareTX); // debug output (TX) pin
   #endif
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
 
   #ifdef WLED_USE_ETHERNET
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { dest.print(","); dest.print(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); }
-    if (ethernetBoards[ethernetType].eth_power>=0)     { dest.print(","); dest.print(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
-    if (ethernetBoards[ethernetType].eth_mdc>=0)       { dest.print(","); dest.print(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
-    if (ethernetBoards[ethernetType].eth_mdio>=0)      { dest.print(","); dest.print(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
+    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { dest.printf(",%d",esp32_nonconfigurable_ethernet_pins[p].pin); }
+    if (ethernetBoards[ethernetType].eth_power>=0)     { dest.printf(",%d", ethernetBoards[ethernetType].eth_power); }
+    if (ethernetBoards[ethernetType].eth_mdc>=0)       { dest.printf(",%d", ethernetBoards[ethernetType].eth_mdc); }
+    if (ethernetBoards[ethernetType].eth_mdio>=0)      { dest.printf(",%d", ethernetBoards[ethernetType].eth_mdio); }
     switch (ethernetBoards[ethernetType].eth_clk_mode) {
       case ETH_CLOCK_GPIO0_IN:
       case ETH_CLOCK_GPIO0_OUT:
@@ -236,27 +191,14 @@ void getSettingsJS(byte subPage, Print& dest)
 
   if (subPage == SUBPAGE_WIFI)
   {
-    char nS[10];
     size_t l;
-    dest.print(F("resetWiFi("));
-    dest.print(WLED_MAX_WIFI_COUNT);
-    dest.print(F(");"));
+    dest.print(F("resetWiFi(" TOSTRING(WLED_MAX_WIFI_COUNT) ");"));
     for (size_t n = 0; n < multiWiFi.size(); n++) {
       l = strlen(multiWiFi[n].clientPass);
       char fpass[l+1]; //fill password field with ***
       fpass[l] = 0;
       memset(fpass,'*',l);
-      dest.print(F("addWiFi(\""));
-      dest.print(multiWiFi[n].clientSSID);
-      dest.print(F("\",\""));
-      dest.print(fpass);
-      dest.print(F("\",0x"));
-      dest.print(itoa(multiWiFi[n].staticIP,nS,16));
-      dest.print(F(",0x"));
-      dest.print(itoa(multiWiFi[n].staticGW,nS,16));
-      dest.print(F(",0x"));
-      dest.print(itoa(multiWiFi[n].staticSN,nS,16));
-      dest.print(F(");"));
+      dest.printf_P(PSTR("addWiFi(\"%s\",\",%s\",0x%X,0x%X,0x%X);"), multiWiFi[n].clientSSID, fpass, (uint32_t) multiWiFi[n].staticIP, (uint32_t) multiWiFi[n].staticGW, (uint32_t) multiWiFi[n].staticSN);
     }
 
     sappend(dest,'v',SET_F("D0"),dnsAddress[0]);
@@ -343,16 +285,16 @@ void getSettingsJS(byte subPage, Print& dest)
     appendGPIOinfo(dest);
 
     // set limits
-    dest.print(F("bLimits("));
-    dest.print(itoa(WLED_MAX_BUSSES,nS,10));  dest.print(",");
-    dest.print(itoa(WLED_MIN_VIRTUAL_BUSSES,nS,10));  dest.print(",");
-    dest.print(itoa(MAX_LEDS_PER_BUS,nS,10)); dest.print(",");
-    dest.print(itoa(MAX_LED_MEMORY,nS,10));   dest.print(",");
-    dest.print(itoa(MAX_LEDS,nS,10));         dest.print(",");
-    dest.print(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10)); dest.print(",");
-    dest.print(itoa(WLED_MAX_DIGITAL_CHANNELS,nS,10)); dest.print(",");
-    dest.print(itoa(WLED_MAX_ANALOG_CHANNELS,nS,10));
-    dest.print(F(");"));
+    dest.print(F("bLimits("
+       TOSTRING(WLED_MAX_BUSSES) ","
+       TOSTRING(WLED_MIN_VIRTUAL_BUSSES) ","
+       TOSTRING(MAX_LEDS_PER_BUS) ","
+       TOSTRING(MAX_LED_MEMORY) ","
+       TOSTRING(MAX_LEDS) ","
+       TOSTRING(WLED_MAX_COLOR_ORDER_MAPPINGS) ","
+       TOSTRING(WLED_MAX_DIGITAL_CHANNELS) ","
+       TOSTRING(WLED_MAX_ANALOG_CHANNELS) ");"
+    ));
 
     sappend(dest,'c',SET_F("MS"),strip.autoSegments);
     sappend(dest,'c',SET_F("CCT"),strip.correctWB);
@@ -426,17 +368,12 @@ void getSettingsJS(byte subPage, Print& dest)
     sappend(dest,'c',SET_F("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
     sappend(dest,'c',SET_F("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
-    dest.print(F("resetCOM("));
-    dest.print(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
-    dest.print(F(");"));
+    dest.print(F("resetCOM(" TOSTRING(WLED_MAX_COLOR_ORDER_MAPPINGS) ");"));
     const ColorOrderMap& com = BusManager::getColorOrderMap();
     for (int s = 0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;
-      dest.print(F("addCOM("));
-      dest.print(itoa(entry->start,nS,10)); dest.print(",");
-      dest.print(itoa(entry->len,nS,10)); dest.print(",");
-      dest.print(itoa(entry->colorOrder,nS,10)); dest.print(");");
+      dest.printf_P(PSTR("addCOM(%d,%d,%d);"), entry->start, entry->len, entry->colorOrder);
     }
 
     sappend(dest,'v',SET_F("CA"),briS);
@@ -462,11 +399,7 @@ void getSettingsJS(byte subPage, Print& dest)
     sappend(dest,'c',SET_F("RM"),rlyMde);
     sappend(dest,'c',SET_F("RO"),rlyOpenDrain);
     for (int i = 0; i < WLED_MAX_BUTTONS; i++) {
-      dest.print(F("addBtn("));
-      dest.print(itoa(i,nS,10)); dest.print(",");
-      dest.print(itoa(btnPin[i],nS,10)); dest.print(",");
-      dest.print(itoa(buttonType[i],nS,10));
-      dest.print(F(");"));
+      dest.printf_P(PSTR("addBtn(%d,%d,%d);"), i, btnPin[i], buttonType[i]);
     }
     sappend(dest,'c',SET_F("IP"),disablePullUp);
     sappend(dest,'v',SET_F("TT"),touchThreshold);
@@ -550,9 +483,9 @@ void getSettingsJS(byte subPage, Print& dest)
     sappends(dest,'s',SET_F("MG"),mqttGroupTopic);
     sappend(dest,'c',SET_F("BM"),buttonPublishMqtt);
     sappend(dest,'c',SET_F("RT"),retainMqttMsg);
-    dest.print(F("d.Sf.MD.maxlength=")); dest.print(itoa(MQTT_MAX_TOPIC_LEN,nS,10));  dest.print(F(";"));
-    dest.print(F("d.Sf.MG.maxlength=")); dest.print(itoa(MQTT_MAX_TOPIC_LEN,nS,10));  dest.print(F(";"));
-    dest.print(F("d.Sf.MS.maxlength=")); dest.print(itoa(MQTT_MAX_SERVER_LEN,nS,10));  dest.print(F(";"));
+    dest.print(F("d.Sf.MD.maxlength=" TOSTRING(MQTT_MAX_TOPIC_LEN) ";\n"
+                 "d.Sf.MG.maxlength=" TOSTRING(MQTT_MAX_TOPIC_LEN) ";\n"
+                 "d.Sf.MS.maxlength=" TOSTRING(MQTT_MAX_SERVER_LEN) ";"));
     #else
     dest.print(F("toggle('MQTT');"));    // hide MQTT settings
     #endif
@@ -627,12 +560,7 @@ void getSettingsJS(byte subPage, Print& dest)
     sappend(dest,'v',SET_F("MC"),macroCountdown);
     sappend(dest,'v',SET_F("MN"),macroNl);
     for (unsigned i=0; i<WLED_MAX_BUTTONS; i++) {
-      dest.print(F("addRow("));
-      dest.print(itoa(i,tm,10));  dest.print(",");
-      dest.print(itoa(macroButton[i],tm,10)); dest.print(",");
-      dest.print(itoa(macroLongPress[i],tm,10)); dest.print(",");
-      dest.print(itoa(macroDoublePress[i],tm,10));
-      dest.print(F(");"));
+      dest.printf_P(PSTR("addRow(%d,%d,%d,%d);"), i, macroButton[i], macroLongPress[i], macroDoublePress[i]);
     }
 
     char k[4];
@@ -663,15 +591,10 @@ void getSettingsJS(byte subPage, Print& dest)
     sappend(dest,'c',SET_F("NO"),otaLock);
     sappend(dest,'c',SET_F("OW"),wifiLock);
     sappend(dest,'c',SET_F("AO"),aOtaEnabled);
-    sappends(dest,'m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
-    olen -= 2; //delete ";
-    dest.print(versionString);
-    dest.print(F(" (build "));
-    dest.print(VERSION);
-    dest.print(F(")\";"));
-    dest.print(F("sd=\""));
-    dest.print(serverDescription);
-    dest.print(F("\";"));
+    char msg_buf[256];
+    snprintf_P(msg_buf,sizeof(msg_buf), PSTR("WLED %s (build " TOSTRING(VERSION) ")"), versionString);
+    sappends(dest,'m',SET_F("(\"sip\")[0]"),msg_buf);
+    dest.printf_P(PSTR("sd=\"%s\";"), serverDescription);
   }
 
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
@@ -705,38 +628,37 @@ void getSettingsJS(byte subPage, Print& dest)
   if (subPage == SUBPAGE_UM) //usermods
   {
     appendGPIOinfo(dest);
-    dest.print(F("numM="));
-    dest.print(usermods.getModCount());
-    dest.print(";");
+    dest.printf_P(PSTR("numM=%d;"), usermods.getModCount());
     sappend(dest,'v',SET_F("SDA"),i2c_sda);
     sappend(dest,'v',SET_F("SCL"),i2c_scl);
     sappend(dest,'v',SET_F("MOSI"),spi_mosi);
     sappend(dest,'v',SET_F("MISO"),spi_miso);
     sappend(dest,'v',SET_F("SCLK"),spi_sclk);
-    dest.print(F("addInfo('SDA','"));  dest.print(HW_PIN_SDA);      dest.print(F("');"));
-    dest.print(F("addInfo('SCL','"));  dest.print(HW_PIN_SCL);      dest.print(F("');"));
-    dest.print(F("addInfo('MOSI','")); dest.print(HW_PIN_DATASPI);  dest.print(F("');"));
-    dest.print(F("addInfo('MISO','")); dest.print(HW_PIN_MISOSPI);  dest.print(F("');"));
-    dest.print(F("addInfo('SCLK','")); dest.print(HW_PIN_CLOCKSPI); dest.print(F("');"));
+    dest.printf_P(PSTR("addInfo('SDA','%d');"
+                 "addInfo('SCL','%d');"
+                 "addInfo('MOSI','%d');"
+                 "addInfo('MISO','%d');"
+                 "addInfo('SCLK','%d');"),
+      HW_PIN_SDA, HW_PIN_SCL, HW_PIN_DATASPI, HW_PIN_MISOSPI, HW_PIN_CLOCKSPI
+    );
     usermods.appendConfigData(dest);
   }
 
   if (subPage == SUBPAGE_UPDATE) // update
   {
-    sappends(dest,'m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
-    olen -= 2; //delete ";
-    dest.print(versionString);
-    dest.print(F("<br>"));
-    dest.print(releaseString);
-    dest.print(F("<br>("));
-    #if defined(ARDUINO_ARCH_ESP32)
-    dest.print(ESP.getChipModel());
-    #else
-    dest.print("esp8266");
-    #endif
-    dest.print(F(" build "));
-    dest.print(VERSION);
-    dest.print(F(")\";"));
+    char msg[256];
+    snprintf_P(msg, sizeof(msg), PSTR("WLED %s<br>%s<br>(%s build %d)"),
+      versionString,
+      releaseString,
+#if defined(ARDUINO_ARCH_ESP32)
+      ESP.getChipModel(),
+#else
+      F("esp8266"),
+  #endif
+      VERSION
+    );
+
+    sappends(dest,'m',SET_F("(\"sip\")[0]"),msg);
   }
 
   if (subPage == SUBPAGE_2D) // 2D matrices
