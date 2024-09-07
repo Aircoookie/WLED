@@ -34,7 +34,7 @@
 			if (d.um_p[0]==-1) d.um_p.shift();	// remove filler
 			d.Sf.SDA.max = d.Sf.SCL.max = d.Sf.MOSI.max = d.Sf.SCLK.max = d.Sf.MISO.max = d.max_gpio;
 			//for (let i of d.getElementsByTagName("input")) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
-			pinDropdowns(); // convert INPUT to SELECT for pins
+			pinDD(); // convert INPUT to SELECT for pins
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {
@@ -165,25 +165,25 @@
 			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
 		}
 	}
-	function pinDropdowns() {
+	function pinDD() {
 		for (let i of d.Sf.elements) {
 			if (i.type === "number" && (i.name.includes("pin") || ["SDA","SCL","MOSI","MISO","SCLK"].includes(i.name))) { //select all pin select elements
 				let v = parseInt(i.value);
-				let sel = addDropdown(i.name,0);
+				let sel = addDD(i.name,0);
 				for (var j = -1; j <= d.max_gpio; j++) {
 					if (d.rsvd.includes(j)) continue;
 					let foundPin = pins.indexOf(j);
 					let txt = (j === -1) ? "unused" : `${j}`;
 					if (foundPin >= 0 && j !== v) txt += ` ${pinO[foundPin]=="if"?"global":pinO[foundPin]}`; // already reserved pin
 					if (d.ro_gpio.includes(j)) txt += " (R/O)";
-					let opt = addOption(sel, txt, j);
+					let opt = addO(sel, txt, j);
 					if (j === v) opt.selected = true; // this is "our" pin
 					else if (pins.includes(j)) opt.disabled = true; // someone else's pin
 				}
 				let um = i.name.split(":")[0];
 				d.extra.forEach((o)=>{
 					if (o[um] && o[um].pin) o[um].pin.forEach((e)=>{
-						let opt = addOption(sel,e[0],e[1]);
+						let opt = addO(sel,e[0],e[1]);
 						if (e[1]==v) opt.selected = true;
 					});
 				});
@@ -219,7 +219,7 @@
 		}
 	}
 	// https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
-	function addDropdown(um,fld) {
+	function addDD(um,fld) {
 		let sel = d.createElement('select');
 		if (typeof(fld) === "string") {	// parameter from usermod (field name)
 			if (fld.includes("pin")) sel.classList.add("pin");
@@ -255,7 +255,8 @@
 		}
 		return null;
 	}
-	function addOption(sel,txt,val) {
+	var addDropdown = addDD; // backwards compatibility
+	function addO(sel,txt,val) {
 		if (sel===null) return; // select object missing
 		let opt = d.createElement("option");
 		opt.value = val;
@@ -267,8 +268,9 @@
 		}
 		return opt;
 	}
+	var addOption = addO; // backwards compatibility
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
-	function addInfo(name,el,txt, txt2="") {
+	function addI(name,el,txt, txt2="") {
 		let obj = d.getElementsByName(name);
 		if (!obj.length) return;
 		if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
@@ -277,9 +279,10 @@
 			if (txt2!="") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
 		}
 	}
+	var addInfo = addI; // backwards compatibility
 	// add Help Button
 	function addHB(um) {
-		addInfo(um + ':help',0,`<button onclick="location.href='https://kno.wled.ge/usermods/${um}'" type="button">?</button>`);
+		addI(um + ':help',0,`<button onclick="location.href='https://kno.wled.ge/usermods/${um}'" type="button">?</button>`);
 	}
 	// load settings and insert values into DOM
 	function ldS() {

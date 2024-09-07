@@ -20,6 +20,7 @@ void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
+void IRAM_ATTR touchButtonISR();
 
 //cfg.cpp
 bool deserializeConfig(JsonObject doc, bool fromFS = false);
@@ -112,6 +113,10 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest);
 void updateFSInfo();
 void closeFile();
+inline bool writeObjectToFileUsingId(const String &file, uint16_t id, JsonDocument* content) { return writeObjectToFileUsingId(file.c_str(), id, content); };
+inline bool writeObjectToFile(const String &file, const char* key, JsonDocument* content) { return writeObjectToFile(file.c_str(), key, content); };
+inline bool readObjectFromFileUsingId(const String &file, uint16_t id, JsonDocument* dest) { return readObjectFromFileUsingId(file.c_str(), id, dest); };
+inline bool readObjectFromFile(const String &file, const char* key, JsonDocument* dest) { return readObjectFromFile(file.c_str(), key, dest); };
 
 //hue.cpp
 void handleHue();
@@ -138,20 +143,8 @@ void handleImprovWifiScan();
 void sendImprovIPRPCResult(ImprovRPCType type);
 
 //ir.cpp
-void applyRepeatActions();
-byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
-void decodeIR(uint32_t code);
-void decodeIR24(uint32_t code);
-void decodeIR24OLD(uint32_t code);
-void decodeIR24CT(uint32_t code);
-void decodeIR40(uint32_t code);
-void decodeIR44(uint32_t code);
-void decodeIR21(uint32_t code);
-void decodeIR6(uint32_t code);
-void decodeIR9(uint32_t code);
-void decodeIRJson(uint32_t code);
-
 void initIR();
+void deInitIR();
 void handleIR();
 
 //json.cpp
@@ -225,9 +218,11 @@ void handlePlaylist();
 void serializePlaylist(JsonObject obj);
 
 //presets.cpp
+const char *getPresetsFileName(bool persistent = true);
 void initPresetsFile();
 void handlePresets();
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+bool applyPresetFromPlaylist(byte index);
 void applyPresetWithFallback(uint8_t presetID, uint8_t callMode, uint8_t effectID = 0, uint8_t paletteID = 0);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
@@ -315,6 +310,7 @@ class Usermod {
     virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
     virtual void onMqttConnect(bool sessionPresent) {}                       // fired when MQTT connection is established (so usermod can subscribe)
     virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
+    virtual bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len) { return false; } // fired upon ESP-NOW message received
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
@@ -338,8 +334,13 @@ class UsermodManager {
     void readFromJsonState(JsonObject& obj);
     void addToConfig(JsonObject& obj);
     bool readFromConfig(JsonObject& obj);
+#ifndef WLED_DISABLE_MQTT
     void onMqttConnect(bool sessionPresent);
     bool onMqttMessage(char* topic, char* payload);
+#endif
+#ifndef WLED_DISABLE_ESPNOW
+    bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len);
+#endif
     void onUpdateBegin(bool);
     void onStateChange(uint8_t);
     bool add(Usermod* um);
@@ -403,7 +404,7 @@ void clearEEPROM();
 #endif
 
 //wled_math.cpp
-#ifndef WLED_USE_REAL_MATH
+#if defined(ESP8266) && !defined(WLED_USE_REAL_MATH)
   template <typename T> T atan_t(T x);
   float cos_t(float phi);
   float sin_t(float x);
@@ -414,14 +415,14 @@ void clearEEPROM();
   float fmod_t(float num, float denom);
 #else
   #include <math.h>
-  #define sin_t sin
-  #define cos_t cos
-  #define tan_t tan
-  #define asin_t asin
-  #define acos_t acos
-  #define atan_t atan
-  #define fmod_t fmod
-  #define floor_t floor
+  #define sin_t sinf
+  #define cos_t cosf
+  #define tan_t tanf
+  #define asin_t asinf
+  #define acos_t acosf
+  #define atan_t atanf
+  #define fmod_t fmodf
+  #define floor_t floorf
 #endif
 
 //wled_serial.cpp

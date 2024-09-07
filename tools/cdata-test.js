@@ -83,6 +83,7 @@ describe('Script', () => {
     // Backup files
     fs.cpSync("wled00/data", "wled00Backup", { recursive: true });
     fs.cpSync("tools/cdata.js", "cdata.bak.js");
+    fs.cpSync("package.json", "package.bak.json");
   });
   after(() => {
     // Restore backup
@@ -90,6 +91,8 @@ describe('Script', () => {
     fs.renameSync("wled00Backup", "wled00/data");
     fs.rmSync("tools/cdata.js");
     fs.renameSync("cdata.bak.js", "tools/cdata.js");
+    fs.rmSync("package.json");
+    fs.renameSync("package.bak.json", "package.json");
   });
 
   // delete all html_*.h files
@@ -131,7 +134,7 @@ describe('Script', () => {
     // run script cdata.js again and wait for it to finish
     await execPromise('node tools/cdata.js');
 
-    checkIfFileWasNewlyCreated(path.join(folderPath, resultFile));
+    await checkIfFileWasNewlyCreated(path.join(folderPath, resultFile));
   }
 
   describe('should build if', () => {
@@ -181,6 +184,10 @@ describe('Script', () => {
 
     it('cdata.js changes', async () => {
       await testFileModification('tools/cdata.js', 'html_ui.h');
+    });
+
+    it('package.json changes', async () => {
+      await testFileModification('package.json', 'html_ui.h');
     });
   });
 

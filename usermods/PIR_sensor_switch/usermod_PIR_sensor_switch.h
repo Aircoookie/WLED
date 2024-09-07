@@ -58,7 +58,11 @@ private:
   bool sensorPinState[PIR_SENSOR_MAX_SENSORS] = {LOW}; // current PIR sensor pin state
 
   // configurable parameters
+#if PIR_SENSOR_PIN < 0
+  bool enabled              = false;          // PIR sensor disabled
+#else
   bool enabled              = true;           // PIR sensor enabled
+#endif
   int8_t PIRsensorPin[PIR_SENSOR_MAX_SENSORS] = {PIR_SENSOR_PIN}; // PIR sensor pin
   uint32_t m_switchOffDelay = PIR_SENSOR_OFF_SEC*1000;  // delay before switch off after the sensor state goes LOW (10min)
   uint8_t m_onPreset        = 0;              // on preset

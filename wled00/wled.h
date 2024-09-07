@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.15.0-b1
+   @version 0.15.0-b4
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2402170
+#define VERSION 2407070
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -36,7 +36,7 @@
   #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
 #endif
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
-#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
+//#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
   #define WLED_ENABLE_LOXONE       // uses 1.2kb
 #endif
@@ -145,7 +145,7 @@
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #endif
 
@@ -158,15 +158,16 @@
 // The following is a construct to enable code to compile without it.
 // There is a code that will still not use PSRAM though:
 //    AsyncJsonResponse is a derived class that implements DynamicJsonDocument (AsyncJson-v6.h)
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+#if defined(ARDUINO_ARCH_ESP32)
+extern bool psramSafe;
 struct PSRAM_Allocator {
   void* allocate(size_t size) {
-    if (psramFound()) return ps_malloc(size); // use PSRAM if it exists
-    else              return malloc(size);    // fallback
+    if (psramSafe && psramFound()) return ps_malloc(size); // use PSRAM if it exists
+    else                           return malloc(size);    // fallback
   }
   void* reallocate(void* ptr, size_t new_size) {
-    if (psramFound()) return ps_realloc(ptr, new_size); // use PSRAM if it exists
-    else              return realloc(ptr, new_size);    // fallback
+    if (psramSafe && psramFound()) return ps_realloc(ptr, new_size); // use PSRAM if it exists
+    else                           return realloc(ptr, new_size);    // fallback
   }
   void deallocate(void* pointer) {
     free(pointer);
@@ -242,27 +243,32 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 //     int arr[]{0,1,2} becomes WLED_GLOBAL int arr[] _INIT_N(({0,1,2}));
 
 #ifndef WLED_DEFINE_GLOBAL_VARS
-# define WLED_GLOBAL extern
-# define _INIT(x)
-# define _INIT_N(x)
+  #define WLED_GLOBAL extern
+  #define _INIT(x)
+  #define _INIT_N(x)
+  #define _INIT_PROGMEM(x)
 #else
-# define WLED_GLOBAL
-# define _INIT(x) = x
-
-//needed to ignore commas in array definitions
-#define UNPACK( ... ) __VA_ARGS__
-# define _INIT_N(x) UNPACK x
+  #define WLED_GLOBAL
+  #define _INIT(x) = x
+  //needed to ignore commas in array definitions
+  #define UNPACK( ... ) __VA_ARGS__
+  #define _INIT_N(x) UNPACK x
+  #define _INIT_PROGMEM(x) PROGMEM = x
 #endif
 
 #define STRINGIFY(X) #X
 #define TOSTRING(X) STRINGIFY(X)
 
 #ifndef WLED_VERSION
-  #define WLED_VERSION "dev"
+  #define WLED_VERSION dev
+#endif
+#ifndef WLED_RELEASE_NAME
+  #define WLED_RELEASE_NAME dev_release
 #endif
 
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
+WLED_GLOBAL char releaseString[] _INIT(TOSTRING(WLED_RELEASE_NAME)); // somehow this will not work if using "const char releaseString[]
 #define WLED_CODENAME "Kōsen"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -271,9 +277,10 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware and pin config
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
-#else
-WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({BTNPIN});
+  #define BTNPIN 0,-1
+#endif
+#ifndef BTNTYPE
+  #define BTNTYPE BTN_TYPE_PUSH,BTN_TYPE_NONE
 #endif
 #ifndef RLYPIN
 WLED_GLOBAL int8_t rlyPin _INIT(-1);
@@ -286,10 +293,17 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 #else
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
-#ifndef IRPIN
-WLED_GLOBAL int8_t irPin _INIT(-1);
+//Use open drain (floating pin) when relay should be off
+#ifndef RLYODRAIN
+WLED_GLOBAL bool rlyOpenDrain _INIT(false);
 #else
-WLED_GLOBAL int8_t irPin _INIT(IRPIN);
+WLED_GLOBAL bool rlyOpenDrain _INIT(RLYODRAIN);
+#endif
+#ifndef IRPIN
+  #define IRPIN -1
+#endif
+#ifndef IRTYPE
+  #define IRTYPE 0
 #endif
 
 #if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || (defined(RX) && defined(TX))
@@ -307,20 +321,60 @@ WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
-WLED_GLOBAL uint8_t selectedWiFi _INIT(0);
 WLED_GLOBAL std::vector<WiFiConfig> multiWiFi;
 WLED_GLOBAL IPAddress dnsAddress _INIT_N(((  8,   8,  8,  8)));   // Google's DNS
 WLED_GLOBAL char cmDNS[33]       _INIT(MDNS_NAME);                // mDNS address (*.local, replaced by wledXXXXXX if default is used)
 WLED_GLOBAL char apSSID[33]      _INIT("");                       // AP off by default (unless setup)
+#ifdef WLED_SAVE_RAM
+typedef class WiFiOptions {
+  public:
+    struct {
+      uint8_t selectedWiFi : 4; // max 16 SSIDs
+      uint8_t apChannel    : 4;
+      uint8_t apHide       : 3;
+      uint8_t apBehavior   : 3;
+      bool    noWifiSleep  : 1;
+      bool    force802_3g  : 1;
+    };
+    WiFiOptions(uint8_t s, uint8_t c, bool h, uint8_t b, bool sl, bool g) {
+      selectedWiFi = s;
+      apChannel = c;
+      apHide = h;
+      apBehavior = b;
+      noWifiSleep = sl;
+      force802_3g = g;
+    }
+} __attribute__ ((aligned(1), packed)) wifi_options_t;
+  #ifdef ARDUINO_ARCH_ESP32
+WLED_GLOBAL wifi_options_t wifiOpt _INIT_N(({0, 1, false, AP_BEHAVIOR_BOOT_NO_CONN, true, false}));
+  #else
+WLED_GLOBAL wifi_options_t wifiOpt _INIT_N(({0, 1, false, AP_BEHAVIOR_BOOT_NO_CONN, false, false}));
+  #endif
+#define selectedWiFi wifiOpt.selectedWiFi
+#define apChannel    wifiOpt.apChannel
+#define apHide       wifiOpt.apHide
+#define apBehavior   wifiOpt.apBehavior
+#define noWifiSleep  wifiOpt.noWifiSleep
+#define force802_3g  wifiOpt.force802_3g
+#else
+WLED_GLOBAL uint8_t selectedWiFi _INIT(0);
 WLED_GLOBAL byte apChannel       _INIT(1);                        // 2.4GHz WiFi AP channel (1-13)
 WLED_GLOBAL byte apHide          _INIT(0);                        // hidden AP SSID
 WLED_GLOBAL byte apBehavior      _INIT(AP_BEHAVIOR_BOOT_NO_CONN); // access point opens when no connection after boot by default
-#ifdef ARDUINO_ARCH_ESP32
+  #ifdef ARDUINO_ARCH_ESP32
 WLED_GLOBAL bool noWifiSleep _INIT(true);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
-#else
+  #else
 WLED_GLOBAL bool noWifiSleep _INIT(false);
-#endif
+  #endif
 WLED_GLOBAL bool force802_3g _INIT(false);
+#endif // WLED_SAVE_RAM
+#ifdef ARDUINO_ARCH_ESP32
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
+WLED_GLOBAL uint8_t txPower _INIT(WIFI_POWER_8_5dBm);
+  #else
+WLED_GLOBAL uint8_t txPower _INIT(WIFI_POWER_19_5dBm);
+  #endif
+#endif
 #define WLED_WIFI_CONFIGURED (strlen(multiWiFi[0].clientSSID) >= 1 && strcmp(multiWiFi[0].clientSSID, DEFAULT_CLIENT_SSID) != 0)
 
 #ifdef WLED_USE_ETHERNET
@@ -338,21 +392,22 @@ WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load
 //if true, a segment per bus will be created on boot and LED settings save
 //if false, only one segment spanning the total LEDs is created,
 //but not on LED settings save if there is more than one segment currently
-WLED_GLOBAL bool autoSegments       _INIT(false);
 #ifdef ESP8266
 WLED_GLOBAL bool useGlobalLedBuffer _INIT(false); // double buffering disabled on ESP8266
 #else
 WLED_GLOBAL bool useGlobalLedBuffer _INIT(true);  // double buffering enabled on ESP32
 #endif
-WLED_GLOBAL bool correctWB          _INIT(false); // CCT color correction of RGB color
-WLED_GLOBAL bool cctFromRgb         _INIT(false); // CCT is calculated from RGB instead of using seg.cct
+#ifdef WLED_USE_IC_CCT
+WLED_GLOBAL bool cctICused          _INIT(true);  // CCT IC used (Athom 15W bulbs)
+#else
+WLED_GLOBAL bool cctICused          _INIT(false); // CCT IC used (Athom 15W bulbs)
+#endif
 WLED_GLOBAL bool gammaCorrectCol    _INIT(true);  // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri    _INIT(false); // use gamma correction on brightness
 WLED_GLOBAL float gammaCorrectVal   _INIT(2.8f);  // gamma correction value
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
-WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
@@ -374,38 +429,20 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
-#if defined(IRTYPE) && defined(IRPIN)
+#ifndef WLED_DISABLE_INFRARED
+WLED_GLOBAL int8_t irPin        _INIT(IRPIN);
 WLED_GLOBAL byte irEnabled      _INIT(IRTYPE); // Infrared receiver
-#else
-WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver disabled
 #endif
-WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR to all selected segments
+WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR or ESP-NOW to all selected segments
 
-WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
-WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
-WLED_GLOBAL uint16_t udpRgbPort _INIT(19446); // Hyperion port
-
-WLED_GLOBAL uint8_t syncGroups    _INIT(0x01);                    // sync groups this instance syncs (bit mapped)
-WLED_GLOBAL uint8_t receiveGroups _INIT(0x01);                    // sync receive groups this instance belongs to (bit mapped)
-WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
-WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color
-WLED_GLOBAL bool receiveNotificationEffects    _INIT(true);       // apply effects setup
-WLED_GLOBAL bool receiveSegmentOptions         _INIT(false);      // apply segment options
-WLED_GLOBAL bool receiveSegmentBounds          _INIT(false);      // apply segment bounds (start, stop, offset)
-WLED_GLOBAL bool notifyDirect _INIT(false);                       // send notification if change via UI or HTTP API
-WLED_GLOBAL bool notifyButton _INIT(false);                       // send if updated by button or infrared remote
-WLED_GLOBAL bool notifyAlexa  _INIT(false);                       // send notification if updated via Alexa
-WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
-WLED_GLOBAL uint8_t udpNumRetries _INIT(0);                       // Number of times a UDP sync message is retransmitted. Increase to increase reliability
-
+#ifndef WLED_DISABLE_ALEXA
 WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable device discovery by Amazon Echo
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 WLED_GLOBAL byte alexaNumPresets _INIT(0);                        // number of presets to expose to Alexa, starting from preset 1, up to 9
+#endif
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
-WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP/Hyperion realtime
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
@@ -563,13 +600,16 @@ WLED_GLOBAL byte colNlT[] _INIT_N(({ 0, 0, 0, 0 }));        // current nightligh
 // brightness
 WLED_GLOBAL unsigned long lastOnTime _INIT(0);
 WLED_GLOBAL bool offMode             _INIT(!turnOnAtBoot);
+WLED_GLOBAL byte briS                _INIT(128);           // default brightness
 WLED_GLOBAL byte bri                 _INIT(briS);          // global brightness (set)
 WLED_GLOBAL byte briOld              _INIT(0);             // global brightness while in transition loop (previous iteration)
 WLED_GLOBAL byte briT                _INIT(0);             // global brightness during transition
 WLED_GLOBAL byte briLast             _INIT(128);           // brightness before turned off. Used for toggle function
-WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function
+WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function in ir.cpp
 
 // button
+WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS]                   _INIT({BTNPIN});
+WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]                 _INIT({BTNTYPE});
 WLED_GLOBAL bool buttonPublishMqtt                            _INIT(false);
 WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
 WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
@@ -584,6 +624,77 @@ WLED_GLOBAL bool sendNotificationsRT  _INIT(false);           // master notifica
 WLED_GLOBAL unsigned long notificationSentTime _INIT(0);
 WLED_GLOBAL byte notificationSentCallMode _INIT(CALL_MODE_INIT);
 WLED_GLOBAL uint8_t notificationCount _INIT(0);
+WLED_GLOBAL uint8_t syncGroups    _INIT(0x01);                // sync send groups this instance syncs to (bit mapped)
+WLED_GLOBAL uint8_t receiveGroups _INIT(0x01);                // sync receive groups this instance belongs to (bit mapped)
+#ifdef WLED_SAVE_RAM
+// this will save us 8 bytes of RAM while increasing code by ~400 bytes
+typedef class Receive {
+  public:
+    union {
+      uint8_t   Options;
+      struct {
+        bool    Brightness     : 1;
+        bool    Color          : 1;
+        bool    Effects        : 1;
+        bool    SegmentOptions : 1;
+        bool    SegmentBounds  : 1;
+        bool    Direct         : 1;
+        uint8_t reserved       : 2;
+      };
+    };
+    Receive(int i) { Options = i; }
+    Receive(bool b, bool c, bool e, bool sO, bool sB) {
+      Brightness = b;
+      Color = c;
+      Effects = e;
+      SegmentOptions = sO;
+      SegmentBounds = sB;
+    };
+} __attribute__ ((aligned(1), packed)) receive_notification_t;
+typedef class Send {
+  public:
+    union {
+      uint8_t Options;
+      struct {
+        bool Direct : 1;
+        bool Button : 1;
+        bool Alexa  : 1;
+        bool Hue    : 1;
+        uint8_t reserved : 4;
+      };
+    };
+  Send(int o) { Options = o; }
+  Send(bool d, bool b, bool a, bool h) {
+    Direct = d;
+    Button = b;
+    Alexa = a;
+    Hue = h;
+  }
+} __attribute__ ((aligned(1), packed)) send_notification_t;
+WLED_GLOBAL receive_notification_t receiveN _INIT(0b00100111);
+WLED_GLOBAL send_notification_t    notifyG  _INIT(0b00001111);
+#define receiveNotificationBrightness receiveN.Brightness
+#define receiveNotificationColor      receiveN.Color
+#define receiveNotificationEffects    receiveN.Effects
+#define receiveSegmentOptions         receiveN.SegmentOptions
+#define receiveSegmentBounds          receiveN.SegmentBounds
+#define receiveDirect                 receiveN.Direct
+#define notifyDirect notifyG.Direct
+#define notifyButton notifyG.Button
+#define notifyAlexa  notifyG.Alexa
+#define notifyHue    notifyG.Hue
+#else
+WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
+WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color
+WLED_GLOBAL bool receiveNotificationEffects    _INIT(true);       // apply effects setup
+WLED_GLOBAL bool receiveSegmentOptions         _INIT(false);      // apply segment options
+WLED_GLOBAL bool receiveSegmentBounds          _INIT(false);      // apply segment bounds (start, stop, offset)
+WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP/Hyperion realtime
+WLED_GLOBAL bool notifyDirect _INIT(false);                       // send notification if change via UI or HTTP API
+WLED_GLOBAL bool notifyButton _INIT(false);                       // send if updated by button or infrared remote
+WLED_GLOBAL bool notifyAlexa  _INIT(false);                       // send notification if updated via Alexa
+WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
+#endif
 
 // effects
 WLED_GLOBAL byte effectCurrent _INIT(0);
@@ -593,7 +704,46 @@ WLED_GLOBAL byte effectPalette _INIT(0);
 WLED_GLOBAL bool stateChanged _INIT(false);
 
 // network
-WLED_GLOBAL bool udpConnected _INIT(false), udp2Connected _INIT(false), udpRgbConnected _INIT(false);
+#ifdef WLED_SAVE_RAM
+// this will save us 2 bytes of RAM while increasing code by ~400 bytes
+typedef class Udp {
+  public:
+    uint16_t  Port;
+    uint16_t  Port2;
+    uint16_t  RgbPort;
+    struct {
+      uint8_t NumRetries : 5;
+      bool    Connected : 1;
+      bool    Connected2 : 1;
+      bool    RgbConnected : 1;
+    };
+    Udp(int p1, int p2, int p3, int r, bool c1, bool c2, bool c3) {
+      Port = p1;
+      Port2 = p2;
+      RgbPort = p3;
+      NumRetries = r;
+      Connected = c1;
+      Connected2 = c2;
+      RgbConnected = c3;
+    }
+} __attribute__ ((aligned(1), packed)) udp_port_t;
+WLED_GLOBAL udp_port_t udp _INIT_N(({21234, 65506, 19446, 0, false, false, false}));
+#define udpPort         udp.Port
+#define udpPort2        udp.Port2
+#define udpRgbPort      udp.RgbPort
+#define udpNumRetries   udp.NumRetries
+#define udpConnected    udp.Connected
+#define udp2Connected   udp.Connected2
+#define udpRgbConnected udp.RgbConnected
+#else
+WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
+WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
+WLED_GLOBAL uint16_t udpRgbPort _INIT(19446); // Hyperion port
+WLED_GLOBAL uint8_t  udpNumRetries _INIT(0);  // Number of times a UDP sync message is retransmitted. Increase to increase reliability
+WLED_GLOBAL bool     udpConnected _INIT(false);
+WLED_GLOBAL bool     udp2Connected _INIT(false);
+WLED_GLOBAL bool     udpRgbConnected _INIT(false);
+#endif
 
 // ui style
 WLED_GLOBAL bool showWelcomePage _INIT(false);
@@ -626,6 +776,7 @@ WLED_GLOBAL byte timerWeekday[]   _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 
 WLED_GLOBAL byte timerMonth[]     _INIT_N(({28,28,28,28,28,28,28,28}));
 WLED_GLOBAL byte timerDay[]       _INIT_N(({1,1,1,1,1,1,1,1}));
 WLED_GLOBAL byte timerDayEnd[]		_INIT_N(({31,31,31,31,31,31,31,31}));
+WLED_GLOBAL bool doAdvancePlaylist _INIT(false);
 
 //improv
 WLED_GLOBAL byte improvActive _INIT(0); //0: no improv packet received, 1: improv active, 2: provisioning
@@ -690,7 +841,6 @@ WLED_GLOBAL uint16_t olen _INIT(0);
 WLED_GLOBAL size_t fsBytesUsed _INIT(0);
 WLED_GLOBAL size_t fsBytesTotal _INIT(0);
 WLED_GLOBAL unsigned long presetsModifiedTime _INIT(0L);
-WLED_GLOBAL JsonDocument* fileDoc;
 WLED_GLOBAL bool doCloseFile _INIT(false);
 
 // presets
@@ -703,7 +853,8 @@ WLED_GLOBAL byte optionType;
 
 WLED_GLOBAL bool doSerializeConfig _INIT(false);        // flag to initiate saving of config
 WLED_GLOBAL bool doReboot          _INIT(false);        // flag to initiate reboot from async handlers
-WLED_GLOBAL bool doPublishMqtt     _INIT(false);
+
+WLED_GLOBAL bool psramSafe         _INIT(true);         // is it safe to use PSRAM (on ESP32 rev.1; compiler fix used "-mfix-esp32-psram-cache-issue")
 
 // status led
 #if defined(STATUSLED)
@@ -735,6 +886,7 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+WLED_GLOBAL uint8_t currentLedmap _INIT(0);
 #ifndef ESP8266
 WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
 #endif
@@ -780,8 +932,9 @@ WLED_GLOBAL int8_t spi_sclk  _INIT(SPISCLKPIN);
 #endif
 
 // global ArduinoJson buffer
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+#if defined(ARDUINO_ARCH_ESP32)
 WLED_GLOBAL JsonDocument *pDoc _INIT(nullptr);
+WLED_GLOBAL SemaphoreHandle_t jsonBufferLockMutex _INIT(xSemaphoreCreateRecursiveMutex());
 #else
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> gDoc;
 WLED_GLOBAL JsonDocument *pDoc _INIT(&gDoc);

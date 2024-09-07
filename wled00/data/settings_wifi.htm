@@ -52,40 +52,42 @@
 				}
 				scanLoops = 0;
 
-				let cs = d.querySelectorAll("#wifi_entries input[type=text]");
-				for (let input of (cs||[])) {
-					let found = false;
-					let select = cE("select");
-					select.id = input.id;
-					select.name = input.name;
-					select.setAttribute("onchange", "T(this)");
-					preScanSSID = input.value;
+				if (networks.length > 0) {
+					let cs = d.querySelectorAll("#wifi_entries input[type=text]");
+					for (let input of (cs||[])) {
+						let found = false;
+						let select = cE("select");
+						select.id = input.id;
+						select.name = input.name;
+						select.setAttribute("onchange", "T(this)");
+						preScanSSID = input.value;
 
-					for (let i = 0; i < select.children.length; i++) {
-						select.removeChild(select.children[i]);
-					}
-
-					for (let i = 0; i < networks.length; i++) {
-						const option = cE("option");
-
-						option.setAttribute("value", networks[i].ssid);
-						option.textContent = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
-
-						if (networks[i].ssid === input.value) {
-							option.setAttribute("selected", "selected");
-							found = true;
+						for (let i = 0; i < select.children.length; i++) {
+							select.removeChild(select.children[i]);
 						}
 
+						for (let i = 0; i < networks.length; i++) {
+							const option = cE("option");
+
+							option.setAttribute("value", networks[i].ssid);
+							option.textContent = `${networks[i].ssid} (${networks[i].rssi} dBm)`;
+
+							if (networks[i].ssid === input.value) {
+								option.setAttribute("selected", "selected");
+								found = true;
+							}
+
+							select.appendChild(option);
+						}
+						const option = cE("option");
+
+						option.setAttribute("value", "!Cs");
+						option.textContent = "Other network...";
 						select.appendChild(option);
+
+						if (input.value === "" || input.value === "Your_Network" || found) input.replaceWith(select);
+						else select.remove(); 
 					}
-					const option = cE("option");
-
-					option.setAttribute("value", "!Cs");
-					option.textContent = "Other network...";
-					select.appendChild(option);
-
-					if (input.value === "" || found) input.replaceWith(select);
-					else select.remove(); 
 				}
 
 				button.disabled = false;
@@ -222,8 +224,23 @@ Static subnet mask:<br>
 		<h3>Experimental</h3>
 		Force 802.11g mode (ESP8266 only): <input type="checkbox" name="FG"><br>
 		Disable WiFi sleep: <input type="checkbox" name="WS"><br>
-		<i>Can help with connectivity issues.<br>
-		Do not enable if WiFi is working correctly, increases power consumption.</i>
+		<i>Can help with connectivity issues and Audioreactive sync.<br>
+		Disabling WiFi sleep increases power consumption.</i><br>
+		<div id="tx">TX power: <select name="TX">
+			<option value="78">19.5 dBm</option>
+			<option value="76">19 dBm</option>
+			<option value="74">18.5 dBm</option>
+			<option value="68">17 dBm</option>
+			<option value="60">15 dBm</option>
+			<option value="52">13 dBm</option>
+			<option value="44">11 dBm</option>
+			<option value="34">8.5 dBm</option>
+			<option value="28">7 dBm</option>
+			<option value="20">5 dBm</option>
+			<option value="8">2 dBm</option>
+		</select><br>
+		<i class="warn">WARNING: Modifying TX power may render device unreachable.</i>
+		</div>
 
 		<h3>ESP-NOW Wireless</h3>
 		<div id="NoESPNOW" class="hide">
@@ -246,6 +263,7 @@ Static subnet mask:<br>
 				<option value="11">ESP32-POE-WROVER</option>
 				<option value="6">ESP32Deux/RGB2Go Tetra</option>
 				<option value="7">KIT-VE</option>
+				<option value="12">LILYGO T-POE Pro</option>
 				<option value="8">QuinLED-Dig-Octa & T-ETH-POE</option>
 				<option value="4">QuinLED-ESP32</option>
 				<option value="10">Serg74-ETH32</option>

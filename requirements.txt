@@ -28,7 +28,7 @@ h11==0.14.0
     # via
     #   uvicorn
     #   wsproto
-idna==3.4
+idna==3.7
     # via
     #   anyio
     #   requests
@@ -36,13 +36,13 @@ marshmallow==3.19.0
     # via platformio
 packaging==23.1
     # via marshmallow
-platformio==6.1.6
+platformio==6.1.14
     # via -r requirements.in
 pyelftools==0.29
     # via platformio
 pyserial==3.5
     # via platformio
-requests==2.31.0
+requests==2.32.0
     # via platformio
 semantic-version==2.10.0
     # via platformio
@@ -52,7 +52,9 @@ starlette==0.23.1
     # via platformio
 tabulate==0.9.0
     # via platformio
-urllib3==1.26.18
+typing-extensions==4.11.0
+    # via starlette
+urllib3==1.26.19
     # via requests
 uvicorn==0.20.0
     # via platformio

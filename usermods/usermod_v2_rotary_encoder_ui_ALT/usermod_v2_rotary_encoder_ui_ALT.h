@@ -392,31 +392,31 @@ byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
  * modes_alpha_indexes and palettes_alpha_indexes.
  */
 void RotaryEncoderUIUsermod::sortModesAndPalettes() {
-  DEBUG_PRINTLN(F("Sorting modes and palettes."));
+  DEBUG_PRINT(F("Sorting modes: ")); DEBUG_PRINTLN(strip.getModeCount());
   //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
   modes_qstrings = strip.getModeDataSrc();
   modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
   re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
-  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount()+strip.customPalettes.size());
-  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount()+strip.customPalettes.size());
+  DEBUG_PRINT(F("Sorting palettes: ")); DEBUG_PRINT(strip.getPaletteCount()); DEBUG_PRINT('/'); DEBUG_PRINTLN(strip.customPalettes.size());
+  palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
+  palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
   if (strip.customPalettes.size()) {
     for (int i=0; i<strip.customPalettes.size(); i++) {
-      palettes_alpha_indexes[strip.getPaletteCount()+i] = 255-i;
-      palettes_qstrings[strip.getPaletteCount()+i] = PSTR("~Custom~");
+      palettes_alpha_indexes[strip.getPaletteCount()-strip.customPalettes.size()+i] = 255-i;
+      palettes_qstrings[strip.getPaletteCount()-strip.customPalettes.size()+i] = PSTR("~Custom~");
     }
   }
-
   // How many palette names start with '*' and should not be sorted?
   // (Also skipping the first one, 'Default').
   int skipPaletteCount = 1;
-  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount++]) == '*') ;
-  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
+  while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount]) == '*') skipPaletteCount++;
+  re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount()-strip.customPalettes.size(), skipPaletteCount);
 }
 
 byte *RotaryEncoderUIUsermod::re_initIndexArray(int numModes) {
   byte *indexes = (byte *)malloc(sizeof(byte) * numModes);
-  for (byte i = 0; i < numModes; i++) {
+  for (unsigned i = 0; i < numModes; i++) {
     indexes[i] = i;
   }
   return indexes;
@@ -700,7 +700,7 @@ void RotaryEncoderUIUsermod::findCurrentEffectAndPalette() {
 
   effectPaletteIndex = 0;
   DEBUG_PRINTLN(effectPalette);
-  for (uint8_t i = 0; i < strip.getPaletteCount()+strip.customPalettes.size(); i++) {
+  for (unsigned i = 0; i < strip.getPaletteCount()+strip.customPalettes.size(); i++) {
     if (palettes_alpha_indexes[i] == effectPalette) {
       effectPaletteIndex = i;
       DEBUG_PRINTLN(F("Found palette."));
@@ -764,7 +764,7 @@ void RotaryEncoderUIUsermod::changeEffect(bool increase) {
   effectCurrent = modes_alpha_indexes[effectCurrentIndex];
   stateChanged = true;
   if (applyToAll) {
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive()) continue;
       seg.setMode(effectCurrent);
@@ -792,7 +792,7 @@ void RotaryEncoderUIUsermod::changeEffectSpeed(bool increase) {
   effectSpeed = max(min((increase ? effectSpeed+fadeAmount : effectSpeed-fadeAmount), 255), 0);
   stateChanged = true;
   if (applyToAll) {
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive()) continue;
       seg.speed = effectSpeed;
@@ -820,7 +820,7 @@ void RotaryEncoderUIUsermod::changeEffectIntensity(bool increase) {
   effectIntensity = max(min((increase ? effectIntensity+fadeAmount : effectIntensity-fadeAmount), 255), 0);
   stateChanged = true;
   if (applyToAll) {
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive()) continue;
       seg.intensity = effectIntensity;
@@ -855,7 +855,7 @@ void RotaryEncoderUIUsermod::changeCustom(uint8_t par, bool increase) {
       case 2:  val = sid.custom2 = max(min((increase ? sid.custom2+fadeAmount : sid.custom2-fadeAmount), 255), 0); break;
       default: val = sid.custom1 = max(min((increase ? sid.custom1+fadeAmount : sid.custom1-fadeAmount), 255), 0); break;
     }
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || i == id) continue;
       switch (par) {
@@ -894,7 +894,7 @@ void RotaryEncoderUIUsermod::changePalette(bool increase) {
   effectPalette = palettes_alpha_indexes[effectPaletteIndex];
   stateChanged = true;
   if (applyToAll) {
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive()) continue;
       seg.setPalette(effectPalette);
@@ -923,7 +923,7 @@ void RotaryEncoderUIUsermod::changeHue(bool increase){
   colorHStoRGB(currentHue1*256, currentSat1, col);
   stateChanged = true; 
   if (applyToAll) {
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive()) continue;
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
@@ -952,7 +952,7 @@ void RotaryEncoderUIUsermod::changeSat(bool increase){
   currentSat1 = max(min((increase ? currentSat1+fadeAmount : currentSat1-fadeAmount), 255), 0);
   colorHStoRGB(currentHue1*256, currentSat1, col);
   if (applyToAll) {
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive()) continue;
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
@@ -1012,7 +1012,7 @@ void RotaryEncoderUIUsermod::changeCCT(bool increase){
 #endif
   currentCCT = max(min((increase ? currentCCT+fadeAmount : currentCCT-fadeAmount), 255), 0);
 //    if (applyToAll) {
-    for (byte i=0; i<strip.getSegmentsNum(); i++) {
+    for (unsigned i=0; i<strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive()) continue;
       seg.setCCT(currentCCT);

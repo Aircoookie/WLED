@@ -4,6 +4,9 @@
  * Registers pins so there is no attempt for two interfaces to use the same pin
  */
 #include <Arduino.h>
+#ifdef ARDUINO_ARCH_ESP32
+#include "driver/ledc.h" // needed for analog/LEDC channel counts
+#endif
 #include "const.h" // for USERMOD_* values
 
 typedef struct PinManagerPinType {
@@ -47,7 +50,6 @@ enum struct PinOwner : uint8_t {
   UM_RotaryEncoderUI   = USERMOD_ID_ROTARY_ENC_UI,      // 0x08 // Usermod "usermod_v2_rotary_encoder_ui.h"
   // #define USERMOD_ID_AUTO_SAVE                       // 0x09 // Usermod "usermod_v2_auto_save.h" -- Does not allocate pins
   // #define USERMOD_ID_DHT                             // 0x0A // Usermod "usermod_dht.h" -- Statically allocates pins, not compatible with pinManager?
-  // #define USERMOD_ID_MODE_SORT                       // 0x0B // Usermod "usermod_v2_mode_sort.h" -- Does not allocate pins
   // #define USERMOD_ID_VL53L0X                         // 0x0C // Usermod "usermod_vl53l0x_gestures.h" -- Uses "standard" HW_I2C pins
   UM_MultiRelay        = USERMOD_ID_MULTI_RELAY,        // 0x0D // Usermod "usermod_multi_relay.h"
   UM_AnimatedStaircase = USERMOD_ID_ANIMATED_STAIRCASE, // 0x0E // Usermod "Animated_Staircase.h"
@@ -55,36 +57,38 @@ enum struct PinOwner : uint8_t {
   // #define USERMOD_ID_RTC                             // 0x0F // Usermod "usermod_rtc.h" -- Uses "standard" HW_I2C pins
   // #define USERMOD_ID_ELEKSTUBE_IPS                   // 0x10 // Usermod "usermod_elekstube_ips.h" -- Uses quite a few pins ... see Hardware.h and User_Setup.h
   // #define USERMOD_ID_SN_PHOTORESISTOR                // 0x11 // Usermod "usermod_sn_photoresistor.h" -- Uses hard-coded pin (PHOTORESISTOR_PIN == A0), but could be easily updated to use pinManager
-  UM_BH1750            = USERMOD_ID_BH1750,             // 0x14 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
+  UM_BH1750            = USERMOD_ID_BH1750,             // 0x14 // Usermod "bh1750.h -- Uses "standard" HW_I2C pins
   UM_RGBRotaryEncoder  = USERMOD_RGB_ROTARY_ENCODER,    // 0x16 // Usermod "rgb-rotary-encoder.h"
   UM_QuinLEDAnPenta    = USERMOD_ID_QUINLED_AN_PENTA,   // 0x17 // Usermod "quinled-an-penta.h"
   UM_BME280            = USERMOD_ID_BME280,             // 0x1E // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
   UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE,      // 0x20 // Usermod "audio_reactive.h"
   UM_SdCard            = USERMOD_ID_SD_CARD,            // 0x25 // Usermod "usermod_sd_card.h"
   UM_PWM_OUTPUTS       = USERMOD_ID_PWM_OUTPUTS,        // 0x26 // Usermod "usermod_pwm_outputs.h"
-  UM_LDR_DUSK_DAWN     = USERMOD_ID_LDR_DUSK_DAWN       // 0x2B // Usermod "usermod_LDR_Dusk_Dawn_v2.h"
+  UM_LDR_DUSK_DAWN     = USERMOD_ID_LDR_DUSK_DAWN,      // 0x2B // Usermod "usermod_LDR_Dusk_Dawn_v2.h"
+  UM_MAX17048          = USERMOD_ID_MAX17048,           // 0x2F // Usermod "usermod_max17048.h"
+  UM_BME68X            = USERMOD_ID_BME68X,             // 0x31 // Usermod "usermod_bme68x.h -- Uses "standard" HW_I2C pins
+  UM_PIXELS_DICE_TRAY  = USERMOD_ID_PIXELS_DICE_TRAY    // 0x35 // Usermod "pixels_dice_tray.h" -- Needs compile time specified 6 pins for display including SPI.
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
 class PinManagerClass {
   private:
-  #ifdef ESP8266
-  #define WLED_NUM_PINS 17
-  uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
-  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
-  #else
-  #define WLED_NUM_PINS 50
-  uint8_t pinAlloc[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 56bit, 1 bit per pin, we use 50 bits on ESP32-S3
-  uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None }; // new MCU's have up to 50 GPIO
-  #endif
-  struct {
-    uint8_t i2cAllocCount : 4; // allow multiple allocation of I2C bus pins but keep track of allocations
-    uint8_t spiAllocCount : 4; // allow multiple allocation of SPI bus pins but keep track of allocations
-  };
+    struct {
+    #ifdef ESP8266
+      #define WLED_NUM_PINS (GPIO_PIN_COUNT+1) // somehow they forgot GPIO 16 (0-16==17)
+      uint32_t pinAlloc     : 24; // 24bit, 1 bit per pin, we use first 17bits
+    #else
+      #define WLED_NUM_PINS (GPIO_PIN_COUNT)
+      uint64_t pinAlloc     : 56; // 56 bits, 1 bit per pin, we use 50 bits on ESP32-S3
+      uint16_t ledcAlloc    : 16; // up to 16 LEDC channels (WLED_MAX_ANALOG_CHANNELS)
+    #endif
+      uint8_t i2cAllocCount :  4; // allow multiple allocation of I2C bus pins but keep track of allocations
+      uint8_t spiAllocCount :  4; // allow multiple allocation of SPI bus pins but keep track of allocations
+    } __attribute__ ((packed));
+    PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
 
   public:
-  PinManagerClass() : i2cAllocCount(0), spiAllocCount(0) {}
+  PinManagerClass() : pinAlloc(0), i2cAllocCount(0), spiAllocCount(0) {}
   // De-allocates a single pin
   bool deallocatePin(byte gpio, PinOwner tag);
   // De-allocates multiple pins but only if all can be deallocated (PinOwner has to be specified)
@@ -99,21 +103,17 @@ class PinManagerClass {
   // ethernet, etc..
   bool allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );
 
-  #if !defined(ESP8266) // ESP8266 compiler doesn't understand deprecated attribute
   [[deprecated("Replaced by three-parameter allocatePin(gpio, output, ownerTag), for improved debugging")]]
-  #endif
   inline bool allocatePin(byte gpio, bool output = true) { return allocatePin(gpio, output, PinOwner::None); }
-  #if !defined(ESP8266) // ESP8266 compiler doesn't understand deprecated attribute
   [[deprecated("Replaced by two-parameter deallocatePin(gpio, ownerTag), for improved debugging")]]
-  #endif
   inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
 
   // will return true for reserved pins
-  bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None);
+  bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None) const;
   // will return false for reserved pins
-  bool isPinOk(byte gpio, bool output = true);
+  bool isPinOk(byte gpio, bool output = true) const;
 
-  PinOwner getPinOwner(byte gpio);
+  PinOwner getPinOwner(byte gpio) const;
 
   #ifdef ARDUINO_ARCH_ESP32
   byte allocateLedc(byte channels);

@@ -8,6 +8,8 @@
 #include "soc/rtc_cntl_reg.h"
 #endif
 
+extern "C" void usePWMFixedNMI();
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
@@ -175,19 +177,44 @@ void WLED::loop()
     DEBUG_PRINTLN(F("Re-init busses."));
     bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
     BusManager::removeAll();
-    uint32_t mem = 0, globalBufMem = 0;
-    uint16_t maxlen = 0;
-    for (uint8_t i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
+    unsigned mem = 0;
+    // determine if it is sensible to use parallel I2S outputs on ESP32 (i.e. more than 5 outputs = 1 I2S + 4 RMT)
+    bool useParallel = false;
+    #if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ARCH_ESP32S2) && !defined(ARDUINO_ARCH_ESP32S3) && !defined(ARDUINO_ARCH_ESP32C3)
+    unsigned digitalCount = 0;
+    unsigned maxLedsOnBus = 0;
+    unsigned maxChannels = 0;
+    for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
-      mem += BusManager::memUsage(*busConfigs[i]);
-      if (useGlobalLedBuffer && busConfigs[i]->start + busConfigs[i]->count > maxlen) {
-          maxlen = busConfigs[i]->start + busConfigs[i]->count;
-          globalBufMem = maxlen * 4;
+      if (!Bus::isDigital(busConfigs[i]->type)) continue;
+      if (!Bus::is2Pin(busConfigs[i]->type)) {
+        digitalCount++;
+        unsigned channels = Bus::getNumberOfChannels(busConfigs[i]->type);
+        if (busConfigs[i]->count > maxLedsOnBus) maxLedsOnBus = busConfigs[i]->count;
+        if (channels > maxChannels) maxChannels  = channels;
       }
-      if (mem + globalBufMem <= MAX_LED_MEMORY) {
-        BusManager::add(*busConfigs[i]);
-      }
-      delete busConfigs[i]; busConfigs[i] = nullptr;
+    }
+    DEBUG_PRINTF_P(PSTR("Maximum LEDs on a bus: %u\nDigital buses: %u\n"), maxLedsOnBus, digitalCount);
+    // we may remove 300 LEDs per bus limit when NeoPixelBus is updated beyond 2.9.0
+    if (maxLedsOnBus <= 300 && digitalCount > 5) {
+      DEBUG_PRINTF_P(PSTR("Switching to parallel I2S."));
+      useParallel = true;
+      BusManager::useParallelOutput();
+      mem = BusManager::memUsage(maxChannels, maxLedsOnBus, 8); // use alternate memory calculation (hse to be used *after* useParallelOutput())
+    }
+    #endif
+    // create buses/outputs
+    for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
+      if (busConfigs[i] == nullptr || (!useParallel && i > 10)) break;
+      if (useParallel && i < 8) {
+        // if for some unexplained reason the above pre-calculation was wrong, update
+        unsigned memT = BusManager::memUsage(*busConfigs[i]); // includes x8 memory allocation for parallel I2S
+        if (memT > mem) mem = memT; // if we have unequal LED count use the largest
+      } else
+        mem += BusManager::memUsage(*busConfigs[i]); // includes global buffer
+      if (mem <= MAX_LED_MEMORY) BusManager::add(*busConfigs[i]);
+      delete busConfigs[i];
+      busConfigs[i] = nullptr;
     }
     strip.finalizeInit(); // also loads default ledmap if present
     if (aligned) strip.makeAutoSegments();
@@ -240,13 +267,14 @@ void WLED::loop()
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
-    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
+    #if defined(ARDUINO_ARCH_ESP32)
     if (psramFound()) {
-      DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
-      DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINTF_P(PSTR("PSRAM: %dkB/%dkB\n"), ESP.getFreePsram()/1024, ESP.getPsramSize()/1024);
+      if (!psramSafe) DEBUG_PRINTLN(F("Not using PSRAM."));
     }
+    DEBUG_PRINTF_P(PSTR("TX power: %d/%d\n"), WiFi.getTxPower(), txPower);
     #endif
-    DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
+    DEBUG_PRINTF_P(PSTR("Wifi state: %d\n"), WiFi.status());
     #ifndef WLED_DISABLE_ESPNOW
     DEBUG_PRINT(F("ESP-NOW state: "));   DEBUG_PRINTLN(statusESPNow);
     #endif
@@ -269,6 +297,7 @@ void WLED::loop()
     maxLoopMillis = 0;
     maxUsermodMillis = 0;
     maxStripMillis = 0;
+    avgLoopMillis = 0;
     avgUsermodMillis = 0;
     avgStripMillis = 0;
     debugTime = millis();
@@ -314,6 +343,9 @@ void WLED::setup()
   #ifdef ARDUINO_ARCH_ESP32
   pinMode(hardwareRX, INPUT_PULLDOWN); delay(1);        // suppress noise in case RX pin is floating (at low noise energy) - see issue #3128
   #endif
+  #ifdef WLED_BOOTUPDELAY
+  delay(WLED_BOOTUPDELAY); // delay to let voltage stabilize, helps with boot issues on some setups
+  #endif
   Serial.begin(115200);
   #if !ARDUINO_USB_CDC_ON_BOOT
   Serial.setTimeout(50);  // this causes troubles on new MCUs that have a "virtual" USB Serial (HWCDC)
@@ -328,7 +360,7 @@ void WLED::setup()
   DEBUG_PRINTLN();
   DEBUG_PRINT(F("---WLED "));
   DEBUG_PRINT(versionString);
-  DEBUG_PRINT(" ");
+  DEBUG_PRINT(F(" "));
   DEBUG_PRINT(VERSION);
   DEBUG_PRINTLN(F(" INIT---"));
 #ifdef ARDUINO_ARCH_ESP32
@@ -360,56 +392,30 @@ void WLED::setup()
   DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
 
 #else
-  DEBUG_PRINT(F("esp8266 "));
+  DEBUG_PRINT(F("esp8266 @ ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINT(F("MHz.\nCore: "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
+  DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipSize()/1024)/1024); DEBUG_PRINTLN(F(" MB"));
 #endif
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
-#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)
-/*
- * The following code is obsolete as PinManager::isPinOK() will return false for reserved GPIO.
- * Additionally xml.cpp will inform UI about reserved GPIO.
- *
-
-  #if defined(CONFIG_IDF_TARGET_ESP32S3)
-  // S3: reserve GPIO 33-37 for "octal" PSRAM
-  managed_pin_type pins[] = { {33, true}, {34, true}, {35, true}, {36, true}, {37, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S2)
-  // S2: reserve GPIO 26-32 for PSRAM (may fail due to isPinOk() but that will also prevent other allocation)
-  managed_pin_type pins[] = { {26, true}, {27, true}, {28, true}, {29, true}, {30, true}, {31, true}, {32, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  // C3: reserve GPIO 12-17 for PSRAM (may fail due to isPinOk() but that will also prevent other allocation)
-  managed_pin_type pins[] = { {12, true}, {13, true}, {14, true}, {15, true}, {16, true}, {17, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
-  #else
-  // GPIO16/GPIO17 reserved for SPI RAM
-  managed_pin_type pins[] = { {16, true}, {17, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
+#if defined(ARDUINO_ARCH_ESP32)
+  // BOARD_HAS_PSRAM also means that a compiler flag "-mfix-esp32-psram-cache-issue" was used and so PSRAM is safe to use on rev.1 ESP32
+  #if !defined(BOARD_HAS_PSRAM) && !(defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3))
+  if (psramFound() && ESP.getChipRevision() < 3) psramSafe = false;
+  if (!psramSafe) DEBUG_PRINTLN(F("Not using PSRAM."));
   #endif
-*/
-  #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-  pDoc = new PSRAMDynamicJsonDocument(2*JSON_BUFFER_SIZE);
-  if (!pDoc) pDoc = new PSRAMDynamicJsonDocument(JSON_BUFFER_SIZE); // falback if double sized buffer could not be allocated
-  // if the above still fails requestJsonBufferLock() will always return false preventing crashes
+  pDoc = new PSRAMDynamicJsonDocument((psramSafe && psramFound() ? 2 : 1)*JSON_BUFFER_SIZE);
+  DEBUG_PRINT(F("JSON buffer allocated: ")); DEBUG_PRINTLN((psramSafe && psramFound() ? 2 : 1)*JSON_BUFFER_SIZE);
+  // if the above fails requestJsonBufferLock() will always return false preventing crashes
   if (psramFound()) {
-    DEBUG_PRINT(F("Total PSRAM: ")); DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
-    DEBUG_PRINT(F("Free PSRAM : ")); DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+    DEBUG_PRINTF_P(PSTR("PSRAM: %dkB/%dkB\n"), ESP.getFreePsram()/1024, ESP.getPsramSize()/1024);
   }
-  #else
-    if (!pDoc) pDoc = &gDoc; // just in case ... (it should be globally assigned)
-    DEBUG_PRINTLN(F("PSRAM not used."));
-  #endif
-#endif
-#if defined(ARDUINO_ESP32_PICO)
-  // special handling for PICO-D4: gpio16+17 are in use for onboard SPI FLASH (not PSRAM)
-  managed_pin_type pins[] = { {16, true}, {17, true} };
-  pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), PinOwner::SPI_RAM);
+  DEBUG_PRINTF_P(PSTR("TX power: %d/%d\n"), WiFi.getTxPower(), txPower);
 #endif
 
-  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
-  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+#ifdef ESP8266
+  usePWMFixedNMI(); // link the NMI fix
+#endif
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
   pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
@@ -422,8 +428,6 @@ void WLED::setup()
   registerUsermods();
 
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
-
-  for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));
@@ -453,6 +457,7 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
 #if defined(STATUSLED) && STATUSLED>=0
   if (!pinManager.isPinAllocated(STATUSLED)) {
@@ -534,6 +539,13 @@ void WLED::setup()
   initServer();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
+#ifndef WLED_DISABLE_INFRARED
+  // init IR
+  DEBUG_PRINTLN(F("initIR"));
+  initIR();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+#endif
+
   // Seed FastLED random functions with an esp random value, which already works properly at this point.
 #if defined(ARDUINO_ARCH_ESP32)
   const uint32_t seed32 = esp_random();
@@ -556,7 +568,7 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  strip.finalizeInit(); // busses created during deserializeConfig()
+  strip.finalizeInit(); // busses created during deserializeConfig() if config existed
   strip.makeAutoSegments();
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
@@ -580,11 +592,13 @@ void WLED::beginStrip()
   if (bootPreset > 0) {
     applyPreset(bootPreset, CALL_MODE_INIT);
   }
-  colorUpdated(CALL_MODE_INIT);
+  colorUpdated(CALL_MODE_INIT); // will not send notification
 
   // init relay pin
-  if (rlyPin>=0)
+  if (rlyPin >= 0) {
+    pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
     digitalWrite(rlyPin, (rlyMde ? bri : !bri));
+  }
 }
 
 void WLED::initAP(bool resetAP)
@@ -600,8 +614,8 @@ void WLED::initAP(bool resetAP)
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  #ifdef ARDUINO_ARCH_ESP32
+  WiFi.setTxPower(wifi_power_t(txPower));
   #endif
 
   if (!apActive) // start captive portal if AP active
@@ -824,9 +838,7 @@ void WLED::initConnection()
     WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass); // no harm if called multiple times
 
 #ifdef ARDUINO_ARCH_ESP32
-  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32S3))
-    WiFi.setTxPower(WIFI_POWER_8_5dBm);
-  #endif
+    WiFi.setTxPower(wifi_power_t(txPower));
     WiFi.setSleep(!noWifiSleep);
     WiFi.setHostname(hostname);
 #else
