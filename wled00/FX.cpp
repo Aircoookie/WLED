@@ -94,60 +94,62 @@ uint16_t mode_static(void) {
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 
+
 /*
- * Copy selected segment 
+ * Copy selected segment and perform (optional) color adjustments
  */
+// TODO: what is the correct place to put getRenderedPixelXY()?
+static CRGB getRenderedPixelXY(Segment& seg, unsigned x, unsigned y = 0) {
+  // We read pixels back following mirror/reverse/transpose but ignoring grouping
+  // For every group-length pixels, add spacing
+  x *= seg.groupLength(); // expand to physical pixels
+  y *= seg.groupLength(); // expand to physical pixels
+  if (x >= seg.width() || y >= seg.height()) return 0;  // fill out of range pixels with black
+  uint32_t offset = seg.is2D() ? 0 : seg.offset; // dirty fix, offset in 2D segments should be zero but is not
+  return strip.getPixelColorXY(seg.start + offset + x, seg.startY + y);
+}
+
 uint16_t mode_copy_segment(void) {
   uint32_t sourceid = SEGMENT.custom3;
-  SEGMENT.fadeToBlackBy(16); // fades out unused pixels, still allows overlay (also fades out if invalid ID is set)
-  if (sourceid >= strip._segments.size() || sourceid == strip.getCurrSegmentId()) return FRAMETIME; // invalid source
-  CRGB sourcecolor;
-  //copy source segment settings (reverse can be set independently)
-  SEGMENT.mirror = strip._segments[sourceid].mirror;
-  SEGMENT.grouping = strip._segments[sourceid].grouping;
-  SEGMENT.spacing = strip._segments[sourceid].spacing;
-  if (strip._segments[sourceid].isActive()) {
-    // note: copying 1D to 2D as well as 2D to 1D is not supported
-    if(SEGMENT.is2D() && strip._segments[sourceid].is2D()) { // 2D setup
-      //copy 2D segment settings 
-      SEGMENT.mirror_y = strip._segments[sourceid].mirror_y;
-      SEGMENT.transpose = strip._segments[sourceid].transpose;
-      uint32_t cx, cy; // sizes to copy
-      cx = std::min(strip._segments[sourceid].virtualWidth(), SEGMENT.virtualWidth()); // get smaller width
-      cy = std::min(strip._segments[sourceid].virtualHeight(), SEGMENT.virtualHeight()); // get smaller height
-      for (unsigned x = 0; x < cx; x++) {
-        for (unsigned y = 0; y < cy; y++) {
-          sourcecolor = strip._segments[sourceid].getPixelColorXY(x, y);   
-          if(SEGMENT.custom2 > 0) // color shifting enabled
-          {
-            CHSV pxHSV = rgb2hsv(sourcecolor); //convert to HSV
-            pxHSV.h += SEGMENT.custom2; // shift hue
-            hsv2rgb_spectrum(pxHSV, sourcecolor); // convert back to RGB             
-          }
-          SEGMENT.setPixelColorXY(x, y, sourcecolor);          
-        }
-      }
-    }
-    else if(!SEGMENT.is2D() && !strip._segments[sourceid].is2D()) { // 1D strip
+  if (sourceid >= strip._segments.size() || sourceid == strip.getCurrSegmentId()) { // invalid source
+    SEGMENT.fadeToBlackBy(15); // fade out, clears pixels and allows overlapping segments
+    return FRAMETIME; 
+  }
+  uint32_t spacing, grouping; 
+  if(SEGMENT.check2) { // copy source segment spacing & grouping (preliminary for testing, may remove again)
+    spacing = SEGMENT.spacing;
+    grouping = SEGMENT.grouping;  
+    SEGMENT.spacing = strip._segments[sourceid].spacing;
+    SEGMENT.grouping = strip._segments[sourceid].grouping;
+  }  
+  if (strip._segments[sourceid].isActive()) {    
+    if(!strip._segments[sourceid].is2D() || !SEGMENT.is2D()) { // 1D source or 1D target; source can be expanded into 2D
       uint32_t cl; // length to copy
-      cl = std::min(strip._segments[sourceid].virtualLength(), SEGMENT.virtualLength()); // get smaller length
-      for (unsigned i = 0; i < cl; i++) {              
-        sourcecolor = strip._segments[sourceid].getPixelColor(i);          
-        if(SEGMENT.custom2 > 0) // color shifting enabled
-        {
-          CHSV pxHSV = rgb2hsv(sourcecolor); //convert to HSV
-          pxHSV.h += SEGMENT.custom2; // shift hue
-          sourcecolor = (CRGB)pxHSV; // convert back to RGB
-        }        
-        SEGMENT.setPixelColor(i,  sourcecolor);
-       // SEGMENT.setPixelColor(i, strip._segments[sourceid].getPixelColor(i)); //use this for no colorshift option
+      for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {              
+        CRGB sourcecolor = getRenderedPixelXY(strip._segments[sourceid], i);
+        adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2); // color adjustment      
+        SEGMENT.setPixelColor(i, sourcecolor);
+      }
+    } else { // 2D source, note: 2D to 1D just copies the first row (y=0, x=0 to x=source.width)
+      for (unsigned y = 0; y <  SEGMENT.virtualHeight(); y++) {
+        for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {     
+          CRGB sourcecolor = getRenderedPixelXY(strip._segments[sourceid], x, y);
+          adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2); // color adjustment
+          SEGMENT.setPixelColorXY(x, y, sourcecolor);
+        }     
       }
     }
   }
+  //restore settings -> if settings change during rendiring, this will reset them... not ideal but cannot be avoided
+  if(SEGMENT.check2) {
+    SEGMENT.spacing = spacing;
+    SEGMENT.grouping = grouping;    
+  }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,,,Color shift,ID;;;12;c2=0,c3=0";
+static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,Color shift,Lighten,Brighten,ID,,Copy Grouping & Spacing;;;12;ix=0,c1=0,c2=0,c3=0,o2=0";
   
+
 /*
  * Blink/strobe function
  * Alternate between color1 and color2

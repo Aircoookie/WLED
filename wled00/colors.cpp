@@ -88,6 +88,21 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
   return scaledcolor;
 }
 
+/* 
+ * color adjustment in HSV color space (converts RGB to HSV and back), color conversions are not 100% accurate!
+   shifts hue, increase brightness, decreases saturation (if not black)
+   note: inputs are 32bit to speed up the function, useful input value ranges are 0-255
+ */
+void adjust_color(CRGB& sourcecolor, uint32_t hueShift, int32_t lighten, uint32_t brighten) {
+    if(hueShift + lighten + brighten == 0) return; // no change   
+    CHSV pxHSV = rgb2hsv(sourcecolor); //convert to HSV
+    if(pxHSV.v == 0) return; // do not change black pixels
+    pxHSV.h += hueShift; // shift hue
+    pxHSV.s =  max((int32_t)0, (int32_t)pxHSV.s - lighten); // desaturate
+    pxHSV.v =  min((uint32_t)255, (uint32_t)pxHSV.v + brighten); // increase brightness    
+    hsv2rgb_spectrum(pxHSV, sourcecolor); // convert back to RGB 
+}
+
 void setRandomColor(byte* rgb)
 {
   lastRandomIndex = get_random_wheel_index(lastRandomIndex);
