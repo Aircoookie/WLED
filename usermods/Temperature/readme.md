@@ -43,10 +43,8 @@ default_envs = d1_mini
 ...
 lib_deps =
   ...
-  #For Dallas sensor uncomment following line
-  OneWire@~2.3.7
-  # ... or you may want to use following with ESP32
-;  https://github.com/blazoncek/OneWire.git # fixes Sensor error on ESP32...
+  #For Dallas sensor uncomment following
+    paulstoffregen/OneWire @ ~2.3.8
 ```
 
 ## Change Log
@@ -63,3 +61,7 @@ lib_deps =
 2023-05
 * Rewrite to conform to newer recommendations.
 * Recommended @blazoncek fork of OneWire for ESP32 to avoid Sensor error
+
+2024-09
+* Update OneWire to version 2.3.8, which includes stickbreaker's and garyd9's ESP32 fixes:
+  blazoncek's fork is no longer needed
