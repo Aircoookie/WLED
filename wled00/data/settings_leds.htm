@@ -26,6 +26,7 @@
 		function isD2P(t)  { return gT(t).t === "2P"; }             // is digital 2 pin type
 		function isNet(t)  { return gT(t).t === "N"; }              // is network type
 		function isVir(t)  { return gT(t).t === "V" || isNet(t); }  // is virtual type
+		function isHub75(t){ return gT(t).t === "H"; }              // is HUB75 type
 		function hasRGB(t) { return !!(gT(t).c & 0x01); }           // has RGB
 		function hasW(t)   { return !!(gT(t).c & 0x02); }           // has white channel
 		function hasCCT(t) { return !!(gT(t).c & 0x04); }           // is white CCT enabled
@@ -246,6 +247,9 @@
 					case 'V': // virtual/non-GPIO based
 						p0d = "Config:"
 						break;
+					case 'H': // HUB75
+						p0d = "Chin Length:"
+						break;
 				}
 				gId("p0d"+n).innerText = p0d;
 				gId("p1d"+n).innerText = p1d;
@@ -283,9 +287,9 @@
 				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none";   // show swap channels dropdown
 				gId("dig"+n+"w").querySelector("[data-opt=CCT]").disabled = !hasCCT(t);     // disable WW/CW swapping	
 				if (!(isDig(t) && hasW(t))) d.Sf["WO"+n].value = 0;                         // reset swapping
-				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";              // hide count for analog
-				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";              // hide reversed for virtual
-				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
+				gId("dig"+n+"c").style.display = (isAna(t) || isHub75(t)) ? "none":"inline";              // hide count for analog
+				gId("dig"+n+"r").style.display = (isVir(t) || isHub75(t)) ? "none":"inline";              // hide reversed for virtual
+				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t) || isHub75(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
 				gId("dig"+n+"f").style.display = (isDig(t) || (isPWM(t) && maxL>2048)) ? "inline":"none"; // hide refresh (PWM hijacks reffresh for dithering on ESP32)
 				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";               // auto calculate white
 				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
