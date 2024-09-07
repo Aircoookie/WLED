@@ -56,8 +56,10 @@ lib_deps =
 * Do not report erroneous low temperatures to MQTT
 * Disable plugin if temperature sensor not detected
 * Report the number of seconds until the first read in the info screen instead of sensor error
+
 2021-04
 * Adaptation for runtime configuration.
+
 2023-05
 * Rewrite to conform to newer recommendations.
 * Recommended @blazoncek fork of OneWire for ESP32 to avoid Sensor error
