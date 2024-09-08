@@ -30,6 +30,7 @@
 		function hasW(t)   { return !!(gT(t).c & 0x02); }           // has white channel
 		function hasCCT(t) { return !!(gT(t).c & 0x04); }           // is white CCT enabled
 		function is16b(t)  { return !!(gT(t).c & 0x10); }           // is digital 16 bit type
+		function numPins(t){ return Math.max(gT(t).t.length, 1); }  // type length determines number of GPIO pins
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -83,7 +84,7 @@
 				let t = parseInt(d.Sf["LT"+n].value, 10); // LED type SELECT
 				// ignore IP address
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-					if (t>=80) return;
+					if (isNet(t)) return;
 				}
 				//check for pin conflicts
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4")
@@ -237,7 +238,7 @@
 						p0d = "Data "+p0d;
 						break;
 					case 'A': // PWM analog
-						if (gT(t).t.length > 1) p0d = "GPIOs:";
+						if (numPins(t) > 1) p0d = "GPIOs:";
 						off = "Dithering";
 						break;
 					case 'N': // network
@@ -412,7 +413,7 @@
 				let t = s.value;
 				if (isDig(t) && !isD2P(t)) digitalB++;
 				if (isD2P(t)) twopinB++;
-				if (isPWM(t)) analogB += t-40; // type defines PWM pins
+				if (isPWM(t)) analogB += numPins(t); // each GPIO is assigned to a channel
 				if (isVir(t)) virtB++;
 			});
 
