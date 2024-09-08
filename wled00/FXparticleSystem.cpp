@@ -67,7 +67,7 @@ ParticleSystem::ParticleSystem(uint16_t width, uint16_t height, uint16_t numbero
   for (uint32_t i = 0; i < numSources; i++)
   {
     sources[i].source.sat = 255; //set saturation to max by default
-    sources[i].source.ttl = 255; //set source alive
+    sources[i].source.ttl = 1; //set source alive
   }
   for (uint32_t i = 0; i < numParticles; i++)
   {
@@ -263,7 +263,8 @@ void ParticleSystem::flameEmit(PSsource &emitter)
       emitIndex = 0;
     if (particles[emitIndex].ttl == 0) // find a dead particle
     { 
-      particles[emitIndex].x = emitter.source.x + random16(PS_P_RADIUS<<1) - PS_P_RADIUS; // jitter the flame by one pixel to make the flames wider at the base
+      //particles[emitIndex].x = emitter.source.x + random16(PS_P_RADIUS<<1) - PS_P_RADIUS; // jitter the flame by one pixel to make the flames wider at the base
+      particles[emitIndex].x = emitter.source.x;
       particles[emitIndex].y = emitter.source.y;
       particles[emitIndex].vx = emitter.vx + random16(emitter.var) - (emitter.var >> 1); // random16 is good enough for fire and much faster
       particles[emitIndex].vy = emitter.vy + random16(emitter.var) - (emitter.var >> 1);
@@ -771,19 +772,13 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
     // generate RGB values for particle
     if (firemode)
     {
-      //TODO: decide on a final version...
-      //brightness = (uint32_t)particles[i].ttl * (1 + (fireintensity >> 4)) + (fireintensity >> 2); //this is good
-      //brightness = (uint32_t)particles[i].ttl * (fireintensity >> 3) + (fireintensity >> 1); // this is experimental, also works, flamecolor is more even, does not look as good (but less puffy at lower speeds)
-      //brightness = (((uint32_t)particles[i].ttl * (maxY + PS_P_RADIUS - particles[i].y)) >> 7) + (uint32_t)particles[i].ttl * (fireintensity >> 4) + (fireintensity >> 1); // this is experimental //multiplikation mit weniger als >>4 macht noch mehr puffs bei low speed
-      //brightness = (((uint32_t)particles[i].ttl * (maxY + PS_P_RADIUS - particles[i].y)) >> 7) + particles[i].ttl + (fireintensity>>1); // this is experimental
-      //brightness = (((uint32_t)particles[i].ttl * (maxY + PS_P_RADIUS - particles[i].y)) >> 7) + ((particles[i].ttl * fireintensity) >> 5); // this is experimental TODO: test this -> testing... ok but not the best, bit sparky
-      brightness = (((uint32_t)particles[i].ttl * (maxY + PS_P_RADIUS - particles[i].y)) >> 7) + (fireintensity >> 1); // this is experimental TODO: test this -> testing... does not look too bad!
+      brightness = (uint32_t)particles[i].ttl*(3 + (fireintensity >> 5)) + 20; 
       brightness = brightness > 255 ? 255 : brightness; // faster then using min()
-      baseRGB = ColorFromPalette(SEGPALETTE, brightness, 255, LINEARBLEND);
+      baseRGB = ColorFromPalette(SEGPALETTE, brightness, 255);
     }
     else{
       brightness = particles[i].ttl > 255 ? 255 : particles[i].ttl; //faster then using min()
-      baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255, LINEARBLEND);
+      baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255);
       if (particles[i].sat < 255) 
       {
         CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to HSV

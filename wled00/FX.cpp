@@ -8218,7 +8218,7 @@ uint16_t mode_particlefire(void)
 
   if (SEGMENT.call == 0) // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
   {
-    if (!initParticleSystem2D(PartSys, 25, 4)) //maximum number of source (PS will determine the exact number based on segment size) and need 4 additional bytes for time keeping (uint32_t lastcall)
+    if (!initParticleSystem2D(PartSys, SEGMENT.virtualWidth(), 4)) //maximum number of source (PS may limit based on segment size); need 4 additional bytes for time keeping (uint32_t lastcall)
       return mode_static(); // allocation failed; //allocation failed
     SEGENV.aux0 = random16(); // aux0 is wind position (index) in the perlin noise
     numFlames = PartSys->numSources; 
@@ -8232,7 +8232,7 @@ uint16_t mode_particlefire(void)
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setWrapX(SEGMENT.check2);
-  PartSys->setMotionBlur(SEGMENT.check1 * 120); // anable/disable motion blur
+  PartSys->setMotionBlur(SEGMENT.check1 * 180); // anable/disable motion blur
 
   uint32_t firespeed = max((uint8_t)100, SEGMENT.speed); //limit speed to 100 minimum, reduce frame rate to make it slower (slower speeds than 100 do not look nice)  
   if (SEGMENT.speed < 100) //slow, limit FPS
@@ -8250,8 +8250,8 @@ uint16_t mode_particlefire(void)
   }
 
   uint32_t spread = (PartSys->maxX >> 5) * (SEGMENT.custom3 + 1); //fire around segment center (in subpixel points)
-  numFlames = min((uint32_t)PartSys->numSources, (2 + ((spread / PS_P_RADIUS) << 1))); // number of flames used depends on spread with, good value is (fire width in pixel) * 2
-  uint32_t percycle = numFlames*2/3;// / 2; // maximum number of particles emitted per cycle (TODO: for ESP826 maybe use flames/2)
+  numFlames = min((uint32_t)PartSys->numSources, (4 + ((spread / PS_P_RADIUS) << 1))); // number of flames used depends on spread with, good value is (fire width in pixel) * 2
+  uint32_t percycle = (numFlames * 2) / 3;// / 2; // maximum number of particles emitted per cycle (TODO: for ESP826 maybe use flames/2) 
   // percycle = map(SEGMENT.intensity,0,255, 2, (numFlames*3) / 2); //TODO: does this give better flames or worse?
 
   // update the flame sprays:
@@ -8261,28 +8261,23 @@ uint16_t mode_particlefire(void)
     {
       PartSys->sources[i].source.ttl--;
     }
-    else // flame source is dead
+    else // flame source is dead: initialize new flame: set properties of source
     {
-      // initialize new flame: set properties of source
-      if (random16(20) == 0 || SEGMENT.call == 0) // from time to time, change flame position 
-      {
-         PartSys->sources[i].source.x = (PartSys->maxX >> 1) - (spread>>1) + random(spread); // distribute randomly on chosen width
-      }
-        PartSys->sources[i].source.y = -PS_P_RADIUS; // set the source below the frame 
-        PartSys->sources[i].source.ttl = 5 + random16((SEGMENT.custom1 * SEGMENT.custom1) >> 7) / (2 + (firespeed >> 4)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed -> new, this works!        
-        PartSys->sources[i].maxLife = random16(7) + 13; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
-        PartSys->sources[i].minLife = 4;
-        PartSys->sources[i].vx = (int8_t)random(-3, 3); // emitting speed (sideways)
-        PartSys->sources[i].vy = 5 + (firespeed >> 2);  // emitting speed (upwards) -> this is good
-        PartSys->sources[i].var = (random16(1 + (firespeed >> 5)) + 2); // speed variation around vx,vy (+/- var)
+        PartSys->sources[i].source.x = (PartSys->maxX >> 1) - (spread>>1) + random(spread); // change flame position: distribute randomly on chosen width     
+        PartSys->sources[i].source.y = -(PS_P_RADIUS<<1); // set the source below the frame 
+        PartSys->sources[i].source.ttl = 16 + random((SEGMENT.custom1 * SEGMENT.custom1) >> 7) / (1 + (firespeed >> 5)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed      
+        PartSys->sources[i].maxLife = random(SEGMENT.virtualHeight() / 2) + 16; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
+        PartSys->sources[i].minLife = PartSys->sources[i].maxLife >> 1;
+        PartSys->sources[i].vx = random16(4) - 2; // emitting speed (sideways)
+        PartSys->sources[i].vy = (SEGMENT.virtualHeight() >> 1) + (firespeed >> 4) + (SEGMENT.custom1>>4);  // emitting speed (upwards) 
+        PartSys->sources[i].var = 2 + random16(2 + (firespeed >> 4)); // speed variation around vx,vy (+/- var)
     }
-    
   }
  
-  if (SEGMENT.call & 0x01) // update noise position every second frames, also add wind
+  if (SEGMENT.call % 3 == 0) // update noise position and add wind
   {
     SEGENV.aux0++; // position in the perlin noise matrix for wind generation
-    if (SEGMENT.call & 0x02) // every third frame
+    if (SEGMENT.call % 10 == 0) 
       SEGENV.aux1++; // move in noise y direction so noise does not repeat as often
     // add wind force to all particles
     int8_t windspeed = ((int16_t)(inoise8(SEGENV.aux0, SEGENV.aux1) - 127) * SEGMENT.custom2) >> 7;
@@ -8317,7 +8312,7 @@ uint16_t mode_particlefire(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Base Heat,Wind,Spread,Smooth,Cylinder,Turbulence;;!;2;pal=35,sx=110,c1=110,c2=50,c3=31,o1=1";
+static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Flame Height,Wind,Spread,Smooth,Cylinder,Turbulence;;!;2;pal=35,sx=110,c1=110,c2=50,c3=31,o1=1";
 
 /*
 PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
