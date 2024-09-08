@@ -809,28 +809,16 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   // mxconfig.driver   = HUB75_I2S_CFG::SHIFTREG;
   mxconfig.clkphase = bc.reversed;
 
+//  HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN};
+
 #if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3) // MatrixPortal ESP32-S3
 
   // https://www.adafruit.com/product/5778
 
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
 
-  mxconfig.gpio.r1 = 42;
-  mxconfig.gpio.g1 = 41;
-  mxconfig.gpio.b1 = 40;
-  mxconfig.gpio.r2 = 38;
-  mxconfig.gpio.g2 = 39;
-  mxconfig.gpio.b2 = 37; 
+  HUB75_I2S_CFG::i2s_pins _pins={ 42, 41, 40, 38, 39, 37,  45, 36, 48, 35, 21, 47, 14, 2 }; 
 
-  mxconfig.gpio.lat = 47;
-  mxconfig.gpio.oe  = 14;
-  mxconfig.gpio.clk = 2;
-
-  mxconfig.gpio.a = 45;
-  mxconfig.gpio.b = 36;
-  mxconfig.gpio.c = 48;
-  mxconfig.gpio.d = 35;
-  mxconfig.gpio.e = 21;
 
 #elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
 
@@ -844,22 +832,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
     Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
 */
 
-  mxconfig.gpio.r1 = 2;
-  mxconfig.gpio.g1 = 15;
-  mxconfig.gpio.b1 = 4;
-  mxconfig.gpio.r2 = 16;
-  mxconfig.gpio.g2 = 27;
-  mxconfig.gpio.b2 = 17; 
-
-  mxconfig.gpio.lat = 26;
-  mxconfig.gpio.oe  = 25;
-  mxconfig.gpio.clk = 22;
-
-  mxconfig.gpio.a = 5;
-  mxconfig.gpio.b = 18;
-  mxconfig.gpio.c = 19;
-  mxconfig.gpio.d = 21;
-  mxconfig.gpio.e = 12;
+ HUB75_I2S_CFG::i2s_pins _pins={ 2, 15, 4, 16, 27, 17, 5, 18, 19, 21, 12, 26, 25, 22 }; 
 
 #else
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Default pins");
@@ -872,25 +845,11 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
    https://www.electrodragon.com/product/rgb-matrix-panel-drive-interface-board-for-esp32-dma/
    
   */
-  mxconfig.gpio.r1 = 25;
-  mxconfig.gpio.g1 = 26;
-  mxconfig.gpio.b1 = 27;
-  mxconfig.gpio.r2 = 14;
-  mxconfig.gpio.g2 = 12;
-  mxconfig.gpio.b2 = 13;
-
-  mxconfig.gpio.lat = 4;
-  mxconfig.gpio.oe  = 15;
-  mxconfig.gpio.clk = 16;
-
-  mxconfig.gpio.a = 23;
-  mxconfig.gpio.b = 19;
-  mxconfig.gpio.c = 5;
-  mxconfig.gpio.d = 17;
-  mxconfig.gpio.e = 18;
+ HUB75_I2S_CFG::i2s_pins _pins={ 25, 26, 27, 14, 12, 13, 23, 9, 5, 17, 18, 4, 15, 16 }; 
 
 #endif
 
+  mxconfig.gpio = _pins;
 
   DEBUG_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
 
@@ -899,6 +858,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   this->_len = (display->width() * display->height());
 
+  // TODO: try and swap _pins to a array so we can use allocateMultiplePins
   pinManager.allocatePin(mxconfig.gpio.r1, true, PinOwner::HUB75);
   pinManager.allocatePin(mxconfig.gpio.g1, true, PinOwner::HUB75);
   pinManager.allocatePin(mxconfig.gpio.b1, true, PinOwner::HUB75);
