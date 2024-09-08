@@ -93,14 +93,17 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
    shifts hue, increase brightness, decreases saturation (if not black)
    note: inputs are 32bit to speed up the function, useful input value ranges are 0-255
  */
-void adjust_color(CRGB& sourcecolor, uint32_t hueShift, int32_t lighten, uint32_t brighten) {
-    if(hueShift + lighten + brighten == 0) return; // no change   
-    CHSV pxHSV = rgb2hsv(sourcecolor); //convert to HSV
-    if(pxHSV.v == 0) return; // do not change black pixels
-    pxHSV.h += hueShift; // shift hue
-    pxHSV.s =  max((int32_t)0, (int32_t)pxHSV.s - lighten); // desaturate
-    pxHSV.v =  min((uint32_t)255, (uint32_t)pxHSV.v + brighten); // increase brightness    
-    hsv2rgb_spectrum(pxHSV, sourcecolor); // convert back to RGB 
+uint32_t adjust_color(uint32_t rgb, uint32_t hueShift, uint32_t lighten, uint32_t brighten) {
+    if(hueShift + lighten + brighten == 0) return rgb; // no change   
+    CHSV hsv;
+    rgb2hsv(rgb, hsv); //convert to HSV
+    if(hsv.v == 0) return rgb; // do not change black pixels
+    hsv.h += hueShift; // shift hue
+    hsv.s =  max((int32_t)0, (int32_t)hsv.s - (int32_t)lighten); // desaturate
+    hsv.v =  min((uint32_t)255, (uint32_t)hsv.v + brighten); // increase brightness    
+    CRGB adjusted;
+    hsv2rgb_spectrum(hsv, adjusted); // convert back to RGB
+    return RGBW32(adjusted.r,adjusted.g,adjusted.b,0);
 }
 
 void setRandomColor(byte* rgb)
@@ -240,22 +243,22 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
   }
 }
 
-CHSV rgb2hsv(const CRGB& rgb) // convert rgb to hsv, more accurate and faster than fastled version
+void rgb2hsv(const uint32_t rgb, CHSV& hsv) // convert rgb to hsv, more accurate and faster than fastled version
 {
-    int32_t r = rgb.r;
-    int32_t g = rgb.g;
-    int32_t b = rgb.b;
-    CHSV hsv = CHSV(0, 0, 0);
+    int32_t r = (rgb>>16)&0xFF;
+    int32_t g = (rgb>>8)&0xFF;
+    int32_t b = rgb&0xFF;
+    hsv = CHSV(0, 0, 0);
     int32_t minval, maxval, delta;
     minval = min(r, g);
     minval = min(minval, b); 
     maxval = max(r, g);
     maxval = max(maxval, b);
-    if (maxval == 0)  return hsv; // black
+    if (maxval == 0)  return; // black
     hsv.v = maxval;
     delta = maxval - minval;
     hsv.s = (255 * delta) / maxval;
-    if (hsv.s == 0)  return hsv; // gray value    
+    if (hsv.s == 0)  return; // gray value    
     int32_t h; //calculate hue
     if (maxval == r) 
         h = (43 * (g - b)) / delta; 
@@ -263,7 +266,6 @@ CHSV rgb2hsv(const CRGB& rgb) // convert rgb to hsv, more accurate and faster th
     else  h = 171 + (43 * (r - g)) / delta; 
     if(h < 0) h += 256;
     hsv.h = h;
-    return hsv;
 }
 
 //get RGB values from color temperature in K (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)

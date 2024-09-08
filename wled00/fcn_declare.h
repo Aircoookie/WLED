@@ -81,12 +81,12 @@ class NeoGammaWLEDMethod {
 uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
 uint32_t color_add(uint32_t,uint32_t, bool fast=false);
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
-void adjust_color(CRGB& sourcecolor, uint32_t hueShift, int32_t lighten, uint32_t brighten);
+uint32_t adjust_color(uint32_t rgb, uint32_t hueShift, uint32_t lighten, uint32_t brighten);
 CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
 CRGBPalette16 generateRandomPalette(void);
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
-CHSV rgb2hsv(const CRGB& rgb); //rgb to hsv 
+void rgb2hsv(const uint32_t rgb, CHSV& hsv); //rgb to hsv
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO

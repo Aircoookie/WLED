@@ -99,56 +99,45 @@ static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
  * Copy selected segment and perform (optional) color adjustments
  */
 // TODO: what is the correct place to put getRenderedPixelXY()?
-static CRGB getRenderedPixelXY(Segment& seg, unsigned x, unsigned y = 0) {
+static uint32_t getRenderedPixelXY(Segment& seg, unsigned x, unsigned y = 0) {
   // We read pixels back following mirror/reverse/transpose but ignoring grouping
   // For every group-length pixels, add spacing
   x *= seg.groupLength(); // expand to physical pixels
   y *= seg.groupLength(); // expand to physical pixels
   if (x >= seg.width() || y >= seg.height()) return 0;  // fill out of range pixels with black
-  uint32_t offset = seg.is2D() ? 0 : seg.offset; // dirty fix, offset in 2D segments should be zero but is not
+  #warning this check can be removed once 2D offset is fixed
+  uint32_t offset = seg.is2D() ? 0 : seg.offset; // dirty fix, offset in 2D segments should be zero but is not TODO: fix the offset
   return strip.getPixelColorXY(seg.start + offset + x, seg.startY + y);
 }
 
 uint16_t mode_copy_segment(void) {
   uint32_t sourceid = SEGMENT.custom3;
   if (sourceid >= strip._segments.size() || sourceid == strip.getCurrSegmentId()) { // invalid source
-    SEGMENT.fadeToBlackBy(15); // fade out, clears pixels and allows overlapping segments
+    SEGMENT.fadeToBlackBy(5); // fade out, clears pixels and allows overlapping segments
     return FRAMETIME; 
   }
-  uint32_t spacing, grouping; 
-  if(SEGMENT.check2) { // copy source segment spacing & grouping (preliminary for testing, may remove again)
-    spacing = SEGMENT.spacing;
-    grouping = SEGMENT.grouping;  
-    SEGMENT.spacing = strip._segments[sourceid].spacing;
-    SEGMENT.grouping = strip._segments[sourceid].grouping;
-  }  
   if (strip._segments[sourceid].isActive()) {    
-    if(!strip._segments[sourceid].is2D() || !SEGMENT.is2D()) { // 1D source or 1D target; source can be expanded into 2D
+    uint32_t sourcecolor;
+    if(!strip._segments[sourceid].is2D()) { // 1D source, source can be expanded into 2D
       uint32_t cl; // length to copy
       for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {              
-        CRGB sourcecolor = getRenderedPixelXY(strip._segments[sourceid], i);
-        adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2); // color adjustment      
-        SEGMENT.setPixelColor(i, sourcecolor);
+        sourcecolor = getRenderedPixelXY(strip._segments[sourceid], i);           
+        SEGMENT.setPixelColor(i, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
       }
-    } else { // 2D source, note: 2D to 1D just copies the first row (y=0, x=0 to x=source.width)
+    } else { // 2D source, note: 2D to 1D just copies the first row (or first column if 'Switch axis' is checked in FX)    
       for (unsigned y = 0; y <  SEGMENT.virtualHeight(); y++) {
-        for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {     
-          CRGB sourcecolor = getRenderedPixelXY(strip._segments[sourceid], x, y);
-          adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2); // color adjustment
-          SEGMENT.setPixelColorXY(x, y, sourcecolor);
+        for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {  
+          if(SEGMENT.check2) sourcecolor = getRenderedPixelXY(strip._segments[sourceid], y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
+          else sourcecolor = getRenderedPixelXY(strip._segments[sourceid], x, y);          
+          SEGMENT.setPixelColorXY(x, y, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
         }     
       }
     }
   }
-  //restore settings -> if settings change during rendiring, this will reset them... not ideal but cannot be avoided
-  if(SEGMENT.check2) {
-    SEGMENT.spacing = spacing;
-    SEGMENT.grouping = grouping;    
-  }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,Color shift,Lighten,Brighten,ID,,Copy Grouping & Spacing;;;12;ix=0,c1=0,c2=0,c3=0,o2=0";
-  
+static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,Color shift,Lighten,Brighten,ID,,Switch axis(2D);;;1;ix=0,c1=0,c2=0,c3=0,o2=0";
+
 
 /*
  * Blink/strobe function
