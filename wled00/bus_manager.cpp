@@ -801,8 +801,8 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[2], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
 
-  if(mxconfig.mx_height >= 64 && (bc.pins[2] > 1)) {
-    DEBUG_PRINTLN("WARNING, only single panel can be used of 64 pixel boards due to memory")
+  if(mxconfig.mx_height >= 64 && (mxconfig.chain_length > 1)) {
+    DEBUG_PRINTLN("WARNING, only single panel can be used of 64 pixel boards due to memory");
     mxconfig.chain_length = 1;
   }
 
