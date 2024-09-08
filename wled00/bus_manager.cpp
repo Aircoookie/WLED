@@ -790,31 +790,24 @@ void BusNetwork::cleanup(void) {
 
 BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
-  mxconfig.double_buff = false; // <------------- Turn on double buffer
+  mxconfig.double_buff = true; // <------------- Turn on double buffer
 
   switch(bc.type) {
-    case 101:
-      mxconfig.mx_width = 32;
-      mxconfig.mx_height = 32;
-      break;
-    case 102:
-      mxconfig.mx_width = 64;
-      mxconfig.mx_height = 32;
-      break;
-    case 103:
-      mxconfig.mx_width = 64;
-      mxconfig.mx_height = 64;
+    case TYPE_HUB75MATRIX_HS:
+      mxconfig.mx_width = bc.pins[0];
+      mxconfig.mx_height = bc.pins[1];
       break;
   }
 
-  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[0], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
+  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[2], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
 
-  if(mxconfig.mx_width >= 64 && (bc.pins[0] > 1)) {
+  if(mxconfig.mx_height >= 64 && (bc.pins[2] > 1)) {
     DEBUG_PRINTLN("WARNING, only single panel can be used of 64 pixel boards due to memory")
     mxconfig.chain_length = 1;
   }
 
   // mxconfig.driver   = HUB75_I2S_CFG::SHIFTREG;
+  mxconfig.clkphase = bc.reversed;
 
 #if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3) // MatrixPortal ESP32-S3
 
@@ -977,8 +970,8 @@ void BusHub75Matrix::deallocatePins() {
 
 std::vector<LEDType> BusHub75Matrix::getLEDTypes() {
   return {
-    {TYPE_HUB75MATRIX_HS,     "H",     PSTR("HUB75 - Half Scan")},
-    // {TYPE_HUB75MATRIX_QS,     "H",     PSTR("HUB75 - Quarter Scan")},
+    {TYPE_HUB75MATRIX_HS,     "H",     PSTR("HUB75 (Half Scan)")},
+    // {TYPE_HUB75MATRIX_QS,     "H",     PSTR("HUB75 (Quarter Scan)")},
   };
 }
 
