@@ -977,9 +977,8 @@ void BusHub75Matrix::deallocatePins() {
 
 std::vector<LEDType> BusHub75Matrix::getLEDTypes() {
   return {
-    {TYPE_HUB75MATRIX + 1,     "H",     PSTR("HUB75 32x32")},
-    {TYPE_HUB75MATRIX + 2,     "H",     PSTR("HUB75 64x32")},
-    {TYPE_HUB75MATRIX + 3,     "H",     PSTR("HUB75 64x64")},
+    {TYPE_HUB75MATRIX_HS,     "H",     PSTR("HUB75 - Half Scan")},
+    // {TYPE_HUB75MATRIX_QS,     "H",     PSTR("HUB75 - Quarter Scan")},
   };
 }
 
