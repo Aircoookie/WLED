@@ -172,7 +172,7 @@
 			const t = parseInt(d.Sf["LT"+n].value); // LED type SELECT
 			gId('LAdis'+n).style.display = s.selectedIndex==5 ? "inline" : "none";
 			if (s.value!=="0") d.Sf["LA"+n].value = s.value;
-			d.Sf["LA"+n].min = (isVir(t) || isAna(t)) ? 0 : 1;
+			d.Sf["LA"+n].min = (isVir(t) || isAna(t) || isHub75(t)) ? 0 : 1;
 		}
 		function setABL()
 		{
@@ -248,14 +248,14 @@
 						p0d = "Config:"
 						break;
 					case 'H': // HUB75
-						p0d = "Panel size (width x height):"
+						p0d = "Panel size (width x height), Panel count:"
 						break;
 				}
 				gId("p0d"+n).innerText = p0d;
 				gId("p1d"+n).innerText = p1d;
 				gId("off"+n).innerText = off;
 				// secondary pins show/hide (type string length is equivalent to number of pins used; except for network and on/off)
-				let pins = Math.max(gT(t).t.length,1) + 3*isNet(t) + 1*isHub75(t); // fixes network pins to 4
+				let pins = Math.max(gT(t).t.length,1) + 3*isNet(t) + 2*isHub75(t); // fixes network pins to 4
 				for (let p=1; p<5; p++) {
 					var LK = d.Sf["L"+p+n];
 					if (!LK) continue;
@@ -339,16 +339,22 @@
 						LC.min = 0;
 						LC.style.color="#fff";
 						return; // do not check conflicts
-					}
-					else if (isHub75(t)) {
-							LC.max = 128;
-							LC.min = 16;
-							LC.style.color="#fff";
-							return; // do not check conflicts
 					} else {
 						LC.max = d.max_gpio;
 						LC.min = -1;
 					}
+				}
+				if (isHub75(t) && (nm=="L0" || nm=="L1")) {
+						LC.max = 16;
+						LC.min = 128;
+						LC.style.color="#fff";
+						return; // do not check conflicts
+				}
+				else if (isHub75(t) && nm=="L2") {
+					LC.max = 1;
+					LC.min = 4;
+					LC.style.color="#fff";
+					return; // do not check conflicts
 				}
 				// check for pin conflicts & color fields
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4")

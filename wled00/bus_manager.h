@@ -333,10 +333,12 @@ class BusHub75Matrix : public Bus {
 
     void setBrightness(uint8_t b, bool immediate);
 
-    uint8_t getPins(uint8_t* pinArray) {
-      pinArray[0] = mxconfig.chain_length;
-      return 1;
-    } // Fake value due to keep finaliseInit happy
+    uint8_t getPins(uint8_t* pinArray) const override {
+      pinArray[0] = mxconfig.mx_height;
+      pinArray[1] = mxconfig.mx_width;
+      pinArray[2] = mxconfig.chain_length;
+      return 3;
+    }
 
     void deallocatePins();
 
