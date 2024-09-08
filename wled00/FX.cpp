@@ -8257,15 +8257,15 @@ uint16_t mode_particlefire(void)
   // update the flame sprays:
   for (i = 0; i < numFlames; i++)
   {
-    if (PartSys->sources[i].source.ttl > 0)
+    if (SEGMENT.call & 1 && PartSys->sources[i].source.ttl > 0) // every second frame
     {
       PartSys->sources[i].source.ttl--;
     }
     else // flame source is dead: initialize new flame: set properties of source
     {
         PartSys->sources[i].source.x = (PartSys->maxX >> 1) - (spread>>1) + random(spread); // change flame position: distribute randomly on chosen width     
-        PartSys->sources[i].source.y = -(PS_P_RADIUS<<1); // set the source below the frame 
-        PartSys->sources[i].source.ttl = 16 + random((SEGMENT.custom1 * SEGMENT.custom1) >> 7) / (1 + (firespeed >> 5)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed      
+        PartSys->sources[i].source.y = -(PS_P_RADIUS<<2); // set the source below the frame 
+        PartSys->sources[i].source.ttl = 20 + random((SEGMENT.custom1 * SEGMENT.custom1) >> 8) / (1 + (firespeed >> 5)); //'hotness' of fire, faster flames reduce the effect or flame height will scale too much with speed      
         PartSys->sources[i].maxLife = random(SEGMENT.virtualHeight() / 2) + 16; // defines flame height together with the vy speed, vy speed*maxlife/PS_P_RADIUS is the average flame height
         PartSys->sources[i].minLife = PartSys->sources[i].maxLife >> 1;
         PartSys->sources[i].vx = random16(4) - 2; // emitting speed (sideways)
