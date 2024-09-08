@@ -21,6 +21,14 @@
 #include "bus_wrapper.h"
 #include "bus_manager.h"
 
+// functions to get/set bits in an array - based on functions created by Brandon for GOL
+//  toDo : make this a class that's completely defined in a header file
+bool getBitFromArray(const uint8_t* byteArray, size_t position) { // get bit value
+    size_t byteIndex = position / 8;
+    unsigned bitIndex = position % 8;
+    uint8_t byteValue = byteArray[byteIndex];
+    return (byteValue >> bitIndex) & 1;
+}
 extern bool cctICused;
 
 void setBitInArray(uint8_t* byteArray, size_t position, bool value) {  // set bit - with error handling for nullptr
@@ -824,10 +832,11 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   if(bc.type == TYPE_HUB75MATRIX_HS) {
       mxconfig.mx_width = bc.pins[0];
-      mxconfig.mx_height = bc.pins[1];
-  
+      mxconfig.mx_height = bc.pins[1];  
   }
   else if(bc.type == TYPE_HUB75MATRIX_QS) {
+      mxconfig.mx_width = bc.pins[0] * 2;
+      mxconfig.mx_height = bc.pins[1] / 2;  
       fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, bc.pins[0], bc.pins[1]);
       fourScanPanel->setRotation(0);
       switch(bc.pins[1]) {
