@@ -821,22 +821,22 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   _valid = false;
   mxconfig.double_buff = false; // default to off, known to cause issue with some effects but needs more memory
-  // mxconfig.double_buff = true; // <------------- Turn on double buffer
   // mxconfig.driver = HUB75_I2S_CFG::ICN2038S;  // experimental - use specific shift register driver
   //mxconfig.latch_blanking = 3;
   // mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;  // experimental - 5MHZ should be enugh, but colours looks slightly better at 10MHz
   //mxconfig.min_refresh_rate = 90;
   //mxconfig.min_refresh_rate = 120;
+  mxconfig.clkphase = bc.reversed;
 
   fourScanPanel = nullptr;
 
   if(bc.type == TYPE_HUB75MATRIX_HS) {
-      mxconfig.mx_width = bc.pins[0];
-      mxconfig.mx_height = bc.pins[1];  
+      mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]);
+      mxconfig.mx_height = 32; // TODO - bad value bc.pins[1];  
   }
   else if(bc.type == TYPE_HUB75MATRIX_QS) {
-      mxconfig.mx_width = bc.pins[0] * 2;
-      mxconfig.mx_height = bc.pins[1] / 2;  
+      mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]) * 2;
+      mxconfig.mx_height = min((u_int8_t) 64, bc.pins[1]) / 2;  
       fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, bc.pins[0], bc.pins[1]);
       fourScanPanel->setRotation(0);
       switch(bc.pins[1]) {
@@ -860,15 +860,13 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   }  
 
 
-  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[2], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
+  mxconfig.chain_length = 1; //max((u_int8_t) 1, min(bc.pins[2], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
 
   if(mxconfig.mx_height >= 64 && (mxconfig.chain_length > 1)) {
     DEBUG_PRINTLN("WARNING, only single panel can be used of 64 pixel boards due to memory");
     mxconfig.chain_length = 1;
   }
 
-  // mxconfig.driver   = HUB75_I2S_CFG::SHIFTREG;
-  mxconfig.clkphase = bc.reversed;
 
 //  HUB75_I2S_CFG::i2s_pins _pins={R1_PIN, G1_PIN, B1_PIN, R2_PIN, G2_PIN, B2_PIN, A_PIN, B_PIN, C_PIN, D_PIN, E_PIN, LAT_PIN, OE_PIN, CLK_PIN};
 
@@ -918,6 +916,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   display = new MatrixPanel_I2S_DMA(mxconfig);
 
   this->_len = (display->width() * display->height());
+  DEBUG_PRINTF("Length: %u\n", _len);
 
   // TODO: try and swap _pins to a array so we can use allocateMultiplePins
   pinManager.allocatePin(mxconfig.gpio.r1, true, PinOwner::HUB75);
@@ -1006,8 +1005,8 @@ void __attribute__((hot)) BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c
     }
   }
   else {
-    if ((c == BLACK) && (getBitFromArray(_ledsDirty, pix) == false)) return; // ignore black if pixel is already black
-    setBitInArray(_ledsDirty, pix, c != BLACK);                              // dirty = true means "color is not BLACK"
+    if ((c == IS_BLACK) && (getBitFromArray(_ledsDirty, pix) == false)) return; // ignore black if pixel is already black
+    setBitInArray(_ledsDirty, pix, c != IS_BLACK);                              // dirty = true means "color is not BLACK"
 
     #ifndef NO_CIE1931
     c = unGamma24(c); // to use the driver linear brightness feature, we first need to undo WLED gamma correction
@@ -1017,25 +1016,23 @@ void __attribute__((hot)) BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c
     uint8_t b = B(c);
 
     if(fourScanPanel != nullptr) {
-      int width = _panelWidth;
-      int x = pix % width;
-      int y = pix / width;
+      int x = pix % _panelWidth;
+      int y = pix / _panelWidth;
       fourScanPanel->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
     } else {
-      int width = _panelWidth;
-      int x = pix % width;
-      int y = pix / width;
+      int x = pix % _panelWidth;
+      int y = pix / _panelWidth;
       display->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
     }
   }
 }
 
 uint32_t BusHub75Matrix::getPixelColor(uint16_t pix) const {
-  if (!_valid || pix >= _len) return BLACK;
+  if (!_valid || pix >= _len) return IS_BLACK;
   if (_ledBuffer)
     return uint32_t(_ledBuffer[pix].scale8(_bri)) & 0x00FFFFFF;  // scale8() is needed to mimic NeoPixelBus, which returns scaled-down colours
   else
-    return getBitFromArray(_ledsDirty, pix) ? DARKGREY: BLACK;   // just a hack - we only know if the pixel is black or not
+    return getBitFromArray(_ledsDirty, pix) ? IS_DARKGREY: IS_BLACK;   // just a hack - we only know if the pixel is black or not
 }
 
 void BusHub75Matrix::setBrightness(uint8_t b, bool immediate) {

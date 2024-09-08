@@ -351,7 +351,10 @@ class BusHub75Matrix : public Bus {
     HUB75_I2S_CFG mxconfig;
     unsigned _panelWidth = 0;
     CRGB *_ledBuffer = nullptr;
-    byte *_ledsDirty = nullptr;    
+    byte *_ledsDirty = nullptr;
+    // workaround for missing constants on include path for non-MM   
+    uint32_t IS_BLACK = 0x000000;
+    uint32_t IS_DARKGREY = 0x333333;
 };
 #endif
 

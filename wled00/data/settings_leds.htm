@@ -82,6 +82,9 @@
 				let nm = LC.name.substring(0,2);
 				let n = LC.name.substring(2);
 				let t = parseInt(d.Sf["LT"+n].value, 10); // LED type SELECT
+				if(isHub75(t)) {
+					return;
+				}
 				// ignore IP address
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
 					if (t>=80) return;
@@ -345,14 +348,16 @@
 					}
 				}
 				if (isHub75(t) && (nm=="L0" || nm=="L1")) {
-						LC.max = 16;
-						LC.min = 128;
-						LC.style.color="#fff";
-						return; // do not check conflicts
+					// Matrix width and height
+					LC.max = 128;
+					LC.min = 16;
+					LC.style.color="#fff";
+					return; // do not check conflicts
 				}
 				else if (isHub75(t) && nm=="L2") {
-					LC.max = 1;
-					LC.min = 4;
+					// Chain length aka Panel Count
+					LC.max = 4;
+					LC.min = 1;
 					LC.style.color="#fff";
 					return; // do not check conflicts
 				}
