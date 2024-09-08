@@ -2,7 +2,11 @@
 #define BusManager_h
 
 #ifdef WLED_ENABLE_HUB75MATRIX
+
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#include <ESP32-VirtualMatrixPanel-I2S-DMA.h>
+#include <FastLED.h>
+
 #endif
 /*
  * Class for addressing various light types
@@ -323,30 +327,17 @@ class BusHub75Matrix : public Bus {
     bool hasWhite() { return false; }
 
     void setPixelColor(uint16_t pix, uint32_t c);
+    uint32_t getPixelColor(uint16_t pix) const override;
 
-    void show() {
-      if(mxconfig.double_buff) {
-        display->flipDMABuffer(); // Show the back buffer, set currently output buffer to the back (i.e. no longer being sent to LED panels)
-        display->clearScreen();   // Now clear the back-buffer
-      }
-    }
+    void show() override;
 
     void setBrightness(uint8_t b, bool immediate);
 
-    uint8_t getPins(uint8_t* pinArray) const override {
-      pinArray[0] = mxconfig.mx_height;
-      pinArray[1] = mxconfig.mx_width;
-      pinArray[2] = mxconfig.chain_length;
-      return 3;
-    }
+    uint8_t getPins(uint8_t* pinArray) const override;
 
     void deallocatePins();
 
-    void cleanup() {
-      deallocatePins();
-      delete display;
-      _valid = false;
-    }
+    void cleanup();
 
     ~BusHub75Matrix() {
       cleanup();
@@ -356,9 +347,11 @@ class BusHub75Matrix : public Bus {
 
   private:
     MatrixPanel_I2S_DMA *display = nullptr;
+    VirtualMatrixPanel  *fourScanPanel = nullptr;
     HUB75_I2S_CFG mxconfig;
-    uint8_t r, g, b, x, y;
-    
+    unsigned _panelWidth = 0;
+    CRGB *_ledBuffer = nullptr;
+    byte *_ledsDirty = nullptr;    
 };
 #endif
 
