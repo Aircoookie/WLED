@@ -588,6 +588,7 @@ typedef struct Segment {
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
     uint32_t getPixelColor(int i) const;
+    uint32_t getRenderedPixelXY(Segment& seg, unsigned x, unsigned y = 0);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t, bool smear = false);
     void fill(uint32_t c);

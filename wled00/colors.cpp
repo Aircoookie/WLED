@@ -94,7 +94,7 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
    note: inputs are 32bit to speed up the function, useful input value ranges are 0-255
  */
 uint32_t adjust_color(uint32_t rgb, uint32_t hueShift, uint32_t lighten, uint32_t brighten) {
-    if(hueShift + lighten + brighten == 0) return rgb; // no change   
+    if(rgb == 0 | hueShift + lighten + brighten == 0) return rgb; // black or no change
     CHSV hsv;
     rgb2hsv(rgb, hsv); //convert to HSV
     if(hsv.v == 0) return rgb; // do not change black pixels

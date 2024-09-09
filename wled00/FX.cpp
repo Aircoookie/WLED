@@ -94,22 +94,9 @@ uint16_t mode_static(void) {
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 
-
 /*
- * Copy selected segment and perform (optional) color adjustments
+ * Copy a segment and perform (optional) color adjustments
  */
-// TODO: what is the correct place to put getRenderedPixelXY()?
-static uint32_t getRenderedPixelXY(Segment& seg, unsigned x, unsigned y = 0) {
-  // We read pixels back following mirror/reverse/transpose but ignoring grouping
-  // For every group-length pixels, add spacing
-  x *= seg.groupLength(); // expand to physical pixels
-  y *= seg.groupLength(); // expand to physical pixels
-  if (x >= seg.width() || y >= seg.height()) return 0;  // fill out of range pixels with black
-  #warning this check can be removed once 2D offset is fixed
-  uint32_t offset = seg.is2D() ? 0 : seg.offset; // dirty fix, offset in 2D segments should be zero but is not TODO: fix the offset
-  return strip.getPixelColorXY(seg.start + offset + x, seg.startY + y);
-}
-
 uint16_t mode_copy_segment(void) {
   uint32_t sourceid = SEGMENT.custom3;
   if (sourceid >= strip._segments.size() || sourceid == strip.getCurrSegmentId()) { // invalid source
@@ -121,14 +108,14 @@ uint16_t mode_copy_segment(void) {
     if(!strip._segments[sourceid].is2D()) { // 1D source, source can be expanded into 2D
       uint32_t cl; // length to copy
       for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {              
-        sourcecolor = getRenderedPixelXY(strip._segments[sourceid], i);           
+        sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], i);           
         SEGMENT.setPixelColor(i, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
       }
     } else { // 2D source, note: 2D to 1D just copies the first row (or first column if 'Switch axis' is checked in FX)    
       for (unsigned y = 0; y <  SEGMENT.virtualHeight(); y++) {
         for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {  
-          if(SEGMENT.check2) sourcecolor = getRenderedPixelXY(strip._segments[sourceid], y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
-          else sourcecolor = getRenderedPixelXY(strip._segments[sourceid], x, y);          
+          if(SEGMENT.check2) sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
+          else sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], x, y);          
           SEGMENT.setPixelColorXY(x, y, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
         }     
       }

@@ -967,6 +967,18 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
   return strip.getPixelColor(i);
 }
 
+/*
+ * Read rendered pixel back (following mirror/reverse/transpose but ignoring grouping)
+ */
+uint32_t Segment::getRenderedPixelXY(Segment& seg, unsigned x, unsigned y) {
+  // For every group-length pixels, add spacing
+  x *= seg.groupLength(); // expand to physical pixels
+  y *= seg.groupLength(); // expand to physical pixels
+  if (x >= seg.width() || y >= seg.height()) return 0;  // fill out of range pixels with black
+  uint32_t offset = seg.is2D() ? 0 : seg.offset; //offset in 2D segments is undefined, set to zero
+  return strip.getPixelColorXY(seg.start + offset + x, seg.startY + y);
+}
+
 uint8_t Segment::differs(Segment& b) const {
   uint8_t d = 0;
   if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
