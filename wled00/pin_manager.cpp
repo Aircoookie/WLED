@@ -281,6 +281,13 @@ bool PinManagerClass::isReadOnlyPin(byte gpio)
   return false;
 }
 
+bool PinManagerClass::isPinDefined(byte gpio, const unsigned *pins, unsigned start, unsigned end) {
+  for (unsigned i = start; i < end; i++) {
+    if (pins[i] == gpio) return true;
+  }
+  return false;
+}
+
 PinOwner PinManagerClass::getPinOwner(byte gpio) const
 {
   if (!isPinOk(gpio, false)) return PinOwner::None;

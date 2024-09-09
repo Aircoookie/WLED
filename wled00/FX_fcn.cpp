@@ -76,7 +76,7 @@ static constexpr unsigned sumPinsRequired(const unsigned* current, size_t count)
 static constexpr bool validatePinsAndTypes(const unsigned* types, unsigned numTypes, unsigned numPins ) {
   // Pins provided < pins required -> always invalid
   // Pins provided = pins required -> always valid
-  // Pins provided > pins required -> last type will repeat until we run out of pins, make sure excess pins modulo last type pins == 0
+  // Pins provided > pins required -> valid if excess pins are a product of last type pins since it will be repeated
   return (sumPinsRequired(types, numTypes) > numPins) ? false :
           (numPins - sumPinsRequired(types, numTypes)) % Bus::getNumberOfPins(types[numTypes-1]) == 0;
 }
@@ -1240,7 +1240,7 @@ void WS2812FX::finalizeInit(void) {
     unsigned prevLen = 0;
     unsigned pinsIndex = 0;
     for (unsigned i = 0; i < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; i++) {
-      uint8_t defPin[OUTPUT_MAX_PINS]; // max 5 pins
+      uint8_t defPin[OUTPUT_MAX_PINS];
       // if we have less types than requested outputs and they do not align, use last known type to set current type
       unsigned dataType = defDataTypes[(i < defNumTypes) ? i : defNumTypes -1];
       unsigned busPins = Bus::getNumberOfPins(dataType);
@@ -1259,8 +1259,19 @@ void WS2812FX::finalizeInit(void) {
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
         if (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) {
           defPin[j] = 1; // start with GPIO1 and work upwards
-          // @FIX pins are allocated after the loop, so if we reassign to a pin that's already in the array for this output 2 fields will have the same pin
-          while ((pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) && defPin[j] < WLED_NUM_PINS) defPin[j]++;
+          while (
+                  (
+                    pinManager.isPinAllocated(defPin[j])                                                ||
+                    pinManager.isReadOnlyPin(defPin[j])                                                 ||
+                    // Check if pin is defined for current bus
+                    pinManager.isPinDefined(defPin[j], defDataPins, pinsIndex + j, pinsIndex + busPins)
+                  ) 
+                  &&
+                    defPin[j] < WLED_NUM_PINS
+                )
+          {
+              defPin[j]++;
+          }
         }
       }
       pinsIndex += busPins;
