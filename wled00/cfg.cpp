@@ -486,6 +486,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
   CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
+  CJSON(receiveNotificationPalette, if_sync_recv["pal"]);
   CJSON(receiveGroups, if_sync_recv["grp"]);
   CJSON(receiveSegmentOptions, if_sync_recv["seg"]);
   CJSON(receiveSegmentBounds, if_sync_recv["sb"]);
@@ -973,6 +974,7 @@ void serializeConfig() {
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
   if_sync_recv["fx"]  = receiveNotificationEffects;
+  if_sync_recv["pal"] = receiveNotificationPalette;
   if_sync_recv["grp"] = receiveGroups;
   if_sync_recv["seg"] = receiveSegmentOptions;
   if_sync_recv["sb"]  = receiveSegmentBounds;

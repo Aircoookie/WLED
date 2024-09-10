@@ -506,6 +506,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
+    sappend('c',SET_F("RP"),receiveNotificationPalette);
     sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SG"),receiveSegmentBounds);
     sappend('c',SET_F("SS"),sendNotifications);
