@@ -87,43 +87,28 @@ bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv
   return true;
 }
 
-
-//append a numeric setting to string buffer
-void sappend(Print& dest, char stype, const char* key, int val)
-{
-  const __FlashStringHelper* type_str;
-  switch(stype)
-  {
-    case 'c': //checkbox
-      type_str = F(".checked=");
-      break;
-    case 'v': //numeric
-      type_str = F(".value=");
-      break;
-    case 'i': //selectedIndex
-      type_str = F(".selectedIndex=");
-      break;
-    default:
-      return; //???
-  }
-  
-  dest.printf_P(PSTR("d.Sf.%s%s%d;"), key, type_str, val);
+static size_t printSetInt(Print& dest, const char* key, const char* selector, int value) {
+  return dest.printf_P(PSTR("d.Sf.%s.%s=%d;"), key, selector, value);
 }
 
-
-//append a string setting to buffer
-void sappends(Print& dest, char stype, const char* key, char* val)
-{
-  switch(stype)
-  {
-    case 's': {//string (we can interpret val as char*)
-      dest.printf_P(PSTR("d.Sf.%s.value=\"%s\";"),key,val);
-      break;}
-    case 'm': //message
-      dest.printf_P(PSTR("d.getElementsByClassName%s.innerHTML=\"%s\";"), key, val);
-      break;
-  }
+size_t printSetCheckbox(Print& dest, const char* key, int val) {
+  return printSetInt(dest, key, PSTR("checked"), val);
 }
+size_t printSetValue(Print& dest, const char* key, int val) {
+  return printSetInt(dest, key, PSTR("value"), val);
+}
+size_t printSetIndex(Print& dest, const char* key, int index) {
+  return printSetInt(dest, key, PSTR("selectedIndex"), index);
+}
+
+size_t printSetValue(Print& dest, const char* key, const char* val) {
+  return dest.printf_P(PSTR("d.Sf.%s.value=\"%s\";"),key,val);
+}
+
+size_t printSetMessage(Print& dest, const char* key, const char* val) {
+  return dest.printf_P(PSTR("d.getElementsByClassName%s.innerHTML=\"%s\";"), key, val);
+}
+
 
 
 void prepareHostname(char* hostname)
