@@ -53,7 +53,7 @@
 #endif
 
 #ifndef DATA_PINS
-  #define DATA_PINS LEDPIN
+  #define DATA_PINS DEFAULT_LED_PIN
 #endif
 
 #ifndef LED_TYPES
@@ -1245,32 +1245,27 @@ void WS2812FX::finalizeInit(void) {
       unsigned dataType = defDataTypes[(i < defNumTypes) ? i : defNumTypes -1];
       unsigned busPins = Bus::getNumberOfPins(dataType);
 
-      // check if we have enough pins left to configure an output of this type
-      // should never happen due to static assert above
-      if (pinsIndex + busPins > defNumPins) {
-        DEBUG_PRINTLN(F("LED outputs misaligned with defined pins. Some pins will remain unused."));
-        break;
-      }
+      // if we need more pins than available all outputs have been configured
+      if (pinsIndex + busPins > defNumPins) break;
       
       for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
         defPin[j] = defDataPins[pinsIndex + j];
 
-        // when booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
+        bool validPin = true;
+        // When booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
-        if (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j])) {
-          defPin[j] = 1; // start with GPIO1 and work upwards
-          while (
-                  (
-                    pinManager.isPinAllocated(defPin[j])                                                ||
-                    pinManager.isReadOnlyPin(defPin[j])                                                 ||
-                    // Check if pin is defined for current bus
-                    pinManager.isPinDefined(defPin[j], defDataPins, pinsIndex + j, pinsIndex + busPins)
-                  ) 
-                  &&
-                    defPin[j] < WLED_NUM_PINS
-                )
-          {
-              defPin[j]++;
+        // Pin should not be already allocated, read/only or defined for current bus
+        while (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j]) ||
+               pinManager.isPinDefined(defPin[j], defDataPins, pinsIndex + j + 1, pinsIndex + busPins)) {
+          if (validPin) {
+            defPin[j] = 1; // start with GPIO1 and work upwards
+            validPin = false;
+          }  
+          if (defPin[j] < WLED_NUM_PINS) {
+            defPin[j]++;
+          } else {
+            DEBUG_PRINTLN(F("No available pins left! Can't configure output."));
+            return;
           }
         }
       }

@@ -563,15 +563,6 @@
   #define WLED_MAX_NODES 150
 #endif
 
-//this is merely a default now and can be changed at runtime
-#ifndef LEDPIN
-#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)  //|| (defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)) || defined(ARDUINO_ESP32_PICO)
-  #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
-#else
-  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
-#endif
-#endif
-
 // List of read only pins. Cannot be used for LED outputs.
 #if defined(CONFIG_IDF_TARGET_ESP32S2)
   #define READ_ONLY_PINS 46
@@ -593,13 +584,14 @@
 #endif
 #endif
 
-#ifndef DEFAULT_LED_TYPE
-  #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+// Defaults pins, type and counts to configure LED output
+#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)
+  #define DEFAULT_LED_PIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
+#else
+  #define DEFAULT_LED_PIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
 #endif
-
-#ifndef DEFAULT_LED_COUNT
-  #define DEFAULT_LED_COUNT 30
-#endif
+#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#define DEFAULT_LED_COUNT 30
 
 #define INTERFACE_UPDATE_COOLDOWN 1000 // time in ms to wait between websockets, alexa, and MQTT updates
 
