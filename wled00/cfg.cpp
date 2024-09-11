@@ -244,6 +244,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // read color order map configuration
   JsonArray hw_com = hw[F("com")];
   if (!hw_com.isNull()) {
+    BusManager::getColorOrderMap().reserve(std::min(hw_com.size(), (size_t)WLED_MAX_COLOR_ORDER_MAPPINGS));
     for (JsonObject entry : hw_com) {
       uint16_t start = entry["start"] | 0;
       uint16_t len = entry["len"] | 0;

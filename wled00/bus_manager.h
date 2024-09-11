@@ -35,6 +35,7 @@ struct ColorOrderMap {
     bool add(uint16_t start, uint16_t len, uint8_t colorOrder);
 
     inline uint8_t count() const { return _mappings.size(); }
+    inline void reserve(size_t num) { _mappings.reserve(num); }
 
     void reset() {
       _mappings.clear();
