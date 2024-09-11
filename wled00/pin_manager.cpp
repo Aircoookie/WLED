@@ -97,7 +97,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
   bool shouldFail = false;
   // first verify the pins are OK and not already allocated
   for (int i = 0; i < arrayElementCount; i++) {
-    unsigned gpio = mptArray[i].pin;
+    byte gpio = mptArray[i].pin;
     if (gpio == 0xFF) {
       // explicit support for io -1 as a no-op (no allocation of pin),
       // as this can greatly simplify configuration arrays
@@ -135,7 +135,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
 
   // all pins are available .. track each one
   for (int i = 0; i < arrayElementCount; i++) {
-    unsigned gpio = mptArray[i].pin;
+    byte gpio = mptArray[i].pin;
     if (gpio == 0xFF) {
       // allow callers to include -1 value as non-requested pin
       // as this can greatly simplify configuration arrays

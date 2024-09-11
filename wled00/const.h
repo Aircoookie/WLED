@@ -496,7 +496,7 @@
 
 // string temp buffer (now stored in stack locally)
 #ifdef ESP8266
-#define SETTINGS_STACK_BUF_SIZE 2048
+#define SETTINGS_STACK_BUF_SIZE 2560
 #else
 #define SETTINGS_STACK_BUF_SIZE 3840  // warning: quite a large value for stack (640 * WLED_MAX_USERMODS)
 #endif
@@ -536,7 +536,11 @@
 #ifdef ESP8266
   #define WLED_PWM_FREQ    880 //PWM frequency proven as good for LEDs
 #else
-  #define WLED_PWM_FREQ  19531
+  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+    #define WLED_PWM_FREQ 9765    // XTAL clock is 40MHz (this will allow 12 bit resolution)
+  #else
+    #define WLED_PWM_FREQ  19531  // APB clock is 80MHz
+  #endif
 #endif
 #endif
 
