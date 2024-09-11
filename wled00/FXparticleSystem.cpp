@@ -39,9 +39,6 @@
 
 #if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)  
 #include "FXparticleSystem.h"
-#include "wled.h"
-#include "FastLED.h"
-#include "FX.h"
 #endif
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
@@ -750,9 +747,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
           }
         }
       }
-
     }
-
   }
   
   if (!useLocalBuffer) //disabled or allocation above failed
@@ -785,8 +780,7 @@ void ParticleSystem::ParticleSys_render(bool firemode, uint32_t fireintensity)
         baseHSV.s = particles[i].sat; //set the saturation
         baseRGB = (CRGB)baseHSV; // convert back to RGB
       }
-    }
-    
+    }    
     renderParticle(framebuffer, i, brightness, baseRGB, renderbuffer);
   }
 
@@ -2365,6 +2359,7 @@ int32_t limitSpeed(int32_t speed)
 // note: result is stored in c1, so c1 will contain the result. not using a return value is much faster as the struct does not need to be copied upon return
 void fast_color_add(CRGB &c1, CRGB &c2, uint32_t scale)
 {
+  //note: function is manly used to add scaled colors, so checking if one color is black is slower
   uint32_t r, g, b;
   if (scale < 255) {
     r = c1.r + ((c2.r * scale) >> 8);

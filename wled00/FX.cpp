@@ -8228,7 +8228,6 @@ uint16_t mode_particlefire(void)
 
   if (PartSys == NULL)
     return mode_static(); // something went wrong, no data!
-  
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setWrapX(SEGMENT.check2);
@@ -8257,7 +8256,7 @@ uint16_t mode_particlefire(void)
   // update the flame sprays:
   for (i = 0; i < numFlames; i++)
   {
-    if (SEGMENT.call & 1 && PartSys->sources[i].source.ttl > 0) // every second frame
+    if (SEGMENT.call & 1 && PartSys->sources[i].source.ttl > 0) // every second frame 
     {
       PartSys->sources[i].source.ttl--;
     }
@@ -8865,26 +8864,26 @@ uint16_t mode_particleattractor(void)
   else
     PartSys->angleEmit(PartSys->sources[0], SEGENV.aux0 + 0x7FFF, 12); // emit at 180° as well
   // apply force
-  #ifdef USERMOD_AUDIOREACTIVE        
+  #ifdef USERMOD_AUDIOREACTIVE  
+  uint32_t strength = SEGMENT.speed;      
   um_data_t *um_data;
-  if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))          
-  {    
-    uint8_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]);
-    uint8_t strength = volumeSmth;
-    if(SEGMENT.check3) strength = SEGMENT.speed; //AR disabled
-    for (uint32_t i = 0; i < PartSys->usedParticles; i++) // update particles
-      {
-         PartSys->pointAttractor(i, attractor, strength, false);         
-      }
-  }
-  else //no data, do classic attractor
+  if(!SEGMENT.check3) //AR enabled
   {
-    for(uint32_t i = 0; i < displayparticles; i++) 
-    {
-      PartSys->pointAttractor(i, attractor, SEGMENT.speed, SEGMENT.check3);
+    if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))          
+    {    
+      uint8_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]);
+      uint32_t strength = volumeSmth;    
+      for (uint32_t i = 0; i < PartSys->usedParticles; i++) // update particles
+        {
+          PartSys->pointAttractor(i, attractor, strength, false);         
+        }
     }
   }
-  #else  
+  for(uint32_t i = 0; i < displayparticles; i++) 
+  {
+     PartSys->pointAttractor(i, attractor, strength, false); 
+  }  
+  #else  // no AR
   for(uint32_t i = 0; i < displayparticles; i++) 
   {
     PartSys->pointAttractor(i, attractor, SEGMENT.speed, SEGMENT.check3);
@@ -10757,12 +10756,10 @@ uint16_t mode_particleFire1D(void)
   for(uint i = 0; i < 3; i++) 
   { 
     if(PartSys->sources[i].source.ttl > 50)
-      PartSys->sources[i].source.ttl -= 10;
+      PartSys->sources[i].source.ttl -= 10; //TODO: in 2D making the source fade out slow results in much smoother flames, need to check if it can be done the same
     else  
-       PartSys->sources[i].source.ttl = 100 + random16(200);
-  }
-  
-  
+       PartSys->sources[i].source.ttl = 100 + random16(200); // base flame
+  }  
   for(uint i = 0; i < PartSys->numSources; i++) 
   { 
     j = (j + 1) % PartSys->numSources;
@@ -10770,7 +10767,7 @@ uint16_t mode_particleFire1D(void)
     PartSys->sources[j].var = 2 + (SEGMENT.speed >> 4);  
     //base flames
     if(j > 2) {
-      PartSys->sources[j].minLife = 150 + SEGMENT.intensity + (j << 2); 
+      PartSys->sources[j].minLife = 150 + SEGMENT.intensity + (j << 2); //TODO: in 2D, min life is maxlife/2 and that looks very nice
       PartSys->sources[j].maxLife = 200 + SEGMENT.intensity + (j << 3); 
       PartSys->sources[j].v = (SEGMENT.speed >> (2 + (j<<1)));
       if(emitparticles)
@@ -10780,11 +10777,11 @@ uint16_t mode_particleFire1D(void)
       }
     }
     else{
-      PartSys->sources[j].minLife = PartSys->sources[j].source.ttl + SEGMENT.intensity; 
+      PartSys->sources[j].minLife = PartSys->sources[j].source.ttl + SEGMENT.intensity;  //TODO: in 2D, emitted particle ttl depends on source TTL, mimic here the same way? OR: change 2D to the same way it is done here and ditch special fire treatment in emit?
       PartSys->sources[j].maxLife = PartSys->sources[j].minLife + 50; 
       PartSys->sources[j].v = SEGMENT.speed >> 2;
       if(SEGENV.call & 0x01) //every second frame
-        PartSys->sprayEmit(PartSys->sources[j]); //emit a particle
+        PartSys->sprayEmit(PartSys->sources[j]); //emit a particle 
     }
   }
 
