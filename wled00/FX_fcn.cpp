@@ -1197,7 +1197,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
 ///////////////////////////////////////////////////////////////////////////////
 
 //do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(void) {
+void WS2812FX::finalizeInit() {
   //reset segment runtimes
   for (segment &seg : _segments) {
     seg.markForReset();
@@ -1366,7 +1366,7 @@ uint32_t IRAM_ATTR WS2812FX::getPixelColor(uint16_t i) const {
   return BusManager::getPixelColor(i);
 }
 
-void WS2812FX::show(void) {
+void WS2812FX::show() {
   // avoid race condition, capture _callback value
   show_callback callback = _callback;
   if (callback) callback();
@@ -1463,7 +1463,7 @@ uint8_t WS2812FX::getActiveSegsLightCapabilities(bool selectedOnly) const {
   return totalLC;
 }
 
-uint8_t WS2812FX::getFirstSelectedSegId(void) const {
+uint8_t WS2812FX::getFirstSelectedSegId() const {
   size_t i = 0;
   for (const segment &seg : _segments) {
     if (seg.isActive() && seg.isSelected()) return i;
@@ -1481,14 +1481,14 @@ void WS2812FX::setMainSegmentId(uint8_t n) {
   return;
 }
 
-uint8_t WS2812FX::getLastActiveSegmentId(void) const {
+uint8_t WS2812FX::getLastActiveSegmentId() const {
   for (size_t i = _segments.size() -1; i > 0; i--) {
     if (_segments[i].isActive()) return i;
   }
   return 0;
 }
 
-uint8_t WS2812FX::getActiveSegmentsNum(void) const {
+uint8_t WS2812FX::getActiveSegmentsNum() const {
   uint8_t c = 0;
   for (size_t i = 0; i < _segments.size(); i++) {
     if (_segments[i].isActive()) c++;
@@ -1496,13 +1496,13 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) const {
   return c;
 }
 
-uint16_t WS2812FX::getLengthTotal(void) const {
+uint16_t WS2812FX::getLengthTotal() const {
   unsigned len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
   if (isMatrix && _length > len) len = _length; // for 2D with trailing strip
   return len;
 }
 
-uint16_t WS2812FX::getLengthPhysical(void) const {
+uint16_t WS2812FX::getLengthPhysical() const {
   unsigned len = 0;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
@@ -1515,7 +1515,7 @@ uint16_t WS2812FX::getLengthPhysical(void) const {
 //used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
 //returns if there is an RGBW bus (supports RGB and White, not only white)
 //not influenced by auto-white mode, also true if white slider does not affect output white channel
-bool WS2812FX::hasRGBWBus(void) const {
+bool WS2812FX::hasRGBWBus() const {
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
@@ -1524,7 +1524,7 @@ bool WS2812FX::hasRGBWBus(void) const {
   return false;
 }
 
-bool WS2812FX::hasCCTBus(void) const {
+bool WS2812FX::hasCCTBus() const {
   if (cctFromRgb && !correctWB) return false;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
