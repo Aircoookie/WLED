@@ -117,8 +117,7 @@ void initPresetsFile()
 
 bool applyPresetFromPlaylist(byte index)
 {
-  DEBUG_PRINT(F("Request to apply preset: "));
-  DEBUG_PRINTLN(index);
+  DEBUG_PRINTF_P(PSTR("Request to apply preset: %d\n"), index);
   presetToApply = index;
   callModeToApply = CALL_MODE_DIRECT_CHANGE;
   return true;
@@ -127,8 +126,7 @@ bool applyPresetFromPlaylist(byte index)
 bool applyPreset(byte index, byte callMode)
 {
   unloadPlaylist(); // applying a preset unloads the playlist (#3827)
-  DEBUG_PRINT(F("Request to apply preset: "));
-  DEBUG_PRINTLN(index);
+  DEBUG_PRINTF_P(PSTR("Request to apply preset: %u\n"), index);
   presetToApply = index;
   callModeToApply = callMode;
   return true;
@@ -163,8 +161,7 @@ void handlePresets()
   presetToApply = 0; //clear request for preset
   callModeToApply = 0;
 
-  DEBUG_PRINT(F("Applying preset: "));
-  DEBUG_PRINTLN(tmpPreset);
+  DEBUG_PRINTF_P(PSTR("Applying preset: %u\n"), (unsigned)tmpPreset);
 
   #ifdef ARDUINO_ARCH_ESP32
   if (tmpPreset==255 && tmpRAMbuffer!=nullptr) {
@@ -222,7 +219,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
     else                             sprintf_P(saveName, PSTR("Preset %d"), index);
   }
 
-  DEBUG_PRINT(F("Saving preset (")); DEBUG_PRINT(index); DEBUG_PRINT(F(") ")); DEBUG_PRINTLN(saveName);
+  DEBUG_PRINTF_P(PSTR("Saving preset (%d) %s\n"), index, saveName);
 
   presetToSave = index;
   playlistSave = false;

@@ -281,9 +281,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         if ((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) {
           if (digitalPinToAnalogChannel(btnPin[s]) < 0) {
             // not an ADC analog pin
-            DEBUG_PRINT(F("PIN ALLOC error: GPIO")); DEBUG_PRINT(btnPin[s]);
-            DEBUG_PRINT(F("for analog button #")); DEBUG_PRINT(s);
-            DEBUG_PRINTLN(F(" is not an analog pin!"));
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[s], s);
             btnPin[s] = -1;
             pinManager.deallocatePin(pin,PinOwner::Button);
           } else {
@@ -294,7 +292,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         {
           if (digitalPinToTouchChannel(btnPin[s]) < 0) {
             // not a touch pin
-            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[s], s);
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not a touch pin!\n"), btnPin[s], s);
             btnPin[s] = -1;
             pinManager.deallocatePin(pin,PinOwner::Button);
           }          
@@ -302,7 +300,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
           #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a function to check touch state but need to attach an interrupt to do so
           else
           {
-            touchAttachInterrupt(btnPin[s], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+            touchAttachInterrupt(btnPin[s], touchButtonISR, touchThreshold << 4); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
           }
           #endif
         }

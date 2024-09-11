@@ -23,6 +23,9 @@
     #ifndef TFT_RST
         #error Please define TFT_RST
     #endif
+    #ifndef TFT_CS
+        #error Please define TFT_CS
+    #endif
     #ifndef LOAD_GLCD
         #error Please define LOAD_GLCD
     #endif
@@ -377,7 +380,7 @@ class St7789DisplayUsermod : public Usermod {
       oappend(SET_F("addInfo('ST7789:pin[]',0,'','SPI CS');"));
       oappend(SET_F("addInfo('ST7789:pin[]',1,'','SPI DC');"));
       oappend(SET_F("addInfo('ST7789:pin[]',2,'','SPI RST');"));
-      oappend(SET_F("addInfo('ST7789:pin[]',2,'','SPI BL');"));
+      oappend(SET_F("addInfo('ST7789:pin[]',3,'','SPI BL');"));
     }
 
     /*

@@ -200,6 +200,8 @@
 #define USERMOD_ID_INA226                50     //Usermod "usermod_ina226.h"
 #define USERMOD_ID_AHT10                 51     //Usermod "usermod_aht10.h"
 #define USERMOD_ID_LD2410                52     //Usermod "usermod_ld2410.h"
+#define USERMOD_ID_POV_DISPLAY           53     //Usermod "usermod_pov_display.h"
+#define USERMOD_ID_PIXELS_DICE_TRAY      54     //Usermod "pixels_dice_tray.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -624,6 +626,14 @@
 #endif
 #ifndef HW_PIN_MISOSPI
   #define HW_PIN_MISOSPI MISO
+#endif
+
+// IRAM_ATTR for 8266 with 32Kb IRAM causes error: section `.text1' will not fit in region `iram1_0_seg'
+// this hack removes the IRAM flag for some 1D/2D functions - somewhat slower, but it solves problems with some older 8266 chips
+#ifdef WLED_SAVE_IRAM
+  #define IRAM_ATTR_YN
+#else
+  #define IRAM_ATTR_YN IRAM_ATTR
 #endif
 
 #endif

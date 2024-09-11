@@ -131,6 +131,11 @@ Specification from: [Molicel INR18650-M35A, 3500mAh 10A Lithium-ion battery, 3.6
 
 ## 📝 Change Log
 
+2024-08-19
+
+- Improved MQTT support
+- Added battery percentage & battery voltage as MQTT topic
+
 2024-05-11
 
 - Documentation updated
