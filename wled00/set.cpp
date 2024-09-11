@@ -157,8 +157,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED mA
       char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max mA
       if (!request->hasArg(lp)) {
-        DEBUG_PRINT(F("No data for "));
-        DEBUG_PRINTLN(s);
+        DEBUG_PRINTF_P(PSTR("No data for %d\n"), s);
         break;
       }
       for (int i = 0; i < 5; i++) {
@@ -289,7 +288,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
           else                    
           {
-            touchAttachInterrupt(btnPin[i], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+            touchAttachInterrupt(btnPin[i], touchButtonISR, touchThreshold << 4); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
           }
           #endif          
         }
@@ -726,7 +725,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                         subObj[name].add(value.toInt());    // we may have an int
           j++;
         }
-        DEBUG_PRINT(F("[")); DEBUG_PRINT(j); DEBUG_PRINT(F("] = ")); DEBUG_PRINTLN(value);
+        DEBUG_PRINTF_P(PSTR("[%d] = %s\n"), j, value.c_str());
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
         // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
@@ -745,7 +744,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           } else if (type == "int")      subObj[name] = value.toInt();
           else                           subObj[name] = value;  // text fields
         }
-        DEBUG_PRINT(F(" = ")); DEBUG_PRINTLN(value);
+        DEBUG_PRINTF_P(PSTR(" = %s\n"), value.c_str());
       }
     }
     usermods.readFromConfig(um);  // force change of usermod parameters
@@ -806,8 +805,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (!(req.indexOf("win") >= 0)) return false;
 
   int pos = 0;
-  DEBUG_PRINT(F("API req: "));
-  DEBUG_PRINTLN(req);
+  DEBUG_PRINTF_P(PSTR("API req: %s\n"), req.c_str());
 
   //segment select (sets main segment)
   pos = req.indexOf(F("SM="));

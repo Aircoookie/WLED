@@ -161,7 +161,7 @@ void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR Segment::XY(int x, int y) {
+uint16_t IRAM_ATTR_YN Segment::XY(int x, int y) {
   unsigned width  = virtualWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   unsigned height = virtualHeight();  // segment height in logical pixels (is always >= 1)
   return isActive() ? (x%width) + (y%height) * width : 0;
@@ -171,7 +171,7 @@ uint16_t IRAM_ATTR Segment::XY(int x, int y) {
 // if clipping start > stop the clipping range is inverted
 // _modeBlend==true  -> old effect during transition
 // _modeBlend==false -> new effect during transition
-bool IRAM_ATTR Segment::isPixelXYClipped(int x, int y) const {
+bool IRAM_ATTR_YN Segment::isPixelXYClipped(int x, int y) const {
 #ifndef WLED_DISABLE_MODE_BLEND
   if (_clipStart != _clipStop && blendingStyle > BLEND_STYLE_FADE) {
     const bool invertX    = _clipStart > _clipStop;
@@ -198,7 +198,7 @@ bool IRAM_ATTR Segment::isPixelXYClipped(int x, int y) const {
   return false;
 }
 
-void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
 
@@ -265,7 +265,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
         else           strip.setPixelColorXY(start + xX, startY + H - yY - 1, tmpCol);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(W - xX - 1, H - yY - 1, tmpCol);
+        strip.setPixelColorXY(start + W - xX - 1, startY + H - yY - 1, tmpCol);
       }
     }
   }
@@ -318,7 +318,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 #endif
 
 // returns RGBW values of pixel
-uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) const {
+uint32_t IRAM_ATTR_YN Segment::getPixelColorXY(int x, int y) const {
   if (!isActive()) return 0; // not active
 
   int vW = virtualWidth();

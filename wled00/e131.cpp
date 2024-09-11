@@ -108,13 +108,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   if (e131SkipOutOfSequence)
     if (seq < e131LastSequenceNumber[previousUniverses] && seq > 20 && e131LastSequenceNumber[previousUniverses] < 250){
-      DEBUG_PRINT(F("skipping E1.31 frame (last seq="));
-      DEBUG_PRINT(e131LastSequenceNumber[previousUniverses]);
-      DEBUG_PRINT(F(", current seq="));
-      DEBUG_PRINT(seq);
-      DEBUG_PRINT(F(", universe="));
-      DEBUG_PRINT(uni);
-      DEBUG_PRINTLN(")");
+      DEBUG_PRINTF_P(PSTR("skipping E1.31 frame (last seq=%d, current seq=%d, universe=%d)\n"), e131LastSequenceNumber[previousUniverses], seq, uni);
       return;
     }
   e131LastSequenceNumber[previousUniverses] = seq;

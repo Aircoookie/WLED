@@ -50,6 +50,7 @@ class UsermodBattery : public Usermod
     //
     bool initDone = false;
     bool initializing = true;
+    bool HomeAssistantDiscovery = false;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -59,6 +60,7 @@ class UsermodBattery : public Usermod
     static const char _preset[];
     static const char _duration[];
     static const char _init[];
+    static const char _haDiscovery[];
 
     /**
      * Helper for rounding floating point values 
@@ -67,6 +69,17 @@ class UsermodBattery : public Usermod
     {
       float nx = (int)(x * 100 + .5);
       return (float)(nx / 100);
+    }
+
+    /**
+     * Helper for converting a string to lowercase
+     */
+    String stringToLower(String str)
+    {
+      for(int i = 0; i < str.length(); i++)
+        if(str[i] >= 'A' && str[i] <= 'Z')
+            str[i] += 32;
+      return str;
     }
 
     /**
@@ -114,6 +127,55 @@ class UsermodBattery : public Usermod
         return (analogRead(batteryPin) / 1023.0f) * bat->getVoltageMultiplier() + bat->getCalibration();
       #endif
     }
+
+#ifndef WLED_DISABLE_MQTT
+    void addMqttSensor(const String &name, const String &type, const String &topic, const String &deviceClass, const String &unitOfMeasurement = "", const bool &isDiagnostic = false)
+    {      
+      StaticJsonDocument<600> doc;
+      char uid[128], json_str[1024], buf[128];
+
+      doc[F("name")] = name;
+      doc[F("stat_t")] = topic;
+      sprintf_P(uid, PSTR("%s_%s_%s"), escapedMac.c_str(), stringToLower(name).c_str(), type);
+      doc[F("uniq_id")] = uid;
+      doc[F("dev_cla")] = deviceClass;
+      doc[F("exp_aft")] = 1800;
+
+      if(type == "binary_sensor") {
+        doc[F("pl_on")]  = "on";
+        doc[F("pl_off")] = "off";
+      }
+
+      if(unitOfMeasurement != "")
+        doc[F("unit_of_measurement")] = unitOfMeasurement;
+
+      if(isDiagnostic)
+        doc[F("entity_category")] = "diagnostic";
+
+      JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
+      device[F("name")] = serverDescription;
+      device[F("ids")]  = String(F("wled-sensor-")) + mqttClientID;
+      device[F("mf")]   = F(WLED_BRAND);
+      device[F("mdl")]  = F(WLED_PRODUCT_NAME);
+      device[F("sw")]   = versionString;
+
+      sprintf_P(buf, PSTR("homeassistant/%s/%s/%s/config"), type, mqttClientID, uid);
+      DEBUG_PRINTLN(buf);
+      size_t payload_size = serializeJson(doc, json_str);
+      DEBUG_PRINTLN(json_str);
+
+      mqtt->publish(buf, 0, true, json_str, payload_size);
+    }
+
+    void publishMqtt(const char* topic, const char* state)
+    {
+      if (WLED_MQTT_CONNECTED) {
+        char buf[128];
+        snprintf_P(buf, 127, PSTR("%s/%s"), mqttDeviceTopic, topic);
+        mqtt->publish(buf, 0, false, state);
+      }
+    }
+#endif
 
   public:
     //Functions called by WLED
@@ -223,13 +285,8 @@ class UsermodBattery : public Usermod
         turnOff();
 
 #ifndef WLED_DISABLE_MQTT
-      // SmartHome stuff
-      // still don't know much about MQTT and/or HA
-      if (WLED_MQTT_CONNECTED) {
-        char buf[64]; // buffer for snprintf()
-        snprintf_P(buf, 63, PSTR("%s/voltage"), mqttDeviceTopic);
-        mqtt->publish(buf, 0, false, String(bat->getVoltage()).c_str());
-      }
+      publishMqtt("battery", String(bat->getLevel(), 0).c_str());
+      publishMqtt("voltage", String(bat->getVoltage()).c_str());
 #endif
 
     }
@@ -288,6 +345,7 @@ class UsermodBattery : public Usermod
       battery[F("calibration")] = bat->getCalibration();
       battery[F("voltage-multiplier")] = bat->getVoltageMultiplier();
       battery[FPSTR(_readInterval)] = readingInterval;
+      battery[FPSTR(_haDiscovery)] = HomeAssistantDiscovery;
 
       JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
       ao[FPSTR(_enabled)] = autoOffEnabled;
@@ -307,8 +365,8 @@ class UsermodBattery : public Usermod
       getJsonValue(battery[F("max-voltage")], cfg.maxVoltage);
       getJsonValue(battery[F("calibration")], cfg.calibration);
       getJsonValue(battery[F("voltage-multiplier")], cfg.voltageMultiplier);
-    
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
+      setHomeAssistantDiscovery(battery[FPSTR(_haDiscovery)] | HomeAssistantDiscovery);
 
       JsonObject ao = battery[F("auto-off")];
       setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
@@ -420,17 +478,18 @@ class UsermodBattery : public Usermod
     void appendConfigData()
     {
       // Total: 462 Bytes
-      oappend(SET_F("td=addDropdown('Battery', 'type');"));               // 35 Bytes
-      oappend(SET_F("addOption(td, 'Unkown', '0');"));                    // 30 Bytes
-      oappend(SET_F("addOption(td, 'LiPo', '1');"));                      // 28 Bytes
-      oappend(SET_F("addOption(td, 'LiOn', '2');"));                      // 28 Bytes
+      oappend(SET_F("td=addDropdown('Battery','type');"));              // 34 Bytes
+      oappend(SET_F("addOption(td,'Unkown','0');"));                    // 28 Bytes
+      oappend(SET_F("addOption(td,'LiPo','1');"));                      // 26 Bytes
+      oappend(SET_F("addOption(td,'LiOn','2');"));                      // 26 Bytes
       oappend(SET_F("addInfo('Battery:type',1,'<small style=\"color:orange\">requires reboot</small>');")); // 81 Bytes
-      oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));          // 40 Bytes
-      oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));          // 40 Bytes
-      oappend(SET_F("addInfo('Battery:interval', 1, 'ms');"));            // 38 Bytes
-      oappend(SET_F("addInfo('Battery:auto-off:threshold', 1, '%');"));   // 47 Bytes
-      oappend(SET_F("addInfo('Battery:indicator:threshold', 1, '%');"));  // 48 Bytes
-      oappend(SET_F("addInfo('Battery:indicator:duration', 1, 's');"));   // 47 Bytes
+      oappend(SET_F("addInfo('Battery:min-voltage',1,'v');"));          // 38 Bytes
+      oappend(SET_F("addInfo('Battery:max-voltage',1,'v');"));          // 38 Bytes
+      oappend(SET_F("addInfo('Battery:interval',1,'ms');"));            // 36 Bytes
+      oappend(SET_F("addInfo('Battery:HA-discovery',1,'');"));          // 38 Bytes
+      oappend(SET_F("addInfo('Battery:auto-off:threshold',1,'%');"));   // 45 Bytes
+      oappend(SET_F("addInfo('Battery:indicator:threshold',1,'%');"));  // 46 Bytes
+      oappend(SET_F("addInfo('Battery:indicator:duration',1,'s');"));   // 45 Bytes
       
       // this option list would exeed the oappend() buffer
       // a list of all presets to select one from
@@ -478,12 +537,12 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
-      // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
       setMinBatteryVoltage(battery[F("min-voltage")] | bat->getMinVoltage());
       setMaxBatteryVoltage(battery[F("max-voltage")] | bat->getMaxVoltage());
       setCalibration(battery[F("calibration")] | bat->getCalibration());
       setVoltageMultiplier(battery[F("voltage-multiplier")] | bat->getVoltageMultiplier());
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
+      setHomeAssistantDiscovery(battery[FPSTR(_haDiscovery)] | HomeAssistantDiscovery);
 
       getUsermodConfigFromJsonObject(battery);
 
@@ -513,38 +572,24 @@ class UsermodBattery : public Usermod
       return !battery[FPSTR(_readInterval)].isNull();
     }
 
-    /**
-     * TBD: Generate a preset sample for low power indication
-     * a button on the config page would be cool, currently not possible
-     */
-    void generateExamplePreset()
+#ifndef WLED_DISABLE_MQTT
+    void onMqttConnect(bool sessionPresent)
     {
-      // StaticJsonDocument<300> j;
-      // JsonObject preset = j.createNestedObject();
-      // preset["mainseg"] = 0;
-      // JsonArray seg = preset.createNestedArray("seg");
-      // JsonObject seg0 = seg.createNestedObject();
-      // seg0["id"] = 0;
-      // seg0["start"] = 0;
-      // seg0["stop"] = 60;
-      // seg0["grp"] = 0;
-      // seg0["spc"] = 0;
-      // seg0["on"] = true;
-      // seg0["bri"] = 255;
+      // Home Assistant Autodiscovery
+      if (!HomeAssistantDiscovery)
+        return;
 
-      // JsonArray col0 = seg0.createNestedArray("col");
-      // JsonArray col00 = col0.createNestedArray();
-      // col00.add(255);
-      // col00.add(0);
-      // col00.add(0);
+      // battery percentage
+      char mqttBatteryTopic[128];
+      snprintf_P(mqttBatteryTopic, 127, PSTR("%s/battery"), mqttDeviceTopic);
+      this->addMqttSensor(F("Battery"), "sensor", mqttBatteryTopic, "battery", "%", true);
 
-      // seg0["fx"] = 1;
-      // seg0["sx"] = 128;
-      // seg0["ix"] = 128;
-
-      // savePreset(199, "Low power Indicator", preset);
+      // voltage
+      char mqttVoltageTopic[128];
+      snprintf_P(mqttVoltageTopic, 127, PSTR("%s/voltage"), mqttDeviceTopic);
+      this->addMqttSensor(F("Voltage"), "sensor", mqttVoltageTopic, "voltage", "V", true);
     }
-   
+#endif   
 
     /*
      *
@@ -785,6 +830,22 @@ class UsermodBattery : public Usermod
     {
       return lowPowerIndicationDone;
     }
+
+    /**
+     * Set Home Assistant auto discovery
+     */
+    void setHomeAssistantDiscovery(bool enable)
+    {
+      HomeAssistantDiscovery = enable;
+    }
+
+    /**
+     * Get Home Assistant auto discovery
+     */
+    bool getHomeAssistantDiscovery()
+    {
+      return HomeAssistantDiscovery;
+    }
 };
 
 // strings to reduce flash memory usage (used more than twice)
@@ -795,3 +856,4 @@ const char UsermodBattery::_threshold[]     PROGMEM = "threshold";
 const char UsermodBattery::_preset[]        PROGMEM = "preset";
 const char UsermodBattery::_duration[]      PROGMEM = "duration";
 const char UsermodBattery::_init[]          PROGMEM = "init";
+const char UsermodBattery::_haDiscovery[]   PROGMEM = "HA-discovery";

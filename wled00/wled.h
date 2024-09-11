@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.15.0-b4
+   @version 0.15.0-b5
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2407070
+#define VERSION 2409100
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -36,7 +36,7 @@
   #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
 #endif
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
-#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
+//#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
   #define WLED_ENABLE_LOXONE       // uses 1.2kb
 #endif
@@ -331,7 +331,7 @@ typedef class WiFiOptions {
     struct {
       uint8_t selectedWiFi : 4; // max 16 SSIDs
       uint8_t apChannel    : 4;
-      bool    apHide       : 1;
+      uint8_t apHide       : 3;
       uint8_t apBehavior   : 3;
       bool    noWifiSleep  : 1;
       bool    force802_3g  : 1;
