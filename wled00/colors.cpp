@@ -72,23 +72,67 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
   if (c1 == BLACK || amount + video == 0) return BLACK;
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
-  uint32_t r = R(c1);
-  uint32_t g = G(c1);
-  uint32_t b = B(c1);
-  uint32_t w = W(c1);
   uint32_t scale = amount; // 32bit for faster calculation
   if (video) {
+    uint32_t r = R(c1);
+    uint32_t g = G(c1);
+    uint32_t b = B(c1);
+    uint32_t w = W(c1);
     scaledcolor  = (((r * scale) >> 8) + ((r && scale) ? 1 : 0)) << 16;
     scaledcolor |= (((g * scale) >> 8) + ((g && scale) ? 1 : 0)) << 8;
     scaledcolor |=  ((b * scale) >> 8) + ((b && scale) ? 1 : 0);
     scaledcolor |= (((w * scale) >> 8) + ((w && scale) ? 1 : 0)) << 24;
-  } else {
-    scaledcolor  = ((r * scale) >> 8) << 16;
-    scaledcolor |= ((g * scale) >> 8) << 8;
-    scaledcolor |=  (b * scale) >> 8;
-    scaledcolor |= ((w * scale) >> 8) << 24;
+  } else {  // according to compile explorer, this is 15% faster but cannot be used for video (its not faster if the assignments are seperated)
+   uint32_t r = (((c1&0x00FF0000) * scale) >> 8) & 0x00FF0000;
+   uint32_t g = (((c1&0x0000FF00) * scale) >> 8) & 0x0000FF00;
+   uint32_t b = ((c1&0x000000FF) * scale) >> 8;
+   uint32_t w = (((c1 & 0xFF000000) >> 8) * scale) & 0xFF000000; // Scale w and keep it in position
+   scaledcolor = r | g | b | w;
   }
   return scaledcolor;
+}
+
+// 1:1 replacement of fastled function optimized for ESP, slightly faster, more accurate and uses less flash (~ -200bytes)
+CRGB ColorFromPaletteWLED(const CRGBPalette16& pal, unsigned index, uint8_t brightness, TBlendType blendType)
+{
+   if ( blendType == LINEARBLEND_NOWRAP) {
+     //index = map8(index, 0, 239);  
+     index = (index*240) >> 8; // Blend range is affected by lo4 blend of values, remap to avoid wrapping
+   }
+    unsigned hi4 = byte(index) >> 4;
+    unsigned lo4 = index & 0x0F;
+    unsigned hi4XsizeofCRGB = hi4 * sizeof(CRGB);
+    // We then add that to a base array pointer.
+    const CRGB* entry = (CRGB*)( (uint8_t*)(&(pal[0])) + hi4XsizeofCRGB);
+    unsigned red1   = entry->red;
+    unsigned green1 = entry->green;
+    unsigned blue1  = entry->blue;     
+    if(blendType != NOBLEND) {
+        if(hi4 == 15) entry = &(pal[0]);
+        else ++entry;
+        unsigned red2 = entry->red;
+        unsigned green2 = entry->green;
+        unsigned blue2  = entry->blue;         
+        unsigned f2 = (lo4 << 4)+1; // +1 so we scale by 256 as a max value, then result can just be shifted by 8
+        unsigned f1 = (257 - f2); // f2 is 1 minimum, so this is 256 max
+        red1   *= f1;
+        green1 *= f1;
+        blue1  *= f1;
+        red2   *= f2;
+        green2 *= f2;
+        blue2  *= f2;
+        red1   = (red1 + red2) >> 8;          
+        green1 = (green1 + green2) >> 8;        
+        blue1  = (blue1 + blue2) >> 8;
+    }
+    if( brightness != 255) { // note: zero checking could be done to return black but that is hardly ever used so it is omitted
+          uint32_t scale = brightness;
+          scale++; // adjust for rounding (bitshift)
+          red1   = (red1 * scale) >> 8;
+          green1 = (green1 * scale) >> 8;
+          blue1  = (blue1 * scale) >> 8;
+    } 
+    return CRGB((uint8_t)red1, (uint8_t)green1, (uint8_t)blue1);
 }
 
 void setRandomColor(byte* rgb)
