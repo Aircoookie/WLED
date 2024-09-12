@@ -161,14 +161,14 @@ void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y)
+uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
 {
   unsigned width  = virtualWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   unsigned height = virtualHeight();  // segment height in logical pixels (is always >= 1)
   return isActive() ? (x%width) + (y%height) * width : 0;
 }
 
-void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
@@ -211,7 +211,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
         else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, tmpCol);
+        strip.setPixelColorXY(start + width() - xX - 1, startY + height() - yY - 1, tmpCol);
       }
     }
   }
@@ -264,7 +264,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 #endif
 
 // returns RGBW values of pixel
-uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) const {
+uint32_t IRAM_ATTR_YN Segment::getPixelColorXY(int x, int y) const {
   if (!isActive()) return 0; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;

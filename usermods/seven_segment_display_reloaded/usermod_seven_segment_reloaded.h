@@ -165,7 +165,7 @@ private:
   void _showElements(String *map, int timevar, bool isColon, bool removeZero
 
 ) {
-    if (!(*map).equals("") && !(*map) == NULL) {
+    if ((map != nullptr) && (*map != nullptr) && !(*map).equals("")) {
       int length = String(timevar).length();
       bool addZero = false;
       if (length == 1) {
@@ -236,11 +236,13 @@ private:
   }
 
   void _setLeds(int lednr, int lastSeenLedNr, bool range, int countSegments, int number, bool colon) {
+    if ((lednr < 0) || (lednr >= umSSDRLength)) return;                                   // prevent array bounds violation
 
+    if (!(colon && umSSDRColonblink) && ((number < 0) || (countSegments < 0))) return;
     if ((colon && umSSDRColonblink) || umSSDRNumbers[number][countSegments]) {
       
       if (range) {
-        for(int i = lastSeenLedNr; i <= lednr; i++) {
+        for(int i = max(0, lastSeenLedNr); i <= lednr; i++) {
           umSSDRMask[i] = true;
         }
       } else {

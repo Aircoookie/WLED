@@ -146,7 +146,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 }
 
 // allocates effect data buffer on heap and initialises (erases) it
-bool IRAM_ATTR Segment::allocateData(size_t len) {
+bool IRAM_ATTR_YN Segment::allocateData(size_t len) {
   if (len == 0) return false; // nothing to do
   if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
     if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
@@ -170,7 +170,7 @@ bool IRAM_ATTR Segment::allocateData(size_t len) {
   return true;
 }
 
-void IRAM_ATTR Segment::deallocateData() {
+void IRAM_ATTR_YN Segment::deallocateData() {
   if (!data) { _dataLen = 0; return; }
   //DEBUG_PRINTF_P(PSTR("---  Released data (%p): %d/%d -> %p\n"), this, _dataLen, Segment::getUsedSegmentData(), data);
   if ((Segment::getUsedSegmentData() > 0) && (_dataLen > 0)) { // check that we don't have a dangling / inconsistent data pointer
@@ -202,7 +202,7 @@ void Segment::resetIfRequired() {
   reset = false;
 }
 
-CRGBPalette16 IRAM_ATTR &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
+CRGBPalette16 IRAM_ATTR_YN &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // TODO remove strip dependency by moving customPalettes out of strip
   //default palette. Differs depending on effect
@@ -417,7 +417,7 @@ uint8_t IRAM_ATTR Segment::currentBri(bool useCct) const {
   return (useCct ? cct : (on ? opacity : 0));
 }
 
-uint8_t IRAM_ATTR Segment::currentMode() const {
+uint8_t IRAM_ATTR_YN Segment::currentMode() const {
 #ifndef WLED_DISABLE_MODE_BLEND
   unsigned prog = progress();
   if (modeBlending && prog < 0xFFFFU) return _t->_modeT;
@@ -425,7 +425,7 @@ uint8_t IRAM_ATTR Segment::currentMode() const {
   return mode;
 }
 
-uint32_t IRAM_ATTR Segment::currentColor(uint8_t slot) const {
+uint32_t IRAM_ATTR_YN Segment::currentColor(uint8_t slot) const {
   if (slot >= NUM_COLORS) slot = 0;
 #ifndef WLED_DISABLE_MODE_BLEND
   return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];
@@ -618,7 +618,7 @@ uint16_t IRAM_ATTR Segment::virtualHeight() const {
   return vHeight;
 }
 
-uint16_t IRAM_ATTR Segment::nrOfVStrips() const {
+uint16_t IRAM_ATTR_YN Segment::nrOfVStrips() const {
   unsigned vLen = 1;
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
@@ -701,7 +701,7 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
   return vLength;
 }
 
-void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 {
   if (!isActive()) return; // not active
 #ifndef WLED_DISABLE_2D
@@ -895,7 +895,7 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 }
 #endif
 
-uint32_t IRAM_ATTR Segment::getPixelColor(int i) const
+uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
 {
   if (!isActive()) return 0; // not active
 #ifndef WLED_DISABLE_2D
@@ -1197,7 +1197,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
 ///////////////////////////////////////////////////////////////////////////////
 
 //do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(void) {
+void WS2812FX::finalizeInit() {
   //reset segment runtimes
   for (segment &seg : _segments) {
     seg.markForReset();
@@ -1366,7 +1366,7 @@ uint32_t IRAM_ATTR WS2812FX::getPixelColor(uint16_t i) const {
   return BusManager::getPixelColor(i);
 }
 
-void WS2812FX::show(void) {
+void WS2812FX::show() {
   // avoid race condition, capture _callback value
   show_callback callback = _callback;
   if (callback) callback();
@@ -1463,7 +1463,7 @@ uint8_t WS2812FX::getActiveSegsLightCapabilities(bool selectedOnly) const {
   return totalLC;
 }
 
-uint8_t WS2812FX::getFirstSelectedSegId(void) const {
+uint8_t WS2812FX::getFirstSelectedSegId() const {
   size_t i = 0;
   for (const segment &seg : _segments) {
     if (seg.isActive() && seg.isSelected()) return i;
@@ -1481,14 +1481,14 @@ void WS2812FX::setMainSegmentId(uint8_t n) {
   return;
 }
 
-uint8_t WS2812FX::getLastActiveSegmentId(void) const {
+uint8_t WS2812FX::getLastActiveSegmentId() const {
   for (size_t i = _segments.size() -1; i > 0; i--) {
     if (_segments[i].isActive()) return i;
   }
   return 0;
 }
 
-uint8_t WS2812FX::getActiveSegmentsNum(void) const {
+uint8_t WS2812FX::getActiveSegmentsNum() const {
   uint8_t c = 0;
   for (size_t i = 0; i < _segments.size(); i++) {
     if (_segments[i].isActive()) c++;
@@ -1496,13 +1496,13 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) const {
   return c;
 }
 
-uint16_t WS2812FX::getLengthTotal(void) const {
+uint16_t WS2812FX::getLengthTotal() const {
   unsigned len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
   if (isMatrix && _length > len) len = _length; // for 2D with trailing strip
   return len;
 }
 
-uint16_t WS2812FX::getLengthPhysical(void) const {
+uint16_t WS2812FX::getLengthPhysical() const {
   unsigned len = 0;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
@@ -1515,7 +1515,7 @@ uint16_t WS2812FX::getLengthPhysical(void) const {
 //used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
 //returns if there is an RGBW bus (supports RGB and White, not only white)
 //not influenced by auto-white mode, also true if white slider does not affect output white channel
-bool WS2812FX::hasRGBWBus(void) const {
+bool WS2812FX::hasRGBWBus() const {
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
@@ -1524,7 +1524,7 @@ bool WS2812FX::hasRGBWBus(void) const {
   return false;
 }
 
-bool WS2812FX::hasCCTBus(void) const {
+bool WS2812FX::hasCCTBus() const {
   if (cctFromRgb && !correctWB) return false;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
