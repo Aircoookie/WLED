@@ -87,26 +87,26 @@ bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv
   return true;
 }
 
-static size_t printSetInt(Print& dest, const char* key, const char* selector, int value) {
+static size_t printSetFormInput(Print& dest, const char* key, const char* selector, int value) {
   return dest.printf_P(PSTR("d.Sf.%s.%s=%d;"), key, selector, value);
 }
 
-size_t printSetCheckbox(Print& dest, const char* key, int val) {
-  return printSetInt(dest, key, PSTR("checked"), val);
+size_t printSetFormCheckbox(Print& dest, const char* key, int val) {
+  return printSetFormInput(dest, key, PSTR("checked"), val);
 }
-size_t printSetValue(Print& dest, const char* key, int val) {
-  return printSetInt(dest, key, PSTR("value"), val);
+size_t printSetFormValue(Print& dest, const char* key, int val) {
+  return printSetFormInput(dest, key, PSTR("value"), val);
 }
-size_t printSetIndex(Print& dest, const char* key, int index) {
-  return printSetInt(dest, key, PSTR("selectedIndex"), index);
+size_t printSetFormIndex(Print& dest, const char* key, int index) {
+  return printSetFormInput(dest, key, PSTR("selectedIndex"), index);
 }
 
-size_t printSetValue(Print& dest, const char* key, const char* val) {
+size_t printSetFormValue(Print& dest, const char* key, const char* val) {
   return dest.printf_P(PSTR("d.Sf.%s.value=\"%s\";"),key,val);
 }
 
-size_t printSetMessage(Print& dest, const char* key, const char* val) {
-  return dest.printf_P(PSTR("d.getElementsByClassName%s.innerHTML=\"%s\";"), key, val);
+size_t printSetClassElementHTML(Print& dest, const char* key, const int index, const char* val) {
+  return dest.printf_P(PSTR("d.getElementsByClassName(\"%s\")[%d].innerHTML=\"%s\";"), key, index, val);
 }
 
 
