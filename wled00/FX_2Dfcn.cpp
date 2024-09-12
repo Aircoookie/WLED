@@ -173,34 +173,30 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
-  if (reverse  ) x = virtualWidth()  - x - 1;
-  if (reverse_y) y = virtualHeight() - y - 1;
-  if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
-
-  x *= groupLength(); // expand to physical pixels
-  y *= groupLength(); // expand to physical pixels
-
-  int W = width();
-  int H = height();
-  if (x >= W || y >= H) return;  // if pixel would fall out of segment just exit
-
   uint8_t _bri_t = currentBri(); 
   if (_bri_t < 255) {
     col = color_fade(col, _bri_t);
   }
 
+  if (reverse  ) x = virtualWidth()  - x - 1;
+  if (reverse_y) y = virtualHeight() - y - 1;
+  if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
+  x *= groupLength(); // expand to physical pixels
+  y *= groupLength(); // expand to physical pixels
+  int W = width();
+  int H = height();
+ 
+  int yY = y;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
+    if(yY >= H) continue;
+    int xX = x;    
     for (int g = 0; g < grouping; g++) { // groupping horizontally
-      int xX = (x+g), yY = (y+j);
-      if (xX >= W || yY >= H) continue;  // we have reached one dimension's end
-
+      if (xX >= W) continue;  // we have reached one dimension's end
 #ifndef WLED_DISABLE_MODE_BLEND
       // if blending modes, blend with underlying pixel
       if (_modeBlend) col = color_blend(strip.getPixelColorXY(start + xX, startY + yY), col, 0xFFFFU - progress(), true);
 #endif
-
       strip.setPixelColorXY(start + xX, startY + yY, col);
-
       if (mirror) { //set the corresponding horizontally mirrored pixel
         if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
         else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
@@ -212,7 +208,9 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
         strip.setPixelColorXY(start + width() - xX - 1, startY + height() - yY - 1, col);
       }
+      xX++;
     }
+    yY++;
   }
 }
 

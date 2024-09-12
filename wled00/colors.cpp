@@ -92,34 +92,23 @@ CRGB ColorFromPaletteWLED(const CRGBPalette16& pal, unsigned index, uint8_t brig
      index = (index*240) >> 8; // Blend range is affected by lo4 blend of values, remap to avoid wrapping
    }
     unsigned hi4 = byte(index) >> 4;
-    unsigned lo4 = index & 0x0F;
-    unsigned hi4XsizeofCRGB = hi4 * sizeof(CRGB);
     // We then add that to a base array pointer.
-    const CRGB* entry = (CRGB*)( (uint8_t*)(&(pal[0])) + hi4XsizeofCRGB);
-    unsigned red1   = entry->red;
-    unsigned green1 = entry->green;
-    unsigned blue1  = entry->blue;     
+    const CRGB* entry = (CRGB*)( (uint8_t*)(&(pal[0])) + (hi4 * sizeof(CRGB)));
+    unsigned red1   = entry->r;
+    unsigned green1 = entry->g;
+    unsigned blue1  = entry->b;     
     if(blendType != NOBLEND) {
         if(hi4 == 15) entry = &(pal[0]);
         else ++entry;
-        unsigned red2 = entry->red;
-        unsigned green2 = entry->green;
-        unsigned blue2  = entry->blue;         
-        unsigned f2 = (lo4 << 4)+1; // +1 so we scale by 256 as a max value, then result can just be shifted by 8
+       // unsigned red2 = entry->red;      
+        unsigned f2 = ((index & 0x0F) << 4) + 1; // +1 so we scale by 256 as a max value, then result can just be shifted by 8
         unsigned f1 = (257 - f2); // f2 is 1 minimum, so this is 256 max
-        red1   *= f1;
-        green1 *= f1;
-        blue1  *= f1;
-        red2   *= f2;
-        green2 *= f2;
-        blue2  *= f2;
-        red1   = (red1 + red2) >> 8;          
-        green1 = (green1 + green2) >> 8;        
-        blue1  = (blue1 + blue2) >> 8;
+        red1   = (red1 * f1 + (unsigned)entry->r * f2) >> 8;          
+        green1   = (green1 * f1 + (unsigned)entry->g * f2) >> 8;        
+        blue1   = (green1 * f1 + (unsigned)entry->b * f2) >> 8;                
     }
-    if( brightness != 255) { // note: zero checking could be done to return black but that is hardly ever used so it is omitted
-          uint32_t scale = brightness;
-          scale++; // adjust for rounding (bitshift)
+    if( brightness < 255) { // note: zero checking could be done to return black but that is hardly ever used so it is omitted
+          uint32_t scale = brightness + 1; // adjust for rounding (bitshift)          
           red1   = (red1 * scale) >> 8;
           green1 = (green1 * scale) >> 8;
           blue1  = (blue1 * scale) >> 8;
