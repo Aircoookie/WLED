@@ -47,7 +47,7 @@ struct ColorOrderMap {
       return &(_mappings[n]);
     }
 
-    uint8_t getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const;
+    [[gnu::hot]] uint8_t getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const;
 
   private:
     std::vector<ColorOrderMapEntry> _mappings;
@@ -201,9 +201,9 @@ class BusDigital : public Bus {
     bool canShow() const override;
     void setBrightness(uint8_t b) override;
     void setStatusPixel(uint32_t c) override;
-    void setPixelColor(uint16_t pix, uint32_t c) override;
+    [[gnu::hot]] void setPixelColor(uint16_t pix, uint32_t c) override;
     void setColorOrder(uint8_t colorOrder) override;
-    uint32_t getPixelColor(uint16_t pix) const override;
+    [[gnu::hot]] uint32_t getPixelColor(uint16_t pix) const override;
     uint8_t  getColorOrder() const override  { return _colorOrder; }
     uint8_t  getPins(uint8_t* pinArray = nullptr) const override;
     uint8_t  skippedLeds() const override    { return _skip; }
@@ -382,7 +382,7 @@ class BusManager {
     static void show();
     static bool canAllShow();
     static void setStatusPixel(uint32_t c);
-    static void setPixelColor(uint16_t pix, uint32_t c);
+    [[gnu::hot]] static void setPixelColor(uint16_t pix, uint32_t c);
     static void setBrightness(uint8_t b);
     // for setSegmentCCT(), cct can only be in [-1,255] range; allowWBCorrection will convert it to K
     // WARNING: setSegmentCCT() is a misleading name!!! much better would be setGlobalCCT() or just setCCT()
