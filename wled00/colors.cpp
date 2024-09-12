@@ -39,10 +39,6 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 {
   if (c1 == BLACK) return c2;
   if (c2 == BLACK) return c1;
-  /*uint32_t r = R(c1) + R(c2);
-  uint32_t g = G(c1) + G(c2);
-  uint32_t b = B(c1) + B(c2);
-  uint32_t w = W(c1) + W(c2);*/
   uint32_t rb = (c1 & 0x00FF00FF) + (c2 & 0x00FF00FF); 
   uint32_t r = rb >> 16;
   uint32_t b = rb & 0xFFFF; 
