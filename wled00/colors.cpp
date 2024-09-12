@@ -70,25 +70,22 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
-  if (c1 == BLACK || amount + video == 0) return BLACK;
+  if (c1 == BLACK || amount == 0) return BLACK;
+  else if (amount == 255) return c1;  
+  video = true;
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
   uint32_t scale = amount; // 32bit for faster calculation
-  if (video) {
-    uint32_t r = R(c1);
-    uint32_t g = G(c1);
-    uint32_t b = B(c1);
-    uint32_t w = W(c1);
-    scaledcolor  = (((r * scale) >> 8) + ((r && scale) ? 1 : 0)) << 16;
-    scaledcolor |= (((g * scale) >> 8) + ((g && scale) ? 1 : 0)) << 8;
-    scaledcolor |=  ((b * scale) >> 8) + ((b && scale) ? 1 : 0);
-    scaledcolor |= (((w * scale) >> 8) + ((w && scale) ? 1 : 0)) << 24;
-  } else {  // according to compile explorer, this is 15% faster but cannot be used for video (its not faster if the assignments are seperated)
-   uint32_t r = (((c1&0x00FF0000) * scale) >> 8) & 0x00FF0000;
-   uint32_t g = (((c1&0x0000FF00) * scale) >> 8) & 0x0000FF00;
-   uint32_t b = ((c1&0x000000FF) * scale) >> 8;
-   uint32_t w = (((c1 & 0xFF000000) >> 8) * scale) & 0xFF000000; // Scale w and keep it in position
-   scaledcolor = r | g | b | w;
+  uint32_t addRemains = 0;
+  if (!video) amount++; // add one for correct scaling using bitshifts
+  else { // video scaling: make sure colors do not dim to zero if they started non-zero
+    addRemains = R(c1) ? 0x00010000 : 0;
+    addRemains |= G(c1) ? 0x00000100 : 0;
+    addRemains |= B(c1) ? 0x00000001 : 0;
+    addRemains |= W(c1) ? 0x01000000 : 0;
   }
+  uint32_t rb = (((c1 & 0x00FF00FF) * scale) >> 8) & 0x00FF00FF; // scale red and blue
+  uint32_t wg = (((c1 & 0xFF00FF00) >> 8) * scale) & 0xFF00FF00; // scale white and green
+  scaledcolor = (rb | wg) + addRemains;  
   return scaledcolor;
 }
 
