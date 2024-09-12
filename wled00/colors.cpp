@@ -39,21 +39,17 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 {
   if (c1 == BLACK) return c2;
   if (c2 == BLACK) return c1;
-  if (fast) {
-    uint8_t r = R(c1);
-    uint8_t g = G(c1);
-    uint8_t b = B(c1);
-    uint8_t w = W(c1);
-    r = qadd8(r, R(c2));
-    g = qadd8(g, G(c2));
-    b = qadd8(b, B(c2));
-    w = qadd8(w, W(c2));
+  uint32_t r = R(c1) + R(c2);
+  uint32_t g = G(c1) + G(c2);
+  uint32_t b = B(c1) + B(c2);
+  uint32_t w = W(c1) + W(c2);
+  if (fast) {    
+    r = r > 255 ? 255 : r; 
+    g = g > 255 ? 255 : g; 
+    b = b > 255 ? 255 : b; 
+    w = w > 255 ? 255 : w; 
     return RGBW32(r,g,b,w);
   } else {
-    uint32_t r = R(c1) + R(c2);
-    uint32_t g = G(c1) + G(c2);
-    uint32_t b = B(c1) + B(c2);
-    uint32_t w = W(c1) + W(c2);
     unsigned max = r;
     if (g > max) max = g;
     if (b > max) max = b;
@@ -72,7 +68,6 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
   if (c1 == BLACK || amount == 0) return BLACK;
   else if (amount == 255) return c1;  
-  video = true;
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
   uint32_t scale = amount; // 32bit for faster calculation
   uint32_t addRemains = 0;
