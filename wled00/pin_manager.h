@@ -113,7 +113,7 @@ class PinManagerClass {
   bool isPinOk(byte gpio, bool output = true) const;
   
   static bool isReadOnlyPin(byte gpio);
-  static bool isPinDefined(byte gpio, const unsigned* pins, unsigned start = 0, unsigned end = WLED_NUM_PINS);
+  static bool isPinDefined(const byte gpio, const uint8_t* pins, const unsigned index = 255);
 
   PinOwner getPinOwner(byte gpio) const;
 

@@ -281,9 +281,11 @@ bool PinManagerClass::isReadOnlyPin(byte gpio)
   return false;
 }
 
-bool PinManagerClass::isPinDefined(byte gpio, const unsigned *pins, unsigned start, unsigned end) {
-  for (unsigned i = start; i < end; i++) {
-    if (pins[i] == gpio) return true;
+// Given an array of pins, check if a given pin is defined except at given index
+bool PinManagerClass::isPinDefined(const byte gpio, const uint8_t *pins, const unsigned index) {
+  unsigned numPins = ((sizeof pins) / (sizeof pins[0]));
+  for (unsigned i = 0; i < numPins; i++) {
+    if ((pins[i] == gpio) && (i != index)) return true;
   }
   return false;
 }

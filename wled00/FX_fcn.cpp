@@ -1248,15 +1248,16 @@ void WS2812FX::finalizeInit(void) {
       // if we need more pins than available all outputs have been configured
       if (pinsIndex + busPins > defNumPins) break;
       
-      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
-        defPin[j] = defDataPins[pinsIndex + j];
+      // Assign all pins first so we can check for conflicts on this bus
+      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) defPin[j] = defDataPins[pinsIndex + j];
 
+      for (unsigned j = 0; j < busPins && j < OUTPUT_MAX_PINS; j++) {
         bool validPin = true;
         // When booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
         // Pin should not be already allocated, read/only or defined for current bus
-        while (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j]) ||
-               pinManager.isPinDefined(defPin[j], defDataPins, pinsIndex + j + 1, pinsIndex + busPins)) {
+        while (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j]) || pinManager.isPinDefined(defPin[j], defPin, j)) {
+          DEBUG_PRINTLN(F("Some of the provided pins cannot be used to configure this LED output."));
           if (validPin) {
             defPin[j] = 1; // start with GPIO1 and work upwards
             validPin = false;
