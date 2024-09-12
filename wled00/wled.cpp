@@ -264,7 +264,7 @@ void WLED::loop()
   if (loopMillis > maxLoopMillis) maxLoopMillis = loopMillis;
   if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
-    DEBUG_PRINTF_P(PSTR("Runtime: %u\n"),   millis());
+    DEBUG_PRINTF_P(PSTR("Runtime: %lu\n"),  millis());
     DEBUG_PRINTF_P(PSTR("Unix time: %u,%03u\n"), toki.getTime().sec, toki.getTime().ms);
     DEBUG_PRINTF_P(PSTR("Free heap: %u\n"), ESP.getFreeHeap());
     #if defined(ARDUINO_ARCH_ESP32)
@@ -283,14 +283,14 @@ void WLED::loop()
       wifiStateChangedTime = millis();
     }
     lastWifiState = WiFi.status();
-    DEBUG_PRINTF_P(PSTR("State time: %u\n"),         wifiStateChangedTime);
-    DEBUG_PRINTF_P(PSTR("NTP last sync: %u\n"),      ntpLastSyncTime);
+    DEBUG_PRINTF_P(PSTR("State time: %lu\n"),        wifiStateChangedTime);
+    DEBUG_PRINTF_P(PSTR("NTP last sync: %lu\n"),     ntpLastSyncTime);
     DEBUG_PRINTF_P(PSTR("Client IP: %u.%u.%u.%u\n"), Network.localIP()[0], Network.localIP()[1], Network.localIP()[2], Network.localIP()[3]);
     if (loops > 0) { // avoid division by zero
-      DEBUG_PRINTF_P(PSTR("Loops/sec: %u\n"),        loops / 30);
-      DEBUG_PRINTF_P(PSTR("Loop time[ms]: %u/%u\n"), avgLoopMillis/loops,    maxLoopMillis);
-      DEBUG_PRINTF_P(PSTR("UM time[ms]: %u/%u\n"),   avgUsermodMillis/loops, maxUsermodMillis);
-      DEBUG_PRINTF_P(PSTR("Strip time[ms]:%u/%u\n"), avgStripMillis/loops,   maxStripMillis);
+      DEBUG_PRINTF_P(PSTR("Loops/sec: %u\n"),         loops / 30);
+      DEBUG_PRINTF_P(PSTR("Loop time[ms]: %u/%lu\n"), avgLoopMillis/loops,    maxLoopMillis);
+      DEBUG_PRINTF_P(PSTR("UM time[ms]: %u/%lu\n"),   avgUsermodMillis/loops, maxUsermodMillis);
+      DEBUG_PRINTF_P(PSTR("Strip time[ms]:%u/%lu\n"), avgStripMillis/loops,   maxStripMillis);
     }
     strip.printSize();
     loops = 0;
@@ -368,11 +368,8 @@ void WLED::setup()
     DEBUG_PRINTLN(F("arduino-esp32 v1.0.x\n"));  // we can't say in more detail.
   #endif
 
-  DEBUG_PRINTF_P(PSTR("CPU:   "),      ESP.getChipModel());
-  DEBUG_PRINTF_P(PSTR(" rev."),        ESP.getChipRevision());
-  DEBUG_PRINTF_P(PSTR(", %d core(s)"), ESP.getChipCores());
-  DEBUG_PRINTF_P(PSTR(", %d MHz.\n"),  ESP.getCpuFreqMHz());
-  DEBUG_PRINTF_P(PSTR("FLASH: %dMB, Mode %d "), (ESP.getFlashChipSize()/1024)/1024, ESP.getFlashChipMode());
+  DEBUG_PRINTF_P(PSTR("CPU:   %s rev.%d, %d core(s), %d MHz.\n"), ESP.getChipModel(), (int)ESP.getChipRevision(), ESP.getChipCores(), ESP.getCpuFreqMHz());
+  DEBUG_PRINTF_P(PSTR("FLASH: %d MB, Mode %d "), (ESP.getFlashChipSize()/1024)/1024, (int)ESP.getFlashChipMode());
   #ifdef WLED_DEBUG
   switch (ESP.getFlashChipMode()) {
     // missing: Octal modes
