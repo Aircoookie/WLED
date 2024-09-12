@@ -1257,8 +1257,8 @@ void WS2812FX::finalizeInit(void) {
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
         // Pin should not be already allocated, read/only or defined for current bus
         while (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j]) || pinManager.isPinDefined(defPin[j], defPin, j)) {
-          DEBUG_PRINTLN(F("Some of the provided pins cannot be used to configure this LED output."));
           if (validPin) {
+            DEBUG_PRINTLN(F("Some of the provided pins cannot be used to configure this LED output."));
             defPin[j] = 1; // start with GPIO1 and work upwards
             validPin = false;
           }  
