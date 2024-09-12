@@ -705,11 +705,16 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 {
   if (!isActive()) return; // not active
 #ifndef WLED_DISABLE_2D
-  int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
+  int vStrip;  
 #endif
-  i &= 0xFFFF;
-
-  if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
+  if (i >= virtualLength() || i<0) // pixel would fall out of segment, check if this is a virtual strip NOTE: this is almost always false if not virtual strip, saves the calculation on 'standard' call
+  {
+    #ifndef WLED_DISABLE_2D
+    vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)    
+    #endif
+    i &= 0xFFFF; //truncate vstrip index
+    if (i >= virtualLength() || i<0) return;  // if pixel would still fall out of segment just exit
+  }
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
@@ -900,8 +905,7 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
   if (!isActive()) return 0; // not active
 #ifndef WLED_DISABLE_2D
   int vStrip = i>>16;
-#endif
-  i &= 0xFFFF;
+#endif  
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
@@ -912,7 +916,7 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
         return getPixelColorXY(i % vW, i / vW);
         break;
       case M12_pBar:
-        if (vStrip>0) return getPixelColorXY(vStrip - 1, vH - i -1);
+        if (vStrip>0) { i &= 0xFFFF; return getPixelColorXY(vStrip - 1, vH - i -1); }
         else          return getPixelColorXY(0, vH - i -1);
         break;
       case M12_pArc:
