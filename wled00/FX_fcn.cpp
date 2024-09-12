@@ -202,7 +202,7 @@ void Segment::resetIfRequired() {
   reset = false;
 }
 
-CRGBPalette16 IRAM_ATTR_YN &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
+CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // TODO remove strip dependency by moving customPalettes out of strip
   //default palette. Differs depending on effect
@@ -417,7 +417,7 @@ uint8_t IRAM_ATTR Segment::currentBri(bool useCct) const {
   return (useCct ? cct : (on ? opacity : 0));
 }
 
-uint8_t IRAM_ATTR_YN Segment::currentMode() const {
+uint8_t Segment::currentMode() const {
 #ifndef WLED_DISABLE_MODE_BLEND
   unsigned prog = progress();
   if (modeBlending && prog < 0xFFFFU) return _t->_modeT;
