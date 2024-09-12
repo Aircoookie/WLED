@@ -192,13 +192,18 @@ void getSettingsJS(byte subPage, Print& dest)
   if (subPage == SUBPAGE_WIFI)
   {
     size_t l;
-    dest.print(F("resetWiFi(" TOSTRING(WLED_MAX_WIFI_COUNT) ");"));
+    dest.printf_P(PSTR("resetWiFi(%d);"), WLED_MAX_WIFI_COUNT);
     for (size_t n = 0; n < multiWiFi.size(); n++) {
       l = strlen(multiWiFi[n].clientPass);
       char fpass[l+1]; //fill password field with ***
       fpass[l] = 0;
       memset(fpass,'*',l);
-      dest.printf_P(PSTR("addWiFi(\"%s\",\",%s\",0x%X,0x%X,0x%X);"), multiWiFi[n].clientSSID, fpass, (uint32_t) multiWiFi[n].staticIP, (uint32_t) multiWiFi[n].staticGW, (uint32_t) multiWiFi[n].staticSN);
+      dest.printf_P(PSTR("addWiFi(\"%s\",\",%s\",0x%X,0x%X,0x%X);"),
+        multiWiFi[n].clientSSID,
+        fpass,
+        (uint32_t) multiWiFi[n].staticIP, // explicit cast required as this is a struct
+        (uint32_t) multiWiFi[n].staticGW,
+        (uint32_t) multiWiFi[n].staticSN);
     }
 
     printSetValue(dest,PSTR("D0"),dnsAddress[0]);
@@ -285,16 +290,16 @@ void getSettingsJS(byte subPage, Print& dest)
     appendGPIOinfo(dest);
 
     // set limits
-    dest.print(F("bLimits("
-       TOSTRING(WLED_MAX_BUSSES) ","
-       TOSTRING(WLED_MIN_VIRTUAL_BUSSES) ","
-       TOSTRING(MAX_LEDS_PER_BUS) ","
-       TOSTRING(MAX_LED_MEMORY) ","
-       TOSTRING(MAX_LEDS) ","
-       TOSTRING(WLED_MAX_COLOR_ORDER_MAPPINGS) ","
-       TOSTRING(WLED_MAX_DIGITAL_CHANNELS) ","
-       TOSTRING(WLED_MAX_ANALOG_CHANNELS) ");"
-    ));
+    dest.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d);"),
+      WLED_MAX_BUSSES,
+      WLED_MIN_VIRTUAL_BUSSES,
+      MAX_LEDS_PER_BUS,
+      MAX_LED_MEMORY,
+      MAX_LEDS,
+      WLED_MAX_COLOR_ORDER_MAPPINGS,
+      WLED_MAX_DIGITAL_CHANNELS,
+      WLED_MAX_ANALOG_CHANNELS
+    );
 
     printSetCheckbox(dest,PSTR("MS"),strip.autoSegments);
     printSetCheckbox(dest,PSTR("CCT"),strip.correctWB);
@@ -368,7 +373,7 @@ void getSettingsJS(byte subPage, Print& dest)
     printSetCheckbox(dest,PSTR("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
     printSetCheckbox(dest,PSTR("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
-    dest.print(F("resetCOM(" TOSTRING(WLED_MAX_COLOR_ORDER_MAPPINGS) ");"));
+    dest.printf_P(PSTR("resetCOM(%d);"), WLED_MAX_COLOR_ORDER_MAPPINGS);
     const ColorOrderMap& com = BusManager::getColorOrderMap();
     for (int s = 0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
@@ -483,9 +488,8 @@ void getSettingsJS(byte subPage, Print& dest)
     printSetValue(dest,PSTR("MG"),mqttGroupTopic);
     printSetCheckbox(dest,PSTR("BM"),buttonPublishMqtt);
     printSetCheckbox(dest,PSTR("RT"),retainMqttMsg);
-    dest.print(F("d.Sf.MD.maxlength=" TOSTRING(MQTT_MAX_TOPIC_LEN) ";\n"
-                 "d.Sf.MG.maxlength=" TOSTRING(MQTT_MAX_TOPIC_LEN) ";\n"
-                 "d.Sf.MS.maxlength=" TOSTRING(MQTT_MAX_SERVER_LEN) ";"));
+    dest.printf_P(PSTR("d.Sf.MD.maxlength=%d;d.Sf.MG.maxlength=%d;d.Sf.MS.maxlength=%d;"),
+                  MQTT_MAX_TOPIC_LEN, MQTT_MAX_TOPIC_LEN, MQTT_MAX_SERVER_LEN);
     #else
     dest.print(F("toggle('MQTT');"));    // hide MQTT settings
     #endif
@@ -592,7 +596,7 @@ void getSettingsJS(byte subPage, Print& dest)
     printSetCheckbox(dest,PSTR("OW"),wifiLock);
     printSetCheckbox(dest,PSTR("AO"),aOtaEnabled);
     char msg_buf[256];
-    snprintf_P(msg_buf,sizeof(msg_buf), PSTR("WLED %s (build " TOSTRING(VERSION) ")"), versionString);
+    snprintf_P(msg_buf,sizeof(msg_buf), PSTR("WLED %s (build %d)"), versionString, VERSION);
     printSetMessage(dest,PSTR("(\"sip\")[0]"),msg_buf);
     dest.printf_P(PSTR("sd=\"%s\";"), serverDescription);
   }
