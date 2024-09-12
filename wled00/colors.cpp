@@ -39,10 +39,17 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 {
   if (c1 == BLACK) return c2;
   if (c2 == BLACK) return c1;
-  uint32_t r = R(c1) + R(c2);
+  /*uint32_t r = R(c1) + R(c2);
   uint32_t g = G(c1) + G(c2);
   uint32_t b = B(c1) + B(c2);
-  uint32_t w = W(c1) + W(c2);
+  uint32_t w = W(c1) + W(c2);*/
+  uint32_t rb = (c1 & 0x00FF00FF) + (c2 & 0x00FF00FF); 
+  uint32_t r = rb >> 16;
+  uint32_t b = rb & 0xFFFF; 
+  uint32_t wg = ((c1>>8) & 0x00FF00FF) + ((c2>>8) & 0x00FF00FF); 
+  uint32_t w = wg >> 16;
+  uint32_t g = wg & 0xFFFF; 
+
   if (fast) {    
     r = r > 255 ? 255 : r; 
     g = g > 255 ? 255 : g; 
@@ -105,7 +112,7 @@ CRGB ColorFromPaletteWLED(const CRGBPalette16& pal, unsigned index, uint8_t brig
         unsigned f1 = (257 - f2); // f2 is 1 minimum, so this is 256 max
         red1   = (red1 * f1 + (unsigned)entry->r * f2) >> 8;          
         green1   = (green1 * f1 + (unsigned)entry->g * f2) >> 8;        
-        blue1   = (green1 * f1 + (unsigned)entry->b * f2) >> 8;                
+        blue1   = (blue1 * f1 + (unsigned)entry->b * f2) >> 8;                
     }
     if( brightness < 255) { // note: zero checking could be done to return black but that is hardly ever used so it is omitted
           uint32_t scale = brightness + 1; // adjust for rounding (bitshift)          
