@@ -54,9 +54,9 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
     return RGBW32(r,g,b,w);
   } else {
     unsigned max = r;
-    if (g > max) max = g;
-    if (b > max) max = b;
-    if (w > max) max = w;
+    max = g > max ? g : max;
+    max = b > max ? b : max;
+    max = w > max ? w : max;
     if (max < 256) return RGBW32(r, g, b, w);
     else           return RGBW32(r * 255 / max, g * 255 / max, b * 255 / max, w * 255 / max);
   }
@@ -70,7 +70,7 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
   if (c1 == BLACK || amount == 0) return BLACK;
-  else if (amount == 255) return c1;  
+  if (amount == 255) return c1;  
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
   uint32_t scale = amount; // 32bit for faster calculation
   uint32_t addRemains = 0;
