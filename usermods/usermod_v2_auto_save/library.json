@@ -1,0 +1,8 @@
+{
+  "name": "auto_save",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+"
+  }
+}
