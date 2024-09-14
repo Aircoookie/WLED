@@ -1181,18 +1181,21 @@ uint32_t Segment::color_wheel(uint8_t pos) const {
  * @returns Single color from palette
  */
 uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri) const {
-  uint32_t color = gamma32(currentColor(mcol));
-
+  
+  uint32_t color = currentColor(mcol);
   // default palette or no RGB support on segment
-  if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) return (pbri == 255) ? color : color_fade(color, pbri, true);
+  if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) {
+    color = gamma32(color);
+    return (pbri == 255) ? color : color_fade(color, pbri, true);
+  }
 
-  unsigned paletteIndex = i;
+  uint8_t paletteIndex = i;
   if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
   // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
   if (!wrap && strip.paletteBlend != 3) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col = ColorFromPalette(_currentPalette, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
 
-  return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, W(color));
+  return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, gamma8(W(color)));
 }
 
 
