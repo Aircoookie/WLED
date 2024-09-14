@@ -567,17 +567,14 @@
   #define WLED_MAX_NODES 150
 #endif
 
-#ifdef WLED_ENABLE_DMX
-#if (LEDPIN == 2)
-  #undef LEDPIN
-  #define LEDPIN 1
-  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 1."
-#endif
-#endif
-
 // Defaults pins, type and counts to configure LED output
 #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)
-  #define DEFAULT_LED_PIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
+  #ifdef WLED_ENABLE_DMX
+    #define DEFAULT_LED_PIN 1
+    #warning "Compiling with DMX. The default LED pin has been changed to pin 1."
+  #else
+    #define DEFAULT_LED_PIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
+  #endif
 #else
   #define DEFAULT_LED_PIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
 #endif

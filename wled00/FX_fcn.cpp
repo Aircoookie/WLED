@@ -43,11 +43,6 @@
   19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]}
 */
 
-//factory defaults LED setup
-//#define PIXEL_COUNTS 30
-//#define DATA_PINS 2 (8266/C3) or 16 
-//#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
-
 #ifndef PIXEL_COUNTS
   #define PIXEL_COUNTS DEFAULT_LED_COUNT
 #endif
