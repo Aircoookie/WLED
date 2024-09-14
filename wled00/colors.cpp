@@ -489,7 +489,6 @@ void NeoGammaWLEDMethod::calcGammaTable(float gamma)
   for (size_t i = 0; i < 256; i++) {
     gammaT[i] = (int)(powf((float)i / 255.0f, gamma) * 255.0f + 0.5f);
   }
-  Serial.println("****GAMMA***"); //!!!
 }
 
 uint8_t IRAM_ATTR NeoGammaWLEDMethod::Correct(uint8_t value)
