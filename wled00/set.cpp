@@ -319,13 +319,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     gammaCorrectBri = request->hasArg(F("GB"));
     gammaCorrectCol = request->hasArg(F("GC"));
     gammaCorrectVal = request->arg(F("GV")).toFloat();
-    if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3)
-      NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal);
-    else {
+    if (gammaCorrectVal <= 1.0f || gammaCorrectVal > 3) {
       gammaCorrectVal = 1.0f; // no gamma correction
       gammaCorrectBri = false;
       gammaCorrectCol = false;
     }
+    NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal); // fill look-up table
 
     fadeTransition = request->hasArg(F("TF"));
     modeBlending = request->hasArg(F("EB"));
