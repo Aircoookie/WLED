@@ -1266,12 +1266,23 @@ void WS2812FX::finalizeInit() {
           bool clash;
           do {
             clash = false;
-            for (const auto &pin : defDataPins) {
-              if (pin == defPin[j]) {
-                defPin[j]++;
-                if (defPin[j] < WLED_NUM_PINS) clash = true;
+            // check for conflicts on current bus
+            for (const auto &pin : defPin) {
+              if (&pin != &defPin[j] && pin == defPin[j]) {
+                clash = true;
+                break;
               }
             }
+            // We already have a clash on current bus, no point checking next buses
+            if (!clash) {
+              // check for conflicts on next buses 
+              for (unsigned k = pinsIndex + busPins; k < defNumPins; k++) {
+                if (defDataPins[k] == defPin[j]) {
+                  clash = true;
+                  break;
+                }
+            }
+            if (clash) defPin[j]++;
           } while (clash);
         }
       }
