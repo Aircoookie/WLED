@@ -69,20 +69,20 @@ typedef struct WiFiConfig {
 // similar to NeoPixelBus NeoGammaTableMethod but allows dynamic changes (superseded by NPB::NeoGammaDynamicTableMethod)
 class NeoGammaWLEDMethod {
   public:
-    static uint8_t Correct(uint8_t value);      // apply Gamma to single channel
-    static uint32_t Correct32(uint32_t color);  // apply Gamma to RGBW32 color (WLED specific, not used by NPB)
-    static void calcGammaTable(float gamma);    // re-calculates & fills gamma table
+    [[gnu::hot]] static uint8_t Correct(uint8_t value);         // apply Gamma to single channel
+    [[gnu::hot]] static uint32_t Correct32(uint32_t color);     // apply Gamma to RGBW32 color (WLED specific, not used by NPB)
+    static void calcGammaTable(float gamma);                              // re-calculates & fills gamma table
     static inline uint8_t rawGamma8(uint8_t val) { return gammaT[val]; }  // get value from Gamma table (WLED specific, not used by NPB)
   private:
     static uint8_t gammaT[];
 };
 #define gamma32(c) NeoGammaWLEDMethod::Correct32(c)
 #define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
-uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
-uint32_t color_add(uint32_t,uint32_t, bool fast=false);
-uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
+[[gnu::hot]] uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
+[[gnu::hot]] uint32_t color_add(uint32_t,uint32_t, bool fast=false);
+[[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
 CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
-CRGBPalette16 generateRandomPalette(void);
+CRGBPalette16 generateRandomPalette();
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
