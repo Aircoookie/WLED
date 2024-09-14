@@ -173,7 +173,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
 //I am NOT to be held liable for burned down garages or houses!
 
 // To disable brightness limiter we either set output max current to 0 or single LED current to 0
-uint8_t BusDigital::estimateCurrentAndLimitBri(void) {
+uint8_t BusDigital::estimateCurrentAndLimitBri() {
   bool useWackyWS2815PowerModel = false;
   byte actualMilliampsPerLed = _milliAmpsPerLed;
 
@@ -225,7 +225,7 @@ uint8_t BusDigital::estimateCurrentAndLimitBri(void) {
   return newBri;
 }
 
-void BusDigital::show(void) {
+void BusDigital::show() {
   _milliAmpsTotal = 0;
   if (!_valid) return;
 
@@ -286,7 +286,7 @@ void BusDigital::show(void) {
   if (newBri < _bri) PolyBus::setBrightness(_busPtr, _iType, _bri);
 }
 
-bool BusDigital::canShow(void) const {
+bool BusDigital::canShow() const {
   if (!_valid) return true;
   return PolyBus::canShow(_busPtr, _iType);
 }
@@ -410,12 +410,12 @@ std::vector<LEDType> BusDigital::getLEDTypes() {
   };
 }
 
-void BusDigital::reinit(void) {
+void BusDigital::reinit() {
   if (!_valid) return;
   PolyBus::begin(_busPtr, _iType, _pins);
 }
 
-void BusDigital::cleanup(void) {
+void BusDigital::cleanup() {
   DEBUG_PRINTLN(F("Digital Cleanup."));
   PolyBus::cleanup(_busPtr, _iType);
   _iType = I_NONE;
@@ -637,7 +637,7 @@ std::vector<LEDType> BusPwm::getLEDTypes() {
   };
 }
 
-void BusPwm::deallocatePins(void) {
+void BusPwm::deallocatePins() {
   unsigned numPins = getPins();
   for (unsigned i = 0; i < numPins; i++) {
     pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
@@ -689,7 +689,7 @@ uint32_t BusOnOff::getPixelColor(uint16_t pix) const {
   return RGBW32(_data[0], _data[0], _data[0], _data[0]);
 }
 
-void BusOnOff::show(void) {
+void BusOnOff::show() {
   if (!_valid) return;
   digitalWrite(_pin, _reversed ? !(bool)_data[0] : (bool)_data[0]);
 }
@@ -751,7 +751,7 @@ uint32_t BusNetwork::getPixelColor(uint16_t pix) const {
   return RGBW32(_data[offset], _data[offset+1], _data[offset+2], (hasWhite() ? _data[offset+3] : 0));
 }
 
-void BusNetwork::show(void) {
+void BusNetwork::show() {
   if (!_valid || !canShow()) return;
   _broadcastLock = true;
   realtimeBroadcast(_UDPtype, _client, _len, _data, _bri, hasWhite());
@@ -778,7 +778,7 @@ std::vector<LEDType> BusNetwork::getLEDTypes() {
   };
 }
 
-void BusNetwork::cleanup(void) {
+void BusNetwork::cleanup() {
   _type = I_NONE;
   _valid = false;
   freeData();
@@ -839,7 +839,7 @@ static String LEDTypesToJson(const std::vector<LEDType>& types) {
 }
 
 // credit @willmmiles & @netmindz https://github.com/Aircoookie/WLED/pull/4056
-String BusManager::getLEDTypesJSONString(void) {
+String BusManager::getLEDTypesJSONString() {
   String json = "[";
   json += LEDTypesToJson(BusDigital::getLEDTypes());
   json += LEDTypesToJson(BusOnOff::getLEDTypes());
@@ -850,13 +850,13 @@ String BusManager::getLEDTypesJSONString(void) {
   return json;
 }
 
-void BusManager::useParallelOutput(void) {
+void BusManager::useParallelOutput() {
   _parallelOutputs = 8; // hardcoded since we use NPB I2S x8 methods
   PolyBus::setParallelI2S1Output();
 }
 
 //do not call this method from system context (network callback)
-void BusManager::removeAll(void) {
+void BusManager::removeAll() {
   DEBUG_PRINTLN(F("Removing all."));
   //prevents crashes due to deleting busses while in use.
   while (!canAllShow()) yield();
@@ -870,7 +870,7 @@ void BusManager::removeAll(void) {
 // #2478
 // If enabled, RMT idle level is set to HIGH when off
 // to prevent leakage current when using an N-channel MOSFET to toggle LED power
-void BusManager::esp32RMTInvertIdle(void) {
+void BusManager::esp32RMTInvertIdle() {
   bool idle_out;
   unsigned rmt = 0;
   for (unsigned u = 0; u < numBusses(); u++) {
@@ -901,7 +901,7 @@ void BusManager::esp32RMTInvertIdle(void) {
 }
 #endif
 
-void BusManager::on(void) {
+void BusManager::on() {
   #ifdef ESP8266
   //Fix for turning off onboard LED breaking bus
   if (pinManager.getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
@@ -922,7 +922,7 @@ void BusManager::on(void) {
   #endif
 }
 
-void BusManager::off(void) {
+void BusManager::off() {
   #ifdef ESP8266
   // turn off built-in LED if strip is turned off
   // this will break digital bus so will need to be re-initialised on On
@@ -937,7 +937,7 @@ void BusManager::off(void) {
   #endif
 }
 
-void BusManager::show(void) {
+void BusManager::show() {
   _milliAmpsUsed = 0;
   for (unsigned i = 0; i < numBusses; i++) {
     busses[i]->show();
@@ -984,7 +984,7 @@ uint32_t BusManager::getPixelColor(uint16_t pix) {
   return 0;
 }
 
-bool BusManager::canAllShow(void) {
+bool BusManager::canAllShow() {
   for (unsigned i = 0; i < numBusses; i++) {
     if (!busses[i]->canShow()) return false;
   }
@@ -997,7 +997,7 @@ Bus* BusManager::getBus(uint8_t busNr) {
 }
 
 //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
-uint16_t BusManager::getTotalLength(void) {
+uint16_t BusManager::getTotalLength() {
   unsigned len = 0;
   for (unsigned i=0; i<numBusses; i++) len += busses[i]->getLength();
   return len;

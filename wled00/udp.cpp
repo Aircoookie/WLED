@@ -213,7 +213,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
 
   //compatibilityVersionByte:
   byte version = udpIn[11];
-  DEBUG_PRINT(F("UDP packet version: ")); DEBUG_PRINTLN(version);
+  DEBUG_PRINTF_P(PSTR("UDP packet version: %d\n"), (int)version);
 
   // if we are not part of any sync group ignore message
   if (version < 9) {
@@ -256,7 +256,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
   if (applyEffects && currentPlaylist >= 0) unloadPlaylist();
   if (version > 10 && (receiveSegmentOptions || receiveSegmentBounds)) {
     unsigned numSrcSegs = udpIn[39];
-    DEBUG_PRINT(F("UDP segments: ")); DEBUG_PRINTLN(numSrcSegs);
+    DEBUG_PRINTF_P(PSTR("UDP segments: %d\n"), numSrcSegs);
     // are we syncing bounds and slave has more active segments than master?
     if (receiveSegmentBounds && numSrcSegs < strip.getActiveSegmentsNum()) {
       DEBUG_PRINTLN(F("Removing excessive segments."));
@@ -270,13 +270,13 @@ void parseNotifyPacket(uint8_t *udpIn) {
     for (size_t i = 0; i < numSrcSegs && i < strip.getMaxSegments(); i++) {
       unsigned ofs = 41 + i*udpIn[40]; //start of segment offset byte
       unsigned id = udpIn[0 +ofs];
-      DEBUG_PRINT(F("UDP segment received: ")); DEBUG_PRINTLN(id);
+      DEBUG_PRINTF_P(PSTR("UDP segment received: %u\n"), id);
       if      (id >  strip.getSegmentsNum()) break;
       else if (id == strip.getSegmentsNum()) {
         if (receiveSegmentBounds && id < strip.getMaxSegments()) strip.appendSegment();
         else break;
       }
-      DEBUG_PRINT(F("UDP segment check: ")); DEBUG_PRINTLN(id);
+      DEBUG_PRINTF_P(PSTR("UDP segment check: %u\n"), id);
       Segment& selseg = strip.getSegment(id);
       // if we are not syncing bounds skip unselected segments
       if (selseg.isActive() && !(selseg.isSelected() || receiveSegmentBounds)) continue;
@@ -290,7 +290,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
           id += inactiveSegs; // adjust id
         }
       }
-      DEBUG_PRINT(F("UDP segment processing: ")); DEBUG_PRINTLN(id);
+      DEBUG_PRINTF_P(PSTR("UDP segment processing: %u\n"), id);
 
       uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
       uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
@@ -307,14 +307,14 @@ void parseNotifyPacket(uint8_t *udpIn) {
       selseg.options = (selseg.options & 0x0071U) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
       selseg.setOpacity(udpIn[10+ofs]);
       if (applyEffects) {
-        DEBUG_PRINT(F("Apply effect: ")); DEBUG_PRINTLN(id);
+        DEBUG_PRINTF_P(PSTR("Apply effect: %u\n"), id);
         selseg.setMode(udpIn[11+ofs]);
         selseg.speed     = udpIn[12+ofs];
         selseg.intensity = udpIn[13+ofs];
         selseg.palette   = udpIn[14+ofs];
       }
       if (receiveNotificationColor || !someSel) {
-        DEBUG_PRINT(F("Apply color: ")); DEBUG_PRINTLN(id);
+        DEBUG_PRINTF_P(PSTR("Apply color: %u\n"), id);
         selseg.setColor(0, RGBW32(udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs],udpIn[18+ofs]));
         selseg.setColor(1, RGBW32(udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs],udpIn[22+ofs]));
         selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]));
@@ -324,10 +324,10 @@ void parseNotifyPacket(uint8_t *udpIn) {
         // when applying synced options ignore selected as it may be used as indicator of which segments to sync
         // freeze, reset should never be synced
         // LSB to MSB: select, reverse, on, mirror, freeze, reset, reverse_y, mirror_y, transpose, map1d2d (3), ssim (2), set (2)
-        DEBUG_PRINT(F("Apply options: ")); DEBUG_PRINTLN(id);
+        DEBUG_PRINTF_P(PSTR("Apply options: %u\n"), id);
         selseg.options = (selseg.options & 0b0000000000110001U) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0b11001110U); // ignore selected, freeze, reset
         if (applyEffects) {
-          DEBUG_PRINT(F("Apply sliders: ")); DEBUG_PRINTLN(id);
+          DEBUG_PRINTF_P(PSTR("Apply sliders: %u\n"), id);
           selseg.custom1 = udpIn[29+ofs];
           selseg.custom2 = udpIn[30+ofs];
           selseg.custom3 = udpIn[31+ofs] & 0x1F;
@@ -561,7 +561,7 @@ void handleNotifications()
   //wled notifier, ignore if realtime packets active
   if (udpIn[0] == 0 && !realtimeMode && receiveGroups)
   {
-    DEBUG_PRINT(F("UDP notification from: ")); DEBUG_PRINTLN(notifierUdp.remoteIP());
+    DEBUG_PRINTF_P(PSTR("UDP notification from: %d.%d.%d.%d\n"), notifierUdp.remoteIP()[0], notifierUdp.remoteIP()[1], notifierUdp.remoteIP()[2], notifierUdp.remoteIP()[3]);
     parseNotifyPacket(udpIn);
     return;
   }

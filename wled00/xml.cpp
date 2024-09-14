@@ -222,8 +222,7 @@ void appendGPIOinfo() {
 void getSettingsJS(byte subPage, char* dest)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
-  DEBUG_PRINT(F("settings resp"));
-  DEBUG_PRINTLN(subPage);
+  DEBUG_PRINTF_P(PSTR("settings resp %u\n"), (unsigned)subPage);
   obuf = dest;
   olen = 0;
 
