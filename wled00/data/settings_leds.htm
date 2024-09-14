@@ -671,7 +671,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 				if (i.type === "number" && fields.includes(i.name)) { //select all pin select elements
 					let v = parseInt(i.value);
 					let sel = addDropdown(i.name,0);
-					for (var j = -1; j <= d.max_gpio; j++) {
+					for (var j = -1; j < d.max_gpio; j++) {
 						if (d.rsvd.includes(j)) continue;
 						let foundPin = d.um_p.indexOf(j);
 						let txt = (j === -1) ? "unused" : `${j}`;

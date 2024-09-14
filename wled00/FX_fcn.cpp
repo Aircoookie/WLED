@@ -1256,18 +1256,28 @@ void WS2812FX::finalizeInit() {
         // When booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
         // Pin should not be already allocated, read/only or defined for current bus
-        while (pinManager.isPinAllocated(defPin[j]) || pinManager.isReadOnlyPin(defPin[j]) || pinManager.isPinDefined(defPin[j], defPin, j)) {
+        while (pinManager.isPinAllocated(defPin[j]) || !pinManager.isPinOk(defPin[j],true)) {
           if (validPin) {
             DEBUG_PRINTLN(F("Some of the provided pins cannot be used to configure this LED output."));
             defPin[j] = 1; // start with GPIO1 and work upwards
             validPin = false;
-          }  
-          if (defPin[j] < WLED_NUM_PINS) {
+          } else if (defPin[j] < WLED_NUM_PINS) {
             defPin[j]++;
           } else {
             DEBUG_PRINTLN(F("No available pins left! Can't configure output."));
             return;
           }
+          // is the newly assigned pin already defined? try next in line until there are no clashes
+          bool clash;
+          do {
+            clash = false;
+            for (const auto pin : defDataPins) {
+              if (pin == defPin[j]) {
+                defPin[j]++;
+                if (defPin[j] < WLED_NUM_PINS) clash = true;
+              }
+            }
+          } while (clash);
         }
       }
       pinsIndex += busPins;

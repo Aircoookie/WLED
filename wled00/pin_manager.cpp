@@ -269,24 +269,9 @@ bool PinManagerClass::isPinOk(byte gpio, bool output) const
 
 bool PinManagerClass::isReadOnlyPin(byte gpio)
 {
-  #ifdef READ_ONLY_PINS
-  const unsigned pins[] = {READ_ONLY_PINS};
-  const unsigned numPins = ((sizeof pins) / (sizeof pins[0]));
-
-  if (gpio <= WLED_NUM_PINS) {
-    for (unsigned i = 0; i < numPins; i++) if (gpio == pins[i]) return true;
-  }
-  #endif
-
-  return false;
-}
-
-// Given an array of pins, check if a given pin is defined except at given index
-bool PinManagerClass::isPinDefined(const byte gpio, const uint8_t *pins, const unsigned index) {
-  unsigned numPins = ((sizeof pins) / (sizeof pins[0]));
-  for (unsigned i = 0; i < numPins; i++) {
-    if ((pins[i] == gpio) && (i != index)) return true;
-  }
+#ifdef ARDUINO_ARCH_ESP32
+  if (gpio < WLED_NUM_PINS) return digitalPinCanOutput(gpio);
+#endif
   return false;
 }
 
