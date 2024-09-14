@@ -1271,7 +1271,7 @@ void WS2812FX::finalizeInit() {
           bool clash;
           do {
             clash = false;
-            for (const auto pin : defDataPins) {
+            for (const auto &pin : defDataPins) {
               if (pin == defPin[j]) {
                 defPin[j]++;
                 if (defPin[j] < WLED_NUM_PINS) clash = true;
