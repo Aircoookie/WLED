@@ -188,7 +188,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
  
   int yY = y;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
-    if(yY >= H) continue;
+    if(yY >= H) break;
     int xX = x;    
     for (int g = 0; g < grouping; g++) { // groupping horizontally
       if (xX >= W) continue;  // we have reached one dimension's end
