@@ -157,8 +157,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED mA
       char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max mA
       if (!request->hasArg(lp)) {
-        DEBUG_PRINT(F("No data for "));
-        DEBUG_PRINTLN(s);
+        DEBUG_PRINTF_P(PSTR("No data for %d\n"), s);
         break;
       }
       for (int i = 0; i < 5; i++) {
@@ -177,7 +176,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       awmode = request->arg(aw).toInt();
       uint16_t freq = request->arg(sp).toInt();
-      if (IS_PWM(type)) {
+      if (Bus::isPWM(type)) {
         switch (freq) {
           case 0 : freq = WLED_PWM_FREQ/2;    break;
           case 1 : freq = WLED_PWM_FREQ*2/3;  break;
@@ -186,7 +185,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           case 3 : freq = WLED_PWM_FREQ*2;    break;
           case 4 : freq = WLED_PWM_FREQ*10/3; break; // uint16_t max (19531 * 3.333)
         }
-      } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
+      } else if (Bus::is2Pin(type)) {
         switch (freq) {
           default:
           case 0 : freq =  1000; break;
@@ -199,7 +198,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         freq = 0;
       }
       channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
-      if (type == TYPE_ONOFF || IS_PWM(type) || IS_VIRTUAL(type)) { // analog and virtual
+      if (Bus::isOnOff(type) || Bus::isPWM(type) || Bus::isVirtual(type)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       } else {
@@ -215,7 +214,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
-    ColorOrderMap com = {};
+    // we will not bother with pre-allocating ColorOrderMappings vector
     for (int s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
       int offset = s < 10 ? 48 : 55;
       char xs[4] = "XS"; xs[2] = offset+s; xs[3] = 0; //start LED
@@ -227,10 +226,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         length = request->arg(xc).toInt();
         colorOrder = request->arg(xo).toInt() & 0x0F;
         colorOrder |= (request->arg(xw).toInt() & 0x0F) << 4; // add W swap information
-        com.add(start, length, colorOrder);
+        if (!BusManager::getColorOrderMap().add(start, length, colorOrder)) break;
       }
     }
-    BusManager::updateColorOrderMap(com);
 
     // update other pins
     #ifndef WLED_DISABLE_INFRARED
@@ -729,7 +727,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                         subObj[name].add(value.toInt());    // we may have an int
           j++;
         }
-        DEBUG_PRINT(F("[")); DEBUG_PRINT(j); DEBUG_PRINT(F("] = ")); DEBUG_PRINTLN(value);
+        DEBUG_PRINTF_P(PSTR("[%d] = %s\n"), j, value.c_str());
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
         // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
@@ -748,7 +746,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           } else if (type == "int")      subObj[name] = value.toInt();
           else                           subObj[name] = value;  // text fields
         }
-        DEBUG_PRINT(F(" = ")); DEBUG_PRINTLN(value);
+        DEBUG_PRINTF_P(PSTR(" = %s\n"), value.c_str());
       }
     }
     usermods.readFromConfig(um);  // force change of usermod parameters
@@ -809,8 +807,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (!(req.indexOf("win") >= 0)) return false;
 
   int pos = 0;
-  DEBUG_PRINT(F("API req: "));
-  DEBUG_PRINTLN(req);
+  DEBUG_PRINTF_P(PSTR("API req: %s\n"), req.c_str());
 
   //segment select (sets main segment)
   pos = req.indexOf(F("SM="));
