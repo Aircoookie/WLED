@@ -123,7 +123,10 @@ void handleSerial()
             releaseJSONBufferLock();
             return;
           }
-          verboseResponse = deserializeState(pDoc->as<JsonObject>());
+          JsonObject root = pDoc->as<JsonObject>();
+          verboseResponse = deserializeState(root);
+          //if JSON contains networking key then initiate saving of config
+          if (root.containsKey("nw")) doSerializeConfig = true;
           //only send response if TX pin is unused for other purposes
           if (verboseResponse && (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut)) {
             pDoc->clear();
