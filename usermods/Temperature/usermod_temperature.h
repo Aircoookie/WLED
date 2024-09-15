@@ -461,13 +461,13 @@ const char UsermodTemperature::_domoticzIDX[]  PROGMEM = "domoticz-idx";
 const char UsermodTemperature::_sensor[]       PROGMEM = "sensor";
 const char UsermodTemperature::_temperature[]  PROGMEM = "temperature";
 const char UsermodTemperature::_Temperature[]  PROGMEM = "/temperature";
-const char UsermodTemperature::_data_fx[]      PROGMEM = "Temperature@Min,Max;;!;01;pal=54";
+const char UsermodTemperature::_data_fx[]      PROGMEM = "Temperature@Min,Max;;!;01;pal=54,sx=255,ix=0";
 
 static uint16_t mode_temperature() {
-  float low  = mapf((float)SEGMENT.speed, 0.f, 255.f, -150.f, 149.9f);    // default: 0°C, range: -15°C to 15°C
-  float high = mapf((float)SEGMENT.intensity, 0.f, 255.f, 150.f, 450.f);  // default: 30°C, range 15°C to 45°C
-  float temp = constrain(UsermodTemperature::getInstance()->getTemperatureC()*10.f, low, high);   // get a little better resolution
-  unsigned i = map(temp, (unsigned)low, (unsigned)high, 0, 255);
+  float low  = roundf(mapf((float)SEGMENT.speed, 0.f, 255.f, -150.f, 150.f));    // default: 15°C, range: -15°C to 15°C
+  float high = roundf(mapf((float)SEGMENT.intensity, 0.f, 255.f, 300.f, 600.f));  // default: 30°C, range 30°C to 60°C
+  float temp = constrain(UsermodTemperature::getInstance()->getTemperatureC()*10.f, low, high);   // get a little better resolution (*10)
+  unsigned i = map(roundf(temp), (unsigned)low, (unsigned)high, 0, 248);
   SEGMENT.fill(SEGMENT.color_from_palette(i, false, false, 255));
   return FRAMETIME;
 }
