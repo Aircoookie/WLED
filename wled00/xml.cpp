@@ -515,6 +515,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RG"),arlsDisableGammaCorrection);
     sappend('v',SET_F("WO"),arlsOffset);
     sappend('c',SET_F("AL"),alexaEnabled);
+    sappend('c',SET_F("ALSE"),alexaSegmentEnabled);
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappend('v',SET_F("AP"),alexaNumPresets);

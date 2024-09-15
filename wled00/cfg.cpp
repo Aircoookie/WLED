@@ -436,6 +436,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(arlsOffset, if_live[F("offset")]); // 0
 
   CJSON(alexaEnabled, interfaces["va"][F("alexa")]); // false
+  CJSON(alexaSegmentEnabled, interfaces["va"][F("segment")]); // false
 
   CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
@@ -895,6 +896,7 @@ void serializeConfig() {
 #ifndef WLED_DISABLE_ALEXA
   JsonObject if_va = interfaces.createNestedObject("va");
   if_va[F("alexa")] = alexaEnabled;
+  if_va[F("segment")] = alexaSegmentEnabled;
 
   JsonArray if_va_macros = if_va.createNestedArray("macros");
   if_va_macros.add(macroAlexaOn);
