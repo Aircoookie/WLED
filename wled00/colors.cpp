@@ -479,14 +479,14 @@ void NeoGammaWLEDMethod::calcGammaTable(float gamma)
   }
 }
 
-uint8_t IRAM_ATTR NeoGammaWLEDMethod::Correct(uint8_t value)
+uint8_t IRAM_ATTR_YN NeoGammaWLEDMethod::Correct(uint8_t value)
 {
   if (!gammaCorrectCol) return value;
   return gammaT[value];
 }
 
 // used for color gamma correction
-uint32_t IRAM_ATTR NeoGammaWLEDMethod::Correct32(uint32_t color)
+uint32_t IRAM_ATTR_YN NeoGammaWLEDMethod::Correct32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;
   uint8_t w = W(color);

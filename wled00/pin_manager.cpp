@@ -32,9 +32,7 @@ bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
     return false;
   }
 
-  byte by = gpio >> 3;
-  byte bi = gpio - 8*by;
-  bitWrite(pinAlloc[by], bi, false);
+  bitWrite(pinAlloc, gpio, false);
   ownerTag[gpio] = PinOwner::None;
   return true;
 }
@@ -146,9 +144,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
     if (gpio >= WLED_NUM_PINS)
       continue; // other unexpected GPIO => avoid array bounds violation
 
-    byte by = gpio >> 3;
-    byte bi = gpio - 8*by;
-    bitWrite(pinAlloc[by], bi, true);
+    bitWrite(pinAlloc, gpio, true);
     ownerTag[gpio] = tag;
     #ifdef WLED_DEBUG
     DEBUG_PRINT(F("PIN ALLOC: Pin "));
@@ -192,9 +188,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
     return false;
   }
 
-  byte by = gpio >> 3;
-  byte bi = gpio - 8*by;
-  bitWrite(pinAlloc[by], bi, true);
+  bitWrite(pinAlloc, gpio, true);
   ownerTag[gpio] = tag;
   #ifdef WLED_DEBUG
   DEBUG_PRINT(F("PIN ALLOC: Pin "));
@@ -213,9 +207,7 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag) const
 {
   if (!isPinOk(gpio, false)) return true;
   if ((tag != PinOwner::None) && (ownerTag[gpio] != tag)) return false;
-  byte by = gpio >> 3;
-  byte bi = gpio - (by<<3);
-  return bitRead(pinAlloc[by], bi);
+  return bitRead(pinAlloc, gpio);
 }
 
 /* see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html
@@ -237,7 +229,7 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag) const
 // Check if supplied GPIO is ok to use
 bool PinManagerClass::isPinOk(byte gpio, bool output) const
 {
-  if (gpio >= WLED_NUM_PINS) return false;        // catch error case, to avoid array out-of-bounds access
+  if (gpio >= WLED_NUM_PINS) return false;     // catch error case, to avoid array out-of-bounds access
 #ifdef ARDUINO_ARCH_ESP32
   if (digitalPinIsValid(gpio)) {
   #if defined(CONFIG_IDF_TARGET_ESP32C3)
@@ -275,6 +267,14 @@ bool PinManagerClass::isPinOk(byte gpio, bool output) const
   return false;
 }
 
+bool PinManagerClass::isReadOnlyPin(byte gpio)
+{
+#ifdef ARDUINO_ARCH_ESP32
+  if (gpio < WLED_NUM_PINS) return (digitalPinIsValid(gpio) && !digitalPinCanOutput(gpio));
+#endif
+  return false;
+}
+
 PinOwner PinManagerClass::getPinOwner(byte gpio) const
 {
   if (!isPinOk(gpio, false)) return PinOwner::None;
@@ -282,34 +282,26 @@ PinOwner PinManagerClass::getPinOwner(byte gpio) const
 }
 
 #ifdef ARDUINO_ARCH_ESP32
-#if defined(CONFIG_IDF_TARGET_ESP32C3)
-  #define MAX_LED_CHANNELS 6
-#else
-  #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
-    #define MAX_LED_CHANNELS 8
-  #else
-    #define MAX_LED_CHANNELS 16
-  #endif
-#endif
 byte PinManagerClass::allocateLedc(byte channels)
 {
-  if (channels > MAX_LED_CHANNELS || channels == 0) return 255;
-  byte ca = 0;
-  for (unsigned i = 0; i < MAX_LED_CHANNELS; i++) {
-    byte by = i >> 3;
-    byte bi = i - 8*by;
-    if (bitRead(ledcAlloc[by], bi)) { //found occupied pin
+  if (channels > WLED_MAX_ANALOG_CHANNELS || channels == 0) return 255;
+  unsigned ca = 0;
+  for (unsigned i = 0; i < WLED_MAX_ANALOG_CHANNELS; i++) {
+    if (bitRead(ledcAlloc, i)) { //found occupied pin
       ca = 0;
     } else {
-      ca++;
+      // if we have PWM CCT bus allocation (2 channels) we need to make sure both channels share the same timer
+      // for phase shifting purposes (otherwise phase shifts may not be accurate)
+      if (channels == 2) { // will skip odd channel for first channel for phase shifting
+        if (ca == 0 && i % 2 == 0) ca++;  // even LEDC channels is 1st PWM channel
+        if (ca == 1 && i % 2 == 1) ca++;  // odd LEDC channel is 2nd PWM channel
+      } else
+        ca++;
     }
     if (ca >= channels) { //enough free channels
-      byte in = (i + 1) - ca;
+      unsigned in = (i + 1) - ca;
       for (unsigned j = 0; j < ca; j++) {
-        byte bChan = in + j;
-        byte byChan = bChan >> 3;
-        byte biChan = bChan - 8*byChan;
-        bitWrite(ledcAlloc[byChan], biChan, true);
+        bitWrite(ledcAlloc, in+j, true);
       }
       return in;
     }
@@ -319,11 +311,8 @@ byte PinManagerClass::allocateLedc(byte channels)
 
 void PinManagerClass::deallocateLedc(byte pos, byte channels)
 {
-  for (unsigned j = pos; j < pos + channels; j++) {
-    if (j > MAX_LED_CHANNELS) return;
-    byte by = j >> 3;
-    byte bi = j - 8*by;
-    bitWrite(ledcAlloc[by], bi, false);
+  for (unsigned j = pos; j < pos + channels && j < WLED_MAX_ANALOG_CHANNELS; j++) {
+    bitWrite(ledcAlloc, j, false);
   }
 }
 #endif

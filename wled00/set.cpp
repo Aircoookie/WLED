@@ -176,7 +176,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       awmode = request->arg(aw).toInt();
       uint16_t freq = request->arg(sp).toInt();
-      if (IS_PWM(type)) {
+      if (Bus::isPWM(type)) {
         switch (freq) {
           case 0 : freq = WLED_PWM_FREQ/2;    break;
           case 1 : freq = WLED_PWM_FREQ*2/3;  break;
@@ -185,7 +185,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           case 3 : freq = WLED_PWM_FREQ*2;    break;
           case 4 : freq = WLED_PWM_FREQ*10/3; break; // uint16_t max (19531 * 3.333)
         }
-      } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
+      } else if (Bus::is2Pin(type)) {
         switch (freq) {
           default:
           case 0 : freq =  1000; break;
@@ -198,7 +198,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         freq = 0;
       }
       channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
-      if (type == TYPE_ONOFF || IS_PWM(type) || IS_VIRTUAL(type)) { // analog and virtual
+      if (Bus::isOnOff(type) || Bus::isPWM(type) || Bus::isVirtual(type)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       } else {
@@ -214,7 +214,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
-    ColorOrderMap com = {};
+    // we will not bother with pre-allocating ColorOrderMappings vector
     for (int s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
       int offset = s < 10 ? 48 : 55;
       char xs[4] = "XS"; xs[2] = offset+s; xs[3] = 0; //start LED
@@ -226,10 +226,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         length = request->arg(xc).toInt();
         colorOrder = request->arg(xo).toInt() & 0x0F;
         colorOrder |= (request->arg(xw).toInt() & 0x0F) << 4; // add W swap information
-        com.add(start, length, colorOrder);
+        if (!BusManager::getColorOrderMap().add(start, length, colorOrder)) break;
       }
     }
-    BusManager::updateColorOrderMap(com);
 
     // update other pins
     #ifndef WLED_DISABLE_INFRARED

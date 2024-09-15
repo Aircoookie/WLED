@@ -93,7 +93,7 @@ After getting the URL (it can be a static file like static.json or a mylogic.php
 -  -D ABL_MILLIAMPS_DEFAULT=450
 -  -D DEFAULT_LED_COUNT=60 ; For a LED Ring of 60 LEDs
 -  -D BTNPIN=41  ; The M5Stack Atom S3 Lite has a button on GPIO41
--  -D LEDPIN=2 ; The M5Stack Atom S3 Lite has a Grove connector on the front, we use this GPIO2
+-  -D DATA_PINS=2 ; The M5Stack Atom S3 Lite has a Grove connector on the front, we use this GPIO2
 -  -D STATUSLED=35 ; The M5Stack Atom S3 Lite has a Multi-Color LED on GPIO35, although I didnt managed to control it
 -  -D IRPIN=4  ; The M5Stack Atom S3 Lite has a IR LED on GPIO4
 
