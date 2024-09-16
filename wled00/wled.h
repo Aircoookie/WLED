@@ -676,6 +676,7 @@ WLED_GLOBAL send_notification_t    notifyG  _INIT(0b00001111);
 #define receiveNotificationBrightness receiveN.Brightness
 #define receiveNotificationColor      receiveN.Color
 #define receiveNotificationEffects    receiveN.Effects
+#define receiveNotificationPalette    receiveN.Palette
 #define receiveSegmentOptions         receiveN.SegmentOptions
 #define receiveSegmentBounds          receiveN.SegmentBounds
 #define receiveDirect                 receiveN.Direct
@@ -687,6 +688,7 @@ WLED_GLOBAL send_notification_t    notifyG  _INIT(0b00001111);
 WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
 WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color
 WLED_GLOBAL bool receiveNotificationEffects    _INIT(true);       // apply effects setup
+WLED_GLOBAL bool receiveNotificationPalette    _INIT(true);       // apply palette
 WLED_GLOBAL bool receiveSegmentOptions         _INIT(false);      // apply segment options
 WLED_GLOBAL bool receiveSegmentBounds          _INIT(false);      // apply segment bounds (start, stop, offset)
 WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP/Hyperion realtime
