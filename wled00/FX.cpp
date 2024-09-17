@@ -24,14 +24,18 @@
   Modified heavily for WLED
 */
 
-/*
+#include "wled.h"
+#include "FX.h"
+#include "fcn_declare.h"
+
+
  //////////////
  // DEV INFO //
  //////////////
+/*
+  information for FX metadata strings: https://kno.wled.ge/interfaces/json-api/#effect-metadata
 
- information for FX metadata strings: https://kno.wled.ge/interfaces/json-api/#effect-metadata
-
- Audio Reactive: use the following code to pass usermod variables to effect
+  Audio Reactive: use the following code to pass usermod variables to effect
 
   uint8_t  *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
   bool      samplePeak = false;
@@ -55,30 +59,24 @@
   }
 */
 
-#include "wled.h"
-#include "FX.h"
-#include "fcn_declare.h"
 
 #define IBN 5100
-
-// a few constants needed for AudioReactive effects
-// for 22Khz sampling
-#define MAX_FREQUENCY   11025    // sample frequency / 2 (as per Nyquist criterion)
-#define MAX_FREQ_LOG10  4.04238f // log10(MAX_FREQUENCY)
-
-// for 20Khz sampling
-//#define MAX_FREQUENCY   10240
-//#define MAX_FREQ_LOG10  4.0103f
-
-// for 10Khz sampling
-//#define MAX_FREQUENCY   5120
-//#define MAX_FREQ_LOG10  3.71f
-
 // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
 #define PALETTE_SOLID_WRAP   (strip.paletteBlend == 1 || strip.paletteBlend == 3)
 #define PALETTE_MOVING_WRAP !(strip.paletteBlend == 2 || (strip.paletteBlend == 0 && SEGMENT.speed == 0))
 
 #define indexToVStrip(index, stripNr) ((index) | (int((stripNr)+1)<<16))
+
+// a few constants needed for AudioReactive effects
+// for 22Khz sampling
+#define MAX_FREQUENCY   11025    // sample frequency / 2 (as per Nyquist criterion)
+#define MAX_FREQ_LOG10  4.04238f // log10(MAX_FREQUENCY)
+// for 20Khz sampling
+//#define MAX_FREQUENCY   10240
+//#define MAX_FREQ_LOG10  4.0103f
+// for 10Khz sampling
+//#define MAX_FREQUENCY   5120
+//#define MAX_FREQ_LOG10  3.71f
 
 // effect utility functions
 uint8_t sin_gap(uint16_t in) {
@@ -1418,8 +1416,9 @@ uint16_t mode_loading(void) {
 }
 static const char _data_FX_MODE_LOADING[] PROGMEM = "Loading@!,Fade;!,!;!;;ix=16";
 
-
-//Police Lights with custom colors
+/*
+ * Two dots running
+ */
 uint16_t mode_two_dots() {
  if (SEGLEN == 1) return mode_static();
   unsigned delay = 1 + (FRAMETIME<<3) / SEGLEN;  // longer segments should change faster
@@ -1428,8 +1427,8 @@ uint16_t mode_two_dots() {
   unsigned width = ((SEGLEN*(SEGMENT.intensity+1))>>9); //max width is half the strip
   if (!width) width = 1;
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(2));
-  uint32_t color1 = SEGCOLOR(0);
-  uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? color1 : SEGCOLOR(1);
+  const uint32_t color1 = SEGCOLOR(0);
+  const uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? color1 : SEGCOLOR(1);
   for (unsigned i = 0; i < width; i++) {
     unsigned indexR = (offset + i) % SEGLEN;
     unsigned indexB = (offset + i + (SEGLEN>>1)) % SEGLEN;
@@ -2159,7 +2158,7 @@ uint16_t mode_fire_2012() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,2D Blur,Boost;;!;1;sx=64,ix=160,m12=1,c2=128"; // bars
+static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,2D Blur,Boost;;!;1;pal=35,sx=64,ix=160,m12=1,c2=128"; // bars
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -2386,22 +2385,27 @@ static const char _data_FX_MODE_LAKE[] PROGMEM = "Lake@!;Fx;!";
 uint16_t mode_meteor() {
   if (SEGLEN == 1) return mode_static();
   if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
-
+  const bool meteorSmooth = SEGMENT.check3;
   byte* trail = SEGENV.data;
 
-  const unsigned meteorSize = 1+ SEGLEN / 20; // 5%
-  uint16_t in = map((SEGENV.step >> 6 & 0xFF), 0, 255, 0, SEGLEN -1);
+  const unsigned meteorSize = 1 + SEGLEN / 20; // 5%
+  uint16_t meteorstart;
+  if(meteorSmooth) meteorstart = map((SEGENV.step >> 6 & 0xFF), 0, 255, 0, SEGLEN -1);
+  else {
+    unsigned counter = strip.now * ((SEGMENT.speed >> 2) + 8);
+    meteorstart = (counter * SEGLEN) >> 16;
+  }
 
-  const int max = SEGMENT.palette==5 || !SEGMENT.check1 ? 240 : 255;  
+  const int max = SEGMENT.palette==5 || !SEGMENT.check1 ? 240 : 255;
   // fade all leds to colors[1] in LEDs one step
   for (unsigned i = 0; i < SEGLEN; i++) {
     uint32_t col;
     if (random8() <= 255 - SEGMENT.intensity) {
-      if(SEGMENT.check3) {
+      if(meteorSmooth) { 
         int change = trail[i] + 4 - random8(24); //change each time between -20 and +4
-        trail[i] = constrain(change, 0, max);;
+        trail[i] = constrain(change, 0, max);
         col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0,  trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
-      }
+        }
         else {
         trail[i] = scale8(trail[i], 128 + random8(127));
         int index = trail[i];
@@ -2420,8 +2424,8 @@ uint16_t mode_meteor() {
 
   // draw meteor
   for (unsigned j = 0; j < meteorSize; j++) {
-    unsigned index = (in + j) % SEGLEN;      
-    if(SEGMENT.check3) { //smooth
+    unsigned index = (meteorstart + j) % SEGLEN;      
+    if(meteorSmooth) { 
         trail[index] = max;
         uint32_t col = SEGMENT.check1 ? SEGMENT.color_from_palette(index, true, false, 0, trail[index]) : SEGMENT.color_from_palette(trail[index], false, true, 255);
         SEGMENT.setPixelColor(index, col);
@@ -2492,7 +2496,7 @@ typedef struct Ripple {
 #else
   #define MAX_RIPPLES  100
 #endif
-static uint16_t ripple_base(bool blur) {
+static uint16_t ripple_base(uint8_t blurAmount = 0) {
   unsigned maxRipples = min(1 + (SEGLEN >> 2), MAX_RIPPLES);  // 56 max for 16 segment ESP8266
   unsigned dataSize = sizeof(ripple) * maxRipples;
 
@@ -2540,7 +2544,7 @@ static uint16_t ripple_base(bool blur) {
       }
     }
   }
-  if(blur) SEGMENT.blur(SEGMENT.custom1>>1);
+  SEGMENT.blur(blurAmount);
   return FRAMETIME;
 }
 #undef MAX_RIPPLES
@@ -2550,7 +2554,7 @@ uint16_t mode_ripple(void) {
   if (SEGLEN == 1) return mode_static();
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1));
   else                 SEGMENT.fade_out(250);
-  return ripple_base(true);
+  return ripple_base(SEGMENT.custom1>>1);
 }
 static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,Blur,,,,Overlay;,!;!;12;c1=0";
 
@@ -2569,7 +2573,7 @@ uint16_t mode_ripple_rainbow(void) {
     SEGENV.aux0--;
   }
   SEGMENT.fill(color_blend(SEGMENT.color_wheel(SEGENV.aux0),BLACK,235));
-  return ripple_base(false);
+  return ripple_base();
 }
 static const char _data_FX_MODE_RIPPLE_RAINBOW[] PROGMEM = "Ripple Rainbow@!,Wave #;;!;12";
 
@@ -4957,7 +4961,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
       SEGMENT.setPixelColorXY(y1, y2, DARKSLATEGRAY);
     }
   }
-  SEGMENT.blur(SEGMENT.custom3<<1, SEGMENT.check2);
+  SEGMENT.blur(SEGMENT.custom3>>1, SEGMENT.check2);
 
   return FRAMETIME;
 } // mode_2DColoredBursts()
@@ -4973,13 +4977,12 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   const int cols = SEGMENT.virtualWidth();
   const int rows = SEGMENT.virtualHeight();
 
-  SEGMENT.fadeToBlackBy(64);
-    SEGMENT.blur(SEGMENT.intensity>>1, SEGMENT.check1);
+  SEGMENT.fadeToBlackBy(64);    
   for (int i = 0; i < cols; i++) {
     SEGMENT.setPixelColorXY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4    ), ColorFromPalette(SEGPALETTE, i*5+strip.now/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND));
     SEGMENT.setPixelColorXY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4+128), ColorFromPalette(SEGPALETTE, i*5+128+strip.now/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND));
   }
-
+  SEGMENT.blur(SEGMENT.intensity>>(3-(SEGMENT.check1 * 2)), SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2Ddna()
@@ -5052,13 +5055,13 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
     int mySin = sin_t(angle) * i;
     int myCos = cos_t(angle) * i;
     SEGMENT.setPixelColorXY(colsCenter + mySin, rowsCenter + myCos, ColorFromPalette(SEGPALETTE, (i * 20) + t_20, 255, LINEARBLEND));
-    if (SEGMENT.check2) SEGMENT.setPixelColorXY(colsCenter + myCos, rowsCenter + mySin, ColorFromPalette(SEGPALETTE, (i * 20) + t_20, 255, LINEARBLEND));
+    if (SEGMENT.check1) SEGMENT.setPixelColorXY(colsCenter + myCos, rowsCenter + mySin, ColorFromPalette(SEGPALETTE, (i * 20) + t_20, 255, LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.intensity>>(!SEGMENT.check1), SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.intensity>>((!SEGMENT.check2) * 3), SEGMENT.check2);
 
   return FRAMETIME;
 } // mode_2DDrift()
-static const char _data_FX_MODE_2DDRIFT[] PROGMEM = "Drift@Rotation speed,Blur amount,,,,Smear,Twin;;!;2;ix=0";
+static const char _data_FX_MODE_2DDRIFT[] PROGMEM = "Drift@Rotation speed,Blur,,,,Twin,Smear;;!;2;ix=0";
 
 
 //////////////////////////
@@ -5103,15 +5106,13 @@ uint16_t mode_2DFrizzles(void) {                 // By: Stepko https://editor.so
 
   const int cols = SEGMENT.virtualWidth();
   const int rows = SEGMENT.virtualHeight();
-
-  SEGMENT.fadeToBlackBy(18);
-  SEGMENT.blur(SEGMENT.custom1 >> (2 + SEGMENT.check1), SEGMENT.check1);
+  SEGMENT.fadeToBlackBy(16); 
   for (size_t i = 8; i > 0; i--) {
     SEGMENT.addPixelColorXY(beatsin8(SEGMENT.speed/8 + i, 0, cols - 1),
                             beatsin8(SEGMENT.intensity/8 - i, 0, rows - 1),
                             ColorFromPalette(SEGPALETTE, beatsin8(12, 0, 255), 255, LINEARBLEND));
   }
-
+  SEGMENT.blur(SEGMENT.custom1 >> 3, SEGMENT.check1);
   return FRAMETIME;
 } // mode_2DFrizzles()
 static const char _data_FX_MODE_2DFRIZZLES[] PROGMEM = "Frizzles@X frequency,Y frequency,Blur,,,Smear;;!;2";
@@ -5577,7 +5578,7 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
                                     (rows - 1 - cy == 0)) ? ColorFromPalette(SEGPALETTE, beat8(5), thisVal, LINEARBLEND) : CRGB::Black);
     }
   }
-  SEGMENT.blur(SEGMENT.custom2>>2);
+  SEGMENT.blur(SEGMENT.custom2>>5);
 
   return FRAMETIME;
 } // mode_2DPlasmaball()
@@ -5593,8 +5594,6 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
 
   const int cols = SEGMENT.virtualWidth();
   const int rows = SEGMENT.virtualHeight();
-
- // CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
 
   if (SEGENV.call == 0) {
     SEGMENT.fill(BLACK);
@@ -5612,13 +5611,13 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
       uint8_t palindex = qsub8(inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
       uint8_t palbrightness = palindex;
       if(SEGMENT.check1) palindex = 255 - palindex; //flip palette
-      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE,palindex,palbrightness));
+      SEGMENT.setPixelColorXY(x, y, SEGMENT.color_from_palette(palindex, false, false, 255, palbrightness));
     }
   }
 
   return FRAMETIME;
 } // mode_2DPolarLights()
-static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@!,Scale,,,,Flip Palette;;!;2;pal=50";
+static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@!,Scale,,,,Flip Palette;;!;2;pal=71";
 
 
 /////////////////////////
@@ -5665,11 +5664,11 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
     int y = sin8(t2 + i * SEGMENT.intensity/8)*(rows-1)/255;  // max index now 255x15/255=15!
     SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, i * 255 / 13, 255, LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.custom2>>1);
+  SEGMENT.blur(SEGMENT.custom2 >> (3 - (SEGMENT.check1<<1)));
 
   return FRAMETIME;
 } // mode_2DSindots()
-static const char _data_FX_MODE_2DSINDOTS[] PROGMEM = "Sindots@!,Dot distance,Fade rate,Blur;;!;2;c2=64";
+static const char _data_FX_MODE_2DSINDOTS[] PROGMEM = "Sindots@!,Dot distance,Fade rate,Blur,,Extra Blur;;!;2;";
 
 
 //////////////////////////////
@@ -5828,7 +5827,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
       SEGMENT.addPixelColorXY(x, y-1, color);
     }
   }
-  SEGMENT.blur(SEGMENT.intensity>>2, SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.intensity >> (3 - SEGMENT.check1), SEGMENT.check1);
 
   return FRAMETIME;
 }
@@ -5881,7 +5880,7 @@ uint16_t mode_2Dcrazybees(void) {
     SEGMENT.fadeToBlackBy(32 + ((SEGMENT.check1*SEGMENT.intensity) >> 2));
     SEGMENT.blur(SEGMENT.intensity >> 1, SEGMENT.check1);
     for (size_t i = 0; i < n; i++) {
-      CRGB flowerCcolor = ColorFromPalette(SEGPALETTE,bee[i].hue);
+      uint32_t flowerCcolor = SEGMENT.color_from_palette(bee[i].hue, false, true, 255);
       SEGMENT.addPixelColorXY(bee[i].aimX + 1, bee[i].aimY, flowerCcolor);
       SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY + 1, flowerCcolor);
       SEGMENT.addPixelColorXY(bee[i].aimX - 1, bee[i].aimY, flowerCcolor);
@@ -6217,13 +6216,14 @@ uint16_t mode_2Ddriftrose(void) {
     float angle = radians(i * 10);
     uint32_t x = (CX + (sin_t(angle) * (beatsin8(i, 0, L*2)-L))) * 255.f;
     uint32_t y = (CY + (cos_t(angle) * (beatsin8(i, 0, L*2)-L))) * 255.f;
-    SEGMENT.wu_pixel(x, y, ColorFromPalette(SEGPALETTE, i * 10));
+    if(SEGMENT.palette == 0) SEGMENT.wu_pixel(x, y, CHSV(i * 10, 255, 255));
+    else SEGMENT.wu_pixel(x, y, ColorFromPalette(SEGPALETTE, i * 10));
   }
-  SEGMENT.blur(SEGMENT.intensity >> (2 + SEGMENT.check1), SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.intensity >> (4 - SEGMENT.check1), SEGMENT.check1);
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur,,,,Smear;;!;2;pal=11,ix=0";
+static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur,,,,Smear;;!;2;pal=11";
 
 /////////////////////////////
 //  2D PLASMA ROTOZOOMER   //
@@ -6448,7 +6448,7 @@ typedef struct Gravity {
 // Gravcenter effects By Andrew Tuline.
 // Gravcenter base function for Gravcenter (0), Gravcentric (1), Gravimeter (2), Gravfreq (3) (merged by @dedehai)
 
-uint16_t mode_gravcenter_base(unsigned mode) {               
+uint16_t mode_gravcenter_base(unsigned mode) {
   if (SEGLEN == 1) return mode_static();
 
   const unsigned dataSize = sizeof(gravity);
@@ -6457,16 +6457,16 @@ uint16_t mode_gravcenter_base(unsigned mode) {
 
   um_data_t *um_data = getAudioData();
   float   volumeSmth  = *(float*)  um_data->u_data[0];
-  float   FFT_MajorPeak = *(float*)um_data->u_data[4]; // used in mode 3: Gravfreq
-  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;    
 
   if(mode == 1) SEGMENT.fade_out(253);  // //Gravcentric
   else if(mode == 2) SEGMENT.fade_out(249);  // Gravimeter
   else if(mode == 3) SEGMENT.fade_out(250);  // Gravfreq
   else SEGMENT.fade_out(251);  // Gravcenter
+
   float mySampleAvg;
   int tempsamp;
   float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0f;
+
   if(mode == 2) { //Gravimeter
     segmentSampleAvg *= 0.25; // divide by 4, to compensate for later "sensitivity" upscaling
     mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment
@@ -6474,16 +6474,16 @@ uint16_t mode_gravcenter_base(unsigned mode) {
   }
   else { // Gravcenter or Gravcentric or Gravfreq
     segmentSampleAvg *= 0.125f; // divide by 8, to compensate for later "sensitivity" upscaling
-    mySampleAvg = mapf(segmentSampleAvg*2.0, 0.0f, 32.0f, 0.0f, (float)SEGLEN/2.0f); // map to pixels availeable in current segment  
+    mySampleAvg = mapf(segmentSampleAvg*2.0, 0.0f, 32.0f, 0.0f, (float)SEGLEN/2.0f); // map to pixels availeable in current segment
     tempsamp = constrain(mySampleAvg, 0, SEGLEN/2);     // Keep the sample from overflowing.
   }
+
   uint8_t gravity = 8 - SEGMENT.speed/32;
   int offset = 1;
   if(mode == 2) offset = 0;  // Gravimeter
-  if (tempsamp >= gravcen->topLED) gravcen->topLED = tempsamp-offset; 
+  if (tempsamp >= gravcen->topLED) gravcen->topLED = tempsamp-offset;
   else if (gravcen->gravityCounter % gravity == 0) gravcen->topLED--;
   
-
   if(mode == 1) {  //Gravcentric
     for (int i=0; i<tempsamp; i++) {
       uint8_t index = segmentSampleAvg*24+strip.now/200;
@@ -6505,8 +6505,10 @@ uint16_t mode_gravcenter_base(unsigned mode) {
     }
   }
   else if(mode == 3) { //Gravfreq
-    for (int i=0; i<tempsamp; i++) {      
-      uint8_t index = (log10f(FFT_MajorPeak) - (MAX_FREQ_LOG10 - 1.78f)) * 255; 
+    for (int i=0; i<tempsamp; i++) {
+      float   FFT_MajorPeak = *(float*)um_data->u_data[4]; // used in mode 3: Gravfreq
+      if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;
+      uint8_t index = (log10f(FFT_MajorPeak) - (MAX_FREQ_LOG10 - 1.78f)) * 255;
       SEGMENT.setPixelColor(i+SEGLEN/2, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
       SEGMENT.setPixelColor(SEGLEN/2-i-1, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
     }
@@ -6529,11 +6531,11 @@ uint16_t mode_gravcenter_base(unsigned mode) {
   gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
   return FRAMETIME;
-} 
+}
 
 uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
   return mode_gravcenter_base(0);
-} 
+}
 static const char _data_FX_MODE_GRAVCENTER[] PROGMEM = "Gravcenter@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=2,si=0"; // Circle, Beatsin
 
 ///////////////////////
@@ -6541,7 +6543,7 @@ static const char _data_FX_MODE_GRAVCENTER[] PROGMEM = "Gravcenter@Rate of fall,
 ///////////////////////
 uint16_t mode_gravcentric(void) {               // Gravcentric. By Andrew Tuline.
   return mode_gravcenter_base(1);
-} 
+}
 static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=3,si=0"; // Corner, Beatsin
 
 
@@ -6559,7 +6561,7 @@ static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,
 ///////////////////////
 uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   return mode_gravcenter_base(3);
-} 
+}
 static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensitivity;!,!;!;1f;ix=128,m12=0,si=0"; // Pixels, Beatsin
 
 
@@ -6774,7 +6776,7 @@ static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels
 //   * PUDDLES      //
 //////////////////////
 // Puddles/Puddlepeak By Andrew Tuline. Merged by @dedehai
-uint16_t mode_puddles_base(bool peakdetect) {                   
+uint16_t mode_puddles_base(bool peakdetect) {
   if (SEGLEN == 1) return mode_static();
   unsigned size = 0;
   uint8_t fadeVal = map(SEGMENT.speed, 0, 255, 224, 254);
@@ -6788,7 +6790,7 @@ uint16_t mode_puddles_base(bool peakdetect) {
   uint8_t *binNum    =  (uint8_t*)um_data->u_data[7];
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  if(peakdetect) { // puddles peak
+  if(peakdetect) {                                          // puddles peak
     *binNum = SEGMENT.custom1;                              // Select a bin.
     *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
     if (samplePeak == 1) {
@@ -6796,7 +6798,7 @@ uint16_t mode_puddles_base(bool peakdetect) {
       if (pos+size>= SEGLEN) size = SEGLEN - pos;
     }
   }
-  else { // puddles  
+  else {                                                    // puddles  
     if (volumeRaw > 1) {
       size = volumeRaw * SEGMENT.intensity /256 /8 + 1;     // Determine size of the flash based on the volume.
       if (pos+size >= SEGLEN) size = SEGLEN - pos;
@@ -7779,7 +7781,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_COLORTWINKLE, &mode_colortwinkle, _data_FX_MODE_COLORTWINKLE);
   addEffect(FX_MODE_LAKE, &mode_lake, _data_FX_MODE_LAKE);
   addEffect(FX_MODE_METEOR, &mode_meteor, _data_FX_MODE_METEOR);
-  //addEffect(FX_MODE_METEOR_SMOOTH, &mode_meteor_smooth, _data_FX_MODE_METEOR_SMOOTH); // merged with mode_meteor
+  //addEffect(FX_MODE_METEOR_SMOOTH, &mode_meteor_smooth, _data_FX_MODE_METEOR_SMOOTH); // merged with mode_meteor 
   addEffect(FX_MODE_RAILWAY, &mode_railway, _data_FX_MODE_RAILWAY);
   addEffect(FX_MODE_RIPPLE, &mode_ripple, _data_FX_MODE_RIPPLE);
   addEffect(FX_MODE_TWINKLEFOX, &mode_twinklefox, _data_FX_MODE_TWINKLEFOX);
