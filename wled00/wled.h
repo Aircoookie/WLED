@@ -641,17 +641,19 @@ typedef class Receive {
         bool    SegmentOptions : 1;
         bool    SegmentBounds  : 1;
         bool    Direct         : 1;
-        uint8_t reserved       : 2;
+        bool    Palette        : 1;
+        uint8_t reserved       : 1;
       };
     };
     Receive(int i) { Options = i; }
-    Receive(bool b, bool c, bool e, bool sO, bool sB) {
-      Brightness = b;
-      Color = c;
-      Effects = e;
-      SegmentOptions = sO;
-      SegmentBounds = sB;
-    };
+    Receive(bool b, bool c, bool e, bool sO, bool sB, bool p)
+    : Brightness(b)
+    , Color(c)
+    , Effects(e)
+    , SegmentOptions(sO)
+    , SegmentBounds(sB)
+    , Palette(p)
+    {};
 } __attribute__ ((aligned(1), packed)) receive_notification_t;
 typedef class Send {
   public:
@@ -673,7 +675,7 @@ typedef class Send {
     Hue = h;
   }
 } __attribute__ ((aligned(1), packed)) send_notification_t;
-WLED_GLOBAL receive_notification_t receiveN _INIT(0b00100111);
+WLED_GLOBAL receive_notification_t receiveN _INIT(0b01100111);
 WLED_GLOBAL send_notification_t    notifyG  _INIT(0b00001111);
 #define receiveNotificationBrightness receiveN.Brightness
 #define receiveNotificationColor      receiveN.Color
