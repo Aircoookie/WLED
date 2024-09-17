@@ -68,3 +68,14 @@ bool UsermodManager::add(Usermod* um)
   ums[numMods++] = um;
   return true;
 }
+
+
+/* Usermod v2 interface shim for oappend */
+Print* Usermod::oappend_shim = nullptr;
+
+void Usermod::appendConfigData(Print& p) {
+  assert(!oappend_shim);
+  oappend_shim = &p;
+  this->appendConfigData();
+  oappend_shim = nullptr;
+}

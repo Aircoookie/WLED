@@ -302,7 +302,7 @@ class Usermod {
     virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
     virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
     virtual void connected() {}                                              // called when WiFi is (re)connected
-    virtual void appendConfigData(Print&) {}                                       // helper function called from usermod settings page to add metadata for entry fields
+    virtual void appendConfigData(Print&);                                   // helper function called from usermod settings page to add metadata for entry fields
     virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
     virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
     virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
@@ -314,6 +314,16 @@ class Usermod {
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
+
+  // API shims
+  private:
+    static Print* oappend_shim;
+    // old form of appendConfigData; called by default appendConfigData(Print&) with oappend_shim set up
+    // private so it is not accidentally invoked except via Usermod::appendConfigData(Print&)
+    virtual void appendConfigData() {}    
+  protected:
+    // Shim for oappend(), which used to exist in utils.cpp
+    template<typename T> static inline void oappend(const T& t) { oappend_shim->print(t); };
 };
 
 class UsermodManager {
