@@ -612,3 +612,8 @@ uint8_t get_random_wheel_index(uint8_t pos) {
   }
   return r;
 }
+
+// float version of map()
+float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}

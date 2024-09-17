@@ -267,6 +267,14 @@ bool PinManagerClass::isPinOk(byte gpio, bool output) const
   return false;
 }
 
+bool PinManagerClass::isReadOnlyPin(byte gpio)
+{
+#ifdef ARDUINO_ARCH_ESP32
+  if (gpio < WLED_NUM_PINS) return (digitalPinIsValid(gpio) && !digitalPinCanOutput(gpio));
+#endif
+  return false;
+}
+
 PinOwner PinManagerClass::getPinOwner(byte gpio) const
 {
   if (!isPinOk(gpio, false)) return PinOwner::None;

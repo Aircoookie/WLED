@@ -111,6 +111,8 @@ class PinManagerClass {
   bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None) const;
   // will return false for reserved pins
   bool isPinOk(byte gpio, bool output = true) const;
+  
+  static bool isReadOnlyPin(byte gpio);
 
   PinOwner getPinOwner(byte gpio) const;
 

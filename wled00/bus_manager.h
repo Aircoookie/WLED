@@ -259,8 +259,8 @@ class BusPwm : public Bus {
     static std::vector<LEDType> getLEDTypes();
 
   private:
-    uint8_t _pins[5];
-    uint8_t _pwmdata[5];
+    uint8_t _pins[OUTPUT_MAX_PINS];
+    uint8_t _pwmdata[OUTPUT_MAX_PINS];
     #ifdef ARDUINO_ARCH_ESP32
     uint8_t _ledcStart;
     #endif

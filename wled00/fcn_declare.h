@@ -378,6 +378,7 @@ uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
 uint8_t get_random_wheel_index(uint8_t pos);
+float mapf(float x, float in_min, float in_max, float out_min, float out_max);
 
 // RAII guard class for the JSON Buffer lock
 // Modeled after std::lock_guard

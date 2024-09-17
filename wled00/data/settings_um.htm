@@ -32,8 +32,8 @@
 			GetV();
 			for (let r of d.rsvd) { pins.push(r); pinO.push("rsvd"); } // reserved pins
 			if (d.um_p[0]==-1) d.um_p.shift();	// remove filler
-			d.Sf.SDA.max = d.Sf.SCL.max = d.Sf.MOSI.max = d.Sf.SCLK.max = d.Sf.MISO.max = d.max_gpio;
-			//for (let i of d.getElementsByTagName("input")) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
+			d.Sf.SDA.max = d.Sf.SCL.max = d.Sf.MOSI.max = d.Sf.SCLK.max = d.Sf.MISO.max = d.max_gpio-1;
+			//for (let i of d.getElementsByTagName("input")) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio-1;
 			pinDD(); // convert INPUT to SELECT for pins
 		});
 		// error event
@@ -80,7 +80,7 @@
 			for (var i=0; i<pins.length; i++) {
 				if (k==pinO[i]) continue;
 				if (o.value==pins[i] && pinO[i]==="if") { o.style.color="lime"; break; }
-				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
+				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio-1) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
 			}
 		} else {
 			switch (o.name) {
@@ -94,7 +94,7 @@
 			for (var i=0; i<pins.length; i++) {
 				//if (k==pinO[i]) continue; // same owner
 				if (o.value==pins[i] && pinO[i]==="if") { o.style.color="tomato"; break; }
-				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
+				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio-1) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
 			}
 		}
 		*/
@@ -148,7 +148,7 @@
 				case "number":
 					c = `value="${o}"`;
 					if (f.substr(-3)==="pin") {
-						c += ` max="${d.max_gpio}" min="-1" class="s"`;
+						c += ` max="${d.max_gpio-1}" min="-1" class="s"`;
 						t = "int";
 					} else {
 						c += ' step="any" class="xxl"';
@@ -170,7 +170,7 @@
 			if (i.type === "number" && (i.name.includes("pin") || ["SDA","SCL","MOSI","MISO","SCLK"].includes(i.name))) { //select all pin select elements
 				let v = parseInt(i.value);
 				let sel = addDD(i.name,0);
-				for (var j = -1; j <= d.max_gpio; j++) {
+				for (var j = -1; j < d.max_gpio; j++) {
 					if (d.rsvd.includes(j)) continue;
 					let foundPin = pins.indexOf(j);
 					let txt = (j === -1) ? "unused" : `${j}`;
