@@ -1144,11 +1144,8 @@ void serveJson(AsyncWebServerRequest* request)
 
   DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for request: %d\n"), lDoc.memoryUsage(), subJson);
 
-  #ifdef WLED_DEBUG
-  size_t len =
-  #endif
-  response->setLength();
-  DEBUG_PRINT(F("JSON content length: ")); DEBUG_PRINTLN(len);
+  [[maybe_unused]] size_t len = response->setLength();
+  DEBUG_PRINTF_P(PSTR("JSON content length: %u\n"), len);
 
   request->send(response);
 }

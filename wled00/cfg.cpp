@@ -173,8 +173,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     for (JsonObject elm : ins) {
       unsigned type = elm["type"] | TYPE_WS2812_RGB;
       unsigned len = elm["len"] | DEFAULT_LED_COUNT;
-      if (!IS_DIGITAL(type)) continue;
-      if (!IS_2PIN(type)) {
+      if (!Bus::isDigital(type)) continue;
+      if (!Bus::is2Pin(type)) {
         digitalCount++;
         unsigned channels = Bus::getNumberOfChannels(type);
         if (len > maxLedsOnBus)     maxLedsOnBus = len;
@@ -215,7 +215,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t maPerLed = elm[F("ledma")] | LED_MILLIAMPS_DEFAULT;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
-      if (IS_PWM(ledType) || IS_ONOFF(ledType) || IS_VIRTUAL(ledType)) { // analog and virtual
+      if (Bus::isPWM(ledType) || Bus::isOnOff(ledType) || Bus::isVirtual(ledType)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       }
@@ -244,17 +244,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // read color order map configuration
   JsonArray hw_com = hw[F("com")];
   if (!hw_com.isNull()) {
-    ColorOrderMap com = {};
-    unsigned s = 0;
+    BusManager::getColorOrderMap().reserve(std::min(hw_com.size(), (size_t)WLED_MAX_COLOR_ORDER_MAPPINGS));
     for (JsonObject entry : hw_com) {
-      if (s > WLED_MAX_COLOR_ORDER_MAPPINGS) break;
       uint16_t start = entry["start"] | 0;
       uint16_t len = entry["len"] | 0;
       uint8_t colorOrder = (int)entry[F("order")];
-      com.add(start, len, colorOrder);
-      s++;
+      if (!BusManager::getColorOrderMap().add(start, len, colorOrder)) break;
     }
-    BusManager::updateColorOrderMap(com);
   }
 
   // read multiple button configuration
@@ -277,9 +273,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         if ((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) {
           if (digitalPinToAnalogChannel(btnPin[s]) < 0) {
             // not an ADC analog pin
-            DEBUG_PRINT(F("PIN ALLOC error: GPIO")); DEBUG_PRINT(btnPin[s]);
-            DEBUG_PRINT(F("for analog button #")); DEBUG_PRINT(s);
-            DEBUG_PRINTLN(F(" is not an analog pin!"));
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[s], s);
             btnPin[s] = -1;
             pinManager.deallocatePin(pin,PinOwner::Button);
           } else {
@@ -290,7 +284,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         {
           if (digitalPinToTouchChannel(btnPin[s]) < 0) {
             // not a touch pin
-            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[s], s);
+            DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not a touch pin!\n"), btnPin[s], s);
             btnPin[s] = -1;
             pinManager.deallocatePin(pin,PinOwner::Button);
           }          

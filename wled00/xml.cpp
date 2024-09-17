@@ -73,6 +73,7 @@ void fillUMPins(Print& dest, JsonObject &mods)
 }
 
 void appendGPIOinfo(Print& dest) {
+  // add usermod pins as d.um_p array
   dest.print(F("d.um_p=[-1")); // has to have 1 element
   if (i2c_sda > -1 && i2c_scl > -1) {
     dest.printf_P(PSTR(",%d,%d"), i2c_sda, i2c_scl);
@@ -90,92 +91,64 @@ void appendGPIOinfo(Print& dest) {
   }
   dest.print(F("];"));
 
-  // add reserved and usermod pins as d.um_p array
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  dest.print(F("d.rsvd=[22,23,24,25,26,27,28,29,30,31,32"));
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  dest.print(F("d.rsvd=[19,20,22,23,24,25,26,27,28,29,30,31,32"));  // includes 19+20 for USB OTG (JTAG)
-  if (psramFound()) dest.print(F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  dest.print(F("d.rsvd=[11,12,13,14,15,16,17"));
-  #elif defined(ESP32)
-  dest.print(F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31,37,38"));
-  if (!pinManager.isPinOk(16,false)) dest.print(F(",16")); // covers PICO & WROVER
-  if (!pinManager.isPinOk(17,false)) dest.print(F(",17")); // covers PICO & WROVER
-  #else
-  dest.print(F("d.rsvd=[6,7,8,9,10,11"));
-  #endif
-
+  // add reserved (unusable) pins
+  dest.print(PSTR("d.rsvd=["));
+  for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
+    if (!pinManager.isPinOk(i, false)) {  // include readonly pins
+      dest.printf_P(PSTR("%d,"),i);
+    }
+  }
   #ifdef WLED_ENABLE_DMX
-  dest.print(F(",2")); // DMX hardcoded pin
+  dest.print(F("2,")); // DMX hardcoded pin
   #endif
-
   #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
-  dest.printf_P(PSTR(",%d"),hardwareTX); // debug output (TX) pin
+  dest.printf_P(PSTR("%d,"),hardwareTX); // debug output (TX) pin
   #endif
-
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
-
   #ifdef WLED_USE_ETHERNET
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { dest.printf(",%d",esp32_nonconfigurable_ethernet_pins[p].pin); }
-    if (ethernetBoards[ethernetType].eth_power>=0)     { dest.printf(",%d", ethernetBoards[ethernetType].eth_power); }
-    if (ethernetBoards[ethernetType].eth_mdc>=0)       { dest.printf(",%d", ethernetBoards[ethernetType].eth_mdc); }
-    if (ethernetBoards[ethernetType].eth_mdio>=0)      { dest.printf(",%d", ethernetBoards[ethernetType].eth_mdio); }
+    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { dest.printf("%d,",esp32_nonconfigurable_ethernet_pins[p].pin); }
+    if (ethernetBoards[ethernetType].eth_power>=0)     { dest.printf("%d,", ethernetBoards[ethernetType].eth_power); }
+    if (ethernetBoards[ethernetType].eth_mdc>=0)       { dest.printf("%d,", ethernetBoards[ethernetType].eth_mdc); }
+    if (ethernetBoards[ethernetType].eth_mdio>=0)      { dest.printf("%d,", ethernetBoards[ethernetType].eth_mdio); }
     switch (ethernetBoards[ethernetType].eth_clk_mode) {
       case ETH_CLOCK_GPIO0_IN:
       case ETH_CLOCK_GPIO0_OUT:
-        dest.print(F(",0"));
+        dest.print(F("0"));
         break;
       case ETH_CLOCK_GPIO16_OUT:
-        dest.print(F(",16"));
+        dest.print(F("16"));
         break;
       case ETH_CLOCK_GPIO17_OUT:
-        dest.print(F(",17"));
+        dest.print(F("17"));
         break;
     }
   }
   #endif
-
-  dest.print(F("];"));
+  dest.print(F("];")); // rsvd
 
   // add info for read-only GPIO
-  dest.print(F("d.ro_gpio=["));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  dest.print(46);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  // none for S3
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  // none for C3
-  #elif defined(ESP32)
-  dest.print(F("34,35,36,37,38,39"));
-  #else
-  // none for ESP8266
-  #endif
-  dest.print(F("];"));
+  dest.print(PSTR("d.ro_gpio=["));
+  bool firstPin = true;
+  for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
+    if (pinManager.isReadOnlyPin(i)) {
+      // No comma before the first pin
+      if (!firstPin) dest.print(',');
+      dest.print(i);
+      firstPin = false;
+    }
+  }
+  dest.print(PSTR("];"));
 
   // add info about max. # of pins
-  dest.print(F("d.max_gpio="));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  dest.print(46);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  dest.print(48);
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  dest.print(21);
-  #elif defined(ESP32)
-  dest.print(39);
-  #else
-  dest.print(16);
-  #endif
-  dest.print(F(";"));
+  dest.printf_P(PSTR("d.max_gpio=%d;"),WLED_NUM_PINS);
 }
 
 //get values for settings form in javascript
 void getSettingsJS(byte subPage, Print& dest)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
-  DEBUG_PRINT(F("settings resp"));
-  DEBUG_PRINTLN(subPage);
+  DEBUG_PRINTF_P(PSTR("settings resp %u\n"), (unsigned)subPage);
 
   if (subPage <0 || subPage >10) return;
 
@@ -289,6 +262,8 @@ void getSettingsJS(byte subPage, Print& dest)
 
     appendGPIOinfo(dest);
 
+    dest.printf_P(PSTR("d.ledTypes=%s;"), BusManager::getLEDTypesJSONString().c_str());
+
     // set limits
     dest.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d);"),
       WLED_MAX_BUSSES,
@@ -333,7 +308,7 @@ void getSettingsJS(byte subPage, Print& dest)
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) printSetFormValue(dest,lp,pins[i]);
+        if (pinManager.isPinOk(pins[i]) || bus->isVirtual()) printSetFormValue(dest,lp,pins[i]);
       }
       printSetFormValue(dest,lc,bus->getLength());
       printSetFormValue(dest,lt,bus->getType());
@@ -345,7 +320,7 @@ void getSettingsJS(byte subPage, Print& dest)
       printSetFormValue(dest,aw,bus->getAutoWhiteMode());
       printSetFormValue(dest,wo,bus->getColorOrder() >> 4);
       unsigned speed = bus->getFrequency();
-      if (IS_PWM(bus->getType())) {
+      if (bus->isPWM()) {
         switch (speed) {
           case WLED_PWM_FREQ/2    : speed = 0; break;
           case WLED_PWM_FREQ*2/3  : speed = 1; break;
@@ -354,7 +329,7 @@ void getSettingsJS(byte subPage, Print& dest)
           case WLED_PWM_FREQ*2    : speed = 3; break;
           case WLED_PWM_FREQ*10/3 : speed = 4; break; // uint16_t max (19531 * 3.333)
         }
-      } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
+      } else if (bus->is2Pin()) {
         switch (speed) {
           case  1000 : speed = 0; break;
           case  2000 : speed = 1; break;

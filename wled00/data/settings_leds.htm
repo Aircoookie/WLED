@@ -5,8 +5,9 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>LED Settings</title>
 	<script>
-		var d=document,laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=4096,maxL=1333,maxCO=10,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var d=document,laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var oMaxB=1;
+		d.ledTypes = [/*{i:22,c:1,t:"D",n:"WS2812"},{i:42,c:6,t:"AA",n:"PWM CCT"}*/]; // filled from GetV()
 		d.um_p = [];
 		d.rsvd = [];
 		d.ro_gpio = [];
@@ -18,14 +19,18 @@
 		function gId(n){return d.getElementById(n);}
 		function off(n){d.getElementsByName(n)[0].value = -1;}
 		// these functions correspond to C macros found in const.h
-		function isPWM(t) { return t > 40 && t < 46; }                      // is PWM type
-		function isAna(t) { return t == 40 || isPWM(t); }                   // is analog type
-		function isDig(t) { return (t > 15 && t < 40) || isD2P(t); }        // is digital type
-		function isD2P(t) { return t > 47 && t < 64; }                      // is digital 2 pin type
-		function is16b(t) { return t == 26 || t == 29 || t == 34; }         // is digital 16 bit type
-		function isVir(t) { return t >= 80 && t < 96; }                     // is virtual type
-		function hasW(t)  { return (t >= 18 && t <= 21) || (t >= 28 && t <= 32) || t == 34 || (t >= 44 && t <= 45) || (t >= 88 && t <= 89); }
-		function hasCCT(t) { return t == 20 || t == 21 || t == 42 || t == 45 || t == 28 || t == 32 || t == 34; }
+		function gT(t)     { for (let type of d.ledTypes) if (t == type.i) return type; } // getType from available ledTypes
+		function isPWM(t)  { return gT(t).t.charAt(0) === "A"; }    // is PWM type
+		function isAna(t)  { return gT(t).t === "" || isPWM(t); }   // is analog type
+		function isDig(t)  { return gT(t).t === "D" || isD2P(t); }  // is digital type
+		function isD2P(t)  { return gT(t).t === "2P"; }             // is digital 2 pin type
+		function isNet(t)  { return gT(t).t === "N"; }              // is network type
+		function isVir(t)  { return gT(t).t === "V" || isNet(t); }  // is virtual type
+		function hasRGB(t) { return !!(gT(t).c & 0x01); }           // has RGB
+		function hasW(t)   { return !!(gT(t).c & 0x02); }           // has white channel
+		function hasCCT(t) { return !!(gT(t).c & 0x04); }           // is white CCT enabled
+		function is16b(t)  { return !!(gT(t).c & 0x10); }           // is digital 16 bit type
+		function numPins(t){ return Math.max(gT(t).t.length, 1); }  // type length determines number of GPIO pins
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
 			let scE = d.createElement("script");
@@ -56,7 +61,7 @@
 			x.className = error ? "error":"show";
 			clearTimeout(timeout);
 			x.style.animation = 'none';
-			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+			timeout = setTimeout(()=>{ x.className = x.className.replace("show", ""); }, 2900);
 		}
 		function bLimits(b,v,p,m,l,o=5,d=2,a=6) {
 			// maxB - max buses (can be changed if using ESP32 parallel I2S)
@@ -65,7 +70,7 @@
 			// maxV - min virtual buses
 			// maxPB - max LEDs per bus
 			// maxM - max LED memory
-			// maxL - max LEDs
+			// maxL - max LEDs (will serve to determine ESP >1664 == ESP32)
 			// maxCO - max Color Order mappings
 			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
 		}
@@ -79,7 +84,7 @@
 				let t = parseInt(d.Sf["LT"+n].value, 10); // LED type SELECT
 				// ignore IP address
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-					if (t>=80) return;
+					if (isNet(t)) return;
 				}
 				//check for pin conflicts
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4")
@@ -199,12 +204,10 @@
 			let len = parseInt(d.getElementsByName("LC"+n)[0].value);
 			len += parseInt(d.getElementsByName("SL"+n)[0].value); // skipped LEDs are allocated too
 			let dbl = 0;
-			let ch = 3;
+			let ch = 3*hasRGB(t) + hasW(t) + hasCCT(t);
 			let mul = 1;
 			if (isDig(t)) {
 				if (is16b(t)) len *= 2; // 16 bit LEDs
-				if (t > 28 && t < 40) ch = 4; //RGBW
-				if (t == 28) ch = 5; //GRBCW
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
 					mul = 5;
 				}
@@ -213,7 +216,6 @@
 				}
 				if (d.Sf.LD.checked) dbl = len * ch; // double buffering
 			}
-			if (isVir(t) && t == 88) ch = 4;
 			return len * ch * mul + dbl;
 		}
 
@@ -224,6 +226,41 @@
 			let sLC = 0, sPC = 0, sDI = 0, maxLC = 0;
 			const ablEN = d.Sf.ABL.checked;
 			maxB = oMaxB; // TODO make sure we start with all possible buses
+			let setPinConfig = (n,t) => {
+				let p0d = "GPIO:";
+				let p1d = "";
+				let off = "Off Refresh";
+				switch (gT(t).t.charAt(0)) {
+					case '2': // 2 pin digital
+						p1d = "Clock "+p0d;
+						// fallthrough
+					case 'D': // digital
+						p0d = "Data "+p0d;
+						break;
+					case 'A': // PWM analog
+						if (numPins(t) > 1) p0d = "GPIOs:";
+						off = "Dithering";
+						break;
+					case 'N': // network
+						p0d = "IP address:";
+						break;
+					case 'V': // virtual/non-GPIO based
+						p0d = "Config:"
+						break;
+				}
+				gId("p0d"+n).innerText = p0d;
+				gId("p1d"+n).innerText = p1d;
+				gId("off"+n).innerText = off;
+				// secondary pins show/hide (type string length is equivalent to number of pins used; except for network and on/off)
+				let pins = Math.max(gT(t).t.length,1) + 3*isNet(t); // fixes network pins to 4
+				for (let p=1; p<5; p++) {
+					var LK = d.Sf["L"+p+n];
+					if (!LK) continue;
+					LK.style.display = (p < pins) ? "inline" : "none";
+					LK.required = (p < pins);
+					if (p >= pins) LK.value="";
+				}
+			}
 
 			// enable/disable LED fields
 			let LTs = d.Sf.querySelectorAll("#mLC select[name^=LT]");
@@ -232,49 +269,29 @@
 				// is the field a LED type?
 				var n = s.name.substring(2);
 				var t = parseInt(s.value);
-				gId("p0d"+n).innerHTML = isVir(t) ? "IP address:" : isD2P(t) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
-				gId("p1d"+n).innerHTML = isD2P(t) ? "Clk GPIO:" : "";
-				gId("abl"+n).style.display = (!ablEN || isVir(t) || isAna(t)) ? "none" : "inline";
-				//var LK = d.getElementsByName("L1"+n)[0]; // clock pin
-
 				memu += getMem(t, n); // calc memory
-
-				// enumerate pins
-				for (p=1; p<5; p++) {
-					var LK = d.Sf["L"+p+n]; // secondary pins
-					if (!LK) continue;
-					if ((isVir(t) && p<4) || (isD2P(t) && p==1) || (isPWM(t) && (p+40 < t))) // TYPE_xxxx values from const.h
-					{
-						// display pin field
-						LK.style.display = "inline";
-						LK.required = true;
-					} else {
-						// hide pin field
-						LK.style.display = "none";
-						LK.required = false;
-						LK.value="";
-					}
-				}
+				setPinConfig(n,t);
+				gId("abl"+n).style.display = (!ablEN || isVir(t) || isAna(t)) ? "none" : "inline";
 				if (change) {
-					gId("rf"+n).checked = (gId("rf"+n).checked || t == 31); // LEDs require data in off state
-					if (isAna(t)) d.Sf["LC"+n].value = 1; // for sanity change analog count just to 1 LED
+					gId("rf"+n).checked = (gId("rf"+n).checked || t == 31); // LEDs require data in off state (mandatory for TM1814)
+					if (isAna(t)) d.Sf["LC"+n].value = 1;                   // for sanity change analog count just to 1 LED
 					d.Sf["LA"+n].min = (isVir(t) || isAna(t)) ? 0 : 1;
 					d.Sf["MA"+n].min = (isVir(t) || isAna(t)) ? 0 : 250;
 				}
-				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-				gRGBW |= hasW(t); // RGBW checkbox, TYPE_xxxx values from const.h
-				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide color order for PWM
-				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none"; // show swap channels dropdown
-				gId("dig"+n+"w").querySelector("[data-opt=CCT]").disabled = !hasCCT(t);   // disable WW/CW swapping	
-				if (!(isDig(t) && hasW(t))) d.Sf["WO"+n].value = 0; // reset swapping
-				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";  // hide count for analog
-				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";  // hide reversed for virtual
+				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});          // prevent change for TM1814
+				gRGBW |= hasW(t);                                                           // RGBW checkbox
+				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";       // hide color order for PWM
+				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none";   // show swap channels dropdown
+				gId("dig"+n+"w").querySelector("[data-opt=CCT]").disabled = !hasCCT(t);     // disable WW/CW swapping	
+				if (!(isDig(t) && hasW(t))) d.Sf["WO"+n].value = 0;                         // reset swapping
+				gId("dig"+n+"c").style.display = (isAna(t)) ? "none":"inline";              // hide count for analog
+				gId("dig"+n+"r").style.display = (isVir(t)) ? "none":"inline";              // hide reversed for virtual
 				gId("dig"+n+"s").style.display = (isVir(t) || isAna(t)) ? "none":"inline";  // hide skip 1st for virtual & analog
-				gId("dig"+n+"f").style.display = (isDig(t)) ? "inline":"none";  // hide refresh
-				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";   // auto calculate white
+				gId("dig"+n+"f").style.display = (isDig(t) || (isPWM(t) && maxL>2048)) ? "inline":"none"; // hide refresh (PWM hijacks reffresh for dithering on ESP32)
+				gId("dig"+n+"a").style.display = (hasW(t)) ? "inline":"none";               // auto calculate white
 				gId("dig"+n+"l").style.display = (isD2P(t) || isPWM(t)) ? "inline":"none";  // bus clock speed / PWM speed (relative) (not On/Off)
-				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
-				//gId("psd"+n).innerHTML = isAna(t) ? "Index:":"Start:";    // change analog start description
+				gId("rev"+n).innerHTML = isAna(t) ? "Inverted output":"Reversed";           // change reverse text for analog else (rotated 180°)
+				//gId("psd"+n).innerHTML = isAna(t) ? "Index:":"Start:";                      // change analog start description
 			});
 			// display global white channel overrides
 			gId("wc").style.display = (gRGBW) ? 'inline':'none';
@@ -396,7 +413,7 @@
 				let t = s.value;
 				if (isDig(t) && !isD2P(t)) digitalB++;
 				if (isD2P(t)) twopinB++;
-				if (isPWM(t)) analogB += t-40; // type defines PWM pins
+				if (isPWM(t)) analogB += numPins(t); // each GPIO is assigned to a channel
 				if (isVir(t)) virtB++;
 			});
 
@@ -408,38 +425,7 @@
 				var cn = `<div class="iST">
 <hr class="sml">
 ${i+1}:
-<select name="LT${s}" onchange="UI(true)">${i>=maxB && false ? '' :
-'<option value="22" data-type="D">WS281x</option>\
-<option value="30" data-type="D">SK6812/WS2814 RGBW</option>\
-<option value="31" data-type="D">TM1814</option>\
-<option value="24" data-type="D">400kHz</option>\
-<option value="25" data-type="D">TM1829</option>\
-<option value="26" data-type="D">UCS8903</option>\
-<option value="27" data-type="D">APA106/PL9823</option>\
-<option value="33" data-type="D">TM1914</option>\
-<option value="28" data-type="D">FW1906 GRBCW</option>\
-<option value="29" data-type="D">UCS8904 RGBW</option>\
-<option value="32" data-type="D">WS2805 RGBCW</option>\
-<option value="34" data-type="D">SM16825 RGBCW</option>\
-<option value="50" data-type="2P">WS2801</option>\
-<option value="51" data-type="2P">APA102</option>\
-<option value="52" data-type="2P">LPD8806</option>\
-<option value="54" data-type="2P">LPD6803</option>\
-<option value="53" data-type="2P">P9813</option>\
-<option value="19" data-type="D">WS2811 White</option>\
-<option value="40">On/Off</option>\
-<option value="41" data-type="A">PWM White</option>\
-<option value="42" data-type="AA">PWM CCT</option>\
-<option value="43" data-type="AAA">PWM RGB</option>\
-<option value="44" data-type="AAAA">PWM RGBW</option>\
-<option value="45" data-type="AAAAA">PWM RGB+CCT</option>\
-<!--option value="46" data-type="AAAAAA">PWM RGB+DCCT</option-->'}
-<option value="80" data-type="V">DDP RGB (network)</option>
-<!--option value="81" data-type="V">E1.31 RGB (network)</option-->
-<option value="82" data-type="V">Art-Net RGB (network)</option>
-<option value="88" data-type="V">DDP RGBW (network)</option>
-<option value="89" data-type="V">Art-Net RGBW (network)</option>
-</select><br>
+<select name="LT${s}" onchange="UI(true)"></select><br>
 <div id="abl${s}">
 mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <option value="55" selected>55mA (typ. 5V WS281x)</option>
@@ -474,10 +460,25 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <span id="p4d${s}"></span><input type="number" name="L4${s}" class="s" onchange="UI();pinUpd(this);"/>
 <div id="dig${s}r" style="display:inline"><br><span id="rev${s}">Reversed</span>: <input type="checkbox" name="CV${s}"></div>
 <div id="dig${s}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${s}" min="0" max="255" value="0" oninput="UI()"></div>
-<div id="dig${s}f" style="display:inline"><br>Off Refresh: <input id="rf${s}" type="checkbox" name="RF${s}"></div>
-<div id="dig${s}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
+<div id="dig${s}f" style="display:inline"><br><span id="off${s}">Off Refresh</span>: <input id="rf${s}" type="checkbox" name="RF${s}"></div>
+<div id="dig${s}a" style="display:inline"><br>Auto-calculate W channel from RGB:<br><select name="AW${s}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
+				// fill led types (credit @netmindz)
+				d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((sel,n)=>{
+					if (sel.length == 0) { // ignore already updated
+						for (let type of d.ledTypes) {
+							let opt = d.createElement("option");
+							opt.value = type.i;
+							opt.text = type.n;
+							if (type.t != undefined && type.t != "") {
+								opt.setAttribute('data-type', type.t);
+							}
+							sel.appendChild(opt);			
+						}
+					}
+				});
+				// disable inappropriate LED types
 				let sel = d.getElementsByName("LT"+s)[0]
 				if (i >= maxB || digitalB >= maxD) disable(sel,'option[data-type="D"]');
 				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]');
@@ -670,7 +671,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 				if (i.type === "number" && fields.includes(i.name)) { //select all pin select elements
 					let v = parseInt(i.value);
 					let sel = addDropdown(i.name,0);
-					for (var j = -1; j <= d.max_gpio; j++) {
+					for (var j = -1; j < d.max_gpio; j++) {
 						if (d.rsvd.includes(j)) continue;
 						let foundPin = d.um_p.indexOf(j);
 						let txt = (j === -1) ? "unused" : `${j}`;
@@ -805,12 +806,13 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<div id="abl">
 			<i>Automatically limits brightness to stay close to the limit.<br>
 				Keep at &lt;1A if poweing LEDs directly from the ESP 5V pin!<br>
+				If using multiple outputs it is recommended to use per-output limiter.<br>
 				Analog (PWM) and virtual LEDs cannot use automatic brightness limiter.<br></i>
 			<div id="psuMA">Maximum PSU Current: <input name="MA" type="number" class="xl" min="250" max="65000" oninput="UI()" required> mA<br></div>
 			Use per-output limiter: <input type="checkbox" name="PPL" onchange="UI()"><br>
 			<div id="ppldis" style="display:none;">
-				<i>Make sure you enter correct values in each LED output.<br>
-				If using multiple outputs with only one PSU, distribute its power proportionally amongst ouputs.</i><br>
+				<i>Make sure you enter correct value for each LED output.<br>
+				If using multiple outputs with only one PSU, distribute its power proportionally amongst outputs.</i><br>
 			</div>
 			<div id="ampwarning" class="warn" style="display: none;">
 				&#9888; Your power supply provides high current.<br>
@@ -824,7 +826,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<hr class="sml">
 		<button type="button" id="+" onclick="addLEDs(1,false)">+</button>
 		<button type="button" id="-" onclick="addLEDs(-1,false)">-</button><br>
-		LED Memory Usage: <span id="m0">0</span> / <span id="m1">?</span> B<br>
+		LED memory usage: <span id="m0">0</span> / <span id="m1">?</span> B<br>
 		<div id="dbar" style="display:inline-block; width: 100px; height: 10px; border-radius: 20px;"></div><br>
 		<div id="ledwarning" class="warn" style="display: none;">
 			&#9888; You might run into stability or lag issues.<br>
@@ -868,8 +870,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
 		Default brightness: <input name="CA" type="number" class="m" min="1" max="255" required> (1-255)<br><br>
-		Apply preset <input name="BP" type="number" class="m" min="0" max="250" required> at boot (0 uses defaults)
-		<br><br>
+		Apply preset <input name="BP" type="number" class="m" min="0" max="250" required> at boot (0 uses values from above)<br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br>
 		Use Gamma value: <input name="GV" type="number" class="m" placeholder="2.8" min="1" max="3" step="0.1" required><br><br>
@@ -878,14 +879,14 @@ Swap: <select id="xw${s}" name="XW${s}">
 		Enable transitions: <input type="checkbox" name="TF" onchange="gId('tran').style.display=this.checked?'inline':'none';"><br>
 		<span id="tran">
 			Effect blending: <input type="checkbox" name="EB"><br>
-			Transition Time: <input name="TD" type="number" class="xl" min="0" max="65500"> ms<br>
+			Default transition time: <input name="TD" type="number" class="xl" min="0" max="65500"> ms<br>
 			Palette transitions: <input type="checkbox" name="PF"><br>
 		</span>
 		<i>Random Cycle</i> Palette Time: <input name="TP" type="number" class="m" min="1" max="255"> s<br>
 		Use harmonic <i>Random Cycle</i> Palette: <input type="checkbox" name="TH"><br>
 		<h3>Timed light</h3>
-		Default Duration: <input name="TL" type="number" class="m" min="1" max="255" required> min<br>
-		Default Target brightness: <input name="TB" type="number" class="m" min="0" max="255" required><br>
+		Default duration: <input name="TL" type="number" class="m" min="1" max="255" required> min<br>
+		Default target brightness: <input name="TB" type="number" class="m" min="0" max="255" required><br>
 		Mode:
 		<select name="TW">
 			<option value="0">Wait and set</option>
@@ -908,10 +909,11 @@ Swap: <select id="xw${s}" name="XW${s}">
 			<br>
 			Calculate CCT from RGB: <input type="checkbox" name="CR"><br>
 			CCT IC used (Athom 15W): <input type="checkbox" name="IC"><br>
-			CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %
+			CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" onchange="UI()" required> %<br>
+			<i class="warn">WARNING: When using H-bridge for reverse polarity (2-wire) CCT LED strip<br><b>make sure this value is 0</b>.<br>(ESP32 variants only, ESP8266 does not support H-bridges)</i>
 		</div>
 		<h3>Advanced</h3>
-		Palette blending:
+		Palette wrapping:
 		<select name="PB">
 			<option value="0">Linear (wrap if moving)</option>
 			<option value="1">Linear (always wrap)</option>

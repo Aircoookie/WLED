@@ -37,6 +37,8 @@ uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16)
  */
 uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 {
+  if (c1 == BLACK) return c2;
+  if (c2 == BLACK) return c1;
   if (fast) {
     uint8_t r = R(c1);
     uint8_t g = G(c1);
@@ -68,17 +70,18 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
+  if (c1 == BLACK || amount + video == 0) return BLACK;
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
   uint32_t r = R(c1);
   uint32_t g = G(c1);
   uint32_t b = B(c1);
   uint32_t w = W(c1);
-  uint32_t scale = amount + !video; // 32bit for faster calculation
+  uint32_t scale = amount; // 32bit for faster calculation
   if (video) {
-    scaledcolor  = (((r * scale) >> 8) << 16) + ((r && scale) ? 1 : 0);
-    scaledcolor |= (((g * scale) >> 8) << 8)  + ((g && scale) ? 1 : 0);
-    scaledcolor |=  ((b * scale) >> 8)        + ((b && scale) ? 1 : 0);
-    scaledcolor |= (((w * scale) >> 8) << 24) + ((w && scale) ? 1 : 0);
+    scaledcolor  = (((r * scale) >> 8) + ((r && scale) ? 1 : 0)) << 16;
+    scaledcolor |= (((g * scale) >> 8) + ((g && scale) ? 1 : 0)) << 8;
+    scaledcolor |=  ((b * scale) >> 8) + ((b && scale) ? 1 : 0);
+    scaledcolor |= (((w * scale) >> 8) + ((w && scale) ? 1 : 0)) << 24;
   } else {
     scaledcolor  = ((r * scale) >> 8) << 16;
     scaledcolor |= ((g * scale) >> 8) << 8;
@@ -195,7 +198,7 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
                        RGBpalettecolors[3]);
 }
 
-CRGBPalette16 generateRandomPalette(void)  //generate fully random palette
+CRGBPalette16 generateRandomPalette()  //generate fully random palette
 {
   return CRGBPalette16(CHSV(random8(), random8(160, 255), random8(128, 255)),
                        CHSV(random8(), random8(160, 255), random8(128, 255)),
@@ -476,14 +479,14 @@ void NeoGammaWLEDMethod::calcGammaTable(float gamma)
   }
 }
 
-uint8_t NeoGammaWLEDMethod::Correct(uint8_t value)
+uint8_t IRAM_ATTR_YN NeoGammaWLEDMethod::Correct(uint8_t value)
 {
   if (!gammaCorrectCol) return value;
   return gammaT[value];
 }
 
 // used for color gamma correction
-uint32_t NeoGammaWLEDMethod::Correct32(uint32_t color)
+uint32_t IRAM_ATTR_YN NeoGammaWLEDMethod::Correct32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;
   uint8_t w = W(color);
