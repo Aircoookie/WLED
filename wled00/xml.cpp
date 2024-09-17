@@ -92,7 +92,7 @@ void appendGPIOinfo(Print& dest) {
   dest.print(F("];"));
 
   // add reserved (unusable) pins
-  dest.print(PSTR("d.rsvd=["));
+  dest.print(F("d.rsvd=["));
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
     if (!pinManager.isPinOk(i, false)) {  // include readonly pins
       dest.printf_P(PSTR("%d,"),i);
@@ -128,7 +128,7 @@ void appendGPIOinfo(Print& dest) {
   dest.print(F("];")); // rsvd
 
   // add info for read-only GPIO
-  dest.print(PSTR("d.ro_gpio=["));
+  dest.print(F("d.ro_gpio=["));
   bool firstPin = true;
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
     if (pinManager.isReadOnlyPin(i)) {
@@ -138,7 +138,7 @@ void appendGPIOinfo(Print& dest) {
       firstPin = false;
     }
   }
-  dest.print(PSTR("];"));
+  dest.print(F("];"));
 
   // add info about max. # of pins
   dest.printf_P(PSTR("d.max_gpio=%d;"),WLED_NUM_PINS);
@@ -413,6 +413,7 @@ void getSettingsJS(byte subPage, Print& dest)
     printSetFormCheckbox(dest,PSTR("RB"),receiveNotificationBrightness);
     printSetFormCheckbox(dest,PSTR("RC"),receiveNotificationColor);
     printSetFormCheckbox(dest,PSTR("RX"),receiveNotificationEffects);
+    printSetFormCheckbox(dest,PSTR("RP"),receiveNotificationPalette);
     printSetFormCheckbox(dest,PSTR("SO"),receiveSegmentOptions);
     printSetFormCheckbox(dest,PSTR("SG"),receiveSegmentBounds);
     printSetFormCheckbox(dest,PSTR("SS"),sendNotifications);
@@ -498,6 +499,9 @@ void getSettingsJS(byte subPage, Print& dest)
     dest.print(F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
     printSetFormValue(dest,PSTR("BD"),serialBaud);
+    #ifndef WLED_ENABLE_ADALIGHT
+    dest.print(F("toggle('Serial);"));
+    #endif
   }
 
   if (subPage == SUBPAGE_TIME)

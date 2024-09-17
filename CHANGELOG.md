@@ -1,5 +1,10 @@
 ## WLED changelog
 
+#### Build 2409140
+-   Configure different kinds of busses at compile (#4107 by @PaoloTK)
+    - BREAKING: removes LEDPIN and DEFAULT_LED_TYPE compile overrides
+-   Fetch LED types from Bus classes (dynamic UI) (#4129 by @netmindz, @blazoncek, @dedehai)
+
 #### Build 2409100
 -   WLED 0.15.0-b5 release
 -   Audioreactive usermod included by default in all compatible builds (including ESP8266)
