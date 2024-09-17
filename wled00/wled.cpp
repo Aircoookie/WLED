@@ -54,17 +54,19 @@ void WLED::loop()
 #endif
 
   handleTime();
-#ifndef WLED_DISABLE_INFRARED
+  #ifndef WLED_DISABLE_INFRARED
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
-#endif
+  #endif
   handleConnection();
+  #ifdef WLED_ENABLE_ADALIGHT
   handleSerial();
+  #endif
   handleImprovWifiScan();
   handleNotifications();
   handleTransitions();
-#ifdef WLED_ENABLE_DMX
+  #ifdef WLED_ENABLE_DMX
   handleDMX();
-#endif
+  #endif
 
   #ifdef WLED_DEBUG
   unsigned long usermodMillis = millis();
@@ -476,10 +478,14 @@ void WLED::setup()
   WiFi.mode(WIFI_STA); // enable scanning
   findWiFi(true);      // start scanning for available WiFi-s
 
+  // all GPIOs are allocated at this point
+  serialCanRX = !pinManager.isPinAllocated(hardwareRX); // Serial RX pin (GPIO 3 on ESP32 and ESP8266)
+  serialCanTX = !pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut; // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
+
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
   //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
-  if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
+  if (serialCanRX && serialCanTX) {
     Serial.println(F("Ada"));
   }
   #endif
@@ -489,10 +495,6 @@ void WLED::setup()
 #ifndef WLED_DISABLE_MQTT
   if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
   if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("WLED-%*s"), 6, escapedMac.c_str() + 6);
-#endif
-
-#ifdef WLED_ENABLE_ADALIGHT
-  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
 #endif
 
 #ifndef WLED_DISABLE_OTA
@@ -521,7 +523,7 @@ void WLED::setup()
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
-  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+  if (serialCanRX && Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
 #endif
 
   // HTTP server page init

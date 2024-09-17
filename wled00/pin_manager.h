@@ -87,7 +87,11 @@ class PinManagerClass {
     PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
 
   public:
-  PinManagerClass() : pinAlloc(0), i2cAllocCount(0), spiAllocCount(0) {}
+  PinManagerClass() : pinAlloc(0ULL), i2cAllocCount(0), spiAllocCount(0) {
+    #ifdef ARDUINO_ARCH_ESP32
+    ledcAlloc = 0;
+    #endif
+  }
   // De-allocates a single pin
   bool deallocatePin(byte gpio, PinOwner tag);
   // De-allocates multiple pins but only if all can be deallocated (PinOwner has to be specified)

@@ -571,6 +571,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
     sappend('v',SET_F("BD"),serialBaud);
+    #ifndef WLED_ENABLE_ADALIGHT
+    oappend(SET_F("toggle('Serial);"));
+    #endif
   }
 
   if (subPage == SUBPAGE_TIME)

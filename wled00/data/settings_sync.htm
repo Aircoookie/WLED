@@ -199,7 +199,7 @@ Realtime LED offset: <input name="WO" type="number" min="-255" max="255" require
 <div id="Alexa">
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input type="text" name="AI" maxlength="32"><br>
-Also emulate devices to call the first <input name="AP" type="number" class="s" min="0" max="9" required> presets<br><br>
+Also emulate devices to call the first <input name="AP" type="number" class="s" min="0" max="9"> presets<br><br>
 </div>
 <hr class="sml">
 <div class="warn">&#9888; <b>MQTT and Hue sync all connect to external hosts!<br>
@@ -245,6 +245,10 @@ Hue Bridge IP:<br>
 Hue status: <span class="sip"> Disabled in this build </span>
 </div>
 <h3>Serial</h3>
+<div id="NoSerial" class="hide">
+	<em class="warn">This firmware build does support Serial interface.<br></em>
+</div>
+<div id="Serial">
 Baud rate:
 <select name=BD>
 <option value=1152>115200</option>
@@ -257,6 +261,7 @@ Baud rate:
 <option value=15000>1500000</option>
 </select><br>
 <i>Keep at 115200 to use Improv. Some boards may not support high rates.</i>
+</div>
 <hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>

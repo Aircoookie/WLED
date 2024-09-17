@@ -1,6 +1,18 @@
 #include "pin_manager.h"
 #include "wled.h"
 
+#ifdef ARDUINO_ARCH_ESP32
+  #ifdef bitRead
+    // Arduino variants assume 32 bit values
+    #undef bitRead
+    #undef bitSet
+    #undef bitClear
+    #define bitRead(var,bit)      (((unsigned long long)(var)>>(bit))&0x1ULL)
+    #define bitSet(var,bit)       ((var)|=(1ULL<<(bit)))
+    #define bitClear(var,bit)     ((var)&=(~(1ULL<<(bit))))
+  #endif
+#endif
+
 #ifdef WLED_DEBUG
 static void DebugPrintOwnerTag(PinOwner tag)
 {
