@@ -5651,7 +5651,7 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
     SEGMENT.fill(BLACK);
   }
 
-  SEGMENT.fadeToBlackBy(SEGMENT.custom1>>3);
+  SEGMENT.fadeToBlackBy((SEGMENT.custom1>>3) + (SEGMENT.check1 * (SEGMENT.custom2>>5)));
 
   byte t1 = strip.now / (257 - SEGMENT.speed); // 20;
   byte t2 = sin8(t1) / 4 * 2;
@@ -5660,11 +5660,11 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
     int y = sin8(t2 + i * SEGMENT.intensity/8)*(rows-1)/255;  // max index now 255x15/255=15!
     SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, i * 255 / 13, 255, LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.custom2 >> (3 - (SEGMENT.check1<<1)));
+  SEGMENT.blur(SEGMENT.custom2>>3, SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2DSindots()
-static const char _data_FX_MODE_2DSINDOTS[] PROGMEM = "Sindots@!,Dot distance,Fade rate,Blur,,Extra Blur;;!;2;";
+static const char _data_FX_MODE_2DSINDOTS[] PROGMEM = "Sindots@!,Dot distance,Fade rate,Blur,,Smear;;!;2;";
 
 
 //////////////////////////////
