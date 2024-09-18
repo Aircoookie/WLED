@@ -712,12 +712,12 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 {
   if (!isActive()) return; // not active
 #ifndef WLED_DISABLE_2D
-  int vStrip;  
+  int vStrip;
 #endif
   if (i >= virtualLength() || i<0) // pixel would fall out of segment, check if this is a virtual strip NOTE: this is almost always false if not virtual strip, saves the calculation on 'standard' call
   {
     #ifndef WLED_DISABLE_2D
-    vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)    
+    vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
     #endif
     i &= 0xFFFF; //truncate vstrip index
     if (i >= virtualLength() || i<0) return;  // if pixel would still fall out of segment just exit
@@ -735,7 +735,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
       case M12_pBar:
         // expand 1D effect vertically or have it play on virtual strips
         if (vStrip>0) setPixelColorXY(vStrip - 1, vH - i - 1, col);
-        else          for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col);
+        else for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col);
         break;
       case M12_pArc:
         // expand in circular fashion from center
@@ -796,7 +796,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
         // Odd rays start further from center if prevRay started at center.
         static int prevRay = INT_MIN; // previous ray number
         if ((i % 2 == 1) && (i - 1 == prevRay || i + 1 == prevRay)) {
-          int jump = min(vW/3, vH/3); // can add 2 if using medium pinwheel 
+          int jump = min(vW/3, vH/3); // can add 2 if using medium pinwheel
           posx += inc_x * jump;
           posy += inc_y * jump;
         }
@@ -1145,8 +1145,8 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
     uint32_t part = color_fade(cur, seep);
     curnew = color_fade(cur, keep);
     if (i > 0) {
-      if (carryover) curnew = color_add(curnew, carryover, true);
-      uint32_t prev = color_add(lastnew, part, true);
+      if (carryover) curnew = color_add(curnew, carryover);
+      uint32_t prev = color_add(lastnew, part);
       // optimization: only set pixel if color has changed
       if (last != prev) setPixelColor(i - 1, prev);
     } else // first pixel
@@ -1188,7 +1188,7 @@ uint32_t Segment::color_wheel(uint8_t pos) const {
  * @returns Single color from palette
  */
 uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri) const {
-  
+
   uint32_t color = currentColor(mcol);
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) {
@@ -1196,7 +1196,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
     return (pbri == 255) ? color : color_fade(color, pbri, true);
   }
 
-  uint8_t paletteIndex = i;
+  unsigned paletteIndex = i;
   if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
   // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
   if (!wrap && strip.paletteBlend != 3) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"

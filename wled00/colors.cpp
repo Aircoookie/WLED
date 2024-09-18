@@ -33,33 +33,32 @@ uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16)
 
 /*
  * color add function that preserves ratio
- * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
+ * original idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
+ * heavily optimized for speed by @dedehai
  */
-uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
+uint32_t color_add(uint32_t c1, uint32_t c2)
 {
   if (c1 == BLACK) return c2;
   if (c2 == BLACK) return c1;
-  uint32_t rb = (c1 & 0x00FF00FF) + (c2 & 0x00FF00FF); 
-  uint32_t r = rb >> 16;
-  uint32_t b = rb & 0xFFFF; 
-  uint32_t wg = ((c1>>8) & 0x00FF00FF) + ((c2>>8) & 0x00FF00FF); 
+  uint32_t rb = (c1 & 0x00FF00FF) + (c2 & 0x00FF00FF); // mask and add two colors at once
+  uint32_t wg = ((c1>>8) & 0x00FF00FF) + ((c2>>8) & 0x00FF00FF);
+  uint32_t r = rb >> 16; // extract single color values
+  uint32_t b = rb & 0xFFFF;
   uint32_t w = wg >> 16;
-  uint32_t g = wg & 0xFFFF; 
+  uint32_t g = wg & 0xFFFF;
 
-  if (fast) {    
-    r = r > 255 ? 255 : r; 
-    g = g > 255 ? 255 : g; 
-    b = b > 255 ? 255 : b; 
-    w = w > 255 ? 255 : w; 
-    return RGBW32(r,g,b,w);
-  } else {
-    unsigned max = r;
-    max = g > max ? g : max;
-    max = b > max ? b : max;
-    max = w > max ? w : max;
-    if (max < 256) return RGBW32(r, g, b, w);
-    else           return RGBW32(r * 255 / max, g * 255 / max, b * 255 / max, w * 255 / max);
+  unsigned max = r; // check for overflow note: not checking and just topping out at 255 (formerly 'fast') is not any faster (but even slower if not overflowing)
+  max = g > max ? g : max;
+  max = b > max ? b : max;
+  max = w > max ? w : max;
+
+  if (max > 255) {
+    uint32_t scale = (uint32_t(255)<<8) / max; // division of two 8bit (shifted) values does not work -> use bit shifts and multiplaction instead
+    rb = ((rb * scale) >> 8) & 0x00FF00FF; //
+    wg = (wg * scale) & 0xFF00FF00;
   }
+  else wg = wg << 8; //shift white and green back to correct position
+  return rb | wg;
 }
 
 /*
@@ -70,52 +69,49 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
   if (c1 == BLACK || amount == 0) return BLACK;
-  if (amount == 255) return c1;  
+  if (amount == 255) return c1;
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
   uint32_t scale = amount; // 32bit for faster calculation
   uint32_t addRemains = 0;
-  if (!video) amount++; // add one for correct scaling using bitshifts
+  if (!video) scale++; // add one for correct scaling using bitshifts
   else { // video scaling: make sure colors do not dim to zero if they started non-zero
-    addRemains = R(c1) ? 0x00010000 : 0;
+    addRemains  = R(c1) ? 0x00010000 : 0;
     addRemains |= G(c1) ? 0x00000100 : 0;
     addRemains |= B(c1) ? 0x00000001 : 0;
     addRemains |= W(c1) ? 0x01000000 : 0;
   }
   uint32_t rb = (((c1 & 0x00FF00FF) * scale) >> 8) & 0x00FF00FF; // scale red and blue
   uint32_t wg = (((c1 & 0xFF00FF00) >> 8) * scale) & 0xFF00FF00; // scale white and green
-  scaledcolor = (rb | wg) + addRemains;  
+  scaledcolor = (rb | wg) + addRemains;
   return scaledcolor;
 }
 
 // 1:1 replacement of fastled function optimized for ESP, slightly faster, more accurate and uses less flash (~ -200bytes)
 CRGB ColorFromPaletteWLED(const CRGBPalette16& pal, unsigned index, uint8_t brightness, TBlendType blendType)
 {
-   if ( blendType == LINEARBLEND_NOWRAP) {
-     //index = map8(index, 0, 239);  
+   if (blendType == LINEARBLEND_NOWRAP) {
      index = (index*240) >> 8; // Blend range is affected by lo4 blend of values, remap to avoid wrapping
    }
     unsigned hi4 = byte(index) >> 4;
-    // We then add that to a base array pointer.
     const CRGB* entry = (CRGB*)( (uint8_t*)(&(pal[0])) + (hi4 * sizeof(CRGB)));
     unsigned red1   = entry->r;
     unsigned green1 = entry->g;
-    unsigned blue1  = entry->b;     
+    unsigned blue1  = entry->b;
     if(blendType != NOBLEND) {
         if(hi4 == 15) entry = &(pal[0]);
         else ++entry;
-       // unsigned red2 = entry->red;      
         unsigned f2 = ((index & 0x0F) << 4) + 1; // +1 so we scale by 256 as a max value, then result can just be shifted by 8
         unsigned f1 = (257 - f2); // f2 is 1 minimum, so this is 256 max
-        red1   = (red1 * f1 + (unsigned)entry->r * f2) >> 8;          
-        green1   = (green1 * f1 + (unsigned)entry->g * f2) >> 8;        
-        blue1   = (blue1 * f1 + (unsigned)entry->b * f2) >> 8;                
+        red1   = (red1 * f1 + (unsigned)entry->r * f2) >> 8;
+        green1 = (green1 * f1 + (unsigned)entry->g * f2) >> 8;
+        blue1  = (blue1 * f1 + (unsigned)entry->b * f2) >> 8;
     }
     if( brightness < 255) { // note: zero checking could be done to return black but that is hardly ever used so it is omitted
-          uint32_t scale = brightness + 1; // adjust for rounding (bitshift)          
+          uint32_t scale = brightness + 1; // adjust for rounding (bitshift)
           red1   = (red1 * scale) >> 8;
           green1 = (green1 * scale) >> 8;
           blue1  = (blue1 * scale) >> 8;
-    } 
+    }
     return CRGB((uint8_t)red1, (uint8_t)green1, (uint8_t)blue1);
 }
 
@@ -176,7 +172,7 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
       harmonics[1] = basehue + 205 + random8(10);
       harmonics[2] = basehue -   5 + random8(10);
       break;
-    
+
     case 3: // square
       harmonics[0] = basehue +  85 + random8(10);
       harmonics[1] = basehue + 175 + random8(10);
@@ -213,9 +209,9 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
   //apply saturation & gamma correction
   CRGB RGBpalettecolors[4];
   for (int i = 0; i < 4; i++) {
-    if (makepastelpalette && palettecolors[i].saturation > 180) { 
+    if (makepastelpalette && palettecolors[i].saturation > 180) {
       palettecolors[i].saturation -= 160; //desaturate all four colors
-    }    
+    }
     RGBpalettecolors[i] = (CRGB)palettecolors[i]; //convert to RGB
     RGBpalettecolors[i] = gamma32(((uint32_t)RGBpalettecolors[i]) & 0x00FFFFFFU); //strip alpha from CRGB
   }

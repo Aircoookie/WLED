@@ -173,7 +173,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
-  uint8_t _bri_t = currentBri(); 
+  uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
     col = color_fade(col, _bri_t);
   }
@@ -185,11 +185,11 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
   y *= groupLength(); // expand to physical pixels
   int W = width();
   int H = height();
- 
+
   int yY = y;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
     if(yY >= H) break;
-    int xX = x;    
+    int xX = x;
     for (int g = 0; g < grouping; g++) { // groupping horizontally
       if (xX >= W) continue;  // we have reached one dimension's end
 #ifndef WLED_DISABLE_MODE_BLEND
@@ -293,8 +293,8 @@ void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
     curnew = color_fade(cur, keep);
     if (x > 0) {
       if (carryover)
-        curnew = color_add(curnew, carryover, true);
-      uint32_t prev = color_add(lastnew, part, true);
+        curnew = color_add(curnew, carryover);
+      uint32_t prev = color_add(lastnew, part);
       if (last != prev) // optimization: only set pixel if color has changed
         setPixelColorXY(x - 1, row, prev);
     } else // first pixel
@@ -326,15 +326,15 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
     curnew = color_fade(cur, keep);
     if (y > 0) {
       if (carryover)
-        curnew = color_add(curnew, carryover, true);
-      uint32_t prev = color_add(lastnew, part, true);      
+        curnew = color_add(curnew, carryover);
+      uint32_t prev = color_add(lastnew, part);
       if (last != prev) // optimization: only set pixel if color has changed
         setPixelColorXY(col, y - 1, prev);
     } else // first pixel
       setPixelColorXY(col, y, curnew);
     lastnew = curnew;
     last = cur; //save original value for comparison on next iteration
-    carryover = part;        
+    carryover = part;
   }
   setPixelColorXY(col, rows - 1, curnew);
 }
@@ -356,8 +356,8 @@ void Segment::blur2D(uint8_t blur_amount, bool smear) {
       uint32_t part = color_fade(cur, seep);
       curnew = color_fade(cur, keep);
       if (x > 0) {
-        if (carryover) curnew = color_add(curnew, carryover, true);
-        uint32_t prev = color_add(lastnew, part, true);
+        if (carryover) curnew = color_add(curnew, carryover);
+        uint32_t prev = color_add(lastnew, part);
         // optimization: only set pixel if color has changed
         if (last != prev) setPixelColorXY(x - 1, row, prev);
       } else setPixelColorXY(x, row, curnew); // first pixel
@@ -375,14 +375,14 @@ void Segment::blur2D(uint8_t blur_amount, bool smear) {
       uint32_t part = color_fade(cur, seep);
       curnew = color_fade(cur, keep);
       if (y > 0) {
-        if (carryover) curnew = color_add(curnew, carryover, true);
-        uint32_t prev = color_add(lastnew, part, true);      
+        if (carryover) curnew = color_add(curnew, carryover);
+        uint32_t prev = color_add(lastnew, part);
         // optimization: only set pixel if color has changed
         if (last != prev) setPixelColorXY(col, y - 1, prev);
       } else setPixelColorXY(col, y, curnew); // first pixel
       lastnew = curnew;
       last = cur; //save original value for comparison on next iteration
-      carryover = part;        
+      carryover = part;
     }
     setPixelColorXY(col, rows - 1, curnew);
   }
