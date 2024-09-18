@@ -302,7 +302,7 @@ class Usermod {
     virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
     virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
     virtual void connected() {}                                              // called when WiFi is (re)connected
-    virtual void appendConfigData(Print&);                                   // helper function called from usermod settings page to add metadata for entry fields
+    virtual void appendConfigData(Print& settingsScript);                    // helper function called from usermod settings page to add metadata for entry fields
     virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
     virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
     virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
@@ -372,11 +372,11 @@ void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
 bool getBoolVal(JsonVariant elem, bool dflt);
 bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
-size_t printSetFormCheckbox(Print& dest, const char* key, int val);
-size_t printSetFormValue(Print& dest, const char* key, int val);
-size_t printSetFormValue(Print& dest, const char* key, const char* val);
-size_t printSetFormIndex(Print& dest, const char* key, int index);
-size_t printSetClassElementHTML(Print& dest, const char* key, const int index, const char* val);
+size_t printSetFormCheckbox(Print& settingsScript, const char* key, int val);
+size_t printSetFormValue(Print& settingsScript, const char* key, int val);
+size_t printSetFormValue(Print& settingsScript, const char* key, const char* val);
+size_t printSetFormIndex(Print& settingsScript, const char* key, int index);
+size_t printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val);
 void prepareHostname(char* hostname);
 bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);

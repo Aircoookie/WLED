@@ -26,19 +26,19 @@ void XML_response(Print& dest)
   );
 }
 
-static void extractPin(Print& dest, JsonObject &obj, const char *key) {
+static void extractPin(Print& settingsScript, JsonObject &obj, const char *key) {
   if (obj[key].is<JsonArray>()) {
     JsonArray pins = obj[key].as<JsonArray>();
     for (JsonVariant pv : pins) {
-      if (pv.as<int>() > -1) { dest.print(","); dest.print(pv.as<int>()); }
+      if (pv.as<int>() > -1) { settingsScript.print(","); settingsScript.print(pv.as<int>()); }
     }
   } else {
-    if (obj[key].as<int>() > -1) { dest.print(","); dest.print(obj[key].as<int>()); }
+    if (obj[key].as<int>() > -1) { settingsScript.print(","); settingsScript.print(obj[key].as<int>()); }
   }
 }
 
-// dest.print used pins by scanning JsonObject (1 level deep)
-void fillUMPins(Print& dest, JsonObject &mods)
+// print used pins by scanning JsonObject (1 level deep)
+static void fillUMPins(Print& settingsScript, JsonObject &mods)
 {
   for (JsonPair kv : mods) {
     // kv.key() is usermod name or subobject key
@@ -47,7 +47,7 @@ void fillUMPins(Print& dest, JsonObject &mods)
     if (!obj.isNull()) {
       // element is an JsonObject
       if (!obj["pin"].isNull()) {
-        extractPin(dest, obj, "pin");
+        extractPin(settingsScript, obj, "pin");
       } else {
         // scan keys (just one level deep as is possible with usermods)
         for (JsonPair so : obj) {
@@ -56,7 +56,7 @@ void fillUMPins(Print& dest, JsonObject &mods)
             // we found a key containing "pin" substring
             if (strlen(strstr(key, "pin")) == 3) {
               // and it is at the end, we found another pin
-              extractPin(dest, obj, key);
+              extractPin(settingsScript, obj, key);
               continue;
             }
           }
@@ -64,7 +64,7 @@ void fillUMPins(Print& dest, JsonObject &mods)
           JsonObject subObj = obj[so.key()];
           if (!subObj["pin"].isNull()) {
             // get pins from subobject
-            extractPin(dest, subObj, "pin");
+            extractPin(settingsScript, subObj, "pin");
           }
         }
       }
@@ -72,81 +72,81 @@ void fillUMPins(Print& dest, JsonObject &mods)
   }
 }
 
-void appendGPIOinfo(Print& dest) {
-  dest.print(F("d.um_p=[-1")); // has to have 1 element
+void appendGPIOinfo(Print& settingsScript) {
+  settingsScript.print(F("d.um_p=[-1")); // has to have 1 element
   if (i2c_sda > -1 && i2c_scl > -1) {
-    dest.printf_P(PSTR(",%d,%d"), i2c_sda, i2c_scl);
+    settingsScript.printf_P(PSTR(",%d,%d"), i2c_sda, i2c_scl);
   }
   if (spi_mosi > -1 && spi_sclk > -1) {
-    dest.printf_P(PSTR(",%d,%d"), spi_mosi, spi_sclk);
+    settingsScript.printf_P(PSTR(",%d,%d"), spi_mosi, spi_sclk);
   }
   // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
     JsonObject mods = pDoc->createNestedObject(F("um"));
     usermods.addToConfig(mods);
-    if (!mods.isNull()) fillUMPins(dest, mods);
+    if (!mods.isNull()) fillUMPins(settingsScript, mods);
     releaseJSONBufferLock();
   }
-  dest.print(F("];"));
+  settingsScript.print(F("];"));
 
   // add reserved (unusable) pins
-  dest.print(SET_F("d.rsvd=["));
+  settingsScript.print(SET_F("d.rsvd=["));
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
     if (!pinManager.isPinOk(i, false)) {  // include readonly pins
-      dest.print(i); dest.print(",");
+      settingsScript.print(i); settingsScript.print(",");
     }
   }
   #ifdef WLED_ENABLE_DMX
-  dest.print(SET_F("2,")); // DMX hardcoded pin
+  settingsScript.print(SET_F("2,")); // DMX hardcoded pin
   #endif
   #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
-  dest.printf_P(PSTR(",%d"),hardwareTX); // debug output (TX) pin
+  settingsScript.printf_P(PSTR(",%d"),hardwareTX); // debug output (TX) pin
   #endif
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
   #ifdef WLED_USE_ETHERNET
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { dest.printf(",%d", esp32_nonconfigurable_ethernet_pins[p].pin); }
-    if (ethernetBoards[ethernetType].eth_power>=0)     { dest.printf(",%d", ethernetBoards[ethernetType].eth_power); }
-    if (ethernetBoards[ethernetType].eth_mdc>=0)       { dest.printf(",%d", ethernetBoards[ethernetType].eth_mdc); }
-    if (ethernetBoards[ethernetType].eth_mdio>=0)      { dest.printf(",%d", ethernetBoards[ethernetType].eth_mdio); }
+    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { settingsScript.printf(",%d", esp32_nonconfigurable_ethernet_pins[p].pin); }
+    if (ethernetBoards[ethernetType].eth_power>=0)     { settingsScript.printf(",%d", ethernetBoards[ethernetType].eth_power); }
+    if (ethernetBoards[ethernetType].eth_mdc>=0)       { settingsScript.printf(",%d", ethernetBoards[ethernetType].eth_mdc); }
+    if (ethernetBoards[ethernetType].eth_mdio>=0)      { settingsScript.printf(",%d", ethernetBoards[ethernetType].eth_mdio); }
     switch (ethernetBoards[ethernetType].eth_clk_mode) {
       case ETH_CLOCK_GPIO0_IN:
       case ETH_CLOCK_GPIO0_OUT:
-        dest.print(SET_F("0"));
+        settingsScript.print(SET_F("0"));
         break;
       case ETH_CLOCK_GPIO16_OUT:
-        dest.print(SET_F("16"));
+        settingsScript.print(SET_F("16"));
         break;
       case ETH_CLOCK_GPIO17_OUT:
-        dest.print(SET_F("17"));
+        settingsScript.print(SET_F("17"));
         break;
     }
   }
   #endif
-  dest.print(SET_F("];")); // rsvd
+  settingsScript.print(SET_F("];")); // rsvd
 
   // add info for read-only GPIO
-  dest.print(SET_F("d.ro_gpio=["));
+  settingsScript.print(SET_F("d.ro_gpio=["));
   bool firstPin = true;
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
     if (pinManager.isReadOnlyPin(i)) {
       // No comma before the first pin
-      if (!firstPin) dest.print(SET_F(","));
-      dest.print(i);
+      if (!firstPin) settingsScript.print(SET_F(","));
+      settingsScript.print(i);
       firstPin = false;
     }
   }
-  dest.print(SET_F("];"));
+  settingsScript.print(SET_F("];"));
 
   // add info about max. # of pins
-  dest.print(SET_F("d.max_gpio="));
-  dest.print(WLED_NUM_PINS);
-  dest.print(SET_F(";"));
+  settingsScript.print(SET_F("d.max_gpio="));
+  settingsScript.print(WLED_NUM_PINS);
+  settingsScript.print(SET_F(";"));
 }
 
 //get values for settings form in javascript
-void getSettingsJS(byte subPage, Print& dest)
+void getSettingsJS(byte subPage, Print& settingsScript)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINTF_P(PSTR("settings resp %u\n"), (unsigned)subPage);
@@ -156,23 +156,23 @@ void getSettingsJS(byte subPage, Print& dest)
   if (subPage == SUBPAGE_MENU)
   {
   #ifdef WLED_DISABLE_2D // include only if 2D is not compiled in
-    dest.print(F("gId('2dbtn').style.display='none';"));
+    settingsScript.print(F("gId('2dbtn').style.display='none';"));
   #endif
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
-    dest.print(F("gId('dmxbtn').style.display='';"));
+    settingsScript.print(F("gId('dmxbtn').style.display='';"));
   #endif
   }
 
   if (subPage == SUBPAGE_WIFI)
   {
     size_t l;
-    dest.printf_P(PSTR("resetWiFi(%d);"), WLED_MAX_WIFI_COUNT);
+    settingsScript.printf_P(PSTR("resetWiFi(%d);"), WLED_MAX_WIFI_COUNT);
     for (size_t n = 0; n < multiWiFi.size(); n++) {
       l = strlen(multiWiFi[n].clientPass);
       char fpass[l+1]; //fill password field with ***
       fpass[l] = 0;
       memset(fpass,'*',l);
-      dest.printf_P(PSTR("addWiFi(\"%s\",\",%s\",0x%X,0x%X,0x%X);"),
+      settingsScript.printf_P(PSTR("addWiFi(\"%s\",\",%s\",0x%X,0x%X,0x%X);"),
         multiWiFi[n].clientSSID,
         fpass,
         (uint32_t) multiWiFi[n].staticIP, // explicit cast required as this is a struct
@@ -180,44 +180,44 @@ void getSettingsJS(byte subPage, Print& dest)
         (uint32_t) multiWiFi[n].staticSN);
     }
 
-    printSetFormValue(dest,PSTR("D0"),dnsAddress[0]);
-    printSetFormValue(dest,PSTR("D1"),dnsAddress[1]);
-    printSetFormValue(dest,PSTR("D2"),dnsAddress[2]);
-    printSetFormValue(dest,PSTR("D3"),dnsAddress[3]);
+    printSetFormValue(settingsScript,PSTR("D0"),dnsAddress[0]);
+    printSetFormValue(settingsScript,PSTR("D1"),dnsAddress[1]);
+    printSetFormValue(settingsScript,PSTR("D2"),dnsAddress[2]);
+    printSetFormValue(settingsScript,PSTR("D3"),dnsAddress[3]);
 
-    printSetFormValue(dest,PSTR("CM"),cmDNS);
-    printSetFormIndex(dest,PSTR("AB"),apBehavior);
-    printSetFormValue(dest,PSTR("AS"),apSSID);
-    printSetFormCheckbox(dest,PSTR("AH"),apHide);
+    printSetFormValue(settingsScript,PSTR("CM"),cmDNS);
+    printSetFormIndex(settingsScript,PSTR("AB"),apBehavior);
+    printSetFormValue(settingsScript,PSTR("AS"),apSSID);
+    printSetFormCheckbox(settingsScript,PSTR("AH"),apHide);
 
     l = strlen(apPass);
     char fapass[l+1]; //fill password field with ***
     fapass[l] = 0;
     memset(fapass,'*',l);
-    printSetFormValue(dest,PSTR("AP"),fapass);
+    printSetFormValue(settingsScript,PSTR("AP"),fapass);
 
-    printSetFormValue(dest,PSTR("AC"),apChannel);
+    printSetFormValue(settingsScript,PSTR("AC"),apChannel);
     #ifdef ARDUINO_ARCH_ESP32
-    printSetFormValue(dest,PSTR("TX"),txPower);
+    printSetFormValue(settingsScript,PSTR("TX"),txPower);
     #else
-    dest.print(F("gId('tx').style.display='none';"));
+    settingsScript.print(F("gId('tx').style.display='none';"));
     #endif
-    printSetFormCheckbox(dest,PSTR("FG"),force802_3g);
-    printSetFormCheckbox(dest,PSTR("WS"),noWifiSleep);
+    printSetFormCheckbox(settingsScript,PSTR("FG"),force802_3g);
+    printSetFormCheckbox(settingsScript,PSTR("WS"),noWifiSleep);
 
     #ifndef WLED_DISABLE_ESPNOW
-    printSetFormCheckbox(dest,PSTR("RE"),enableESPNow);
-    printSetFormValue(dest,PSTR("RMAC"),linked_remote);
+    printSetFormCheckbox(settingsScript,PSTR("RE"),enableESPNow);
+    printSetFormValue(settingsScript,PSTR("RMAC"),linked_remote);
     #else
     //hide remote settings if not compiled
-    dest.print(F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+    settingsScript.print(F("toggle('ESPNOW');"));  // hide ESP-NOW setting
     #endif
 
     #ifdef WLED_USE_ETHERNET
-    printSetFormValue(dest,PSTR("ETH"),ethernetType);
+    printSetFormValue(settingsScript,PSTR("ETH"),ethernetType);
     #else
     //hide ethernet setting if not compiled in
-    dest.print(F("gId('ethd').style.display='none';"));
+    settingsScript.print(F("gId('ethd').style.display='none';"));
     #endif
 
     if (Network.isConnected()) //is connected
@@ -229,10 +229,10 @@ void getSettingsJS(byte subPage, Print& dest)
       #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
       if (Network.isEthernet()) strcat_P(s ,SET_F(" (Ethernet)"));
       #endif
-      printSetClassElementHTML(dest,PSTR("sip"),0,s);
+      printSetClassElementHTML(settingsScript,PSTR("sip"),0,s);
     } else
     {
-      printSetClassElementHTML(dest,PSTR("sip"),0,(char*)F("Not connected"));
+      printSetClassElementHTML(settingsScript,PSTR("sip"),0,(char*)F("Not connected"));
     }
 
     if (WiFi.softAPIP()[0] != 0) //is active
@@ -240,19 +240,19 @@ void getSettingsJS(byte subPage, Print& dest)
       char s[16];
       IPAddress apIP = WiFi.softAPIP();
       sprintf(s, "%d.%d.%d.%d", apIP[0], apIP[1], apIP[2], apIP[3]);
-      printSetClassElementHTML(dest,PSTR("sip"),1,s);
+      printSetClassElementHTML(settingsScript,PSTR("sip"),1,s);
     } else
     {
-      printSetClassElementHTML(dest,PSTR("sip"),1,(char*)F("Not active"));
+      printSetClassElementHTML(settingsScript,PSTR("sip"),1,(char*)F("Not active"));
     }
 
     #ifndef WLED_DISABLE_ESPNOW
     if (strlen(last_signal_src) > 0) { //Have seen an ESP-NOW Remote
-      printSetClassElementHTML(dest,PSTR("rlid"),0,last_signal_src);
+      printSetClassElementHTML(settingsScript,PSTR("rlid"),0,last_signal_src);
     } else if (!enableESPNow) {
-      printSetClassElementHTML(dest,PSTR("rlid"),0,(char*)F("(Enable ESP-NOW to listen)"));
+      printSetClassElementHTML(settingsScript,PSTR("rlid"),0,(char*)F("(Enable ESP-NOW to listen)"));
     } else {
-      printSetClassElementHTML(dest,PSTR("rlid"),0,(char*)F("None"));
+      printSetClassElementHTML(settingsScript,PSTR("rlid"),0,(char*)F("None"));
     }
     #endif
   }
@@ -261,12 +261,12 @@ void getSettingsJS(byte subPage, Print& dest)
   {
     char nS[32];
 
-    appendGPIOinfo(dest);
+    appendGPIOinfo(settingsScript);
 
-    dest.print(SET_F("d.ledTypes=")); dest.print(BusManager::getLEDTypesJSONString().c_str()); dest.print(";");
+    settingsScript.print(SET_F("d.ledTypes=")); settingsScript.print(BusManager::getLEDTypesJSONString().c_str()); settingsScript.print(";");
 
     // set limits
-    dest.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d);"),
+    settingsScript.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d);"),
       WLED_MAX_BUSSES,
       WLED_MIN_VIRTUAL_BUSSES,
       MAX_LEDS_PER_BUS,
@@ -277,14 +277,14 @@ void getSettingsJS(byte subPage, Print& dest)
       WLED_MAX_ANALOG_CHANNELS
     );
 
-    printSetFormCheckbox(dest,PSTR("MS"),strip.autoSegments);
-    printSetFormCheckbox(dest,PSTR("CCT"),strip.correctWB);
-    printSetFormCheckbox(dest,PSTR("IC"),cctICused);
-    printSetFormCheckbox(dest,PSTR("CR"),strip.cctFromRgb);
-    printSetFormValue(dest,PSTR("CB"),strip.cctBlending);
-    printSetFormValue(dest,PSTR("FR"),strip.getTargetFps());
-    printSetFormValue(dest,PSTR("AW"),Bus::getGlobalAWMode());
-    printSetFormCheckbox(dest,PSTR("LD"),useGlobalLedBuffer);
+    printSetFormCheckbox(settingsScript,PSTR("MS"),strip.autoSegments);
+    printSetFormCheckbox(settingsScript,PSTR("CCT"),strip.correctWB);
+    printSetFormCheckbox(settingsScript,PSTR("IC"),cctICused);
+    printSetFormCheckbox(settingsScript,PSTR("CR"),strip.cctFromRgb);
+    printSetFormValue(settingsScript,PSTR("CB"),strip.cctBlending);
+    printSetFormValue(settingsScript,PSTR("FR"),strip.getTargetFps());
+    printSetFormValue(settingsScript,PSTR("AW"),Bus::getGlobalAWMode());
+    printSetFormCheckbox(settingsScript,PSTR("LD"),useGlobalLedBuffer);
 
     unsigned sumMa = 0;
     for (int s = 0; s < BusManager::getNumBusses(); s++) {
@@ -304,22 +304,22 @@ void getSettingsJS(byte subPage, Print& dest)
       char sp[4] = "SP"; sp[2] = offset+s; sp[3] = 0; //bus clock speed
       char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED current
       char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max per-port PSU current
-      dest.print(F("addLEDs(1);"));
+      settingsScript.print(F("addLEDs(1);"));
       uint8_t pins[5];
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (pinManager.isPinOk(pins[i]) || bus->isVirtual()) printSetFormValue(dest,lp,pins[i]);
+        if (pinManager.isPinOk(pins[i]) || bus->isVirtual()) printSetFormValue(settingsScript,lp,pins[i]);
       }
-      printSetFormValue(dest,lc,bus->getLength());
-      printSetFormValue(dest,lt,bus->getType());
-      printSetFormValue(dest,co,bus->getColorOrder() & 0x0F);
-      printSetFormValue(dest,ls,bus->getStart());
-      printSetFormCheckbox(dest,cv,bus->isReversed());
-      printSetFormValue(dest,sl,bus->skippedLeds());
-      printSetFormCheckbox(dest,rf,bus->isOffRefreshRequired());
-      printSetFormValue(dest,aw,bus->getAutoWhiteMode());
-      printSetFormValue(dest,wo,bus->getColorOrder() >> 4);
+      printSetFormValue(settingsScript,lc,bus->getLength());
+      printSetFormValue(settingsScript,lt,bus->getType());
+      printSetFormValue(settingsScript,co,bus->getColorOrder() & 0x0F);
+      printSetFormValue(settingsScript,ls,bus->getStart());
+      printSetFormCheckbox(settingsScript,cv,bus->isReversed());
+      printSetFormValue(settingsScript,sl,bus->skippedLeds());
+      printSetFormCheckbox(settingsScript,rf,bus->isOffRefreshRequired());
+      printSetFormValue(settingsScript,aw,bus->getAutoWhiteMode());
+      printSetFormValue(settingsScript,wo,bus->getColorOrder() >> 4);
       unsigned speed = bus->getFrequency();
       if (bus->isPWM()) {
         switch (speed) {
@@ -340,148 +340,148 @@ void getSettingsJS(byte subPage, Print& dest)
           case 20000 : speed = 4; break;
         }
       }
-      printSetFormValue(dest,sp,speed);
-      printSetFormValue(dest,la,bus->getLEDCurrent());
-      printSetFormValue(dest,ma,bus->getMaxCurrent());
+      printSetFormValue(settingsScript,sp,speed);
+      printSetFormValue(settingsScript,la,bus->getLEDCurrent());
+      printSetFormValue(settingsScript,ma,bus->getMaxCurrent());
       sumMa += bus->getMaxCurrent();
     }
-    printSetFormValue(dest,PSTR("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
-    printSetFormCheckbox(dest,PSTR("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
-    printSetFormCheckbox(dest,PSTR("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
+    printSetFormValue(settingsScript,PSTR("MA"),BusManager::ablMilliampsMax() ? BusManager::ablMilliampsMax() : sumMa);
+    printSetFormCheckbox(settingsScript,PSTR("ABL"),BusManager::ablMilliampsMax() || sumMa > 0);
+    printSetFormCheckbox(settingsScript,PSTR("PPL"),!BusManager::ablMilliampsMax() && sumMa > 0);
 
-    dest.printf_P(PSTR("resetCOM(%d);"), WLED_MAX_COLOR_ORDER_MAPPINGS);
+    settingsScript.printf_P(PSTR("resetCOM(%d);"), WLED_MAX_COLOR_ORDER_MAPPINGS);
     const ColorOrderMap& com = BusManager::getColorOrderMap();
     for (int s = 0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
       if (entry == nullptr) break;
-      dest.printf_P(PSTR("addCOM(%d,%d,%d);"), entry->start, entry->len, entry->colorOrder);
+      settingsScript.printf_P(PSTR("addCOM(%d,%d,%d);"), entry->start, entry->len, entry->colorOrder);
     }
 
-    printSetFormValue(dest,PSTR("CA"),briS);
+    printSetFormValue(settingsScript,PSTR("CA"),briS);
 
-    printSetFormCheckbox(dest,PSTR("BO"),turnOnAtBoot);
-    printSetFormValue(dest,PSTR("BP"),bootPreset);
+    printSetFormCheckbox(settingsScript,PSTR("BO"),turnOnAtBoot);
+    printSetFormValue(settingsScript,PSTR("BP"),bootPreset);
 
-    printSetFormCheckbox(dest,PSTR("GB"),gammaCorrectBri);
-    printSetFormCheckbox(dest,PSTR("GC"),gammaCorrectCol);
-    dtostrf(gammaCorrectVal,3,1,nS); printSetFormValue(dest,PSTR("GV"),nS);
-    printSetFormCheckbox(dest,PSTR("TF"),fadeTransition);
-    printSetFormCheckbox(dest,PSTR("EB"),modeBlending);
-    printSetFormValue(dest,PSTR("TD"),transitionDelayDefault);
-    printSetFormCheckbox(dest,PSTR("PF"),strip.paletteFade);
-    printSetFormValue(dest,PSTR("TP"),randomPaletteChangeTime);
-    printSetFormCheckbox(dest,PSTR("TH"),useHarmonicRandomPalette);
-    printSetFormValue(dest,PSTR("BF"),briMultiplier);
-    printSetFormValue(dest,PSTR("TB"),nightlightTargetBri);
-    printSetFormValue(dest,PSTR("TL"),nightlightDelayMinsDefault);
-    printSetFormValue(dest,PSTR("TW"),nightlightMode);
-    printSetFormIndex(dest,PSTR("PB"),strip.paletteBlend);
-    printSetFormValue(dest,PSTR("RL"),rlyPin);
-    printSetFormCheckbox(dest,PSTR("RM"),rlyMde);
-    printSetFormCheckbox(dest,PSTR("RO"),rlyOpenDrain);
+    printSetFormCheckbox(settingsScript,PSTR("GB"),gammaCorrectBri);
+    printSetFormCheckbox(settingsScript,PSTR("GC"),gammaCorrectCol);
+    dtostrf(gammaCorrectVal,3,1,nS); printSetFormValue(settingsScript,PSTR("GV"),nS);
+    printSetFormCheckbox(settingsScript,PSTR("TF"),fadeTransition);
+    printSetFormCheckbox(settingsScript,PSTR("EB"),modeBlending);
+    printSetFormValue(settingsScript,PSTR("TD"),transitionDelayDefault);
+    printSetFormCheckbox(settingsScript,PSTR("PF"),strip.paletteFade);
+    printSetFormValue(settingsScript,PSTR("TP"),randomPaletteChangeTime);
+    printSetFormCheckbox(settingsScript,PSTR("TH"),useHarmonicRandomPalette);
+    printSetFormValue(settingsScript,PSTR("BF"),briMultiplier);
+    printSetFormValue(settingsScript,PSTR("TB"),nightlightTargetBri);
+    printSetFormValue(settingsScript,PSTR("TL"),nightlightDelayMinsDefault);
+    printSetFormValue(settingsScript,PSTR("TW"),nightlightMode);
+    printSetFormIndex(settingsScript,PSTR("PB"),strip.paletteBlend);
+    printSetFormValue(settingsScript,PSTR("RL"),rlyPin);
+    printSetFormCheckbox(settingsScript,PSTR("RM"),rlyMde);
+    printSetFormCheckbox(settingsScript,PSTR("RO"),rlyOpenDrain);
     for (int i = 0; i < WLED_MAX_BUTTONS; i++) {
-      dest.printf_P(PSTR("addBtn(%d,%d,%d);"), i, btnPin[i], buttonType[i]);
+      settingsScript.printf_P(PSTR("addBtn(%d,%d,%d);"), i, btnPin[i], buttonType[i]);
     }
-    printSetFormCheckbox(dest,PSTR("IP"),disablePullUp);
-    printSetFormValue(dest,PSTR("TT"),touchThreshold);
+    printSetFormCheckbox(settingsScript,PSTR("IP"),disablePullUp);
+    printSetFormValue(settingsScript,PSTR("TT"),touchThreshold);
 #ifndef WLED_DISABLE_INFRARED
-    printSetFormValue(dest,PSTR("IR"),irPin);
-    printSetFormValue(dest,PSTR("IT"),irEnabled);
+    printSetFormValue(settingsScript,PSTR("IR"),irPin);
+    printSetFormValue(settingsScript,PSTR("IT"),irEnabled);
 #endif    
-    printSetFormCheckbox(dest,PSTR("MSO"),!irApplyToAllSelected);
+    printSetFormCheckbox(settingsScript,PSTR("MSO"),!irApplyToAllSelected);
   }
 
   if (subPage == SUBPAGE_UI)
   {
-    printSetFormValue(dest,PSTR("DS"),serverDescription);
-    printSetFormCheckbox(dest,PSTR("SU"),simplifiedUI);
+    printSetFormValue(settingsScript,PSTR("DS"),serverDescription);
+    printSetFormCheckbox(settingsScript,PSTR("SU"),simplifiedUI);
   }
 
   if (subPage == SUBPAGE_SYNC)
   {
     [[maybe_unused]] char nS[32];
-    printSetFormValue(dest,PSTR("UP"),udpPort);
-    printSetFormValue(dest,PSTR("U2"),udpPort2);
+    printSetFormValue(settingsScript,PSTR("UP"),udpPort);
+    printSetFormValue(settingsScript,PSTR("U2"),udpPort2);
   #ifndef WLED_DISABLE_ESPNOW
-    if (enableESPNow) printSetFormCheckbox(dest,PSTR("EN"),useESPNowSync);
-    else              dest.print(F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+    if (enableESPNow) printSetFormCheckbox(settingsScript,PSTR("EN"),useESPNowSync);
+    else              settingsScript.print(F("toggle('ESPNOW');"));  // hide ESP-NOW setting
   #else
-    dest.print(F("toggle('ESPNOW');"));  // hide ESP-NOW setting
+    settingsScript.print(F("toggle('ESPNOW');"));  // hide ESP-NOW setting
   #endif
-    printSetFormValue(dest,PSTR("GS"),syncGroups);
-    printSetFormValue(dest,PSTR("GR"),receiveGroups);
+    printSetFormValue(settingsScript,PSTR("GS"),syncGroups);
+    printSetFormValue(settingsScript,PSTR("GR"),receiveGroups);
 
-    printSetFormCheckbox(dest,PSTR("RB"),receiveNotificationBrightness);
-    printSetFormCheckbox(dest,PSTR("RC"),receiveNotificationColor);
-    printSetFormCheckbox(dest,PSTR("RX"),receiveNotificationEffects);
-    printSetFormCheckbox(dest,PSTR("RP"),receiveNotificationPalette);
-    printSetFormCheckbox(dest,PSTR("SO"),receiveSegmentOptions);
-    printSetFormCheckbox(dest,PSTR("SG"),receiveSegmentBounds);
-    printSetFormCheckbox(dest,PSTR("SS"),sendNotifications);
-    printSetFormCheckbox(dest,PSTR("SD"),notifyDirect);
-    printSetFormCheckbox(dest,PSTR("SB"),notifyButton);
-    printSetFormCheckbox(dest,PSTR("SH"),notifyHue);
-    printSetFormValue(dest,PSTR("UR"),udpNumRetries);
+    printSetFormCheckbox(settingsScript,PSTR("RB"),receiveNotificationBrightness);
+    printSetFormCheckbox(settingsScript,PSTR("RC"),receiveNotificationColor);
+    printSetFormCheckbox(settingsScript,PSTR("RX"),receiveNotificationEffects);
+    printSetFormCheckbox(settingsScript,PSTR("RP"),receiveNotificationPalette);
+    printSetFormCheckbox(settingsScript,PSTR("SO"),receiveSegmentOptions);
+    printSetFormCheckbox(settingsScript,PSTR("SG"),receiveSegmentBounds);
+    printSetFormCheckbox(settingsScript,PSTR("SS"),sendNotifications);
+    printSetFormCheckbox(settingsScript,PSTR("SD"),notifyDirect);
+    printSetFormCheckbox(settingsScript,PSTR("SB"),notifyButton);
+    printSetFormCheckbox(settingsScript,PSTR("SH"),notifyHue);
+    printSetFormValue(settingsScript,PSTR("UR"),udpNumRetries);
 
-    printSetFormCheckbox(dest,PSTR("NL"),nodeListEnabled);
-    printSetFormCheckbox(dest,PSTR("NB"),nodeBroadcastEnabled);
+    printSetFormCheckbox(settingsScript,PSTR("NL"),nodeListEnabled);
+    printSetFormCheckbox(settingsScript,PSTR("NB"),nodeBroadcastEnabled);
 
-    printSetFormCheckbox(dest,PSTR("RD"),receiveDirect);
-    printSetFormCheckbox(dest,PSTR("MO"),useMainSegmentOnly);
-    printSetFormCheckbox(dest,PSTR("RLM"),realtimeRespectLedMaps);
-    printSetFormValue(dest,PSTR("EP"),e131Port);
-    printSetFormCheckbox(dest,PSTR("ES"),e131SkipOutOfSequence);
-    printSetFormCheckbox(dest,PSTR("EM"),e131Multicast);
-    printSetFormValue(dest,PSTR("EU"),e131Universe);
-    printSetFormValue(dest,PSTR("DA"),DMXAddress);
-    printSetFormValue(dest,PSTR("XX"),DMXSegmentSpacing);
-    printSetFormValue(dest,PSTR("PY"),e131Priority);
-    printSetFormValue(dest,PSTR("DM"),DMXMode);
-    printSetFormValue(dest,PSTR("ET"),realtimeTimeoutMs);
-    printSetFormCheckbox(dest,PSTR("FB"),arlsForceMaxBri);
-    printSetFormCheckbox(dest,PSTR("RG"),arlsDisableGammaCorrection);
-    printSetFormValue(dest,PSTR("WO"),arlsOffset);
+    printSetFormCheckbox(settingsScript,PSTR("RD"),receiveDirect);
+    printSetFormCheckbox(settingsScript,PSTR("MO"),useMainSegmentOnly);
+    printSetFormCheckbox(settingsScript,PSTR("RLM"),realtimeRespectLedMaps);
+    printSetFormValue(settingsScript,PSTR("EP"),e131Port);
+    printSetFormCheckbox(settingsScript,PSTR("ES"),e131SkipOutOfSequence);
+    printSetFormCheckbox(settingsScript,PSTR("EM"),e131Multicast);
+    printSetFormValue(settingsScript,PSTR("EU"),e131Universe);
+    printSetFormValue(settingsScript,PSTR("DA"),DMXAddress);
+    printSetFormValue(settingsScript,PSTR("XX"),DMXSegmentSpacing);
+    printSetFormValue(settingsScript,PSTR("PY"),e131Priority);
+    printSetFormValue(settingsScript,PSTR("DM"),DMXMode);
+    printSetFormValue(settingsScript,PSTR("ET"),realtimeTimeoutMs);
+    printSetFormCheckbox(settingsScript,PSTR("FB"),arlsForceMaxBri);
+    printSetFormCheckbox(settingsScript,PSTR("RG"),arlsDisableGammaCorrection);
+    printSetFormValue(settingsScript,PSTR("WO"),arlsOffset);
     #ifndef WLED_DISABLE_ALEXA
-    printSetFormCheckbox(dest,PSTR("AL"),alexaEnabled);
-    printSetFormValue(dest,PSTR("AI"),alexaInvocationName);
-    printSetFormCheckbox(dest,PSTR("SA"),notifyAlexa);
-    printSetFormValue(dest,PSTR("AP"),alexaNumPresets);
+    printSetFormCheckbox(settingsScript,PSTR("AL"),alexaEnabled);
+    printSetFormValue(settingsScript,PSTR("AI"),alexaInvocationName);
+    printSetFormCheckbox(settingsScript,PSTR("SA"),notifyAlexa);
+    printSetFormValue(settingsScript,PSTR("AP"),alexaNumPresets);
     #else
-    dest.print(F("toggle('Alexa');"));  // hide Alexa settings
+    settingsScript.print(F("toggle('Alexa');"));  // hide Alexa settings
     #endif
 
     #ifndef WLED_DISABLE_MQTT
-    printSetFormCheckbox(dest,PSTR("MQ"),mqttEnabled);
-    printSetFormValue(dest,PSTR("MS"),mqttServer);
-    printSetFormValue(dest,PSTR("MQPORT"),mqttPort);
-    printSetFormValue(dest,PSTR("MQUSER"),mqttUser);
+    printSetFormCheckbox(settingsScript,PSTR("MQ"),mqttEnabled);
+    printSetFormValue(settingsScript,PSTR("MS"),mqttServer);
+    printSetFormValue(settingsScript,PSTR("MQPORT"),mqttPort);
+    printSetFormValue(settingsScript,PSTR("MQUSER"),mqttUser);
     byte l = strlen(mqttPass);
     char fpass[l+1]; //fill password field with ***
     fpass[l] = 0;
     memset(fpass,'*',l);
-    printSetFormValue(dest,PSTR("MQPASS"),fpass);
-    printSetFormValue(dest,PSTR("MQCID"),mqttClientID);
-    printSetFormValue(dest,PSTR("MD"),mqttDeviceTopic);
-    printSetFormValue(dest,PSTR("MG"),mqttGroupTopic);
-    printSetFormCheckbox(dest,PSTR("BM"),buttonPublishMqtt);
-    printSetFormCheckbox(dest,PSTR("RT"),retainMqttMsg);
-    dest.printf_P(PSTR("d.Sf.MD.maxlength=%d;d.Sf.MG.maxlength=%d;d.Sf.MS.maxlength=%d;"),
+    printSetFormValue(settingsScript,PSTR("MQPASS"),fpass);
+    printSetFormValue(settingsScript,PSTR("MQCID"),mqttClientID);
+    printSetFormValue(settingsScript,PSTR("MD"),mqttDeviceTopic);
+    printSetFormValue(settingsScript,PSTR("MG"),mqttGroupTopic);
+    printSetFormCheckbox(settingsScript,PSTR("BM"),buttonPublishMqtt);
+    printSetFormCheckbox(settingsScript,PSTR("RT"),retainMqttMsg);
+    settingsScript.printf_P(PSTR("d.Sf.MD.maxlength=%d;d.Sf.MG.maxlength=%d;d.Sf.MS.maxlength=%d;"),
                   MQTT_MAX_TOPIC_LEN, MQTT_MAX_TOPIC_LEN, MQTT_MAX_SERVER_LEN);
     #else
-    dest.print(F("toggle('MQTT');"));    // hide MQTT settings
+    settingsScript.print(F("toggle('MQTT');"));    // hide MQTT settings
     #endif
 
     #ifndef WLED_DISABLE_HUESYNC
-    printSetFormValue(dest,PSTR("H0"),hueIP[0]);
-    printSetFormValue(dest,PSTR("H1"),hueIP[1]);
-    printSetFormValue(dest,PSTR("H2"),hueIP[2]);
-    printSetFormValue(dest,PSTR("H3"),hueIP[3]);
-    printSetFormValue(dest,PSTR("HL"),huePollLightId);
-    printSetFormValue(dest,PSTR("HI"),huePollIntervalMs);
-    printSetFormCheckbox(dest,PSTR("HP"),huePollingEnabled);
-    printSetFormCheckbox(dest,PSTR("HO"),hueApplyOnOff);
-    printSetFormCheckbox(dest,PSTR("HB"),hueApplyBri);
-    printSetFormCheckbox(dest,PSTR("HC"),hueApplyColor);
+    printSetFormValue(settingsScript,PSTR("H0"),hueIP[0]);
+    printSetFormValue(settingsScript,PSTR("H1"),hueIP[1]);
+    printSetFormValue(settingsScript,PSTR("H2"),hueIP[2]);
+    printSetFormValue(settingsScript,PSTR("H3"),hueIP[3]);
+    printSetFormValue(settingsScript,PSTR("HL"),huePollLightId);
+    printSetFormValue(settingsScript,PSTR("HI"),huePollIntervalMs);
+    printSetFormCheckbox(settingsScript,PSTR("HP"),huePollingEnabled);
+    printSetFormCheckbox(settingsScript,PSTR("HO"),hueApplyOnOff);
+    printSetFormCheckbox(settingsScript,PSTR("HB"),hueApplyBri);
+    printSetFormCheckbox(settingsScript,PSTR("HC"),hueApplyColor);
     char hueErrorString[25];
     switch (hueError)
     {
@@ -495,56 +495,56 @@ void getSettingsJS(byte subPage, Print& dest)
       default: sprintf_P(hueErrorString,PSTR("Bridge Error %i"),hueError);
     }
 
-    printSetClassElementHTML(dest,PSTR("sip"),0,hueErrorString);
+    printSetClassElementHTML(settingsScript,PSTR("sip"),0,hueErrorString);
     #else
-    dest.print(F("toggle('Hue');"));    // hide Hue Sync settings
+    settingsScript.print(F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
-    printSetFormValue(dest,PSTR("BD"),serialBaud);
+    printSetFormValue(settingsScript,PSTR("BD"),serialBaud);
     #ifndef WLED_ENABLE_ADALIGHT
-    dest.print(SET_F("toggle('Serial);"));
+    settingsScript.print(SET_F("toggle('Serial);"));
     #endif
   }
 
   if (subPage == SUBPAGE_TIME)
   {
-    printSetFormCheckbox(dest,PSTR("NT"),ntpEnabled);
-    printSetFormValue(dest,PSTR("NS"),ntpServerName);
-    printSetFormCheckbox(dest,PSTR("CF"),!useAMPM);
-    printSetFormIndex(dest,PSTR("TZ"),currentTimezone);
-    printSetFormValue(dest,PSTR("UO"),utcOffsetSecs);
+    printSetFormCheckbox(settingsScript,PSTR("NT"),ntpEnabled);
+    printSetFormValue(settingsScript,PSTR("NS"),ntpServerName);
+    printSetFormCheckbox(settingsScript,PSTR("CF"),!useAMPM);
+    printSetFormIndex(settingsScript,PSTR("TZ"),currentTimezone);
+    printSetFormValue(settingsScript,PSTR("UO"),utcOffsetSecs);
     char tm[32];
     dtostrf(longitude,4,2,tm);
-    printSetFormValue(dest,PSTR("LN"),tm);
+    printSetFormValue(settingsScript,PSTR("LN"),tm);
     dtostrf(latitude,4,2,tm);
-    printSetFormValue(dest,PSTR("LT"),tm);
+    printSetFormValue(settingsScript,PSTR("LT"),tm);
     getTimeString(tm);
-    printSetClassElementHTML(dest,PSTR("times"),0,tm);
+    printSetClassElementHTML(settingsScript,PSTR("times"),0,tm);
     if ((int)(longitude*10.0f) || (int)(latitude*10.0f)) {
       sprintf_P(tm, PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
-      printSetClassElementHTML(dest,PSTR("times"),1,tm);
+      printSetClassElementHTML(settingsScript,PSTR("times"),1,tm);
     }
-    printSetFormCheckbox(dest,PSTR("OL"),overlayCurrent);
-    printSetFormValue(dest,PSTR("O1"),overlayMin);
-    printSetFormValue(dest,PSTR("O2"),overlayMax);
-    printSetFormValue(dest,PSTR("OM"),analogClock12pixel);
-    printSetFormCheckbox(dest,PSTR("OS"),analogClockSecondsTrail);
-    printSetFormCheckbox(dest,PSTR("O5"),analogClock5MinuteMarks);
-    printSetFormCheckbox(dest,PSTR("OB"),analogClockSolidBlack);
+    printSetFormCheckbox(settingsScript,PSTR("OL"),overlayCurrent);
+    printSetFormValue(settingsScript,PSTR("O1"),overlayMin);
+    printSetFormValue(settingsScript,PSTR("O2"),overlayMax);
+    printSetFormValue(settingsScript,PSTR("OM"),analogClock12pixel);
+    printSetFormCheckbox(settingsScript,PSTR("OS"),analogClockSecondsTrail);
+    printSetFormCheckbox(settingsScript,PSTR("O5"),analogClock5MinuteMarks);
+    printSetFormCheckbox(settingsScript,PSTR("OB"),analogClockSolidBlack);
 
-    printSetFormCheckbox(dest,PSTR("CE"),countdownMode);
-    printSetFormValue(dest,PSTR("CY"),countdownYear);
-    printSetFormValue(dest,PSTR("CI"),countdownMonth);
-    printSetFormValue(dest,PSTR("CD"),countdownDay);
-    printSetFormValue(dest,PSTR("CH"),countdownHour);
-    printSetFormValue(dest,PSTR("CM"),countdownMin);
-    printSetFormValue(dest,PSTR("CS"),countdownSec);
+    printSetFormCheckbox(settingsScript,PSTR("CE"),countdownMode);
+    printSetFormValue(settingsScript,PSTR("CY"),countdownYear);
+    printSetFormValue(settingsScript,PSTR("CI"),countdownMonth);
+    printSetFormValue(settingsScript,PSTR("CD"),countdownDay);
+    printSetFormValue(settingsScript,PSTR("CH"),countdownHour);
+    printSetFormValue(settingsScript,PSTR("CM"),countdownMin);
+    printSetFormValue(settingsScript,PSTR("CS"),countdownSec);
 
-    printSetFormValue(dest,PSTR("A0"),macroAlexaOn);
-    printSetFormValue(dest,PSTR("A1"),macroAlexaOff);
-    printSetFormValue(dest,PSTR("MC"),macroCountdown);
-    printSetFormValue(dest,PSTR("MN"),macroNl);
+    printSetFormValue(settingsScript,PSTR("A0"),macroAlexaOn);
+    printSetFormValue(settingsScript,PSTR("A1"),macroAlexaOff);
+    printSetFormValue(settingsScript,PSTR("MC"),macroCountdown);
+    printSetFormValue(settingsScript,PSTR("MN"),macroNl);
     for (unsigned i=0; i<WLED_MAX_BUTTONS; i++) {
-      dest.printf_P(PSTR("addRow(%d,%d,%d,%d);"), i, macroButton[i], macroLongPress[i], macroDoublePress[i]);
+      settingsScript.printf_P(PSTR("addRow(%d,%d,%d,%d);"), i, macroButton[i], macroLongPress[i], macroDoublePress[i]);
     }
 
     char k[4];
@@ -552,15 +552,15 @@ void getSettingsJS(byte subPage, Print& dest)
     for (int i = 0; i<10; i++)
     {
       k[1] = 48+i; //ascii 0,1,2,3
-      if (i<8) { k[0] = 'H'; printSetFormValue(dest,k,timerHours[i]); }
-      k[0] = 'N'; printSetFormValue(dest,k,timerMinutes[i]);
-      k[0] = 'T'; printSetFormValue(dest,k,timerMacro[i]);
-      k[0] = 'W'; printSetFormValue(dest,k,timerWeekday[i]);
+      if (i<8) { k[0] = 'H'; printSetFormValue(settingsScript,k,timerHours[i]); }
+      k[0] = 'N'; printSetFormValue(settingsScript,k,timerMinutes[i]);
+      k[0] = 'T'; printSetFormValue(settingsScript,k,timerMacro[i]);
+      k[0] = 'W'; printSetFormValue(settingsScript,k,timerWeekday[i]);
       if (i<8) {
-        k[0] = 'M'; printSetFormValue(dest,k,(timerMonth[i] >> 4) & 0x0F);
-				k[0] = 'P'; printSetFormValue(dest,k,timerMonth[i] & 0x0F);
-        k[0] = 'D'; printSetFormValue(dest,k,timerDay[i]);
-				k[0] = 'E'; printSetFormValue(dest,k,timerDayEnd[i]);
+        k[0] = 'M'; printSetFormValue(settingsScript,k,(timerMonth[i] >> 4) & 0x0F);
+				k[0] = 'P'; printSetFormValue(settingsScript,k,timerMonth[i] & 0x0F);
+        k[0] = 'D'; printSetFormValue(settingsScript,k,timerDay[i]);
+				k[0] = 'E'; printSetFormValue(settingsScript,k,timerDayEnd[i]);
       }
     }
   }
@@ -571,61 +571,61 @@ void getSettingsJS(byte subPage, Print& dest)
     char fpass[l+1]; //fill PIN field with 0000
     fpass[l] = 0;
     memset(fpass,'0',l);
-    printSetFormValue(dest,PSTR("PIN"),fpass);
-    printSetFormCheckbox(dest,PSTR("NO"),otaLock);
-    printSetFormCheckbox(dest,PSTR("OW"),wifiLock);
-    printSetFormCheckbox(dest,PSTR("AO"),aOtaEnabled);
+    printSetFormValue(settingsScript,PSTR("PIN"),fpass);
+    printSetFormCheckbox(settingsScript,PSTR("NO"),otaLock);
+    printSetFormCheckbox(settingsScript,PSTR("OW"),wifiLock);
+    printSetFormCheckbox(settingsScript,PSTR("AO"),aOtaEnabled);
     char tmp_buf[128];
     snprintf_P(tmp_buf,sizeof(tmp_buf),PSTR("WLED %s (build %d)"),versionString,VERSION);
-    printSetClassElementHTML(dest,PSTR("sip"),0,tmp_buf);
-    dest.printf_P(PSTR("sd=\"%s\";"), serverDescription);
+    printSetClassElementHTML(settingsScript,PSTR("sip"),0,tmp_buf);
+    settingsScript.printf_P(PSTR("sd=\"%s\";"), serverDescription);
   }
 
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == SUBPAGE_DMX)
   {
-    printSetFormValue(dest,PSTR("PU"),e131ProxyUniverse);
+    printSetFormValue(settingsScript,PSTR("PU"),e131ProxyUniverse);
 
-    printSetFormValue(dest,PSTR("CN"),DMXChannels);
-    printSetFormValue(dest,PSTR("CG"),DMXGap);
-    printSetFormValue(dest,PSTR("CS"),DMXStart);
-    printSetFormValue(dest,PSTR("SL"),DMXStartLED);
+    printSetFormValue(settingsScript,PSTR("CN"),DMXChannels);
+    printSetFormValue(settingsScript,PSTR("CG"),DMXGap);
+    printSetFormValue(settingsScript,PSTR("CS"),DMXStart);
+    printSetFormValue(settingsScript,PSTR("SL"),DMXStartLED);
 
-    printSetFormIndex(dest,PSTR("CH1"),DMXFixtureMap[0]);
-    printSetFormIndex(dest,PSTR("CH2"),DMXFixtureMap[1]);
-    printSetFormIndex(dest,PSTR("CH3"),DMXFixtureMap[2]);
-    printSetFormIndex(dest,PSTR("CH4"),DMXFixtureMap[3]);
-    printSetFormIndex(dest,PSTR("CH5"),DMXFixtureMap[4]);
-    printSetFormIndex(dest,PSTR("CH6"),DMXFixtureMap[5]);
-    printSetFormIndex(dest,PSTR("CH7"),DMXFixtureMap[6]);
-    printSetFormIndex(dest,PSTR("CH8"),DMXFixtureMap[7]);
-    printSetFormIndex(dest,PSTR("CH9"),DMXFixtureMap[8]);
-    printSetFormIndex(dest,PSTR("CH10"),DMXFixtureMap[9]);
-    printSetFormIndex(dest,PSTR("CH11"),DMXFixtureMap[10]);
-    printSetFormIndex(dest,PSTR("CH12"),DMXFixtureMap[11]);
-    printSetFormIndex(dest,PSTR("CH13"),DMXFixtureMap[12]);
-    printSetFormIndex(dest,PSTR("CH14"),DMXFixtureMap[13]);
-    printSetFormIndex(dest,PSTR("CH15"),DMXFixtureMap[14]);
+    printSetFormIndex(settingsScript,PSTR("CH1"),DMXFixtureMap[0]);
+    printSetFormIndex(settingsScript,PSTR("CH2"),DMXFixtureMap[1]);
+    printSetFormIndex(settingsScript,PSTR("CH3"),DMXFixtureMap[2]);
+    printSetFormIndex(settingsScript,PSTR("CH4"),DMXFixtureMap[3]);
+    printSetFormIndex(settingsScript,PSTR("CH5"),DMXFixtureMap[4]);
+    printSetFormIndex(settingsScript,PSTR("CH6"),DMXFixtureMap[5]);
+    printSetFormIndex(settingsScript,PSTR("CH7"),DMXFixtureMap[6]);
+    printSetFormIndex(settingsScript,PSTR("CH8"),DMXFixtureMap[7]);
+    printSetFormIndex(settingsScript,PSTR("CH9"),DMXFixtureMap[8]);
+    printSetFormIndex(settingsScript,PSTR("CH10"),DMXFixtureMap[9]);
+    printSetFormIndex(settingsScript,PSTR("CH11"),DMXFixtureMap[10]);
+    printSetFormIndex(settingsScript,PSTR("CH12"),DMXFixtureMap[11]);
+    printSetFormIndex(settingsScript,PSTR("CH13"),DMXFixtureMap[12]);
+    printSetFormIndex(settingsScript,PSTR("CH14"),DMXFixtureMap[13]);
+    printSetFormIndex(settingsScript,PSTR("CH15"),DMXFixtureMap[14]);
   }
   #endif
 
   if (subPage == SUBPAGE_UM) //usermods
   {
-    appendGPIOinfo(dest);
-    dest.printf_P(PSTR("numM=%d;"), usermods.getModCount());
-    printSetFormValue(dest,PSTR("SDA"),i2c_sda);
-    printSetFormValue(dest,PSTR("SCL"),i2c_scl);
-    printSetFormValue(dest,PSTR("MOSI"),spi_mosi);
-    printSetFormValue(dest,PSTR("MISO"),spi_miso);
-    printSetFormValue(dest,PSTR("SCLK"),spi_sclk);
-    dest.printf_P(PSTR("addInfo('SDA','%d');"
+    appendGPIOinfo(settingsScript);
+    settingsScript.printf_P(PSTR("numM=%d;"), usermods.getModCount());
+    printSetFormValue(settingsScript,PSTR("SDA"),i2c_sda);
+    printSetFormValue(settingsScript,PSTR("SCL"),i2c_scl);
+    printSetFormValue(settingsScript,PSTR("MOSI"),spi_mosi);
+    printSetFormValue(settingsScript,PSTR("MISO"),spi_miso);
+    printSetFormValue(settingsScript,PSTR("SCLK"),spi_sclk);
+    settingsScript.printf_P(PSTR("addInfo('SDA','%d');"
                  "addInfo('SCL','%d');"
                  "addInfo('MOSI','%d');"
                  "addInfo('MISO','%d');"
                  "addInfo('SCLK','%d');"),
       HW_PIN_SDA, HW_PIN_SCL, HW_PIN_DATASPI, HW_PIN_MISOSPI, HW_PIN_CLOCKSPI
     );
-    usermods.appendConfigData(dest);
+    usermods.appendConfigData(settingsScript);
   }
 
   if (subPage == SUBPAGE_UPDATE) // update
@@ -641,44 +641,44 @@ void getSettingsJS(byte subPage, Print& dest)
     #endif
       VERSION);
 
-    printSetClassElementHTML(dest,PSTR("sip"),0,tmp_buf);
+    printSetClassElementHTML(settingsScript,PSTR("sip"),0,tmp_buf);
   }
 
   if (subPage == SUBPAGE_2D) // 2D matrices
   {
-    printSetFormValue(dest,PSTR("SOMP"),strip.isMatrix);
+    printSetFormValue(settingsScript,PSTR("SOMP"),strip.isMatrix);
     #ifndef WLED_DISABLE_2D
-    dest.printf_P(PSTR("maxPanels=%d;"),WLED_MAX_PANELS);
-    dest.print(F("resetPanels();"));
+    settingsScript.printf_P(PSTR("maxPanels=%d;"),WLED_MAX_PANELS);
+    settingsScript.print(F("resetPanels();"));
     if (strip.isMatrix) {
       if(strip.panels>0){
-        printSetFormValue(dest,PSTR("PW"),strip.panel[0].width); //Set generator Width and Height to first panel size for convenience
-        printSetFormValue(dest,PSTR("PH"),strip.panel[0].height);
+        printSetFormValue(settingsScript,PSTR("PW"),strip.panel[0].width); //Set generator Width and Height to first panel size for convenience
+        printSetFormValue(settingsScript,PSTR("PH"),strip.panel[0].height);
       }
-      printSetFormValue(dest,PSTR("MPC"),strip.panels);
+      printSetFormValue(settingsScript,PSTR("MPC"),strip.panels);
       // panels
       for (unsigned i=0; i<strip.panels; i++) {
         char n[5];
-        dest.print(F("addPanel("));
-        dest.print(itoa(i,n,10));
-        dest.print(F(");"));
+        settingsScript.print(F("addPanel("));
+        settingsScript.print(itoa(i,n,10));
+        settingsScript.print(F(");"));
         char pO[8] = { '\0' };
         snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
         pO[7] = '\0';
         unsigned l = strlen(pO);
         // create P0B, P1B, ..., P63B, etc for other PxxX
-        pO[l] = 'B'; printSetFormValue(dest,pO,strip.panel[i].bottomStart);
-        pO[l] = 'R'; printSetFormValue(dest,pO,strip.panel[i].rightStart);
-        pO[l] = 'V'; printSetFormValue(dest,pO,strip.panel[i].vertical);
-        pO[l] = 'S'; printSetFormCheckbox(dest,pO,strip.panel[i].serpentine);
-        pO[l] = 'X'; printSetFormValue(dest,pO,strip.panel[i].xOffset);
-        pO[l] = 'Y'; printSetFormValue(dest,pO,strip.panel[i].yOffset);
-        pO[l] = 'W'; printSetFormValue(dest,pO,strip.panel[i].width);
-        pO[l] = 'H'; printSetFormValue(dest,pO,strip.panel[i].height);
+        pO[l] = 'B'; printSetFormValue(settingsScript,pO,strip.panel[i].bottomStart);
+        pO[l] = 'R'; printSetFormValue(settingsScript,pO,strip.panel[i].rightStart);
+        pO[l] = 'V'; printSetFormValue(settingsScript,pO,strip.panel[i].vertical);
+        pO[l] = 'S'; printSetFormCheckbox(settingsScript,pO,strip.panel[i].serpentine);
+        pO[l] = 'X'; printSetFormValue(settingsScript,pO,strip.panel[i].xOffset);
+        pO[l] = 'Y'; printSetFormValue(settingsScript,pO,strip.panel[i].yOffset);
+        pO[l] = 'W'; printSetFormValue(settingsScript,pO,strip.panel[i].width);
+        pO[l] = 'H'; printSetFormValue(settingsScript,pO,strip.panel[i].height);
       }
     }
     #else
-    dest.print(F("gId(\"somp\").remove(1);")); // remove 2D option from dropdown
+    settingsScript.print(F("gId(\"somp\").remove(1);")); // remove 2D option from dropdown
     #endif
   }
 }

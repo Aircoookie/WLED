@@ -73,9 +73,9 @@ bool UsermodManager::add(Usermod* um)
 /* Usermod v2 interface shim for oappend */
 Print* Usermod::oappend_shim = nullptr;
 
-void Usermod::appendConfigData(Print& p) {
+void Usermod::appendConfigData(Print& settingsScript) {
   assert(!oappend_shim);
-  oappend_shim = &p;
+  oappend_shim = &settingsScript;
   this->appendConfigData();
   oappend_shim = nullptr;
 }
