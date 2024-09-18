@@ -573,7 +573,7 @@ typedef struct Segment {
     [[gnu::hot]] uint8_t  currentBri(bool useCct = false) const; // current segment brightness/CCT (blended while in transition)
     uint8_t  currentMode() const;                            // currently active effect/mode (while in transition)
     [[gnu::hot]] uint32_t currentColor(uint8_t slot) const;  // currently active segment color (blended while in transition)
-    [[gnu::hot]] CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
+    CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
     void     setCurrentPalette();
 
     // 1D strip
@@ -615,7 +615,7 @@ typedef struct Segment {
     // 2D matrix
     [[gnu::hot]] uint16_t virtualWidth()  const; // segment width in virtual pixels (accounts for groupping and spacing)
     [[gnu::hot]] uint16_t virtualHeight() const; // segment height in virtual pixels (accounts for groupping and spacing)
-    [[gnu::hot]] uint16_t nrOfVStrips() const;   // returns number of virtual vertical strips in 2D matrix (used to expand 1D effects into 2D)
+    uint16_t nrOfVStrips() const;                // returns number of virtual vertical strips in 2D matrix (used to expand 1D effects into 2D)
   #ifndef WLED_DISABLE_2D
     [[gnu::hot]] uint16_t XY(int x, int y);      // support function to get relative index within segment
     [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color

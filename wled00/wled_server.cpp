@@ -18,6 +18,7 @@ static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security setti
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
 static const char s_notimplemented[] PROGMEM = "Not implemented";
 static const char s_accessdenied[]   PROGMEM = "Access Denied";
+static const char _common_js[]       PROGMEM = "/common.js";
 
 //Is this an IP?
 static bool isIp(String str) {
@@ -235,6 +236,10 @@ void initServer()
 #endif
   server.on(F("/liveview"), HTTP_GET, [](AsyncWebServerRequest *request) {
     handleStaticContent(request, "", 200, FPSTR(CONTENT_TYPE_HTML), PAGE_liveview, PAGE_liveview_length);
+  });
+
+  server.on(_common_js, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_common_js), 200, FPSTR(CONTENT_TYPE_JAVASCRIPT), JS_common, JS_common_length);
   });
 
   //settings page
@@ -511,6 +516,10 @@ void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t erro
 
 void serveSettingsJS(AsyncWebServerRequest* request)
 {
+  if (request->url().indexOf(FPSTR(_common_js)) > 0) {
+    handleStaticContent(request, FPSTR(_common_js), 200, FPSTR(CONTENT_TYPE_JAVASCRIPT), JS_common, JS_common_length);
+    return;
+  }
   char buf[SETTINGS_STACK_BUF_SIZE+37];
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
