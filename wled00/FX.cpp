@@ -6175,17 +6175,21 @@ uint16_t mode_2Dscrollingtext(void) {
   }
 
   if (!SEGMENT.check2) SEGMENT.fade_out(255 - (SEGMENT.custom1>>4));  // trail
+  bool usePaletteGradient = false;
+  uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
+  uint32_t col2 = BLACK;
+  if (SEGMENT.check1) { // use gradient
+    if(SEGMENT.palette == 0) { // use colors for gradient
+    col1 = SEGCOLOR(0);
+    col2 = SEGCOLOR(2);
+    }
+    else usePaletteGradient = true;
+  }
 
   for (int i = 0; i < numberOfLetters; i++) {
     int xoffset = int(cols) - int(SEGENV.aux0) + rotLW*i;
     if (xoffset + rotLW < 0) continue; // don't draw characters off-screen
-    uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
-    uint32_t col2 = BLACK;
-    if (SEGMENT.check1 && SEGMENT.palette == 0) {
-      col1 = SEGCOLOR(0);
-      col2 = SEGCOLOR(2);
-    }
-    SEGMENT.drawCharacter(text[i], xoffset, yoffset, letterWidth, letterHeight, col1, col2, map(SEGMENT.custom3, 0, 31, -2, 2));
+    SEGMENT.drawCharacter(text[i], xoffset, yoffset, letterWidth, letterHeight, col1, col2, map(SEGMENT.custom3, 0, 31, -2, 2), usePaletteGradient);
   }
 
   return FRAMETIME;
