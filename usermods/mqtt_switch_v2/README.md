@@ -19,7 +19,7 @@ Example `usermods_list.cpp`:
 
 void registerUsermods()
 {
-  usermods.add(new UsermodMqttSwitch());
+  UsermodManager::add(new UsermodMqttSwitch());
 }
 ```
 

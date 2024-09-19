@@ -396,7 +396,7 @@ void initServer()
       #if WLED_WATCHDOG_TIMEOUT > 0
       WLED::instance().disableWatchdog();
       #endif
-      usermods.onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
+      UsermodManager::onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
       lastEditTime = millis(); // make sure PIN does not lock during update
       strip.suspend();
       #ifdef ESP8266
@@ -412,7 +412,7 @@ void initServer()
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
         strip.resume();
-        usermods.onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
+        UsermodManager::onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
         #if WLED_WATCHDOG_TIMEOUT > 0
         WLED::instance().enableWatchdog();
         #endif

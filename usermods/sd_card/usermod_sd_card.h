@@ -45,7 +45,7 @@ class UsermodSdCard : public Usermod {
         { configPinPico, true }
         };
 
-        if (!pinManager.allocateMultiplePins(pins, 4, PinOwner::UM_SdCard)) {
+        if (!PinManager::allocateMultiplePins(pins, 4, PinOwner::UM_SdCard)) {
             DEBUG_PRINTF("[%s] SD (SPI) pin allocation failed!\n", _name);
             sdInitDone = false;
             return;
@@ -75,10 +75,10 @@ class UsermodSdCard : public Usermod {
         SD_ADAPTER.end();
 
         DEBUG_PRINTF("[%s] deallocate pins!\n", _name);
-        pinManager.deallocatePin(configPinSourceSelect, PinOwner::UM_SdCard);
-        pinManager.deallocatePin(configPinSourceClock,  PinOwner::UM_SdCard);
-        pinManager.deallocatePin(configPinPoci,         PinOwner::UM_SdCard);
-        pinManager.deallocatePin(configPinPico,         PinOwner::UM_SdCard);
+        PinManager::deallocatePin(configPinSourceSelect, PinOwner::UM_SdCard);
+        PinManager::deallocatePin(configPinSourceClock,  PinOwner::UM_SdCard);
+        PinManager::deallocatePin(configPinPoci,         PinOwner::UM_SdCard);
+        PinManager::deallocatePin(configPinPico,         PinOwner::UM_SdCard);
 
         sdInitDone = false;
       }
