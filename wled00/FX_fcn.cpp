@@ -213,24 +213,12 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // TODO remove strip dependency by moving customPalettes out of strip
   //default palette. Differs depending on effect
-  if (pal == 0) switch (mode) {
-    case FX_MODE_FIRE_2012  : pal = 35; break; // heat palette
-    case FX_MODE_COLORWAVES : pal = 26; break; // landscape 33
-    case FX_MODE_FILLNOISE8 : pal =  9; break; // ocean colors
-    case FX_MODE_NOISE16_1  : pal = 20; break; // Drywet
-    case FX_MODE_NOISE16_2  : pal = 43; break; // Blue cyan yellow
-    case FX_MODE_NOISE16_3  : pal = 35; break; // heat palette
-    case FX_MODE_NOISE16_4  : pal = 26; break; // landscape 33
-    case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
-    case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
-    case FX_MODE_RAILWAY    : pal =  3; break; // prim + sec
-    case FX_MODE_2DSOAP     : pal = 11; break; // rainbow colors
-  }
+  if (pal == 0) pal = _default_palette; //load default palette set in FX _data, party colors as default
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
     case 1: //randomly generated palette
-      targetPalette = _randomPalette; //random palette is generated at intervals in handleRandomPalette() 
+      targetPalette = _randomPalette; //random palette is generated at intervals in handleRandomPalette()
       break;
     case 2: {//primary color only
       CRGB prim = gamma32(colors[0]);
@@ -593,20 +581,24 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
       sOpt = extractModeDefaults(fx, "mi");  if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
       sOpt = extractModeDefaults(fx, "rY");  if (sOpt >= 0) reverse_y = (bool)sOpt;
       sOpt = extractModeDefaults(fx, "mY");  if (sOpt >= 0) mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
-      sOpt = extractModeDefaults(fx, "pal"); if (sOpt >= 0) setPalette(sOpt); //else setPalette(0);
+      sOpt = extractModeDefaults(fx, "pal"); if (sOpt >= 0) setPalette(sOpt, true); //else setPalette(0);
     }
     markForReset();
     stateChanged = true; // send UDP/WS broadcast
   }
 }
 
-void Segment::setPalette(uint8_t pal) {
+void Segment::setPalette(uint8_t pal, bool setdefault) {
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0; // built in palettes
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // custom palettes
   if (pal != palette) {
     if (strip.paletteFade) startTransition(strip.getTransition());
     palette = pal;
     stateChanged = true; // send UDP/WS broadcast
+  }
+  if(setdefault) {
+    if(pal == 0) pal = 6; //partycolors
+    _default_palette = pal;
   }
 }
 

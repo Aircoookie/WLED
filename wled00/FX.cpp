@@ -2204,7 +2204,7 @@ uint16_t mode_colorwaves() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue;!;!";
+static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue;!;!;;pal=26";
 
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
@@ -2251,7 +2251,7 @@ uint16_t mode_noise16_1() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_1[] PROGMEM = "Noise 1@!;!;!";
+static const char _data_FX_MODE_NOISE16_1[] PROGMEM = "Noise 1@!;!;!;;pal=20";
 
 
 uint16_t mode_noise16_2() {
@@ -2269,7 +2269,7 @@ uint16_t mode_noise16_2() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_2[] PROGMEM = "Noise 2@!;!;!";
+static const char _data_FX_MODE_NOISE16_2[] PROGMEM = "Noise 2@!;!;!;;pal=43";
 
 
 uint16_t mode_noise16_3() {
@@ -2290,7 +2290,7 @@ uint16_t mode_noise16_3() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_3[] PROGMEM = "Noise 3@!;!;!";
+static const char _data_FX_MODE_NOISE16_3[] PROGMEM = "Noise 3@!;!;!;;pal=35";
 
 
 //https://github.com/aykevl/ledstrip-spark/blob/master/ledstrip.ino
@@ -2302,7 +2302,7 @@ uint16_t mode_noise16_4() {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_4[] PROGMEM = "Noise 4@!;!;!";
+static const char _data_FX_MODE_NOISE16_4[] PROGMEM = "Noise 4@!;!;!;;pal=26";
 
 
 //based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
@@ -2477,7 +2477,7 @@ uint16_t mode_railway() {
   SEGENV.step += FRAMETIME;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_RAILWAY[] PROGMEM = "Railway@!,Smoothness;1,2;!";
+static const char _data_FX_MODE_RAILWAY[] PROGMEM = "Railway@!,Smoothness;1,2;!;;pal=3";
 
 
 //Water ripple
@@ -3234,7 +3234,7 @@ uint16_t mode_glitter()
   glitter_base(SEGMENT.intensity, SEGCOLOR(2) ? SEGCOLOR(2) : ULTRAWHITE);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;,,Glitter color;!;;pal=0,m12=0"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;,,Glitter color;!;;pal=11,m12=0"; //pixels
 
 
 //Solid colour background with glitter (can be replaced by Glitter)
@@ -4144,7 +4144,7 @@ uint16_t mode_sunrise() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SUNRISE[] PROGMEM = "Sunrise@Time [min],Width;;!;;sx=60";
+static const char _data_FX_MODE_SUNRISE[] PROGMEM = "Sunrise@Time [min],Width;;!;;pal=35,sx=60";
 
 
 /*
@@ -7573,7 +7573,7 @@ uint16_t mode_2Dsoap() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2";
+static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2;pal=11";
 
 
 //Idea from https://www.youtube.com/watch?v=HsA-6KIbgto&ab_channel=GreatScott%21

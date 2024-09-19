@@ -414,6 +414,7 @@ typedef struct Segment {
         uint8_t _reserved : 4;
       };
     };
+    uint8_t _default_palette;  // palette number that gets assigned to pal0
     uint16_t        _dataLen;
     static uint16_t _usedSegmentData;
 
@@ -544,7 +545,7 @@ typedef struct Segment {
     void    setOpacity(uint8_t o);
     void    setOption(uint8_t n, bool val);
     void    setMode(uint8_t fx, bool loadDefaults = false);
-    void    setPalette(uint8_t pal);
+    void    setPalette(uint8_t pal, bool setdefault = false);
     uint8_t differs(Segment& b) const;
     void    refreshLightCapabilities();
 
