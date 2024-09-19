@@ -36,7 +36,7 @@ uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16)
  * original idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
  * heavily optimized for speed by @dedehai
  */
-uint32_t color_add(uint32_t c1, uint32_t c2)
+uint32_t color_add(uint32_t c1, uint32_t c2, bool desat)
 {
   if (c1 == BLACK) return c2;
   if (c2 == BLACK) return c1;
@@ -47,18 +47,27 @@ uint32_t color_add(uint32_t c1, uint32_t c2)
   uint32_t w = wg >> 16;
   uint32_t g = wg & 0xFFFF;
 
-  unsigned max = r; // check for overflow note: not checking and just topping out at 255 (formerly 'fast') is not any faster (but even slower if not overflowing)
-  max = g > max ? g : max;
-  max = b > max ? b : max;
-  max = w > max ? w : max;
+  if(desat) { // desaturate
+    unsigned max = r; // check for overflow note
+    max = g > max ? g : max;
+    max = b > max ? b : max;
+    max = w > max ? w : max;
 
-  if (max > 255) {
-    uint32_t scale = (uint32_t(255)<<8) / max; // division of two 8bit (shifted) values does not work -> use bit shifts and multiplaction instead
-    rb = ((rb * scale) >> 8) & 0x00FF00FF; //
-    wg = (wg * scale) & 0xFF00FF00;
+    if (max > 255) {
+      uint32_t scale = (uint32_t(255)<<8) / max; // division of two 8bit (shifted) values does not work -> use bit shifts and multiplaction instead
+      rb = ((rb * scale) >> 8) & 0x00FF00FF; //
+      wg = (wg * scale) & 0xFF00FF00;
+    }
+    else wg = wg << 8; //shift white and green back to correct position
+    return rb | wg;
   }
-  else wg = wg << 8; //shift white and green back to correct position
-  return rb | wg;
+  else {
+    r = r > 255 ? 255 : r;
+    g = g > 255 ? 255 : g;
+    b = b > 255 ? 255 : b;
+    w = w > 255 ? 255 : w;
+    return RGBW32(r,g,b,w);
+  }
 }
 
 /*

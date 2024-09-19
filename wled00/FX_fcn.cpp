@@ -1169,7 +1169,7 @@ uint32_t Segment::color_wheel(uint8_t pos) const {
   pos = 255 - pos;
   if (pos < 85) {
     return RGBW32((255 - pos * 3), 0, (pos * 3), w);
-  } else if(pos < 170) {
+  } else if (pos < 170) {
     pos -= 85;
     return RGBW32(0, (pos * 3), (255 - pos * 3), w);
   } else {
