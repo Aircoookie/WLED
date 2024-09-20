@@ -482,6 +482,7 @@ typedef struct Segment {
       aux1(0),
       data(nullptr),
       _capabilities(0),
+      _default_palette(0),
       _dataLen(0),
       _t(nullptr)
     {
