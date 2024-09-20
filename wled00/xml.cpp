@@ -135,7 +135,7 @@ void appendGPIOinfo() {
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
     JsonObject mods = pDoc->createNestedObject(F("um"));
-    usermods.addToConfig(mods);
+    UsermodManager::addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
     releaseJSONBufferLock();
   }
@@ -144,7 +144,7 @@ void appendGPIOinfo() {
   // add reserved (unusable) pins
   oappend(SET_F("d.rsvd=["));
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
-    if (!pinManager.isPinOk(i, false)) {  // include readonly pins
+    if (!PinManager::isPinOk(i, false)) {  // include readonly pins
       oappendi(i); oappend(",");
     }
   }
@@ -181,7 +181,7 @@ void appendGPIOinfo() {
   oappend(SET_F("d.ro_gpio=["));
   bool firstPin = true;
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
-    if (pinManager.isReadOnlyPin(i)) {
+    if (PinManager::isReadOnlyPin(i)) {
       // No comma before the first pin
       if (!firstPin) oappend(SET_F(","));
       oappendi(i);
@@ -370,7 +370,7 @@ void getSettingsJS(byte subPage, char* dest)
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (pinManager.isPinOk(pins[i]) || bus->isVirtual()) sappend('v',lp,pins[i]);
+        if (PinManager::isPinOk(pins[i]) || bus->isVirtual()) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
@@ -484,6 +484,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
+    sappend('c',SET_F("RP"),receiveNotificationPalette);
     sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SG"),receiveSegmentBounds);
     sappend('c',SET_F("SS"),sendNotifications);
@@ -570,6 +571,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
     sappend('v',SET_F("BD"),serialBaud);
+    #ifndef WLED_ENABLE_ADALIGHT
+    oappend(SET_F("toggle('Serial);"));
+    #endif
   }
 
   if (subPage == SUBPAGE_TIME)
@@ -690,7 +694,7 @@ void getSettingsJS(byte subPage, char* dest)
   {
     appendGPIOinfo();
     oappend(SET_F("numM="));
-    oappendi(usermods.getModCount());
+    oappendi(UsermodManager::getModCount());
     oappend(";");
     sappend('v',SET_F("SDA"),i2c_sda);
     sappend('v',SET_F("SCL"),i2c_scl);
@@ -702,7 +706,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
     oappend(SET_F("addInfo('MISO','")); oappendi(HW_PIN_MISOSPI);  oappend(SET_F("');"));
     oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
-    usermods.appendConfigData();
+    UsermodManager::appendConfigData();
   }
 
   if (subPage == SUBPAGE_UPDATE) // update

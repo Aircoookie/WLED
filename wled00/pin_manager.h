@@ -70,57 +70,54 @@ enum struct PinOwner : uint8_t {
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
-class PinManagerClass {
+class PinManager {
   private:
-    struct {
     #ifdef ESP8266
-      #define WLED_NUM_PINS (GPIO_PIN_COUNT+1) // somehow they forgot GPIO 16 (0-16==17)
-      uint32_t pinAlloc     : 24; // 24bit, 1 bit per pin, we use first 17bits
+    #define WLED_NUM_PINS (GPIO_PIN_COUNT+1) // somehow they forgot GPIO 16 (0-16==17)
+    static uint32_t pinAlloc;     // 1 bit per pin, we use first 17bits
     #else
-      #define WLED_NUM_PINS (GPIO_PIN_COUNT)
-      uint64_t pinAlloc     : 56; // 56 bits, 1 bit per pin, we use 50 bits on ESP32-S3
-      uint16_t ledcAlloc    : 16; // up to 16 LEDC channels (WLED_MAX_ANALOG_CHANNELS)
+    #define WLED_NUM_PINS (GPIO_PIN_COUNT)
+    static uint64_t pinAlloc;     // 1 bit per pin, we use 50 bits on ESP32-S3
+    static uint16_t ledcAlloc;    // up to 16 LEDC channels (WLED_MAX_ANALOG_CHANNELS)
     #endif
-      uint8_t i2cAllocCount :  4; // allow multiple allocation of I2C bus pins but keep track of allocations
-      uint8_t spiAllocCount :  4; // allow multiple allocation of SPI bus pins but keep track of allocations
-    } __attribute__ ((packed));
-    PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
+    static uint8_t i2cAllocCount; // allow multiple allocation of I2C bus pins but keep track of allocations
+    static uint8_t spiAllocCount; // allow multiple allocation of SPI bus pins but keep track of allocations
+    static PinOwner ownerTag[WLED_NUM_PINS];
 
   public:
-  PinManagerClass() : pinAlloc(0), i2cAllocCount(0), spiAllocCount(0) {}
-  // De-allocates a single pin
-  bool deallocatePin(byte gpio, PinOwner tag);
-  // De-allocates multiple pins but only if all can be deallocated (PinOwner has to be specified)
-  bool deallocateMultiplePins(const uint8_t *pinArray, byte arrayElementCount, PinOwner tag);
-  bool deallocateMultiplePins(const managed_pin_type *pinArray, byte arrayElementCount, PinOwner tag);
-  // Allocates a single pin, with an owner tag.
-  // De-allocation requires the same owner tag (or override)
-  bool allocatePin(byte gpio, bool output, PinOwner tag);
-  // Allocates all the pins, or allocates none of the pins, with owner tag.
-  // Provided to simplify error condition handling in clients
-  // using more than one pin, such as I2C, SPI, rotary encoders,
-  // ethernet, etc..
-  bool allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );
+    // De-allocates a single pin
+    static bool deallocatePin(byte gpio, PinOwner tag);
+    // De-allocates multiple pins but only if all can be deallocated (PinOwner has to be specified)
+    static bool deallocateMultiplePins(const uint8_t *pinArray, byte arrayElementCount, PinOwner tag);
+    static bool deallocateMultiplePins(const managed_pin_type *pinArray, byte arrayElementCount, PinOwner tag);
+    // Allocates a single pin, with an owner tag.
+    // De-allocation requires the same owner tag (or override)
+    static bool allocatePin(byte gpio, bool output, PinOwner tag);
+    // Allocates all the pins, or allocates none of the pins, with owner tag.
+    // Provided to simplify error condition handling in clients
+    // using more than one pin, such as I2C, SPI, rotary encoders,
+    // ethernet, etc..
+    static bool allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );
 
-  [[deprecated("Replaced by three-parameter allocatePin(gpio, output, ownerTag), for improved debugging")]]
-  inline bool allocatePin(byte gpio, bool output = true) { return allocatePin(gpio, output, PinOwner::None); }
-  [[deprecated("Replaced by two-parameter deallocatePin(gpio, ownerTag), for improved debugging")]]
-  inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
+    [[deprecated("Replaced by three-parameter allocatePin(gpio, output, ownerTag), for improved debugging")]]
+    static inline bool allocatePin(byte gpio, bool output = true) { return allocatePin(gpio, output, PinOwner::None); }
+    [[deprecated("Replaced by two-parameter deallocatePin(gpio, ownerTag), for improved debugging")]]
+    static inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
 
-  // will return true for reserved pins
-  bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None) const;
-  // will return false for reserved pins
-  bool isPinOk(byte gpio, bool output = true) const;
-  
-  static bool isReadOnlyPin(byte gpio);
+    // will return true for reserved pins
+    static bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None);
+    // will return false for reserved pins
+    static bool isPinOk(byte gpio, bool output = true);
+    
+    static bool isReadOnlyPin(byte gpio);
 
-  PinOwner getPinOwner(byte gpio) const;
+    static PinOwner getPinOwner(byte gpio);
 
-  #ifdef ARDUINO_ARCH_ESP32
-  byte allocateLedc(byte channels);
-  void deallocateLedc(byte pos, byte channels);
-  #endif
+    #ifdef ARDUINO_ARCH_ESP32
+    static byte allocateLedc(byte channels);
+    static void deallocateLedc(byte pos, byte channels);
+    #endif
 };
 
-extern PinManagerClass pinManager;
+//extern PinManager pinManager;
 #endif

@@ -86,6 +86,6 @@ Example **usermods_list.cpp**:
 
 void registerUsermods()
 {
-  usermods.add(new MPU6050Driver());
+  UsermodManager::add(new MPU6050Driver());
 }
 ```

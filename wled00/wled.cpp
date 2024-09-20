@@ -54,23 +54,25 @@ void WLED::loop()
 #endif
 
   handleTime();
-#ifndef WLED_DISABLE_INFRARED
+  #ifndef WLED_DISABLE_INFRARED
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
-#endif
+  #endif
   handleConnection();
+  #ifdef WLED_ENABLE_ADALIGHT
   handleSerial();
+  #endif
   handleImprovWifiScan();
   handleNotifications();
   handleTransitions();
-#ifdef WLED_ENABLE_DMX
+  #ifdef WLED_ENABLE_DMX
   handleDMX();
-#endif
+  #endif
 
   #ifdef WLED_DEBUG
   unsigned long usermodMillis = millis();
   #endif
   userLoop();
-  usermods.loop();
+  UsermodManager::loop();
   #ifdef WLED_DEBUG
   usermodMillis = millis() - usermodMillis;
   avgUsermodMillis += usermodMillis;
@@ -408,10 +410,10 @@ void WLED::setup()
 #endif
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
-  pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
+  PinManager::allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
 #endif
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
-  pinManager.allocatePin(2, true, PinOwner::DMX);
+  PinManager::allocatePin(2, true, PinOwner::DMX);
 #endif
 
   DEBUG_PRINTLN(F("Registering usermods ..."));
@@ -450,7 +452,7 @@ void WLED::setup()
   DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
 
 #if defined(STATUSLED) && STATUSLED>=0
-  if (!pinManager.isPinAllocated(STATUSLED)) {
+  if (!PinManager::isPinAllocated(STATUSLED)) {
     // NOTE: Special case: The status LED should *NOT* be allocated.
     //       See comments in handleStatusLed().
     pinMode(STATUSLED, OUTPUT);
@@ -463,7 +465,7 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
-  usermods.setup();
+  UsermodManager::setup();
   DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
 
   if (strcmp(multiWiFi[0].clientSSID, DEFAULT_CLIENT_SSID) == 0)
@@ -476,10 +478,14 @@ void WLED::setup()
   WiFi.mode(WIFI_STA); // enable scanning
   findWiFi(true);      // start scanning for available WiFi-s
 
+  // all GPIOs are allocated at this point
+  serialCanRX = !PinManager::isPinAllocated(hardwareRX); // Serial RX pin (GPIO 3 on ESP32 and ESP8266)
+  serialCanTX = !PinManager::isPinAllocated(hardwareTX) || PinManager::getPinOwner(hardwareTX) == PinOwner::DebugOut; // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
+
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
   //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
-  if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
+  if (serialCanRX && serialCanTX) {
     Serial.println(F("Ada"));
   }
   #endif
@@ -489,10 +495,6 @@ void WLED::setup()
 #ifndef WLED_DISABLE_MQTT
   if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
   if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("WLED-%*s"), 6, escapedMac.c_str() + 6);
-#endif
-
-#ifdef WLED_ENABLE_ADALIGHT
-  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
 #endif
 
 #ifndef WLED_DISABLE_OTA
@@ -521,7 +523,7 @@ void WLED::setup()
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
-  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+  if (serialCanRX && Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
 #endif
 
   // HTTP server page init
@@ -683,7 +685,7 @@ bool WLED::initEthernet()
     return false;
   }
 
-  if (!pinManager.allocateMultiplePins(pinsToAllocate, 10, PinOwner::Ethernet)) {
+  if (!PinManager::allocateMultiplePins(pinsToAllocate, 10, PinOwner::Ethernet)) {
     DEBUG_PRINTLN(F("initE: Failed to allocate ethernet pins"));
     return false;
   }
@@ -717,7 +719,7 @@ bool WLED::initEthernet()
     DEBUG_PRINTLN(F("initC: ETH.begin() failed"));
     // de-allocate the allocated pins
     for (managed_pin_type mpt : pinsToAllocate) {
-      pinManager.deallocatePin(mpt.pin, PinOwner::Ethernet);
+      PinManager::deallocatePin(mpt.pin, PinOwner::Ethernet);
     }
     return false;
   }
@@ -1008,7 +1010,7 @@ void WLED::handleConnection()
     }
     initInterfaces();
     userConnected();
-    usermods.connected();
+    UsermodManager::connected();
     lastMqttReconnectAttempt = 0; // force immediate update
 
     // shut down AP
@@ -1031,7 +1033,7 @@ void WLED::handleStatusLED()
   uint32_t c = 0;
 
   #if STATUSLED>=0
-  if (pinManager.isPinAllocated(STATUSLED)) {
+  if (PinManager::isPinAllocated(STATUSLED)) {
     return; //lower priority if something else uses the same pin
   }
   #endif

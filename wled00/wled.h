@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2409140
+#define VERSION 2409170
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -510,6 +510,8 @@ WLED_GLOBAL bool hueApplyColor _INIT(true);
 #endif
 
 WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
+WLED_GLOBAL bool     serialCanRX _INIT(false);
+WLED_GLOBAL bool     serialCanTX _INIT(false);
 
 #ifndef WLED_DISABLE_ESPNOW
 WLED_GLOBAL bool enableESPNow        _INIT(false);  // global on/off for ESP-NOW
@@ -639,17 +641,19 @@ typedef class Receive {
         bool    SegmentOptions : 1;
         bool    SegmentBounds  : 1;
         bool    Direct         : 1;
-        uint8_t reserved       : 2;
+        bool    Palette        : 1;
+        uint8_t reserved       : 1;
       };
     };
     Receive(int i) { Options = i; }
-    Receive(bool b, bool c, bool e, bool sO, bool sB) {
-      Brightness = b;
-      Color = c;
-      Effects = e;
-      SegmentOptions = sO;
-      SegmentBounds = sB;
-    };
+    Receive(bool b, bool c, bool e, bool sO, bool sB, bool p)
+    : Brightness(b)
+    , Color(c)
+    , Effects(e)
+    , SegmentOptions(sO)
+    , SegmentBounds(sB)
+    , Palette(p)
+    {};
 } __attribute__ ((aligned(1), packed)) receive_notification_t;
 typedef class Send {
   public:
@@ -671,11 +675,12 @@ typedef class Send {
     Hue = h;
   }
 } __attribute__ ((aligned(1), packed)) send_notification_t;
-WLED_GLOBAL receive_notification_t receiveN _INIT(0b00100111);
+WLED_GLOBAL receive_notification_t receiveN _INIT(0b01100111);
 WLED_GLOBAL send_notification_t    notifyG  _INIT(0b00001111);
 #define receiveNotificationBrightness receiveN.Brightness
 #define receiveNotificationColor      receiveN.Color
 #define receiveNotificationEffects    receiveN.Effects
+#define receiveNotificationPalette    receiveN.Palette
 #define receiveSegmentOptions         receiveN.SegmentOptions
 #define receiveSegmentBounds          receiveN.SegmentBounds
 #define receiveDirect                 receiveN.Direct
@@ -687,6 +692,7 @@ WLED_GLOBAL send_notification_t    notifyG  _INIT(0b00001111);
 WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
 WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color
 WLED_GLOBAL bool receiveNotificationEffects    _INIT(true);       // apply effects setup
+WLED_GLOBAL bool receiveNotificationPalette    _INIT(true);       // apply palette
 WLED_GLOBAL bool receiveSegmentOptions         _INIT(false);      // apply segment options
 WLED_GLOBAL bool receiveSegmentBounds          _INIT(false);      // apply segment bounds (start, stop, offset)
 WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP/Hyperion realtime

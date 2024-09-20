@@ -714,9 +714,8 @@ void handleIR()
     if (strip.isUpdating() && timeDiff < 240) return;  // be nice, but not too nice
     irCheckedTime = currentTime;
     if (irrecv->decode(&results)) {
-      if (results.value != 0) { // only print results if anything is received ( != 0 )
-        if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut) // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
-          Serial.printf_P(PSTR("IR recv: 0x%lX\n"), (unsigned long)results.value);
+      if (results.value != 0 && serialCanTX) { // only print results if anything is received ( != 0 )
+        Serial.printf_P(PSTR("IR recv: 0x%lX\n"), (unsigned long)results.value);
       }
       decodeIR(results.value);
       irrecv->resume();
