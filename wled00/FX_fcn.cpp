@@ -1030,7 +1030,6 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() >= segStopIdx) continue;
     if (bus->getStart() + bus->getLength() <= segStartIdx) continue;
 
-    //uint8_t type = bus->getType();
     if (bus->hasRGB() || (strip.cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
     if (!strip.cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
     if (strip.correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
@@ -1563,7 +1562,7 @@ uint16_t WS2812FX::getLengthPhysical() const {
   unsigned len = 0;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
-    if (bus->getType() >= TYPE_NET_DDP_RGB) continue; //exclude non-physical network busses
+    if (bus->isVirtual()) continue; //exclude non-physical network busses
     len += bus->getLength();
   }
   return len;
