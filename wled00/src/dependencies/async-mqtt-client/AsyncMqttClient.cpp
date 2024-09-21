@@ -875,3 +875,8 @@ uint16_t AsyncMqttClient::publish(const char* topic, uint8_t qos, bool retain, c
     return 1;
   }
 }
+
+void AsyncMqttClient::setConnected(bool connected)
+{
+  _connected = connected;
+}
