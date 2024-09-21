@@ -39,52 +39,46 @@
 #include "AsyncMqttClient/Packets/PubCompPacket.hpp"
 
 #if ESP32
-#define SEMAPHORE_TAKE(X)                                               \
-  if (xSemaphoreTake(_xSemaphore, 1000 / portTICK_PERIOD_MS) != pdTRUE) \
-  {                                                                     \
-    return X;                                                           \
-  } // Waits max 1000ms
+#define SEMAPHORE_TAKE(X) if (xSemaphoreTake(_xSemaphore, 1000 / portTICK_PERIOD_MS) != pdTRUE) { return X; }  // Waits max 1000ms
 #define SEMAPHORE_GIVE() xSemaphoreGive(_xSemaphore);
 #elif defined(ESP8266)
 #define SEMAPHORE_TAKE(X) void()
 #define SEMAPHORE_GIVE() void()
 #endif
 
-class AsyncMqttClient
-{
-public:
+class AsyncMqttClient {
+ public:
   AsyncMqttClient();
   ~AsyncMqttClient();
 
-  AsyncMqttClient &setKeepAlive(uint16_t keepAlive);
-  AsyncMqttClient &setClientId(const char *clientId);
-  AsyncMqttClient &setCleanSession(bool cleanSession);
-  AsyncMqttClient &setMaxTopicLength(uint16_t maxTopicLength);
-  AsyncMqttClient &setCredentials(const char *username, const char *password = nullptr);
-  AsyncMqttClient &setWill(const char *topic, uint8_t qos, bool retain, const char *payload = nullptr, size_t length = 0);
-  AsyncMqttClient &setServer(IPAddress ip, uint16_t port);
-  AsyncMqttClient &setServer(const char *host, uint16_t port);
+  AsyncMqttClient& setKeepAlive(uint16_t keepAlive);
+  AsyncMqttClient& setClientId(const char* clientId);
+  AsyncMqttClient& setCleanSession(bool cleanSession);
+  AsyncMqttClient& setMaxTopicLength(uint16_t maxTopicLength);
+  AsyncMqttClient& setCredentials(const char* username, const char* password = nullptr);
+  AsyncMqttClient& setWill(const char* topic, uint8_t qos, bool retain, const char* payload = nullptr, size_t length = 0);
+  AsyncMqttClient& setServer(IPAddress ip, uint16_t port);
+  AsyncMqttClient& setServer(const char* host, uint16_t port);
 #if ASYNC_TCP_SSL_ENABLED
-  AsyncMqttClient &setSecure(bool secure);
-  AsyncMqttClient &addServerFingerprint(const uint8_t *fingerprint);
+  AsyncMqttClient& setSecure(bool secure);
+  AsyncMqttClient& addServerFingerprint(const uint8_t* fingerprint);
 #endif
 
-  AsyncMqttClient &onConnect(AsyncMqttClientInternals::OnConnectUserCallback callback);
-  AsyncMqttClient &onDisconnect(AsyncMqttClientInternals::OnDisconnectUserCallback callback);
-  AsyncMqttClient &onSubscribe(AsyncMqttClientInternals::OnSubscribeUserCallback callback);
-  AsyncMqttClient &onUnsubscribe(AsyncMqttClientInternals::OnUnsubscribeUserCallback callback);
-  AsyncMqttClient &onMessage(AsyncMqttClientInternals::OnMessageUserCallback callback);
-  AsyncMqttClient &onPublish(AsyncMqttClientInternals::OnPublishUserCallback callback);
+  AsyncMqttClient& onConnect(AsyncMqttClientInternals::OnConnectUserCallback callback);
+  AsyncMqttClient& onDisconnect(AsyncMqttClientInternals::OnDisconnectUserCallback callback);
+  AsyncMqttClient& onSubscribe(AsyncMqttClientInternals::OnSubscribeUserCallback callback);
+  AsyncMqttClient& onUnsubscribe(AsyncMqttClientInternals::OnUnsubscribeUserCallback callback);
+  AsyncMqttClient& onMessage(AsyncMqttClientInternals::OnMessageUserCallback callback);
+  AsyncMqttClient& onPublish(AsyncMqttClientInternals::OnPublishUserCallback callback);
 
   bool connected() const;
   void connect();
   void disconnect(bool force = false);
-  uint16_t subscribe(const char *topic, uint8_t qos);
-  uint16_t unsubscribe(const char *topic);
-  uint16_t publish(const char *topic, uint8_t qos, bool retain, const char *payload = nullptr, size_t length = 0, bool dup = false, uint16_t message_id = 0);
-  void setConnected(bool connected);
+  uint16_t subscribe(const char* topic, uint8_t qos);
+  uint16_t unsubscribe(const char* topic);
+  uint16_t publish(const char* topic, uint8_t qos, bool retain, const char* payload = nullptr, size_t length = 0, bool dup = false, uint16_t message_id = 0);
 
-private:
+ private:
   AsyncClient _client;
 
   bool _connected;
@@ -95,9 +89,9 @@ private:
   uint32_t _lastServerActivity;
   uint32_t _lastPingRequestTime;
 
-  char _generatedClientId[13 + 1]; // esp8266abc123
+  char _generatedClientId[13 + 1];  // esp8266abc123
   IPAddress _ip;
-  const char *_host;
+  const char* _host;
   bool _useIp;
 #if ASYNC_TCP_SSL_ENABLED
   bool _secure;
@@ -105,11 +99,11 @@ private:
   uint16_t _port;
   uint16_t _keepAlive;
   bool _cleanSession;
-  const char *_clientId;
-  const char *_username;
-  const char *_password;
-  const char *_willTopic;
-  const char *_willPayload;
+  const char* _clientId;
+  const char* _username;
+  const char* _password;
+  const char* _willTopic;
+  const char* _willPayload;
   uint16_t _willPayloadLength;
   uint8_t _willQos;
   bool _willRetain;
@@ -126,7 +120,7 @@ private:
   std::vector<AsyncMqttClientInternals::OnPublishUserCallback> _onPublishUserCallbacks;
 
   AsyncMqttClientInternals::ParsingInformation _parsingInformation;
-  AsyncMqttClientInternals::Packet *_currentParsedPacket;
+  AsyncMqttClientInternals::Packet* _currentParsedPacket;
   uint8_t _remainingLengthBufferPosition;
   char _remainingLengthBuffer[4];
 
@@ -144,20 +138,20 @@ private:
   void _freeCurrentParsedPacket();
 
   // TCP
-  void _onConnect(AsyncClient *client);
-  void _onDisconnect(AsyncClient *client);
-  static void _onError(AsyncClient *client, int8_t error);
-  void _onTimeout(AsyncClient *client, uint32_t time);
-  static void _onAck(AsyncClient *client, size_t len, uint32_t time);
-  void _onData(AsyncClient *client, char *data, size_t len);
-  void _onPoll(AsyncClient *client);
+  void _onConnect(AsyncClient* client);
+  void _onDisconnect(AsyncClient* client);
+  static void _onError(AsyncClient* client, int8_t error);
+  void _onTimeout(AsyncClient* client, uint32_t time);
+  static void _onAck(AsyncClient* client, size_t len, uint32_t time);
+  void _onData(AsyncClient* client, char* data, size_t len);
+  void _onPoll(AsyncClient* client);
 
   // MQTT
   void _onPingResp();
   void _onConnAck(bool sessionPresent, uint8_t connectReturnCode);
   void _onSubAck(uint16_t packetId, char status);
   void _onUnsubAck(uint16_t packetId);
-  void _onMessage(char *topic, char *payload, uint8_t qos, bool dup, bool retain, size_t len, size_t index, size_t total, uint16_t packetId);
+  void _onMessage(char* topic, char* payload, uint8_t qos, bool dup, bool retain, size_t len, size_t index, size_t total, uint16_t packetId);
   void _onPublish(uint16_t packetId, uint8_t qos);
   void _onPubRel(uint16_t packetId);
   void _onPubAck(uint16_t packetId);
