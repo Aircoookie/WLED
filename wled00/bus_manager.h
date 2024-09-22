@@ -325,23 +325,16 @@ class BusNetwork : public Bus {
 class BusHub75Matrix : public Bus {
   public:
     BusHub75Matrix(BusConfig &bc);
-
     bool hasRGB() { return true; }
     bool hasWhite() { return false; }
-
     void setPixelColor(uint16_t pix, uint32_t c);
     uint32_t getPixelColor(uint16_t pix) const override;
-
     void show() override;
-
     void setBrightness(uint8_t b, bool immediate);
-
     uint8_t getPins(uint8_t* pinArray) const override;
-
     void deallocatePins();
-
     void cleanup();
-
+    
     ~BusHub75Matrix() {
       cleanup();
     }
