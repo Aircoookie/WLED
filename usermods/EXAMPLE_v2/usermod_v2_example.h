@@ -71,7 +71,7 @@ class MyExampleUsermod : public Usermod {
     //   #endif
     //  in setup()
     //   #ifdef USERMOD_EXAMPLE
-    //   UM = (MyExampleUsermod*) usermods.lookup(USERMOD_ID_EXAMPLE);
+    //   UM = (MyExampleUsermod*) UsermodManager::lookup(USERMOD_ID_EXAMPLE);
     //   #endif
     //  somewhere in loop() or other member method
     //   #ifdef USERMOD_EXAMPLE

@@ -149,7 +149,6 @@ static bool useBandPassFilter = false;                    // if true, enables a 
 ////////////////////
 
 // some prototypes, to ensure consistent interfaces
-static float mapf(float x, float in_min, float in_max, float out_min, float out_max); // map function for float
 static float fftAddAvg(int from, int to);   // average of several FFT result bins
 void FFTcode(void * parameter);      // audio processing task: read samples, run FFT, fill GEQ channels from FFT results
 static void runMicFilter(uint16_t numSamples, float *sampleBuffer);          // pre-filtering of raw samples (band-pass)
@@ -210,11 +209,6 @@ static float vImag[samplesFFT] = {0.0f};       // imaginary parts
 static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, true);
 
 // Helper functions
-
-// float version of map()
-static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
 
 // compute average of several FFT result bins
 static float fftAddAvg(int from, int to) {

@@ -472,6 +472,9 @@
 #define NTP_PACKET_SIZE 48       // size of NTP receive buffer
 #define NTP_MIN_PACKET_SIZE 48   // min expected size - NTP v4 allows for "extended information" appended to the standard fields
 
+// Maximum number of pins per output. 5 for RGBCCT analog LEDs.
+#define OUTPUT_MAX_PINS 5
+
 //maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
 #ifndef MAX_LEDS
 #ifdef ESP8266
@@ -570,26 +573,19 @@
   #define WLED_MAX_NODES 150
 #endif
 
-//this is merely a default now and can be changed at runtime
-#ifndef LEDPIN
-#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)  //|| (defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)) || defined(ARDUINO_ESP32_PICO)
-  #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
+// Defaults pins, type and counts to configure LED output
+#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)
+  #ifdef WLED_ENABLE_DMX
+    #define DEFAULT_LED_PIN 1
+    #warning "Compiling with DMX. The default LED pin has been changed to pin 1."
+  #else
+    #define DEFAULT_LED_PIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
+  #endif
 #else
-  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
+  #define DEFAULT_LED_PIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
 #endif
-#endif
-
-#ifdef WLED_ENABLE_DMX
-#if (LEDPIN == 2)
-  #undef LEDPIN
-  #define LEDPIN 1
-  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 1."
-#endif
-#endif
-
-#ifndef DEFAULT_LED_COUNT
-  #define DEFAULT_LED_COUNT 30
-#endif
+#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#define DEFAULT_LED_COUNT 30
 
 #define INTERFACE_UPDATE_COOLDOWN 1000 // time in ms to wait between websockets, alexa, and MQTT updates
 
@@ -649,6 +645,14 @@
 #endif
 #ifndef HW_PIN_MISOSPI
   #define HW_PIN_MISOSPI MISO
+#endif
+
+// IRAM_ATTR for 8266 with 32Kb IRAM causes error: section `.text1' will not fit in region `iram1_0_seg'
+// this hack removes the IRAM flag for some 1D/2D functions - somewhat slower, but it solves problems with some older 8266 chips
+#ifdef WLED_SAVE_IRAM
+  #define IRAM_ATTR_YN
+#else
+  #define IRAM_ATTR_YN IRAM_ATTR
 #endif
 
 #endif

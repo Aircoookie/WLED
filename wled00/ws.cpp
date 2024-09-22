@@ -125,7 +125,7 @@ void sendDataWs(AsyncWebSocketClient * client)
 
   // the following may no longer be necessary as heap management has been fixed by @willmmiles in AWS
   size_t heap1 = ESP.getFreeHeap();
-  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+  DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
   #ifdef ESP8266
   if (len>heap1) {
     DEBUG_PRINTLN(F("Out of memory (WS)!"));
@@ -135,7 +135,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   AsyncWebSocketBuffer buffer(len);
   #ifdef ESP8266
   size_t heap2 = ESP.getFreeHeap();
-  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+  DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
   #else
   size_t heap2 = 0; // ESP32 variants do not have the same issue and will work without checking heap allocation
   #endif
@@ -150,11 +150,11 @@ void sendDataWs(AsyncWebSocketClient * client)
 
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {
-    client->text(std::move(buffer));
     DEBUG_PRINTLN(F("to a single client."));
+    client->text(std::move(buffer));
   } else {
-    ws.textAll(std::move(buffer));
     DEBUG_PRINTLN(F("to multiple clients."));
+    ws.textAll(std::move(buffer));
   }
 
   releaseJSONBufferLock();

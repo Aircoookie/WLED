@@ -23,6 +23,9 @@
     #ifndef TFT_RST
         #error Please define TFT_RST
     #endif
+    #ifndef TFT_CS
+        #error Please define TFT_CS
+    #endif
     #ifndef LOAD_GLCD
         #error Please define LOAD_GLCD
     #endif
@@ -135,10 +138,10 @@ class St7789DisplayUsermod : public Usermod {
     void setup() override
     {
         PinManagerPinType spiPins[] = { { spi_mosi, true }, { spi_miso, false}, { spi_sclk, true } };
-        if (!pinManager.allocateMultiplePins(spiPins, 3, PinOwner::HW_SPI)) { enabled = false; return; }
+        if (!PinManager::allocateMultiplePins(spiPins, 3, PinOwner::HW_SPI)) { enabled = false; return; }
         PinManagerPinType displayPins[] = { { TFT_CS, true}, { TFT_DC, true}, { TFT_RST, true }, { TFT_BL, true } };
-        if (!pinManager.allocateMultiplePins(displayPins, sizeof(displayPins)/sizeof(PinManagerPinType), PinOwner::UM_FourLineDisplay)) {
-            pinManager.deallocateMultiplePins(spiPins, 3, PinOwner::HW_SPI);
+        if (!PinManager::allocateMultiplePins(displayPins, sizeof(displayPins)/sizeof(PinManagerPinType), PinOwner::UM_FourLineDisplay)) {
+            PinManager::deallocateMultiplePins(spiPins, 3, PinOwner::HW_SPI);
             enabled = false;
             return;
         }
@@ -377,7 +380,7 @@ class St7789DisplayUsermod : public Usermod {
       oappend(SET_F("addInfo('ST7789:pin[]',0,'','SPI CS');"));
       oappend(SET_F("addInfo('ST7789:pin[]',1,'','SPI DC');"));
       oappend(SET_F("addInfo('ST7789:pin[]',2,'','SPI RST');"));
-      oappend(SET_F("addInfo('ST7789:pin[]',2,'','SPI BL');"));
+      oappend(SET_F("addInfo('ST7789:pin[]',3,'','SPI BL');"));
     }
 
     /*
