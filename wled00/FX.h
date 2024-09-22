@@ -368,6 +368,7 @@ typedef struct Segment {
     };
     uint8_t startY;  // start Y coodrinate 2D (top); there should be no more than 255 rows
     uint8_t stopY;   // stop Y coordinate 2D (bottom); there should be no more than 255 rows
+    //note: here are 3 free bytes of padding
     char    *name;
 
     // runtime data

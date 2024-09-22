@@ -712,7 +712,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 {
   if (!isActive()) return; // not active
 #ifndef WLED_DISABLE_2D
-  int vStrip;
+  int vStrip = 0;
 #endif
   if (i >= virtualLength() || i<0) // pixel would fall out of segment, check if this is a virtual strip NOTE: this is almost always false if not virtual strip, saves the calculation on 'standard' call
   {
