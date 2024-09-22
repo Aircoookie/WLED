@@ -11061,7 +11061,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLEGHOSTRIDER, &mode_particleghostrider, _data_FX_MODE_PARTICLEGHOSTRIDER);
   addEffect(FX_MODE_PARTICLEBLOBS, &mode_particleblobs, _data_FX_MODE_PARTICLEBLOBS);
   addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECIRCULARGEQ);
-  addEffect(FX_MODE_PSFRACTAL, &mode_particlefractal, _data_FX_MODE_PARTICLEFRACTAL);
+ // addEffect(FX_MODE_PSFRACTAL, &mode_particlefractal, _data_FX_MODE_PARTICLEFRACTAL);
   
 #endif // WLED_DISABLE_PARTICLESYSTEM2D
 
