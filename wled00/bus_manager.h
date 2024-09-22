@@ -358,6 +358,7 @@ class BusHub75Matrix : public Bus {
     // workaround for missing constants on include path for non-MM   
     uint32_t IS_BLACK = 0x000000;
     uint32_t IS_DARKGREY = 0x333333;
+    const int PIN_COUNT = 14;
 };
 #endif
 

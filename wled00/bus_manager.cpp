@@ -902,9 +902,9 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
 #endif
 
-  int8_t pins[14];
+  int8_t pins[PIN_COUNT];
   memcpy(pins, &mxconfig.gpio, sizeof(mxconfig.gpio));
-  pinManager.allocateMultiplePins(pins, 14, PinOwner::HUB75, true);
+  PinManager::allocateMultiplePins(pins, PIN_COUNT, PinOwner::HUB75, true);
 
   DEBUG_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
   DEBUG_PRINTF("R1_PIN=%u, G1_PIN=%u, B1_PIN=%u, R2_PIN=%u, G2_PIN=%u, B2_PIN=%u, A_PIN=%u, B_PIN=%u, C_PIN=%u, D_PIN=%u, E_PIN=%u, LAT_PIN=%u, OE_PIN=%u, CLK_PIN=%u\n",
@@ -1075,9 +1075,9 @@ void BusHub75Matrix::cleanup() {
 }
 
 void BusHub75Matrix::deallocatePins() {
-  uint8_t pins[14];
+  uint8_t pins[PIN_COUNT];
   memcpy(pins, &mxconfig.gpio, sizeof(mxconfig.gpio));
-  pinManager.deallocateMultiplePins(pins, 14, PinOwner::HUB75);
+  PinManager::deallocateMultiplePins(pins, PIN_COUNT, PinOwner::HUB75);
 }
 
 std::vector<LEDType> BusHub75Matrix::getLEDTypes() {
