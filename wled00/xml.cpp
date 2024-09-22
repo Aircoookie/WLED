@@ -784,6 +784,5 @@ void getSettingsJS(byte subPage, char* dest)
     #else
     oappend(SET_F("gId(\"somp\").remove(1);")); // remove 2D option from dropdown
     #endif
-
   }
 }
