@@ -1884,7 +1884,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   return (customMappingSize > 0);
 }
 
-__attribute__ ((always_inline)) inline uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) const {
+__attribute__ ((always_inline)) inline uint16_t WS2812FX::getMappedPixelIndex(uint16_t index) const {
   // convert logical address to physical
   if (index < customMappingSize
     && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
