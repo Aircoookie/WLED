@@ -370,7 +370,7 @@ void getSettingsJS(byte subPage, char* dest)
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (PinManager::isPinOk(pins[i]) || bus->isVirtual()) sappend('v',lp,pins[i]);
+        if (PinManager::isPinOk(pins[i]) || bus->isVirtual() || bus->isHub75()) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());

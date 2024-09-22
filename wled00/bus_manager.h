@@ -110,6 +110,7 @@ class Bus {
     inline  bool     isOnOff() const                           { return isOnOff(_type); }
     inline  bool     isPWM() const                             { return isPWM(_type); }
     inline  bool     isVirtual() const                         { return isVirtual(_type); }
+    inline  bool     isHub75() const                           { return isHub75(_type); }
     inline  bool     is16bit() const                           { return is16bit(_type); }
     inline  bool     mustRefresh() const                       { return mustRefresh(_type); }
     inline  void     setReversed(bool reversed)                { _reversed = reversed; }
