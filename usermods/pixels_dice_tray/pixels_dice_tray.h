@@ -112,15 +112,15 @@ class PixelsDiceTrayUsermod : public Usermod {
     SetSPIPinsFromMacros();
     PinManagerPinType spiPins[] = {
         {spi_mosi, true}, {spi_miso, false}, {spi_sclk, true}};
-    if (!pinManager.allocateMultiplePins(spiPins, 3, PinOwner::HW_SPI)) {
+    if (!PinManager::allocateMultiplePins(spiPins, 3, PinOwner::HW_SPI)) {
       enabled = false;
     } else {
       PinManagerPinType displayPins[] = {
           {TFT_CS, true}, {TFT_DC, true}, {TFT_RST, true}, {TFT_BL, true}};
-      if (!pinManager.allocateMultiplePins(
+      if (!PinManager::allocateMultiplePins(
               displayPins, sizeof(displayPins) / sizeof(PinManagerPinType),
               PinOwner::UM_FourLineDisplay)) {
-        pinManager.deallocateMultiplePins(spiPins, 3, PinOwner::HW_SPI);
+        PinManager::deallocateMultiplePins(spiPins, 3, PinOwner::HW_SPI);
         enabled = false;
       }
     }
