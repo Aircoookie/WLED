@@ -372,7 +372,7 @@ struct BusConfig {
   uint8_t skipAmount;
   bool refreshReq;
   uint8_t autoWhite;
-  uint8_t pins[5] = {255, 255, 255, 255, 255};
+  uint8_t pins[OUTPUT_MAX_PINS] = {255, 255, 255, 255, 255};
   uint16_t frequency;
   bool doubleBuffer;
   uint8_t milliAmpsPerLed;

@@ -366,7 +366,7 @@ void getSettingsJS(byte subPage, char* dest)
       char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED current
       char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max per-port PSU current
       oappend(SET_F("addLEDs(1);"));
-      uint8_t pins[5];
+      uint8_t pins[OUTPUT_MAX_PINS];
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
