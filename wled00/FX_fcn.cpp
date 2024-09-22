@@ -580,7 +580,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
       sOpt = extractModeDefaults(fx, "pal"); if (sOpt >= 0) setPalette(sOpt); //else setPalette(0);
     }
     sOpt = extractModeDefaults(fx, "pal"); // always extract 'pal' to set _default_palette
-    if(sOpt == 0 || sOpt == 255) sOpt = 6; // partycolors if zero or not set (=255)
+    if(sOpt <= 0) sOpt = 6; // partycolors if zero or not set
     _default_palette = sOpt; // _deault_palette is loaded into pal0 in loadPalette() (if selected)
     markForReset();
     stateChanged = true; // send UDP/WS broadcast
