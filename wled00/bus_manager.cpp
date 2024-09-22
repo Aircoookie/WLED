@@ -876,8 +876,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
 
-  HUB75_I2S_CFG::i2s_pins _pins={ 42, 41, 40, 38, 39, 37,  45, 36, 48, 35, 21, 47, 14, 2 }; 
-
+  mxconfig.gpio = { 42, 41, 40, 38, 39, 37,  45, 36, 48, 35, 21, 47, 14, 2 }; 
 
 #elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
 
@@ -891,7 +890,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
     Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
 */
 
- HUB75_I2S_CFG::i2s_pins _pins={ 2, 15, 4, 16, 27, 17, 5, 18, 19, 21, 12, 26, 25, 22 }; 
+ mxconfig.gpio = { 2, 15, 4, 16, 27, 17, 5, 18, 19, 21, 12, 26, 25, 22 }; 
 
 #else
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Default pins");
@@ -904,37 +903,24 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
    https://www.electrodragon.com/product/rgb-matrix-panel-drive-interface-board-for-esp32-dma/
    
   */
- HUB75_I2S_CFG::i2s_pins _pins={ 25, 26, 27, 14, 12, 13, 23, 9, 5, 17, 18, 4, 15, 16 }; 
+ mxconfig.gpio = { 25, 26, 27, 14, 12, 13, 23, 9, 5, 17, 18, 4, 15, 16 }; 
 
 #endif
 
-  mxconfig.gpio = _pins;
+  int8_t pins[14];
+  memcpy(pins, &mxconfig.gpio, sizeof(mxconfig.gpio));
+  pinManager.allocateMultiplePins(pins, 14, PinOwner::HUB75, true);
 
   DEBUG_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
+  DEBUG_PRINTF("R1_PIN=%u, G1_PIN=%u, B1_PIN=%u, R2_PIN=%u, G2_PIN=%u, B2_PIN=%u, A_PIN=%u, B_PIN=%u, C_PIN=%u, D_PIN=%u, E_PIN=%u, LAT_PIN=%u, OE_PIN=%u, CLK_PIN=%u\n",
+                mxconfig.gpio.r1, mxconfig.gpio.g1, mxconfig.gpio.b1, mxconfig.gpio.r2, mxconfig.gpio.g2, mxconfig.gpio.b2,
+                mxconfig.gpio.a, mxconfig.gpio.b, mxconfig.gpio.c, mxconfig.gpio.d, mxconfig.gpio.e, mxconfig.gpio.lat, mxconfig.gpio.oe, mxconfig.gpio.clk);
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
 
   this->_len = (display->width() * display->height());
   DEBUG_PRINTF("Length: %u\n", _len);
-
-  // TODO: try and swap _pins to a array so we can use allocateMultiplePins
-  pinManager.allocatePin(mxconfig.gpio.r1, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.g1, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.b1, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.r2, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.g2, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.b2, true, PinOwner::HUB75);
-
-  pinManager.allocatePin(mxconfig.gpio.lat, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.oe, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.clk, true, PinOwner::HUB75);
-
-  pinManager.allocatePin(mxconfig.gpio.a, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.b, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.c, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.d, true, PinOwner::HUB75);
-  pinManager.allocatePin(mxconfig.gpio.e, true, PinOwner::HUB75);
 
   // display->setLatBlanking(4);
 
@@ -1096,24 +1082,9 @@ void BusHub75Matrix::cleanup() {
 }
 
 void BusHub75Matrix::deallocatePins() {
-
-  pinManager.deallocatePin(mxconfig.gpio.r1, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.g1, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.b1, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.r2, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.g2, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.b2, PinOwner::HUB75);
-
-  pinManager.deallocatePin(mxconfig.gpio.lat, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.oe, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.clk, PinOwner::HUB75);
-
-  pinManager.deallocatePin(mxconfig.gpio.a, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.b, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.c, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.d, PinOwner::HUB75);
-  pinManager.deallocatePin(mxconfig.gpio.e, PinOwner::HUB75);
-
+  uint8_t pins[14];
+  memcpy(pins, &mxconfig.gpio, sizeof(mxconfig.gpio));
+  pinManager.deallocateMultiplePins(pins, 14, PinOwner::HUB75);
 }
 
 std::vector<LEDType> BusHub75Matrix::getLEDTypes() {
