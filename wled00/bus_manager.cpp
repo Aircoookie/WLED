@@ -873,20 +873,15 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 #if defined(ARDUINO_ADAFRUIT_MATRIXPORTAL_ESP32S3) // MatrixPortal ESP32-S3
 
   // https://www.adafruit.com/product/5778
-
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
-
   mxconfig.gpio = { 42, 41, 40, 38, 39, 37,  45, 36, 48, 35, 21, 47, 14, 2 }; 
 
 #elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
 
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA - ESP32_FORUM_PINOUT");
-
 /*
     ESP32 with SmartMatrix's default pinout - ESP32_FORUM_PINOUT
-    
     https://github.com/pixelmatix/SmartMatrix/blob/teensylc/src/MatrixHardware_ESP32_V0.h
-
     Can use a board like https://github.com/rorosaurus/esp32-hub75-driver
 */
 
@@ -921,8 +916,6 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   this->_len = (display->width() * display->height());
   DEBUG_PRINTF("Length: %u\n", _len);
-
-  // display->setLatBlanking(4);
 
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA created");
   // let's adjust default brightness
