@@ -256,11 +256,11 @@ CHSV rgb2hsv(const uint32_t rgb) // convert rgb to hsv, more accurate and faster
     minval = min(minval, b);
     maxval = max(r, g);
     maxval = max(maxval, b);
-    if (maxval == 0)  return; // black
+    if (maxval == 0)  return hsv; // black
     hsv.v = maxval;
     delta = maxval - minval;
     hsv.s = (255 * delta) / maxval;
-    if (hsv.s == 0)  return; // gray value
+    if (hsv.s == 0)  return hsv; // gray value
     int32_t h; //calculate hue
     if (maxval == r)
         h = (43 * (g - b)) / delta;
@@ -268,6 +268,7 @@ CHSV rgb2hsv(const uint32_t rgb) // convert rgb to hsv, more accurate and faster
     else  h = 171 + (43 * (r - g)) / delta;
     if(h < 0) h += 256;
     hsv.h = h;
+    return hsv;
 }
 
 //get RGB values from color temperature in K (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)
