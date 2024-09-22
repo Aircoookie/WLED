@@ -832,7 +832,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   if(bc.type == TYPE_HUB75MATRIX_HS) {
       mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]);
-      mxconfig.mx_height = 32; // TODO - bad value bc.pins[1];  
+      mxconfig.mx_height = min((u_int8_t) 64, bc.pins[1]);
   }
   else if(bc.type == TYPE_HUB75MATRIX_QS) {
       mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]) * 2;
@@ -860,7 +860,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   }  
 
 
-  mxconfig.chain_length = 1; //max((u_int8_t) 1, min(bc.pins[2], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
+  mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[2], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
 
   if(mxconfig.mx_height >= 64 && (mxconfig.chain_length > 1)) {
     DEBUG_PRINTLN("WARNING, only single panel can be used of 64 pixel boards due to memory");
@@ -916,6 +916,10 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   this->_len = (display->width() * display->height());
   DEBUG_PRINTF("Length: %u\n", _len);
+  if(this->_len >= MAX_LEDS) {
+    DEBUG_PRINTLN("MatrixPanel_I2S_DMA Too many LEDS - playing safe");
+    return;
+  }
 
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA created");
   // let's adjust default brightness

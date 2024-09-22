@@ -312,7 +312,13 @@
 				}
 				// do we have led pins for digital leds
 				if (nm=="L0" || nm=="L1") {
-					d.Sf["LC"+n].max = maxPB; // update max led count value
+					if (!isHub75(t)) {
+						d.Sf["LC"+n].max = maxPB; // update max led count value
+					}
+					else {
+						d.Sf["LC"+n].min = undefined;
+						d.Sf["LC"+n].max = undefined;
+					}
 				}
 				// ignore IP address (stored in pins for virtual busses)
 				if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
