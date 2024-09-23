@@ -34,9 +34,9 @@ uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16)
 /*
  * color add function that preserves ratio
  * original idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
- * heavily optimized for speed by @dedehai
+ * speed optimisations by @dedehai
  */
-uint32_t color_add(uint32_t c1, uint32_t c2, bool desat)
+uint32_t color_add(uint32_t c1, uint32_t c2, bool preserveCR)
 {
   if (c1 == BLACK) return c2;
   if (c2 == BLACK) return c1;
@@ -47,21 +47,21 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool desat)
   uint32_t w = wg >> 16;
   uint32_t g = wg & 0xFFFF;
 
-  if(desat) { // desaturate
-    unsigned max = r; // check for overflow note
-    max = g > max ? g : max;
-    max = b > max ? b : max;
-    max = w > max ? w : max;
-
+  if (preserveCR) { // preserve color ratios
+    unsigned max = std::max(r,g); // check for overflow note
+    max = std::max(max,b);
+    max = std::max(max,w);
+    //unsigned max = r; // check for overflow note
+    //max = g > max ? g : max;
+    //max = b > max ? b : max;
+    //max = w > max ? w : max;
     if (max > 255) {
       uint32_t scale = (uint32_t(255)<<8) / max; // division of two 8bit (shifted) values does not work -> use bit shifts and multiplaction instead
       rb = ((rb * scale) >> 8) & 0x00FF00FF; //
       wg = (wg * scale) & 0xFF00FF00;
-    }
-    else wg = wg << 8; //shift white and green back to correct position
+    } else wg = wg << 8; //shift white and green back to correct position
     return rb | wg;
-  }
-  else {
+  } else {
     r = r > 255 ? 255 : r;
     g = g > 255 ? 255 : g;
     b = b > 255 ? 255 : b;
@@ -106,20 +106,20 @@ CRGB ColorFromPaletteWLED(const CRGBPalette16& pal, unsigned index, uint8_t brig
     unsigned red1   = entry->r;
     unsigned green1 = entry->g;
     unsigned blue1  = entry->b;
-    if(blendType != NOBLEND) {
-        if(hi4 == 15) entry = &(pal[0]);
-        else ++entry;
-        unsigned f2 = ((index & 0x0F) << 4) + 1; // +1 so we scale by 256 as a max value, then result can just be shifted by 8
-        unsigned f1 = (257 - f2); // f2 is 1 minimum, so this is 256 max
-        red1   = (red1 * f1 + (unsigned)entry->r * f2) >> 8;
-        green1 = (green1 * f1 + (unsigned)entry->g * f2) >> 8;
-        blue1  = (blue1 * f1 + (unsigned)entry->b * f2) >> 8;
+    if (blendType != NOBLEND) {
+      if (hi4 == 15) entry = &(pal[0]);
+      else ++entry;
+      unsigned f2 = ((index & 0x0F) << 4) + 1; // +1 so we scale by 256 as a max value, then result can just be shifted by 8
+      unsigned f1 = (257 - f2); // f2 is 1 minimum, so this is 256 max
+      red1   = (red1 * f1 + (unsigned)entry->r * f2) >> 8;
+      green1 = (green1 * f1 + (unsigned)entry->g * f2) >> 8;
+      blue1  = (blue1 * f1 + (unsigned)entry->b * f2) >> 8;
     }
-    if( brightness < 255) { // note: zero checking could be done to return black but that is hardly ever used so it is omitted
-          uint32_t scale = brightness + 1; // adjust for rounding (bitshift)
-          red1   = (red1 * scale) >> 8;
-          green1 = (green1 * scale) >> 8;
-          blue1  = (blue1 * scale) >> 8;
+    if (brightness < 255) { // note: zero checking could be done to return black but that is hardly ever used so it is omitted
+      uint32_t scale = brightness + 1; // adjust for rounding (bitshift)
+      red1   = (red1 * scale) >> 8;
+      green1 = (green1 * scale) >> 8;
+      blue1  = (blue1 * scale) >> 8;
     }
     return CRGB((uint8_t)red1, (uint8_t)green1, (uint8_t)blue1);
 }
@@ -485,7 +485,7 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
   }
 }
 
-//gamma 2.8 lookup table used for color correction
+// gamma lookup table used for color correction (filled on 1st use (cfg.cpp & set.cpp))
 uint8_t NeoGammaWLEDMethod::gammaT[256];
 
 // re-calculates & fills gamma table

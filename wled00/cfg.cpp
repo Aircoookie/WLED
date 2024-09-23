@@ -437,9 +437,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (light_gc_col > 1.0f) gammaCorrectCol = true;
   else                     gammaCorrectCol = false;
   if (gammaCorrectVal <= 1.0f || gammaCorrectVal > 3) {
-  gammaCorrectVal = 1.0f; // no gamma correction
-  gammaCorrectBri = false;
-  gammaCorrectCol = false;
+    gammaCorrectVal = 1.0f; // no gamma correction
+    gammaCorrectBri = false;
+    gammaCorrectCol = false;
   }
   NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal); // fill look-up table
 

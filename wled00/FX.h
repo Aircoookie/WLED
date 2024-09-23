@@ -56,6 +56,9 @@
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 #endif
 
+extern bool realtimeRespectLedMaps; // used in getMappedPixelIndex()
+extern byte realtimeMode;           // used in getMappedPixelIndex()
+
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
@@ -596,9 +599,9 @@ typedef struct Segment {
     void fadeToBlackBy(uint8_t fadeBy);
     inline void blendPixelColor(int n, uint32_t color, uint8_t blend)    { setPixelColor(n, color_blend(getPixelColor(n), color, blend)); }
     inline void blendPixelColor(int n, CRGB c, uint8_t blend)            { blendPixelColor(n, RGBW32(c.r,c.g,c.b,0), blend); }
-    inline void addPixelColor(int n, uint32_t color, bool saturate = false) { setPixelColor(n, color_add(getPixelColor(n), color, saturate)); }
-    inline void addPixelColor(int n, byte r, byte g, byte b, byte w = 0, bool saturate = false) { addPixelColor(n, RGBW32(r,g,b,w), saturate); }
-    inline void addPixelColor(int n, CRGB c, bool saturate = false)                             { addPixelColor(n, RGBW32(c.r,c.g,c.b,0), saturate); }
+    inline void addPixelColor(int n, uint32_t color, bool preserveCR = true)                     { setPixelColor(n, color_add(getPixelColor(n), color, preserveCR)); }
+    inline void addPixelColor(int n, byte r, byte g, byte b, byte w = 0, bool preserveCR = true) { addPixelColor(n, RGBW32(r,g,b,w), preserveCR); }
+    inline void addPixelColor(int n, CRGB c, bool preserveCR = true)                             { addPixelColor(n, RGBW32(c.r,c.g,c.b,0), preserveCR); }
     inline void fadePixelColor(uint16_t n, uint8_t fade)                 { setPixelColor(n, color_fade(getPixelColor(n), fade, true)); }
     [[gnu::hot]] uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255) const;
     [[gnu::hot]] uint32_t color_wheel(uint8_t pos) const;
@@ -633,9 +636,9 @@ typedef struct Segment {
     // 2D support functions
     inline void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) { setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend)); }
     inline void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)         { blendPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), blend); }
-    inline void addPixelColorXY(int x, int y, uint32_t color, bool saturate = false)        { setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color, saturate)); }
-    inline void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0, bool saturate = false)        { addPixelColorXY(x, y, RGBW32(r,g,b,w), saturate); }
-    inline void addPixelColorXY(int x, int y, CRGB c, bool saturate = false)                { addPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), saturate); }
+    inline void addPixelColorXY(int x, int y, uint32_t color, bool preserveCR = true)                     { setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color, preserveCR)); }
+    inline void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0, bool preserveCR = true) { addPixelColorXY(x, y, RGBW32(r,g,b,w), preserveCR); }
+    inline void addPixelColorXY(int x, int y, CRGB c, bool preserveCR = true)                             { addPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), preserveCR); }
     inline void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)                   { setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), fade, true)); }
     void box_blur(unsigned r = 1U, bool smear = false); // 2D box blur
     void blur2D(uint8_t blur_amount, bool smear = false);
@@ -837,13 +840,16 @@ class WS2812FX {  // 96 bytes
     uint16_t
       getLengthPhysical() const,
       getLengthTotal() const, // will include virtual/nonexistent pixels in matrix
-      getFps() const,
-      getMappedPixelIndex(uint16_t index) const;
+      getFps() const;
 
     inline uint16_t getFrameTime() const    { return _frametime; }        // returns amount of time a frame should take (in ms)
     inline uint16_t getMinShowDelay() const { return MIN_SHOW_DELAY; }    // returns minimum amount of time strip.service() can be delayed (constant)
     inline uint16_t getLength() const       { return _length; }           // returns actual amount of LEDs on a strip (2D matrix may have less LEDs than W*H)
     inline uint16_t getTransition() const   { return _transitionDur; }    // returns currently set transition time (in ms)
+    inline uint16_t getMappedPixelIndex(uint16_t index) const {           // convert logical address to physical
+      if (index < customMappingSize && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
+      return index;
+    };
 
     uint32_t
       now,

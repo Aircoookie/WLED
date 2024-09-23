@@ -628,13 +628,7 @@ uint16_t IRAM_ATTR Segment::virtualHeight() const {
 uint16_t IRAM_ATTR_YN Segment::nrOfVStrips() const {
   unsigned vLen = 1;
 #ifndef WLED_DISABLE_2D
-  if (is2D()) {
-    switch (map1D2D) {
-      case M12_pBar:
-        vLen = virtualWidth();
-        break;
-    }
-  }
+  if (is2D() && map1D2D == M12_pBar) vLen = virtualWidth();
 #endif
   return vLen;
 }
@@ -710,17 +704,21 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
 
 void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 {
-  if (!isActive()) return; // not active
+  if (!isActive() || i < 0) return; // not active or invalid index
 #ifndef WLED_DISABLE_2D
   int vStrip = 0;
 #endif
-  if (i >= virtualLength() || i<0) // pixel would fall out of segment, check if this is a virtual strip NOTE: this is almost always false if not virtual strip, saves the calculation on 'standard' call
-  {
+  // if the 1D effect is using virtual strips "i" will have virtual strip id stored in upper 16 bits
+  // in such case "i" will be > virtualLength()
+  if (i >= virtualLength()) {
+    // check if this is a virtual strip
     #ifndef WLED_DISABLE_2D
     vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
+    i &= 0xFFFF;    //truncate vstrip index
+    if (i >= virtualLength()) return;  // if pixel would still fall out of segment just exit
+    #else
+    return;
     #endif
-    i &= 0xFFFF; //truncate vstrip index
-    if (i >= virtualLength() || i<0) return;  // if pixel would still fall out of segment just exit
   }
 
 #ifndef WLED_DISABLE_2D
@@ -734,12 +732,12 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
         break;
       case M12_pBar:
         // expand 1D effect vertically or have it play on virtual strips
-        if (vStrip>0) setPixelColorXY(vStrip - 1, vH - i - 1, col);
-        else for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col);
+        if (vStrip > 0) setPixelColorXY(vStrip - 1, vH - i - 1, col);
+        else          for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col);
         break;
       case M12_pArc:
         // expand in circular fashion from center
-        if (i==0)
+        if (i == 0)
           setPixelColorXY(0, 0, col);
         else {
           float r = i;
@@ -910,9 +908,6 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
 {
   if (!isActive()) return 0; // not active
-#ifndef WLED_DISABLE_2D
-  int vStrip = i>>16;
-#endif  
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
@@ -922,10 +917,11 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
       case M12_Pixels:
         return getPixelColorXY(i % vW, i / vW);
         break;
-      case M12_pBar:
-        if (vStrip>0) { i &= 0xFFFF; return getPixelColorXY(vStrip - 1, vH - i -1); }
-        else          return getPixelColorXY(0, vH - i -1);
-        break;
+      case M12_pBar: {
+        int vStrip = i>>16; // virtual strips are only relevant in Bar expansion mode
+        if (vStrip > 0) return getPixelColorXY(vStrip - 1, vH - (i & 0xFFFF) -1);
+        else            return getPixelColorXY(0, vH - i -1);
+        break; }
       case M12_pArc:
         if (i >= vW && i >= vH) {
           unsigned vI = sqrt16(i*i/2);
@@ -1882,14 +1878,6 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   releaseJSONBufferLock();
   return (customMappingSize > 0);
-}
-
-__attribute__ ((always_inline)) inline uint16_t WS2812FX::getMappedPixelIndex(uint16_t index) const {
-  // convert logical address to physical
-  if (index < customMappingSize
-    && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
-
-  return index;
 }
 
 
