@@ -73,7 +73,7 @@ class UsermodTemperature : public Usermod {
     void publishHomeAssistantAutodiscovery();
 #endif
 
-    static UsermodTemperature* _instance; // to overcome nonstatic getTemperatureC() method and avoid usermods.lookup(USERMOD_ID_TEMPERATURE);
+    static UsermodTemperature* _instance; // to overcome nonstatic getTemperatureC() method and avoid UsermodManager::lookup(USERMOD_ID_TEMPERATURE);
 
   public:
 
@@ -223,14 +223,14 @@ void UsermodTemperature::setup() {
     // config says we are enabled
     DEBUG_PRINTLN(F("Allocating temperature pin..."));
     // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-    if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
+    if (temperaturePin >= 0 && PinManager::allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
       oneWire = new OneWire(temperaturePin);
       if (oneWire->reset()) {
         while (!findSensor() && retries--) {
           delay(25); // try to find sensor
         }
       }
-      if (parasite && pinManager.allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
+      if (parasite && PinManager::allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
         pinMode(parasitePin, OUTPUT);
         digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
       } else {
@@ -423,9 +423,9 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
       DEBUG_PRINTLN(F("Re-init temperature."));
       // deallocate pin and release memory
       delete oneWire;
-      pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
+      PinManager::deallocatePin(temperaturePin, PinOwner::UM_Temperature);
       temperaturePin = newTemperaturePin;
-      pinManager.deallocatePin(parasitePin, PinOwner::UM_Temperature);
+      PinManager::deallocatePin(parasitePin, PinOwner::UM_Temperature);
       // initialise
       setup();
     }
@@ -461,13 +461,13 @@ const char UsermodTemperature::_domoticzIDX[]  PROGMEM = "domoticz-idx";
 const char UsermodTemperature::_sensor[]       PROGMEM = "sensor";
 const char UsermodTemperature::_temperature[]  PROGMEM = "temperature";
 const char UsermodTemperature::_Temperature[]  PROGMEM = "/temperature";
-const char UsermodTemperature::_data_fx[]      PROGMEM = "Temperature@Min,Max;;!;01;pal=54";
+const char UsermodTemperature::_data_fx[]      PROGMEM = "Temperature@Min,Max;;!;01;pal=54,sx=255,ix=0";
 
 static uint16_t mode_temperature() {
-  float low  = mapf((float)SEGMENT.speed, 0.f, 255.f, -150.f, 149.9f);    // default: 0°C, range: -15°C to 15°C
-  float high = mapf((float)SEGMENT.intensity, 0.f, 255.f, 150.f, 450.f);  // default: 30°C, range 15°C to 45°C
-  float temp = constrain(UsermodTemperature::getInstance()->getTemperatureC()*10.f, low, high);   // get a little better resolution
-  unsigned i = map(temp, (unsigned)low, (unsigned)high, 0, 255);
+  float low  = roundf(mapf((float)SEGMENT.speed, 0.f, 255.f, -150.f, 150.f));    // default: 15°C, range: -15°C to 15°C
+  float high = roundf(mapf((float)SEGMENT.intensity, 0.f, 255.f, 300.f, 600.f));  // default: 30°C, range 30°C to 60°C
+  float temp = constrain(UsermodTemperature::getInstance()->getTemperatureC()*10.f, low, high);   // get a little better resolution (*10)
+  unsigned i = map(roundf(temp), (unsigned)low, (unsigned)high, 0, 248);
   SEGMENT.fill(SEGMENT.color_from_palette(i, false, false, 255));
   return FRAMETIME;
 }

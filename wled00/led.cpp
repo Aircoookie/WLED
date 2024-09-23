@@ -126,7 +126,7 @@ void stateUpdated(byte callMode) {
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
 
   // notify usermods of state change
-  usermods.onStateChange(callMode);
+  UsermodManager::onStateChange(callMode);
 
   if (strip.getTransition() == 0) {
     jsonTransitionOnce = false;

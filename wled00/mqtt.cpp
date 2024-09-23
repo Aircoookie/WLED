@@ -45,7 +45,7 @@ static void onMqttConnect(bool sessionPresent)
     mqtt->subscribe(subuf, 0);
   }
 
-  usermods.onMqttConnect(sessionPresent);
+  UsermodManager::onMqttConnect(sessionPresent);
 
   DEBUG_PRINTLN(F("MQTT ready"));
   publishMqtt();
@@ -89,7 +89,7 @@ static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProp
       topic += topicPrefixLen;
     } else {
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
-      usermods.onMqttMessage(topic, payloadStr);
+      UsermodManager::onMqttMessage(topic, payloadStr);
       delete[] payloadStr;
       payloadStr = nullptr;
       return;
@@ -115,7 +115,7 @@ static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProp
     }
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
-    usermods.onMqttMessage(topic, payloadStr);
+    UsermodManager::onMqttMessage(topic, payloadStr);
   } else {
     // topmost topic (just wled/MAC)
     parseMQTTBriPayload(payloadStr);

@@ -489,7 +489,7 @@ void RotaryEncoderUIUsermod::setup()
       enabled = false;
       return;
     } else {
-      if (pinIRQ >= 0 && pinManager.allocatePin(pinIRQ, false, PinOwner::UM_RotaryEncoderUI)) {
+      if (pinIRQ >= 0 && PinManager::allocatePin(pinIRQ, false, PinOwner::UM_RotaryEncoderUI)) {
         pinMode(pinIRQ, INPUT_PULLUP);
         attachInterrupt(pinIRQ, i2cReadingISR, FALLING); // RISING, FALLING, CHANGE, ONLOW, ONHIGH
         DEBUG_PRINTLN(F("Interrupt attached."));
@@ -502,7 +502,7 @@ void RotaryEncoderUIUsermod::setup()
     }
   } else {
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
-    if (pinA<0 || pinB<0 || !pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
+    if (pinA<0 || pinB<0 || !PinManager::allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       pinA = pinB = pinC = -1;
       enabled = false;
       return;
@@ -525,7 +525,7 @@ void RotaryEncoderUIUsermod::setup()
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   // This Usermod uses FourLineDisplayUsermod for the best experience.
   // But it's optional. But you want it.
-  display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
+  display = (FourLineDisplayUsermod*) UsermodManager::lookup(USERMOD_ID_FOUR_LINE_DISP);
   if (display != nullptr) {
     display->setMarkLine(1, 0);
   }
@@ -1138,14 +1138,14 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
       if (oldPcf8574) {
         if (pinIRQ >= 0) {
           detachInterrupt(pinIRQ);
-          pinManager.deallocatePin(pinIRQ, PinOwner::UM_RotaryEncoderUI);
+          PinManager::deallocatePin(pinIRQ, PinOwner::UM_RotaryEncoderUI);
           DEBUG_PRINTLN(F("Deallocated old IRQ pin."));
         }
         pinIRQ = newIRQpin<100 ? newIRQpin : -1; // ignore PCF8574 pins
       } else {
-        pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
-        pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
-        pinManager.deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
+        PinManager::deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
+        PinManager::deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
+        PinManager::deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
         DEBUG_PRINTLN(F("Deallocated old pins."));
       }
       pinA = newDTpin;

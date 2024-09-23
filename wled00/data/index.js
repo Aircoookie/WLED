@@ -3207,7 +3207,7 @@ function simplifyUI() {
 	createDropdown("palw", "Change palette");
 	createDropdown("fx", "Change effect", [gId("fxFind"), gId("fxlist")]);
 
-	// Hide pallete label
+	// Hide palette label
 	gId("pall").style.display = "none";
 	gId("Colors").insertBefore(document.createElement("br"), gId("pall"));
 	// Hide effect label

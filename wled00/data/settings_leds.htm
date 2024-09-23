@@ -4,20 +4,12 @@
 	<meta charset="utf-8">
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>LED Settings</title>
+	<script src="common.js" async type="text/javascript"></script>
 	<script>
-		var d=document,laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var oMaxB=1;
-		d.ledTypes = [/*{i:22,c:1,t:"D",n:"WS2812"},{i:42,c:6,t:"AA",n:"PWM CCT"}*/]; // filled from GetV()
-		d.um_p = [];
-		d.rsvd = [];
-		d.ro_gpio = [];
-		d.max_gpio = 50;
 		var customStarts=false,startsDirty=[];
-		var loc = false, locip, locproto = "http:";
-		function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
-		function B(){window.open(getURL("/settings"),"_self");}
-		function gId(n){return d.getElementById(n);}
-		function off(n){d.getElementsByName(n)[0].value = -1;}
+		function off(n)    { gN(n).value = -1;}
 		// these functions correspond to C macros found in const.h
 		function gT(t)     { for (let type of d.ledTypes) if (t == type.i) return type; } // getType from available ledTypes
 		function isPWM(t)  { return gT(t).t.charAt(0) === "A"; }    // is PWM type
@@ -30,38 +22,24 @@
 		function hasW(t)   { return !!(gT(t).c & 0x02); }           // has white channel
 		function hasCCT(t) { return !!(gT(t).c & 0x04); }           // is white CCT enabled
 		function is16b(t)  { return !!(gT(t).c & 0x10); }           // is digital 16 bit type
+		function mustR(t)  { return !!(gT(t).c & 0x20); }           // Off refresh is mandatory
 		function numPins(t){ return Math.max(gT(t).t.length, 1); }  // type length determines number of GPIO pins
-		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
-		function loadJS(FILE_URL, async = true) {
-			let scE = d.createElement("script");
-			scE.setAttribute("src", FILE_URL);
-			scE.setAttribute("type", "text/javascript");
-			scE.setAttribute("async", async);
-			d.body.appendChild(scE);
-			// success event 
-			scE.addEventListener("load", () => {
-				GetV();
+		function S() {
+			getLoc();
+			loadJS(getURL('/settings/s.js?p=2'), false, ()=>{
+				d.ledTypes = [/*{i:22,c:1,t:"D",n:"WS2812"},{i:42,c:6,t:"AA",n:"PWM CCT"}*/]; // filled from GetV()
+				d.um_p = [];
+				d.rsvd = [];
+				d.ro_gpio = [];
+				d.max_gpio = 50;
+			}, ()=>{
 				checkSi();
 				setABL();
 				d.Sf.addEventListener("submit", trySubmit);
 				if (d.um_p[0]==-1) d.um_p.shift();
 				pinDropdowns();
-			});
-			// error event
-			scE.addEventListener("error", (ev) => {
-				console.log("Error on loading file", ev);
-				alert("Loading of configuration script failed.\nIncomplete page data!");
-			});
-		}
-		var timeout;
-		function showToast(text, error = false)
-		{
-			var x = gId("toast");
-			x.innerHTML = text;
-			x.className = error ? "error":"show";
-			clearTimeout(timeout);
-			x.style.animation = 'none';
-			timeout = setTimeout(()=>{ x.className = x.className.replace("show", ""); }, 2900);
+			});	// If we set async false, file is loaded and executed, then next statement is processed
+			if (loc) d.Sf.action = getURL('/settings/leds');
 		}
 		function bLimits(b,v,p,m,l,o=5,d=2,a=6) {
 			// maxB - max buses (can be changed if using ESP32 parallel I2S)
@@ -278,7 +256,7 @@
 					d.Sf["LA"+n].min = (isVir(t) || isAna(t)) ? 0 : 1;
 					d.Sf["MA"+n].min = (isVir(t) || isAna(t)) ? 0 : 250;
 				}
-				gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});          // prevent change for TM1814
+				gId("rf"+n).onclick = mustR(t) ? (()=>{return false}) : (()=>{});           // prevent change change of "Refresh" checkmark when mandatory
 				gRGBW |= hasW(t);                                                           // RGBW checkbox
 				gId("co"+n).style.display = (isVir(t) || isAna(t)) ? "none":"inline";       // hide color order for PWM
 				gId("dig"+n+"w").style.display = (isDig(t) && hasW(t)) ? "inline":"none";   // show swap channels dropdown
@@ -403,7 +381,7 @@
 		}
 		function addLEDs(n,init=true)
 		{
-			var o = d.getElementsByClassName("iST");
+			var o = gEBCN("iST");
 			var i = o.length;
 			let disable = (sel,opt) => { sel.querySelectorAll(opt).forEach((o)=>{o.disabled=true;}); }
 
@@ -465,10 +443,10 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
 				// fill led types (credit @netmindz)
-				d.Sf.querySelectorAll("#mLC select[name^=LT]").forEach((sel,n)=>{
+				f.querySelectorAll("select[name^=LT]").forEach((sel,n)=>{
 					if (sel.length == 0) { // ignore already updated
 						for (let type of d.ledTypes) {
-							let opt = d.createElement("option");
+							let opt = cE("option");
 							opt.value = type.i;
 							opt.text = type.n;
 							if (type.t != undefined && type.t != "") {
@@ -480,9 +458,9 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 				});
 				// disable inappropriate LED types
 				let sel = d.getElementsByName("LT"+s)[0]
-				if (i >= maxB || digitalB >= maxD) disable(sel,'option[data-type="D"]');
-				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]');
-				disable(sel,`option[data-type^="${'A'.repeat(maxA-analogB+1)}"]`);
+				if (i >= maxB || digitalB >= maxD) disable(sel,'option[data-type="D"]'); // NOTE: see isDig()
+				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]'); // NOTE: see isD2P()
+				disable(sel,`option[data-type^="${'A'.repeat(maxA-analogB+1)}"]`); // NOTE: see isPWM()
 				sel.selectedIndex = sel.querySelector('option:not(:disabled)').index;
 			}
 			if (n==-1) {
@@ -499,7 +477,7 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 		}
 
 		function addCOM(start=0,len=1,co=0) {
-			var i = d.getElementsByClassName("com_entry").length;
+			var i = gEBCN("com_entry").length;
 			if (i >= maxCO) return;
 			var s = String.fromCharCode((i<10?48:55)+i);
 			var b = `<div class="com_entry">
@@ -530,7 +508,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		}
 
 		function remCOM() {
-			var entries = d.getElementsByClassName("com_entry");
+			var entries = gEBCN("com_entry");
 			var i = entries.length;
 			if (i === 0) return;
 			entries[i-1].remove();
@@ -542,7 +520,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 			if (_newMaxCOOverrides) {
 				maxCO = _newMaxCOOverrides;
 			}
-			for (let e of d.getElementsByClassName("com_entry")) {
+			for (let e of gEBCN("com_entry")) {
 				e.remove();
 			}
 			btnCOM(0);
@@ -578,24 +556,13 @@ Swap: <select id="xw${s}" name="XW${s}">
 		}
 		function checkSi() { //on load, checks whether there are custom start fields
 			var cs = false;
-			for (var i=1; i < d.getElementsByClassName("iST").length; i++) {
-				var v = parseInt(gId("ls"+(i-1)).value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
+			for (var i=1; i < gEBCN("iST").length; i++) {
+				var v = parseInt(gId("ls"+(i-1)).value) + parseInt(gN("LC"+(i-1)).value);
 				if (v != parseInt(gId("ls"+i).value)) {cs = true; startsDirty[i] = true;}
 			}
 			if (gId("ls0") && parseInt(gId("ls0").value) != 0) {cs = true; startsDirty[0] = true;}
 			gId("si").checked = cs;
 			tglSi(cs);
-		}
-		function uploadFile(name) {
-			var req = new XMLHttpRequest();
-			req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
-			req.addEventListener('error', function(e){showToast(e.stack,true);});
-			req.open("POST", "/upload");
-			var formData = new FormData();
-			formData.append("data", d.Sf.data.files[0], name);
-			req.send(formData);
-			d.Sf.data.value = '';
-			return false;
 		}
 		// https://stackoverflow.com/questions/7346563/loading-local-json-file
 		function loadCfg(o) {
@@ -725,7 +692,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		}
 		// https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
 		function addDropdown(field) {
-			let sel = d.createElement('select');
+			let sel = cE('select');
 			sel.classList.add("pin");
 			let inp = d.getElementsByName(field)[0];
 			if (inp && inp.tagName === "INPUT" && (inp.type === "text" || inp.type === "number")) {  // may also use nodeName
@@ -750,7 +717,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		}
 		function addOption(sel,txt,val) {
 			if (sel===null) return; // select object missing
-			let opt = d.createElement("option");
+			let opt = cE("option");
 			opt.value = val;
 			opt.text = txt;
 			sel.appendChild(opt);
@@ -760,40 +727,13 @@ Swap: <select id="xw${s}" name="XW${s}">
 			}
 			return opt;
 		}
-		function S() {
-			let l = window.location;
-			if (l.protocol == "file:") {
-				loc = true;
-				locip = localStorage.getItem('locIp');
-				if (!locip) {
-					locip = prompt("File Mode. Please enter WLED IP!");
-					localStorage.setItem('locIp', locip);
-				}
-			} else {
-				// detect reverse proxy
-				let path = l.pathname;
-				let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
-				if (paths.length > 2) {
-					paths.pop(); // remove "leds"
-					paths.pop(); // remove "settings"
-					locproto = l.protocol;
-					loc = true;
-					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
-				}
-			}
-			loadJS(getURL('/settings/s.js?p=2'), false);	// If we set async false, file is loaded and executed, then next statement is processed
-			if (loc) d.Sf.action = getURL('/settings/leds');
-		}
-		function getURL(path) {
-			return (loc ? locproto + "//" + locip : "") + path;
-		}
 	</script>
 	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
 		<div class="toprow">
-		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<div class="helpB"><button type="button" onclick="H('features/settings/#led-settings')">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 		</div>
 		<h2>LED &amp; Hardware setup</h2>
@@ -861,7 +801,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<option value=8>JSON remote</option>
 		</select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#x2715;</span><br>
 		Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
-		<div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
+		<div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile(d.Sf.data,'/ir.json')">Upload</button><br></div>
 		<a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
 		<hr class="sml">
 		Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>

@@ -68,3 +68,6 @@ bool UsermodManager::add(Usermod* um)
   ums[numMods++] = um;
   return true;
 }
+
+Usermod* UsermodManager::ums[WLED_MAX_USERMODS] = {nullptr};
+byte UsermodManager::numMods = 0;
