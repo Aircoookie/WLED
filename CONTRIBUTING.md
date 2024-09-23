@@ -16,6 +16,20 @@ A good description helps us to review and understand your proposed changes. For 
 
 Please make all PRs against the `0_15` branch.
 
+### Updating your code
+While the PR is open - and under review by maintainers - you may be asked to modify your PR source code.
+You can simply update your own branch, and push changes in response to reviewer recommendations. 
+Github will pick up the changes so your PR stays up-to-date.
+
+> [!CAUTION]
+> Do not use "force-push" while your PR is open!
+> It has many subtle and unexpected consequences on our github reposistory.
+> For example, we regularly lost review comments when the PR author force-pushes code changes. So, pretty please, do not force-push.
+
+
+You can find a collection of very useful tips and tricks here: https://github.com/Aircoookie/WLED/wiki/How-to-properly-submit-a-PR
+
+
 ### Code style
 
 When in doubt, it is easiest to replicate the code style you find in the files you want to edit :)
@@ -38,15 +52,17 @@ if (a == b) {
 ```
 
 ```cpp
+if (a == b) doStuff(a);
+```
+
+Acceptable - however the first variant is usually easier to read:
+```cpp
 if (a == b)
 {
   doStuff(a);
 }
 ```
 
-```cpp
-if (a == b) doStuff(a);
-```
 
 There should always be a space between a keyword and its condition and between the condition and brace.  
 Within the condition, no space should be between the parenthesis and variables.  

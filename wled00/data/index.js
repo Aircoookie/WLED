@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip, locproto = "http:";
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false/*, syncTglRecv = true*/;
-var hasWhite = false, hasRGB = false, hasCCT = false;
+var hasWhite = false, hasRGB = false, hasCCT = false, has2D = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
 var segLmax = 0; // size (in pixels) of largest selected segment
@@ -1339,7 +1339,7 @@ function updateSelectedFx()
 				if (ds.id>0) {
 					if (segLmax==0) fx.classList.add('hide'); // none of the segments selected (hide all effects)
 					else {
-						if ((segLmax==1 && (!opts[3] || opts[3].indexOf("0")<0)) || (!isM && opts[3] && ((opts[3].indexOf("2")>=0 && opts[3].indexOf("1")<0)))) fx.classList.add('hide');
+						if ((segLmax==1 && (!opts[3] || opts[3].indexOf("0")<0)) || (!has2D && opts[3] && ((opts[3].indexOf("2")>=0 && opts[3].indexOf("1")<0)))) fx.classList.add('hide');
 						else fx.classList.remove('hide');
 					}
 				}
@@ -1441,7 +1441,7 @@ function readState(s,command=false)
 	populateSegments(s);
 	var selc=0;
 	var sellvl=0; // 0: selc is invalid, 1: selc is mainseg, 2: selc is first selected
-	hasRGB = hasWhite = hasCCT = false;
+	hasRGB = hasWhite = hasCCT = has2D = false;
 	segLmax = 0;
 	for (let i = 0; i < (s.seg||[]).length; i++)
 	{
@@ -1452,20 +1452,23 @@ function readState(s,command=false)
 		if (s.seg[i].sel) {
 			if (sellvl < 2) selc = i; // get first selected segment
 			sellvl = 2;
-			var lc = lastinfo.leds.seglc[i];
+			let w  = (s.seg[i].stop - s.seg[i].start);
+			let h  = s.seg[i].stopY ? (s.seg[i].stopY - s.seg[i].startY) : 1;
+			let lc = lastinfo.leds.seglc[i];
 			hasRGB   |= !!(lc & 0x01);
 			hasWhite |= !!(lc & 0x02);
 			hasCCT   |= !!(lc & 0x04);
-			let sLen = (s.seg[i].stop - s.seg[i].start)*(s.seg[i].stopY?(s.seg[i].stopY - s.seg[i].startY):1);
-			segLmax = segLmax < sLen ? sLen : segLmax;
+			has2D    |= w > 1 && h > 1;
+			if (w*h > segLmax) segLmax = w*h;
 		}
 	}
 	var i=s.seg[selc];
 	if (sellvl == 1) {
-		var lc = lastinfo.leds.seglc[selc];
+		let lc = lastinfo.leds.seglc[selc];
 		hasRGB   = !!(lc & 0x01);
 		hasWhite = !!(lc & 0x02);
 		hasCCT   = !!(lc & 0x04);
+		has2D    = (i.stop - i.start) > 1 && (i.stopY ? (i.stopY - i.startY) : 1) > 1;
 	}
 	if (!i) {
 		showToast('No Segments!', true);
@@ -2837,7 +2840,7 @@ function search(field, listId = null) {
 	if (gId("filters").querySelectorAll("input[type=checkbox]:checked").length) return;
 
 	// filter list items but leave (Default & Solid) always visible
-	const listItems = gId("fxlist").querySelectorAll('.lstI');
+	const listItems = gId(listId).querySelectorAll('.lstI');
 	listItems.forEach((listItem,i)=>{
 		if (listId!=='pcont' && i===0) return;
 		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
@@ -3198,7 +3201,7 @@ function simplifyUI() {
 	createDropdown("palw", "Change palette");
 	createDropdown("fx", "Change effect", [gId("fxFind"), gId("fxlist")]);
 
-	// Hide pallete label
+	// Hide palette label
 	gId("pall").style.display = "none";
 	gId("Colors").insertBefore(document.createElement("br"), gId("pall"));
 	// Hide effect label

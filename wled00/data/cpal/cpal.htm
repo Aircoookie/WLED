@@ -608,8 +608,8 @@
   }
 
   function generatePaletteDivs() {
-    const palettesDiv = d.getElementById("palettes");
-    const staticPalettesDiv = d.getElementById("staticPalettes");
+    const palettesDiv = gId("palettes");
+    const staticPalettesDiv = gId("staticPalettes");
     const paletteDivs = Array.from(palettesDiv.children).filter((child) => {
       return child.id.match(/^palette\d$/); // match only elements with id starting with "palette" followed by a single digit
     });
@@ -620,25 +620,25 @@
 
     for (let i = 0; i < paletteArray.length; i++) {
       const palette = paletteArray[i];
-      const paletteDiv = d.createElement("div");
+      const paletteDiv = cE("div");
       paletteDiv.id = `palette${i}`;
       paletteDiv.classList.add("palette");
       const thisKey = Object.keys(palette)[0];
       paletteDiv.dataset.colarray = JSON.stringify(palette[thisKey]);
 
-      const gradientDiv = d.createElement("div");
+      const gradientDiv = cE("div");
       gradientDiv.id = `paletteGradient${i}`
-      const buttonsDiv = d.createElement("div");
+      const buttonsDiv = cE("div");
       buttonsDiv.id = `buttonsDiv${i}`;
       buttonsDiv.classList.add("buttonsDiv")
 
-      const sendSpan = d.createElement("span");
+      const sendSpan = cE("span");
       sendSpan.id = `sendSpan${i}`;
       sendSpan.onclick = function() {initiateUpload(i)};
       sendSpan.setAttribute('title', `Send current editor to slot ${i}`); // perhaps Save instead of Send?
       sendSpan.innerHTML = svgSave;
       sendSpan.classList.add("sendSpan")
-      const editSpan = d.createElement("span");
+      const editSpan = cE("span");
       editSpan.id = `editSpan${i}`;
       editSpan.onclick = function() {loadForEdit(i)};
       editSpan.setAttribute('title', `Copy slot ${i} palette to editor`);

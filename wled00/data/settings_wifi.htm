@@ -4,16 +4,10 @@
   <meta charset="utf-8">
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>WiFi Settings</title>
+	<script src="common.js" async type="text/javascript"></script>
 	<script>
-		var d = document;
-		var loc = false, locip, locproto = "http:";
 		var scanLoops = 0, preScanSSID = "";
 		var maxNetworks = 3;
-		function gId(e) { return d.getElementById(e); }
-		function cE(e) { return d.createElement(e); }
-		function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
-		function H(){window.open("https://kno.wled.ge/features/settings/#wifi-settings");}
-		function B(){window.open(getURL("/settings"),"_self");}
 		function N() {
 			const button = gId("scan");
 			button.disabled = true;
@@ -137,50 +131,10 @@ Static subnet mask:<br>
 			entries[i-1].remove();
 			btnWiFi(i-1);
 		}
-		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
-		function loadJS(FILE_URL, async = true) {
-			let scE = cE("script");
-			scE.setAttribute("src", FILE_URL);
-			scE.setAttribute("type", "text/javascript");
-			scE.setAttribute("async", async);
-			d.body.appendChild(scE);
-			// success event
-			scE.addEventListener("load", () => {
-				//console.log("File loaded");
-				GetV();
-			});
-			// error event
-			scE.addEventListener("error", (ev) => {
-				console.log("Error on loading file", ev);
-				alert("Loading of configuration script failed.\nIncomplete page data!");
-			});
-		}
 		function S() {
-			let l = window.location;
-			if (l.protocol == "file:") {
-				loc = true;
-				locip = localStorage.getItem('locIp');
-				if (!locip) {
-					locip = prompt("File Mode. Please enter WLED IP!");
-					localStorage.setItem('locIp', locip);
-				}
-			} else {
-				// detect reverse proxy
-				let path = l.pathname;
-				let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
-				if (paths.length > 2) {
-					paths.pop(); // remove "wifi"
-					paths.pop(); // remove "settings"
-					locproto = l.protocol;
-					loc = true;
-					locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
-				}
-			}
+			getLoc();
 			loadJS(getURL('/settings/s.js?p=1'), false);	// If we set async false, file is loaded and executed, then next statement is processed
 			if (loc) d.Sf.action = getURL('/settings/wifi');
-		}
-		function getURL(path) {
-			return (loc ? locproto + "//" + locip : "") + path;
 		}
 	</script>
 	<style>@import url("style.css");</style>
@@ -188,7 +142,7 @@ Static subnet mask:<br>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
 		<div class="toprow">
-		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<div class="helpB"><button type="button" onclick="H('features/settings/#wifi-settings')">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button><hr>
 		</div>
 		<h2>WiFi setup</h2>

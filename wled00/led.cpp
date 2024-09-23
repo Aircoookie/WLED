@@ -29,9 +29,9 @@ void setValuesFromSegment(uint8_t s)
 void applyValuesToSelectedSegs()
 {
   // copy of first selected segment to tell if value was updated
-  uint8_t firstSel = strip.getFirstSelectedSegId();
+  unsigned firstSel = strip.getFirstSelectedSegId();
   Segment selsegPrev = strip.getSegment(firstSel);
-  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+  for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
@@ -70,7 +70,7 @@ void toggleOnOff()
 //scales the brightness with the briMultiplier factor
 byte scaledBri(byte in)
 {
-  uint16_t val = ((uint16_t)in*briMultiplier)/100;
+  unsigned val = ((uint16_t)in*briMultiplier)/100;
   if (val > 255) val = 255;
   return (byte)val;
 }
@@ -131,7 +131,7 @@ void stateUpdated(byte callMode) {
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
 
   // notify usermods of state change
-  usermods.onStateChange(callMode);
+  UsermodManager::onStateChange(callMode);
 
   if (fadeTransition) {
     if (strip.getTransition() == 0) {
@@ -226,7 +226,7 @@ void handleNightlight()
       nightlightDelayMs = (unsigned)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
-      for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
+      for (unsigned i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
       if (nightlightMode == NL_MODE_SUN)
       {
         //save current
@@ -251,7 +251,7 @@ void handleNightlight()
       bri = briNlT + ((nightlightTargetBri - briNlT)*nper);
       if (nightlightMode == NL_MODE_COLORFADE)                                         // color fading only is enabled with "NF=2"
       {
-        for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
+        for (unsigned i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
       }
       colorUpdated(CALL_MODE_NO_NOTIFY);
     }

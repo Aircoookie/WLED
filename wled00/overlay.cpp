@@ -34,7 +34,7 @@ void _overlayAnalogClock()
   }
   if (analogClock5MinuteMarks)
   {
-    for (byte i = 0; i <= 12; i++)
+    for (unsigned i = 0; i <= 12; i++)
     {
       unsigned pix = analogClock12pixel + roundf((overlaySize / 12.0f) *i);
       if (pix > overlayMax) pix -= overlaySize;
@@ -88,10 +88,10 @@ void _overlayAnalogCountdown()
 }
 
 void handleOverlayDraw() {
-  usermods.handleOverlayDraw();
+  UsermodManager::handleOverlayDraw();
   if (analogClockSolidBlack) {
     const Segment* segments = strip.getSegments();
-    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+    for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
       const Segment& segment = segments[i];
       if (!segment.isActive()) continue;
       if (segment.mode > 0 || segment.colors[0] > 0) {

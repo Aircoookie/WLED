@@ -75,7 +75,7 @@ class PWMFanUsermod : public Usermod {
     static const char _lock[];
 
     void initTacho(void) {
-      if (tachoPin < 0 || !pinManager.allocatePin(tachoPin, false, PinOwner::UM_Unspecified)){
+      if (tachoPin < 0 || !PinManager::allocatePin(tachoPin, false, PinOwner::UM_Unspecified)){
         tachoPin = -1;
         return;
       }
@@ -88,7 +88,7 @@ class PWMFanUsermod : public Usermod {
     void deinitTacho(void) {
       if (tachoPin < 0) return;
       detachInterrupt(digitalPinToInterrupt(tachoPin));
-      pinManager.deallocatePin(tachoPin, PinOwner::UM_Unspecified);
+      PinManager::deallocatePin(tachoPin, PinOwner::UM_Unspecified);
       tachoPin = -1;
     }
 
@@ -111,7 +111,7 @@ class PWMFanUsermod : public Usermod {
 
     // https://randomnerdtutorials.com/esp32-pwm-arduino-ide/
     void initPWMfan(void) {
-      if (pwmPin < 0 || !pinManager.allocatePin(pwmPin, true, PinOwner::UM_Unspecified)) {
+      if (pwmPin < 0 || !PinManager::allocatePin(pwmPin, true, PinOwner::UM_Unspecified)) {
         enabled = false;
         pwmPin = -1;
         return;
@@ -121,7 +121,7 @@ class PWMFanUsermod : public Usermod {
       analogWriteRange(255);
       analogWriteFreq(WLED_PWM_FREQ);
       #else
-      pwmChannel = pinManager.allocateLedc(1);
+      pwmChannel = PinManager::allocateLedc(1);
       if (pwmChannel == 255) { //no more free LEDC channels
         deinitPWMfan(); return;
       }
@@ -136,9 +136,9 @@ class PWMFanUsermod : public Usermod {
     void deinitPWMfan(void) {
       if (pwmPin < 0) return;
 
-      pinManager.deallocatePin(pwmPin, PinOwner::UM_Unspecified);
+      PinManager::deallocatePin(pwmPin, PinOwner::UM_Unspecified);
       #ifdef ARDUINO_ARCH_ESP32
-      pinManager.deallocateLedc(pwmChannel, 1);
+      PinManager::deallocateLedc(pwmChannel, 1);
       #endif
       pwmPin = -1;
     }
@@ -191,9 +191,9 @@ class PWMFanUsermod : public Usermod {
     void setup() override {
       #ifdef USERMOD_DALLASTEMPERATURE   
       // This Usermod requires Temperature usermod
-      tempUM = (UsermodTemperature*) usermods.lookup(USERMOD_ID_TEMPERATURE);
+      tempUM = (UsermodTemperature*) UsermodManager::lookup(USERMOD_ID_TEMPERATURE);
       #elif defined(USERMOD_SHT)
-      tempUM = (ShtUsermod*) usermods.lookup(USERMOD_ID_SHT);
+      tempUM = (ShtUsermod*) UsermodManager::lookup(USERMOD_ID_SHT);
       #endif
       initTacho();
       initPWMfan();

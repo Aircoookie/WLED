@@ -121,6 +121,7 @@ void fillUMPins(JsonObject &mods)
 void appendGPIOinfo() {
   char nS[8];
 
+  // add usermod pins as d.um_p array
   oappend(SET_F("d.um_p=[-1")); // has to have 1 element
   if (i2c_sda > -1 && i2c_scl > -1) {
     oappend(","); oappend(itoa(i2c_sda,nS,10));
@@ -134,89 +135,64 @@ void appendGPIOinfo() {
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
     JsonObject mods = pDoc->createNestedObject(F("um"));
-    usermods.addToConfig(mods);
+    UsermodManager::addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
     releaseJSONBufferLock();
   }
   oappend(SET_F("];"));
 
-  // add reserved and usermod pins as d.um_p array
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  oappend(SET_F("d.rsvd=[22,23,24,25,26,27,28,29,30,31,32"));
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  oappend(SET_F("d.rsvd=[19,20,22,23,24,25,26,27,28,29,30,31,32"));  // includes 19+20 for USB OTG (JTAG)
-  if (psramFound()) oappend(SET_F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  oappend(SET_F("d.rsvd=[11,12,13,14,15,16,17"));
-  #elif defined(ESP32)
-  oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31,37,38"));
-  if (!pinManager.isPinOk(16,false)) oappend(SET_F(",16")); // covers PICO & WROVER
-  if (!pinManager.isPinOk(17,false)) oappend(SET_F(",17")); // covers PICO & WROVER
-  #else
-  oappend(SET_F("d.rsvd=[6,7,8,9,10,11"));
-  #endif
-
+  // add reserved (unusable) pins
+  oappend(SET_F("d.rsvd=["));
+  for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
+    if (!PinManager::isPinOk(i, false)) {  // include readonly pins
+      oappendi(i); oappend(",");
+    }
+  }
   #ifdef WLED_ENABLE_DMX
-  oappend(SET_F(",2")); // DMX hardcoded pin
+  oappend(SET_F("2,")); // DMX hardcoded pin
   #endif
-
   #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
-  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10)); // debug output (TX) pin
+  oappend(itoa(hardwareTX,nS,10)); oappend(","); // debug output (TX) pin
   #endif
-
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
-
   #ifdef WLED_USE_ETHERNET
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-    for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { oappend(","); oappend(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); }
-    if (ethernetBoards[ethernetType].eth_power>=0)     { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
-    if (ethernetBoards[ethernetType].eth_mdc>=0)       { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
-    if (ethernetBoards[ethernetType].eth_mdio>=0)      { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
-    switch (ethernetBoards[ethernetType].eth_clk_mode) {
+    for (unsigned p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { oappend(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); oappend(","); }
+    if (ethernetBoards[ethernetType].eth_power>=0)      { oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); oappend(","); }
+    if (ethernetBoards[ethernetType].eth_mdc>=0)        { oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); oappend(","); }
+    if (ethernetBoards[ethernetType].eth_mdio>=0)       { oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); oappend(","); }
+    switch (ethernetBoards[ethernetType].eth_clk_mode)  {
       case ETH_CLOCK_GPIO0_IN:
       case ETH_CLOCK_GPIO0_OUT:
-        oappend(SET_F(",0"));
+        oappend(SET_F("0"));
         break;
       case ETH_CLOCK_GPIO16_OUT:
-        oappend(SET_F(",16"));
+        oappend(SET_F("16"));
         break;
       case ETH_CLOCK_GPIO17_OUT:
-        oappend(SET_F(",17"));
+        oappend(SET_F("17"));
         break;
     }
   }
   #endif
-
-  oappend(SET_F("];"));
+  oappend(SET_F("];")); // rsvd
 
   // add info for read-only GPIO
   oappend(SET_F("d.ro_gpio=["));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  oappendi(46);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  // none for S3
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  // none for C3
-  #elif defined(ESP32)
-  oappend(SET_F("34,35,36,37,38,39"));
-  #else
-  // none for ESP8266
-  #endif
+  bool firstPin = true;
+  for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
+    if (PinManager::isReadOnlyPin(i)) {
+      // No comma before the first pin
+      if (!firstPin) oappend(SET_F(","));
+      oappendi(i);
+      firstPin = false;
+    }
+  }
   oappend(SET_F("];"));
 
   // add info about max. # of pins
   oappend(SET_F("d.max_gpio="));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  oappendi(46);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  oappendi(48);
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  oappendi(21);
-  #elif defined(ESP32)
-  oappendi(39);
-  #else
-  oappendi(16);
-  #endif
+  oappendi(WLED_NUM_PINS);
   oappend(SET_F(";"));
 }
 
@@ -224,8 +200,7 @@ void appendGPIOinfo() {
 void getSettingsJS(byte subPage, char* dest)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
-  DEBUG_PRINT(F("settings resp"));
-  DEBUG_PRINTLN(subPage);
+  DEBUG_PRINTF_P(PSTR("settings resp %u\n"), (unsigned)subPage);
   obuf = dest;
   olen = 0;
 
@@ -349,6 +324,8 @@ void getSettingsJS(byte subPage, char* dest)
 
     appendGPIOinfo();
 
+    oappend(SET_F("d.ledTypes=")); oappend(BusManager::getLEDTypesJSONString().c_str()); oappend(";");
+
     // set limits
     oappend(SET_F("bLimits("));
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
@@ -361,10 +338,10 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(WLED_MAX_ANALOG_CHANNELS,nS,10));
     oappend(SET_F(");"));
 
-    sappend('c',SET_F("MS"),autoSegments);
-    sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("MS"),strip.autoSegments);
+    sappend('c',SET_F("CCT"),strip.correctWB);
     sappend('c',SET_F("IC"),cctICused);
-    sappend('c',SET_F("CR"),cctFromRgb);
+    sappend('c',SET_F("CR"),strip.cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
@@ -393,7 +370,7 @@ void getSettingsJS(byte subPage, char* dest)
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (pinManager.isPinOk(pins[i]) || IS_VIRTUAL(bus->getType())) sappend('v',lp,pins[i]);
+        if (PinManager::isPinOk(pins[i]) || bus->isVirtual()) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
@@ -405,7 +382,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
       unsigned speed = bus->getFrequency();
-      if (IS_PWM(bus->getType())) {
+      if (bus->isPWM()) {
         switch (speed) {
           case WLED_PWM_FREQ/2    : speed = 0; break;
           case WLED_PWM_FREQ*2/3  : speed = 1; break;
@@ -414,7 +391,7 @@ void getSettingsJS(byte subPage, char* dest)
           case WLED_PWM_FREQ*2    : speed = 3; break;
           case WLED_PWM_FREQ*10/3 : speed = 4; break; // uint16_t max (19531 * 3.333)
         }
-      } else if (IS_DIGITAL(bus->getType()) && IS_2PIN(bus->getType())) {
+      } else if (bus->is2Pin()) {
         switch (speed) {
           case  1000 : speed = 0; break;
           case  2000 : speed = 1; break;
@@ -507,6 +484,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
+    sappend('c',SET_F("RP"),receiveNotificationPalette);
     sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SG"),receiveSegmentBounds);
     sappend('c',SET_F("SS"),sendNotifications);
@@ -533,15 +511,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("FB"),arlsForceMaxBri);
     sappend('c',SET_F("RG"),arlsDisableGammaCorrection);
     sappend('v',SET_F("WO"),arlsOffset);
+    #ifndef WLED_DISABLE_ALEXA
     sappend('c',SET_F("AL"),alexaEnabled);
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappend('v',SET_F("AP"),alexaNumPresets);
-    #ifdef WLED_DISABLE_ALEXA
+    #else
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
     #endif
 
-    #ifdef WLED_ENABLE_MQTT
+    #ifndef WLED_DISABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
     sappends('s',SET_F("MS"),mqttServer);
     sappend('v',SET_F("MQPORT"),mqttPort);
@@ -592,6 +571,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
     sappend('v',SET_F("BD"),serialBaud);
+    #ifndef WLED_ENABLE_ADALIGHT
+    oappend(SET_F("toggle('Serial);"));
+    #endif
   }
 
   if (subPage == SUBPAGE_TIME)
@@ -632,7 +614,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("A1"),macroAlexaOff);
     sappend('v',SET_F("MC"),macroCountdown);
     sappend('v',SET_F("MN"),macroNl);
-    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+    for (unsigned i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addRow("));
       oappend(itoa(i,tm,10));  oappend(",");
       oappend(itoa(macroButton[i],tm,10)); oappend(",");
@@ -712,7 +694,7 @@ void getSettingsJS(byte subPage, char* dest)
   {
     appendGPIOinfo();
     oappend(SET_F("numM="));
-    oappendi(usermods.getModCount());
+    oappendi(UsermodManager::getModCount());
     oappend(";");
     sappend('v',SET_F("SDA"),i2c_sda);
     sappend('v',SET_F("SCL"),i2c_scl);
@@ -724,7 +706,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
     oappend(SET_F("addInfo('MISO','")); oappendi(HW_PIN_MISOSPI);  oappend(SET_F("');"));
     oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
-    usermods.appendConfigData();
+    UsermodManager::appendConfigData();
   }
 
   if (subPage == SUBPAGE_UPDATE) // update
@@ -758,7 +740,7 @@ void getSettingsJS(byte subPage, char* dest)
       }
       sappend('v',SET_F("MPC"),strip.panels);
       // panels
-      for (uint8_t i=0; i<strip.panels; i++) {
+      for (unsigned i=0; i<strip.panels; i++) {
         char n[5];
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
@@ -766,7 +748,7 @@ void getSettingsJS(byte subPage, char* dest)
         char pO[8] = { '\0' };
         snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
         pO[7] = '\0';
-        uint8_t l = strlen(pO);
+        unsigned l = strlen(pO);
         // create P0B, P1B, ..., P63B, etc for other PxxX
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);

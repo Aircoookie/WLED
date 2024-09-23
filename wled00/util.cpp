@@ -148,7 +148,7 @@ void sappends(char stype, const char* key, char* val)
 
 bool oappendi(int i)
 {
-  char s[11];
+  char s[12]; // 32bit signed number can have 10 digits plus - sign
   sprintf(s, "%d", i);
   return oappend(s);
 }
@@ -156,7 +156,7 @@ bool oappendi(int i)
 
 bool oappend(const char* txt)
 {
-  uint16_t len = strlen(txt);
+  unsigned len = strlen(txt);
   if ((obuf == nullptr) || (olen + len >= SETTINGS_STACK_BUF_SIZE)) { // sanity checks
 #ifdef WLED_DEBUG
     DEBUG_PRINT(F("oappend() buffer overflow. Cannot append "));
@@ -175,7 +175,7 @@ void prepareHostname(char* hostname)
 {
   sprintf_P(hostname, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
-  uint8_t pos = 5;          // keep "wled-"
+  unsigned pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length
     if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
       hostname[pos] = *pC;
@@ -197,7 +197,7 @@ void prepareHostname(char* hostname)
 
 bool isAsterisksOnly(const char* str, byte maxLen)
 {
-  for (byte i = 0; i < maxLen; i++) {
+  for (unsigned i = 0; i < maxLen; i++) {
     if (str[i] == 0) break;
     if (str[i] != '*') return false;
   }
@@ -213,21 +213,33 @@ bool requestJSONBufferLock(uint8_t module)
     DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
     return false;
   }
-  unsigned long now = millis();
 
-  while (jsonBufferLock && millis()-now < 250) delay(1); // wait for fraction for buffer lock
-
+#if defined(ARDUINO_ARCH_ESP32)
+  // Use a recursive mutex type in case our task is the one holding the JSON buffer.
+  // This can happen during large JSON web transactions.  In this case, we continue immediately
+  // and then will return out below if the lock is still held.
+  if (xSemaphoreTakeRecursive(jsonBufferLockMutex, 250) == pdFALSE) return false;  // timed out waiting
+#elif defined(ARDUINO_ARCH_ESP8266)
+  // If we're in system context, delay() won't return control to the user context, so there's
+  // no point in waiting.
+  if (can_yield()) {
+    unsigned long now = millis();
+    while (jsonBufferLock && (millis()-now < 250)) delay(1); // wait for fraction for buffer lock
+  }
+#else
+  #error Unsupported task framework - fix requestJSONBufferLock
+#endif  
+  // If the lock is still held - by us, or by another task
   if (jsonBufferLock) {
-    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
-    DEBUG_PRINT(jsonBufferLock);
-    DEBUG_PRINTLN(")");
-    return false; // waiting time-outed
+    DEBUG_PRINTF_P(PSTR("ERROR: Locking JSON buffer (%d) failed! (still locked by %d)\n"), module, jsonBufferLock);
+#ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif
+    return false;
   }
 
   jsonBufferLock = module ? module : 255;
-  DEBUG_PRINT(F("JSON buffer locked. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
+  DEBUG_PRINTF_P(PSTR("JSON buffer locked. (%d)\n"), jsonBufferLock);
   pDoc->clear();
   return true;
 }
@@ -235,10 +247,11 @@ bool requestJSONBufferLock(uint8_t module)
 
 void releaseJSONBufferLock()
 {
-  DEBUG_PRINT(F("JSON buffer released. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
+  DEBUG_PRINTF_P(PSTR("JSON buffer released. (%d)\n"), jsonBufferLock);
   jsonBufferLock = 0;
+#ifdef ARDUINO_ARCH_ESP32
+  xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif  
 }
 
 
@@ -269,9 +282,9 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
     return strlen(dest);
   }
 
-  uint8_t qComma = 0;
+  unsigned qComma = 0;
   bool insideQuotes = false;
-  uint8_t printedChars = 0;
+  unsigned printedChars = 0;
   char singleJsonSymbol;
   size_t len = strlen_P(src);
 
@@ -308,11 +321,11 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
   if (mode < strip.getModeCount()) {
     String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
-      int16_t start = lineBuffer.indexOf('@');
-      int16_t stop  = lineBuffer.indexOf(';', start);
+      unsigned start = lineBuffer.indexOf('@');
+      unsigned stop  = lineBuffer.indexOf(';', start);
       if (start>0 && stop>0) {
         String names = lineBuffer.substring(start, stop); // include @
-        int16_t nameBegin = 1, nameEnd, nameDefault;
+        unsigned nameBegin = 1, nameEnd, nameDefault;
         if (slider < 10) {
           for (size_t i=0; i<=slider; i++) {
             const char *tmpstr;
@@ -598,4 +611,9 @@ uint8_t get_random_wheel_index(uint8_t pos) {
     d = MIN(x, y);
   }
   return r;
+}
+
+// float version of map()
+float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

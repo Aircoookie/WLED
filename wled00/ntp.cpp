@@ -246,8 +246,7 @@ bool checkNTPResponse()
   }
 
   uint32_t ntpPacketReceivedTime = millis();
-  DEBUG_PRINT(F("NTP recv, l="));
-  DEBUG_PRINTLN(cb);
+  DEBUG_PRINTF_P(PSTR("NTP recv, l=%d\n"), cb);
   byte pbuf[NTP_PACKET_SIZE];
   ntpUdp.read(pbuf, NTP_PACKET_SIZE); // read the packet into the buffer
   if (!isValidNtpResponse(pbuf)) return false;  // verify we have a valid response to client
@@ -377,7 +376,7 @@ void checkTimers()
     if (!hour(localTime) && minute(localTime)==1) calculateSunriseAndSunset();
 
     DEBUG_PRINTF_P(PSTR("Local time: %02d:%02d\n"), hour(localTime), minute(localTime));
-    for (uint8_t i = 0; i < 8; i++)
+    for (unsigned i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
           && (timerWeekday[i] & 0x01) //timer is enabled
@@ -493,7 +492,7 @@ void calculateSunriseAndSunset() {
     do {
       time_t theDay = localTime - retryCount * 86400; // one day back = 86400 seconds
       minUTC = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, false);
-      DEBUG_PRINT(F("* sunrise (minutes from UTC) = ")); DEBUG_PRINTLN(minUTC);
+      DEBUG_PRINTF_P(PSTR("* sunrise (minutes from UTC) = %d\n"), minUTC);
       retryCount ++;
     } while ((abs(minUTC) > SUNSET_MAX)  && (retryCount <= 3));
 
@@ -512,7 +511,7 @@ void calculateSunriseAndSunset() {
     do {
       time_t theDay = localTime - retryCount * 86400; // one day back = 86400 seconds
       minUTC = getSunriseUTC(year(theDay), month(theDay), day(theDay), latitude, longitude, true);
-      DEBUG_PRINT(F("* sunset  (minutes from UTC) = ")); DEBUG_PRINTLN(minUTC);
+      DEBUG_PRINTF_P(PSTR("* sunset  (minutes from UTC) = %d\n"), minUTC);
       retryCount ++;
     } while ((abs(minUTC) > SUNSET_MAX)  && (retryCount <= 3));
 

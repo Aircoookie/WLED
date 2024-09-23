@@ -161,14 +161,14 @@ void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y)
+uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
 {
   unsigned width  = virtualWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   unsigned height = virtualHeight();  // segment height in logical pixels (is always >= 1)
   return isActive() ? (x%width) + (y%height) * width : 0;
 }
 
-void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
@@ -180,17 +180,20 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
-  if (transpose) { unsigned t = x; x = y; y = t; } // swap X & Y if segment transposed
+  if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
 
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
-  if (x >= width() || y >= height()) return;  // if pixel would fall out of segment just exit
+
+  int W = width();
+  int H = height();
+  if (x >= W || y >= H) return;  // if pixel would fall out of segment just exit
 
   uint32_t tmpCol = col;
   for (int j = 0; j < grouping; j++) {   // groupping vertically
     for (int g = 0; g < grouping; g++) { // groupping horizontally
-      unsigned xX = (x+g), yY = (y+j);
-      if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
+      int xX = (x+g), yY = (y+j);
+      if (xX >= W || yY >= H) continue;  // we have reached one dimension's end
 
 #ifndef WLED_DISABLE_MODE_BLEND
       // if blending modes, blend with underlying pixel
@@ -208,7 +211,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
         else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, tmpCol);
       }
       if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
-        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, tmpCol);
+        strip.setPixelColorXY(start + width() - xX - 1, startY + height() - yY - 1, tmpCol);
       }
     }
   }
@@ -261,12 +264,12 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 #endif
 
 // returns RGBW values of pixel
-uint32_t IRAM_ATTR Segment::getPixelColorXY(int x, int y) {
+uint32_t IRAM_ATTR_YN Segment::getPixelColorXY(int x, int y) const {
   if (!isActive()) return 0; // not active
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
-  if (transpose) { unsigned t = x; x = y; y = t; } // swap X & Y if segment transposed
+  if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
@@ -339,39 +342,126 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
   setPixelColorXY(col, rows - 1, curnew);
 }
 
-// 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
-void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
+void Segment::blur2D(uint8_t blur_amount, bool smear) {
   if (!isActive() || blur_amount == 0) return; // not active
-  const int cols = virtualWidth();
-  const int rows = virtualHeight();
-  const int dim1 = vertical ? rows : cols;
-  const int dim2 = vertical ? cols : rows;
-  if (i >= dim2) return;
-  const float seep = blur_amount/255.f;
-  const float keep = 3.f - 2.f*seep;
-  // 1D box blur
-  uint32_t out[dim1], in[dim1];
-  for (int j = 0; j < dim1; j++) {
-    int x = vertical ? i : j;
-    int y = vertical ? j : i;
-    in[j] = getPixelColorXY(x, y);
+  const unsigned cols = virtualWidth();
+  const unsigned rows = virtualHeight();
+
+  const uint8_t keep = smear ? 255 : 255 - blur_amount;
+  const uint8_t seep = blur_amount >> (1 + smear);
+  uint32_t lastnew;
+  uint32_t last;
+  for (unsigned row = 0; row < rows; row++) {
+    uint32_t carryover = BLACK;
+    uint32_t curnew = BLACK;
+    for (unsigned x = 0; x < cols; x++) {
+      uint32_t cur = getPixelColorXY(x, row);
+      uint32_t part = color_fade(cur, seep);
+      curnew = color_fade(cur, keep);
+      if (x > 0) {
+        if (carryover) curnew = color_add(curnew, carryover, true);
+        uint32_t prev = color_add(lastnew, part, true);
+        // optimization: only set pixel if color has changed
+        if (last != prev) setPixelColorXY(x - 1, row, prev);
+      } else setPixelColorXY(x, row, curnew); // first pixel
+      lastnew = curnew;
+      last = cur; // save original value for comparison on next iteration
+      carryover = part;
+    }
+    setPixelColorXY(cols-1, row, curnew); // set last pixel
   }
-  for (int j = 0; j < dim1; j++) {
-    uint32_t curr = in[j];
-    uint32_t prev = j > 0      ? in[j-1] : BLACK;
-    uint32_t next = j < dim1-1 ? in[j+1] : BLACK;
-    uint8_t r, g, b, w;
-    r = (R(curr)*keep + (R(prev) + R(next))*seep) / 3;
-    g = (G(curr)*keep + (G(prev) + G(next))*seep) / 3;
-    b = (B(curr)*keep + (B(prev) + B(next))*seep) / 3;
-    w = (W(curr)*keep + (W(prev) + W(next))*seep) / 3;
-    out[j] = RGBW32(r,g,b,w);
+  for (unsigned col = 0; col < cols; col++) {
+    uint32_t carryover = BLACK;
+    uint32_t curnew = BLACK;
+    for (unsigned y = 0; y < rows; y++) {
+      uint32_t cur = getPixelColorXY(col, y);
+      uint32_t part = color_fade(cur, seep);
+      curnew = color_fade(cur, keep);
+      if (y > 0) {
+        if (carryover) curnew = color_add(curnew, carryover, true);
+        uint32_t prev = color_add(lastnew, part, true);      
+        // optimization: only set pixel if color has changed
+        if (last != prev) setPixelColorXY(col, y - 1, prev);
+      } else setPixelColorXY(col, y, curnew); // first pixel
+      lastnew = curnew;
+      last = cur; //save original value for comparison on next iteration
+      carryover = part;        
+    }
+    setPixelColorXY(col, rows - 1, curnew);
   }
-  for (int j = 0; j < dim1; j++) {
-    int x = vertical ? i : j;
-    int y = vertical ? j : i;
-    setPixelColorXY(x, y, out[j]);
+}
+
+// 2D Box blur
+void Segment::box_blur(unsigned radius, bool smear) {
+  if (!isActive() || radius == 0) return; // not active
+  if (radius > 3) radius = 3;
+  const unsigned d = (1 + 2*radius) * (1 + 2*radius); // averaging divisor
+  const unsigned cols = virtualWidth();
+  const unsigned rows = virtualHeight();
+  uint16_t *tmpRSum = new uint16_t[cols*rows];
+  uint16_t *tmpGSum = new uint16_t[cols*rows];
+  uint16_t *tmpBSum = new uint16_t[cols*rows];
+  uint16_t *tmpWSum = new uint16_t[cols*rows];
+  // fill summed-area table (https://en.wikipedia.org/wiki/Summed-area_table)
+  for (unsigned x = 0; x < cols; x++) {
+    unsigned rS, gS, bS, wS;
+    unsigned index;
+    rS = gS = bS = wS = 0;
+    for (unsigned y = 0; y < rows; y++) {
+      index = x * cols + y;
+      if (x > 0) {
+        unsigned index2 = (x - 1) * cols + y;
+        tmpRSum[index] = tmpRSum[index2];
+        tmpGSum[index] = tmpGSum[index2];
+        tmpBSum[index] = tmpBSum[index2];
+        tmpWSum[index] = tmpWSum[index2];
+      } else {
+        tmpRSum[index] = 0;
+        tmpGSum[index] = 0;
+        tmpBSum[index] = 0;
+        tmpWSum[index] = 0;
+      }
+      uint32_t c = getPixelColorXY(x, y);
+      rS += R(c);
+      gS += G(c);
+      bS += B(c);
+      wS += W(c);
+      tmpRSum[index] += rS;
+      tmpGSum[index] += gS;
+      tmpBSum[index] += bS;
+      tmpWSum[index] += wS;
+    }
   }
+  // do a box blur using pre-calculated sums
+  for (unsigned x = 0; x < cols; x++) {
+    for (unsigned y = 0; y < rows; y++) {
+      // sum = D + A - B - C where k = (x,y)
+      // +----+-+---- (x)
+      // |    | |
+      // +----A-B
+      // |    |k|
+      // +----C-D
+      // |
+      //(y)
+      unsigned x0 = x < radius ? 0 : x - radius;
+      unsigned y0 = y < radius ? 0 : y - radius;
+      unsigned x1 = x >= cols - radius ? cols - 1 : x + radius;
+      unsigned y1 = y >= rows - radius ? rows - 1 : y + radius;
+      unsigned A = x0 * cols + y0;
+      unsigned B = x1 * cols + y0;
+      unsigned C = x0 * cols + y1;
+      unsigned D = x1 * cols + y1;
+      unsigned r = tmpRSum[D] + tmpRSum[A] - tmpRSum[C] - tmpRSum[B];
+      unsigned g = tmpGSum[D] + tmpGSum[A] - tmpGSum[C] - tmpGSum[B];
+      unsigned b = tmpBSum[D] + tmpBSum[A] - tmpBSum[C] - tmpBSum[B];
+      unsigned w = tmpWSum[D] + tmpWSum[A] - tmpWSum[C] - tmpWSum[B];
+      setPixelColorXY(x, y, RGBW32(r/d, g/d, b/d, w/d));
+    }
+  }
+  delete[] tmpRSum;
+  delete[] tmpGSum;
+  delete[] tmpBSum;
+  delete[] tmpWSum;
 }
 
 void Segment::moveX(int8_t delta, bool wrap) {
