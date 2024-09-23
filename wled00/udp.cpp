@@ -215,7 +215,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
     if (!(receiveGroups & 0x01)) return;
   } else if (!(receiveGroups & udpIn[36])) return;
 
-  bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+  bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveNotificationPalette);
 
   // set transition time before making any segment changes
   if (version > 3) {
@@ -305,6 +305,9 @@ void parseNotifyPacket(uint8_t *udpIn) {
         selseg.setMode(udpIn[11+ofs]);
         selseg.speed     = udpIn[12+ofs];
         selseg.intensity = udpIn[13+ofs];
+      }
+      if (receiveNotificationPalette || !someSel) {
+        DEBUG_PRINTF_P(PSTR("Apply palette: %u\n"), id);
         selseg.palette   = udpIn[14+ofs];
       }
       if (receiveNotificationColor || !someSel) {
@@ -346,14 +349,16 @@ void parseNotifyPacket(uint8_t *udpIn) {
   }
 
   // simple effect sync, applies to all selected segments
-  if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
+  if ((applyEffects || receiveNotificationPalette) && (version < 11 || !receiveSegmentOptions)) {
     for (size_t i = 0; i < strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
-      seg.setMode(udpIn[8]);
-      seg.speed = udpIn[9];
-      if (version > 2) seg.intensity = udpIn[16];
-      if (version > 4) seg.setPalette(udpIn[19]);
+      if (applyEffects) {
+        seg.setMode(udpIn[8]);
+        seg.speed = udpIn[9];
+        if (version > 2) seg.intensity = udpIn[16];
+      }
+      if (version > 4 && receiveNotificationPalette) seg.setPalette(udpIn[19]);
     }
     stateChanged = true;
   }
@@ -975,7 +980,7 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
   #endif
 
   // usermods hook can override processing
-  if (usermods.onEspNowMessage(address, data, len)) return;
+  if (UsermodManager::onEspNowMessage(address, data, len)) return;
 
   // only handle messages from linked master/remote (ignore PING messages) or any master/remote if 0xFFFFFFFFFFFF
   //uint8_t anyMaster[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -997,6 +1002,7 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
     channelESPNow = master->channel;                      // pre-configure if heartbeat is heard while scanning for WiFi
     return;
   }
+#endif
 
   // handle WiZ Mote data
   if (data[0] == 0x91 || data[0] == 0x81 || data[0] == 0x80) {

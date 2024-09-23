@@ -516,7 +516,7 @@ void MultiRelay::setup() {
       if (!_relay[i].external) _relay[i].state = !offMode;
       state |= (uint8_t)(_relay[i].invert ? !_relay[i].state : _relay[i].state) << pin;
     } else if (_relay[i].pin<100 && _relay[i].pin>=0) {
-      if (pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
+      if (PinManager::allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
         if (!_relay[i].external) _relay[i].state = !offMode;
         switchRelay(i, _relay[i].state);
         _relay[i].active = false;
@@ -817,7 +817,7 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
     // deallocate all pins 1st
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
       if (oldPin[i]>=0 && oldPin[i]<100) {
-        pinManager.deallocatePin(oldPin[i], PinOwner::UM_MultiRelay);
+        PinManager::deallocatePin(oldPin[i], PinOwner::UM_MultiRelay);
       }
     // allocate new pins
     setup();

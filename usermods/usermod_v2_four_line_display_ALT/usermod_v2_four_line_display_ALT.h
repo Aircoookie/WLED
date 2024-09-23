@@ -543,7 +543,7 @@ void FourLineDisplayUsermod::setup() {
       type = NONE;
     } else {
       PinManagerPinType cspins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
-      if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type = NONE; }
+      if (!PinManager::allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type = NONE; }
     }
   } else {
     if (i2c_scl<0 || i2c_sda<0) { type=NONE; }
@@ -569,7 +569,7 @@ void FourLineDisplayUsermod::setup() {
   if (nullptr == u8x8) {
     DEBUG_PRINTLN(F("Display init failed."));
     if (isSPI) {
-      pinManager.deallocateMultiplePins((const uint8_t*)ioPin, 3, PinOwner::UM_FourLineDisplay);
+      PinManager::deallocateMultiplePins((const uint8_t*)ioPin, 3, PinOwner::UM_FourLineDisplay);
     }
     type = NONE;
     return;
@@ -1307,7 +1307,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
       bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type == SSD1309_SPI64);
       bool newSPI = (newType == SSD1306_SPI || newType == SSD1306_SPI64 || newType == SSD1309_SPI64);
       if (isSPI) {
-        if (pinsChanged || !newSPI) pinManager.deallocateMultiplePins((const uint8_t*)oldPin, 3, PinOwner::UM_FourLineDisplay);
+        if (pinsChanged || !newSPI) PinManager::deallocateMultiplePins((const uint8_t*)oldPin, 3, PinOwner::UM_FourLineDisplay);
         if (!newSPI) {
           // was SPI but is no longer SPI
           if (i2c_scl<0 || i2c_sda<0) { newType=NONE; }
@@ -1315,7 +1315,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
           // still SPI but pins changed
           PinManagerPinType cspins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
           if (ioPin[0]<0 || ioPin[1]<0 || ioPin[1]<0) { newType=NONE; }
-          else if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
+          else if (!PinManager::allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
         }
       } else if (newSPI) {
         // was I2C but is now SPI
@@ -1324,7 +1324,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
         } else {
           PinManagerPinType pins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
           if (ioPin[0]<0 || ioPin[1]<0 || ioPin[1]<0) { newType=NONE; }
-          else if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
+          else if (!PinManager::allocateMultiplePins(pins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
         }
       } else {
         // just I2C type changed

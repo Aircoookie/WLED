@@ -30,7 +30,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
     void setup() {
       // register ldrPin
       if ((ldrPin >= 0) && (digitalPinToAnalogChannel(ldrPin) >= 0)) {
-        if(!pinManager.allocatePin(ldrPin, false, PinOwner::UM_LDR_DUSK_DAWN)) ldrEnabled = false; // pin already in use -> disable usermod
+        if(!PinManager::allocatePin(ldrPin, false, PinOwner::UM_LDR_DUSK_DAWN)) ldrEnabled = false; // pin already in use -> disable usermod
         else pinMode(ldrPin, INPUT);                                                               // alloc success -> configure pin for input
       } else ldrEnabled = false;                                                                   // invalid pin -> disable usermod
       initDone = true;
@@ -110,7 +110,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
 
       if (initDone && (ldrPin != oldLdrPin)) {
          // pin changed - un-register previous pin, register new pin
-        if (oldLdrPin >= 0) pinManager.deallocatePin(oldLdrPin, PinOwner::UM_LDR_DUSK_DAWN);
+        if (oldLdrPin >= 0) PinManager::deallocatePin(oldLdrPin, PinOwner::UM_LDR_DUSK_DAWN);
         setup();             // setup new pin
       }
       return configComplete;
@@ -139,7 +139,7 @@ class LDR_Dusk_Dawn_v2 : public Usermod {
       //LDR_Off_Count.add(ldrOffCount);
 
       //bool pinValid = ((ldrPin >= 0) && (digitalPinToAnalogChannel(ldrPin) >= 0));
-      //if (pinManager.getPinOwner(ldrPin) != PinOwner::UM_LDR_DUSK_DAWN) pinValid = false;
+      //if (PinManager::getPinOwner(ldrPin) != PinOwner::UM_LDR_DUSK_DAWN) pinValid = false;
       //JsonArray LDR_valid = user.createNestedArray(F("LDR pin"));
       //LDR_valid.add(ldrPin);
       //LDR_valid.add(pinValid ? F(" OK"): F(" invalid"));

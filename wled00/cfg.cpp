@@ -177,8 +177,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     for (JsonObject elm : ins) {
       unsigned type = elm["type"] | TYPE_WS2812_RGB;
       unsigned len = elm["len"] | DEFAULT_LED_COUNT;
-      if (!IS_DIGITAL(type)) continue;
-      if (!IS_2PIN(type)) {
+      if (!Bus::isDigital(type)) continue;
+      if (!Bus::is2Pin(type)) {
         digitalCount++;
         unsigned channels = Bus::getNumberOfChannels(type);
         if (len > maxLedsOnBus)     maxLedsOnBus = len;
@@ -219,7 +219,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t maPerLed = elm[F("ledma")] | LED_MILLIAMPS_DEFAULT;
       uint16_t maMax = elm[F("maxpwr")] | (ablMilliampsMax * length) / total; // rough (incorrect?) per strip ABL calculation when no config exists
       // To disable brightness limiter we either set output max current to 0 or single LED current to 0 (we choose output max current)
-      if (IS_PWM(ledType) || IS_ONOFF(ledType) || IS_VIRTUAL(ledType)) { // analog and virtual
+      if (Bus::isPWM(ledType) || Bus::isOnOff(ledType) || Bus::isVirtual(ledType)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       }
@@ -248,17 +248,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // read color order map configuration
   JsonArray hw_com = hw[F("com")];
   if (!hw_com.isNull()) {
-    ColorOrderMap com = {};
-    unsigned s = 0;
+    BusManager::getColorOrderMap().reserve(std::min(hw_com.size(), (size_t)WLED_MAX_COLOR_ORDER_MAPPINGS));
     for (JsonObject entry : hw_com) {
-      if (s > WLED_MAX_COLOR_ORDER_MAPPINGS) break;
       uint16_t start = entry["start"] | 0;
       uint16_t len = entry["len"] | 0;
       uint8_t colorOrder = (int)entry[F("order")];
-      com.add(start, len, colorOrder);
-      s++;
+      if (!BusManager::getColorOrderMap().add(start, len, colorOrder)) break;
     }
-    BusManager::updateColorOrderMap(com);
   }
 
   // read multiple button configuration
@@ -269,12 +265,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonArray hw_btn_ins = btn_obj["ins"];
   if (!hw_btn_ins.isNull()) {
     // deallocate existing button pins
-    for (unsigned b = 0; b < WLED_MAX_BUTTONS; b++) pinManager.deallocatePin(btnPin[b], PinOwner::Button); // does nothing if trying to deallocate a pin with PinOwner != Button
+    for (unsigned b = 0; b < WLED_MAX_BUTTONS; b++) PinManager::deallocatePin(btnPin[b], PinOwner::Button); // does nothing if trying to deallocate a pin with PinOwner != Button
     unsigned s = 0;
     for (JsonObject btn : hw_btn_ins) {
       CJSON(buttonType[s], btn["type"]);
       int8_t pin = btn["pin"][0] | -1;
-      if (pin > -1 && pinManager.allocatePin(pin, false, PinOwner::Button)) {
+      if (pin > -1 && PinManager::allocatePin(pin, false, PinOwner::Button)) {
         btnPin[s] = pin;
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
@@ -283,7 +279,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             // not an ADC analog pin
             DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[s], s);
             btnPin[s] = -1;
-            pinManager.deallocatePin(pin,PinOwner::Button);
+            PinManager::deallocatePin(pin,PinOwner::Button);
           } else {
             analogReadResolution(12); // see #4040
           }
@@ -294,7 +290,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             // not a touch pin
             DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not a touch pin!\n"), btnPin[s], s);
             btnPin[s] = -1;
-            pinManager.deallocatePin(pin,PinOwner::Button);
+            PinManager::deallocatePin(pin,PinOwner::Button);
           }          
           //if touch pin, enable the touch interrupt on ESP32 S2 & S3
           #ifdef SOC_TOUCH_VERSION_2    // ESP32 S2 and S3 have a function to check touch state but need to attach an interrupt to do so
@@ -339,7 +335,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     if (fromFS) {
       // relies upon only being called once with fromFS == true, which is currently true.
       for (size_t s = 0; s < WLED_MAX_BUTTONS; s++) {
-        if (buttonType[s] == BTN_TYPE_NONE || btnPin[s] < 0 || !pinManager.allocatePin(btnPin[s], false, PinOwner::Button)) {
+        if (buttonType[s] == BTN_TYPE_NONE || btnPin[s] < 0 || !PinManager::allocatePin(btnPin[s], false, PinOwner::Button)) {
           btnPin[s]     = -1;
           buttonType[s] = BTN_TYPE_NONE;
         }
@@ -366,8 +362,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
-    pinManager.deallocatePin(irPin, PinOwner::IR);
-    if (pinManager.allocatePin(hw_ir_pin, false, PinOwner::IR)) {
+    PinManager::deallocatePin(irPin, PinOwner::IR);
+    if (PinManager::allocatePin(hw_ir_pin, false, PinOwner::IR)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
@@ -382,8 +378,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   rlyOpenDrain  = relay[F("odrain")] | rlyOpenDrain;
   int hw_relay_pin = relay["pin"] | -2;
   if (hw_relay_pin > -2) {
-    pinManager.deallocatePin(rlyPin, PinOwner::Relay);
-    if (pinManager.allocatePin(hw_relay_pin,true, PinOwner::Relay)) {
+    PinManager::deallocatePin(rlyPin, PinOwner::Relay);
+    if (PinManager::allocatePin(hw_relay_pin,true, PinOwner::Relay)) {
       rlyPin = hw_relay_pin;
       pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
     } else {
@@ -402,7 +398,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(i2c_sda, hw_if_i2c[0]);
   CJSON(i2c_scl, hw_if_i2c[1]);
   PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
-  if (i2c_scl >= 0 && i2c_sda >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+  if (i2c_scl >= 0 && i2c_sda >= 0 && PinManager::allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
     #ifdef ESP32
     if (!Wire.setPins(i2c_sda, i2c_scl)) { i2c_scl = i2c_sda = -1; } // this will fail if Wire is initialised (Wire.begin() called prior)
     else Wire.begin();
@@ -418,7 +414,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(spi_sclk, hw_if_spi[1]);
   CJSON(spi_miso, hw_if_spi[2]);
   PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_miso, true }, { spi_sclk, true } };
-  if (spi_mosi >= 0 && spi_sclk >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+  if (spi_mosi >= 0 && spi_sclk >= 0 && PinManager::allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
     #ifdef ESP32
     SPI.begin(spi_sclk, spi_miso, spi_mosi);  // SPI global uses VSPI on ESP32 and FSPI on C3, S3
     #else
@@ -490,6 +486,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
   CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
+  CJSON(receiveNotificationPalette, if_sync_recv["pal"]);
   CJSON(receiveGroups, if_sync_recv["grp"]);
   CJSON(receiveSegmentOptions, if_sync_recv["seg"]);
   CJSON(receiveSegmentBounds, if_sync_recv["sb"]);
@@ -671,7 +668,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   DEBUG_PRINTLN(F("Starting usermod config."));
   JsonObject usermods_settings = doc["um"];
   if (!usermods_settings.isNull()) {
-    needsSave = !usermods.readFromConfig(usermods_settings);
+    needsSave = !UsermodManager::readFromConfig(usermods_settings);
   }
 
   if (fromFS) return needsSave;
@@ -707,7 +704,7 @@ void deserializeConfigFromFS() {
     // save default values to /cfg.json
     // call readFromConfig() with an empty object so that usermods can initialize to defaults prior to saving
     JsonObject empty = JsonObject();
-    usermods.readFromConfig(empty);
+    UsermodManager::readFromConfig(empty);
     serializeConfig();
     // init Ethernet (in case default type is set at compile time)
     #ifdef WLED_USE_ETHERNET
@@ -979,6 +976,7 @@ void serializeConfig() {
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
   if_sync_recv["fx"]  = receiveNotificationEffects;
+  if_sync_recv["pal"] = receiveNotificationPalette;
   if_sync_recv["grp"] = receiveGroups;
   if_sync_recv["seg"] = receiveSegmentOptions;
   if_sync_recv["sb"]  = receiveSegmentBounds;
@@ -1129,7 +1127,7 @@ void serializeConfig() {
   #endif
 
   JsonObject usermods_settings = root.createNestedObject("um");
-  usermods.addToConfig(usermods_settings);
+  UsermodManager::addToConfig(usermods_settings);
 
   File f = WLED_FS.open(FPSTR(s_cfg_json), "w");
   if (f) serializeJson(root, f);

@@ -41,7 +41,7 @@ When a relay is switched, a message is published:
 
 ## Usermod installation
 
-1. Register the usermod by adding `#include "../usermods/multi_relay/usermod_multi_relay.h"` at the top and `usermods.add(new MultiRelay());` at the bottom of `usermods_list.cpp`.
+1. Register the usermod by adding `#include "../usermods/multi_relay/usermod_multi_relay.h"` at the top and `UsermodManager::add(new MultiRelay());` at the bottom of `usermods_list.cpp`.
 or
 2. Use `#define USERMOD_MULTI_RELAY` in wled.h or `-D USERMOD_MULTI_RELAY` in your platformio.ini
 
@@ -90,9 +90,9 @@ void registerUsermods()
    * || || ||
    * \/ \/ \/
    */
-  //usermods.add(new MyExampleUsermod());
-  //usermods.add(new UsermodTemperature());
-  usermods.add(new MultiRelay());
+  //UsermodManager::add(new MyExampleUsermod());
+  //UsermodManager::add(new UsermodTemperature());
+  UsermodManager::add(new MultiRelay());
 
 }
 ```

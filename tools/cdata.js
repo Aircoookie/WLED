@@ -116,7 +116,8 @@ async function minify(str, type = "plain") {
   } else if (type == "css-minify") {
     return new CleanCSS({}).minify(str).styles;
   } else if (type == "js-minify") {
-    return await minifyHtml('<script>' + str + '</script>', options).replace(/<[\/]*script>/g, '');
+    let js = await minifyHtml('<script>' + str + '</script>', options);
+    return js.replace(/<[\/]*script>/g, '');
   } else if (type == "html-minify") {
     return await minifyHtml(str, options);
   }
@@ -251,6 +252,12 @@ writeChunks(
       mangle: (str) =>
         str
           .replace("%%", "%")
+    },
+    {
+      file: "common.js",
+      name: "JS_common",
+      method: "gzip",
+      filter: "js-minify",
     },
     {
       file: "settings.htm",

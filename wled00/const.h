@@ -51,27 +51,28 @@
     #define WLED_MAX_BUSSES 4                 // will allow 3 digital & 1 analog RGB
     #define WLED_MIN_VIRTUAL_BUSSES 2
   #else
+    #define WLED_MAX_ANALOG_CHANNELS (LEDC_CHANNEL_MAX*LEDC_SPEED_MODE_MAX)
     #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
       #define WLED_MAX_BUSSES 4               // will allow 2 digital & 2 analog RGB
       #define WLED_MAX_DIGITAL_CHANNELS 2
-      #define WLED_MAX_ANALOG_CHANNELS 6
+      //#define WLED_MAX_ANALOG_CHANNELS 6
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
       // the 5th bus (I2S) will prevent Audioreactive usermod from functioning (it is last used though)
       #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog RGB
       #define WLED_MAX_DIGITAL_CHANNELS 5
-      #define WLED_MAX_ANALOG_CHANNELS 8
+      //#define WLED_MAX_ANALOG_CHANNELS 8
       #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
       #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog RGB
       #define WLED_MAX_DIGITAL_CHANNELS 4
-      #define WLED_MAX_ANALOG_CHANNELS 8
+      //#define WLED_MAX_ANALOG_CHANNELS 8
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       // the last digital bus (I2S0) will prevent Audioreactive usermod from functioning
       #define WLED_MAX_BUSSES 20              // will allow 17 digital & 3 analog RGB
       #define WLED_MAX_DIGITAL_CHANNELS 17
-      #define WLED_MAX_ANALOG_CHANNELS 10
+      //#define WLED_MAX_ANALOG_CHANNELS 16
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #endif
   #endif
@@ -281,6 +282,7 @@
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
 //Digital types (data pin only) (16-39)
+#define TYPE_DIGITAL_MIN         16            // first usable digital type
 #define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
 #define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
 #define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
@@ -298,26 +300,36 @@
 #define TYPE_WS2805              32            //RGB + WW + CW
 #define TYPE_TM1914              33            //RGB
 #define TYPE_SM16825             34            //RGB + WW + CW
+#define TYPE_DIGITAL_MAX         39            // last usable digital type
 //"Analog" types (40-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.; NOT PWM)
+#define TYPE_ANALOG_MIN          41            // first usable analog type
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
 #define TYPE_ANALOG_2CH          42            //analog WW + CW
 #define TYPE_ANALOG_3CH          43            //analog RGB
 #define TYPE_ANALOG_4CH          44            //analog RGBW
 #define TYPE_ANALOG_5CH          45            //analog RGB + WW + CW
+#define TYPE_ANALOG_6CH          46            //analog RGB + A + WW + CW
+#define TYPE_ANALOG_MAX          47            // last usable analog type
 //Digital types (data + clock / SPI) (48-63)
+#define TYPE_2PIN_MIN            48
 #define TYPE_WS2801              50
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
 #define TYPE_LPD6803             54
+#define TYPE_2PIN_MAX            63
 //Network types (master broadcast) (80-95)
+#define TYPE_VIRTUAL_MIN         80
 #define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
 #define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus, unused)
 #define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
 #define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 #define TYPE_NET_ARTNET_RGBW     89            //network ArtNet RGB bus (master broadcast bus, unused)
+#define TYPE_VIRTUAL_MAX         95
 
+/*
+// old macros that have been moved to Bus class
 #define IS_TYPE_VALID(t) ((t) > 15 && (t) < 128)
 #define IS_DIGITAL(t)    (((t) > 15 && (t) < 40) || ((t) > 47 && (t) < 64)) //digital are 16-39 and 48-63
 #define IS_2PIN(t)       ((t) > 47 && (t) < 64)
@@ -326,6 +338,7 @@
 #define IS_PWM(t)        ((t) > 40 && (t) < 46)     //does not include on/Off type
 #define NUM_PWM_PINS(t)  ((t) - 40)                 //for analog PWM 41-45 only
 #define IS_VIRTUAL(t)    ((t) >= 80 && (t) < 96)    //this was a poor choice a better would be 96-111
+*/
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
@@ -453,6 +466,9 @@
 #define NTP_PACKET_SIZE 48       // size of NTP receive buffer
 #define NTP_MIN_PACKET_SIZE 48   // min expected size - NTP v4 allows for "extended information" appended to the standard fields
 
+// Maximum number of pins per output. 5 for RGBCCT analog LEDs.
+#define OUTPUT_MAX_PINS 5
+
 //maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
 #ifndef MAX_LEDS
 #ifdef ESP8266
@@ -480,7 +496,7 @@
 
 // string temp buffer (now stored in stack locally)
 #ifdef ESP8266
-#define SETTINGS_STACK_BUF_SIZE 2048
+#define SETTINGS_STACK_BUF_SIZE 2560
 #else
 #define SETTINGS_STACK_BUF_SIZE 3840  // warning: quite a large value for stack (640 * WLED_MAX_USERMODS)
 #endif
@@ -520,7 +536,11 @@
 #ifdef ESP8266
   #define WLED_PWM_FREQ    880 //PWM frequency proven as good for LEDs
 #else
-  #define WLED_PWM_FREQ  19531
+  #ifdef SOC_LEDC_SUPPORT_XTAL_CLOCK
+    #define WLED_PWM_FREQ 9765    // XTAL clock is 40MHz (this will allow 12 bit resolution)
+  #else
+    #define WLED_PWM_FREQ  19531  // APB clock is 80MHz
+  #endif
 #endif
 #endif
 
@@ -547,26 +567,19 @@
   #define WLED_MAX_NODES 150
 #endif
 
-//this is merely a default now and can be changed at runtime
-#ifndef LEDPIN
-#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)  //|| (defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM)) || defined(ARDUINO_ESP32_PICO)
-  #define LEDPIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
+// Defaults pins, type and counts to configure LED output
+#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)
+  #ifdef WLED_ENABLE_DMX
+    #define DEFAULT_LED_PIN 1
+    #warning "Compiling with DMX. The default LED pin has been changed to pin 1."
+  #else
+    #define DEFAULT_LED_PIN 2    // GPIO2 (D4) on Wemos D1 mini compatible boards, safe to use on any board
+  #endif
 #else
-  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
+  #define DEFAULT_LED_PIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards (if it is unusable it will be reassigned in WS2812FX::finalizeInit())
 #endif
-#endif
-
-#ifdef WLED_ENABLE_DMX
-#if (LEDPIN == 2)
-  #undef LEDPIN
-  #define LEDPIN 1
-  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 1."
-#endif
-#endif
-
-#ifndef DEFAULT_LED_COUNT
-  #define DEFAULT_LED_COUNT 30
-#endif
+#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#define DEFAULT_LED_COUNT 30
 
 #define INTERFACE_UPDATE_COOLDOWN 1000 // time in ms to wait between websockets, alexa, and MQTT updates
 
