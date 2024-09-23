@@ -1002,7 +1002,6 @@ void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rs
     channelESPNow = master->channel;                      // pre-configure if heartbeat is heard while scanning for WiFi
     return;
   }
-#endif
 
   // handle WiZ Mote data
   if (data[0] == 0x91 || data[0] == 0x81 || data[0] == 0x80) {
