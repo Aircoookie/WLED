@@ -332,7 +332,7 @@ class Animated_Staircase : public Usermod {
       };
       // NOTE: this *WILL* return TRUE if all the pins are set to -1.
       //       this is *BY DESIGN*.
-      if (!pinManager.allocateMultiplePins(pins, 4, PinOwner::UM_AnimatedStaircase)) {
+      if (!PinManager::allocateMultiplePins(pins, 4, PinOwner::UM_AnimatedStaircase)) {
         topPIRorTriggerPin = -1;
         topEchoPin = -1;
         bottomPIRorTriggerPin = -1;
@@ -513,10 +513,10 @@ class Animated_Staircase : public Usermod {
             (oldBottomAPin != bottomPIRorTriggerPin) ||
             (oldBottomBPin != bottomEchoPin)) {
           changed = true;
-          pinManager.deallocatePin(oldTopAPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldTopBPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldBottomAPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldBottomBPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldTopAPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldTopBPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldBottomAPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldBottomBPin, PinOwner::UM_AnimatedStaircase);
         }
         if (changed) setup();
       }

@@ -1,8 +1,42 @@
 ## WLED changelog
 
+#### Build 2409140
+-   Configure different kinds of busses at compile (#4107 by @PaoloTK)
+    - BREAKING: removes LEDPIN and DEFAULT_LED_TYPE compile overrides
+-   Fetch LED types from Bus classes (dynamic UI) (#4129 by @netmindz, @blazoncek, @dedehai)
+
+#### Build 2409100
+-   WLED 0.15.0-b5 release
+-   Audioreactive usermod included by default in all compatible builds (including ESP8266)
+-   Demystified some byte definitions of WiZmote ESP-NOW message (#4114 by @ChuckMash)
+-   Update usermod "Battery" improved MQTT support (#4110 by @itCarl)
+-   Added a usermod for interacting with BLE Pixels Dice (#4093 by @axlan)
+-   Allow lower values for touch threshold (#4081 by @RobinMeis)
+-   Added POV image effect usermod (#3539 by @Liliputech)
+-   Remove repeating code to fetch audio data (#4103 by @netmindz)
+-   Loxone JSON parser doesn't handle lx=0 correctly (#4104 by @FreakyJ, fixes #3809)
+-   Rename wled00.ino to wled_main.cpp (#4090 by @willmmiles)
+-   SM16825 chip support including WW & CW channel swap (#4092)
+-   Add stress testing scripts (#4088 by @willmmiles)
+-   Improve jsonBufferLock management (#4089 by @willmmiles)
+-   Fix incorrect PWM bit depth on Esp32 with XTAL clock (#4082 by @PaoloTK)
+-   Devcontainer args (#4073 by @axlan)
+-   Effect: Fire2012 optional blur amount (#4078 by @apanteleev)
+-   Effect: GEQ fix bands (#4077 by @adrianschroeter)
+-   Boot delay option (#4060 by @DedeHai)
+-   ESP8266 Audioreactive sync (#3962 by @gaaat98, @netmindz, @softhack007)
+-   ESP8266 PWM crash fix (#4035 by @willmmiles)
+-   Usermod: Battery fix (#4051 by @Nickbert7)
+-   Usermod: Mpu6050 usermod crash fix (#4048 by @willmmiles)
+-   Usermod: Internal Temperature V2 (#4033 by @adamsthws)
+-   Various fixes and improvements (including build environments to emulate 0.14.0 for ESP8266)
+
+#### Build 2407070
+-   Various fixes and improvements (mainly LED settings fix)
+
 #### Build 2406290
 -   WLED 0.15.0-b4 release
--   LED settings bus management update (WARNING only allow available outputs)
+-   LED settings bus management update (WARNING: only allows available outputs)
 -   Add ETH support for LILYGO-POE-Pro (#4030 by @rorosaurus)
 -   Update usermod_sn_photoresistor (#4017 by @xkvmoto)
 -   Several internal fixes and optimisations

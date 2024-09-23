@@ -148,7 +148,7 @@ void sappends(char stype, const char* key, char* val)
 
 bool oappendi(int i)
 {
-  char s[11];
+  char s[12]; // 32bit signed number can have 10 digits plus - sign
   sprintf(s, "%d", i);
   return oappend(s);
 }
@@ -213,21 +213,33 @@ bool requestJSONBufferLock(uint8_t module)
     DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
     return false;
   }
-  unsigned long now = millis();
 
-  while (jsonBufferLock && millis()-now < 250) delay(1); // wait for fraction for buffer lock
-
+#if defined(ARDUINO_ARCH_ESP32)
+  // Use a recursive mutex type in case our task is the one holding the JSON buffer.
+  // This can happen during large JSON web transactions.  In this case, we continue immediately
+  // and then will return out below if the lock is still held.
+  if (xSemaphoreTakeRecursive(jsonBufferLockMutex, 250) == pdFALSE) return false;  // timed out waiting
+#elif defined(ARDUINO_ARCH_ESP8266)
+  // If we're in system context, delay() won't return control to the user context, so there's
+  // no point in waiting.
+  if (can_yield()) {
+    unsigned long now = millis();
+    while (jsonBufferLock && (millis()-now < 250)) delay(1); // wait for fraction for buffer lock
+  }
+#else
+  #error Unsupported task framework - fix requestJSONBufferLock
+#endif  
+  // If the lock is still held - by us, or by another task
   if (jsonBufferLock) {
-    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! (still locked by "));
-    DEBUG_PRINT(jsonBufferLock);
-    DEBUG_PRINTLN(")");
-    return false; // waiting time-outed
+    DEBUG_PRINTF_P(PSTR("ERROR: Locking JSON buffer (%d) failed! (still locked by %d)\n"), module, jsonBufferLock);
+#ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif
+    return false;
   }
 
   jsonBufferLock = module ? module : 255;
-  DEBUG_PRINT(F("JSON buffer locked. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
+  DEBUG_PRINTF_P(PSTR("JSON buffer locked. (%d)\n"), jsonBufferLock);
   pDoc->clear();
   return true;
 }
@@ -235,10 +247,11 @@ bool requestJSONBufferLock(uint8_t module)
 
 void releaseJSONBufferLock()
 {
-  DEBUG_PRINT(F("JSON buffer released. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
+  DEBUG_PRINTF_P(PSTR("JSON buffer released. (%d)\n"), jsonBufferLock);
   jsonBufferLock = 0;
+#ifdef ARDUINO_ARCH_ESP32
+  xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif  
 }
 
 
@@ -598,4 +611,9 @@ uint8_t get_random_wheel_index(uint8_t pos) {
     d = MIN(x, y);
   }
   return r;
+}
+
+// float version of map()
+float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

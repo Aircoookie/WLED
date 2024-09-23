@@ -4,10 +4,10 @@
  * MQTT communication protocol for home automation
  */
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
 #define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds
 
-void parseMQTTBriPayload(char* payload)
+static void parseMQTTBriPayload(char* payload)
 {
   if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; stateUpdated(CALL_MODE_DIRECT_CHANGE);}
   else if (strstr(payload, "T" ) || strstr(payload, "t" )) {toggleOnOff(); stateUpdated(CALL_MODE_DIRECT_CHANGE);}
@@ -20,7 +20,7 @@ void parseMQTTBriPayload(char* payload)
 }
 
 
-void onMqttConnect(bool sessionPresent)
+static void onMqttConnect(bool sessionPresent)
 {
   //(re)subscribe to required topics
   char subuf[38];
@@ -45,18 +45,17 @@ void onMqttConnect(bool sessionPresent)
     mqtt->subscribe(subuf, 0);
   }
 
-  usermods.onMqttConnect(sessionPresent);
+  UsermodManager::onMqttConnect(sessionPresent);
 
   DEBUG_PRINTLN(F("MQTT ready"));
   publishMqtt();
 }
 
 
-void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
   static char *payloadStr;
 
-  DEBUG_PRINT(F("MQTT msg: "));
-  DEBUG_PRINTLN(topic);
+  DEBUG_PRINTF_P(PSTR("MQTT msg: %s\n"), topic);
 
   // paranoia check to avoid npe if no payload
   if (payload==nullptr) {
@@ -90,7 +89,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       topic += topicPrefixLen;
     } else {
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
-      usermods.onMqttMessage(topic, payloadStr);
+      UsermodManager::onMqttMessage(topic, payloadStr);
       delete[] payloadStr;
       payloadStr = nullptr;
       return;
@@ -116,7 +115,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     }
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
-    usermods.onMqttMessage(topic, payloadStr);
+    UsermodManager::onMqttMessage(topic, payloadStr);
   } else {
     // topmost topic (just wled/MAC)
     parseMQTTBriPayload(payloadStr);
@@ -166,6 +165,7 @@ bool initMqtt()
 
   if (mqtt == nullptr) {
     mqtt = new AsyncMqttClient();
+    if (!mqtt) return false;
     mqtt->onMessage(onMqttMessage);
     mqtt->onConnect(onMqttConnect);
   }

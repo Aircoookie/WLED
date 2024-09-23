@@ -18,6 +18,7 @@ static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security setti
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
 static const char s_notimplemented[] PROGMEM = "Not implemented";
 static const char s_accessdenied[]   PROGMEM = "Access Denied";
+static const char _common_js[]       PROGMEM = "/common.js";
 
 //Is this an IP?
 static bool isIp(String str) {
@@ -163,8 +164,7 @@ static void handleUpload(AsyncWebServerRequest *request, const String& filename,
     }
 
     request->_tempFile = WLED_FS.open(finalname, "w");
-    DEBUG_PRINT(F("Uploading "));
-    DEBUG_PRINTLN(finalname);
+    DEBUG_PRINTF_P(PSTR("Uploading %s\n"), finalname.c_str());
     if (finalname.equals(FPSTR(getPresetsFileName()))) presetsModifiedTime = toki.second();
   }
   if (len) {
@@ -236,6 +236,10 @@ void initServer()
 #endif
   server.on(F("/liveview"), HTTP_GET, [](AsyncWebServerRequest *request) {
     handleStaticContent(request, "", 200, FPSTR(CONTENT_TYPE_HTML), PAGE_liveview, PAGE_liveview_length);
+  });
+
+  server.on(_common_js, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_common_js), 200, FPSTR(CONTENT_TYPE_JAVASCRIPT), JS_common, JS_common_length);
   });
 
   //settings page
@@ -392,7 +396,7 @@ void initServer()
       #if WLED_WATCHDOG_TIMEOUT > 0
       WLED::instance().disableWatchdog();
       #endif
-      usermods.onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
+      UsermodManager::onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
       lastEditTime = millis(); // make sure PIN does not lock during update
       strip.suspend();
       #ifdef ESP8266
@@ -408,7 +412,7 @@ void initServer()
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
         strip.resume();
-        usermods.onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
+        UsermodManager::onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
         #if WLED_WATCHDOG_TIMEOUT > 0
         WLED::instance().enableWatchdog();
         #endif
@@ -466,7 +470,7 @@ void initServer()
 
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
-    DEBUG_PRINT(F("Not-Found HTTP call: ")); DEBUG_PRINTLN(request->url());
+    DEBUG_PRINTF_P(PSTR("Not-Found HTTP call: %s\n"), request->url().c_str());
     if (captivePortal(request)) return;
 
     //make API CORS compatible
@@ -512,6 +516,10 @@ void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t erro
 
 void serveSettingsJS(AsyncWebServerRequest* request)
 {
+  if (request->url().indexOf(FPSTR(_common_js)) > 0) {
+    handleStaticContent(request, FPSTR(_common_js), 200, FPSTR(CONTENT_TYPE_JAVASCRIPT), JS_common, JS_common_length);
+    return;
+  }
   char buf[SETTINGS_STACK_BUF_SIZE+37];
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
