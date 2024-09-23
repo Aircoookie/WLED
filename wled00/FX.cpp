@@ -75,12 +75,13 @@ int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
 
 static um_data_t* getAudioData() {
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   return um_data;
 }
+
 
 // effect functions
 
@@ -92,6 +93,37 @@ uint16_t mode_static(void) {
   return strip.isOffRefreshRequired() ? FRAMETIME : 350;
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
+
+/*
+ * Copy a segment and perform (optional) color adjustments
+ */
+uint16_t mode_copy_segment(void) {
+  uint32_t sourceid = SEGMENT.custom3;
+  if (sourceid >= strip._segments.size() || sourceid == strip.getCurrSegmentId()) { // invalid source
+    SEGMENT.fadeToBlackBy(5); // fade out, clears pixels and allows overlapping segments
+    return FRAMETIME; 
+  }
+  if (strip._segments[sourceid].isActive()) {    
+    uint32_t sourcecolor;
+    if(!strip._segments[sourceid].is2D()) { // 1D source, source can be expanded into 2D
+      uint32_t cl; // length to copy
+      for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {              
+        sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], i);           
+        SEGMENT.setPixelColor(i, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
+      }
+    } else { // 2D source, note: 2D to 1D just copies the first row (or first column if 'Switch axis' is checked in FX)    
+      for (unsigned y = 0; y <  SEGMENT.virtualHeight(); y++) {
+        for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {  
+          if(SEGMENT.check2) sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
+          else sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], x, y);          
+          SEGMENT.setPixelColorXY(x, y, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
+        }     
+      }
+    }
+  }
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,Color shift,Lighten,Brighten,ID,,Switch axis(2D);;;1;ix=0,c1=0,c2=0,c3=0,o2=0";
 
 
 /*
@@ -6298,7 +6330,7 @@ static const char _data_FX_MODE_2DPLASMAROTOZOOM[] PROGMEM = "Rotozoomer@!,Scale
   uint8_t  *fftResult = nullptr;
   float    *fftBin = nullptr;
   um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     volumeSmth    = *(float*)   um_data->u_data[0];
     volumeRaw     = *(float*)   um_data->u_data[1];
     fftResult     =  (uint8_t*) um_data->u_data[2];
@@ -6911,7 +6943,7 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
   uint8_t *myVals = reinterpret_cast<uint8_t*>(SEGENV.data); // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
 
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -7494,7 +7526,7 @@ uint16_t mode_2DAkemi(void) {
   const float normalFactor = 0.4f;
 
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
@@ -7830,6 +7862,7 @@ void WS2812FX::setupEffectData() {
     _modeData.push_back(_data_RESERVED);
   }
   // now replace all pre-allocated effects
+  addEffect(FX_MODE_COPY, &mode_copy_segment, _data_FX_MODE_COPY);
   // --- 1D non-audio effects ---
   addEffect(FX_MODE_BLINK, &mode_blink, _data_FX_MODE_BLINK);
   addEffect(FX_MODE_BREATH, &mode_breath, _data_FX_MODE_BREATH);

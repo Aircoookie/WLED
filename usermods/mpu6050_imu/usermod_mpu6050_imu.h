@@ -164,7 +164,7 @@ class MPU6050Driver : public Usermod {
       if (i2c_scl<0 || i2c_sda<0) { DEBUG_PRINTLN(F("MPU6050: I2C is no good."));  return; }
       // Check the interrupt pin
       if (config.interruptPin >= 0) {
-        irqBound = pinManager.allocatePin(config.interruptPin, false, PinOwner::UM_IMU);
+        irqBound = PinManager::allocatePin(config.interruptPin, false, PinOwner::UM_IMU);
         if (!irqBound) { DEBUG_PRINTLN(F("MPU6050: IRQ pin already in use.")); return; }
         pinMode(config.interruptPin, INPUT);
       };
@@ -408,7 +408,7 @@ class MPU6050Driver : public Usermod {
         // Previously loaded and config changed
         if (irqBound && ((old_cfg.interruptPin != config.interruptPin) || !config.enabled)) {
           detachInterrupt(old_cfg.interruptPin);
-          pinManager.deallocatePin(old_cfg.interruptPin, PinOwner::UM_IMU);            
+          PinManager::deallocatePin(old_cfg.interruptPin, PinOwner::UM_IMU);            
           irqBound = false;
         }
 

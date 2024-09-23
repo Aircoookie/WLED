@@ -317,8 +317,8 @@
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
-
-#define MODE_COUNT                     187
+#define FX_MODE_COPY                   187
+#define MODE_COUNT                     188
 
 
 #define BLEND_STYLE_FADE            0
@@ -620,6 +620,7 @@ typedef struct Segment {
     #endif
     bool isPixelClipped(int i) const;
     [[gnu::hot]] uint32_t getPixelColor(int i) const;
+    uint32_t getRenderedPixelXY(Segment& seg, unsigned x, unsigned y = 0);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t, bool smear = false);
     void fill(uint32_t c);

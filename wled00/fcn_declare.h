@@ -81,10 +81,13 @@ class NeoGammaWLEDMethod {
 [[gnu::hot]] uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
 [[gnu::hot]] uint32_t color_add(uint32_t,uint32_t, bool fast=false);
 [[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
+uint32_t adjust_color(uint32_t rgb, uint32_t hueShift, uint32_t lighten, uint32_t brighten);
 CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
 CRGBPalette16 generateRandomPalette();
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
+CHSV rgb2hsv(const uint32_t rgb); // rgb to hsv
+inline CHSV rgb2hsv(const CRGB c) { return rgb2hsv((uint32_t((byte(c.r) << 16) | (byte(c.g) << 8) | (byte(c.b))))); } // CRGB to hsv
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO
@@ -317,34 +320,34 @@ class Usermod {
 
 class UsermodManager {
   private:
-    Usermod* ums[WLED_MAX_USERMODS];
-    byte numMods = 0;
+    static Usermod* ums[WLED_MAX_USERMODS];
+    static byte numMods;
 
   public:
-    void loop();
-    void handleOverlayDraw();
-    bool handleButton(uint8_t b);
-    bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
-    void setup();
-    void connected();
-    void appendConfigData();
-    void addToJsonState(JsonObject& obj);
-    void addToJsonInfo(JsonObject& obj);
-    void readFromJsonState(JsonObject& obj);
-    void addToConfig(JsonObject& obj);
-    bool readFromConfig(JsonObject& obj);
+    static void loop();
+    static void handleOverlayDraw();
+    static bool handleButton(uint8_t b);
+    static bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
+    static void setup();
+    static void connected();
+    static void appendConfigData();
+    static void addToJsonState(JsonObject& obj);
+    static void addToJsonInfo(JsonObject& obj);
+    static void readFromJsonState(JsonObject& obj);
+    static void addToConfig(JsonObject& obj);
+    static bool readFromConfig(JsonObject& obj);
 #ifndef WLED_DISABLE_MQTT
-    void onMqttConnect(bool sessionPresent);
-    bool onMqttMessage(char* topic, char* payload);
+    static void onMqttConnect(bool sessionPresent);
+    static bool onMqttMessage(char* topic, char* payload);
 #endif
 #ifndef WLED_DISABLE_ESPNOW
-    bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len);
+    static bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len);
 #endif
-    void onUpdateBegin(bool);
-    void onStateChange(uint8_t);
-    bool add(Usermod* um);
-    Usermod* lookup(uint16_t mod_id);
-    byte getModCount() {return numMods;};
+    static void onUpdateBegin(bool);
+    static void onStateChange(uint8_t);
+    static bool add(Usermod* um);
+    static Usermod* lookup(uint16_t mod_id);
+    static inline byte getModCount() {return numMods;};
 };
 
 //usermods_list.cpp

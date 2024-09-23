@@ -280,7 +280,7 @@ class BusOnOff : public Bus {
     uint32_t getPixelColor(uint16_t pix) const override;
     uint8_t  getPins(uint8_t* pinArray) const override;
     void show() override;
-    void cleanup() { pinManager.deallocatePin(_pin, PinOwner::BusOnOff); }
+    void cleanup() { PinManager::deallocatePin(_pin, PinOwner::BusOnOff); }
 
     static std::vector<LEDType> getLEDTypes();
 

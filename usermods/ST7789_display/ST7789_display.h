@@ -138,10 +138,10 @@ class St7789DisplayUsermod : public Usermod {
     void setup() override
     {
         PinManagerPinType spiPins[] = { { spi_mosi, true }, { spi_miso, false}, { spi_sclk, true } };
-        if (!pinManager.allocateMultiplePins(spiPins, 3, PinOwner::HW_SPI)) { enabled = false; return; }
+        if (!PinManager::allocateMultiplePins(spiPins, 3, PinOwner::HW_SPI)) { enabled = false; return; }
         PinManagerPinType displayPins[] = { { TFT_CS, true}, { TFT_DC, true}, { TFT_RST, true }, { TFT_BL, true } };
-        if (!pinManager.allocateMultiplePins(displayPins, sizeof(displayPins)/sizeof(PinManagerPinType), PinOwner::UM_FourLineDisplay)) {
-            pinManager.deallocateMultiplePins(spiPins, 3, PinOwner::HW_SPI);
+        if (!PinManager::allocateMultiplePins(displayPins, sizeof(displayPins)/sizeof(PinManagerPinType), PinOwner::UM_FourLineDisplay)) {
+            PinManager::deallocateMultiplePins(spiPins, 3, PinOwner::HW_SPI);
             enabled = false;
             return;
         }

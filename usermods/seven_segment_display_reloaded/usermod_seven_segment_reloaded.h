@@ -385,7 +385,7 @@ public:
     _setAllFalse();
 
     #ifdef USERMOD_SN_PHOTORESISTOR
-      ptr = (Usermod_SN_Photoresistor*) usermods.lookup(USERMOD_ID_SN_PHOTORESISTOR);
+      ptr = (Usermod_SN_Photoresistor*) UsermodManager::lookup(USERMOD_ID_SN_PHOTORESISTOR);
     #endif
     DEBUG_PRINTLN(F("Setup done"));
   }
