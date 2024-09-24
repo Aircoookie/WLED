@@ -1268,8 +1268,8 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
   int8_t oldPin[3]; for (unsigned i=0; i<3; i++) oldPin[i] = ioPin[i];
 
   JsonObject top = root[FPSTR(_name)];
+  DEBUGUM_PRINT(FPSTR(_name));
   if (top.isNull()) {
-    DEBUGUM_PRINT(FPSTR(_name));
     DEBUGUM_PRINTLN(F(": No config found. (Using defaults.)"));
     return false;
   }
@@ -1293,13 +1293,12 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
   else
     ioFrequency = min(3400, max(100, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
 
-  DEBUGUM_PRINT(FPSTR(_name));
   if (!initDone) {
     // first run: reading from cfg.json
     type = newType;
-    DEBUGUM_PRINTLN(F(" config loaded."));
+    DEBUGUM_PRINTLN(F(": config loaded."));
   } else {
-    DEBUGUM_PRINTLN(F(" config (re)loaded."));
+    DEBUGUM_PRINTLN(F(": config (re)loaded."));
     // changing parameters from settings page
     bool pinsChanged = false;
     for (unsigned i=0; i<3; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }

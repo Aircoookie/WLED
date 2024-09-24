@@ -229,7 +229,7 @@ void PIRsensorSwitch::switchStrip(bool switchOn)
   if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return; //if lights on and off only, do nothing
   if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
   PIRtriggered = switchOn;
-  DEBUGUM_PRINT(F("PIR: strip=")); DEBUGUM_PRINTLN(switchOn?"on":"off");
+  DEBUGUM_PRINTF_P(PSTR("PIR: strip=%s\n"), switchOn?"on":"off");
   if (switchOn) {
     if (m_onPreset) {
       if (currentPlaylist>0 && !offMode) {
@@ -384,7 +384,7 @@ void PIRsensorSwitch::setup()
       #endif
       sensorPinState[i] = digitalRead(PIRsensorPin[i]);
     } else {
-      DEBUGUM_PRINT(F("PIRSensorSwitch pin ")); DEBUGUM_PRINTLN(i); DEBUGUM_PRINTLN(F(" allocation failed."));
+      DEBUGUM_PRINTF_P(PSTR("PIRSensorSwitch: pin %d allocation failed.\n"), i);
       PIRsensorPin[i] = -1;  // allocation failed
     }
   }
@@ -471,7 +471,7 @@ void PIRsensorSwitch::addToJsonInfo(JsonObject &root)
 
 void PIRsensorSwitch::onStateChange(uint8_t mode) {
   if (!initDone) return;
-  DEBUGUM_PRINT(F("PIR: offTimerStart=")); DEBUGUM_PRINTLN(offTimerStart);
+  DEBUGUM_PRINTF_P(PSTR("PIR: offTimerStart=%lu\n"), offTimerStart);
   if (m_override && PIRtriggered && offTimerStart) { // debounce
     // checking PIRtriggered and offTimerStart will prevent cancellation upon On trigger
     DEBUGUM_PRINTLN(F("PIR: Canceled."));
@@ -561,12 +561,12 @@ bool PIRsensorSwitch::readFromConfig(JsonObject &root)
 
   if (!initDone) {
     // reading config prior to setup()
-    DEBUGUM_PRINTLN(F(" config loaded."));
+    DEBUGUM_PRINTLN(F(": config loaded."));
   } else {
     for (int i = 0; i < PIR_SENSOR_MAX_SENSORS; i++)
       if (oldPin[i] >= 0) PinManager::deallocatePin(oldPin[i], PinOwner::UM_PIR);
     setup();
-    DEBUGUM_PRINTLN(F(" config (re)loaded."));
+    DEBUGUM_PRINTLN(F(": config (re)loaded."));
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
   return !(pins.isNull() || pins.size() != PIR_SENSOR_MAX_SENSORS);

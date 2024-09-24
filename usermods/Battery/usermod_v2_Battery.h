@@ -160,9 +160,9 @@ class UsermodBattery : public Usermod
       device[F("sw")]   = versionString;
 
       sprintf_P(buf, PSTR("homeassistant/%s/%s/%s/config"), type, mqttClientID, uid);
-      DEBUG_PRINTLN(buf);
+      DEBUGUM_PRINTLN(buf);
       size_t payload_size = serializeJson(doc, json_str);
-      DEBUG_PRINTLN(json_str);
+      DEBUGUM_PRINTLN(json_str);
 
       mqtt->publish(buf, 0, true, json_str, payload_size);
     }

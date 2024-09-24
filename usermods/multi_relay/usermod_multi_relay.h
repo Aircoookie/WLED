@@ -399,7 +399,7 @@ void MultiRelay::switchRelay(uint8_t relay, bool mode) {
       state |= (_relay[i].invert ? !_relay[i].state : _relay[i].state) << pin; // fill relay states for all pins
     }
     IOexpanderWrite(addrPcf8574, state);
-    DEBUGUM_PRINT(F("Writing to PCF8574: ")); DEBUGUM_PRINTLN(state);
+    DEBUGUM_PRINTF_P(PSTR("Writing to PCF8574: %d\n"), (int)state);
   } else if (_relay[relay].pin < 100) {
     pinMode(_relay[relay].pin, OUTPUT);
     digitalWrite(_relay[relay].pin, _relay[relay].invert ? !_relay[relay].state : _relay[relay].state);
@@ -781,8 +781,8 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
   int8_t oldPin[MULTI_RELAY_MAX_RELAYS];
 
   JsonObject top = root[FPSTR(_name)];
+  DEBUGUM_PRINT(FPSTR(_name));
   if (top.isNull()) {
-    DEBUGUM_PRINT(FPSTR(_name));
     DEBUGUM_PRINTLN(F(": No config found. (Using defaults.)"));
     return false;
   }
@@ -809,10 +809,9 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
     _relay[i].delay    = min(600,max(0,abs((int)_relay[i].delay))); // bounds checking max 10min
   }
 
-  DEBUGUM_PRINT(FPSTR(_name));
   if (!initDone) {
     // reading config prior to setup()
-    DEBUGUM_PRINTLN(F(" config loaded."));
+    DEBUGUM_PRINTLN(F(": config loaded."));
   } else {
     // deallocate all pins 1st
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
@@ -821,7 +820,7 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
       }
     // allocate new pins
     setup();
-    DEBUGUM_PRINTLN(F(" config (re)loaded."));
+    DEBUGUM_PRINTLN(F(": config (re)loaded."));
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
   return !top[FPSTR(_pcf8574)].isNull();

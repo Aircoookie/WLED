@@ -163,8 +163,7 @@ bool IRAM_ATTR_YN Segment::allocateData(size_t len) {
   deallocateData(); // if the old buffer was smaller release it first
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
     // not enough memory
-    DEBUGFX_PRINT(F("!!! Effect RAM depleted: "));
-    DEBUGFX_PRINTF_P(PSTR("%d/%d !!!\n"), len, Segment::getUsedSegmentData());
+    DEBUGFX_PRINTF_P(PSTR("!!! Effect RAM depleted: %d/%d !!!\n"), len, Segment::getUsedSegmentData());
     errorFlag = ERR_NORAM;
     return false;
   }
@@ -492,10 +491,7 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
   }
   if (ofs < UINT16_MAX) offset = ofs;
 
-  DEBUGFX_PRINT(F("setUp segment: ")); DEBUGFX_PRINT(i1);
-  DEBUGFX_PRINT(','); DEBUGFX_PRINT(i2);
-  DEBUGFX_PRINT(F(" -> ")); DEBUGFX_PRINT(i1Y);
-  DEBUGFX_PRINT(','); DEBUGFX_PRINTLN(i2Y);
+  DEBUGFX_PRINTF_P(PSTR("setUp segment: %d,%d -> %d,%d\n"), (int)i1, (int)i2, (int)i1Y, (int)i2Y);
   markForReset();
   if (boundsUnchanged) return;
 
@@ -1248,13 +1244,13 @@ void WS2812FX::finalizeInit() {
         // Pin should not be already allocated, read/only or defined for current bus
         while (PinManager::isPinAllocated(defPin[j]) || !PinManager::isPinOk(defPin[j],true)) {
           if (validPin) {
-            DEBUG_PRINTLN(F("Some of the provided pins cannot be used to configure this LED output."));
+            DEBUGFX_PRINTLN(F("Some of the provided pins cannot be used to configure this LED output."));
             defPin[j] = 1; // start with GPIO1 and work upwards
             validPin = false;
           } else if (defPin[j] < WLED_NUM_PINS) {
             defPin[j]++;
           } else {
-            DEBUG_PRINTLN(F("No available pins left! Can't configure output."));
+            DEBUGFX_PRINTLN(F("No available pins left! Can't configure output."));
             return;
           }
           // is the newly assigned pin already defined or used previously?
@@ -1780,8 +1776,7 @@ void WS2812FX::loadCustomPalettes() {
 
     StaticJsonDocument<1536> pDoc; // barely enough to fit 72 numbers
     if (WLED_FS.exists(fileName)) {
-      DEBUGFX_PRINT(F("Reading palette from "));
-      DEBUGFX_PRINTLN(fileName);
+      DEBUGFX_PRINTF_P(PSTR("Reading palette from %s\n"), fileName);
 
       if (readObjectFromFile(fileName, nullptr, &pDoc)) {
         JsonArray pal = pDoc[F("palette")];
@@ -1841,7 +1836,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   if (!isFile || !requestJSONBufferLock(7)) return false;
 
   if (!readObjectFromFile(fileName, nullptr, pDoc)) {
-    DEBUGFX_PRINT(F("ERROR Invalid ledmap in ")); DEBUGFX_PRINTLN(fileName);
+    DEBUGFX_PRINTF_P(PSTR("ERROR Invalid ledmap in %s\n"), fileName);
     releaseJSONBufferLock();
     return false; // if file does not load properly then exit
   }
@@ -1857,7 +1852,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   customMappingTable = new uint16_t[getLengthTotal()];
 
   if (customMappingTable) {
-    DEBUGFX_PRINT(F("Reading LED map from ")); DEBUGFX_PRINTLN(fileName);
+    DEBUGFX_PRINTF_P(PSTR("Reading LED map from %s\n"), fileName);
     JsonArray map = root[F("map")];
     if (!map.isNull() && map.size()) {  // not an empty map
       customMappingSize = min((unsigned)map.size(), (unsigned)getLengthTotal());

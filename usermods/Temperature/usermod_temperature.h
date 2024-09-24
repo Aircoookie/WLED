@@ -122,8 +122,7 @@ float UsermodTemperature::readDallas() {
     if (OneWire::crc8(data,8) != data[8]) {
       DEBUGUM_PRINTLN(F("CRC error reading temperature."));
       for (unsigend i=0; i < 9; i++) DEBUGUM_PRINTF_P(PSTR("0x%02X "), data[i]);
-      DEBUGUM_PRINT(F(" => "));
-      DEBUGUM_PRINTF_P(PSTR("0x%02X\n"), OneWire::crc8(data,8));
+      DEBUGUM_PRINTF_P(PSTR(" => 0x%02X\n"), OneWire::crc8(data,8));
     }
     #endif
     switch(sensorFound) {
@@ -161,8 +160,7 @@ void UsermodTemperature::readTemperature() {
   lastMeasurement = millis();
   waitingForConversion = false;
   //DEBUGUM_PRINTF_P(PSTR("Read temperature %2.1f.\n"), temperature); // does not work properly on 8266
-  DEBUGUM_PRINT(F("Read temperature "));
-  DEBUGUM_PRINTLN(temperature);
+  DEBUGUM_PRINTF_P(PSTR("Read temperature %3.1f\n"), (double)temperature);
 }
 
 bool UsermodTemperature::findSensor() {
@@ -415,12 +413,12 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
   if (!initDone) {
     // first run: reading from cfg.json
     temperaturePin = newTemperaturePin;
-    DEBUGUM_PRINTLN(F(" config loaded."));
+    DEBUGUM_PRINTLN(F(": config loaded."));
   } else {
-    DEBUGUM_PRINTLN(F(" config (re)loaded."));
+    DEBUGUM_PRINTLN(F(": config (re)loaded."));
     // changing paramters from settings page
     if (newTemperaturePin != temperaturePin) {
-      DEBUGUM_PRINTLN(F("Re-init temperature."));
+      DEBUGUM_PRINTLN(F(" Re-init temperature."));
       // deallocate pin and release memory
       delete oneWire;
       PinManager::deallocatePin(temperaturePin, PinOwner::UM_Temperature);

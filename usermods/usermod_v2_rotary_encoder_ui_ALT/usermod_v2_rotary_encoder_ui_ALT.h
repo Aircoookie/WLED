@@ -392,13 +392,13 @@ byte RotaryEncoderUIUsermod::readPin(uint8_t pin) {
  * modes_alpha_indexes and palettes_alpha_indexes.
  */
 void RotaryEncoderUIUsermod::sortModesAndPalettes() {
-  DEBUGUM_PRINT(F("Sorting modes: ")); DEBUGUM_PRINTLN(strip.getModeCount());
+  DEBUGUM_PRINTF_P(PSTR("Sorting modes: %d\n"), (int)strip.getModeCount());
   //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
   modes_qstrings = strip.getModeDataSrc();
   modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
   re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
-  DEBUGUM_PRINT(F("Sorting palettes: ")); DEBUGUM_PRINT(strip.getPaletteCount()); DEBUGUM_PRINT('/'); DEBUGUM_PRINTLN(strip.customPalettes.size());
+  DEBUGUM_PRINTF_P(PSTR("Sorting palettes: %u/%u"), (unsigned)strip.getPaletteCount(), strip.customPalettes.size());
   palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
   palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
   if (strip.customPalettes.size()) {
@@ -1102,8 +1102,8 @@ void RotaryEncoderUIUsermod::appendConfigData() {
 bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
   // we look for JSON object: {"Rotary-Encoder":{"DT-pin":12,"CLK-pin":14,"SW-pin":13}}
   JsonObject top = root[FPSTR(_name)];
+  DEBUGUM_PRINT(FPSTR(_name));
   if (top.isNull()) {
-    DEBUGUM_PRINT(FPSTR(_name));
     DEBUGUM_PRINTLN(F(": No config found. (Using defaults.)"));
     return false;
   }
@@ -1124,29 +1124,28 @@ bool RotaryEncoderUIUsermod::readFromConfig(JsonObject &root) {
   usePcf8574 = top[FPSTR(_pcf8574)] | usePcf8574;
   addrPcf8574 = top[FPSTR(_pcfAddress)] | addrPcf8574;
 
-  DEBUGUM_PRINT(FPSTR(_name));
   if (!initDone) {
     // first run: reading from cfg.json
     pinA = newDTpin;
     pinB = newCLKpin;
     pinC = newSWpin;
-    DEBUGUM_PRINTLN(F(" config loaded."));
+    DEBUGUM_PRINTLN(F(": config loaded."));
   } else {
-    DEBUGUM_PRINTLN(F(" config (re)loaded."));
+    DEBUGUM_PRINTLN(F(": config (re)loaded."));
     // changing parameters from settings page
     if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin || pinIRQ!=newIRQpin) {
       if (oldPcf8574) {
         if (pinIRQ >= 0) {
           detachInterrupt(pinIRQ);
           PinManager::deallocatePin(pinIRQ, PinOwner::UM_RotaryEncoderUI);
-          DEBUGUM_PRINTLN(F("Deallocated old IRQ pin."));
+          DEBUGUM_PRINTLN(F(" Deallocated old IRQ pin."));
         }
         pinIRQ = newIRQpin<100 ? newIRQpin : -1; // ignore PCF8574 pins
       } else {
         PinManager::deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
         PinManager::deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
         PinManager::deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
-        DEBUGUM_PRINTLN(F("Deallocated old pins."));
+        DEBUGUM_PRINTLN(F(" Deallocated old pins."));
       }
       pinA = newDTpin;
       pinB = newCLKpin;
