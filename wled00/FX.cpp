@@ -99,25 +99,26 @@ static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
  */
 uint16_t mode_copy_segment(void) {
   uint32_t sourceid = SEGMENT.custom3;
-  if (sourceid >= strip._segments.size() || sourceid == strip.getCurrSegmentId()) { // invalid source
+  if (sourceid >= strip.getSegmentsNum() || sourceid == strip.getCurrSegmentId()) { // invalid source
     SEGMENT.fadeToBlackBy(5); // fade out, clears pixels and allows overlapping segments
-    return FRAMETIME; 
+    return FRAMETIME;
   }
-  if (strip._segments[sourceid].isActive()) {    
+  Segment sourcesegment = strip.getSegment(sourceid);
+  if (sourcesegment.isActive()) {
     uint32_t sourcecolor;
-    if(!strip._segments[sourceid].is2D()) { // 1D source, source can be expanded into 2D
+    if(!sourcesegment.is2D()) { // 1D source, source can be expanded into 2D
       uint32_t cl; // length to copy
-      for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {              
-        sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], i);           
+      for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {
+        sourcecolor = strip.getRenderedPixelXY(sourceid, i);
         SEGMENT.setPixelColor(i, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
       }
-    } else { // 2D source, note: 2D to 1D just copies the first row (or first column if 'Switch axis' is checked in FX)    
+    } else { // 2D source, note: 2D to 1D just copies the first row (or first column if 'Switch axis' is checked in FX)
       for (unsigned y = 0; y <  SEGMENT.virtualHeight(); y++) {
-        for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {  
-          if(SEGMENT.check2) sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
-          else sourcecolor = SEGMENT.getRenderedPixelXY(strip._segments[sourceid], x, y);          
+        for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {
+          if(SEGMENT.check2) sourcecolor = strip.getRenderedPixelXY(sourceid, y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
+          else sourcecolor = strip.getRenderedPixelXY(sourceid, x, y);
           SEGMENT.setPixelColorXY(x, y, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
-        }     
+        }
       }
     }
   }

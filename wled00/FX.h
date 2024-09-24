@@ -588,7 +588,6 @@ typedef struct Segment {
     inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
     [[gnu::hot]] uint32_t getPixelColor(int i) const;
-    uint32_t getRenderedPixelXY(Segment& seg, unsigned x, unsigned y = 0);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t, bool smear = false);
     void fill(uint32_t c);
@@ -848,7 +847,8 @@ class WS2812FX {  // 96 bytes
     uint32_t
       now,
       timebase,
-      getPixelColor(uint16_t) const;
+      getPixelColor(uint16_t) const,
+      getRenderedPixelXY(uint8_t segid, unsigned x, unsigned y = 0) const;
 
     inline uint32_t getLastShow() const       { return _lastShow; }           // returns millis() timestamp of last strip.show() call
     inline uint32_t segColor(uint8_t i) const { return _colors_t[i]; }        // returns currently valid color (for slot i) AKA SEGCOLOR(); may be blended between two colors while in transition
