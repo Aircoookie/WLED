@@ -839,10 +839,6 @@ WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
 WLED_GLOBAL Toki toki _INIT(Toki());
 
-// Temp buffer
-WLED_GLOBAL char* obuf;
-WLED_GLOBAL uint16_t olen _INIT(0);
-
 // General filesystem
 WLED_GLOBAL size_t fsBytesUsed _INIT(0);
 WLED_GLOBAL size_t fsBytesTotal _INIT(0);
