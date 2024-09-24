@@ -69,6 +69,8 @@ bool UsermodManager::add(Usermod* um)
   return true;
 }
 
+Usermod* UsermodManager::ums[WLED_MAX_USERMODS] = {nullptr};
+byte UsermodManager::numMods = 0;
 
 /* Usermod v2 interface shim for oappend */
 Print* Usermod::oappend_shim = nullptr;

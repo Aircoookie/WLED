@@ -73,7 +73,7 @@ class UsermodTemperature : public Usermod {
     void publishHomeAssistantAutodiscovery();
 #endif
 
-    static UsermodTemperature* _instance; // to overcome nonstatic getTemperatureC() method and avoid usermods.lookup(USERMOD_ID_TEMPERATURE);
+    static UsermodTemperature* _instance; // to overcome nonstatic getTemperatureC() method and avoid UsermodManager::lookup(USERMOD_ID_TEMPERATURE);
 
   public:
 
@@ -223,14 +223,14 @@ void UsermodTemperature::setup() {
     // config says we are enabled
     DEBUG_PRINTLN(F("Allocating temperature pin..."));
     // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-    if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
+    if (temperaturePin >= 0 && PinManager::allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
       oneWire = new OneWire(temperaturePin);
       if (oneWire->reset()) {
         while (!findSensor() && retries--) {
           delay(25); // try to find sensor
         }
       }
-      if (parasite && pinManager.allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
+      if (parasite && PinManager::allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
         pinMode(parasitePin, OUTPUT);
         digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
       } else {
@@ -423,9 +423,9 @@ bool UsermodTemperature::readFromConfig(JsonObject &root) {
       DEBUG_PRINTLN(F("Re-init temperature."));
       // deallocate pin and release memory
       delete oneWire;
-      pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
+      PinManager::deallocatePin(temperaturePin, PinOwner::UM_Temperature);
       temperaturePin = newTemperaturePin;
-      pinManager.deallocatePin(parasitePin, PinOwner::UM_Temperature);
+      PinManager::deallocatePin(parasitePin, PinOwner::UM_Temperature);
       // initialise
       setup();
     }

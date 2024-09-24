@@ -103,7 +103,7 @@ class AutoSaveUsermod : public Usermod {
       #ifdef USERMOD_FOUR_LINE_DISPLAY    
       // This Usermod has enhanced functionality if
       // FourLineDisplayUsermod is available.
-      display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
+      display = (FourLineDisplayUsermod*) UsermodManager::lookup(USERMOD_ID_FOUR_LINE_DISP);
       #endif
       initDone = true;
       if (enabled && applyAutoSaveOnBoot) applyPreset(autoSavePreset);

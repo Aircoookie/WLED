@@ -84,7 +84,7 @@ void appendGPIOinfo(Print& settingsScript) {
   if (requestJSONBufferLock(6)) {
     // if we can't allocate JSON buffer ignore usermod pins
     JsonObject mods = pDoc->createNestedObject(F("um"));
-    usermods.addToConfig(mods);
+    UsermodManager::addToConfig(mods);
     if (!mods.isNull()) fillUMPins(settingsScript, mods);
     releaseJSONBufferLock();
   }
@@ -93,7 +93,7 @@ void appendGPIOinfo(Print& settingsScript) {
   // add reserved (unusable) pins
   settingsScript.print(SET_F("d.rsvd=["));
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
-    if (!pinManager.isPinOk(i, false)) {  // include readonly pins
+    if (!PinManager::isPinOk(i, false)) {  // include readonly pins
       settingsScript.print(i); settingsScript.print(",");
     }
   }
@@ -130,7 +130,7 @@ void appendGPIOinfo(Print& settingsScript) {
   settingsScript.print(SET_F("d.ro_gpio=["));
   bool firstPin = true;
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
-    if (pinManager.isReadOnlyPin(i)) {
+    if (PinManager::isReadOnlyPin(i)) {
       // No comma before the first pin
       if (!firstPin) settingsScript.print(SET_F(","));
       settingsScript.print(i);
@@ -309,7 +309,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (pinManager.isPinOk(pins[i]) || bus->isVirtual()) printSetFormValue(settingsScript,lp,pins[i]);
+        if (PinManager::isPinOk(pins[i]) || bus->isVirtual()) printSetFormValue(settingsScript,lp,pins[i]);
       }
       printSetFormValue(settingsScript,lc,bus->getLength());
       printSetFormValue(settingsScript,lt,bus->getType());
@@ -612,7 +612,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
   if (subPage == SUBPAGE_UM) //usermods
   {
     appendGPIOinfo(settingsScript);
-    settingsScript.printf_P(PSTR("numM=%d;"), usermods.getModCount());
+    settingsScript.printf_P(PSTR("numM=%d;"), UsermodManager::getModCount());
     printSetFormValue(settingsScript,PSTR("SDA"),i2c_sda);
     printSetFormValue(settingsScript,PSTR("SCL"),i2c_scl);
     printSetFormValue(settingsScript,PSTR("MOSI"),spi_mosi);
@@ -625,7 +625,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
                  "addInfo('SCLK','%d');"),
       HW_PIN_SDA, HW_PIN_SCL, HW_PIN_DATASPI, HW_PIN_MISOSPI, HW_PIN_CLOCKSPI
     );
-    usermods.appendConfigData(settingsScript);
+    UsermodManager::appendConfigData(settingsScript);
   }
 
   if (subPage == SUBPAGE_UPDATE) // update

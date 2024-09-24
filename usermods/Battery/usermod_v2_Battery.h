@@ -200,7 +200,7 @@ class UsermodBattery : public Usermod
         bool success = false;
         DEBUG_PRINTLN(F("Allocating battery pin..."));
         if (batteryPin >= 0 && digitalPinToAnalogChannel(batteryPin) >= 0) 
-          if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
+          if (PinManager::allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
           }
@@ -561,7 +561,7 @@ class UsermodBattery : public Usermod
           if (newBatteryPin != batteryPin) 
           {
             // deallocate pin
-            pinManager.deallocatePin(batteryPin, PinOwner::UM_Battery);
+            PinManager::deallocatePin(batteryPin, PinOwner::UM_Battery);
             batteryPin = newBatteryPin;
             // initialise
             setup();

@@ -183,11 +183,7 @@ void IRAM_ATTR_YN Segment::deallocateData() {
   if ((Segment::getUsedSegmentData() > 0) && (_dataLen > 0)) { // check that we don't have a dangling / inconsistent data pointer
     free(data);
   } else {
-    DEBUG_PRINT(F("---- Released data "));
-    DEBUG_PRINTF_P(PSTR("(%p): "), this);
-    DEBUG_PRINT(F("inconsistent UsedSegmentData "));
-    DEBUG_PRINTF_P(PSTR("(%d/%d)"), _dataLen, Segment::getUsedSegmentData());
-    DEBUG_PRINTLN(F(", cowardly refusing to free nothing."));
+    DEBUG_PRINTF_P(PSTR("---- Released data (%p): inconsistent UsedSegmentData (%d/%d), cowardly refusing to free nothing.\n"), this, _dataLen, Segment::getUsedSegmentData());
   }
   data = nullptr;
   Segment::addUsedSegmentData(_dataLen <= Segment::getUsedSegmentData() ? -_dataLen : -Segment::getUsedSegmentData());
@@ -1034,7 +1030,6 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() >= segStopIdx) continue;
     if (bus->getStart() + bus->getLength() <= segStartIdx) continue;
 
-    //uint8_t type = bus->getType();
     if (bus->hasRGB() || (strip.cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
     if (!strip.cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
     if (strip.correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
@@ -1251,7 +1246,7 @@ void WS2812FX::finalizeInit() {
         // When booting without config (1st boot) we need to make sure GPIOs defined for LED output don't clash with hardware
         // i.e. DEBUG (GPIO1), DMX (2), SPI RAM/FLASH (16&17 on ESP32-WROVER/PICO), read/only pins, etc.
         // Pin should not be already allocated, read/only or defined for current bus
-        while (pinManager.isPinAllocated(defPin[j]) || !pinManager.isPinOk(defPin[j],true)) {
+        while (PinManager::isPinAllocated(defPin[j]) || !PinManager::isPinOk(defPin[j],true)) {
           if (validPin) {
             DEBUG_PRINTLN(F("Some of the provided pins cannot be used to configure this LED output."));
             defPin[j] = 1; // start with GPIO1 and work upwards
@@ -1567,7 +1562,7 @@ uint16_t WS2812FX::getLengthPhysical() const {
   unsigned len = 0;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
     Bus *bus = BusManager::getBus(b);
-    if (bus->getType() >= TYPE_NET_DDP_RGB) continue; //exclude non-physical network busses
+    if (bus->isVirtual()) continue; //exclude non-physical network busses
     len += bus->getLength();
   }
   return len;
