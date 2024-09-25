@@ -48,7 +48,7 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool preserveCR)
   uint32_t g = wg & 0xFFFF;
 
   if (preserveCR) { // preserve color ratios
-    unsigned max = std::max(r,g); // check for overflow note
+    uint32_t max = std::max(r,g); // check for overflow note
     max = std::max(max,b);
     max = std::max(max,w);
     //unsigned max = r; // check for overflow note
