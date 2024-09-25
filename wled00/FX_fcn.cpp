@@ -1290,7 +1290,7 @@ void WS2812FX::finalizeInit() {
       // if we have less counts than pins and they do not align, use last known count to set current count
       unsigned count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       // analog always has length 1
-      if (Bus::isPWM(dataType)) count = 1;
+      if (Bus::isPWM(dataType) || Bus::isOnOff(dataType)) count = 1;
       prevLen += count;
       BusConfig defCfg = BusConfig(dataType, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, useGlobalLedBuffer);
       if (BusManager::add(defCfg) == -1) break;
