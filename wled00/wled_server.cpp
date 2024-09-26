@@ -396,7 +396,7 @@ void initServer()
       #if WLED_WATCHDOG_TIMEOUT > 0
       WLED::instance().disableWatchdog();
       #endif
-      usermods.onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
+      UsermodManager::onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
       lastEditTime = millis(); // make sure PIN does not lock during update
       strip.suspend();
       #ifdef ESP8266
@@ -412,7 +412,7 @@ void initServer()
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
         strip.resume();
-        usermods.onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
+        UsermodManager::onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
         #if WLED_WATCHDOG_TIMEOUT > 0
         WLED::instance().enableWatchdog();
         #endif
@@ -520,27 +520,23 @@ void serveSettingsJS(AsyncWebServerRequest* request)
     handleStaticContent(request, FPSTR(_common_js), 200, FPSTR(CONTENT_TYPE_JAVASCRIPT), JS_common, JS_common_length);
     return;
   }
-  char buf[SETTINGS_STACK_BUF_SIZE+37];
-  buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
   if (subPage > 10) {
-    strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
-    request->send(501, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
+    request->send_P(501, FPSTR(CONTENT_TYPE_JAVASCRIPT), PSTR("alert('Settings for this request are not implemented.');"));
     return;
   }
   if (subPage > 0 && !correctPIN && strlen(settingsPIN)>0) {
-    strcpy_P(buf, PSTR("alert('PIN incorrect.');"));
-    request->send(401, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
+    request->send_P(401, FPSTR(CONTENT_TYPE_JAVASCRIPT), PSTR("alert('PIN incorrect.');"));
     return;
   }
-  strcat_P(buf,PSTR("function GetV(){var d=document;"));
-  getSettingsJS(subPage, buf+strlen(buf));  // this may overflow by 35bytes!!!
-  strcat_P(buf,PSTR("}"));
   
-  AsyncWebServerResponse *response;
-  response = request->beginResponse(200, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
+  AsyncResponseStream *response = request->beginResponseStream(FPSTR(CONTENT_TYPE_JAVASCRIPT));
   response->addHeader(F("Cache-Control"), F("no-store"));
   response->addHeader(F("Expires"), F("0"));
+
+  response->print(F("function GetV(){var d=document;"));
+  getSettingsJS(subPage, *response);
+  response->print(F("}"));
   request->send(response);
 }
 

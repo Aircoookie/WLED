@@ -436,7 +436,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
   strip.resume();
 
-  usermods.readFromJsonState(root);
+  UsermodManager::readFromJsonState(root);
 
   loadLedmap = root[F("ledmap")] | loadLedmap;
 
@@ -592,7 +592,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root[F("pl")] = currentPlaylist;
     root[F("ledmap")] = currentLedmap;
 
-    usermods.addToJsonState(root);
+    UsermodManager::addToJsonState(root);
 
     JsonObject nl = root.createNestedObject("nl");
     nl["on"] = nightlightActive;
@@ -784,7 +784,7 @@ void serializeInfo(JsonObject root)
   getTimeString(time);
   root[F("time")] = time;
 
-  usermods.addToJsonInfo(root);
+  UsermodManager::addToJsonInfo(root);
 
   uint16_t os = 0;
   #ifdef WLED_DEBUG

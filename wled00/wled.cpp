@@ -72,7 +72,7 @@ void WLED::loop()
   unsigned long usermodMillis = millis();
   #endif
   userLoop();
-  usermods.loop();
+  UsermodManager::loop();
   #ifdef WLED_DEBUG
   usermodMillis = millis() - usermodMillis;
   avgUsermodMillis += usermodMillis;
@@ -410,10 +410,10 @@ void WLED::setup()
 #endif
 
 #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
-  pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
+  PinManager::allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
 #endif
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
-  pinManager.allocatePin(2, true, PinOwner::DMX);
+  PinManager::allocatePin(2, true, PinOwner::DMX);
 #endif
 
   DEBUG_PRINTLN(F("Registering usermods ..."));
@@ -452,7 +452,7 @@ void WLED::setup()
   DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
 
 #if defined(STATUSLED) && STATUSLED>=0
-  if (!pinManager.isPinAllocated(STATUSLED)) {
+  if (!PinManager::isPinAllocated(STATUSLED)) {
     // NOTE: Special case: The status LED should *NOT* be allocated.
     //       See comments in handleStatusLed().
     pinMode(STATUSLED, OUTPUT);
@@ -465,7 +465,7 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
-  usermods.setup();
+  UsermodManager::setup();
   DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
 
   if (strcmp(multiWiFi[0].clientSSID, DEFAULT_CLIENT_SSID) == 0)
@@ -479,8 +479,8 @@ void WLED::setup()
   findWiFi(true);      // start scanning for available WiFi-s
 
   // all GPIOs are allocated at this point
-  serialCanRX = !pinManager.isPinAllocated(hardwareRX); // Serial RX pin (GPIO 3 on ESP32 and ESP8266)
-  serialCanTX = !pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut; // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
+  serialCanRX = !PinManager::isPinAllocated(hardwareRX); // Serial RX pin (GPIO 3 on ESP32 and ESP8266)
+  serialCanTX = !PinManager::isPinAllocated(hardwareTX) || PinManager::getPinOwner(hardwareTX) == PinOwner::DebugOut; // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
 
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
@@ -685,7 +685,7 @@ bool WLED::initEthernet()
     return false;
   }
 
-  if (!pinManager.allocateMultiplePins(pinsToAllocate, 10, PinOwner::Ethernet)) {
+  if (!PinManager::allocateMultiplePins(pinsToAllocate, 10, PinOwner::Ethernet)) {
     DEBUG_PRINTLN(F("initE: Failed to allocate ethernet pins"));
     return false;
   }
@@ -719,7 +719,7 @@ bool WLED::initEthernet()
     DEBUG_PRINTLN(F("initC: ETH.begin() failed"));
     // de-allocate the allocated pins
     for (managed_pin_type mpt : pinsToAllocate) {
-      pinManager.deallocatePin(mpt.pin, PinOwner::Ethernet);
+      PinManager::deallocatePin(mpt.pin, PinOwner::Ethernet);
     }
     return false;
   }
@@ -1010,7 +1010,7 @@ void WLED::handleConnection()
     }
     initInterfaces();
     userConnected();
-    usermods.connected();
+    UsermodManager::connected();
     lastMqttReconnectAttempt = 0; // force immediate update
 
     // shut down AP
@@ -1033,7 +1033,7 @@ void WLED::handleStatusLED()
   uint32_t c = 0;
 
   #if STATUSLED>=0
-  if (pinManager.isPinAllocated(STATUSLED)) {
+  if (PinManager::isPinAllocated(STATUSLED)) {
     return; //lower priority if something else uses the same pin
   }
   #endif
