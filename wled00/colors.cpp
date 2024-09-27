@@ -251,7 +251,7 @@ void hsv2rgb(const CHSV32& hsv, uint32_t& rgb) // convert HSV (16bit hue) to RGB
   }
   region = h / 10923;  // 65536 / 6 = 10923
   remainder = (h - (region * 10923)) * 6;
-  p = (v * (256 - s)) >> 8;
+  p = (v * (255 - s)) >> 8;
   q = (v * (255 - ((s * remainder) >> 16))) >> 8;
   t = (v * (255 - ((s * (65535 - remainder)) >> 16))) >> 8;
   switch (region) {
