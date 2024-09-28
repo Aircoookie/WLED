@@ -74,13 +74,13 @@ typedef struct WiFiConfig {
 struct CRGBW {
     union {
         uint32_t color32; // Access as a 32-bit value (0xWWRRGGBB)
-        uint8_t raw[4];   // Access as an array in the order B, G, R, W
         struct {
             uint8_t b;
             uint8_t g;
             uint8_t r;
             uint8_t w;
         };
+        uint8_t raw[4];   // Access as an array in the order B, G, R, W
     };
 
     // Default constructor
@@ -90,10 +90,10 @@ struct CRGBW {
     constexpr CRGBW(uint32_t color) __attribute__((always_inline)) : color32(color) {}
 
     // Constructor with r, g, b, w values
-    constexpr CRGBW(uint8_t red, uint8_t green, uint8_t blue, uint8_t white = 0) __attribute__((always_inline)) : r(red), g(green), b(blue), w(white) {}
+    constexpr CRGBW(uint8_t red, uint8_t green, uint8_t blue, uint8_t white = 0) __attribute__((always_inline)) : b(blue), g(green), r(red), w(white) {}
 
     // Constructor from CRGB
-    constexpr CRGBW(CRGB rgb) __attribute__((always_inline)) : r(rgb.r), g(rgb.g), b(rgb.b), w(0) {}
+    constexpr CRGBW(CRGB rgb) __attribute__((always_inline)) : b(rgb.b), g(rgb.g), r(rgb.r), w(0) {}
 
     // Access as an array
     inline const uint8_t& operator[] (uint8_t x) const __attribute__((always_inline)) { return raw[x]; }
@@ -102,7 +102,7 @@ struct CRGBW {
     inline CRGBW& operator=(uint32_t color) __attribute__((always_inline)) { color32 = color; return *this; }
 
     // Assignment from r, g, b, w
-    inline CRGBW& operator=(const CRGB& rgb) __attribute__((always_inline)) { r = rgb.r; g = rgb.g; b = rgb.b; w = 0; return *this; }
+    inline CRGBW& operator=(const CRGB& rgb) __attribute__((always_inline)) { b = rgb.b; g = rgb.g; r = rgb.r; w = 0; return *this; }
 
     // Conversion operator to uint32_t
     inline operator uint32_t() const __attribute__((always_inline)) {
