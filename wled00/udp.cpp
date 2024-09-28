@@ -416,18 +416,18 @@ void realtimeLock(uint32_t timeoutMs, byte md)
       start = mainseg.start;
       stop  = mainseg.stop;
       mainseg.freeze = true;
+      // if WLED was off and using main segment only, freeze non-main segments so they stay off
+      if (bri == 0) {
+        for (size_t s = 0; s < strip.getSegmentsNum(); s++) {
+          strip.getSegment(s).freeze = true;
+        }
+      }
     } else {
       start = 0;
       stop  = strip.getLengthTotal();
     }
     // clear strip/segment
     for (size_t i = start; i < stop; i++) strip.setPixelColor(i,BLACK);
-    // if WLED was off and using main segment only, freeze non-main segments so they stay off
-    if (useMainSegmentOnly && bri == 0) {
-      for (size_t s=0; s < strip.getSegmentsNum(); s++) {
-        strip.getSegment(s).freeze = true;
-      }
-    }
   }
   // if strip is off (bri==0) and not already in RTM
   if (briT == 0 && !realtimeMode && !realtimeOverride) {
@@ -510,12 +510,10 @@ void handleNotifications()
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
       if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
-      unsigned id = 0;
       unsigned totalLen = strip.getLengthTotal();
-      for (size_t i = 0; i < packetSize -2; i += 3)
-      {
+      if (useMainSegmentOnly) strip.getMainSegment().beginDraw(); // set up parameters for get/setPixelColor()
+      for (size_t i = 0, id = 0; i < packetSize -2 && id < totalLen; i += 3, id++) {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
-        id++; if (id >= totalLen) break;
       }
       if (!(realtimeMode && useMainSegmentOnly)) strip.show();
       return;
@@ -595,17 +593,11 @@ void handleNotifications()
 
     unsigned id = (tpmPayloadFrameSize/3)*(packetNum-1); //start LED
     unsigned totalLen = strip.getLengthTotal();
-    for (size_t i = 6; i < tpmPayloadFrameSize + 4U; i += 3)
-    {
-      if (id < totalLen)
-      {
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        id++;
-      }
-      else break;
+    if (useMainSegmentOnly) strip.getMainSegment().beginDraw(); // set up parameters for get/setPixelColor()
+    for (size_t i = 6; i < tpmPayloadFrameSize + 4U && id < totalLen; i += 3, id++) {
+      setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
     }
-    if (tpmPacketCount == numPackets) //reset packet count and show if all packets were received
-    {
+    if (tpmPacketCount == numPackets) { //reset packet count and show if all packets were received
       tpmPacketCount = 0;
       strip.show();
     }
@@ -629,6 +621,7 @@ void handleNotifications()
     if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     unsigned totalLen = strip.getLengthTotal();
+    if (useMainSegmentOnly) strip.getMainSegment().beginDraw(); // set up parameters for get/setPixelColor()
     if (udpIn[0] == 1 && packetSize > 5) //warls
     {
       for (size_t i = 2; i < packetSize -3; i += 4)
@@ -637,39 +630,29 @@ void handleNotifications()
       }
     } else if (udpIn[0] == 2 && packetSize > 4) //drgb
     {
-      unsigned id = 0;
-      for (size_t i = 2; i < packetSize -2; i += 3)
+      for (size_t i = 2, id = 0; i < packetSize -2 && id < totalLen; i += 3, id++)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-
-        id++; if (id >= totalLen) break;
       }
     } else if (udpIn[0] == 3 && packetSize > 6) //drgbw
     {
-      unsigned id = 0;
-      for (size_t i = 2; i < packetSize -3; i += 4)
+      for (size_t i = 2, id = 0; i < packetSize -3 && id < totalLen; i += 4, id++)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-
-        id++; if (id >= totalLen) break;
       }
     } else if (udpIn[0] == 4 && packetSize > 7) //dnrgb
     {
       unsigned id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (size_t i = 4; i < packetSize -2; i += 3)
+      for (size_t i = 4; i < packetSize -2 && id < totalLen; i += 3, id++)
       {
-        if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        id++;
       }
     } else if (udpIn[0] == 5 && packetSize > 8) //dnrgbw
     {
       unsigned id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (size_t i = 4; i < packetSize -2; i += 4)
+      for (size_t i = 4; i < packetSize -2 && id < totalLen; i += 4, id++)
       {
-        if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-        id++;
       }
     }
     strip.show();
@@ -705,8 +688,7 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
       w = gamma8(w);
     }
     if (useMainSegmentOnly) {
-      Segment &seg = strip.getMainSegment();
-      if (pix<seg.length()) seg.setPixelColor(pix, r, g, b, w);
+      strip.getMainSegment().setPixelColor(pix, r, g, b, w); // this expects that strip.getMainSegment().beginDraw() has been called in handleNotification()
     } else {
       strip.setPixelColor(pix, r, g, b, w);
     }

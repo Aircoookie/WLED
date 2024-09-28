@@ -163,23 +163,24 @@ void WS2812FX::setUpMatrix() {
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
 uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
 {
-  unsigned width  = virtualWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
-  unsigned height = virtualHeight();  // segment height in logical pixels (is always >= 1)
-  return isActive() ? (x%width) + (y%height) * width : 0;
+  const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+  const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+  return isActive() ? (x%vW) + (y%vH) * vW : 0;
 }
 
-void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col, bool unScaled)
 {
   if (!isActive()) return; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
+ 
+  const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+  const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+  if (x >= vW|| y >= vH || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
-  uint8_t _bri_t = currentBri();
-  if (_bri_t < 255) {
-    col = color_fade(col, _bri_t);
-  }
+  // if color is unscaled
+  if (unScaled) col = color_fade(col, currentBri());
 
-  if (reverse  ) x = virtualWidth()  - x - 1;
-  if (reverse_y) y = virtualHeight() - y - 1;
+  if (reverse  ) x = vW - x - 1;
+  if (reverse_y) y = vH - y - 1;
   if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
@@ -221,11 +222,8 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
   if (!isActive()) return; // not active
   if (x<0.0f || x>1.0f || y<0.0f || y>1.0f) return; // not normalized
 
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
-
-  float fX = x * (cols-1);
-  float fY = y * (rows-1);
+  float fX = x * (vWidth()-1);
+  float fY = y * (vHeight()-1);
   if (aa) {
     unsigned xL = roundf(fX-0.49f);
     unsigned xR = roundf(fX+0.49f);
@@ -263,9 +261,11 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 // returns RGBW values of pixel
 uint32_t IRAM_ATTR_YN Segment::getPixelColorXY(int x, int y) const {
   if (!isActive()) return 0; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
-  if (reverse  ) x = virtualWidth()  - x - 1;
-  if (reverse_y) y = virtualHeight() - y - 1;
+  int vW = vWidth();
+  int vH = vHeight();
+  if (x >= vW || y >= vH || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
+  if (reverse  ) x = vW - x - 1;
+  if (reverse_y) y = vH - y - 1;
   if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
@@ -274,10 +274,10 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColorXY(int x, int y) const {
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
-void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
+void Segment::blurRow(int row, fract8 blur_amount, bool smear){
   if (!isActive() || blur_amount == 0) return; // not active
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
+  const int cols = vWidth();
+  const int rows = vHeight();
 
   if (row >= rows) return;
   // blur one row
@@ -287,7 +287,7 @@ void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
   uint32_t lastnew;
   uint32_t last;
   uint32_t curnew = BLACK;
-  for (unsigned x = 0; x < cols; x++) {
+  for (int x = 0; x < cols; x++) {
     uint32_t cur = getPixelColorXY(x, row);
     uint32_t part = color_fade(cur, seep);
     curnew = color_fade(cur, keep);
@@ -306,10 +306,10 @@ void Segment::blurRow(uint32_t row, fract8 blur_amount, bool smear){
 }
 
 // blurCol: perform a blur on a column of a rectangular matrix
-void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
+void Segment::blurCol(int col, fract8 blur_amount, bool smear) {
   if (!isActive() || blur_amount == 0) return; // not active
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
+  const int cols = vWidth();
+  const int rows = vHeight();
 
   if (col >= cols) return;
   // blur one column
@@ -319,7 +319,7 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
   uint32_t lastnew;
   uint32_t last;
   uint32_t curnew = BLACK;
-  for (unsigned y = 0; y < rows; y++) {
+  for (int y = 0; y < rows; y++) {
     uint32_t cur = getPixelColorXY(col, y);
     uint32_t part = color_fade(cur, seep);
     curnew = color_fade(cur, keep);
@@ -339,8 +339,8 @@ void Segment::blurCol(uint32_t col, fract8 blur_amount, bool smear) {
 
 void Segment::blur2D(uint8_t blur_amount, bool smear) {
   if (!isActive() || blur_amount == 0) return; // not active
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
+  const unsigned cols = vWidth();
+  const unsigned rows = vHeight();
 
   const uint8_t keep = smear ? 255 : 255 - blur_amount;
   const uint8_t seep = blur_amount >> (1 + smear);
@@ -391,8 +391,8 @@ void Segment::box_blur(unsigned radius, bool smear) {
   if (!isActive() || radius == 0) return; // not active
   if (radius > 3) radius = 3;
   const unsigned d = (1 + 2*radius) * (1 + 2*radius); // averaging divisor
-  const unsigned cols = virtualWidth();
-  const unsigned rows = virtualHeight();
+  const unsigned cols = vWidth();
+  const unsigned rows = vHeight();
   uint16_t *tmpRSum = new uint16_t[cols*rows];
   uint16_t *tmpGSum = new uint16_t[cols*rows];
   uint16_t *tmpBSum = new uint16_t[cols*rows];
@@ -461,37 +461,37 @@ void Segment::box_blur(unsigned radius, bool smear) {
 
 void Segment::moveX(int8_t delta, bool wrap) {
   if (!isActive()) return; // not active
-  const int cols = virtualWidth();
-  const int rows = virtualHeight();
-  if (!delta || abs(delta) >= cols) return;
-  uint32_t newPxCol[cols];
-  for (int y = 0; y < rows; y++) {
+  const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+  const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+  if (!delta || abs(delta) >= vW) return;
+  uint32_t newPxCol[vW];
+  for (int y = 0; y < vH; y++) {
     if (delta > 0) {
-      for (int x = 0; x < cols-delta; x++)    newPxCol[x] = getPixelColorXY((x + delta), y);
-      for (int x = cols-delta; x < cols; x++) newPxCol[x] = getPixelColorXY(wrap ? (x + delta) - cols : x, y);
+      for (int x = 0; x < vW-delta; x++)  newPxCol[x] = getPixelColorXY((x + delta), y);
+      for (int x = vW-delta; x < vW; x++) newPxCol[x] = getPixelColorXY(wrap ? (x + delta) - vW : x, y);
     } else {
-      for (int x = cols-1; x >= -delta; x--) newPxCol[x] = getPixelColorXY((x + delta), y);
-      for (int x = -delta-1; x >= 0; x--)    newPxCol[x] = getPixelColorXY(wrap ? (x + delta) + cols : x, y);
+      for (int x = vW-1; x >= -delta; x--) newPxCol[x] = getPixelColorXY((x + delta), y);
+      for (int x = -delta-1; x >= 0; x--)  newPxCol[x] = getPixelColorXY(wrap ? (x + delta) + vW : x, y);
     }
-    for (int x = 0; x < cols; x++) setPixelColorXY(x, y, newPxCol[x]);
+    for (int x = 0; x < vW; x++) setPixelColorXY(x, y, newPxCol[x]);
   }
 }
 
 void Segment::moveY(int8_t delta, bool wrap) {
   if (!isActive()) return; // not active
-  const int cols = virtualWidth();
-  const int rows = virtualHeight();
-  if (!delta || abs(delta) >= rows) return;
-  uint32_t newPxCol[rows];
-  for (int x = 0; x < cols; x++) {
+  const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+  const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+  if (!delta || abs(delta) >= vH) return;
+  uint32_t newPxCol[vH];
+  for (int x = 0; x < vW; x++) {
     if (delta > 0) {
-      for (int y = 0; y < rows-delta; y++)    newPxCol[y] = getPixelColorXY(x, (y + delta));
-      for (int y = rows-delta; y < rows; y++) newPxCol[y] = getPixelColorXY(x, wrap ? (y + delta) - rows : y);
+      for (int y = 0; y < vH-delta; y++)  newPxCol[y] = getPixelColorXY(x, (y + delta));
+      for (int y = vH-delta; y < vH; y++) newPxCol[y] = getPixelColorXY(x, wrap ? (y + delta) - vH : y);
     } else {
-      for (int y = rows-1; y >= -delta; y--) newPxCol[y] = getPixelColorXY(x, (y + delta));
-      for (int y = -delta-1; y >= 0; y--)    newPxCol[y] = getPixelColorXY(x, wrap ? (y + delta) + rows : y);
+      for (int y = vH-1; y >= -delta; y--) newPxCol[y] = getPixelColorXY(x, (y + delta));
+      for (int y = -delta-1; y >= 0; y--)  newPxCol[y] = getPixelColorXY(x, wrap ? (y + delta) + vH : y);
     }
-    for (int y = 0; y < rows; y++) setPixelColorXY(x, y, newPxCol[y]);
+    for (int y = 0; y < vH; y++) setPixelColorXY(x, y, newPxCol[y]);
   }
 }
 
@@ -545,18 +545,20 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
       x++;
     }
   } else {
+    // pre-scale color for all pixels
+    col = color_fade(col, currentBri());
     // Bresenham’s Algorithm
     int d = 3 - (2*radius);
     int y = radius, x = 0;
     while (y >= x) {
-      setPixelColorXY(cx+x, cy+y, col);
-      setPixelColorXY(cx-x, cy+y, col);
-      setPixelColorXY(cx+x, cy-y, col);
-      setPixelColorXY(cx-x, cy-y, col);
-      setPixelColorXY(cx+y, cy+x, col);
-      setPixelColorXY(cx-y, cy+x, col);
-      setPixelColorXY(cx+y, cy-x, col);
-      setPixelColorXY(cx-y, cy-x, col);
+      setPixelColorXY(cx+x, cy+y, col, false);
+      setPixelColorXY(cx-x, cy+y, col, false);
+      setPixelColorXY(cx+x, cy-y, col, false);
+      setPixelColorXY(cx-x, cy-y, col, false);
+      setPixelColorXY(cx+y, cy+x, col, false);
+      setPixelColorXY(cx-y, cy+x, col, false);
+      setPixelColorXY(cx+y, cy-x, col, false);
+      setPixelColorXY(cx-y, cy-x, col, false);
       x++;
       if (d > 0) {
         y--;
@@ -571,17 +573,19 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col, bool soft) {
   if (!isActive() || radius == 0) return; // not active
+  const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+  const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
   // draw soft bounding circle
   if (soft) drawCircle(cx, cy, radius, col, soft);
+  // pre-scale color for all pixels
+  col = color_fade(col, currentBri());
   // fill it
-  const int cols = virtualWidth();
-  const int rows = virtualHeight();
   for (int y = -radius; y <= radius; y++) {
     for (int x = -radius; x <= radius; x++) {
       if (x * x + y * y <= radius * radius &&
-          int(cx)+x>=0 && int(cy)+y>=0 &&
-          int(cx)+x<cols && int(cy)+y<rows)
-        setPixelColorXY(cx + x, cy + y, col);
+          int(cx)+x >= 0 && int(cy)+y >= 0 &&
+          int(cx)+x < vW && int(cy)+y < vH)
+        setPixelColorXY(cx + x, cy + y, col, false);
     }
   }
 }
@@ -589,9 +593,9 @@ void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
 //line function
 void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c, bool soft) {
   if (!isActive()) return; // not active
-  const int cols = virtualWidth();
-  const int rows = virtualHeight();
-  if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
+  const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+  const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+  if (x0 >= vW || x1 >= vW || y0 >= vH || y1 >= vH) return;
 
   const int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1; // x distance & step
   const int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; // y distance & step
@@ -629,10 +633,12 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       if (steep) std::swap(x,y);  // restore if steep
     }
   } else {
+    // pre-scale color for all pixels
+    c = color_fade(c, currentBri());
     // Bresenham's algorithm
     int err = (dx>dy ? dx : -dy)/2;   // error direction
     for (;;) {
-      setPixelColorXY(x0, y0, c);
+      setPixelColorXY(x0, y0, c, false);
       if (x0==x1 && y0==y1) break;
       int e2 = err;
       if (e2 >-dx) { err -= dy; x0 += sx; }
@@ -653,8 +659,6 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
   if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
-  const int cols = virtualWidth();
-  const int rows = virtualHeight();
   const int font = w*h;
 
   CRGB col = CRGB(color);
@@ -681,7 +685,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
         case  1: x0 = x + i;         y0 = y + j;         break; // +90 deg
         default: x0 = x + (w-1) - j; y0 = y + i;         break; // no rotation
       }
-      if (x0 < 0 || x0 >= cols || y0 < 0 || y0 >= rows) continue; // drawing off-screen
+      if (x0 < 0 || x0 >= (int)vWidth() || y0 < 0 || y0 >= (int)vHeight()) continue; // drawing off-screen
       if (((bits>>(j+(8-w))) & 0x01)) { // bit set
         setPixelColorXY(x0, y0, col);
       }

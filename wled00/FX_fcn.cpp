@@ -80,15 +80,18 @@ static constexpr bool validatePinsAndTypes(const unsigned* types, unsigned numTy
 ///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation
 ///////////////////////////////////////////////////////////////////////////////
-uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
-uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
-uint16_t Segment::maxHeight = 1;
-
+uint16_t      Segment::_usedSegmentData   = 0U; // amount of RAM all segments use for their data[]
+uint16_t      Segment::maxWidth           = DEFAULT_LED_COUNT;
+uint16_t      Segment::maxHeight          = 1;
+unsigned      Segment::_vLength           = 0;
+unsigned      Segment::_vWidth            = 0;
+unsigned      Segment::_vHeight           = 0;
+uint32_t      Segment::_currentColors[NUM_COLORS] = {0,0,0};
 CRGBPalette16 Segment::_currentPalette    = CRGBPalette16(CRGB::Black);
 CRGBPalette16 Segment::_randomPalette     = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
 CRGBPalette16 Segment::_newRandomPalette  = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
 uint16_t      Segment::_lastPaletteChange = 0; // perhaps it should be per segment
-uint16_t      Segment::_lastPaletteBlend  = 0; //in millis (lowest 16 bits only)
+uint16_t      Segment::_lastPaletteBlend  = 0; // in millis (lowest 16 bits only)
 
 #ifndef WLED_DISABLE_MODE_BLEND
 bool Segment::_modeBlend = false;
@@ -437,7 +440,21 @@ uint32_t IRAM_ATTR_YN Segment::currentColor(uint8_t slot) const {
 #endif
 }
 
-void Segment::setCurrentPalette() {
+// pre-calculate drawing parameters for faster access
+void Segment::beginDraw() {
+  _vWidth  = virtualWidth();
+  _vHeight = virtualHeight();
+  _vLength = virtualLength();
+  // adjust gamma for effects
+  for (unsigned i = 0; i < NUM_COLORS; i++) {
+    #ifndef WLED_DISABLE_MODE_BLEND
+    uint32_t col = isInTransition() ? color_blend(_t->_segT._colorT[i], colors[i], progress(), true) : colors[i];
+    #else
+    uint32_t col = isInTransition() ? color_blend(_t->_colorT[i], colors[i], progress(), true) : colors[i];
+    #endif
+    _currentColors[i] = gamma32(col);
+  }
+  // load palette into _currentPalette
   loadPalette(_currentPalette, palette);
   unsigned prog = progress();
   if (strip.paletteFade && prog < 0xFFFFU) {
@@ -698,20 +715,21 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
   return vLength;
 }
 
-void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col, bool unScaled)
 {
   if (!isActive() || i < 0) return; // not active or invalid index
 #ifndef WLED_DISABLE_2D
   int vStrip = 0;
 #endif
+  int vL = vLength();
   // if the 1D effect is using virtual strips "i" will have virtual strip id stored in upper 16 bits
   // in such case "i" will be > virtualLength()
-  if (i >= virtualLength()) {
+  if (i >= vL) {
     // check if this is a virtual strip
     #ifndef WLED_DISABLE_2D
     vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
     i &= 0xFFFF;    //truncate vstrip index
-    if (i >= virtualLength()) return;  // if pixel would still fall out of segment just exit
+    if (i >= vL) return;  // if pixel would still fall out of segment just exit
     #else
     return;
     #endif
@@ -719,22 +737,24 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
-    int vH = virtualHeight();  // segment height in logical pixels
-    int vW = virtualWidth();
+    const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+    const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+    // pre-scale color for all pixels
+    col = color_fade(col, currentBri());
     switch (map1D2D) {
       case M12_Pixels:
         // use all available pixels as a long strip
-        setPixelColorXY(i % vW, i / vW, col);
+        setPixelColorXY(i % vW, i / vW, col, false);
         break;
       case M12_pBar:
         // expand 1D effect vertically or have it play on virtual strips
-        if (vStrip > 0) setPixelColorXY(vStrip - 1, vH - i - 1, col);
-        else          for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col);
+        if (vStrip > 0) setPixelColorXY(vStrip - 1, vH - i - 1, col, false);
+        else for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col, false);
         break;
       case M12_pArc:
         // expand in circular fashion from center
         if (i == 0)
-          setPixelColorXY(0, 0, col);
+          setPixelColorXY(0, 0, col, false);
         else {
           float r = i;
           float step = HALF_PI / (2.8284f * r + 4); // we only need (PI/4)/(r/sqrt(2)+1) steps
@@ -742,8 +762,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
             int x = roundf(sin_t(rad) * r);
             int y = roundf(cos_t(rad) * r);
             // exploit symmetry
-            setPixelColorXY(x, y, col);
-            setPixelColorXY(y, x, col);
+            setPixelColorXY(x, y, col, false);
+            setPixelColorXY(y, x, col, false);
           }
           // Bresenham’s Algorithm (may not fill every pixel)
           //int d = 3 - (2*i);
@@ -762,8 +782,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
         }
         break;
       case M12_pCorner:
-        for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
-        for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
+        for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col, false);
+        for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col, false);
         break;
       case M12_sPinwheel: {
         // i = angle --> 0 - 296  (Big), 0 - 192  (Medium), 0 - 72 (Small)
@@ -802,7 +822,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
           int x = posx / Fixed_Scale;
           int y = posy / Fixed_Scale;
           // set pixel
-          if (x != lastX || y != lastY) setPixelColorXY(x, y, col);  // only paint if pixel position is different
+          if (x != lastX || y != lastY) setPixelColorXY(x, y, col, false);  // only paint if pixel position is different
           lastX = x;
           lastY = y;
           // advance to next position
@@ -813,12 +833,12 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
       }
     }
     return;
-  } else if (Segment::maxHeight!=1 && (width()==1 || height()==1)) {
+  } else if (Segment::maxHeight != 1 && (width() == 1 || height() == 1)) {
     if (start < Segment::maxWidth*Segment::maxHeight) {
       // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
       int x = 0, y = 0;
-      if (virtualHeight()>1) y = i;
-      if (virtualWidth() >1) x = i;
+      if (vHeight() > 1) y = i;
+      if (vWidth()  > 1) x = i;
       setPixelColorXY(x, y, col);
       return;
     }
@@ -826,10 +846,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 #endif
 
   unsigned len = length();
-  uint8_t _bri_t = currentBri();
-  if (_bri_t < 255) {
-    col = color_fade(col, _bri_t);
-  }
+  // if color is unscaled
+  if (unScaled) col = color_fade(col, currentBri());
 
   // expand pixel (taking into account start, grouping, spacing [and offset])
   i = i * groupLength();
@@ -907,8 +925,8 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
 
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
-    int vH = virtualHeight();  // segment height in logical pixels
-    int vW = virtualWidth();
+    const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
+    const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
     switch (map1D2D) {
       case M12_Pixels:
         return getPixelColorXY(i % vW, i / vW);
@@ -961,7 +979,7 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
   }
 #endif
 
-  if (reverse) i = virtualLength() - i - 1;
+  if (reverse) i = vLength() - i - 1;
   i *= groupLength();
   i += start;
   // offset/phase
@@ -1050,11 +1068,13 @@ void Segment::refreshLightCapabilities() {
  */
 void Segment::fill(uint32_t c) {
   if (!isActive()) return; // not active
-  const int cols = is2D() ? virtualWidth() : virtualLength();
-  const int rows = virtualHeight(); // will be 1 for 1D
+  const int cols = is2D() ? vWidth() : vLength();
+  const int rows = vHeight(); // will be 1 for 1D
+  // pre-scale color for all pixels
+  c = color_fade(c, currentBri());
   for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
-    if (is2D()) setPixelColorXY(x, y, c);
-    else        setPixelColor(x, c);
+    if (is2D()) setPixelColorXY(x, y, c, false);
+    else        setPixelColor(x, c, false);
   }
 }
 
@@ -1063,8 +1083,8 @@ void Segment::fill(uint32_t c) {
  */
 void Segment::fade_out(uint8_t rate) {
   if (!isActive()) return; // not active
-  const int cols = is2D() ? virtualWidth() : virtualLength();
-  const int rows = virtualHeight(); // will be 1 for 1D
+  const int cols = is2D() ? vWidth() : vLength();
+  const int rows = vHeight(); // will be 1 for 1D
 
   rate = (255-rate) >> 1;
   float mappedRate = 1.0f / (float(rate) + 1.1f);
@@ -1102,8 +1122,8 @@ void Segment::fade_out(uint8_t rate) {
 // fades all pixels to black using nscale8()
 void Segment::fadeToBlackBy(uint8_t fadeBy) {
   if (!isActive() || fadeBy == 0) return;   // optimization - no scaling to apply
-  const int cols = is2D() ? virtualWidth() : virtualLength();
-  const int rows = virtualHeight(); // will be 1 for 1D
+  const int cols = is2D() ? vWidth() : vLength();
+  const int rows = vHeight(); // will be 1 for 1D
 
   for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
     if (is2D()) setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), 255-fadeBy));
@@ -1126,7 +1146,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
 #endif
   uint8_t keep = smear ? 255 : 255 - blur_amount;
   uint8_t seep = blur_amount >> (1 + smear);
-  unsigned vlength = virtualLength();
+  unsigned vlength = vLength();
   uint32_t carryover = BLACK;
   uint32_t lastnew;
   uint32_t last;
@@ -1140,8 +1160,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
       uint32_t prev = color_add(lastnew, part);
       // optimization: only set pixel if color has changed
       if (last != prev) setPixelColor(i - 1, prev);
-    } else // first pixel
-      setPixelColor(i, curnew);
+    } else setPixelColor(i, curnew); // first pixel
     lastnew = curnew;
     last = cur; // save original value for comparison on next iteration
     carryover = part;
@@ -1156,7 +1175,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
  */
 uint32_t Segment::color_wheel(uint8_t pos) const {
   if (palette) return color_from_palette(pos, false, true, 0); // perhaps "strip.paletteBlend < 2" should be better instead of "true"
-  uint8_t w = W(currentColor(0));
+  uint8_t w = W(getCurrentColor(0));
   pos = 255 - pos;
   if (pos < 85) {
     return RGBW32((255 - pos * 3), 0, (pos * 3), w);
@@ -1179,20 +1198,19 @@ uint32_t Segment::color_wheel(uint8_t pos) const {
  * @returns Single color from palette
  */
 uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri) const {
-
-  uint32_t color = currentColor(mcol);
+  uint32_t color = getCurrentColor(mcol < NUM_COLORS ? mcol : 0);
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) {
-    color = gamma32(color);
-    return (pbri == 255) ? color : color_fade(color, pbri, true);
+    return color_fade(color, pbri, true);
   }
 
+  const int vL = vLength();
   unsigned paletteIndex = i;
-  if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
+  if (mapping && vL > 1) paletteIndex = (i*255)/(vL -1);
   // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
   if (!wrap && strip.paletteBlend != 3) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGBW palcol = ColorFromPalette(_currentPalette, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
-  palcol.w = gamma8(W(color));
+  palcol.w = W(color);
 
   return palcol.color32;
 }
@@ -1359,11 +1377,6 @@ void WS2812FX::service() {
 
       if (!seg.freeze) { //only run effect function if not frozen
         int oldCCT = BusManager::getSegmentCCT(); // store original CCT value (actually it is not Segment based)
-        _virtualSegmentLength = seg.virtualLength(); //SEGLEN
-        _colors_t[0] = gamma32(seg.currentColor(0));
-        _colors_t[1] = gamma32(seg.currentColor(1));
-        _colors_t[2] = gamma32(seg.currentColor(2));
-        seg.setCurrentPalette();              // load actual palette
         // when correctWB is true we need to correct/adjust RGB value according to desired CCT value, but it will also affect actual WW/CW ratio
         // when cctFromRgb is true we implicitly calculate WW and CW from RGB values
         if (cctFromRgb) BusManager::setSegmentCCT(-1);
@@ -1375,13 +1388,14 @@ void WS2812FX::service() {
         // overwritten by later effect. To enable seamless blending for every effect, additional LED buffer
         // would need to be allocated for each effect and then blended together for each pixel.
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
+        seg.beginDraw();                      // set up parameters for get/setPixelColor()
         delay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
         if (modeBlending && seg.mode != tmpMode) {
           Segment::tmpsegd_t _tmpSegData;
           Segment::modeBlend(true);           // set semaphore
           seg.swapSegenv(_tmpSegData);        // temporarily store new mode state (and swap it with transitional state)
-          _virtualSegmentLength = seg.virtualLength(); // update SEGLEN (mapping may have changed)
+          seg.beginDraw();                    // set up parameters for get/setPixelColor()
           unsigned d2 = (*_mode[tmpMode])();  // run old mode
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
           delay = MIN(delay,d2);              // use shortest delay
@@ -1397,7 +1411,6 @@ void WS2812FX::service() {
     }
     _segment_index++;
   }
-  _virtualSegmentLength = 0;
   _isServicing = false;
   _triggered = false;
 

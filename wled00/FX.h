@@ -90,11 +90,11 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
 #define SEGENV           strip._segments[strip.getCurrSegmentId()]
-//#define SEGCOLOR(x)      strip._segments[strip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
-//#define SEGLEN           strip._segments[strip.getCurrSegmentId()].virtualLength()
-#define SEGCOLOR(x)      strip.segColor(x) /* saves us a few kbytes of code */
+#define SEGCOLOR(x)      Segment::getCurrentColor(x)
 #define SEGPALETTE       Segment::getCurrentPalette()
-#define SEGLEN           strip._virtualSegmentLength /* saves us a few kbytes of code */
+#define SEGLEN           Segment::vLength()
+#define SEG_W            Segment::vWidth()
+#define SEG_H            Segment::vHeight()
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
 // some common colors
@@ -421,7 +421,9 @@ typedef struct Segment {
     uint16_t        _dataLen;
     static uint16_t _usedSegmentData;
 
-    // perhaps this should be per segment, not static
+    static unsigned _vLength;                 // 1D dimension used for current effect 
+    static unsigned _vWidth, _vHeight;        // 2D dimensions used for current effect
+    static uint32_t _currentColors[NUM_COLORS]; // colors used for current effect
     static CRGBPalette16 _currentPalette;     // palette used for current effect (includes transition, used in color_from_palette())
     static CRGBPalette16 _randomPalette;      // actual random palette
     static CRGBPalette16 _newRandomPalette;   // target random palette
@@ -534,14 +536,20 @@ typedef struct Segment {
     inline uint16_t groupLength()        const { return grouping + spacing; }
     inline uint8_t  getLightCapabilities() const { return _capabilities; }
 
-    inline static uint16_t getUsedSegmentData()    { return _usedSegmentData; }
-    inline static void addUsedSegmentData(int len) { _usedSegmentData += len; }
+    inline static uint16_t getUsedSegmentData()            { return Segment::_usedSegmentData; }
+    inline static void     addUsedSegmentData(int len)     { Segment::_usedSegmentData += len; }
     #ifndef WLED_DISABLE_MODE_BLEND
-    inline static void modeBlend(bool blend)       { _modeBlend = blend; }
+    inline static void     modeBlend(bool blend)           { _modeBlend = blend; }
     #endif
-    static void     handleRandomPalette();
+    inline static unsigned vLength()                       { return Segment::_vLength; }
+    inline static unsigned vWidth()                        { return Segment::_vWidth; }
+    inline static unsigned vHeight()                       { return Segment::_vHeight; }
+    inline static uint32_t getCurrentColor(unsigned i)     { return Segment::_currentColors[i]; } // { return i < 3 ? Segment::_currentColors[i] : 0; }
     inline static const CRGBPalette16 &getCurrentPalette() { return Segment::_currentPalette; }
 
+    static void handleRandomPalette();
+
+    void    beginDraw();            // set up parameters for current effect
     void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
     void    setCCT(uint16_t k);
@@ -578,14 +586,13 @@ typedef struct Segment {
     uint8_t  currentMode() const;                            // currently active effect/mode (while in transition)
     [[gnu::hot]] uint32_t currentColor(uint8_t slot) const;  // currently active segment color (blended while in transition)
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
-    void     setCurrentPalette();
 
     // 1D strip
     [[gnu::hot]] uint16_t virtualLength() const;
-    [[gnu::hot]] void setPixelColor(int n, uint32_t c); // set relative pixel within segment with color
-    inline void setPixelColor(unsigned n, uint32_t c)                    { setPixelColor(int(n), c); }
-    inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); }
-    inline void setPixelColor(int n, CRGB c)                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); }
+    [[gnu::hot]] void setPixelColor(int n, uint32_t c, bool unScaled = true); // set relative pixel within segment with color
+    inline void setPixelColor(unsigned n, uint32_t c, bool unScaled = true) { setPixelColor(int(n), c, unScaled); }
+    inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0)    { setPixelColor(n, RGBW32(r,g,b,w)); }
+    inline void setPixelColor(int n, CRGB c)                                { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); }
     #ifdef WLED_USE_AA_PIXELS
     void setPixelColor(float i, uint32_t c, bool aa = true);
     inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
@@ -622,8 +629,8 @@ typedef struct Segment {
     uint16_t nrOfVStrips() const;                // returns number of virtual vertical strips in 2D matrix (used to expand 1D effects into 2D)
   #ifndef WLED_DISABLE_2D
     [[gnu::hot]] uint16_t XY(int x, int y);      // support function to get relative index within segment
-    [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
-    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColorXY(int(x), int(y), c); }
+    [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c, bool unScaled = true); // set relative pixel within segment with color
+    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c, bool unScaled = true) { setPixelColorXY(int(x), int(y), c, unScaled); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
     inline void setPixelColorXY(unsigned x, unsigned y, CRGB c)                   { setPixelColorXY(int(x), int(y), RGBW32(c.r,c.g,c.b,0)); }
@@ -642,8 +649,8 @@ typedef struct Segment {
     inline void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)                   { setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), fade, true)); }
     void box_blur(unsigned r = 1U, bool smear = false); // 2D box blur
     void blur2D(uint8_t blur_amount, bool smear = false);
-    void blurRow(uint32_t row, fract8 blur_amount, bool smear = false);
-    void blurCol(uint32_t col, fract8 blur_amount, bool smear = false);
+    void blurRow(int row, fract8 blur_amount, bool smear = false);
+    void blurCol(int col, fract8 blur_amount, bool smear = false);
     void moveX(int8_t delta, bool wrap = false);
     void moveY(int8_t delta, bool wrap = false);
     void move(uint8_t dir, uint8_t delta, bool wrap = false);
@@ -660,9 +667,9 @@ typedef struct Segment {
     inline void blur2d(fract8 blur_amount) { blur(blur_amount); }
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
-    inline uint16_t XY(uint16_t x, uint16_t y)                                    { return x; }
-    inline void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
-    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColor(int(x), c); }
+    inline uint16_t XY(int x, int y)                                              { return x; }
+    inline void setPixelColorXY(int x, int y, uint32_t c, bool unScaled = true)   { setPixelColor(x, c, unScaled); }
+    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c, bool unScaled = true) { setPixelColor(int(x), c, unScaled); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColor(x, RGBW32(c.r,c.g,c.b,0)); }
     inline void setPixelColorXY(unsigned x, unsigned y, CRGB c)                   { setPixelColor(int(x), RGBW32(c.r,c.g,c.b,0)); }
@@ -680,8 +687,8 @@ typedef struct Segment {
     inline void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)            { fadePixelColor(x, fade); }
     inline void box_blur(unsigned i, bool vertical, fract8 blur_amount) {}
     inline void blur2D(uint8_t blur_amount, bool smear = false) {}
-    inline void blurRow(uint32_t row, fract8 blur_amount, bool smear = false) {}
-    inline void blurCol(uint32_t col, fract8 blur_amount, bool smear = false) {}
+    inline void blurRow(int row, fract8 blur_amount, bool smear = false) {}
+    inline void blurCol(int col, fract8 blur_amount, bool smear = false) {}
     inline void moveX(int8_t delta, bool wrap = false) {}
     inline void moveY(int8_t delta, bool wrap = false) {}
     inline void move(uint8_t dir, uint8_t delta, bool wrap = false) {}
@@ -727,9 +734,6 @@ class WS2812FX {  // 96 bytes
       autoSegments(false),
       correctWB(false),
       cctFromRgb(false),
-      // semi-private (just obscured) used in effect functions through macros
-      _colors_t{0,0,0},
-      _virtualSegmentLength(0),
       // true private variables
       _suspend(false),
       _length(DEFAULT_LED_COUNT),
@@ -829,7 +833,7 @@ class WS2812FX {  // 96 bytes
       addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name);         // add effect to the list; defined in FX.cpp;
 
     inline uint8_t getBrightness() const    { return _brightness; }       // returns current strip brightness
-    inline uint8_t getMaxSegments() const   { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
+    inline constexpr unsigned getMaxSegments() { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
     inline uint8_t getSegmentsNum() const   { return _segments.size(); }  // returns currently present segments
     inline uint8_t getCurrSegmentId() const { return _segment_index; }    // returns current segment index (only valid while strip.isServicing())
     inline uint8_t getMainSegmentId() const { return _mainSegment; }      // returns main segment index
@@ -855,7 +859,6 @@ class WS2812FX {  // 96 bytes
     uint32_t getPixelColor(unsigned) const;
 
     inline uint32_t getLastShow() const       { return _lastShow; }           // returns millis() timestamp of last strip.show() call
-    inline uint32_t segColor(uint8_t i) const { return _colors_t[i]; }        // returns currently valid color (for slot i) AKA SEGCOLOR(); may be blended between two colors while in transition
 
     const char *
       getModeData(uint8_t id = 0) const { return (id && id<_modeCount) ? _modeData[id] : PSTR("Solid"); }
@@ -921,11 +924,6 @@ class WS2812FX {  // 96 bytes
       bool correctWB    : 1;
       bool cctFromRgb   : 1;
     };
-
-    // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
-    // and color transitions
-    uint32_t _colors_t[3]; // color used for effect (includes transition)
-    uint16_t _virtualSegmentLength;
 
     std::vector<segment> _segments;
     friend class Segment;
