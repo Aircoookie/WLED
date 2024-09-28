@@ -1937,7 +1937,7 @@ uint16_t mode_juggle(void) {
   for (int i = 0; i < 8; i++) {
     int index = 0 + beatsin88((16 + SEGMENT.speed)*(i + 7), 0, SEGLEN -1);
     fastled_col = CRGB(SEGMENT.getPixelColor(index));
-    fastled_col |= (SEGMENT.palette==0)?CHSV(dothue, 220, 255):ColorFromPalette(SEGPALETTE, dothue, 255);
+    fastled_col |= (SEGMENT.palette==0)?CHSV(dothue, 220, 255):CRGB(ColorFromPalette(SEGPALETTE, dothue, 255));
     SEGMENT.setPixelColor(index, fastled_col);
     dothue += 32;
   }
@@ -2282,33 +2282,33 @@ uint16_t mode_colortwinkle() {
   unsigned dataSize = (SEGLEN+7) >> 3; //1 bit per LED
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
-  CRGB fastled_col, prev;
+  CRGBW col, prev;
   fract8 fadeUpAmount = strip.getBrightness()>28 ? 8 + (SEGMENT.speed>>2) : 68-strip.getBrightness();
   fract8 fadeDownAmount = strip.getBrightness()>28 ? 8 + (SEGMENT.speed>>3) : 68-strip.getBrightness();
   for (int i = 0; i < SEGLEN; i++) {
-    fastled_col = SEGMENT.getPixelColor(i);
-    prev = fastled_col;
+    CRGBW cur = SEGMENT.getPixelColor(i);
+    prev = cur;
     unsigned index = i >> 3;
     unsigned  bitNum = i & 0x07;
     bool fadeUp = bitRead(SEGENV.data[index], bitNum);
 
     if (fadeUp) {
-      CRGB incrementalColor = fastled_col;
-      incrementalColor.nscale8_video(fadeUpAmount);
-      fastled_col += incrementalColor;
+      CRGBW incrementalColor = color_fade(col, fadeUpAmount, true);
+      col = color_add(cur, incrementalColor);
 
-      if (fastled_col.red == 255 || fastled_col.green == 255 || fastled_col.blue == 255) {
+      if (col.r == 255 || col.g == 255 || col.b == 255) {
         bitWrite(SEGENV.data[index], bitNum, false);
       }
-      SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
 
-      if (SEGMENT.getPixelColor(i) == RGBW32(prev.r, prev.g, prev.b, 0)) {  //fix "stuck" pixels
-        fastled_col += fastled_col;
-        SEGMENT.setPixelColor(i, fastled_col);
+      if (cur == prev) {  //fix "stuck" pixels
+        color_add(col, col);
+        SEGMENT.setPixelColor(i, col);
       }
-    } else {
-      fastled_col.nscale8(255 - fadeDownAmount);
-      SEGMENT.setPixelColor(i, fastled_col);
+      else SEGMENT.setPixelColor(i, col);
+    }
+    else {
+      col = color_fade(cur, 255 - fadeDownAmount);
+      SEGMENT.setPixelColor(i, col);
     }
   }
 
@@ -2317,11 +2317,10 @@ uint16_t mode_colortwinkle() {
       for (unsigned times = 0; times < 5; times++) { //attempt to spawn a new pixel 5 times
         int i = random16(SEGLEN);
         if (SEGMENT.getPixelColor(i) == 0) {
-          fastled_col = ColorFromPalette(SEGPALETTE, random8(), 64, NOBLEND);
           unsigned index = i >> 3;
           unsigned  bitNum = i & 0x07;
           bitWrite(SEGENV.data[index], bitNum, true);
-          SEGMENT.setPixelColor(i, fastled_col);
+          SEGMENT.setPixelColor(i, ColorFromPalette(SEGPALETTE, random8(), 64, NOBLEND));
           break; //only spawn 1 new pixel per frame per 50 LEDs
         }
       }
@@ -2378,8 +2377,7 @@ uint16_t mode_meteor() {
         index = map(i,0,SEGLEN,0,max);
         bri = trail[i];
       }
-      uint32_t col = SEGMENT.color_from_palette(index, false, false, idx, bri);  // full brightness for Fire
-      SEGMENT.setPixelColor(i, col);
+      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, false, idx, bri)); // full brightness for Fire
     }
   }
 
@@ -2392,8 +2390,7 @@ uint16_t mode_meteor() {
       i = map(index,0,SEGLEN,0,max);
       idx = 0;
     }
-    uint32_t col = SEGMENT.color_from_palette(i, false, false, idx, 255); // full brightness
-    SEGMENT.setPixelColor(index, col);
+    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(i, false, false, idx, 255)); // full brightness
   }
 
   return FRAMETIME;
@@ -2419,8 +2416,7 @@ uint16_t mode_meteor_smooth() {
     if (/*trail[i] != 0 &&*/ random8() <= 255 - SEGMENT.intensity) {
       int change = trail[i] + 4 - random8(24); //change each time between -20 and +4
       trail[i] = constrain(change, 0, max);
-      uint32_t col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0, trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
-      SEGMENT.setPixelColor(i, col);
+      SEGMENT.setPixelColor(i, SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0, trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255));
     }
   }
 
@@ -2431,8 +2427,7 @@ uint16_t mode_meteor_smooth() {
       index -= SEGLEN;
     }
     trail[index] = max;
-    uint32_t col = SEGMENT.check1 ? SEGMENT.color_from_palette(index, true, false, 0, trail[index]) : SEGMENT.color_from_palette(trail[index], false, true, 255);
-    SEGMENT.setPixelColor(index, col);
+    SEGMENT.setPixelColor(index, SEGMENT.check1 ? SEGMENT.color_from_palette(index, true, false, 0, trail[index]) : SEGMENT.color_from_palette(trail[index], false, true, 255));
   }
 
   SEGENV.step += SEGMENT.speed +1;
@@ -2680,7 +2675,7 @@ static uint16_t twinklefox_base(bool cat)
     if (deltabright >= 32 || (!bg)) {
       // If the new pixel is significantly brighter than the background color,
       // use the new color.
-      SEGMENT.setPixelColor(i, c.red, c.green, c.blue);
+      SEGMENT.setPixelColor(i, c);
     } else if (deltabright > 0) {
       // If the new pixel is just slightly brighter than the background color,
       // mix a blend of the new color and the background color
@@ -2688,7 +2683,7 @@ static uint16_t twinklefox_base(bool cat)
     } else {
       // if the new pixel is not at all brighter than the background color,
       // just use the background color.
-      SEGMENT.setPixelColor(i, bg.r, bg.g, bg.b);
+      SEGMENT.setPixelColor(i, bg);
     }
   }
   return FRAMETIME;
@@ -3532,7 +3527,7 @@ uint16_t mode_starburst(void) {
         if (start == end) end++;
         if (end > SEGLEN) end = SEGLEN;
         for (int p = start; p < end; p++) {
-          SEGMENT.setPixelColor(p, c.r, c.g, c.b);
+          SEGMENT.setPixelColor(p, c);
         }
       }
     }
@@ -3650,17 +3645,17 @@ uint16_t mode_exploding_fireworks(void)
           if (SEGMENT.is2D() && !(sparks[i].posX >= 0 && sparks[i].posX < cols)) continue;
           unsigned prog = sparks[i].col;
           uint32_t spColor = (SEGMENT.palette) ? SEGMENT.color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
-          CRGB c = CRGB::Black; //HeatColor(sparks[i].col);
+          CRGBW c = BLACK; //HeatColor(sparks[i].col);
           if (prog > 300) { //fade from white to spark color
-            c = CRGB(color_blend(spColor, WHITE, (prog - 300)*5));
+            c = color_blend(spColor, WHITE, (prog - 300)*5);
           } else if (prog > 45) { //fade from spark color to black
-            c = CRGB(color_blend(BLACK, spColor, prog - 45));
+            c = color_blend(BLACK, spColor, prog - 45);
             unsigned cooling = (300 - prog) >> 5;
             c.g = qsub8(c.g, cooling);
             c.b = qsub8(c.b, cooling * 2);
           }
-          if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(int(sparks[i].posX), rows - int(sparks[i].pos) - 1, c.red, c.green, c.blue);
-          else                SEGMENT.setPixelColor(int(sparks[i].posX) ? rows - int(sparks[i].pos) - 1 : int(sparks[i].pos), c.red, c.green, c.blue);
+          if (SEGMENT.is2D()) SEGMENT.setPixelColorXY(int(sparks[i].posX), rows - int(sparks[i].pos) - 1, c);
+          else                SEGMENT.setPixelColor(int(sparks[i].posX) ? rows - int(sparks[i].pos) - 1 : int(sparks[i].pos), c);
         }
       }
       if (SEGMENT.check3) SEGMENT.blur(16);
@@ -4006,7 +4001,7 @@ static CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, u
   ci += (cs * i);
   unsigned sindex16 = sin16(ci) + 32768;
   unsigned sindex8 = scale16(sindex16, 240);
-  return ColorFromPalette(p, sindex8, bri, LINEARBLEND);
+  return CRGB(ColorFromPalette(p, sindex8, bri, LINEARBLEND));
 }
 
 uint16_t mode_pacifica()
@@ -4077,7 +4072,7 @@ uint16_t mode_pacifica()
     c.green = scale8(c.green, 200);
     c |= CRGB( 2, 5, 7);
 
-    SEGMENT.setPixelColor(i, c.red, c.green, c.blue);
+    SEGMENT.setPixelColor(i, c);
   }
 
   strip.now = nowOld;
@@ -4119,13 +4114,10 @@ uint16_t mode_sunrise() {
 
   for (int i = 0; i <= SEGLEN/2; i++)
   {
-    //default palette is Fire
-    uint32_t c = SEGMENT.color_from_palette(0, false, true, 255); //background
-
+    //default palette is Fire    
     unsigned wave = triwave16((i * stage) / SEGLEN);
-
     wave = (wave >> 8) + ((wave * SEGMENT.intensity) >> 15);
-
+    uint32_t c;
     if (wave > 240) { //clipped, full white sun
       c = SEGMENT.color_from_palette( 240, false, true, 255);
     } else { //transition
@@ -4217,8 +4209,6 @@ uint16_t mode_noisepal(void) {                                    // Slow noise 
     palettes[1] = CRGBPalette16(CHSV(baseI+random8(64), 255, random8(128,255)), CHSV(baseI+128, 255, random8(128,255)), CHSV(baseI+random8(92), 192, random8(128,255)), CHSV(baseI+random8(92), 255, random8(128,255)));
   }
 
-  CRGB color;
-
   //EVERY_N_MILLIS(10) { //(don't have to time this, effect function is only called every 24ms)
   nblendPaletteTowardPalette(palettes[0], palettes[1], 48);               // Blend towards the target palette over 48 iterations.
 
@@ -4226,8 +4216,7 @@ uint16_t mode_noisepal(void) {                                    // Slow noise 
 
   for (int i = 0; i < SEGLEN; i++) {
     unsigned index = inoise8(i*scale, SEGENV.aux0+i*scale);                // Get a value from the noise function. I'm using both x and y axis.
-    color = ColorFromPalette(palettes[0], index, 255, LINEARBLEND);       // Use the my own palette.
-    SEGMENT.setPixelColor(i, color.red, color.green, color.blue);
+    SEGMENT.setPixelColor(i,  ColorFromPalette(palettes[0], index, 255, LINEARBLEND));  // Use my own palette.
   }
 
   SEGENV.aux0 += beatsin8(10,1,4);                                        // Moving along the distance. Vary it a bit with a sine wave.
@@ -4314,9 +4303,8 @@ uint16_t mode_chunchun(void)
     counter -= span;
     unsigned megumin = sin16(counter) + 0x8000;
     unsigned bird = uint32_t(megumin * SEGLEN) >> 16;
-    uint32_t c = SEGMENT.color_from_palette((i * 255)/ numBirds, false, false, 0);  // no palette wrapping
     bird = constrain(bird, 0U, SEGLEN-1U);
-    SEGMENT.setPixelColor(bird, c);
+    SEGMENT.setPixelColor(bird, SEGMENT.color_from_palette((i * 255)/ numBirds, false, false, 0)); // no palette wrapping
   }
   return FRAMETIME;
 }
@@ -4934,7 +4922,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
     byte x2 = beatsin8(1 + SEGMENT.speed/16, 0, (cols - 1));
     byte y1 = beatsin8(5 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 24);
     byte y2 = beatsin8(3 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 48 + 64);
-    CRGB color = ColorFromPalette(SEGPALETTE, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
+    uint32_t color = ColorFromPalette(SEGPALETTE, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
 
     byte xsteps = abs8(x1 - y1) + 1;
     byte ysteps = abs8(x2 - y2) + 1;
@@ -5831,7 +5819,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
   for (size_t i = 0; i < 8; i++) {
     int x = beatsin8(12 + i, 2, cols - 3);
     int y = beatsin8(15 + i, 2, rows - 3);
-    CRGB color = ColorFromPalette(SEGPALETTE, beatsin8(12 + i, 0, 255), 255);
+    uint32_t color = ColorFromPalette(SEGPALETTE, beatsin8(12 + i, 0, 255), 255);
     SEGMENT.addPixelColorXY(x, y, color);
     if (cols > 24 || rows > 24) {
       SEGMENT.addPixelColorXY(x+1, y, color);
@@ -6725,8 +6713,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
     index = (255 - i*256/SEGLEN) * index/(256-SEGMENT.intensity);                       // Now we need to scale index so that it gets blacker as we get close to one of the ends.
                                                                                         // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
 
-    CRGB color = ColorFromPalette(myPal, index, volumeSmth*2, LINEARBLEND);     // Use the my own palette.
-    SEGMENT.setPixelColor(i, color);
+    SEGMENT.setPixelColor(i, ColorFromPalette(myPal, index, volumeSmth*2, LINEARBLEND)); // Use my own palette.
   }
 
   return FRAMETIME;
@@ -7532,7 +7519,7 @@ uint16_t mode_2DAkemi(void) {
       unsigned band = x * cols/8;
       band = constrain(band, 0, 15);
       int barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
-      CRGB color = CRGB(SEGMENT.color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0));
+      uint32_t color = SEGMENT.color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
 
       for (int y=0; y < barHeight; y++) {
         SEGMENT.setPixelColorXY(x, rows/2-y, color);
@@ -7760,8 +7747,7 @@ uint16_t mode_2Doctopus() {
       //CRGB c = CHSV(SEGENV.step / 2 - radius, 255, sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step) + radius - SEGENV.step * 2 + angle * (SEGMENT.custom3/3+1)));
       unsigned intensity = sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step/2) + radius - SEGENV.step + angle * (SEGMENT.custom3/4+1));
       intensity = map((intensity*intensity) & 0xFFFF, 0, 65535, 0, 255); // add a bit of non-linearity for cleaner display
-      CRGB c = ColorFromPalette(SEGPALETTE, SEGENV.step / 2 - radius, intensity);
-      SEGMENT.setPixelColorXY(x, y, c);
+      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, SEGENV.step / 2 - radius, intensity));
     }
   }
   return FRAMETIME;

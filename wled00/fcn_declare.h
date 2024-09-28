@@ -68,6 +68,64 @@ typedef struct WiFiConfig {
 //colors.cpp
 #define ColorFromPalette ColorFromPaletteWLED // override fastled version
 
+// CRGBW can be used to manipulate 32bit colors faster. However: if it is passed to functions, it adds overhead compared to a uint32_t color
+// use with caution and pay attention to flash size. Usually converting a uint32_t to CRGBW to extract r, g, b, w values is slower than using bitshifts
+// it can be useful to avoid back and forth conversions between uint32_t and fastled CRGB
+struct CRGBW {
+    union {
+        uint32_t color32; // Access as a 32-bit value (0xWWRRGGBB)
+        uint8_t raw[4];   // Access as an array in the order B, G, R, W
+        struct {
+            uint8_t b;
+            uint8_t g;
+            uint8_t r;
+            uint8_t w;
+        };
+    };
+
+    // Default constructor
+    inline CRGBW() __attribute__((always_inline)) = default;
+
+    // Constructor from a 32-bit color (0xWWRRGGBB)
+    constexpr CRGBW(uint32_t color) __attribute__((always_inline)) : color32(color) {}
+
+    // Constructor with r, g, b, w values
+    constexpr CRGBW(uint8_t red, uint8_t green, uint8_t blue, uint8_t white = 0) __attribute__((always_inline)) : r(red), g(green), b(blue), w(white) {}
+
+    // Constructor from CRGB
+    constexpr CRGBW(CRGB rgb) __attribute__((always_inline)) : r(rgb.r), g(rgb.g), b(rgb.b), w(0) {}
+
+    // Access as an array
+    inline const uint8_t& operator[] (uint8_t x) const __attribute__((always_inline)) { return raw[x]; }
+
+    // Assignment from 32-bit color
+    inline CRGBW& operator=(uint32_t color) __attribute__((always_inline)) { color32 = color; return *this; }
+
+    // Assignment from r, g, b, w
+    inline CRGBW& operator=(const CRGB& rgb) __attribute__((always_inline)) { r = rgb.r; g = rgb.g; b = rgb.b; w = 0; return *this; }
+
+    // Conversion operator to uint32_t
+    inline operator uint32_t() const __attribute__((always_inline)) {
+      return color32;
+    }
+    /*
+    // Conversion operator to CRGB
+    inline operator CRGB() const __attribute__((always_inline)) {
+      return CRGB(r, g, b);
+    }
+
+    CRGBW& scale32 (uint8_t scaledown) // 32bit math
+    {
+      if (color32 == 0) return *this; // 2 extra instructions, worth it if called a lot on black (which probably is true) adding check if scaledown is zero adds much more overhead as its 8bit
+      uint32_t scale = scaledown + 1;
+      uint32_t rb = (((color32 & 0x00FF00FF) * scale) >> 8) & 0x00FF00FF; // scale red and blue
+      uint32_t wg = (((color32 & 0xFF00FF00) >> 8) * scale) & 0xFF00FF00; // scale white and green
+          color32 =  rb | wg;
+      return *this;
+    }*/
+
+};
+
 struct CHSV32 { // 32bit HSV color with 16bit hue for more accurate conversions
   union {
     struct {
@@ -106,7 +164,7 @@ class NeoGammaWLEDMethod {
 [[gnu::hot]] uint32_t color_blend(uint32_t, uint32_t, uint16_t, bool b16=false);
 [[gnu::hot]] uint32_t color_add(uint32_t, uint32_t, bool preserveCR = false);
 [[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
-[[gnu::hot]] CRGB ColorFromPaletteWLED(const CRGBPalette16 &pal, unsigned index, uint8_t brightness = (uint8_t)255U, TBlendType blendType = LINEARBLEND);
+[[gnu::hot]] uint32_t ColorFromPaletteWLED(const CRGBPalette16 &pal, unsigned index, uint8_t brightness = (uint8_t)255U, TBlendType blendType = LINEARBLEND);
 CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
 CRGBPalette16 generateRandomPalette();
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }

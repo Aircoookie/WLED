@@ -851,10 +851,8 @@ class WS2812FX {  // 96 bytes
       return index;
     };
 
-    uint32_t
-      now,
-      timebase,
-      getPixelColor(uint16_t) const;
+    uint32_t now, timebase;
+    uint32_t getPixelColor(unsigned) const;
 
     inline uint32_t getLastShow() const       { return _lastShow; }           // returns millis() timestamp of last strip.show() call
     inline uint32_t segColor(uint8_t i) const { return _colors_t[i]; }        // returns currently valid color (for slot i) AKA SEGCOLOR(); may be blended between two colors while in transition
