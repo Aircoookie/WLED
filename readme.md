@@ -1,4 +1,4 @@
-Some GUI (graphic user interface) updates
+<h1>Some GUI (graphic user interface) updates</h1>
 <hr/>
 <br/>
 <br/>
