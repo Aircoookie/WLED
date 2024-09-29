@@ -35,6 +35,7 @@
 	--sgp: "block";
 	--bmt: 0;
 	--sti: 42px;
+	--stp: 42px;
 }
 
 html {
@@ -468,7 +469,7 @@ button {
 	padding: 4px 2px;
 	position: relative;
 	opacity: 1;
-	transition: opacity .5s linear, height .25s, transform .25s;
+	transition: opacity .25s linear, height .2s, transform .2s;
 }
 
 .filter {
@@ -1335,9 +1336,11 @@ TD .checkmark, TD .radiomark {
 	top: 42px;
 }
 
-#fxlist .lstI.selected,
-#pallist .lstI.selected {
+#fxlist .lstI.selected {
 	top: calc(var(--sti) + 42px);
+}
+#pallist .lstI.selected {
+	top: calc(var(--stp) + 42px);
 }
 
 dialog::backdrop {
@@ -1353,9 +1356,11 @@ dialog {
 	color: var(--c-f);
 }
 
-#fxlist .lstI.sticky,
-#pallist .lstI.sticky {
+#fxlist .lstI.sticky {
 	top: var(--sti);
+}
+#pallist .lstI.sticky {
+	top: var(--stp);
 }
 
 /* list item content */
