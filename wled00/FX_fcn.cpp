@@ -442,7 +442,7 @@ uint32_t IRAM_ATTR_YN Segment::currentColor(uint8_t slot) const {
 #endif
 }
 
-// pre-calculate drawing parameters for faster access
+// pre-calculate drawing parameters for faster access (based on the idea from @softhack007 from MM fork)
 void Segment::beginDraw() {
   _vWidth  = virtualWidth();
   _vHeight = virtualHeight();
