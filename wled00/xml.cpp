@@ -91,14 +91,14 @@ void appendGPIOinfo(Print& settingsScript) {
   settingsScript.print(F("];"));
 
   // add reserved (unusable) pins
-  settingsScript.print(SET_F("d.rsvd=["));
+  settingsScript.print(F("d.rsvd=["));
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
     if (!PinManager::isPinOk(i, false)) {  // include readonly pins
       settingsScript.print(i); settingsScript.print(",");
     }
   }
   #ifdef WLED_ENABLE_DMX
-  settingsScript.print(SET_F("2,")); // DMX hardcoded pin
+  settingsScript.print(F("2,")); // DMX hardcoded pin
   #endif
   #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)
   settingsScript.printf_P(PSTR(",%d"),hardwareTX); // debug output (TX) pin
@@ -113,36 +113,36 @@ void appendGPIOinfo(Print& settingsScript) {
     switch (ethernetBoards[ethernetType].eth_clk_mode) {
       case ETH_CLOCK_GPIO0_IN:
       case ETH_CLOCK_GPIO0_OUT:
-        settingsScript.print(SET_F("0"));
+        settingsScript.print(F("0"));
         break;
       case ETH_CLOCK_GPIO16_OUT:
-        settingsScript.print(SET_F("16"));
+        settingsScript.print(F("16"));
         break;
       case ETH_CLOCK_GPIO17_OUT:
-        settingsScript.print(SET_F("17"));
+        settingsScript.print(F("17"));
         break;
     }
   }
   #endif
-  settingsScript.print(SET_F("];")); // rsvd
+  settingsScript.print(F("];")); // rsvd
 
   // add info for read-only GPIO
-  settingsScript.print(SET_F("d.ro_gpio=["));
+  settingsScript.print(F("d.ro_gpio=["));
   bool firstPin = true;
   for (unsigned i = 0; i < WLED_NUM_PINS; i++) {
     if (PinManager::isReadOnlyPin(i)) {
       // No comma before the first pin
-      if (!firstPin) settingsScript.print(SET_F(","));
+      if (!firstPin) settingsScript.print(F(","));
       settingsScript.print(i);
       firstPin = false;
     }
   }
-  settingsScript.print(SET_F("];"));
+  settingsScript.print(F("];"));
 
   // add info about max. # of pins
-  settingsScript.print(SET_F("d.max_gpio="));
+  settingsScript.print(F("d.max_gpio="));
   settingsScript.print(WLED_NUM_PINS);
-  settingsScript.print(SET_F(";"));
+  settingsScript.print(F(";"));
 }
 
 //get values for settings form in javascript
@@ -262,7 +262,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
   {
     appendGPIOinfo(settingsScript);
 
-    settingsScript.print(SET_F("d.ledTypes=")); settingsScript.print(BusManager::getLEDTypesJSONString().c_str()); settingsScript.print(";");
+    settingsScript.print(F("d.ledTypes=")); settingsScript.print(BusManager::getLEDTypesJSONString().c_str()); settingsScript.print(";");
 
     // set limits
     settingsScript.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d);"),
@@ -499,7 +499,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     #endif
     printSetFormValue(settingsScript,PSTR("BD"),serialBaud);
     #ifndef WLED_ENABLE_ADALIGHT
-    settingsScript.print(SET_F("toggle('Serial);"));
+    settingsScript.print(F("toggle('Serial);"));
     #endif
   }
 
