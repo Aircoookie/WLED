@@ -176,8 +176,8 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
   if (unsigned(x) >= vW || unsigned(y) >= vH) return;  // if pixel would fall out of virtual segment just exit
 
-  if(getCurrentBrightness() < 255)
-    col = color_fade(col, getCurrentBrightness()); // scale brightness
+  // if color is unscaled
+  if (!_colorScaled) col = color_fade(col, _segBri);
 
   if (reverse  ) x = vW - x - 1;
   if (reverse_y) y = vH - y - 1;
@@ -545,6 +545,9 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
       x++;
     }
   } else {
+    // pre-scale color for all pixels
+    col = color_fade(col, _segBri);
+    _colorScaled = true;
     // Bresenham’s Algorithm
     int d = 3 - (2*radius);
     int y = radius, x = 0;
@@ -565,6 +568,7 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
         d += 4 * x + 6;
       }
     }
+    _colorScaled = false;
   }
 }
 
@@ -575,6 +579,9 @@ void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
   // draw soft bounding circle
   if (soft) drawCircle(cx, cy, radius, col, soft);
+  // pre-scale color for all pixels
+  col = color_fade(col, _segBri);
+  _colorScaled = true;
   // fill it
   for (int y = -radius; y <= radius; y++) {
     for (int x = -radius; x <= radius; x++) {
@@ -584,6 +591,7 @@ void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
         setPixelColorXY(cx + x, cy + y, col);
     }
   }
+  _colorScaled = false;
 }
 
 //line function
@@ -629,6 +637,9 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       if (steep) std::swap(x,y);  // restore if steep
     }
   } else {
+    // pre-scale color for all pixels
+    c = color_fade(c, _segBri);
+    _colorScaled = true;
     // Bresenham's algorithm
     int err = (dx>dy ? dx : -dy)/2;   // error direction
     for (;;) {
@@ -638,6 +649,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       if (e2 >-dx) { err -= dy; x0 += sx; }
       if (e2 < dy) { err += dx; y0 += sy; }
     }
+    _colorScaled = false;
   }
 }
 
@@ -670,6 +682,9 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
       default: return;
     }
     uint32_t col = ColorFromPaletteWLED(grad, (i+1)*255/h, 255, NOBLEND);
+    // pre-scale color for all pixels
+    col = color_fade(col, _segBri);
+    _colorScaled = true;
     for (int j = 0; j<w; j++) { // character width
       int x0, y0;
       switch (rotate) {
@@ -684,6 +699,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
         setPixelColorXY(x0, y0, col);
       }
     }
+    _colorScaled = false;
   }
 }
 

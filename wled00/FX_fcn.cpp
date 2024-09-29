@@ -87,9 +87,8 @@ unsigned      Segment::_vLength           = 0;
 unsigned      Segment::_vWidth            = 0;
 unsigned      Segment::_vHeight           = 0;
 uint8_t       Segment::_segBri            = 0;
-//uint8_t       Segment::_currentBrightness2      = 0;
-//uint8_t       Segment::_currentBrightness3      = 0;
 uint32_t      Segment::_currentColors[NUM_COLORS] = {0,0,0};
+bool          Segment::_colorScaled       = false;
 CRGBPalette16 Segment::_currentPalette    = CRGBPalette16(CRGB::Black);
 CRGBPalette16 Segment::_randomPalette     = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
 CRGBPalette16 Segment::_newRandomPalette  = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
@@ -448,7 +447,7 @@ void Segment::beginDraw() {
   _vWidth  = virtualWidth();
   _vHeight = virtualHeight();
   _vLength = virtualLength();
-  _segBri = currentBri();
+  _segBri  = currentBri();
   // adjust gamma for effects
   for (unsigned i = 0; i < NUM_COLORS; i++) {
     #ifndef WLED_DISABLE_MODE_BLEND
@@ -743,6 +742,9 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
   if (is2D()) {
     const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
     const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+    // pre-scale color for all pixels
+    col = color_fade(col, _segBri);
+    _colorScaled = true;
     switch (map1D2D) {
       case M12_Pixels:
         // use all available pixels as a long strip
@@ -834,6 +836,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
         break;
       }
     }
+    _colorScaled = false;
     return;
   } else if (Segment::maxHeight != 1 && (width() == 1 || height() == 1)) {
     if (start < Segment::maxWidth*Segment::maxHeight) {
@@ -848,8 +851,9 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 #endif
 
   unsigned len = length();
-  if(getCurrentBrightness() < 255) //!!! test without this if
-    col = color_fade(col, getCurrentBrightness()); // scale brightness
+  // if color is unscaled
+  if (!_colorScaled) col = color_fade(col, _segBri);
+
   // expand pixel (taking into account start, grouping, spacing [and offset])
   i = i * groupLength();
   if (reverse) { // is segment reversed?
@@ -1071,10 +1075,14 @@ void Segment::fill(uint32_t c) {
   if (!isActive()) return; // not active
   const int cols = is2D() ? vWidth() : vLength();
   const int rows = vHeight(); // will be 1 for 1D
+  // pre-scale color for all pixels
+  c = color_fade(c, _segBri);
+  _colorScaled = true;
   for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
     if (is2D()) setPixelColorXY(x, y, c);
     else        setPixelColor(x, c);
   }
+  _colorScaled = false;
 }
 
 /*
