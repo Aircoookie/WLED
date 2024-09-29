@@ -573,11 +573,6 @@ void BusPwm::show() {
   const unsigned maxBri = (1<<_depth);      // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8) 
   const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
 #endif
-  // add dead time between signals (when using dithering, two full 8bit pulses are required)
-  // this is needed for 2CH, but also adds some slack for ESP8266 which has less precise
-  // PWM timing.
-  const int deadTime = (1+dithering) << bitShift;
-
   // use CIE brightness formula (cubic) to fit (or approximate linearity of) human eye perceived brightness
   // the formula is based on 12 bit resolution as there is no need for greater precision
   // see: https://en.wikipedia.org/wiki/Lightness
@@ -601,9 +596,12 @@ void BusPwm::show() {
   // Phase shifting requires that LEDC timers are synchronised (see setup()). For PWM CCT (and H-bridge) it is
   // also mandatory that both channels use the same timer (pinManager takes care of that).
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned duty = (_data[i] * pwmBri) / 255;    
+    unsigned duty = (_data[i] * pwmBri) / 255;
+    unsigned deadTime = 0;
 
     if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {
+      // add dead time between signals (when using dithering, two full 8bit pulses are required)
+      deadTime = (1+dithering) << bitShift;
       // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overlap
       if (_bri >= 254 && duty >= maxBri / 2 && duty < maxBri) {
         duty -= deadTime << 1; // shorten duty of larger signal except if full on
