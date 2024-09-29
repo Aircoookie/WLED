@@ -612,7 +612,7 @@ void BusPwm::show() {
     if (_reversed) duty = maxBri - duty;
 
     #ifdef ESP8266
-    stopWaveform(_pins[i]);
+    //stopWaveform(_pins[i]);  // can cause the waveform to miss a cycle. instead we risk crossovers.
     startWaveformClockCycles(_pins[i], duty, analogPeriod - duty, 0, i ? _pins[0] : -1, hPoint, false);
     #else
     unsigned channel = _ledcStart + i;

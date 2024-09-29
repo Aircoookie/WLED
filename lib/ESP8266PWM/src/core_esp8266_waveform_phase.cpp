@@ -104,18 +104,20 @@ constexpr int32_t DELTAIRQCCYS = ISCPUFREQ160MHZ ?
 // for INFINITE, the NMI proceeds on the waveform without expiry deadline.
 // for EXPIRES, the NMI expires the waveform automatically on the expiry ccy.
 // for UPDATEEXPIRY, the NMI recomputes the exact expiry ccy and transitions to EXPIRES.
+// for UPDATEPHASE, the NMI recomputes the target timings
 // for INIT, the NMI initializes nextPeriodCcy, and if expiryCcy != 0 includes UPDATEEXPIRY.
-enum class WaveformMode : uint8_t {INFINITE = 0, EXPIRES = 1, UPDATEEXPIRY = 2, INIT = 3};
+enum class WaveformMode : uint8_t {INFINITE = 0, EXPIRES = 1, UPDATEEXPIRY = 2, UPDATEPHASE = 3, INIT = 4};
 
 // Waveform generator can create tones, PWM, and servos
 typedef struct {
-  uint32_t nextPeriodCcy; // ESP clock cycle when a period begins. If WaveformMode::INIT, temporarily holds positive phase offset ccy count
+  uint32_t nextPeriodCcy; // ESP clock cycle when a period begins.
   uint32_t endDutyCcy;    // ESP clock cycle when going from duty to off
   int32_t dutyCcys;       // Set next off cycle at low->high to maintain phase
   int32_t adjDutyCcys;    // Temporary correction for next period
   int32_t periodCcys;     // Set next phase cycle at low->high to maintain phase
   uint32_t expiryCcy;     // For time-limited waveform, the CPU clock cycle when this waveform must stop. If WaveformMode::UPDATE, temporarily holds relative ccy count
   WaveformMode mode;
+  uint32_t phaseCcy;      // positive phase offset ccy count  
   int8_t alignPhase;      // < 0 no phase alignment, otherwise starts waveform in relative phase offset to given pin
   bool autoPwm;           // perform PWM duty to idle cycle ratio correction under high load at the expense of precise timings
 } Waveform;
@@ -200,15 +202,15 @@ int startWaveformClockCycles_weak(uint8_t pin, uint32_t highCcys, uint32_t lowCc
   wave.adjDutyCcys = 0;
   wave.periodCcys = periodCcys;
   wave.autoPwm = autoPwm;
+  wave.alignPhase = (alignPhase < 0) ? -1 : alignPhase;
+  wave.phaseCcy = phaseOffsetCcys;
 
   std::atomic_thread_fence(std::memory_order_acquire);
   const uint32_t pinBit = 1UL << pin;
   if (!(waveform.enabled & pinBit)) {
     // wave.nextPeriodCcy and wave.endDutyCcy are initialized by the ISR
-    wave.nextPeriodCcy = phaseOffsetCcys;
     wave.expiryCcy = runTimeCcys; // in WaveformMode::INIT, temporarily hold relative cycle count
     wave.mode = WaveformMode::INIT;
-    wave.alignPhase = (alignPhase < 0) ? -1 : alignPhase;
     if (!wave.dutyCcys) {
       // If initially at zero duty cycle, force GPIO off
       if (pin == 16) {
@@ -232,9 +234,14 @@ int startWaveformClockCycles_weak(uint8_t pin, uint32_t highCcys, uint32_t lowCc
   else {
     wave.mode = WaveformMode::INFINITE; // turn off possible expiry to make update atomic from NMI
     std::atomic_thread_fence(std::memory_order_release);
-    wave.expiryCcy = runTimeCcys; // in WaveformMode::UPDATEEXPIRY, temporarily hold relative cycle count
     if (runTimeCcys) {
+      wave.expiryCcy = runTimeCcys; // in WaveformMode::UPDATEEXPIRY, temporarily hold relative cycle count
       wave.mode = WaveformMode::UPDATEEXPIRY;
+      std::atomic_thread_fence(std::memory_order_release);
+      waveform.toSetBits = 1UL << pin;
+    } else if (alignPhase) {
+      // @willmmiles new feature
+      wave.mode = WaveformMode::UPDATEPHASE; // recalculate start
       std::atomic_thread_fence(std::memory_order_release);
       waveform.toSetBits = 1UL << pin;
     }
@@ -292,12 +299,13 @@ static inline IRAM_ATTR int32_t scaleCcys(const int32_t ccys, const bool isCPU2X
 }
 
 static IRAM_ATTR void timer1Interrupt() {
+  const uint32_t isrStartCcy = ESP.getCycleCount();
+  int32_t clockDrift = isrStartCcy - waveform.nextEventCcy;
+
   // ----- @willmmiles begin patch -----
   nmiCrashWorkaround();
   // ----- @willmmiles end patch -----
 
-  const uint32_t isrStartCcy = ESP.getCycleCount();
-  int32_t clockDrift = isrStartCcy - waveform.nextEventCcy;
   const bool isCPU2X = CPU2X & 1;
   if ((waveform.toSetBits && !(waveform.enabled & waveform.toSetBits)) || waveform.toDisableBits) {
     // Handle enable/disable requests from main app.
@@ -328,6 +336,15 @@ static IRAM_ATTR void timer1Interrupt() {
       wave.expiryCcy = wave.nextPeriodCcy + scaleCcys(wave.expiryCcy, isCPU2X);
       wave.mode = WaveformMode::EXPIRES;
       break;
+    // @willmmiles new feature
+    case WaveformMode::UPDATEPHASE:
+      // in WaveformMode::UPDATEPHASE, we recalculate the targets without adjusting the state
+      if (wave.alignPhase >= 0 && waveform.enabled & (1UL << wave.alignPhase)) {
+        auto& align_wave = waveform.pins[wave.alignPhase];        
+        // Go back one cycle
+        wave.nextPeriodCcy = align_wave.nextPeriodCcy - scaleCcys(align_wave.periodCcys, isCPU2X) + scaleCcys(wave.phaseCcy, isCPU2X);
+        wave.endDutyCcy = wave.nextPeriodCcy + scaleCcys(wave.dutyCcys, isCPU2X);
+      }
     default:
       break;
     }
@@ -355,11 +372,13 @@ static IRAM_ATTR void timer1Interrupt() {
 
       Waveform& wave = waveform.pins[pin];
 
+/* @willmmiles - wtf?  We don't want to accumulate drift
       if (clockDrift) {
         wave.endDutyCcy += clockDrift;
         wave.nextPeriodCcy += clockDrift;
         wave.expiryCcy += clockDrift;
       }
+*/          
 
       uint32_t waveNextEventCcy = (waveform.states & pinBit) ? wave.endDutyCcy : wave.nextPeriodCcy;
       if (WaveformMode::EXPIRES == wave.mode &&
