@@ -565,7 +565,7 @@ void BusPwm::show() {
    const unsigned analogPeriod = F_CPU / _frequency;
    const unsigned maxBri = analogPeriod;  // compute to clock cycle accuracy
    constexpr bool dithering = false;   
-   constexpr unsigned bitShift = 7;  // 2^7 clocks for dead time
+   constexpr unsigned bitShift = 8;  // 256 clocks for dead time, ~3us at 80MHz
 #else
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
   // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
@@ -609,8 +609,10 @@ void BusPwm::show() {
         duty -= deadTime << 1; // shorten duty of larger signal except if full on
       }
     }
-    if (_reversed) duty = maxBri - duty;
-
+    if (_reversed) {
+      if (i) hPoint += duty;  // align start at time zero
+      duty = maxBri - duty;
+    }
     #ifdef ESP8266
     //stopWaveform(_pins[i]);  // can cause the waveform to miss a cycle. instead we risk crossovers.
     startWaveformClockCycles(_pins[i], duty, analogPeriod - duty, 0, i ? _pins[0] : -1, hPoint, false);
@@ -625,7 +627,8 @@ void BusPwm::show() {
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
     #endif
     
-    hPoint += duty + (_reversed ? -1 : 1) * deadTime;        // offset to cascade the signals
+    if (!_reversed) hPoint += duty;
+    hPoint += deadTime;        // offset to cascade the signals
     if (hPoint >= maxBri) hPoint -= maxBri; // offset is out of bounds, reset
   }
 }

@@ -242,7 +242,7 @@ int startWaveformClockCycles_weak(uint8_t pin, uint32_t highCcys, uint32_t lowCc
       wave.mode = WaveformMode::UPDATEEXPIRY;
       std::atomic_thread_fence(std::memory_order_release);
       waveform.toSetBits = 1UL << pin;
-    } else if (alignPhase) {
+    } else if (alignPhase >= 0) {
       // @willmmiles new feature
       wave.mode = WaveformMode::UPDATEPHASE; // recalculate start
       std::atomic_thread_fence(std::memory_order_release);
@@ -303,7 +303,7 @@ static inline IRAM_ATTR int32_t scaleCcys(const int32_t ccys, const bool isCPU2X
 
 static IRAM_ATTR void timer1Interrupt() {
   const uint32_t isrStartCcy = ESP.getCycleCount();
-  int32_t clockDrift = isrStartCcy - waveform.nextEventCcy;
+  //int32_t clockDrift = isrStartCcy - waveform.nextEventCcy;
 
   // ----- @willmmiles begin patch -----
   nmiCrashWorkaround();
@@ -341,12 +341,16 @@ static IRAM_ATTR void timer1Interrupt() {
       break;
     // @willmmiles new feature
     case WaveformMode::UPDATEPHASE:
-      // in WaveformMode::UPDATEPHASE, we recalculate the targets without adjusting the state
+      // in WaveformMode::UPDATEPHASE, we recalculate the targets
       if (waveform.alignPhase >= 0 && waveform.enabled & (1UL << waveform.alignPhase)) {
-        auto& align_wave = waveform.pins[waveform.alignPhase];        
-        // Go back one cycle
-        wave.nextPeriodCcy = align_wave.nextPeriodCcy - scaleCcys(align_wave.periodCcys, isCPU2X) + scaleCcys(waveform.phaseCcy, isCPU2X);
-        wave.endDutyCcy = wave.nextPeriodCcy + scaleCcys(wave.dutyCcys, isCPU2X);
+        // Compute phase shift to realign with target
+        auto& align_wave = waveform.pins[waveform.alignPhase];                
+        int32_t shift = static_cast<int32_t>(align_wave.nextPeriodCcy + scaleCcys(waveform.phaseCcy, isCPU2X) - wave.nextPeriodCcy);
+        const int32_t periodCcys = scaleCcys(wave.periodCcys, isCPU2X);
+        if (shift > periodCcys/2) shift -= periodCcys;
+        else if (shift <= -periodCcys/2) shift += periodCcys;
+        wave.nextPeriodCcy += shift;
+        wave.endDutyCcy += shift;
       }
     default:
       break;
@@ -462,7 +466,7 @@ static IRAM_ATTR void timer1Interrupt() {
       }
       now = ESP.getCycleCount();
     }
-    clockDrift = 0;
+    //clockDrift = 0;
   }
 
   int32_t callbackCcys = 0;
