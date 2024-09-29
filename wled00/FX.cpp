@@ -2294,7 +2294,7 @@ uint16_t mode_colortwinkle() {
     bool fadeUp = bitRead(SEGENV.data[index], bitNum);
 
     if (fadeUp) {
-      CRGBW incrementalColor = color_fade(col, fadeUpAmount, true);
+      CRGBW incrementalColor = color_fade(cur, fadeUpAmount, true);
       col = color_add(cur, incrementalColor);
 
       if (col.r == 255 || col.g == 255 || col.b == 255) {
@@ -2528,7 +2528,7 @@ static uint16_t ripple_base() {
     } else {//randomly create new wave
       if (random16(IBN + 10000) <= (SEGMENT.intensity >> (SEGMENT.is2D()*3))) {
         ripples[i].state = 1;
-        ripples[i].pos = SEGMENT.is2D() ? ((random8(SEGENV.virtualWidth())<<8) | (random8(SEGENV.virtualHeight()))) : random16(SEGLEN);
+        ripples[i].pos = SEGMENT.is2D() ? ((random8(SEG_W)<<8) | (random8(SEG_H))) : random16(SEGLEN);
         ripples[i].color = random8(); //color
       }
     }

@@ -168,16 +168,16 @@ uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
   return isActive() ? (x%vW) + (y%vH) * vW : 0;
 }
 
-void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col, bool unScaled)
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
- 
+
   const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
-  if (x >= vW|| y >= vH || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
+  if (unsigned(x) >= vW || unsigned(y) >= vH) return;  // if pixel would fall out of virtual segment just exit
 
-  // if color is unscaled
-  if (unScaled) col = color_fade(col, currentBri());
+  if(getCurrentBrightness() < 255)
+    col = color_fade(col, getCurrentBrightness()); // scale brightness
 
   if (reverse  ) x = vW - x - 1;
   if (reverse_y) y = vH - y - 1;
@@ -459,7 +459,7 @@ void Segment::box_blur(unsigned radius, bool smear) {
   delete[] tmpWSum;
 }
 
-void Segment::moveX(int8_t delta, bool wrap) {
+void Segment::moveX(int delta, bool wrap) {
   if (!isActive()) return; // not active
   const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
@@ -477,7 +477,7 @@ void Segment::moveX(int8_t delta, bool wrap) {
   }
 }
 
-void Segment::moveY(int8_t delta, bool wrap) {
+void Segment::moveY(int delta, bool wrap) {
   if (!isActive()) return; // not active
   const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
@@ -545,20 +545,18 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
       x++;
     }
   } else {
-    // pre-scale color for all pixels
-    col = color_fade(col, currentBri());
     // Bresenham’s Algorithm
     int d = 3 - (2*radius);
     int y = radius, x = 0;
     while (y >= x) {
-      setPixelColorXY(cx+x, cy+y, col, false);
-      setPixelColorXY(cx-x, cy+y, col, false);
-      setPixelColorXY(cx+x, cy-y, col, false);
-      setPixelColorXY(cx-x, cy-y, col, false);
-      setPixelColorXY(cx+y, cy+x, col, false);
-      setPixelColorXY(cx-y, cy+x, col, false);
-      setPixelColorXY(cx+y, cy-x, col, false);
-      setPixelColorXY(cx-y, cy-x, col, false);
+      setPixelColorXY(cx+x, cy+y, col);
+      setPixelColorXY(cx-x, cy+y, col);
+      setPixelColorXY(cx+x, cy-y, col);
+      setPixelColorXY(cx-x, cy-y, col);
+      setPixelColorXY(cx+y, cy+x, col);
+      setPixelColorXY(cx-y, cy+x, col);
+      setPixelColorXY(cx+y, cy-x, col);
+      setPixelColorXY(cx-y, cy-x, col);
       x++;
       if (d > 0) {
         y--;
@@ -577,15 +575,13 @@ void Segment::fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
   // draw soft bounding circle
   if (soft) drawCircle(cx, cy, radius, col, soft);
-  // pre-scale color for all pixels
-  col = color_fade(col, currentBri());
   // fill it
   for (int y = -radius; y <= radius; y++) {
     for (int x = -radius; x <= radius; x++) {
       if (x * x + y * y <= radius * radius &&
           int(cx)+x >= 0 && int(cy)+y >= 0 &&
           int(cx)+x < vW && int(cy)+y < vH)
-        setPixelColorXY(cx + x, cy + y, col, false);
+        setPixelColorXY(cx + x, cy + y, col);
     }
   }
 }
@@ -633,12 +629,10 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       if (steep) std::swap(x,y);  // restore if steep
     }
   } else {
-    // pre-scale color for all pixels
-    c = color_fade(c, currentBri());
     // Bresenham's algorithm
     int err = (dx>dy ? dx : -dy)/2;   // error direction
     for (;;) {
-      setPixelColorXY(x0, y0, c, false);
+      setPixelColorXY(x0, y0, c);
       if (x0==x1 && y0==y1) break;
       int e2 = err;
       if (e2 >-dx) { err -= dy; x0 += sx; }

@@ -420,8 +420,8 @@ typedef struct Segment {
     };
     uint16_t        _dataLen;
     static uint16_t _usedSegmentData;
-
-    static unsigned _vLength;                 // 1D dimension used for current effect 
+    static uint8_t _segBri;                   // Current brightness of segment
+    static unsigned _vLength;                 // 1D dimension used for current effect
     static unsigned _vWidth, _vHeight;        // 2D dimensions used for current effect
     static uint32_t _currentColors[NUM_COLORS]; // colors used for current effect
     static CRGBPalette16 _currentPalette;     // palette used for current effect (includes transition, used in color_from_palette())
@@ -546,7 +546,7 @@ typedef struct Segment {
     inline static unsigned vHeight()                       { return Segment::_vHeight; }
     inline static uint32_t getCurrentColor(unsigned i)     { return Segment::_currentColors[i]; } // { return i < 3 ? Segment::_currentColors[i] : 0; }
     inline static const CRGBPalette16 &getCurrentPalette() { return Segment::_currentPalette; }
-
+    inline static uint8_t getCurrentBrightness()           { return Segment::_segBri; }
     static void handleRandomPalette();
 
     void    beginDraw();            // set up parameters for current effect
@@ -589,8 +589,8 @@ typedef struct Segment {
 
     // 1D strip
     [[gnu::hot]] uint16_t virtualLength() const;
-    [[gnu::hot]] void setPixelColor(int n, uint32_t c, bool unScaled = true); // set relative pixel within segment with color
-    inline void setPixelColor(unsigned n, uint32_t c, bool unScaled = true) { setPixelColor(int(n), c, unScaled); }
+    [[gnu::hot]] void setPixelColor(int n, uint32_t c); // set relative pixel within segment with color
+    inline void setPixelColor(unsigned n, uint32_t c) { setPixelColor(int(n), c); }
     inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0)    { setPixelColor(n, RGBW32(r,g,b,w)); }
     inline void setPixelColor(int n, CRGB c)                                { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); }
     #ifdef WLED_USE_AA_PIXELS
@@ -629,8 +629,8 @@ typedef struct Segment {
     uint16_t nrOfVStrips() const;                // returns number of virtual vertical strips in 2D matrix (used to expand 1D effects into 2D)
   #ifndef WLED_DISABLE_2D
     [[gnu::hot]] uint16_t XY(int x, int y);      // support function to get relative index within segment
-    [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c, bool unScaled = true); // set relative pixel within segment with color
-    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c, bool unScaled = true) { setPixelColorXY(int(x), int(y), c, unScaled); }
+    [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
+    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c) { setPixelColorXY(int(x), int(y), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
     inline void setPixelColorXY(unsigned x, unsigned y, CRGB c)                   { setPixelColorXY(int(x), int(y), RGBW32(c.r,c.g,c.b,0)); }
@@ -651,8 +651,8 @@ typedef struct Segment {
     void blur2D(uint8_t blur_amount, bool smear = false);
     void blurRow(int row, fract8 blur_amount, bool smear = false);
     void blurCol(int col, fract8 blur_amount, bool smear = false);
-    void moveX(int8_t delta, bool wrap = false);
-    void moveY(int8_t delta, bool wrap = false);
+    void moveX(int delta, bool wrap = false);
+    void moveY(int delta, bool wrap = false);
     void move(uint8_t dir, uint8_t delta, bool wrap = false);
     void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false);
     inline void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) { drawCircle(cx, cy, radius, RGBW32(c.r,c.g,c.b,0), soft); }
@@ -668,8 +668,8 @@ typedef struct Segment {
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
     inline uint16_t XY(int x, int y)                                              { return x; }
-    inline void setPixelColorXY(int x, int y, uint32_t c, bool unScaled = true)   { setPixelColor(x, c, unScaled); }
-    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c, bool unScaled = true) { setPixelColor(int(x), c, unScaled); }
+    inline void setPixelColorXY(int x, int y, uint32_t c)   { setPixelColor(x, c); }
+    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c) { setPixelColor(int(x), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColor(x, RGBW32(c.r,c.g,c.b,0)); }
     inline void setPixelColorXY(unsigned x, unsigned y, CRGB c)                   { setPixelColor(int(x), RGBW32(c.r,c.g,c.b,0)); }
@@ -689,8 +689,8 @@ typedef struct Segment {
     inline void blur2D(uint8_t blur_amount, bool smear = false) {}
     inline void blurRow(int row, fract8 blur_amount, bool smear = false) {}
     inline void blurCol(int col, fract8 blur_amount, bool smear = false) {}
-    inline void moveX(int8_t delta, bool wrap = false) {}
-    inline void moveY(int8_t delta, bool wrap = false) {}
+    inline void moveX(int delta, bool wrap = false) {}
+    inline void moveY(int delta, bool wrap = false) {}
     inline void move(uint8_t dir, uint8_t delta, bool wrap = false) {}
     inline void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false) {}
     inline void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) {}

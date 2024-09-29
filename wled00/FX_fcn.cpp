@@ -86,6 +86,9 @@ uint16_t      Segment::maxHeight          = 1;
 unsigned      Segment::_vLength           = 0;
 unsigned      Segment::_vWidth            = 0;
 unsigned      Segment::_vHeight           = 0;
+uint8_t       Segment::_segBri            = 0;
+//uint8_t       Segment::_currentBrightness2      = 0;
+//uint8_t       Segment::_currentBrightness3      = 0;
 uint32_t      Segment::_currentColors[NUM_COLORS] = {0,0,0};
 CRGBPalette16 Segment::_currentPalette    = CRGBPalette16(CRGB::Black);
 CRGBPalette16 Segment::_randomPalette     = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
@@ -413,7 +416,7 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 }
 #endif
 
-uint8_t IRAM_ATTR Segment::currentBri(bool useCct) const {
+uint8_t Segment::currentBri(bool useCct) const {
   unsigned prog = progress();
   if (prog < 0xFFFFU) {
     unsigned curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
@@ -445,6 +448,7 @@ void Segment::beginDraw() {
   _vWidth  = virtualWidth();
   _vHeight = virtualHeight();
   _vLength = virtualLength();
+  _segBri = currentBri();
   // adjust gamma for effects
   for (unsigned i = 0; i < NUM_COLORS; i++) {
     #ifndef WLED_DISABLE_MODE_BLEND
@@ -624,21 +628,21 @@ void Segment::setPalette(uint8_t pal) {
 }
 
 // 2D matrix
-uint16_t IRAM_ATTR Segment::virtualWidth() const {
+uint16_t Segment::virtualWidth() const {
   unsigned groupLen = groupLength();
   unsigned vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
   if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vWidth;
 }
 
-uint16_t IRAM_ATTR Segment::virtualHeight() const {
+uint16_t Segment::virtualHeight() const {
   unsigned groupLen = groupLength();
   unsigned vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
   if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vHeight;
 }
 
-uint16_t IRAM_ATTR_YN Segment::nrOfVStrips() const {
+uint16_t Segment::nrOfVStrips() const {
   unsigned vLen = 1;
 #ifndef WLED_DISABLE_2D
   if (is2D() && map1D2D == M12_pBar) vLen = virtualWidth();
@@ -683,7 +687,7 @@ static int getPinwheelLength(int vW, int vH) {
 #endif
 
 // 1D strip
-uint16_t IRAM_ATTR Segment::virtualLength() const {
+uint16_t Segment::virtualLength() const {
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     unsigned vW = virtualWidth();
@@ -715,7 +719,7 @@ uint16_t IRAM_ATTR Segment::virtualLength() const {
   return vLength;
 }
 
-void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col, bool unScaled)
+void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 {
   if (!isActive() || i < 0) return; // not active or invalid index
 #ifndef WLED_DISABLE_2D
@@ -739,22 +743,20 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col, bool unScaled)
   if (is2D()) {
     const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
     const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
-    // pre-scale color for all pixels
-    col = color_fade(col, currentBri());
     switch (map1D2D) {
       case M12_Pixels:
         // use all available pixels as a long strip
-        setPixelColorXY(i % vW, i / vW, col, false);
+        setPixelColorXY(i % vW, i / vW, col);
         break;
       case M12_pBar:
         // expand 1D effect vertically or have it play on virtual strips
-        if (vStrip > 0) setPixelColorXY(vStrip - 1, vH - i - 1, col, false);
-        else for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col, false);
+        if (vStrip > 0) setPixelColorXY(vStrip - 1, vH - i - 1, col);
+        else for (int x = 0; x < vW; x++) setPixelColorXY(x, vH - i - 1, col);
         break;
       case M12_pArc:
         // expand in circular fashion from center
         if (i == 0)
-          setPixelColorXY(0, 0, col, false);
+          setPixelColorXY(0, 0, col);
         else {
           float r = i;
           float step = HALF_PI / (2.8284f * r + 4); // we only need (PI/4)/(r/sqrt(2)+1) steps
@@ -762,8 +764,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col, bool unScaled)
             int x = roundf(sin_t(rad) * r);
             int y = roundf(cos_t(rad) * r);
             // exploit symmetry
-            setPixelColorXY(x, y, col, false);
-            setPixelColorXY(y, x, col, false);
+            setPixelColorXY(x, y, col);
+            setPixelColorXY(y, x, col);
           }
           // Bresenham’s Algorithm (may not fill every pixel)
           //int d = 3 - (2*i);
@@ -782,8 +784,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col, bool unScaled)
         }
         break;
       case M12_pCorner:
-        for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col, false);
-        for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col, false);
+        for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
+        for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
         break;
       case M12_sPinwheel: {
         // i = angle --> 0 - 296  (Big), 0 - 192  (Medium), 0 - 72 (Small)
@@ -822,7 +824,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col, bool unScaled)
           int x = posx / Fixed_Scale;
           int y = posy / Fixed_Scale;
           // set pixel
-          if (x != lastX || y != lastY) setPixelColorXY(x, y, col, false);  // only paint if pixel position is different
+          if (x != lastX || y != lastY) setPixelColorXY(x, y, col);  // only paint if pixel position is different
           lastX = x;
           lastY = y;
           // advance to next position
@@ -846,9 +848,8 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col, bool unScaled)
 #endif
 
   unsigned len = length();
-  // if color is unscaled
-  if (unScaled) col = color_fade(col, currentBri());
-
+  if(getCurrentBrightness() < 255) //!!! test without this if
+    col = color_fade(col, getCurrentBrightness()); // scale brightness
   // expand pixel (taking into account start, grouping, spacing [and offset])
   i = i * groupLength();
   if (reverse) { // is segment reversed?
@@ -1070,11 +1071,9 @@ void Segment::fill(uint32_t c) {
   if (!isActive()) return; // not active
   const int cols = is2D() ? vWidth() : vLength();
   const int rows = vHeight(); // will be 1 for 1D
-  // pre-scale color for all pixels
-  c = color_fade(c, currentBri());
   for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
-    if (is2D()) setPixelColorXY(x, y, c, false);
-    else        setPixelColor(x, c, false);
+    if (is2D()) setPixelColorXY(x, y, c);
+    else        setPixelColor(x, c);
   }
 }
 
