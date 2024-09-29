@@ -117,8 +117,6 @@ typedef struct {
   int32_t periodCcys;     // Set next phase cycle at low->high to maintain phase
   uint32_t expiryCcy;     // For time-limited waveform, the CPU clock cycle when this waveform must stop. If WaveformMode::UPDATE, temporarily holds relative ccy count
   WaveformMode mode;
-  uint32_t phaseCcy;      // positive phase offset ccy count  
-  int8_t alignPhase;      // < 0 no phase alignment, otherwise starts waveform in relative phase offset to given pin
   bool autoPwm;           // perform PWM duty to idle cycle ratio correction under high load at the expense of precise timings
 } Waveform;
 
@@ -132,6 +130,11 @@ namespace {
     // Enable lock-free by only allowing updates to waveform.states and waveform.enabled from IRQ service routine
     int32_t toSetBits = 0;     // Message to the NMI handler to start/modify exactly one waveform
     int32_t toDisableBits = 0; // Message to the NMI handler to disable exactly one pin from waveform generation
+
+    // toSetBits temporaries
+    // cheaper than packing them in every Waveform, since we permit only one use at a time
+    uint32_t phaseCcy;      // positive phase offset ccy count  
+    int8_t alignPhase;      // < 0 no phase alignment, otherwise starts waveform in relative phase offset to given pin
 
     uint32_t(*timer1CB)() = nullptr;
 
@@ -202,8 +205,8 @@ int startWaveformClockCycles_weak(uint8_t pin, uint32_t highCcys, uint32_t lowCc
   wave.adjDutyCcys = 0;
   wave.periodCcys = periodCcys;
   wave.autoPwm = autoPwm;
-  wave.alignPhase = (alignPhase < 0) ? -1 : alignPhase;
-  wave.phaseCcy = phaseOffsetCcys;
+  waveform.alignPhase = (alignPhase < 0) ? -1 : alignPhase;
+  waveform.phaseCcy = phaseOffsetCcys;
 
   std::atomic_thread_fence(std::memory_order_acquire);
   const uint32_t pinBit = 1UL << pin;
@@ -320,8 +323,8 @@ static IRAM_ATTR void timer1Interrupt() {
     switch (wave.mode) {
     case WaveformMode::INIT:
       waveform.states &= ~waveform.toSetBits; // Clear the state of any just started
-      if (wave.alignPhase >= 0 && waveform.enabled & (1UL << wave.alignPhase)) {
-        wave.nextPeriodCcy = waveform.pins[wave.alignPhase].nextPeriodCcy + wave.nextPeriodCcy;
+      if (waveform.alignPhase >= 0 && waveform.enabled & (1UL << waveform.alignPhase)) {
+        wave.nextPeriodCcy = waveform.pins[waveform.alignPhase].nextPeriodCcy + wave.nextPeriodCcy;
       }
       else {
         wave.nextPeriodCcy = waveform.nextEventCcy;
@@ -339,10 +342,10 @@ static IRAM_ATTR void timer1Interrupt() {
     // @willmmiles new feature
     case WaveformMode::UPDATEPHASE:
       // in WaveformMode::UPDATEPHASE, we recalculate the targets without adjusting the state
-      if (wave.alignPhase >= 0 && waveform.enabled & (1UL << wave.alignPhase)) {
-        auto& align_wave = waveform.pins[wave.alignPhase];        
+      if (waveform.alignPhase >= 0 && waveform.enabled & (1UL << waveform.alignPhase)) {
+        auto& align_wave = waveform.pins[waveform.alignPhase];        
         // Go back one cycle
-        wave.nextPeriodCcy = align_wave.nextPeriodCcy - scaleCcys(align_wave.periodCcys, isCPU2X) + scaleCcys(wave.phaseCcy, isCPU2X);
+        wave.nextPeriodCcy = align_wave.nextPeriodCcy - scaleCcys(align_wave.periodCcys, isCPU2X) + scaleCcys(waveform.phaseCcy, isCPU2X);
         wave.endDutyCcy = wave.nextPeriodCcy + scaleCcys(wave.dutyCcys, isCPU2X);
       }
     default:
