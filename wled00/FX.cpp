@@ -7530,7 +7530,7 @@ uint16_t mode_2DAkemi(void) {
   if (um_data && fftResult) {
     int xMax = cols/8;
     for (int x=0; x < xMax; x++) {
-      unsigned band = map2(x, 0, max(xMax,4), 0, 15);  // map 0..cols/8 to 16 GEQ bands
+      unsigned band = map(x, 0, max(xMax,4), 0, 15);  // map 0..cols/8 to 16 GEQ bands
       band = constrain(band, 0, 15);
       int barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
       CRGB color = CRGB(SEGMENT.color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0));
