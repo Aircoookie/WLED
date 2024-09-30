@@ -400,7 +400,7 @@ typedef struct Segment {
       uint32_t _stepT;
       uint32_t _callT;
       uint8_t *_dataT;
-      uint16_t _dataLenT;
+      unsigned _dataLenT;
       TemporarySegmentData()
         : _dataT(nullptr) // just in case...
         , _dataLenT(0)
@@ -418,8 +418,8 @@ typedef struct Segment {
         uint8_t _reserved : 4;
       };
     };
-    uint16_t        _dataLen;
-    static uint16_t _usedSegmentData;
+    unsigned        _dataLen;
+    static unsigned _usedSegmentData;
     static uint8_t  _segBri;                  // brightness of segment for current effect
     static unsigned _vLength;                 // 1D dimension used for current effect
     static unsigned _vWidth, _vHeight;        // 2D dimensions used for current effect
@@ -537,7 +537,7 @@ typedef struct Segment {
     inline uint16_t groupLength()        const { return grouping + spacing; }
     inline uint8_t  getLightCapabilities() const { return _capabilities; }
 
-    inline static uint16_t getUsedSegmentData()            { return Segment::_usedSegmentData; }
+    inline static unsigned getUsedSegmentData()            { return Segment::_usedSegmentData; }
     inline static void     addUsedSegmentData(int len)     { Segment::_usedSegmentData += len; }
     #ifndef WLED_DISABLE_MODE_BLEND
     inline static void     modeBlend(bool blend)           { _modeBlend = blend; }

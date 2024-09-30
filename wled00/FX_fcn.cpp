@@ -80,7 +80,7 @@ static constexpr bool validatePinsAndTypes(const unsigned* types, unsigned numTy
 ///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation
 ///////////////////////////////////////////////////////////////////////////////
-uint16_t      Segment::_usedSegmentData   = 0U; // amount of RAM all segments use for their data[]
+unsigned      Segment::_usedSegmentData   = 0U; // amount of RAM all segments use for their data[]
 uint16_t      Segment::maxWidth           = DEFAULT_LED_COUNT;
 uint16_t      Segment::maxHeight          = 1;
 unsigned      Segment::_vLength           = 0;
@@ -433,7 +433,7 @@ uint8_t Segment::currentMode() const {
   return mode;
 }
 
-uint32_t IRAM_ATTR_YN Segment::currentColor(uint8_t slot) const {
+uint32_t Segment::currentColor(uint8_t slot) const {
   if (slot >= NUM_COLORS) slot = 0;
 #ifndef WLED_DISABLE_MODE_BLEND
   return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress(), true) : colors[slot];

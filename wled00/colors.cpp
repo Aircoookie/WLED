@@ -77,8 +77,8 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool preserveCR)
 
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
-  if (c1 == BLACK || amount == 0) return BLACK;
   if (amount == 255) return c1;
+  if (c1 == BLACK || amount == 0) return BLACK;
   uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
   uint32_t scale = amount; // 32bit for faster calculation
   uint32_t addRemains = 0;
