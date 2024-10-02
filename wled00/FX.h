@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "const.h"
+#include "bus_manager.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #define USE_GET_MILLISECOND_TIMER
@@ -654,7 +655,7 @@ typedef struct Segment {
     void blurCol(int col, fract8 blur_amount, bool smear = false);
     void moveX(int delta, bool wrap = false);
     void moveY(int delta, bool wrap = false);
-    void move(uint8_t dir, uint8_t delta, bool wrap = false);
+    void move(unsigned dir, unsigned delta, bool wrap = false);
     void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false);
     inline void drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) { drawCircle(cx, cy, radius, RGBW32(c.r,c.g,c.b,0), soft); }
     void fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t c, bool soft = false);
@@ -781,25 +782,22 @@ class WS2812FX {  // 96 bytes
 #endif
       finalizeInit(),                             // initialises strip components
       service(),                                  // executes effect functions when due and calls strip.show()
-      setMode(uint8_t segid, uint8_t m),          // sets effect/mode for given segment (high level API)
-      setColor(uint8_t slot, uint32_t c),         // sets color (in slot) for given segment (high level API)
       setCCT(uint16_t k),                         // sets global CCT (either in relative 0-255 value or in K)
       setBrightness(uint8_t b, bool direct = false),    // sets strip brightness
       setRange(uint16_t i, uint16_t i2, uint32_t col),  // used for clock overlay
       purgeSegments(),                            // removes inactive segments from RAM (may incure penalty and memory fragmentation but reduces vector footprint)
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 1, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=1),
-      setMainSegmentId(uint8_t n),
+      setMainSegmentId(unsigned n = 0),
       resetSegments(),                            // marks all segments for reset
       makeAutoSegments(bool forceReset = false),  // will create segments based on configured outputs
       fixInvalidSegments(),                       // fixes incorrect segment configuration
       setPixelColor(unsigned n, uint32_t c),      // paints absolute strip pixel with index n and color c
       show(),                                     // initiates LED output
-      setTargetFps(uint8_t fps),
+      setTargetFps(unsigned fps),
       setupEffectData();                          // add default effects to the list; defined in FX.cpp
 
     inline void restartRuntime()          { for (Segment &seg : _segments) seg.markForReset(); }
     inline void setTransitionMode(bool t) { for (Segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0); }
-    inline void setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0)    { setColor(slot, RGBW32(r,g,b,w)); }
     inline void setPixelColor(unsigned n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); }
     inline void setPixelColor(unsigned n, CRGB c)                                         { setPixelColor(n, c.red, c.green, c.blue); }
     inline void fill(uint32_t c)          { for (unsigned i = 0; i < getLengthTotal(); i++) setPixelColor(i, c); } // fill whole strip with color (inline)
@@ -815,9 +813,9 @@ class WS2812FX {  // 96 bytes
       checkSegmentAlignment(),
       hasRGBWBus() const,
       hasCCTBus() const,
-      isUpdating() const, // return true if the strip is being sent pixel updates
-      deserializeMap(uint8_t n=0);
+      deserializeMap(unsigned n = 0);
 
+    inline bool isUpdating() const           { return !BusManager::canAllShow(); } // return true if the strip is being sent pixel updates
     inline bool isServicing() const          { return _isServicing; }           // returns true if strip.service() is executing
     inline bool hasWhiteChannel() const      { return _hasWhiteChannel; }       // returns true if strip contains separate white chanel
     inline bool isOffRefreshRequired() const { return _isOffRefreshRequired; }  // returns true if strip requires regular updates (i.e. TM1814 chipset)
@@ -844,9 +842,9 @@ class WS2812FX {  // 96 bytes
 
     uint16_t
       getLengthPhysical() const,
-      getLengthTotal() const, // will include virtual/nonexistent pixels in matrix
-      getFps() const;
+      getLengthTotal() const; // will include virtual/nonexistent pixels in matrix
 
+    inline uint16_t getFps() const          { return (millis() - _lastShow > 2000) ? 0 : _cumulativeFps +1; } // Returns the refresh rate of the LED strip
     inline uint16_t getFrameTime() const    { return _frametime; }        // returns amount of time a frame should take (in ms)
     inline uint16_t getMinShowDelay() const { return MIN_SHOW_DELAY; }    // returns minimum amount of time strip.service() can be delayed (constant)
     inline uint16_t getLength() const       { return _length; }           // returns actual amount of LEDs on a strip (2D matrix may have less LEDs than W*H)
@@ -859,15 +857,12 @@ class WS2812FX {  // 96 bytes
     uint32_t now, timebase;
     uint32_t getPixelColor(unsigned) const;
 
-    inline uint32_t getLastShow() const       { return _lastShow; }           // returns millis() timestamp of last strip.show() call
+    inline uint32_t getLastShow() const   { return _lastShow; }           // returns millis() timestamp of last strip.show() call
 
-    const char *
-      getModeData(uint8_t id = 0) const { return (id && id<_modeCount) ? _modeData[id] : PSTR("Solid"); }
+    const char *getModeData(unsigned id = 0) const { return (id && id < _modeCount) ? _modeData[id] : PSTR("Solid"); }
+    inline const char **getModeDataSrc()  { return &(_modeData[0]); } // vectors use arrays for underlying data
 
-    const char **
-      getModeDataSrc() { return &(_modeData[0]); } // vectors use arrays for underlying data
-
-    Segment&        getSegment(uint8_t id);
+    Segment&        getSegment(unsigned id);
     inline Segment& getFirstSelectedSeg() { return _segments[getFirstSelectedSegId()]; }  // returns reference to first segment that is "selected"
     inline Segment& getMainSegment()      { return _segments[getMainSegmentId()]; }       // returns reference to main segment
     inline Segment* getSegments()         { return &(_segments[0]); }                     // returns pointer to segment vector structure (warning: use carefully)

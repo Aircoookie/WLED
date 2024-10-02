@@ -234,12 +234,12 @@ void parseNotifyPacket(uint8_t *udpIn) {
   //apply colors from notification to main segment, only if not syncing full segments
   if ((receiveNotificationColor || !someSel) && (version < 11 || !receiveSegmentOptions)) {
     // primary color, only apply white if intented (version > 0)
-    strip.setColor(0, RGBW32(udpIn[3], udpIn[4], udpIn[5], (version > 0) ? udpIn[10] : 0));
+    strip.getMainSegment().setColor(0, RGBW32(udpIn[3], udpIn[4], udpIn[5], (version > 0) ? udpIn[10] : 0));
     if (version > 1) {
-      strip.setColor(1, RGBW32(udpIn[12], udpIn[13], udpIn[14], udpIn[15])); // secondary color
+      strip.getMainSegment().setColor(1, RGBW32(udpIn[12], udpIn[13], udpIn[14], udpIn[15])); // secondary color
     }
     if (version > 6) {
-      strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
+      strip.getMainSegment().setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
       if (version > 9 && udpIn[37] < 255) { // valid CCT/Kelvin value
         unsigned cct = udpIn[38];
         if (udpIn[37] > 0) { //Kelvin

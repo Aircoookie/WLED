@@ -499,7 +499,7 @@ void Segment::moveY(int delta, bool wrap) {
 // @param dir direction: 0=left, 1=left-up, 2=up, 3=right-up, 4=right, 5=right-down, 6=down, 7=left-down
 // @param delta number of pixels to move
 // @param wrap around
-void Segment::move(uint8_t dir, uint8_t delta, bool wrap) {
+void Segment::move(unsigned dir, unsigned delta, bool wrap) {
   if (delta==0) return;
   switch (dir) {
     case 0: moveX( delta, wrap);                      break;

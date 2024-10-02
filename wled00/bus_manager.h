@@ -6,6 +6,7 @@
  */
 
 #include "const.h"
+#include "pin_manager.h"
 #include <vector>
 
 //colors.cpp

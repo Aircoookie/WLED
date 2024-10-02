@@ -1464,47 +1464,9 @@ void WS2812FX::show() {
   _lastShow = showNow;
 }
 
-/**
- * Returns a true value if any of the strips are still being updated.
- * On some hardware (ESP32), strip updates are done asynchronously.
- */
-bool WS2812FX::isUpdating() const {
-  return !BusManager::canAllShow();
-}
-
-/**
- * Returns the refresh rate of the LED strip. Useful for finding out whether a given setup is fast enough.
- * Only updates on show() or is set to 0 fps if last show is more than 2 secs ago, so accuracy varies
- */
-uint16_t WS2812FX::getFps() const {
-  if (millis() - _lastShow > 2000) return 0;
-  return _cumulativeFps +1;
-}
-
-void WS2812FX::setTargetFps(uint8_t fps) {
+void WS2812FX::setTargetFps(unsigned fps) {
   if (fps > 0 && fps <= 120) _targetFps = fps;
   _frametime = 1000 / _targetFps;
-}
-
-void WS2812FX::setMode(uint8_t segid, uint8_t m) {
-  if (segid >= _segments.size()) return;
-
-  if (m >= getModeCount()) m = getModeCount() - 1;
-
-  if (_segments[segid].mode != m) {
-    _segments[segid].setMode(m); // do not load defaults
-  }
-}
-
-//applies to all active and selected segments
-void WS2812FX::setColor(uint8_t slot, uint32_t c) {
-  if (slot >= NUM_COLORS) return;
-
-  for (segment &seg : _segments) {
-    if (seg.isActive() && seg.isSelected()) {
-      seg.setColor(slot, c);
-    }
-  }
 }
 
 void WS2812FX::setCCT(uint16_t k) {
@@ -1553,7 +1515,7 @@ uint8_t WS2812FX::getFirstSelectedSegId() const {
   return getMainSegmentId();
 }
 
-void WS2812FX::setMainSegmentId(uint8_t n) {
+void WS2812FX::setMainSegmentId(unsigned n) {
   _mainSegment = 0;
   if (n < _segments.size()) {
     _mainSegment = n;
@@ -1629,7 +1591,7 @@ void WS2812FX::purgeSegments() {
   }
 }
 
-Segment& WS2812FX::getSegment(uint8_t id) {
+Segment& WS2812FX::getSegment(unsigned id) {
   return _segments[id >= _segments.size() ? getMainSegmentId() : id]; // vectors
 }
 
@@ -1844,7 +1806,7 @@ void WS2812FX::loadCustomPalettes() {
 }
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
-bool WS2812FX::deserializeMap(uint8_t n) {
+bool WS2812FX::deserializeMap(unsigned n) {
   // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
   char fileName[32];
