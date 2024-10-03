@@ -123,7 +123,7 @@ void handleImprovPacket() {
     }
 
     checksum += next;
-	checksum &= 0xFF;
+    checksum &= 0xFF;
     packetByte++;
   }
 }
