@@ -475,8 +475,6 @@ void Segment::moveY(int delta, bool wrap) {
   }
 }
 
-// TODO: check if it works, used in FX rain and 2D spaceships
-
 // move() - move all pixels in desired direction delta number of pixels
 // @param dir direction: 0=left, 1=left-up, 2=up, 3=right-up, 4=right, 5=right-down, 6=down, 7=left-down
 // @param delta number of pixels to move
