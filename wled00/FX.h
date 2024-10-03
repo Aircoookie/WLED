@@ -457,6 +457,8 @@ typedef struct Segment {
       {}
     } *_t;
 
+    [[gnu::hot]] void _setPixelColorXY_raw(int& x, int& y, uint32_t& col); // set pixel without mapping (internal use only)
+
   public:
 
     Segment(uint16_t sStart=0, uint16_t sStop=30) :
@@ -617,12 +619,10 @@ typedef struct Segment {
 
     // 2D Blur: shortcuts for bluring columns or rows only (50% faster than full 2D blur)
     inline void blurCols(fract8 blur_amount, bool smear = false) { // blur all columns
-      const unsigned cols = virtualWidth();
-      for (unsigned k = 0; k < cols; k++) blurCol(k, blur_amount, smear);
+      blur2D(0, blur_amount, smear);
     }
     inline void blurRows(fract8 blur_amount, bool smear = false) { // blur all rows
-      const unsigned rows = virtualHeight();
-      for ( unsigned i = 0; i < rows; i++) blurRow(i, blur_amount, smear);
+      blur2D(blur_amount, 0, smear);
     }
 
     // 2D matrix
@@ -649,10 +649,8 @@ typedef struct Segment {
     inline void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0, bool preserveCR = true) { addPixelColorXY(x, y, RGBW32(r,g,b,w), preserveCR); }
     inline void addPixelColorXY(int x, int y, CRGB c, bool preserveCR = true)                             { addPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), preserveCR); }
     inline void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)                   { setPixelColorXY(x, y, color_fade(getPixelColorXY(x,y), fade, true)); }
-    void box_blur(unsigned r = 1U, bool smear = false); // 2D box blur
-    void blur2D(uint8_t blur_amount, bool smear = false);
-    void blurRow(int row, fract8 blur_amount, bool smear = false);
-    void blurCol(int col, fract8 blur_amount, bool smear = false);
+    //void box_blur(unsigned r = 1U, bool smear = false); // 2D box blur
+    void blur2D(uint8_t blur_x, uint8_t blur_y, bool smear = false);
     void moveX(int delta, bool wrap = false);
     void moveY(int delta, bool wrap = false);
     void move(unsigned dir, unsigned delta, bool wrap = false);
@@ -666,7 +664,6 @@ typedef struct Segment {
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, int8_t rotate = 0) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0), rotate); } // automatic inline
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
-    inline void blur2d(fract8 blur_amount) { blur(blur_amount); }
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
     inline uint16_t XY(int x, int y)                                              { return x; }
@@ -687,8 +684,8 @@ typedef struct Segment {
     inline void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0, bool saturate = false) { addPixelColor(x, RGBW32(r,g,b,w), saturate); }
     inline void addPixelColorXY(int x, int y, CRGB c, bool saturate = false)         { addPixelColor(x, RGBW32(c.r,c.g,c.b,0), saturate); }
     inline void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)            { fadePixelColor(x, fade); }
-    inline void box_blur(unsigned i, bool vertical, fract8 blur_amount) {}
-    inline void blur2D(uint8_t blur_amount, bool smear = false) {}
+    //inline void box_blur(unsigned i, bool vertical, fract8 blur_amount) {}
+    inline void blur2D(uint8_t blur_x, uint8_t blur_y, bool smear = false) {}
     inline void blurRow(int row, fract8 blur_amount, bool smear = false) {}
     inline void blurCol(int col, fract8 blur_amount, bool smear = false) {}
     inline void moveX(int delta, bool wrap = false) {}

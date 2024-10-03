@@ -1146,7 +1146,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     // compatibility with 2D
-    blur2D(blur_amount, smear);
+    blur2D(blur_amount, blur_amount, smear); // symmetrical 2D blur
     //box_blur(map(blur_amount,1,255,1,3), smear);
     return;
   }
