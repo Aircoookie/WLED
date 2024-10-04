@@ -833,11 +833,10 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   fourScanPanel = nullptr;
 
-  if(bc.type == TYPE_HUB75MATRIX_HS) {
+  if (bc.type == TYPE_HUB75MATRIX_HS) {
       mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]);
       mxconfig.mx_height = min((u_int8_t) 64, bc.pins[1]);
-  }
-  else if(bc.type == TYPE_HUB75MATRIX_QS) {
+  } else if (bc.type == TYPE_HUB75MATRIX_QS) {
       mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]) * 2;
       mxconfig.mx_height = min((u_int8_t) 64, bc.pins[1]) / 2;  
       fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, bc.pins[0], bc.pins[1]);
@@ -856,8 +855,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
           DEBUG_PRINTLN("Unsupported height");
           return;
       }
-  }
-  else {
+  } else {
     DEBUG_PRINTLN("Unknown type");
     return;
   }  
