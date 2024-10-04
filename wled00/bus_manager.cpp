@@ -1027,7 +1027,7 @@ void BusHub75Matrix::setBrightness(uint8_t b, bool immediate) {
   display->setBrightness(_bri);
 }
 
-void __attribute__((hot)) BusHub75Matrix::show(void) {
+void BusHub75Matrix::show(void) {
   if (!_valid) return;
   display->setBrightness(_bri);
 
