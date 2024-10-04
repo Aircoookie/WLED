@@ -910,6 +910,22 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   memcpy(pins, &mxconfig.gpio, sizeof(mxconfig.gpio));
   PinManager::allocateMultiplePins(pins, PIN_COUNT, PinOwner::HUB75, true);
 
+  if(bc.colorOrder == COL_ORDER_RGB) {
+    DEBUG_PRINTLN("MatrixPanel_I2S_DMA = Default color order (RGB)");
+  } else if(bc.colorOrder == COL_ORDER_BGR) {
+    DEBUG_PRINTLN("MatrixPanel_I2S_DMA = color order BGR");
+    uint8_t tmpPin;
+    tmpPin = mxconfig.gpio.r1;
+    mxconfig.gpio.r1 = mxconfig.gpio.b1;
+    mxconfig.gpio.b1 = tmpPin;
+    tmpPin = mxconfig.gpio.r2;
+    mxconfig.gpio.r2 = mxconfig.gpio.b2;
+    mxconfig.gpio.b2 = tmpPin;
+  }
+  else {
+    DEBUG_PRINTF("MatrixPanel_I2S_DMA = unsupported color order %u\n", bc.colorOrder);
+  }
+
   DEBUG_PRINTF("MatrixPanel_I2S_DMA config - %ux%u length: %u\n", mxconfig.mx_width, mxconfig.mx_height, mxconfig.chain_length);
   DEBUG_PRINTF("R1_PIN=%u, G1_PIN=%u, B1_PIN=%u, R2_PIN=%u, G2_PIN=%u, B2_PIN=%u, A_PIN=%u, B_PIN=%u, C_PIN=%u, D_PIN=%u, E_PIN=%u, LAT_PIN=%u, OE_PIN=%u, CLK_PIN=%u\n",
                 mxconfig.gpio.r1, mxconfig.gpio.g1, mxconfig.gpio.b1, mxconfig.gpio.r2, mxconfig.gpio.g2, mxconfig.gpio.b2,
