@@ -704,11 +704,14 @@ void Segment::wu_pixel(uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel
                    WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (int i = 0; i < 4; i++) {
-    CRGB led = getPixelColorXY((x >> 8) + (i & 1), (y >> 8) + ((i >> 1) & 1));
+    int wu_x = (x >> 8) + (i & 1);        // precalculate x
+    int wu_y = (y >> 8) + ((i >> 1) & 1); // precalculate y
+    CRGB led = getPixelColorXY(wu_x, wu_y);
+    CRGB oldLed = led;
     led.r = qadd8(led.r, c.r * wu[i] >> 8);
     led.g = qadd8(led.g, c.g * wu[i] >> 8);
     led.b = qadd8(led.b, c.b * wu[i] >> 8);
-    setPixelColorXY(int((x >> 8) + (i & 1)), int((y >> 8) + ((i >> 1) & 1)), led);
+    if (led != oldLed) setPixelColorXY(wu_x, wu_y, led); // don't repaint if same color
   }
 }
 #undef WU_WEIGHT
