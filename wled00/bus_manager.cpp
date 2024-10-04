@@ -823,6 +823,9 @@ void BusNetwork::cleanup() {
 BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
   _valid = false;
+  _hasRgb = true;
+  _hasWhite = false;
+
   mxconfig.double_buff = false; // default to off, known to cause issue with some effects but needs more memory
   // mxconfig.driver = HUB75_I2S_CFG::ICN2038S;  // experimental - use specific shift register driver
   //mxconfig.latch_blanking = 3;
@@ -1019,7 +1022,7 @@ uint32_t BusHub75Matrix::getPixelColor(uint16_t pix) const {
     return getBitFromArray(_ledsDirty, pix) ? IS_DARKGREY: IS_BLACK;   // just a hack - we only know if the pixel is black or not
 }
 
-void BusHub75Matrix::setBrightness(uint8_t b, bool immediate) {
+void BusHub75Matrix::setBrightness(uint8_t b) {
   _bri = b;
   if (_bri > 238) _bri=238;
   display->setBrightness(_bri);
