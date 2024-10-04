@@ -816,6 +816,9 @@ void BusNetwork::cleanup() {
 // ***************************************************************************
 
 #ifdef WLED_ENABLE_HUB75MATRIX
+#ifdef ESP8266
+#error ESP8266 does not support HUB75
+#endif 
 
 BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
