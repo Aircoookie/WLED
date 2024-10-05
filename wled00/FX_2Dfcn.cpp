@@ -195,6 +195,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 
   const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
+  // negative values of x & y cast into unsigend will become very large values and will therefore be greater than vW/vH
   if (unsigned(x) >= unsigned(vW) || unsigned(y) >= unsigned(vH)) return;  // if pixel would fall out of virtual segment just exit
 
   // if color is unscaled
@@ -205,8 +206,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
   unsigned groupLen = groupLength();
 
-  if(groupLen > 1)
-  {
+  if (groupLen > 1) {
     int W = width();
     int H = height();
     x *= groupLen; // expand to physical pixels
@@ -222,8 +222,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
       }
       yY++;
     }
-  }
-  else {
+  } else {
     _setPixelColorXY_raw(x, y, col);
   }
 }
@@ -293,7 +292,7 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) {
   const unsigned rows = vHeight();
   uint32_t lastnew;
   uint32_t last;
-  if(blur_x) {
+  if (blur_x) {
     const uint8_t keepx = smear ? 255 : 255 - blur_x;
     const uint8_t seepx = blur_x >> (1 + smear);
     for (unsigned row = 0; row < rows; row++) { // blur rows (x direction)
@@ -316,7 +315,7 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) {
       setPixelColorXY(cols-1, row, curnew); // set last pixel
     }
   }
-  if(blur_y) {
+  if (blur_y) {
     const uint8_t keepy = smear ? 255 : 255 - blur_y;
     const uint8_t seepy = blur_y >> (1 + smear);
     for (unsigned col = 0; col < cols; col++) {
@@ -425,20 +424,16 @@ void Segment::moveX(int delta, bool wrap) {
   int newDelta;
   int stop = vW;
   int start = 0;
-  if(wrap) newDelta = (delta + vW) % vW; // +cols in case delta < 0
+  if (wrap) newDelta = (delta + vW) % vW; // +cols in case delta < 0
   else {
-    if(delta < 0) start = -delta;
+    if (delta < 0) start = absDelta;
     stop = vW - absDelta;
     newDelta = delta > 0 ? delta : 0;
   }
   for (int y = 0; y < vH; y++) {
     for (int x = 0; x < stop; x++) {
-      int srcX;
-      if (wrap) {
-          srcX = (x + newDelta) % vW; // Wrap using modulo when `wrap` is true
-      } else {
-          srcX = x + newDelta;
-      }
+      int srcX = x + newDelta;
+      if (wrap) srcX %= vW; // Wrap using modulo when `wrap` is true
       newPxCol[x] = getPixelColorXY(srcX, y);
     }
     for (int x = 0; x < stop; x++) setPixelColorXY(x + start, y, newPxCol[x]);
@@ -455,20 +450,16 @@ void Segment::moveY(int delta, bool wrap) {
   int newDelta;
   int stop = vH;
   int start = 0;
-  if(wrap) newDelta = (delta + vH) % vH; // +rows in case delta < 0
+  if (wrap) newDelta = (delta + vH) % vH; // +rows in case delta < 0
   else {
-    if(delta < 0) start = -delta;
+    if (delta < 0) start = absDelta;
     stop = vH - absDelta;
     newDelta = delta > 0 ? delta : 0;
   }
   for (int x = 0; x < vW; x++) {
     for (int y = 0; y < stop; y++) {
-      int srcY;
-      if (wrap) {
-          srcY = (y + newDelta) % vH; // Wrap using modulo when `wrap` is true
-      } else {
-          srcY = y + newDelta;
-      }
+      int srcY = y + newDelta;
+      if (wrap) srcY %= vH; // Wrap using modulo when `wrap` is true
       newPxCol[y] = getPixelColorXY(x, srcY);
     }
     for (int y = 0; y < stop; y++) setPixelColorXY(x, y + start, newPxCol[y]);
