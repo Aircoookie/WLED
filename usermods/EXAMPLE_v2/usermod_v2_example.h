@@ -30,8 +30,8 @@ class PIRLDRMod : public Usermod {
       return uint16_t(lux + LDRLuxOffset); // Apply the offset to lux
     }
 
-    // MQTT discovery
-    const char* discoveryTopic = "homeassistant/sensor/wled_%06X/%s/config";
+    // // MQTT discovery
+    // const char* discoveryTopic = "homeassistant/sensor/wled_%06X/%s/config";
 
     // Helper method to send sensor data via MQTT
     void sendSensorData(const char* sensorType, int value) {
@@ -41,20 +41,6 @@ class PIRLDRMod : public Usermod {
         char payload[16];
         snprintf(payload, 16, "%d", value);
         mqtt->publish(subTopic, 0, false, payload);
-      }
-    }
-
-    // Helper method to discover sensor in HA
-    void discoverSensor(const char* sensorType, const char* name, const char* unit) {
-      if (WLED_MQTT_CONNECTED) {
-        char topic[128];
-        char payload[256];
-        snprintf(topic, 128, discoveryTopic, escapedMac.c_str(), sensorType);
-        snprintf(payload, 256, 
-          "{\"name\":\"%s\", \"state_topic\":\"wled/%s\", \"unit_of_measurement\":\"%s\", \"unique_id\":\"wled_%06X_%s\", \"device_class\":\"%s\", \"value_template\":\"{{ value }}\"}", 
-          name, sensorType, unit, escapedMac.c_str(), sensorType, sensorType);
-
-        mqtt->publish(topic, 0, false, payload);
       }
     }
 
@@ -69,10 +55,6 @@ class PIRLDRMod : public Usermod {
       if (LDRenable) {
         pinMode(LDRpin, INPUT);
       }
-      
-      // Register the sensors with Home Assistant
-      discoverSensor("pir_sensor", "WLED PIR Sensor", "");
-      discoverSensor("light_level", "WLED Light Level", "lx");
     }
 
     void loop() {
