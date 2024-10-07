@@ -465,7 +465,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     ps = presetCycCurr;
     if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
-      presetCycCurr = ps;
       applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
       return stateResponse;
     }
