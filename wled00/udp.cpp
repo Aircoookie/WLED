@@ -687,10 +687,11 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
       b = gamma8(b);
       w = gamma8(w);
     }
+    uint32_t col = RGBW32(r,g,b,w);
     if (useMainSegmentOnly) {
-      strip.getMainSegment().setPixelColor(pix, r, g, b, w); // this expects that strip.getMainSegment().beginDraw() has been called in handleNotification()
+      strip.getMainSegment().setPixelColor(pix, col); // this expects that strip.getMainSegment().beginDraw() has been called in handleNotification()
     } else {
-      strip.setPixelColor(pix, r, g, b, w);
+      strip.setPixelColor(pix, col);
     }
   }
 }
