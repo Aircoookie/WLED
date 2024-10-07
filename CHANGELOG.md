@@ -1,11 +1,11 @@
 ## WLED changelog
 
-#### Build 2410060
+#### Build 2410080
 -   WLED 0.15.0-b6 release
 -   New 512kB FS parition map for 4MB devices
 -   Internal API change: Static PinManager & UsermodManager
 -   Change in Improv chip ID and version generation
--   Various optimisations, bugfixes and enhancements (#4005, #4174 & #4175 by @Xevel, #4180)
+-   Various optimisations, bugfixes and enhancements (#4005, #4174 & #4175 by @Xevel, #4180, #4168, #4154)
 
 #### Build 2409170
 -   UI: Introduce common.js in settings pages (size optimisation)
