@@ -720,7 +720,7 @@ class WS2812FX {  // 96 bytes
 #ifndef WLED_DISABLE_2D
       panels(1),
 #endif
-#ifdef WLED_AUTOSEGMENT_OUTPUTS
+#ifdef WLED_AUTOSEGMENTS
       autoSegments(true),
 #else
       autoSegments(false),
