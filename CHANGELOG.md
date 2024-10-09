@@ -1,9 +1,23 @@
 ## WLED changelog
 
+#### Build 2410060
+-   WLED 0.15.0-b6 release
+-   New 512kB FS parition map for 4MB devices
+-   Internal API change: Static PinManager & UsermodManager
+-   Change in Improv chip ID and version generation
+-   Various optimisations, bugfixes and enhancements (#4005, #4174 & #4175 by @Xevel, #4180)
+
+#### Build 2409170
+-   UI: Introduce common.js in settings pages (size optimisation)
+-   Add the ability to toggle the reception of palette synchronizations (#4137 by @felddy)
+-   Usermod/FX: Temperature usermod added Temperature effect (example usermod effect by @blazoncek)
+-   Fix AsyncWebServer version pin
+
 #### Build 2409140
 -   Configure different kinds of busses at compile (#4107 by @PaoloTK)
     - BREAKING: removes LEDPIN and DEFAULT_LED_TYPE compile overrides
 -   Fetch LED types from Bus classes (dynamic UI) (#4129 by @netmindz, @blazoncek, @dedehai)
+-   Temperature usermod: update OneWire to 2.3.8 (#4131 by @iammattcoleman)
 
 #### Build 2409100
 -   WLED 0.15.0-b5 release
