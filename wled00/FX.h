@@ -720,7 +720,11 @@ class WS2812FX {  // 96 bytes
 #ifndef WLED_DISABLE_2D
       panels(1),
 #endif
+#ifdef WLED_AUTOSEGMENTS
+      autoSegments(true),
+#else
       autoSegments(false),
+#endif
       correctWB(false),
       cctFromRgb(false),
       // semi-private (just obscured) used in effect functions through macros
