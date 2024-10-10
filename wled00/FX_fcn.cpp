@@ -637,31 +637,36 @@ uint16_t IRAM_ATTR_YN Segment::nrOfVStrips() const {
 
 // Constants for mapping mode "Pinwheel"
 #ifndef WLED_DISABLE_2D
-constexpr int Fixed_Shift = 15; // fixpoint scaling factor (15bit for fraction)
+constexpr int Fixed_Scale = 16384; // fixpoint scaling factor (14bit for fraction)
+constexpr float stepFactor = 4.2; // number of angle steps per size (empirically found)
+constexpr int incFactor = 220; // Increment is multiplied by INCFACTOR / 256 (scaled with cornerAdd function)
+constexpr int cornerAdd = 35; // smaller increments the closer the angle is to 45°
+constexpr int smallMatrixIncReduction = 60; // smaller increments on smaller sizes to prevent holes
+// note: these parameters work on sizes 2x2 up to 512x512
+// note: for 8x8,16x16,32x32  (and a few other sizes) these parameters work and use less overdraw:
+// constexpr float stepFactor = 3.33; // number of angle steps per size (empirically found)
+// constexpr int incFactor = 220; // Increment is multiplied by INCFACTOR / 256 (scaled with cornerAdd function)
+// constexpr int cornerAdd = 35; // smaller increments the closer the angle is to 45°
 
 // Pinwheel helper function: matrix dimensions to number of rays
 static inline int getPinwheelSteps(int vW, int vH) {
   int maxXY = max(vW, vH);
-  return maxXY * 5; // theoretical value sqrt(2) * pi (1 pixel step in the corner) Note: (maxXY * 9)/2 works on most sizes but not all, there is room for speed optimization here
-}
-// Pinwheel helper function: pixel index to radians
-static float getPinwheelAngle(int i, int vW, int vH) {
-  int steps = getPinwheelSteps(vW, vH) - 1; // -1 to make the angle larger so the wheel has no gap
-  return float(i) * (DEG_TO_RAD * 360) / steps;
+  unsigned stepfactor = unsigned(stepFactor * Fixed_Scale);
+    //if(maxXY < 10) return MIN_STEPS;
+    return (maxXY * stepfactor) / Fixed_Scale;
 }
 
 static void setPinwheelParameters(int i, int vW, int vH, unsigned& posx, unsigned& posy, int& inc_x, int& inc_y, int& maxX, int& maxY) {
-  float angleRad = getPinwheelAngle(i, vW, vH); // angle in radians
+  int steps = getPinwheelSteps(vW, vH);
+  float angleRad = float(i) * (DEG_TO_RAD * 360) / steps; //angle in radians
   float cosVal = cos_t(angleRad);
   float sinVal = sin_t(angleRad);
-  posx = (vW - 1) << (Fixed_Shift - 1); // X starting position = center (in fixed point)
-  posy = (vH - 1) << (Fixed_Shift - 1); // Y starting position = center (in fixed point)
-  inc_x = cosVal * (1 << Fixed_Shift);  // X increment per step (fixed point)
-  inc_y = sinVal * (1 << Fixed_Shift);  // Y increment per step (fixed point)
-  inc_x = inc_x >> 1; // reduce to 50% to avoid pixel holes
-  inc_y = inc_y >> 1; // note: this increases the number of loops to be run but the loops are fast, it appears like a good tradeoff
-  maxX = vW << Fixed_Shift; // X edge in fixedpoint
-  maxY = vH << Fixed_Shift; // Y edge in fixedpoint
+  posx = (vW - 1) * Fixed_Scale / 2; // X starting position = center (in fixed point)
+  posy = (vH - 1) * Fixed_Scale / 2; // Y starting position = center (in fixed point)
+  inc_x = cosVal * Fixed_Scale;  // X increment per step (fixed point)
+  inc_y = sinVal * Fixed_Scale;  // Y increment per step (fixed point)
+  maxX = vW * Fixed_Scale; // X edge in fixedpoint
+  maxY = vH * Fixed_Scale; // Y edge in fixedpoint
 }
 #endif
 
@@ -760,36 +765,72 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
         unsigned posx, posy;  // unsigned so negative numbers overflow to > maxXY to save negative checking
         int inc_x, inc_y, maxX, maxY;
         setPinwheelParameters(i, vW, vH, posx, posy, inc_x, inc_y, maxX, maxY);
-        unsigned totalSteps = getPinwheelSteps(vW, vH);
         static int pixelsdrawn;
-        /*
-        Note on the skipping algorithm:
-          - in the center, the angle is way too small for efficient drawing, pixels get overdrawn a lot, making it slow
-          - tracking the radius and deciding when to actually draw pixels significantly reduces the number of overdraws
-          - the number of angular steps required for a certain radius is in theory 2*pi*radius*sqrt(2) (worst case, in the corner)
-          - we can exploit that and only draw rays that are larger than a minimum step size (need to account for rounding errors)
-        */
+       // if(i == 1) {  Serial.print("drawn: "); Serial.println(pixelsdrawn); pixelsdrawn = 0;}
+
+        posx = (posx + inc_x/2) ; // X starting position in fixed point
+        posy = (posy + inc_y/2) ; // Y starting position in fixed point
+
+        unsigned steps = getPinwheelSteps(vW, vH);
+        int currentangle =  (i * Fixed_Scale) / steps; // 360° = Fixed_Scale
+        int degree45 = Fixed_Scale / 8; // for readability
+        int degree90 = Fixed_Scale / 4;
+        int cornerfctr = 1 + cornerAdd * abs((degree45 - ((currentangle + degree45) % degree90))) / degree45; //1FFF is 45°, 3FFF is 90°, so this is 1FFF at 45°, falling off to both sides (triangular function)
+        int maxXY = vW > vH ? vW : vH;
+        int incfctr = incFactor; // the smaller the factor, the smaller the increment steps
+        if(maxXY < 16)
+          incfctr -= smallMatrixIncReduction; // smaller sizes need a higher increment resolution or pixel holes appear
+
+        // Odd rays start further from center if prevRay started at center.
+        static int prevRay = INT_MIN; // previous ray number
+        bool odd = i & 1;
+        int jump = 0;
+        if (odd && (i - 1 == prevRay || i + 1 == prevRay)) {
+          jump = maxXY/3; // can add 2 if using medium pinwheel
+        }
+        else // there is room to optimize here
+        {
+           // int jumpstep = i % (maxXY/9);
+           // if (jumpstep > 2) jumpstep = 3;
+           if(maxXY > 8)
+            jump = (i % 3);
+        }
+        prevRay = i;
+
+        posx += inc_x * jump;
+        posy += inc_y * jump;
+
+        inc_x = inc_x * (incfctr-cornerfctr)/256; // reduce increments to to avoid pixel holes
+        inc_y = inc_y * (incfctr-cornerfctr)/256;
         // avoid re-painting the same pixel
         int lastX = INT_MIN; // impossible position
         int lastY = INT_MIN;
-        unsigned currentR = 0; // current radius in "pixels"
-        // draw ray until we hit any edge
-        while ((posx < maxX)  && (posy < maxY))  {
-          int x = posx >> Fixed_Shift;
-          int y = posy >> Fixed_Shift;
-          if (x != lastX || y != lastY) { // only paint if pixel position is different
-            currentR++;
-            int requiredsteps = currentR * 8; // empirically found value (R is a rough estimation, always >= actual R)
-            int skipsteps = totalSteps/requiredsteps;
-            if(!skipsteps || i % (skipsteps) == 0) // check if pixel would 'overdraw'
-            {
-             setPixelColorXY(x, y, col);
-            }
-          }
+
+        while ((posx < maxX) && (posy < maxY))  {
+          int cnt = 0;
+          int x = posx / Fixed_Scale;
+          if (x != lastX)  // Only paint if the pixel is different
+              {setPixelColorXY(x, lastY, col);pixelsdrawn++;}
+          else
+            cnt++;
+
+          int y = posy/(Fixed_Scale);
+            if(y != lastY)
+              {setPixelColorXY(x, y, col); pixelsdrawn++;}
+            else
+              cnt++;
+
           lastX = x;
           lastY = y;
-          posx += inc_x;  // advance to next position
-          posy += inc_y;
+          if(cnt == 2) {      // no pixel drawn
+            posx += inc_x/3;  // advance a bit
+            posy += inc_y/3;
+          }
+          else {
+            posx += inc_x;  // advance to next position
+            posy += inc_y;
+          }
+
         }
         break;
       }
@@ -923,8 +964,8 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
         int y = INT_MIN;
         while ((posx < maxX)  && (posy < maxY))  {
           // scale down to integer (compiler will replace division with appropriate bitshift) -> not guaranteed
-          x = posx >> Fixed_Shift;
-          y = posy >> Fixed_Shift;
+          x = posx / Fixed_Scale;
+          y = posy / Fixed_Scale;
           // advance to next position
           posx += inc_x;
           posy += inc_y;
