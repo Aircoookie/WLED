@@ -816,6 +816,7 @@ void BusNetwork::cleanup() {
 // ***************************************************************************
 
 #ifdef WLED_ENABLE_HUB75MATRIX
+#warning "HUB75 driver enabled (experimental)"
 #ifdef ESP8266
 #error ESP8266 does not support HUB75
 #endif 
@@ -826,9 +827,12 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   _hasRgb = true;
   _hasWhite = false;
 
-  mxconfig.double_buff = false; // default to off, known to cause issue with some effects but needs more memory
+  mxconfig.double_buff = false; // Use our own memory-optimised buffer rather than the driver's own double-buffer  
+
   // mxconfig.driver = HUB75_I2S_CFG::ICN2038S;  // experimental - use specific shift register driver
-  //mxconfig.latch_blanking = 3;
+  // mxconfig.driver = HUB75_I2S_CFG::FM6124;    // try this driver in case you panel stays dark, or when colors look too pastel
+
+  // mxconfig.latch_blanking = 3;
   // mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;  // experimental - 5MHZ should be enugh, but colours looks slightly better at 10MHz
   //mxconfig.min_refresh_rate = 90;
   //mxconfig.min_refresh_rate = 120;
@@ -863,6 +867,13 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
     return;
   }  
 
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2)// classic esp32, or esp32-s2: reduce bitdepth for large panels
+  if (mxconfig.mx_height >= 64) {
+    if (mxconfig.chain_length * mxconfig.mx_width > 192) mxconfig.setPixelColorDepthBits(3);
+    else if (mxconfig.chain_length * mxconfig.mx_width > 64)  mxconfig.setPixelColorDepthBits(4);
+    else mxconfig.setPixelColorDepthBits(8);
+  } else mxconfig.setPixelColorDepthBits(8);
+#endif
 
   mxconfig.chain_length = max((u_int8_t) 1, min(bc.pins[2], (u_int8_t) 4)); // prevent bad data preventing boot due to low memory
 
@@ -878,7 +889,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   // https://www.adafruit.com/product/5778
   DEBUG_PRINTLN("MatrixPanel_I2S_DMA - Matrix Portal S3 config");
-  mxconfig.gpio = { 42, 41, 40, 38, 39, 37,  45, 36, 48, 35, 21, 47, 14, 2 }; 
+  mxconfig.gpio = { 42, 41, 40, 38, 39, 37,  45, 36, 48, 35, 21, 47, 14, 2 };
 
 #elif defined(ESP32_FORUM_PINOUT) // Common format for boards designed for SmartMatrix
 
@@ -933,6 +944,11 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
 
   // OK, now we can create our matrix object
   display = new MatrixPanel_I2S_DMA(mxconfig);
+  if (display == nullptr) {
+      DEBUG_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! driver allocation failed ***********");
+      DEBUG_PRINT(F("heap usage: ")); DEBUG_PRINTLN(lastHeap - ESP.getFreeHeap());
+      return;
+  }
 
   this->_len = (display->width() * display->height());
   DEBUG_PRINTF("Length: %u\n", _len);
@@ -946,13 +962,16 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   display->setBrightness8(25);    // range is 0-255, 0 - 0%, 255 - 100%
 
   delay(24); // experimental
+  DEBUG_PRINT(F("heap usage: ")); DEBUG_PRINTLN(lastHeap - ESP.getFreeHeap());
   // Allocate memory and start DMA display
   if( not display->begin() ) {
       DEBUG_PRINTLN("****** MatrixPanel_I2S_DMA !KABOOM! I2S memory allocation failed ***********");
+      DEBUG_PRINT(F("heap usage: ")); DEBUG_PRINTLN(lastHeap - ESP.getFreeHeap());
       return;
   }
   else {
     DEBUG_PRINTLN("MatrixPanel_I2S_DMA begin ok");
+    DEBUG_PRINT(F("heap usage: ")); DEBUG_PRINTLN(lastHeap - ESP.getFreeHeap());
     delay(18);   // experiment - give the driver a moment (~ one full frame @ 60hz) to settle
     _valid = true;
     display->clearScreen();   // initially clear the screen buffer
@@ -962,13 +981,14 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
     if (_ledsDirty) free(_ledsDirty);                 // should not happen
     DEBUG_PRINTLN("MatrixPanel_I2S_DMA allocate memory");
     _ledsDirty = (byte*) malloc(getBitArrayBytes(_len));  // create LEDs dirty bits
-   DEBUG_PRINTLN("MatrixPanel_I2S_DMA allocate memory ok");
+    DEBUG_PRINTLN("MatrixPanel_I2S_DMA allocate memory ok");
    
     if (_ledsDirty == nullptr) {
       display->stopDMAoutput();
       delete display; display = nullptr;
       _valid = false;
       DEBUG_PRINTLN(F("MatrixPanel_I2S_DMA not started - not enough memory for dirty bits!"));
+      DEBUG_PRINT(F("heap usage: ")); DEBUG_PRINTLN(lastHeap - ESP.getFreeHeap());
       return;  //  fail is we cannot get memory for the buffer
     }
     setBitArray(_ledsDirty, _len, false);             // reset dirty bits
@@ -1040,7 +1060,6 @@ uint32_t BusHub75Matrix::getPixelColor(uint16_t pix) const {
 
 void BusHub75Matrix::setBrightness(uint8_t b) {
   _bri = b;
-  if (_bri > 238) _bri=238;
   display->setBrightness(_bri);
 }
 
