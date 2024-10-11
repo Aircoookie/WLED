@@ -1111,7 +1111,7 @@ uint16_t mode_running_random(void) {
 
   unsigned z = it % zoneSize;
   bool nzone = (!z && it != SEGENV.aux1);
-  for (unsigned i=SEGLEN-1; i > 0; i--) {
+  for (int i=SEGLEN-1; i >= 0; i--) {
     if (nzone || z >= zoneSize) {
       unsigned lastrand = PRNG16 >> 8;
       int16_t diff = 0;

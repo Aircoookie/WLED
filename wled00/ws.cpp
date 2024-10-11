@@ -169,7 +169,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
 #ifdef ESP8266
   const size_t MAX_LIVE_LEDS_WS = 256U;
 #else
-  const size_t MAX_LIVE_LEDS_WS = 1024U;
+  const size_t MAX_LIVE_LEDS_WS = 4096U;
 #endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   size_t pos = 2;  // start of data
