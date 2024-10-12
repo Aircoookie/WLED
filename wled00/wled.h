@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2409140
+#define VERSION 2409170
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -316,8 +316,6 @@ WLED_GLOBAL bool rlyOpenDrain _INIT(RLYODRAIN);
   constexpr uint8_t hardwareTX = 1;
 #endif
 
-//WLED_GLOBAL byte presetToApply _INIT(0);
-
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
@@ -510,6 +508,8 @@ WLED_GLOBAL bool hueApplyColor _INIT(true);
 #endif
 
 WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
+WLED_GLOBAL bool     serialCanRX _INIT(false);
+WLED_GLOBAL bool     serialCanTX _INIT(false);
 
 #ifndef WLED_DISABLE_ESPNOW
 WLED_GLOBAL bool enableESPNow        _INIT(false);  // global on/off for ESP-NOW
@@ -639,17 +639,19 @@ typedef class Receive {
         bool    SegmentOptions : 1;
         bool    SegmentBounds  : 1;
         bool    Direct         : 1;
-        uint8_t reserved       : 2;
+        bool    Palette        : 1;
+        uint8_t reserved       : 1;
       };
     };
     Receive(int i) { Options = i; }
-    Receive(bool b, bool c, bool e, bool sO, bool sB) {
-      Brightness = b;
-      Color = c;
-      Effects = e;
-      SegmentOptions = sO;
-      SegmentBounds = sB;
-    };
+    Receive(bool b, bool c, bool e, bool sO, bool sB, bool p)
+    : Brightness(b)
+    , Color(c)
+    , Effects(e)
+    , SegmentOptions(sO)
+    , SegmentBounds(sB)
+    , Palette(p)
+    {};
 } __attribute__ ((aligned(1), packed)) receive_notification_t;
 typedef class Send {
   public:
@@ -671,7 +673,7 @@ typedef class Send {
     Hue = h;
   }
 } __attribute__ ((aligned(1), packed)) send_notification_t;
-WLED_GLOBAL receive_notification_t receiveN _INIT(0b00100111);
+WLED_GLOBAL receive_notification_t receiveN _INIT(0b01100111);
 WLED_GLOBAL send_notification_t    notifyG  _INIT(0b00001111);
 #define receiveNotificationBrightness receiveN.Brightness
 #define receiveNotificationColor      receiveN.Color
@@ -834,10 +836,6 @@ WLED_GLOBAL float latitude _INIT(WLED_LAT);
 WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
 WLED_GLOBAL Toki toki _INIT(Toki());
-
-// Temp buffer
-WLED_GLOBAL char* obuf;
-WLED_GLOBAL uint16_t olen _INIT(0);
 
 // General filesystem
 WLED_GLOBAL size_t fsBytesUsed _INIT(0);

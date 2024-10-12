@@ -436,7 +436,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
   strip.resume();
 
-  usermods.readFromJsonState(root);
+  UsermodManager::readFromJsonState(root);
 
   loadLedmap = root[F("ledmap")] | loadLedmap;
 
@@ -465,7 +465,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     ps = presetCycCurr;
     if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
-      presetCycCurr = ps;
       applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
       return stateResponse;
     }
@@ -592,7 +591,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root[F("pl")] = currentPlaylist;
     root[F("ledmap")] = currentLedmap;
 
-    usermods.addToJsonState(root);
+    UsermodManager::addToJsonState(root);
 
     JsonObject nl = root.createNestedObject("nl");
     nl["on"] = nightlightActive;
@@ -784,7 +783,7 @@ void serializeInfo(JsonObject root)
   getTimeString(time);
   root[F("time")] = time;
 
-  usermods.addToJsonInfo(root);
+  UsermodManager::addToJsonInfo(root);
 
   uint16_t os = 0;
   #ifdef WLED_DEBUG

@@ -81,7 +81,7 @@ int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
 
 static um_data_t* getAudioData() {
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
@@ -4040,7 +4040,7 @@ uint16_t mode_pacifica()
 
   // Increment the four "color index start" counters, one for each wave layer.
   // Each is incremented at a different speed, and the speeds vary over time.
-  unsigned sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step, sCIStart4 = SEGENV.step >> 16;
+  unsigned sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step & 0xFFFF, sCIStart4 = (SEGENV.step >> 16);
   uint32_t deltams = (FRAMETIME >> 2) + ((FRAMETIME * SEGMENT.speed) >> 7);
   uint64_t deltat = (strip.now >> 2) + ((strip.now * SEGMENT.speed) >> 7);
   strip.now = deltat;
@@ -4055,7 +4055,7 @@ uint16_t mode_pacifica()
   sCIStart3 -= (deltams1 * beatsin88(501,5,7));
   sCIStart4 -= (deltams2 * beatsin88(257,4,6));
   SEGENV.aux0 = sCIStart1; SEGENV.aux1 = sCIStart2;
-  SEGENV.step = sCIStart4; SEGENV.step = (SEGENV.step << 16) + sCIStart3;
+  SEGENV.step = (sCIStart4 << 16) | (sCIStart3 & 0xFFFF);
 
   // Clear out the LED array to a dim background blue-green
   //SEGMENT.fill(132618);
@@ -4086,7 +4086,7 @@ uint16_t mode_pacifica()
     c.green = scale8(c.green, 200);
     c |= CRGB( 2, 5, 7);
 
-    SEGMENT.setPixelColor(i, c.red, c.green, c.blue);
+    SEGMENT.setPixelColor(i, c);
   }
 
   strip.now = nowOld;
@@ -4941,8 +4941,8 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
   SEGMENT.fadeToBlackBy(40);
   for (size_t i = 0; i < numLines; i++) {
     byte x1 = beatsin8(2 + SEGMENT.speed/16, 0, (cols - 1));
-    byte x2 = beatsin8(1 + SEGMENT.speed/16, 0, (cols - 1));
-    byte y1 = beatsin8(5 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 24);
+    byte x2 = beatsin8(1 + SEGMENT.speed/16, 0, (rows - 1));
+    byte y1 = beatsin8(5 + SEGMENT.speed/16, 0, (cols - 1), 0, i * 24);
     byte y2 = beatsin8(3 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 48 + 64);
     CRGB color = ColorFromPalette(SEGPALETTE, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
 
@@ -5020,9 +5020,11 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
       // draw a gradient line between x and x1
       x = x / 2; x1 = x1 / 2;
       unsigned steps = abs8(x - x1) + 1;
+      bool positive = (x1 >= x);                         // direction of drawing
       for (size_t k = 1; k <= steps; k++) {
         unsigned rate = k * 255 / steps;
-        unsigned dx = lerp8by8(x, x1, rate);
+        //unsigned dx = lerp8by8(x, x1, rate);
+        unsigned dx = positive? (x + k-1) : (x - k+1);   // behaves the same as "lerp8by8" but does not create holes
         //SEGMENT.setPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, hue, 255, LINEARBLEND).nscale8_video(rate));
         SEGMENT.addPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, hue, 255, LINEARBLEND)); // use setPixelColorXY for different look
         SEGMENT.fadePixelColorXY(dx, i, rate);
@@ -6313,8 +6315,8 @@ static const char _data_FX_MODE_2DPLASMAROTOZOOM[] PROGMEM = "Rotozoomer@!,Scale
   uint8_t  *fftResult = nullptr;
   float    *fftBin = nullptr;
   um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    volumeSmth    = *(float*)   um_data->u_data[0]; 
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    volumeSmth    = *(float*)   um_data->u_data[0];
     volumeRaw     = *(float*)   um_data->u_data[1];
     fftResult     =  (uint8_t*) um_data->u_data[2];
     samplePeak    = *(uint8_t*) um_data->u_data[3];
@@ -6926,7 +6928,7 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
   uint8_t *myVals = reinterpret_cast<uint8_t*>(SEGENV.data); // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
 
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -7509,7 +7511,7 @@ uint16_t mode_2DAkemi(void) {
   const float normalFactor = 0.4f;
 
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
@@ -7543,8 +7545,9 @@ uint16_t mode_2DAkemi(void) {
 
   //add geq left and right
   if (um_data && fftResult) {
-    for (int x=0; x < cols/8; x++) {
-      unsigned band = x * cols/8;
+    int xMax = cols/8;
+    for (int x=0; x < xMax; x++) {
+      unsigned band = map(x, 0, max(xMax,4), 0, 15);  // map 0..cols/8 to 16 GEQ bands
       band = constrain(band, 0, 15);
       int barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
       CRGB color = CRGB(SEGMENT.color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0));

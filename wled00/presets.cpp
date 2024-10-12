@@ -118,7 +118,7 @@ void initPresetsFile()
 bool applyPresetFromPlaylist(byte index)
 {
   DEBUG_PRINTF_P(PSTR("Request to apply preset: %d\n"), index);
-  presetToApply = index;
+  presetToApply = presetCycCurr = index;
   callModeToApply = CALL_MODE_DIRECT_CHANGE;
   return true;
 }
@@ -127,7 +127,7 @@ bool applyPreset(byte index, byte callMode)
 {
   unloadPlaylist(); // applying a preset unloads the playlist (#3827)
   DEBUG_PRINTF_P(PSTR("Request to apply preset: %u\n"), index);
-  presetToApply = index;
+  presetToApply = presetCycCurr = index;
   callModeToApply = callMode;
   return true;
 }
