@@ -95,6 +95,11 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
 void setRandomColor(byte* rgb);
 
+//crypto.cpp
+void hmac_sign(const char* message, const char* psk, byte* signature);
+bool hmac_verify(const char* message, const char* psk, const byte* signature);
+bool hmac_test();
+
 //dmx.cpp
 void initDMX();
 void handleDMX();

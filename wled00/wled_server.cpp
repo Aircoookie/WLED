@@ -287,18 +287,27 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
 
+    Serial.println("JSON request");
+
     if (!requestJSONBufferLock(14)) {
       serveJsonError(request, 503, ERR_NOBUF);
       return;
     }
 
     DeserializationError error = deserializeJson(*pDoc, (uint8_t*)(request->_tempObject));
+
+    // if enabled, calculate HMAC and verify it
+    Serial.println("HMAC verification");
+    Serial.write((const char*)request->_tempObject, request->contentLength());
+
     JsonObject root = pDoc->as<JsonObject>();
     if (error || root.isNull()) {
       releaseJSONBufferLock();
       serveJsonError(request, 400, ERR_JSON);
       return;
     }
+
+    // old 4-digit pin logic for settings authentication (no transport encryption)
     if (root.containsKey("pin")) checkSettingsPIN(root["pin"].as<const char*>());
 
     const String& url = request->url();
