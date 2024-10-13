@@ -172,7 +172,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       char fpass[l+1]; //fill password field with ***
       fpass[l] = 0;
       memset(fpass,'*',l);
-      settingsScript.printf_P(PSTR("addWiFi(\"%s\",\",%s\",0x%X,0x%X,0x%X);"),
+      settingsScript.printf_P(PSTR("addWiFi(\"%s\",\"%s\",0x%X,0x%X,0x%X);"),
         multiWiFi[n].clientSSID,
         fpass,
         (uint32_t) multiWiFi[n].staticIP, // explicit cast required as this is a struct
