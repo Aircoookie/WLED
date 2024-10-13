@@ -31,6 +31,20 @@ bool hmac_verify(const char* message, const char* psk, const byte* signature) {
   return true;
 }
 
+bool verify_json_hmac(JsonObject root) {
+  JsonObject msg = root["msg"];
+  if (!msg) {
+    Serial.println(F("No message object found in JSON."));
+    return false;
+  }
+  const char *sig = msg["sig"];
+  if (sig == nullptr) {
+    Serial.println(F("No signature found in JSON."));
+    return false;
+  }
+  
+}
+
 bool hmac_test() {
   Serial.println(F("Testing HMAC..."));
   unsigned long start = millis();

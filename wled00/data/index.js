@@ -214,6 +214,10 @@ function loadSkinCSS(cId)
 	}
 }
 
+var useSRA = false;
+var sraWindow = null;
+var sraOrigin = '';
+
 function getURL(path) {
 	return (loc ? locproto + "//" + locip : "") + path;
 }
@@ -242,6 +246,13 @@ function onLoad()
 	}
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
+
+	if (window.opener) {
+		// can't get opener origin due to cross-origin browser policy
+		//var openerOrigin = window.opener.location.origin;
+		//console.log("WLED-UI opener origin: " + openerOrigin);
+		window.opener.postMessage('{"wled-ui":"onload"}', '*'); //openerOrigin);
+	}
 
 	tooltip();
 	resetPUtil();
@@ -300,6 +311,26 @@ function onLoad()
 		sl.addEventListener('touchend', toggleBubble);
 	});
 }
+
+function handleWindowMessageEvent(event) {
+	console.log(`Received message: ${event.data}`);
+  console.log(`origin: ${event.origin}`);
+	try {
+    var json = JSON.parse(event.data)
+  } catch (e) {
+    console.log(`Error parsing JSON: ${e}`);
+    return;
+  }
+	if (json['wled-rc'] === 'ready') {
+		useSRA = true;
+		sraWindow = event.source;
+		sraOrigin = event.origin;
+	} else if (json['wled-rc'] === 'hmac') {
+		console.log(`Received HMAC: ${json['hmac']}`);
+	}
+}
+
+onmessage = (event) => { handleWindowMessageEvent(event) };
 
 function updateTablinks(tabI)
 {
@@ -1702,6 +1733,12 @@ function requestJson(command=null)
 		if (req.length > 1340) useWs = false; // do not send very long requests over websocket
 		if (req.length >  500 && lastinfo && lastinfo.arch == "esp8266") useWs = false; // esp8266 can only handle 500 bytes
 	};
+
+	if (command && useSRA && !command['sig']) { // secure remote access integration, need to get HMAC from rc.wled.me
+		// if we already have a command including a signature, we are good to go
+		sraWindow.postMessage(JSON.stringify({"wled-ui":"hmac-req", "msg":command}), sraOrigin);
+		return; // TODO need a sort of pending indicator
+	}
 
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');

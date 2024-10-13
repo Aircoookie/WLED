@@ -297,8 +297,25 @@ void initServer()
     DeserializationError error = deserializeJson(*pDoc, (uint8_t*)(request->_tempObject));
 
     // if enabled, calculate HMAC and verify it
-    Serial.println("HMAC verification");
+    Serial.println(F("HMAC verification"));
     Serial.write((const char*)request->_tempObject, request->contentLength());
+
+    // actually we need to verify the HMAC of the nested "msg" object
+    if (strlen((const char*)request->_tempObject) > request->contentLength()) {
+      Serial.println(F("HMAC verification failed: content is not null-terminated"));
+      releaseJSONBufferLock();
+      serveJsonError(request, 400, ERR_JSON);
+      return;
+    }
+    // find the "msg" object in JSON
+    char * msgPtr = strstr((const char*)request->_tempObject, "\"msg\":");
+    if (msgPtr == NULL) {
+      Serial.println(F("HMAC verification failed: no \"msg\" object found"));
+      releaseJSONBufferLock();
+      serveJsonError(request, 400, ERR_JSON);
+      return;
+    }
+    char * objStart = strchr(msgPtr, '{');
 
     JsonObject root = pDoc->as<JsonObject>();
     if (error || root.isNull()) {
@@ -306,6 +323,17 @@ void initServer()
       serveJsonError(request, 400, ERR_JSON);
       return;
     }
+
+    // if (root.containsKey("sig")) {
+    //   const char* hmacProvided = root["sig"];
+    //   char hmac_calculated[SHA256HMAC_SIZE];
+    //   hmac_sign((const char*)request->_tempObject, settings.hmacKey, (byte*)hmac_calculated);
+    //   if (memcmp(hmac_calculated, hmac, SHA256HMAC_SIZE) != 0) {
+    //     releaseJSONBufferLock();
+    //     serveJsonError(request, 401, ERR_HMAC);
+    //     return;
+    //   }
+    // }
 
     // old 4-digit pin logic for settings authentication (no transport encryption)
     if (root.containsKey("pin")) checkSettingsPIN(root["pin"].as<const char*>());
