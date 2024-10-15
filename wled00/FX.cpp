@@ -5960,10 +5960,16 @@ uint16_t mode_2Dscrollingtext(void) {
     else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d")     :PSTR("%d.%d"),      day(localTime),   month(localTime));
     else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d")     :PSTR("%d/%d"),      month(localTime), day(localTime));
     else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s")   :PSTR("%2d:%02d%s"), AmPmHour,         minute(localTime), sec);
-    else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
-    else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         AmPmHour);
-    else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        minute(localTime));
-  }
+    else if (!strncmp_P(text,PSTR("#hhmm"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
+    else if (!strncmp_P(text,PSTR("#DD"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        day(localTime));
+    else if (!strncmp_P(text,PSTR("#MMM"),4))  sprintf_P(text, zero?PSTR("%s")            :PSTR("%s"),        monthShortStr(month(localTime)));
+    else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        month(localTime));
+    else if (!strncmp_P(text,PSTR("#YYYY"),5)) sprintf_P(text, zero?PSTR("%04d")          :PSTR("%d"),        year(localTime));
+    else if (!strncmp_P(text,PSTR("#YY"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        year(localTime)-2000);
+    else if (!strncmp_P(text,PSTR("#hh"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        AmPmHour);
+    else if (!strncmp_P(text,PSTR("#mm"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        minute(localTime));
+    else if (!strncmp_P(text,PSTR("#ss"),3))   sprintf_P(text, zero?PSTR("%s")            :PSTR("%s"),        &sec[1]);
+}
 
   const int  numberOfLetters = strlen(text);
   const unsigned long now = millis(); // reduce millis() calls
