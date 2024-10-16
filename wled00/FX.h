@@ -303,8 +303,8 @@
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
-
-#define MODE_COUNT                     187
+#define FX_MODE_COPY                   187
+#define MODE_COUNT                     188
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -837,7 +837,8 @@ class WS2812FX {  // 96 bytes
     uint32_t
       now,
       timebase,
-      getPixelColor(uint16_t) const;
+      getPixelColor(uint16_t) const,
+      getRenderedPixelXY(uint8_t segid, unsigned x, unsigned y = 0) const;
 
     inline uint32_t getLastShow() const       { return _lastShow; }           // returns millis() timestamp of last strip.show() call
     inline uint32_t segColor(uint8_t i) const { return _colors_t[i]; }        // returns currently valid color (for slot i) AKA SEGCOLOR(); may be blended between two colors while in transition
