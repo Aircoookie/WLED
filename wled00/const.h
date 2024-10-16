@@ -266,7 +266,9 @@
 #define DMX_MODE_EFFECT_SEGMENT   8            //trigger standalone effects of WLED (15 channels per segment)
 #define DMX_MODE_EFFECT_SEGMENT_W 9            //trigger standalone effects of WLED (18 channels per segment)
 #define DMX_MODE_PRESET           10           //apply presets (1 channel)
-
+#define DMX_MODE_PRESET_MULTIPLE_RGB 11        //Preset and multi RGB
+#define DMX_MODE_PRESET_MULTIPLE_RGBW 12       //Preset and multi RGBW
+#define DMX_MODE_LAST 12                       //Should always ahve the same ID as the last option
 //Light capability byte (unused) 0bRCCCTTTT
 //bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
 //bits 4/5/6: specifies the class of LED driver - 0b000 (dec. 0-15)  unconfigured/reserved

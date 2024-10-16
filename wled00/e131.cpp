@@ -321,6 +321,94 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         }
         break;
       }
+    case DMX_MODE_PRESET_MULTIPLE_RGB:
+    case DMX_MODE_PRESET_MULTIPLE_RGBW:
+      {
+        if (availDMXLen < 3) return;
+
+        static uint8_t mode;
+
+        //only check mode if we're in the first universe
+        if(previousUniverses==0)
+        {
+          mode = e131_data[dataOffset];
+        }
+
+        //mode 0-126: preset mode
+        if( mode < 127)
+        {
+          if(previousUniverses != 0) return;
+          // limit max. selectable preset to 250, even though DMX max. val is 255
+          uint8_t dmxValPreset = (e131_data[dataOffset+2] > 250 ? 250 : e131_data[dataOffset+2]);
+          
+          // only apply preset if value changed 
+          if (dmxValPreset != 0 && dmxValPreset != currentPreset &&  
+              // only apply preset if not in playlist, or playlist changed
+              (currentPlaylist < 0 || dmxValPreset != currentPlaylist)) { 
+            presetCycCurr = dmxValPreset;
+            unloadPlaylist(); // applying a preset unloads the playlist
+            applyPreset(dmxValPreset, CALL_MODE_NOTIFICATION);
+          }
+
+          // only change brightness if value changed
+          if (bri != e131_data[dataOffset+1]) {                                        
+            bri = e131_data[dataOffset+1];
+            strip.setBrightness(scaledBri(bri), false);
+            stateUpdated(CALL_MODE_WS_SEND);
+          }
+          return;
+        }
+        //Mode 127-255: Raw pixel mode
+        else
+        {
+          bool is4Chan = (DMXMode == DMX_MODE_PRESET_MULTIPLE_RGBW);
+          const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
+          const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
+          uint8_t stripBrightness = 255;
+          uint16_t previousLeds, dmxOffset, ledsTotal;
+
+          if (previousUniverses == 0) {
+            if (availDMXLen < 4) return;
+            dmxOffset = dataOffset+4;
+            previousLeds = 0;
+            // First DMX address is dimmer.
+            ledsTotal = (availDMXLen-4) / dmxChannelsPerLed;
+
+          } else {
+            // All subsequent universes start at the first channel.
+            dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
+            const uint16_t dimmerOffset = 4;
+            uint16_t ledsInFirstUniverse = (((MAX_CHANNELS_PER_UNIVERSE - DMXAddress) + dmxLenOffset) - dimmerOffset) / dmxChannelsPerLed;
+            previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
+            ledsTotal = previousLeds + (dmxChannels / dmxChannelsPerLed);
+          }
+
+          // All LEDs already have values
+          if (previousLeds >= totalLen) {
+            return;
+          }
+
+          realtimeLock(realtimeTimeoutMs, mde);
+          if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+
+          if (ledsTotal > totalLen) {
+            ledsTotal = totalLen;
+          }
+
+          if (!is4Chan) {
+            for (uint16_t i = previousLeds; i < ledsTotal; i++) {
+              setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], 0);
+              dmxOffset+=3;
+            }
+          } else {
+            for (uint16_t i = previousLeds; i < ledsTotal; i++) {
+              setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], e131_data[dmxOffset+3]);
+              dmxOffset+=4;
+            }
+          }
+        }
+        break;
+      }
     default:
       DEBUG_PRINTLN(F("unknown E1.31 DMX mode"));
       return;  // nothing to do
@@ -353,10 +441,13 @@ void handleArtnetPollReply(IPAddress ipAddress) {
     case DMX_MODE_MULTIPLE_DRGB:
     case DMX_MODE_MULTIPLE_RGB:
     case DMX_MODE_MULTIPLE_RGBW:
+    case DMX_MODE_PRESET_MULTIPLE_RGB:
+    case DMX_MODE_PRESET_MULTIPLE_RGBW:
       {
         bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
         const unsigned dmxChannelsPerLed = is4Chan ? 4 : 3;
-        const unsigned dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
+        const unsigned dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 
+                                      (DMXMode == DMX_MODE_PRESET_MULTIPLE_RGB || DMXMode == DMX_MODE_PRESET_MULTIPLE_RGBW ) ? 4 : 0;
         const unsigned dmxLenOffset = (DMXAddress == 0) ? 0 : 1; // For legacy DMX start address 0
         const unsigned ledsInFirstUniverse = (((MAX_CHANNELS_PER_UNIVERSE - DMXAddress) + dmxLenOffset) - dimmerOffset) / dmxChannelsPerLed;
         const unsigned totalLen = strip.getLengthTotal();
