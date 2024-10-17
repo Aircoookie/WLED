@@ -1,16 +1,12 @@
 # I2C/SPI 4 Line Display Usermod ALT
 
 Thank you to the authors of the original version of these usermods. It would not have been possible without them!
-"usermod_v2_four_line_display"
-"usermod_v2_rotary_encoder_ui"
+"usermod_v2_four_line_display" (old but gold, removed since release 0.15.0)
+"usermod_v2_rotary_encoder_ui" (old but gold, removed since release 0.15.0)
 
-The core of these usermods are a copy of the originals. The main changes are to the FourLineDisplay usermod.
-The display usermod UI has been completely changed.
+The core of these usermods are a copy of the originals, the display usermod UI has been completely changed.
 
-
-The changes made to the RotaryEncoder usermod were made to support the new UI in the display usermod.
-Without the display, it functions identical to the original.
-The original "usermod_v2_auto_save" will not work with the display just yet.
+## Functionalities
 
 Press the encoder to cycle through the options:
 * Brightness
@@ -18,23 +14,18 @@ Press the encoder to cycle through the options:
 * Intensity
 * Palette
 * Effect
-* Main Color (only if display is used)
-* Saturation (only if display is used)
+* Main Color
+* Saturation
 
-Press and hold the encoder to display Network Info. If AP is active, it will display AP, SSID and password
+Press and hold the encoder to display Network Info. If AP is active, it will display the AP, SSID and Password
 
-Also shows if the timer is enabled
+Also shows if the timer is enabled.
 
 [See the pair of usermods in action](https://www.youtube.com/watch?v=ulZnBt9z3TI)
 
 ## Installation
 
-Please refer to the original `usermod_v2_rotary_encoder_ui` readme for the main instructions.
-
-Copy the example `platformio_override.sample.ini` from the usermod_v2_rotary_encoder_ui_ALT folder to the root directory of your particular build and rename it to `platformio_override.ini`.
-
-This file should be placed in the same directory as `platformio.ini`.
-
+Copy the example `\usermods\usermod_v2_rotary_encoder_ui_ALT\platformio–override.sample.ini` to the root directory of your particular build and rename it to `platformio_override.ini`.
 
 ## Configuration
 
@@ -70,6 +61,10 @@ These options are configurable in Config > Usermods
 ### PlatformIO requirements
 
 Note: the Four Line Display usermod requires the libraries `U8g2` and `Wire`.
+
+## Compatibility
+
+The original "usermod_v2_auto_save" will not work with the display just yet.
 
 ## Change Log
 
