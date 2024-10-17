@@ -21,8 +21,7 @@ Press the encoder to cycle through the options:
 * Main Color (only if display is used)
 * Saturation (only if display is used)
 
-Press and hold the encoder to display Network Info
-    if AP is active, it will display the AP, SSID and Password
+Press and hold the encoder to display Network Info if AP is active, it will display the AP, SSID and Password
 
 Also shows if the timer is enabled.
 
@@ -32,15 +31,12 @@ Also shows if the timer is enabled.
 
 Copy the example `platformio_override.sample.ini` to the root directory of your particular build and rename it to `platformio_override.ini`.
 
-To activate this alternative usermod, add `#define USE_ALT_DISPlAY` (NOTE: CASE SENSITIVE) to the `usermods_list.cpp` file, or add `-D USE_ALT_DISPlAY` to your `platformio_override.ini` file
-
 ### Define Your Options
 
 * `USERMOD_ROTARY_ENCODER_UI`       - define this to have this user mod included wled00\usermods_list.cpp
 * `USERMOD_FOUR_LINE_DISPLAY`       - define this to have this the Four Line Display mod included wled00\usermods_list.cpp
                                         also tells this usermod that the display is available
                                         (see the Four Line Display usermod `readme.md` for more details)
-* `USE_ALT_DISPlAY`                 - Mandatory to use Four Line Display
 * `ENCODER_DT_PIN`                  - defaults to 18
 * `ENCODER_CLK_PIN`                 - defaults to 5
 * `ENCODER_SW_PIN`                  - defaults to 19
