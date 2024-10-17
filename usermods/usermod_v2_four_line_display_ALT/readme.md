@@ -35,9 +35,6 @@ Copy the example `platformio_override.sample.ini` from the usermod_v2_rotary_enc
 
 This file should be placed in the same directory as `platformio.ini`.
 
-Then, to activate this alternative usermod, add `#define USE_ALT_DISPlAY` (NOTE: CASE SENSITIVE) to the `usermods_list.cpp` file,
-                                        or add `-D USE_ALT_DISPlAY` to the original `platformio_override.ini.sample` file
-
 
 ## Configuration
 
