@@ -374,10 +374,9 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Begin simulateSound (to enable audio enhanced effects to display something)
+// Begin simulated sound (to enable audio enhanced effects to display something)
 ///////////////////////////////////////////////////////////////////////////////
 // Currently 4 types defined, to be fine tuned and new types added
-// (only 2 used as stored in 1 bit in segment options, consider switching to a single global simulation type)
 typedef enum UM_SoundSimulations {
   UMS_BeatSin = 0,
   UMS_WeWillRockYou,
@@ -385,7 +384,7 @@ typedef enum UM_SoundSimulations {
   UMS_14_3
 } um_soundSimulations_t;
 
-um_data_t* simulateSound(uint8_t simulationId)
+um_data_t* getAudioData(uint8_t simulationId)
 {
   static uint8_t samplePeak;
   static float   FFT_MajorPeak;
@@ -400,6 +399,9 @@ um_data_t* simulateSound(uint8_t simulationId)
   uint8_t *fftResult;
 
   static um_data_t* um_data = nullptr;
+
+  um_data_t* um_data_tmp;
+  if (UsermodManager::getUMData(&um_data_tmp, USERMOD_ID_AUDIOREACTIVE)) return um_data_tmp;
 
   if (!um_data) {
     //claim storage for arrays
@@ -422,7 +424,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data[7] = &binNum;
   } else {
     // get arrays from um_data
-    fftResult =  (uint8_t*)um_data->u_data[2];
+    fftResult = (uint8_t*)um_data->u_data[2];
   }
 
   uint32_t ms = millis();
@@ -430,65 +432,51 @@ um_data_t* simulateSound(uint8_t simulationId)
   switch (simulationId) {
     default:
     case UMS_BeatSin:
-      for (int i = 0; i<16; i++)
-        fftResult[i] = beatsin8(120 / (i+1), 0, 255);
-        // fftResult[i] = (beatsin8(120, 0, 255) + (256/16 * i)) % 256;
-        volumeSmth = fftResult[8];
+      for (int i = 0; i<16; i++) fftResult[i] = beatsin8(120 / (i+1), 0, 255);
+      volumeSmth = fftResult[8];
       break;
     case UMS_WeWillRockYou:
       if (ms%2000 < 200) {
         volumeSmth = random8(255);
-        for (int i = 0; i<5; i++)
-          fftResult[i] = random8(255);
-      }
-      else if (ms%2000 < 400) {
+        for (int i = 0; i < 5; i++) fftResult[i] = random8(255);
+      } else if (ms%2000 < 400) {
         volumeSmth = 0;
-        for (int i = 0; i<16; i++)
-          fftResult[i] = 0;
-      }
-      else if (ms%2000 < 600) {
+        for (int i = 0; i < 16; i++) fftResult[i] = 0;
+      } else if (ms%2000 < 600) {
         volumeSmth = random8(255);
-        for (int i = 5; i<11; i++)
-          fftResult[i] = random8(255);
-      }
-      else if (ms%2000 < 800) {
+        for (int i = 5; i < 11; i++) fftResult[i] = random8(255);
+      } else if (ms%2000 < 800) {
         volumeSmth = 0;
-        for (int i = 0; i<16; i++)
-          fftResult[i] = 0;
-      }
-      else if (ms%2000 < 1000) {
+        for (int i = 0; i < 16; i++) fftResult[i] = 0;
+      } else if (ms%2000 < 1000) {
         volumeSmth = random8(255);
-        for (int i = 11; i<16; i++)
-          fftResult[i] = random8(255);
-      }
-      else {
+        for (int i = 11; i < 16; i++) fftResult[i] = random8(255);
+      } else {
         volumeSmth = 0;
-        for (int i = 0; i<16; i++)
-          fftResult[i] = 0;
+        for (int i = 0; i < 16; i++) fftResult[i] = 0;
       }
       break;
     case UMS_10_13:
-      for (int i = 0; i<16; i++)
-        fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
-        volumeSmth = fftResult[8];
+      for (int i = 0; i < 16; i++) fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
+      volumeSmth = fftResult[8];
       break;
     case UMS_14_3:
-      for (int i = 0; i<16; i++)
-        fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
+      for (int i = 0; i < 16; i++) fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
       volumeSmth = fftResult[8];
       break;
   }
 
   samplePeak    = random8() > 250;
-  FFT_MajorPeak = 21 + (volumeSmth*volumeSmth) / 8.0f; // walk thru full range of 21hz...8200hz
-  maxVol        = 31;  // this gets feedback fro UI
-  binNum        = 8;   // this gets feedback fro UI
-  volumeRaw = volumeSmth;
-  my_magnitude = 10000.0f / 8.0f; //no idea if 10000 is a good value for FFT_Magnitude ???
+  FFT_MajorPeak = 21 + (volumeSmth*volumeSmth) / 8.0f; // walk through full range of 21hz...8200hz
+  maxVol        = 31;  // this gets feedback from UI
+  binNum        = 8;   // this gets feedback from UI
+  volumeRaw     = volumeSmth;
+  my_magnitude  = 10000.0f / 8.0f; //no idea if 10000 is a good value for FFT_Magnitude ???
   if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
 
   return um_data;
 }
+
 
 static const char s_ledmap_tmpl[] PROGMEM = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
