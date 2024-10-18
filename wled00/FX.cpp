@@ -59,15 +59,6 @@ int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
   return 0;
 }
 
-static um_data_t* getAudioData() {
-  um_data_t *um_data;
-  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio
-    um_data = simulateSound(SEGMENT.soundSim);
-  }
-  return um_data;
-}
-
 // effect functions
 
 /*
@@ -6330,13 +6321,13 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
 
-  um_data_t *um_data = getAudioData();
-  uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   #ifdef ESP32
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  float   FFT_MajorPeak = *(float*)um_data->u_data[4];
   #endif
-  uint8_t *maxVol       =  (uint8_t*)um_data->u_data[6];
-  uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
+  uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
+  uint8_t *maxVol    =  (uint8_t*)um_data->u_data[6];
+  uint8_t *binNum    =  (uint8_t*)um_data->u_data[7];
 
   // printUmData();
 
@@ -6417,9 +6408,9 @@ uint16_t mode_2DSwirl(void) {
   int ni = (cols - 1) - i;
   int nj = (cols - 1) - j;
 
-  um_data_t *um_data = getAudioData();
-  float volumeSmth  = *(float*)   um_data->u_data[0]; //ewowi: use instead of sampleAvg???
-  int   volumeRaw   = *(int16_t*) um_data->u_data[1];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)  um_data->u_data[0]; //ewowi: use instead of sampleAvg???
+  int   volumeRaw  = *(int16_t*)um_data->u_data[1];
 
   SEGMENT.addPixelColorXY( i, j, ColorFromPalette(SEGPALETTE, (strip.now / 11 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 11, 200, 255);
   SEGMENT.addPixelColorXY( j, i, ColorFromPalette(SEGPALETTE, (strip.now / 13 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 13, 200, 255);
@@ -6443,8 +6434,8 @@ uint16_t mode_2DWaverly(void) {
   const int cols = SEGMENT.virtualWidth();
   const int rows = SEGMENT.virtualHeight();
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth  = *(float*)   um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
@@ -6487,8 +6478,8 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth  = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   //SEGMENT.fade_out(240);
   SEGMENT.fade_out(251);  // 30%
@@ -6532,8 +6523,8 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
   if (!SEGENV.allocateData(dataSize)) return mode_static();     //allocation failed
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth  = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   // printUmData();
 
@@ -6580,8 +6571,8 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth  = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   //SEGMENT.fade_out(240);
   SEGMENT.fade_out(249);  // 25%
@@ -6617,8 +6608,8 @@ static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,
 //   * JUGGLES      //
 //////////////////////
 uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   SEGMENT.fade_out(224); // 6.25%
   unsigned my_sampleAgc = fmax(fmin(volumeSmth, 255.0), 0);
@@ -6640,8 +6631,8 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   if (SEGLEN == 1) return mode_static();
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
 
-  um_data_t *um_data = getAudioData();
-  int volumeRaw    = *(int16_t*)um_data->u_data[1];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  int volumeRaw = *(int16_t*)um_data->u_data[1];
 
   if (SEGENV.call == 0) {
     SEGMENT.fill(BLACK);
@@ -6668,8 +6659,8 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
   if (SEGLEN == 1) return mode_static();
 // Changing xdist to SEGENV.aux0 and ydist to SEGENV.aux1.
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   SEGMENT.fade_out(SEGMENT.speed);
   SEGMENT.fade_out(SEGMENT.speed);
@@ -6703,8 +6694,8 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
                                       CRGB::DarkOrange, CRGB::DarkOrange, CRGB::Orange,  CRGB::Orange,
                                       CRGB::Yellow,     CRGB::Orange,     CRGB::Yellow,  CRGB::Yellow);
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   if (SEGENV.call == 0) SEGMENT.fill(BLACK);
 
@@ -6727,9 +6718,9 @@ static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!,!;;;01v;m12=2
 ///////////////////////
 uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
-  int volumeRaw    = *(int16_t*)um_data->u_data[1];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)  um_data->u_data[0];
+  int   volumeRaw  = *(int16_t*)um_data->u_data[1];
 
   //uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
   uint8_t fadeRate = map(SEGMENT.speed,0,255,200,254);
@@ -6764,8 +6755,8 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
     SEGMENT.fill(BLACK);
   }
 
-  um_data_t *um_data = getAudioData();
-  int volumeRaw    = *(int16_t*)um_data->u_data[1];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  int volumeRaw = *(int16_t*)um_data->u_data[1];
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
   if (SEGENV.aux0 != secondHand) {
@@ -6796,8 +6787,8 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   if (!SEGENV.allocateData(sizeof(plasphase))) return mode_static(); //allocation failed
   Plasphase* plasmoip = reinterpret_cast<Plasphase*>(SEGENV.data);
 
-  um_data_t *um_data = getAudioData();
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   SEGMENT.fadeToBlackBy(32);
 
@@ -6831,11 +6822,11 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 254);
   unsigned pos = random16(SEGLEN);                        // Set a random starting position.
 
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
   uint8_t *maxVol    =  (uint8_t*)um_data->u_data[6];
   uint8_t *binNum    =  (uint8_t*)um_data->u_data[7];
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  float   volumeSmth = *(float*)  um_data->u_data[0];
 
   if (SEGENV.call == 0) {
     SEGMENT.custom1 = *binNum;
@@ -6872,8 +6863,8 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 
   SEGMENT.fade_out(fadeVal);
 
-  um_data_t *um_data = getAudioData();
-  int volumeRaw    = *(int16_t*)um_data->u_data[1];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  int volumeRaw = *(int16_t*)um_data->u_data[1];
 
   if (volumeRaw > 1) {
     size = volumeRaw * SEGMENT.intensity /256 /8 + 1;        // Determine size of the flash based on the volume.
@@ -6898,11 +6889,8 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
   if (!SEGENV.allocateData(32*sizeof(uint8_t))) return mode_static(); //allocation failed
   uint8_t *myVals = reinterpret_cast<uint8_t*>(SEGENV.data); // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
 
-  um_data_t *um_data;
-  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(SEGMENT.soundSim);
-  }
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float volumeSmth = *(float*)um_data->u_data[0];
 
   myVals[strip.now%32] = volumeSmth;    // filling values semi randomly
 
@@ -6930,7 +6918,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   if (SEGLEN == 1) return mode_static();
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
 
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) {
@@ -6963,7 +6951,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   // No need to prevent from executing on single led strips, only mid will be set (mid = 0)
   const int mid = SEGLEN / 2;
 
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) {
@@ -6995,7 +6983,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   // Start frequency = 60 Hz and log10(60) = 1.78
   // End frequency = MAX_FREQUENCY in Hz and lo10(MAX_FREQUENCY) = MAX_FREQ_LOG10
 
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   float FFT_MajorPeak = *(float*)um_data->u_data[4];
   float my_magnitude  = *(float*)um_data->u_data[5] / 4.0f;
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
@@ -7025,7 +7013,7 @@ static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting 
 ///////////////////////
 uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Pleschung.
   // No need to prevent from executing on single led strips, we simply change pixel 0 each time and avoid the shift
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   float FFT_MajorPeak = *(float*)um_data->u_data[4];
   float volumeSmth    = *(float*)um_data->u_data[0];
 
@@ -7080,7 +7068,7 @@ static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Speed,Sound e
 //  SEGMENT.speed select faderate
 //  SEGMENT.intensity select colour index
 uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   float FFT_MajorPeak = *(float*)um_data->u_data[4];
   float my_magnitude  = *(float*)um_data->u_data[5] / 16.0f;
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1.0f; // log10(0) is "forbidden" (throws exception)
@@ -7123,7 +7111,7 @@ static const char _data_FX_MODE_FREQPIXELS[] PROGMEM = "Freqpixels@Fade rate,Sta
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
   // As before, this effect can also work on single pixels, we just lose the shifting effect
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   float FFT_MajorPeak = *(float*)um_data->u_data[4];
   float volumeSmth    = *(float*)um_data->u_data[0];
 
@@ -7178,9 +7166,9 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
-  um_data_t *um_data = getAudioData();
-  float   FFT_MajorPeak = *(float*)um_data->u_data[4];
-  float   volumeSmth    = *(float*)um_data->u_data[0];
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float volumeSmth    = *(float*)um_data->u_data[0];
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   SEGMENT.fade_out(250);
@@ -7221,7 +7209,7 @@ static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sens
 //   ** Noisemove   //
 //////////////////////
 uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuline
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   int fadeoutDelay = (256 - SEGMENT.speed) / 96;
@@ -7244,9 +7232,9 @@ static const char _data_FX_MODE_NOISEMOVE[] PROGMEM = "Noisemove@Speed of perlin
 //   ** Rocktaves   //
 //////////////////////
 uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from each octave is same colour.    By: Andrew Tuline
-  um_data_t *um_data = getAudioData();
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
-  float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f;
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
+  float FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float my_magnitude  = *(float*)um_data->u_data[5] / 16.0f;
 
   SEGMENT.fadeToBlackBy(16);                              // Just in case something doesn't get faded.
 
@@ -7282,12 +7270,12 @@ static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;!,!;!;01f;m12=
 uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tuline
   // effect can work on single pixels, we just lose the shifting effect
   
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   uint8_t *maxVol       =  (uint8_t*)um_data->u_data[6];
   uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
-  float   my_magnitude  = *(float*)   um_data->u_data[5] / 8.0f;
+  float   my_magnitude  = *(float*)  um_data->u_data[5] / 8.0f;
 
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
@@ -7305,9 +7293,12 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    //uint8_t pixCol = (log10f((float)FFT_MajorPeak) - 2.26f) * 177;  // 10Khz sampling - log10 frequency range is from 2.26 (182hz) to 3.7 (5012hz). Let's scale accordingly.
-    uint8_t pixCol = (log10f(FFT_MajorPeak) - 2.26f) * 150;           // 22Khz sampling - log10 frequency range is from 2.26 (182hz) to 3.967 (9260hz). Let's scale accordingly.
-    if (FFT_MajorPeak < 182.0f) pixCol = 0;                           // handle underflow
+#if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
+    uint8_t pixCol = (log10f(FFT_MajorPeak) - 2.26f) * 177;   // 16Khz sampling - log10 frequency range is from 2.26 (182hz) to 3.85 (7079hz). Let's scale accordingly.
+#else
+    uint8_t pixCol = (log10f(FFT_MajorPeak) - 2.26f) * 150;   // 22Khz sampling - log10 frequency range is from 2.26 (182hz) to 3.967 (9260hz). Let's scale accordingly.
+#endif
+    if (FFT_MajorPeak < 182.0f) pixCol = 0;                   // handle underflow
 
     if (samplePeak) {
       SEGMENT.setPixelColor(SEGLEN-1, CHSV(92,92,92));
@@ -7337,7 +7328,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   if (!SEGENV.allocateData(cols*sizeof(uint16_t))) return mode_static(); //allocation failed
   uint16_t *previousBarHeight = reinterpret_cast<uint16_t*>(SEGENV.data); //array of previous bar heights per frequency band
 
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
@@ -7396,7 +7387,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
     bandInc = (NUMB_BANDS / cols);
   }
 
-  um_data_t *um_data = getAudioData();
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) {
@@ -7481,10 +7472,7 @@ uint16_t mode_2DAkemi(void) {
   const float lightFactor  = 0.15f;
   const float normalFactor = 0.4f;
 
-  um_data_t *um_data;
-  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(SEGMENT.soundSim);
-  }
+  um_data_t *um_data = getAudioData(SEGMENT.soundSim);
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
   float base = fftResult[0]/255.0f;
 
