@@ -118,7 +118,7 @@ Receive UDP realtime: <input type="checkbox" name="RD"><br>
 Use main segment only: <input type="checkbox" name="MO"><br>
 Respect LED Maps: <input type="checkbox" name="RLM"><br><br>
 <i>Network DMX input</i><br>
-Type:&nbsp;
+Type:
 <select name=DI onchange="SP(); adj();">
 <option value=5568>E1.31 (sACN)</option>
 <option value=6454>Art-Net</option>
@@ -127,12 +127,12 @@ Type:&nbsp;
 <div id=xp>Port: <input name="EP" type="number" min="1" max="65535" value="5568" class="d5" required><br></div>
 Multicast: <input type="checkbox" name="EM"><br>
 Start universe: <input name="EU" type="number" min="0" max="63999" required><br>
-<i>Reboot required.</i>&nbsp;Check out&nbsp;<a href="https://github.com/LedFx/LedFx" target="_blank">LedFx</a>!<br>
+<i>Reboot required.</i> Check out <a href="https://github.com/LedFx/LedFx" target="_blank">LedFx</a>!<br>
 Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
 DMX start address: <input name="DA" type="number" min="1" max="510" required><br>
 DMX segment spacing: <input name="XX" type="number" min="0" max="150" required><br>
 E1.31 port priority: <input name="PY" type="number" min="0" max="200" required><br>
-DMX mode:&nbsp;
+DMX mode:
 <select name=DM>
 <option value=0>Disabled</option>
 <option value=1>Single RGB</option>
@@ -185,7 +185,7 @@ Device Topic: <input type="text" name="MD" maxlength="32"><br>
 Group Topic: <input type="text" name="MG" maxlength="32"><br>
 Publish on button press: <input type="checkbox" name="BM"><br>
 Retain brightness & color messages: <input type="checkbox" name="RT"><br>
-<i>Reboot required to apply changes.&nbsp;</i><a href="https://kno.wled.ge/interfaces/mqtt/" target="_blank">MQTT info</a>
+<i>Reboot required to apply changes. </i><a href="https://kno.wled.ge/interfaces/mqtt/" target="_blank">MQTT info</a>
 </div>
 <h3>Philips Hue</h3>
 <div id="NoHue" class="hide">
@@ -209,7 +209,7 @@ Hue status: <span class="sip"> Disabled in this build </span>
 	<em class="warn">This firmware build does not support Serial interface.<br></em>
 </div>
 <div id="Serial">
-Baud rate:&nbsp;
+Baud rate:
 <select name=BD>
 <option value=1152>115200</option>
 <option value=2304>230400</option>

@@ -246,7 +246,7 @@ Y: <input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()"
 		<button type="button" onclick="B()">Back</button><button type="button" onclick="fS()">Save</button><hr>
 	</div>
 	<h2>2D setup</h2>
-	Strip or panel:&nbsp;
+	Strip or panel:
 	<select id="somp" name="SOMP" onchange="resetPanels();addPanels();UI();" >
 		<option value="0">1D Strip</option>
 		<option value="1">2D Matrix</option>
@@ -258,14 +258,14 @@ Y: <input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()"
 			Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
 			Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1">
 			Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1"><br>
-			1<sup>st</sup> panel:&nbsp;<select name="PB">
+			1<sup>st</sup> panel: <select name="PB">
 				<option value="0">Top</option>
 				<option value="1">Bottom</option>
 			</select><select name="PR">
 				<option value="0">Left</option>
 				<option value="1">Right</option>
 			</select><br>
-			Orientation:&nbsp;<select name="PV">
+			Orientation: <select name="PV">
 				<option value="0">Horizontal</option>
 				<option value="1">Vertical</option>
 			</select><br>
@@ -286,7 +286,7 @@ Y: <input name="P${i}Y" type="number" min="0" max="255" value="0" oninput="UI()"
 		<div id="MD"></div>
 		<canvas id="canvas"></canvas>
 		<div id="json" >Gap file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile(d.Sf.data,'/2d-gaps.json')">Upload</button></div>
-		<i>Note: Gap file is a&nbsp;<b>.json</b>&nbsp;file containing an array with number of elements equal to the matrix size.<br>
+		<i>Note: Gap file is a <b>.json</b> file containing an array with number of elements equal to the matrix size.<br>
 			A value of -1 means that pixel at that position is missing, a value of 0 means never paint that pixel, and 1 means regular pixel.</i>
 	</div>
 	<hr>

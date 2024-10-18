@@ -747,7 +747,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 		</div>
 		<h2>LED &amp; Hardware setup</h2>
-		Total LEDs:&nbsp;<span id="lc">?</span> <span id="pc"></span><br>
+		Total LEDs: <span id="lc">?</span> <span id="pc"></span><br>
 		<i>Recommended power supply for brightest white:</i><br>
 		<b><span id="psu">?</span></b><br>
 		<span id="psu2"><br></span>
@@ -776,7 +776,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<hr class="sml">
 		<button type="button" id="+" onclick="addLEDs(1,false)">+</button>
 		<button type="button" id="-" onclick="addLEDs(-1,false)">-</button><br>
-		LED memory usage:&nbsp;<span id="m0">0</span> / <span id="m1">?</span> B<br>
+		LED memory usage: <span id="m0">0</span> / <span id="m1">?</span> B<br>
 		<div id="dbar" style="display:inline-block; width: 100px; height: 10px; border-radius: 20px;"></div><br>
 		<div id="ledwarning" class="warn" style="display: none;">
 			&#9888; You might run into stability or lag issues.<br>
@@ -837,7 +837,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		<h3>Timed light</h3>
 		Default duration: <input name="TL" type="number" class="m" min="1" max="255" required> min<br>
 		Default target brightness: <input name="TB" type="number" class="m" min="0" max="255" required><br>
-		Mode:&nbsp;
+		Mode:
 		<select name="TW">
 			<option value="0">Wait and set</option>
 			<option value="1">Fade</option>
@@ -863,7 +863,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 			<i class="warn">WARNING: When using H-bridge for reverse polarity (2-wire) CCT LED strip<br><b>make sure this value is 0</b>.<br>(ESP32 variants only, ESP8266 does not support H-bridges)</i>
 		</div>
 		<h3>Advanced</h3>
-		Palette wrapping:&nbsp;
+		Palette wrapping:
 		<select name="PB">
 			<option value="0">Linear (wrap if moving)</option>
 			<option value="1">Linear (always wrap)</option>
