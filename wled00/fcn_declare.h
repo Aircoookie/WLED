@@ -96,9 +96,10 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb);
 void setRandomColor(byte* rgb);
 
 //crypto.cpp
-void hmac_sign(const char* message, const char* psk, byte* signature);
-bool hmac_verify(const char* message, const char* psk, const byte* signature);
-bool hmac_test();
+void hmacSign(const byte* message, size_t msgLen, const char* pskHex, byte* signature);
+bool hmacVerify(const byte* message, size_t msgLen, const char* pskHex, const byte* signature);
+bool verifyHmacFromJsonStr(const char* jsonStr, uint32_t maxLen);
+bool hmacTest();
 
 //dmx.cpp
 void initDMX();

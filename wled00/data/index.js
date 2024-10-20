@@ -326,7 +326,8 @@ function handleWindowMessageEvent(event) {
 		sraWindow = event.source;
 		sraOrigin = event.origin;
 	} else if (json['wled-rc'] === 'hmac') {
-		console.log(`Received HMAC: ${json['hmac']}`);
+		console.log(`Received HMAC: ${json['sig']}`);
+		requestJson(json);
 	}
 }
 
@@ -1435,6 +1436,14 @@ function makeWS() {
 			if (isInfo) populateInfo(i);
 		} else
 			i = lastinfo;
+		if (json.error) {
+			if (json.error == 1) {
+				showToast('HMAC verification failed! Please make sure you used the right password!', true);
+				return;
+			}
+			showToast(json.error, true);
+			return;
+		}
 		var s = json.state ? json.state : json;
 		displayRover(i, s);
 		readState(s);

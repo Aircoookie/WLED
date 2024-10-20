@@ -556,7 +556,7 @@ void WLED::setup()
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
   #endif
 
-  hmac_test();
+  hmacTest();
 }
 
 void WLED::beginStrip()
