@@ -326,7 +326,7 @@ function handleWindowMessageEvent(event) {
 		sraWindow = event.source;
 		sraOrigin = event.origin;
 	} else if (json['wled-rc'] === 'hmac') {
-		console.log(`Received HMAC: ${json['sig']}`);
+		console.log(`Received HMAC: ${json['mac']}`);
 		requestJson(json);
 	}
 }
@@ -1743,8 +1743,8 @@ function requestJson(command=null)
 		if (req.length >  500 && lastinfo && lastinfo.arch == "esp8266") useWs = false; // esp8266 can only handle 500 bytes
 	};
 
-	if (command && useSRA && !command['sig']) { // secure remote access integration, need to get HMAC from rc.wled.me
-		// if we already have a command including a signature, we are good to go
+	if (command && useSRA && !command['mac']) { // secure remote access integration, need to get HMAC from rc.wled.me
+		// if we already have a command including a MAC, we are good to go
 		sraWindow.postMessage(JSON.stringify({"wled-ui":"hmac-req", "msg":command}), sraOrigin);
 		return; // TODO need a sort of pending indicator
 	}

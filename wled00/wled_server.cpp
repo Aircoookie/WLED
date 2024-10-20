@@ -289,7 +289,7 @@ void initServer()
 
     Serial.println("JSON request");
     Serial.println((const char*)request->_tempObject);
-    if (!verifyHmacFromJsonStr((const char*)request->_tempObject, request->contentLength())) {
+    if (!verifyHmacFromJsonString0Term((byte*)request->_tempObject, request->contentLength())) {
       //releaseJSONBufferLock();
       serveJsonError(request, 401, ERR_DENIED);
       return;

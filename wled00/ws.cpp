@@ -43,8 +43,10 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
         Serial.print(F("WS message: "));
         Serial.println((const char*)data);
+        verifyHmacFromJsonString0Term(data, len);
 
         DeserializationError error = deserializeJson(*pDoc, data, len);
+        verifyHmacFromJsonString0Term(data, len);
         JsonObject root = pDoc->as<JsonObject>();
         if (error || root.isNull()) {
           releaseJSONBufferLock();
@@ -56,11 +58,11 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         } else if (root.containsKey("lv")) {
           wsLiveClientId = root["lv"] ? client->id() : 0;
         } else {
-          if (!verifyHmacFromJsonStr((const char*)data, len)) {
-            releaseJSONBufferLock();
-            client->text(F("{\"error\":1}")); // ERR_DENIED
-            return;
-          }
+          // if (!verifyHmacFromJsonString0Term(data, len)) {
+          //   releaseJSONBufferLock();
+          //   client->text(F("{\"error\":1}")); // ERR_DENIED
+          //   return;
+          // }
           verboseResponse = deserializeState(root["msg"]);
         }
         releaseJSONBufferLock();
