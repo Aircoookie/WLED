@@ -191,8 +191,8 @@ constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT resul
 #define LOG_256  5.54517744f                            // log(256)
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
-static float vReal[samplesFFT] = {0.0f};       // FFT sample inputs / freq output -  these are our raw result bins
-static float vImag[samplesFFT] = {0.0f};       // imaginary parts
+static float* vReal = nullptr;                  // FFT sample inputs / freq output -  these are our raw result bins
+static float* vImag = nullptr;                  // imaginary parts
 
 // Create FFT object
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
@@ -200,14 +200,9 @@ static float vImag[samplesFFT] = {0.0f};       // imaginary parts
 // #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc) - not faster on ESP32
 // #define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt  - slower on ESP32
 // Below options are forcing ArduinoFFT to use sqrtf() instead of sqrt()
-#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 10-50% on ESP32
-#define sqrt_internal sqrtf          // see https://github.com/kosme/arduinoFFT/pull/83
+// #define sqrt_internal sqrtf          // see https://github.com/kosme/arduinoFFT/pull/83 - since v2.0.0 this must be done in build_flags
 
-#include <arduinoFFT.h>
-
-/* Create FFT object with weighing factor storage */
-static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, true);
-
+#include <arduinoFFT.h>             // FFT object is created in FFTcode
 // Helper functions
 
 // compute average of several FFT result bins
@@ -225,6 +220,18 @@ static float fftAddAvg(int from, int to) {
 void FFTcode(void * parameter)
 {
   DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
+
+  // allocate FFT buffers on first call
+  if (vReal == nullptr) vReal = (float*) calloc(sizeof(float), samplesFFT);
+  if (vImag == nullptr) vImag = (float*) calloc(sizeof(float), samplesFFT);
+  if ((vReal == nullptr) || (vImag == nullptr)) {
+    // something went wrong
+    if (vReal) free(vReal); vReal = nullptr;
+    if (vImag) free(vImag); vImag = nullptr;
+    return;
+  }
+  // Create FFT object with weighing factor storage
+  ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, true);
 
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
@@ -247,6 +254,7 @@ void FFTcode(void * parameter)
 
     // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
+    memset(vImag, 0, samplesFFT * sizeof(float));   // set imaginary parts to 0
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
@@ -265,8 +273,6 @@ void FFTcode(void * parameter)
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
     for (int i=0; i < samplesFFT; i++) {
-	    // set imaginary parts to 0
-      vImag[i] = 0;
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
@@ -297,7 +303,7 @@ void FFTcode(void * parameter)
 #endif
 
     } else { // noise gate closed - only clear results as FFT was skipped. MIC samples are still valid when we do this.
-      memset(vReal, 0, sizeof(vReal));
+      memset(vReal, 0, samplesFFT * sizeof(float));
       FFT_MajorPeak = 1;
       FFT_Magnitude = 0.001;
     }
