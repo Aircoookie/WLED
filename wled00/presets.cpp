@@ -118,7 +118,7 @@ void initPresetsFile()
 bool applyPresetFromPlaylist(byte index)
 {
   DEBUG_PRINTF_P(PSTR("Request to apply preset: %d\n"), index);
-  presetToApply = presetCycCurr = index;
+  presetToApply = index;
   callModeToApply = CALL_MODE_DIRECT_CHANGE;
   return true;
 }
@@ -127,7 +127,7 @@ bool applyPreset(byte index, byte callMode)
 {
   unloadPlaylist(); // applying a preset unloads the playlist (#3827)
   DEBUG_PRINTF_P(PSTR("Request to apply preset: %u\n"), index);
-  presetToApply = presetCycCurr = index;
+  presetToApply = index;
   callModeToApply = callMode;
   return true;
 }
@@ -143,6 +143,7 @@ void applyPresetWithFallback(uint8_t index, uint8_t callMode, uint8_t effectID, 
 
 void handlePresets()
 {
+  byte presetErrFlag = ERR_NONE;
   if (presetToSave) {
     strip.suspend();
     doSaveState();
@@ -166,13 +167,15 @@ void handlePresets()
   #ifdef ARDUINO_ARCH_ESP32
   if (tmpPreset==255 && tmpRAMbuffer!=nullptr) {
     deserializeJson(*pDoc,tmpRAMbuffer);
-    errorFlag = ERR_NONE;
   } else
   #endif
   {
-  errorFlag = readObjectFromFileUsingId(getPresetsFileName(tmpPreset < 255), tmpPreset, pDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  presetErrFlag = readObjectFromFileUsingId(getPresetsFileName(tmpPreset < 255), tmpPreset, pDoc) ? ERR_NONE : ERR_FS_PLOAD;
   }
   fdo = pDoc->as<JsonObject>();
+
+  // only reset errorflag if previous error was preset-related
+  if ((errorFlag == ERR_NONE) || (errorFlag == ERR_FS_PLOAD)) errorFlag = presetErrFlag;
 
   //HTTP API commands
   const char* httpwin = fdo["win"];
