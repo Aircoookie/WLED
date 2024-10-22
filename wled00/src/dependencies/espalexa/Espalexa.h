@@ -120,9 +120,6 @@ private:
   
   void encodeLightId(uint8_t idx, char* out)
   {
-    uint8_t mac[6];
-    WiFi.macAddress(mac);
-
     String mymac = WiFi.macAddress();
 	sprintf_P(out, PSTR("%02X:%s:AB-%02X"), idx, mymac.c_str(), idx);
   }
