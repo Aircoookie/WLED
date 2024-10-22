@@ -1885,57 +1885,59 @@ class AudioReactive : public Usermod {
     }
 
 
-    void appendConfigData() override
+    void appendConfigData(Print& uiScript) override
     {
-#ifdef ARDUINO_ARCH_ESP32   
-      oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
+      uiScript.print(F("ux='AudioReactive';"));         // ux = shortcut for Audioreactive - fingers crossed that "ux" isn't already used as JS var, html post parameter or css style
+#ifdef ARDUINO_ARCH_ESP32
+      uiScript.print(F("uxp=ux+':digitalmic:pin[]';")); // uxp = shortcut for AudioReactive:digitalmic:pin[]
+      uiScript.print(F("dd=addDropdown(ux,'digitalmic:type');"));
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-      oappend(SET_F("addOption(dd,'Generic Analog',0);"));
+      uiScript.print(F("addOption(dd,'Generic Analog',0);"));
     #endif
-      oappend(SET_F("addOption(dd,'Generic I2S',1);"));
-      oappend(SET_F("addOption(dd,'ES7243',2);"));
-      oappend(SET_F("addOption(dd,'SPH0654',3);"));
-      oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
+      uiScript.print(F("addOption(dd,'Generic I2S',1);"));
+      uiScript.print(F("addOption(dd,'ES7243',2);"));
+      uiScript.print(F("addOption(dd,'SPH0654',3);"));
+      uiScript.print(F("addOption(dd,'Generic I2S with Mclk',4);"));
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-      oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
+      uiScript.print(F("addOption(dd,'Generic I2S PDM',5);"));
     #endif
-    oappend(SET_F("addOption(dd,'ES8388',6);"));
+    uiScript.print(F("addOption(dd,'ES8388',6);"));
     
-      oappend(SET_F("dd=addDropdown('AudioReactive','config:AGC');"));
-      oappend(SET_F("addOption(dd,'Off',0);"));
-      oappend(SET_F("addOption(dd,'Normal',1);"));
-      oappend(SET_F("addOption(dd,'Vivid',2);"));
-      oappend(SET_F("addOption(dd,'Lazy',3);"));
+      uiScript.print(F("dd=addDropdown(ux,'config:AGC');"));
+      uiScript.print(F("addOption(dd,'Off',0);"));
+      uiScript.print(F("addOption(dd,'Normal',1);"));
+      uiScript.print(F("addOption(dd,'Vivid',2);"));
+      uiScript.print(F("addOption(dd,'Lazy',3);"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
-      oappend(SET_F("addOption(dd,'Off',0);"));
-      oappend(SET_F("addOption(dd,'On',1);"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:limiter',0,' On ');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:dynamics:rise',1,'ms <i>(&#x266A; effects only)</i>');"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:fall',1,'ms <i>(&#x266A; effects only)</i>');"));
+      uiScript.print(F("dd=addDropdown(ux,'dynamics:limiter');"));
+      uiScript.print(F("addOption(dd,'Off',0);"));
+      uiScript.print(F("addOption(dd,'On',1);"));
+      uiScript.print(F("addInfo(ux+':dynamics:limiter',0,' On ');"));  // 0 is field type, 1 is actual field
+      uiScript.print(F("addInfo(ux+':dynamics:rise',1,'ms <i>(&#x266A; effects only)</i>');"));
+      uiScript.print(F("addInfo(ux+':dynamics:fall',1,'ms <i>(&#x266A; effects only)</i>');"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','frequency:scale');"));
-      oappend(SET_F("addOption(dd,'None',0);"));
-      oappend(SET_F("addOption(dd,'Linear (Amplitude)',2);"));
-      oappend(SET_F("addOption(dd,'Square Root (Energy)',3);"));
-      oappend(SET_F("addOption(dd,'Logarithmic (Loudness)',1);"));
+      uiScript.print(F("dd=addDropdown(ux,'frequency:scale');"));
+      uiScript.print(F("addOption(dd,'None',0);"));
+      uiScript.print(F("addOption(dd,'Linear (Amplitude)',2);"));
+      uiScript.print(F("addOption(dd,'Square Root (Energy)',3);"));
+      uiScript.print(F("addOption(dd,'Logarithmic (Loudness)',1);"));
 #endif
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
-      oappend(SET_F("addOption(dd,'Off',0);"));
+      uiScript.print(F("dd=addDropdown(ux,'sync:mode');"));
+      uiScript.print(F("addOption(dd,'Off',0);"));
 #ifdef ARDUINO_ARCH_ESP32
-      oappend(SET_F("addOption(dd,'Send',1);"));
+      uiScript.print(F("addOption(dd,'Send',1);"));
 #endif
-      oappend(SET_F("addOption(dd,'Receive',2);"));
+      uiScript.print(F("addOption(dd,'Receive',2);"));
 #ifdef ARDUINO_ARCH_ESP32
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
+      uiScript.print(F("addInfo(ux+':digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
+      uiScript.print(F("addInfo(uxp,0,'<i>sd/data/dout</i>','I2S SD');"));
+      uiScript.print(F("addInfo(uxp,1,'<i>ws/clk/lrck</i>','I2S WS');"));
+      uiScript.print(F("addInfo(uxp,2,'<i>sck/bclk</i>','I2S SCK');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'<i>only use -1, 0, 1 or 3</i>','I2S MCLK');"));
+        uiScript.print(F("addInfo(uxp,3,'<i>only use -1, 0, 1 or 3</i>','I2S MCLK');"));
       #else
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'<i>master clock</i>','I2S MCLK');"));
+        uiScript.print(F("addInfo(uxp,3,'<i>master clock</i>','I2S MCLK');"));
       #endif
 #endif
     }
