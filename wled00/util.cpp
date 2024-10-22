@@ -69,6 +69,15 @@ bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
 }
 
 
+bool getBoolVal(JsonVariant elem, bool dflt) {
+  if (elem.is<const char*>() && elem.as<const char*>()[0] == 't') {
+    return !dflt;
+  } else {
+    return elem | dflt;
+  }
+}
+
+
 bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv)
 {
   const char *v = strstr(req, key);
@@ -78,95 +87,35 @@ bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv
   return true;
 }
 
-
-//append a numeric setting to string buffer
-void sappend(char stype, const char* key, int val)
-{
-  char ds[] = "d.Sf.";
-
-  switch(stype)
-  {
-    case 'c': //checkbox
-      oappend(ds);
-      oappend(key);
-      oappend(".checked=");
-      oappendi(val);
-      oappend(";");
-      break;
-    case 'v': //numeric
-      oappend(ds);
-      oappend(key);
-      oappend(".value=");
-      oappendi(val);
-      oappend(";");
-      break;
-    case 'i': //selectedIndex
-      oappend(ds);
-      oappend(key);
-      oappend(SET_F(".selectedIndex="));
-      oappendi(val);
-      oappend(";");
-      break;
-  }
+static size_t printSetFormInput(Print& settingsScript, const char* key, const char* selector, int value) {
+  return settingsScript.printf_P(PSTR("d.Sf.%s.%s=%d;"), key, selector, value);
 }
 
-
-//append a string setting to buffer
-void sappends(char stype, const char* key, char* val)
-{
-  switch(stype)
-  {
-    case 's': {//string (we can interpret val as char*)
-      String buf = val;
-      //convert "%" to "%%" to make EspAsyncWebServer happy
-      //buf.replace("%","%%");
-      oappend("d.Sf.");
-      oappend(key);
-      oappend(".value=\"");
-      oappend(buf.c_str());
-      oappend("\";");
-      break;}
-    case 'm': //message
-      oappend(SET_F("d.getElementsByClassName"));
-      oappend(key);
-      oappend(SET_F(".innerHTML=\""));
-      oappend(val);
-      oappend("\";");
-      break;
-  }
+size_t printSetFormCheckbox(Print& settingsScript, const char* key, int val) {
+  return printSetFormInput(settingsScript, key, PSTR("checked"), val);
+}
+size_t printSetFormValue(Print& settingsScript, const char* key, int val) {
+  return printSetFormInput(settingsScript, key, PSTR("value"), val);
+}
+size_t printSetFormIndex(Print& settingsScript, const char* key, int index) {
+  return printSetFormInput(settingsScript, key, PSTR("selectedIndex"), index);
 }
 
-
-bool oappendi(int i)
-{
-  char s[11];
-  sprintf(s, "%d", i);
-  return oappend(s);
+size_t printSetFormValue(Print& settingsScript, const char* key, const char* val) {
+  return settingsScript.printf_P(PSTR("d.Sf.%s.value=\"%s\";"),key,val);
 }
 
-
-bool oappend(const char* txt)
-{
-  uint16_t len = strlen(txt);
-  if ((obuf == nullptr) || (olen + len >= SETTINGS_STACK_BUF_SIZE)) { // sanity checks
-#ifdef WLED_DEBUG
-    DEBUG_PRINT(F("oappend() buffer overflow. Cannot append "));
-    DEBUG_PRINT(len); DEBUG_PRINT(F(" bytes \t\""));
-    DEBUG_PRINT(txt); DEBUG_PRINTLN(F("\""));
-#endif
-    return false;        // buffer full
-  }
-  strcpy(obuf + olen, txt);
-  olen += len;
-  return true;
+size_t printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val) {
+  return settingsScript.printf_P(PSTR("d.getElementsByClassName(\"%s\")[%d].innerHTML=\"%s\";"), key, index, val);
 }
+
 
 
 void prepareHostname(char* hostname)
 {
-  sprintf_P(hostname, "wled-%*s", 6, escapedMac.c_str() + 6);
+  sprintf_P(hostname, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
-  uint8_t pos = 5;          // keep "wled-"
+  unsigned pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length
     if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
       hostname[pos] = *pC;
@@ -188,7 +137,7 @@ void prepareHostname(char* hostname)
 
 bool isAsterisksOnly(const char* str, byte maxLen)
 {
-  for (byte i = 0; i < maxLen; i++) {
+  for (unsigned i = 0; i < maxLen; i++) {
     if (str[i] == 0) break;
     if (str[i] != '*') return false;
   }
@@ -200,34 +149,49 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 //threading/network callback details: https://github.com/Aircoookie/WLED/pull/2336#discussion_r762276994
 bool requestJSONBufferLock(uint8_t module)
 {
-  unsigned long now = millis();
+  if (pDoc == nullptr) {
+    DEBUG_PRINTLN(F("ERROR: JSON buffer not allocated!"));
+    return false;
+  }
 
-  while (jsonBufferLock && millis()-now < 1000) delay(1); // wait for a second for buffer lock
-
-  if (millis()-now >= 1000) {
-    DEBUG_PRINT(F("ERROR: Locking JSON buffer failed! ("));
-    DEBUG_PRINT(jsonBufferLock);
-    DEBUG_PRINTLN(")");
-    return false; // waiting time-outed
+#if defined(ARDUINO_ARCH_ESP32)
+  // Use a recursive mutex type in case our task is the one holding the JSON buffer.
+  // This can happen during large JSON web transactions.  In this case, we continue immediately
+  // and then will return out below if the lock is still held.
+  if (xSemaphoreTakeRecursive(jsonBufferLockMutex, 250) == pdFALSE) return false;  // timed out waiting
+#elif defined(ARDUINO_ARCH_ESP8266)
+  // If we're in system context, delay() won't return control to the user context, so there's
+  // no point in waiting.
+  if (can_yield()) {
+    unsigned long now = millis();
+    while (jsonBufferLock && (millis()-now < 250)) delay(1); // wait for fraction for buffer lock
+  }
+#else
+  #error Unsupported task framework - fix requestJSONBufferLock
+#endif  
+  // If the lock is still held - by us, or by another task
+  if (jsonBufferLock) {
+    DEBUG_PRINTF_P(PSTR("ERROR: Locking JSON buffer (%d) failed! (still locked by %d)\n"), module, jsonBufferLock);
+#ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif
+    return false;
   }
 
   jsonBufferLock = module ? module : 255;
-  DEBUG_PRINT(F("JSON buffer locked. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
-  fileDoc = &doc;  // used for applying presets (presets.cpp)
-  doc.clear();
+  DEBUG_PRINTF_P(PSTR("JSON buffer locked. (%d)\n"), jsonBufferLock);
+  pDoc->clear();
   return true;
 }
 
 
 void releaseJSONBufferLock()
 {
-  DEBUG_PRINT(F("JSON buffer released. ("));
-  DEBUG_PRINT(jsonBufferLock);
-  DEBUG_PRINTLN(")");
-  fileDoc = nullptr;
+  DEBUG_PRINTF_P(PSTR("JSON buffer released. (%d)\n"), jsonBufferLock);
   jsonBufferLock = 0;
+#ifdef ARDUINO_ARCH_ESP32
+  xSemaphoreGiveRecursive(jsonBufferLockMutex);
+#endif  
 }
 
 
@@ -252,15 +216,15 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
     } else return 0;
   }
 
-  if (src == JSON_palette_names && mode > GRADIENT_PALETTE_COUNT) {
-    snprintf_P(dest, maxLen, PSTR("~ Custom %d~"), 255-mode);
+  if (src == JSON_palette_names && mode > (GRADIENT_PALETTE_COUNT + 13)) {
+    snprintf_P(dest, maxLen, PSTR("~ Custom %d ~"), 255-mode);
     dest[maxLen-1] = '\0';
     return strlen(dest);
   }
 
-  uint8_t qComma = 0;
+  unsigned qComma = 0;
   bool insideQuotes = false;
-  uint8_t printedChars = 0;
+  unsigned printedChars = 0;
   char singleJsonSymbol;
   size_t len = strlen_P(src);
 
@@ -297,11 +261,11 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
   if (mode < strip.getModeCount()) {
     String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
-      int16_t start = lineBuffer.indexOf('@');
-      int16_t stop  = lineBuffer.indexOf(';', start);
+      unsigned start = lineBuffer.indexOf('@');
+      unsigned stop  = lineBuffer.indexOf(';', start);
       if (start>0 && stop>0) {
         String names = lineBuffer.substring(start, stop); // include @
-        int16_t nameBegin = 1, nameEnd, nameDefault;
+        unsigned nameBegin = 1, nameEnd, nameDefault;
         if (slider < 10) {
           for (size_t i=0; i<=slider; i++) {
             const char *tmpstr;
@@ -364,7 +328,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 }
 
 
-// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;sx=16,ix=240,1d")
+// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;012;sx=16,ix=240")
 int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
@@ -526,13 +490,13 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
+static const char s_ledmap_tmpl[] PROGMEM = "ledmap%d.json";
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
   for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
-    char fileName[33];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    char fileName[33] = "/";
+    sprintf_P(fileName+1, s_ledmap_tmpl, i);
     bool isFile = WLED_FS.exists(fileName);
 
     #ifndef ESP8266
@@ -547,11 +511,12 @@ void enumerateLedmaps() {
 
       #ifndef ESP8266
       if (requestJSONBufferLock(21)) {
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        if (readObjectFromFile(fileName, nullptr, pDoc)) {
           size_t len = 0;
-          if (!doc["n"].isNull()) {
+          JsonObject root = pDoc->as<JsonObject>();
+          if (!root["n"].isNull()) {
             // name field exists
-            const char *name = doc["n"].as<const char*>();
+            const char *name = root["n"].as<const char*>();
             if (name != nullptr) len = strlen(name);
             if (len > 0 && len < 33) {
               ledmapNames[i-1] = new char[len+1];
@@ -560,7 +525,7 @@ void enumerateLedmaps() {
           }
           if (!ledmapNames[i-1]) {
             char tmp[33];
-            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            snprintf_P(tmp, 32, s_ledmap_tmpl, i);
             len = strlen(tmp);
             ledmapNames[i-1] = new char[len+1];
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
@@ -586,4 +551,9 @@ uint8_t get_random_wheel_index(uint8_t pos) {
     d = MIN(x, y);
   }
   return r;
+}
+
+// float version of map()
+float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

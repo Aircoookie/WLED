@@ -29,9 +29,9 @@ void setValuesFromSegment(uint8_t s)
 void applyValuesToSelectedSegs()
 {
   // copy of first selected segment to tell if value was updated
-  uint8_t firstSel = strip.getFirstSelectedSegId();
+  unsigned firstSel = strip.getFirstSelectedSegId();
   Segment selsegPrev = strip.getSegment(firstSel);
-  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+  for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
@@ -70,7 +70,7 @@ void toggleOnOff()
 //scales the brightness with the briMultiplier factor
 byte scaledBri(byte in)
 {
-  uint16_t val = ((uint16_t)in*briMultiplier)/100;
+  unsigned val = ((uint16_t)in*briMultiplier)/100;
   if (val > 255) val = 255;
   return (byte)val;
 }
@@ -131,7 +131,7 @@ void stateUpdated(byte callMode) {
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
 
   // notify usermods of state change
-  usermods.onStateChange(callMode);
+  UsermodManager::onStateChange(callMode);
 
   if (fadeTransition) {
     if (strip.getTransition() == 0) {
@@ -162,7 +162,7 @@ void updateInterfaces(uint8_t callMode)
 
   sendDataWs();
   lastInterfaceUpdate = millis();
-  interfaceUpdateCallMode = 0; //disable
+  interfaceUpdateCallMode = 0; //disable further updates
 
   if (callMode == CALL_MODE_WS_SEND) return;
 
@@ -172,7 +172,9 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
-  doPublishMqtt = true;
+  #ifndef WLED_DISABLE_MQTT
+  publishMqtt();
+  #endif
 }
 
 
@@ -180,9 +182,6 @@ void handleTransitions()
 {
   //handle still pending interface update
   updateInterfaces(interfaceUpdateCallMode);
-#ifndef WLED_DISABLE_MQTT
-  if (doPublishMqtt) publishMqtt();
-#endif
 
   if (transitionActive && strip.getTransition() > 0) {
     float tper = (millis() - transitionStartTime)/(float)strip.getTransition();
@@ -196,7 +195,7 @@ void handleTransitions()
       applyFinalBri();
       return;
     }
-    if (tper - tperLast < 0.004f) return;
+    if (tper - tperLast < 0.004f) return; // less than 1 bit change (1/255)
     tperLast = tper;
     briT = briOld + ((bri - briOld) * tper);
 
@@ -214,7 +213,6 @@ void colorUpdated(byte callMode) {
 
 void handleNightlight()
 {
-  static unsigned long lastNlUpdate;
   unsigned long now = millis();
   if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; // take care of millis() rollover
   if (now - lastNlUpdate < 100) return; // allow only 10 NL updates per second
@@ -225,10 +223,10 @@ void handleNightlight()
     if (!nightlightActiveOld) //init
     {
       nightlightStartTime = millis();
-      nightlightDelayMs = (int)(nightlightDelayMins*60000);
+      nightlightDelayMs = (unsigned)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
-      for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
+      for (unsigned i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
       if (nightlightMode == NL_MODE_SUN)
       {
         //save current
@@ -253,7 +251,7 @@ void handleNightlight()
       bri = briNlT + ((nightlightTargetBri - briNlT)*nper);
       if (nightlightMode == NL_MODE_COLORFADE)                                         // color fading only is enabled with "NF=2"
       {
-        for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
+        for (unsigned i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
       }
       colorUpdated(CALL_MODE_NO_NOTIFY);
     }
