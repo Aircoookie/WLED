@@ -193,12 +193,12 @@ void createEditHandler(bool enable) {
       editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
       #endif
     #else
-      editHandler = &server.on(SET_F("/edit"), HTTP_GET, [](AsyncWebServerRequest *request){
+      editHandler = &server.on(F("/edit"), HTTP_GET, [](AsyncWebServerRequest *request){
         serveMessage(request, 501, FPSTR(s_notimplemented), F("The FS editor is disabled in this build."), 254);
       });
     #endif
   } else {
-    editHandler = &server.on(SET_F("/edit"), HTTP_ANY, [](AsyncWebServerRequest *request){
+    editHandler = &server.on(F("/edit"), HTTP_ANY, [](AsyncWebServerRequest *request){
       serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_cfg), 254);
     });
   }
@@ -427,11 +427,11 @@ void initServer()
 
 
 #ifdef WLED_ENABLE_DMX
-  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, FPSTR(CONTENT_TYPE_HTML), PAGE_dmxmap     , dmxProcessor);
   });
 #else
-  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, FPSTR(s_notimplemented), F("DMX support is not enabled in this build."), 254);
   });
 #endif
