@@ -13,7 +13,8 @@ class DS1307RTC
 {
   // user-accessible "public" interface
   public:
-    DS1307RTC();
+    DS1307RTC() {}
+    static void begin() { Wire.begin(); }
     static time_t get();
     static bool set(time_t t);
     static bool read(tmElements_t &tm);

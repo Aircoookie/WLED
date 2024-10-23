@@ -15,11 +15,17 @@ This file should be placed in the same directory as `platformio.ini`.
 
 ### Define Your Options
 
-* `USERMOD_ROTARY_ENCODER_UI`  - define this to have this user mod included wled00\usermods_list.cpp
-* `USERMOD_FOUR_LINE_DISPLAY`  - define this to have this the Four Line Display mod included wled00\usermods_list.cpp - also tells this usermod that the display is available (see the Four Line Display usermod `readme.md` for more details)
-* `ENCODER_DT_PIN`             - The encoders DT pin, defaults to 12
-* `ENCODER_CLK_PIN`            - The encoders CLK pin, defaults to 14
-* `ENCODER_SW_PIN`             - The encoders SW pin, defaults to 13
+* `USERMOD_ROTARY_ENCODER_UI`       - define this to have this user mod included wled00\usermods_list.cpp
+* `USERMOD_ROTARY_ENCODER_GPIO`     - define the GPIO function (INPUT, INPUT_PULLUP, etc...)
+* `USERMOD_FOUR_LINE_DISPLAY`       - define this to have this the Four Line Display mod included wled00\usermods_list.cpp
+                                        also tells this usermod that the display is available
+                                        (see the Four Line Display usermod `readme.md` for more details)
+* `ENCODER_DT_PIN`                  &nbsp;&nbsp;- defaults to 12
+* `ENCODER_CLK_PIN`                 - defaults to 14
+* `ENCODER_SW_PIN`                  &nbsp;&nbsp;- defaults to 13
+* `USERMOD_ROTARY_ENCODER_GPIO`     - GPIO functionality:
+                                        `INPUT_PULLUP` to use internal pull-up
+                                        `INPUT` to use pull-up on the PCB
 
 ### PlatformIO requirements
 

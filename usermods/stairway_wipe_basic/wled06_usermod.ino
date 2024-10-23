@@ -89,7 +89,7 @@ void startWipe()
   resetTimebase(); //make sure wipe starts from beginning
 
   //set wipe direction
-  WS2812FX::Segment& seg = strip.getSegment(0);
+  Segment& seg = strip.getSegment(0);
   bool doReverse = (userVar0 == 2);
   seg.setOption(1, doReverse);
 

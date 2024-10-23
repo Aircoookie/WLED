@@ -162,7 +162,6 @@ public:
                 break;
             }
         }
-
         re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
     }
 
@@ -189,6 +188,7 @@ public:
         bool complete = false;
         for (size_t i = 0; i < strlen_P(json); i++) {
             singleJsonSymbol = pgm_read_byte_near(json + i);
+            if (singleJsonSymbol == '\0') break;
             switch (singleJsonSymbol) {
             case '"':
                 insideQuotes = !insideQuotes;
@@ -200,18 +200,14 @@ public:
             case '[':
                 break;
             case ']':
-                complete = true;
+                if (!insideQuotes) complete = true;
                 break;
             case ',':
-                modeIndex++;
+                if (!insideQuotes) modeIndex++;
             default:
-                if (!insideQuotes) {
-                    break;
-                }
+                if (!insideQuotes) break;
             }
-            if (complete) {
-                break;
-            }
+            if (complete) break;
         }
         return modeStrings;
     }
