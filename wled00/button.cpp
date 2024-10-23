@@ -171,13 +171,12 @@ void handleAnalog(uint8_t b)
   // remove noise & reduce frequency of UI updates
   if (abs(int(aRead) - int(oldRead[b])) <= POT_SENSITIVITY) return;  // no significant change in reading
 
-  // Unomment the next lines if you still see flickering related to potentiometer
+  // Un-comment the next lines if you still see flickering related to potentiometer
   // This waits until strip finishes updating (why: strip was not updating at the start of handleButton() but may have started during analogRead()?)
   //unsigned long wait_started = millis();
   //while(strip.isUpdating() && (millis() - wait_started < STRIP_WAIT_TIME)) {
   //  delay(1);
   //}
-  //if (strip.isUpdating()) return; // give up
 
   oldRead[b] = aRead;
 
@@ -227,11 +226,11 @@ void handleAnalog(uint8_t b)
 
 void handleButton()
 {
-  static unsigned long lastRead = 0UL;
+  static unsigned long lastAnalogRead = 0UL;
   static unsigned long lastRun = 0UL;
   unsigned long now = millis();
 
-  if (strip.isUpdating() && (now - lastRun < 400)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
+  if (strip.isUpdating() && (now - lastRun < ANALOG_BTN_READ_CYCLE+1)) return; // don't interfere with strip update (unless strip is updating continuously, e.g. very long strips)
   lastRun = now;
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
@@ -244,9 +243,8 @@ void handleButton()
     if (usermods.handleButton(b)) continue; // did usermod handle buttons
 
     if (buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) { // button is not a button but a potentiometer
-      if (now - lastRead > ANALOG_BTN_READ_CYCLE) {
+      if (now - lastAnalogRead > ANALOG_BTN_READ_CYCLE) {
         handleAnalog(b);
-        lastRead = now;
       }
       continue;
     }
@@ -326,6 +324,9 @@ void handleButton()
       shortPressAction(b);
     }
   }
+  if (now - lastAnalogRead > ANALOG_BTN_READ_CYCLE) {
+    lastAnalogRead = now;
+  }
 }
 
 // If enabled, RMT idle level is set to HIGH when off
@@ -375,7 +376,7 @@ void handleIO()
     if (!offMode) {
       #ifdef ESP8266
       // turn off built-in LED if strip is turned off
-      // this will break digital bus so will need to be reinitialised on On
+      // this will break digital bus so will need to be re-initialised on On
       PinOwner ledPinOwner = pinManager.getPinOwner(LED_BUILTIN);
       if (!strip.isOffRefreshRequired() && (ledPinOwner == PinOwner::None || ledPinOwner == PinOwner::BusDigital)) {
         pinMode(LED_BUILTIN, OUTPUT);

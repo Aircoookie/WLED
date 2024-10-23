@@ -1,5 +1,5 @@
 # HyperSerialWLED
-Fork of the WLED project where the Adalight USB serial protocol @115200 speed is replaced with the AWA protocol with data integrity check at @2000000 speed for use with [HyperHDR](https://github.com/awawa-dev/HyperHDR).<br/>
+Fork of the WLED project where the Adalight USB serial protocol @115200 speed is replaced with the AWA protocol with data integrity check at @2000000 speed or higher for use with [HyperHDR](https://github.com/awawa-dev/HyperHDR).<br/>
 
 **:warning: WARNING for ESP8266 users: although WLED allows pin-out redefinition, still the only hardware available SPI pins for APA102/SK9822/HD107 are: GPIO13 (MOSI, usually D7) and GPIO14 (SCLK/CLOCK, usually D5) and no software can change it :warning:**
 
@@ -30,7 +30,7 @@ Fork of the WLED project where the Adalight USB serial protocol @115200 speed is
 - Up to 250 user presets to save and load colors/effects easily, supports cycling through them.  
 - Presets can be used to automatically execute API calls  
 - Nightlight function (gradually dims down)  
-- Full OTA software updatability (HTTP + ArduinoOTA), password protectable  
+- Full OTA software updateability (HTTP + ArduinoOTA), password protectable  
 - Configurable analog clock (Cronixie, 7-segment and EleksTube IPS clock support via usermods) 
 - Configurable Auto Brightness limit for safe operation  
 - Filesystem-based config for easier backup of presets and settings  
@@ -69,7 +69,7 @@ Credits [here](https://kno.wled.ge/about/contributors/)!
 
 Join the Discord server to discuss everything about WLED!
 
-<a href="https://discord.gg/A2FpqFQaRS"><img src="https://discordapp.com/api/guilds/473448917040758787/widget.png?style=banner2" width="25%"></a>
+<a href="https://discord.gg/QAh7wJHrRM"><img src="https://discordapp.com/api/guilds/473448917040758787/widget.png?style=banner2" width="25%"></a>
 
 Check out the WLED [Discourse forum](https://wled.discourse.group)!  
 

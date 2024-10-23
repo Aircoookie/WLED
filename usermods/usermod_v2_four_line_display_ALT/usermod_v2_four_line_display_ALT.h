@@ -6,7 +6,7 @@
 #include "4LD_wled_fonts.c"
 
 #ifndef FLD_ESP32_NO_THREADS
-  #define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
+  #define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behaviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
 #endif
 
 //
@@ -243,7 +243,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void setMarkLine(byte newMarkLineNum, byte newMarkColNum);
 
-    //Draw the arrow for the current setting beiong changed
+    //Draw the arrow for the current setting being changed
     void drawArrow();
 
     //Display the current effect or palette (desiredEntry) 
@@ -793,7 +793,7 @@ void FourLineDisplayUsermod::setMarkLine(byte newMarkLineNum, byte newMarkColNum
   markColNum = newMarkColNum;
 }
 
-//Draw the arrow for the current setting beiong changed
+//Draw the arrow for the current setting being changed
 void FourLineDisplayUsermod::drawArrow() {
 #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
   unsigned long now = millis();
@@ -1066,7 +1066,7 @@ void FourLineDisplayUsermod::networkOverlay(const char* line1, long showHowLong)
 bool FourLineDisplayUsermod::handleButton(uint8_t b) {
   yield();
   if (!enabled
-    || b // butto 0 only
+    || b // button 0 only
     || buttonType[b] == BTN_TYPE_SWITCH
     || buttonType[b] == BTN_TYPE_NONE
     || buttonType[b] == BTN_TYPE_RESERVED

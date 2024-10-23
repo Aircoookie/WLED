@@ -15,7 +15,7 @@ private:
   static const char _enabled[];
   static const char _loopInterval[];
 
-  // any private methods should go here (non-inline methosd should be defined out of class)
+  // any private methods should go here (non-inline method should be defined out of class)
   void publishMqtt(const char *state, bool retain = false); // example for publishing MQTT message
 
 public:

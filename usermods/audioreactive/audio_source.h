@@ -44,7 +44,7 @@
 // benefit: analog mic inputs will be sampled contiously -> better response times and less "glitches"
 // WARNING: this option WILL lock-up your device in case that any other analogRead() operation is performed; 
 //          for example if you want to read "analog buttons"
-//#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continously sample analog ADC microphone. WARNING will cause analogRead() lock-up
+//#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continuously sample analog ADC microphone. WARNING will cause analogRead() lock-up
 
 // data type requested from the I2S driver - currently we always use 32bit
 //#define I2S_USE_16BIT_SAMPLES   // (experimental) define this to request 16bit - more efficient but possibly less compatible
@@ -378,7 +378,7 @@ class I2SSource : public AudioSource {
 };
 
 /* ES7243 Microphone
-   This is an I2S microphone that requires ininitialization over
+   This is an I2S microphone that requires initialization over
    I2C before I2S data can be received
 */
 class ES7243 : public I2SSource {
@@ -429,8 +429,8 @@ public:
     }
 };
 
-/* ES8388 Sound Modude
-   This is an I2S sound processing unit that requires ininitialization over
+/* ES8388 Sound Module
+   This is an I2S sound processing unit that requires initialization over
    I2C before I2S data can be received. 
 */
 class ES8388Source : public I2SSource {
@@ -475,7 +475,7 @@ class ES8388Source : public I2SSource {
       // The mics *and* line-in are BOTH connected to LIN2/RIN2 on the AudioKit
       // so there's no way to completely eliminate the mics. It's also hella noisy. 
       // Line-in works OK on the AudioKit, generally speaking, as the mics really need
-      // amplification to be noticable in a quiet room. If you're in a very loud room, 
+      // amplification to be noticeable in a quiet room. If you're in a very loud room, 
       // the mics on the AudioKit WILL pick up sound even in line-in mode. 
       // TL;DR: Don't use the AudioKit for anything, use the LyraT. 
       //
