@@ -80,7 +80,6 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: firmware-release
         pattern: firmware-release-*
         merge-multiple: true
     - name: Create draft release
