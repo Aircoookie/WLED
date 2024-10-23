@@ -462,7 +462,7 @@ WLED_GLOBAL bool hueApplyBri _INIT(true);
 WLED_GLOBAL bool hueApplyColor _INIT(true);
 #endif
 
-WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
+WLED_GLOBAL uint16_t serialBaud _INIT(20000); // serial baud rate, multiply by 100
 
 #ifndef WLED_DISABLE_ESPNOW
 WLED_GLOBAL bool enable_espnow_remote _INIT(false);
