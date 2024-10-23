@@ -75,7 +75,7 @@ private:
     
     uint8_t lineBuffer[w * 2];
 
-    if (!realtimeMode || realtimeOverride) strip.service();
+    if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) strip.service();
 
     // 0,0 coordinates are top left
     for (row = 0; row < h; row++) {
@@ -133,13 +133,13 @@ private:
       return false;
     }
 
-    read32(bmpFS); // filesize in bytes
-    read32(bmpFS); // reserved
+    (void) read32(bmpFS); // filesize in bytes
+    (void) read32(bmpFS); // reserved
     seekOffset = read32(bmpFS); // start of bitmap
     headerSize = read32(bmpFS); // header size
     w = read32(bmpFS); // width
     h = read32(bmpFS); // height
-    read16(bmpFS); // color planes (must be 1)
+    (void) read16(bmpFS); // color planes (must be 1)
     bitDepth = read16(bmpFS);
 
     if (read32(bmpFS) != 0 || (bitDepth != 24 && bitDepth != 1 && bitDepth != 4 && bitDepth != 8)) {
@@ -151,9 +151,9 @@ private:
     uint32_t palette[256];
     if (bitDepth <= 8) // 1,4,8 bit bitmap: read color palette
     {
-      read32(bmpFS); read32(bmpFS); read32(bmpFS); // size, w resolution, h resolution
+      (void) read32(bmpFS); (void) read32(bmpFS); (void) read32(bmpFS); // size, w resolution, h resolution
       paletteSize = read32(bmpFS);
-      if (paletteSize == 0) paletteSize = bitDepth * bitDepth; //if 0, size is 2^bitDepth
+      if (paletteSize == 0) paletteSize = 1 << bitDepth; //if 0, size is 2^bitDepth
       bmpFS.seek(14 + headerSize); // start of color palette
       for (uint16_t i = 0; i < paletteSize; i++) {
         palette[i] = read32(bmpFS);
@@ -169,7 +169,7 @@ private:
     uint32_t lineSize = ((bitDepth * w +31) >> 5) * 4;
     uint8_t lineBuffer[lineSize];
     
-    uint8_t serviceStrip = (!realtimeMode || realtimeOverride) ? 7 : 0;
+    uint8_t serviceStrip = (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) ? 7 : 0;
     // row is decremented as the BMP image is drawn bottom up
     for (row = h-1; row >= 0; row--) {
       if ((row & 0b00000111) == serviceStrip) strip.service(); //still refresh backlight to mitigate stutter every few rows
@@ -198,7 +198,7 @@ private:
           }
           b = c; g = c >> 8; r = c >> 16;
         }
-        if (dimming != 255) { // only dimm when needed
+        if (dimming != 255) { // only dim when needed
           r *= dimming; g *= dimming; b *= dimming;
           r  = r  >> 8; g  = g  >> 8; b  = b  >> 8;
         }
@@ -250,7 +250,7 @@ private:
     
     uint8_t lineBuffer[w * 2];
     
-    if (!realtimeMode || realtimeOverride) strip.service();
+    if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) strip.service();
 
     // 0,0 coordinates are top left
     for (row = 0; row < h; row++) {
@@ -355,7 +355,7 @@ public:
     // Color in grayscale bitmaps if Segment 1 exists
     // TODO If secondary and tertiary are black, color all in primary,
     // else color first three from Seg 1 color slots and last three from Seg 2 color slots
-    WS2812FX::Segment& seg1 = strip.getSegment(tubeSegment);
+    Segment& seg1 = strip.getSegment(tubeSegment);
     if (seg1.isActive()) {
       digitColor = strip.getPixelColor(seg1.start + digit);
       dimming = seg1.opacity;

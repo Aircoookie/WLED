@@ -33,9 +33,23 @@ class AutoSaveUsermod : public Usermod {
     bool enabled = true;
 
     // configurable parameters
+    #ifdef AUTOSAVE_AFTER_SEC
+    uint16_t autoSaveAfterSec = AUTOSAVE_AFTER_SEC;
+    #else
     uint16_t autoSaveAfterSec = 15;       // 15s by default
+    #endif
+
+    #ifdef AUTOSAVE_PRESET_NUM
+    uint8_t autoSavePreset = AUTOSAVE_PRESET_NUM;
+    #else
     uint8_t autoSavePreset = 250;         // last possible preset
+    #endif
+
+    #ifdef USERMOD_AUTO_SAVE_ON_BOOT
+    bool applyAutoSaveOnBoot = USERMOD_AUTO_SAVE_ON_BOOT; 
+    #else
     bool applyAutoSaveOnBoot = false;     // do we load auto-saved preset on boot?
+    #endif
 
     // If we've detected the need to auto save, this will be non zero.
     unsigned long autoSaveAfter = 0;
@@ -64,6 +78,7 @@ class AutoSaveUsermod : public Usermod {
         PSTR("~ %02d-%02d %02d:%02d:%02d ~"),
         month(localTime), day(localTime),
         hour(localTime), minute(localTime), second(localTime));
+      cacheInvalidate++;  // force reload of presets
       savePreset(autoSavePreset, presetNameBuffer);
     }
 
@@ -74,6 +89,10 @@ class AutoSaveUsermod : public Usermod {
         display->overlay("Settings", "Auto Saved", 1500);
       }
       #endif
+    }
+
+    void enable(bool enable) {
+      enabled = enable;
     }
 
   public:
@@ -140,12 +159,24 @@ class AutoSaveUsermod : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    //void addToJsonInfo(JsonObject& root) {
-      //JsonObject user = root["u"];
-      //if (user.isNull()) user = root.createNestedObject("u");
-      //JsonArray data = user.createNestedArray(F("Autosave"));
-      //data.add(F("Loaded."));
-    //}
+    void addToJsonInfo(JsonObject& root) {
+      JsonObject user = root["u"];
+      if (user.isNull()) {
+        user = root.createNestedObject("u");
+      }
+
+      JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
+
+      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
+      uiDomString += FPSTR(_name);
+      uiDomString += F(":{");
+      uiDomString += FPSTR(_autoSaveEnabled);
+      uiDomString += enabled ? F(":false}});\">") : F(":true}});\">");
+      uiDomString += F("<i class=\"icons ");
+      uiDomString += enabled ? "on" : "off";
+      uiDomString += F("\">&#xe08f;</i></button>");
+      infoArr.add(uiDomString);
+    }
 
     /*
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
@@ -158,9 +189,20 @@ class AutoSaveUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void readFromJsonState(JsonObject& root) {
-    //  if (!initDone) return;  // prevent crash on boot applyPreset()
-    //}
+    void readFromJsonState(JsonObject& root) {
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+      bool en = enabled;
+      JsonObject um = root[FPSTR(_name)];
+      if (!um.isNull()) {
+        if (um[FPSTR(_autoSaveEnabled)].is<bool>()) {
+          en = um[FPSTR(_autoSaveEnabled)].as<bool>();
+        } else {
+          String str = um[FPSTR(_autoSaveEnabled)]; // checkbox -> off or on
+          en = (bool)(str!="off"); // off is guaranteed to be present
+        }
+        if (en != enabled) enable(en);
+      }
+    }
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.

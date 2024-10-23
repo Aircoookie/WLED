@@ -63,7 +63,7 @@ class ElekstubeIPSUsermod : public Usermod {
       if (!toki.isTick()) return;
       updateLocalTime();
 
-      WS2812FX::Segment& seg1 = strip.getSegment(tfts.tubeSegment);
+      Segment& seg1 = strip.getSegment(tfts.tubeSegment);
       if (seg1.isActive()) {
         bool update = false;
         if (seg1.opacity != lastBri) update = true;
