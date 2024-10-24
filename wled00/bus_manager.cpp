@@ -16,6 +16,9 @@
     #define LEDC_MUTEX_UNLOCK()
   #endif
 #endif
+#ifdef ESP8266
+#include "core_esp8266_waveform.h"
+#endif
 #include "const.h"
 #include "pin_manager.h"
 #include "bus_wrapper.h"
@@ -466,10 +469,7 @@ BusPwm::BusPwm(BusConfig &bc)
   for (unsigned i = 0; i < numPins; i++) pins[i] = {(int8_t)bc.pins[i], true};
   if (!PinManager::allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) return;
 
-#ifdef ESP8266
-  analogWriteRange((1<<_depth)-1);
-  analogWriteFreq(_frequency);
-#else
+#ifdef ARDUINO_ARCH_ESP32
   // for 2 pin PWM CCT strip pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
   _ledcStart = PinManager::allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
@@ -560,13 +560,19 @@ uint32_t BusPwm::getPixelColor(uint16_t pix) const {
 
 void BusPwm::show() {
   if (!_valid) return;
+  const unsigned numPins = getPins();
+#ifdef ESP8266
+   const unsigned analogPeriod = F_CPU / _frequency;
+   const unsigned maxBri = analogPeriod;  // compute to clock cycle accuracy
+   constexpr bool dithering = false;   
+   constexpr unsigned bitShift = 8;  // 256 clocks for dead time, ~3us at 80MHz
+#else
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
   // https://github.com/Aircoookie/WLED/pull/4115 and https://github.com/zalatnaicsongor/WLED/pull/1)
   const bool     dithering = _needsRefresh; // avoid working with bitfield
-  const unsigned numPins = getPins();
   const unsigned maxBri = (1<<_depth);      // possible values: 16384 (14), 8192 (13), 4096 (12), 2048 (11), 1024 (10), 512 (9) and 256 (8) 
-  [[maybe_unused]] const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
-
+  const unsigned bitShift = dithering * 4;  // if dithering, _depth is 12 bit but LEDC channel is set to 8 bit (using 4 fractional bits)
+#endif
   // use CIE brightness formula (cubic) to fit (or approximate linearity of) human eye perceived brightness
   // the formula is based on 12 bit resolution as there is no need for greater precision
   // see: https://en.wikipedia.org/wiki/Lightness
@@ -590,20 +596,25 @@ void BusPwm::show() {
   // Phase shifting requires that LEDC timers are synchronised (see setup()). For PWM CCT (and H-bridge) it is
   // also mandatory that both channels use the same timer (pinManager takes care of that).
   for (unsigned i = 0; i < numPins; i++) {
-    unsigned duty = (_data[i] * pwmBri) / 255;    
-    #ifdef ESP8266
-    if (_reversed) duty = maxBri - duty;
-    analogWrite(_pins[i], duty);
-    #else
-    int deadTime = 0;
+    unsigned duty = (_data[i] * pwmBri) / 255;
+    unsigned deadTime = 0;
+
     if (_type == TYPE_ANALOG_2CH && Bus::getCCTBlend() == 0) {
       // add dead time between signals (when using dithering, two full 8bit pulses are required)
       deadTime = (1+dithering) << bitShift;
       // we only need to take care of shortening the signal at (almost) full brightness otherwise pulses may overlap
-      if (_bri >= 254 && duty >= maxBri / 2 && duty < maxBri) duty -= deadTime << 1; // shorten duty of larger signal except if full on
-      if (_reversed) deadTime = -deadTime; // need to invert dead time to make phaseshift go the opposite way so low signals dont overlap
+      if (_bri >= 254 && duty >= maxBri / 2 && duty < maxBri) {
+        duty -= deadTime << 1; // shorten duty of larger signal except if full on
+      }
     }
-    if (_reversed) duty = maxBri - duty;
+    if (_reversed) {
+      if (i) hPoint += duty;  // align start at time zero
+      duty = maxBri - duty;
+    }
+    #ifdef ESP8266
+    //stopWaveform(_pins[i]);  // can cause the waveform to miss a cycle. instead we risk crossovers.
+    startWaveformClockCycles(_pins[i], duty, analogPeriod - duty, 0, i ? _pins[0] : -1, hPoint, false);
+    #else
     unsigned channel = _ledcStart + i;
     unsigned gr = channel/8;  // high/low speed group
     unsigned ch = channel%8;  // group channel
@@ -612,9 +623,11 @@ void BusPwm::show() {
     LEDC.channel_group[gr].channel[ch].duty.duty = duty << ((!dithering)*4);  // lowest 4 bits are used for dithering, shift by 4 bits if not using dithering
     LEDC.channel_group[gr].channel[ch].hpoint.hpoint = hPoint >> bitShift;    // hPoint is at _depth resolution (needs shifting if dithering)
     ledc_update_duty((ledc_mode_t)gr, (ledc_channel_t)ch);
-    hPoint += duty + deadTime;        // offset to cascade the signals
-    if (hPoint >= maxBri) hPoint = 0; // offset it out of bounds, reset
     #endif
+    
+    if (!_reversed) hPoint += duty;
+    hPoint += deadTime;        // offset to cascade the signals
+    if (hPoint >= maxBri) hPoint -= maxBri; // offset is out of bounds, reset
   }
 }
 
