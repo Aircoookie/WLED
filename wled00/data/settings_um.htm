@@ -139,6 +139,7 @@
 			}
 		} else {
 			var c, t = typeof o;
+			var colorPicker = ""; //Added for colorPicker enhancements
 			switch (t) {
 				case "boolean":
 					t = "checkbox"; c = 'value="true"' + (o ? ' checked' : '');
@@ -154,15 +155,39 @@
 					break;
 				default:
 					t = "text"; c = `value="${o}" style="width:250px;"`;
+					/** Added for colorPicker enhancements ************************
+					The colorpicker field will be adde if, in the name of the main field, there is the string "RRGGBB".
+					The colorPicker field will automatically sync the main field with the color value.
+					*******************************************/
+					colorIdentifier = "RRGGBB";
+					const regex = new RegExp(`\\b${colorIdentifier}\\b`);
+					if (regex.test(f)) colorPicker = `<input type="color" name="${k}:${f}" value="#${o}" onchange="setColorPicker('${k}:${f}', this.value);" style="border-radius: 5px;width:50px; padding:0; margin:0; border:0; box-sizing:border-box;">`;
+					//end block for colorPicker enhancements
 					break;
 			}
 			urows += ` ${initCap(f)} `; //only show field (key is shown in grouping)
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
 			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
 			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
-			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
+			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')">${colorPicker}<br>`;
 		}
 	}
+	/**Added for colorPicker enhancements
+	 * setColorPicker is a function that sets the value of a text input field
+	 * which is associated with a color input field (i.e. it has the same name)
+	 * to the given new value in the format #RRGGBB.
+	 * It takes two parameters: the name of the input field (obj) and the new
+	 * value (newval) as a string in the format #RRGGBB.
+	 * It loops through all elements that have the given name and if the type
+	 * of the element is 'text', it sets its value to the new value.
+	 */
+	function setColorPicker(obj,newval) {
+		const collection = document.getElementsByName(obj);
+		for (let i = 0; i < collection.length; i++) {
+		  if (collection[i].type == 'text') {
+			collection[i].value = newval.slice(1).toUpperCase();
+		  }
+		}}
 	function pinDropdowns() {
 		for (let i of d.Sf.elements) {
 			if (i.type === "number" && (i.name.includes("pin") || ["SDA","SCL","MOSI","MISO","SCLK"].includes(i.name))) { //select all pin select elements
@@ -339,6 +364,7 @@
 		<div id="um">Loading settings...</div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
+
 </body>
 
 </html>
