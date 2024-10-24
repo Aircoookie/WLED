@@ -66,6 +66,29 @@ typedef struct WiFiConfig {
 } wifi_config;
 
 //colors.cpp
+struct CHSV32 { // 32bit HSV color with 16bit hue for more accurate conversions
+  union {
+    struct {
+        uint16_t h;  // hue
+        uint8_t s;   // saturation
+        uint8_t v;   // value
+    };
+    uint32_t raw;    // 32bit access
+  };
+  inline CHSV32() __attribute__((always_inline)) = default; // default constructor
+
+    /// Allow construction from hue, saturation, and value
+    /// @param ih input hue
+    /// @param is input saturation
+    /// @param iv input value
+  inline CHSV32(uint16_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) // constructor from 16bit h, s, v
+        : h(ih), s(is), v(iv) {}
+  inline CHSV32(uint8_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) // constructor from 8bit h, s, v
+        : h((uint16_t)ih << 8), s(is), v(iv) {}
+  inline CHSV32(const CHSV& chsv) __attribute__((always_inline))  // constructor from CHSV
+    : h((uint16_t)chsv.h << 8), s(chsv.s), v(chsv.v) {}
+  inline operator CHSV() const { return CHSV((uint8_t)(h >> 8), s, v); } // typecast to CHSV
+};
 // similar to NeoPixelBus NeoGammaTableMethod but allows dynamic changes (superseded by NPB::NeoGammaDynamicTableMethod)
 class NeoGammaWLEDMethod {
   public:
@@ -81,10 +104,14 @@ class NeoGammaWLEDMethod {
 [[gnu::hot]] uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
 [[gnu::hot]] uint32_t color_add(uint32_t,uint32_t, bool fast=false);
 [[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
+uint32_t adjust_color(uint32_t rgb, uint32_t hueShift, uint32_t lighten, uint32_t brighten);
 CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
 CRGBPalette16 generateRandomPalette();
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
-void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
+void hsv2rgb(const CHSV32& hsv, uint32_t& rgb);
+void colorHStoRGB(uint16_t hue, byte sat, byte* rgb);
+void rgb2hsv(const uint32_t rgb, CHSV32& hsv);
+inline CHSV rgb2hsv(const CRGB c) { CHSV32 hsv; rgb2hsv((uint32_t((byte(c.r) << 16) | (byte(c.g) << 8) | (byte(c.b)))), hsv); return CHSV(hsv); } // CRGB to hsv
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO

@@ -91,6 +91,23 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
   return scaledcolor;
 }
 
+/*
+ * color adjustment in HSV color space (converts RGB to HSV and back), color conversions are not 100% accurate!
+   shifts hue, increase brightness, decreases saturation (if not black)
+   note: inputs are 32bit to speed up the function, useful input value ranges are 0-255
+ */
+uint32_t adjust_color(uint32_t rgb, uint32_t hueShift, uint32_t lighten, uint32_t brighten) {
+    if(rgb == 0 | hueShift + lighten + brighten == 0) return rgb; // black or no change
+    CHSV32 hsv;
+    rgb2hsv(rgb, hsv); //convert to HSV
+    hsv.h += (hueShift << 8); // shift hue (hue is 16 bits)
+    hsv.s =  max((int32_t)0, (int32_t)hsv.s - (int32_t)lighten); // desaturate
+    hsv.v =  min((uint32_t)255, (uint32_t)hsv.v + brighten); // increase brightness
+    uint32_t rgb_adjusted;
+    hsv2rgb(hsv, rgb_adjusted); // convert back to RGB TODO: make this into 16 bit conversion
+    return rgb_adjusted;
+}
+
 void setRandomColor(byte* rgb)
 {
   lastRandomIndex = get_random_wheel_index(lastRandomIndex);
@@ -105,7 +122,7 @@ CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
 {
   CHSV palettecolors[4]; //array of colors for the new palette
   uint8_t keepcolorposition = random8(4); //color position of current random palette to keep
-  palettecolors[keepcolorposition] = rgb2hsv_approximate(basepalette.entries[keepcolorposition*5]); //read one of the base colors of the current palette
+  palettecolors[keepcolorposition] = rgb2hsv(basepalette.entries[keepcolorposition*5]); //read one of the base colors of the current palette
   palettecolors[keepcolorposition].hue += random8(10)-5; // +/- 5 randomness of base color
   //generate 4 saturation and brightness value numbers
   //only one saturation is allowed to be below 200 creating mostly vibrant colors
@@ -206,26 +223,64 @@ CRGBPalette16 generateRandomPalette()  //generate fully random palette
                        CHSV(random8(), random8(160, 255), random8(128, 255)));
 }
 
-void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
+void hsv2rgb(const CHSV32& hsv, uint32_t& rgb) // convert HSV (16bit hue) to RGB (32bit with white = 0)
 {
-  float h = ((float)hue)/10922.5f; // hue*6/65535
-  float s = ((float)sat)/255.0f;
-  int   i = int(h);
-  float f = h - i;
-  int   p = int(255.0f * (1.0f-s));
-  int   q = int(255.0f * (1.0f-s*f));
-  int   t = int(255.0f * (1.0f-s*(1.0f-f)));
-  p = constrain(p, 0, 255);
-  q = constrain(q, 0, 255);
-  t = constrain(t, 0, 255);
-  switch (i%6) {
-    case 0: rgb[0]=255,rgb[1]=t,  rgb[2]=p;  break;
-    case 1: rgb[0]=q,  rgb[1]=255,rgb[2]=p;  break;
-    case 2: rgb[0]=p,  rgb[1]=255,rgb[2]=t;  break;
-    case 3: rgb[0]=p,  rgb[1]=q,  rgb[2]=255;break;
-    case 4: rgb[0]=t,  rgb[1]=p,  rgb[2]=255;break;
-    case 5: rgb[0]=255,rgb[1]=p,  rgb[2]=q;  break;
+  unsigned int remainder, region, p, q, t;
+  unsigned int h = hsv.h;
+  unsigned int s = hsv.s;
+  unsigned int v = hsv.v;
+  if (s == 0) {
+      rgb = v << 16 | v << 8 | v;
+      return;
   }
+  region = h / 10923;  // 65536 / 6 = 10923
+  remainder = (h - (region * 10923)) * 6;
+  p = (v * (256 - s)) >> 8;
+  q = (v * (255 - ((s * remainder) >> 16))) >> 8;
+  t = (v * (255 - ((s * (65535 - remainder)) >> 16))) >> 8;
+  switch (region) {
+    case 0:
+      rgb = v << 16 | t << 8 | p; break;
+    case 1:
+      rgb = q << 16 | v << 8 | p; break;
+    case 2:
+      rgb = p << 16 | v << 8 | t; break;
+    case 3:
+      rgb = p << 16 | q << 8 | v; break;
+    case 4:
+      rgb = t << 16 | p << 8 | v; break;
+    default:
+      rgb = v << 16 | p << 8 | q; break;
+  }
+}
+
+void rgb2hsv(const uint32_t rgb, CHSV32& hsv) // convert RGB to HSV (16bit hue), much more accurate and faster than fastled version
+{
+    hsv.raw = 0;
+    int32_t r = (rgb>>16)&0xFF;
+    int32_t g = (rgb>>8)&0xFF;
+    int32_t b = rgb&0xFF;
+    int32_t minval, maxval, delta;
+    minval = min(r, g);
+    minval = min(minval, b);
+    maxval = max(r, g);
+    maxval = max(maxval, b);
+    if (maxval == 0)  return; // black
+    hsv.v = maxval;
+    delta = maxval - minval;
+    hsv.s = (255 * delta) / maxval;
+    if (hsv.s == 0)  return; // gray value
+    if (maxval == r) hsv.h = (10923 * (g - b)) / delta;
+    else if (maxval == g)  hsv.h = 21845 + (10923 * (b - r)) / delta;
+    else hsv.h = 43690 + (10923 * (r - g)) / delta;
+}
+
+void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) { //hue, sat to rgb
+  uint32_t crgb;
+  hsv2rgb(CHSV32(hue, sat, 255), crgb);
+  rgb[0] = byte((crgb) >> 16);
+  rgb[1] = byte((crgb) >> 8);
+  rgb[2] = byte(crgb);
 }
 
 //get RGB values from color temperature in K (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)
