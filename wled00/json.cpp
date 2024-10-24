@@ -1107,7 +1107,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
 
   if (!requestJSONBufferLock(17)) {
-    serveJsonError(request, 503, ERR_NOBUF);
+    request->deferResponse();    
     return;
   }
   // releaseJSONBufferLock() will be called when "response" is destroyed (from AsyncWebServer)
