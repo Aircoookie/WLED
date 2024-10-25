@@ -146,7 +146,6 @@ void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-
 uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
 {
   unsigned width  = virtualWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
