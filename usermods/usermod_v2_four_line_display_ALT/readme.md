@@ -1,10 +1,6 @@
 # I2C/SPI 4 Line Display Usermod ALT
 
-Thank you to the authors of the original version of these usermods. It would not have been possible without them!
-"usermod_v2_four_line_display" (old but gold, removed since release 0.15.0)
-"usermod_v2_rotary_encoder_ui" (old but gold, removed since release 0.15.0)
-
-The core of these usermods are a copy of the originals, the display usermod UI has been completely changed.
+This usermod could be used in compination with `usermod_v2_rotary_encoder_ui_ALT`.
 
 ## Functionalities
 
@@ -25,7 +21,7 @@ Also shows if the timer is enabled.
 
 ## Installation
 
-Copy the example `\usermods\usermod_v2_rotary_encoder_ui_ALT\platformio–override.sample.ini` to the root directory of your particular build and rename it to `platformio_override.ini`.
+Copy the example `platformio_override.sample.ini` to the root directory of your particular build.
 
 ## Configuration
 
@@ -61,10 +57,6 @@ These options are configurable in Config > Usermods
 ### PlatformIO requirements
 
 Note: the Four Line Display usermod requires the libraries `U8g2` and `Wire`.
-
-## Compatibility
-
-The original "usermod_v2_auto_save" will not work with the display just yet.
 
 ## Change Log
 

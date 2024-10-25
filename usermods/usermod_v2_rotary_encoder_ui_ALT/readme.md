@@ -1,10 +1,6 @@
 # Rotary Encoder UI Usermod ALT
 
-Thank you to the authors of the original version of these usermods. It would not have been possible without them!
-"usermod_v2_four_line_display" (old but gold, removed since release 0.15.0)
-"usermod_v2_rotary_encoder_ui" (old but gold, removed since release 0.15.0)
-
-The core of these usermods are a copy of the originals, the changes made to the RotaryEncoder usermod were made to support the new UI in the display usermod.
+This usermod supports the UI of the `usermod_v2_rotary_encoder_ui_ALT`.
 
 ## Functionalities
 
@@ -25,7 +21,7 @@ Also shows if the timer is enabled.
 
 ## Installation
 
-Copy the example `platformio–override.sample.ini` to the root directory of your particular build and rename it to `platformio_override.ini`.
+Copy the example `platformio_override.sample.ini` to the root directory of your particular build.
 
 ### Define Your Options
 
@@ -43,7 +39,6 @@ Copy the example `platformio–override.sample.ini` to the root directory of your 
 ### PlatformIO requirements
 
 No special requirements.
-
 
 ## Change Log
 
