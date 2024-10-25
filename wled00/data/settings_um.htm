@@ -169,6 +169,7 @@
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
 			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
 			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
+			//Added ${colorPicker} for colorPicker enhancements
 			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')">${colorPicker}<br>`;
 		}
 	}
