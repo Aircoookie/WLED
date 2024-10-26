@@ -12,8 +12,8 @@
   TODO:
   -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired.
   -add an x/y struct, do particle rendering using that, much easier to read
+  -add underscore to private variables
 */
-
 
 #if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)
 #include "FXparticleSystem.h"
@@ -21,9 +21,7 @@
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 
-ParticleSystem2D::ParticleSystem2D(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced, bool sizecontrol)
-{
-  //Serial.println("PS Constructor");
+ParticleSystem2D::ParticleSystem2D(uint16_t width, uint16_t height, uint16_t numberofparticles, uint16_t numberofsources, bool isadvanced, bool sizecontrol) {
   numSources = numberofsources;
   numParticles = numberofparticles; // set number of particles in the array
   usedParticles = numberofparticles; // use all particles by default
@@ -39,16 +37,13 @@ ParticleSystem2D::ParticleSystem2D(uint16_t width, uint16_t height, uint16_t num
   emitIndex = 0;
 
   //initialize some default non-zero values most FX use
-  for (uint32_t i = 0; i < numSources; i++)
-  {
+  for (uint32_t i = 0; i < numSources; i++) {
     sources[i].source.sat = 255; //set saturation to max by default
     sources[i].source.ttl = 1; //set source alive
   }
-  for (uint32_t i = 0; i < numParticles; i++)
-  {
+  for (uint32_t i = 0; i < numParticles; i++) {
      particles[i].sat = 255; // full saturation
   }
-  //Serial.println("PS Constructor done");
 }
 
 // update function applies gravity, moves the particles, handles collisions and renders the particles
@@ -60,10 +55,8 @@ void ParticleSystem2D::update(void)
     applyGravity();
 
   //update size settings before handling collisions
-  if (advPartSize)
-  {
-    for (uint32_t i = 0; i < usedParticles; i++)
-    {
+  if (advPartSize) {
+    for (uint32_t i = 0; i < usedParticles; i++) {
       updateSize(&advPartProps[i], &advPartSize[i]);
     }
   }
@@ -82,16 +75,6 @@ void ParticleSystem2D::update(void)
     particleMoveUpdate(particles[i], &particlesettings, advprop);
   }
 
-  /*TODO remove this
-  Serial.print("alive particles: ");
-  uint32_t aliveparticles = 0;
-  for (int i = 0; i < numParticles; i++)
-  {
-    if (particles[i].ttl)
-    aliveparticles++;
-  }
-  Serial.println(aliveparticles);
-  */
   ParticleSys_render();
 }
 
@@ -171,7 +154,7 @@ void ParticleSystem2D::setMotionBlur(uint8_t bluramount)
 void ParticleSystem2D::setParticleSize(uint8_t size)
 {
   particlesize = size;
-  particleHardRadius = PS_P_MINHARDRADIUS + particlesize; // note: this sets size if not using advanced props
+  particleHardRadius = PS_P_MINHARDRADIUS + (particlesize >> 1); // radius used for wall collisions & particle collisions
   motionBlur = 0; // disable motion blur if particle size is set
 }
 // enable/disable gravity, optionally, set the force (force=8 is default) can be -127 to +127, 0 is disable
@@ -229,113 +212,67 @@ int32_t ParticleSystem2D::sprayEmit(PSsource &emitter, uint32_t amount)
 }
 
 // Spray emitter for particles used for flames (particle TTL depends on source TTL)
-void ParticleSystem2D::flameEmit(PSsource &emitter)
-{
+void ParticleSystem2D::flameEmit(PSsource &emitter) {
   int emitIndex = sprayEmit(emitter);
   if(emitIndex > 0)  particles[emitIndex].ttl +=  emitter.source.ttl;
 }
 
 // Emits a particle at given angle and speed, angle is from 0-65535 (=0-360deg), speed is also affected by emitter->var
 // angle = 0 means in positive x-direction (i.e. to the right)
-int32_t ParticleSystem2D::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, uint32_t amount)
-{
+int32_t ParticleSystem2D::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, uint32_t amount) {
   emitter.vx = ((int32_t)cos16(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding
   emitter.vy = ((int32_t)sin16(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   return sprayEmit(emitter, amount);
 }
 
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
-// uses passed settings to set bounce or wrap, if useGravity is set, it will never bounce at the top and killoutofbounds is not applied over the top
-void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSsettings2D *options, PSadvancedParticle *advancedproperties)
-{
+// uses passed settings to set bounce or wrap, if useGravity is enabled, it will never bounce at the top and killoutofbounds is not applied over the top
+void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSsettings2D *options, PSadvancedParticle *advancedproperties) {
   if (options == NULL)
     options = &particlesettings; //use PS system settings by default
-  if (part.ttl > 0)
-  {
+
+  if (part.ttl > 0) {
     if (!part.perpetual)
       part.ttl--; // age
-    if (particlesettings.colorByAge)
+    if (options->colorByAge)
       part.hue = part.ttl > 255 ? 255 : part.ttl; //set color to ttl
 
-    bool usesize = false; // particle uses individual size rendering
-    int32_t newX = part.x + (int16_t)part.vx;
-    int32_t newY = part.y + (int16_t)part.vy;
-    part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
+    int32_t renderradius = PS_P_HALFRADIUS; // used to check out of bounds
+    int32_t newX = part.x + (int32_t)part.vx;
+    int32_t newY = part.y + (int32_t)part.vy;
+    part.outofbounds = false; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
 
-    if (advancedproperties) //using individual particle size?
-    {
-      if (advancedproperties->size > 0)
-        usesize = true; // note: variable eases out of frame checking below
-      particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize + (advancedproperties->size));
+    if (advancedproperties) { //using individual particle size?
+      if (advancedproperties->size > 0) {
+        particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize + (advancedproperties->size)); // update radius
+        renderradius = particleHardRadius;
+      }
     }
     // if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of view
-    if (options->bounceX)
-    {
-      if ((newX < particleHardRadius) || (newX > maxX - particleHardRadius)) // reached a wall
+    if (options->bounceX) {
+      if ((newX < (int32_t)particleHardRadius) || (newX > (int32_t)(maxX - particleHardRadius))) // reached a wall
         bounce(part.vx, part.vy, newX, maxX);
     }
 
-    if ((newX < 0) || (newX > maxX)) // check if particle reached an edge (note: this also checks out of bounds and must not be skipped, even if bounce is enabled)
-    {
-      if (options->wrapX)
-      {
-        newX = newX % (maxX + 1);
-        if (newX < 0)
-          newX += maxX + 1;
-      }
-      else if (((newX <= -PS_P_HALFRADIUS) || (newX > maxX + PS_P_HALFRADIUS))) // particle is leaving, set out of bounds if it has fully left
-      {
-        bool isleaving = true;
-        if (usesize) // using individual particle size
-        {
-          if (((newX > -particleHardRadius) && (newX < maxX + particleHardRadius))) // large particle is not yet leaving the view - note: this is not pixel perfect but good enough
-            isleaving = false;
-        }
-
-        if (isleaving)
-        {
-          part.outofbounds = 1;
-          if (options->killoutofbounds)
-            part.ttl = 0;
-        }
-      }
+    if(!checkBoundsAndWrap(newX, maxX, renderradius, options->wrapX)) { // check out of bounds  note: this must not be skipped or it can lead to crashes TODO: is this still true?
+      part.outofbounds = true;
+      if (options->killoutofbounds)
+        part.ttl = 0;
     }
 
-    if (options->bounceY)
-    {
-      if ((newY < particleHardRadius) || ((newY > maxY - particleHardRadius) && !options->useGravity)) // reached floor / ceiling
-      {
+    if (options->bounceY) {
+      if ((newY < (int32_t)particleHardRadius) || ((newY > (int32_t)(maxY - particleHardRadius)) && !options->useGravity)) { // reached floor / ceiling
          bounce(part.vy, part.vx, newY, maxY);
       }
     }
 
-    if (((newY < 0) || (newY > maxY))) // check if particle reached an edge (makes sure particles are within frame for rendering)
-    {
-      if (options->wrapY)
-      {
-        newY = newY % (maxY + 1);
-        if (newY < 0)
-          newY += maxY + 1;
-      }
-      else if (((newY <= -PS_P_HALFRADIUS) || (newY > maxY + PS_P_HALFRADIUS))) // particle is leaving, set out of bounds if it has fully left
-      {
-        bool isleaving = true;
-        if (usesize) // using individual particle size
-        {
-          if (((newY > -particleHardRadius) && (newY < maxY + particleHardRadius))) // still withing rendering reach
-            isleaving = false;
-        }
-        if (isleaving)
-        {
-          part.outofbounds = 1;
-          if (options->killoutofbounds)
-          {
-            if (newY < 0) // if gravity is enabled, only kill particles below ground
-              part.ttl = 0;
-            else if (!options->useGravity)
-              part.ttl = 0;
-          }
-        }
+    if(!checkBoundsAndWrap(newY, maxY, renderradius, options->wrapY)) { // check out of bounds  note: this must not be skipped or it can lead to crashes TODO: is this still true?
+      part.outofbounds = true;
+      if (options->killoutofbounds) {
+        if (newY < 0) // if gravity is enabled, only kill particles below ground
+          part.ttl = 0;
+        else if (!options->useGravity)
+          part.ttl = 0;
       }
     }
     part.x = (int16_t)newX; // set new position
@@ -601,8 +538,6 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
   uint32_t i;
   uint32_t brightness; // particle brightness, fades if dying
 
-  if (useLocalBuffer)
-  {
     /*
     //memory fragmentation check:
     Serial.print("heap: ");
@@ -611,6 +546,8 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
     Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
     */
 
+  if (useLocalBuffer)
+  {
     // allocate empty memory for the local renderbuffer
     framebuffer = allocate2Dbuffer(maxXpixel + 1, maxYpixel + 1);
     if (framebuffer == NULL)
@@ -619,10 +556,6 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
       useLocalBuffer = false; //render to segment pixels directly if not enough memory
     }
     else{
-      if (advPartProps)
-      {
-        renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0. note: null checking is done when accessing it
-      }
       if (motionBlur > 0) // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
       {
         uint32_t yflipped;
@@ -638,9 +571,11 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
       }
     }
   }
+  if (advPartProps) {
+    renderbuffer = allocate2Dbuffer(10, 10); //buffer to render individual particles to if size > 0. note: null checking is done when accessing it
+  }
 
   if (!useLocalBuffer) { //disabled or allocation above failed
-    //Serial.println("NOT using local buffer!");
     if (motionBlur > 0)
       SEGMENT.fadeToBlackBy(255 - motionBlur);
     else
@@ -687,8 +622,9 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
 
       if (useLocalBuffer)
         blur2D(framebuffer, maxXpixel + 1, maxYpixel + 1, bluramount << bitshift, bluramount << bitshift);
-      else
+      else{
         SEGMENT.blur(bluramount << bitshift, true);
+      }
       bluramount -= 64;
     }
   }
@@ -711,42 +647,36 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
-void ParticleSystem2D::renderParticle(CRGB **framebuffer, const uint32_t& particleindex, const uint32_t& brightness, const CRGB& color, CRGB **renderbuffer, const bool& wrapX, const bool& wrapY) {
+void ParticleSystem2D::renderParticle(CRGB **framebuffer, const uint32_t particleindex, const uint32_t brightness, const CRGB& color, CRGB **renderbuffer, const bool wrapX, const bool wrapY) {
   int32_t pxlbrightness[4] = {0}; // note: pxlbrightness needs to be set to 0 or checking does not work
   int32_t pixco[4][2]; // physical pixel coordinates of the four pixels a particle is rendered to. x,y pairs
   bool advancedrender = false; // rendering for advanced particles
-
-  // subtract half a radius as the rendering algorithm always starts at the bottom left, this makes calculations more efficient
-  int32_t xoffset = particles[particleindex].x - PS_P_HALFRADIUS;
-  int32_t yoffset = particles[particleindex].y - PS_P_HALFRADIUS;
-  int32_t dx = xoffset & (PS_P_RADIUS - 1); //relativ particle position in subpixel space
-  int32_t dy = yoffset & (PS_P_RADIUS - 1); // modulo replaced with bitwise AND, as radius is always a power of 2
-  int32_t x = xoffset >> PS_P_RADIUS_SHIFT; // divide by PS_P_RADIUS which is 64, so can bitshift (compiler may not optimize automatically)
-  int32_t y = yoffset >> PS_P_RADIUS_SHIFT;
-
   // check if particle has advanced size properties and buffer is available
   if (advPartProps && advPartProps[particleindex].size > 0) {
-      if (renderbuffer && framebuffer) {
+      if (renderbuffer) {
         advancedrender = true;
         memset(renderbuffer[0], 0, 100 * sizeof(CRGB)); // clear the buffer, renderbuffer is 10x10 pixels
       }
       else return; // cannot render without buffers
   }
+  // add half a radius as the rendering algorithm always starts at the bottom left, this leaves things positive, so shifts can be used, then shift coordinate by a full pixel (x--/y-- below)
+  int32_t xoffset = particles[particleindex].x + PS_P_HALFRADIUS;
+  int32_t yoffset = particles[particleindex].y + PS_P_HALFRADIUS;
+  int32_t dx = xoffset & (PS_P_RADIUS - 1); // relativ particle position in subpixel space
+  int32_t dy = yoffset & (PS_P_RADIUS - 1); // modulo replaced with bitwise AND, as radius is always a power of 2
+  int32_t x = (xoffset >> PS_P_RADIUS_SHIFT); // divide by PS_P_RADIUS which is 64, so can bitshift (compiler can not optimize integer)
+  int32_t y = (yoffset >> PS_P_RADIUS_SHIFT);
+
   // set the four raw pixel coordinates, the order is bottom left [0], bottom right[1], top right [2], top left [3]
+  pixco[1][0] = pixco[2][0] = x;  // bottom right & top right
+  pixco[2][1] = pixco[3][1] = y;  // top right & top left
+  x--; // shift by a full pixel here, this is skipped above to not do -1 and then +1
+  y--;
   pixco[0][0] = pixco[3][0] = x;      // bottom left & top left
   pixco[0][1] = pixco[1][1] = y;      // bottom left & bottom right
-  pixco[1][0] = pixco[2][0] = x + 1;  // bottom right & top right
-  pixco[2][1] = pixco[3][1] = y + 1;  // top right & top left
 
   // now check if any are out of frame. set values to -1 if they are so they can be easily checked after (no value calculation, no setting of pixelcolor if value < 0)
   if (x < 0) { // left pixels out of frame
-    dx += PS_P_RADIUS; // if x<0, xoffset becomes negative (and so does dx), must adjust dx as modulo will flip its value (really old bug now finally fixed)
-    // note: due to inverted shift math, a particel at position -32 (xoffset = -64, dx = 64) is rendered at the wrong pixel position (it should be out of frame)
-    // checking this above makes this algorithm slower (in frame pixels do not have to be checked), so just correct for it here:
-    if (dx == PS_P_RADIUS) {
-      pxlbrightness[1] = pxlbrightness[2] = -1; // pixel is actually out of matrix boundaries, do not render
-      dx = 2; // fix for advanced renderer (it does render slightly out of frame particles)
-    }
     if (wrapX) { // wrap x to the other side if required
       pixco[0][0] = pixco[3][0] = maxXpixel;
     } else {
@@ -762,11 +692,6 @@ void ParticleSystem2D::renderParticle(CRGB **framebuffer, const uint32_t& partic
   }
 
   if (y < 0) { // bottom pixels out of frame
-    dy += PS_P_RADIUS; //see note above
-    if (dy == PS_P_RADIUS) {
-      pxlbrightness[2] = pxlbrightness[3] = -1; // pixel is actually out of matrix boundaries, do not render
-      dy = 2; // fix for advanced renderer (it does render slightly out of frame particles)
-    }
     if (wrapY) { // wrap y to the other side if required
       pixco[0][1] = pixco[1][1] = maxYpixel;
     } else {
@@ -857,7 +782,10 @@ void ParticleSystem2D::renderParticle(CRGB **framebuffer, const uint32_t& partic
           else
             continue;
         }
-        fast_color_add(framebuffer[xfb][yfb], renderbuffer[xrb][yrb]);
+        if (framebuffer)
+          fast_color_add(framebuffer[xfb][yfb], renderbuffer[xrb][yrb]);
+        else
+          SEGMENT.addPixelColorXY(xfb, maxYpixel - yfb, renderbuffer[xrb][yrb]);
       }
     }
   }
@@ -967,40 +895,32 @@ void ParticleSystem2D::fireParticleupdate()
 }
 
 // detect collisions in an array of particles and handle them
-void ParticleSystem2D::handleCollisions()
-{
+void ParticleSystem2D::handleCollisions() {
   // detect and handle collisions
   uint32_t i, j;
   uint32_t startparticle = 0;
   uint32_t endparticle = usedParticles >> 1; // do half the particles, significantly speeds things up
+  int32_t collisiondistance = particleHardRadius << 1;
   // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame, less accurate but good enough)
   // if more accurate collisions are needed, just call it twice in a row
-  if (collisioncounter & 0x01)
-  {
+  if (collisioncounter & 0x01) {
     startparticle = endparticle;
     endparticle = usedParticles;
   }
   collisioncounter++;
-
-  for (i = startparticle; i < endparticle; i++)
-  {
-    // go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
-    if (particles[i].ttl > 0 && particles[i].outofbounds == 0  && particles[i].collide) // if particle is alive and does collide and is not out of view
-    {
+  for (i = startparticle; i < endparticle; i++) { // go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
+    if (particles[i].ttl > 0 && particles[i].outofbounds == 0  && particles[i].collide) { // if particle is alive and does collide and is not out of view
       int32_t dx, dy; // distance to other particles
-      for (j = i + 1; j < usedParticles; j++) // check against higher number particles
-      {
-        if (particles[j].ttl > 0 && particles[j].collide) // if target particle is alive
-        {
+      for (j = i + 1; j < usedParticles; j++) { // check against higher number particles
+        if (particles[j].ttl > 0 && particles[j].collide) { // if target particle is alive
           dx = particles[i].x - particles[j].x;
+
           if (advPartProps) //may be using individual particle size
-          {
-              particleHardRadius = PS_P_MINHARDRADIUS + particlesize + (((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1); // collision distance
-          }
-          if (dx < particleHardRadius && dx > -particleHardRadius) // check x direction, if close, check y direction
-          {
+              collisiondistance = PS_P_MINHARDRADIUS + particlesize + (((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1); // collision distance
+
+          if (dx < collisiondistance && dx > -collisiondistance) { // check x direction, if close, check y direction
             dy = particles[i].y - particles[j].y;
-            if (dy < particleHardRadius && dy > -particleHardRadius) // particles are close
+            if (dy < collisiondistance && dy > -collisiondistance) // particles are close
               collideParticles(&particles[i], &particles[j]);
           }
         }
@@ -1246,7 +1166,7 @@ uint32_t calculateNumberOfParticles2D(bool isadvanced, bool sizecontrol)
   uint32_t numberofParticles = (cols * rows);  // 1 particle per pixel (for example 512 particles on 32x16)
   uint32_t particlelimit = ESP32_MAXPARTICLES; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
 #endif
-  numberofParticles = max((uint32_t)1, min(numberofParticles, particlelimit));
+  numberofParticles = max((uint32_t)4, min(numberofParticles, particlelimit));
   if (isadvanced) // advanced property array needs ram, reduce number of particles to use the same amount
     numberofParticles = (numberofParticles * sizeof(PSparticle)) / (sizeof(PSparticle) + sizeof(PSadvancedParticle));
   if (sizecontrol) // advanced property array needs ram, reduce number of particles to use the same amount
@@ -1288,6 +1208,7 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
     requiredmemory += sizeof(PSsizeControl) * numparticles;
   requiredmemory += sizeof(PSsource) * numsources;
   requiredmemory += additionalbytes;
+  requiredmemory += 64; //!!! just a test, remove this line looking for crash reasons
   //Serial.print("allocating: ");
   //Serial.print(requiredmemory);
   //Serial.println("Bytes");
@@ -1447,10 +1368,11 @@ void ParticleSystem1D::setMotionBlur(uint8_t bluramount)
 // note: if size is set larger than 1 without advanced properties, weird things may happen
 void ParticleSystem1D::setParticleSize(uint8_t size)
 {
-  particlesize = size;
-  particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1; // 1 pixel sized particles have half the radius (for bounce, not for collisions)
+  particlesize = size; // TODO: add support for global sizes?
   if (particlesize)
-    particleHardRadius = particleHardRadius << 1; // 2 pixel sized particles
+    particleHardRadius = PS_P_MINHARDRADIUS_1D; // 2 pixel sized particles
+  else
+    particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1; // 1 pixel sized particles have half the radius (for bounce, not for collisions)
 }
 // enable/disable gravity, optionally, set the force (force=8 is default) can be -127 to +127, 0 is disable
 // if enabled, gravity is applied to all particles in ParticleSystemUpdate()
@@ -1507,99 +1429,69 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
 {
   if (options == NULL)
     options = &particlesettings; //use PS system settings by default
-  if (part.ttl > 0)
-  {
+
+  if (part.ttl > 0) {
     if (!part.perpetual)
       part.ttl--; // age
-    if (particlesettings.colorByAge)
-      part.hue = part.ttl > 250 ? 250 : part.ttl; //set color to ttl
+    if (options->colorByAge)
+      part.hue = part.ttl > 255 ? 255 : part.ttl; //set color to ttl
 
-    bool usesize = false; // particle uses individual size rendering
-    int32_t newX = part.x + (int16_t)part.vx;
-    part.outofbounds = 0; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
-    if (advancedproperties) //using individual particle size?
-    {
-      particleHardRadius = PS_P_MINHARDRADIUS_1D + (advancedproperties->size >> 1);
+    int32_t renderradius = PS_P_HALFRADIUS_1D; // used to check out of bounds, default for 2 pixel rendering
+    int32_t newX = part.x + (int32_t)part.vx;
+    part.outofbounds = false; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)
+
+    if (advancedproperties) { //using individual particle size?
       if (advancedproperties->size > 1)
-      {
-        usesize = true; // note: variable eases out of frame checking below
-      }
-      else if (advancedproperties->size == 0) // single pixel particles use half the collision distance for walls
+        particleHardRadius = PS_P_MINHARDRADIUS_1D + (advancedproperties->size >> 1); //TODO: this may need optimization, radius and diameter is still a mess in 1D system.
+      else // single pixel particles use half the collision distance for walls
         particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1;
+      renderradius = particleHardRadius; // note: for single pixel particles, it should be zero, but it does not matter as out of bounds checking is done in rendering function
     }
 
     // if wall collisions are enabled, bounce them before they reach the edge, it looks much nicer if the particle is not half out of view
-    if (options->bounce)
-    {
-      if ((newX < particleHardRadius) || ((newX > maxX - particleHardRadius))) // reached a wall
-      {
+    if (options->bounce) {
+      if ((newX < (int32_t)particleHardRadius) || ((newX > (int32_t)(maxX - particleHardRadius)))) { // reached a wall
           bool bouncethis = true;
-          if (options->useGravity)
-          {
-            if (part.reversegrav) //skip at x = 0
-            {
+          if (options->useGravity) {
+            if (part.reversegrav) { // skip bouncing at x = 0
               if (newX < particleHardRadius)
                 bouncethis = false;
             }
-            else //skip at x = max
-            {
-              if (newX > particleHardRadius)
+            else if (newX > particleHardRadius){ //skip bouncing at x = max
                 bouncethis = false;
             }
           }
-
-          if (bouncethis)
-          {
+          if (bouncethis) {
             part.vx = -part.vx; //invert speed
             part.vx = ((int32_t)part.vx * wallHardness) / 255; // reduce speed as energy is lost on non-hard surface
-            if (newX < particleHardRadius)
+            if (newX < (int32_t)particleHardRadius)
               newX = particleHardRadius; // fast particles will never reach the edge if position is inverted, this looks better
             else
               newX = maxX - particleHardRadius;
           }
       }
     }
-    if ((newX < 0) || (newX > maxX)) // check if particle reached an edge (note: this also checks out of bounds and must not be skipped, even if bounce is enabled)
-    {
-      if (options->wrap)
+
+    if(!checkBoundsAndWrap(newX, maxX, renderradius, options->wrap)) { // check out of bounds  note: this must not be skipped or it can lead to crashes TODO: is this still true?
+      part.outofbounds = true;
+      if (options->killoutofbounds)
       {
-        newX = newX % (maxX + 1);
-        if (newX < 0)
-          newX += maxX + 1;
-      }
-      else if (((newX <= -PS_P_HALFRADIUS_1D) || (newX > maxX + PS_P_HALFRADIUS_1D))) // particle is leaving, set out of bounds if it has fully left
-      {
-          bool isleaving = true;
-          if (usesize) // using individual particle size
-          {
-            if (((newX > -particleHardRadius) && (newX < maxX + particleHardRadius))) // large particle is not yet leaving the view - note: this is not pixel perfect but good enough
-              isleaving = false;
+        bool killthis = true;
+        if (options->useGravity) { //if gravity is used, only kill below 'floor level'
+          if (part.reversegrav) { //skip at x = 0
+            if (newX < 0)
+              killthis = false;
           }
-          if (isleaving)
-          {
-            part.outofbounds = 1;
-            if (options->killoutofbounds)
-            {
-              bool killthis = true;
-              if (options->useGravity) //if gravity is used, only kill below 'floor level'
-              {
-                if (part.reversegrav) //skip at x = 0
-                {
-                  if (newX < 0)
-                    killthis = false;
-                }
-                else //skip at x = max
-                {
-                  if (newX > 0)
-                    killthis = false;
-                }
-              }
-              if (killthis)
-                part.ttl = 0;
-            }
+          else { //skip at x = max
+            if (newX > 0)
+              killthis = false;
           }
+        }
+        if (killthis)
+          part.ttl = 0;
       }
     }
+
     if (!part.fixed)
       part.x = (int16_t)newX; // set new position
     else
@@ -1755,13 +1647,12 @@ void ParticleSystem1D::ParticleSys_render()
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
-void ParticleSystem1D::renderParticle(CRGB *framebuffer, const uint32_t &particleindex, const uint32_t &brightness, const CRGB &color, CRGB *renderbuffer, const bool &wrap) {
+void ParticleSystem1D::renderParticle(CRGB *framebuffer, const uint32_t particleindex, const uint32_t brightness, const CRGB &color, CRGB *renderbuffer, const bool wrap) {
   uint32_t size = particlesize;
   if (advPartProps) {// use advanced size properties
     size = advPartProps[particleindex].size;
   }
-  if (size == 0) //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
-  {
+  if (size == 0) { //single pixel particle, can be out of bounds as oob checking is made for 2-pixel particles
     uint32_t x =  particles[particleindex].x >> PS_P_RADIUS_SHIFT_1D;
     if (x <= maxXpixel) { //by making x unsigned there is no need to check < 0 as it will overflow
       if (framebuffer)
@@ -1774,24 +1665,19 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, const uint32_t &particl
     bool pxlisinframe[2] = {true, true};
     int32_t pxlbrightness[2];
     int32_t pixco[2]; // physical pixel coordinates of the two pixels representing a particle
-    // subtract half a radius as the rendering algorithm always starts at the left, this makes calculations more efficient
-    int32_t xoffset = particles[particleindex].x - PS_P_HALFRADIUS_1D;
-    int32_t dx = xoffset % PS_P_RADIUS_1D; //relativ particle position in subpixel space
+
+    // add half a radius as the rendering algorithm always starts at the bottom left, this leaves things positive, so shifts can be used, then shift coordinate by a full pixel (x-- below)
+    int32_t xoffset = particles[particleindex].x + PS_P_HALFRADIUS_1D;
+    int32_t dx = xoffset & (PS_P_RADIUS_1D - 1); //relativ particle position in subpixel space,  modulo replaced with bitwise AND
     int32_t x = xoffset >> PS_P_RADIUS_SHIFT_1D; // divide by PS_P_RADIUS, bitshift of negative number stays negative -> checking below for x < 0 works (but does not when using division)
 
     // set the raw pixel coordinates
-    pixco[0] = x;      // left pixel
-    pixco[1] = x + 1;  // right pixel
+    pixco[1] = x;  // right pixel
+    x--; // shift by a full pixel here, this is skipped above to not do -1 and then +1
+    pixco[0] = x;  // left pixel
 
     // now check if any are out of frame. set values to -1 if they are so they can be easily checked after (no value calculation, no setting of pixelcolor if value < 0)
     if (x < 0) { // left pixels out of frame
-      dx = PS_P_RADIUS_1D + dx; // if x<0, xoffset becomes negative (and so does dx), must adjust dx as modulo will flip its value
-      // note: due to inverted shift math, a particel at position -16 (xoffset = -32, dx = 32) is rendered at the wrong pixel position (it should be out of frame)
-      // checking this above would make this algorithm slower (in frame pixels do not have to be checked), so just correct for it here:
-      if (dx == PS_P_RADIUS_1D) {
-        pxlisinframe[1] = false; // pixel is actually out of matrix boundaries, do not render
-        dx = 0; // fix for out of frame advanced particles (dx=0 is changed to dx=PS_P_RADIUS_1D in above statement, 0 is correct)
-      }
       if (wrap) // wrap x to the other side if required
         pixco[0] = maxXpixel;
       else
@@ -1810,7 +1696,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, const uint32_t &particl
 
     // check if particle has advanced size properties and buffer is available
     if (advPartProps && advPartProps[particleindex].size > 1) {
-      if (renderbuffer && framebuffer) {
+      if (renderbuffer && framebuffer) { // TODO: add unbuffered large size rendering like in 2D system
         memset(renderbuffer, 0, 10 * sizeof(CRGB)); // clear the buffer, renderbuffer is 10 pixels
       }
       else
@@ -1851,7 +1737,7 @@ void ParticleSystem1D::renderParticle(CRGB *framebuffer, const uint32_t &particl
           else
             continue;
         }
-        fast_color_add(framebuffer[xfb], renderbuffer[xrb]);
+        fast_color_add(framebuffer[xfb], renderbuffer[xrb]); // TODO: add unbuffered large size rendering like in 2D system
       }
     }
     else { // standard rendering (2 pixels per particle)
@@ -1895,7 +1781,7 @@ void ParticleSystem1D::handleCollisions()
         {
           if (advPartProps) // use advanced size properties
           {
-            collisiondistance = PS_P_MINHARDRADIUS_1D + ((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1;
+            collisiondistance = PS_P_MINHARDRADIUS_1D + (((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1);
           }
           dx = particles[j].x - particles[i].x;
           int32_t  dv = (int32_t)particles[j].vx - (int32_t)particles[i].vx;
@@ -2184,6 +2070,20 @@ int32_t calcForce_dv(int8_t force, uint8_t* counter)
 int32_t limitSpeed(int32_t speed)
 {
   return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed);
+}
+
+// check if particle is out of bounds and wrap it around if required
+bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, bool wrap) {
+  if ((uint32_t)position > max) { // check if particle reached an edge
+    if (wrap) {
+      position = position % (max + 1); // note: cannot optimize modulo, particles can be far out of bounds when wrap is enabled
+      if (position < 0)
+        position += max + 1;
+    }
+    else if (((position < -particleradius) || (position > max + particleradius))) // particle is leaving boundaries, out of bounds if it has fully left
+      return false; // out of bounds
+  }
+  return true; // particle is in bounds
 }
 
 // fastled color adding is very inaccurate in color preservation

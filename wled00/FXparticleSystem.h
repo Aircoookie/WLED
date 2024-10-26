@@ -18,6 +18,7 @@
 //shared functions (used both in 1D and 2D system)
 int32_t calcForce_dv(int8_t force, uint8_t *counter);
 int32_t limitSpeed(int32_t speed);
+bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, bool wrap); // returns false if out of bounds by more than particleradius
 void fast_color_add(CRGB &c1, const CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
 void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
 #endif
@@ -33,10 +34,10 @@ void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 3
 
 // particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 // subpixel size, each pixel is divided by this for particle movement (must be a power of 2)
-#define PS_P_HALFRADIUS 32
+#define PS_P_HALFRADIUS (PS_P_RADIUS >> 1)
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
-#define PS_P_MINHARDRADIUS 70 // minimum hard surface radius
+#define PS_P_MINHARDRADIUS 70 // minimum hard surface radius for collisions
 #define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 
 // struct for PS settings (shared for 1D and 2D class)
@@ -154,8 +155,8 @@ public:
   PSadvancedParticle *advPartProps; // pointer to advanced particle properties (can be NULL)
   PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
   uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
-  int32_t maxX, maxY; // particle system size i.e. width-1 / height-1 in subpixels
-  int32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
+  uint32_t maxX, maxY; // particle system size i.e. width-1 / height-1 in subpixels
+  uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
   uint32_t numSources; // number of sources
   uint32_t numParticles;  // number of particles available in this system
   uint32_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
@@ -163,7 +164,7 @@ public:
 private:
   //rendering functions
   void ParticleSys_render(bool firemode = false, uint32_t fireintensity = 128);
-  void renderParticle(CRGB **framebuffer, const uint32_t &particleindex, const uint32_t &brightness, const CRGB &color, CRGB **renderbuffer, const bool &wrapX, const bool &wrapY);
+  void renderParticle(CRGB **framebuffer, const uint32_t particleindex, const uint32_t brightness, const CRGB& color, CRGB **renderbuffer, const bool wrapX, const bool wrapY);
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
   void handleCollisions();
@@ -188,7 +189,7 @@ private:
   uint8_t forcecounter; // counter for globally applied forces
   // global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
-  int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
+  uint32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
 
@@ -214,8 +215,8 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
 
 // particle dimensions (subpixel division)
 #define PS_P_RADIUS_1D 32 // subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
-#define PS_P_HALFRADIUS_1D 16
-#define PS_P_RADIUS_SHIFT_1D 5 //TODO: may need to adjust
+#define PS_P_HALFRADIUS_1D (PS_P_RADIUS_1D >> 1)
+#define PS_P_RADIUS_SHIFT_1D 5
 #define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
 #define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius
 #define PS_P_MINSURFACEHARDNESS_1D 50 // minimum hardness used in collision impulse calculation
@@ -304,8 +305,8 @@ public:
   PSadvancedParticle1D *advPartProps; // pointer to advanced particle properties (can be NULL)
   //PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
   uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
-  int32_t maxX; // particle system size i.e. width-1
-  int32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1
+  uint32_t maxX; // particle system size i.e. width-1
+  uint32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1
   uint32_t numSources; // number of sources
   uint32_t numParticles;  // number of particles available in this system
   uint32_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
@@ -313,7 +314,7 @@ public:
 private:
   //rendering functions
   void ParticleSys_render(void);
-  void renderParticle(CRGB *framebuffer, const uint32_t &particleindex, const uint32_t &brightness, const CRGB &color, CRGB *renderbuffer, const bool &wrap);
+  void renderParticle(CRGB *framebuffer, const uint32_t particleindex, const uint32_t brightness, const CRGB &color, CRGB *renderbuffer, const bool wrap);
 
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
@@ -337,7 +338,7 @@ private:
   //uint8_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call? -> currently unused
   // global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, larger sizez TBD (TODO: need larger sizes?)
-  int32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
+  uint32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
 
