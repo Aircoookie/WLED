@@ -169,7 +169,6 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 void setValuesFromSegment(uint8_t s);
 void setValuesFromMainSeg();
 void setValuesFromFirstSelectedSeg();
-void resetTimebase();
 void toggleOnOff();
 void applyBri();
 void applyFinalBri();
