@@ -1,5 +1,11 @@
 ## WLED changelog
 
+#### Build 2410270
+-   WLED 0.15.0-b7 release
+-   Add visual expand button on hover (#4172)
+-   `/json/live` (JSON live data/peek) only enabled when WebSockets are disabled
+-   Bugfixes: #4179, #4215, #4219, #4224, #4228, #4230
+
 #### Build 2410140
 -   WLED 0.15.0-b6 release
 -   Added BRT timezone (#4188 by @LuisFadini)

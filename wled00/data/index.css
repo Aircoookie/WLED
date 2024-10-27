@@ -1040,7 +1040,7 @@ textarea {
 
 .segname .flr, .pname .flr {
 	transform: rotate(0deg);
-	right: -6px;
+	/*right: -6px;*/
 }
 
 /* segment power wrapper */
@@ -1333,6 +1333,11 @@ TD .checkmark, TD .radiomark {
 .lstI.selected {
 	z-index: 1;
 	box-shadow: 0 0 10px 4px var(--c-1);
+}
+
+.lstI .flr:hover {
+    background: var(--c-6);
+    border-radius: 100%;
 }
 
 #pcont .selected:not([class*="expanded"]) {

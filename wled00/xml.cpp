@@ -501,7 +501,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     #endif
     printSetFormValue(settingsScript,PSTR("BD"),serialBaud);
     #ifndef WLED_ENABLE_ADALIGHT
-    settingsScript.print(F("toggle('Serial);"));
+    settingsScript.print(F("toggle('Serial');"));
     #endif
   }
 
