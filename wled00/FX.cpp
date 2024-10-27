@@ -8427,7 +8427,7 @@ uint16_t mode_particlewaterfall(void)
   PartSys->setBounceX(SEGMENT.check2); // walls
   PartSys->setBounceY(SEGMENT.check3); // ground
   PartSys->setWallHardness(SEGMENT.custom2);
-  numSprays = min(PartSys->numSources, max(PartSys->maxXpixel / 6, (uint32_t)2)); // number of sprays depends on segment width
+  numSprays = min((int32_t)PartSys->numSources, max(PartSys->maxXpixel / 6, (int32_t)2)); // number of sprays depends on segment width
   if (SEGMENT.custom2 > 0) // collisions enabled
     PartSys->enableParticleCollisions(true, SEGMENT.custom2); // enable collisions and set particle collision hardness
   else
@@ -10341,7 +10341,7 @@ uint16_t mode_particleChase(void)
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3; 
   if(SEGENV.aux0 != settingssum)  //settings changed changed, update
   {
-    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), (PartSys->numParticles)))); //depends on intensity and particle size (custom1)
+    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->numParticles)))); //depends on intensity and particle size (custom1)
     SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 4)) / PartSys->usedParticles; //spacing between particles
    // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this 
     for(i = 0; i < PartSys->usedParticles; i++)

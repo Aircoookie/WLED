@@ -16,11 +16,12 @@
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 
 //shared functions (used both in 1D and 2D system)
-int32_t calcForce_dv(int8_t force, uint8_t *counter);
-int32_t limitSpeed(int32_t speed);
-bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, bool wrap); // returns false if out of bounds by more than particleradius
-void fast_color_add(CRGB &c1, const CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
-void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
+static int32_t calcForce_dv(int8_t force, uint8_t *counter);
+static int32_t limitSpeed(int32_t speed);
+static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, bool wrap); // returns false if out of bounds by more than particleradius
+static void fast_color_add(CRGB &c1, const CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
+static void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
+static CRGB *allocate1Dbuffer(uint32_t length);
 #endif
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
@@ -155,8 +156,8 @@ public:
   PSadvancedParticle *advPartProps; // pointer to advanced particle properties (can be NULL)
   PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
   uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
-  uint32_t maxX, maxY; // particle system size i.e. width-1 / height-1 in subpixels
-  uint32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
+  int32_t maxX, maxY; // particle system size i.e. width-1 / height-1 in subpixels, Note: all "max" variables must be signed to compare to coordinates (which are signed)
+  int32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
   uint32_t numSources; // number of sources
   uint32_t numParticles;  // number of particles available in this system
   uint32_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
@@ -164,11 +165,11 @@ public:
 private:
   //rendering functions
   void ParticleSys_render(bool firemode = false, uint32_t fireintensity = 128);
-  void renderParticle(CRGB **framebuffer, const uint32_t particleindex, const uint32_t brightness, const CRGB& color, CRGB **renderbuffer, const bool wrapX, const bool wrapY);
+  void renderParticle(CRGB *framebuffer, const uint32_t particleindex, const uint32_t brightness, const CRGB& color, CRGB *renderbuffer, const bool wrapX, const bool wrapY);
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
   void handleCollisions();
-  void collideParticles(PSparticle *particle1, PSparticle *particle2);
+  void collideParticles(PSparticle *particle1, PSparticle *particle2, int32_t dx, int32_t dy);
   void fireParticleupdate();
   //utility functions
   void updatePSpointers(bool isadvanced, bool sizecontrol); // update the data pointers to current segment data space
@@ -176,7 +177,6 @@ private:
   void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
   void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); // bounce on a wall
   int16_t wraparound(uint16_t p, uint32_t maxvalue);
-  CRGB **allocate2Dbuffer(uint32_t cols, uint32_t rows);
   // note: variables that are accessed often are 32bit for speed
   PSsettings2D particlesettings; // settings used when updating particles (can also used by FX to move sources), do not edit properties directly, use functions above
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
@@ -193,7 +193,7 @@ private:
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
 };
 
-void blur2D(CRGB **colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
+void blur2D(CRGB *colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
 // initialization functions (not part of class)
 bool initParticleSystem2D(ParticleSystem2D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes = 0, bool advanced = false, bool sizecontrol = false);
 uint32_t calculateNumberOfParticles2D(bool advanced, bool sizecontrol);
@@ -305,8 +305,8 @@ public:
   PSadvancedParticle1D *advPartProps; // pointer to advanced particle properties (can be NULL)
   //PSsizeControl *advPartSize; // pointer to advanced particle size control (can be NULL)
   uint8_t* PSdataEnd; // points to first available byte after the PSmemory, is set in setPointers(). use this for FX custom data
-  uint32_t maxX; // particle system size i.e. width-1
-  uint32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1
+  int32_t maxX; // particle system size i.e. width-1, Note: all "max" variables must be signed to compare to coordinates (which are signed)
+  int32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1
   uint32_t numSources; // number of sources
   uint32_t numParticles;  // number of particles available in this system
   uint32_t usedParticles; // number of particles used in animation (can be smaller then numParticles)
@@ -326,7 +326,6 @@ private:
   //void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
   //void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
   void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, uint16_t maxposition); // bounce on a wall
-  CRGB *allocate1Dbuffer(uint32_t length);
   // note: variables that are accessed often are 32bit for speed
   PSsettings1D particlesettings; // settings used when updating particles
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
