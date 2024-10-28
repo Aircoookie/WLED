@@ -9074,7 +9074,7 @@ uint16_t mode_particleGEQ(void)
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS Equalizer@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS 2D GEQ@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128,o1=0,o2=0,o3=0";
 
 /*
  * Particle rotating GEQ (unfinished, basically works but needs more fine-tuning)
