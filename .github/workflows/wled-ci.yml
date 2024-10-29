@@ -61,7 +61,7 @@ jobs:
       env:
         WLED_RELEASE: True
       run: pio run -e ${{ matrix.environment }}
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: firmware-${{ matrix.environment }}
         path: |
