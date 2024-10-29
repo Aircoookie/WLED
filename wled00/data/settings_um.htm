@@ -161,7 +161,7 @@
 					*******************************************/
 					colorIdentifier = "RRGGBB";
 					const regex = new RegExp(`\\b${colorIdentifier}\\b`);
-					if (regex.test(f)) colorPicker = `<input type="color" name="${k}:${f}" value="#${o}" onchange="setColorPicker('${k}:${f}', this.value);" style="border-radius: 5px;width:50px; padding:0; margin:0; border:0; box-sizing:border-box;">`;
+					if (regex.test(f)) colorPicker = `<input type="color" name="${k}:${f}-colorpicker" value="#${o}" onchange="setColorPicker('${k}:${f}', this.value);" style="border-radius: 5px;width:50px; padding:0; margin:0; border:0; box-sizing:border-box;">`;
 					//end block for colorPicker enhancements
 					break;
 			}
