@@ -119,9 +119,9 @@ private:
     float last_sent_power_mW = 0;
     bool last_sent_overflow = false;
 
-    float totalEnergy_kWh = 0.0; // Total energy in kWh
     float dailyEnergy_kWh = 0.0; // Daily energy in kWh
     float monthlyEnergy_kWh = 0.0; // Monthly energy in kWh
+    float totalEnergy_kWh = 0.0; // Total energy in kWh
     unsigned long lastPublishTime = 0; // Track the last publish time
 
     // Variables to store last reset timestamps
@@ -255,9 +255,9 @@ public:
                 mqttCreateHassSensor(F("Shunt Voltage"), topic, F("voltage"), F("mV"), F("shunt_voltage_mV"), F("sensor"));
                 mqttCreateHassSensor(F("Shunt Resistor"), topic, F(""), F("Ω"), F("shunt_resistor_Ohms"), F("sensor"));
                 mqttCreateHassSensor(F("Overflow"), topic, F(""), F(""), F("overflow"), F("binary_sensor"));
-                mqttCreateHassSensor(F("Total Energy"), topic, F("energy"), F("kWh"), F("total_energy_kWh"), F("sensor"));
                 mqttCreateHassSensor(F("Daily Energy"), topic, F("energy"), F("kWh"), F("daily_energy_kWh"), F("sensor"));
                 mqttCreateHassSensor(F("Monthly Energy"), topic, F("energy"), F("kWh"), F("monthly_energy_kWh"), F("sensor"));
+                mqttCreateHassSensor(F("Total Energy"), topic, F("energy"), F("kWh"), F("total_energy_kWh"), F("sensor"));
         
 				// Mark as sent to avoid repeating
 				haDiscoverySent = true;
@@ -267,9 +267,9 @@ public:
 				mqttRemoveHassSensor(F("Voltage"), F("sensor"));
 				mqttRemoveHassSensor(F("Power"), F("sensor"));
 				mqttRemoveHassSensor(F("Shunt-Voltage"), F("sensor"));
-				mqttRemoveHassSensor(F("Total-Energy"), F("sensor"));
 				mqttRemoveHassSensor(F("Daily-Energy"), F("sensor"));
 				mqttRemoveHassSensor(F("Monthly-Energy"), F("sensor"));
+				mqttRemoveHassSensor(F("Total-Energy"), F("sensor"));
 				mqttRemoveHassSensor(F("Shunt-Resistor"), F("sensor"));
 				mqttRemoveHassSensor(F("Overflow"), F("binary_sensor"));
 				
@@ -313,9 +313,9 @@ public:
 	        }
 	
 	        // Update the energy values
-	        totalEnergy_kWh = jsonDoc["total_energy_kWh"];
 	        dailyEnergy_kWh = jsonDoc["daily_energy_kWh"];
 	        monthlyEnergy_kWh = jsonDoc["monthly_energy_kWh"];
+	        totalEnergy_kWh = jsonDoc["total_energy_kWh"];
 	        dailyResetTime = jsonDoc["dailyResetTime"];
 	        monthlyResetTime = jsonDoc["monthlyResetTime"];
 	
@@ -363,9 +363,9 @@ public:
 	    jsonDoc["shunt_resistor_Ohms"] = shuntResistor; // Shunt resistor value in Ohms
 	    
 	    // Energy calculations
-	    jsonDoc["total_energy_kWh"] = totalEnergy_kWh; // Total energy in kilowatt-hours
 	    jsonDoc["daily_energy_kWh"] = dailyEnergy_kWh; // Daily energy in kilowatt-hours
 	    jsonDoc["monthly_energy_kWh"] = monthlyEnergy_kWh; // Monthly energy in kilowatt-hours
+	    jsonDoc["total_energy_kWh"] = totalEnergy_kWh; // Total energy in kilowatt-hours
 	    
 	    // Reset timestamps
 	    jsonDoc["dailyResetTime"] = dailyResetTime;   // Timestamp of the last daily reset
@@ -543,12 +543,7 @@ public:
 	
 	    if (!enabled) {
 	        energy_json.add(F("disabled")); // Indicate that the module is disabled
-	    } else {
-	        // Create a nested array for total energy
-	        JsonArray totalEnergy_json = user.createNestedArray(F("Total Energy"));
-	        totalEnergy_json.add(totalEnergy_kWh); // Add total energy in kWh
-	        totalEnergy_json.add(F("kWh")); // Add unit of measurement
-	
+	    } else {	
 	        // Create a nested array for daily energy
 	        JsonArray dailyEnergy_json = user.createNestedArray(F("Daily Energy"));
 	        dailyEnergy_json.add(dailyEnergy_kWh); // Add daily energy in kWh
@@ -558,6 +553,11 @@ public:
 	        JsonArray monthlyEnergy_json = user.createNestedArray(F("Monthly Energy"));
 	        monthlyEnergy_json.add(monthlyEnergy_kWh); // Add monthly energy in kWh
 	        monthlyEnergy_json.add(F("kWh")); // Add unit of measurement
+			
+	        // Create a nested array for total energy
+	        JsonArray totalEnergy_json = user.createNestedArray(F("Total Energy"));
+	        totalEnergy_json.add(totalEnergy_kWh); // Add total energy in kWh
+	        totalEnergy_json.add(F("kWh")); // Add unit of measurement
 	    }
 	}
 	
