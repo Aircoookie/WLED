@@ -1053,8 +1053,8 @@ void blur2D(CRGB *colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, u
 
 //non class functions to use for initialization
 uint32_t calculateNumberOfParticles2D(bool isadvanced, bool sizecontrol) {
-  uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  uint32_t cols = SEGMENT.virtualWidth();
+  uint32_t rows = SEGMENT.virtualHeight();
 #ifdef ESP8266
   uint32_t numberofParticles = (cols * rows * 3) / 4; // 0.75 particle per pixel
   uint32_t particlelimit = ESP8266_MAXPARTICLES; // maximum number of paticles allowed (based on one segment of 16x16 and 4k effect ram)
@@ -1077,8 +1077,8 @@ uint32_t calculateNumberOfParticles2D(bool isadvanced, bool sizecontrol) {
 }
 
 uint32_t calculateNumberOfSources2D(uint8_t requestedsources) {
-  uint32_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  uint32_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  uint32_t cols = SEGMENT.virtualWidth();
+  uint32_t rows = SEGMENT.virtualHeight();
 #ifdef ESP8266
   int numberofSources = min((cols * rows) / 8, (uint32_t)requestedsources);
   numberofSources = max(1, min(numberofSources, ESP8266_MAXSOURCES)); // limit to 1 - 16
@@ -1110,6 +1110,7 @@ bool allocateParticleSystemMemory2D(uint16_t numparticles, uint16_t numsources, 
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
 bool initParticleSystem2D(ParticleSystem2D *&PartSys, uint8_t requestedsources, uint16_t additionalbytes, bool advanced, bool sizecontrol) {
+  if(!strip.isMatrix) return false; // only for 2D
   uint32_t numparticles = calculateNumberOfParticles2D(advanced, sizecontrol);
   uint32_t numsources = calculateNumberOfSources2D(requestedsources);
   if (!allocateParticleSystemMemory2D(numparticles, numsources, advanced, sizecontrol, additionalbytes))
@@ -1727,6 +1728,7 @@ bool allocateParticleSystemMemory1D(uint16_t numparticles, uint16_t numsources, 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
 // note: requestedparticles is relative, 127 = 50%, 255 = 100% (deafaults to 100% meaning one particle per pixel)
 bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint32_t requestedsources, uint32_t requestedparticles, uint16_t additionalbytes, bool advanced) {
+  if (SEGLEN == 1) return false; // single pixel not supported
   uint32_t numparticles = (requestedparticles * calculateNumberOfParticles1D(advanced)) / 255;
   uint32_t numsources = calculateNumberOfSources1D(requestedsources);
   if (!allocateParticleSystemMemory1D(numparticles, numsources, advanced, additionalbytes)) {
