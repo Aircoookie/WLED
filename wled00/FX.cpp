@@ -8313,10 +8313,6 @@ static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intens
  * Uses palette for particle color, spray source at top emitting particles, many config options
  * by DedeHai (Damian Schneider)
  */
-uint16_t mode_particlewaterfall(void)
-{
-  if (SEGLEN == 1)
-    return mode_static();
 uint16_t mode_particlewaterfall(void) {
   ParticleSystem2D *PartSys = NULL;
   uint8_t numSprays;
