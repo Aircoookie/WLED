@@ -1309,11 +1309,23 @@ void WS2812FX::finalizeInit() {
 void WS2812FX::service() {
   unsigned long nowUp = millis(); // Be aware, millis() rolls over every 49 days
   now = nowUp + timebase;
-  if (nowUp - _lastShow < MIN_SHOW_DELAY || _suspend) return;
+  if (_suspend) return;
+  unsigned long elapsed = nowUp - _lastServiceShow;
+
+  #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+  if (elapsed < 2) return;                                                       // keep wifi alive
+  if ( !_triggered && (_targetFps < FPS_UNLIMITED) && (_targetFps > 0)) {
+    if (elapsed < MIN_SHOW_DELAY) return;                                        // WLEDMM too early for service
+  }
+  #else  // legacy
+  if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
+  #endif
+
   bool doShow = false;
 
   _isServicing = true;
   _segment_index = 0;
+  unsigned speedLimit = (_targetFps < FPS_UNLIMITED) ? (0.85f * FRAMETIME) : 1;      // lower limit for effect frametime
 
   for (segment &seg : _segments) {
     if (_suspend) return; // immediately stop processing segments if suspend requested during service()
@@ -1326,10 +1338,10 @@ void WS2812FX::service() {
     if (!seg.isActive()) continue;
 
     // last condition ensures all solid segments are updated at the same time
-    if (nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
+    if (nowUp >= seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
       doShow = true;
-      unsigned delay = FRAMETIME;
+      unsigned frameDelay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen
         int oldCCT = BusManager::getSegmentCCT(); // store original CCT value (actually it is not Segment based)
@@ -1349,7 +1361,8 @@ void WS2812FX::service() {
         // overwritten by later effect. To enable seamless blending for every effect, additional LED buffer
         // would need to be allocated for each effect and then blended together for each pixel.
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
-        delay = (*_mode[seg.mode])();         // run new/current mode
+        frameDelay = (*_mode[seg.mode])();         // run new/current mode
+        if (frameDelay < speedLimit) frameDelay = FRAMETIME;                    // limit effects that want to go faster than target FPS
 #ifndef WLED_DISABLE_MODE_BLEND
         if (modeBlending && seg.mode != tmpMode) {
           Segment::tmpsegd_t _tmpSegData;
@@ -1358,16 +1371,16 @@ void WS2812FX::service() {
           _virtualSegmentLength = seg.virtualLength(); // update SEGLEN (mapping may have changed)
           unsigned d2 = (*_mode[tmpMode])();  // run old mode
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
-          delay = MIN(delay,d2);              // use shortest delay
+          frameDelay = min(frameDelay,d2);              // use shortest delay
           Segment::modeBlend(false);          // unset semaphore
         }
 #endif
         seg.call++;
-        if (seg.isInTransition() && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
+        if (seg.isInTransition() && frameDelay > FRAMETIME) frameDelay = FRAMETIME; // force faster updates during transition
         BusManager::setSegmentCCT(oldCCT); // restore old CCT for ABL adjustments
       }
 
-      seg.next_time = nowUp + delay;
+      seg.next_time = nowUp + frameDelay;
     }
     _segment_index++;
   }
@@ -1376,15 +1389,16 @@ void WS2812FX::service() {
   _triggered = false;
 
   #ifdef WLED_DEBUG
-  if (millis() - nowUp > _frametime) DEBUG_PRINTF_P(PSTR("Slow effects %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
+  if (millis() - nowUp > _frametime*2) DEBUG_PRINTF_P(PSTR("Slow effects %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
   #endif
   if (doShow) {
     yield();
     Segment::handleRandomPalette(); // slowly transition random palette; move it into for loop when each segment has individual random palette
     show();
+    _lastServiceShow = nowUp; // correct timestamp, for better FPS control
   }
   #ifdef WLED_DEBUG
-  if (millis() - nowUp > _frametime) DEBUG_PRINTF_P(PSTR("Slow strip %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
+  if (millis() - nowUp > _frametime*2) DEBUG_PRINTF_P(PSTR("Slow strip %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
   #endif
 }
 
@@ -1404,18 +1418,19 @@ void WS2812FX::show() {
   // avoid race condition, capture _callback value
   show_callback callback = _callback;
   if (callback) callback();
+  unsigned long showNow = millis();
 
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
   BusManager::show();
 
-  unsigned long showNow = millis();
   size_t diff = showNow - _lastShow;
   size_t fpsCurr = 200;
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr +2) >> 2;   // "+2" for proper rounding (2/4 = 0.5)
   _lastShow = showNow;
+  _lastServiceShow = showNow;
 }
 
 /**
@@ -1438,6 +1453,8 @@ uint16_t WS2812FX::getFps() const {
 void WS2812FX::setTargetFps(uint8_t fps) {
   if (fps > 0 && fps <= 120) _targetFps = fps;
   _frametime = 1000 / _targetFps;
+  if (_frametime < 1) _frametime = 1;           // better safe than sorry
+  if (fps >= FPS_UNLIMITED) _frametime = 3;     // unlimited mode
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {

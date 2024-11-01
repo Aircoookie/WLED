@@ -44,8 +44,20 @@
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
-#define FRAMETIME_FIXED  (1000/WLED_FPS)
 #define FRAMETIME        strip.getFrameTime()
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)    // all ESP32 except -C3(very slow, untested)
+  #define FRAMETIME_FIXED  (strip.getFrameTime() < 10 ? 12 : 24)            // allow faster FRAMETIME_FIXED when target FPS >= 100  
+  #define MIN_SHOW_DELAY   (max(2, (_frametime*5)/8))                       // supports higher framerates and better animation control -- 5/8 = 62%
+  // used to initialize for strip attributes:
+  #define WLED_FPS_SLOW    42
+  #define FRAMETIME_FIXED_SLOW  (24)                                        // 1000/42 = 24ms
+#else
+  #define FRAMETIME_FIXED  (1000/WLED_FPS)
+  #define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)                       // legacy MIN_SHOW_DELAY - creates more idle loops, but reduces framerates
+  #define WLED_FPS_SLOW     WLED_FPS
+  #define FRAMETIME_FIXED_SLOW FRAMETIME_FIXED
+#endif
+#define FPS_UNLIMITED    119
 
 /* each segment uses 82 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -67,8 +79,6 @@
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
   assuming each segment uses the same amount of data. 256 for ESP8266, 640 for ESP32. */
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / strip.getMaxSegments())
-
-#define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
@@ -727,8 +737,8 @@ class WS2812FX {  // 96 bytes
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
       _transitionDur(750),
-      _targetFps(WLED_FPS),
-      _frametime(FRAMETIME_FIXED),
+      _targetFps(WLED_FPS_SLOW),
+      _frametime(FRAMETIME_FIXED_SLOW),
       _cumulativeFps(2),
       _isServicing(false),
       _isOffRefreshRequired(false),
@@ -739,6 +749,7 @@ class WS2812FX {  // 96 bytes
       customMappingTable(nullptr),
       customMappingSize(0),
       _lastShow(0),
+      _lastServiceShow(0),
       _segment_index(0),
       _mainSegment(0)
     {
@@ -949,6 +960,7 @@ class WS2812FX {  // 96 bytes
     uint16_t  customMappingSize;
 
     unsigned long _lastShow;
+    unsigned long _lastServiceShow;
 
     uint8_t _segment_index;
     uint8_t _mainSegment;
