@@ -14,89 +14,89 @@ private:
     // Configurable settings for the INA219 Usermod
 	// Enabled setting
     #ifdef INA219_ENABLED
-    bool enabled = INA219_ENABLED;
+    	bool enabled = INA219_ENABLED;
     #else
-    bool enabled = false; // Default disabled value
+    	bool enabled = false; // Default disabled value
     #endif
 
     // I2C Address (default is 0x40 if not defined)
     #ifdef INA219_I2C_ADDRESS
-    uint8_t _i2cAddress = INA219_I2C_ADDRESS;
+    	uint8_t _i2cAddress = INA219_I2C_ADDRESS;
     #else
-    uint8_t _i2cAddress = 0x40; // Default I2C address
+    	uint8_t _i2cAddress = 0x40; // Default I2C address
     #endif
 
     // Check Interval (in seconds)
     #ifdef INA219_CHECK_INTERVAL
-    uint16_t _checkInterval = INA219_CHECK_INTERVAL;
-    uint16_t checkInterval = _checkInterval * 1000; // Convert to milliseconds
+    	uint16_t _checkInterval = INA219_CHECK_INTERVAL;
+    	uint16_t checkInterval = _checkInterval * 1000; // Convert to milliseconds
     #else
-    uint16_t _checkInterval = 5; // Default 5 seconds
-    uint16_t checkInterval = _checkInterval * 1000; // Default 5 seconds
+    	uint16_t _checkInterval = 5; // Default 5 seconds
+    	uint16_t checkInterval = _checkInterval * 1000; // Default 5 seconds
     #endif
 
     // Conversion Time
     #ifdef INA219_CONVERSION_TIME
-    INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(INA219_CONVERSION_TIME); // Cast from int if defined
+    	INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(INA219_CONVERSION_TIME); // Cast from int if defined
     #else
-    INA219_ADC_MODE conversionTime = BIT_MODE_12; // Default 12-bit resolution
+    	INA219_ADC_MODE conversionTime = BIT_MODE_12; // Default 12-bit resolution
     #endif
 
     // Decimal factor for current/power readings
     #ifdef INA219_DECIMAL_FACTOR
-    uint8_t _decimalFactor = INA219_DECIMAL_FACTOR;
+    	uint8_t _decimalFactor = INA219_DECIMAL_FACTOR;
     #else
-    uint8_t _decimalFactor = 3; // Default 3 decimal places
+    	uint8_t _decimalFactor = 3; // Default 3 decimal places
     #endif
 
     // Shunt Resistor value
     #ifdef INA219_SHUNT_RESISTOR
-    float shuntResistor = INA219_SHUNT_RESISTOR;
+    	float shuntResistor = INA219_SHUNT_RESISTOR;
     #else
-    float shuntResistor = 0.1; // Default 0.1 ohms
+    	float shuntResistor = 0.1; // Default 0.1 ohms
     #endif
 
     // Correction factor
     #ifdef INA219_CORRECTION_FACTOR
-    float correctionFactor = INA219_CORRECTION_FACTOR;
+    	float correctionFactor = INA219_CORRECTION_FACTOR;
     #else
-    float correctionFactor = 1.0; // Default correction factor
+    	float correctionFactor = 1.0; // Default correction factor
     #endif
 
     // MQTT Publish Settings
     #ifdef INA219_MQTT_PUBLISH
-    bool mqttPublish = INA219_MQTT_PUBLISH;
+    	bool mqttPublish = INA219_MQTT_PUBLISH;
 	bool mqttPublishSent = !INA219_MQTT_PUBLISH;
     #else
-    bool mqttPublish = false; // Default: false (do not publish to MQTT)
+    	bool mqttPublish = false; // Default: false (do not publish to MQTT)
 	bool mqttPublishSent = true;
     #endif
 
     #ifdef INA219_MQTT_PUBLISH_ALWAYS
-    bool mqttPublishAlways = INA219_MQTT_PUBLISH_ALWAYS;
+    	bool mqttPublishAlways = INA219_MQTT_PUBLISH_ALWAYS;
     #else
-    bool mqttPublishAlways = false; // Default: false (only publish changes)
+    	bool mqttPublishAlways = false; // Default: false (only publish changes)
     #endif
 
     #ifdef INA219_HA_DISCOVERY
-    bool haDiscovery = INA219_HA_DISCOVERY;
+    	bool haDiscovery = INA219_HA_DISCOVERY;
 	bool haDiscoverySent = !INA219_HA_DISCOVERY;
     #else
-    bool haDiscovery = false; // Default: false (Home Assistant discovery disabled)
+    	bool haDiscovery = false; // Default: false (Home Assistant discovery disabled)
 	bool haDiscoverySent = true;
     #endif
 
     // I2C SDA and SCL pins (default SDA = 8, SCL = 9 if not defined)
     #ifdef INA219_SDA_PIN
-    uint8_t _sdaPin = INA219_SDA_PIN;
+    	uint8_t _sdaPin = INA219_SDA_PIN;
     #else
-    uint8_t _sdaPin = 8; // Default SDA pin
+    	uint8_t _sdaPin = 8; // Default SDA pin
     #endif
 
     #ifdef INA219_SCL_PIN
-    uint8_t _sclPin = INA219_SCL_PIN;
+    	uint8_t _sclPin = INA219_SCL_PIN;
     #else
-    uint8_t _sclPin = 9; // Default SCL pin
+    	uint8_t _sclPin = 9; // Default SCL pin
     #endif
 	
     // Variables to store sensor readings
