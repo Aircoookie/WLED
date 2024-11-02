@@ -1314,7 +1314,7 @@ void WS2812FX::service() {
 
   #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
   if (elapsed < 2) return;                                                       // keep wifi alive
-  if ( !_triggered && (_targetFps < FPS_UNLIMITED) && (_targetFps > 0)) {
+  if ( !_triggered && (_targetFps != FPS_UNLIMITED) && (_targetFps > 0)) {
     if (elapsed < MIN_SHOW_DELAY) return;                                        // WLEDMM too early for service
   }
   #else  // legacy
@@ -1325,7 +1325,7 @@ void WS2812FX::service() {
 
   _isServicing = true;
   _segment_index = 0;
-  unsigned speedLimit = (_targetFps < FPS_UNLIMITED) ? (0.85f * FRAMETIME) : 1;      // lower limit for effect frametime
+  unsigned speedLimit = (_targetFps != FPS_UNLIMITED) ? (0.85f * FRAMETIME) : 1;      // lower limit for effect frametime
 
   for (segment &seg : _segments) {
     if (_suspend) return; // immediately stop processing segments if suspend requested during service()
@@ -1389,7 +1389,7 @@ void WS2812FX::service() {
   _triggered = false;
 
   #ifdef WLED_DEBUG
-  if (millis() - nowUp > _frametime*2) DEBUG_PRINTF_P(PSTR("Slow effects %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
+  if ((_targetFps != FPS_UNLIMITED) && (millis() - nowUp > _frametime)) DEBUG_PRINTF_P(PSTR("Slow effects %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
   #endif
   if (doShow) {
     yield();
@@ -1398,7 +1398,7 @@ void WS2812FX::service() {
     _lastServiceShow = nowUp; // correct timestamp, for better FPS control
   }
   #ifdef WLED_DEBUG
-  if (millis() - nowUp > _frametime*2) DEBUG_PRINTF_P(PSTR("Slow strip %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
+  if ((_targetFps != FPS_UNLIMITED) && (millis() - nowUp > _frametime)) DEBUG_PRINTF_P(PSTR("Slow strip %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
   #endif
 }
 
@@ -1430,7 +1430,6 @@ void WS2812FX::show() {
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr +2) >> 2;   // "+2" for proper rounding (2/4 = 0.5)
   _lastShow = showNow;
-  _lastServiceShow = showNow;
 }
 
 /**
@@ -1453,8 +1452,7 @@ uint16_t WS2812FX::getFps() const {
 void WS2812FX::setTargetFps(uint8_t fps) {
   if (fps > 0 && fps <= 120) _targetFps = fps;
   _frametime = 1000 / _targetFps;
-  if (_frametime < 1) _frametime = 1;           // better safe than sorry
-  if (fps >= FPS_UNLIMITED) _frametime = 3;     // unlimited mode
+  if (fps == FPS_UNLIMITED) _frametime = 3;     // unlimited mode
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
