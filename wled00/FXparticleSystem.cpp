@@ -1807,41 +1807,39 @@ static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32
   return true; // particle is in bounds
 }
 
-// fastled color adding is very inaccurate in color preservation
+// fastled color adding is very inaccurate in color preservation (but it is fast)
 // a better color add function is implemented in colors.cpp but it uses 32bit RGBW. to use it colors need to be shifted just to then be shifted back by that function, which is slow
-// this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color (fastled scale8 can be made faster using native 32bit on ESP)
-// note: result is stored in c1, so c1 will contain the result. not using a return value is much faster as the struct does not need to be copied upon return
-static void fast_color_add(CRGB &c1, const CRGB &c2, uint32_t scale) {
-  //note: function is manly used to add scaled colors, so checking if one color is black is slower
+// this is a fast version for RGB (no white channel, PS does not handle white) and with native CRGB including scaling of second color
+// note: result is stored in c1, not using a return value is faster as the CRGB struct does not need to be copied upon return
+// note2: function is mainly used to add scaled colors, so checking if one color is black is slower
+// note3: scale is 255 when using blur, checking for that makes blur faster
+static void fast_color_add(CRGB &c1, const CRGB &c2, const uint32_t scale) {
   uint32_t r, g, b;
   if (scale < 255) {
     r = c1.r + ((c2.r * scale) >> 8);
     g = c1.g + ((c2.g * scale) >> 8);
     b = c1.b + ((c2.b * scale) >> 8);
-  }
-  else {
+  } else {
     r = c1.r + c2.r;
     g = c1.g + c2.g;
     b = c1.b + c2.b;
   }
-  uint32_t max = r;
-  if (g > max) max = g;
-  if (b > max) max = b;
+
+  uint32_t max = std::max(r,g); // check for overflow, using max() is faster as the compiler can optimize
+  max = std::max(max,b);
   if (max < 256) {
     c1.r = r; // save result to c1
     c1.g = g;
     c1.b = b;
-  }
-  else {
-    uint32_t scale = (255 << 16) / max;  // to avoid multiple divisions
-    c1.r = (r * scale) >> 16;  // (c * 255) / max;
-    c1.g = (g * scale) >> 16;
-    c1.b = (b * scale) >> 16;
+  } else {
+    c1.r = (r * 255) / max;  // note: compile optimizes the divisions, no need to manually optimize
+    c1.g = (g * 255) / max;
+    c1.b = (b * 255) / max;
   }
 }
 
-// faster than fastled color scaling as it uses a 32bit scale factor and pointer
-static void fast_color_scale(CRGB &c, uint32_t scale) {
+// faster than fastled color scaling as it does in place scaling
+static void fast_color_scale(CRGB &c, const uint32_t scale) {
   c.r = ((c.r * scale) >> 8);
   c.g = ((c.g * scale) >> 8);
   c.b = ((c.b * scale) >> 8);

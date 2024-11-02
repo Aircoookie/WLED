@@ -20,7 +20,7 @@ static int32_t calcForce_dv(int8_t force, uint8_t *counter);
 static int32_t limitSpeed(int32_t speed);
 static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, bool wrap); // returns false if out of bounds by more than particleradius
 static void fast_color_add(CRGB &c1, const CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
-static void fast_color_scale(CRGB &c, uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
+static void fast_color_scale(CRGB &c, const uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
 static CRGB *allocate1Dbuffer(uint32_t length);
 #endif
 
