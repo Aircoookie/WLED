@@ -78,7 +78,7 @@ class NeoGammaWLEDMethod {
 };
 #define gamma32(c) NeoGammaWLEDMethod::Correct32(c)
 #define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
-[[gnu::hot]] uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
+[[gnu::hot]] uint32_t color_blend(uint32_t,uint32_t,uint16_t);
 inline uint32_t color_blend(uint32_t c1, uint32_t c2, uint8_t blend)  { return color_blend(c1, c2, uint16_t(((uint16_t)blend << 8))); };
 [[gnu::hot]] uint32_t color_add(uint32_t,uint32_t, bool fast=false);
 [[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
