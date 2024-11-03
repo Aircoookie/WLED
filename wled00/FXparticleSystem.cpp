@@ -10,8 +10,7 @@
 
 /*
   TODO:
-  -add function to 'update sources' so FX does not have to take care of that. FX can still implement its own version if so desired.
-  -add an x/y struct, do particle rendering using that, much easier to read
+  - change passing particle pointers to references (if possible)
   -add underscore to private variables
 */
 
@@ -196,9 +195,9 @@ void ParticleSystem2D::flameEmit(PSsource &emitter) {
 
 // Emits a particle at given angle and speed, angle is from 0-65535 (=0-360deg), speed is also affected by emitter->var
 // angle = 0 means in positive x-direction (i.e. to the right)
-int32_t ParticleSystem2D::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, uint32_t amount) {
-  emitter.vx = ((int32_t)cos16(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding
-  emitter.vy = ((int32_t)sin16(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
+int32_t ParticleSystem2D::angleEmit(PSsource &emitter, uint16_t angle, int32_t speed, uint32_t amount) {
+  emitter.vx = ((int32_t)cos16(angle) * speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding
+  emitter.vy = ((int32_t)sin16(angle) * speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   return sprayEmit(emitter, amount);
 }
 
@@ -472,11 +471,11 @@ void ParticleSystem2D::applyGravity() {
 
 // apply gravity to single particle using system settings (use this for sources)
 // function does not increment gravity counter, if gravity setting is disabled, this cannot be used
-void ParticleSystem2D::applyGravity(PSparticle *part) {
+void ParticleSystem2D::applyGravity(PSparticle &part) {
   uint32_t counterbkp = gforcecounter; // backup PS gravity counter
   int32_t dv = calcForce_dv(gforce, &gforcecounter);
   gforcecounter = counterbkp; //save it back
-  part->vy = limitSpeed((int32_t)part->vy - dv);
+  part.vy = limitSpeed((int32_t)part.vy - dv);
 }
 
 // slow down particle by friction, the higher the speed, the higher the friction. a high friction coefficient slows them more (255 means instant stop)

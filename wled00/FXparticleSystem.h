@@ -120,9 +120,9 @@ public:
   // particle emitters
   int32_t sprayEmit(PSsource &emitter, uint32_t amount = 1);
   void flameEmit(PSsource &emitter);
-  int32_t angleEmit(PSsource& emitter, uint16_t angle, int8_t speed, uint32_t amount = 1);
+  int32_t angleEmit(PSsource& emitter, uint16_t angle, int32_t speed, uint32_t amount = 1);
   //particle physics
-  void applyGravity(PSparticle *part); // applies gravity to single particle (use this for sources)
+  void applyGravity(PSparticle &part); // applies gravity to single particle (use this for sources)
   void applyForce(PSparticle *part, int8_t xforce, int8_t yforce, uint8_t *counter);
   void applyForce(uint16_t particleindex, int8_t xforce, int8_t yforce); // use this for advanced property particles
   void applyForce(int8_t xforce, int8_t yforce); // apply a force to all particles
