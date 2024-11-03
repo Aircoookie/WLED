@@ -934,7 +934,7 @@
     "unknown": "未知",
     "v0.14.2 \"Kuuhaku\"": "v0.14.2「月探し」\"",
     "will not": "しません",
-    " s": " s",
+    " s": "秒",
     "⚠ Could not access local storage. Make sure it is enabled in your browser.": "⚠ ローカルストレージにアクセスできませんでした。ブラウザで有効になっていることを確認してください.",
     "⚠ Could not load configuration.": "⚠ 構成をロードできませんでした.",
     "⚠ Restoring presets/configuration will OVERWRITE your current presets/configuration.": "⚠ プリセット/構成を復元すると、現在のプリセット/構成が上書きされます.",
