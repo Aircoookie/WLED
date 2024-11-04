@@ -7,7 +7,7 @@
 #endif
 
 #ifndef TEST_MODE_BRIGHTNESS
-  #define TEST_MODE_BRIGHTNESS 60
+  #define TEST_MODE_BRIGHTNESS 60 // 60 ~= 25%
 #endif
 
 #ifndef TEST_MODE_COLOR
@@ -36,10 +36,10 @@ class TestModeUsermod : public Usermod {
     static const char _name[];
     static const char _enabled[];
 
-    inline void enable(bool enable) { enabled = enable; }
     inline bool isEnabled() { return enabled; }
-
     void setup() { initDone = true; }
+
+    void enable(bool enable);
     void loop();
 
     bool handleButton(uint8_t b) override;
@@ -48,51 +48,71 @@ class TestModeUsermod : public Usermod {
     uint16_t getId() override;
 };
 
-void TestModeUsermod::loop() {
-  if (!enabled || TEST_MODE_BUTTONS < 1) { return; }
+void TestModeUsermod::enable(bool enable)
+{
+  enabled = enable;
 
-  if (millis() - lastTime > 1000) {
-    lastTime = millis();
-    heldButtons = 0;
-    for (unsigned i=0; i<WLED_MAX_BUTTONS; i++) {
-      if (testButtons[i] == 1) {
-        heldButtons += 1;
-      }
-    }
-    if (heldButtons >= TEST_MODE_BUTTONS) {
-      DEBUG_PRINTLN(F("Test Mode activated"));
-      testModeActivated = true;
-
-      bri = TEST_MODE_BRIGHTNESS;
-      Segment& seg = strip.getMainSegment();
-      seg.setMode(TEST_MODE_EFFECT, false);
-      seg.setColor(0, TEST_MODE_COLOR);
-      seg.setPalette(TEST_MODE_PALETTE);
-      stateUpdated(CALL_MODE_DIRECT_CHANGE);
-
-      // Disable usermod so next boot is clean
-      enable(false);
-      serializeConfig();
-    }
+  if (enable) {
+    // Reset test buttons state
+    for (unsigned i=0; i<WLED_MAX_BUTTONS; i++) testButtons[i] = 0;
+    testModeActivated = false;
   }
+}
+
+void TestModeUsermod::loop()
+{
+    if (!enabled || TEST_MODE_BUTTONS < 1)
+    {
+        return;
+    }
+
+    if (millis() - lastTime > 1000)
+    {
+        lastTime = millis();
+        heldButtons = 0;
+        for (unsigned i = 0; i < WLED_MAX_BUTTONS; i++)
+        {
+            if (testButtons[i] == 1 &&
+                // WLED can have pins assigned to buttons but not initialized, verify that's not the case
+                PinManager::isPinAllocated(btnPin[i], PinOwner::Button))
+            {
+                heldButtons += 1;
+            }
+        }
+        if (heldButtons >= TEST_MODE_BUTTONS)
+        {
+            DEBUG_PRINTLN(F("Test Mode activated."));
+            testModeActivated = true;
+
+            bri = TEST_MODE_BRIGHTNESS;
+            Segment &seg = strip.getMainSegment();
+            seg.setMode(TEST_MODE_EFFECT, false);
+            seg.setColor(0, TEST_MODE_COLOR);
+            seg.setPalette(TEST_MODE_PALETTE);
+            stateUpdated(CALL_MODE_DIRECT_CHANGE);
+
+            // Disable usermod so next boot is clean
+            enable(false);
+            serializeConfig();
+        }
+    }
 }
 
 bool TestModeUsermod::handleButton(uint8_t b) {
   yield();
+
   // once test mode has been activated keep handling buttons for this boot
-  if (!testModeActivated) {
-    if (!enabled
-    // ignore certain button types as they may have other consequences
+  if (testModeActivated) return true;
+
+  if (!enabled
     || buttonType[b] == BTN_TYPE_NONE
     || buttonType[b] == BTN_TYPE_RESERVED
     || buttonType[b] == BTN_TYPE_PIR_SENSOR
     || buttonType[b] == BTN_TYPE_ANALOG
     || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) {
-      return false;
-    }
+    return false;
   }
 
-  bool handled = false;
   // do your button handling here
   unsigned long now = millis();
 
@@ -112,8 +132,7 @@ bool TestModeUsermod::handleButton(uint8_t b) {
     buttonLongPressed[b] = false;
   }
 
-  handled = true;
-  return handled;
+  return true;
 }
 
 void TestModeUsermod::addToConfig(JsonObject& root) {
@@ -127,6 +146,8 @@ bool TestModeUsermod::readFromConfig(JsonObject& root) {
   bool configComplete = !top.isNull();
 
   configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
+
+  if (enabled) enable(true);
 
   return configComplete;
 }
