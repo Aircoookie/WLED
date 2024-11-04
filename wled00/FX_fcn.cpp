@@ -1312,20 +1312,15 @@ void WS2812FX::service() {
   if (_suspend) return;
   unsigned long elapsed = nowUp - _lastServiceShow;
 
-  #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-  if (elapsed < 2) return;                                                       // keep wifi alive
-  if ( !_triggered && (_targetFps != FPS_UNLIMITED)) {
-    if (elapsed < MIN_SHOW_DELAY) return;                                        // WLEDMM too early for service
+  if (elapsed < 2) return;                                                       // keep wifi alive - no matter if triggered or unlimited
+  if ( !_triggered && (_targetFps != FPS_UNLIMITED)) {                           // unlimited mode = no frametime
+    if (elapsed < _frametime) return;                                            // too early for service
   }
-  #else  // legacy
-  if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
-  #endif
 
   bool doShow = false;
 
   _isServicing = true;
   _segment_index = 0;
-  unsigned speedLimit = (_targetFps != FPS_UNLIMITED) ? (0.85f * FRAMETIME) : 1;      // lower limit for effect frametime
 
   for (segment &seg : _segments) {
     if (_suspend) return; // immediately stop processing segments if suspend requested during service()
@@ -1362,7 +1357,6 @@ void WS2812FX::service() {
         // would need to be allocated for each effect and then blended together for each pixel.
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
         frameDelay = (*_mode[seg.mode])();         // run new/current mode
-        if (frameDelay < speedLimit) frameDelay = FRAMETIME;                    // limit effects that want to go faster than target FPS
 #ifndef WLED_DISABLE_MODE_BLEND
         if (modeBlending && seg.mode != tmpMode) {
           Segment::tmpsegd_t _tmpSegData;
@@ -1375,6 +1369,7 @@ void WS2812FX::service() {
           Segment::modeBlend(false);          // unset semaphore
         }
 #endif
+        frameDelay = max(frameDelay, unsigned(MIN_SHOW_DELAY));                     // limit effects that want to go faster than target FPS
         seg.call++;
         if (seg.isInTransition() && frameDelay > FRAMETIME) frameDelay = FRAMETIME; // force faster updates during transition
         BusManager::setSegmentCCT(oldCCT); // restore old CCT for ABL adjustments

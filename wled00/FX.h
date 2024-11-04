@@ -47,8 +47,7 @@
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
 #define FRAMETIME        strip.getFrameTime()
 #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)    // all ESP32 except -C3(very slow, untested)
-  #define MIN_SHOW_DELAY   (max(2, (_frametime*5)/8))                       // supports higher framerates and better animation control -- 5/8 = 62%
-  // used to initialize for strip attributes:
+  #define MIN_SHOW_DELAY   3                                              // supports higher framerates and better animation control
 #else
   #define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)                       // legacy MIN_SHOW_DELAY - creates more idle loops, but reduces framerates
 #endif
