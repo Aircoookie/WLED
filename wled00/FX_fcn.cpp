@@ -1314,7 +1314,7 @@ void WS2812FX::service() {
 
   #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
   if (elapsed < 2) return;                                                       // keep wifi alive
-  if ( !_triggered && (_targetFps != FPS_UNLIMITED) && (_targetFps > 0)) {
+  if ( !_triggered && (_targetFps != FPS_UNLIMITED)) {
     if (elapsed < MIN_SHOW_DELAY) return;                                        // WLEDMM too early for service
   }
   #else  // legacy
@@ -1450,9 +1450,9 @@ uint16_t WS2812FX::getFps() const {
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
-  if (fps > 0 && fps <= 120) _targetFps = fps;
-  _frametime = 1000 / _targetFps;
-  if (fps == FPS_UNLIMITED) _frametime = 3;     // unlimited mode
+  if (fps <= 120) _targetFps = fps;
+  if (_targetFps > 0) _frametime = 1000 / _targetFps;
+  else _frametime = 3;     // unlimited mode
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {

@@ -52,7 +52,7 @@
 #else
   #define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)                       // legacy MIN_SHOW_DELAY - creates more idle loops, but reduces framerates
 #endif
-#define FPS_UNLIMITED    120
+#define FPS_UNLIMITED    0
 
 /* each segment uses 82 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
