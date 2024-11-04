@@ -737,7 +737,7 @@ class WS2812FX {  // 96 bytes
       _transitionDur(750),
       _targetFps(WLED_FPS),
       _frametime(FRAMETIME_FIXED),
-      _cumulativeFps(50<<6),
+      _cumulativeFps(50<<7),
       _isServicing(false),
       _isOffRefreshRequired(false),
       _hasWhiteChannel(false),
