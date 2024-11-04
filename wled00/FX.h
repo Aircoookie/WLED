@@ -54,6 +54,7 @@
 #ifndef FPS_MULTIPLIER
 #define FPS_MULTIPLIER 1 // dev option: multiplier to get sub-frame FPS without floats
 #endif
+#define FPS_CALC_SHIFT 7 // bit shift for fixed point math
 
 /* each segment uses 82 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -737,7 +738,7 @@ class WS2812FX {  // 96 bytes
       _transitionDur(750),
       _targetFps(WLED_FPS),
       _frametime(FRAMETIME_FIXED),
-      _cumulativeFps(50<<7),
+      _cumulativeFps(50 << FPS_CALC_SHIFT),
       _isServicing(false),
       _isOffRefreshRequired(false),
       _hasWhiteChannel(false),
