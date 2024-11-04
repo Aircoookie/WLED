@@ -1,19 +1,3 @@
-/*
-  Usermod for controlling WLED using a generic 433 / 315MHz remote and simple 3-pin receiver
-  See https://github.com/sui77/rc-switch/ for details
-
-  Build:
-    - Enable by defining USERMOD_RF433 in my_config.h
-    - Uncomment "sui77/rc-switch @ 2.6.4" in platformio.ini default env lib_deps section
-
-  Usage:
-    - Connect receiver to an interrupt-capable pin
-    - Set pin in Config->Usermods
-    - Info pane will show the last received button code
-    - See https://kno.wled.ge/interfaces/json-ir/json_infrared/ as reference to create a "remote433.json" file
-      and upload it to the ESP in http://ip/edit, the key for the actions is the button number retrieved from above.
-*/
-
 #pragma once
 
 #include "wled.h"
@@ -56,7 +40,6 @@ public:
   {
   }
 
-
   void loop()
   {
     if (!modEnabled || strip.isUpdating()) 
@@ -68,7 +51,7 @@ public:
       mySwitch.resetAvailable();
 
       // Discard duplicates, limit long press repeat
-      if (lastValue == value && millis() - lastTime < 1000)
+      if (lastValue == value && millis() - lastTime < 800)
         return;
 
       lastValue = value;
@@ -170,6 +153,18 @@ public:
       fdo.clear();                                                 // clear JSON buffer (it is no longer needed)
       handleSet(nullptr, cmdStr, false);                           // no stateUpdated() call here
       stateUpdated(CALL_MODE_BUTTON);
+      parsed = true;
+    } else {
+    // command is JSON object
+      if (jsonCmdObj[F("psave")].isNull())
+        deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
+      else {
+        uint8_t psave = jsonCmdObj[F("psave")].as<int>();
+        char pname[33];
+        sprintf_P(pname, PSTR("IR Preset %d"), psave);
+        fdo.clear();
+        if (psave > 0 && psave < 251) savePreset(psave, pname, fdo);
+      }
       parsed = true;
     }
     releaseJSONBufferLock();
