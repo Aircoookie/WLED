@@ -3110,42 +3110,57 @@ function mergeDeep(target, ...sources)
 	return mergeDeep(target, ...sources);
 }
 
+function showTooltip(element) {
+	// save title
+	element.setAttribute("data-title", element.getAttribute("title"));
+	const tooltip = d.createElement("span");
+	tooltip.className = "tooltip";
+	tooltip.textContent = element.getAttribute("title");
+
+	// prevent default title popup
+	element.removeAttribute("title");
+
+	let { top, left, width } = element.getBoundingClientRect();
+
+	d.body.appendChild(tooltip);
+
+	const { offsetHeight, offsetWidth } = tooltip;
+
+	const offset = element.classList.contains("sliderwrap") ? 4 : 10;
+	top -= offsetHeight + offset;
+	left += (width - offsetWidth) / 2;
+
+	tooltip.style.top = top + "px";
+	tooltip.style.left = left + "px";
+	tooltip.classList.add("visible");
+}
+
+function hideTooltip(element) {
+	d.querySelectorAll('.tooltip').forEach((tooltip)=>{	
+		tooltip.classList.remove("visible");
+		d.body.removeChild(tooltip);
+	});
+	// restore title
+	element.setAttribute("title", element.getAttribute("data-title"));
+}
+
 function tooltip(cont=null)
 {
 	d.querySelectorAll((cont?cont+" ":"")+"[title]").forEach((element)=>{
 		element.addEventListener("mouseover", ()=>{
-			// save title
-			element.setAttribute("data-title", element.getAttribute("title"));
-			const tooltip = d.createElement("span");
-			tooltip.className = "tooltip";
-			tooltip.textContent = element.getAttribute("title");
-
-			// prevent default title popup
-			element.removeAttribute("title");
-
-			let { top, left, width } = element.getBoundingClientRect();
-
-			d.body.appendChild(tooltip);
-
-			const { offsetHeight, offsetWidth } = tooltip;
-
-			const offset = element.classList.contains("sliderwrap") ? 4 : 10;
-			top -= offsetHeight + offset;
-			left += (width - offsetWidth) / 2;
-
-			tooltip.style.top = top + "px";
-			tooltip.style.left = left + "px";
-			tooltip.classList.add("visible");
+			// On touch devices, the "mouseover" event is triggered after "touchend".
+            // Whitout "if (!element.classList.contains("isTouched"))", this would cause the tooltip to appear and never close. 
+			if (!element.classList.contains("isTouched")) { showTooltip(element); } 
+			element.classList.remove("isTouched");
 		});
 
-		element.addEventListener("mouseout", ()=>{
-			d.querySelectorAll('.tooltip').forEach((tooltip)=>{
-				tooltip.classList.remove("visible");
-				d.body.removeChild(tooltip);
-			});
-			// restore title
-			element.setAttribute("title", element.getAttribute("data-title"));
+		element.addEventListener("touchstart", ()=>{
+			element.classList.add("isTouched");
+			showTooltip(element);
 		});
+
+		element.addEventListener("mouseout", ()=>{ hideTooltip(element); });
+		element.addEventListener("touchend", ()=>{ hideTooltip(element); });
 	});
 };
 
