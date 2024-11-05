@@ -876,7 +876,7 @@ Swap: <select id="xw${s}" name="XW${s}">
 		</select><br>
 		Target refresh rate: <input type="number" class="s" min="0" max="120" name="FR" oninput="UI()" required> FPS
 		<div id="fpsHelp" style="display: block;"><i>use 0 for unlimited</i><br></div>
-		<div id="fpsNone" style="color:orange; display: none;">Unlimited FPS Mode<br></div>
+		<div id="fpsNone" class="warn" style="display: none;">Unlimited FPS Mode<br></div>
 		<hr class="sml">
 		<div id="cfg">Config template: <input type="file" name="data2" accept=".json"><button type="button" class="sml" onclick="loadCfg(d.Sf.data2)">Apply</button><br></div>
 		<hr>
