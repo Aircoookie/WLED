@@ -1412,10 +1412,12 @@ void WS2812FX::show() {
 
   unsigned long showNow = millis();
   size_t diff = showNow - _lastShow;
-  size_t fpsCurr = 200;
-  if (diff > 0) fpsCurr = 1000 / diff;
-  _cumulativeFps = (3 * _cumulativeFps + fpsCurr +2) >> 2;   // "+2" for proper rounding (2/4 = 0.5)
-  _lastShow = showNow;
+
+  if (diff > 0) { // skip calculation if no time has passed
+    size_t fpsCurr = (1000 << FPS_CALC_SHIFT) / diff; // fixed point math
+    _cumulativeFps = (FPS_CALC_AVG * _cumulativeFps + fpsCurr + FPS_CALC_AVG / 2) / (FPS_CALC_AVG + 1);   // "+FPS_CALC_AVG/2" for proper rounding
+    _lastShow = showNow;
+  }
 }
 
 /**
@@ -1432,7 +1434,7 @@ bool WS2812FX::isUpdating() const {
  */
 uint16_t WS2812FX::getFps() const {
   if (millis() - _lastShow > 2000) return 0;
-  return _cumulativeFps +1;
+  return (FPS_MULTIPLIER * _cumulativeFps) >> FPS_CALC_SHIFT; // _cumulativeFps is stored in fixed point
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
