@@ -3144,25 +3144,18 @@ function hideTooltip(element) {
 	element.setAttribute("title", element.getAttribute("data-title"));
 }
 
-function tooltip(cont=null)
-{
-	d.querySelectorAll((cont?cont+" ":"")+"[title]").forEach((element)=>{
-		element.addEventListener("mouseover", ()=>{
-			// On touch devices, the "mouseover" event is triggered after "touchend".
-            // Whitout "if (!element.classList.contains("isTouched"))", this would cause the tooltip to appear and never close. 
-			if (!element.classList.contains("isTouched")) { showTooltip(element); } 
-			element.classList.remove("isTouched");
-		});
-
-		element.addEventListener("touchstart", ()=>{
-			element.classList.add("isTouched");
-			showTooltip(element);
-		});
-
-		element.addEventListener("mouseout", ()=>{ hideTooltip(element); });
-		element.addEventListener("touchend", ()=>{ hideTooltip(element); });
+function tooltip(cont = null) {
+	let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+	d.querySelectorAll((cont ? cont + " " : "") + "[title]").forEach((element) => {
+		if (isTouchDevice) {
+			element.addEventListener("touchstart", () => { showTooltip(element); });
+			element.addEventListener("touchend", () => { hideTooltip(element); });
+		} else {
+			element.addEventListener("mouseover", () => { showTooltip(element); });
+			element.addEventListener("mouseout", () => { hideTooltip(element); });
+		}
 	});
-};
+}
 
 // Transforms the default UI into the simple UI
 function simplifyUI() {
