@@ -317,12 +317,12 @@ void Segment::stopTransition() {
 }
 
 // transition progression between 0-65535
-uint16_t IRAM_ATTR Segment::progress() const {
+void IRAM_ATTR Segment::updateTransitionProgress() {
+  transitionprogress = 0xFFFFU;
   if (isInTransition()) {
     unsigned diff = millis() - _t->_start;
-    if (_t->_dur > 0 && diff < _t->_dur) return diff * 0xFFFFU / _t->_dur;
+    if (_t->_dur > 0 && diff < _t->_dur) transitionprogress = diff * 0xFFFFU / _t->_dur;
   }
-  return 0xFFFFU;
 }
 
 #ifndef WLED_DISABLE_MODE_BLEND
