@@ -1312,7 +1312,7 @@ void WS2812FX::service() {
   if (_suspend) return;
   unsigned long elapsed = nowUp - _lastServiceShow;
 
-  if (elapsed < 2) return;                                                       // keep wifi alive - no matter if triggered or unlimited
+  if (elapsed <= MIN_FRAME_DELAY) return;                                        // keep wifi alive - no matter if triggered or unlimited
   if ( !_triggered && (_targetFps != FPS_UNLIMITED)) {                           // unlimited mode = no frametime
     if (elapsed < _frametime) return;                                            // too early for service
   }
@@ -1369,7 +1369,6 @@ void WS2812FX::service() {
           Segment::modeBlend(false);          // unset semaphore
         }
 #endif
-        frameDelay = max(frameDelay, unsigned(MIN_SHOW_DELAY));                     // limit effects that want to go faster than target FPS
         seg.call++;
         if (seg.isInTransition() && frameDelay > FRAMETIME) frameDelay = FRAMETIME; // force faster updates during transition
         BusManager::setSegmentCCT(oldCCT); // restore old CCT for ABL adjustments
@@ -1390,7 +1389,7 @@ void WS2812FX::service() {
     yield();
     Segment::handleRandomPalette(); // slowly transition random palette; move it into for loop when each segment has individual random palette
     show();
-    _lastServiceShow = nowUp; // correct timestamp, for better FPS control
+    _lastServiceShow = nowUp; // update timestamp, for precise FPS control
   }
   #ifdef WLED_DEBUG
   if ((_targetFps != FPS_UNLIMITED) && (millis() - nowUp > _frametime)) DEBUG_PRINTF_P(PSTR("Slow strip %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
@@ -1445,9 +1444,9 @@ uint16_t WS2812FX::getFps() const {
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
-  if (fps <= 120) _targetFps = fps;
+  if (fps <= 250) _targetFps = fps;
   if (_targetFps > 0) _frametime = 1000 / _targetFps;
-  else _frametime = 3;     // unlimited mode
+  else _frametime = MIN_FRAME_DELAY;     // unlimited mode
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
@@ -1495,7 +1494,7 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   BusManager::setBrightness(b);
   if (!direct) {
     unsigned long t = millis();
-    if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) trigger(); //apply brightness change immediately if no refresh soon
+    if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_FRAME_DELAY) trigger(); //apply brightness change immediately if no refresh soon
   }
 }
 

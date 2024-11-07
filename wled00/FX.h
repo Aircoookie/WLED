@@ -46,10 +46,12 @@
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
 #define FRAMETIME        strip.getFrameTime()
-#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)    // all ESP32 except -C3(very slow, untested)
-  #define MIN_SHOW_DELAY   3                                              // supports higher framerates and better animation control
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
+  #define MIN_FRAME_DELAY  2                                              // minimum wait between repaints, to keep other functions like WiFi alive 
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
+  #define MIN_FRAME_DELAY  4                                              // S2 is slower than normal esp32, and only has one core
 #else
-  #define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)                       // legacy MIN_SHOW_DELAY - creates more idle loops, but reduces framerates
+  #define MIN_FRAME_DELAY  8                                              // 8266 legacy MIN_SHOW_DELAY
 #endif
 #define FPS_UNLIMITED    0
 
@@ -842,7 +844,7 @@ class WS2812FX {  // 96 bytes
       getMappedPixelIndex(uint16_t index) const;
 
     inline uint16_t getFrameTime() const    { return _frametime; }        // returns amount of time a frame should take (in ms)
-    inline uint16_t getMinShowDelay() const { return MIN_SHOW_DELAY; }    // returns minimum amount of time strip.service() can be delayed (constant)
+    inline uint16_t getMinShowDelay() const { return MIN_FRAME_DELAY; }   // returns minimum amount of time strip.service() can be delayed (constant)
     inline uint16_t getLength() const       { return _length; }           // returns actual amount of LEDs on a strip (2D matrix may have less LEDs than W*H)
     inline uint16_t getTransition() const   { return _transitionDur; }    // returns currently set transition time (in ms)
 
