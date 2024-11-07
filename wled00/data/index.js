@@ -3136,12 +3136,12 @@ function showTooltip(element) {
 }
 
 function hideTooltip(element) {
-		d.querySelectorAll('.tooltip').forEach((tooltip)=>{
-			tooltip.classList.remove("visible");
-			d.body.removeChild(tooltip);
-		});
-		// restore title
-		element.setAttribute("title", element.getAttribute("data-title"));
+			d.querySelectorAll('.tooltip').forEach((tooltip)=>{
+				tooltip.classList.remove("visible");
+				d.body.removeChild(tooltip);
+			});
+			// restore title
+			element.setAttribute("title", element.getAttribute("data-title"));
 }
 
 function tooltip(cont = null) {
