@@ -3111,32 +3111,32 @@ function mergeDeep(target, ...sources)
 }
 
 function showTooltip(element) {
-	// save title
-	element.setAttribute("data-title", element.getAttribute("title"));
-	const tooltip = d.createElement("span");
-	tooltip.className = "tooltip";
-	tooltip.textContent = element.getAttribute("title");
+			// save title
+			element.setAttribute("data-title", element.getAttribute("title"));
+			const tooltip = d.createElement("span");
+			tooltip.className = "tooltip";
+			tooltip.textContent = element.getAttribute("title");
 
-	// prevent default title popup
-	element.removeAttribute("title");
+			// prevent default title popup
+			element.removeAttribute("title");
 
-	let { top, left, width } = element.getBoundingClientRect();
+			let { top, left, width } = element.getBoundingClientRect();
 
-	d.body.appendChild(tooltip);
+			d.body.appendChild(tooltip);
 
-	const { offsetHeight, offsetWidth } = tooltip;
+			const { offsetHeight, offsetWidth } = tooltip;
 
-	const offset = element.classList.contains("sliderwrap") ? 4 : 10;
-	top -= offsetHeight + offset;
-	left += (width - offsetWidth) / 2;
+			const offset = element.classList.contains("sliderwrap") ? 4 : 10;
+			top -= offsetHeight + offset;
+			left += (width - offsetWidth) / 2;
 
-	tooltip.style.top = top + "px";
-	tooltip.style.left = left + "px";
-	tooltip.classList.add("visible");
+			tooltip.style.top = top + "px";
+			tooltip.style.left = left + "px";
+			tooltip.classList.add("visible");
 }
 
 function hideTooltip(element) {
-	d.querySelectorAll('.tooltip').forEach((tooltip)=>{	
+	d.querySelectorAll('.tooltip').forEach((tooltip)=>{
 		tooltip.classList.remove("visible");
 		d.body.removeChild(tooltip);
 	});
@@ -3145,7 +3145,7 @@ function hideTooltip(element) {
 }
 
 function tooltip(cont = null) {
-	let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+	const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 	d.querySelectorAll((cont ? cont + " " : "") + "[title]").forEach((element) => {
 		if (isTouchDevice) {
 			element.addEventListener("touchstart", () => { showTooltip(element); });
@@ -3155,7 +3155,7 @@ function tooltip(cont = null) {
 			element.addEventListener("mouseout", () => { hideTooltip(element); });
 		}
 	});
-}
+};
 
 // Transforms the default UI into the simple UI
 function simplifyUI() {
