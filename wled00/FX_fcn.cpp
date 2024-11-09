@@ -489,8 +489,10 @@ void Segment::handleRandomPalette() {
   nblendPaletteTowardPalette(_randomPalette, _newRandomPalette, 48);
 }
 
-// segId is given when called from network callback, changes are queued if that segment is currently in its effect function
-void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
+// sets Segment geometry (length or width/height and grouping, spacing and offset as well as 2D mapping)
+// strip must be suspended (strip.suspend()) before calling this function
+// this function may call fill() to clear pixels if spacing or mapping changed (which requires setting _vWidth, _vHeight, _vLength or beginDraw())
+void Segment::setGeometry(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y, uint8_t m12) {
   // return if neither bounds nor grouping have changed
   bool boundsUnchanged = (start == i1 && stop == i2);
   #ifndef WLED_DISABLE_2D
@@ -498,11 +500,19 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
   #endif
   if (boundsUnchanged
       && (!grp || (grouping == grp && spacing == spc))
-      && (ofs == UINT16_MAX || ofs == offset)) return;
+      && (ofs == UINT16_MAX || ofs == offset)
+      && (m12 == map1D2D)
+     ) return;
 
   stateChanged = true; // send UDP/WS broadcast
 
-  if (stop) fill(BLACK); // turn old segment range off (clears pixels if changing spacing)
+  if (stop || spc != spacing || m12 != map1D2D) {
+    _vWidth  = virtualWidth();
+    _vHeight = virtualHeight();
+    _vLength = virtualLength();
+    _segBri  = currentBri();
+    fill(BLACK); // turn old segment range off or clears pixels if changing spacing (requires _vWidth/_vHeight/_vLength/_segBri)
+  }
   if (grp) { // prevent assignment of 0
     grouping = grp;
     spacing = spc;
@@ -511,6 +521,7 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
     spacing = 0;
   }
   if (ofs < UINT16_MAX) offset = ofs;
+  map1D2D  = constrain(m12, 0, 7);
 
   DEBUG_PRINT(F("setUp segment: ")); DEBUG_PRINT(i1);
   DEBUG_PRINT(','); DEBUG_PRINT(i2);
@@ -993,7 +1004,7 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
   return strip.getPixelColor(i);
 }
 
-uint8_t Segment::differs(Segment& b) const {
+uint8_t Segment::differs(const Segment& b) const {
   uint8_t d = 0;
   if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
   if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
@@ -1593,19 +1604,6 @@ void WS2812FX::purgeSegments() {
 
 Segment& WS2812FX::getSegment(unsigned id) {
   return _segments[id >= _segments.size() ? getMainSegmentId() : id]; // vectors
-}
-
-// sets new segment bounds, queues if that segment is currently running
-void WS2812FX::setSegment(uint8_t segId, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
-  if (segId >= getSegmentsNum()) {
-    if (i2 <= i1) return; // do not append empty/inactive segments
-    appendSegment(Segment(0, strip.getLengthTotal()));
-    segId = getSegmentsNum()-1; // segments are added at the end of list
-  }
-  suspend();
-  _segments[segId].setUp(i1, i2, grouping, spacing, offset, startY, stopY);
-  resume();
-  if (segId > 0 && segId == getSegmentsNum()-1 && i2 <= i1) _segments.pop_back(); // if last segment was deleted remove it from vector
 }
 
 void WS2812FX::resetSegments() {

@@ -539,6 +539,7 @@ typedef struct Segment {
     inline uint16_t length()             const { return width() * height(); }               // segment length (count) in physical pixels
     inline uint16_t groupLength()        const { return grouping + spacing; }
     inline uint8_t  getLightCapabilities() const { return _capabilities; }
+    inline void     deactivate()               { setGeometry(0,0); }
 
     inline static unsigned getUsedSegmentData()            { return Segment::_usedSegmentData; }
     inline static void     addUsedSegmentData(int len)     { Segment::_usedSegmentData += len; }
@@ -554,14 +555,14 @@ typedef struct Segment {
     static void handleRandomPalette();
 
     void    beginDraw();            // set up parameters for current effect
-    void    setUp(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
+    void    setGeometry(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1, uint8_t m12=0);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
     void    setCCT(uint16_t k);
     void    setOpacity(uint8_t o);
     void    setOption(uint8_t n, bool val);
     void    setMode(uint8_t fx, bool loadDefaults = false);
     void    setPalette(uint8_t pal);
-    uint8_t differs(Segment& b) const;
+    uint8_t differs(const Segment& b) const;
     void    refreshLightCapabilities();
 
     // runtime data functions
@@ -783,7 +784,6 @@ class WS2812FX {  // 96 bytes
       setBrightness(uint8_t b, bool direct = false),    // sets strip brightness
       setRange(uint16_t i, uint16_t i2, uint32_t col),  // used for clock overlay
       purgeSegments(),                            // removes inactive segments from RAM (may incure penalty and memory fragmentation but reduces vector footprint)
-      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 1, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=1),
       setMainSegmentId(unsigned n = 0),
       resetSegments(),                            // marks all segments for reset
       makeAutoSegments(bool forceReset = false),  // will create segments based on configured outputs
