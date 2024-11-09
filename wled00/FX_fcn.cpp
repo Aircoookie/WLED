@@ -1823,7 +1823,6 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   StaticJsonDocument<64> filter;
   filter[F("width")]  = true;
   filter[F("height")] = true;
-  filter[F("name")]   = true;
   if (!readObjectFromFile(fileName, nullptr, pDoc, &filter)) {
     DEBUG_PRINT(F("ERROR Invalid ledmap in ")); DEBUG_PRINTLN(fileName);
     releaseJSONBufferLock();
