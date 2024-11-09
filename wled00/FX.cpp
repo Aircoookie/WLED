@@ -1940,7 +1940,7 @@ uint16_t mode_palette() {
   using angleType = unsigned;
   constexpr mathType sInt16Scale             = 0x7FFF;
   constexpr mathType maxAngle                = 0x8000;
-  constexpr mathType staticRotationScale     = 256;
+  constexpr mathType staticRotationScale     = 255;
   constexpr mathType animatedRotationScale   = 1;
   constexpr int16_t (*sinFunction)(uint16_t) = &sin16;
   constexpr int16_t (*cosFunction)(uint16_t) = &cos16;
@@ -1949,7 +1949,7 @@ uint16_t mode_palette() {
   using wideMathType = float;
   using angleType = float;
   constexpr mathType sInt16Scale           = 1.0f;
-  constexpr mathType maxAngle              = M_PI / 256.0;
+  constexpr mathType maxAngle              = M_PI / 255.0;
   constexpr mathType staticRotationScale   = 1.0f;
   constexpr mathType animatedRotationScale = M_TWOPI / double(0xFFFF);
   constexpr float (*sinFunction)(float)    = &sin_t;
@@ -1961,7 +1961,7 @@ uint16_t mode_palette() {
 
   const int  inputShift           = SEGMENT.speed;
   const int  inputSize            = SEGMENT.intensity;
-  const int  inputRotation        = SEGMENT.custom1;
+  const int  inputRotation        = SEGMENT.custom1 + 128;
   const bool inputAnimateShift    = SEGMENT.check1;
   const bool inputAnimateRotation = SEGMENT.check2;
   const bool inputAssumeSquare    = SEGMENT.check3;
@@ -1985,7 +1985,7 @@ uint16_t mode_palette() {
   // So the rectangle needs to have exactly the right size. That size depends on the rotation.
   // This scale computation here only considers one dimension. You can think of it like the rectangle is always scaled so that
   // the left and right most points always match the left and right side of the display.
-  const mathType scale   = std::abs(sinTheta) + (std::abs(cosTheta) * maxYOut / maxXOut);
+  const mathType scale = std::abs(sinTheta) + (std::abs(cosTheta) * maxYOut / maxXOut);
   // 2D simulation:
   // If we are dealing with a 1D setup, we assume that each segment represents one line on a 2-dimensional display.
   // The function is called once per segments, so we need to handle one line at a time.
@@ -2016,7 +2016,7 @@ uint16_t mode_palette() {
         colorIndex = ((inputSize - 112) * colorIndex) / 16;
       }
       // Finally, shift the palette a bit.
-      const int paletteOffset = (!inputAnimateShift) ? (inputShift-128) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
+      const int paletteOffset = (!inputAnimateShift) ? (inputShift) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
       colorIndex += paletteOffset;
       const uint32_t color = SEGMENT.color_wheel((uint8_t)colorIndex);
       if (isMatrix) {
@@ -2028,7 +2028,7 @@ uint16_t mode_palette() {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;c1=128,c2=128,c3=128,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;ix=112,c1=0,o1=1,o2=0,o3=1";
 
 
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
