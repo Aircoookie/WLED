@@ -219,6 +219,7 @@ void WLED::loop()
       busConfigs[i] = nullptr;
     }
     strip.finalizeInit(); // also loads default ledmap if present
+    BusManager::setBrightness(bri); // fix re-initialised bus' brightness #4005
     if (aligned) strip.makeAutoSegments();
     else strip.fixInvalidSegments();
     BusManager::setBrightness(bri); // fix re-initialised bus' brightness
@@ -380,6 +381,12 @@ void WLED::setup()
     case FM_QOUT: DEBUG_PRINT(F("(QOUT)"));break;
     case FM_DIO:  DEBUG_PRINT(F("(DIO)")); break;
     case FM_DOUT: DEBUG_PRINT(F("(DOUT)"));break;
+    #if defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_ESPTOOLPY_FLASHMODE_OPI
+    case FM_FAST_READ: DEBUG_PRINT(F("(OPI)")); break;
+    #else
+    case FM_FAST_READ: DEBUG_PRINT(F("(fast_read)")); break;
+    #endif
+    case FM_SLOW_READ: DEBUG_PRINT(F("(slow_read)")); break;
     default: break;
   }
   #endif

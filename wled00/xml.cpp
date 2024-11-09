@@ -173,7 +173,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       char fpass[l+1]; //fill password field with ***
       fpass[l] = 0;
       memset(fpass,'*',l);
-      settingsScript.printf_P(PSTR("addWiFi(\"%s\",\",%s\",0x%X,0x%X,0x%X);"),
+      settingsScript.printf_P(PSTR("addWiFi(\"%s\",\"%s\",0x%X,0x%X,0x%X);"),
         multiWiFi[n].clientSSID,
         fpass,
         (uint32_t) multiWiFi[n].staticIP, // explicit cast required as this is a struct
@@ -228,7 +228,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
 
       #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-      if (Network.isEthernet()) strcat_P(s ,SET_F(" (Ethernet)"));
+      if (Network.isEthernet()) strcat_P(s ,PSTR(" (Ethernet)"));
       #endif
       printSetClassElementHTML(settingsScript,PSTR("sip"),0,s);
     } else
@@ -499,7 +499,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     #endif
     printSetFormValue(settingsScript,PSTR("BD"),serialBaud);
     #ifndef WLED_ENABLE_ADALIGHT
-    settingsScript.print(F("toggle('Serial);"));
+    settingsScript.print(F("toggle('Serial');"));
     #endif
   }
 
