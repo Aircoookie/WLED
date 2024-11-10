@@ -1473,7 +1473,7 @@ TD .checkmark, TD .radiomark {
 
 @media all and (max-width: 1023px) {
 	.top button {
-		width: 8%;
+		width: 10%;
 		padding: 10px 0 8px 0;
 	}
 	#buttonPcm {
@@ -1507,7 +1507,7 @@ TD .checkmark, TD .radiomark {
 
 @media all and (max-width: 639px) {
 	.top button {
-		width: 16.6%;
+		width: 18.6%;
 		padding: 8px 0 4px 0;
 	}
 	#briwrap {
@@ -1522,7 +1522,7 @@ TD .checkmark, TD .radiomark {
 
 @media all and (min-width: 420px) and (max-width: 639px) {
 	.top button {
-		width: 14.28%;
+		width: 16.28%;
 		padding: 8px 0 4px 0;
 	}
 }
@@ -1578,4 +1578,11 @@ TD .checkmark, TD .radiomark {
 		text-overflow: ellipsis;
 		overflow-x: clip;
 	}
+}
+.hidden-over-screen {
+	position: fixed;
+	top: -10000px;
+	left: -10000px;
+	opacity: 0;
+	pointer-events: none;
 }
