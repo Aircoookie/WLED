@@ -324,7 +324,7 @@ static IRAM_ATTR void timer1Interrupt() {
     case WaveformMode::INIT:
       waveform.states &= ~waveform.toSetBits; // Clear the state of any just started
       if (waveform.alignPhase >= 0 && waveform.enabled & (1UL << waveform.alignPhase)) {
-        wave.nextPeriodCcy = waveform.pins[waveform.alignPhase].nextPeriodCcy + wave.nextPeriodCcy;
+        wave.nextPeriodCcy = waveform.pins[waveform.alignPhase].nextPeriodCcy + scaleCcys(waveform.phaseCcy, isCPU2X);
       }
       else {
         wave.nextPeriodCcy = waveform.nextEventCcy;
@@ -342,15 +342,15 @@ static IRAM_ATTR void timer1Interrupt() {
     // @willmmiles new feature
     case WaveformMode::UPDATEPHASE:
       // in WaveformMode::UPDATEPHASE, we recalculate the targets
-      if (waveform.alignPhase >= 0 && waveform.enabled & (1UL << waveform.alignPhase)) {
+      if ((waveform.alignPhase >= 0) && (waveform.enabled & (1UL << waveform.alignPhase))) {
         // Compute phase shift to realign with target
-        auto& align_wave = waveform.pins[waveform.alignPhase];                
-        int32_t shift = static_cast<int32_t>(align_wave.nextPeriodCcy + scaleCcys(waveform.phaseCcy, isCPU2X) - wave.nextPeriodCcy);
-        const int32_t periodCcys = scaleCcys(wave.periodCcys, isCPU2X);
-        if (shift > periodCcys/2) shift -= periodCcys;
-        else if (shift <= -periodCcys/2) shift += periodCcys;
-        wave.nextPeriodCcy += shift;
-        wave.endDutyCcy += shift;
+        auto const newPeriodCcy = waveform.pins[waveform.alignPhase].nextPeriodCcy + scaleCcys(waveform.phaseCcy, isCPU2X);
+        auto const period = scaleCcys(wave.periodCcys, isCPU2X);
+        auto shift = ((static_cast<int32_t> (newPeriodCcy - wave.nextPeriodCcy) + period/2) % period) - (period/2);
+        wave.nextPeriodCcy += static_cast<uint32_t>(shift);
+        if (static_cast<int32_t>(wave.endDutyCcy - wave.nextPeriodCcy) > 0) {
+          wave.endDutyCcy = wave.nextPeriodCcy;
+        }
       }
     default:
       break;
