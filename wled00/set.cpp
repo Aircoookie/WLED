@@ -803,7 +803,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
 
 //HTTP API request parser
-bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply)
+bool handleHttpApi(const String& req, bool apply)
 {
   int pos = 0;
   DEBUG_PRINTF_P(PSTR("API req: %s\n"), req.c_str());
@@ -1030,10 +1030,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   bool fxModeChanged = false, speedChanged = false, intensityChanged = false, paletteChanged = false;
   bool custom1Changed = false, custom2Changed = false, custom3Changed = false, check1Changed = false, check2Changed = false, check3Changed = false;
   // set effect parameters
-  if (updateVal(req.c_str(), "FX=", &effectIn, 0, strip.getModeCount()-1)) {
-    if (request != nullptr) unloadPlaylist(); // unload playlist if changing FX using web request
-    fxModeChanged = true;
-  }
+  fxModeChanged    = updateVal(req.c_str(), "FX=", &effectIn, 0, strip.getModeCount()-1);
   speedChanged     = updateVal(req.c_str(), "SX=", &speedIn);
   intensityChanged = updateVal(req.c_str(), "IX=", &intensityIn);
   paletteChanged   = updateVal(req.c_str(), "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
@@ -1186,13 +1183,6 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
   stateUpdated((pos >= 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);
-
-  // internal call, does not send XML response
-  if (request != nullptr) {
-    auto response = request->beginResponseStream("text/xml");
-    XML_response(*response);
-    request->send(response);
-  }
 
   return true;
 }

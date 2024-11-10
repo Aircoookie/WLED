@@ -483,7 +483,15 @@ void initServer()
     }
 
     if (request->url().indexOf("win") == 0) {
-      if(handleHttpApi(request, request->url().substring(3))) return;
+      if (handleHttpApi(request->url().substring(3))) {
+        if (request->url().indexOf(F("&FX=")) > 0) {
+          unloadPlaylist();  // Setting an FX via HTTP disables any active playlist.
+        }
+        auto response = request->beginResponseStream(CONTENT_TYPE_XML);
+        XML_response(*response);
+        request->send(response);
+        return;
+      }
     }
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;

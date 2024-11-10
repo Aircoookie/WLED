@@ -180,7 +180,7 @@ void handlePresets()
   //HTTP API commands
   const char* httpwin = fdo["win"];
   if (httpwin) {
-    handleHttpApi(nullptr, httpwin, false); // may call applyPreset() via PL=
+    handleHttpApi(httpwin, false); // may call applyPreset() via PL=
     setValuesFromFirstSelectedSeg(); // fills legacy values
     changePreset = true;
   } else {

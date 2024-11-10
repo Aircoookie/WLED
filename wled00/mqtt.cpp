@@ -107,7 +107,7 @@ static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProp
         deserializeJson(*pDoc, payloadStr);
         deserializeState(pDoc->as<JsonObject>());
       } else { //HTTP API
-        handleHttpApi(nullptr, payloadStr);
+        handleHttpApi(payloadStr);
       }
       releaseJSONBufferLock();
     }

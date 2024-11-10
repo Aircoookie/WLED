@@ -235,7 +235,7 @@ void handleRemote(uint8_t *data, size_t len);
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
-bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply=true);
+bool handleHttpApi(const String& req, bool apply=true);
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);

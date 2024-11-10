@@ -681,7 +681,7 @@ void handleNotifications()
 
   if (requestJSONBufferLock(18)) {
     if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
-      handleHttpApi(nullptr, (char*)udpIn);
+      handleHttpApi((char*)udpIn);
     } else if (udpIn[0] == '{') { //JSON API
       DeserializationError error = deserializeJson(*pDoc, udpIn);
       JsonObject root = pDoc->as<JsonObject>();
