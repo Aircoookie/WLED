@@ -317,7 +317,7 @@ void Segment::stopTransition() {
 }
 
 // transition progression between 0-65535
-void IRAM_ATTR Segment::updateTransitionProgress() {
+void Segment::updateTransitionProgress() {
   transitionprogress = 0xFFFFU;
   if (isInTransition()) {
     unsigned diff = millis() - _t->_start;
