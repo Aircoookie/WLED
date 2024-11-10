@@ -5,12 +5,10 @@
  */
 
 /*
- * color blend function
+ * base color blend function, used for 8bit and 16bit
  */
-uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend) {
-  if (blend == 0) return color1;
-  else if (blend == 0xFFFF) return color2;
-
+uint32_t color_blend_base(uint32_t color1, uint32_t color2, uint16_t blend) {
+  if(blend == 0) return color1;
   uint32_t w1 = W(color1);
   uint32_t r1 = R(color1);
   uint32_t g1 = G(color1);

@@ -417,9 +417,9 @@ uint8_t Segment::currentMode() const {
 uint32_t IRAM_ATTR_YN Segment::currentColor(uint8_t slot) const {
   if (slot >= NUM_COLORS) slot = 0;
 #ifndef WLED_DISABLE_MODE_BLEND
-  return isInTransition() ? color_blend(_t->_segT._colorT[slot], colors[slot], progress()) : colors[slot];
+  return isInTransition() ? color_blend16(_t->_segT._colorT[slot], colors[slot], progress()) : colors[slot];
 #else
-  return isInTransition() ? color_blend(_t->_colorT[slot], colors[slot], progress()) : colors[slot];
+  return isInTransition() ? color_blend16(_t->_colorT[slot], colors[slot], progress()) : colors[slot];
 #endif
 }
 
@@ -830,14 +830,14 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-        if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexMir), col, uint16_t(0xFFFFU - progress()));
+        if (_modeBlend) tmpCol = color_blend16(strip.getPixelColor(indexMir), col, uint16_t(0xFFFFU - progress()));
 #endif
         strip.setPixelColor(indexMir, tmpCol);
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
 #ifndef WLED_DISABLE_MODE_BLEND
-      if (_modeBlend) tmpCol = color_blend(strip.getPixelColor(indexSet), col, uint16_t(0xFFFFU - progress()));
+      if (_modeBlend) tmpCol = color_blend16(strip.getPixelColor(indexSet), col, uint16_t(0xFFFFU - progress()));
 #endif
       strip.setPixelColor(indexSet, tmpCol);
     }

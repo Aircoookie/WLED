@@ -182,7 +182,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 
 #ifndef WLED_DISABLE_MODE_BLEND
       // if blending modes, blend with underlying pixel
-      if (_modeBlend) tmpCol = color_blend(strip.getPixelColorXY(start + xX, startY + yY), col, uint16_t(0xFFFFU - progress()));
+      if (_modeBlend) tmpCol = color_blend16(strip.getPixelColorXY(start + xX, startY + yY), col, uint16_t(0xFFFFU - progress()));
 #endif
 
       strip.setPixelColorXY(start + xX, startY + yY, tmpCol);
@@ -516,22 +516,22 @@ void Segment::drawCircle(uint16_t cx, uint16_t cy, uint8_t radius, uint32_t col,
       uint16_t fade = float(0xFFFF) * (ceilf(yf) - yf); // how much color to keep
       if (oldFade > fade) y--;
       oldFade = fade;
-      setPixelColorXY(cx+x, cy+y, color_blend(col, getPixelColorXY(cx+x, cy+y), fade));
-      setPixelColorXY(cx-x, cy+y, color_blend(col, getPixelColorXY(cx-x, cy+y), fade));
-      setPixelColorXY(cx+x, cy-y, color_blend(col, getPixelColorXY(cx+x, cy-y), fade));
-      setPixelColorXY(cx-x, cy-y, color_blend(col, getPixelColorXY(cx-x, cy-y), fade));
-      setPixelColorXY(cx+y, cy+x, color_blend(col, getPixelColorXY(cx+y, cy+x), fade));
-      setPixelColorXY(cx-y, cy+x, color_blend(col, getPixelColorXY(cx-y, cy+x), fade));
-      setPixelColorXY(cx+y, cy-x, color_blend(col, getPixelColorXY(cx+y, cy-x), fade));
-      setPixelColorXY(cx-y, cy-x, color_blend(col, getPixelColorXY(cx-y, cy-x), fade));
-      setPixelColorXY(cx+x, cy+y-1, color_blend(getPixelColorXY(cx+x, cy+y-1), col, fade));
-      setPixelColorXY(cx-x, cy+y-1, color_blend(getPixelColorXY(cx-x, cy+y-1), col, fade));
-      setPixelColorXY(cx+x, cy-y+1, color_blend(getPixelColorXY(cx+x, cy-y+1), col, fade));
-      setPixelColorXY(cx-x, cy-y+1, color_blend(getPixelColorXY(cx-x, cy-y+1), col, fade));
-      setPixelColorXY(cx+y-1, cy+x, color_blend(getPixelColorXY(cx+y-1, cy+x), col, fade));
-      setPixelColorXY(cx-y+1, cy+x, color_blend(getPixelColorXY(cx-y+1, cy+x), col, fade));
-      setPixelColorXY(cx+y-1, cy-x, color_blend(getPixelColorXY(cx+y-1, cy-x), col, fade));
-      setPixelColorXY(cx-y+1, cy-x, color_blend(getPixelColorXY(cx-y+1, cy-x), col, fade));
+      setPixelColorXY(cx+x, cy+y, color_blend16(col, getPixelColorXY(cx+x, cy+y), fade));
+      setPixelColorXY(cx-x, cy+y, color_blend16(col, getPixelColorXY(cx-x, cy+y), fade));
+      setPixelColorXY(cx+x, cy-y, color_blend16(col, getPixelColorXY(cx+x, cy-y), fade));
+      setPixelColorXY(cx-x, cy-y, color_blend16(col, getPixelColorXY(cx-x, cy-y), fade));
+      setPixelColorXY(cx+y, cy+x, color_blend16(col, getPixelColorXY(cx+y, cy+x), fade));
+      setPixelColorXY(cx-y, cy+x, color_blend16(col, getPixelColorXY(cx-y, cy+x), fade));
+      setPixelColorXY(cx+y, cy-x, color_blend16(col, getPixelColorXY(cx+y, cy-x), fade));
+      setPixelColorXY(cx-y, cy-x, color_blend16(col, getPixelColorXY(cx-y, cy-x), fade));
+      setPixelColorXY(cx+x, cy+y-1, color_blend16(getPixelColorXY(cx+x, cy+y-1), col, fade));
+      setPixelColorXY(cx-x, cy+y-1, color_blend16(getPixelColorXY(cx-x, cy+y-1), col, fade));
+      setPixelColorXY(cx+x, cy-y+1, color_blend16(getPixelColorXY(cx+x, cy-y+1), col, fade));
+      setPixelColorXY(cx-x, cy-y+1, color_blend16(getPixelColorXY(cx-x, cy-y+1), col, fade));
+      setPixelColorXY(cx+y-1, cy+x, color_blend16(getPixelColorXY(cx+y-1, cy+x), col, fade));
+      setPixelColorXY(cx-y+1, cy+x, color_blend16(getPixelColorXY(cx-y+1, cy+x), col, fade));
+      setPixelColorXY(cx+y-1, cy-x, color_blend16(getPixelColorXY(cx+y-1, cy-x), col, fade));
+      setPixelColorXY(cx-y+1, cy-x, color_blend16(getPixelColorXY(cx-y+1, cy-x), col, fade));
       x++;
     }
   } else {
@@ -613,8 +613,8 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
       int y = int(intersectY);
       if (steep) std::swap(x,y);  // temporaryly swap if steep
       // pixel coverage is determined by fractional part of y co-ordinate
-      setPixelColorXY(x, y, color_blend(c, getPixelColorXY(x, y), keep));
-      setPixelColorXY(x+int(steep), y+int(!steep), color_blend(c, getPixelColorXY(x+int(steep), y+int(!steep)), seep));
+      setPixelColorXY(x, y, color_blend16(c, getPixelColorXY(x, y), keep));
+      setPixelColorXY(x+int(steep), y+int(!steep), color_blend16(c, getPixelColorXY(x+int(steep), y+int(!steep)), seep));
       intersectY += gradient;
       if (steep) std::swap(x,y);  // restore if steep
     }
