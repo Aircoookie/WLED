@@ -21,7 +21,7 @@ A fast and feature-rich implementation of an ESP32 and ESP8266 webserver to cont
 - Segments to set different effects and colors to user defined parts of the LED string  
 - Settings page - configuration via the network  
 - Access Point and station mode - automatic failsafe AP  
-- Up to 10 LED outputs per instance
+- [Up to 10 LED outputs](https://kno.wled.ge/features/multi-strip/#esp32) per instance
 - Support for RGBW strips  
 - Up to 250 user presets to save and load colors/effects easily, supports cycling through them.  
 - Presets can be used to automatically execute API calls  
