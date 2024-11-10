@@ -482,7 +482,9 @@ void initServer()
       return;
     }
 
-    if(handleHttpApi(request, request->url())) return;
+    if (request->url().indexOf("win") == 0) {
+      if(handleHttpApi(request, request->url().substring(3))) return;
+    }
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif

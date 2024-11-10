@@ -107,9 +107,7 @@ static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProp
         deserializeJson(*pDoc, payloadStr);
         deserializeState(pDoc->as<JsonObject>());
       } else { //HTTP API
-        String apireq = "win"; apireq += '&'; // reduce flash string usage
-        apireq += payloadStr;
-        handleHttpApi(nullptr, apireq);
+        handleHttpApi(nullptr, payloadStr);
       }
       releaseJSONBufferLock();
     }

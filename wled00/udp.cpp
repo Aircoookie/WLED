@@ -681,9 +681,7 @@ void handleNotifications()
 
   if (requestJSONBufferLock(18)) {
     if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
-      String apireq = "win"; apireq += '&'; // reduce flash string usage
-      apireq += (char*)udpIn;
-      handleHttpApi(nullptr, apireq);
+      handleHttpApi(nullptr, (char*)udpIn);
     } else if (udpIn[0] == '{') { //JSON API
       DeserializationError error = deserializeJson(*pDoc, udpIn);
       JsonObject root = pDoc->as<JsonObject>();

@@ -180,10 +180,7 @@ void handlePresets()
   //HTTP API commands
   const char* httpwin = fdo["win"];
   if (httpwin) {
-    String apireq = "win"; // reduce flash string usage
-    apireq += F("&IN&"); // internal call
-    apireq += httpwin;
-    handleHttpApi(nullptr, apireq, false); // may call applyPreset() via PL=
+    handleHttpApi(nullptr, httpwin, false); // may call applyPreset() via PL=
     setValuesFromFirstSelectedSeg(); // fills legacy values
     changePreset = true;
   } else {

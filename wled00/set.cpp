@@ -805,14 +805,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 //HTTP API request parser
 bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply)
 {
-  if (!(req.indexOf("win") >= 0)) return false;
-
   int pos = 0;
   DEBUG_PRINTF_P(PSTR("API req: %s\n"), req.c_str());
 
   //segment select (sets main segment)
   pos = req.indexOf(F("SM="));
-  if (pos > 0 && !realtimeMode) {
+  if (pos >= 0 && !realtimeMode) {
     strip.setMainSegmentId(getNumVal(&req, pos));
   }
 
@@ -821,7 +819,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   bool singleSegment = false;
 
   pos = req.indexOf(F("SS="));
-  if (pos > 0) {
+  if (pos >= 0) {
     unsigned t = getNumVal(&req, pos);
     if (t < strip.getSegmentsNum()) {
       selectedSeg = t;
@@ -831,7 +829,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   Segment& selseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
-  if (pos > 0) {
+  if (pos >= 0) {
     unsigned t = getNumVal(&req, pos);
     if (t == 2) for (unsigned i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).selected = false; // unselect other segments
     selseg.selected = t;
@@ -859,31 +857,31 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   uint8_t  grpI    = selseg.grouping;
   uint16_t spcI    = selseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
-  if (pos > 0) {
+  if (pos >= 0) {
     startI = std::abs(getNumVal(&req, pos));
   }
   pos = req.indexOf(F("S2=")); //segment stop
-  if (pos > 0) {
+  if (pos >= 0) {
     stopI = std::abs(getNumVal(&req, pos));
   }
   pos = req.indexOf(F("GP=")); //segment grouping
-  if (pos > 0) {
+  if (pos >= 0) {
     grpI = std::max(1,getNumVal(&req, pos));
   }
   pos = req.indexOf(F("SP=")); //segment spacing
-  if (pos > 0) {
+  if (pos >= 0) {
     spcI = std::max(0,getNumVal(&req, pos));
   }
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
-  if (pos > 0) selseg.reverse = req.charAt(pos+3) != '0';
+  if (pos >= 0) selseg.reverse = req.charAt(pos+3) != '0';
 
   pos = req.indexOf(F("MI=")); //Segment mirror
-  if (pos > 0) selseg.mirror = req.charAt(pos+3) != '0';
+  if (pos >= 0) selseg.mirror = req.charAt(pos+3) != '0';
 
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
-  if (pos > 0) {
+  if (pos >= 0) {
     byte segbri = getNumVal(&req, pos);
     selseg.setOption(SEG_OPTION_ON, segbri); // use transition
     if (segbri) {
@@ -892,7 +890,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   }
 
   pos = req.indexOf(F("SW=")); //segment power
-  if (pos > 0) {
+  if (pos >= 0) {
     switch (getNumVal(&req, pos)) {
       case 0:  selseg.setOption(SEG_OPTION_ON, false);      break; // use transition
       case 1:  selseg.setOption(SEG_OPTION_ON, true);       break; // use transition
@@ -901,13 +899,13 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   }
 
   pos = req.indexOf(F("PS=")); //saves current in preset
-  if (pos > 0) savePreset(getNumVal(&req, pos));
+  if (pos >= 0) savePreset(getNumVal(&req, pos));
 
   pos = req.indexOf(F("P1=")); //sets first preset for cycle
-  if (pos > 0) presetCycMin = getNumVal(&req, pos);
+  if (pos >= 0) presetCycMin = getNumVal(&req, pos);
 
   pos = req.indexOf(F("P2=")); //sets last preset for cycle
-  if (pos > 0) presetCycMax = getNumVal(&req, pos);
+  if (pos >= 0) presetCycMax = getNumVal(&req, pos);
 
   //apply preset
   if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
@@ -915,7 +913,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   }
 
   pos = req.indexOf(F("NP")); //advances to next preset in a playlist
-  if (pos > 0) doAdvancePlaylist = true;
+  if (pos >= 0) doAdvancePlaylist = true;
   
   //set brightness
   updateVal(req.c_str(), "&A=", &bri);
@@ -935,7 +933,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   #ifdef WLED_ENABLE_LOXONE
   //lox parser
   pos = req.indexOf(F("LX=")); // Lox primary color
-  if (pos > 0) {
+  if (pos >= 0) {
     int lxValue = getNumVal(&req, pos);
     if (parseLx(lxValue, colIn)) {
       bri = 255;
@@ -944,7 +942,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
     }
   }
   pos = req.indexOf(F("LY=")); // Lox secondary color
-  if (pos > 0) {
+  if (pos >= 0) {
     int lxValue = getNumVal(&req, pos);
     if(parseLx(lxValue, colInSec)) {
       bri = 255;
@@ -956,11 +954,11 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   //set hue
   pos = req.indexOf(F("HU="));
-  if (pos > 0) {
+  if (pos >= 0) {
     uint16_t temphue = getNumVal(&req, pos);
     byte tempsat = 255;
     pos = req.indexOf(F("SA="));
-    if (pos > 0) {
+    if (pos >= 0) {
       tempsat = getNumVal(&req, pos);
     }
     byte sec = req.indexOf(F("H2"));
@@ -970,7 +968,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   //set white spectrum (kelvin)
   pos = req.indexOf(F("&K="));
-  if (pos > 0) {
+  if (pos >= 0) {
     byte sec = req.indexOf(F("K2"));
     colorKtoRGB(getNumVal(&req, pos), (sec>0) ? colInSec : colIn);
     col0Changed |= (!sec); col1Changed |= sec;
@@ -979,17 +977,17 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   //set color from HEX or 32bit DEC
   byte tmpCol[4];
   pos = req.indexOf(F("CL="));
-  if (pos > 0) {
+  if (pos >= 0) {
     colorFromDecOrHexString(colIn, (char*)req.substring(pos + 3).c_str());
     col0Changed = true;
   }
   pos = req.indexOf(F("C2="));
-  if (pos > 0) {
+  if (pos >= 0) {
     colorFromDecOrHexString(colInSec, (char*)req.substring(pos + 3).c_str());
     col1Changed = true;
   }
   pos = req.indexOf(F("C3="));
-  if (pos > 0) {
+  if (pos >= 0) {
     colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
     uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     selseg.setColor(2, col2); // defined above (SS= or main)
@@ -998,7 +996,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   //set to random hue SR=0->1st SR=1->2nd
   pos = req.indexOf(F("SR"));
-  if (pos > 0) {
+  if (pos >= 0) {
     byte sec = getNumVal(&req, pos);
     setRandomColor(sec? colInSec : colIn);
     col0Changed |= (!sec); col1Changed |= sec;
@@ -1006,7 +1004,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   //swap 2nd & 1st
   pos = req.indexOf(F("SC"));
-  if (pos > 0) {
+  if (pos >= 0) {
     byte temp;
     for (unsigned i=0; i<4; i++) {
       temp        = colIn[i];
@@ -1066,31 +1064,31 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   //set advanced overlay
   pos = req.indexOf(F("OL="));
-  if (pos > 0) {
+  if (pos >= 0) {
     overlayCurrent = getNumVal(&req, pos);
   }
 
   //apply macro (deprecated, added for compatibility with pre-0.11 automations)
   pos = req.indexOf(F("&M="));
-  if (pos > 0) {
+  if (pos >= 0) {
     applyPreset(getNumVal(&req, pos) + 16);
   }
 
   //toggle send UDP direct notifications
   pos = req.indexOf(F("SN="));
-  if (pos > 0) notifyDirect = (req.charAt(pos+3) != '0');
+  if (pos >= 0) notifyDirect = (req.charAt(pos+3) != '0');
 
   //toggle receive UDP direct notifications
   pos = req.indexOf(F("RN="));
-  if (pos > 0) receiveGroups = (req.charAt(pos+3) != '0') ? receiveGroups | 1 : receiveGroups & 0xFE;
+  if (pos >= 0) receiveGroups = (req.charAt(pos+3) != '0') ? receiveGroups | 1 : receiveGroups & 0xFE;
 
   //receive live data via UDP/Hyperion
   pos = req.indexOf(F("RD="));
-  if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
+  if (pos >= 0) receiveDirect = (req.charAt(pos+3) != '0');
 
   //main toggle on/off (parse before nightlight, #1214)
   pos = req.indexOf(F("&T="));
-  if (pos > 0) {
+  if (pos >= 0) {
     nightlightActive = false; //always disable nightlight when toggling
     switch (getNumVal(&req, pos))
     {
@@ -1102,9 +1100,9 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   //toggle nightlight mode
   bool aNlDef = false;
-  if (req.indexOf(F("&ND")) > 0) aNlDef = true;
+  if (req.indexOf(F("&ND")) >= 0) aNlDef = true;
   pos = req.indexOf(F("NL="));
-  if (pos > 0)
+  if (pos >= 0)
   {
     if (req.charAt(pos+3) == '0')
     {
@@ -1124,14 +1122,14 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
 
   //set nightlight target brightness
   pos = req.indexOf(F("NT="));
-  if (pos > 0) {
+  if (pos >= 0) {
     nightlightTargetBri = getNumVal(&req, pos);
     nightlightActiveOld = false; //re-init
   }
 
   //toggle nightlight fade
   pos = req.indexOf(F("NF="));
-  if (pos > 0)
+  if (pos >= 0)
   {
     nightlightMode = getNumVal(&req, pos);
 
@@ -1140,24 +1138,24 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
   pos = req.indexOf(F("TT="));
-  if (pos > 0) transitionDelay = getNumVal(&req, pos);
+  if (pos >= 0) transitionDelay = getNumVal(&req, pos);
   if (fadeTransition) strip.setTransition(transitionDelay);
 
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));
-  if (pos > 0) {
+  if (pos >= 0) {
     setTimeFromAPI(getNumVal(&req, pos));
   }
 
   //set countdown goal (unix timestamp)
   pos = req.indexOf(F("CT="));
-  if (pos > 0) {
+  if (pos >= 0) {
     countdownTime = getNumVal(&req, pos);
     if (countdownTime - toki.second() > 0) countdownOverTriggered = false;
   }
 
   pos = req.indexOf(F("LO="));
-  if (pos > 0) {
+  if (pos >= 0) {
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
     if (realtimeMode && useMainSegmentOnly) {
@@ -1166,19 +1164,19 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   }
 
   pos = req.indexOf(F("RB"));
-  if (pos > 0) doReboot = true;
+  if (pos >= 0) doReboot = true;
 
   // clock mode, 0: normal, 1: countdown
   pos = req.indexOf(F("NM="));
-  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
+  if (pos >= 0) countdownMode = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf(F("U0=")); //user var 0
-  if (pos > 0) {
+  if (pos >= 0) {
     userVar0 = getNumVal(&req, pos);
   }
 
   pos = req.indexOf(F("U1=")); //user var 1
-  if (pos > 0) {
+  if (pos >= 0) {
     userVar1 = getNumVal(&req, pos);
   }
   // you can add more if you need
@@ -1187,11 +1185,11 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   if (!apply) return true; // when called by JSON API, do not call colorUpdated() here
 
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
-  stateUpdated((pos > 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);
+  stateUpdated((pos >= 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);
 
   // internal call, does not send XML response
   pos = req.indexOf(F("IN"));
-  if ((request != nullptr) && (pos < 1)) {
+  if ((request != nullptr) && (pos >= 0)) {
     auto response = request->beginResponseStream("text/xml");
     XML_response(*response);
     request->send(response);

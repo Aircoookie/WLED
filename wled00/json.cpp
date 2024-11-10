@@ -449,9 +449,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // HTTP API commands (must be handled before "ps")
   const char* httpwin = root["win"];
   if (httpwin) {
-    String apireq = "win"; apireq += '&'; // reduce flash string usage
-    apireq += httpwin;
-    handleHttpApi(nullptr, apireq, false);    // may set stateChanged
+    handleHttpApi(nullptr, httpwin, false);    // may set stateChanged
   }
 
   // Applying preset from JSON API has 2 cases: a) "pd" AKA "preset direct" and b) "ps" AKA "preset select"
