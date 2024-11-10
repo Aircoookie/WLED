@@ -34,6 +34,11 @@ void WLED::reset()
 
 void WLED::loop()
 {
+  if (otaInProgress)
+  {
+    // stop the loop while ota in progress
+    return;
+  }
   #ifdef WLED_DEBUG
   static unsigned long lastRun = 0;
   unsigned long        loopMillis = millis();
@@ -461,8 +466,10 @@ pinManager.allocateMultiplePins(pins, sizeof(pins)/sizeof(managed_pin_type), Pin
   // fill in unique mdns default
   if (strcmp(cmDNS, "x") == 0) sprintf_P(cmDNS, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
 #ifndef WLED_DISABLE_MQTT
-  if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
-  if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("WLED-%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("lights/%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("LIGHTS-%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttResponseTopic[0] == 0)
+    snprintf_P(mqttResponseTopic, 36, PSTR("%s/r"), mqttDeviceTopic);
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT

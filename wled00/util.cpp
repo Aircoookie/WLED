@@ -230,6 +230,39 @@ void releaseJSONBufferLock()
   jsonBufferLock = 0;
 }
 
+// the same functions but for my new response buffers
+bool requestResponseBufferLock(uint8_t module)
+{
+  unsigned long now = millis();
+
+  while (responseBufferLock && millis() - now < 1000)
+    delay(1); // wait for a second for buffer lock
+
+  if (millis() - now >= 1000)
+  {
+    DEBUG_PRINT(F("ERROR: Locking response buffer failed! ("));
+    DEBUG_PRINT(responseBufferLock);
+    DEBUG_PRINTLN(")");
+    return false; // waiting time-outed
+  }
+
+  responseBufferLock = module ? module : 255;
+  DEBUG_PRINT(F("Response buffer locked. ("));
+  DEBUG_PRINT(responseBufferLock);
+  DEBUG_PRINTLN(")");
+  mqttResponseDoc.clear();                         // Clear the JSON document
+  memset(mqttResponseBuffer, 0, JSON_BUFFER_SIZE); // Clear the buffer
+  return true;
+}
+
+void releaseResponseBufferLock()
+{
+  DEBUG_PRINT(F("Response buffer released. ("));
+  DEBUG_PRINT(responseBufferLock);
+  DEBUG_PRINTLN(")");
+  responseBufferLock = 0;
+}
+
 
 // extracts effect mode (or palette) name from names serialized string
 // caller must provide large enough buffer for name (including SR extensions)!
