@@ -1188,8 +1188,7 @@ bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply
   stateUpdated((pos >= 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);
 
   // internal call, does not send XML response
-  pos = req.indexOf(F("IN"));
-  if ((request != nullptr) && (pos >= 0)) {
+  if (request != nullptr) {
     auto response = request->beginResponseStream("text/xml");
     XML_response(*response);
     request->send(response);
