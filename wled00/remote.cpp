@@ -162,7 +162,7 @@ static bool remoteJson(int button)
         cmdStr += tmp;
       }
       fdo.clear();                                                 // clear JSON buffer (it is no longer needed)
-      handleSet(nullptr, cmdStr, false);                           // no stateUpdated() call here
+      handleHttpApi(nullptr, cmdStr, false);                           // no stateUpdated() call here
       stateUpdated(CALL_MODE_BUTTON);
       parsed = true;
     }

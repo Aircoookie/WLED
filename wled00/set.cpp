@@ -803,7 +803,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
 
 //HTTP API request parser
-bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
+bool handleHttpApi(AsyncWebServerRequest *request, const String& req, bool apply)
 {
   if (!(req.indexOf("win") >= 0)) return false;
 

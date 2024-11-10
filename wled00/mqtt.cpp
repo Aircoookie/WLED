@@ -109,7 +109,7 @@ static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProp
       } else { //HTTP API
         String apireq = "win"; apireq += '&'; // reduce flash string usage
         apireq += payloadStr;
-        handleSet(nullptr, apireq);
+        handleHttpApi(nullptr, apireq);
       }
       releaseJSONBufferLock();
     }

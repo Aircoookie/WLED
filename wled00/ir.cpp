@@ -608,7 +608,7 @@ static void decodeIRJson(uint32_t code)
         cmdStr += tmp;
       }
       fdo.clear();                                                 // clear JSON buffer (it is no longer needed)
-      handleSet(nullptr, cmdStr, false);                           // no stateUpdated() call here
+      handleHttpApi(nullptr, cmdStr, false);                           // no stateUpdated() call here
     }
   } else {
     // command is JSON object (TODO: currently will not handle irApplyToAllSelected correctly)
