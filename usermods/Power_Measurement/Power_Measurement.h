@@ -100,7 +100,7 @@ class UsermodPower_Measurement : public Usermod {
     float Voltage = 0;
     float Current = 0;
     float Power = 0;
-    unsigned long kilowatthours = 0;
+    unsigned long watthours = 0;
 
     void setup() {
       analogReadResolution(ADCResolution);
@@ -177,6 +177,8 @@ class UsermodPower_Measurement : public Usermod {
 
     }
 
+
+
     void pinAlocation() {
       DEBUG_PRINTLN(F("Allocating power pins..."));
       if (VoltagePin >= 0 && pinManager.allocatePin(VoltagePin, true, PinOwner::UM_Power_Measurement)) {
@@ -222,7 +224,8 @@ class UsermodPower_Measurement : public Usermod {
       DEBUG_PRINTLN(Power);
 
       DEBUG_PRINT("Energy: ");
-      DEBUG_PRINTLN(kilowatthours);
+      DEBUG_PRINT(watthours);
+      DEBUG_PRINTLN(" Wh");
       DEBUG_PRINT("Energy Wms: ");
       DEBUG_PRINTLN(wattmiliseconds);
     }
@@ -287,14 +290,18 @@ class UsermodPower_Measurement : public Usermod {
 
       // Calculate energy - dont do it when led is off
       if (Power > 0) {
-        unsigned long elapsedTime = millis() - lastTime_energy;
-        wattmiliseconds += Power * elapsedTime;
-      }
-      lastTime_energy = millis();
+        unsigned long currentTime = millis();
+        unsigned long elapsedTime = currentTime - lastTime_energy;
+        lastTime_energy = currentTime;
 
-      if (wattmiliseconds >= 3600000000) { // 3,600,000 milliseconds = 1 hour
-        kilowatthours += wattmiliseconds / 3600000000; // Convert watt-milliseconds to kilowatt-hours (1 watt-millisecond = 1/3,600,000,000 kilowatt-hours)
-        wattmiliseconds = 0;
+        unsigned long long wattMilliseconds = static_cast<unsigned long>(Power) * elapsedTime;
+        wattmiliseconds += wattMilliseconds;
+
+        // Convert watt-milliseconds to kilowatt-hours
+        if (wattmiliseconds >= 3600000ULL) { // 3,600,000 milliseconds = 1 hour
+            watthours += static_cast<double>(wattmiliseconds) / 3600000.0;
+            wattmiliseconds = 0;
+        }
       }
     }
 
@@ -415,8 +422,8 @@ class UsermodPower_Measurement : public Usermod {
       Power_json.add(F(" W"));
 
       JsonArray Energy_json = user.createNestedArray(FPSTR("Energy"));
-      Energy_json.add(kilowatthours);
-      Energy_json.add(F(" kWh"));
+      Energy_json.add(watthours);
+      Energy_json.add(F(" Wh"));
     }
 
     void addToConfig(JsonObject& root) {
@@ -546,10 +553,10 @@ class UsermodPower_Measurement : public Usermod {
           dtostrf(Power, 6, 2, payload); // Convert float to string
           mqtt->publish(subuf, 0, true, payload);
 
-          // Publish kilowatthours
+          // Publish watthours
           strcpy(subuf, mqttDeviceTopic);
-          strcat_P(subuf, PSTR("/power_measurement/kilowatthours"));
-          ultoa(kilowatthours, payload, 10); // Convert unsigned long to string
+          strcat_P(subuf, PSTR("/power_measurement/watthours"));
+          ultoa(watthours, payload, 10); // Convert unsigned long to string
           mqtt->publish(subuf, 0, true, payload);
         }
       }
