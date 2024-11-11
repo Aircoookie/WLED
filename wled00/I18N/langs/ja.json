@@ -758,7 +758,6 @@
         "Search": "検索",
         "Security & Update setup": "セキュリティとアップデートのセットアップ",
         "Security & Updates": "セキュリティとアップデート",
-        "Segment 0": "セグメント0",
         "Segments": "セグメント",
         "Select group": "グループを選択",
         "Select slot": "スロットを選択",
@@ -1004,5 +1003,8 @@
         "text": "文章",
         "true": "真実"
     },
-    "pattern": {}
+    "pattern": {
+        "^Segment ([0-9]+)$": "セグメント$1",
+        "^New segment ([0-9]+)$": "新しいセグメント$1"
+    }
 }
