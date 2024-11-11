@@ -91,4 +91,4 @@ This code was created by Tomáš Kuchta.
 
 ## Contributions
 
-- Tomáš Kuchta (Initial idea)
+- Tomáš Kuchta (Initial idea and code)
