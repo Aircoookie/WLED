@@ -1,12 +1,12 @@
 console.log("L12N.js loading")
 
+/* Unused
 const generateID = function(){
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
-
-/*
-    localStorage uses UTF-16 for both keys and values.
 */
+
+//Note: localStorage uses UTF-16 for both keys and values.
 I18N = function() {
     this.undo = [];
     this.langCode = "en";
@@ -25,87 +25,122 @@ I18N = function() {
     */
 }
 
-I18N.prototype.getTranslationData = function(langCode)
-{
-    console.log("getTranslationData(",langCode)
-    sJson = localStorage.getItem("I18N.lang." + langCode);
-    if(sJson) {
-        console.log("getTranslationData1a",sJson.length);
-        this.translation = JSON.parse(sJson);
-    } else {
-        sJson = this.FetchTranslationFile(langCode);    //NOTE must be synchronous
-        console.log("getTranslationData1b",sJson.length);
-        localStorage.setItem("I18N.lang." + langCode, sJson);
-        this.translation = JSON.parse(sJson)
-    }
-    //console.log(")getTranslationData",Object.keys(this.translation).length);
-    return this.translation;
-}
-
+// Apply translation for language in I18N.langCode or switch languages to the specified code 
 I18N.prototype.setLang = function(langCode)     // undefined means keep the setting and apply
 {
-    if(langCode != undefined) { // undefined means Don't switch 
+    self = this;
+
+    // langCode==undefined means: Apply Translation for Current LangCode
+    // Otherwise, switch to the specificed language
+    console.log("I18N.setLang", langCode);
+    if(langCode != undefined) {  
         if(localStorage.getItem("I18N.langCode") == langCode)
             return;
-        this.undoAll();
+        this.undoAll(); // prepare by setting UI back to base language
         localStorage.setItem("I18N.langCode", langCode);
     }
-    // here I18N.langCode has been set
-    langCode = localStorage.getItem("I18N.langCode");
 
-    if(langCode != null && langCode != "en") {  // the possibility the langCode is gone
-        this.getTranslationData(langCode);
-        this.applyTranslation();    
+    // At this point: I18N.langCode is set; UI needs to reflect it; UI is the original text
+    langCode = localStorage.getItem("I18N.langCode");
+    if(langCode == "en")
+        return; // The UI is already in english 
+
+    // Get the translationdata and apply it
+    console.log("I18N getTranslationData(",langCode)
+    sJson = localStorage.getItem("I18N.lang." + langCode);
+    if(sJson) {
+        console.log("I18N translation Data in LS",sJson.length);
+        self.translation = JSON.parse(sJson);
+        console.log("I18N", self.translation);
+        self.applyTranslation();    
+        return;
     }
+
+    // Need to fetch translation data
+    fetch("/langs/" + langCode + ".json")
+    .then((res)=>{
+        if (!res.ok) {
+            showToast("Unable to load translation file");
+            return;
+        }
+        return res.json();
+    })
+    .then((json)=>{
+        console.log("I18N fetched json", json);
+        localStorage.setItem("I18N.langs." + langCode, JSON.stringify(json));
+        self.translation = json;
+    })
+    .catch((e)=>{
+        showToast("Unable to load translation file");
+        return null;
+    })
+    .finally(()=>{
+        if(self.translation != null)
+            self.applyTranslation();
+    });
 }
 
+
+// Apply current translation.  Ccan be called to extend the translation on changing the UI.
+I18N.prototype.applyTranslation = function()
+{
+    this.LocalizeHTML();
+}
+
+// Translation support functions
+// Has the node already been translated?
+I18N.prototype.isTranslated = function(node)
+{
+    return this.undo.some(entry => entry.node === node); 
+}
+
+// Has the node already been translated?
+I18N.prototype.hasTranslation = function(text)
+{
+    if(text in this.translation.exact)
+        return true;
+    
+    if(Object.keys(this.translation.pattern).length == 0)
+        return false;
+    for(pattern in this.translation.pattern)
+        rePattern = RegExp(pattern)
+        if(rePattern.test(text))
+            return true;
+    return false;
+}
+
+// Set all translated nodes back to original (=English) values.
 I18N.prototype.undoAll = function()
 {
     if(this.undo.length == 0)
         return;
     for(i=0; i < this.undo.length; ++i)
     {
-        undo = this.undo[i];
-        // run the undo
+        translated = this.undo[i];
+        translated.node.nodeValue = translated.original;
     }
     this.undo = [];
 }
 
-I18N.prototype.FetchTranslationFile = function(langCode)
-{
-    const request = new XMLHttpRequest();
-    const url = "https://raw.githubusercontent.com/Sojourneer/WLED/refs/heads/0_15/wled00/I18N/langs/" + langCode + ".json"
-    request.open("GET", url, false); // `false` makes the request synchronous
-    request.send(null);
-    
-    if (request.status === 200) {
-      console.log(request.responseText);
-      return request.responseText;
-    }
-    return null;
-}
-
 var templateName;
 
-I18N.prototype.applyTranslation = function()
-{
-    this.LocalizeHTML();
-}
-
 I18N.prototype.TranslateText = function(text) {
-    /*
-    const re = /([0-9a-f]+)/
-    m = text.match(re)
-    if(m) {
-        text = m[1]
-        entry = translation[text]
-        console.log("translate",text,placeholder,entry)
-        return entry;
-    } else
-        return null;
-    */
    //TODO support multiple translations
-   result = this.translation[text];
+
+   if(text in this.translation.exact) {
+       result = this.translation.exact[text];
+   } else {
+        for(pattern in this.translation.pattern) {
+            rePattern = RegExp(pattern)
+            entry = this.translation.pattern[pattern];
+            //console.log("I18N: trying ",pattern, entry);
+            if(m = text.match(rePattern)) {
+                result = text.replace(rePattern, entry);
+                console.log("I18N",rePattern, entry, result);
+                return result;
+            }
+        }
+   }
    console.log(text,result);
    return result;
 }
@@ -113,39 +148,41 @@ I18N.prototype.TranslateText = function(text) {
 I18N.prototype.LocalizeHTML = function()
 {
     console.log(templateName);
-    /*
-    document.querySelectorAll(".I18N").forEach(function(e){
-        console.log(e.innerText);
-    });
-    */
     self = this;
 
     function traverse(e) {
-        //if(count++ > 1000) return;
-
         function translateAttribute(attrName, node) {
-            if(e.hasAttribute(attrName) && (value = e.getAttribute(attrName)) in self.translation) {
-                e.setAttribute(attrName, self.TranslateText(value));
-                if(! e.hasAttribute("id")) e.setAttribute("id", generateID());
+            if(e.hasAttribute(attrName)) {
+                if(self.hasTranslation(value = e.getAttribute(attrName))) {
+                    attr = e.attributes[attrName];
+                    if(! self.isTranslated(attr)) {
+                        self.undo.push({node:attr, original:value})
+                        e.setAttribute(attrName, self.TranslateText(value));
+                    }
+                }
             }
         }
 
         switch(e.nodeType) {
             case 1:
-                if(e.tagName == "SCRIPT") break; // not possible to get external script content
-                // strings = [...e.contentText.matchAll(/(\")([^\"]*)\" | (\')([^\']*)\'/g)] 
+                if(e.tagName == "SCRIPT") break; // Note: impossible to get external script content
 
                 // Look at atrributes, and then descend
                 translateAttribute("title", e);
                 translateAttribute("placeholder", e);
+                if(e.tagName == "input")
+                    translateAttribute("label", e);
 
                 for(var i=0; i < e.childNodes.length; ++i)
                     traverse(e.childNodes[i]);
                 break;
             case 3:
-                //TBD filter here for all whitespace
-                if(e.nodeValue in self.translation)
+                if(self.isTranslated(e))
+                    break;
+                if(self.hasTranslation(e.nodeValue)) {
+                    self.undo.push({node:e, original: e.nodeValue});
                     e.nodeValue = self.TranslateText(e.nodeValue);
+                }
                 break;
         }
     }
@@ -156,28 +193,29 @@ I18N.prototype.LocalizeHTML = function()
 
 console.log("creating I18N");
 I18N.singleton = new I18N();
-function runI18N()
+function runI18N() // call when everything has been loaded
 {
     console.log("runI18N");
 
     // Wrap functions that use text needing translation
-    window.showToast = (function() {
+    if(typeof window.showToast == "function") { // effect: translate showToast text
+        window.showToast = (function() {
         var cached_function = window.showToast;
 
         return function(text, error = false) {
-            // pre code
             if(I18N.singleton && I18N.singleton.translate && (text in I18N.singleton.translation)) {
                 translation = I18N.singleton.translation[text];    
             } else
                 translation = text;
-            console.log("showToast",translation);
-            var result = cached_function.apply(this, [translation, error]); // use .apply() to call it
+            console.log("showToast",text, translation);
+            var result = cached_function.apply(this, [translation, error]);
 
             return result;
         };
-    })();
+        })();
+    }
 
-    if(typeof window.updateUI == "function") {
+    if(typeof window.updateUI == "function") { // effect: retranslate on updateUI
         window.updateUI = (function() {
             var cached_function = window.updateUI;
         
@@ -191,7 +229,7 @@ function runI18N()
         })();   
     }
 
-    if(typeof window.genForm == "function") {
+    if(typeof window.genForm == "function") { // effect: retranslate on updateUI
         window.genForm = (function() {
             var cached_function = window.genForm;
         
@@ -205,6 +243,52 @@ function runI18N()
         })();   
     }
     
+    // makePUtil
+    if(typeof window.makePUtil == "function") { // effect: retranslate on updateUI
+        window.makePUtil = (function() {
+            var cached_function = window.makePUtil;
+        
+            return function() {
+                var result = cached_function.apply(this, arguments);
+
+                // translate again
+                I18N.singleton.setLang();
+                return result;
+            };
+        })();   
+    }
+
+    // makePlUtil
+    if(typeof window.makePlUtil == "function") { // effect: retranslate on updateUI
+        window.makePlUtil = (function() {
+            var cached_function = window.makePlUtil;
+        
+            return function() {
+                var result = cached_function.apply(this, arguments);
+
+                // translate again
+                I18N.singleton.setLang();
+                return result;
+            };
+        })();   
+    }
+
+    //makeSeg
+    if(typeof window.makeSeg == "function") { // effect: retranslate on updateUI
+        window.makeSeg = (function() {
+            var cached_function = window.makeSeg;
+        
+            return function() {
+                var result = cached_function.apply(this, arguments);
+
+                // translate again
+                I18N.singleton.setLang();
+                return result;
+            };
+        })();   
+    }
+
+
     I18N.singleton.setLang();
 }
 
