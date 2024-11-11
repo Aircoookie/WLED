@@ -1,4 +1,5 @@
 console.log("L12N.js loading")
+baseUrlLangfiles = "https://raw.githubusercontent.com/Sojourneer/WLED/refs/heads/0_15/wled00/I18N/langs/"
 
 /* Unused
 const generateID = function(){
@@ -57,7 +58,7 @@ I18N.prototype.setLang = function(langCode)     // undefined means keep the sett
     }
 
     // Need to fetch translation data
-    fetch("/langs/" + langCode + ".json")
+    fetch(baseUrlLangfiles + langCode + ".json")
     .then((res)=>{
         if (!res.ok) {
             showToast("Unable to load translation file");
