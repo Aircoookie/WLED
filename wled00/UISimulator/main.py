@@ -2,7 +2,7 @@
 import time
 from http.server import HTTPServer
 from server import WLEDServer, WLEDHandler
-from response.WLEDrequestHandlers import WLEDFileHandler, Patcher_I18N_Script, isHtml, PagePOSTHandler, SinglePOSTHandler
+from response.WLEDrequestHandlers import WLEDFileHandler, Patcher_I18N_Script, isHtml, PagePOSTHandler, SinglePOSTHandler, SI_POSTHandler
 from response.WLEDrequestHandlers import FunctionHandler, GetAvailableLangs
 import argparse
 
@@ -28,8 +28,8 @@ if __name__ == '__main__':
             "condition": isHtml,
             "processor": Patcher_I18N_Script,
             "args":
-                {"replaceScript": { "old": "/scripts/L12N.js",
-                                    "new": "/scripts/I18N.js"}
+                {"replaceScript": { "old": "/L12N.js",
+                                    "new": "/I18N.js"}
                 }
         }]
     elif args.mode == 'L12N':
@@ -41,6 +41,7 @@ if __name__ == '__main__':
     else:
         postHandlers = []
 
+    httpd.on("/json/si", "POST", SI_POSTHandler, {"file": "I18N/data/cachedFromWLED/si.json"})
     httpd.on("/json/", "GET", WLEDFileHandler, {
         "mapper": lambda url: url.replace("/json/","I18N/data/cachedFromWLED/") + ".json"
     })
@@ -64,7 +65,9 @@ if __name__ == '__main__':
     #    "mapper": lambda url: url.replace("/settings/","data/settings_") + ".htm"})
     httpd.on("/settings/", "GET", WLEDFileHandler, {"root":"data/"})
     httpd.on("/settings", "GET", WLEDFileHandler, {"file":"data/settings.htm", "postFilter": postHandlers})
-    httpd.on("/scripts/", "GET", WLEDFileHandler, {"root":"scripts/"})
+    #httpd.on("/scripts/", "GET", WLEDFileHandler, {"root":"scripts/"})
+    httpd.on("/I18N.js", "GET", WLEDFileHandler, {"file":"I18N/scripts/I18N.js"})
+    httpd.on("/L12N.js", "GET", WLEDFileHandler, {"file":"I18N/scripts/L12N.js"})
     httpd.on("/", "GET", WLEDFileHandler, {"root":"data/", "default":"data/index.htm", "postFilter":postHandlers})
 
     httpd.on("/I18N/toast.json", "POST", SinglePOSTHandler, {"file":"I18N/data/fromScripts/toast.json"})

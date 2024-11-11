@@ -1,4 +1,4 @@
-console.log("localization.js loading")
+console.log("L12N.js loading")
 
 const generateID = function(){
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -73,23 +73,8 @@ I18N.prototype.undoAll = function()
 
 I18N.prototype.FetchTranslationFile = function(langCode)
 {
-    /*
-    async function getData() {
-        const url = "/langs/" + langCode + ".json";
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-            throw new Error(`Response status: ${response.status}`);
-            }
-            const json = await response.json();
-            return json;
-        } catch (error) {
-            console.error(error.message);
-        }
-    }
-    */
     const request = new XMLHttpRequest();
-    const url = "/langs/" + langCode + ".json"
+    const url = "https://raw.githubusercontent.com/Sojourneer/WLED/refs/heads/0_15/wled00/I18N/langs/" + langCode + ".json"
     request.open("GET", url, false); // `false` makes the request synchronous
     request.send(null);
     
@@ -169,14 +154,6 @@ I18N.prototype.LocalizeHTML = function()
     return;
 }
 
-/*
-function DoIt() {
-    LocalizeHTML();
-    console.log("Localization complete");
-}
-
-FetchTranslationFile(DoIt);
-*/
 console.log("creating I18N");
 I18N.singleton = new I18N();
 function runI18N()
@@ -231,4 +208,4 @@ function runI18N()
     I18N.singleton.setLang();
 }
 
-console.log("localization.js loaded")
+console.log("L12N.js loaded")

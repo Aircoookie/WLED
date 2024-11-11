@@ -10,6 +10,7 @@ class RequestHandler:
         return False
 
     def handle_path(self, method, path):
+        print(method,path)
         return None
 
     def error404(self, resolvedPath):

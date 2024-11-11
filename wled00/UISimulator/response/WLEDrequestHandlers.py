@@ -163,18 +163,25 @@ class PagePOSTHandler(WLEDFileHandler):
                     data[key] = addition
                     count += 1
             else:
-                data.append(addition)
-                count += 1
+                #TODO Check if already exists in data (text and index if provided)
+                print(addition)
+                if not any(filter(lambda o: o["content"] == addition["content"]
+                                            and (
+                                                not("path" in addition and "path" in o)
+                                                or o["path"] == addition["path"]
+                                            ),
+                                  data)):
+                    data.append(addition)
+                    count += 1
 
         message = ("total {}: posted {}, new {}".format(len(data), len(additions), count))
         print("POST: {} {}".format(fpath, message))
         with open(fpath, "w") as jsonfile:
-            json.dump(data, jsonfile)
+            json.dump(data, jsonfile, indent=4)
 
-        #spec = self.getResponseSpec(fpath)
         return {"resolved":fpath, "status":201, "content-type":"text/plain", "content":bytes("201 Created\n" + message,"UTF-8")}
 
-
+# For showToast and similar, we ignore duplicates
 class SinglePOSTHandler(WLEDFileHandler):
     def handle_POST_path(self, parsedUrl, postData):
         path = parsedUrl.path
@@ -187,21 +194,32 @@ class SinglePOSTHandler(WLEDFileHandler):
 
         if os.path.exists(fpath):
             with open(fpath, "r") as jsonfile:
-                data = json.load(jsonfile)
+                database = json.load(jsonfile)
         else:
-            data = []
+            database = []
 
         addition = json.loads(sData)
-        data.append(addition)
+        # Ignore duplicates (text+page)
+        if not any(filter(lambda o: o["content"] == addition["content"] and o["page"] == addition["page"], database)):
+            database.append(addition)
 
-        message = ("total {}: added".format(len(data)))
+        message = ("total {}: added".format(len(database)))
         print("POST: {} {}".format(fpath, message))
         with open(fpath, "w") as jsonfile:
-            json.dump(data, jsonfile)
+            json.dump(database, jsonfile, indent=4)
 
-        #spec = self.getResponseSpec(fpath)
         return {"resolved":fpath, "status":201, "content-type":"text/plain", "content":bytes("201 Created\n" + message,"UTF-8")}
 
+class SI_POSTHandler(WLEDFileHandler):
+    # ignore and just return the existing si.json file
+    def handle_POST_path(self, parsedUrl, postData):
+        print("SI_POSTHandler", postData)
+        path = parsedUrl.path
+        if not self.can_handle("POST", path): return None
+
+        fpath = self.resolvePath(path)
+        return self.respondFile(fpath)
+ 
 class FunctionHandler(RequestHandler):
     def __init__(self, prefixUrl, method, options):
         super().__init__(prefixUrl, method, options),
