@@ -104,10 +104,11 @@ I18N.prototype.hasTranslation = function(text)
     
     if(Object.keys(this.translation.pattern).length == 0)
         return false;
-    for(pattern in this.translation.pattern)
+    for(pattern in this.translation.pattern) {
         rePattern = RegExp(pattern)
         if(rePattern.test(text))
             return true;
+    }
     return false;
 }
 
