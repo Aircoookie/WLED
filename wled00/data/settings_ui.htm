@@ -150,6 +150,12 @@
 		localStorage.removeItem('wledP');
 		localStorage.removeItem('wledPmt');
 		localStorage.removeItem('wledPalx');
+
+		// Remove all the language data
+		Object.keys(localStorage).
+			filter(x => x.startsWith("I18N.langs.")).
+			forEach(k => localStorage.removeItem(k));
+
 		showToast("Cleared.");
 	}
 	
