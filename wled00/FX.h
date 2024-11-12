@@ -445,20 +445,22 @@ typedef struct Segment {
       #ifndef WLED_DISABLE_MODE_BLEND
       tmpsegd_t     _segT;        // previous segment environment
       uint8_t       _modeT;       // previous mode/effect
+      uint8_t       _palette;     // previous palette
       #else
       uint32_t      _colorT[NUM_COLORS];
       #endif
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
-      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 blends possible)
       unsigned long _start;       // must accommodate millis()
       uint16_t      _dur;
+      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 blends possible)
+      // -> here is one byte of padding
       Transition(uint16_t dur=750)
         : _palT(CRGBPalette16(CRGB::Black))
-        , _prevPaletteBlends(0)
         , _start(millis())
         , _dur(dur)
+        , _prevPaletteBlends(0)
       {}
     } *_t;
 
@@ -587,7 +589,7 @@ typedef struct Segment {
     uint8_t  currentMode() const;                            // currently active effect/mode (while in transition)
     [[gnu::hot]] uint32_t currentColor(uint8_t slot) const;  // currently active segment color (blended while in transition)
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
-    void     setCurrentPalette();
+    void     setCurrentPalette(bool loadOldPalette = false);
 
     // 1D strip
     [[gnu::hot]] uint16_t virtualLength() const;

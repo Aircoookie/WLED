@@ -11,6 +11,7 @@
 */
 #include "wled.h"
 #include "FX.h"
+#include "FXparticleSystem.h"  // TODO: better define the required function (mem service) in FX.h?
 #include "palettes.h"
 
 /*
@@ -166,13 +167,15 @@ bool IRAM_ATTR_YN Segment::allocateData(size_t len) {
 
 void IRAM_ATTR_YN Segment::deallocateData() {
   if (!data) { _dataLen = 0; return; }
-  //DEBUG_PRINTF_P(PSTR("---  Released data (%p): %d/%d -> %p\n"), this, _dataLen, Segment::getUsedSegmentData(), data);
+  Serial.printf(PSTR("---  Released data (%p): %d/%d -> %p\n"), this, _dataLen, Segment::getUsedSegmentData(), data);
   if ((Segment::getUsedSegmentData() > 0) && (_dataLen > 0)) { // check that we don't have a dangling / inconsistent data pointer
+    Serial.println("releasing segment data");
     free(data);
   } else {
     DEBUG_PRINTF_P(PSTR("---- Released data (%p): inconsistent UsedSegmentData (%d/%d), cowardly refusing to free nothing.\n"), this, _dataLen, Segment::getUsedSegmentData());
   }
   data = nullptr;
+  Serial.println("reducing used data by" + String(_dataLen));
   Segment::addUsedSegmentData(_dataLen <= Segment::getUsedSegmentData() ? -_dataLen : -Segment::getUsedSegmentData());
   _dataLen = 0;
 }
@@ -277,6 +280,7 @@ void Segment::startTransition(uint16_t dur) {
 
   //DEBUG_PRINTF_P(PSTR("-- Started transition: %p (%p)\n"), this, _t);
   loadPalette(_t->_palT, palette);
+  _t->_palette        = palette;
   _t->_briT           = on ? opacity : 0;
   _t->_cctT           = cct;
 #ifndef WLED_DISABLE_MODE_BLEND
@@ -424,16 +428,23 @@ uint32_t IRAM_ATTR_YN Segment::currentColor(uint8_t slot) const {
 #endif
 }
 
-void Segment::setCurrentPalette() {
-  loadPalette(_currentPalette, palette);
-  unsigned prog = progress();
-  if (strip.paletteFade && prog < 0xFFFFU) {
-    // blend palettes
-    // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
-    // minimum blend time is 100ms maximum is 65535ms
-    unsigned noOfBlends = ((255U * prog) / 0xFFFFU) - _t->_prevPaletteBlends;
-    for (unsigned i = 0; i < noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, _currentPalette, 48);
-    _currentPalette = _t->_palT; // copy transitioning/temporary palette
+void Segment::setCurrentPalette(bool loadOldPalette) {
+  if (isInTransition()) {
+    if(loadOldPalette) { // load palette of old effect
+      loadPalette(_currentPalette, _t->_palette);
+      return;
+    }
+    if(strip.paletteFade) {
+      // blend palettes
+      // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
+      // minimum blend time is 100ms maximum is 65535ms
+      loadPalette(_currentPalette, palette);
+      unsigned noOfBlends = ((255U * progress()) / 0xFFFFU) - _t->_prevPaletteBlends;
+      for (unsigned i = 0; i < noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, _currentPalette, 48);
+      _currentPalette = _t->_palT; // copy transitioning/temporary palette
+    }
+  } else {
+    loadPalette(_currentPalette, palette);
   }
 }
 
@@ -698,7 +709,6 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
 #endif
   i &= 0xFFFF;
-
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
 
 #ifndef WLED_DISABLE_2D
@@ -1374,6 +1384,7 @@ void WS2812FX::service() {
         seg.call++;
         if (seg.isInTransition() && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
         BusManager::setSegmentCCT(oldCCT); // restore old CCT for ABL adjustments
+        servicePSmem(_segment_index); // handle segment's particle system memory
       }
 
       seg.next_time = nowUp + delay;

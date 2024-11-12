@@ -360,6 +360,8 @@ void WLED::setup()
   #if !defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && !defined(WLED_DEBUG_HOST) && ARDUINO_USB_CDC_ON_BOOT
   Serial.setDebugOutput(false); // switch off kernel messages when using USBCDC
   #endif
+  Serial.println("size of WS2812FX " + String(sizeof(WS2812FX)));
+  Serial.println("size of Segmen t" + String(sizeof(Segment)));
   DEBUG_PRINTLN();
   DEBUG_PRINTF_P(PSTR("---WLED %s %u INIT---\n"), versionString, VERSION);
   DEBUG_PRINTLN();

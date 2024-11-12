@@ -7817,8 +7817,7 @@ uint16_t mode_particlevortex(void) {
     #else
     PartSys->setMotionBlur(130);
     #endif
-    uint8_t numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
-    for (i = 0; i < numSprays; i++) {
+    for (i = 0; i < min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); i++) {
       PartSys->sources[i].source.x = (PartSys->maxX + 1) >> 1; // center
       PartSys->sources[i].source.y = (PartSys->maxY + 1) >> 1; // center
       PartSys->sources[i].maxLife = 900;
@@ -7836,10 +7835,13 @@ uint16_t mode_particlevortex(void) {
   uint8_t spraycount = min(PartSys->numSources, (uint32_t)(1 + (SEGMENT.custom1 >> 5))); // number of sprays to display, 1-8
   #ifdef ESP8266
   for (i = 1; i < 4; i++) { // need static particles in the center to reduce blinking (would be black every other frame without this hack), just set them there fixed
-    PartSys->particles[PartSys->numParticles - i].x = (PartSys->maxX + 1) >> 1; // center
-    PartSys->particles[PartSys->numParticles - i].y = (PartSys->maxY + 1) >> 1; // center
-    PartSys->particles[PartSys->numParticles - i].sat = 230;
-    PartSys->particles[PartSys->numParticles - i].ttl = 255; //set alive
+    int partindex = (int)PartSys->usedParticles - (int)i;
+    if(partindex >= 0) {
+      PartSys->particles[partindex].x = (PartSys->maxX + 1) >> 1; // center
+      PartSys->particles[partindex].y = (PartSys->maxY + 1) >> 1; // center
+      PartSys->particles[partindex].sat = 230;
+      PartSys->particles[partindex].ttl = 256; //keep alive
+    }
   }
   #endif
   if (SEGMENT.check1 != (SEGENV.aux1 & 0x01) || SEGMENT.call == 0) { // state change
@@ -7975,9 +7977,10 @@ uint16_t mode_particlefireworks(void) {
   // check each rocket's state and emit particles according to its state: moving up = emit exhaust, at top = explode; falling down = standby time
   uint32_t emitparticles, frequency, baseangle, hueincrement; // number of particles to emit for each rocket's state
   // variables for circular explosions
-  int32_t speed, currentspeed, speedvariation, counter, percircle;
-  uint16_t angle;
-  unsigned angleincrement;
+  [[maybe_unused]] int32_t speed, currentspeed, speedvariation, percircle;
+  int32_t counter = 0;
+  [[maybe_unused]] uint16_t angle;
+  [[maybe_unused]] unsigned angleincrement;
   bool circularexplosion = false;
 
   // emit particles for each rocket
@@ -8008,7 +8011,6 @@ uint16_t mode_particlefireworks(void) {
         circularexplosion = true;
         speed = 2 + random16(3) + ((SEGMENT.intensity >> 6));
         currentspeed = speed;
-        counter = 0;
         angleincrement = 2730 + random16(5461); // minimum 15° + random(30°)
         angle = random16(); // random start angle
         baseangle = angle; // save base angle for modulation
@@ -8233,7 +8235,7 @@ uint16_t mode_particlepit(void) {
       return mode_static(); // allocation failed or not 2D
     PartSys->setKillOutOfBounds(true);
     PartSys->setGravity(); // enable with default gravity
-    PartSys->setUsedParticles((PartSys->numParticles * 3) / 2); // use 2/3 of available particles
+    PartSys->setUsedParticles(170); // use 75% of available particles
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -8375,21 +8377,8 @@ uint16_t mode_particlebox(void) {
       return mode_static(); // allocation failed or not 2D
     PartSys->setBounceX(true);
     PartSys->setBounceY(true);
-    // set max number of particles and save to aux1 for later
-    #ifdef ESP8266
-    SEGENV.aux1 = min((uint32_t)((PartSys->maxXpixel * PartSys->maxYpixel) >> 1), PartSys->numParticles);
-    #else
-    SEGENV.aux1 = min((uint32_t)((PartSys->maxXpixel * PartSys->maxYpixel)), PartSys->numParticles); // max number of particles
-    #endif
-    for (i = 0; i < SEGENV.aux1; i++) {
-      PartSys->particles[i].ttl = 500; // set all particles alive (not all are rendered though)
-      PartSys->particles[i].perpetual = true; // never die
-      PartSys->particles[i].hue = i * 3; // color range
-      PartSys->particles[i].x = map(i, 0, SEGENV.aux1, 1, PartSys->maxX); // distribute along x according to color
-      PartSys->particles[i].y = random16(PartSys->maxY >> 2); // bottom quarter
-      PartSys->particles[i].collide = true; // all particles collide
-    }
-    SEGENV.aux0 = rand(); // position in perlin noise
+    SEGENV.aux1 = 0; // number currently used particles
+    SEGENV.aux0 = random16(); // position in perlin noise
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -8401,7 +8390,18 @@ uint16_t mode_particlebox(void) {
 
   PartSys->setWallHardness(min(SEGMENT.custom2, (uint8_t)200)); // wall hardness is 200 or more
   PartSys->enableParticleCollisions(true, max(2, (int)SEGMENT.custom2)); // enable collisions and set particle collision hardness
-  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, SEGENV.aux1)); // aux1 holds max number of particles to use
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 25, 255)); // 10%-100%
+  if(PartSys->usedParticles > SEGENV.aux1) { // if more particles are needed, emit them
+    for (i = SEGENV.aux1; i < PartSys->usedParticles; i++) {
+      PartSys->particles[i].ttl = 260; // full brigthness
+      PartSys->particles[i].perpetual = true; // never die
+      PartSys->particles[i].x = random(PartSys->maxX);
+      PartSys->particles[i].y = random(PartSys->maxY);
+      PartSys->particles[i].hue = i * 3; // color range
+      PartSys->particles[i].collide = true; // all particles colllide
+    }
+    SEGENV.aux1 = PartSys->usedParticles;
+  }
 
   if (SEGMENT.call % (((255 - SEGMENT.speed) >> 6) + 1) == 0 && SEGMENT.speed > 0) { // how often the force is applied depends on speed setting
     int32_t xgravity;
@@ -8459,9 +8459,6 @@ uint16_t mode_particleperlin(void) {
 
     PartSys->setKillOutOfBounds(true); // should never happen, but lets make sure there are no stray particles
     SEGENV.aux0 = rand();
-    for (i = 0; i < PartSys->numParticles; i++) {
-      PartSys->particles[i].collide = true; // all particles colllide
-    }
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -8475,17 +8472,17 @@ uint16_t mode_particleperlin(void) {
   PartSys->setBounceY(true);
   PartSys->setWallHardness(SEGMENT.custom1); // wall hardness
   PartSys->enableParticleCollisions(SEGMENT.check3, SEGMENT.custom1); // enable collisions and set particle collision hardness
-  uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 10, PartSys->numParticles >> 1);
-  PartSys->setUsedParticles(displayparticles);
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 25, 128)); // min is 10%, max is 50%
   PartSys->setMotionBlur(230); // anable motion blur
   // apply 'gravity' from a 2D perlin noise map
   SEGENV.aux0 += 1 + (SEGMENT.speed >> 5); // noise z-position
   // update position in noise
-  for (i = 0; i < displayparticles; i++) {
+  for (i = 0; i < PartSys->usedParticles; i++) {
     if (PartSys->particles[i].ttl == 0) { // revive dead particles (do not keep them alive forever, they can clump up, need to reseed)
       PartSys->particles[i].ttl = random16(500) + 200;
       PartSys->particles[i].x = random(PartSys->maxX);
       PartSys->particles[i].y = random(PartSys->maxY);
+      PartSys->particles[i].collide = true; // particle colllides
     }
     uint32_t scale = 16 - ((31 - SEGMENT.custom3) >> 1);
     uint16_t xnoise = PartSys->particles[i].x / scale; // position in perlin noise, scaled by slider
@@ -8522,13 +8519,14 @@ uint16_t mode_particleimpact(void) {
   if (SEGMENT.call == 0) { // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
     if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES)) // init, no additional data needed
       return mode_static(); // allocation failed or not 2D
-    PartSys->setKillOutOfBounds(false); // explosions out of frame ar allowed, set to true to save particles (TODO: better enable it in ESP8266?)
+    PartSys->setKillOutOfBounds(true);
     PartSys->setGravity(); // enable default gravity
     PartSys->setBounceY(true); // always use ground bounce
+    PartSys->setWallRoughness(220); // high roughness
     MaxNumMeteors = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
     for (i = 0; i < MaxNumMeteors; i++) {
-      PartSys->sources[i].source.y = 500;
-      PartSys->sources[i].source.ttl = random16(20 * i); // set initial delay for meteors
+     // PartSys->sources[i].source.y = 500;
+      PartSys->sources[i].source.ttl = random16(10 * i); // set initial delay for meteors
       PartSys->sources[i].source.vy = 10; // at positive speeds, no particles are emitted and if particle dies, it will be relaunched
     }
   }
@@ -8542,10 +8540,12 @@ uint16_t mode_particleimpact(void) {
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceX(SEGMENT.check2);
-  PartSys->setWallHardness(SEGMENT.custom2);
-  PartSys->enableParticleCollisions(SEGMENT.check3, SEGMENT.custom2); // enable collisions and set particle collision hardness
+  PartSys->setMotionBlur(SEGMENT.custom3<<3);
+  uint8_t hardness = map(SEGMENT.custom2, 0, 255, 127, 255);
+  PartSys->setWallHardness(hardness);
+  PartSys->enableParticleCollisions(SEGMENT.check3, hardness); // enable collisions and set particle collision hardness
   MaxNumMeteors = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
-  uint8_t numMeteors = map(SEGMENT.custom3, 0, 31, 1, MaxNumMeteors); // number of meteors to use for animation
+  uint8_t numMeteors = MaxNumMeteors; // TODO: clean this up   map(SEGMENT.custom3, 0, 31, 1, MaxNumMeteors); // number of meteors to use for animation
 
   uint32_t emitparticles; // number of particles to emit for each rocket's state
 
@@ -8565,8 +8565,8 @@ uint16_t mode_particleimpact(void) {
     #ifdef ESP8266
       emitparticles = random16(SEGMENT.intensity >> 3) + 5; // defines the size of the explosion
     #else
-      emitparticles = map(SEGMENT.intensity, 0, 255, 10, random16(PartSys->numParticles>>2)); // defines the size of the explosion !!!TODO: check if this works on ESP8266, drop esp8266 def if it does
-#endif
+      emitparticles = map(SEGMENT.intensity, 0, 255, 10, random16(PartSys->usedParticles>>2)); // defines the size of the explosion !!!TODO: check if this works on ESP8266, drop esp8266 def if it does
+    #endif
     }
     for (int e = emitparticles; e > 0; e--) {
         PartSys->sprayEmit(PartSys->sources[i]);
@@ -8577,7 +8577,7 @@ uint16_t mode_particleimpact(void) {
   for (i = 0; i < numMeteors; i++) {
     if (PartSys->sources[i].source.ttl) {
       PartSys->sources[i].source.ttl--; // note: this saves an if statement, but moving down particles age twice
-      if (PartSys->sources[i].source.vy < 0) { //move down
+      if (PartSys->sources[i].source.vy < 0) { // move down
         PartSys->applyGravity(PartSys->sources[i].source);
         PartSys->particleMoveUpdate(PartSys->sources[i].source, &meteorsettings);
 
@@ -8587,14 +8587,13 @@ uint16_t mode_particleimpact(void) {
           PartSys->sources[i].source.vx = 0;
           PartSys->sources[i].source.collide = true;
           #ifdef ESP8266
-          PartSys->sources[i].maxLife = 130;
+          PartSys->sources[i].maxLife = 180;
           PartSys->sources[i].minLife = 20;
-          PartSys->sources[i].source.ttl = random16(255 - (SEGMENT.speed>>1)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
           #else
-          PartSys->sources[i].maxLife = 160;
+          PartSys->sources[i].maxLife = 250;
           PartSys->sources[i].minLife = 50;
-          PartSys->sources[i].source.ttl = random16((255 - SEGMENT.speed)) + 10; // standby time til next launch (in frames at 42fps, max of 265 is about 6 seconds
           #endif
+          PartSys->sources[i].source.ttl = random16((512 - (SEGMENT.speed << 1))) + 40; // standby time til next launch (in frames)
           PartSys->sources[i].vy = (SEGMENT.custom1 >> 2);  // emitting speed y
           PartSys->sources[i].var = (SEGMENT.custom1 >> 2); // speed variation around vx,vy (+/- var)
         }
@@ -8605,7 +8604,7 @@ uint16_t mode_particleimpact(void) {
       PartSys->sources[i].source.y = PartSys->maxY + (PS_P_RADIUS << 2); // start 4 pixels above the top
       PartSys->sources[i].source.x = random(PartSys->maxX);
       PartSys->sources[i].source.vy = -random16(30) - 30; // meteor downward speed
-      PartSys->sources[i].source.vx = random(30) - 15;
+      PartSys->sources[i].source.vx = random(50) - 25; // TODO: make this dependent on position so they do not move out of frame
       PartSys->sources[i].source.hue = random16(); // random color
       PartSys->sources[i].source.ttl = 500; // long life, will explode at bottom
       PartSys->sources[i].source.collide = false; // trail particles will not collide
@@ -8620,7 +8619,7 @@ uint16_t mode_particleimpact(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Bounce,Meteors,Cylinder,Walls,Collisions;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=8,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Hardness,Blur,Cylinder,Walls,Collisions;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o1=0,o2=0,o3=1";
 
 /*
 Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
@@ -8635,7 +8634,7 @@ uint16_t mode_particleattractor(void) {
   sourcesettings.asByte = 0b00001100; // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
   PSparticle *attractor; // particle pointer to the attractor
   if (SEGMENT.call == 0) { // initialization
-    if (!initParticleSystem2D(PartSys, 1, 0, true)) // init using 1 source and advanced particle settings
+    if (!initParticleSystem2D(PartSys, 1, sizeof(PSparticle), true)) // init using 1 source and advanced particle settings
       return mode_static(); // allocation failed or not 2D
     PartSys->sources[0].source.hue = random16();
     PartSys->sources[0].source.vx = -7; // will collied with wall and get random bounce direction
@@ -8661,21 +8660,16 @@ uint16_t mode_particleattractor(void) {
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  attractor = reinterpret_cast<PSparticle *>(PartSys->PSdataEnd);
 
   PartSys->setColorByAge(SEGMENT.check1);
   PartSys->setParticleSize(SEGMENT.custom1 >> 1); //set size globally
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 25, 190));
 
   if (SEGMENT.custom2 > 0) // collisions enabled
     PartSys->enableParticleCollisions(true, map(SEGMENT.custom2, 1, 255, 120, 255)); // enable collisions and set particle collision hardness
   else
     PartSys->enableParticleCollisions(false);
-
-  uint16_t lastusedparticle = (PartSys->numParticles * 3) >> 2; // use 3/4 of particles
-  uint32_t displayparticles = map(SEGMENT.intensity, 0, 255, 10, lastusedparticle);
-  PartSys->setUsedParticles(displayparticles);
-
-  // set pointers
-  attractor = &PartSys->particles[lastusedparticle + 1];
 
   if (SEGMENT.call == 0) {
     attractor->vx = PartSys->sources[0].source.vy; // set to spray movemement but reverse x and y
@@ -8715,11 +8709,11 @@ uint16_t mode_particleattractor(void) {
       }
     }
   }
-  for(uint32_t i = 0; i < displayparticles; i++) {
+  for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
      PartSys->pointAttractor(i, attractor, strength, false);
   }
   #else  // no AR
-  for (uint32_t i = 0; i < displayparticles; i++) {
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
     PartSys->pointAttractor(i, attractor, SEGMENT.speed, SEGMENT.check3);
   }
   #endif
@@ -8836,7 +8830,7 @@ uint16_t mode_particleGEQ(void) {
     if (!initParticleSystem2D(PartSys, 1))
       return mode_static(); // allocation failed or not 2D
     PartSys->setKillOutOfBounds(true);
-    PartSys->setUsedParticles((PartSys->numParticles * 3) / 2); // use 2/3 of available particles
+    PartSys->setUsedParticles(170); // use 2/3 of available particles
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9081,7 +9075,7 @@ uint16_t mode_particleblobs(void) {
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  PartSys->setUsedParticles(min(PartSys->numParticles, (uint32_t)map(SEGMENT.intensity, 0, 255, 1, (PartSys->maxXpixel * PartSys->maxYpixel) >> 4)));
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 25, 128)); // minimum 10%, maximum 50% of available particles (note: PS ensures at least 1)
   PartSys->enableParticleCollisions(SEGMENT.check2);
 
   for (uint32_t i = 0; i < PartSys->usedParticles; i++) { // update particles
@@ -9138,6 +9132,7 @@ static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,
  * particles move, then split to form a fractal tree EXPERIMENTAL!
  * by DedeHai (Damian Schneider)
  */
+ 
 uint16_t mode_particlefractal(void) {
   ParticleSystem2D *PartSys = NULL;
   uint32_t i;
@@ -9164,7 +9159,7 @@ uint16_t mode_particlefractal(void) {
   int8_t emitspeed = SEGMENT.speed >> 2;
 
   //check particle age, emit 2 particles at the end of the branch
-  for (i = 0; i < PartSys->numParticles; i++) {
+  for (i = 0; i < PartSys->usedParticles; i++) {
     if(PartSys->particles[i].ttl > 0 && PartSys->particles[i].ttl < 260) { //alive and ripe
       PartSys->particles[i].ttl = 0;
       uint16_t currentangle =  ((uint32_t)PartSys->advPartProps[i].forcecounter) << 7; // abuse forcecounter to track the angle
@@ -9356,7 +9351,7 @@ uint16_t mode_particleBouncingBalls(void) {
   PartSys->sources[0].var = SEGMENT.speed >> 3;
   PartSys->sources[0].v = (SEGMENT.speed >> 1) - (SEGMENT.speed >> 3);
   PartSys->enableParticleCollisions(SEGMENT.check1, 254); // enable collisions and set particle collision hardness (do not use full hardness or particles speed up due to pushing, can not be made perfectly balanced)
-  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, PartSys->numParticles));
+  PartSys->setUsedParticles(SEGMENT.intensity);
   PartSys->setColorByPosition(SEGMENT.check3);
 
   if (SEGMENT.check2) { //rolling balls
@@ -9706,12 +9701,6 @@ uint16_t mode_particleHourglass(void) {
       return mode_static(); // allocation failed or is single pixel
     PartSys->setBounce(true);
     PartSys->setWallHardness(80);
-
-    for(uint32_t i = 0; i < PartSys->numParticles; i++) {
-      PartSys->particles[i].collide = true;
-      PartSys->particles[i].ttl = 500;
-      PartSys->particles[i].perpetual = true;
-    }
     SEGENV.step = 0xFFFF;
   }
   else
@@ -9723,8 +9712,7 @@ uint16_t mode_particleHourglass(void) {
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   basehue = PartSys->PSdataEnd;  //assign data pointer
   direction = reinterpret_cast<bool *>(PartSys->PSdataEnd + 1);  //assign data pointer
-  uint32_t numgrains = map(SEGMENT.intensity, 0, 255, 1, PartSys->maxXpixel + 1); // number of particles to use
-  PartSys->setUsedParticles(min(numgrains, (uint32_t)PartSys->numParticles));//SEGMENT.custom1);
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, 255));
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, 1, 30));
   PartSys->enableParticleCollisions(true, 34); // fixed hardness, 34 is a value that works best in most settings (spent a long time optimizing)   SEGMENT.custom1);
@@ -9775,6 +9763,8 @@ uint16_t mode_particleHourglass(void) {
 
   if(SEGENV.aux1 == 1) { //last countdown call before dropping starts, reset all particles
     for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+      PartSys->particles[i].collide = true;
+      PartSys->particles[i].ttl = 260;
       uint32_t targetposition;
       //calculate target position depending on direction
       if(PartSys->particles[i].reversegrav)
@@ -9886,13 +9876,7 @@ uint16_t mode_particleBalance(void) {
       return mode_static(); // allocation failed or is single pixel
     //PartSys->setKillOutOfBounds(true);
     PartSys->setParticleSize(1);
-    for(i = 0; i < PartSys->numParticles; i++) {
-      PartSys->particles[i].x = i * PS_P_RADIUS_1D;
-      PartSys->particles[i].hue = (i * 1024) / PartSys->usedParticles; // multi gradient distribution
-      PartSys->particles[i].ttl = 300;
-      PartSys->particles[i].perpetual = true;
-      PartSys->particles[i].collide = true;
-    }
+    SEGENV.aux0 = 0; // to track particle initialization
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9909,7 +9893,16 @@ uint16_t mode_particleBalance(void) {
   if(SEGMENT.custom1 == 0) //collisions disabled, make the walls hard
     hardness = 200;
   PartSys->setWallHardness(hardness);
-  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, PartSys->numParticles));
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, 255));
+  if(PartSys->usedParticles > SEGENV.aux1) { // more particles, reinitialize
+    for (i = 0; i < PartSys->usedParticles; i++) {
+      PartSys->particles[i].x = i * PS_P_RADIUS_1D;
+      PartSys->particles[i].hue = (i * 1024) / PartSys->usedParticles; // multi gradient distribution
+      PartSys->particles[i].ttl = 300;
+      PartSys->particles[i].collide = true;
+    }
+  }
+  SEGENV.aux1 = PartSys->usedParticles;
 
   if (SEGMENT.call % (((255 - SEGMENT.speed) >> 6) + 1) == 0) { // how often the force is applied depends on speed setting
     int32_t xgravity;
@@ -9952,11 +9945,6 @@ uint16_t mode_particleChase(void) {
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1, 255, 3, true)) // init
       return mode_static(); // allocation failed or is single pixel
-    for(i = 0; i < PartSys->numParticles; i++) {
-      PartSys->advPartProps[i].sat = 255;
-      PartSys->particles[i].ttl = 300;
-      PartSys->particles[i].perpetual = true;
-    }
     SEGENV.aux0 = 0xFFFF; // invalidate
     *PartSys->PSdataEnd = 1;
     *(PartSys->PSdataEnd + 1) = 1;
@@ -9975,10 +9963,13 @@ uint16_t mode_particleChase(void) {
   //PartSys->setBounce(SEGMENT.check2);
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3;
   if(SEGENV.aux0 != settingssum) { //settings changed changed, update
-    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->numParticles)))); //depends on intensity and particle size (custom1)
+    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->usedParticles)))); //depends on intensity and particle size (custom1)  !!! TODO: this needs an update to relative number
     SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 4)) / PartSys->usedParticles; //spacing between particles
     // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this
     for(i = 0; i < PartSys->usedParticles; i++) {
+      PartSys->advPartProps[i].sat = 255;
+      PartSys->particles[i].ttl = 300;
+      PartSys->particles[i].perpetual = true;
       //PartSys->particles[i].x = (i - 1) * SEGENV.step + (((i + 1) * remainder) / PartSys->usedParticles); // distribute evenly
       PartSys->particles[i].x = (i - 1) * SEGENV.step; // distribute evenly
       PartSys->particles[i].vx =  SEGMENT.speed >> 1;
