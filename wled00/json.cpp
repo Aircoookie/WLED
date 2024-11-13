@@ -818,8 +818,10 @@ void serializeInfo(JsonObject root)
   #endif
   #ifndef WLED_DISABLE_OTA
   os += 0x01;
+  root[F("ota")] = !otaLock;
   #endif
   root[F("opt")] = os;
+  root[F("settings")] = correctPIN;
 
   root[F("brand")] = F(WLED_BRAND);
   root[F("product")] = F(WLED_PRODUCT_NAME);
