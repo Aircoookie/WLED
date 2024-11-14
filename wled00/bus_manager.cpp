@@ -838,25 +838,28 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   //mxconfig.min_refresh_rate = 120;
   mxconfig.clkphase = bc.reversed;
 
-  fourScanPanel = nullptr;
+  virtualDisp = nullptr;
 
   if (bc.type == TYPE_HUB75MATRIX_HS) {
       mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]);
       mxconfig.mx_height = min((u_int8_t) 64, bc.pins[1]);
+      if(bc.pins[2] > 1 &&  bc.pins[3] > 0 &&  bc.pins[4]) {
+        virtualDisp = new VirtualMatrixPanel((*display), bc.pins[3], bc.pins[4], mxconfig.mx_width, mxconfig.mx_height, CHAIN_BOTTOM_LEFT_UP);
+      }
   } else if (bc.type == TYPE_HUB75MATRIX_QS) {
       mxconfig.mx_width = min((u_int8_t) 64, bc.pins[0]) * 2;
       mxconfig.mx_height = min((u_int8_t) 64, bc.pins[1]) / 2;  
-      fourScanPanel = new VirtualMatrixPanel((*display), 1, 1, bc.pins[0], bc.pins[1]);
-      fourScanPanel->setRotation(0);
+      virtualDisp = new VirtualMatrixPanel((*display), 1, 1, bc.pins[0], bc.pins[1]);
+      virtualDisp->setRotation(0);
       switch(bc.pins[1]) {
         case 16:
-          fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_16PX_HIGH);
+          virtualDisp->setPhysicalPanelScanRate(FOUR_SCAN_16PX_HIGH);
           break;
         case 32:
-          fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
+          virtualDisp->setPhysicalPanelScanRate(FOUR_SCAN_32PX_HIGH);
           break;
         case 64:
-          fourScanPanel->setPhysicalPanelScanRate(FOUR_SCAN_64PX_HIGH);
+          virtualDisp->setPhysicalPanelScanRate(FOUR_SCAN_64PX_HIGH);
           break;
         default:
           DEBUG_PRINTLN("Unsupported height");
@@ -1000,7 +1003,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   
 
   if (_valid) {
-    _panelWidth = fourScanPanel ? fourScanPanel->width() : display->width();  // cache width - it will never change
+    _panelWidth = virtualDisp ? virtualDisp->width() : display->width();  // cache width - it will never change
   }
 
   DEBUG_PRINT(F("MatrixPanel_I2S_DMA "));
@@ -1038,10 +1041,10 @@ void __attribute__((hot)) BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c
     uint8_t g = G(c);
     uint8_t b = B(c);
 
-    if(fourScanPanel != nullptr) {
+    if(virtualDisp != nullptr) {
       int x = pix % _panelWidth;
       int y = pix / _panelWidth;
-      fourScanPanel->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
+      virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
     } else {
       int x = pix % _panelWidth;
       int y = pix / _panelWidth;
@@ -1069,9 +1072,8 @@ void BusHub75Matrix::show(void) {
 
   if (_ledBuffer) {
     // write out buffered LEDs
-    bool isFourScan = (fourScanPanel != nullptr);
-    //if (isFourScan) fourScanPanel->setRotation(0);
-    unsigned height = isFourScan ? fourScanPanel->height() : display->height();
+    bool isVirtualDisp = (virtualDisp != nullptr);
+    unsigned height = isVirtualDisp ? virtualDisp->height() : display->height();
     unsigned width = _panelWidth;
 
     //while(!previousBufferFree) delay(1);   // experimental - Wait before we allow any writing to the buffer. Stop flicker.
@@ -1086,7 +1088,7 @@ void BusHub75Matrix::show(void) {
         uint8_t r = R(c);
         uint8_t g = G(c);
         uint8_t b = B(c);
-        if (isFourScan) fourScanPanel->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
+        if (isVirtualDisp) virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
         else display->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
       }
       pix ++;
@@ -1109,10 +1111,10 @@ void BusHub75Matrix::cleanup() {
   deallocatePins();
   DEBUG_PRINTLN("HUB75 output ended.");
 
-  //if (fourScanPanel != nullptr) delete fourScanPanel;  // warning: deleting object of polymorphic class type 'VirtualMatrixPanel' which has non-virtual destructor might cause undefined behavior
+  //if (virtualDisp != nullptr) delete virtualDisp;  // warning: deleting object of polymorphic class type 'VirtualMatrixPanel' which has non-virtual destructor might cause undefined behavior
   delete display;
   display = nullptr;
-  fourScanPanel = nullptr;
+  virtualDisp = nullptr;
   if (_ledBuffer != nullptr) free(_ledBuffer); _ledBuffer = nullptr;
   if (_ledsDirty != nullptr) free(_ledsDirty); _ledsDirty = nullptr;      
 }
