@@ -802,6 +802,8 @@ void serializeInfo(JsonObject root)
   os += 0x40;
   #endif
 
+  root[F("settingsLocked")] = !correctPIN;
+
   //os += 0x20; // indicated now removed Blynk support, may be reused to indicate another build-time option
 
   #ifdef USERMOD_CRONIXIE
@@ -818,11 +820,10 @@ void serializeInfo(JsonObject root)
   #endif
   #ifndef WLED_DISABLE_OTA
   os += 0x01;
-  root[F("ota")] = !otaLock;
+  root[F("otaLocked")] = otaLock;
   #endif
   root[F("opt")] = os;
-  root[F("settings")] = correctPIN;
-
+  
   root[F("brand")] = F(WLED_BRAND);
   root[F("product")] = F(WLED_PRODUCT_NAME);
   root["mac"] = escapedMac;
