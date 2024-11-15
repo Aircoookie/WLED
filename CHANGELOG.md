@@ -1,5 +1,8 @@
 ## WLED changelog
 
+#### Build 2411150
+-   WLED 0.15.0-rc1 release
+
 #### Build 2410270
 -   WLED 0.15.0-b7 release
 -   Re-license the WLED project from MIT to EUPL (#4194 by @Aircoookie)
