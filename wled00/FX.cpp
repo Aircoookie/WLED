@@ -2,24 +2,10 @@
   WS2812FX.cpp contains all effect methods
   Harm Aldick - 2016
   www.aldick.org
-  LICENSE
-  The MIT License (MIT)
+
   Copyright (c) 2016  Harm Aldick
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
+  Licensed under the EUPL v. 1.2 or later
+  Adapted from code originally licensed under the MIT license
 
   Modified heavily for WLED
 */
@@ -2520,9 +2506,9 @@ static uint16_t ripple_base() {
       #endif
       {
         int left = rippleorigin - propI -1;
-        int right = rippleorigin + propI +3;
+        int right = rippleorigin + propI +2;
         for (int v = 0; v < 4; v++) {
-          unsigned mag = scale8(cubicwave8((propF>>2)+(v-left)*64), amp);
+          unsigned mag = scale8(cubicwave8((propF>>2) + v * 64), amp);
           SEGMENT.setPixelColor(left + v, color_blend(SEGMENT.getPixelColor(left + v), col, mag)); // TODO
           SEGMENT.setPixelColor(right - v, color_blend(SEGMENT.getPixelColor(right - v), col, mag)); // TODO
         }
@@ -7749,7 +7735,7 @@ uint16_t mode_2Doctopus() {
     const int C_Y = (rows / 2) + ((SEGMENT.custom2 - 128)*rows)/255;
     for (int x = 0; x < cols; x++) {
       for (int y = 0; y < rows; y++) {
-        rMap[XY(x, y)].angle  = 40.7436f * atan2f((y - C_Y), (x - C_X));  // avoid 128*atan2()/PI
+        rMap[XY(x, y)].angle  = int(40.7436f * atan2f((y - C_Y), (x - C_X)));  // avoid 128*atan2()/PI
         rMap[XY(x, y)].radius = hypotf((x - C_X), (y - C_Y)) * mapp;      //thanks Sutaburosu
       }
     }

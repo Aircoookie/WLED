@@ -2,24 +2,10 @@
   WS2812FX_fcn.cpp contains all utility functions
   Harm Aldick - 2016
   www.aldick.org
-  LICENSE
-  The MIT License (MIT)
+
   Copyright (c) 2016  Harm Aldick
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
+  Licensed under the EUPL v. 1.2 or later
+  Adapted from code originally licensed under the MIT license
 
   Modified heavily for WLED
 */
@@ -523,46 +509,53 @@ void Segment::setUp(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t
 }
 
 
-bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
-  if (slot >= NUM_COLORS || c == colors[slot]) return false;
+Segment &Segment::setColor(uint8_t slot, uint32_t c) {
+  if (slot >= NUM_COLORS || c == colors[slot]) return *this;
   if (!_isRGB && !_hasW) {
-    if (slot == 0 && c == BLACK) return false; // on/off segment cannot have primary color black
-    if (slot == 1 && c != BLACK) return false; // on/off segment cannot have secondary color non black
+    if (slot == 0 && c == BLACK) return *this; // on/off segment cannot have primary color black
+    if (slot == 1 && c != BLACK) return *this; // on/off segment cannot have secondary color non black
   }
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   stateChanged = true; // send UDP/WS broadcast
-  return true;
+  return *this;
 }
 
-void Segment::setCCT(uint16_t k) {
+Segment &Segment::setCCT(uint16_t k) {
   if (k > 255) { //kelvin value, convert to 0-255
     if (k < 1900)  k = 1900;
     if (k > 10091) k = 10091;
     k = (k - 1900) >> 5;
   }
-  if (cct == k) return;
-  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
-  cct = k;
-  stateChanged = true; // send UDP/WS broadcast
+  if (cct != k) {
+    //DEBUGFX_PRINTF_P(PSTR("- Starting CCT transition: %d\n"), k);
+    startTransition(strip.getTransition()); // start transition prior to change
+    cct = k;
+    stateChanged = true; // send UDP/WS broadcast
+  }
+  return *this;
 }
 
-void Segment::setOpacity(uint8_t o) {
-  if (opacity == o) return;
-  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
-  opacity = o;
-  stateChanged = true; // send UDP/WS broadcast
+Segment &Segment::setOpacity(uint8_t o) {
+  if (opacity != o) {
+    //DEBUGFX_PRINTF_P(PSTR("- Starting opacity transition: %d\n"), o);
+    startTransition(strip.getTransition()); // start transition prior to change
+    opacity = o;
+    stateChanged = true; // send UDP/WS broadcast
+  }
+  return *this;
 }
 
-void Segment::setOption(uint8_t n, bool val) {
+Segment &Segment::setOption(uint8_t n, bool val) {
   bool prevOn = on;
   if (fadeTransition && n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
   if (val) options |=   0x01 << n;
   else     options &= ~(0x01 << n);
   if (!(n == SEG_OPTION_SELECTED || n == SEG_OPTION_RESET)) stateChanged = true; // send UDP/WS broadcast
+  return *this;
 }
 
-void Segment::setMode(uint8_t fx, bool loadDefaults) {
+Segment &Segment::setMode(uint8_t fx, bool loadDefaults) {
   // skip reserved
   while (fx < strip.getModeCount() && strncmp_P("RSVD", strip.getModeData(fx), 4) == 0) fx++;
   if (fx >= strip.getModeCount()) fx = 0; // set solid mode
@@ -594,9 +587,10 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
     markForReset();
     stateChanged = true; // send UDP/WS broadcast
   }
+  return *this;
 }
 
-void Segment::setPalette(uint8_t pal) {
+Segment &Segment::setPalette(uint8_t pal) {
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0; // built in palettes
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // custom palettes
   if (pal != palette) {
@@ -604,35 +598,22 @@ void Segment::setPalette(uint8_t pal) {
     palette = pal;
     stateChanged = true; // send UDP/WS broadcast
   }
+  return *this;
 }
 
 // 2D matrix
-uint16_t IRAM_ATTR Segment::virtualWidth() const {
+unsigned IRAM_ATTR Segment::virtualWidth() const {
   unsigned groupLen = groupLength();
   unsigned vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
   if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vWidth;
 }
 
-uint16_t IRAM_ATTR Segment::virtualHeight() const {
+unsigned IRAM_ATTR Segment::virtualHeight() const {
   unsigned groupLen = groupLength();
   unsigned vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
   if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vHeight;
-}
-
-uint16_t IRAM_ATTR_YN Segment::nrOfVStrips() const {
-  unsigned vLen = 1;
-#ifndef WLED_DISABLE_2D
-  if (is2D()) {
-    switch (map1D2D) {
-      case M12_pBar:
-        vLen = virtualWidth();
-        break;
-    }
-  }
-#endif
-  return vLen;
 }
 
 // Constants for mapping mode "Pinwheel"
@@ -1201,10 +1182,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit() {
   //reset segment runtimes
-  for (segment &seg : _segments) {
-    seg.markForReset();
-    seg.resetIfRequired();
-  }
+  restartRuntime();
 
   // for the lack of better place enumerate ledmaps here
   // if we do it in json.cpp (serializeInfo()) we are getting flashes on LEDs
@@ -1351,7 +1329,7 @@ void WS2812FX::service() {
     if (nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
       doShow = true;
-      unsigned delay = FRAMETIME;
+      unsigned frameDelay = FRAMETIME;
 
       if (!seg.freeze) { //only run effect function if not frozen
         int oldCCT = BusManager::getSegmentCCT(); // store original CCT value (actually it is not Segment based)
@@ -1371,7 +1349,7 @@ void WS2812FX::service() {
         // overwritten by later effect. To enable seamless blending for every effect, additional LED buffer
         // would need to be allocated for each effect and then blended together for each pixel.
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
-        delay = (*_mode[seg.mode])();         // run new/current mode
+        frameDelay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
         if (modeBlending && seg.mode != tmpMode) {
           Segment::tmpsegd_t _tmpSegData;
@@ -1380,16 +1358,16 @@ void WS2812FX::service() {
           _virtualSegmentLength = seg.virtualLength(); // update SEGLEN (mapping may have changed)
           unsigned d2 = (*_mode[tmpMode])();  // run old mode
           seg.restoreSegenv(_tmpSegData);     // restore mode state (will also update transitional state)
-          delay = MIN(delay,d2);              // use shortest delay
+          frameDelay = min(frameDelay,d2);              // use shortest delay
           Segment::modeBlend(false);          // unset semaphore
         }
 #endif
         seg.call++;
-        if (seg.isInTransition() && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
+        if (seg.isInTransition() && frameDelay > FRAMETIME) frameDelay = FRAMETIME; // force faster updates during transition
         BusManager::setSegmentCCT(oldCCT); // restore old CCT for ABL adjustments
       }
 
-      seg.next_time = nowUp + delay;
+      seg.next_time = nowUp + frameDelay;
     }
     _segment_index++;
   }
@@ -1416,7 +1394,7 @@ void IRAM_ATTR WS2812FX::setPixelColor(unsigned i, uint32_t col) {
   BusManager::setPixelColor(i, col);
 }
 
-uint32_t IRAM_ATTR WS2812FX::getPixelColor(uint16_t i) const {
+uint32_t IRAM_ATTR WS2812FX::getPixelColor(unsigned i) const {
   i = getMappedPixelIndex(i);
   if (i >= _length) return 0;
   return BusManager::getPixelColor(i);
@@ -1434,10 +1412,12 @@ void WS2812FX::show() {
 
   unsigned long showNow = millis();
   size_t diff = showNow - _lastShow;
-  size_t fpsCurr = 200;
-  if (diff > 0) fpsCurr = 1000 / diff;
-  _cumulativeFps = (3 * _cumulativeFps + fpsCurr +2) >> 2;   // "+2" for proper rounding (2/4 = 0.5)
-  _lastShow = showNow;
+
+  if (diff > 0) { // skip calculation if no time has passed
+    size_t fpsCurr = (1000 << FPS_CALC_SHIFT) / diff; // fixed point math
+    _cumulativeFps = (FPS_CALC_AVG * _cumulativeFps + fpsCurr + FPS_CALC_AVG / 2) / (FPS_CALC_AVG + 1);   // "+FPS_CALC_AVG/2" for proper rounding
+    _lastShow = showNow;
+  }
 }
 
 /**
@@ -1454,7 +1434,7 @@ bool WS2812FX::isUpdating() const {
  */
 uint16_t WS2812FX::getFps() const {
   if (millis() - _lastShow > 2000) return 0;
-  return _cumulativeFps +1;
+  return (FPS_MULTIPLIER * _cumulativeFps) >> FPS_CALC_SHIFT; // _cumulativeFps is stored in fixed point
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
