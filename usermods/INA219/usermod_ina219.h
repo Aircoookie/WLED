@@ -88,15 +88,15 @@ private:
 
     // I2C SDA and SCL pins (default SDA = 8, SCL = 9 if not defined)
     #ifdef INA219_SDA_PIN
-    	uint8_t _sdaPin = INA219_SDA_PIN;
+    	int8_t _sdaPin = INA219_SDA_PIN;
     #else
-    	uint8_t _sdaPin = 8; // Default SDA pin
+    	int8_t _sdaPin = 8; // Default SDA pin
     #endif
 
     #ifdef INA219_SCL_PIN
-    	uint8_t _sclPin = INA219_SCL_PIN;
+    	int8_t _sclPin = INA219_SCL_PIN;
     #else
-    	uint8_t _sclPin = 9; // Default SCL pin
+    	int8_t _sclPin = 9; // Default SCL pin
     #endif
 	
     // Variables to store sensor readings
