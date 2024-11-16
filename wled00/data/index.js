@@ -327,6 +327,7 @@ function handleWindowMessageEvent(event) {
 		sraOrigin = event.origin;
 	} else if (json['wled-rc'] === 'hmac') {
 		console.log(`Received HMAC: ${json['mac']}`);
+		// Pass the message containing the HMAC to the ESP
 		requestJson(json);
 	}
 }

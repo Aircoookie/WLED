@@ -98,9 +98,10 @@ void setRandomColor(byte* rgb);
 //crypto.cpp
 void hmacSign(const byte* message, size_t msgLen, const char* pskHex, byte* signature);
 bool hmacVerify(const byte* message, size_t msgLen, const char* pskHex, const byte* signature);
-bool verifyHmacFromJsonStr(const char* jsonStr, uint32_t maxLen);
-bool verifyHmacFromJsonString0Term(byte* jsonStr, size_t len);
+uint8_t verifyHmacFromJsonStr(const char* jsonStr, uint32_t maxLen);
+uint8_t verifyHmacFromJsonString0Term(byte* jsonStr, size_t len);
 bool hmacTest();
+void hmacBenchmark(const char* message);
 
 //dmx.cpp
 void initDMX();

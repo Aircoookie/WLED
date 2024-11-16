@@ -11,6 +11,22 @@ unsigned long wsLastLiveTime = 0;
 
 #define WS_LIVE_INTERVAL 40
 
+void sendWsError(AsyncWebSocketClient * client, uint8_t error)
+{
+  if (!ws.count()) return;
+
+  char errorStr[16];
+  strcpy_P(errorStr, PSTR("{\"error\":"));
+  strcpy(errorStr + 9, itoa(error, errorStr + 9, 10));
+  strcat(errorStr + 10, "}");
+
+  if (client) {
+    client->text(errorStr); // ERR_NOBUF
+  } else {
+    ws.textAll(errorStr); // ERR_NOBUF
+  }
+}
+
 void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
   if(type == WS_EVT_CONNECT){
@@ -36,36 +52,47 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
 
         bool verboseResponse = false;
-        if (!requestJSONBufferLock(11)) {
-          client->text(F("{\"error\":3}")); // ERR_NOBUF
-          return;
-        }
 
         Serial.print(F("WS message: "));
-        Serial.println((const char*)data);
-        verifyHmacFromJsonString0Term(data, len);
+        Serial.write(data, len);
+        Serial.println();
 
-        DeserializationError error = deserializeJson(*pDoc, data, len);
-        verifyHmacFromJsonString0Term(data, len);
-        JsonObject root = pDoc->as<JsonObject>();
-        if (error || root.isNull()) {
-          releaseJSONBufferLock();
-          return;
-        }
-        if (root["v"] && root.size() == 1) {
+        if (len < 11 && memcmp(data, "{\"v\":true}", 10) == 0) {
           // if the received value is just "{"v":true}", send only to this client
           verboseResponse = true;
-        } else if (root.containsKey("lv")) {
-          wsLiveClientId = root["lv"] ? client->id() : 0;
+          Serial.println(F("Simple state query."));
+        } else if (len < 13 && memcmp(data, "{\"lv\":", 6) == 0) {
+          wsLiveClientId = data[6] == 't' ? client->id() : 0;
         } else {
-          // if (!verifyHmacFromJsonString0Term(data, len)) {
-          //   releaseJSONBufferLock();
-          //   client->text(F("{\"error\":1}")); // ERR_DENIED
-          //   return;
-          // }
+          // check HMAC, must do before parsing JSON as that modifies "data" to store strings
+          uint8_t hmacVerificationResult = verifyHmacFromJsonString0Term(data, len);
+          if (hmacVerificationResult != ERR_NONE) {
+            sendWsError(client, hmacVerificationResult);
+            return;
+          }
+
+          if (!requestJSONBufferLock(11)) {
+            sendWsError(client, 3); // ERR_NOBUF
+            return;
+          }
+
+          Serial.print(F("deser input: "));
+          Serial.write(data, len);
+          Serial.println();
+          DeserializationError error = deserializeJson(*pDoc, data, len);
+          JsonObject root = pDoc->as<JsonObject>();
+          if (error || root.isNull()) {
+            Serial.print(F("deserializeJson() failed: "));
+            Serial.println(error.c_str());
+            //Serial.println(F("WS JSON parse F!"));
+            sendWsError(client, 9); // ERR_JSON
+            releaseJSONBufferLock();
+            return;
+          }
           verboseResponse = deserializeState(root["msg"]);
+
+          releaseJSONBufferLock();
         }
-        releaseJSONBufferLock();
 
         if (!interfaceUpdateCallMode) { // individual client response only needed if no WS broadcast soon
           if (verboseResponse) {
@@ -92,7 +119,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       if((info->index + len) == info->len){
         if(info->final){
           if(info->message_opcode == WS_TEXT) {
-            client->text(F("{\"error\":9}")); // ERR_JSON we do not handle split packets right now
+            sendWsError(client, 9); // ERR_JSON we do not handle split packets right now
           }
         }
       }
