@@ -2506,9 +2506,9 @@ static uint16_t ripple_base() {
       #endif
       {
         int left = rippleorigin - propI -1;
-        int right = rippleorigin + propI +3;
+        int right = rippleorigin + propI +2;
         for (int v = 0; v < 4; v++) {
-          unsigned mag = scale8(cubicwave8((propF>>2)+(v-left)*64), amp);
+          unsigned mag = scale8(cubicwave8((propF>>2) + v * 64), amp);
           SEGMENT.setPixelColor(left + v, color_blend(SEGMENT.getPixelColor(left + v), col, mag)); // TODO
           SEGMENT.setPixelColor(right - v, color_blend(SEGMENT.getPixelColor(right - v), col, mag)); // TODO
         }

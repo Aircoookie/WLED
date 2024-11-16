@@ -156,7 +156,7 @@ uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
 void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!isActive()) return; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
+  if ((unsigned)x >= virtualWidth() || (unsigned)y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
   uint8_t _bri_t = currentBri();
   if (_bri_t < 255) {
@@ -251,7 +251,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 // returns RGBW values of pixel
 uint32_t IRAM_ATTR_YN Segment::getPixelColorXY(int x, int y) const {
   if (!isActive()) return 0; // not active
-  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
+  if ((unsigned)x >= virtualWidth() || (unsigned)y >= virtualHeight() || x<0 || y<0) return 0;  // if pixel would fall out of virtual segment just exit
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
   if (transpose) { std::swap(x,y); } // swap X & Y if segment transposed
