@@ -2847,6 +2847,7 @@ function search(field, listId = null) {
 	// filter list items but leave (Default & Solid) always visible
 	const listItems = gId(listId).querySelectorAll('.lstI');
 	listItems.forEach((listItem, i) => {
+		if (listId !== 'pcont' && i === 0) return;
 		const listItemName = listItem.querySelector('.lstIname').innerText.toUpperCase();
 		const searchIndex = listItemName.indexOf(field.value.toUpperCase());
 		if (searchIndex < 0) {
@@ -2854,9 +2855,7 @@ function search(field, listId = null) {
 		} else {
 			listItem.dataset.searchIndex = searchIndex;
 		}
-
-		if ((listId !== 'pcont' && i === 0) || listItem.classList.contains("selected")) return;
-		listItem.style.display = (searchIndex < 0) ? 'none' : '';
+		listItem.style.display = (searchIndex < 0) && !listItem.classList.contains("selected") ? 'none' : '';
 	});
 
 	// sort list items by search index and name
