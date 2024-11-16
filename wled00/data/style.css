@@ -44,9 +44,6 @@ button.sml {
   min-width: 40px;
   margin: 0 0 0 10px;
 }
-span:before, b:before, b:after, i:after{
-	content: "\00A0";
-}
 #scan {
   margin-top: -10px;
 }
