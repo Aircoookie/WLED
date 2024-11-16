@@ -20,10 +20,10 @@
 #define DEEPSLEEP_WAKEUPINTERVAL 0
 #endif
 #ifndef DEEPSLEEP_DELAY
-#define DEEPSLEEP_DELAY 0
+#define DEEPSLEEP_DELAY 1
 #endif
 
-RTC_DATA_ATTR bool bootup = true; // variable in RTC data persists on a reboot
+RTC_DATA_ATTR bool powerup = true; // variable in RTC data persists on a reboot
 
 class DeepSleepUsermod : public Usermod {
 
@@ -36,7 +36,7 @@ class DeepSleepUsermod : public Usermod {
     bool noPull = true; // use pullup/pulldown resistor
     int wakeupAfter = DEEPSLEEP_WAKEUPINTERVAL; // in seconds, <=0: button only
     int sleepDelay = DEEPSLEEP_DELAY; // in seconds, 0 = immediate
-    int delaycounter = -1; // negative means timer (yet) not set
+    int delaycounter = 5; // delay deep sleep at bootup until preset settings are applied
     uint32_t lastLoopTime = 0;
     // string that are used multiple time (this will save some flash memory)
     static const char _name[];
@@ -71,11 +71,6 @@ class DeepSleepUsermod : public Usermod {
     void setup() {
       //TODO: if the de-init of RTC pins is required to do it could be done here
       //rtc_gpio_deinit(wakeupPin);
-      if(bootup == false && !turnOnAtBoot) { // not first bootup, turn LEDs on (override turnOnAtBoot) or loop() will go back to deep sleep
-        if (briS == 0) bri = 5; // turn on at low brightness
-        else bri = briS;
-        offMode = false;
-      }
       initDone = true;
     }
 
@@ -85,15 +80,30 @@ class DeepSleepUsermod : public Usermod {
         return;
       }
 
-      if (sleepDelay > 0 && !bootup) {
+      if (sleepDelay > 0) {
         if(lastLoopTime == 0) lastLoopTime = millis(); // initialize
         if (millis() - lastLoopTime < sleepDelay * 1000) {
             return; // wait until delay is over
         }
       }
 
+      if(powerup == false && delaycounter) { // delay sleep in case a preset is being loaded and turnOnAtBoot is disabled (handleIO() does enable offMode temporarily in this case)
+        delaycounter--;
+        if(delaycounter == 2 && offMode) { // force turn on, no matter the settings (device is bricked if user set sleepDelay=0, no bootup preset and turnOnAtBoot=false)
+          if (briS == 0) bri = 10; // turn on at low brightness
+          else bri = briS;
+          strip.setBrightness(bri); // needed to make handleIO() not turn off LEDs (really? does not help in bootup preset)
+          offMode = false;
+          applyPresetWithFallback(0, CALL_MODE_INIT, FX_MODE_STATIC, 0); // try to apply preset 0, fallback to static
+          if (rlyPin >= 0) {
+            digitalWrite(rlyPin, (rlyMde ? HIGH : LOW)); // turn relay on TODO: this should be done by wled, what function to call?
+          }
+        }
+        return;
+      }
+
       DEBUG_PRINTLN(F("DeepSleep UM: entering deep sleep..."));
-      bootup = false; // turn leds on in all subsequent bootups (overrides Turn LEDs on after power up/reset' at reboot)
+      powerup = false; // turn leds on in all subsequent bootups (overrides Turn LEDs on after power up/reset' at reboot)
       if(!pin_is_valid(wakeupPin)) return;
       esp_err_t halerror = ESP_OK;
       pinMode(wakeupPin, INPUT); // make sure GPIO is input with pullup/pulldown disabled
@@ -102,7 +112,7 @@ class DeepSleepUsermod : public Usermod {
       if(wakeupAfter)
       esp_sleep_enable_timer_wakeup((uint64_t)wakeupAfter * (uint64_t)1e6); //sleep for x seconds
 
-  #if defined(CONFIG_IDF_TARGET_ESP32C3) // ESP32 C3
+    #if defined(CONFIG_IDF_TARGET_ESP32C3) // ESP32 C3
     if(noPull)
       gpio_sleep_set_pull_mode((gpio_num_t)wakeupPin, GPIO_FLOATING);
     else { // enable pullup/pulldown resistor
@@ -115,7 +125,7 @@ class DeepSleepUsermod : public Usermod {
       halerror = esp_deep_sleep_enable_gpio_wakeup(1<<wakeupPin, ESP_GPIO_WAKEUP_GPIO_HIGH);
     else
       halerror = esp_deep_sleep_enable_gpio_wakeup(1<<wakeupPin, ESP_GPIO_WAKEUP_GPIO_LOW);
-  #else // ESP32, S2, S3
+    #else // ESP32, S2, S3
     gpio_pulldown_dis((gpio_num_t)wakeupPin); // disable internal pull resistors for GPIO use
     gpio_pullup_dis((gpio_num_t)wakeupPin);
     if(noPull) {
@@ -198,8 +208,8 @@ void addToConfig(JsonObject& root) override
       oappend(SET_F("addOption(dd,'High',1);"));
 
       oappend(SET_F("addInfo('DeepSleep:pull',1,'','-up/down disable: ');")); // first string is suffix, second string is prefix
-      oappend(SET_F("addInfo('DeepSleep::wakeAfter',1,'seconds (0 = never)');"));
-      oappend(SET_F("addInfo('DeepSleep::delaySleep',1,'seconds');")); // first string is suffix, second string is prefix
+      oappend(SET_F("addInfo('DeepSleep:wakeAfter',1,'seconds <i>(0 = never)<i>');"));
+      oappend(SET_F("addInfo('DeepSleep:delaySleep',1,'seconds <i>(0 = sleep at powerup)<i>');")); // first string is suffix, second string is prefix
     }
 
     /*

@@ -5,8 +5,8 @@ During deep sleep the ESP is shut down completely: no WiFi, no CPU, no outputs. 
 
 # A word of warning
 
-When you disable the WLED option 'Turn LEDs on after power up/reset' the ESP will go into deep sleep directly after power up and only start WLED after it has been woken up.
-If the ESP can not be awoken from deep sleep due to a wrong configuration it has to be flashed again through USB. There is no other way to wake it up.
+When you disable the WLED option 'Turn LEDs on after power up/reset' and 'DelaySleep' is set to zero the ESP will go into deep sleep directly after power-up and only start WLED after it has been woken up.
+If the ESP can not be awoken from deep sleep due to a wrong configuration it has to be factory reset, disabling sleep at power-up. There is no other way to wake it up.
 
 # Power Consumption in deep sleep
 
