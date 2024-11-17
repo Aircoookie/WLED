@@ -28,7 +28,7 @@ var isM = false, mw = 0, mh=0;
 var ws, wsRpt=0;
 var cfg = {
 	theme:{base:"dark", bg:{url:"", rnd: false, rndGrayscale: false, rndBlur: false}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
-	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
+	comp :{colors:{picker: true, rgb: false, quick: true, hex: false, cqcs: ""},
 		  labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false,
 		  css:true, hdays:false, fxdef:true, on:0, off:0, idsort: false}
 };
@@ -1279,6 +1279,20 @@ function updateUI()
 	gId('kwrap').style.display   = (hasRGB && !hasCCT) ? "block":"none";      // Kelvin slider
 	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";     // RGB sliders
 	gId('qcs-w').style.display   = (hasRGB && ccfg.quick) ? "block":"none";   // quick selection
+
+	if (hasRGB && ccfg.quick && ccfg.cqcs) {                                  // custom quick selectors
+		var clist = ccfg.cqcs.split(",");
+		var str = "", ct = 0;
+		for (let i = 0; i < clist.length; i++) {
+			var col = clist[i].trim();
+			if (!col.match(/^#(?:[0-9a-fA-F]{3}){1,2}$/g)) continue;
+			if (ct !== 0 && (ct % 11 === 6 || ct % 11 === 0)) str += ` <br>`;
+			str += ` <div class="qcs" onclick="pC('${col}');" style="background-color:${col};"></div>`;
+			ct++;
+		}
+		gId('qcs-c').innerHTML = str;
+	}
+
 	//gId('csl').style.display     = (hasRGB || hasWhite) ? "block":"none";     // color selectors (hide for On/Off bus)
 	//gId('palw').style.display    = (hasRGB) ? "inline-block":"none";          // palettes are shown/hidden in setEffectParameters()
 
