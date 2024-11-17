@@ -3,11 +3,13 @@
 
 #define HMAC_KEY_SIZE 32
 
-#define SESSION_ID_SIZE 16
 #define MAX_SESSION_IDS 8
 
-void getNonce(byte* nonce) {
-  RNG::fill(nonce, SESSION_ID_SIZE);
+void printByteArray(const byte* arr, size_t len) {
+  for (size_t i = 0; i < len; i++) {
+    Serial.print(arr[i], HEX);
+  }
+  Serial.println();
 }
 
 struct Nonce {
@@ -27,26 +29,38 @@ void moveToFirst(uint32_t i) {
   knownSessions[0] = tmp;
 }
 
-bool verifyNonce(const byte* sid, uint32_t counter) {
+uint8_t verifyNonce(const byte* sid, uint32_t counter) {
+  Serial.println(F("check sid"));
+  printByteArray(sid, SESSION_ID_SIZE);
+
+  uint32_t sum = 0;
+  for (size_t i = 0; i < SESSION_ID_SIZE; i++) {
+    sum += sid[i];
+  }
+  if (sum == 0) { // all-zero session ID is invalid as it is used for uninitialized entries
+    return ERR_NONCE;
+  }
+
   for (int i = 0; i < MAX_SESSION_IDS; i++) {
     if (memcmp(knownSessions[i].sessionId, sid, SESSION_ID_SIZE) == 0) {
+      Serial.print(F("Session ID matches e"));
+      Serial.println(i);
       if (counter <= knownSessions[i].counter) {
         Serial.println(F("Retransmission detected!"));
-        return false;
+        return ERR_REPLAY;
       }
       knownSessions[i].counter = counter;
       // nonce good, move this entry to the first position of knownSessions
       moveToFirst(i);
-      return true;
+      return ERR_NONE;
     }
   }
   Serial.println(F("Unknown session ID!"));
-  return false;
+  return ERR_NONCE;
 }
 
-void addSession(const char* sid) {
-  byte sid_new[SESSION_ID_SIZE];
-  RNG::fill(sid_new, SESSION_ID_SIZE);
+void addSessionId(byte* sid) {
+  RNG::fill(sid, SESSION_ID_SIZE);
 
   // first, try to find a completely unused slot
   for (int i = 0; i < MAX_SESSION_IDS; i++) {
@@ -71,18 +85,28 @@ void addSession(const char* sid) {
   moveToFirst(MAX_SESSION_IDS - 1);
 }
 
-void printByteArray(const byte* arr, size_t len) {
-  for (size_t i = 0; i < len; i++) {
-    Serial.print(arr[i], HEX);
-  }
-  Serial.println();
-}
-
 void hexStringToByteArray(const char* hexString, unsigned char* byteArray, size_t byteArraySize) {
+  size_t lenStr = strlen(hexString);
+  if (lenStr < 2 * byteArraySize) byteArraySize = lenStr / 2;
+
   for (size_t i = 0; i < byteArraySize; i++) {
     char c[3] = {hexString[2 * i], hexString[2 * i + 1], '\0'};  // Get two characters
     byteArray[i] = (unsigned char)strtoul(c, NULL, 16);          // Convert to byte
   }
+}
+
+// requires hexString to be at least 2 * byteLen + 1 characters long
+char* byteArrayToHexString(char* hexString, const byte* byteArray, size_t byteLen) {
+  
+  for (size_t i = 0; i < byteLen; ++i) {
+      // Convert each byte to a two-character hex string
+      sprintf(&hexString[i * 2], "%02x", byteArray[i]);
+  }
+  
+  // Null-terminate the string
+  hexString[byteLen * 2] = '\0';
+
+  return hexString;
 }
 
 void hmacSign(const byte* message, size_t msgLen, const char* pskHex, byte* signature) {
@@ -182,7 +206,6 @@ uint8_t verifyHmacFromJsonStr(const char* jsonStr, uint32_t maxLen) {
       objEnd = objStart + i;
       break;
     }
-    //i++;
   }
   if (objEnd == nullptr) {
     Serial.println(F("Couldn't find msg object end."));
@@ -196,39 +219,6 @@ uint8_t verifyHmacFromJsonStr(const char* jsonStr, uint32_t maxLen) {
     Serial.println(F("No nonce found in msg."));
     return ERR_HMAC_GEN;
   }
-  // {
-  //   StaticJsonDocument<128> nonceDoc;
-  //   DeserializationError error = deserializeJson(nonceDoc, noncePos +5);
-  //   if (error) {
-  //     Serial.print(F("deser nc failed: "));
-  //     Serial.println(error.c_str());
-  //     return false;
-  //   }
-  //   JsonObject nonceObj = nonceDoc.as<JsonObject>();
-  //   if (nonceObj.isNull()) {
-  //     Serial.println(F("Failed nonce JSON."));
-  //     return false;
-  //   }
-  //   const char* sessionId = nonceObj["sid"];
-  //   if (sessionId == nullptr) {
-  //     Serial.println(F("No session ID found in nonce."));
-  //     return false;
-  //   }
-  //   uint32_t counter = nonceObj["c"] | 0;
-  //   if (counter == 0) {
-  //     Serial.println(F("No counter found in nonce."));
-  //     return false;
-  //   }
-  //   if (counter > UINT32_MAX - 100) {
-  //     Serial.println(F("Counter too large."));
-  //     return false;
-  //   }
-  //   byte sidBytes[SESSION_ID_SIZE];
-  //   hexStringToByteArray(sessionId, sidBytes, SESSION_ID_SIZE);
-  //   if (!verifyNonce(sidBytes, counter)) {
-  //     return false;
-  //   }
-  // }
 
   // Convert the MAC from hex string to byte array
   size_t len = strlen(mac) / 2; // This will drop the last character if the string has an odd length
@@ -240,8 +230,44 @@ uint8_t verifyHmacFromJsonStr(const char* jsonStr, uint32_t maxLen) {
   hexStringToByteArray(mac, macByteArray, len);
 
   // Calculate the HMAC of the message object
-  bool hmacOk = hmacVerify((const byte*)objStart, objEnd - objStart + 1, WLED_HMAC_TEST_PSK, macByteArray);
-  return hmacOk ? ERR_NONE : ERR_HMAC;
+  if (!hmacVerify((const byte*)objStart, objEnd - objStart + 1, WLED_HMAC_TEST_PSK, macByteArray)) {
+    return ERR_HMAC;
+  }
+
+  // Nonce verification (Replay attack prevention)
+  {
+    StaticJsonDocument<128> nonceDoc;
+    DeserializationError error = deserializeJson(nonceDoc, noncePos +5);
+    if (error) {
+      Serial.print(F("deser nc failed: "));
+      Serial.println(error.c_str());
+      return ERR_HMAC_GEN;
+    }
+    JsonObject nonceObj = nonceDoc.as<JsonObject>();
+    if (nonceObj.isNull()) {
+      Serial.println(F("Failed nonce JSON."));
+      return ERR_HMAC_GEN;
+    }
+    const char* sessionId = nonceObj["sid"];
+    if (sessionId == nullptr) {
+      Serial.println(F("No session ID found in nonce."));
+      return ERR_HMAC_GEN;
+    }
+    uint32_t counter = nonceObj["c"] | 0;
+    if (counter == 0) {
+      Serial.println(F("No counter found in nonce."));
+      return ERR_HMAC_GEN;
+    }
+    if (counter > UINT32_MAX - 100) {
+      Serial.println(F("Counter too large."));
+      return ERR_NONCE;
+    }
+    byte sidBytes[SESSION_ID_SIZE] = {};
+    hexStringToByteArray(sessionId, sidBytes, SESSION_ID_SIZE);
+    uint8_t nonceResult = verifyNonce(sidBytes, counter);
+
+    return nonceResult ? nonceResult : ERR_NONE;
+  }
 }
 
 bool hmacTest() {

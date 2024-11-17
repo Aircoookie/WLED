@@ -713,6 +713,12 @@ function parseInfo(i) {
 	} else {
 		gId("filter2D").classList.remove('hide');
 	}
+
+	if (useSRA && i.sid) {
+		if (sraWindow) {
+			sraWindow.postMessage(JSON.stringify({"wled-ui":"sid","sid":i.sid}), sraOrigin);
+		}
+	}
 //	if (i.noaudio) {
 //		gId("filterVol").classList.add("hide");
 //		gId("filterFreq").classList.add("hide");
@@ -1438,8 +1444,17 @@ function makeWS() {
 		} else
 			i = lastinfo;
 		if (json.error) {
-			if (json.error == 1) {
+			if (json.error == 42) {
 				showToast('HMAC verification failed! Please make sure you used the right password!', true);
+				return;
+			} else if (json.error == 43) {
+				showToast("This light's control is password protected. Please access it through rc.wled.me", true);
+				return;
+			} else if (json.error == 41) {
+				showToast('Replayed message detected!', true);
+				return;
+			} else if (json.error == 40) {
+				showToast('Invalid nonce', true);
 				return;
 			}
 			showToast(json.error, true);

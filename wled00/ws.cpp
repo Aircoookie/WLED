@@ -32,7 +32,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   if(type == WS_EVT_CONNECT){
     //client connected
     DEBUG_PRINTLN(F("WS client connected."));
-    sendDataWs(client);
+    sendDataWs(client, true);
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
@@ -138,7 +138,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   }
 }
 
-void sendDataWs(AsyncWebSocketClient * client)
+void sendDataWs(AsyncWebSocketClient * client, bool initialConnection)
 {
   if (!ws.count()) return;
 
@@ -156,6 +156,16 @@ void sendDataWs(AsyncWebSocketClient * client)
   serializeState(state);
   JsonObject info  = pDoc->createNestedObject("info");
   serializeInfo(info);
+
+  if (initialConnection) {
+    char sid[SESSION_ID_SIZE*2+1] = {};
+    byte sidBytes[SESSION_ID_SIZE] = {};
+    addSessionId(sidBytes);
+    byteArrayToHexString(sid, sidBytes, SESSION_ID_SIZE);
+    Serial.print(F("New session ID: "));
+    Serial.println(sid);
+    info["sid"] = sid;
+  }
 
   size_t len = measureJson(*pDoc);
   DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for WS request (%u).\n"), pDoc->memoryUsage(), len);

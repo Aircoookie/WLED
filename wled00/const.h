@@ -421,6 +421,8 @@
 #define SEG_CAPABILITY_W       0x02
 #define SEG_CAPABILITY_CCT     0x04
 
+#define SESSION_ID_SIZE 16
+
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_DENIED       1  // Permission denied

@@ -96,6 +96,8 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb);
 void setRandomColor(byte* rgb);
 
 //crypto.cpp
+void addSessionId(byte* sid);
+char* byteArrayToHexString(char* hexString, const byte* byteArray, size_t byteLen);
 void hmacSign(const byte* message, size_t msgLen, const char* pskHex, byte* signature);
 bool hmacVerify(const byte* message, size_t msgLen, const char* pskHex, const byte* signature);
 uint8_t verifyHmacFromJsonStr(const char* jsonStr, uint32_t maxLen);
@@ -460,7 +462,7 @@ void serveSettingsJS(AsyncWebServerRequest* request);
 //ws.cpp
 void handleWs();
 void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
-void sendDataWs(AsyncWebSocketClient * client = nullptr);
+void sendDataWs(AsyncWebSocketClient * client = nullptr, bool initialConnection = false);
 
 //xml.cpp
 void XML_response(Print& dest);
