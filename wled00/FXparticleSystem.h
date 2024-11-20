@@ -16,7 +16,7 @@
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 #define MAX_MEMIDLE 200 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!) note: setting this to a high 8bit value prevents fragmentation
 
-#define WLED_DEBUG_PS
+//#define WLED_DEBUG_PS
 
 #ifdef WLED_DEBUG_PS
   #define PSPRINT(x) Serial.print(x)
@@ -32,7 +32,7 @@ struct partMem {
   uint32_t numParticles;      // number of particles that fit in memory note: could be a uint16_t but padding will increase the struct size so 12 bytes anyway
   uint8_t sizeOfParticle;     // size of the particle struct in this buffer
   uint8_t id;                 // ID of segment this memory belongs to
-  uint8_t inTransition;       // to track transitions TODO: probably not be needed anymore
+  uint8_t inTransition;       // to track transitions
   uint8_t watchdog;           // counter to handle deallocation
 };
 
@@ -44,7 +44,7 @@ void* getUpdatedParticlePointer(const uint32_t requestedParticles, size_t struct
 //extern uint16_t renderBufferSize; // size in pixels, if allcoated by a 1D system it needs to be updated for 2D
 partMem* getPartMem(void); // returns pointer to memory struct for current segment or nullptr
 void updateRenderingBuffer(CRGB* buffer, uint32_t requiredsize, bool isFramebuffer); // allocate CRGB rendering buffer, update size if needed
-void transferBuffer(uint32_t width, uint32_t height, uint8_t effectID); // transfer the buffer to the segment
+void transferBuffer(uint32_t width, uint32_t height); // transfer the buffer to the segment
 //TODO: add 1D version
 void servicePSmem(uint8_t idx); // increments watchdog, frees memory if idle too long
 
@@ -55,6 +55,8 @@ inline void updateUsedParticles(const uint32_t allocated, const uint32_t availab
 
 #endif
 
+//TODO: updated ESP32_MAXPARTICLES, can have more with new mem manager, revisit the calculation
+// TODO: maybe update PS_P_MINSURFACEHARDNESS for 2D? its a bit too sticky already at hardness 100
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 // memory allocation
 #define ESP8266_MAXPARTICLES 180 // enough for one 16x16 segment with transitions
@@ -89,15 +91,15 @@ typedef union {
 } PSsettings2D;
 
 //struct for a single particle
-typedef struct { // 10 bytes
+typedef struct { // 11 bytes
     int16_t x;  // x position in particle system
     int16_t y;  // y position in particle system
     int8_t vx;  // horizontal velocity
     int8_t vy;  // vertical velocity
     uint8_t hue;  // color hue
     uint8_t sat; // particle color saturation
-    // two byte bit field:
-    uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
+    //uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
+    uint16_t ttl; // time to live 
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)

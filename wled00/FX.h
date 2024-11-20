@@ -549,6 +549,7 @@ typedef struct Segment {
     inline static void addUsedSegmentData(int len) { _usedSegmentData += len; }
     #ifndef WLED_DISABLE_MODE_BLEND
     inline static void modeBlend(bool blend)       { _modeBlend = blend; }
+    inline static bool getmodeBlend(void)       { return _modeBlend; }
     #endif
     static void     handleRandomPalette();
     inline static const CRGBPalette16 &getCurrentPalette() { return Segment::_currentPalette; }
