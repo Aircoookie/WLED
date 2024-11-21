@@ -465,9 +465,8 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     printSetFormValue(settingsScript,PSTR("MG"),mqttGroupTopic);
     printSetFormCheckbox(settingsScript,PSTR("BM"),buttonPublishMqtt);
     printSetFormCheckbox(settingsScript,PSTR("RT"),retainMqttMsg);
-    printSetInputMaxLength(settingsScript, PSTR("MD"), MQTT_MAX_TOPIC_LEN);
-    printSetInputMaxLength(settingsScript, PSTR("MG"), MQTT_MAX_TOPIC_LEN);
-    printSetInputMaxLength(settingsScript, PSTR("MS"), MQTT_MAX_SERVER_LEN);
+    settingsScript.printf_P(PSTR("d.Sf.MD.maxlength=%d;d.Sf.MG.maxlength=%d;d.Sf.MS.maxlength=%d;"),
+                  MQTT_MAX_TOPIC_LEN, MQTT_MAX_TOPIC_LEN, MQTT_MAX_SERVER_LEN);
     #else
     settingsScript.print(F("toggle('MQTT');"));    // hide MQTT settings
     #endif

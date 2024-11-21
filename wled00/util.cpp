@@ -109,10 +109,6 @@ size_t printSetClassElementHTML(Print& settingsScript, const char* key, const in
   return settingsScript.printf_P(PSTR("d.getElementsByClassName(\"%s\")[%d].innerHTML=\"%s\";"), key, index, val);
 }
 
-size_t printSetInputMaxLength(Print& settingsScript, const char* key, int val) {
-  return settingsScript.printf_P(PSTR("d.Sf.%s.setAttribute(\"maxlength\", %d);"),key,val);
-}
-
 
 
 void prepareHostname(char* hostname)
