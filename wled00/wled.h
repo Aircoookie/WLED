@@ -476,7 +476,7 @@ WLED_GLOBAL uint16_t pollReplyCount _INIT(0);                     // count numbe
 WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);  // used for other periodic tasks too
 #ifndef WLED_DISABLE_MQTT
   #ifndef MQTT_MAX_TOPIC_LEN
-    #define MQTT_MAX_TOPIC_LEN 32  // should not be less than 32. might cause trouble when increased with usermods active that do not handle this correctly.
+    #define MQTT_MAX_TOPIC_LEN 32
   #endif
   #ifndef MQTT_MAX_SERVER_LEN
     #define MQTT_MAX_SERVER_LEN 32

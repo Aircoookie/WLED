@@ -7,6 +7,10 @@
 #ifndef WLED_DISABLE_MQTT
 #define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds
 
+#if MQTT_MAX_TOPIC_LEN > 32
+#warning "MQTT topics length > 32 is not recommended for compatibility with usermods!"
+#endif
+
 static void parseMQTTBriPayload(char* payload)
 {
   if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; stateUpdated(CALL_MODE_DIRECT_CHANGE);}
