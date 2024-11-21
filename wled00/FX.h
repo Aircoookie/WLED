@@ -48,8 +48,8 @@
 #define FRAMETIME        strip.getFrameTime()
 #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
   #define MIN_FRAME_DELAY  2                                              // minimum wait between repaints, to keep other functions like WiFi alive 
-#elif defined(CONFIG_IDF_TARGET_ESP32S2)
-  #define MIN_FRAME_DELAY  4                                              // S2 is slower than normal esp32, and only has one core
+#elif defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+  #define MIN_FRAME_DELAY  3                                              // S2/C3 are slower than normal esp32, and only have one core
 #else
   #define MIN_FRAME_DELAY  8                                              // 8266 legacy MIN_SHOW_DELAY
 #endif
