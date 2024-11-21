@@ -276,7 +276,7 @@ function onLoad()
 	handleLocationHash();
 	cpick.on("input:end", () => {setColor(1);});
 	cpick.on("color:change", () => {updatePSliders()});
-	cpick.on("color:change", () => {updateIntermediateColor();
+	cpick.on("color:change", () => {updateIntermediateColor()});
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
