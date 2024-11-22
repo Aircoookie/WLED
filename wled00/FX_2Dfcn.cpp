@@ -348,7 +348,7 @@ void Segment::blur2D(uint8_t blur_amount, bool smear) {
   const unsigned rows = virtualHeight();
 
   const uint8_t keep = smear ? 255 : 255 - blur_amount;
-  const uint8_t seep = blur_amount >> (1 + smear);
+  const uint8_t seep = blur_amount >> 1;
   uint32_t lastnew;
   uint32_t last;
   for (unsigned row = 0; row < rows; row++) {
