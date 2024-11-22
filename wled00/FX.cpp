@@ -1940,7 +1940,7 @@ uint16_t mode_palette() {
   using angleType = unsigned;
   constexpr mathType sInt16Scale             = 0x7FFF;
   constexpr mathType maxAngle                = 0x8000;
-  constexpr mathType staticRotationScale     = 255;
+  constexpr mathType staticRotationScale     = 256;
   constexpr mathType animatedRotationScale   = 1;
   constexpr int16_t (*sinFunction)(uint16_t) = &sin16;
   constexpr int16_t (*cosFunction)(uint16_t) = &cos16;
@@ -1949,7 +1949,7 @@ uint16_t mode_palette() {
   using wideMathType = float;
   using angleType = float;
   constexpr mathType sInt16Scale           = 1.0f;
-  constexpr mathType maxAngle              = M_PI / 255.0;
+  constexpr mathType maxAngle              = M_PI / 256.0;
   constexpr mathType staticRotationScale   = 1.0f;
   constexpr mathType animatedRotationScale = M_TWOPI / double(0xFFFF);
   constexpr float (*sinFunction)(float)    = &sin_t;
@@ -1961,12 +1961,12 @@ uint16_t mode_palette() {
 
   const int  inputShift           = SEGMENT.speed;
   const int  inputSize            = SEGMENT.intensity;
-  const int  inputRotation        = SEGMENT.custom1 + 128;
+  const int  inputRotation        = SEGMENT.custom1;
   const bool inputAnimateShift    = SEGMENT.check1;
   const bool inputAnimateRotation = SEGMENT.check2;
   const bool inputAssumeSquare    = SEGMENT.check3;
 
-  const angleType theta = (!inputAnimateRotation) ? (inputRotation * maxAngle / staticRotationScale) : (((strip.now * ((inputRotation >> 4) +1)) & 0xFFFF) * animatedRotationScale);
+  const angleType theta = (!inputAnimateRotation) ? ((inputRotation + 128) * maxAngle / staticRotationScale) : (((strip.now * ((inputRotation >> 4) +1)) & 0xFFFF) * animatedRotationScale);
   const mathType sinTheta = sinFunction(theta);
   const mathType cosTheta = cosFunction(theta);
 
@@ -2017,7 +2017,7 @@ uint16_t mode_palette() {
       }
       // Finally, shift the palette a bit.
       const int paletteOffset = (!inputAnimateShift) ? (inputShift) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
-      colorIndex += paletteOffset;
+      colorIndex -= paletteOffset;
       const uint32_t color = SEGMENT.color_wheel((uint8_t)colorIndex);
       if (isMatrix) {
         SEGMENT.setPixelColorXY(x, y, color);
