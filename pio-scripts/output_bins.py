@@ -19,7 +19,7 @@ def _create_dirs(dirs=["map", "release", "firmware"]):
         os.makedirs(os.path.join(OUTPUT_DIR, d), exist_ok=True)
 
 def create_release(source):
-    release_name = _get_cpp_define_value(env, "WLED_RELEASE_NAME")
+    release_name = _get_cpp_define_value(env, "WLED_RELEASE_NAME").replace("\\\"", "")
     if release_name:
         version = _get_cpp_define_value(env, "WLED_VERSION")
         release_file = os.path.join(OUTPUT_DIR, "release", f"WLED_{version}_{release_name}.bin")
