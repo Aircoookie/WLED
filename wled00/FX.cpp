@@ -884,12 +884,12 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
       SEGMENT.setPixelColor(i, color3);
   }
 
-  // set fading pixels on each end (if smooth enabled)
-  // if (SEGMENT.check2) {
+  // set fading pixels on each border (if smooth enabled)
+  if (SEGMENT.check2) {
     SEGMENT.setPixelColor(a, color_blend(color1, color2, rev_progress, true));
     SEGMENT.setPixelColor(b, color_blend(color2, color3, rev_progress, true));
     SEGMENT.setPixelColor(c, color_blend(color3, color1, rev_progress, true));
-  // }
+  }
 
   return FRAMETIME;
 }
@@ -901,7 +901,7 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
 uint16_t mode_chase_color(void) {
   return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), true);
 }
-static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!,!,!;!";
+static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width,,,,,Smooth;!,!,!;!";
 
 
 /*
@@ -910,7 +910,7 @@ static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!,!,!;!";
 uint16_t mode_chase_random(void) {
   return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), false);
 }
-static const char _data_FX_MODE_CHASE_RANDOM[] PROGMEM = "Chase Random@!,Width;!,,!;!";
+static const char _data_FX_MODE_CHASE_RANDOM[] PROGMEM = "Chase Random@!,Width,,,,,Smooth;!,,!;!";
 
 
 /*
@@ -924,7 +924,7 @@ uint16_t mode_chase_rainbow(void) {
 
   return chase(color, SEGCOLOR(0), SEGCOLOR(1), false);
 }
-static const char _data_FX_MODE_CHASE_RAINBOW[] PROGMEM = "Chase Rainbow@!,Width;!,!;!";
+static const char _data_FX_MODE_CHASE_RAINBOW[] PROGMEM = "Chase Rainbow@!,Width,,,,,Smooth;!,!;!";
 
 
 /*
@@ -938,7 +938,7 @@ uint16_t mode_chase_rainbow_white(void) {
 
   return chase(SEGCOLOR(0), color2, color3, false);
 }
-static const char _data_FX_MODE_CHASE_RAINBOW_WHITE[] PROGMEM = "Rainbow Runner@!,Size;Bg;!";
+static const char _data_FX_MODE_CHASE_RAINBOW_WHITE[] PROGMEM = "Rainbow Runner@!,Size,,,,,Smooth;Bg;!";
 
 
 /*
