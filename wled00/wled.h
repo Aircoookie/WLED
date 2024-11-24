@@ -264,7 +264,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
   #define WLED_VERSION dev
 #endif
 #ifndef WLED_RELEASE_NAME
-  #define WLED_RELEASE_NAME dev_release
+  #define WLED_RELEASE_NAME "Custom"
 #endif
 
 // Global Variable definitions
