@@ -5,7 +5,7 @@
  * Readability defines and their associated numerical values + compile-time constants
  */
 
-#define GRADIENT_PALETTE_COUNT 58
+#define GRADIENT_PALETTE_COUNT 59
 
 // You can define custom product info from build flags.
 // This is useful to allow API consumer to identify what type of WLED version

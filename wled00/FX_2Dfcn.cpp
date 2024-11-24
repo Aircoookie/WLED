@@ -333,7 +333,7 @@ void Segment::blur2D(uint8_t blur_amount, bool smear) {
   const unsigned rows = virtualHeight();
 
   const uint8_t keep = smear ? 255 : 255 - blur_amount;
-  const uint8_t seep = blur_amount >> (1 + smear);
+  const uint8_t seep = blur_amount >> 1;
   uint32_t lastnew;
   uint32_t last;
   for (unsigned row = 0; row < rows; row++) {
@@ -639,7 +639,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, int8_t rotate) {
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2, int8_t rotate, bool usePalGrad) {
   if (!isActive()) return; // not active
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
@@ -649,6 +649,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
 
   CRGB col = CRGB(color);
   CRGBPalette16 grad = CRGBPalette16(col, col2 ? CRGB(col2) : col);
+  if(usePalGrad) grad = SEGPALETTE; // selected palette as gradient
 
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
