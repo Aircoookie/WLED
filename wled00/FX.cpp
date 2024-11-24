@@ -456,6 +456,7 @@ static uint16_t running(uint32_t color1, uint32_t color2, bool theatre = false) 
   int width = (theatre ? 3 : 1) + (SEGMENT.intensity >> 4);  // window
   uint32_t cycleTime = 50 + (255 - SEGMENT.speed);
   uint32_t it = strip.now / cycleTime;
+  // uint16_t rem = map(strip.now % cycleTime, 0, cycleTime - 1, 0, 0xFFFF);
   bool usePalette = color1 == SEGCOLOR(0);
 
   for (int i = 0; i < SEGLEN; i++) {
@@ -466,6 +467,7 @@ static uint16_t running(uint32_t color1, uint32_t color2, bool theatre = false) 
     } else {
       int pos = (i % (width<<1));
       if ((pos < SEGENV.aux0-width) || ((pos >= SEGENV.aux0) && (pos < SEGENV.aux0+width))) col = color1;
+      // if ((pos == SEGENV.aux0-width) || (pos == SEGENV.aux0)) col = color_blend(color2, color1, rem, true);
     }
     SEGMENT.setPixelColor(i,col);
   }
@@ -823,7 +825,6 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
   uint32_t scaledCounter = counter * SEGLEN;
   uint16_t a = scaledCounter >> 16;
   uint16_t progress = scaledCounter & 0xFFFF;
-  uint16_t rev_progress = 0xFFFF - progress;
 
   bool chase_random = (SEGMENT.mode == FX_MODE_CHASE_RANDOM);
   if (chase_random) {
@@ -886,9 +887,9 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
 
   // set fading pixels on each border (if smooth enabled)
   if (SEGMENT.check2) {
-    SEGMENT.setPixelColor(a, color_blend(color1, color2, rev_progress, true));
-    SEGMENT.setPixelColor(b, color_blend(color2, color3, rev_progress, true));
-    SEGMENT.setPixelColor(c, color_blend(color3, color1, rev_progress, true));
+    SEGMENT.setPixelColor(a, color_blend(color2, color1, progress, true));
+    SEGMENT.setPixelColor(b, color_blend(color3, color2, progress, true));
+    SEGMENT.setPixelColor(c, color_blend(color1, color3, progress, true));
   }
 
   return FRAMETIME;
