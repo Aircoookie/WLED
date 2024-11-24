@@ -885,11 +885,11 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
   }
 
   // set fading pixels on each end (if smooth enabled)
-  if (SEGMENT.check2) {
+  // if (SEGMENT.check2) {
     SEGMENT.setPixelColor(a, color_blend(color1, color2, rev_progress, true));
     SEGMENT.setPixelColor(b, color_blend(color2, color3, rev_progress, true));
     SEGMENT.setPixelColor(c, color_blend(color3, color1, rev_progress, true));
-  }
+  // }
 
   return FRAMETIME;
 }
@@ -901,7 +901,7 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
 uint16_t mode_chase_color(void) {
   return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), true);
 }
-static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width,,,,,Smooth;!,!,!;!";
+static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!,!,!;!";
 
 
 /*
