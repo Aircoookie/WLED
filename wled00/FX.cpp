@@ -820,7 +820,10 @@ static const char _data_FX_MODE_ANDROID[] PROGMEM = "Android@!,Width;!,!;!;;m12=
  */
 static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do_palette) {
   uint16_t counter = strip.now * ((SEGMENT.speed >> 2) + 1);
-  uint16_t a = (counter * SEGLEN) >> 16;
+  uint32_t scaledCounter = counter * SEGLEN;
+  uint16_t a = scaledCounter >> 16;
+  uint16_t progress = scaledCounter & 0xFFFF;
+  uint16_t rev_progress = 0xFFFF - progress;
 
   bool chase_random = (SEGMENT.mode == FX_MODE_CHASE_RANDOM);
   if (chase_random) {
@@ -869,7 +872,7 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
       SEGMENT.setPixelColor(i, color2);
   }
 
-  //fill between points b and c with color2
+  //fill between points b and c with color3
   if (b < c)
   {
     for (unsigned i = b; i < c; i++)
@@ -879,6 +882,13 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
       SEGMENT.setPixelColor(i, color3);
     for (unsigned i = 0; i < c; i++) //fill from start until c
       SEGMENT.setPixelColor(i, color3);
+  }
+
+  // set fading pixels on each end (if smooth enabled)
+  if (SEGMENT.check2) {
+    SEGMENT.setPixelColor(a, color_blend(color1, color2, rev_progress, true));
+    SEGMENT.setPixelColor(b, color_blend(color2, color3, rev_progress, true));
+    SEGMENT.setPixelColor(c, color_blend(color3, color1, rev_progress, true));
   }
 
   return FRAMETIME;
@@ -891,7 +901,7 @@ static uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do
 uint16_t mode_chase_color(void) {
   return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), true);
 }
-static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!,!,!;!";
+static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width,,,,,Smooth;!,!,!;!";
 
 
 /*
