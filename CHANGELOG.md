@@ -2,6 +2,8 @@
 
 #### Build 2411150
 -   WLED 0.15.0-rc1 release
+-   Add support for esp32S3_wroom2 (#4243 by @softhack007)
+-   Fix mixed LED SK6812 and ws2812b booloop (#4301 by @willmmiles)
 
 #### Build 2410270
 -   WLED 0.15.0-b7 release
