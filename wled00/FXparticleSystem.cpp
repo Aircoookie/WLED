@@ -560,45 +560,37 @@ void ParticleSystem2D::pointAttractor(uint16_t particleindex, PSparticle *attrac
 void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity) {
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
-/*
-  if(transferflag) {
-    transferflag = false;
-      transferBuffer((maxXpixel + 1), (maxYpixel + 1), effectID);
-  }*/
-  Serial.print(" render ");
-
-
+  static bool useAdditiveTransfer = false; // use add instead of set for buffer transferring
+  if(!pmem->inTransition)  useAdditiveTransfer = false; // additive rendering is only used in transitions
+  // handle blurring and framebuffer update
   if (framebuffer) {
     // update global blur (used for blur transitions)
-    if(motionBlur > 0) {
-      uint32_t bluramount = motionBlur;
-      if(pmem->inTransition) { // FX transition
-        uint32_t progress = SEGMENT.progress(); // transition progress
-        if (pmem->inTransition != effectID) // inTransition is set to new effectID so this is true if we are to old FX
-          progress = 0xFFFFU - progress; // inverted transition progress for old FX
-        bluramount = (bluramount * progress) >> 16; // fade the blur during transitions
+    int32_t bluramount = motionBlur;
+    if(pmem->inTransition) { // FX transition, fade blur amount or skip setting new blur if particlesize is used
+      if(pmem->inTransition == effectID) { // FX transition and new FX: fade blur amount
+        bluramount = globalBlur + (((bluramount - globalBlur) * (int)SEGMENT.progress()) >> 16); // fade from old blur to new blur during transitions
       }
-      if(globalBlur < bluramount) globalBlur = bluramount; // keep track of highest blur amount TODO: transition could be made better, i.e. take the diff from old to new and transition that? could not clear the global blur and derive it from that plus new FX blur
     }
+    globalBlur = bluramount;
 
   /*
   Note on blurring / clearing
   when rendersolo is active, blurring can be done on the buffer directly, if this is a transition, skip blurring if this is the old FX (i.e. blur before new FX is rendered)
   if rendersolo is not set, the buffer must be either cleared (if no blurring and no pmem->inTransition) or read from segment (if blur is active AND this is not the old FX i.e. pmem->inTransition != fxID)
   if multiple segments are used, rendersolor is false, if then transitioning from classic to PS fx, blurring is applied. if transitioning away from PS, blurring is skipped (as this is the old FX)
- 
+
   // first check if rendersolo is active, if yes, check if this is a transition
   // if rendersolo is active and not a transition, blur the buffer or clear it
   // if this is a transition, only clear or blur if this is the new FX (which is rendered first)
   // if this is the new FX in a transition and rendersolo is not active, read the buffer from the segment befor applying blur (clear otherwise)
-
-  TODO: blurring during transitions is now completely disabled, there is a bug in the below code that skips blurring and probably does clearing instead.
 */
+
     // handle buffer blurring or clearing
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
+
     if(bufferNeedsUpdate) {
       if (globalBlur > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
-        Serial.println(" blurring: " + globalBlur);
+        //Serial.print(" blurring: " + String(globalBlur));
         for (uint32_t y = 0; y <= maxYpixel; y++) {
           int index = y * (maxXpixel + 1);
           for (uint32_t x = 0; x <= maxXpixel; x++) {
@@ -610,10 +602,38 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
             index++;
           }
         }
-        globalBlur = 0; // reset global blur for next frame
       }
-      else if (bufferNeedsUpdate) { // no blurring and not a transition or is new FX
+      else { // no blurring: clear buffer
         memset(framebuffer, 0, frameBufferSize * sizeof(CRGB));
+      }
+    }
+    if(particlesize > 0 && pmem->inTransition) { // if particle size is used by FX we need a clean buffer
+      // new FX already rendered to the buffer, transfer it to segment and clear it  TODO: make buffer transfer a function again
+      if(bufferNeedsUpdate && !globalBlur) { // transfer only if buffer was not cleared above (happens if this is the new FX and other FX does not use blurring)
+        useAdditiveTransfer = false; // no blurring and big size particle FX is the new FX, can just render normally
+      }
+      else {
+        #ifndef WLED_DISABLE_MODE_BLEND
+        bool tempBlend = SEGMENT.getmodeBlend();
+        SEGMENT.modeBlend(false); // temporarily disable FX blending in PS to PS transition (local buffer is used to do PS blending)
+        #endif
+        int yflipped;
+        for (uint32_t y = 0; y <= maxYpixel; y++) {
+          yflipped = maxYpixel - y;
+          int index = y * (maxXpixel + 1); // current row index for 1D buffer
+          for (uint32_t x = 0; x <= maxXpixel; x++) {
+            //if(globalBlur) fast_color_scale(framebuffer[index], globalBlur); // apply motion blurring
+            CRGB *c = &framebuffer[index++];
+            uint32_t clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color
+            //if(clr > 0) // not black  TODO: not transferring black is faster and enables overlay, but requries proper handling of buffer clearing, which is quite complex and probably needs a change to SEGMENT handling.
+            SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr);
+          }
+        }
+        #ifndef WLED_DISABLE_MODE_BLEND
+        SEGMENT.modeBlend(tempBlend);
+        #endif
+        memset(framebuffer, 0, frameBufferSize * sizeof(CRGB)); // clear the buffer after transfer
+        useAdditiveTransfer = true; // add buffer content to segment after rendering
       }
     }
   }
@@ -649,18 +669,6 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
   }
 
   if (particlesize > 0) {
-  // TODO: if global particle size is used, need to transfer the buffer NOW, clear it, render to it, then add the 'background' again from the segment.
- /*
-  for (uint32_t y = 0; y <= maxYpixel; y++) {
-        uint32_t  yflipped = maxYpixel - y;
-        int index = y * (maxXpixel + 1); // current row index for 1D buffer
-        for (uint32_t x = 0; x <= maxXpixel; x++) {
-          CRGB sourcecolor = SEGMENT.getPixelColorXY(x, yflipped);
-          fast_color_add(sourcecolor, framebuffer[index]);
-          index++;
-        }
-      }
-    */
     uint32_t passes = particlesize / 64 + 1; // number of blur passes, four passes max
     uint32_t bluramount = particlesize;
     uint32_t bitshift = 0;
@@ -683,7 +691,7 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
     #ifndef WLED_DISABLE_MODE_BLEND
     bool tempBlend = SEGMENT.getmodeBlend();
     if (pmem->inTransition)
-      SEGMENT.modeBlend(false); // temporarily disable FX blending in PS to PS transition (using local buffer to do PS blending)
+      SEGMENT.modeBlend(false); // temporarily disable FX blending in PS to PS transition (local buffer is used to do PS blending)
     #endif
     int yflipped;
     for (uint32_t y = 0; y <= maxYpixel; y++) {
@@ -692,8 +700,22 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
       for (uint32_t x = 0; x <= maxXpixel; x++) {
         CRGB *c = &framebuffer[index++];
         uint32_t clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color
+        if(useAdditiveTransfer) {
+          uint32_t segmentcolor = SEGMENT.getPixelColorXY((int)x, (int)yflipped);
+          CRGB segmentRGB = CRGB(segmentcolor);
+          if(clr == 0) // frame buffer is black, just update the framebuffer TODO: could check if segmentcolor is also black and skip
+            *c = segmentRGB;
+          else { // not black
+            if(segmentcolor) {
+              fast_color_add(*c, segmentRGB); // add segment color back to buffer if not black TODO: since both are 32bit, this could be made faster using the new improved wled 32bit adding (see speed improvements PR)
+              clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again)
+            }
+            SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr); // save back to segment after adding local buffer
+          }
+        }
         //if(clr > 0) // not black  TODO: not transferring black is faster and enables overlay, but requries proper handling of buffer clearing, which is quite complex and probably needs a change to SEGMENT handling.
-        SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr);
+        else
+          SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr);
       }
     }
     #ifndef WLED_DISABLE_MODE_BLEND
@@ -701,7 +723,6 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
     #endif
   }
   else PSPRINTLN("skip xfer");
-
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -801,7 +822,7 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
       if (framebuffer)
         fast_color_add(framebuffer[xfb + yfb * (maxXpixel + 1)], renderbuffer[xrb + yrb * 10]);
       else
-        SEGMENT.addPixelColorXY(xfb, maxYpixel - yfb, renderbuffer[xrb + yrb * 10]);
+        SEGMENT.addPixelColorXY(xfb, maxYpixel - yfb, renderbuffer[xrb + yrb * 10],true);
       }
     }
     } else { // standard rendering
@@ -844,7 +865,7 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
     else {
       for (uint32_t i = 0; i < 4; i++) {
       if (pixelvalid[i])
-        SEGMENT.addPixelColorXY(pixco[i][0], maxYpixel - pixco[i][1], color.scale8((uint8_t)pxlbrightness[i]));
+        SEGMENT.addPixelColorXY(pixco[i][0], maxYpixel - pixco[i][1], color.scale8((uint8_t)pxlbrightness[i]), true);
       }
     }
   }
@@ -1032,7 +1053,7 @@ void ParticleSystem2D::updateSystem(void) {
   uint32_t cols = SEGMENT.virtualWidth(); // update matrix size
   uint32_t rows = SEGMENT.virtualHeight();
   setMatrixSize(cols, rows);
-  updatePSpointers(advPartProps != NULL, advPartSize != NULL); // update pointers to PS data, also updates availableParticles
+  updatePSpointers(advPartProps != nullptr, advPartSize != nullptr); // update pointers to PS data, also updates availableParticles
   setUsedParticles(usedpercentage); // update used particles based on percentage  TODO: this does not need to be called for each frame, it only changes during transitions. can optimize?
   if (partMemList.size() == 1) // if number of vector elements is one, this is the only system !!!TODO: does this need more special case handling? 
   {
@@ -1191,13 +1212,14 @@ bool allocateParticleSystemMemory2D(uint32_t numparticles, uint32_t numsources, 
 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
 bool initParticleSystem2D(ParticleSystem2D *&PartSys, uint32_t requestedsources, uint32_t additionalbytes, bool advanced, bool sizecontrol) {
- PSPRINTLN("PS 2D init");
+  PSPRINT("PS 2D init ");
   if(!strip.isMatrix) return false; // only for 2D
   uint32_t cols = SEGMENT.virtualWidth();
   uint32_t rows = SEGMENT.virtualHeight();
   uint32_t pixels = cols * rows;
   uint32_t numparticles = calculateNumberOfParticles2D(pixels, advanced, sizecontrol);
-  PSPRINTLN("request numparticles:" + String(numparticles));
+  PSPRINT(" segmentsize:" + String(cols) + " " + String(rows));
+  PSPRINT(" request numparticles:" + String(numparticles));
   uint32_t numsources = calculateNumberOfSources2D(pixels, requestedsources);
   // allocate rendering buffer (if this fails, it will render to segment buffer directly)
   updateRenderingBuffer(framebuffer, pixels, true);
@@ -1287,7 +1309,7 @@ void ParticleSystem1D::update(void) {
   uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
   if (bg_color > 0) { //if not black
     for(int32_t i = 0; i < maxXpixel + 1; i++) {
-      SEGMENT.addPixelColor(i,bg_color); // TODO: can this be done in rendering function using local buffer?
+      SEGMENT.addPixelColor(i, bg_color, true); // TODO: can this be done in rendering function using local buffer?
     }
   }
 }
@@ -1570,7 +1592,7 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
       if (framebuffer)
         fast_color_add(framebuffer[x], color, brightness);
       else
-        SEGMENT.addPixelColor(x, color.scale8((uint8_t)brightness));
+        SEGMENT.addPixelColor(x, color.scale8((uint8_t)brightness), true);
     }
   }
   else { //render larger particles
@@ -1658,7 +1680,7 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
           if (framebuffer)
             fast_color_add(framebuffer[pixco[i]], color, pxlbrightness[i]);
           else
-             SEGMENT.addPixelColor(pixco[i], color.scale8((uint8_t)pxlbrightness[i]));
+             SEGMENT.addPixelColor(pixco[i], color.scale8((uint8_t)pxlbrightness[i]), true);
         }
       }
     }
@@ -2346,7 +2368,7 @@ void transferBuffer(uint32_t width, uint32_t height) {
       CRGB *c = &framebuffer[x];
       uint32_t color = RGBW32(c->r,c->g,c->b,0);
       //if(color > 0) // not black
-      SEGMENT.setPixelColor(x, color);
+      SEGMENT.setPixelColor((int)x, color);
     }
   }
   /*
