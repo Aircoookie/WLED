@@ -278,7 +278,11 @@ WLED_GLOBAL char releaseString[] _INIT(TOSTRING(WLED_RELEASE_NAME)); // somehow 
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
+#ifdef WLED_OTA_PASS
+WLED_GLOBAL char otaPass[33] _INIT(WLED_OTA_PASS);
+#else
 WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
+#endif
 
 // Hardware and pin config
 #ifndef BTNPIN
@@ -560,7 +564,11 @@ WLED_GLOBAL byte macroLongPress[WLED_MAX_BUTTONS]     _INIT({0});
 WLED_GLOBAL byte macroDoublePress[WLED_MAX_BUTTONS]   _INIT({0});
 
 // Security CONFIG
+#ifdef WLED_OTA_PASS
+WLED_GLOBAL bool otaLock        _INIT(true);     // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
+#else
 WLED_GLOBAL bool otaLock        _INIT(false);     // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
+#endif
 WLED_GLOBAL bool wifiLock       _INIT(false);     // prevents access to WiFi settings when OTA lock is enabled
 WLED_GLOBAL bool aOtaEnabled    _INIT(true);      // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
 WLED_GLOBAL char settingsPIN[5] _INIT(WLED_PIN);  // PIN for settings pages
