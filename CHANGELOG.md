@@ -1,9 +1,17 @@
 ## WLED changelog
 
-#### Build 2411150
+#### Build 2411250
 -   WLED 0.15.0-rc1 release
 -   Add support for esp32S3_wroom2 (#4243 by @softhack007)
 -   Fix mixed LED SK6812 and ws2812b booloop (#4301 by @willmmiles)
+-   Improved FPS calculation (by DedeHai)
+-   Fix crashes when using HTTP API within MQTT (#4269 by @willmmiles)
+-   Fix array overflow in exploding_fireworks (#4120 by @willmmiles)
+-   Fix MQTT topic buffer length (#4293 by @WouterGritter)
+-   Fix SparkFunDMX fix for possible array bounds violation in DMX.write (by @softhack007)
+-   Allow TV Simulator on single LED segments (by @softhack007)
+-   Fix WLED_RELEASE_NAME (by @netmindz)
+
 
 #### Build 2410270
 -   WLED 0.15.0-b7 release
