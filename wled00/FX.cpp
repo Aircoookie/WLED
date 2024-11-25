@@ -456,7 +456,13 @@ static uint16_t running(uint32_t color1, uint32_t color2, bool theatre = false) 
   int width = (theatre ? 3 : 1) + (SEGMENT.intensity >> 4);  // window
   uint32_t cycleTime = 50 + (255 - SEGMENT.speed);
   uint32_t it = strip.now / cycleTime;
-  // uint16_t rem = map(strip.now % cycleTime, 0, cycleTime - 1, 0, 0xFFFF);
+
+  if (it != SEGENV.step) {
+    SEGENV.aux0 = (SEGENV.aux0 +1) % (theatre ? width : (width<<1));
+    SEGENV.step = it;
+  }
+
+  uint16_t blend = map(strip.now % cycleTime, 0, cycleTime - 1, 0x0000, 0xFFFF);
   bool usePalette = color1 == SEGCOLOR(0);
 
   for (int i = 0; i < SEGLEN; i++) {
@@ -467,14 +473,15 @@ static uint16_t running(uint32_t color1, uint32_t color2, bool theatre = false) 
     } else {
       int pos = (i % (width<<1));
       if ((pos < SEGENV.aux0-width) || ((pos >= SEGENV.aux0) && (pos < SEGENV.aux0+width))) col = color1;
-      // if ((pos == SEGENV.aux0-width) || (pos == SEGENV.aux0)) col = color_blend(color2, color1, rem, true);
+
+      if (SEGENV.check1) {
+        if (pos == SEGENV.aux0)
+          col = color_blend(color1, color2, blend, true);
+        if (pos == SEGENV.aux0-width || pos == SEGENV.aux0+width)
+          col = color_blend(color2, color1, blend, true);
+      }
     }
     SEGMENT.setPixelColor(i,col);
-  }
-
-  if (it != SEGENV.step) {
-    SEGENV.aux0 = (SEGENV.aux0 +1) % (theatre ? width : (width<<1));
-    SEGENV.step = it;
   }
   return FRAMETIME;
 }
@@ -1092,7 +1099,7 @@ static const char _data_FX_MODE_CHASE_FLASH_RANDOM[] PROGMEM = "Chase Flash Rnd@
 uint16_t mode_running_color(void) {
   return running(SEGCOLOR(0), SEGCOLOR(1));
 }
-static const char _data_FX_MODE_RUNNING_COLOR[] PROGMEM = "Chase 2@!,Width;!,!;!";
+static const char _data_FX_MODE_RUNNING_COLOR[] PROGMEM = "Chase 2@!,Width,,,,Smooth;!,!;!";
 
 
 /*
