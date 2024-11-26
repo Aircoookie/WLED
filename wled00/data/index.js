@@ -329,7 +329,7 @@ function openTab(tabI, force = false) {
 var timeout;
 
 function showToast(text, error = false) {
-	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
+    if (error) gId('connind').style.backgroundColor = "var(--c-r)";
     var x = gId('toast');
     //if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
     x.innerHTML = text;
@@ -664,8 +664,14 @@ function populateInfo(i) {
     heap = heap.toFixed(1);
     var pwr = i.leds.pwr;
     var pwru = "Not calculated";
-	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
-	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
+    if (pwr > 1000) {
+        pwr /= 1000;
+        pwr = pwr.toFixed((pwr > 10) ? 0 : 1);
+        pwru = pwr + " A";
+    } else if (pwr > 0) {
+        pwr = 50 * Math.round(pwr / 50);
+        pwru = pwr + " mA";
+    }
     var urows = "";
     if (i.u) {
         for (const [k, val] of Object.entries(i.u)) {
@@ -801,8 +807,8 @@ function populateEffects() {
         let fd = "";
         if (ef.name.indexOf("RSVD") < 0) {
             if (Array.isArray(fxdata) && fxdata.length > id) {
-				if (fxdata[id].length==0) fd = ";;!;1"
-				else fd = fxdata[id];
+                if (fxdata[id].length == 0) fd = ";;!;1"
+                else fd = fxdata[id];
                 let eP = (fd == '') ? [] : fd.split(";"); // effect parameters
                 let p = (eP.length < 3 || eP[2] === '') ? [] : eP[2].split(","); // palette data
                 if (p.length > 0 && (p[0] !== "" && !isNumeric(p[0]))) nm += "&#x1F3A8;";	// effects using palette
@@ -1486,9 +1492,8 @@ function setEffectParameters(idx) {
 var jsonTimeout;
 var reqsLegal = false;
 
-function requestJson(command=null)
-{
-	gId('connind').style.backgroundColor = "var(--c-y)";
+function requestJson(command = null) {
+    gId('connind').style.backgroundColor = "var(--c-y)";
     if (command && !reqsLegal) return; // stop post requests from chrome onchange event on page restore
     if (!jsonTimeout) jsonTimeout = setTimeout(() => {
         if (ws) ws.close();
@@ -1509,7 +1514,8 @@ function requestJson(command=null)
         req = JSON.stringify(command);
         if (req.length > 1340) useWs = false; // do not send very long requests over websocket
         if (req.length > 500 && lastinfo && lastinfo.arch == "esp8266") useWs = false; // esp8266 can only handle 500 bytes
-	};
+    }
+    ;
 
     if (useWs) {
         ws.send(req ? req : '{"v":true}');
@@ -2577,6 +2583,24 @@ function filterFx(o) {
     });
 }
 
+function filterPreset(o) {
+    if (!o) return;
+    let i = gId('psFind').children[0];
+    i.value = !o.checked ? '' : o.dataset.flt;
+    i.focus();
+    i.dispatchEvent(new Event('input'));
+    gId("presetTabs").querySelectorAll("input[type=checkbox]").forEach((e) => {
+        if (e !== o) {
+            e.checked = false;
+            debugger
+            e.closest(".preset-modes-tabs__tab").classList.remove("preset-modes-tabs__tab--active");
+        } else {
+            debugger
+            e.closest(".preset-modes-tabs__tab").classList.add("preset-modes-tabs__tab--active");
+        }
+    });
+}
+
 // make sure "dur" and "transition" are arrays with at least the length of "ps"
 function formatArr(pl) {
     var l = pl.ps.length;
@@ -2701,7 +2725,7 @@ function move(e) {
 
 function size() {
     wW = window.innerWidth;
-	var h = gId('top').clientHeight;
+    var h = gId('top').clientHeight;
     sCol('--th', h + "px");
     sCol('--bh', gId('bot').clientHeight + "px");
     if (isLv) h -= 4;
@@ -2744,13 +2768,13 @@ function mergeDeep(target, ...sources) {
 }
 
 size();
-    _C.style.setProperty('--n', N);
+_C.style.setProperty('--n', N);
 
 window.addEventListener('resize', size, true);
 
-    _C.addEventListener('mousedown', lock, false);
-    _C.addEventListener('touchstart', lock, false);
+_C.addEventListener('mousedown', lock, false);
+_C.addEventListener('touchstart', lock, false);
 
-    _C.addEventListener('mouseout', move, false);
-    _C.addEventListener('mouseup', move, false);
-    _C.addEventListener('touchend', move, false);
+_C.addEventListener('mouseout', move, false);
+_C.addEventListener('mouseup', move, false);
+_C.addEventListener('touchend', move, false);
