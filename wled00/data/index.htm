@@ -248,10 +248,10 @@
 					<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this)">
 					<span class="checkmark"></span>
 				</label>
-				<label id="filterFreq" class="check fchkl">&#9835;
-					<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this)">
-					<span class="checkmark"></span>
-				</label>
+<!--				<label id="filterFreq" class="check fchkl">&#9835;-->
+<!--					<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this)">-->
+<!--					<span class="checkmark"></span>-->
+<!--				</label>-->
 			</div>
 			<div id="slider0" class="slider">
 				<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
@@ -332,6 +332,22 @@
 		<div id="pql">
 		</div>
 		<p class="labels hd">Presets</p>
+		<div id="presetTabs" class="preset-modes-tabs">
+			<label class="preset-modes-tabs__tab preset-modes-tabs__tab--active">
+				<span id="filterActive" class="check fchkl">
+					Active
+					&#8226;
+					<input type="checkbox" name="presets-tab" data-flt="&#8226;" onchange="filterPreset(this)">
+				</span>
+			</label>
+			<label class="preset-modes-tabs__tab">
+				<span id="filterMusic" class="check fchkl">
+					Music
+					&#9834;
+					<input type="checkbox" name="presets-tab" data-flt="&#9834;" onchange="filterPreset(this)">
+				</span>
+			</label>
+		</div>
 		<div class="staytop fnd" id="psFind">
 			<input type="text" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this,'pcont')" />
 			<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
