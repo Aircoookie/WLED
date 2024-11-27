@@ -1,7 +1,9 @@
-name: WLED CI
+name: WLED Build
 
-on: [push, pull_request]
-
+# Only included into other workflows
+on:
+  workflow_call:
+  
 jobs:
 
   get_default_envs:

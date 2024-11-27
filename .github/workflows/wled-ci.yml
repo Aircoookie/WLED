@@ -1,0 +1,11 @@
+name: WLED CI
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+
+jobs:
+  wled_build:
+    uses: ./.github/workflows/build.yml
