@@ -2,24 +2,10 @@
   WS2812FX.cpp contains all effect methods
   Harm Aldick - 2016
   www.aldick.org
-  LICENSE
-  The MIT License (MIT)
+
   Copyright (c) 2016  Harm Aldick
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
+  Licensed under the EUPL v. 1.2 or later
+  Adapted from code originally licensed under the MIT license
 
   Modified heavily for WLED
 */
@@ -1980,7 +1966,7 @@ uint16_t mode_palette() {
   const bool inputAnimateRotation = SEGMENT.check2;
   const bool inputAssumeSquare    = SEGMENT.check3;
 
-  const angleType theta = (!inputAnimateRotation) ? (inputRotation * maxAngle / staticRotationScale) : (((strip.now * ((inputRotation >> 4) +1)) & 0xFFFF) * animatedRotationScale);
+  const angleType theta = (!inputAnimateRotation) ? ((inputRotation + 128) * maxAngle / staticRotationScale) : (((strip.now * ((inputRotation >> 4) +1)) & 0xFFFF) * animatedRotationScale);
   const mathType sinTheta = sinFunction(theta);
   const mathType cosTheta = cosFunction(theta);
 
@@ -1999,7 +1985,7 @@ uint16_t mode_palette() {
   // So the rectangle needs to have exactly the right size. That size depends on the rotation.
   // This scale computation here only considers one dimension. You can think of it like the rectangle is always scaled so that
   // the left and right most points always match the left and right side of the display.
-  const mathType scale   = std::abs(sinTheta) + (std::abs(cosTheta) * maxYOut / maxXOut);
+  const mathType scale = std::abs(sinTheta) + (std::abs(cosTheta) * maxYOut / maxXOut);
   // 2D simulation:
   // If we are dealing with a 1D setup, we assume that each segment represents one line on a 2-dimensional display.
   // The function is called once per segments, so we need to handle one line at a time.
@@ -2030,8 +2016,8 @@ uint16_t mode_palette() {
         colorIndex = ((inputSize - 112) * colorIndex) / 16;
       }
       // Finally, shift the palette a bit.
-      const int paletteOffset = (!inputAnimateShift) ? (inputShift-128) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
-      colorIndex += paletteOffset;
+      const int paletteOffset = (!inputAnimateShift) ? (inputShift) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
+      colorIndex -= paletteOffset;
       const uint32_t color = SEGMENT.color_wheel((uint8_t)colorIndex);
       if (isMatrix) {
         SEGMENT.setPixelColorXY(x, y, color);
@@ -2042,7 +2028,7 @@ uint16_t mode_palette() {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;c1=128,c2=128,c3=128,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;ix=112,c1=0,o1=1,o2=0,o3=1";
 
 
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
@@ -2520,9 +2506,9 @@ static uint16_t ripple_base() {
       #endif
       {
         int left = rippleorigin - propI -1;
-        int right = rippleorigin + propI +3;
+        int right = rippleorigin + propI +2;
         for (int v = 0; v < 4; v++) {
-          unsigned mag = scale8(cubicwave8((propF>>2)+(v-left)*64), amp);
+          unsigned mag = scale8(cubicwave8((propF>>2) + v * 64), amp);
           SEGMENT.setPixelColor(left + v, color_blend(SEGMENT.getPixelColor(left + v), col, mag)); // TODO
           SEGMENT.setPixelColor(right - v, color_blend(SEGMENT.getPixelColor(right - v), col, mag)); // TODO
         }
@@ -3561,7 +3547,7 @@ uint16_t mode_exploding_fireworks(void)
   if (segs <= (strip.getMaxSegments() /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
 
-  unsigned numSparks = min(2 + ((rows*cols) >> 1), maxSparks);
+  unsigned numSparks = min(5 + ((rows*cols) >> 1), maxSparks);
   unsigned dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize + sizeof(float))) return mode_static(); //allocation failed
   float *dying_gravity = reinterpret_cast<float*>(SEGENV.data + dataSize);
@@ -3616,7 +3602,8 @@ uint16_t mode_exploding_fireworks(void)
      * Size is proportional to the height.
      */
     unsigned nSparks = flare->pos + random8(4);
-    nSparks = constrain(nSparks, 4, numSparks);
+    nSparks = std::max(nSparks, 4U);  // This is not a standard constrain; numSparks is not guaranteed to be at least 4
+    nSparks = std::min(nSparks, numSparks);
 
     // initialize sparks
     if (SEGENV.aux0 == 2) {
@@ -4031,7 +4018,7 @@ uint16_t mode_pacifica()
 
   // Increment the four "color index start" counters, one for each wave layer.
   // Each is incremented at a different speed, and the speeds vary over time.
-  unsigned sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step, sCIStart4 = SEGENV.step >> 16;
+  unsigned sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step & 0xFFFF, sCIStart4 = (SEGENV.step >> 16);
   uint32_t deltams = (FRAMETIME >> 2) + ((FRAMETIME * SEGMENT.speed) >> 7);
   uint64_t deltat = (strip.now >> 2) + ((strip.now * SEGMENT.speed) >> 7);
   strip.now = deltat;
@@ -4046,7 +4033,7 @@ uint16_t mode_pacifica()
   sCIStart3 -= (deltams1 * beatsin88_t(501,5,7));
   sCIStart4 -= (deltams2 * beatsin88_t(257,4,6));
   SEGENV.aux0 = sCIStart1; SEGENV.aux1 = sCIStart2;
-  SEGENV.step = sCIStart4; SEGENV.step = (SEGENV.step << 16) + sCIStart3;
+  SEGENV.step = (sCIStart4 << 16) | (sCIStart3 & 0xFFFF);
 
   // Clear out the LED array to a dim background blue-green
   //SEGMENT.fill(132618);
@@ -4077,7 +4064,7 @@ uint16_t mode_pacifica()
     c.green = scale8(c.green, 200);
     c |= CRGB( 2, 5, 7);
 
-    SEGMENT.setPixelColor(i, c.red, c.green, c.blue);
+    SEGMENT.setPixelColor(i, c);
   }
 
   strip.now = nowOld;
@@ -4644,7 +4631,7 @@ uint16_t mode_tv_simulator(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TV_SIMULATOR[] PROGMEM = "TV Simulator@!,!;;";
+static const char _data_FX_MODE_TV_SIMULATOR[] PROGMEM = "TV Simulator@!,!;;!;01";
 
 
 /*

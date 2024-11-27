@@ -144,7 +144,7 @@ button {
 }
 
 .huge {
-	font-size: 42px;
+	font-size: 60px !important;
 }
 
 .segt, .plentry TABLE {
@@ -584,6 +584,10 @@ button {
 	z-index: 3;
 }
 
+#rover .ibtn {
+	margin: 5px;
+}
+
 #ndlt {
 	margin: 12px 0;
 }
@@ -624,7 +628,7 @@ button {
   padding-bottom: 8px;
 }
 
-.infobtn {
+#info .ibtn {
 	margin: 5px;
 }
 
@@ -848,7 +852,7 @@ input[type=range]::-moz-range-thumb {
 	width: 135px;
 }
 
-#nodes .infobtn {
+#nodes .ibtn {
 	margin: 0;
 }
 
@@ -1036,7 +1040,7 @@ textarea {
 
 .segname .flr, .pname .flr {
 	transform: rotate(0deg);
-	right: -6px;
+	/*right: -6px;*/
 }
 
 /* segment power wrapper */
@@ -1331,6 +1335,11 @@ TD .checkmark, TD .radiomark {
 	box-shadow: 0 0 10px 4px var(--c-1);
 }
 
+.lstI .flr:hover {
+    background: var(--c-6);
+    border-radius: 100%;
+}
+
 #pcont .selected:not([class*="expanded"]) {
 	bottom: 52px;
 	top: 42px;
@@ -1524,7 +1533,7 @@ dialog {
 	#info table .btn, #nodes table .btn {
 		width: 200px;
 	}
-	#info .infobtn, #nodes .infobtn {
+	#info .ibtn, #nodes .ibtn {
 		width: 145px;
 	}
 	#info div, #nodes div, #nodes a.btn {
