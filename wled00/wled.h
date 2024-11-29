@@ -708,6 +708,9 @@ WLED_GLOBAL byte effectIntensity _INIT(128);
 WLED_GLOBAL byte effectPalette _INIT(0);
 WLED_GLOBAL bool stateChanged _INIT(false);
 
+// custom color presets
+WLED_GLOBAL std::vector<uint32_t> customColors;
+
 // network
 #ifdef WLED_SAVE_RAM
 // this will save us 2 bytes of RAM while increasing code by ~400 bytes

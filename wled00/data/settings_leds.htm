@@ -6,7 +6,7 @@
 	<title>LED Settings</title>
 	<script src="common.js" async type="text/javascript"></script>
 	<script>
-		var laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0,maxCC=36; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var oMaxB=1;
 		var customStarts=false,startsDirty=[];
 		function off(n)    { gN(n).value = -1;}
@@ -41,7 +41,7 @@
 			});	// If we set async false, file is loaded and executed, then next statement is processed
 			if (loc) d.Sf.action = getURL('/settings/leds');
 		}
-		function bLimits(b,v,p,m,l,o=5,d=2,a=6) {
+		function bLimits(b,v,p,m,l,o=5,d=2,a=6,c=36) {
 			// maxB - max buses (can be changed if using ESP32 parallel I2S)
 			// maxD - max digital channels (can be changed if using ESP32 parallel I2S)
 			// maxA - max analog channels
@@ -50,7 +50,8 @@
 			// maxM - max LED memory
 			// maxL - max LEDs (will serve to determine ESP >1664 == ESP32)
 			// maxCO - max Color Order mappings
-			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
+			// macCC - max custom colors
+			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o; maxCC = c;
 		}
 		function pinsOK() {
 			var ok = true;
@@ -574,6 +575,33 @@ Swap: <select id="xw${s}" name="XW${s}">
 			gId("si").checked = cs;
 			tglSi(cs);
 		}
+		function addCCol(col) {
+			var i = gEBCN('ccol_entry').length;
+			if (i>=maxCC) return;
+			var s = String.fromCharCode((i<10?48:55)+i);
+			if (!col) col = [
+				Math.floor(Math.random() * 256),
+				Math.floor(Math.random() * 256),
+				Math.floor(Math.random() * 256)
+			];
+			var hex = '#'
+				+ col[0].toString(16).padStart(2,'0')
+				+ col[1].toString(16).padStart(2,'0')
+				+ col[2].toString(16).padStart(2,'0');
+			var b = `<input type="color" name="CC${s}" value="${hex}" class="ccol_entry"> `;
+			gId("ccol_entries").insertAdjacentHTML("beforeend", b);
+			btnCCol(i+1);
+		}
+		function remCCol() {
+			var entries = gEBCN('ccol_entry');
+			btnCCol(entries.length-1);
+			if (!entries.length) return;
+			entries[entries.length-1].remove();
+		}
+		function btnCCol(i) {
+			gId('ccol_add').style.display = (i<maxCC) ? 'inline' : 'none';
+			gId('ccol_rem').style.display = (i>0) ? 'inline' : 'none';
+		}
 		// https://stackoverflow.com/questions/7346563/loading-local-json-file
 		function loadCfg(o) {
 			var f, fr;
@@ -636,6 +664,11 @@ Swap: <select id="xw${s}" name="XW${s}">
 						d.getElementsByName("RL")[0].value = c.hw.relay.pin;
 						d.getElementsByName("RM")[0].checked = c.hw.relay.rev;
 						d.getElementsByName("RO")[0].checked = c.hw.relay.odrain;
+					}
+					if (c.ccols) {
+						c.ccols.forEach(v=>{
+							addCCol(v);
+						});
 					}
 					UI();
 				}
@@ -821,6 +854,11 @@ Swap: <select id="xw${s}" name="XW${s}">
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
 		Default brightness: <input name="CA" type="number" class="m" min="1" max="255" required> (1-255)<br><br>
 		Apply preset <input name="BP" type="number" class="m" min="0" max="250" required> at boot (0 uses values from above)<br><br>
+		Custom Color Presets:<br>
+		<div id="ccol_entries"></div>
+		<button type="button" id="ccol_add" onclick="addCCol()">+</button>
+		<button type="button" id="ccol_rem" onclick="remCCol()" style="display:none">-</button>
+		<br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br>
 		Use Gamma value: <input name="GV" type="number" class="m" placeholder="2.8" min="1" max="3" step="0.1" required><br><br>

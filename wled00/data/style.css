@@ -128,6 +128,14 @@ select.pin {
   max-width: 120px;
   text-overflow: ellipsis;
 }
+#ccol_entries {
+  line-height: 52px;
+  margin-top: 5px;
+}
+input[type=color].ccol_entry {
+  height: 50px;
+  border-radius: 25%;
+}
 tr {
   line-height: 100%;
 }
