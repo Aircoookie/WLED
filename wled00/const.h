@@ -115,6 +115,10 @@
   #endif
 #endif
 
+#ifndef WLED_MAX_CCOLS
+  #define WLED_MAX_CCOLS 36
+#endif
+
 #ifdef ESP8266
 #define WLED_MAX_COLOR_ORDER_MAPPINGS 5
 #else

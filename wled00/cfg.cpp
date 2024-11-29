@@ -468,6 +468,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(turnOnAtBoot, def["on"]); // true
   CJSON(briS, def["bri"]); // 128
 
+  JsonArray ccolors = doc["ccols"];
+  customColors.resize(ccolors.size());
+  for (uint i = 0; i < ccolors.size(); i++) {
+    int col0 = ccolors[i][0];
+    int col1 = ccolors[i][1];
+    int col2 = ccolors[i][2];
+    customColors[i] = (col0<<16) + (col1<<8) + col2;
+  }
+
   JsonObject interfaces = doc["if"];
 
   JsonObject if_sync = interfaces["sync"];
@@ -955,6 +964,14 @@ void serializeConfig() {
   def["ps"] = bootPreset;
   def["on"] = turnOnAtBoot;
   def["bri"] = briS;
+
+  JsonArray ccols = root.createNestedArray("ccols");
+  for (size_t i = 0; i < customColors.size(); i++) {
+    JsonArray col = ccols.createNestedArray();
+    col[0] = (customColors[i]>>16) & 0xFF;
+    col[1] = (customColors[i]>>8)  & 0xFF;
+    col[2] =  customColors[i]      & 0xFF;
+  }
 
   JsonObject interfaces = root.createNestedObject("if");
 

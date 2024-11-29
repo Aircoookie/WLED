@@ -654,6 +654,14 @@ void serializeInfo(JsonObject root)
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   leds[F("bootps")] = bootPreset;
+  
+  JsonArray ccols = root.createNestedArray(F("ccols"));
+  for (int i = 0; i < customColors.size(); i++) {
+    JsonArray col = ccols.createNestedArray();
+    col[0] = (customColors[i]>>16) & 0xFF;
+    col[1] = (customColors[i]>>8)  & 0xFF;
+    col[2] =  customColors[i]      & 0xFF;
+  }
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {

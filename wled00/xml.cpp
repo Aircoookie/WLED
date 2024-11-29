@@ -266,7 +266,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     settingsScript.print(F("d.ledTypes=")); settingsScript.print(BusManager::getLEDTypesJSONString().c_str()); settingsScript.print(";");
 
     // set limits
-    settingsScript.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d);"),
+    settingsScript.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d,%d);"),
       WLED_MAX_BUSSES,
       WLED_MIN_VIRTUAL_BUSSES,
       MAX_LEDS_PER_BUS,
@@ -274,7 +274,8 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       MAX_LEDS,
       WLED_MAX_COLOR_ORDER_MAPPINGS,
       WLED_MAX_DIGITAL_CHANNELS,
-      WLED_MAX_ANALOG_CHANNELS
+      WLED_MAX_ANALOG_CHANNELS,
+      WLED_MAX_CCOLS
     );
 
     printSetFormCheckbox(settingsScript,PSTR("MS"),strip.autoSegments);
@@ -361,6 +362,11 @@ void getSettingsJS(byte subPage, Print& settingsScript)
 
     printSetFormCheckbox(settingsScript,PSTR("BO"),turnOnAtBoot);
     printSetFormValue(settingsScript,PSTR("BP"),bootPreset);
+
+    for (int i = 0; i < customColors.size(); i++) {
+      uint32_t color = customColors[i];
+      settingsScript.printf_P(PSTR("addCCol([%d,%d,%d]);"), (color>>16)&0xFF, (color>>8)&0xFF, color&0xFF);
+    }
 
     printSetFormCheckbox(settingsScript,PSTR("GB"),gammaCorrectBri);
     printSetFormCheckbox(settingsScript,PSTR("GC"),gammaCorrectCol);
