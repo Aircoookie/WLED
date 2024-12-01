@@ -422,7 +422,7 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 <option value="15">15mA (seed/fairy pixels)</option>
 <option value="0">Custom</option>
 </select><br>
-<div id="LAdis${s}" style="display: none;">max. mA/LED: <input name="LA${s}" type="number" min="1" max="255" oninput="UI()"> mA<br></div>
+<div id="LAdis${s}" style="display: none;">max. mA/LED: <input name="LA${s}" type="number" min="1" max="255" oninput="UI()" value=55> mA<br></div>
 <div id="PSU${s}">PSU: <input name="MA${s}" type="number" class="xl" min="250" max="65000" oninput="UI()" value="250"> mA<br></div>
 </div>
 <div id="co${s}" style="display:inline">Color Order:
