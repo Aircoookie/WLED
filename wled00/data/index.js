@@ -1811,7 +1811,7 @@ ${(i > 0) ? ('<div class="h">ID ' + i + '</div>') : ""}`;
 }
 
 function makePUtil() {
-    let p = gId('putil');
+    let p = gId('prutil');
     p.classList.remove('staybot');
     p.classList.add('pres');
     p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
@@ -1872,8 +1872,12 @@ function makePlUtil() {
 function resetPUtil() {
     gId('psFind').classList.add('staytop');
     let p = gId('putil');
+    let pr = gId('prutil');
     p.classList.add('staybot');
-    p.classList.remove('pres');
+    p.classList.add('staybot');
+    pr.classList.remove('pres');
+    pr.classList.remove('pres');
+    pr.innerHTML = ''
     // p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>Preset</button>`
     // + `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
     p.innerHTML = `<button class="btn btn-s" onclick="makePlUtil()" style="margin: 0 auto;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
@@ -2205,6 +2209,8 @@ function saveP(i, pl) {
             obj.ib = gId(`p${i}ibtgl`).checked;
             obj.sb = gId(`p${i}sbtgl`).checked;
             obj.sc = gId(`p${i}sbchk`).checked;
+            obj.isDynamic = true;
+            obj.customField = false;
             if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value !== "") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
         }
     }
@@ -2592,10 +2598,10 @@ function filterPreset(o) {
     gId("presetTabs").querySelectorAll("input[type=checkbox]").forEach((e) => {
         if (e !== o) {
             e.checked = false;
-            debugger
+            // debugger
             e.closest(".preset-modes-tabs__tab").classList.remove("preset-modes-tabs__tab--active");
         } else {
-            debugger
+            // debugger
             e.closest(".preset-modes-tabs__tab").classList.add("preset-modes-tabs__tab--active");
         }
     });

@@ -169,12 +169,22 @@
 			</div>
 		</div>
 
+		<!-- TODO(Insaf): для чего это вообще? -->
 		<div id="Segments" class="center">
 			<div id="segcont"></div>
 		</div>
 
 		<div id="Presets" class="center">
         	<p class="label h">Presets</p>
+			<div class="fnd">
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this)" />
+				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
+				<i class="icons search-icon">&#xe0a1;</i>
+			</div>
+			<div id="pcont" class="list"></div>
+		</div>
+		<div id="Constructor" class="center">
+        	<p class="label h">Constructor</p>
 			<div class="fnd">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this)" />
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
