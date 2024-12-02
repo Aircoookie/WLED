@@ -3,54 +3,32 @@
 #include "wled.h"
 
 /*
- * Usermods allow you to add own functionality to WLED more easily
- * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
- * 
- * This is an example for a v2 usermod.
- * v2 usermods are class inheritance based and can (but don't have to) implement more functions, each of them is shown in this example.
- * Multiple v2 usermods can be added to one compilation easily.
- * 
- * Creating a usermod:
- * This file serves as an example. If you want to create a usermod, it is recommended to use usermod_v2_empty.h from the usermods folder as a template.
- * Please remember to rename the class and file to a descriptive name.
- * You may also use multiple .h and .cpp files.
- * 
- * Using a usermod:
- * 1. Copy the usermod into the sketch folder (same folder as wled00.ino)
- * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
+ * Send usage info to WLED to help with support and development
  */
 
-struct __attribute__ ((packed)) UsagePacket {
-      char     header[1];
-      uint8_t  length;
-      char     version[20]; // TODO: size
-      char     chip[10]; // TODO: size
-      uint16_t uptime;
-      uint16_t totalLEDs;
-      bool     isMatrix; 
+struct __attribute__((packed)) UsagePacket {
+  byte header;
+  uint8_t length = sizeof(UsagePacket);
+  char version[20]; // TODO: size
+  char chip[10];    // TODO: size
+  uint16_t uptime;
+  uint16_t totalLEDs;
+  bool isMatrix;
 };
 
-//class name. Use something descriptive and leave the ": public Usermod" part :)
 class UsageUsermod : public Usermod {
 
-  private:
-
-    // Private class members. You can declare variables and functions only accessible to your usermod here
-    bool enabled = false;
+private:
+    bool enabled = true; // TODO: set to false to disable usermod
     bool isConnected = false;
     bool initDone = false;
     unsigned long lastTime = 0;
 
-    // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-    bool testBool = false;
-    unsigned long testULong = 42424242;
-    float testFloat = 42.42;
-    String testString = "Forty-Two";
-
-    // These config variables have defaults set inside readFromConfig()
-    int testInt;
-    long testLong;
-    int8_t testPins[2];
+    // set your config variables to their boot default value (this can also be
+    // done in readFromConfig() or a constructor if you prefer)
+    String usageHost = "192.168.178.50";
+    int port = 7001;
+    WiFiUDP wifiUDP;
 
     // string that are used multiple time (this will save some flash memory)
     static const char _name[];
@@ -58,43 +36,38 @@ class UsageUsermod : public Usermod {
 
     UsagePacket usagePacket;
 
-  public:
+public:
 
-    // non WLED related methods, may be used for data exchange between usermods (non-inline methods should be defined out of class)
+  /**
+   * Enable/Disable the usermod
+   */
+    void enable(bool enable) { enabled = enable; }
 
-    /**
-     * Enable/Disable the usermod
-     */
-    inline void enable(bool enable) { enabled = enable; }
+  /**
+   * Get usermod enabled/disabled state
+   */
+    bool isEnabled() { return enabled; }
 
-    /**
-     * Get usermod enabled/disabled state
-     */
-    inline bool isEnabled() { return enabled; }
-
-    // methods called by WLED (can be inlined as they are called only once but if you call them explicitly define them out of class)
-
-    /*
-     * setup() is called once at boot. WiFi is not yet connected at this point.
-     * readFromConfig() is called prior to setup()
-     * You can use it to initialize variables, sensors or similar.
-     */
+  /*
+   * setup() is called once at boot. WiFi is not yet connected at this point.
+   * readFromConfig() is called prior to setup()
+   * You can use it to initialize variables, sensors or similar.
+   */
     void setup() override {
-      // do your set-up here
-      //Serial.println("Hello from my usermod!");
-      initDone = true;
-      usagePacket.chip = ESP.getChipModel();
-      usagePacket.version = versionString;
+        initDone = true;
+        usagePacket.header = 0x01;
+        strncpy(usagePacket.chip, ESP.getChipModel(), sizeof(usagePacket.chip));
+        strncpy(usagePacket.version, versionString, sizeof(usagePacket.version));
     }
 
-
-    /*
-     * connected() is called every time the WiFi is (re)connected
-     * Use it to initialize network interfaces
-     */
-    void connected() override {
+  /*
+   * connected() is called every time the WiFi is (re)connected
+   * Use it to initialize network interfaces
+   */
+  void connected() override {
       isConnected = true;
-    }
+      wifiUDP.begin(WiFi.localIP(), port);
+  }
 
 
     /*
@@ -113,7 +86,6 @@ class UsageUsermod : public Usermod {
       if (!enabled || strip.isUpdating()) return;
       if(!isConnected) return;
 
-      // do your magic here
       if (millis() - lastTime > 1000) { // TODO: set interval
         //Serial.println("I'm alive!");
         lastTime = millis();
@@ -123,7 +95,6 @@ class UsageUsermod : public Usermod {
         usagePacket.isMatrix = strip.isMatrix;
       }
     }
-
 
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
@@ -136,19 +107,19 @@ class UsageUsermod : public Usermod {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      //this code adds "u":{"ExampleUsermod":[20," lux"]} to the info object
-      //int reading = 20;
-      //JsonArray lightArr = user.createNestedArray(FPSTR(_name))); //name
-      //lightArr.add(reading); //value
-      //lightArr.add(F(" lux")); //unit
+    // this code adds "u":{"ExampleUsermod":[20," lux"]} to the info object
+    // int reading = 20;
+    // JsonArray lightArr = user.createNestedArray(FPSTR(_name))); //name
+    // lightArr.add(reading); //value
+    // lightArr.add(F(" lux")); //unit
 
-      // if you are implementing a sensor usermod, you may publish sensor data
-      //JsonObject sensor = root[F("sensor")];
-      //if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
-      //temp = sensor.createNestedArray(F("light"));
-      //temp.add(reading);
-      //temp.add(F("lux"));
-    }
+    // if you are implementing a sensor usermod, you may publish sensor data
+    // JsonObject sensor = root[F("sensor")];
+    // if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+    // temp = sensor.createNestedArray(F("light"));
+    // temp.add(reading);
+    // temp.add(F("lux"));
+  }
 
   
     /*
@@ -224,15 +195,15 @@ class UsageUsermod : public Usermod {
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-      JsonObject top = root[FPSTR(_name)];
+    JsonObject top = root[FPSTR(_name)];
 
-      bool configComplete = !top.isNull();
+    bool configComplete = !top.isNull();
 
-      // configComplete &= getJsonValue(top["great"], userVar0);
-      // configComplete &= getJsonValue(top["testBool"], testBool);
-      // configComplete &= getJsonValue(top["testULong"], testULong);
-      // configComplete &= getJsonValue(top["testFloat"], testFloat);
-      // configComplete &= getJsonValue(top["testString"], testString);
+    // configComplete &= getJsonValue(top["great"], userVar0);
+    // configComplete &= getJsonValue(top["testBool"], testBool);
+    // configComplete &= getJsonValue(top["testULong"], testULong);
+    // configComplete &= getJsonValue(top["testFloat"], testFloat);
+    // configComplete &= getJsonValue(top["testString"], testString);
 
       // // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
       // configComplete &= getJsonValue(top["testInt"], testInt, 42);  
@@ -242,8 +213,8 @@ class UsageUsermod : public Usermod {
       // configComplete &= getJsonValue(top["pin"][0], testPins[0], -1);
       // configComplete &= getJsonValue(top["pin"][1], testPins[1], -1);
 
-      return configComplete;
-    }
+    return configComplete;
+  }
 
 
     /*
@@ -274,8 +245,6 @@ class UsageUsermod : public Usermod {
    //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
 
-
 // add more strings here to reduce flash memory usage
-const char UsageUsermod::_name[]    PROGMEM = "Usage";
+const char UsageUsermod::_name[] PROGMEM = "Usage";
 const char UsageUsermod::_enabled[] PROGMEM = "enabled";
-
