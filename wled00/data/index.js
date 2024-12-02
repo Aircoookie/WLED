@@ -1279,6 +1279,22 @@ function updateUI()
 	gId('kwrap').style.display   = (hasRGB && !hasCCT) ? "block":"none";      // Kelvin slider
 	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";     // RGB sliders
 	gId('qcs-w').style.display   = (hasRGB && ccfg.quick) ? "block":"none";   // quick selection
+
+	if (hasRGB && ccfg.quick && lastinfo.ccols && lastinfo.ccols.length) {    // custom quick selectors
+		var str = "", ct = 0;
+		for (let i = 0; i < lastinfo.ccols.length; i++) {
+			var col = lastinfo.ccols[i];
+			var hex = '#'
+				+ col[0].toString(16).padStart(2,'0')
+				+ col[1].toString(16).padStart(2,'0')
+				+ col[2].toString(16).padStart(2,'0');
+			if (ct !== 0 && (ct % 11 === 6 || ct % 11 === 0)) str += ` <br>`;
+			str += ` <div class="qcs" onclick="pC('${hex}');" style="background-color:${hex};"></div>`;
+			ct++;
+		}
+		gId('qcs-c').innerHTML = str;
+	}
+
 	//gId('csl').style.display     = (hasRGB || hasWhite) ? "block":"none";     // color selectors (hide for On/Off bus)
 	//gId('palw').style.display    = (hasRGB) ? "inline-block":"none";          // palettes are shown/hidden in setEffectParameters()
 

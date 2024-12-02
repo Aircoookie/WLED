@@ -316,6 +316,21 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     turnOnAtBoot = request->hasArg(F("BO"));
     t = request->arg(F("BP")).toInt();
     if (t <= 250) bootPreset = t;
+
+    customColors.resize(WLED_MAX_CCOLS);
+    for (int i = 0; i < WLED_MAX_CCOLS; i++) {
+      int offset = i < 10 ? 48 : 55;
+      char cc[4] = "CC"; cc[2] = offset+i; cc[3] = 0;
+      const char* color = request->arg(cc).c_str();
+      if (color[0] != '\0') {
+        uint32_t colVal = std::strtoul(color+1, nullptr, 16);
+        customColors[i] = colVal;
+      } else {
+        customColors.resize(i);
+        break;
+      }
+    }
+
     gammaCorrectBri = request->hasArg(F("GB"));
     gammaCorrectCol = request->hasArg(F("GC"));
     gammaCorrectVal = request->arg(F("GV")).toFloat();
