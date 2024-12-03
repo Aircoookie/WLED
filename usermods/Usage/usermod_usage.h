@@ -10,7 +10,7 @@ struct __attribute__((packed)) UsagePacket {
   byte header;
   uint8_t length = sizeof(UsagePacket);
   char version[20]; // TODO: size
-  char chip[10];    // TODO: size
+  char chip[15];    // TODO: size
   uint16_t uptime;
   uint16_t totalLEDs;
   bool isMatrix;
@@ -56,7 +56,12 @@ public:
     void setup() override {
         initDone = true;
         usagePacket.header = 0x01;
+#ifdef ESP8266
+        strncpy(usagePacket.chip, "ESP8266", sizeof(usagePacket.chip));
+#else
         strncpy(usagePacket.chip, ESP.getChipModel(), sizeof(usagePacket.chip));
+#endif
+
         strncpy(usagePacket.version, versionString, sizeof(usagePacket.version));
     }
 
@@ -66,8 +71,12 @@ public:
    */
   void connected() override {
       isConnected = true;
+#ifdef ESP8266
+      wifiUDP.begin(port);
+#else
       wifiUDP.begin(WiFi.localIP(), port);
-  }
+#endif
+    }
 
 
     /*
