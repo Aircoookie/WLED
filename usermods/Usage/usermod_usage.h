@@ -1,6 +1,11 @@
 #pragma once
 
 #include "wled.h"
+#ifdef ESP8266
+#include <Hash.h>
+#else
+#include "esp32hash.h"
+#endif
 
 /*
  * Send usage info to WLED to help with support and development
@@ -9,6 +14,7 @@
 struct __attribute__((packed)) UsagePacket {
   byte header;
   uint8_t length = sizeof(UsagePacket);
+  char deviceId[40];
   char version[20]; // TODO: size
   char chip[15];    // TODO: size
   uint16_t uptime;
@@ -56,6 +62,7 @@ public:
     void setup() override {
         initDone = true;
         usagePacket.header = 0x01;
+        strncpy(usagePacket.deviceId, sha1("WLEDUSAGE" + WiFi.macAddress()).c_str(), sizeof(usagePacket.deviceId));
 #ifdef ESP8266
         strncpy(usagePacket.chip, "ESP8266", sizeof(usagePacket.chip));
 #else
@@ -97,8 +104,8 @@ public:
 
         if (millis() - lastTime > 1000) {
             lastTime = millis();
-            usagePacket.uptime = 123; //millis(); //  / 1000;
-            usagePacket.totalLEDs = 456; //strip.getLengthTotal();
+            usagePacket.uptime = (millis() / 1000l);
+            usagePacket.totalLEDs = strip.getLength();
             usagePacket.isMatrix = strip.isMatrix;
 
             if(wifiUDP.beginPacket(IPAddress(192, 168, 178, 50), port)) {
