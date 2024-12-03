@@ -92,18 +92,22 @@ public:
     void loop() override {
       // if usermod is disabled or called during strip updating just exit
       // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
-      if (!enabled || strip.isUpdating()) return;
-      if(!isConnected) return;
+        if (!enabled || strip.isUpdating()) return;
+        if(!isConnected) return;
 
-      if (millis() - lastTime > 1000) { // TODO: set interval
-        //Serial.println("I'm alive!");
-        lastTime = millis();
-        
-        usagePacket.uptime = millis() / 1000;
-        usagePacket.totalLEDs = strip.getLengthTotal();
-        usagePacket.isMatrix = strip.isMatrix;
-      }
-    }
+        if (millis() - lastTime > 1000) {
+            lastTime = millis();
+            usagePacket.uptime = 123; //millis(); //  / 1000;
+            usagePacket.totalLEDs = 456; //strip.getLengthTotal();
+            usagePacket.isMatrix = strip.isMatrix;
+
+            if(wifiUDP.beginPacket(IPAddress(192, 168, 178, 50), port)) {
+                wifiUDP.write(reinterpret_cast<uint8_t *>(&usagePacket), sizeof(usagePacket));
+                wifiUDP.endPacket();
+                Serial.printf("Send usage packet to %s:%u\n", wifiUDP.remoteIP().toString().c_str(), wifiUDP.remotePort());
+            }
+        }
+  }
 
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
