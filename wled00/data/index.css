@@ -1754,7 +1754,7 @@ TD .radiomark {
 	width: 100%;
 }
 .add-music-playlist-button {
-	width: auto !important;
+	width: 100% !important;
 	margin: 0 auto;
 	display: block;
 	padding-right: 14px;
