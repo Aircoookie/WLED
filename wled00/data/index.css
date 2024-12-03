@@ -1749,3 +1749,23 @@ TD .radiomark {
 .btnwrap > * {
 	flex-grow: 1;
 }
+.add-music-preset-button {
+	margin: 16px auto;
+	width: 100%;
+}
+.add-music-playlist-button {
+	width: auto !important;
+	margin: 0 auto;
+	display: block;
+	padding-right: 14px;
+	box-sizing: border-box;
+}
+.music-preset-form {
+	margin: 0 auto;
+	width: 100%;
+	box-sizing: border-box;
+}
+.brightness-control {
+	float: none !important;
+	margin: 0 auto;
+}

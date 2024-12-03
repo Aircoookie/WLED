@@ -1814,7 +1814,7 @@ function makePUtil() {
     let p = gId('prutil');
     p.classList.remove('staybot');
     p.classList.add('pres');
-    p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
+    p.innerHTML = `<div class="presin expanded music-preset-form">${makeP(0)}</div>`;
     let pTx = gId('p0txt');
     pTx.focus();
     pTx.value = eJson.find((o) => {
@@ -1880,7 +1880,7 @@ function resetPUtil() {
     pr.innerHTML = ''
     // p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>Preset</button>`
     // + `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
-    p.innerHTML = `<button class="btn btn-s" onclick="makePlUtil()" style="margin: 0 auto;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
+    p.innerHTML = `<button class="btn btn-s add-music-playlist-button" onclick="makePlUtil()" style="margin: 0 auto;"><i class="icons btn-icon">&#xe18a;</i>Добавить плейлист</button>`;
 }
 
 function tglCs(i) {

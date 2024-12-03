@@ -104,8 +104,8 @@
 						<p class="tab-label">PC Mode</p>
 					</button>
 				</div>
-				<div id="briwrap">
-					<p class="hd">Brightness</p>
+				<div id="briwrap" class="brightness-control">
+					<p class="hd">Яркость</p>
 					<div class="slider" style="padding-right: 32px">
 						<i
 							class="icons slider-icon"
@@ -609,7 +609,7 @@
 					</div>
 				</div>
 			</div> -->
-			<!-- 
+			<!--
 			<div id="Segments" class="tabcontent">
 				<div id="segcont">Loading...</div>
 				<div id="segutil" class="staybot"></div>
@@ -818,6 +818,9 @@
 						<output class="sliderbubble"></output>
 						<span class="tooltiptext" id="sliderLabel4">Custom 3</span>
 					</div>
+					<button class="btn add-music-preset-button" onclick="makePUtil()">
+							<i class="icons btn-icon">&#xe18a;</i>Добавить пресет
+					</button>
 					<div id="fxopt" class="option fade">
 						<label id="opt0" class="check ochkl hide"
 							><i class="icons">&#xe2b3;</i><span class="tooltiptext" id="optLabel0">Check 1</span>
@@ -836,9 +839,6 @@
 						</label>
 					</div>
 				</div>
-				<button class="btn" onclick="makePUtil()" style="float: left">
-					<i class="icons btn-icon">&#xe18a;</i>Preset
-				</button>
 				<div id="prutil" class="staybot"></div>
 			</div>
 		</div>
