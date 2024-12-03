@@ -1742,3 +1742,10 @@ TD .radiomark {
 	background-color: var(--c-tbh);
 	color: var(--c-e);
 }
+.btnwrap {
+	display: flex;
+	justify-content: center;
+}
+.btnwrap > * {
+	flex-grow: 1;
+}
