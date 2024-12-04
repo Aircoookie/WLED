@@ -1801,6 +1801,21 @@ ${makePlSel(plJson[i].end ? plJson[i].end : 0, true)}
 </div>
 <div class="po2" id="p${i}o2">API command<br><textarea class="apitxt" id="p${i}api"></textarea></div>
 <div class="po1" id="p${i}o1">${content}</div>
+<fieldset class="music-preset-form__preset-kind-fieldset">
+    <legend>Вид пресета</legend>
+    <div class="music-preset-form__preset-kind-fieldset-option">
+    <div class="v2-radiobutton">
+        <input type="radio" id="radiobtn-kind-active-${i}" name="preset-kind" value="kind-active">
+    </div>
+    <label for="radiobtn-kind-active-${i}">Активный</label>
+    </div>
+    <div class="music-preset-form__preset-kind-fieldset-option">
+    <div class="v2-radiobutton">
+        <input type="radio" id="radiobtn-kind-music-${i}" name="preset-kind" value="kind-music">
+    </div>
+    <label for="radiobtn-kind-music-${i}">Музыкальный</label>
+    </div>
+</fieldset>
 <div class="c m6">Save to ID <input id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i > 0) ? i : getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
@@ -2213,6 +2228,15 @@ function saveP(i, pl) {
             obj.customField = false;
             if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value !== "") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
         }
+    }
+
+    const isActive = gId(`radiobtn-kind-active-${i}`).checked;
+    const isMusic = gId(`radiobtn-kind-music-${i}`).checked;
+
+    if (isActive && !isMusic) {
+        pN += "&#8226;"
+    } else if (!isActive && isMusic) {
+        pN += "&#9834;";
     }
 
     obj.psave = pI;
