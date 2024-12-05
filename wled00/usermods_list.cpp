@@ -178,6 +178,10 @@
   #include "../usermods/usermod_v2_animartrix/usermod_v2_animartrix.h"
 #endif
 
+#ifdef USERMOD_PERCEPTUAL_BRIGHTNESS
+  #include "../usermods/perceptual_brightness/perceptual_brightness.h"
+#endif
+
 #ifdef USERMOD_INTERNAL_TEMPERATURE
   #include "../usermods/Internal_Temperature_v2/usermod_internal_temperature.h"
 #endif
@@ -421,6 +425,10 @@ void registerUsermods()
 
   #ifdef USERMOD_ANIMARTRIX
   UsermodManager::add(new AnimartrixUsermod("Animartrix", false));
+  #endif
+
+  #ifdef USERMOD_PERCEPTUAL_BRIGHTNESS
+  UsermodManager::add(new UsermodPerceptualBrightness());
   #endif
 
   #ifdef USERMOD_INTERNAL_TEMPERATURE
