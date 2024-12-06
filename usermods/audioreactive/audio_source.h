@@ -40,11 +40,27 @@
 // if you have problems to get your microphone work on the left channel, uncomment the following line
 //#define I2S_USE_RIGHT_CHANNEL    // (experimental) define this to use right channel (digital mics only)
 
-// Uncomment the line below to utilize ADC1 _exclusively_ for I2S sound input.
-// benefit: analog mic inputs will be sampled contiously -> better response times and less "glitches"
-// WARNING: this option WILL lock-up your device in case that any other analogRead() operation is performed; 
-//          for example if you want to read "analog buttons"
-//#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continuously sample analog ADC microphone. WARNING will cause analogRead() lock-up
+// Uncomment the line below to utilize ADC1 _exclusively_ for I2S analog sound input.
+// ESP32DEV only supports two analog-digital converters (ADC).  One is used by WiFi.
+// Using an analog microphone will use the other ADC.  While the ADC is being used
+// software can not call analogRead() since it requires ADC.  You can still use digitalRead if
+// that works for you needs.
+// The bottom line:, if you need ADC analogRead for any other usermods while using audio, 
+// your only real option is to use a digital microphone (which is supported) instead of an analog audio device.
+
+// The current analog audio reactive implementation has two implementations for analog microphone:
+// 1.  Continuous I2S ADC audio sampling.  This option gives better response times and less "glitches".
+// performance sampling is typically ~1 ms.  But software can NOT make any analogReads that might be
+// needed in another user mod.  If you do, the device will lock up.
+// 2.  DEFAULT: Only enable ADC audio sampling just before collecting audio samples and then disabling after collection.
+// The benefit is that you can make analogRead calls when ADC is not enabled.  If you happen to do an analogRead
+// while the the ADC audio is enabled, the device will lock up.  The downside is that the Audio sampling
+// takes ~20-30 ms (to enable, collect sample, disable each collection cycle).  There is no synchronization
+// implementation to ensure co-operative sharing of the ADC in this approach.  So while device lockups won't be consistent
+// you may experience intermittent device lockups as a result of a context-switch while in 
+// the sampling mode.  This will likely be very difficult to debug.  You can enable I2S_GRAB_ADC1_COMPLETELY to debug.
+// If you experience consistent lockups, this would be a very strong suggestion that you may be hitting this issue.
+//#define I2S_GRAB_ADC1_COMPLETELY 
 
 // data type requested from the I2S driver - currently we always use 32bit
 //#define I2S_USE_16BIT_SAMPLES   // (experimental) define this to request 16bit - more efficient but possibly less compatible
@@ -54,14 +70,18 @@
 #define I2S_datatype int16_t
 #define I2S_unsigned_datatype uint16_t
 #define I2S_data_size I2S_BITS_PER_CHAN_16BIT
-#undef  I2S_SAMPLE_DOWNSCALE_TO_16BIT
+// Bug Fix:  4345 - This was forceing a Downsample of 32-bit to 16-bi for I2S ADC Mode
+// #undef  I2S_SAMPLE_DOWNSCALE_TO_16BIT
+#define I2S_SAMPLE_DOWNSCALE_TO_16BIT
 #else
 #define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_32BIT
 //#define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_24BIT 
 #define I2S_datatype int32_t
 #define I2S_unsigned_datatype uint32_t
 #define I2S_data_size I2S_BITS_PER_CHAN_32BIT
-#define I2S_SAMPLE_DOWNSCALE_TO_16BIT
+// Bug Fix:  4345 - This was forceing a Downsample of 32-bit to 16-bi for I2S ADC Mode
+//#define I2S_SAMPLE_DOWNSCALE_TO_16BIT
+#undef I2S_SAMPLE_DOWNSCALE_TO_16BIT
 #endif
 
 /* There are several (confusing) options  in IDF 4.4.x:
@@ -565,7 +585,8 @@ class I2SAdcSource : public I2SSource {
     I2SAdcSource(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f) :
       I2SSource(sampleRate, blockSize, sampleScale) {
       _config = {
-        .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
+        /* Bug Fix: 4345 Note: Removed I2S_MODE_MASTER  - It should not be enabled for analog microphone.  Only applies to external I2S devices */
+        .mode = i2s_mode_t(I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
         .sample_rate = _sampleRate,
         .bits_per_sample = I2S_SAMPLE_RESOLUTION,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -605,41 +626,43 @@ class I2SAdcSource : public I2SSource {
         _myADCchannel = channel;
       }
 
-      // Install Driver
-      esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
-      if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to install i2s driver: %d\n", err);
-        return;
-      }
-
+   
       adc1_config_width(ADC_WIDTH_BIT_12);   // ensure that ADC runs with 12bit resolution
-
-      // Enable I2S mode of ADC
-      err = i2s_set_adc_mode(ADC_UNIT_1, adc1_channel_t(channel));
+ 
+      // see example in https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/I2S/HiFreq_ADC/HiFreq_ADC.ino
+      adc1_config_channel_atten(adc1_channel_t(channel), ADC_ATTEN_DB_11);   // configure ADC input amplification
+ 
+      // Configure I2S mode of ADC
+      esp_err_t err = i2s_set_adc_mode(ADC_UNIT_1, adc1_channel_t(channel));
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("Failed to set i2s adc mode: %d\n", err);
         return;
       }
 
-      // see example in https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/I2S/HiFreq_ADC/HiFreq_ADC.ino
-      adc1_config_channel_atten(adc1_channel_t(channel), ADC_ATTEN_DB_11);   // configure ADC input amplification
+      // Install Driver
+      err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
+      if (err != ESP_OK) {
+        DEBUGSR_PRINTF("Failed to install i2s driver: %d\n", err);
+        return;
+      }
 
       #if defined(I2S_GRAB_ADC1_COMPLETELY)
       // according to docs from espressif, the ADC needs to be started explicitly
-      // fingers crossed
+      // fingers crossed - i2s_start/i2s_stop aren't used (needed) for I2S ADC Mode
         err = i2s_adc_enable(I2S_NUM_0);
         if (err != ESP_OK) {
             DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
             //return;
         }
-      #else
-        // bugfix: do not disable ADC initially - its already disabled after driver install.
-        //err = i2s_adc_disable(I2S_NUM_0);
-		    // //err = i2s_stop(I2S_NUM_0);
-        //if (err != ESP_OK) {
-        //    DEBUGSR_PRINTF("Failed to initially disable i2s adc: %d\n", err);
-        //}
-      #endif
+        //Bug Fix: 4345 - Adding I2S start / Stop functionality
+        // Not clear if absolutiely necessary for I2S ADC Mode since it seems to work without it
+        // But it's not clear if there is some other unknown effect managing resources.  
+        // Since it is part of the I2S lifecycle including to be on the safe side.
+        err = i2s_start(I2S_NUM_0);
+        if (err != ESP_OK) {
+          DEBUGSR_PRINTF("Failed to stop i2s: %d\n", err);
+        }
+     #endif
 
       _initialized = true;
     }
@@ -700,12 +723,19 @@ class I2SAdcSource : public I2SSource {
             DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
             return;
           }
+          err = i2s_start(I2S_NUM_0);
+          if (err != ESP_OK) {
+            DEBUGSR_PRINTF("Failed to stop i2s: %d\n", err);
+          }
         #endif
 
         I2SSource::getSamples(buffer, num_samples);
 
         #if !defined(I2S_GRAB_ADC1_COMPLETELY)
-          // old code - works for me without enable/disable, at least on ESP32.
+          err = i2s_stop(I2S_NUM_0);
+          if (err != ESP_OK) {
+            DEBUGSR_PRINTF("Failed to stop i2s: %d\n", err);
+          }
           err = i2s_adc_disable(I2S_NUM_0);  //i2s_adc_disable() may cause crash with IDF 4.4 (https://github.com/espressif/arduino-esp32/issues/6832)
           //err = i2s_stop(I2S_NUM_0);
           if (err != ESP_OK) {
@@ -725,13 +755,16 @@ class I2SAdcSource : public I2SSource {
       #if defined(I2S_GRAB_ADC1_COMPLETELY)
         // according to docs from espressif, the ADC needs to be stopped explicitly
         // fingers crossed
+        err = i2s_stop(I2S_NUM_0);
+        if (err != ESP_OK) {
+          DEBUGSR_PRINTF("Failed to stop i2s: %d\n", err);
+        }
         err = i2s_adc_disable(I2S_NUM_0);
         if (err != ESP_OK) {
           DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
         }
       #endif
 
-      i2s_stop(I2S_NUM_0);
       err = i2s_driver_uninstall(I2S_NUM_0);
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("Failed to uninstall i2s driver: %d\n", err);
