@@ -566,17 +566,17 @@ class AudioReactive : public Usermod {
     uint8_t dmType = SR_DMTYPE;
     #endif
     #ifndef I2S_SDPIN // aka DOUT
-    int8_t i2ssdPin = 32;
+    int8_t i2ssdPin = -1;
     #else
     int8_t i2ssdPin = I2S_SDPIN;
     #endif
     #ifndef I2S_WSPIN // aka LRCL
-    int8_t i2swsPin = 15;
+    int8_t i2swsPin = -1;
     #else
     int8_t i2swsPin = I2S_WSPIN;
     #endif
     #ifndef I2S_CKPIN // aka BCLK
-    int8_t i2sckPin = 14; /*PDM: set to I2S_PIN_NO_CHANGE*/
+    int8_t i2sckPin = -1; /*PDM: set to I2S_PIN_NO_CHANGE*/
     #else
     int8_t i2sckPin = I2S_CKPIN;
     #endif
