@@ -52,7 +52,7 @@ class MyUsermod : public Usermod {
 
   void togglePIRSensor() {
     #ifdef USERMOD_PIR_SENSOR_SWITCH
-    PIRsensorSwitch *PIRsensor = (PIRsensorSwitch::*) usermods.lookup(USERMOD_ID_PIRSWITCH);
+    PIRsensorSwitch *PIRsensor = (PIRsensorSwitch::*) UsermodManager::lookup(USERMOD_ID_PIRSWITCH);
     if (PIRsensor != nullptr) {
       PIRsensor->EnablePIRsensor(!PIRsensor->PIRsensorEnabled());
     }

@@ -169,7 +169,6 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 void setValuesFromSegment(uint8_t s);
 void setValuesFromMainSeg();
 void setValuesFromFirstSelectedSeg();
-void resetTimebase();
 void toggleOnOff();
 void applyBri();
 void applyFinalBri();
@@ -302,7 +301,7 @@ class Usermod {
     virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
     virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
     virtual void connected() {}                                              // called when WiFi is (re)connected
-    virtual void appendConfigData() {}                                       // helper function called from usermod settings page to add metadata for entry fields
+    virtual void appendConfigData(Print& settingsScript);                    // helper function called from usermod settings page to add metadata for entry fields
     virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
     virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
     virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
@@ -314,38 +313,52 @@ class Usermod {
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
+
+  // API shims
+  private:
+    static Print* oappend_shim;
+    // old form of appendConfigData; called by default appendConfigData(Print&) with oappend_shim set up
+    // private so it is not accidentally invoked except via Usermod::appendConfigData(Print&)
+    virtual void appendConfigData() {}    
+  protected:
+    // Shim for oappend(), which used to exist in utils.cpp
+    template<typename T> static inline void oappend(const T& t) { oappend_shim->print(t); };
+#ifdef ESP8266
+    // Handle print(PSTR()) without crashing by detecting PROGMEM strings
+    static void oappend(const char* c) { if ((intptr_t) c >= 0x40000000) oappend_shim->print(FPSTR(c)); else oappend_shim->print(c); };
+#endif
 };
 
 class UsermodManager {
   private:
-    Usermod* ums[WLED_MAX_USERMODS];
-    byte numMods = 0;
+    static Usermod* ums[WLED_MAX_USERMODS];
+    static byte numMods;
 
   public:
-    void loop();
-    void handleOverlayDraw();
-    bool handleButton(uint8_t b);
-    bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
-    void setup();
-    void connected();
-    void appendConfigData();
-    void addToJsonState(JsonObject& obj);
-    void addToJsonInfo(JsonObject& obj);
-    void readFromJsonState(JsonObject& obj);
-    void addToConfig(JsonObject& obj);
-    bool readFromConfig(JsonObject& obj);
+    static void loop();
+    static void handleOverlayDraw();
+    static bool handleButton(uint8_t b);
+    static bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
+    static void setup();
+    static void connected();
+    static void appendConfigData(Print&);
+    static void addToJsonState(JsonObject& obj);
+    static void addToJsonInfo(JsonObject& obj);
+    static void readFromJsonState(JsonObject& obj);
+    static void addToConfig(JsonObject& obj);
+    static bool readFromConfig(JsonObject& obj);
 #ifndef WLED_DISABLE_MQTT
-    void onMqttConnect(bool sessionPresent);
-    bool onMqttMessage(char* topic, char* payload);
+    static void onMqttConnect(bool sessionPresent);
+    static bool onMqttMessage(char* topic, char* payload);
 #endif
 #ifndef WLED_DISABLE_ESPNOW
-    bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len);
+    static bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len);
 #endif
-    void onUpdateBegin(bool);
-    void onStateChange(uint8_t);
-    bool add(Usermod* um);
-    Usermod* lookup(uint16_t mod_id);
-    byte getModCount() {return numMods;};
+    static void onUpdateBegin(bool);
+    static void onStateChange(uint8_t);
+    static bool add(Usermod* um);
+    static Usermod* lookup(uint16_t mod_id);
+    static inline byte getModCount() {return numMods;};
 };
 
 //usermods_list.cpp
@@ -362,10 +375,11 @@ void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
 bool getBoolVal(JsonVariant elem, bool dflt);
 bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
-bool oappend(const char* txt); // append new c string to temp buffer efficiently
-bool oappendi(int i);          // append new number to temp buffer efficiently
-void sappend(char stype, const char* key, int val);
-void sappends(char stype, const char* key, char* val);
+size_t printSetFormCheckbox(Print& settingsScript, const char* key, int val);
+size_t printSetFormValue(Print& settingsScript, const char* key, int val);
+size_t printSetFormValue(Print& settingsScript, const char* key, const char* val);
+size_t printSetFormIndex(Print& settingsScript, const char* key, int index);
+size_t printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val);
 void prepareHostname(char* hostname);
 bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
@@ -375,9 +389,13 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 void checkSettingsPIN(const char *pin);
 uint16_t crc16(const unsigned char* data_p, size_t length);
+uint16_t beatsin88_t(accum88 beats_per_minute_88, uint16_t lowest = 0, uint16_t highest = 65535, uint32_t timebase = 0, uint16_t phase_offset = 0);
+uint16_t beatsin16_t(accum88 beats_per_minute, uint16_t lowest = 0, uint16_t highest = 65535, uint32_t timebase = 0, uint16_t phase_offset = 0);
+uint8_t beatsin8_t(accum88 beats_per_minute, uint8_t lowest = 0, uint8_t highest = 255, uint32_t timebase = 0, uint8_t phase_offset = 0);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
 uint8_t get_random_wheel_index(uint8_t pos);
+float mapf(float x, float in_min, float in_max, float out_min, float out_max);
 
 // RAII guard class for the JSON Buffer lock
 // Modeled after std::lock_guard
@@ -404,27 +422,37 @@ void clearEEPROM();
 #endif
 
 //wled_math.cpp
-#if defined(ESP8266) && !defined(WLED_USE_REAL_MATH)
-  template <typename T> T atan_t(T x);
-  float cos_t(float phi);
-  float sin_t(float x);
-  float tan_t(float x);
-  float acos_t(float x);
-  float asin_t(float x);
-  float floor_t(float x);
-  float fmod_t(float num, float denom);
-#else
-  #include <math.h>
-  #define sin_t sinf
-  #define cos_t cosf
-  #define tan_t tanf
-  #define asin_t asinf
-  #define acos_t acosf
-  #define atan_t atanf
-  #define fmod_t fmodf
-  #define floor_t floorf
-#endif
+//float cos_t(float phi); // use float math
+//float sin_t(float phi);
+//float tan_t(float x);
+int16_t sin16_t(uint16_t theta);
+int16_t cos16_t(uint16_t theta);
+uint8_t sin8_t(uint8_t theta);
+uint8_t cos8_t(uint8_t theta);
+float sin_approx(float theta); // uses integer math (converted to float), accuracy +/-0.0015 (compared to sinf())
+float cos_approx(float theta);
+float tan_approx(float x);
+float atan2_t(float y, float x);
+float acos_t(float x);
+float asin_t(float x);
+template <typename T> T atan_t(T x);
+float floor_t(float x);
+float fmod_t(float num, float denom);
+#define sin_t sin_approx
+#define cos_t cos_approx
+#define tan_t tan_approx
 
+/*
+#include <math.h>  // standard math functions. use a lot of flash
+#define sin_t sinf
+#define cos_t cosf
+#define tan_t tanf
+#define asin_t asinf
+#define acos_t acosf
+#define atan_t atanf
+#define fmod_t fmodf
+#define floor_t floorf
+*/
 //wled_serial.cpp
 void handleSerial();
 void updateBaudRate(uint32_t rate);
@@ -443,7 +471,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 void sendDataWs(AsyncWebSocketClient * client = nullptr);
 
 //xml.cpp
-void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
-void getSettingsJS(byte subPage, char* dest);
+void XML_response(Print& dest);
+void getSettingsJS(byte subPage, Print& dest);
 
 #endif

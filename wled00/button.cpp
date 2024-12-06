@@ -215,6 +215,7 @@ void handleAnalog(uint8_t b)
         briLast = bri;
         bri = 0;
       } else {
+        if (bri == 0) strip.restartRuntime();
         bri = aRead;
       }
     } else if (macroDoublePress[b] == 249) {
@@ -267,7 +268,7 @@ void handleButton()
     if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
     #endif
 
-    if (usermods.handleButton(b)) continue; // did usermod handle buttons
+    if (UsermodManager::handleButton(b)) continue; // did usermod handle buttons
 
     if (buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) { // button is not a button but a potentiometer
       if (now - lastAnalogRead > ANALOG_BTN_READ_CYCLE) {

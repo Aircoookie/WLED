@@ -59,10 +59,10 @@ void registerUsermods()
    * || || ||
    * \/ \/ \/
    */
-  //usermods.add(new MyExampleUsermod());
-  //usermods.add(new UsermodTemperature());
-  //usermods.add(new UsermodRenameMe());
-  usermods.add(new FixUnreachableNetServices());
+  //UsermodManager::add(new MyExampleUsermod());
+  //UsermodManager::add(new UsermodTemperature());
+  //UsermodManager::add(new UsermodRenameMe());
+  UsermodManager::add(new FixUnreachableNetServices());
 
 }
 ```

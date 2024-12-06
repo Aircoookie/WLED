@@ -47,17 +47,12 @@ void applyValuesToSelectedSegs()
 }
 
 
-void resetTimebase()
-{
-  strip.timebase = 0 - millis();
-}
-
-
 void toggleOnOff()
 {
   if (bri == 0)
   {
     bri = briLast;
+    strip.restartRuntime();
   } else
   {
     briLast = bri;
@@ -122,7 +117,7 @@ void stateUpdated(byte callMode) {
     nightlightStartTime = millis();
   }
   if (briT == 0) {
-    if (callMode != CALL_MODE_NOTIFICATION) resetTimebase(); //effect start from beginning
+    if (callMode != CALL_MODE_NOTIFICATION) strip.resetTimebase(); //effect start from beginning
   }
 
   if (bri > 0) briLast = bri;
@@ -131,7 +126,7 @@ void stateUpdated(byte callMode) {
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
 
   // notify usermods of state change
-  usermods.onStateChange(callMode);
+  UsermodManager::onStateChange(callMode);
 
   if (fadeTransition) {
     if (strip.getTransition() == 0) {

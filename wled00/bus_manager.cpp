@@ -130,11 +130,11 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
 , _colorOrderMap(com)
 {
   if (!isDigital(bc.type) || !bc.count) return;
-  if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
+  if (!PinManager::allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
   _frequencykHz = 0U;
   _pins[0] = bc.pins[0];
   if (is2Pin(bc.type)) {
-    if (!pinManager.allocatePin(bc.pins[1], true, PinOwner::BusDigital)) {
+    if (!PinManager::allocatePin(bc.pins[1], true, PinOwner::BusDigital)) {
       cleanup();
       return;
     }
@@ -150,7 +150,7 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   //_buffering = bc.doubleBuffer;
   uint16_t lenToCreate = bc.count;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
-  _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
+  _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr);
   _valid = (_busPtr != nullptr);
   DEBUG_PRINTF_P(PSTR("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n"), _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], is2Pin(bc.type)?_pins[1]:255, _iType, _milliAmpsPerLed, _milliAmpsMax);
 }
@@ -410,9 +410,9 @@ std::vector<LEDType> BusDigital::getLEDTypes() {
   };
 }
 
-void BusDigital::reinit() {
+void BusDigital::begin() {
   if (!_valid) return;
-  PolyBus::begin(_busPtr, _iType, _pins);
+  PolyBus::begin(_busPtr, _iType, _pins, _frequencykHz);
 }
 
 void BusDigital::cleanup() {
@@ -422,8 +422,8 @@ void BusDigital::cleanup() {
   _valid = false;
   _busPtr = nullptr;
   if (_data != nullptr) freeData();
-  pinManager.deallocatePin(_pins[1], PinOwner::BusDigital);
-  pinManager.deallocatePin(_pins[0], PinOwner::BusDigital);
+  PinManager::deallocatePin(_pins[1], PinOwner::BusDigital);
+  PinManager::deallocatePin(_pins[0], PinOwner::BusDigital);
 }
 
 
@@ -464,16 +464,16 @@ BusPwm::BusPwm(BusConfig &bc)
 
   managed_pin_type pins[numPins];
   for (unsigned i = 0; i < numPins; i++) pins[i] = {(int8_t)bc.pins[i], true};
-  if (!pinManager.allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) return;
+  if (!PinManager::allocateMultiplePins(pins, numPins, PinOwner::BusPwm)) return;
 
 #ifdef ESP8266
   analogWriteRange((1<<_depth)-1);
   analogWriteFreq(_frequency);
 #else
   // for 2 pin PWM CCT strip pinManager will make sure both LEDC channels are in the same speed group and sharing the same timer
-  _ledcStart = pinManager.allocateLedc(numPins);
+  _ledcStart = PinManager::allocateLedc(numPins);
   if (_ledcStart == 255) { //no more free LEDC channels
-    pinManager.deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
+    PinManager::deallocateMultiplePins(pins, numPins, PinOwner::BusPwm);
     return;
   }
   // if _needsRefresh is true (UI hack) we are using dithering (credit @dedehai & @zalatnaicsongor)
@@ -640,8 +640,8 @@ std::vector<LEDType> BusPwm::getLEDTypes() {
 void BusPwm::deallocatePins() {
   unsigned numPins = getPins();
   for (unsigned i = 0; i < numPins; i++) {
-    pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
-    if (!pinManager.isPinOk(_pins[i])) continue;
+    PinManager::deallocatePin(_pins[i], PinOwner::BusPwm);
+    if (!PinManager::isPinOk(_pins[i])) continue;
     #ifdef ESP8266
     digitalWrite(_pins[i], LOW); //turn off PWM interrupt
     #else
@@ -649,7 +649,7 @@ void BusPwm::deallocatePins() {
     #endif
   }
   #ifdef ARDUINO_ARCH_ESP32
-  pinManager.deallocateLedc(_ledcStart, numPins);
+  PinManager::deallocateLedc(_ledcStart, numPins);
   #endif
 }
 
@@ -661,7 +661,7 @@ BusOnOff::BusOnOff(BusConfig &bc)
   if (!Bus::isOnOff(bc.type)) return;
 
   uint8_t currentPin = bc.pins[0];
-  if (!pinManager.allocatePin(currentPin, true, PinOwner::BusOnOff)) {
+  if (!PinManager::allocatePin(currentPin, true, PinOwner::BusOnOff)) {
     return;
   }
   _pin = currentPin; //store only after allocatePin() succeeds
@@ -830,7 +830,7 @@ static String LEDTypesToJson(const std::vector<LEDType>& types) {
   String json;
   for (const auto &type : types) {
     // capabilities follows similar pattern as JSON API
-    int capabilities = Bus::hasRGB(type.id) | Bus::hasWhite(type.id)<<1 | Bus::hasCCT(type.id)<<2 | Bus::is16bit(type.id)<<4;
+    int capabilities = Bus::hasRGB(type.id) | Bus::hasWhite(type.id)<<1 | Bus::hasCCT(type.id)<<2 | Bus::is16bit(type.id)<<4 | Bus::mustRefresh(type.id)<<5;
     char str[256];
     sprintf_P(str, PSTR("{i:%d,c:%d,t:\"%s\",n:\"%s\"},"), type.id, capabilities, type.type, type.name);
     json += str;
@@ -904,13 +904,13 @@ void BusManager::esp32RMTInvertIdle() {
 void BusManager::on() {
   #ifdef ESP8266
   //Fix for turning off onboard LED breaking bus
-  if (pinManager.getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
+  if (PinManager::getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
     for (unsigned i = 0; i < numBusses; i++) {
       uint8_t pins[2] = {255,255};
       if (busses[i]->isDigital() && busses[i]->getPins(pins)) {
         if (pins[0] == LED_BUILTIN || pins[1] == LED_BUILTIN) {
           BusDigital *bus = static_cast<BusDigital*>(busses[i]);
-          bus->reinit();
+          bus->begin();
           break;
         }
       }
@@ -926,7 +926,7 @@ void BusManager::off() {
   #ifdef ESP8266
   // turn off built-in LED if strip is turned off
   // this will break digital bus so will need to be re-initialised on On
-  if (pinManager.getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
+  if (PinManager::getPinOwner(LED_BUILTIN) == PinOwner::BusDigital) {
     for (unsigned i = 0; i < numBusses; i++) if (busses[i]->isOffRefreshRequired()) return;
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
