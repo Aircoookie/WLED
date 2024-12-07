@@ -24,6 +24,7 @@ private:
   uint8_t  PressureDecimals = 0;    // Number of decimal places in published pressure values
   uint16_t TemperatureInterval = 5; // Interval to measure temperature (and humidity, dew point if available) in seconds
   uint16_t PressureInterval = 300;  // Interval to measure pressure in seconds
+  float PressureHeight = 300;  // Interval to measure pressure in seconds
   BME280I2C::I2CAddr I2CAddress = BME280I2C::I2CAddr_0x76;  // i2c address, defaults to 0x76
   bool PublishAlways = false;             // Publish values even when they have not changed
   bool UseCelsius = true;                 // Use Celsius for Reporting
@@ -51,6 +52,7 @@ private:
   float sensorHeatIndex;
   float sensorDewPoint;
   float sensorPressure;
+  float sensorPressureNormalized;
   String tempScale;
   // Track previous sensor values
   float lastTemperature;
@@ -86,6 +88,7 @@ private:
       {
         sensorHeatIndex = EnvironmentCalculations::HeatIndex(_temperature, _humidity, envTempUnit);
         sensorDewPoint = EnvironmentCalculations::DewPoint(_temperature, _humidity, envTempUnit);
+        sensorPressureNormalized = EnvironmentCalculations::EquivalentSeaLevelPressure(PressureHeight, _temperature, _pressure);
       }
     } else {
       BME280::TempUnit tempUnit(BME280::TempUnit_Fahrenheit);
@@ -112,10 +115,12 @@ private:
     char mqttTemperatureTopic[128];
     char mqttHumidityTopic[128];
     char mqttPressureTopic[128];
+    char mqttPressureNTopic[128];
     char mqttHeatIndexTopic[128];
     char mqttDewPointTopic[128];
     snprintf_P(mqttTemperatureTopic, 127, PSTR("%s/temperature"), mqttDeviceTopic);
     snprintf_P(mqttPressureTopic, 127, PSTR("%s/pressure"), mqttDeviceTopic);
+    snprintf_P(mqttPressureNTopic, 127, PSTR("%s/pressure_normalized"), mqttDeviceTopic);
     snprintf_P(mqttHumidityTopic, 127, PSTR("%s/humidity"), mqttDeviceTopic);
     snprintf_P(mqttHeatIndexTopic, 127, PSTR("%s/heat_index"), mqttDeviceTopic);
     snprintf_P(mqttDewPointTopic, 127, PSTR("%s/dew_point"), mqttDeviceTopic);
@@ -123,6 +128,7 @@ private:
     if (HomeAssistantDiscovery) {
       _createMqttSensor(F("Temperature"), mqttTemperatureTopic, "temperature", tempScale);
       _createMqttSensor(F("Pressure"), mqttPressureTopic, "pressure", F("hPa"));
+      _createMqttSensor(F("Pressure (normalized)"), mqttPressureNTopic, "pressure_normalized", F("hPa"));
       _createMqttSensor(F("Humidity"), mqttHumidityTopic, "humidity", F("%"));
       _createMqttSensor(F("HeatIndex"), mqttHeatIndexTopic, "temperature", tempScale);
       _createMqttSensor(F("DewPoint"), mqttDewPointTopic, "temperature", tempScale);
@@ -278,10 +284,12 @@ public:
         lastPressureMeasure = timer;
 
         float pressure = roundf(sensorPressure * powf(10, PressureDecimals)) / powf(10, PressureDecimals);
+        float pressureN = roundf(sensorPressureNormalized * powf(10, PressureDecimals)) / powf(10, PressureDecimals);
 
         if (pressure != lastPressure || PublishAlways)
         {
-          publishMqtt("pressure", String(pressure, PressureDecimals).c_str());
+          publishMqtt("pressure", String(pressure, (int)PressureDecimals).c_str());
+          publishMqtt("pressure_normalized", String(pressureN, (int)PressureDecimals).c_str());
         }
 
         lastPressure = pressure;
@@ -383,6 +391,7 @@ public:
       JsonArray temperature_json = user.createNestedArray(F("Temperature"));
       JsonArray humidity_json = user.createNestedArray(F("Humidity"));
       JsonArray pressure_json = user.createNestedArray(F("Pressure"));
+      JsonArray pressureN_json = user.createNestedArray(F("Pressure (Sealevel)"));
       JsonArray heatindex_json = user.createNestedArray(F("Heat Index"));
       JsonArray dewpoint_json = user.createNestedArray(F("Dew Point"));
       temperature_json.add(roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
@@ -391,6 +400,8 @@ public:
       humidity_json.add(F("%"));
       pressure_json.add(roundf(sensorPressure * powf(10, PressureDecimals)) / powf(10, PressureDecimals));
       pressure_json.add(F("hPa"));
+      pressureN_json.add(roundf(sensorPressureNormalized * powf(10, PressureDecimals)) / powf(10, PressureDecimals));
+      pressureN_json.add(F("hPa"));
       heatindex_json.add(roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
       heatindex_json.add(tempScale);
       dewpoint_json.add(roundf(sensorDewPoint * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
@@ -410,6 +421,7 @@ public:
     top[F("PressureDecimals")] = PressureDecimals;
     top[F("TemperatureInterval")] = TemperatureInterval;
     top[F("PressureInterval")] = PressureInterval;
+    top[F("PressureHeight")] = PressureHeight;
     top[F("PublishAlways")] = PublishAlways;
     top[F("UseCelsius")] = UseCelsius;
     top[F("HomeAssistantDiscovery")] = HomeAssistantDiscovery;
@@ -441,6 +453,7 @@ public:
     configComplete &= getJsonValue(top[F("PressureDecimals")], PressureDecimals, 0);
     configComplete &= getJsonValue(top[F("TemperatureInterval")], TemperatureInterval, 30);
     configComplete &= getJsonValue(top[F("PressureInterval")], PressureInterval, 30);
+    configComplete &= getJsonValue(top[F("PressureHeight")], PressureHeight, 100.0);
     configComplete &= getJsonValue(top[F("PublishAlways")], PublishAlways, false);
     configComplete &= getJsonValue(top[F("UseCelsius")], UseCelsius, true);
     configComplete &= getJsonValue(top[F("HomeAssistantDiscovery")], HomeAssistantDiscovery, false);
@@ -460,6 +473,7 @@ public:
       sensorHeatIndex = 0;
       sensorDewPoint = 0;
       sensorPressure = 0;
+      sensorPressureNormalized = 0;      
       lastTemperature = 0;
       lastHumidity = 0;
       lastHeatIndex = 0;
