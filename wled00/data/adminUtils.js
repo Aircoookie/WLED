@@ -17,12 +17,11 @@ function setupTogglingAdminMode() {
     if (!togglerEls) return;
     togglerEls.forEach((element) => {
         element.addEventListener("click", () => {
-            timeouts.forEach((item) => {
-                clearTimeout(item);
-            })
             const isAdmin = getIsAdminValue();
-            setIsAdminValue(!isAdmin);
-            alert("Режим админа " + (!isAdmin ? "включен" : "выключен"));
+            const newisAdmin = isAdmin === "false";
+            setIsAdminValue(newisAdmin);
+            alert("Режим админа " + (newisAdmin ? "включен" : "выключен"));
+            showAdminElements(adminElementsSelectors);
         })
     });
 }
@@ -33,7 +32,7 @@ function showAdminElements(elementsToproc) {
     const isAdmin = getIsAdminValue();
     const proc = (element) => {
         if (!element) return;
-        if (isAdmin) {
+        if (isAdmin === "true") {
             element.classList.remove("hidden-over-screen");
         } else {
             element.classList.add("hidden-over-screen");

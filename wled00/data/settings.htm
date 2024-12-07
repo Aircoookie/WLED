@@ -90,6 +90,11 @@
             opacity: 0;
             pointer-events: none;
         }
+
+        .secret-admin-mode-toggler {
+            white-space: pre-line;
+            height: auto;
+        }
     </style>
 </head>
 <body onload="S()">
@@ -115,7 +120,7 @@
 <button class="admin-only" type="submit"
         onclick="window.location=getURL('/settings/sec')">Security & Updates
 </button>
-
+<button class="secret-admin-mode-toggler">Переключить режим администратора</button>
 <script src="./adminUtils.js"></script>
 </body>
 </html>
