@@ -363,7 +363,7 @@ typedef struct Segment {
     };
     uint8_t startY;  // start Y coodrinate 2D (top); there should be no more than 255 rows
     uint8_t stopY;   // stop Y coordinate 2D (bottom); there should be no more than 255 rows
-    uint16_t transitionprogress; // current transition progress 0 - 0xFFFF
+    // note: two bytes of padding are added here
     char    *name;
 
     // runtime data
@@ -419,6 +419,7 @@ typedef struct Segment {
     static CRGBPalette16 _newRandomPalette;   // target random palette
     static uint16_t _lastPaletteChange;       // last random palette change time in millis()/1000
     static uint16_t _lastPaletteBlend;        // blend palette according to set Transition Delay in millis()%0xFFFF
+    static uint16_t _transitionprogress;      // current transition progress 0 - 0xFFFF
     #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
     #endif
@@ -469,7 +470,6 @@ typedef struct Segment {
       check3(false),
       startY(0),
       stopY(1),
-      transitionprogress(0xFFFF),
       name(nullptr),
       next_time(0),
       step(0),
@@ -567,7 +567,7 @@ typedef struct Segment {
     void     restoreSegenv(tmpsegd_t &tmpSegD); // restores segment data from buffer, if buffer is not transition buffer, changed values are copied to transition buffer
     #endif
     [[gnu::hot]] void updateTransitionProgress();            // set current progression of transition
-    inline uint16_t progress() const { return transitionprogress; };  // transition progression between 0-65535
+    inline uint16_t progress() const { return _transitionprogress; };  // transition progression between 0-65535
     [[gnu::hot]] uint8_t  currentBri(bool useCct = false) const; // current segment brightness/CCT (blended while in transition)
     uint8_t  currentMode() const;                            // currently active effect/mode (while in transition)
     [[gnu::hot]] uint32_t currentColor(uint8_t slot) const;  // currently active segment color (blended while in transition)
