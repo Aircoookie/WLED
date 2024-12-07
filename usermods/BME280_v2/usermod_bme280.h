@@ -241,7 +241,7 @@ public:
         // from the UI and values read from sensor, then publish to broker
         if (temperature != lastTemperature || PublishAlways)
         {
-          publishMqtt("temperature", String(temperature, TemperatureDecimals).c_str());
+          publishMqtt("temperature", String(temperature, static_cast<unsigned int>(TemperatureDecimals)).c_str());
         }
 
         lastTemperature = temperature; // Update last sensor temperature for next loop
@@ -254,17 +254,17 @@ public:
 
           if (humidity != lastHumidity || PublishAlways)
           {
-            publishMqtt("humidity", String(humidity, HumidityDecimals).c_str());
+            publishMqtt("humidity", String(humidity, static_cast<unsigned int>(HumidityDecimals)).c_str());
           }
 
           if (heatIndex != lastHeatIndex || PublishAlways)
           {
-            publishMqtt("heat_index", String(heatIndex, TemperatureDecimals).c_str());
+            publishMqtt("heat_index", String(heatIndex, static_cast<unsigned int>(TemperatureDecimals)).c_str());
           }
 
           if (dewPoint != lastDewPoint || PublishAlways)
           {
-            publishMqtt("dew_point", String(dewPoint, TemperatureDecimals).c_str());
+            publishMqtt("dew_point", String(dewPoint, static_cast<unsigned int>(TemperatureDecimals)).c_str());
           }
 
           lastHumidity = humidity;
@@ -281,7 +281,7 @@ public:
 
         if (pressure != lastPressure || PublishAlways)
         {
-          publishMqtt("pressure", String(pressure, PressureDecimals).c_str());
+          publishMqtt("pressure", String(pressure, static_cast<unsigned int>(PressureDecimals)).c_str());
         }
 
         lastPressure = pressure;
