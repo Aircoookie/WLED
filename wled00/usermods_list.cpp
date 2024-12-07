@@ -242,6 +242,10 @@
 #include "../usermods/LD2410_v2/usermod_ld2410.h"
 #endif
 
+#ifdef USERMOD_PRESET_NAVIGATION
+#include "../usermods/preset_navigation/preset_navigation.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -469,5 +473,9 @@ void registerUsermods()
 
   #ifdef USERMOD_POV_DISPLAY
   UsermodManager::add(new PovDisplayUsermod());
+  #endif
+
+  #ifdef USERMOD_PRESET_NAVIGATION
+  UsermodManager::add(new UsermodPresetNavigation());
   #endif
 }
