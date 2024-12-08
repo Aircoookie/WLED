@@ -511,7 +511,7 @@ void handleNotifications()
   }
 
   //UDP realtime: 1 warls 2 drgb 3 drgbw
-  if (udpIn[0] > 0 && udpIn[0] < 5)
+  if (udpIn[0] > 0 && udpIn[0] < 7)
   {
     realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
     DEBUG_PRINTLN(realtimeIP);
@@ -569,7 +569,17 @@ void handleNotifications()
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
         id++;
       }
+    } else if (udpIn[0] == 6) //scrgbw
+    {
+      uint8_t start = udpIn[2];
+      uint8_t count = udpIn[3];
+      for (size_t id = start; id<start+count; id++)
+      {
+        if (id >= totalLen) break;
+        setRealtimePixel(id, udpIn[4], udpIn[5], udpIn[6], udpIn[7]);
+      }
     }
+
     strip.show();
     return;
   }
