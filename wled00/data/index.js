@@ -1752,7 +1752,7 @@ function plR(p) {
 function makeP(i, pl) {
     var content = "";
     content += `
-        <fieldset class="music-preset-form__preset-kind-fieldset">
+        <fieldset class="music-preset-form__preset-kind-fieldset preset-kind-fieldset">
         <legend>Вид пресета</legend>
         <div class="music-preset-form__preset-kind-fieldset-option">
         <div class="v2-radiobutton">
@@ -2703,9 +2703,16 @@ function expand(i) {
                 if (!plJson[p].r) plJson[p].r = false;
                 if (isNaN(plJson[p].end)) plJson[p].end = 0;
                 gId('seg' + i).innerHTML = makeP(p, true);
+                const aEls = gEBCN("preset-kind-fieldset");
+                Array.from(aEls).forEach((item)=> {
+                    item.style.display = "none";
+                });
                 refreshPlE(p);
             } else {
                 gId('seg' + i).innerHTML = makeP(p);
+                Array.from(gEBCN("preset-kind-fieldset")).forEach((item)=> {
+                    item.style.display = "block";
+                });
             }
             var papi = papiVal(p);
             gId(`p${p}api`).value = papi;
