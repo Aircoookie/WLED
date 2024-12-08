@@ -1662,10 +1662,26 @@ function makePlSel(el, incPl = false) {
     var plSelContent = "";
     delete pJson["0"];	// remove filler preset
     var arr = Object.entries(pJson);
+    const musicRadioBtn = gId("radiobtn-kind-music-0");
+    const activeRadioBtn = gId("radiobtn-kind-active-0");
+    let isMusicMode;
+    let isActiveMode;
+    if (musicRadioBtn) {
+        isMusicMode = musicRadioBtn.checked;
+    }
+    if (activeRadioBtn) {
+        isActiveMode = activeRadioBtn.checked;
+    }
     for (var a of arr) {
         var n = a[1].n ? a[1].n : "Preset " + a[0];
         if (cfg.comp.idsort) n = a[0] + ' ' + n;
         if (!incPl && a[1].playlist && a[1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
+        const isIncla = a[1].n.includes("&#8226;");
+        const isInclb = a[1].n.includes("&#9834;");
+        if ((isActiveMode && !isIncla) ||
+            (isMusicMode && !isInclb)) {
+            continue;
+        }
         plSelContent += `<option value="${a[0]}" ${a[0] == el ? "selected" : ""}>${n}</option>`
     }
     return plSelContent;
@@ -1735,12 +1751,29 @@ function plR(p) {
 
 function makeP(i, pl) {
     var content = "";
+    content += `
+        <fieldset class="music-preset-form__preset-kind-fieldset">
+        <legend>Вид пресета</legend>
+        <div class="music-preset-form__preset-kind-fieldset-option">
+        <div class="v2-radiobutton">
+            <input type="radio" id="radiobtn-kind-active-${i}" onchange="refreshPlE(0)" name="preset-kind" value="kind-active">
+        </div>
+        <label for="radiobtn-kind-active-${i}">Активный</label>
+        </div>
+        <div class="music-preset-form__preset-kind-fieldset-option">
+        <div class="v2-radiobutton">
+            <input type="radio" id="radiobtn-kind-music-${i}" onchange="refreshPlE(0)" name="preset-kind" value="kind-music">
+        </div>
+        <label for="radiobtn-kind-music-${i}">Музыкальный</label>
+        </div>
+    </fieldset>
+    `;
     if (pl) {
         if (i === 0) plJson[0] = {
             ps: [1], dur: [100], transition: [tr], repeat: 0, r: false, end: 0
         };
         var rep = plJson[i].repeat ? plJson[i].repeat : 0;
-        content = `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
+        content += `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
 	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r || rep < 0 ? "checked" : ""}>
 	<span class="checkmark"></span>
 </label>
@@ -1759,7 +1792,7 @@ ${makePlSel(plJson[i].end ? plJson[i].end : 0, true)}
 </div>
 <div class="c"><button class="btn btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
     } else {
-        content = `<label class="check revchkl">
+        content += `<label class="check revchkl">
 	<span class="lstIname">
 	Include brightness
 	</span>
@@ -1801,21 +1834,6 @@ ${makePlSel(plJson[i].end ? plJson[i].end : 0, true)}
 </div>
 <div class="po2" id="p${i}o2">API command<br><textarea class="apitxt" id="p${i}api"></textarea></div>
 <div class="po1" id="p${i}o1">${content}</div>
-<fieldset class="music-preset-form__preset-kind-fieldset">
-    <legend>Вид пресета</legend>
-    <div class="music-preset-form__preset-kind-fieldset-option">
-    <div class="v2-radiobutton">
-        <input type="radio" id="radiobtn-kind-active-${i}" name="preset-kind" value="kind-active">
-    </div>
-    <label for="radiobtn-kind-active-${i}">Активный</label>
-    </div>
-    <div class="music-preset-form__preset-kind-fieldset-option">
-    <div class="v2-radiobutton">
-        <input type="radio" id="radiobtn-kind-music-${i}" name="preset-kind" value="kind-music">
-    </div>
-    <label for="radiobtn-kind-music-${i}">Музыкальный</label>
-    </div>
-</fieldset>
 <div class="c m6">Save to ID <input id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i > 0) ? i : getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
