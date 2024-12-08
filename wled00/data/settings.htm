@@ -1,126 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
-    <title>WLED Settings</title>
-    <script>
-        var d = document;
-        var loc = false, locip, locproto = "http:";
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+			name="viewport" />
+		<link rel="stylesheet" href="index.css" />
+		<title>WLED Settings</title>
+		<script>
+			var d = document;
+			var loc = false,
+				locip,
+				locproto = "http:";
 
-        function gId(n) {
-            return d.getElementById(n);
-        }
+			function gId(n) {
+				return d.getElementById(n);
+			}
 
-        // https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
-        function loadJS(FILE_URL, async = true) {
-            let scE = d.createElement("script");
-            scE.setAttribute("src", FILE_URL);
-            scE.setAttribute("type", "text/javascript");
-            scE.setAttribute("async", async);
-            d.body.appendChild(scE);
-            // success event
-            scE.addEventListener("load", () => {
-                //console.log("File loaded");
-                GetV();
-            });
-            // error event
-            scE.addEventListener("error", (ev) => {
-                console.log("Error on loading file", ev);
-                alert("Loading of configuration script failed.\nIncomplete page data!");
-            });
-        }
+			// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+			function loadJS(FILE_URL, async = true) {
+				let scE = d.createElement("script");
+				scE.setAttribute("src", FILE_URL);
+				scE.setAttribute("type", "text/javascript");
+				scE.setAttribute("async", async);
+				d.body.appendChild(scE);
+				// success event
+				scE.addEventListener("load", () => {
+					//console.log("File loaded");
+					GetV();
+				});
+				// error event
+				scE.addEventListener("error", (ev) => {
+					console.log("Error on loading file", ev);
+					alert("Loading of configuration script failed.\nIncomplete page data!");
+				});
+			}
 
-        function S() {
-            let l = window.location;
-            if (l.protocol == "file:") {
-                loc = true;
-                locip = localStorage.getItem('locIp');
-                if (!locip) {
-                    locip = prompt("File Mode. Please enter WLED IP!");
-                    localStorage.setItem('locIp', locip);
-                }
-            } else {
-                // detect reverse proxy
-                let path = l.pathname;
-                let paths = path.slice(1, path.endsWith('/') ? -1 : undefined).split("/");
-                if (paths.length > 1) {
-                    locproto = l.protocol;
-                    loc = true;
-                    locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
-                }
-            }
-            loadJS(getURL('/settings/s.js?p=0'), false);	// If we set async false, file is loaded and executed, then next statement is processed
-        }
+			function S() {
+				let l = window.location;
+				if (l.protocol == "file:") {
+					loc = true;
+					locip = localStorage.getItem("locIp");
+					if (!locip) {
+						locip = prompt("File Mode. Please enter WLED IP!");
+						localStorage.setItem("locIp", locip);
+					}
+				} else {
+					// detect reverse proxy
+					let path = l.pathname;
+					let paths = path.slice(1, path.endsWith("/") ? -1 : undefined).split("/");
+					if (paths.length > 1) {
+						locproto = l.protocol;
+						loc = true;
+						locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths[0];
+					}
+				}
+				loadJS(getURL("/settings/s.js?p=0"), false); // If we set async false, file is loaded and executed, then next statement is processed
+			}
 
-        function getURL(path) {
-            return (loc ? locproto + "//" + locip : "") + path;
-        }
-    </script>
-    <style>
-        body {
-            text-align: center;
-            background: #222;
-            height: 100px;
-            margin: 0;
-        }
+			function getURL(path) {
+				return (loc ? locproto + "//" + locip : "") + path;
+			}
+		</script>
+		<style>
+			body {
+				text-align: center;
+				background: #222;
+				height: 100px;
+				margin: 0;
+				height: 100%;
+				overflow: auto;
+			}
 
-        html {
-            --h: 9vh;
-        }
+			html {
+				height: 100%;
+				overflow: scroll;
+				--h: 9vh;
+			}
 
-        button {
-            background: #333;
-            color: #fff;
-            font-family: Verdana, Helvetica, sans-serif;
-            display: block;
-            border: 1px solid #333;
-            border-radius: var(--h);
-            font-size: 6vmin;
-            height: var(--h);
-            width: calc(100% - 40px);
-            margin: 2vh auto 0;
-            cursor: pointer;
-        }
+			button {
+				background: #333;
+				color: #fff;
+				font-family: Verdana, Helvetica, sans-serif;
+				display: block;
+				border: 1px solid #333;
+				border-radius: var(--h);
+				font-size: 6vmin;
+				height: var(--h);
+				width: calc(100% - 40px);
+				margin: 2vh auto 0;
+				cursor: pointer;
+			}
 
-        .hidden-over-screen {
-            position: fixed;
-            top: -10000px;
-            left: -10000px;
-            opacity: 0;
-            pointer-events: none;
-        }
+			.hidden-over-screen {
+				position: fixed;
+				top: -10000px;
+				left: -10000px;
+				opacity: 0;
+				pointer-events: none;
+			}
 
-        .secret-admin-mode-toggler {
-            white-space: pre-line;
-            height: auto;
-        }
-    </style>
-</head>
-<body onload="S()">
-<button type=submit id="b" onclick="window.location=getURL('/')">Back</button>
-<button type="submit" onclick="window.location=getURL('/settings/wifi')">WiFi Setup</button>
-<button type="submit" onclick="window.location=getURL('/settings/leds')">LED Preferences</button>
-<button id="2dbtn" class="admin-only" type="submit" onclick="window.location=getURL('/settings/2D')">2D Configuration
-</button>
-<button class="admin-only" type="submit"
-        onclick="window.location=getURL('/settings/ui')">User Interface
-</button>
-<button class="admin-only" id="dmxbtn" style="display:none;" type="submit" onclick="window.location=getURL('/settings/dmx')">DMX Output
-</button>
-<button class="admin-only" type="submit"
-        onclick="window.location=getURL('/settings/sync')">Sync Interfaces
-</button>
-<button class="admin-only" type="submit"
-        onclick="window.location=getURL('/settings/time')">Time & Macros
-</button>
-<button class="admin-only" type="submit"
-        onclick="window.location=getURL('/settings/um')">Usermods
-</button>
-<button class="admin-only" type="submit"
-        onclick="window.location=getURL('/settings/sec')">Security & Updates
-</button>
-<button class="secret-admin-mode-toggler">Переключить режим администратора</button>
-<script src="./adminUtils.js"></script>
-</body>
+			.secret-admin-mode-toggler {
+				white-space: pre-line;
+				height: auto;
+				margin-bottom: 20px;
+			}
+
+			.modal {
+				position: fixed;
+				left: 0px;
+				bottom: 0px;
+				right: 0px;
+				top: calc(var(--th) - 1px);
+				background-color: var(--c-o);
+				transform: translateY(100%);
+				transition: transform 0.4s;
+				padding: 8px;
+				font-size: 20px;
+				overflow: auto;
+			}
+			.btn {
+				display: inline;
+				height: auto;
+				font-family: unset;
+			}
+		</style>
+	</head>
+	<body onload="S()">
+		<div id="connind"></div>
+		<div id="toast" onclick="clearErrorToast(100);"></div>
+		<div id="namelabel" onclick="toggleNodes()"></div>
+		<div id="info" class="modal">
+			<button class="btn btn-xs close" onclick="toggleInfo()">
+				<i class="icons rot45">&#xe18a;</i>
+			</button>
+			<div id="imgw">
+				<img
+					class="wi"
+					alt=""
+					src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAFCAYAAAC5Fuf5AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABbSURBVChTlY9bDoAwDMNW7n9nwCipytQN4Z8tbrTHmDmF4oPzyldwRqp1SSdnV/NuZuzqerAByxXznBw3igkeFEfXyUuhK/yFM0CxJfyqXZEOc6/Sr9/bf7uIC5Nwd7orMvAPAAAAAElFTkSuQmCC" />
+			</div>
+			<div id="kv">Loading...</div>
+			<br />
+			<div>
+				<button class="btn infobtn" onclick="requestJson()">Refresh</button>
+				<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
+				<button class="btn infobtn" onclick="window.open(getURL('/update'),'_self');">
+					Update WLED
+				</button>
+				<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button>
+			</div>
+			<br />
+			<span class="h"
+				>Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the
+				<a href="https://wled.discourse.group/" target="_blank">WLED community</a></span
+			>
+		</div>
+		<div id="nodes" class="modal">
+			<button class="btn btn-xs close" onclick="toggleNodes()">
+				<i class="icons rot45">&#xe18a;</i>
+			</button>
+			<div id="ndlt">WLED instances</div>
+			<div id="kn">Loading...</div>
+			<div style="position: sticky; bottom: 0">
+				<button class="btn infobtn" onclick="loadNodes()">Refresh</button>
+			</div>
+		</div>
+
+		<button type="submit" id="b" onclick="window.location=getURL('/')">Back</button>
+		<button type="submit" onclick="window.location=getURL('/settings/wifi')">WiFi Setup</button>
+		<button type="submit" onclick="window.location=getURL('/settings/leds')">
+			LED Preferences
+		</button>
+		<button
+			id="2dbtn"
+			class="admin-only"
+			type="submit"
+			onclick="window.location=getURL('/settings/2D')">
+			2D Configuration
+		</button>
+		<button class="admin-only" type="submit" onclick="window.location=getURL('/settings/ui')">
+			User Interface
+		</button>
+		<button
+			class="admin-only"
+			id="dmxbtn"
+			style="display: none"
+			type="submit"
+			onclick="window.location=getURL('/settings/dmx')">
+			DMX Output
+		</button>
+		<button class="admin-only" type="submit" onclick="window.location=getURL('/settings/sync')">
+			Sync Interfaces
+		</button>
+		<button class="admin-only" type="submit" onclick="window.location=getURL('/settings/time')">
+			Time & Macros
+		</button>
+		<button class="admin-only" type="submit" onclick="window.location=getURL('/settings/um')">
+			Usermods
+		</button>
+		<button class="admin-only" type="submit" onclick="window.location=getURL('/settings/sec')">
+			Security & Updates
+		</button>
+
+		<button id="buttonI" onclick="toggleInfo()">Информация</button>
+		<!-- <button id="buttonI" onclick="toggleInfo()">Информация</button> -->
+		<button class="secret-admin-mode-toggler">Переключить режим администратора</button>
+		<script src="./adminUtils.js"></script>
+	</body>
 </html>
