@@ -1662,10 +1662,26 @@ function makePlSel(el, incPl = false) {
     var plSelContent = "";
     delete pJson["0"];	// remove filler preset
     var arr = Object.entries(pJson);
+    const musicRadioBtn = gId("radiobtn-kind-music-0");
+    const activeRadioBtn = gId("radiobtn-kind-active-0");
+    let isMusicMode;
+    let isActiveMode;
+    if (musicRadioBtn) {
+        isMusicMode = musicRadioBtn.checked;
+    }
+    if (activeRadioBtn) {
+        isActiveMode = activeRadioBtn.checked;
+    }
     for (var a of arr) {
         var n = a[1].n ? a[1].n : "Preset " + a[0];
         if (cfg.comp.idsort) n = a[0] + ' ' + n;
         if (!incPl && a[1].playlist && a[1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
+        const isIncla = a[1].n.includes("&#8226;");
+        const isInclb = a[1].n.includes("&#9834;");
+        if ((isActiveMode && !isIncla) ||
+            (isMusicMode && !isInclb)) {
+            continue;
+        }
         plSelContent += `<option value="${a[0]}" ${a[0] == el ? "selected" : ""}>${n}</option>`
     }
     return plSelContent;
@@ -1735,12 +1751,29 @@ function plR(p) {
 
 function makeP(i, pl) {
     var content = "";
+    content += `
+        <fieldset class="music-preset-form__preset-kind-fieldset preset-kind-fieldset">
+        <legend>Вид пресета</legend>
+        <div class="music-preset-form__preset-kind-fieldset-option">
+        <div class="v2-radiobutton">
+            <input type="radio" id="radiobtn-kind-active-${i}" onchange="refreshPlE(0)" name="preset-kind" value="kind-active">
+        </div>
+        <label for="radiobtn-kind-active-${i}">Активный</label>
+        </div>
+        <div class="music-preset-form__preset-kind-fieldset-option">
+        <div class="v2-radiobutton">
+            <input type="radio" id="radiobtn-kind-music-${i}" onchange="refreshPlE(0)" name="preset-kind" value="kind-music">
+        </div>
+        <label for="radiobtn-kind-music-${i}">Музыкальный</label>
+        </div>
+    </fieldset>
+    `;
     if (pl) {
         if (i === 0) plJson[0] = {
             ps: [1], dur: [100], transition: [tr], repeat: 0, r: false, end: 0
         };
         var rep = plJson[i].repeat ? plJson[i].repeat : 0;
-        content = `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
+        content += `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
 	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r || rep < 0 ? "checked" : ""}>
 	<span class="checkmark"></span>
 </label>
@@ -1759,7 +1792,7 @@ ${makePlSel(plJson[i].end ? plJson[i].end : 0, true)}
 </div>
 <div class="c"><button class="btn btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
     } else {
-        content = `<label class="check revchkl">
+        content += `<label class="check revchkl">
 	<span class="lstIname">
 	Include brightness
 	</span>
@@ -1814,7 +1847,7 @@ function makePUtil() {
     let p = gId('prutil');
     p.classList.remove('staybot');
     p.classList.add('pres');
-    p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
+    p.innerHTML = `<div class="presin expanded music-preset-form">${makeP(0)}</div>`;
     let pTx = gId('p0txt');
     pTx.focus();
     pTx.value = eJson.find((o) => {
@@ -1880,7 +1913,7 @@ function resetPUtil() {
     pr.innerHTML = ''
     // p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>Preset</button>`
     // + `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
-    p.innerHTML = `<button class="btn btn-s" onclick="makePlUtil()" style="margin: 0 auto;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
+    p.innerHTML = `<button class="btn btn-s add-music-playlist-button" onclick="makePlUtil()" style="margin: 0 auto;"><i class="icons btn-icon">&#xe18a;</i>Добавить плейлист</button>`;
 }
 
 function tglCs(i) {
@@ -2213,6 +2246,23 @@ function saveP(i, pl) {
             obj.customField = false;
             if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value !== "") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
         }
+    }
+
+    let isActive = gId(`radiobtn-kind-active-${i}`).checked;
+    let isMusic = gId(`radiobtn-kind-music-${i}`).checked;
+
+    if (!isActive && !isMusic) {
+        isActive = pN.includes("•");
+        isMusic = pN.includes("♪");
+    }
+
+    pN = pN.replaceAll("♪", "");
+    pN = pN.replaceAll("•", "");
+
+    if (isActive && !isMusic) {
+        pN += "&#8226;"
+    } else if (!isActive && isMusic) {
+        pN += "&#9834;";
     }
 
     obj.psave = pI;
@@ -2653,9 +2703,16 @@ function expand(i) {
                 if (!plJson[p].r) plJson[p].r = false;
                 if (isNaN(plJson[p].end)) plJson[p].end = 0;
                 gId('seg' + i).innerHTML = makeP(p, true);
+                const aEls = gEBCN("preset-kind-fieldset");
+                Array.from(aEls).forEach((item)=> {
+                    item.style.display = "none";
+                });
                 refreshPlE(p);
             } else {
                 gId('seg' + i).innerHTML = makeP(p);
+                Array.from(gEBCN("preset-kind-fieldset")).forEach((item)=> {
+                    item.style.display = "block";
+                });
             }
             var papi = papiVal(p);
             gId(`p${p}api`).value = papi;
