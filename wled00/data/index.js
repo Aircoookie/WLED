@@ -2230,8 +2230,16 @@ function saveP(i, pl) {
         }
     }
 
-    const isActive = gId(`radiobtn-kind-active-${i}`).checked;
-    const isMusic = gId(`radiobtn-kind-music-${i}`).checked;
+    let isActive = gId(`radiobtn-kind-active-${i}`).checked;
+    let isMusic = gId(`radiobtn-kind-music-${i}`).checked;
+
+    if (!isActive && !isMusic) {
+        isActive = pN.includes("•");
+        isMusic = pN.includes("♪");
+    }
+
+    pN = pN.replaceAll("♪", "");
+    pN = pN.replaceAll("•", "");
 
     if (isActive && !isMusic) {
         pN += "&#8226;"
