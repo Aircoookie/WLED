@@ -71,7 +71,7 @@ class MyExampleUsermod : public Usermod {
     //   #endif
     //  in setup()
     //   #ifdef USERMOD_EXAMPLE
-    //   UM = (MyExampleUsermod*) usermods.lookup(USERMOD_ID_EXAMPLE);
+    //   UM = (MyExampleUsermod*) UsermodManager::lookup(USERMOD_ID_EXAMPLE);
     //   #endif
     //  somewhere in loop() or other member method
     //   #ifdef USERMOD_EXAMPLE
@@ -87,7 +87,7 @@ class MyExampleUsermod : public Usermod {
      * readFromConfig() is called prior to setup()
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup() {
+    void setup() override {
       // do your set-up here
       //Serial.println("Hello from my usermod!");
       initDone = true;
@@ -98,7 +98,7 @@ class MyExampleUsermod : public Usermod {
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() {
+    void connected() override {
       //Serial.println("Connected to WiFi!");
     }
 
@@ -113,7 +113,7 @@ class MyExampleUsermod : public Usermod {
      * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
      *    Instead, use a timer check as shown here.
      */
-    void loop() {
+    void loop() override {
       // if usermod is disabled or called during strip updating just exit
       // NOTE: on very long strips strip.isUpdating() may always return true so update accordingly
       if (!enabled || strip.isUpdating()) return;
@@ -131,7 +131,7 @@ class MyExampleUsermod : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    void addToJsonInfo(JsonObject& root)
+    void addToJsonInfo(JsonObject& root) override
     {
       // if "u" object does not exist yet wee need to create it
       JsonObject user = root["u"];
@@ -156,7 +156,7 @@ class MyExampleUsermod : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject& root)
+    void addToJsonState(JsonObject& root) override
     {
       if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
 
@@ -171,7 +171,7 @@ class MyExampleUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root)
+    void readFromJsonState(JsonObject& root) override
     {
       if (!initDone) return;  // prevent crash on boot applyPreset()
 
@@ -220,7 +220,7 @@ class MyExampleUsermod : public Usermod {
      * 
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
-    void addToConfig(JsonObject& root)
+    void addToConfig(JsonObject& root) override
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)] = enabled;
@@ -253,7 +253,7 @@ class MyExampleUsermod : public Usermod {
      * 
      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
-    bool readFromConfig(JsonObject& root)
+    bool readFromConfig(JsonObject& root) override
     {
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
@@ -285,13 +285,13 @@ class MyExampleUsermod : public Usermod {
      * it may add additional metadata for certain entry fields (adding drop down is possible)
      * be careful not to add too much as oappend() buffer is limited to 3k
      */
-    void appendConfigData()
+    void appendConfigData() override
     {
-      oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":great")); oappend(SET_F("',1,'<i>(this is a great config value)</i>');"));
-      oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":testString")); oappend(SET_F("',1,'enter any string you want');"));
-      oappend(SET_F("dd=addDropdown('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F("','testInt');"));
-      oappend(SET_F("addOption(dd,'Nothing',0);"));
-      oappend(SET_F("addOption(dd,'Everything',42);"));
+      oappend(F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(F(":great")); oappend(F("',1,'<i>(this is a great config value)</i>');"));
+      oappend(F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(F(":testString")); oappend(F("',1,'enter any string you want');"));
+      oappend(F("dd=addDropdown('")); oappend(String(FPSTR(_name)).c_str()); oappend(F("','testInt');"));
+      oappend(F("addOption(dd,'Nothing',0);"));
+      oappend(F("addOption(dd,'Everything',42);"));
     }
 
 
@@ -300,7 +300,7 @@ class MyExampleUsermod : public Usermod {
      * Use this to blank out some LEDs or set them to a different color regardless of the set effect mode.
      * Commonly used for custom clocks (Cronixie, 7 segment)
      */
-    void handleOverlayDraw()
+    void handleOverlayDraw() override
     {
       //strip.setPixelColor(0, RGBW32(0,0,0,0)) // set the first pixel to black
     }
@@ -311,7 +311,7 @@ class MyExampleUsermod : public Usermod {
      * will prevent button working in a default way.
      * Replicating button.cpp
      */
-    bool handleButton(uint8_t b) {
+    bool handleButton(uint8_t b) override {
       yield();
       // ignore certain button types as they may have other consequences
       if (!enabled
@@ -334,7 +334,7 @@ class MyExampleUsermod : public Usermod {
      * handling of MQTT message
      * topic only contains stripped topic (part after /wled/MAC)
      */
-    bool onMqttMessage(char* topic, char* payload) {
+    bool onMqttMessage(char* topic, char* payload) override {
       // check if we received a command
       //if (strlen(topic) == 8 && strncmp_P(topic, PSTR("/command"), 8) == 0) {
       //  String action = payload;
@@ -355,7 +355,7 @@ class MyExampleUsermod : public Usermod {
     /**
      * onMqttConnect() is called when MQTT connection is established
      */
-    void onMqttConnect(bool sessionPresent) {
+    void onMqttConnect(bool sessionPresent) override {
       // do any MQTT related initialisation here
       //publishMqtt("I am alive!");
     }
@@ -366,7 +366,7 @@ class MyExampleUsermod : public Usermod {
      * onStateChanged() is used to detect WLED state change
      * @mode parameter is CALL_MODE_... parameter used for notifications
      */
-    void onStateChange(uint8_t mode) {
+    void onStateChange(uint8_t mode) override {
       // do something if WLED state changed (color, brightness, effect, preset, etc)
     }
 
@@ -375,7 +375,7 @@ class MyExampleUsermod : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    uint16_t getId()
+    uint16_t getId() override
     {
       return USERMOD_ID_EXAMPLE;
     }

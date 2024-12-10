@@ -4,10 +4,10 @@
  * MQTT communication protocol for home automation
  */
 
-#ifdef WLED_ENABLE_MQTT
+#ifndef WLED_DISABLE_MQTT
 #define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds
 
-void parseMQTTBriPayload(char* payload)
+static void parseMQTTBriPayload(char* payload)
 {
   if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; stateUpdated(CALL_MODE_DIRECT_CHANGE);}
   else if (strstr(payload, "T" ) || strstr(payload, "t" )) {toggleOnOff(); stateUpdated(CALL_MODE_DIRECT_CHANGE);}
@@ -20,7 +20,7 @@ void parseMQTTBriPayload(char* payload)
 }
 
 
-void onMqttConnect(bool sessionPresent)
+static void onMqttConnect(bool sessionPresent)
 {
   //(re)subscribe to required topics
   char subuf[38];
@@ -45,18 +45,17 @@ void onMqttConnect(bool sessionPresent)
     mqtt->subscribe(subuf, 0);
   }
 
-  usermods.onMqttConnect(sessionPresent);
+  UsermodManager::onMqttConnect(sessionPresent);
 
-  doPublishMqtt = true;
   DEBUG_PRINTLN(F("MQTT ready"));
+  publishMqtt();
 }
 
 
-void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+static void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
   static char *payloadStr;
 
-  DEBUG_PRINT(F("MQTT msg: "));
-  DEBUG_PRINTLN(topic);
+  DEBUG_PRINTF_P(PSTR("MQTT msg: %s\n"), topic);
 
   // paranoia check to avoid npe if no payload
   if (payload==nullptr) {
@@ -76,7 +75,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   if (index + len >= total) { // at end
     payloadStr[total] = '\0'; // terminate c style string
   } else {
-    DEBUG_PRINTLN(F("Partial packet received."));
+    DEBUG_PRINTLN(F("MQTT partial packet received."));
     return; // process next packet
   }
   DEBUG_PRINTLN(payloadStr);
@@ -90,7 +89,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       topic += topicPrefixLen;
     } else {
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
-      usermods.onMqttMessage(topic, payloadStr);
+      UsermodManager::onMqttMessage(topic, payloadStr);
       delete[] payloadStr;
       payloadStr = nullptr;
       return;
@@ -103,23 +102,20 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorFromDecOrHexString(col, payloadStr);
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
-    if (!requestJSONBufferLock(15)) {
-      delete[] payloadStr;
-      payloadStr = nullptr;
-      return;
+    if (requestJSONBufferLock(15)) {
+      if (payloadStr[0] == '{') { //JSON API
+        deserializeJson(*pDoc, payloadStr);
+        deserializeState(pDoc->as<JsonObject>());
+      } else { //HTTP API
+        String apireq = "win"; apireq += '&'; // reduce flash string usage
+        apireq += payloadStr;
+        handleSet(nullptr, apireq);
+      }
+      releaseJSONBufferLock();
     }
-    if (payloadStr[0] == '{') { //JSON API
-      deserializeJson(doc, payloadStr);
-      deserializeState(doc.as<JsonObject>());
-    } else { //HTTP API
-      String apireq = "win"; apireq += '&'; // reduce flash string usage
-      apireq += payloadStr;
-      handleSet(nullptr, apireq);
-    }
-    releaseJSONBufferLock();
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
-    usermods.onMqttMessage(topic, payloadStr);
+    UsermodManager::onMqttMessage(topic, payloadStr);
   } else {
     // topmost topic (just wled/MAC)
     parseMQTTBriPayload(payloadStr);
@@ -128,16 +124,41 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   payloadStr = nullptr;
 }
 
+// Print adapter for flat buffers
+namespace { 
+class bufferPrint : public Print {
+  char* _buf;
+  size_t _size, _offset;
+  public:
+
+  bufferPrint(char* buf, size_t size) : _buf(buf), _size(size), _offset(0) {};
+
+  size_t write(const uint8_t *buffer, size_t size) {
+    size = std::min(size, _size - _offset);
+    memcpy(_buf + _offset, buffer, size);
+    _offset += size;
+    return size;
+  }
+
+  size_t write(uint8_t c) {
+    return this->write(&c, 1);
+  }
+
+  char* data() const { return _buf; }
+  size_t size() const { return _offset; }
+  size_t capacity() const { return _size; }
+};
+}; // anonymous namespace
+
 
 void publishMqtt()
 {
-  doPublishMqtt = false;
   if (!WLED_MQTT_CONNECTED) return;
   DEBUG_PRINTLN(F("Publish MQTT"));
 
   #ifndef USERMOD_SMARTNEST
   char s[10];
-  char subuf[38];
+  char subuf[48];
 
   sprintf_P(s, PSTR("%u"), bri);
   strlcpy(subuf, mqttDeviceTopic, 33);
@@ -153,11 +174,13 @@ void publishMqtt()
   strcat_P(subuf, PSTR("/status"));
   mqtt->publish(subuf, 0, true, "online");          // retain message for a LWT
 
-  char apires[1024];                                // allocating 1024 bytes from stack can be risky
-  XML_response(nullptr, apires);
+  // TODO: use a DynamicBufferList.  Requires a list-read-capable MQTT client API.
+  DynamicBuffer buf(1024);
+  bufferPrint pbuf(buf.data(), buf.size());
+  XML_response(pbuf);
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/v"));
-  mqtt->publish(subuf, 0, retainMqttMsg, apires);   // optionally retain message (#2263)
+  mqtt->publish(subuf, 0, retainMqttMsg, buf.data(), pbuf.size());   // optionally retain message (#2263)
   #endif
 }
 
@@ -170,6 +193,7 @@ bool initMqtt()
 
   if (mqtt == nullptr) {
     mqtt = new AsyncMqttClient();
+    if (!mqtt) return false;
     mqtt->onMessage(onMqttMessage);
     mqtt->onConnect(onMqttConnect);
   }

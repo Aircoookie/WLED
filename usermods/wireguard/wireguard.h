@@ -54,21 +54,21 @@ class WireguardUsermod : public Usermod {
     }
 
     void appendConfigData() {
-        oappend(SET_F("addInfo('WireGuard:host',1,'Server Hostname');"));           // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:port',1,'Server Port');"));               // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:ip',1,'Device IP');"));                   // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:psk',1,'Pre Shared Key (optional)');"));  // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:pem',1,'Private Key');"));                // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:pub',1,'Public Key');"));                 // 0 is field type, 1 is actual field
-        oappend(SET_F("addInfo('WireGuard:tz',1,'POSIX timezone string');"));       // 0 is field type, 1 is actual field
+        oappend(F("addInfo('WireGuard:host',1,'Server Hostname');"));           // 0 is field type, 1 is actual field
+        oappend(F("addInfo('WireGuard:port',1,'Server Port');"));               // 0 is field type, 1 is actual field
+        oappend(F("addInfo('WireGuard:ip',1,'Device IP');"));                   // 0 is field type, 1 is actual field
+        oappend(F("addInfo('WireGuard:psk',1,'Pre Shared Key (optional)');"));  // 0 is field type, 1 is actual field
+        oappend(F("addInfo('WireGuard:pem',1,'Private Key');"));                // 0 is field type, 1 is actual field
+        oappend(F("addInfo('WireGuard:pub',1,'Public Key');"));                 // 0 is field type, 1 is actual field
+        oappend(F("addInfo('WireGuard:tz',1,'POSIX timezone string');"));       // 0 is field type, 1 is actual field
     }
 
     void addToConfig(JsonObject& root) {
         JsonObject top = root.createNestedObject(F("WireGuard"));
         top[F("host")] = endpoint_address;
-        top[F("port")] = endpoint_port;
-        top[F("ip")] = local_ip.toString();
-        top[F("psk")] = preshared_key;
+        top["port"] = endpoint_port;
+        top["ip"] = local_ip.toString();
+        top["psk"] = preshared_key;
         top[F("pem")] = private_key;
         top[F("pub")] = public_key;
         top[F("tz")] = posix_tz;
@@ -77,11 +77,11 @@ class WireguardUsermod : public Usermod {
     bool readFromConfig(JsonObject& root) {
         JsonObject top = root[F("WireGuard")];
 
-        if (top["host"].isNull() || top["port"].isNull() || top["ip"].isNull() || top["pem"].isNull() || top["pub"].isNull() || top["tz"].isNull()) {
+        if (top[F("host")].isNull() || top["port"].isNull() || top["ip"].isNull() || top[F("pem")].isNull() || top[F("pub")].isNull() || top[F("tz")].isNull()) {
             is_enabled = false;
             return false;
         } else {
-            const char* host = top["host"];
+            const char* host = top[F("host")];
             strncpy(endpoint_address, host, 100);
 
             const char* ip_s = top["ip"];
@@ -89,16 +89,16 @@ class WireguardUsermod : public Usermod {
             sscanf(ip_s, "%u.%u.%u.%u", &ip[0], &ip[1], &ip[2], &ip[3]);
             local_ip = IPAddress(ip[0], ip[1], ip[2], ip[3]);
 
-            const char* pem = top["pem"];
+            const char* pem = top[F("pem")];
             strncpy(private_key, pem, 45);
 
-            const char* pub = top["pub"];
+            const char* pub = top[F("pub")];
             strncpy(public_key, pub, 45);
 
-            const char* tz = top["tz"];
+            const char* tz = top[F("tz")];
             strncpy(posix_tz, tz, 150);
 
-            endpoint_port = top["port"];
+            endpoint_port = top[F("port")];
 
             if (!top["psk"].isNull()) {
                 const char* psk = top["psk"];

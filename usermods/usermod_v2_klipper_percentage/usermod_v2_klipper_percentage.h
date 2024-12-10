@@ -6,7 +6,7 @@ class klipper_percentage : public Usermod
 {
 private:
   unsigned long lastTime = 0;
-  String ip = "192.168.25.207";
+  String ip = F("0.0.0.0");
   WiFiClient wifiClient;
   char errorMessage[100] = "";
   int printPercent = 0;
@@ -30,7 +30,7 @@ private:
     {
       // Send HTTP request
       client.println(F("GET /printer/objects/query?virtual_sdcard=progress HTTP/1.0"));
-      client.println("Host: " + ip);
+      client.print(F("Host: ")); client.println(ip);
       client.println(F("Connection: close"));
       if (client.println() == 0)
       {
@@ -41,7 +41,7 @@ private:
         // Check HTTP status
         char status[32] = {0};
         client.readBytesUntil('\r', status, sizeof(status));
-        if (strcmp(status, "HTTP/1.1 200 OK") != 0)
+        if (strcmp_P(status, PSTR("HTTP/1.1 200 OK")) != 0)
         {
           strcat(errorMessage, PSTR("Unexpected response: "));
           strcat(errorMessage, status);
@@ -86,11 +86,11 @@ public:
               strcat(errorMessage, PSTR("deserializeJson() failed: "));
               strcat(errorMessage, error.c_str());
             }
-            printPercent = (int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100);
+            printPercent = (int)(klipperDoc[F("result")][F("status")][F("virtual_sdcard")][F("progress")].as<float>() * 100);
 
-            DEBUG_PRINT("Percent: ");
-            DEBUG_PRINTLN((int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100));
-            DEBUG_PRINT("LEDs: ");
+            DEBUG_PRINT(F("Percent: "));
+            DEBUG_PRINTLN((int)(klipperDoc[F("result")][F("status")][F("virtual_sdcard")][F("progress")].as<float>() * 100));
+            DEBUG_PRINT(F("LEDs: "));
             DEBUG_PRINTLN(direction == 2 ? (strip.getLengthTotal() / 2) * printPercent / 100 : strip.getLengthTotal() * printPercent / 100);
           }
           else
@@ -106,10 +106,10 @@ public:
 
   void addToConfig(JsonObject &root)
   {
-    JsonObject top = root.createNestedObject("Klipper Printing Percentage");
-    top["Enabled"] = enabled;
-    top["Klipper IP"] = ip;
-    top["Direction"] = direction;
+    JsonObject top = root.createNestedObject(F("Klipper Printing Percentage"));
+    top[F("Enabled")] = enabled;
+    top[F("Klipper IP")] = ip;
+    top[F("Direction")] = direction;
   }
 
   bool readFromConfig(JsonObject &root)
@@ -117,12 +117,12 @@ public:
     // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
     // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-    JsonObject top = root["Klipper Printing Percentage"];
+    JsonObject top = root[F("Klipper Printing Percentage")];
 
     bool configComplete = !top.isNull();
-    configComplete &= getJsonValue(top["Klipper IP"], ip);
-    configComplete &= getJsonValue(top["Enabled"], enabled);
-    configComplete &= getJsonValue(top["Direction"], direction);
+    configComplete &= getJsonValue(top[F("Klipper IP")], ip);
+    configComplete &= getJsonValue(top[F("Enabled")], enabled);
+    configComplete &= getJsonValue(top[F("Direction")], direction);
     return configComplete;
   }
 

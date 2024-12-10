@@ -59,7 +59,7 @@ private:
   bool sensorFound = false;
 
   // Home Assistant and MQTT  
-  String mqttLuminanceTopic = F("");
+  String mqttLuminanceTopic;
   bool mqttInitialized = false;
   bool HomeAssistantDiscovery = true; // Publish Home Assistant Discovery messages
 
@@ -86,7 +86,7 @@ private:
     
     StaticJsonDocument<600> doc;
     
-    doc[F("name")] = String(serverDescription) + F(" ") + name;
+    doc[F("name")] = String(serverDescription) + " " + name;
     doc[F("state_topic")] = topic;
     doc[F("unique_id")] = String(mqttClientID) + name;
     if (unitOfMeasurement != "")
@@ -98,8 +98,8 @@ private:
     JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
     device[F("name")] = serverDescription;
     device[F("identifiers")] = "wled-sensor-" + String(mqttClientID);
-    device[F("manufacturer")] = F("WLED");
-    device[F("model")] = F("FOSS");
+    device[F("manufacturer")] = F(WLED_BRAND);
+    device[F("model")] = F(WLED_PRODUCT_NAME);
     device[F("sw_version")] = versionString;
 
     String temp;

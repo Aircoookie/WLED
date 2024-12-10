@@ -332,7 +332,7 @@ class Animated_Staircase : public Usermod {
       };
       // NOTE: this *WILL* return TRUE if all the pins are set to -1.
       //       this is *BY DESIGN*.
-      if (!pinManager.allocateMultiplePins(pins, 4, PinOwner::UM_AnimatedStaircase)) {
+      if (!PinManager::allocateMultiplePins(pins, 4, PinOwner::UM_AnimatedStaircase)) {
         topPIRorTriggerPin = -1;
         topEchoPin = -1;
         bottomPIRorTriggerPin = -1;
@@ -425,10 +425,10 @@ class Animated_Staircase : public Usermod {
     }
 
     void appendConfigData() {
-      //oappend(SET_F("dd=addDropdown('staircase','selectfield');"));
-      //oappend(SET_F("addOption(dd,'1st value',0);"));
-      //oappend(SET_F("addOption(dd,'2nd value',1);"));
-      //oappend(SET_F("addInfo('staircase:selectfield',1,'additional info');"));  // 0 is field type, 1 is actual field
+      //oappend(F("dd=addDropdown('staircase','selectfield');"));
+      //oappend(F("addOption(dd,'1st value',0);"));
+      //oappend(F("addOption(dd,'2nd value',1);"));
+      //oappend(F("addInfo('staircase:selectfield',1,'additional info');"));  // 0 is field type, 1 is actual field
     }
 
 
@@ -513,10 +513,10 @@ class Animated_Staircase : public Usermod {
             (oldBottomAPin != bottomPIRorTriggerPin) ||
             (oldBottomBPin != bottomEchoPin)) {
           changed = true;
-          pinManager.deallocatePin(oldTopAPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldTopBPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldBottomAPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldBottomBPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldTopAPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldTopBPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldBottomAPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldBottomBPin, PinOwner::UM_AnimatedStaircase);
         }
         if (changed) setup();
       }
