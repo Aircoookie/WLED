@@ -1,5 +1,10 @@
 ## WLED changelog
 
+#### Build 2412100
+-   WLED 0.15.0 release
+-   Usermod BME280: Fix "Unit of Measurement" for temperature
+-   WiFi reconnect bugfix (@blazoncek)
+
 #### Build 2411250
 -   WLED 0.15.0-rc1 release
 -   Add support for esp32S3_wroom2 (#4243 by @softhack007)
