@@ -84,11 +84,11 @@ class QuinLEDAnPentaUsermod : public Usermod
     void getCurrentUsedLedPins()
     {
       for (int8_t lp = 0; lp <= 4; lp++) currentLedPins[lp] = 0;
-      byte numBusses = busses.getNumBusses();
+      byte numBusses = BusManager::getNumBusses();
       byte numUsedPins = 0;
 
       for (int8_t b = 0; b < numBusses; b++) {
-        Bus* curBus = busses.getBus(b);
+        Bus* curBus = BusManager::getBus(b);
         if (curBus != nullptr) {
           uint8_t pins[5] = {0, 0, 0, 0, 0};
           currentBussesNumPins[b] = curBus->getPins(pins);
@@ -104,11 +104,11 @@ class QuinLEDAnPentaUsermod : public Usermod
 
     void getCurrentLedcValues()
     {
-      byte numBusses = busses.getNumBusses();
+      byte numBusses = BusManager::getNumBusses();
       byte numLedc = 0;
 
       for (int8_t b = 0; b < numBusses; b++) {
-        Bus* curBus = busses.getBus(b);
+        Bus* curBus = BusManager::getBus(b);
         if (curBus != nullptr) {
           uint32_t curPixColor = curBus->getPixelColor(0);
           uint8_t _data[5] = {255, 255, 255, 255, 255};
@@ -129,7 +129,7 @@ class QuinLEDAnPentaUsermod : public Usermod
     void initOledDisplay()
     {
       PinManagerPinType pins[5] = { { oledSpiClk, true }, { oledSpiData, true }, { oledSpiCs, true }, { oledSpiDc, true }, { oledSpiRst, true } };
-      if (!pinManager.allocateMultiplePins(pins, 5, PinOwner::UM_QuinLEDAnPenta)) {
+      if (!PinManager::allocateMultiplePins(pins, 5, PinOwner::UM_QuinLEDAnPenta)) {
         DEBUG_PRINTF("[%s] OLED pin allocation failed!\n", _name);
         oledEnabled = oledInitDone = false;
         return;
@@ -164,11 +164,11 @@ class QuinLEDAnPentaUsermod : public Usermod
         oledDisplay->clear();
       }
 
-      pinManager.deallocatePin(oledSpiClk, PinOwner::UM_QuinLEDAnPenta);
-      pinManager.deallocatePin(oledSpiData, PinOwner::UM_QuinLEDAnPenta);
-      pinManager.deallocatePin(oledSpiCs, PinOwner::UM_QuinLEDAnPenta);
-      pinManager.deallocatePin(oledSpiDc, PinOwner::UM_QuinLEDAnPenta);
-      pinManager.deallocatePin(oledSpiRst, PinOwner::UM_QuinLEDAnPenta);
+      PinManager::deallocatePin(oledSpiClk, PinOwner::UM_QuinLEDAnPenta);
+      PinManager::deallocatePin(oledSpiData, PinOwner::UM_QuinLEDAnPenta);
+      PinManager::deallocatePin(oledSpiCs, PinOwner::UM_QuinLEDAnPenta);
+      PinManager::deallocatePin(oledSpiDc, PinOwner::UM_QuinLEDAnPenta);
+      PinManager::deallocatePin(oledSpiRst, PinOwner::UM_QuinLEDAnPenta);
 
       delete oledDisplay;
 
@@ -184,7 +184,7 @@ class QuinLEDAnPentaUsermod : public Usermod
     void initSht30TempHumiditySensor()
     {
       PinManagerPinType pins[2] = { { shtSda, true }, { shtScl, true } };
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::UM_QuinLEDAnPenta)) {
+      if (!PinManager::allocateMultiplePins(pins, 2, PinOwner::UM_QuinLEDAnPenta)) {
         DEBUG_PRINTF("[%s] SHT30 pin allocation failed!\n", _name);
         shtEnabled = shtInitDone = false;
         return;
@@ -212,8 +212,8 @@ class QuinLEDAnPentaUsermod : public Usermod
         sht30TempHumidSensor->reset();
       }
 
-      pinManager.deallocatePin(shtSda, PinOwner::UM_QuinLEDAnPenta);
-      pinManager.deallocatePin(shtScl, PinOwner::UM_QuinLEDAnPenta);
+      PinManager::deallocatePin(shtSda, PinOwner::UM_QuinLEDAnPenta);
+      PinManager::deallocatePin(shtScl, PinOwner::UM_QuinLEDAnPenta);
 
       delete sht30TempHumidSensor;
 

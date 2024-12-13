@@ -7,6 +7,7 @@ This Usermod is designed to read a `BME280` or `BMP280` sensor and output the fo
 - Dew Point (`BME280` only)
 
 Configuration is performed via the Usermod menu.  There are no parameters to set in code!  The following settings can be configured in the Usermod Menu:
+- The i2c address in decimal. Set it to either 118 (0x76, the default) or 119 (0x77).
 - Temperature Decimals (number of decimal places to output)
 - Humidity Decimals
 - Pressure Decimals

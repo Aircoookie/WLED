@@ -75,7 +75,7 @@ class PWMFanUsermod : public Usermod {
     static const char _lock[];
 
     void initTacho(void) {
-      if (tachoPin < 0 || !pinManager.allocatePin(tachoPin, false, PinOwner::UM_Unspecified)){
+      if (tachoPin < 0 || !PinManager::allocatePin(tachoPin, false, PinOwner::UM_Unspecified)){
         tachoPin = -1;
         return;
       }
@@ -88,7 +88,7 @@ class PWMFanUsermod : public Usermod {
     void deinitTacho(void) {
       if (tachoPin < 0) return;
       detachInterrupt(digitalPinToInterrupt(tachoPin));
-      pinManager.deallocatePin(tachoPin, PinOwner::UM_Unspecified);
+      PinManager::deallocatePin(tachoPin, PinOwner::UM_Unspecified);
       tachoPin = -1;
     }
 
@@ -111,7 +111,7 @@ class PWMFanUsermod : public Usermod {
 
     // https://randomnerdtutorials.com/esp32-pwm-arduino-ide/
     void initPWMfan(void) {
-      if (pwmPin < 0 || !pinManager.allocatePin(pwmPin, true, PinOwner::UM_Unspecified)) {
+      if (pwmPin < 0 || !PinManager::allocatePin(pwmPin, true, PinOwner::UM_Unspecified)) {
         enabled = false;
         pwmPin = -1;
         return;
@@ -121,7 +121,7 @@ class PWMFanUsermod : public Usermod {
       analogWriteRange(255);
       analogWriteFreq(WLED_PWM_FREQ);
       #else
-      pwmChannel = pinManager.allocateLedc(1);
+      pwmChannel = PinManager::allocateLedc(1);
       if (pwmChannel == 255) { //no more free LEDC channels
         deinitPWMfan(); return;
       }
@@ -136,9 +136,9 @@ class PWMFanUsermod : public Usermod {
     void deinitPWMfan(void) {
       if (pwmPin < 0) return;
 
-      pinManager.deallocatePin(pwmPin, PinOwner::UM_Unspecified);
+      PinManager::deallocatePin(pwmPin, PinOwner::UM_Unspecified);
       #ifdef ARDUINO_ARCH_ESP32
-      pinManager.deallocateLedc(pwmChannel, 1);
+      PinManager::deallocateLedc(pwmChannel, 1);
       #endif
       pwmPin = -1;
     }
@@ -188,12 +188,12 @@ class PWMFanUsermod : public Usermod {
 
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
-    void setup() {
+    void setup() override {
       #ifdef USERMOD_DALLASTEMPERATURE   
       // This Usermod requires Temperature usermod
-      tempUM = (UsermodTemperature*) usermods.lookup(USERMOD_ID_TEMPERATURE);
+      tempUM = (UsermodTemperature*) UsermodManager::lookup(USERMOD_ID_TEMPERATURE);
       #elif defined(USERMOD_SHT)
-      tempUM = (ShtUsermod*) usermods.lookup(USERMOD_ID_SHT);
+      tempUM = (ShtUsermod*) UsermodManager::lookup(USERMOD_ID_SHT);
       #endif
       initTacho();
       initPWMfan();
@@ -203,12 +203,12 @@ class PWMFanUsermod : public Usermod {
 
     // gets called every time WiFi is (re-)connected. Initialize own network
     // interfaces here
-    void connected() {}
+    void connected() override {}
 
     /*
      * Da loop.
      */
-    void loop() {
+    void loop() override {
       if (!enabled || strip.isUpdating()) return;
 
       unsigned long now = millis();
@@ -223,7 +223,7 @@ class PWMFanUsermod : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    void addToJsonInfo(JsonObject& root) {
+    void addToJsonInfo(JsonObject& root) override {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
@@ -272,7 +272,7 @@ class PWMFanUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root) {
+    void readFromJsonState(JsonObject& root) override {
       if (!initDone) return;  // prevent crash on boot applyPreset()
       JsonObject usermod = root[FPSTR(_name)];
       if (!usermod.isNull()) {
@@ -305,7 +305,7 @@ class PWMFanUsermod : public Usermod {
      * 
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
-    void addToConfig(JsonObject& root) {
+    void addToConfig(JsonObject& root) override {
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
       top[FPSTR(_enabled)]        = enabled;
       top[FPSTR(_pwmPin)]         = pwmPin;
@@ -328,7 +328,7 @@ class PWMFanUsermod : public Usermod {
      * 
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
-    bool readFromConfig(JsonObject& root) {
+    bool readFromConfig(JsonObject& root) override {
       int8_t newTachoPin = tachoPin;
       int8_t newPwmPin   = pwmPin;
 
@@ -380,7 +380,7 @@ class PWMFanUsermod : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    uint16_t getId() {
+    uint16_t getId() override {
         return USERMOD_ID_PWM_FAN;
     }
 };

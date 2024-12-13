@@ -174,9 +174,9 @@ class BobLightUsermod : public Usermod {
 
       #if WLED_DEBUG
       DEBUG_PRINTLN(F("Fill light data: "));
-      DEBUG_PRINTF(" lights %d\n", numLights);
+      DEBUG_PRINTF_P(PSTR(" lights %d\n"), numLights);
       for (int i=0; i<numLights; i++) {
-        DEBUG_PRINTF(" light %s scan %2.1f %2.1f %2.1f %2.1f\n", lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
+        DEBUG_PRINTF_P(PSTR(" light %s scan %2.1f %2.1f %2.1f %2.1f\n"), lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
       }
       #endif
     }
@@ -187,11 +187,11 @@ class BobLightUsermod : public Usermod {
 
   public:
 
-    void setup() {
+    void setup() override {
       uint16_t totalLights = bottom + left + top + right;
       if ( totalLights > strip.getLengthTotal() ) {
         DEBUG_PRINTLN(F("BobLight: Too many lights."));
-        DEBUG_PRINTF("%d+%d+%d+%d>%d\n", bottom, left, top, right, strip.getLengthTotal());
+        DEBUG_PRINTF_P(PSTR("%d+%d+%d+%d>%d\n"), bottom, left, top, right, strip.getLengthTotal());
         totalLights = strip.getLengthTotal();
         top = bottom = (uint16_t) roundf((float)totalLights * 16.0f / 50.0f);
         left = right = (uint16_t) roundf((float)totalLights *  9.0f / 50.0f);
@@ -202,14 +202,14 @@ class BobLightUsermod : public Usermod {
       initDone = true;
     }
 
-    void connected() {
+    void connected() override {
       // we can only start server when WiFi is connected
       if (!bob) bob = new WiFiServer(bobPort, 1);
       bob->begin();
       bob->setNoDelay(true);
     }
 
-    void loop() {
+    void loop() override {
       if (!enabled || strip.isUpdating()) return;
       if (millis() - lastTime > 10) {
         lastTime = millis();
@@ -225,7 +225,7 @@ class BobLightUsermod : public Usermod {
      * topic only contains stripped topic (part after /wled/MAC)
      * topic should look like: /swipe with amessage of [up|down]
      */
-    bool onMqttMessage(char* topic, char* payload) {
+    bool onMqttMessage(char* topic, char* payload) override {
       //if (strlen(topic) == 6 && strncmp_P(topic, PSTR("/subtopic"), 6) == 0) {
       //  String action = payload;
       //  if (action == "on") {
@@ -242,7 +242,7 @@ class BobLightUsermod : public Usermod {
     /**
      * subscribe to MQTT topic for controlling usermod
      */
-    void onMqttConnect(bool sessionPresent) {
+    void onMqttConnect(bool sessionPresent) override {
       //char subuf[64];
       //if (mqttDeviceTopic[0] != 0) {
       //  strcpy(subuf, mqttDeviceTopic);
@@ -252,7 +252,7 @@ class BobLightUsermod : public Usermod {
     }
 #endif
 
-    void addToJsonInfo(JsonObject& root)
+    void addToJsonInfo(JsonObject& root) override
     {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
@@ -273,7 +273,7 @@ class BobLightUsermod : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject& root)
+    void addToJsonState(JsonObject& root) override
     {
     }
 
@@ -281,7 +281,7 @@ class BobLightUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root) {
+    void readFromJsonState(JsonObject& root) override {
       if (!initDone) return;  // prevent crash on boot applyPreset()
       bool en = enabled;
       JsonObject um = root[FPSTR(_name)];
@@ -304,21 +304,21 @@ class BobLightUsermod : public Usermod {
       }
     }
 
-    void appendConfigData() {
-      //oappend(SET_F("dd=addDropdown('usermod','selectfield');"));
-      //oappend(SET_F("addOption(dd,'1st value',0);"));
-      //oappend(SET_F("addOption(dd,'2nd value',1);"));
-      oappend(SET_F("addInfo('BobLight:top',1,'LEDs');"));                // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('BobLight:bottom',1,'LEDs');"));             // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('BobLight:left',1,'LEDs');"));               // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('BobLight:right',1,'LEDs');"));              // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('BobLight:pct',1,'Depth of scan [%]');"));   // 0 is field type, 1 is actual field
+    void appendConfigData() override {
+      //oappend(F("dd=addDropdown('usermod','selectfield');"));
+      //oappend(F("addOption(dd,'1st value',0);"));
+      //oappend(F("addOption(dd,'2nd value',1);"));
+      oappend(F("addInfo('BobLight:top',1,'LEDs');"));                // 0 is field type, 1 is actual field
+      oappend(F("addInfo('BobLight:bottom',1,'LEDs');"));             // 0 is field type, 1 is actual field
+      oappend(F("addInfo('BobLight:left',1,'LEDs');"));               // 0 is field type, 1 is actual field
+      oappend(F("addInfo('BobLight:right',1,'LEDs');"));              // 0 is field type, 1 is actual field
+      oappend(F("addInfo('BobLight:pct',1,'Depth of scan [%]');"));   // 0 is field type, 1 is actual field
     }
 
-    void addToConfig(JsonObject& root) {
+    void addToConfig(JsonObject& root) override {
       JsonObject umData = root.createNestedObject(FPSTR(_name));
       umData[FPSTR(_enabled)] = enabled;
-      umData[F("port")]       = bobPort;
+      umData[  "port" ]       = bobPort;
       umData[F("top")]        = top;
       umData[F("bottom")]     = bottom;
       umData[F("left")]       = left;
@@ -326,7 +326,7 @@ class BobLightUsermod : public Usermod {
       umData[F("pct")]        = pct;
     }
 
-    bool readFromConfig(JsonObject& root) {
+    bool readFromConfig(JsonObject& root) override {
       JsonObject umData = root[FPSTR(_name)];
       bool configComplete = !umData.isNull();
 
@@ -334,7 +334,7 @@ class BobLightUsermod : public Usermod {
       configComplete &= getJsonValue(umData[FPSTR(_enabled)], en);
       enable(en);
 
-      configComplete &= getJsonValue(umData[F("port")],   bobPort);
+      configComplete &= getJsonValue(umData[  "port" ],   bobPort);
       configComplete &= getJsonValue(umData[F("bottom")], bottom,    16);
       configComplete &= getJsonValue(umData[F("top")],    top,       16);
       configComplete &= getJsonValue(umData[F("left")],   left,       9);
@@ -355,11 +355,11 @@ class BobLightUsermod : public Usermod {
      * Use this to blank out some LEDs or set them to a different color regardless of the set effect mode.
      * Commonly used for custom clocks (Cronixie, 7 segment)
      */
-    void handleOverlayDraw() {
+    void handleOverlayDraw() override {
       //strip.setPixelColor(0, RGBW32(0,0,0,0)) // set the first pixel to black
     }
 
-    uint16_t getId() { return USERMOD_ID_BOBLIGHT; }
+    uint16_t getId() override { return USERMOD_ID_BOBLIGHT; }
 
 };
 
@@ -392,7 +392,7 @@ void BobLightUsermod::pollBob() {
     //get data from the client
     while (bobClient.available()) {
       String input = bobClient.readStringUntil('\n');
-      // DEBUG_PRINT("Client: "); DEBUG_PRINTLN(input); // may be to stressful on Serial
+      // DEBUG_PRINT(F("Client: ")); DEBUG_PRINTLN(input); // may be to stressful on Serial
       if (input.startsWith(F("hello"))) {
         DEBUG_PRINTLN(F("hello"));
         bobClient.print(F("hello\n"));
@@ -445,7 +445,7 @@ void BobLightUsermod::pollBob() {
           //strip.setPixelColor(light_id, RGBW32(red, green, blue, 0));
           setRealtimePixel(light_id, red, green, blue, 0);
         } // currently no support for interpolation or speed, we just ignore this
-      } else if (input.startsWith(F("sync"))) {
+      } else if (input.startsWith("sync")) {
         BobSync();
       } else {
         // Client sent gibberish

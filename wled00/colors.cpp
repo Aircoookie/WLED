@@ -8,10 +8,10 @@
  * color blend function
  */
 uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
-  if(blend == 0)   return color1;
-  uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
-  if(blend == blendmax) return color2;
-  uint8_t shift = b16 ? 16 : 8;
+  if (blend == 0) return color1;
+  unsigned blendmax = b16 ? 0xFFFF : 0xFF;
+  if (blend == blendmax) return color2;
+  unsigned shift = b16 ? 16 : 8;
 
   uint32_t w1 = W(color1);
   uint32_t r1 = R(color1);
@@ -37,6 +37,8 @@ uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16)
  */
 uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
 {
+  if (c1 == BLACK) return c2;
+  if (c2 == BLACK) return c1;
   if (fast) {
     uint8_t r = R(c1);
     uint8_t g = G(c1);
@@ -52,7 +54,7 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
     uint32_t g = G(c1) + G(c2);
     uint32_t b = B(c1) + B(c2);
     uint32_t w = W(c1) + W(c2);
-    uint16_t max = r;
+    unsigned max = r;
     if (g > max) max = g;
     if (b > max) max = b;
     if (w > max) max = w;
@@ -65,24 +67,28 @@ uint32_t color_add(uint32_t c1, uint32_t c2, bool fast)
  * fades color toward black
  * if using "video" method the resulting color will never become black unless it is already black
  */
+
 uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 {
-  uint8_t r = R(c1);
-  uint8_t g = G(c1);
-  uint8_t b = B(c1);
-  uint8_t w = W(c1);
+  if (c1 == BLACK || amount + video == 0) return BLACK;
+  uint32_t scaledcolor; // color order is: W R G B from MSB to LSB
+  uint32_t r = R(c1);
+  uint32_t g = G(c1);
+  uint32_t b = B(c1);
+  uint32_t w = W(c1);
+  uint32_t scale = amount; // 32bit for faster calculation
   if (video) {
-    r = scale8_video(r, amount);
-    g = scale8_video(g, amount);
-    b = scale8_video(b, amount);
-    w = scale8_video(w, amount);
+    scaledcolor  = (((r * scale) >> 8) + ((r && scale) ? 1 : 0)) << 16;
+    scaledcolor |= (((g * scale) >> 8) + ((g && scale) ? 1 : 0)) << 8;
+    scaledcolor |=  ((b * scale) >> 8) + ((b && scale) ? 1 : 0);
+    scaledcolor |= (((w * scale) >> 8) + ((w && scale) ? 1 : 0)) << 24;
   } else {
-    r = scale8(r, amount);
-    g = scale8(g, amount);
-    b = scale8(b, amount);
-    w = scale8(w, amount);
+    scaledcolor  = ((r * scale) >> 8) << 16;
+    scaledcolor |= ((g * scale) >> 8) << 8;
+    scaledcolor |=  (b * scale) >> 8;
+    scaledcolor |= ((w * scale) >> 8) << 24;
   }
-  return RGBW32(r, g, b, w);
+  return scaledcolor;
 }
 
 void setRandomColor(byte* rgb)
@@ -91,15 +97,124 @@ void setRandomColor(byte* rgb)
   colorHStoRGB(lastRandomIndex*256,255,rgb);
 }
 
+/*
+ * generates a random palette based on harmonic color theory
+ * takes a base palette as the input, it will choose one color of the base palette and keep it
+ */
+CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette)
+{
+  CHSV palettecolors[4]; //array of colors for the new palette
+  uint8_t keepcolorposition = random8(4); //color position of current random palette to keep
+  palettecolors[keepcolorposition] = rgb2hsv_approximate(basepalette.entries[keepcolorposition*5]); //read one of the base colors of the current palette
+  palettecolors[keepcolorposition].hue += random8(10)-5; // +/- 5 randomness of base color
+  //generate 4 saturation and brightness value numbers
+  //only one saturation is allowed to be below 200 creating mostly vibrant colors
+  //only one brightness value number is allowed below 200, creating mostly bright palettes
+
+  for (int i = 0; i < 3; i++) { //generate three high values
+    palettecolors[i].saturation = random8(200,255);
+    palettecolors[i].value = random8(220,255);
+  }
+  //allow one to be lower
+  palettecolors[3].saturation = random8(20,255);
+  palettecolors[3].value = random8(80,255);
+
+  //shuffle the arrays
+  for (int i = 3; i > 0; i--) {
+    std::swap(palettecolors[i].saturation, palettecolors[random8(i + 1)].saturation);
+    std::swap(palettecolors[i].value, palettecolors[random8(i + 1)].value);
+  }
+
+  //now generate three new hues based off of the hue of the chosen current color
+  uint8_t basehue = palettecolors[keepcolorposition].hue;
+  uint8_t harmonics[3]; //hues that are harmonic but still a little random
+  uint8_t type = random8(5); //choose a harmony type
+
+  switch (type) {
+    case 0: // analogous
+      harmonics[0] = basehue + random8(30, 50);
+      harmonics[1] = basehue + random8(10, 30);
+      harmonics[2] = basehue - random8(10, 30);
+      break;
+
+    case 1: // triadic
+      harmonics[0] = basehue + 113 + random8(15);
+      harmonics[1] = basehue + 233 + random8(15);
+      harmonics[2] = basehue -   7 + random8(15);
+      break;
+
+    case 2: // split-complementary
+      harmonics[0] = basehue + 145 + random8(10);
+      harmonics[1] = basehue + 205 + random8(10);
+      harmonics[2] = basehue -   5 + random8(10);
+      break;
+    
+    case 3: // square
+      harmonics[0] = basehue +  85 + random8(10);
+      harmonics[1] = basehue + 175 + random8(10);
+      harmonics[2] = basehue + 265 + random8(10);
+     break;
+
+    case 4: // tetradic
+      harmonics[0] = basehue +  80 + random8(20);
+      harmonics[1] = basehue + 170 + random8(20);
+      harmonics[2] = basehue -  15 + random8(30);
+     break;
+  }
+
+  if (random8() < 128) {
+    //50:50 chance of shuffling hues or keep the color order
+    for (int i = 2; i > 0; i--) {
+      std::swap(harmonics[i], harmonics[random8(i + 1)]);
+    }
+  }
+
+  //now set the hues
+  int j = 0;
+  for (int i = 0; i < 4; i++) {
+    if (i==keepcolorposition) continue; //skip the base color
+    palettecolors[i].hue = harmonics[j];
+    j++;
+  }
+
+  bool makepastelpalette = false;
+  if (random8() < 25) { //~10% chance of desaturated 'pastel' colors
+    makepastelpalette = true;
+  }
+
+  //apply saturation & gamma correction
+  CRGB RGBpalettecolors[4];
+  for (int i = 0; i < 4; i++) {
+    if (makepastelpalette && palettecolors[i].saturation > 180) { 
+      palettecolors[i].saturation -= 160; //desaturate all four colors
+    }    
+    RGBpalettecolors[i] = (CRGB)palettecolors[i]; //convert to RGB
+    RGBpalettecolors[i] = gamma32(((uint32_t)RGBpalettecolors[i]) & 0x00FFFFFFU); //strip alpha from CRGB
+  }
+
+  return CRGBPalette16(RGBpalettecolors[0],
+                       RGBpalettecolors[1],
+                       RGBpalettecolors[2],
+                       RGBpalettecolors[3]);
+}
+
+CRGBPalette16 generateRandomPalette()  //generate fully random palette
+{
+  return CRGBPalette16(CHSV(random8(), random8(160, 255), random8(128, 255)),
+                       CHSV(random8(), random8(160, 255), random8(128, 255)),
+                       CHSV(random8(), random8(160, 255), random8(128, 255)),
+                       CHSV(random8(), random8(160, 255), random8(128, 255)));
+}
+
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 {
-  float h = ((float)hue)/65535.0f;
+  float h = ((float)hue)/10922.5f; // hue*6/65535
   float s = ((float)sat)/255.0f;
-  int   i = floorf(h*6);
-  float f = h * 6.0f - i;
+  int   i = int(h);
+  float f = h - i;
   int   p = int(255.0f * (1.0f-s));
-  int   q = int(255.0f * (1.0f-f*s));
-  int   t = int(255.0f * (1.0f-(1.0f-f)*s));
+  int   q = int(255.0f * (1.0f-s*f));
+  int   t = int(255.0f * (1.0f-s*(1.0f-f)));
   p = constrain(p, 0, 255);
   q = constrain(q, 0, 255);
   t = constrain(t, 0, 255);
@@ -269,13 +384,13 @@ bool colorFromHexString(byte* rgb, const char* in) {
   return true;
 }
 
-float minf (float v, float w)
+static inline float minf(float v, float w)
 {
   if (w > v) return v;
   return w;
 }
 
-float maxf (float v, float w)
+static inline float maxf(float v, float w)
 {
   if (w > v) return w;
   return v;
@@ -364,14 +479,14 @@ void NeoGammaWLEDMethod::calcGammaTable(float gamma)
   }
 }
 
-uint8_t NeoGammaWLEDMethod::Correct(uint8_t value)
+uint8_t IRAM_ATTR_YN NeoGammaWLEDMethod::Correct(uint8_t value)
 {
   if (!gammaCorrectCol) return value;
   return gammaT[value];
 }
 
 // used for color gamma correction
-uint32_t NeoGammaWLEDMethod::Correct32(uint32_t color)
+uint32_t IRAM_ATTR_YN NeoGammaWLEDMethod::Correct32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;
   uint8_t w = W(color);

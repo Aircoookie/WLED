@@ -2,6 +2,8 @@
 
 #include "wled.h"
 
+#define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+
 #ifndef MULTI_RELAY_MAX_RELAYS
   #define MULTI_RELAY_MAX_RELAYS 4
 #else
@@ -17,6 +19,22 @@
   #define MULTI_RELAY_ENABLED false
 #else
   #define MULTI_RELAY_ENABLED true
+#endif
+
+#ifndef MULTI_RELAY_HA_DISCOVERY
+  #define MULTI_RELAY_HA_DISCOVERY false
+#endif
+
+#ifndef MULTI_RELAY_DELAYS
+  #define MULTI_RELAY_DELAYS 0
+#endif
+
+#ifndef MULTI_RELAY_EXTERNALS
+  #define MULTI_RELAY_EXTERNALS false
+#endif
+
+#ifndef MULTI_RELAY_INVERTS
+  #define MULTI_RELAY_INVERTS false
 #endif
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
@@ -86,6 +104,9 @@ class MultiRelay : public Usermod {
     static const char _HAautodiscovery[];
     static const char _pcf8574[];
     static const char _pcfAddress[];
+    static const char _switch[];
+    static const char _toggle[];
+    static const char _Command[];
 
     void handleOffTimer();
     void InitHtmlAPIHandle();
@@ -125,7 +146,7 @@ class MultiRelay : public Usermod {
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
-    inline uint16_t getId() { return USERMOD_ID_MULTI_RELAY; }
+    inline uint16_t getId() override { return USERMOD_ID_MULTI_RELAY; }
 
     /**
      * switch relay on/off
@@ -143,22 +164,22 @@ class MultiRelay : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup();
+    void setup() override;
 
     /**
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    inline void connected() { InitHtmlAPIHandle(); }
+    inline void connected() override { InitHtmlAPIHandle(); }
 
     /**
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
-    void loop();
+    void loop() override;
 
 #ifndef WLED_DISABLE_MQTT
-    bool onMqttMessage(char* topic, char* payload);
-    void onMqttConnect(bool sessionPresent);
+    bool onMqttMessage(char* topic, char* payload) override;
+    void onMqttConnect(bool sessionPresent) override;
 #endif
 
     /**
@@ -166,31 +187,31 @@ class MultiRelay : public Usermod {
      * will prevent button working in a default way.
      * Replicating button.cpp
      */
-    bool handleButton(uint8_t b);
+    bool handleButton(uint8_t b) override;
 
     /**
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      */
-    void addToJsonInfo(JsonObject &root);
+    void addToJsonInfo(JsonObject &root) override;
 
     /**
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject &root);
+    void addToJsonState(JsonObject &root) override;
 
     /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject &root);
+    void readFromJsonState(JsonObject &root) override;
 
     /**
      * provide the changeable values
      */
-    void addToConfig(JsonObject &root);
+    void addToConfig(JsonObject &root) override;
 
-    void appendConfigData();
+    void appendConfigData() override;
 
     /**
      * restore the changeable values
@@ -198,7 +219,7 @@ class MultiRelay : public Usermod {
      * 
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
-    bool readFromConfig(JsonObject &root);
+    bool readFromConfig(JsonObject &root) override;
 };
 
 
@@ -243,8 +264,8 @@ void MultiRelay::handleOffTimer() {
 void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsyncWebServer
   DEBUG_PRINTLN(F("Relays: Initialize HTML API"));
 
-  server.on("/relays", HTTP_GET, [this](AsyncWebServerRequest *request) {
-    DEBUG_PRINTLN("Relays: HTML API");
+  server.on(F("/relays"), HTTP_GET, [this](AsyncWebServerRequest *request) {
+    DEBUG_PRINTLN(F("Relays: HTML API"));
     String janswer;
     String error = "";
     //int params = request->params();
@@ -253,9 +274,9 @@ void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsync
 
     if (getActiveRelayCount()) {
       // Commands
-      if(request->hasParam("switch")) {
+      if (request->hasParam(FPSTR(_switch))) {
         /**** Switch ****/
-        AsyncWebParameter* p = request->getParam("switch");
+        AsyncWebParameter* p = request->getParam(FPSTR(_switch));
         // Get Values
         for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           int value = getValue(p->value(), ',', i);
@@ -266,9 +287,9 @@ void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsync
             if (_relay[i].external) switchRelay(i, (bool)value);
           }
         }
-      } else if(request->hasParam("toggle")) {
+      } else if (request->hasParam(FPSTR(_toggle))) {
         /**** Toggle ****/
-        AsyncWebParameter* p = request->getParam("toggle");
+        AsyncWebParameter* p = request->getParam(FPSTR(_toggle));
         // Get Values
         for (int i=0;i<MULTI_RELAY_MAX_RELAYS;i++) {
           int value = getValue(p->value(), ',', i);
@@ -296,7 +317,7 @@ void MultiRelay::InitHtmlAPIHandle() {  // https://github.com/me-no-dev/ESPAsync
     janswer += error;
     janswer += F("\",");
     janswer += F("\"SW Version\":\"");
-    janswer += String(GEOGABVERSION);
+    janswer += String(F(GEOGABVERSION));
     janswer += F("\"}");
     request->send(200, "application/json", janswer);
   });
@@ -343,18 +364,22 @@ MultiRelay::MultiRelay()
   , initDone(false)
   , usePcf8574(USE_PCF8574)
   , addrPcf8574(PCF8574_ADDRESS)
-  , HAautodiscovery(false)
+  , HAautodiscovery(MULTI_RELAY_HA_DISCOVERY)
   , periodicBroadcastSec(60)
   , lastBroadcast(0)
 {
   const int8_t defPins[] = {MULTI_RELAY_PINS};
+  const int8_t relayDelays[] = {MULTI_RELAY_DELAYS};
+  const bool relayExternals[] = {MULTI_RELAY_EXTERNALS};
+  const bool relayInverts[] = {MULTI_RELAY_INVERTS};
+
   for (size_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-    _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;
-    _relay[i].delay    = 0;
-    _relay[i].invert   = false;
+    _relay[i].pin      = i < COUNT_OF(defPins) ? defPins[i] : -1;
+    _relay[i].delay    = i < COUNT_OF(relayDelays) ? relayDelays[i] : 0;
+    _relay[i].invert   = i < COUNT_OF(relayInverts) ? relayInverts[i] : false;
     _relay[i].active   = false;
     _relay[i].state    = false;
-    _relay[i].external = false;
+    _relay[i].external = i < COUNT_OF(relayExternals) ? relayExternals[i] : false;
     _relay[i].button   = -1;
   }
 }
@@ -398,7 +423,7 @@ uint8_t MultiRelay::getActiveRelayCount() {
  * topic should look like: /relay/X/command; where X is relay number, 0 based
  */
 bool MultiRelay::onMqttMessage(char* topic, char* payload) {
-  if (strlen(topic) > 8 && strncmp_P(topic, PSTR("/relay/"), 7) == 0 && strncmp_P(topic+8, PSTR("/command"), 8) == 0) {
+  if (strlen(topic) > 8 && strncmp_P(topic, PSTR("/relay/"), 7) == 0 && strncmp_P(topic+8, _Command, 8) == 0) {
     uint8_t relay = strtoul(topic+7, NULL, 10);
     if (relay<MULTI_RELAY_MAX_RELAYS) {
       String action = payload;
@@ -408,7 +433,7 @@ bool MultiRelay::onMqttMessage(char* topic, char* payload) {
       } else if (action == "off") {
         if (_relay[relay].external) switchRelay(relay, false);
         return true;
-      } else if (action == "toggle") {
+      } else if (action == FPSTR(_toggle)) {
         if (_relay[relay].external) toggleRelay(relay);
         return true;
       }
@@ -448,7 +473,7 @@ void MultiRelay::publishHomeAssistantAutodiscovery() {
 
       sprintf_P(buf, PSTR("%s/relay/%d"), mqttDeviceTopic, i); //max length: 33 + 7 + 3 = 43
       json["~"] = buf;
-      strcat_P(buf, PSTR("/command"));
+      strcat_P(buf, _Command);
       mqtt->subscribe(buf, 0);
 
       json[F("stat_t")]  = "~";
@@ -491,7 +516,7 @@ void MultiRelay::setup() {
       if (!_relay[i].external) _relay[i].state = !offMode;
       state |= (uint8_t)(_relay[i].invert ? !_relay[i].state : _relay[i].state) << pin;
     } else if (_relay[i].pin<100 && _relay[i].pin>=0) {
-      if (pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
+      if (PinManager::allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
         if (!_relay[i].external) _relay[i].state = !offMode;
         switchRelay(i, _relay[i].state);
         _relay[i].active = false;
@@ -642,7 +667,7 @@ void MultiRelay::addToJsonInfo(JsonObject &root) {
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
       if (_relay[i].pin<0 || !_relay[i].external) continue;
       uiDomString = F("Relay "); uiDomString += i;
-      JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
+      infoArr = user.createNestedArray(uiDomString); // timer value
 
       uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
       uiDomString += FPSTR(_name);
@@ -653,8 +678,8 @@ void MultiRelay::addToJsonInfo(JsonObject &root) {
       uiDomString += F(",on:");
       uiDomString += _relay[i].state ? "false" : "true";
       uiDomString += F("}});\">");
-      uiDomString += F("<i class=\"icons");
-      uiDomString += _relay[i].state ? F(" on") : F(" off");
+      uiDomString += F("<i class=\"icons ");
+      uiDomString += _relay[i].state ? "on" : "off";
       uiDomString += F("\">&#xe08f;</i></button>");
       infoArr.add(uiDomString);
     }
@@ -677,11 +702,11 @@ void MultiRelay::addToJsonState(JsonObject &root) {
     if (_relay[i].pin < 0) continue;
     JsonObject relay = rel_arr.createNestedObject();
     relay[FPSTR(_relay_str)] = i;
-    relay[F("state")] = _relay[i].state;
+    relay["state"] = _relay[i].state;
   }
   #else
   multiRelay[FPSTR(_relay_str)] = 0;
-  multiRelay[F("state")] = _relay[0].state;
+  multiRelay["state"] = _relay[0].state;
   #endif
 }
 
@@ -740,10 +765,10 @@ void MultiRelay::addToConfig(JsonObject &root) {
 }
 
 void MultiRelay::appendConfigData() {
-  oappend(SET_F("addInfo('MultiRelay:PCF8574-address',1,'<i>(not hex!)</i>');"));
-  oappend(SET_F("addInfo('MultiRelay:broadcast-sec',1,'(MQTT message)');"));
-  //oappend(SET_F("addInfo('MultiRelay:relay-0:pin',1,'(use -1 for PCF8574)');"));
-  oappend(SET_F("d.extra.push({'MultiRelay':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
+  oappend(F("addInfo('MultiRelay:PCF8574-address',1,'<i>(not hex!)</i>');"));
+  oappend(F("addInfo('MultiRelay:broadcast-sec',1,'(MQTT message)');"));
+  //oappend(F("addInfo('MultiRelay:relay-0:pin',1,'(use -1 for PCF8574)');"));
+  oappend(F("d.extra.push({'MultiRelay':{pin:[['P0',100],['P1',101],['P2',102],['P3',103],['P4',104],['P5',105],['P6',106],['P7',107]]}});"));
 }
 
 /**
@@ -781,13 +806,6 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
     _relay[i].external = top[parName][FPSTR(_external)]   | _relay[i].external;
     _relay[i].delay    = top[parName][FPSTR(_delay_str)]  | _relay[i].delay;
     _relay[i].button   = top[parName][FPSTR(_button)]     | _relay[i].button;
-    // begin backwards compatibility (beta) remove when 0.13 is released
-    parName += '-';
-    _relay[i].pin      = top[parName+"pin"] | _relay[i].pin;
-    _relay[i].invert   = top[parName+FPSTR(_activeHigh)] | _relay[i].invert;
-    _relay[i].external = top[parName+FPSTR(_external)]   | _relay[i].external;
-    _relay[i].delay    = top[parName+FPSTR(_delay_str)]  | _relay[i].delay;
-    // end compatibility
     _relay[i].delay    = min(600,max(0,abs((int)_relay[i].delay))); // bounds checking max 10min
   }
 
@@ -799,7 +817,7 @@ bool MultiRelay::readFromConfig(JsonObject &root) {
     // deallocate all pins 1st
     for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
       if (oldPin[i]>=0 && oldPin[i]<100) {
-        pinManager.deallocatePin(oldPin[i], PinOwner::UM_MultiRelay);
+        PinManager::deallocatePin(oldPin[i], PinOwner::UM_MultiRelay);
       }
     // allocate new pins
     setup();
@@ -821,3 +839,6 @@ const char MultiRelay::_broadcast[]       PROGMEM = "broadcast-sec";
 const char MultiRelay::_HAautodiscovery[] PROGMEM = "HA-autodiscovery";
 const char MultiRelay::_pcf8574[]         PROGMEM = "use-PCF8574";
 const char MultiRelay::_pcfAddress[]      PROGMEM = "PCF8574-address";
+const char MultiRelay::_switch[]          PROGMEM = "switch";
+const char MultiRelay::_toggle[]          PROGMEM = "toggle";
+const char MultiRelay::_Command[]         PROGMEM = "/command";
