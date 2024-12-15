@@ -318,7 +318,7 @@ void Segment::stopTransition() {
 }
 
 // transition progression between 0-65535
-void Segment::updateTransitionProgress() {
+inline void Segment::updateTransitionProgress() {
   _transitionprogress = 0xFFFFU;
   if (isInTransition()) {
     unsigned diff = millis() - _t->_start;
