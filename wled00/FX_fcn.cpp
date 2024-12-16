@@ -75,6 +75,7 @@ CRGBPalette16 Segment::_randomPalette     = generateRandomPalette();  // was CRG
 CRGBPalette16 Segment::_newRandomPalette  = generateRandomPalette();  // was CRGBPalette16(DEFAULT_COLOR);
 uint16_t      Segment::_lastPaletteChange = 0; // perhaps it should be per segment
 uint16_t      Segment::_lastPaletteBlend  = 0; //in millis (lowest 16 bits only)
+uint16_t      Segment::_transitionprogress  = 0xFFFF;
 
 #ifndef WLED_DISABLE_MODE_BLEND
 bool Segment::_modeBlend = false;
@@ -305,12 +306,12 @@ void Segment::stopTransition() {
 }
 
 // transition progression between 0-65535
-uint16_t IRAM_ATTR Segment::progress() const {
+inline void Segment::updateTransitionProgress() {
+  _transitionprogress = 0xFFFFU;
   if (isInTransition()) {
     unsigned diff = millis() - _t->_start;
-    if (_t->_dur > 0 && diff < _t->_dur) return diff * 0xFFFFU / _t->_dur;
+    if (_t->_dur > 0 && diff < _t->_dur) _transitionprogress = diff * 0xFFFFU / _t->_dur;
   }
-  return 0xFFFFU;
 }
 
 #ifndef WLED_DISABLE_MODE_BLEND

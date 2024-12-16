@@ -6,7 +6,7 @@
 	<title>LED Settings</title>
 	<script src="common.js" async type="text/javascript"></script>
 	<script>
-		var laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var oMaxB=1;
 		var customStarts=false,startsDirty=[];
 		function off(n)    { gN(n).value = -1;}
@@ -476,6 +476,8 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]'); // NOTE: see isD2P()
 				disable(sel,`option[data-type^="${'A'.repeat(maxA-analogB+1)}"]`); // NOTE: see isPWM()
 				sel.selectedIndex = sel.querySelector('option:not(:disabled)').index;
+			    // initialize current limiter
+				enLA(d.Sf["LAsel"+s],s);
 			}
 			if (n==-1) {
 				o[--i].remove();--i;
