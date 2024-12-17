@@ -60,7 +60,7 @@ See the [documentation on our official site](https://kno.wled.ge)!
 See [here](https://kno.wled.ge/basics/compatible-hardware)!
 
 ## ✌️ Other
-
+HI there
 Licensed under the EUPL v1.2 license  
 Credits [here](https://kno.wled.ge/about/contributors/)!
 
