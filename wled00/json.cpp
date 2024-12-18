@@ -436,9 +436,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   // HTTP API commands (must be handled before "ps")
   const char* httpwin = root["win"];
   if (httpwin) {
-    String apireq = "win"; apireq += '&'; // reduce flash string usage
-    apireq += httpwin;
-    handleSet(nullptr, apireq, false);    // may set stateChanged
+    handleHttpApi(httpwin, false);    // may set stateChanged
   }
 
   // Applying preset from JSON API has 2 cases: a) "pd" AKA "preset direct" and b) "ps" AKA "preset select"
@@ -449,7 +447,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (!root[F("pd")].isNull() && stateChanged) {
     // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
     currentPreset = root[F("pd")] | currentPreset;
-    if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise presetCycCurr was set in handleSet() [set.cpp]
+    if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise presetCycCurr was set in handleHttpApi() [set.cpp]
     presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
     DEBUG_PRINTF_P(PSTR("Preset direct: %d\n"), currentPreset);
   } else if (!root["ps"].isNull()) {

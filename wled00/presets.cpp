@@ -180,10 +180,7 @@ void handlePresets()
   //HTTP API commands
   const char* httpwin = fdo["win"];
   if (httpwin) {
-    String apireq = "win"; // reduce flash string usage
-    apireq += F("&IN&"); // internal call
-    apireq += httpwin;
-    handleSet(nullptr, apireq, false); // may call applyPreset() via PL=
+    handleHttpApi(httpwin, false); // may call applyPreset() via PL=
     setValuesFromFirstSelectedSeg(); // fills legacy values
     changePreset = true;
   } else {
@@ -208,7 +205,7 @@ void handlePresets()
   updateInterfaces(tmpMode);
 }
 
-//called from handleSet(PS=) [network callback (sObj is empty), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
+//called from handleHttpApi(PS=) [network callback (sObj is empty), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
 void savePreset(byte index, const char* pname, JsonObject sObj)
 {
   if (!saveName) saveName = new char[33];
