@@ -231,6 +231,7 @@ bool getPresetName(byte index, String& name);
 
 //remote.cpp
 void handleRemote(uint8_t *data, size_t len);
+void processESPNowButton();
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
