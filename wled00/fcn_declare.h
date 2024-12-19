@@ -231,7 +231,8 @@ void deletePreset(byte index);
 bool getPresetName(byte index, String& name);
 
 //remote.cpp
-void handleRemote(uint8_t *data, size_t len);
+void handleWiZdata(uint8_t *incomingData, size_t len);
+void handleRemote();
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
