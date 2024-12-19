@@ -150,20 +150,10 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
   //_buffering = bc.doubleBuffer;
   uint16_t lenToCreate = bc.count;
   if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(bc.count); // only needs a third of "RGB" LEDs for NeoPixelBus
-  _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr, _frequencykHz);
+  _busPtr = PolyBus::create(_iType, _pins, lenToCreate + _skip, nr);
   _valid = (_busPtr != nullptr);
   DEBUG_PRINTF_P(PSTR("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u). mA=%d/%d\n"), _valid?"S":"Uns", nr, bc.count, bc.type, _pins[0], is2Pin(bc.type)?_pins[1]:255, _iType, _milliAmpsPerLed, _milliAmpsMax);
 }
-
-//fine tune power estimation constants for your setup
-//you can set it to 0 if the ESP is powered by USB and the LEDs by external
-#ifndef MA_FOR_ESP
-  #ifdef ESP8266
-    #define MA_FOR_ESP         80 //how much mA does the ESP use (Wemos D1 about 80mA)
-  #else
-    #define MA_FOR_ESP        120 //how much mA does the ESP use (ESP32 about 120mA)
-  #endif
-#endif
 
 //DISCLAIMER
 //The following function attemps to calculate the current LED power usage,
@@ -410,9 +400,9 @@ std::vector<LEDType> BusDigital::getLEDTypes() {
   };
 }
 
-void BusDigital::reinit() {
+void BusDigital::begin() {
   if (!_valid) return;
-  PolyBus::begin(_busPtr, _iType, _pins);
+  PolyBus::begin(_busPtr, _iType, _pins, _frequencykHz);
 }
 
 void BusDigital::cleanup() {
@@ -910,7 +900,7 @@ void BusManager::on() {
       if (busses[i]->isDigital() && busses[i]->getPins(pins)) {
         if (pins[0] == LED_BUILTIN || pins[1] == LED_BUILTIN) {
           BusDigital *bus = static_cast<BusDigital*>(busses[i]);
-          bus->reinit();
+          bus->begin();
           break;
         }
       }
@@ -943,7 +933,6 @@ void BusManager::show() {
     busses[i]->show();
     _milliAmpsUsed += busses[i]->getUsedCurrent();
   }
-  if (_milliAmpsUsed) _milliAmpsUsed += MA_FOR_ESP;
 }
 
 void BusManager::setStatusPixel(uint32_t c) {

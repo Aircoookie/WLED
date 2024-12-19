@@ -6,7 +6,7 @@
 	<title>LED Settings</title>
 	<script src="common.js" async type="text/javascript"></script>
 	<script>
-		var laprev=55,maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+		var maxB=1,maxD=1,maxA=1,maxV=0,maxM=4000,maxPB=2048,maxL=1664,maxCO=5; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var oMaxB=1;
 		var customStarts=false,startsDirty=[];
 		function off(n)    { gN(n).value = -1;}
@@ -42,15 +42,14 @@
 			if (loc) d.Sf.action = getURL('/settings/leds');
 		}
 		function bLimits(b,v,p,m,l,o=5,d=2,a=6) {
-			// maxB - max buses (can be changed if using ESP32 parallel I2S)
-			// maxD - max digital channels (can be changed if using ESP32 parallel I2S)
-			// maxA - max analog channels
-			// maxV - min virtual buses
-			// maxPB - max LEDs per bus
-			// maxM - max LED memory
-			// maxL - max LEDs (will serve to determine ESP >1664 == ESP32)
-			// maxCO - max Color Order mappings
-			oMaxB = maxB = b; maxD = d, maxA = a, maxV = v; maxM = m; maxPB = p; maxL = l; maxCO = o;
+			oMaxB = maxB = b; // maxB - max buses (can be changed if using ESP32 parallel I2S)
+			maxD  = d; // maxD - max digital channels (can be changed if using ESP32 parallel I2S)
+			maxA  = a; // maxA - max analog channels
+			maxV  = v; // maxV - min virtual buses
+			maxPB = p; // maxPB - max LEDs per bus
+			maxM  = m; // maxM - max LED memory
+			maxL  = l; // maxL - max LEDs (will serve to determine ESP >1664 == ESP32)
+			maxCO = o; // maxCO - max Color Order mappings
 		}
 		function pinsOK() {
 			var ok = true;
@@ -380,6 +379,11 @@
 			gId('psu').innerHTML = s;
 			gId('psu2').innerHTML = s2;
 			gId("json").style.display = d.Sf.IT.value==8 ? "" : "none";
+
+			// show/hide FPS warning messages
+			gId('fpsNone').style.display = (d.Sf.FR.value == 0) ? 'block':'none';
+			gId('fpsWarn').style.display = (d.Sf.FR.value == 0) || (d.Sf.FR.value >= 80) ? 'block':'none';
+			gId('fpsHigh').style.display = (d.Sf.FR.value >= 80) ? 'block':'none';
 		}
 		function lastEnd(i) {
 			if (i-- < 1) return 0;
@@ -472,6 +476,8 @@ mA/LED: <select name="LAsel${s}" onchange="enLA(this,'${s}');UI();">
 				if (i >= maxB || twopinB >= 1)     disable(sel,'option[data-type="2P"]'); // NOTE: see isD2P()
 				disable(sel,`option[data-type^="${'A'.repeat(maxA-analogB+1)}"]`); // NOTE: see isPWM()
 				sel.selectedIndex = sel.querySelector('option:not(:disabled)').index;
+			    // initialize current limiter
+				enLA(d.Sf["LAsel"+s],s);
 			}
 			if (n==-1) {
 				o[--i].remove();--i;
@@ -870,7 +876,10 @@ Swap: <select id="xw${s}" name="XW${s}">
 			<option value="2">Linear (never wrap)</option>
 			<option value="3">None (not recommended)</option>
 		</select><br>
-		Target refresh rate: <input type="number" class="s" min="1" max="120" name="FR" required> FPS
+		Target refresh rate: <input type="number" class="s" min="0" max="250" name="FR" oninput="UI()" required> FPS
+		<div id="fpsNone" class="warn" style="display: none;">&#9888; Unlimited FPS Mode  is experimental &#9888;<br></div>
+		<div id="fpsHigh" class="warn" style="display: none;">&#9888; High FPS Mode is experimental.<br></div>
+		<div id="fpsWarn" class="warn" style="display: none;">Please <a class="lnk" href="sec#backup">backup</a> WLED configuration and presets first!<br></div>
 		<hr class="sml">
 		<div id="cfg">Config template: <input type="file" name="data2" accept=".json"><button type="button" class="sml" onclick="loadCfg(d.Sf.data2)">Apply</button><br></div>
 		<hr>
