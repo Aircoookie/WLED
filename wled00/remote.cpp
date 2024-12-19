@@ -40,7 +40,7 @@ typedef struct WizMoteMessageStructure {
 
 static uint32_t last_seq = UINT32_MAX;
 static int brightnessBeforeNightMode = NIGHT_MODE_DEACTIVATED;
-static uint8_t ESPNowButton = 0; // set in callback if new button value is received
+static int16_t ESPNowButton = -1; // set in callback if new button value is received
 
 // Pulled from the IR Remote logic but reduced to 10 steps with a constant of 3
 static const byte brightnessSteps[] = {
@@ -214,7 +214,7 @@ void handleWiZdata(uint8_t *incomingData, size_t len) {
 
 // process ESPNow button data (acesses FS, should not be called while update to avoid glitches)
 void handleRemote() {
-  if(ESPNowButton > 0) {
+  if(ESPNowButton >= 0) {
   if (!remoteJson(ESPNowButton))
     switch (ESPNowButton) {
       case WIZMOTE_BUTTON_ON             : setOn();                                         break;
@@ -233,7 +233,7 @@ void handleRemote() {
       default: break;
     }
   }
-  ESPNowButton = 0;
+  ESPNowButton = -1;
 }
 
 #else
