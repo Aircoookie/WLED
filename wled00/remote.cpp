@@ -1,7 +1,7 @@
 #include "wled.h"
 #ifndef WLED_DISABLE_ESPNOW
 
-#define ESPNOW_BUSWAIT_TIMEOUT 30 // timeout in ms to wait for bus to finish updating
+#define ESPNOW_BUSWAIT_TIMEOUT 24 // one frame timeout to wait for bus to finish updating
 
 #define NIGHT_MODE_DEACTIVATED     -1
 #define NIGHT_MODE_BRIGHTNESS      5
@@ -182,7 +182,7 @@ static bool remoteJson(int button)
 }
 
 // Callback function that will be executed when data is received
-void handleRemote(uint8_t *incomingData, size_t len) {
+void handleWiZdata(uint8_t *incomingData, size_t len) {
   message_structure_t *incoming = reinterpret_cast<message_structure_t *>(incomingData);
 
   if (strcmp(last_signal_src, linked_remote) != 0) {
@@ -212,7 +212,8 @@ void handleRemote(uint8_t *incomingData, size_t len) {
   last_seq = cur_seq;
 }
 
-void processESPNowButton() {
+// process ESPNow button data (acesses FS, should not be called while update to avoid glitches)
+void handleRemote() {
   if(ESPNowButton > 0) {
   if (!remoteJson(ESPNowButton))
     switch (ESPNowButton) {
@@ -236,5 +237,5 @@ void processESPNowButton() {
 }
 
 #else
-void handleRemote(uint8_t *incomingData, size_t len) {}
+void handleRemote() {}
 #endif
