@@ -79,6 +79,7 @@ class Bus {
 
     virtual ~Bus() {} //throw the bus under the bus
 
+    virtual void     begin() {};
     virtual void     show() = 0;
     virtual bool     canShow() const                          { return true; }
     virtual void     setStatusPixel(uint32_t c)                {}
@@ -213,7 +214,7 @@ class BusDigital : public Bus {
     uint16_t getLEDCurrent() const override  { return _milliAmpsPerLed; }
     uint16_t getUsedCurrent() const override { return _milliAmpsTotal; }
     uint16_t getMaxCurrent() const override  { return _milliAmpsMax; }
-    void reinit();
+    void begin() override;
     void cleanup();
 
     static std::vector<LEDType> getLEDTypes();
@@ -362,6 +363,16 @@ struct BusConfig {
 };
 
 
+//fine tune power estimation constants for your setup
+//you can set it to 0 if the ESP is powered by USB and the LEDs by external
+#ifndef MA_FOR_ESP
+  #ifdef ESP8266
+    #define MA_FOR_ESP         80 //how much mA does the ESP use (Wemos D1 about 80mA)
+  #else
+    #define MA_FOR_ESP        120 //how much mA does the ESP use (ESP32 about 120mA)
+  #endif
+#endif
+
 class BusManager {
   public:
     BusManager() {};
@@ -369,7 +380,7 @@ class BusManager {
     //utility to get the approx. memory usage of a given BusConfig
     static uint32_t memUsage(BusConfig &bc);
     static uint32_t memUsage(unsigned channels, unsigned count, unsigned buses = 1);
-    static uint16_t currentMilliamps() { return _milliAmpsUsed; }
+    static uint16_t currentMilliamps() { return _milliAmpsUsed + MA_FOR_ESP; }
     static uint16_t ablMilliampsMax()  { return _milliAmpsMax; }
 
     static int add(BusConfig &bc);

@@ -46,6 +46,14 @@
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
 #define FRAMETIME        strip.getFrameTime()
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
+  #define MIN_FRAME_DELAY  2                                              // minimum wait between repaints, to keep other functions like WiFi alive 
+#elif defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+  #define MIN_FRAME_DELAY  3                                              // S2/C3 are slower than normal esp32, and only have one core
+#else
+  #define MIN_FRAME_DELAY  8                                              // 8266 legacy MIN_SHOW_DELAY
+#endif
+#define FPS_UNLIMITED    0
 
 // FPS calculation (can be defined as compile flag for debugging)
 #ifndef FPS_CALC_AVG
@@ -76,8 +84,6 @@
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
   assuming each segment uses the same amount of data. 256 for ESP8266, 640 for ESP32. */
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / strip.getMaxSegments())
-
-#define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
@@ -363,6 +369,7 @@ typedef struct Segment {
     };
     uint8_t startY;  // start Y coodrinate 2D (top); there should be no more than 255 rows
     uint8_t stopY;   // stop Y coordinate 2D (bottom); there should be no more than 255 rows
+    // note: two bytes of padding are added here
     char    *name;
 
     // runtime data
@@ -418,6 +425,7 @@ typedef struct Segment {
     static CRGBPalette16 _newRandomPalette;   // target random palette
     static uint16_t _lastPaletteChange;       // last random palette change time in millis()/1000
     static uint16_t _lastPaletteBlend;        // blend palette according to set Transition Delay in millis()%0xFFFF
+    static uint16_t _transitionprogress;      // current transition progress 0 - 0xFFFF
     #ifndef WLED_DISABLE_MODE_BLEND
     static bool          _modeBlend;          // mode/effect blending semaphore
     #endif
@@ -559,12 +567,13 @@ typedef struct Segment {
     // transition functions
     void     startTransition(uint16_t dur);     // transition has to start before actual segment values change
     void     stopTransition();                  // ends transition mode by destroying transition structure (does nothing if not in transition)
-    inline void handleTransition() { if (progress() == 0xFFFFU) stopTransition(); }
+    inline void handleTransition() { updateTransitionProgress(); if (progress() == 0xFFFFU) stopTransition(); }
     #ifndef WLED_DISABLE_MODE_BLEND
     void     swapSegenv(tmpsegd_t &tmpSegD);    // copies segment data into specifed buffer, if buffer is not a transition buffer, segment data is overwritten from transition buffer
     void     restoreSegenv(tmpsegd_t &tmpSegD); // restores segment data from buffer, if buffer is not transition buffer, changed values are copied to transition buffer
     #endif
-    [[gnu::hot]] uint16_t progress() const;                  // transition progression between 0-65535
+    [[gnu::hot]] void updateTransitionProgress();            // set current progression of transition
+    inline uint16_t progress() const { return _transitionprogress; };  // transition progression between 0-65535
     [[gnu::hot]] uint8_t  currentBri(bool useCct = false) const; // current segment brightness/CCT (blended while in transition)
     uint8_t  currentMode() const;                            // currently active effect/mode (while in transition)
     [[gnu::hot]] uint32_t currentColor(uint8_t slot) const;  // currently active segment color (blended while in transition)
@@ -748,6 +757,7 @@ class WS2812FX {  // 96 bytes
       customMappingTable(nullptr),
       customMappingSize(0),
       _lastShow(0),
+      _lastServiceShow(0),
       _segment_index(0),
       _mainSegment(0)
     {
@@ -846,7 +856,7 @@ class WS2812FX {  // 96 bytes
       getMappedPixelIndex(uint16_t index) const;
 
     inline uint16_t getFrameTime() const    { return _frametime; }        // returns amount of time a frame should take (in ms)
-    inline uint16_t getMinShowDelay() const { return MIN_SHOW_DELAY; }    // returns minimum amount of time strip.service() can be delayed (constant)
+    inline uint16_t getMinShowDelay() const { return MIN_FRAME_DELAY; }   // returns minimum amount of time strip.service() can be delayed (constant)
     inline uint16_t getLength() const       { return _length; }           // returns actual amount of LEDs on a strip (2D matrix may have less LEDs than W*H)
     inline uint16_t getTransition() const   { return _transitionDur; }    // returns currently set transition time (in ms)
 
@@ -958,6 +968,7 @@ class WS2812FX {  // 96 bytes
     uint16_t  customMappingSize;
 
     unsigned long _lastShow;
+    unsigned long _lastServiceShow;
 
     uint8_t _segment_index;
     uint8_t _mainSegment;
