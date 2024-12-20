@@ -2335,7 +2335,7 @@ uint16_t mode_colortwinkle() {
           unsigned index = i >> 3;
           unsigned  bitNum = i & 0x07;
           bitWrite(SEGENV.data[index], bitNum, true);
-          SEGMENT.setPixelColor(i, ColorFromPalette(SEGPALETTE, random8(), 64, NOBLEND));
+          SEGMENT.setPixelColor(i, ColorFromPalette(SEGPALETTE, hw_random8(), 64, NOBLEND));
           break; //only spawn 1 new pixel per frame per 50 LEDs
         }
       }
@@ -2750,10 +2750,10 @@ uint16_t mode_halloween_eyes()
       // - select a duration
       // - immediately switch to eyes on state.
 
-      data.startPos = random16(0, maxWidth - eyeLength - 1);
-      data.color = random8();
+      data.startPos = hw_random16(0, maxWidth - eyeLength - 1);
+      data.color = hw_random8();
       if (strip.isMatrix) SEGMENT.offset = hw_random16(SEG_H-1); // a hack: reuse offset since it is not used in matrices
-      duration = 128u + random16(SEGMENT.intensity*64u);
+      duration = 128u + hw_random16(SEGMENT.intensity*64u);
       data.duration = duration;
       data.state = eyeState::on;
       [[fallthrough]];
