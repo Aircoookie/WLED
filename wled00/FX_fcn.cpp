@@ -426,9 +426,9 @@ void Segment::beginDraw() {
   // adjust gamma for effects
   for (unsigned i = 0; i < NUM_COLORS; i++) {
     #ifndef WLED_DISABLE_MODE_BLEND
-    uint32_t col = isInTransition() ? color_blend(_t->_segT._colorT[i], colors[i], progress(), true) : colors[i];
+    uint32_t col = isInTransition() ? color_blend16(_t->_segT._colorT[i], colors[i], progress()) : colors[i];
     #else
-    uint32_t col = isInTransition() ? color_blend(_t->_colorT[i], colors[i], progress(), true) : colors[i];
+    uint32_t col = isInTransition() ? color_blend16(_t->_colorT[i], colors[i], progress()) : colors[i];
     #endif
     _currentColors[i] = gamma32(col);
   }
