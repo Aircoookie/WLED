@@ -1,5 +1,6 @@
 /*
  * Color palettes for FastLED effects (65-73).
+ * 4 bytes per color: index, red, green, blue
  */
 
 // From ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -844,6 +845,12 @@ const byte candy2_gp[] PROGMEM = {
   211,  39, 33, 34,
   255,   1,  1,  1};
 
+const byte trafficlight_gp[] PROGMEM = {
+  0, 0, 0, 0,       //black
+  85, 0, 255, 0,    //green
+  170, 255, 255, 0, //yellow
+  255, 255, 0, 0};  //red
+
 // array of fastled palettes (palette 6 - 12)
 const TProgmemRGBPalette16 *const fastledPalettes[] PROGMEM = {
   &PartyColors_p,               //06-00 Party
@@ -917,7 +924,8 @@ const byte* const gGradientPalettes[] PROGMEM = {
   blink_red_gp,                 //67-54 Blink Red
   red_shift_gp,                 //68-55 Red Shift
   red_tide_gp,                  //69-56 Red Tide
-  candy2_gp                     //70-57 Candy2
+  candy2_gp,                    //70-57 Candy2
+  trafficlight_gp               //71-58 Traffic Light
 };
 
 #endif
