@@ -845,11 +845,22 @@ const byte candy2_gp[] PROGMEM = {
   211,  39, 33, 34,
   255,   1,  1,  1};
 
-  const byte trafficlight_gp[] PROGMEM = {
-    0, 0, 0, 0,       //black
-    85, 0, 255, 0,    //green
-    170, 255, 255, 0, //yellow
-    255, 255, 0, 0};  //red
+const byte trafficlight_gp[] PROGMEM = {
+  0, 0, 0, 0,       //black
+  85, 0, 255, 0,    //green
+  170, 255, 255, 0, //yellow
+  255, 255, 0, 0};  //red
+
+// array of fastled palettes (palette 6 - 12)
+const TProgmemRGBPalette16 *const fastledPalettes[] PROGMEM = {
+  &PartyColors_p,               //06-00 Party
+  &CloudColors_p,               //07-01 Cloud
+  &LavaColors_p,                //08-02 Lava
+  &OceanColors_p,               //09-03 Ocean
+  &ForestColors_p,              //10-04 Forest
+  &RainbowColors_p,             //11-05 Rainbow
+  &RainbowStripeColors_p        //12-06 Rainbow Bands
+};
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
