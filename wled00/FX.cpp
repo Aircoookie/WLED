@@ -101,13 +101,15 @@ uint16_t blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
 
   SEGENV.step = it; //save previous iteration
 
-  uint32_t color = on ? color1 : color2;
-  if (color == color1 && do_palette)
-  {
-    for (int i = 0; i < SEGLEN; i++) {
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-    }
-  } else SEGMENT.fill(color);
+  if (on || !SEGMENT.check2) { // overlay mode
+    uint32_t color = on ? color1 : color2;
+    if (color == color1 && do_palette)
+    {
+      for (int i = 0; i < SEGLEN; i++) {
+        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+      }
+    } else SEGMENT.fill(color);
+  }
 
   return FRAMETIME;
 }
@@ -119,7 +121,7 @@ uint16_t blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
 uint16_t mode_blink(void) {
   return blink(SEGCOLOR(0), SEGCOLOR(1), false, true);
 }
-static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle;!,!;!;01";
+static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle,,,,,Overlay;!,!;!;01";
 
 
 /*
@@ -128,7 +130,7 @@ static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle;!,!;!;01";
 uint16_t mode_blink_rainbow(void) {
   return blink(SEGMENT.color_wheel(SEGENV.call & 0xFF), SEGCOLOR(1), false, false);
 }
-static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequency,Blink duration;!,!;!;01";
+static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequency,Blink duration,,,,,Overlay;!,!;!;01";
 
 
 /*
@@ -137,7 +139,7 @@ static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequen
 uint16_t mode_strobe(void) {
   return blink(SEGCOLOR(0), SEGCOLOR(1), true, true);
 }
-static const char _data_FX_MODE_STROBE[] PROGMEM = "Strobe@!;!,!;!;01";
+static const char _data_FX_MODE_STROBE[] PROGMEM = "Strobe@!,,,,,,Overlay;!,!;!;01";
 
 
 /*
@@ -146,7 +148,7 @@ static const char _data_FX_MODE_STROBE[] PROGMEM = "Strobe@!;!,!;!;01";
 uint16_t mode_strobe_rainbow(void) {
   return blink(SEGMENT.color_wheel(SEGENV.call & 0xFF), SEGCOLOR(1), true, false);
 }
-static const char _data_FX_MODE_STROBE_RAINBOW[] PROGMEM = "Strobe Rainbow@!;,!;!;01";
+static const char _data_FX_MODE_STROBE_RAINBOW[] PROGMEM = "Strobe Rainbow@!,,,,,,Overlay;,!;!;01";
 
 
 /*
