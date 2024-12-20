@@ -50,7 +50,7 @@ public:
 #else                                    // ESP32 ESP32S3 and ESP32C3
     temperature = roundf(temperatureRead() * 10) / 10;
 #endif
-
+ if(presetToActivate != 0){
     // Check if temperature has exceeded the activation threshold
     if (temperature >= activationThreshold) {
       // Update the state flag if not already set
@@ -58,7 +58,7 @@ public:
         isAboveThreshold = true;
         }
       // Check if a 'high temperature' preset is configured and it's not already active
-      if (presetToActivate != 0 && currentPreset != presetToActivate) {
+      if (currentPreset != presetToActivate) {
         // If a playlist is active, store it for reactivation later
         if (currentPlaylist > 0) {
           previousPlaylist = currentPlaylist;
@@ -101,6 +101,7 @@ public:
           }
         }
       }
+ }
 
 #ifndef WLED_DISABLE_MQTT
     if (WLED_MQTT_CONNECTED)
