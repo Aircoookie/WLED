@@ -14,7 +14,7 @@ int getNumVal(const String* req, uint16_t pos)
 void parseNumber(const char* str, byte* val, byte minv, byte maxv)
 {
   if (str == nullptr || str[0] == '\0') return;
-  if (str[0] == 'r') {*val = random8(minv,maxv?maxv:255); return;} // maxv for random cannot be 0
+  if (str[0] == 'r') {*val = hw_random8(minv,maxv?maxv:255); return;} // maxv for random cannot be 0
   bool wrap = false;
   if (str[0] == 'w' && strlen(str) > 1) {str++; wrap = true;}
   if (str[0] == '~') {
@@ -52,7 +52,7 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
   *val = atoi(str);
 }
 
-
+//getVal supports inc/decrementing and random ("X~Y(r|~[w][-][Z])" form)
 bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
   if (elem.is<int>()) {
 		if (elem < 0) return false; //ignore e.g. {"ps":-1}
@@ -60,8 +60,12 @@ bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
     return true;
   } else if (elem.is<const char*>()) {
     const char* str = elem;
-    size_t len = strnlen(str, 12);
-    if (len == 0 || len > 10) return false;
+    size_t len = strnlen(str, 14);
+    if (len == 0 || len > 12) return false;
+    // fix for #3605 & #4346
+    // ignore vmin and vmax and use as specified in API
+    if (len > 3 && (strchr(str,'r') || strchr(str,'~') != strrchr(str,'~'))) vmax = vmin = 0; // we have "X~Y(r|~[w][-][Z])" form
+    // end fix
     parseNumber(str, val, vmin, vmax);
     return true;
   }
@@ -372,6 +376,39 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
   return crc;
 }
 
+// fastled beatsin: 1:1 replacements to remove the use of fastled sin16()
+// Generates a 16-bit sine wave at a given BPM that oscillates within a given range. see fastled for details.
+uint16_t beatsin88_t(accum88 beats_per_minute_88, uint16_t lowest, uint16_t highest, uint32_t timebase, uint16_t phase_offset)
+{
+    uint16_t beat = beat88( beats_per_minute_88, timebase);
+    uint16_t beatsin (sin16_t( beat + phase_offset) + 32768);
+    uint16_t rangewidth = highest - lowest;
+    uint16_t scaledbeat = scale16( beatsin, rangewidth);
+    uint16_t result = lowest + scaledbeat;
+    return result;
+}
+
+// Generates a 16-bit sine wave at a given BPM that oscillates within a given range. see fastled for details.
+uint16_t beatsin16_t(accum88 beats_per_minute, uint16_t lowest, uint16_t highest, uint32_t timebase, uint16_t phase_offset)
+{
+    uint16_t beat = beat16( beats_per_minute, timebase);
+    uint16_t beatsin = (sin16_t( beat + phase_offset) + 32768);
+    uint16_t rangewidth = highest - lowest;
+    uint16_t scaledbeat = scale16( beatsin, rangewidth);
+    uint16_t result = lowest + scaledbeat;
+    return result;
+}
+
+// Generates an 8-bit sine wave at a given BPM that oscillates within a given range. see fastled for details.
+uint8_t beatsin8_t(accum88 beats_per_minute, uint8_t lowest, uint8_t highest, uint32_t timebase, uint8_t phase_offset)
+{
+    uint8_t beat = beat8( beats_per_minute, timebase);
+    uint8_t beatsin = sin8_t( beat + phase_offset);
+    uint8_t rangewidth = highest - lowest;
+    uint8_t scaledbeat = scale8( beatsin, rangewidth);
+    uint8_t result = lowest + scaledbeat;
+    return result;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Begin simulateSound (to enable audio enhanced effects to display something)
@@ -431,15 +468,15 @@ um_data_t* simulateSound(uint8_t simulationId)
     default:
     case UMS_BeatSin:
       for (int i = 0; i<16; i++)
-        fftResult[i] = beatsin8(120 / (i+1), 0, 255);
-        // fftResult[i] = (beatsin8(120, 0, 255) + (256/16 * i)) % 256;
+        fftResult[i] = beatsin8_t(120 / (i+1), 0, 255);
+        // fftResult[i] = (beatsin8_t(120, 0, 255) + (256/16 * i)) % 256;
         volumeSmth = fftResult[8];
       break;
     case UMS_WeWillRockYou:
       if (ms%2000 < 200) {
-        volumeSmth = random8(255);
+        volumeSmth = hw_random8();
         for (int i = 0; i<5; i++)
-          fftResult[i] = random8(255);
+          fftResult[i] = hw_random8();
       }
       else if (ms%2000 < 400) {
         volumeSmth = 0;
@@ -447,9 +484,9 @@ um_data_t* simulateSound(uint8_t simulationId)
           fftResult[i] = 0;
       }
       else if (ms%2000 < 600) {
-        volumeSmth = random8(255);
+        volumeSmth = hw_random8();
         for (int i = 5; i<11; i++)
-          fftResult[i] = random8(255);
+          fftResult[i] = hw_random8();
       }
       else if (ms%2000 < 800) {
         volumeSmth = 0;
@@ -457,9 +494,9 @@ um_data_t* simulateSound(uint8_t simulationId)
           fftResult[i] = 0;
       }
       else if (ms%2000 < 1000) {
-        volumeSmth = random8(255);
+        volumeSmth = hw_random8();
         for (int i = 11; i<16; i++)
-          fftResult[i] = random8(255);
+          fftResult[i] = hw_random8();
       }
       else {
         volumeSmth = 0;
@@ -469,17 +506,17 @@ um_data_t* simulateSound(uint8_t simulationId)
       break;
     case UMS_10_13:
       for (int i = 0; i<16; i++)
-        fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
+        fftResult[i] = inoise8(beatsin8_t(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
         volumeSmth = fftResult[8];
       break;
     case UMS_14_3:
       for (int i = 0; i<16; i++)
-        fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
+        fftResult[i] = inoise8(beatsin8_t(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
       volumeSmth = fftResult[8];
       break;
   }
 
-  samplePeak    = random8() > 250;
+  samplePeak    = hw_random8() > 250;
   FFT_MajorPeak = 21 + (volumeSmth*volumeSmth) / 8.0f; // walk thru full range of 21hz...8200hz
   maxVol        = 31;  // this gets feedback fro UI
   binNum        = 8;   // this gets feedback fro UI
@@ -545,7 +582,7 @@ void enumerateLedmaps() {
 uint8_t get_random_wheel_index(uint8_t pos) {
   uint8_t r = 0, x = 0, y = 0, d = 0;
   while (d < 42) {
-    r = random8();
+    r = hw_random8();
     x = abs(pos - r);
     y = 255 - x;
     d = MIN(x, y);
@@ -556,4 +593,19 @@ uint8_t get_random_wheel_index(uint8_t pos) {
 // float version of map()
 float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+// 32 bit random number generator, inlining uses more code, use hw_random16() if speed is critical (see fcn_declare.h)
+uint32_t hw_random(uint32_t upperlimit) {
+  uint32_t rnd = hw_random();
+  uint64_t scaled = uint64_t(rnd) * uint64_t(upperlimit);
+  return scaled >> 32;
+}
+
+int32_t hw_random(int32_t lowerlimit, int32_t upperlimit) {
+  if(lowerlimit >= upperlimit) {
+    return lowerlimit;
+  }
+  uint32_t diff = upperlimit - lowerlimit;
+  return hw_random(diff) + lowerlimit;
 }
