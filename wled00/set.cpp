@@ -215,6 +215,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
     // we will not bother with pre-allocating ColorOrderMappings vector
+    BusManager::getColorOrderMap().reset();
     for (int s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
       int offset = s < 10 ? 48 : 55;
       char xs[4] = "XS"; xs[2] = offset+s; xs[3] = 0; //start LED
@@ -1191,7 +1192,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // internal call, does not send XML response
   pos = req.indexOf(F("IN"));
-  if (pos < 1) {
+  if ((request != nullptr) && (pos < 1)) {
     auto response = request->beginResponseStream("text/xml");
     XML_response(*response);
     request->send(response);

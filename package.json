@@ -1,6 +1,6 @@
 {
   "name": "wled",
-  "version": "0.15.0-b6",
+  "version": "0.15.0-dev",
   "description": "Tools for WLED project",
   "main": "tools/cdata.js",
   "directories": {
@@ -27,5 +27,8 @@
     "html-minifier-terser": "^7.2.0",
     "inliner": "^1.13.1",
     "nodemon": "^3.1.7"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
