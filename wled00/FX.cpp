@@ -4917,7 +4917,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
   byte numLines = SEGMENT.intensity/16 + 1;
 
   SEGENV.aux0++;  // hue
-  SEGMENT.fadeToBlackBy(40);
+  SEGMENT.fadeToBlackBy(40 - SEGMENT.check2 * 8);
   for (size_t i = 0; i < numLines; i++) {
     byte x1 = beatsin8_t(2 + SEGMENT.speed/16, 0, (cols - 1));
     byte x2 = beatsin8_t(1 + SEGMENT.speed/16, 0, (rows - 1));
@@ -4959,12 +4959,12 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   const int cols = SEG_W;
   const int rows = SEG_H;
 
-  SEGMENT.fadeToBlackBy(64);    
+  SEGMENT.fadeToBlackBy(64);
   for (int i = 0; i < cols; i++) {
     SEGMENT.setPixelColorXY(i, beatsin8_t(SEGMENT.speed/8, 0, rows-1, 0, i*4    ), ColorFromPalette(SEGPALETTE, i*5+strip.now/17, beatsin8_t(5, 55, 255, 0, i*10), LINEARBLEND));
     SEGMENT.setPixelColorXY(i, beatsin8_t(SEGMENT.speed/8, 0, rows-1, 0, i*4+128), ColorFromPalette(SEGPALETTE, i*5+128+strip.now/17, beatsin8_t(5, 55, 255, 0, i*10+128), LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.intensity>>(3-SEGMENT.check1), SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.intensity / (8 - (SEGMENT.check1 * 2)), SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2Ddna()
@@ -5011,7 +5011,7 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
       SEGMENT.setPixelColorXY(x1, i, WHITE);
     }
   }
-  SEGMENT.blur(SEGMENT.custom1 >> 1, SEGMENT.check1);
+  SEGMENT.blur(((uint16_t)SEGMENT.custom1 * 3) / (6 + SEGMENT.check1), SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2DDNASpiral()
@@ -5087,7 +5087,7 @@ uint16_t mode_2DFrizzles(void) {                 // By: Stepko https://editor.so
   const int cols = SEG_W;
   const int rows = SEG_H;
 
-  SEGMENT.fadeToBlackBy(16);
+  SEGMENT.fadeToBlackBy(16 + SEGMENT.check1 * 10);
   for (size_t i = 8; i > 0; i--) {
     SEGMENT.addPixelColorXY(beatsin8_t(SEGMENT.speed/8 + i, 0, cols - 1),
                             beatsin8_t(SEGMENT.intensity/8 - i, 0, rows - 1),
@@ -5371,7 +5371,7 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
     ylocn = (rows < 2) ? 1 : (map(2*ylocn, 0,511, 0,2*(rows-1)) +1) /2;    // "rows > 1" is needed to avoid div/0 in map()
     SEGMENT.setPixelColorXY((uint8_t)xlocn, (uint8_t)ylocn, SEGMENT.color_from_palette(strip.now/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
-  SEGMENT.blur(SEGMENT.custom1>> (1 + SEGMENT.check1 * 2), SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.custom1 >> (1 + SEGMENT.check1 * 3), SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2DLissajous()
@@ -5637,7 +5637,7 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
     SEGMENT.fill(BLACK);
   }
 
-  SEGMENT.fadeToBlackBy((SEGMENT.custom1>>3) + (SEGMENT.check1 * (SEGMENT.custom2>>5)));
+  SEGMENT.fadeToBlackBy((SEGMENT.custom1>>3) + (SEGMENT.check1 * 24));
 
   byte t1 = strip.now / (257 - SEGMENT.speed); // 20;
   byte t2 = sin8_t(t1) / 4 * 2;
@@ -5860,7 +5860,7 @@ uint16_t mode_2Dcrazybees(void) {
   if (strip.now > SEGENV.step) {
     SEGENV.step = strip.now + (FRAMETIME * 16 / ((SEGMENT.speed>>4)+1));
     SEGMENT.fadeToBlackBy(32 + ((SEGMENT.check1*SEGMENT.intensity) / 25));
-    SEGMENT.blur(SEGMENT.intensity >> (1 + SEGMENT.check1 * 2), SEGMENT.check1);
+    SEGMENT.blur(SEGMENT.intensity / (2 + SEGMENT.check1 * 9), SEGMENT.check1);
     for (size_t i = 0; i < n; i++) {
       uint32_t flowerCcolor = SEGMENT.color_from_palette(bee[i].hue, false, true, 255);
       SEGMENT.addPixelColorXY(bee[i].aimX + 1, bee[i].aimY, flowerCcolor);
