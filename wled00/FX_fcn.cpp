@@ -1454,23 +1454,6 @@ void WS2812FX::show() {
   }
 }
 
-/**
- * Returns a true value if any of the strips are still being updated.
- * On some hardware (ESP32), strip updates are done asynchronously.
- */
-bool WS2812FX::isUpdating() const {
-  return !BusManager::canAllShow();
-}
-
-/**
- * Returns the refresh rate of the LED strip. Useful for finding out whether a given setup is fast enough.
- * Only updates on show() or is set to 0 fps if last show is more than 2 secs ago, so accuracy varies
- */
-uint16_t WS2812FX::getFps() const {
-  if (millis() - _lastShow > 2000) return 0;
-  return (FPS_MULTIPLIER * _cumulativeFps) >> FPS_CALC_SHIFT; // _cumulativeFps is stored in fixed point
-}
-
 void WS2812FX::setTargetFps(unsigned fps) {
   if (fps <= 250) _targetFps = fps;
   if (_targetFps > 0) _frametime = 1000 / _targetFps;
