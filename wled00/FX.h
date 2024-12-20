@@ -208,7 +208,7 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FX_MODE_COLORTWINKLE            74
 #define FX_MODE_LAKE                    75
 #define FX_MODE_METEOR                  76
-#define FX_MODE_METEOR_SMOOTH           77
+//#define FX_MODE_METEOR_SMOOTH           77 // merged with meteor
 #define FX_MODE_RAILWAY                 78
 #define FX_MODE_RIPPLE                  79
 #define FX_MODE_TWINKLEFOX              80
@@ -420,6 +420,7 @@ typedef struct Segment {
         uint8_t _reserved : 4;
       };
     };
+    uint8_t         _default_palette;  // palette number that gets assigned to pal0
     unsigned        _dataLen;
     static unsigned _usedSegmentData;
     static uint8_t  _segBri;                  // brightness of segment for current effect
@@ -493,6 +494,7 @@ typedef struct Segment {
       aux1(0),
       data(nullptr),
       _capabilities(0),
+      _default_palette(0),
       _dataLen(0),
       _t(nullptr)
     {
@@ -670,9 +672,9 @@ typedef struct Segment {
     inline void fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) { fillCircle(cx, cy, radius, RGBW32(c.r,c.g,c.b,0), soft); }
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c, bool soft = false);
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, bool soft = false) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0), soft); } // automatic inline
-    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0, int8_t rotate = 0);
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0, int8_t rotate = 0, bool usePalGrad = false);
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
-    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, int8_t rotate = 0) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0), rotate); } // automatic inline
+    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, int8_t rotate = 0, bool usePalGrad = false) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0), rotate, usePalGrad); } // automatic inline
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
@@ -707,9 +709,9 @@ typedef struct Segment {
     inline void fillCircle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c, bool soft = false) {}
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c, bool soft = false) {}
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, bool soft = false) {}
-    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t = 0, int8_t = 0) {}
+    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t = 0, int8_t = 0, bool = false) {}
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color) {}
-    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, int8_t rotate = 0) {}
+    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2, int8_t rotate = 0, bool usePalGrad = false) {}
     inline void wu_pixel(uint32_t x, uint32_t y, CRGB c) {}
   #endif
 } segment;
