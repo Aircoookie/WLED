@@ -242,6 +242,10 @@
 #include "../usermods/LD2410_v2/usermod_ld2410.h"
 #endif
 
+#ifdef USERMOD_M5STICK2_VISUALISER
+#include "../usermods/M5Stick2_Visualiser/M5Stick2_Visualiser.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -469,5 +473,9 @@ void registerUsermods()
 
   #ifdef USERMOD_POV_DISPLAY
   UsermodManager::add(new PovDisplayUsermod());
+  #endif
+
+  #ifdef USERMOD_M5STICK2_VISUALISER
+  usermods.add(new M5Stick2Visualiser());
   #endif
 }
