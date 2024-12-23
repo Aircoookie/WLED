@@ -623,7 +623,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //USERMODS
   if (subPage == SUBPAGE_UM)
   {
-    if (!requestJSONBufferLock(5)) return;
+    if (!requestJSONBufferLock(5)) {
+      request->deferResponse();
+      return;
+    }
 
     // global I2C & SPI pins
     int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : (int)request->arg(F("SDA")).toInt();
