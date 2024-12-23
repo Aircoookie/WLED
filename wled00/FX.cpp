@@ -20,11 +20,6 @@
 #include "FXparticleSystem.h"
 #endif
 
-#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)
-#include "FXparticleSystem.h"
-#endif
-
-
  //////////////
  // DEV INFO //
  //////////////
@@ -7656,126 +7651,6 @@ uint16_t mode_2Dwavingcell() {
     }
   }
   SEGMENT.blur(SEGMENT.intensity);
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,Blur,Amplitude 1,Amplitude 2,Amplitude 3,,Flow;;!;2;ix=0";
-
-#ifndef WLED_DISABLE_PARTICLESYSTEM2D
-
-/*
- * Particle System Vortex
- * Particles sprayed from center with a rotating spray
- * Uses palette for particle color
- * by DedeHai (Damian Schneider)
- */
-#define NUMBEROFSOURCES 8
-uint16_t mode_particlevortex(void) {
-  if (SEGLEN == 1)
-    return mode_static();
-  ParticleSystem2D *PartSys = NULL;
-  uint32_t i, j;
-
-  if (SEGMENT.call == 0) { // initialization
-    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES))
-      return mode_static(); // allocation failed
-    SEGENV.aux1 = 0x01; // check flags
-    #ifdef ESP8266
-    PartSys->setMotionBlur(180);
-    #else
-    PartSys->setMotionBlur(130);
-    #endif
-    for (i = 0; i < min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); i++) {
-      PartSys->sources[i].source.x = (PartSys->maxX + 1) >> 1; // center
-      PartSys->sources[i].source.y = (PartSys->maxY + 1) >> 1; // center
-      PartSys->sources[i].maxLife = 900;
-      PartSys->sources[i].minLife = 800;
-    }
-    PartSys->setKillOutOfBounds(true);
-  }
-  else
-    PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-
-  if (PartSys == NULL)
-    return mode_static(); // something went wrong, no data!
-
-  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  uint8_t spraycount = min(PartSys->numSources, (uint32_t)(1 + (SEGMENT.custom1 >> 5))); // number of sprays to display, 1-8
-  #ifdef ESP8266
-  for (i = 1; i < 4; i++) { // need static particles in the center to reduce blinking (would be black every other frame without this hack), just set them there fixed
-    int partindex = (int)PartSys->usedParticles - (int)i;
-    if(partindex >= 0) {
-      PartSys->particles[partindex].x = (PartSys->maxX + 1) >> 1; // center
-      PartSys->particles[partindex].y = (PartSys->maxY + 1) >> 1; // center
-      PartSys->particles[partindex].sat = 230;
-      PartSys->particles[partindex].ttl = 256; //keep alive
-    }
-  }
-  #endif
-  if (SEGMENT.check1 != (SEGENV.aux1 & 0x01) || SEGMENT.call == 0) { // state change
-    if (SEGMENT.check1)
-      SEGENV.aux1 |= 0x01; //set the flag
-    else
-      SEGENV.aux1 &= ~0x01; // clear the flag
-
-    for (i = 0; i < spraycount; i++) {
-      if (SEGMENT.check1) // random color is checked
-        PartSys->sources[i].source.hue = random16();
-      else {
-        uint8_t coloroffset = 0xFF / spraycount;
-        PartSys->sources[i].source.hue = coloroffset * i;
-      }
-    }
-  }
-  // set rotation direction and speed
-  // can use direction flag to determine current direction
-  bool direction = SEGMENT.check2; //no automatic direction change, set it to flag
-  int32_t currentspeed = (int32_t)SEGENV.step; // make a signed integer out of step
-
-  if (SEGMENT.custom2 > 0) { // automatic direction change enabled
-    uint16_t changeinterval = 15 + 255 / SEGMENT.custom2;
-    direction = SEGENV.aux1 & 0x02; //set direction according to flag
-
-    if (SEGMENT.check3) // random interval
-      changeinterval = 20 + changeinterval + random16(changeinterval);
-
-    if (SEGMENT.call % changeinterval == 0) { //flip direction on next frame
-      SEGENV.aux1 |= 0x04; // set the update flag (for random interval update)
-      if (direction)
-        SEGENV.aux1 &= ~0x02; // clear the direction flag
-      else
-        SEGENV.aux1 |= 0x02; // set the direction flag
-    }
-  }
-
-  int32_t targetspeed = (direction ? 1 : -1) * (SEGMENT.speed << 2);
-  int32_t speeddiff = targetspeed - currentspeed;
-  int32_t speedincrement = speeddiff / 50;
-
-  if (speedincrement == 0) { //if speeddiff is not zero, make the increment at least 1 so it reaches target speed
-    if(speeddiff < 0)
-      speedincrement = -1;
-    else if (speeddiff > 0)
-      speedincrement = 1;
-  }
-
-  currentspeed += speedincrement;
-  SEGENV.aux0 += currentspeed;
-  SEGENV.step = (uint32_t)currentspeed; //save it back
-
-  uint16_t angleoffset = 0xFFFF / spraycount; // angle offset for an even distribution
-  uint32_t skip = PS_P_HALFRADIUS / (SEGMENT.intensity + 1) + 1; // intensity is emit speed, emit less on low speeds
-  if (SEGMENT.call % skip == 0) {
-    j = random(spraycount); // start with random spray so all get a chance to emit a particle if maximum number of particles alive is reached.
-    for (i = 0; i < spraycount; i++) { // emit one particle per spray (if available)
-      PartSys->sources[j].var = (SEGMENT.custom3 >> 1); //update speed variation
-      #ifdef ESP8266
-      if (SEGMENT.call & 0x01) // every other frame, do not emit to save particles
-      #endif
-      PartSys->angleEmit(PartSys->sources[j], SEGENV.aux0 + angleoffset * j, (SEGMENT.intensity >> 2)+1);
-      j = (j + 1) % spraycount;
-    }
-  }
-  PartSys->update(); //update all particles and render to frame
   return FRAMETIME;
 }
 static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,Blur,Amplitude 1,Amplitude 2,Amplitude 3,,Flow;;!;2;ix=0";

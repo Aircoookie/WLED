@@ -578,6 +578,7 @@ typedef struct Segment {
     inline static void     addUsedSegmentData(int len)     { Segment::_usedSegmentData += len; }
     #ifndef WLED_DISABLE_MODE_BLEND
     inline static void     modeBlend(bool blend)           { _modeBlend = blend; }
+    inline static bool     getmodeBlend(void)              { return _modeBlend; }
     #endif
     inline static unsigned vLength()                       { return Segment::_vLength; }
     inline static unsigned vWidth()                        { return Segment::_vWidth; }
