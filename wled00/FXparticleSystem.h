@@ -205,6 +205,7 @@ private:
   void collideParticles(PSparticle *particle1, PSparticle *particle2, int32_t dx, int32_t dy);
   void fireParticleupdate();
   //utility functions
+  void transferBuffer(bool additive = false); // transfer the framebuffer to the segment
   void updatePSpointers(bool isadvanced, bool sizecontrol); // update the data pointers to current segment data space
   void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
   void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);

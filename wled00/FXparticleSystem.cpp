@@ -703,7 +703,7 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
         if(useAdditiveTransfer) {
           uint32_t segmentcolor = SEGMENT.getPixelColorXY((int)x, (int)yflipped);
           CRGB segmentRGB = CRGB(segmentcolor);
-          if(clr == 0) // frame buffer is black, just update the framebuffer TODO: could check if segmentcolor is also black and skip
+          if(clr == 0) // frame buffer is black, just update the framebuffer
             *c = segmentRGB;
           else { // not black
             if(segmentcolor) {
@@ -1065,6 +1065,37 @@ void ParticleSystem2D::updateSystem(void) {
     PSPRINTLN("rendermulti");
     renderSolo = 0;
   }
+}
+
+void ParticleSystem2D::transferBuffer(bool additive) {
+  if (framebuffer) {
+    int yflipped;
+    for (uint32_t y = 0; y <= maxYpixel; y++) {
+      yflipped = maxYpixel - y;
+      int index = y * (maxXpixel + 1); // current row index for 1D buffer
+      for (uint32_t x = 0; x <= maxXpixel; x++) {
+        CRGB *c = &framebuffer[index++];
+        uint32_t clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color
+        if (additive) {
+          uint32_t segmentcolor = SEGMENT.getPixelColorXY((int)x, (int)yflipped);
+          CRGB segmentRGB = CRGB(segmentcolor);
+          if(clr == 0) // frame buffer is black, just update the framebuffer TODO: could check if segmentcolor is also black and skip
+            *c = segmentRGB;
+          else { // not black
+            if(segmentcolor) {
+              fast_color_add(*c, segmentRGB); // add segment color back to buffer if not black TODO: since both are 32bit, this could be made faster using the new improved wled 32bit adding (see speed improvements PR)
+              clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again)
+            }
+            SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr); // save back to segment after adding local buffer
+          }
+        }
+        //if(clr > 0) // not black  TODO: not transferring black is faster and enables overlay, but requries proper handling of buffer clearing, which is quite complex and probably needs a change to SEGMENT handling.
+        else
+          SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr);
+      }
+    }
+  }
+  else PSPRINTLN("skip xfer");
 }
 
 // set the pointers for the class (this only has to be done once and not on every FX call, only the class pointer needs to be reassigned to SEGENV.data every time)
@@ -1964,9 +1995,10 @@ static void fast_color_add(CRGB &c1, const CRGB &c2, const uint32_t scale) {
     c1.g = g;
     c1.b = b;
   } else {
-    c1.r = (r * 255) / max;  // note: compile optimizes the divisions, no need to manually optimize
-    c1.g = (g * 255) / max;
-    c1.b = (b * 255) / max;
+    uint32_t scale = (255U << 16) / max;
+    c1.r = (r * scale) >> 16;
+    c1.g = (g * scale) >> 16;
+    c1.b = (b * scale) >> 16;
   }
 }
 
@@ -2061,9 +2093,11 @@ void* getUpdatedParticlePointer(const uint32_t requestedParticles, size_t struct
       }
       if (pmem->watchdog == 1) { // if a PS already exists during particle request, it kicked the watchdog in last frame, servicePSmem() adds 1 afterwards -> PS to PS transition
         PSPRINTLN("********** PS is in transition, new FX:" + String(effectID));
-        pmem->inTransition = effectID; // save the ID of the new effect (required to determine blur amount in rendering function, it will not work without this so dont optimize)
-        //TODO2: handle memory initialization properly. if not in transition, particles must be initialized to TTL=0 and sat=255
-        //TODO3: add palettes. man kann beim PS init die palette so kopieren: loadPalette(
+        //Serial.print(" inTransition = " + String(pmem->inTransition));
+        if(pmem->inTransition) // there is already a transition going on, multi transitions lead to weird behaviour (missin particles, missing transitions) 
+          pmem->inTransition = 1; // set to an invalid FX number so transitions work (the calling "new FX" is recognized as the old FX) TODO: this is a dirty hack and needs fixing but there is a bug in segment handling, not copying the segment.data...
+        else
+          pmem->inTransition = effectID; // save the ID of the new effect (required to determine blur amount in rendering function, it will not work without this so dont optimize)
       }
       else { // no watchdog, this is a new PS
         // availableToPS = requestedParticles; // all particles are available todo: THIS IS TBD, probably ok to feed particles slowly
@@ -2159,10 +2193,10 @@ void* getUpdatedParticlePointer(const uint32_t requestedParticles, size_t struct
           }
         }
         else {
-          Serial.println(" overflow in transfer ****");
+           PSPRINTLN(" Particle transfer overflow! ");
         }
       }
-      else { // if (SEGMENT.currentMode() == effectID) { // seg.currentMode() is the old effect ID during transitions, this was called from old FX
+      else { // this was called from old FX
         PSPRINT(" old FX");
         PSPRINT(" progress: " + String(progress));
         SEGMENT.setCurrentPalette(true); // load the old palette into segment
@@ -2199,19 +2233,10 @@ void* getUpdatedParticlePointer(const uint32_t requestedParticles, size_t struct
     availableToPS = pmem->numParticles; // no transition, full buffer available
     PSPRINTLN(" no trans, no of partcls: " + String(availableToPS));
     pmem->inTransition = false;
-    /*
-    PSparticle *particles = (PSparticle*)buffer;
-    Serial.println("**");
-    
-    for (uint32_t i = 0; i < pmem->numParticles; i++) {
-      Serial.print(particles[i].ttl) ;
-      Serial.print(" ");
-    }
-    Serial.println(" ");*/
   }
   PSPRINTLN(" END getPartPointer ");
   return buffer;
-} //TODO: final few particles are not tranferred properly if FX uses perpetual particles, need to fix this
+}
 
 // function to update the framebuffer and renderbuffer
 void updateRenderingBuffer(CRGB* buffer, uint32_t requiredpixels, bool isFramebuffer) {
@@ -2298,13 +2323,11 @@ static void applyBlurOrClear2D(uint32_t width, uint32_t height, uint8_t fxID) {
   if (framebuffer) {
     if (globalBlur > 0) { // using SEGMENT.fadeToBlackBy is much slower, this approximately doubles the speed of fade calculation
       PSPRINTLN(" blurring: " + String(globalBlur));
-        Serial.println(" blur: " + String(globalBlur));
       uint32_t yflipped;
       for (uint32_t y = 0; y < height; y++) {
         int index = y * width; // current row index for 1D buffer
         if(renderSolo < 2 && pmem->inTransition != fxID) { // there are/were other systems using the buffer and this is not the old FX in a transition: read data from segment
           yflipped = height - y - 1;
-          Serial.print(" cpy ");
           for (uint32_t x = 0; x < width; x++) {
             framebuffer[index++] = SEGMENT.getPixelColorXY(x, yflipped); //copy to local buffer
           }
@@ -2318,7 +2341,6 @@ static void applyBlurOrClear2D(uint32_t width, uint32_t height, uint8_t fxID) {
       globalBlur = 0; // reset for next frame (updated by PS)
     }
     else { // no blurring, clear the buffer
-      Serial.println(" clear ");
       memset(framebuffer, 0, frameBufferSize * sizeof(CRGB));
     }
   }
@@ -2327,7 +2349,6 @@ static void applyBlurOrClear2D(uint32_t width, uint32_t height, uint8_t fxID) {
 // transfer the frame buffer to the segment and handle transitional rendering (both FX render to the same buffer so they mix)
 void transferBuffer(uint32_t width, uint32_t height) {
   PSPRINT(" xfer buf ");
-    Serial.print(" xfer ");
   if(!framebuffer) return; // no buffer, nothing to transfer
   /*
   if(SEGMENT.isInTransition()) {
