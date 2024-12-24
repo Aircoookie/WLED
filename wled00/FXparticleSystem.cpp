@@ -1252,16 +1252,15 @@ bool initParticleSystem2D(ParticleSystem2D *&PartSys, uint32_t requestedsources,
   PSPRINT(" segmentsize:" + String(cols) + " " + String(rows));
   PSPRINT(" request numparticles:" + String(numparticles));
   uint32_t numsources = calculateNumberOfSources2D(pixels, requestedsources);
-  // allocate rendering buffer (if this fails, it will render to segment buffer directly)
-  updateRenderingBuffer(framebuffer, pixels, true);
-  if(advanced)
-    updateRenderingBuffer(renderbuffer, 100, false);
-
   if (!allocateParticleSystemMemory2D(numparticles, numsources, advanced, sizecontrol, additionalbytes))
   {
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
   }
+  // allocate rendering buffer (if this fails, it will render to segment buffer directly)
+  updateRenderingBuffer(framebuffer, pixels, true); // allocate a rendering buffer
+  if(advanced)
+    updateRenderingBuffer(renderbuffer, 100, false); // allocate a 10x10 buffer for rendering advanced particles
 
   PartSys = new (SEGENV.data) ParticleSystem2D(cols, rows, numparticles, numsources, advanced, sizecontrol); // particle system constructor
 

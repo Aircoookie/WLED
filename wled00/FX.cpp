@@ -7727,7 +7727,7 @@ uint16_t mode_particlevortex(void) {
   int32_t currentspeed = (int32_t)SEGENV.step; // make a signed integer out of step
 
   if (SEGMENT.custom2 > 0) { // automatic direction change enabled
-    uint16_t changeinterval = 15 + 255 / SEGMENT.custom2;
+    uint16_t changeinterval = 1040 - ((uint32_t)SEGMENT.custom2 << 2);
     direction = SEGENV.aux1 & 0x02; //set direction according to flag
 
     if (SEGMENT.check3) // random interval
@@ -8004,7 +8004,6 @@ uint16_t mode_particlefire(void) {
     if (!initParticleSystem2D(PartSys, SEGMENT.virtualWidth(), 4)) //maximum number of source (PS may limit based on segment size); need 4 additional bytes for time keeping (uint32_t lastcall)
       return mode_static(); // allocation failed or not 2D
     SEGENV.aux0 = random16(); // aux0 is wind position (index) in the perlin noise
-    numFlames = PartSys->numSources;
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS

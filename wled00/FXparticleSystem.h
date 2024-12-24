@@ -59,12 +59,12 @@ inline void updateUsedParticles(const uint32_t allocated, const uint32_t availab
 // TODO: maybe update PS_P_MINSURFACEHARDNESS for 2D? its a bit too sticky already at hardness 100
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 // memory allocation
-#define ESP8266_MAXPARTICLES 180 // enough for one 16x16 segment with transitions
-#define ESP8266_MAXSOURCES 16
-#define ESP32S2_MAXPARTICLES 840 // enough for four 16x16 segments
-#define ESP32S2_MAXSOURCES 48
-#define ESP32_MAXPARTICLES 1024 // enough for four 16x16 segments TODO: not enough for one 64x64 panel...
-#define ESP32_MAXSOURCES 64
+#define ESP8266_MAXPARTICLES 300 // enough up to 20x20 pixels
+#define ESP8266_MAXSOURCES 24
+#define ESP32S2_MAXPARTICLES 1024 // enough up to 32x32 pixels
+#define ESP32S2_MAXSOURCES 64
+#define ESP32_MAXPARTICLES 2048 // enough up to 64x32 pixels
+#define ESP32_MAXSOURCES 128
 
 // particle dimensions (subpixel division)
 #define PS_P_RADIUS 64 // subpixel size, each pixel is divided by this for particle movement (must be a power of 2)
@@ -99,7 +99,7 @@ typedef struct { // 11 bytes
     uint8_t hue;  // color hue
     uint8_t sat; // particle color saturation
     //uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
-    uint16_t ttl; // time to live 
+    uint16_t ttl; // time to live
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
