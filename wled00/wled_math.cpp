@@ -220,3 +220,26 @@ float fmod_t(float num, float denom) {
   #endif
   return res;
 }
+
+// bit-wise integer square root calculation (exact)
+uint8_t sqrt16_bw(uint16_t x) {
+  uint32_t res = 0;
+  uint32_t bit;
+  uint32_t num = x; // use 32bit for faster calculation
+
+  if(num < 0x40)  bit = 1 << 6; // speed optimization for small numbers < 64 (mostly used)
+  else bit = 1 << 14; // start with highest power of 4 <= 2^16
+
+  while (bit > num) bit >>= 2; // reduce iterations
+
+  while (bit != 0) {
+    if (num >= res + bit) {
+      num -= res + bit;
+      res = (res >> 1) + bit;
+    } else {
+      res >>= 1;
+    }
+    bit >>= 2;
+  }
+  return res;
+}
