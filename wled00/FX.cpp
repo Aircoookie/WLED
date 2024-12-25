@@ -642,11 +642,12 @@ static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!,!;!,!;!;;m12=0"; 
  * Dissolve function
  */
 uint16_t dissolve(uint32_t color) {
-  unsigned dataSize = (SEGLEN+7) >> 3; //1 bit per LED
+  unsigned dataSize = sizeof(uint32_t) * SEGLEN;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  uint32_t* pixels = reinterpret_cast<uint32_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    memset(SEGMENT.data, 0xFF, dataSize); // start by fading pixels up
+    for (unsigned i = 0; i < SEGLEN; i++) pixels[i] = SEGCOLOR(1);
     SEGENV.aux0 = 1;
   }
 
@@ -654,33 +655,26 @@ uint16_t dissolve(uint32_t color) {
     if (hw_random8() <= SEGMENT.intensity) {
       for (size_t times = 0; times < 10; times++) { //attempt to spawn a new pixel 10 times
         unsigned i = hw_random16(SEGLEN);
-        unsigned index = i >> 3;
-        unsigned bitNum = i & 0x07;
-        bool fadeUp = bitRead(SEGENV.data[index], bitNum);
         if (SEGENV.aux0) { //dissolve to primary/palette
-          if (fadeUp) {
-            if (color == SEGCOLOR(0)) {
-              SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-            } else {
-              SEGMENT.setPixelColor(i, color);
-            }
-            bitWrite(SEGENV.data[index], bitNum, false);
+          if (pixels[i] == SEGCOLOR(1)) {
+            pixels[i] = color == SEGCOLOR(0) ? SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0) : color;
             break; //only spawn 1 new pixel per frame per 50 LEDs
           }
         } else { //dissolve to secondary
-          if (!fadeUp) {
-            SEGMENT.setPixelColor(i, SEGCOLOR(1)); break;
-            bitWrite(SEGENV.data[index], bitNum, true);
+          if (pixels[i] != SEGCOLOR(1)) {
+            pixels[i] = SEGCOLOR(1);
+            break;
           }
         }
       }
     }
   }
+  // fix for #4401
+  for (unsigned i = 0; i < SEGLEN; i++) SEGMENT.setPixelColor(i, pixels[i]);
 
   if (SEGENV.step > (255 - SEGMENT.speed) + 15U) {
     SEGENV.aux0 = !SEGENV.aux0;
     SEGENV.step = 0;
-    memset(SEGMENT.data, (SEGENV.aux0 ? 0xFF : 0), dataSize); // switch fading
   } else {
     SEGENV.step++;
   }
@@ -6577,7 +6571,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   int volumeRaw    = *(int16_t*)um_data->u_data[1];
 
   if (SEGENV.call == 0) {
-    for (int i = 0; i < SEGLEN; i++) pixels[i] = BLACK;   // may not be needed as resetIfRequired() clears buffer
+    for (unsigned i = 0; i < SEGLEN; i++) pixels[i] = BLACK;   // may not be needed as resetIfRequired() clears buffer
   }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
@@ -7161,7 +7155,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   if (SEGENV.call == 0) {
-    for (int i = 0; i < SEGLEN; i++) pixels[i] = BLACK;   // may not be needed as resetIfRequired() clears buffer
+    for (unsigned i = 0; i < SEGLEN; i++) pixels[i] = BLACK;   // may not be needed as resetIfRequired() clears buffer
     SEGENV.aux0 = 255;
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
@@ -7178,7 +7172,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
     uint8_t pixCol = (log10f(FFT_MajorPeak) - 2.26f) * 150;           // 22Khz sampling - log10 frequency range is from 2.26 (182hz) to 3.967 (9260hz). Let's scale accordingly.
     if (FFT_MajorPeak < 182.0f) pixCol = 0;                           // handle underflow
 
-    int k = SEGLEN-1;
+    unsigned k = SEGLEN-1;
     if (samplePeak) {
       pixels[k] = (uint32_t)CRGB(CHSV(92,92,92));
     } else {
