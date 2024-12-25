@@ -222,6 +222,7 @@ void WLED::loop()
     BusManager::setBrightness(bri); // fix re-initialised bus' brightness #4005
     if (aligned) strip.makeAutoSegments();
     else strip.fixInvalidSegments();
+    BusManager::setBrightness(bri); // fix re-initialised bus' brightness
     doSerializeConfig = true;
   }
   if (loadLedmap >= 0) {
@@ -543,14 +544,8 @@ void WLED::setup()
 #endif
 
   // Seed FastLED random functions with an esp random value, which already works properly at this point.
-#if defined(ARDUINO_ARCH_ESP32)
-  const uint32_t seed32 = esp_random();
-#elif defined(ARDUINO_ARCH_ESP8266)
-  const uint32_t seed32 = RANDOM_REG32;
-#else
-  const uint32_t seed32 = random(std::numeric_limits<long>::max());
-#endif
-  random16_set_seed((uint16_t)((seed32 & 0xFFFF) ^ (seed32 >> 16)));
+  const uint32_t seed32 = hw_random();
+  random16_set_seed((uint16_t)seed32);
 
   #if WLED_WATCHDOG_TIMEOUT > 0
   enableWatchdog();
@@ -575,10 +570,11 @@ void WLED::beginStrip()
   } else {
     // fix for #3196
     if (bootPreset > 0) {
-      bool oldTransition = fadeTransition;    // workaround if transitions are enabled
-      fadeTransition = false;                 // ignore transitions temporarily
-      strip.setColor(0, BLACK);               // set all segments black
-      fadeTransition = oldTransition;         // restore transitions
+      // set all segments black (no transition)
+      for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
+        Segment &seg = strip.getSegment(i);
+        if (seg.isActive()) seg.colors[0] = BLACK;
+      }
       col[0] = col[1] = col[2] = col[3] = 0;  // needed for colorUpdated()
     }
     briLast = briS; bri = 0;

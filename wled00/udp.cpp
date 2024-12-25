@@ -234,12 +234,12 @@ void parseNotifyPacket(uint8_t *udpIn) {
   //apply colors from notification to main segment, only if not syncing full segments
   if ((receiveNotificationColor || !someSel) && (version < 11 || !receiveSegmentOptions)) {
     // primary color, only apply white if intented (version > 0)
-    strip.setColor(0, RGBW32(udpIn[3], udpIn[4], udpIn[5], (version > 0) ? udpIn[10] : 0));
+    strip.getMainSegment().setColor(0, RGBW32(udpIn[3], udpIn[4], udpIn[5], (version > 0) ? udpIn[10] : 0));
     if (version > 1) {
-      strip.setColor(1, RGBW32(udpIn[12], udpIn[13], udpIn[14], udpIn[15])); // secondary color
+      strip.getMainSegment().setColor(1, RGBW32(udpIn[12], udpIn[13], udpIn[14], udpIn[15])); // secondary color
     }
     if (version > 6) {
-      strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
+      strip.getMainSegment().setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
       if (version > 9 && udpIn[37] < 255) { // valid CCT/Kelvin value
         unsigned cct = udpIn[38];
         if (udpIn[37] > 0) { //Kelvin
@@ -260,11 +260,12 @@ void parseNotifyPacket(uint8_t *udpIn) {
     // are we syncing bounds and slave has more active segments than master?
     if (receiveSegmentBounds && numSrcSegs < strip.getActiveSegmentsNum()) {
       DEBUG_PRINTLN(F("Removing excessive segments."));
-      for (size_t i=strip.getSegmentsNum(); i>numSrcSegs; i--) {
-        if (strip.getSegment(i).isActive()) {
-          strip.setSegment(i-1,0,0); // delete segment
-        }
+      strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
+      for (size_t i=strip.getSegmentsNum(); i>numSrcSegs && i>0; i--) {
+        Segment &seg = strip.getSegment(i-1);
+        if (seg.isActive()) seg.deactivate(); // delete segment
       }
+      strip.resume();
     }
     size_t inactiveSegs = 0;
     for (size_t i = 0; i < numSrcSegs && i < strip.getMaxSegments(); i++) {
@@ -300,7 +301,7 @@ void parseNotifyPacket(uint8_t *udpIn) {
       if (!receiveSegmentOptions) {
         DEBUG_PRINTF_P(PSTR("Set segment w/o options: %d [%d,%d;%d,%d]\n"), id, (int)start, (int)stop, (int)startY, (int)stopY);
         strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
-        selseg.setUp(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+        selseg.setGeometry(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY, selseg.map1D2D);
         strip.resume();
         continue; // we do receive bounds, but not options
       }
@@ -342,12 +343,12 @@ void parseNotifyPacket(uint8_t *udpIn) {
       if (receiveSegmentBounds) {
         DEBUG_PRINTF_P(PSTR("Set segment w/ options: %d [%d,%d;%d,%d]\n"), id, (int)start, (int)stop, (int)startY, (int)stopY);
         strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
-        selseg.setUp(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+        selseg.setGeometry(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY, selseg.map1D2D);
         strip.resume();
       } else {
         DEBUG_PRINTF_P(PSTR("Set segment grouping: %d [%d,%d]\n"), id, (int)udpIn[5+ofs], (int)udpIn[6+ofs]);
         strip.suspend(); //should not be needed as UDP handling is not done in ISR callbacks but still added "just in case"
-        selseg.setUp(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+        selseg.setGeometry(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY, selseg.map1D2D);
         strip.resume();
       }
     }
@@ -416,18 +417,18 @@ void realtimeLock(uint32_t timeoutMs, byte md)
       start = mainseg.start;
       stop  = mainseg.stop;
       mainseg.freeze = true;
+      // if WLED was off and using main segment only, freeze non-main segments so they stay off
+      if (bri == 0) {
+        for (size_t s = 0; s < strip.getSegmentsNum(); s++) {
+          strip.getSegment(s).freeze = true;
+        }
+      }
     } else {
       start = 0;
       stop  = strip.getLengthTotal();
     }
     // clear strip/segment
     for (size_t i = start; i < stop; i++) strip.setPixelColor(i,BLACK);
-    // if WLED was off and using main segment only, freeze non-main segments so they stay off
-    if (useMainSegmentOnly && bri == 0) {
-      for (size_t s=0; s < strip.getSegmentsNum(); s++) {
-        strip.getSegment(s).freeze = true;
-      }
-    }
   }
   // if strip is off (bri==0) and not already in RTM
   if (briT == 0 && !realtimeMode && !realtimeOverride) {
@@ -510,12 +511,10 @@ void handleNotifications()
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
       if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
-      unsigned id = 0;
       unsigned totalLen = strip.getLengthTotal();
-      for (size_t i = 0; i < packetSize -2; i += 3)
-      {
+      if (useMainSegmentOnly) strip.getMainSegment().beginDraw(); // set up parameters for get/setPixelColor()
+      for (size_t i = 0, id = 0; i < packetSize -2 && id < totalLen; i += 3, id++) {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
-        id++; if (id >= totalLen) break;
       }
       if (!(realtimeMode && useMainSegmentOnly)) strip.show();
       return;
@@ -595,17 +594,11 @@ void handleNotifications()
 
     unsigned id = (tpmPayloadFrameSize/3)*(packetNum-1); //start LED
     unsigned totalLen = strip.getLengthTotal();
-    for (size_t i = 6; i < tpmPayloadFrameSize + 4U; i += 3)
-    {
-      if (id < totalLen)
-      {
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        id++;
-      }
-      else break;
+    if (useMainSegmentOnly) strip.getMainSegment().beginDraw(); // set up parameters for get/setPixelColor()
+    for (size_t i = 6; i < tpmPayloadFrameSize + 4U && id < totalLen; i += 3, id++) {
+      setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
     }
-    if (tpmPacketCount == numPackets) //reset packet count and show if all packets were received
-    {
+    if (tpmPacketCount == numPackets) { //reset packet count and show if all packets were received
       tpmPacketCount = 0;
       strip.show();
     }
@@ -629,6 +622,7 @@ void handleNotifications()
     if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     unsigned totalLen = strip.getLengthTotal();
+    if (useMainSegmentOnly) strip.getMainSegment().beginDraw(); // set up parameters for get/setPixelColor()
     if (udpIn[0] == 1 && packetSize > 5) //warls
     {
       for (size_t i = 2; i < packetSize -3; i += 4)
@@ -637,39 +631,29 @@ void handleNotifications()
       }
     } else if (udpIn[0] == 2 && packetSize > 4) //drgb
     {
-      unsigned id = 0;
-      for (size_t i = 2; i < packetSize -2; i += 3)
+      for (size_t i = 2, id = 0; i < packetSize -2 && id < totalLen; i += 3, id++)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-
-        id++; if (id >= totalLen) break;
       }
     } else if (udpIn[0] == 3 && packetSize > 6) //drgbw
     {
-      unsigned id = 0;
-      for (size_t i = 2; i < packetSize -3; i += 4)
+      for (size_t i = 2, id = 0; i < packetSize -3 && id < totalLen; i += 4, id++)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-
-        id++; if (id >= totalLen) break;
       }
     } else if (udpIn[0] == 4 && packetSize > 7) //dnrgb
     {
       unsigned id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (size_t i = 4; i < packetSize -2; i += 3)
+      for (size_t i = 4; i < packetSize -2 && id < totalLen; i += 3, id++)
       {
-        if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        id++;
       }
     } else if (udpIn[0] == 5 && packetSize > 8) //dnrgbw
     {
       unsigned id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (size_t i = 4; i < packetSize -2; i += 4)
+      for (size_t i = 4; i < packetSize -2 && id < totalLen; i += 4, id++)
       {
-        if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-        id++;
       }
     }
     strip.show();
@@ -704,11 +688,11 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
       b = gamma8(b);
       w = gamma8(w);
     }
+    uint32_t col = RGBW32(r,g,b,w);
     if (useMainSegmentOnly) {
-      Segment &seg = strip.getMainSegment();
-      if (pix<seg.length()) seg.setPixelColor(pix, r, g, b, w);
+      strip.getMainSegment().setPixelColor(pix, col); // this expects that strip.getMainSegment().beginDraw() has been called in handleNotification()
     } else {
-      strip.setPixelColor(pix, r, g, b, w);
+      strip.setPixelColor(pix, col);
     }
   }
 }
