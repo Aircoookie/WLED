@@ -1067,7 +1067,7 @@ void ParticleSystem2D::updateSystem(void) {
   setMatrixSize(cols, rows);
   updatePSpointers(advPartProps != nullptr, advPartSize != nullptr); // update pointers to PS data, also updates availableParticles
   setUsedParticles(usedpercentage); // update used particles based on percentage  TODO: this does not need to be called for each frame, it only changes during transitions. can optimize?
-  if (partMemList.size() == 1) // if number of vector elements is one, this is the only system !!!TODO: does this need more special case handling? 
+  if (partMemList.size() == 1) // if number of vector elements is one, this is the only system
   {
     PSPRINTLN("rendersolo");
     if(renderSolo < 2) renderSolo++; // increment: there is one transition frame when enabling render solo where local buffer is still blank and cant be used for blurring
@@ -2152,8 +2152,6 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       PSPRINT(" new FX");
       PSPRINT(" progress: " + String(progress));
       newAvailable = (maxParticles * (progress + 1)) >> 16; // update total particles available to this PS
-      //if(newAvailable < 2) newAvailable = 2; // always give a minimum amount (this can lead to overlap, currently not a problem but some new FX may not like it)
-      //uint32_t brforigin = (uintptr_t)buffer; // save old buffer pointer for !!!!DEBUG
       buffer = (void*)((uint8_t*)buffer + (maxParticles - newAvailable) * structSize); // new effect gets the end of the buffer
       //uint32_t newbrfaddr = (uintptr_t)buffer;
       #ifdef WLED_DEBUG_PS
@@ -2228,7 +2226,6 @@ void particleHandover(void *buffer, size_t structSize, uint32_t numToTransfer) {
         particles[i].ttl = 0; // kill out of bounds
       else if (particles[i].ttl > 200)
         particles[i].ttl = 200; // reduce TTL so it will die soon
-      // else if(particles[i].ttl) particles[i].ttl += 100; // !!! debug test
       particles[i].sat = 255;      // full saturation
       particles[i].collide = true; // enable collisions (in case new FX uses them)
     }

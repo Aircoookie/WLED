@@ -7770,7 +7770,7 @@ uint16_t mode_particlevortex(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation Speed,Particle Speed,Arms,Auto Flip,Nozzle,Smear,Direction,Random Flip;;!;2;pal=56,sx=200,ix=190,c1=200,c2=0,c3=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation Speed,Particle Speed,Arms,Auto Flip,Nozzle,Smear,Direction,Random Flip;;!;2;pal=56,sx=200,ix=190,c1=200,c2=0,c3=0";
 
 /*
  * Particle Fireworks
@@ -8316,6 +8316,8 @@ uint16_t mode_particleperlin(void) {
       return mode_static(); // allocation failed or not 2D
 
     PartSys->setKillOutOfBounds(true); // should never happen, but lets make sure there are no stray particles
+    PartSys->setMotionBlur(230); // anable motion blur
+    PartSys->setBounceY(true);
     SEGENV.aux0 = rand();
   }
   else
@@ -8327,11 +8329,11 @@ uint16_t mode_particleperlin(void) {
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceX(!SEGMENT.check1);
-  PartSys->setBounceY(true);
   PartSys->setWallHardness(SEGMENT.custom1); // wall hardness
   PartSys->enableParticleCollisions(SEGMENT.check3, SEGMENT.custom1); // enable collisions and set particle collision hardness
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 25, 128)); // min is 10%, max is 50%
-  PartSys->setMotionBlur(230); // anable motion blur
+  PartSys->setSmearBlur(SEGMENT.check2 * 15); // enable 2D blurring (smearing)
+
   // apply 'gravity' from a 2D perlin noise map
   SEGENV.aux0 += 1 + (SEGMENT.speed >> 5); // noise z-position
   // update position in noise
@@ -8360,7 +8362,7 @@ uint16_t mode_particleperlin(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,,Collisions;;!;2;pal=64,sx=50,ix=200,c1=130,c2=30,c3=5,o1=0,o3=1";
+static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,Smear,Collisions;;!;2;pal=64,sx=50,ix=200,c1=130,c2=30,c3=5,o3=1";
 
 /*
  * Particle smashing down like meteors and exploding as they hit the ground, has many parameters to play with
@@ -8477,7 +8479,7 @@ uint16_t mode_particleimpact(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Hardness,Blur,Cylinder,Walls,Collisions;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Hardness,Blur,Cylinder,Walls,Collisions;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o3=1";
 
 /*
 Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
@@ -8583,9 +8585,9 @@ uint16_t mode_particleattractor(void) {
   return FRAMETIME;
 }
 #ifdef USERMOD_AUDIOREACTIVE
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Disable AR;;!;2v;pal=9,sx=100,ix=82,c1=0,c2=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Disable AR;;!;2v;pal=9,sx=100,ix=82,c1=0,c2=0,";
 #else
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=0,c2=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=0,c2=0";
 #endif
 
 /*
@@ -8672,7 +8674,7 @@ uint16_t mode_particlespray(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;2v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;2v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21";
 
 
 /*
@@ -8750,7 +8752,7 @@ uint16_t mode_particleGEQ(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS 2D GEQ@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS 2D GEQ@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128";
 
 /*
  * Particle rotating GEQ (unfinished, basically works but needs more fine-tuning)
@@ -8826,7 +8828,7 @@ uint16_t mode_particlecenterGEQ(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
+static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
 
 /*
 Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
@@ -8906,7 +8908,7 @@ uint16_t mode_particleghostrider(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,Color by age,Walls;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,Color by age,Walls;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1";
 
 /*
 PS Blobs: large particles bouncing around, changing size and form
@@ -8983,7 +8985,7 @@ uint16_t mode_particleblobs(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o3=1";
 
 /*
  * Particle Fractal
@@ -9057,7 +9059,7 @@ uint16_t mode_particlefractal(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PARTICLEFRACTAL[] PROGMEM = "PS fractal (exp)@Speed,Intensity,Base angle,branch angle,Blur,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8,o1=0,o2=0";
+static const char _data_FX_MODE_PARTICLEFRACTAL[] PROGMEM = "PS fractal (exp)@Speed,Intensity,Base angle,branch angle,Blur,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
 
 #endif //WLED_DISABLE_PARTICLESYSTEM2D
 
@@ -9171,7 +9173,7 @@ uint16_t mode_particleDrip(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=25,c1=220,c2=30,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=25,c1=220,c2=30,c3=21";
 
 
 /*
@@ -9259,7 +9261,7 @@ uint16_t mode_particleBouncingBalls(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Size,Blur/Overlay,Gravity,Collide,Rolling,Color by Position;,!;!;1;pal=0,sx=100,ix=85,c1=30,c2=0,c3=8,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Size,Blur/Overlay,Gravity,Collide,Rolling,Color by Position;,!;!;1;pal=0,sx=100,ix=85,c1=30,c2=0,c3=8";
 
 /*
 Particle Replacement for original Dancing Shadows:
@@ -9370,7 +9372,7 @@ uint16_t mode_particleDancingShadows(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur/Overlay,Color Cycle,,,,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=0,c2=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur/Overlay,Color Cycle,,,,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=0,c2=0";
 
 /*
 Particle Fireworks 1D replacement
@@ -9472,7 +9474,7 @@ uint16_t mode_particleFireworks1D(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur/Overlay,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o1=0,o2=1,o3=0";
+static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur/Overlay,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o2=1";
 
 /*
 Particle based Sparkle effect
@@ -9542,7 +9544,7 @@ uint16_t mode_particleSparkler(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur/Overlay,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur/Overlay,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
 /*
 Particle based Hourglass, particles falling at defined intervals
 Uses palette for particle color
@@ -9718,7 +9720,7 @@ uint16_t mode_particle1Dspray(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur/Overlay,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur/Overlay,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
 /*
 Particle based balance: particles move back and forth (1D pendent to 2D particle box)
 Uses palette for particle color
@@ -9788,7 +9790,7 @@ uint16_t mode_particleBalance(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
 
 /*
 Particle based Chase effect
@@ -9896,7 +9898,7 @@ uint16_t mode_particleChase(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur/Overlay,Pride,Color Waves,Color by Position;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur/Overlay,Pride,Color Waves,Color by Position;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0";
 /*
 Particle Fireworks Starburst replacement (smoother rendering, more settings)
 Uses palette for particle color
@@ -9957,7 +9959,7 @@ uint16_t mode_particleStarburst(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Fragment Size,Blur/Overlay,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Fragment Size,Blur/Overlay,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21";
 
 /*
 Particle based 1D GEQ effect, each frequency bin gets an emitter, distributed over the strip
@@ -10036,7 +10038,7 @@ uint16_t mode_particle1DGEQ(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur/Overlay,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur/Overlay,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
 /*
 Particle based Fire effect
 Uses palette for particle color
@@ -10101,7 +10103,7 @@ uint16_t mode_particleFire1D(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Blur/Overlay;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1,o3=0";
+static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Blur/Overlay;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1";
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 
 //////////////////////////////////////////////////////////////////////////////////////////
