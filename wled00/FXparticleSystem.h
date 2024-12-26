@@ -29,11 +29,11 @@
 // memory and transition manager
 struct partMem {
   void* particleMemPointer;   // pointer to particle memory
-  uint32_t numParticles;      // number of particles that fit in memory note: could be a uint16_t but padding will increase the struct size so 12 bytes anyway
-  uint8_t sizeOfParticle;     // size of the particle struct in this buffer
+  uint32_t buffersize;        // buffer size in bytes
+  uint8_t particleType;       // type of particles currently in memory: 0 = none, particle struct size otherwise (required for 1D<->2D transitions)
   uint8_t id;                 // ID of segment this memory belongs to
   uint8_t watchdog;           // counter to handle deallocation
-  uint8_t inTransition;       // to track transitions (is set to new FX ID during transitions)
+  uint8_t inTransition;       // to track PS to PS FX transitions (is set to new FX ID during transitions), not set if not both FX are PS FX
   bool transferParticles;     // if set, particles in buffer are transferred to new FX
 };
 

@@ -8219,7 +8219,7 @@ uint16_t mode_particlewaterfall(void) {
   PartSys->update();   // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collisions,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=64,c2=160,c3=17,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collisions,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,c3=17,o1=0,o2=0,o3=1";
 
 /*
 Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)

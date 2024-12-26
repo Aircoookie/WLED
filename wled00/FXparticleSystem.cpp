@@ -37,7 +37,6 @@ uint16_t frameBufferSize = 0; // size in pixels, used to check if framebuffer is
 uint16_t renderBufferSize = 0; // size in pixels, if allcoated by a 1D system it needs to be updated for 2D
 uint8_t renderSolo = 0; // is set to >0 if this is the only particle system using the so it can use the buffer continuously (faster blurring)
 uint8_t globalBlur = 0; // motion blur to apply if multiple PS are using the buffer
-bool transferflag = false; //DEBUG test !!! do it right
 
 ParticleSystem2D::ParticleSystem2D(uint32_t width, uint32_t height, uint32_t numberofparticles, uint32_t numberofsources, bool isadvanced, bool sizecontrol) {
   effectID = SEGMENT.mode; // new FX called init, save the effect ID
@@ -566,7 +565,7 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
   static bool useAdditiveTransfer = false; // use add instead of set for buffer transferring
-  if(!pmem->inTransition)  useAdditiveTransfer = false; // additive rendering is only used in transitions
+  if(!pmem->inTransition)  useAdditiveTransfer = false; // additive rendering is only used in PS FX transitions
   // handle blurring and framebuffer update
   if (framebuffer) {
     // update global blur (used for blur transitions)
@@ -698,7 +697,6 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
     else
       SEGMENT.blur(smearBlur, true);
   }
-  
 
   // transfer framebuffer to segment if available
   if (framebuffer && pmem->inTransition != effectID) { // not in transition or is old FX  TODO: how to handle this for overlay rendering or multiple segment rendering? need to check for rendersolo as well?
@@ -1249,6 +1247,7 @@ bool allocateParticleSystemMemory2D(uint32_t numparticles, uint32_t numsources, 
     requiredmemory += sizeof(PSsizeControl) * numparticles;
   requiredmemory += sizeof(PSsource) * numsources;
   requiredmemory += additionalbytes;
+  PSPRINTLN("mem alloc: " + String(requiredmemory));
   return(SEGMENT.allocateData(requiredmemory));
 }
 
@@ -2087,27 +2086,22 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       PSPRINT(" requested particles: " + String(requestedParticles));
       pmem->transferParticles = true; // set flag to transfer particles
       uint32_t requestsize = structSize * requestedParticles; // required buffer size
-      uint32_t currentsize = pmem->numParticles * pmem->sizeOfParticle;
-      if (requestsize > currentsize) { // request is larger than buffer, try to extend it
-        if (Segment::getUsedSegmentData() + requestsize - currentsize <= MAX_SEGMENT_DATA) { // enough memory available to extend buffer
+      if (requestsize > pmem->buffersize) { // request is larger than buffer, try to extend it
+        if (Segment::getUsedSegmentData() + requestsize - pmem->buffersize <= MAX_SEGMENT_DATA) { // enough memory available to extend buffer
           PSPRINT(" extending particle buffer ");
-          buffer = allocatePSmemory(structSize * requestedParticles, true); // calloc new memory in FX data, override limit (temporary buffer)
+          buffer = allocatePSmemory(requestsize, true); // calloc new memory in FX data, override limit (temporary buffer)
           if (buffer) { // allocaction successful, copy old particles to new buffer
-            memcpy(buffer,  pmem->particleMemPointer, currentsize); // copy old particle buffer note: only required if transition but copy is fast and rarely happens
-            deallocatePSmemory( pmem->particleMemPointer, currentsize); // free old memory
+            memcpy(buffer,  pmem->particleMemPointer, pmem->buffersize); // copy old particle buffer note: only required if transition but copy is fast and rarely happens
+            deallocatePSmemory( pmem->particleMemPointer, pmem->buffersize); // free old memory
             pmem->particleMemPointer = buffer; // set new buffer
-            pmem->numParticles = requestedParticles; // update number of particles
-            pmem->sizeOfParticle = structSize; // update memory size of a particle
+            pmem->buffersize = requestsize; // update buffer size
           } // if buffer was not extended, the old, smaller buffer is used
         }
       }
       if (pmem->watchdog == 1) { // if a PS already exists during particle request, it kicked the watchdog in last frame, servicePSmem() adds 1 afterwards -> PS to PS transition
         PSPRINTLN("********** PS is in transition, new FX:" + String(effectID));
-        //Serial.print(" inTransition = " + String(pmem->inTransition));
-        if(pmem->inTransition) // there is already a transition going on, multi transitions lead to weird behaviour (missing particles, missing transitions) 
-          pmem->inTransition = 1; // set to an invalid FX number so transitions work (the calling "new FX" is recognized as the old FX) TODO: this is a dirty hack and needs fixing but there is a bug in segment handling, not copying the segment.data...
-        else
-          pmem->inTransition = effectID; // save the ID of the new effect (required to determine blur amount in rendering function, it will not work without this so dont optimize)
+        PSPRINTLN(" inTransition = " + String(pmem->inTransition));
+        pmem->inTransition = effectID; // save the ID of the new effect (required to determine blur amount in rendering function)
       }
       else { // no watchdog, this is a new PS
         // availableToPS = requestedParticles; // all particles are available todo: THIS IS TBD, probably ok to feed particles slowly
@@ -2122,12 +2116,13 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
   }
   else { // if the id was not found create a buffer and add an element to the list
     PSPRINT(" allocating particle buffer ");
-    buffer = allocatePSmemory(structSize * requestedParticles, false); // allocate new memory
+    uint32_t requestsize = structSize * requestedParticles; // required buffer size
+    buffer = allocatePSmemory(requestsize, false); // allocate new memory
     if (buffer) PSPRINTLN(" bfr allocated");
     else PSPRINTLN(" brf alloc failed");
 
     if (buffer)
-      partMemList.push_back({buffer, (uint16_t)requestedParticles, (uint8_t)structSize, strip.getCurrSegmentId(),  0, 0});  // add buffer to list note: if pushback fails, it may crash
+      partMemList.push_back({buffer, requestsize, 0, strip.getCurrSegmentId(),  0, 0, true});  // add buffer to list, set flag to transfer/init the particles note: if pushback fails, it may crash
     else
       return nullptr; // there is no memory available !!! TODO: if localbuffer is allocated, free it and try again, its no use having a buffer but no particles
     pmem = getPartMem(); // get the pointer to the new element (check that it was added)
@@ -2135,7 +2130,6 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       free(buffer);
       return nullptr;
     }
-    pmem->transferParticles = true; // set flag to transfer particles
     availableToPS = 0; // new PS starts with zero particles, they are transferred in the next call
     return buffer; // directly return the buffer on init call
   }
@@ -2144,88 +2138,74 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
   Serial.println((uintptr_t)buffer, HEX);
   #endif
 
-  // now we have a valid buffer, check if we are in transition (pmem->inTransition is still true for one frame after transition is finished to allow for transfer of remaining particles)
-  if (SEGMENT.isInTransition() || pmem->inTransition) {
-    bool effectchanged = (SEGMENT.currentMode() != SEGMENT.mode); // FX changed, transition the particle buffer
-    if (effectchanged || pmem->transferParticles) {
-      PSPRINT(" FX changed ");
-      PSPRINT(" this mode: " + String(effectID));
-      PSPRINT("/ oldmode: " + String(SEGMENT.currentMode()));
-      PSPRINTLN(" newmode: " + String(SEGMENT.mode));
-      uint32_t progress = SEGMENT.progress(); // transition progress
-      uint32_t newAvailable = 0;
-      if (SEGMENT.mode == effectID) { // new effect ID -> function was called from new FX
-        PSPRINT(" new FX");
-        PSPRINT(" progress: " + String(progress));
-        newAvailable = (pmem->numParticles * (progress + 1)) >> 16; // update total particles available to this PS
-        if(newAvailable < 2) newAvailable = 2; // always give a minimum amount (this can lead to overlap, currently not a problem but some new FX may not like it)
-        //uint32_t brforigin = (uintptr_t)buffer; // save old buffer pointer for !!!!DEBUG
-        buffer = (void*)((uint8_t*)buffer + (pmem->numParticles - newAvailable) * structSize); // new effect gets the end of the buffer
-        //uint32_t newbrfaddr = (uintptr_t)buffer;
-        #ifdef WLED_DEBUG_PS
-        //PSPRINT(" new buffer startaddress: 0x");
-        //Serial.println((uintptr_t)buffer, HEX);
-        //PSPRINT("new bfrstart in particles ");
-        //Serial.println((newbrfaddr-brforigin)/structSize);
-        PSPRINT(" particle start: " + String(pmem->numParticles - newAvailable));
-        #endif
-        uint32_t transferstartidx = 0; // start at beginning of new buffer pointer  TODO: not used anymore, alway zero, can be removed.
-        uint32_t totransfer = newAvailable - availableToPS; // number of particles to transfer in this transition update
-        //TODO: maybe memcopy the buffer? if usedparticle number is small, end of the buffer holds alive but unused particles... copy would erase old particles though. need to think about a good way to do it.
-        // initialize newly transferred particles note: to have PS interact during transition, this must be changed. could initialize TTL and perpetual only TODO: need to be more clever: need to clear buffer if 2D->1D or 1D->2D transition or settings are nonsensical.
-        PSPRINT(" totransfer: " + String(totransfer));
-        if(totransfer <= newAvailable) { // overflow check TODO: why do overflows happen? does it still happen with the new calculation? -> not in normal transfer, need to check quick transfer changes -> seems ok TODO: can this be removed?
-          particleHandover(buffer, structSize, totransfer);
-        }
-        else {
-           PSPRINTLN(" Particle transfer overflow! ");
-        }
-      }
-      else { // this was called from old FX
-        PSPRINT(" old FX");
-        PSPRINT(" progress: " + String(progress));
-        SEGMENT.setCurrentPalette(true); // load the old palette into segment
-        progress = 0xFFFFU - progress; // inverted transition progress
-                PSPRINT(" inv.prog: " + String(progress));
+  // now we have a valid buffer, if this is a PS to PS FX transition: transfer particles slowly to new FX
+  bool effectchanged = (SEGMENT.currentMode() != SEGMENT.mode); // FX changed, transition the particle buffer
+  if (effectchanged && pmem->inTransition) {
+    PSPRINT(" FX changed ");
+    PSPRINT(" this mode: " + String(effectID));
+    PSPRINT("/ oldmode: " + String(SEGMENT.currentMode()));
+    PSPRINTLN(" newmode: " + String(SEGMENT.mode));
+    uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
+    uint32_t progress = SEGMENT.progress(); // transition progress
+    uint32_t newAvailable = 0;
+    if (SEGMENT.mode == effectID) { // new effect ID -> function was called from new FX
+      PSPRINT(" new FX");
+      PSPRINT(" progress: " + String(progress));
+      newAvailable = (maxParticles * (progress + 1)) >> 16; // update total particles available to this PS
+      //if(newAvailable < 2) newAvailable = 2; // always give a minimum amount (this can lead to overlap, currently not a problem but some new FX may not like it)
+      //uint32_t brforigin = (uintptr_t)buffer; // save old buffer pointer for !!!!DEBUG
+      buffer = (void*)((uint8_t*)buffer + (maxParticles - newAvailable) * structSize); // new effect gets the end of the buffer
+      //uint32_t newbrfaddr = (uintptr_t)buffer;
+      #ifdef WLED_DEBUG_PS
+      PSPRINT(" new buffer startaddress: 0x");
+      Serial.println((uintptr_t)buffer, HEX);
+      PSPRINT("new bfrstart in particles ");
+      Serial.println((newbrfaddr-brforigin)/structSize);
+      PSPRINT(" particle start: " + String(maxParticles - newAvailable));
+      #endif
+      uint32_t totransfer = newAvailable - availableToPS; // number of particles to transfer in this transition update
+      //TODO: maybe memcopy the buffer? if usedparticle number is small, end of the buffer holds alive but unused particles... copy would erase old particles though. need to think about a good way to do it.
 
-        newAvailable = (pmem->numParticles * progress) >> 16;
-        PSPRINT(" newAvailable: " + String(newAvailable));
-        PSPRINT(" oldAvailable: " + String(availableToPS));
-        if(newAvailable > availableToPS) newAvailable = availableToPS; // do not increase available particles (if memory was extended)
-        //PSPRINTLN("trans: available particles: " + String(availableToPS));
-        // note: startindex is start of buffer (transferred from end to start, so end particles are the old ones)
+      // initialize newly transferred particles note: to have PS interact during transition, this must be changed. could initialize TTL and perpetual only 
 
-      }
-
-      availableToPS = newAvailable;
-      PSPRINT(" final available to PS: " + String(availableToPS));
-      // TODO: if this is correct, the first if statement can be removed and availabletoPS updated here or: this part of the function can be optimized still
-    }
-    else { // same effect transition
-      PSPRINT(" same FX ");
-      availableToPS = pmem->numParticles; // no transition, full buffer available  TODO: need to restrict to segment size? test this with different size but same FX (large to small)
-      pmem->inTransition = false;
-    }
-
-    if(!SEGMENT.isInTransition()) { // transition ended, cleanup
-      pmem->inTransition = false;
-      PSPRINTLN(" ** ");
-      PSPRINTLN("****** TRANSITION ENDED ******");
-      // Transfer the last buffer state in PS before rendering
-      transferflag = true;
-    }
-  } else { // no transition, full buffer available
-    if(pmem->transferParticles) { // transition ended (or blending is disabled) -> transfer all remaining particles
-      uint32_t numPixels = SEGMENT.vWidth() * SEGMENT.vHeight(); // works for 1D and 2D, height is 1 in 1D
-      uint32_t finalAvailable = min(pmem->numParticles, numPixels); // limit to segment size in case a larger segment initialized the buffer
-      if (finalAvailable > availableToPS) { // not all particles transferred yet
-        uint32_t totransfer = finalAvailable - availableToPS; // number of particles to transfer in this transition update
+      PSPRINT(" totransfer: " + String(totransfer));
+      if(totransfer <= newAvailable) { // overflow check TODO: why do overflows happen? does it still happen with the new calculation? -> not in normal transfer, need to check quick transfer changes -> seems ok TODO: can this be removed?
         particleHandover(buffer, structSize, totransfer);
       }
-      availableToPS = finalAvailable; // update available particles
+      else {
+          PSPRINTLN(" Particle transfer overflow! ");
+      }
+    }
+    else { // this was called from the old FX
+      PSPRINT(" old FX");
+      PSPRINT(" progress: " + String(progress));
+      SEGMENT.setCurrentPalette(true); // load the old palette into segment
+      progress = 0xFFFFU - progress; // inverted transition progress
+      PSPRINT(" inv.prog: " + String(progress));
+      newAvailable = ((maxParticles * progress) >> 16);
+      if(newAvailable > 0) newAvailable--; // -1 to avoid overlapping memory in 1D<->2D transitions
+      //newAvailable = min(newAvailable, numPixels); // limit to segment size in case a larger segment initialized the buffer -> not needed during transfer, looks better without this
+      PSPRINT(" newAvailable: " + String(newAvailable));
+      PSPRINT(" oldAvailable: " + String(availableToPS));
+      if(newAvailable > availableToPS) newAvailable = availableToPS; // do not increase available particles (if memory was extended)
+      //PSPRINTLN("trans: available particles: " + String(availableToPS));
+      // note: startindex is start of buffer (transferred from end to start, so end particles are the old ones)
+    }
+    availableToPS = newAvailable;
+    PSPRINT(" final available to PS: " + String(availableToPS));
+  } else { // no PS transition, full buffer available
+    if(pmem->transferParticles) { // transition ended (or blending is disabled) -> transfer all remaining particles
+      uint32_t numPixels = SEGMENT.vWidth() * SEGMENT.vHeight(); // works for 1D and 2D, height is 1 in 1D
+      uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
+      if (maxParticles > availableToPS) { // not all particles transferred yet
+        uint32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
+        particleHandover(buffer, structSize, totransfer);
+      }
+      availableToPS = min(maxParticles, numPixels);; // update available particles limit to segment size in case a larger segment initialized the buffer (FX depend may depend on it)
+      pmem->particleType = structSize; // update particle type
       pmem->transferParticles = false;
     }
-    PSPRINTLN(" no trans, no of partcls: " + String(availableToPS));
+    PSPRINTLN(" no trans, nr of partcls: " + String(availableToPS));
     pmem->inTransition = false;
   }
   PSPRINTLN(" END getPartPointer ");
@@ -2234,13 +2214,15 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
 }
 
 // (re)initialize particles in the particle buffer for use in the new FX
-void particleHandover(void *buffer, size_t structSize, uint32_t numToTransfer)
-{
-  if (structSize == sizeof(PSparticle))
-  { // 2D particle
+void particleHandover(void *buffer, size_t structSize, uint32_t numToTransfer) {
+  // TODO: need to be more clever: need to clear buffer if 2D->1D or 1D->2D transition or settings are nonsensical.
+  #ifndef WLED_DISABLE_PARTICLESYSTEM2D
+  if (structSize == sizeof(PSparticle)) { // 2D particle
     PSparticle *particles = (PSparticle *)buffer;
-    for (uint32_t i = 0; i < numToTransfer; i++)
-    {
+    if (pmem->particleType != sizeof(PSparticle)) { // check if we are being handed over from a 1D system, clear buffer if so
+      memset(buffer, 0, numToTransfer * sizeof(PSparticle)); // clear buffer
+    }
+    for (uint32_t i = 0; i < numToTransfer; i++) {
       particles[i].perpetual = false; // particle ages
       if (particles[i].outofbounds)
         particles[i].ttl = 0; // kill out of bounds
@@ -2251,17 +2233,23 @@ void particleHandover(void *buffer, size_t structSize, uint32_t numToTransfer)
       particles[i].collide = true; // enable collisions (in case new FX uses them)
     }
   }
-  else
-  { // 1D particle system
+  else // 1D particle system
+  #endif
+  {
+    #ifndef WLED_DISABLE_PARTICLESYSTEM1D
     PSparticle1D *particles = (PSparticle1D *)buffer;
-    for (uint32_t i = 0; i < numToTransfer; i++)
-    {
+    // check if we are being handed over from a 2D system, clear buffer if so
+    if (pmem->particleType != sizeof(PSparticle1D)) {
+      memset(buffer, 0, numToTransfer * sizeof(PSparticle1D)); // clear buffer
+    }
+    for (uint32_t i = 0; i < numToTransfer; i++) {
       particles[i].perpetual = false; // particle ages
       if (particles[i].outofbounds)
         particles[i].ttl = 0; // kill out of bounds
       else if (particles[i].ttl > 50)
         particles[i].ttl = 50; // reduce TTL so it will die soon
     }
+    #endif
   }
 }
 
@@ -2322,7 +2310,7 @@ void servicePSmem() {
       PSPRINTLN(partMemList[i].watchdog);
       if (partMemList[i].watchdog > MAX_MEMIDLE) {
           PSPRINTLN("psmem free"); //deallocating memory:2560
-          deallocatePSmemory(partMemList[i].particleMemPointer, partMemList[i].numParticles * partMemList[i].sizeOfParticle); // Free memory
+          deallocatePSmemory(partMemList[i].particleMemPointer, partMemList[i].buffersize); // Free memory
           partMemList.erase(partMemList.begin() + i);  // Remove entry
           partMemList.shrink_to_fit(); // partMemList is small, memory operations should be unproblematic
       }
@@ -2343,7 +2331,7 @@ void servicePSmem() {
 }
 
 
-
+//!!! TODO: either use this function or remove it
 // apply globalBlur to framebuffer, clear buffer if not blurring (call this after transferring the buffer to the segment)
 static void applyBlurOrClear2D(uint32_t width, uint32_t height, uint8_t fxID) {
   if (framebuffer) {
@@ -2376,18 +2364,6 @@ static void applyBlurOrClear2D(uint32_t width, uint32_t height, uint8_t fxID) {
 void transferBuffer(uint32_t width, uint32_t height) {
   PSPRINT(" xfer buf ");
   if(!framebuffer) return; // no buffer, nothing to transfer
-  /*
-  if(SEGMENT.isInTransition()) {
-    // check if PS is also in transition
-    partMem *pmem = getPartMem();
-    if (pmem && pmem->inTransition)  // PS to PS transition
-    {
-      if(SEGMENT.mode == effectID) { // segment.mode() returns new FX, new FX is rendered first, skip transfer
-      PSPRINTLN("skip xfer");
-     // return; // leave the buffer as is, let the old effect render to it as well before transferring
-      }
-    }
-  }*/
   if(height) { // is 2D, 1D passes height = 0
     int32_t yflipped;
     PSPRINT("xfer 2D");
