@@ -14,7 +14,7 @@
 #include "wled.h"
 
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
-#define MAX_MEMIDLE 200 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!) note: setting this to a high 8bit value prevents fragmentation
+#define MAX_MEMIDLE 50 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!)
 
 //#define WLED_DEBUG_PS
 
@@ -32,12 +32,13 @@ struct partMem {
   uint32_t numParticles;      // number of particles that fit in memory note: could be a uint16_t but padding will increase the struct size so 12 bytes anyway
   uint8_t sizeOfParticle;     // size of the particle struct in this buffer
   uint8_t id;                 // ID of segment this memory belongs to
-  uint8_t inTransition;       // to track transitions
   uint8_t watchdog;           // counter to handle deallocation
+  uint8_t inTransition;       // to track transitions (is set to new FX ID during transitions)
+  bool transferParticles;     // if set, particles in buffer are transferred to new FX
 };
 
-
-void* getUpdatedParticlePointer(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint32_t &usedbyPS, const uint8_t percentused, const uint8_t effectID); // update particle memory pointer, handles transitions
+void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, const uint8_t effectID); // update particle memory pointer, handles transitions
+void particleHandover(void *buffer, size_t structSize, uint32_t numParticles);
 //extern CRGB *framebuffer; // local frame buffer for rendering
 //extern CRGB *renderbuffer; // local particle render buffer for advanced particles
 //extern uint16_t frameBufferSize; // size in pixels, used to check if framebuffer is large enough for current segment  TODO: make this in bytes, not in pixels
@@ -46,7 +47,7 @@ partMem* getPartMem(void); // returns pointer to memory struct for current segme
 void updateRenderingBuffer(CRGB* buffer, uint32_t requiredsize, bool isFramebuffer); // allocate CRGB rendering buffer, update size if needed
 void transferBuffer(uint32_t width, uint32_t height); // transfer the buffer to the segment
 //TODO: add 1D version
-void servicePSmem(uint8_t idx); // increments watchdog, frees memory if idle too long
+void servicePSmem(); // increments watchdog, frees memory if idle too long
 
 // update number of particles to use, must never be more than allocated (= particles allocated by the calling system)
 inline void updateUsedParticles(const uint32_t allocated, const uint32_t available, const uint8_t percentage, uint32_t &used) {
@@ -180,6 +181,7 @@ public:
   void setSaturation(uint8_t sat); // set global color saturation
   void setColorByAge(bool enable);
   void setMotionBlur(uint8_t bluramount); // note: motion blur can only be used if 'particlesize' is set to zero
+  void setSmearBlur(uint8_t bluramount); // enable 2D smeared blurring of full frame
   void setParticleSize(uint8_t size);
   void setGravity(int8_t force = 8);
   void enableParticleCollisions(bool enable, uint8_t hardness = 255);
@@ -226,7 +228,8 @@ private:
   int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)
   // global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
-  uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
+  uint8_t motionBlur; // motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
+  uint8_t smearBlur; // 2D smeared blurring of full frame
   uint8_t effectID; // ID of the effect that is using this particle system, used for transitions
   uint8_t usedpercentage; // percentage of particles used in the system, used during transition updates
 };
@@ -244,12 +247,12 @@ bool allocateParticleSystemMemory2D(uint32_t numparticles, uint32_t numsources, 
 ////////////////////////
 #ifndef WLED_DISABLE_PARTICLESYSTEM1D
 // memory allocation
-#define ESP8266_MAXPARTICLES_1D 400
-#define ESP8266_MAXSOURCES_1D 8
-#define ESP32S2_MAXPARTICLES_1D 1900
-#define ESP32S2_MAXSOURCES_1D 16
-#define ESP32_MAXPARTICLES_1D 6000
-#define ESP32_MAXSOURCES_1D 32
+#define ESP8266_MAXPARTICLES_1D 450
+#define ESP8266_MAXSOURCES_1D 16
+#define ESP32S2_MAXPARTICLES_1D 1600
+#define ESP32S2_MAXSOURCES_1D 32
+#define ESP32_MAXPARTICLES_1D 3200
+#define ESP32_MAXSOURCES_1D 64
 
 // particle dimensions (subpixel division)
 #define PS_P_RADIUS_1D 32 // subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
@@ -275,7 +278,7 @@ typedef union {
   byte asByte; // access as a byte, order is: LSB is first entry in the list above
 } PSsettings1D;
 
-//struct for a single particle (6 bytes)
+//struct for a single particle (7 bytes)
 typedef struct {
     int16_t x;  // x position in particle system
     int8_t vx;  // horizontal velocity

@@ -1403,13 +1403,13 @@ void WS2812FX::service() {
         seg.call++;
         if (seg.isInTransition() && frameDelay > FRAMETIME) frameDelay = FRAMETIME; // force faster updates during transition
         BusManager::setSegmentCCT(oldCCT); // restore old CCT for ABL adjustments
-        servicePSmem(_segment_index); // handle segment's particle system memory
       }
 
       seg.next_time = nowUp + frameDelay;
     }
     _segment_index++;
   }
+  servicePSmem(); // handle segment particle system memory
   _isServicing = false;
   _triggered = false;
 
