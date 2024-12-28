@@ -39,14 +39,9 @@ struct partMem {
 
 void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint8_t fractionUsed, const uint8_t effectID); // update particle memory pointer, handles memory transitions
 void particleHandover(void *buffer, size_t structSize, int32_t numParticles);
-//extern CRGB *framebuffer; // local frame buffer for rendering
-//extern CRGB *renderbuffer; // local particle render buffer for advanced particles
-//extern uint16_t frameBufferSize; // size in pixels, used to check if framebuffer is large enough for current segment  TODO: make this in bytes, not in pixels
-//extern uint16_t renderBufferSize; // size in pixels, if allcoated by a 1D system it needs to be updated for 2D
 partMem* getPartMem(void); // returns pointer to memory struct for current segment or nullptr
-void updateRenderingBuffer(CRGB* buffer, uint32_t requiredsize, bool isFramebuffer); // allocate CRGB rendering buffer, update size if needed
+void updateRenderingBuffer(uint32_t requiredsize, bool isFramebuffer); // allocate CRGB rendering buffer, update size if needed
 void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer = false); // transfer the buffer to the segment (supports 1D and 2D)
-//TODO: add 1D version? or remove 2D version?
 void servicePSmem(); // increments watchdog, frees memory if idle too long
 
 // update number of particles to use, must never be more than allocated (= particles allocated by the calling system)
