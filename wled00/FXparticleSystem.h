@@ -14,7 +14,7 @@
 #include "wled.h"
 
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
-#define MAX_MEMIDLE 50 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!)
+#define MAX_MEMIDLE 10 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!)
 
 //#define WLED_DEBUG_PS
 
@@ -37,16 +37,16 @@ struct partMem {
   bool transferParticles;     // if set, particles in buffer are transferred to new FX
 };
 
-void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, const uint8_t effectID); // update particle memory pointer, handles transitions
-void particleHandover(void *buffer, size_t structSize, uint32_t numParticles);
+void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint8_t fractionUsed, const uint8_t effectID); // update particle memory pointer, handles memory transitions
+void particleHandover(void *buffer, size_t structSize, int32_t numParticles);
 //extern CRGB *framebuffer; // local frame buffer for rendering
 //extern CRGB *renderbuffer; // local particle render buffer for advanced particles
 //extern uint16_t frameBufferSize; // size in pixels, used to check if framebuffer is large enough for current segment  TODO: make this in bytes, not in pixels
 //extern uint16_t renderBufferSize; // size in pixels, if allcoated by a 1D system it needs to be updated for 2D
 partMem* getPartMem(void); // returns pointer to memory struct for current segment or nullptr
 void updateRenderingBuffer(CRGB* buffer, uint32_t requiredsize, bool isFramebuffer); // allocate CRGB rendering buffer, update size if needed
-void transferBuffer(uint32_t width, uint32_t height); // transfer the buffer to the segment
-//TODO: add 1D version
+void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer = false); // transfer the buffer to the segment (supports 1D and 2D)
+//TODO: add 1D version? or remove 2D version?
 void servicePSmem(); // increments watchdog, frees memory if idle too long
 
 // update number of particles to use, must never be more than allocated (= particles allocated by the calling system)
@@ -56,8 +56,7 @@ inline void updateUsedParticles(const uint32_t allocated, const uint32_t availab
 
 #endif
 
-//TODO: updated ESP32_MAXPARTICLES, can have more with new mem manager, revisit the calculation
-// TODO: maybe update PS_P_MINSURFACEHARDNESS for 2D? its a bit too sticky already at hardness 100
+//TODO: maybe update PS_P_MINSURFACEHARDNESS for 2D? its a bit too sticky already at hardness 100
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 // memory allocation
 #define ESP8266_MAXPARTICLES 300 // enough up to 20x20 pixels
@@ -92,15 +91,15 @@ typedef union {
 } PSsettings2D;
 
 //struct for a single particle
-typedef struct { // 11 bytes
+typedef struct { // 12 bytes
     int16_t x;  // x position in particle system
     int16_t y;  // y position in particle system
+    uint16_t ttl; // time to live
     int8_t vx;  // horizontal velocity
     int8_t vy;  // vertical velocity
     uint8_t hue;  // color hue
     uint8_t sat; // particle color saturation
     //uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
-    uint16_t ttl; // time to live
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
@@ -168,7 +167,7 @@ public:
   void pointAttractor(uint16_t particleindex, PSparticle *attractor, uint8_t strength, bool swallow);
   void lineAttractor(uint16_t particleindex, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t strength);
   // set options
-  void setUsedParticles(uint8_t percentage);
+  void setUsedParticles(uint8_t percentage);  // set the percentage of particles used in the system, 255=100%
   void setCollisionHardness(uint8_t hardness); // hardness for particle collisions (255 means full hard)
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set
   void setWallRoughness(uint8_t roughness); // wall roughness randomizes wall collisions
@@ -207,7 +206,6 @@ private:
   void collideParticles(PSparticle *particle1, PSparticle *particle2, int32_t dx, int32_t dy);
   void fireParticleupdate();
   //utility functions
-  void transferBuffer(bool additive = false); // transfer the framebuffer to the segment
   void updatePSpointers(bool isadvanced, bool sizecontrol); // update the data pointers to current segment data space
   void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
   void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
@@ -217,6 +215,7 @@ private:
   PSsettings2D particlesettings; // settings used when updating particles (can also used by FX to move sources), do not edit properties directly, use functions above
   uint32_t numParticles;  // total number of particles allocated by this system note: during transitions, less are available, use availableParticles
   uint32_t availableParticles; // number of particles available for use (can be more or less than numParticles, assigned by memory manager)
+  uint8_t fractionOfParticlesUsed; // percentage of particles used in the system (255=100%), used during transition updates
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
   uint32_t wallHardness;
@@ -231,7 +230,6 @@ private:
   uint8_t motionBlur; // motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
   uint8_t smearBlur; // 2D smeared blurring of full frame
   uint8_t effectID; // ID of the effect that is using this particle system, used for transitions
-  uint8_t usedpercentage; // percentage of particles used in the system, used during transition updates
 };
 
 void blur2D(CRGB *colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, uint32_t yblur, uint32_t xstart = 0, uint32_t ystart = 0, bool isparticle = false);
@@ -327,7 +325,7 @@ public:
   void applyGravity(PSparticle1D *part); // applies gravity to single particle (use this for sources)
   void applyFriction(int32_t coefficient); // apply friction to all used particles
   // set options
-  void setUsedParticles(uint8_t percentage);
+  void setUsedParticles(uint8_t percentage); // set the percentage of particles used in the system, 255=100%
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set
   void setSize(uint16_t x); //set particle system size (= strip length)
   void setWrap(bool enable);
@@ -369,6 +367,7 @@ private:
   PSsettings1D particlesettings; // settings used when updating particles
   uint32_t numParticles;  // total number of particles allocated by this system note: never use more than this, even if more are available (only this many advanced particles are allocated)
   uint32_t availableParticles; // number of particles available for use (can be more or less than numParticles, assigned by memory manager)
+  uint8_t fractionOfParticlesUsed; // percentage of particles used in the system (255=100%), used during transition updates
   uint32_t emitIndex; // index to count through particles to emit so searching for dead pixels is faster
   int32_t collisionHardness;
   uint32_t particleHardRadius; // hard surface radius of a particle, used for collision detection
@@ -381,11 +380,10 @@ private:
   uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, larger sizez TBD (TODO: need larger sizes?)
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
   uint8_t effectID; // ID of the effect that is using this particle system, used for transitions
-  uint8_t usedpercentage; // percentage of particles used in the system, used for transitions
 };
 
-bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint32_t requestedsources, uint32_t percentofparticles = 255, uint32_t additionalbytes = 0, bool advanced = false);
-uint32_t calculateNumberOfParticles1D(bool isadvanced);
+bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint32_t requestedsources, uint8_t fractionofparticles = 255, uint32_t additionalbytes = 0, bool advanced = false);
+uint32_t calculateNumberOfParticles1D(uint32_t fraction, bool isadvanced);
 uint32_t calculateNumberOfSources1D(uint32_t requestedsources);
 bool allocateParticleSystemMemory1D(uint32_t numparticles, uint32_t numsources, bool isadvanced, uint32_t additionalbytes);
 void blur1D(CRGB *colorbuffer, uint32_t size, uint32_t blur, uint32_t start = 0);

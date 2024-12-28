@@ -7808,6 +7808,11 @@ uint16_t mode_particlefireworks(void) {
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceY(SEGMENT.check2);
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, SEGMENT.check2 ? 1 : 0, 10)); // if bounded, set gravity to minimum of 1 or they will bounce at top
+  PartSys->setMotionBlur(map(SEGMENT.custom2, 0, 255, 0, 170)); // anable motion blur
+  uint8_t smearing = 0;
+  if(SEGMENT.custom2 > 200) 
+    smearing = SEGMENT.custom2 - 200;
+  PartSys->setSmearBlur(smearing); // enable 2D blurring (smearing)
 
   // update the rockets, set the speed state
   for (j = 0; j < numRockets; j++) {
@@ -7911,7 +7916,7 @@ uint16_t mode_particlefireworks(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,,Gravity,Cylinder,Ground,;;!;2;pal=11,sx=100,ix=50,c1=84,c2=128,c3=12,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,;;!;2;pal=11,sx=100,ix=50,c1=84,c2=0,c3=12,o1=0,o2=0,o3=0";
 
 /*
  * Particle Volcano
@@ -9806,8 +9811,8 @@ uint16_t mode_particleChase(void) {
     if (!initParticleSystem1D(PartSys, 1, 255, 3, true)) // init
       return mode_static(); // allocation failed or is single pixel
     SEGENV.aux0 = 0xFFFF; // invalidate
-    *PartSys->PSdataEnd = 1;
-    *(PartSys->PSdataEnd + 1) = 1;
+    *PartSys->PSdataEnd = 1; // huedir
+    *(PartSys->PSdataEnd + 1) = 1; // sizedir
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9821,9 +9826,10 @@ uint16_t mode_particleChase(void) {
   //uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer
 
   //PartSys->setBounce(SEGMENT.check2);
-  uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3;
+  uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3; // note: progress is used to enforce update during transitions
   if(SEGENV.aux0 != settingssum) { //settings changed changed, update
-    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->usedParticles)))); //depends on intensity and particle size (custom1)  !!! TODO: this needs an update to relative number
+    //PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->usedParticles)))); //depends on intensity and particle size (custom1)  !!! TODO: is this fine now? 
+    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, 255 / (1 + (SEGMENT.custom1 >> 6)))); //depends on intensity and particle size (custom1)
     SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 4)) / PartSys->usedParticles; //spacing between particles
     // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this
     for(i = 0; i < PartSys->usedParticles; i++) {
@@ -9831,7 +9837,7 @@ uint16_t mode_particleChase(void) {
       PartSys->particles[i].ttl = 300;
       PartSys->particles[i].perpetual = true;
       //PartSys->particles[i].x = (i - 1) * SEGENV.step + (((i + 1) * remainder) / PartSys->usedParticles); // distribute evenly
-      PartSys->particles[i].x = (i - 1) * SEGENV.step; // distribute evenly
+      PartSys->particles[i].x = (i - 1) * SEGENV.step; // distribute evenly (starts out of frame for i=0)
       PartSys->particles[i].vx =  SEGMENT.speed >> 1;
       PartSys->advPartProps[i].size = SEGMENT.custom1;
       if(SEGMENT.custom2 < 255)
