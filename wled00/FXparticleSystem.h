@@ -16,7 +16,7 @@
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 #define MAX_MEMIDLE 10 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!)
 
-//#define WLED_DEBUG_PS
+#define WLED_DEBUG_PS
 
 #ifdef WLED_DEBUG_PS
   #define PSPRINT(x) Serial.print(x)
@@ -89,11 +89,11 @@ typedef union {
 typedef struct { // 12 bytes
     int16_t x;  // x position in particle system
     int16_t y;  // y position in particle system
-    uint16_t ttl; // time to live
     int8_t vx;  // horizontal velocity
     int8_t vy;  // vertical velocity
     uint8_t hue;  // color hue
     uint8_t sat; // particle color saturation
+    uint16_t ttl; // time to live in frames
     //uint16_t ttl : 12; // time to live, 12 bit or 4095 max (which is 50s at 80FPS)
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
@@ -271,18 +271,21 @@ typedef union {
   byte asByte; // access as a byte, order is: LSB is first entry in the list above
 } PSsettings1D;
 
-//struct for a single particle (7 bytes)
+//struct for a single particle (8 bytes)
 typedef struct {
     int16_t x;  // x position in particle system
     int8_t vx;  // horizontal velocity
     uint8_t hue;  // color hue
     // two byte bit field:
-    uint16_t ttl : 11; // time to live, 11 bit or 2047 max (which is 25s at 80FPS)
+    //uint16_t ttl : 11; // time to live, 11 bit or 2047 max (which is 25s at 80FPS)
+    uint16_t ttl; // time to live in frames
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
     bool reversegrav : 1; // if set, gravity is reversed on this particle
     bool fixed : 1; // if set, particle does not move (and collisions make other particles revert direction),
+    // note: there is on byte of padding added here, making TTL a 16bit variable saves 500bytes of flash so much faster than a bit field
+    // TODO: can this be optimized? wastes a lot of ram...
 } PSparticle1D;
 
 // struct for additional particle settings (optional)
@@ -292,7 +295,7 @@ typedef struct {
   uint8_t forcecounter;
 } PSadvancedParticle1D;
 
-//struct for a particle source (17 bytes)
+//struct for a particle source (16 bytes)
 typedef struct {
   uint16_t minLife; // minimum ttl of emittet particles
   uint16_t maxLife; // maximum ttl of emitted particles
@@ -330,6 +333,7 @@ public:
   void setColorByAge(bool enable);
   void setColorByPosition(bool enable);
   void setMotionBlur(uint8_t bluramount); // note: motion blur can only be used if 'particlesize' is set to zero
+  void setSmearBlur(uint8_t bluramount); // enable 1D smeared blurring of full frame
   void setParticleSize(uint8_t size); //size 0 = 1 pixel, size 1 = 2 pixels, is overruled by advanced particle size
   void setGravity(int8_t force = 8);
   void enableParticleCollisions(bool enable, uint8_t hardness = 255);
@@ -373,7 +377,8 @@ private:
   //uint8_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call? -> currently unused
   //global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, larger sizez TBD (TODO: need larger sizes?)
-  uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
+  uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations
+  uint8_t smearBlur; // smeared blurring of full frame
   uint8_t effectID; // ID of the effect that is using this particle system, used for transitions
 };
 

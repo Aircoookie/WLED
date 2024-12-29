@@ -9708,12 +9708,10 @@ uint16_t mode_particle1Dspray(void) {
   PartSys->sources[0].maxLife = 400;
   PartSys->sources[0].source.x = map(SEGMENT.custom1, 0 , 255, 0, PartSys->maxX); // spray position
   PartSys->sources[0].v = map(SEGMENT.speed, 0 , 255, -127 + PartSys->sources[0].var, 127 - PartSys->sources[0].var); // particle emit speed
-  PartSys->sources[0].source.reversegrav = false;
-  if(gravity < 0)
-    PartSys->sources[0].source.reversegrav = true;
+  PartSys->sources[0].source.reversegrav = gravity < 0 ? true : false;
 
   if(hw_random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0)
-        PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
+    PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
 
   //update color settings
   PartSys->setColorByAge(SEGMENT.check1); //overruled by 'color by position'
@@ -9722,6 +9720,7 @@ uint16_t mode_particle1Dspray(void) {
     PartSys->particles[i].reversegrav = PartSys->sources[0].source.reversegrav; //update gravity direction
   }
   PartSys->update(); // update and render
+  Serial.println("used by FX: " + String(PartSys->usedParticles));
 
   return FRAMETIME;
 }
@@ -9741,7 +9740,7 @@ uint16_t mode_particleBalance(void) {
       return mode_static(); // allocation failed or is single pixel
     //PartSys->setKillOutOfBounds(true);
     PartSys->setParticleSize(1);
-    SEGENV.aux0 = 0; // to track particle initialization
+    SEGENV.aux0 = 0; // 
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9764,6 +9763,7 @@ uint16_t mode_particleBalance(void) {
       PartSys->particles[i].x = i * PS_P_RADIUS_1D;
       PartSys->particles[i].hue = (i * 1024) / PartSys->usedParticles; // multi gradient distribution
       PartSys->particles[i].ttl = 300;
+      PartSys->particles[i].perpetual = true; // TODO: is this a good idea? need to check how to handle it in transitions
       PartSys->particles[i].collide = true;
     }
   }
