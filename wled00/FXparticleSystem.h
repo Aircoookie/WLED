@@ -37,18 +37,13 @@ struct partMem {
   bool transferParticles;     // if set, particles in buffer are transferred to new FX
 };
 
-void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint8_t fractionUsed, const uint8_t effectID); // update particle memory pointer, handles memory transitions
+void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint32_t numParticlesUsed, const uint8_t effectID); // update particle memory pointer, handles memory transitions
 void particleHandover(void *buffer, size_t structSize, int32_t numParticles);
+void updateUsedParticles(const uint32_t allocated, const uint32_t available, const uint8_t percentage, uint32_t &used);
 partMem* getPartMem(void); // returns pointer to memory struct for current segment or nullptr
 void updateRenderingBuffer(uint32_t requiredsize, bool isFramebuffer); // allocate CRGB rendering buffer, update size if needed
 void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer = false); // transfer the buffer to the segment (supports 1D and 2D)
 void servicePSmem(); // increments watchdog, frees memory if idle too long
-
-// update number of particles to use, must never be more than allocated (= particles allocated by the calling system)
-inline void updateUsedParticles(const uint32_t allocated, const uint32_t available, const uint8_t percentage, uint32_t &used) {
-  used = max((uint32_t)1, (min(allocated, available) * ((uint32_t)percentage + 1)) >> 8); // always use a minimum of 1 particle
-}
-
 #endif
 
 //TODO: maybe update PS_P_MINSURFACEHARDNESS for 2D? its a bit too sticky already at hardness 100

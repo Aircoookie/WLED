@@ -997,7 +997,10 @@ PSPRINTLN("updatePSpointers");
   // a pointer MUST be 4 byte aligned. sizeof() in a struct/class is always aligned to the largest element. if it contains a 32bit, it will be padded to 4 bytes, 16bit is padded to 2byte alignment.
   // The PS is aligned to 4 bytes, a PSparticle is aligned to 2 and a struct containing only byte sized variables is not aligned at all and may need to be padded when dividing the memoryblock.
   // by making sure that the number of sources and particles is a multiple of 4, padding can be skipped here as alignent is ensured, independent of struct sizes.
-  particles = reinterpret_cast<PSparticle *>(particleMemoryManager(0, sizeof(PSparticle), availableParticles, fractionOfParticlesUsed, effectID)); // get memory, leave buffer size as is (request 0)
+
+  // memory manager needs to know how many particles the FX wants to use so transitions can be handled properly (i.e. pointer will stop changing if enough particles are available during transitions)
+  uint32_t usedByFX = (numParticles * ((uint32_t)fractionOfParticlesUsed + 1)) >> 8; // final number of particles the FX wants to use (fractionOfParticlesUsed is 0-255)
+  particles = reinterpret_cast<PSparticle *>(particleMemoryManager(0, sizeof(PSparticle), availableParticles, usedByFX, effectID)); // get memory, leave buffer size as is (request 0)
   sources = reinterpret_cast<PSsource *>(this + 1); // pointer to source(s) at data+sizeof(ParticleSystem2D)
   PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources); // pointer to first available byte after the PS for FX additional data
   if (isadvanced) {
@@ -1745,7 +1748,10 @@ void ParticleSystem1D::updatePSpointers(bool isadvanced) {
   // a pointer MUST be 4 byte aligned. sizeof() in a struct/class is always aligned to the largest element. if it contains a 32bit, it will be padded to 4 bytes, 16bit is padded to 2byte alignment.
   // The PS is aligned to 4 bytes, a PSparticle is aligned to 2 and a struct containing only byte sized variables is not aligned at all and may need to be padded when dividing the memoryblock.
   // by making sure that the number of sources and particles is a multiple of 4, padding can be skipped here as alignent is ensured, independent of struct sizes.
-  particles = reinterpret_cast<PSparticle1D *>(particleMemoryManager(0, sizeof(PSparticle1D), availableParticles, fractionOfParticlesUsed, effectID)); // get memory, leave buffer size as is (request 0)
+
+  // memory manager needs to know how many particles the FX wants to use so transitions can be handled properly (i.e. pointer will stop changing if enough particles are available during transitions)
+  uint32_t usedByFX = (numParticles * ((uint32_t)fractionOfParticlesUsed + 1)) >> 8; // final number of particles the FX wants to use (fractionOfParticlesUsed is 0-255)
+  particles = reinterpret_cast<PSparticle1D *>(particleMemoryManager(0, sizeof(PSparticle1D), availableParticles, usedByFX, effectID)); // get memory, leave buffer size as is (request 0)
   sources = reinterpret_cast<PSsource1D *>(this + 1); // pointer to source(s)
   PSdataEnd = reinterpret_cast<uint8_t *>(sources + numSources); // pointer to first available byte after the PS for FX additional data
   if (isadvanced) {
@@ -1974,7 +1980,7 @@ void deallocatePSmemory(void* dataptr, uint32_t size) {
 }
 
 // Particle transition manager, creates/extends buffer if needed and handles transition memory-handover
-void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint8_t fractionUsed, const uint8_t effectID) {
+void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint32_t numParticlesUsed, const uint8_t effectID) {
   pmem = getPartMem();
   void* buffer = nullptr;
   PSPRINTLN("PS MemManager");
@@ -2029,6 +2035,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     uint32_t newAvailable = 0;
     if (SEGMENT.mode == effectID) { // new effect ID -> function was called from new FX
       newAvailable = (maxParticles * progress) >> 16; // update total particles available to this PS (newAvailable is guaranteed to be smaller than maxParticles)
+      if(newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used by the new FX and do not move the pointer anymore (will be set to base in final handover)
       uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles
       if(bufferoffset < maxParticles) // safety check
         buffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // new effect gets the end of the buffer
@@ -2052,15 +2059,17 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
         int32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
         if(totransfer < 0) totransfer = 0; // safety check
         particleHandover(buffer, structSize, totransfer);
+        // move the already existing particles to the beginning of the buffer
+        uint32_t usedbytes = availableToPS * structSize;
+        uint32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
+        void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
+        memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
       }
-      availableToPS = maxParticles; // update available particles
-      PSPRINTLN("final available particles: " + String(availableToPS));
       // kill unused particles to they do not re-appear when transitioning to next FX
-      uint32_t used = (maxParticles * fractionUsed) >> 8; // calculate number of particles used (this may not always be accurate but good enough)
       #ifndef WLED_DISABLE_PARTICLESYSTEM2D
       if (structSize == sizeof(PSparticle)) { // 2D particle
         PSparticle *particles = (PSparticle *)buffer;
-        for (uint32_t i = used; i < maxParticles; i++) {
+        for (uint32_t i = availableToPS; i < maxParticles; i++) {
           particles[i].ttl = 0; // kill unused particles
         }
       }
@@ -2069,11 +2078,13 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       {
         #ifndef WLED_DISABLE_PARTICLESYSTEM1D
         PSparticle1D *particles = (PSparticle1D *)buffer;
-        for (uint32_t i = used; i < maxParticles; i++) {
+        for (uint32_t i = availableToPS; i < maxParticles; i++) {
           particles[i].ttl = 0; // kill unused particles
         }
         #endif
       }
+      availableToPS = maxParticles; // now all particles are available to new FX
+      PSPRINTLN("final available particles: " + String(availableToPS));
       pmem->particleType = structSize; // update particle type
       pmem->transferParticles = false;
     }
@@ -2124,6 +2135,23 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
   }
 }
 
+// update number of particles to use, limit to allocated (= particles allocated by the calling system) in case more are available in the buffer
+void updateUsedParticles(const uint32_t allocated, const uint32_t available, const uint8_t percentage, uint32_t &used) {
+  uint32_t wantsToUse = (allocated * ((uint32_t)percentage + 1)) >> 8;
+  used = min(available, wantsToUse); // limit to available particles
+}
+
+// get the pointer to the particle memory for the segment
+partMem* getPartMem(void) { // TODO: maybe there is a better/faster way than using vectors?
+  uint8_t segID = strip.getCurrSegmentId();
+  for (partMem &pmem : partMemList) {
+    if (pmem.id == segID) {
+      return &pmem;
+    }
+  }
+  return nullptr;
+}
+
 // function to update the framebuffer and renderbuffer
 void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer) {
   PSPRINTLN("updateRenderingBuffer");
@@ -2138,17 +2166,6 @@ void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer) {
     else
       targetBufferSize = 0;
   }
-}
-
-// get the pointer to the particle memory for the segment
-partMem* getPartMem(void) { // TODO: maybe there is a better/faster way than using vectors?
-  uint8_t segID = strip.getCurrSegmentId();
-  for (partMem &pmem : partMemList) {
-    if (pmem.id == segID) {
-      return &pmem;
-    }
-  }
-  return nullptr;
 }
 
 // service the particle system memory, free memory if idle too long
