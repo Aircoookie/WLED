@@ -20,6 +20,7 @@ void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
+void IRAM_ATTR touchButtonISR();
 
 //cfg.cpp
 bool deserializeConfig(JsonObject doc, bool fromFS = false);
@@ -48,25 +49,130 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
   return true;
 }
 
+typedef struct WiFiConfig {
+  char clientSSID[33];
+  char clientPass[65];
+  IPAddress staticIP;
+  IPAddress staticGW;
+  IPAddress staticSN;
+  WiFiConfig(const char *ssid="", const char *pass="", uint32_t ip=0, uint32_t gw=0, uint32_t subnet=0x00FFFFFF) // little endian
+  : staticIP(ip)
+  , staticGW(gw)
+  , staticSN(subnet)
+  {
+    strncpy(clientSSID, ssid, 32); clientSSID[32] = 0;
+    strncpy(clientPass, pass, 64); clientPass[64] = 0;
+  }
+} wifi_config;
 
 //colors.cpp
+#define ColorFromPalette ColorFromPaletteWLED // override fastled version
+
+// CRGBW can be used to manipulate 32bit colors faster. However: if it is passed to functions, it adds overhead compared to a uint32_t color
+// use with caution and pay attention to flash size. Usually converting a uint32_t to CRGBW to extract r, g, b, w values is slower than using bitshifts
+// it can be useful to avoid back and forth conversions between uint32_t and fastled CRGB
+struct CRGBW {
+    union {
+        uint32_t color32; // Access as a 32-bit value (0xWWRRGGBB)
+        struct {
+            uint8_t b;
+            uint8_t g;
+            uint8_t r;
+            uint8_t w;
+        };
+        uint8_t raw[4];   // Access as an array in the order B, G, R, W
+    };
+
+    // Default constructor
+    inline CRGBW() __attribute__((always_inline)) = default;
+
+    // Constructor from a 32-bit color (0xWWRRGGBB)
+    constexpr CRGBW(uint32_t color) __attribute__((always_inline)) : color32(color) {}
+
+    // Constructor with r, g, b, w values
+    constexpr CRGBW(uint8_t red, uint8_t green, uint8_t blue, uint8_t white = 0) __attribute__((always_inline)) : b(blue), g(green), r(red), w(white) {}
+
+    // Constructor from CRGB
+    constexpr CRGBW(CRGB rgb) __attribute__((always_inline)) : b(rgb.b), g(rgb.g), r(rgb.r), w(0) {}
+
+    // Access as an array
+    inline const uint8_t& operator[] (uint8_t x) const __attribute__((always_inline)) { return raw[x]; }
+
+    // Assignment from 32-bit color
+    inline CRGBW& operator=(uint32_t color) __attribute__((always_inline)) { color32 = color; return *this; }
+
+    // Assignment from r, g, b, w
+    inline CRGBW& operator=(const CRGB& rgb) __attribute__((always_inline)) { b = rgb.b; g = rgb.g; r = rgb.r; w = 0; return *this; }
+
+    // Conversion operator to uint32_t
+    inline operator uint32_t() const __attribute__((always_inline)) {
+      return color32;
+    }
+    /*
+    // Conversion operator to CRGB
+    inline operator CRGB() const __attribute__((always_inline)) {
+      return CRGB(r, g, b);
+    }
+
+    CRGBW& scale32 (uint8_t scaledown) // 32bit math
+    {
+      if (color32 == 0) return *this; // 2 extra instructions, worth it if called a lot on black (which probably is true) adding check if scaledown is zero adds much more overhead as its 8bit
+      uint32_t scale = scaledown + 1;
+      uint32_t rb = (((color32 & 0x00FF00FF) * scale) >> 8) & 0x00FF00FF; // scale red and blue
+      uint32_t wg = (((color32 & 0xFF00FF00) >> 8) * scale) & 0xFF00FF00; // scale white and green
+          color32 =  rb | wg;
+      return *this;
+    }*/
+
+};
+
+struct CHSV32 { // 32bit HSV color with 16bit hue for more accurate conversions
+  union {
+    struct {
+        uint16_t h;  // hue
+        uint8_t s;   // saturation
+        uint8_t v;   // value
+    };
+    uint32_t raw;    // 32bit access
+  };
+  inline CHSV32() __attribute__((always_inline)) = default; // default constructor
+
+    /// Allow construction from hue, saturation, and value
+    /// @param ih input hue
+    /// @param is input saturation
+    /// @param iv input value
+  inline CHSV32(uint16_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) // constructor from 16bit h, s, v
+        : h(ih), s(is), v(iv) {}
+  inline CHSV32(uint8_t ih, uint8_t is, uint8_t iv) __attribute__((always_inline)) // constructor from 8bit h, s, v
+        : h((uint16_t)ih << 8), s(is), v(iv) {}
+  inline CHSV32(const CHSV& chsv) __attribute__((always_inline))  // constructor from CHSV
+    : h((uint16_t)chsv.h << 8), s(chsv.s), v(chsv.v) {}
+  inline operator CHSV() const { return CHSV((uint8_t)(h >> 8), s, v); } // typecast to CHSV
+};
 // similar to NeoPixelBus NeoGammaTableMethod but allows dynamic changes (superseded by NPB::NeoGammaDynamicTableMethod)
 class NeoGammaWLEDMethod {
   public:
-    static uint8_t Correct(uint8_t value);      // apply Gamma to single channel
-    static uint32_t Correct32(uint32_t color);  // apply Gamma to RGBW32 color (WLED specific, not used by NPB)
-    static void calcGammaTable(float gamma);    // re-calculates & fills gamma table
+    [[gnu::hot]] static uint8_t Correct(uint8_t value);         // apply Gamma to single channel
+    [[gnu::hot]] static uint32_t Correct32(uint32_t color);     // apply Gamma to RGBW32 color (WLED specific, not used by NPB)
+    static void calcGammaTable(float gamma);                              // re-calculates & fills gamma table
     static inline uint8_t rawGamma8(uint8_t val) { return gammaT[val]; }  // get value from Gamma table (WLED specific, not used by NPB)
   private:
     static uint8_t gammaT[];
 };
 #define gamma32(c) NeoGammaWLEDMethod::Correct32(c)
 #define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
-uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
-uint32_t color_add(uint32_t,uint32_t, bool fast=false);
-uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
+[[gnu::hot]] uint32_t color_blend(uint32_t c1, uint32_t c2 , uint8_t blend);
+inline uint32_t color_blend16(uint32_t c1, uint32_t c2, uint16_t b) { return color_blend(c1, c2, b >> 8); };
+[[gnu::hot]] uint32_t color_add(uint32_t, uint32_t, bool preserveCR = false);
+[[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
+[[gnu::hot]] uint32_t ColorFromPaletteWLED(const CRGBPalette16 &pal, unsigned index, uint8_t brightness = (uint8_t)255U, TBlendType blendType = LINEARBLEND);
+CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
+CRGBPalette16 generateRandomPalette();
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
-void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
+void hsv2rgb(const CHSV32& hsv, uint32_t& rgb);
+void colorHStoRGB(uint16_t hue, byte sat, byte* rgb);
+void rgb2hsv(const uint32_t rgb, CHSV32& hsv);
+inline CHSV rgb2hsv(const CRGB c) { CHSV32 hsv; rgb2hsv((uint32_t((byte(c.r) << 16) | (byte(c.g) << 8) | (byte(c.b)))), hsv); return CHSV(hsv); } // CRGB to hsv
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO
@@ -95,6 +201,10 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest);
 void updateFSInfo();
 void closeFile();
+inline bool writeObjectToFileUsingId(const String &file, uint16_t id, JsonDocument* content) { return writeObjectToFileUsingId(file.c_str(), id, content); };
+inline bool writeObjectToFile(const String &file, const char* key, JsonDocument* content) { return writeObjectToFile(file.c_str(), key, content); };
+inline bool readObjectFromFileUsingId(const String &file, uint16_t id, JsonDocument* dest) { return readObjectFromFileUsingId(file.c_str(), id, dest); };
+inline bool readObjectFromFile(const String &file, const char* key, JsonDocument* dest) { return readObjectFromFile(file.c_str(), key, dest); };
 
 //hue.cpp
 void handleHue();
@@ -121,20 +231,8 @@ void handleImprovWifiScan();
 void sendImprovIPRPCResult(ImprovRPCType type);
 
 //ir.cpp
-void applyRepeatActions();
-byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
-void decodeIR(uint32_t code);
-void decodeIR24(uint32_t code);
-void decodeIR24OLD(uint32_t code);
-void decodeIR24CT(uint32_t code);
-void decodeIR40(uint32_t code);
-void decodeIR44(uint32_t code);
-void decodeIR21(uint32_t code);
-void decodeIR6(uint32_t code);
-void decodeIR9(uint32_t code);
-void decodeIRJson(uint32_t code);
-
 void initIR();
+void deInitIR();
 void handleIR();
 
 //json.cpp
@@ -159,7 +257,6 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 void setValuesFromSegment(uint8_t s);
 void setValuesFromMainSeg();
 void setValuesFromFirstSelectedSeg();
-void resetTimebase();
 void toggleOnOff();
 void applyBri();
 void applyFinalBri();
@@ -208,9 +305,11 @@ void handlePlaylist();
 void serializePlaylist(JsonObject obj);
 
 //presets.cpp
+const char *getPresetsFileName(bool persistent = true);
 void initPresetsFile();
 void handlePresets();
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+bool applyPresetFromPlaylist(byte index);
 void applyPresetWithFallback(uint8_t presetID, uint8_t callMode, uint8_t effectID = 0, uint8_t paletteID = 0);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
@@ -219,7 +318,7 @@ void deletePreset(byte index);
 bool getPresetName(byte index, String& name);
 
 //remote.cpp
-void handleRemote();
+void handleRemote(uint8_t *data, size_t len);
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
@@ -235,6 +334,10 @@ void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
+#ifndef WLED_DISABLE_ESPNOW
+void espNowSentCB(uint8_t* address, uint8_t status);
+void espNowReceiveCB(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast);
+#endif
 
 //network.cpp
 int getSignalQuality(int rssi);
@@ -286,7 +389,7 @@ class Usermod {
     virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
     virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
     virtual void connected() {}                                              // called when WiFi is (re)connected
-    virtual void appendConfigData() {}                                       // helper function called from usermod settings page to add metadata for entry fields
+    virtual void appendConfigData(Print& settingsScript);                    // helper function called from usermod settings page to add metadata for entry fields
     virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
     virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
     virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
@@ -294,36 +397,56 @@ class Usermod {
     virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
     virtual void onMqttConnect(bool sessionPresent) {}                       // fired when MQTT connection is established (so usermod can subscribe)
     virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
+    virtual bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len) { return false; } // fired upon ESP-NOW message received
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
+
+  // API shims
+  private:
+    static Print* oappend_shim;
+    // old form of appendConfigData; called by default appendConfigData(Print&) with oappend_shim set up
+    // private so it is not accidentally invoked except via Usermod::appendConfigData(Print&)
+    virtual void appendConfigData() {}    
+  protected:
+    // Shim for oappend(), which used to exist in utils.cpp
+    template<typename T> static inline void oappend(const T& t) { oappend_shim->print(t); };
+#ifdef ESP8266
+    // Handle print(PSTR()) without crashing by detecting PROGMEM strings
+    static void oappend(const char* c) { if ((intptr_t) c >= 0x40000000) oappend_shim->print(FPSTR(c)); else oappend_shim->print(c); };
+#endif
 };
 
 class UsermodManager {
   private:
-    Usermod* ums[WLED_MAX_USERMODS];
-    byte numMods = 0;
+    static Usermod* ums[WLED_MAX_USERMODS];
+    static byte numMods;
 
   public:
-    void loop();
-    void handleOverlayDraw();
-    bool handleButton(uint8_t b);
-    bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
-    void setup();
-    void connected();
-    void appendConfigData();
-    void addToJsonState(JsonObject& obj);
-    void addToJsonInfo(JsonObject& obj);
-    void readFromJsonState(JsonObject& obj);
-    void addToConfig(JsonObject& obj);
-    bool readFromConfig(JsonObject& obj);
-    void onMqttConnect(bool sessionPresent);
-    bool onMqttMessage(char* topic, char* payload);
-    void onUpdateBegin(bool);
-    void onStateChange(uint8_t);
-    bool add(Usermod* um);
-    Usermod* lookup(uint16_t mod_id);
-    byte getModCount() {return numMods;};
+    static void loop();
+    static void handleOverlayDraw();
+    static bool handleButton(uint8_t b);
+    static bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
+    static void setup();
+    static void connected();
+    static void appendConfigData(Print&);
+    static void addToJsonState(JsonObject& obj);
+    static void addToJsonInfo(JsonObject& obj);
+    static void readFromJsonState(JsonObject& obj);
+    static void addToConfig(JsonObject& obj);
+    static bool readFromConfig(JsonObject& obj);
+#ifndef WLED_DISABLE_MQTT
+    static void onMqttConnect(bool sessionPresent);
+    static bool onMqttMessage(char* topic, char* payload);
+#endif
+#ifndef WLED_DISABLE_ESPNOW
+    static bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len);
+#endif
+    static void onUpdateBegin(bool);
+    static void onStateChange(uint8_t);
+    static bool add(Usermod* um);
+    static Usermod* lookup(uint16_t mod_id);
+    static inline byte getModCount() {return numMods;};
 };
 
 //usermods_list.cpp
@@ -335,14 +458,22 @@ void userConnected();
 void userLoop();
 
 //util.cpp
+#ifdef ESP8266
+#define HW_RND_REGISTER RANDOM_REG32
+#else // ESP32 family
+#include "soc/wdev_reg.h"
+#define HW_RND_REGISTER REG_READ(WDEV_RND_REG)
+#endif
 int getNumVal(const String* req, uint16_t pos);
 void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
-bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
+bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255); // getVal supports inc/decrementing and random ("X~Y(r|~[w][-][Z])" form)
+bool getBoolVal(JsonVariant elem, bool dflt);
 bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
-bool oappend(const char* txt); // append new c string to temp buffer efficiently
-bool oappendi(int i);          // append new number to temp buffer efficiently
-void sappend(char stype, const char* key, int val);
-void sappends(char stype, const char* key, char* val);
+size_t printSetFormCheckbox(Print& settingsScript, const char* key, int val);
+size_t printSetFormValue(Print& settingsScript, const char* key, int val);
+size_t printSetFormValue(Print& settingsScript, const char* key, const char* val);
+size_t printSetFormIndex(Print& settingsScript, const char* key, int index);
+size_t printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val);
 void prepareHostname(char* hostname);
 bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
@@ -352,9 +483,30 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 void checkSettingsPIN(const char *pin);
 uint16_t crc16(const unsigned char* data_p, size_t length);
+uint16_t beatsin88_t(accum88 beats_per_minute_88, uint16_t lowest = 0, uint16_t highest = 65535, uint32_t timebase = 0, uint16_t phase_offset = 0);
+uint16_t beatsin16_t(accum88 beats_per_minute, uint16_t lowest = 0, uint16_t highest = 65535, uint32_t timebase = 0, uint16_t phase_offset = 0);
+uint8_t beatsin8_t(accum88 beats_per_minute, uint8_t lowest = 0, uint8_t highest = 255, uint32_t timebase = 0, uint8_t phase_offset = 0);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
 uint8_t get_random_wheel_index(uint8_t pos);
+float mapf(float x, float in_min, float in_max, float out_min, float out_max);
+
+// fast (true) random numbers using hardware RNG, all functions return values in the range lowerlimit to upperlimit-1
+// note: for true random numbers with high entropy, do not call faster than every 200ns (5MHz)
+// tests show it is still highly random reading it quickly in a loop (better than fastled PRNG)
+// for 8bit and 16bit random functions: no limit check is done for best speed
+// 32bit inputs are used for speed and code size, limits don't work if inverted or out of range
+// inlining does save code size except for random(a,b) and 32bit random with limits
+#define random hw_random // replace arduino random()
+inline uint32_t hw_random() { return HW_RND_REGISTER; };
+uint32_t hw_random(uint32_t upperlimit); // not inlined for code size
+int32_t hw_random(int32_t lowerlimit, int32_t upperlimit);
+inline uint16_t hw_random16() { return HW_RND_REGISTER; };
+inline uint16_t hw_random16(uint32_t upperlimit) { return (hw_random16() * upperlimit) >> 16; }; // input range 0-65535 (uint16_t)
+inline int16_t hw_random16(int32_t lowerlimit, int32_t upperlimit) { int32_t range = upperlimit - lowerlimit; return lowerlimit + hw_random16(range); }; // signed limits, use int16_t ranges
+inline uint8_t hw_random8() { return HW_RND_REGISTER; };
+inline uint8_t hw_random8(uint32_t upperlimit) { return (hw_random8() * upperlimit) >> 8; }; // input range 0-255
+inline uint8_t hw_random8(uint32_t lowerlimit, uint32_t upperlimit) { uint32_t range = upperlimit - lowerlimit; return lowerlimit + hw_random8(range); }; // input range 0-255
 
 // RAII guard class for the JSON Buffer lock
 // Modeled after std::lock_guard
@@ -381,41 +533,46 @@ void clearEEPROM();
 #endif
 
 //wled_math.cpp
-#ifndef WLED_USE_REAL_MATH
-  template <typename T> T atan_t(T x);
-  float cos_t(float phi);
-  float sin_t(float x);
-  float tan_t(float x);
-  float acos_t(float x);
-  float asin_t(float x);
-  float floor_t(float x);
-  float fmod_t(float num, float denom);
-#else
-  #include <math.h>
-  #define sin_t sin
-  #define cos_t cos
-  #define tan_t tan
-  #define asin_t asin
-  #define acos_t acos
-  #define atan_t atan
-  #define fmod_t fmod
-  #define floor_t floor
-#endif
+//float cos_t(float phi); // use float math
+//float sin_t(float phi);
+//float tan_t(float x);
+int16_t sin16_t(uint16_t theta);
+int16_t cos16_t(uint16_t theta);
+uint8_t sin8_t(uint8_t theta);
+uint8_t cos8_t(uint8_t theta);
+float sin_approx(float theta); // uses integer math (converted to float), accuracy +/-0.0015 (compared to sinf())
+float cos_approx(float theta);
+float tan_approx(float x);
+float atan2_t(float y, float x);
+float acos_t(float x);
+float asin_t(float x);
+template <typename T> T atan_t(T x);
+float floor_t(float x);
+float fmod_t(float num, float denom);
+#define sin_t sin_approx
+#define cos_t cos_approx
+#define tan_t tan_approx
 
+/*
+#include <math.h>  // standard math functions. use a lot of flash
+#define sin_t sinf
+#define cos_t cosf
+#define tan_t tanf
+#define asin_t asinf
+#define acos_t acosf
+#define atan_t atanf
+#define fmod_t fmodf
+#define floor_t floorf
+*/
 //wled_serial.cpp
 void handleSerial();
 void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
-bool isIp(String str);
 void createEditHandler(bool enable);
-bool captivePortal(AsyncWebServerRequest *request);
 void initServer();
-void serveIndexOrWelcome(AsyncWebServerRequest *request);
-void serveIndex(AsyncWebServerRequest* request);
-String msgProcessor(const String& var);
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
-String dmxProcessor(const String& var);
+void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t error);
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
 void serveSettingsJS(AsyncWebServerRequest* request);
 
@@ -425,8 +582,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 void sendDataWs(AsyncWebSocketClient * client = nullptr);
 
 //xml.cpp
-void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
-void URL_response(AsyncWebServerRequest *request);
-void getSettingsJS(byte subPage, char* dest);
+void XML_response(Print& dest);
+void getSettingsJS(byte subPage, Print& dest);
 
 #endif

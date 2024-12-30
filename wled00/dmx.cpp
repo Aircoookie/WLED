@@ -22,7 +22,7 @@ void handleDMX()
   bool calc_brightness = true;
 
    // check if no shutter channel is set
-   for (byte i = 0; i < DMXChannels; i++)
+   for (unsigned i = 0; i < DMXChannels; i++)
    {
      if (DMXFixtureMap[i] == 5) calc_brightness = false;
    }
@@ -69,14 +69,10 @@ void handleDMX()
 }
 
 void initDMX() {
- #ifdef ESP8266
+ #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2)
   dmx.init(512);        // initialize with bus length
  #else
   dmx.initWrite(512);  // initialize with bus length
  #endif
 }
-
-#else
-void handleDMX() {}
-void initDMX() {}
 #endif

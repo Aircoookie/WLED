@@ -123,6 +123,27 @@ const ethernet_settings ethernetBoards[] = {
     18,                   // eth_mdio,
     ETH_PHY_LAN8720,      // eth_type,
     ETH_CLOCK_GPIO17_OUT  // eth_clk_mode
+  },
+
+  // ESP32-POE-WROVER
+  {
+    0,                    // eth_address,
+    12,                   // eth_power,
+    23,                   // eth_mdc,
+    18,                   // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO0_OUT   // eth_clk_mode
+  },
+  
+  // LILYGO T-POE Pro
+  // https://github.com/Xinyuan-LilyGO/LilyGO-T-ETH-Series/blob/master/schematic/T-POE-PRO.pdf
+  {
+    0,			              // eth_address,
+    5,			              // eth_power,
+    23,			              // eth_mdc,
+    18,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO0_OUT	// eth_clk_mode
   }
 };
 #endif
@@ -163,8 +184,8 @@ void WiFiEvent(WiFiEvent_t event)
       if (!apActive) {
         WiFi.disconnect(true);
       }
-      if (staticIP != (uint32_t)0x00000000 && staticGateway != (uint32_t)0x00000000) {
-        ETH.config(staticIP, staticGateway, staticSubnet, IPAddress(8, 8, 8, 8));
+      if (multiWiFi[0].staticIP != (uint32_t)0x00000000 && multiWiFi[0].staticGW != (uint32_t)0x00000000) {
+        ETH.config(multiWiFi[0].staticIP, multiWiFi[0].staticGW, multiWiFi[0].staticSN, dnsAddress);
       } else {
         ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
       }
@@ -186,6 +207,7 @@ void WiFiEvent(WiFiEvent_t event)
       break;
 #endif
     default:
+      DEBUG_PRINTF_P(PSTR("Network event: %d\n"), (int)event);
       break;
   }
 }

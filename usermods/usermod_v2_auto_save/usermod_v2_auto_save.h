@@ -103,7 +103,7 @@ class AutoSaveUsermod : public Usermod {
       #ifdef USERMOD_FOUR_LINE_DISPLAY    
       // This Usermod has enhanced functionality if
       // FourLineDisplayUsermod is available.
-      display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
+      display = (FourLineDisplayUsermod*) UsermodManager::lookup(USERMOD_ID_FOUR_LINE_DISP);
       #endif
       initDone = true;
       if (enabled && applyAutoSaveOnBoot) applyPreset(autoSavePreset);
@@ -122,9 +122,9 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (!autoSaveAfterSec || !enabled || strip.isUpdating() || currentPreset>0) return;  // setting 0 as autosave seconds disables autosave
-
+      static unsigned long lastRun = 0;
       unsigned long now = millis();
+      if (!autoSaveAfterSec || !enabled || currentPreset>0 || (strip.isUpdating() && now - lastRun < 240)) return;  // setting 0 as autosave seconds disables autosave
       uint8_t currentMode = strip.getMainSegment().mode;
       uint8_t currentPalette = strip.getMainSegment().palette;
 

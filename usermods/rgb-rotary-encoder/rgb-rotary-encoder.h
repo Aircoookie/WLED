@@ -40,7 +40,7 @@ class RgbRotaryEncoderUsermod : public Usermod
     void initRotaryEncoder()
     {
       PinManagerPinType pins[2] = { { eaIo, false }, { ebIo, false } };
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::UM_RGBRotaryEncoder)) {
+      if (!PinManager::allocateMultiplePins(pins, 2, PinOwner::UM_RGBRotaryEncoder)) {
         eaIo = -1;
         ebIo = -1;
         cleanup();
@@ -108,11 +108,11 @@ class RgbRotaryEncoderUsermod : public Usermod
     {
       // Only deallocate pins if we allocated them ;)
       if (eaIo != -1) {
-        pinManager.deallocatePin(eaIo, PinOwner::UM_RGBRotaryEncoder);
+        PinManager::deallocatePin(eaIo, PinOwner::UM_RGBRotaryEncoder);
         eaIo = -1;
       }
       if (ebIo != -1) {
-        pinManager.deallocatePin(ebIo, PinOwner::UM_RGBRotaryEncoder);
+        PinManager::deallocatePin(ebIo, PinOwner::UM_RGBRotaryEncoder);
         ebIo = -1;
       }
 
@@ -303,8 +303,8 @@ class RgbRotaryEncoderUsermod : public Usermod
           }
 
           if (eaIo != oldEaIo || ebIo != oldEbIo || stepsPerClick != oldStepsPerClick || incrementPerClick != oldIncrementPerClick) {
-            pinManager.deallocatePin(oldEaIo, PinOwner::UM_RGBRotaryEncoder);
-            pinManager.deallocatePin(oldEbIo, PinOwner::UM_RGBRotaryEncoder);
+            PinManager::deallocatePin(oldEaIo, PinOwner::UM_RGBRotaryEncoder);
+            PinManager::deallocatePin(oldEbIo, PinOwner::UM_RGBRotaryEncoder);
             
             delete rotaryEncoder;
             initRotaryEncoder();
