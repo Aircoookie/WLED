@@ -288,7 +288,7 @@ void initServer()
     bool isConfig = false;
 
     if (!requestJSONBufferLock(14)) {
-      serveJsonError(request, 503, ERR_NOBUF);
+      request->deferResponse();
       return;
     }
 
