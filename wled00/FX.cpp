@@ -8014,7 +8014,7 @@ uint16_t mode_particlefire(void) {
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setWrapX(SEGMENT.check2);
-  PartSys->setMotionBlur(SEGMENT.check1 * 180); // anable/disable motion blur
+  PartSys->setMotionBlur(SEGMENT.check1 * 170); // anable/disable motion blur
 
   uint32_t firespeed = max((uint8_t)100, SEGMENT.speed); //limit speed to 100 minimum, reduce frame rate to make it slower (slower speeds than 100 do not look nice)
   if (SEGMENT.speed < 100) { //slow, limit FPS
@@ -8170,7 +8170,7 @@ uint16_t mode_particlewaterfall(void) {
 
     PartSys->setGravity();  // enable with default gforce
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
-    PartSys->setMotionBlur(175); // anable motion blur
+    PartSys->setMotionBlur(170); // anable motion blur
     PartSys->setSmearBlur(45); // enable 2D blurring (smearing)
     for (i = 0; i < PartSys->numSources; i++) {
       PartSys->sources[i].source.hue = i*90;
@@ -9236,7 +9236,7 @@ uint16_t mode_particleBouncingBalls(void) {
         PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? newspeed : -newspeed; //keep the direction
         PartSys->particles[i].hue = hw_random8(); //set ball colors to random
         PartSys->advPartProps[i].sat = 255;
-        PartSys->advPartProps[i].size = hw_random16(SEGMENT.custom1 >> 2, SEGMENT.custom1);
+        PartSys->advPartProps[i].size = SEGMENT.custom1;
       }
     }
   }
@@ -9253,7 +9253,7 @@ uint16_t mode_particleBouncingBalls(void) {
       SEGENV.aux0 = (260 - SEGMENT.intensity) + hw_random16(280 - SEGMENT.intensity);
       PartSys->sources[0].source.hue = hw_random16(); //set ball color
       PartSys->sources[0].sat = 255;
-      PartSys->sources[0].size = hw_random16(SEGMENT.custom1 >> 2, SEGMENT.custom1);
+      PartSys->sources[0].size = SEGMENT.custom1;
       PartSys->sprayEmit(PartSys->sources[0]);
     }
   }
@@ -9618,7 +9618,7 @@ uint16_t mode_particleHourglass(void) {
         case 3: PartSys->particles[i].hue = *basehue + (i % colormode)*70; break; // interleved colors (every 2 or 3 particles)
         case 4: PartSys->particles[i].hue = *basehue + (i * 255) / PartSys->usedParticles;  break; // gradient palette colors
         case 5: PartSys->particles[i].hue = *basehue + (i * 1024) / PartSys->usedParticles;  break; // multi gradient palette colors
-        case 6: PartSys->particles[i].hue = i + (strip.now >> 1);  break; // disco! fast moving color gradient
+        case 6: PartSys->particles[i].hue = i + (strip.now >> 3);  break; // disco! moving color gradient
         default: break;
       }
     }
@@ -9629,6 +9629,7 @@ uint16_t mode_particleHourglass(void) {
   if(SEGENV.aux1 == 1) { //last countdown call before dropping starts, reset all particles
     for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particles[i].collide = true;
+      PartSys->particles[i].perpetual = true;
       PartSys->particles[i].ttl = 260;
       uint32_t targetposition;
       //calculate target position depending on direction
@@ -9699,10 +9700,10 @@ uint16_t mode_particle1Dspray(void) {
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setBounce(SEGMENT.check2);
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  int32_t gravity = (int32_t)SEGMENT.custom3 - 15;  //gravity setting, 0-14 is negative, 16 - 31 is positive
+  int32_t gravity = (int32_t)SEGMENT.custom3 - 15;  // gravity setting, 0-14 is negative, 16 - 31 is positive
   PartSys->setGravity(abs(gravity)); // use reversgrav setting to invert gravity (for proper 'floor' and out of bounce handling)
 
-  PartSys->sources[0].source.hue = hw_random16();  //TODO: add colormodes like in hourglass?
+  PartSys->sources[0].source.hue = hw_random16();  // TODO: add colormodes like in hourglass?
   PartSys->sources[0].var = 20;
   PartSys->sources[0].minLife = 200;
   PartSys->sources[0].maxLife = 400;
@@ -9711,13 +9712,13 @@ uint16_t mode_particle1Dspray(void) {
   PartSys->sources[0].source.reversegrav = gravity < 0 ? true : false;
 
   if(hw_random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0)
-    PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
+    PartSys->sprayEmit(PartSys->sources[0]); // emit a particle
 
   //update color settings
-  PartSys->setColorByAge(SEGMENT.check1); //overruled by 'color by position'
+  PartSys->setColorByAge(SEGMENT.check1); // overruled by 'color by position'
   PartSys->setColorByPosition(SEGMENT.check3);
   for(uint i = 0; i < PartSys->usedParticles; i++) {
-    PartSys->particles[i].reversegrav = PartSys->sources[0].source.reversegrav; //update gravity direction
+    PartSys->particles[i].reversegrav = PartSys->sources[0].source.reversegrav; // update gravity direction
   }
   PartSys->update(); // update and render
   Serial.println("used by FX: " + String(PartSys->usedParticles));
@@ -9826,11 +9827,11 @@ uint16_t mode_particleChase(void) {
   //uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer
 
   //PartSys->setBounce(SEGMENT.check2);
-  uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3; // note: progress is used to enforce update during transitions
+  uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3 + PartSys->getUsedParticles(); // note: progress is used to enforce update during transitions
   if(SEGENV.aux0 != settingssum) { //settings changed changed, update
     //PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->usedParticles)))); //depends on intensity and particle size (custom1)  !!! TODO: is this fine now? 
     PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, 255 / (1 + (SEGMENT.custom1 >> 6)))); //depends on intensity and particle size (custom1)
-    SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 4)) / PartSys->usedParticles; //spacing between particles
+    SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 5)) / PartSys->usedParticles; //spacing between particles
     // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this
     for(i = 0; i < PartSys->usedParticles; i++) {
       PartSys->advPartProps[i].sat = 255;

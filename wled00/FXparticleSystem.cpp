@@ -1195,6 +1195,12 @@ ParticleSystem1D::ParticleSystem1D(uint32_t length, uint32_t numberofparticles, 
   for (uint32_t i = 0; i < numSources; i++) {
     sources[i].source.ttl = 1; //set source alive
   }
+
+  if(isadvanced) {
+    for (uint32_t i = 0; i < numParticles; i++) {
+      advPartProps[i].sat = 255; // set full saturation (for particles that are transferred from non-advanced system)
+    }
+  }
 }
 
 // update function applies gravity, moves the particles, handles collisions and renders the particles
@@ -2035,7 +2041,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     uint32_t newAvailable = 0;
     if (SEGMENT.mode == effectID) { // new effect ID -> function was called from new FX
       newAvailable = (maxParticles * progress) >> 16; // update total particles available to this PS (newAvailable is guaranteed to be smaller than maxParticles)
-      if(newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used by the new FX and do not move the pointer anymore (will be set to base in final handover)
+      if(maxParticles / numParticlesUsed > 3 && newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used for FX using a small amount, do not move the pointer anymore (will be set to base in final handover)
       uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles
       if(bufferoffset < maxParticles) // safety check
         buffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // new effect gets the end of the buffer
@@ -2059,11 +2065,12 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
         int32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
         if(totransfer < 0) totransfer = 0; // safety check
         particleHandover(buffer, structSize, totransfer);
-        // move the already existing particles to the beginning of the buffer
-        uint32_t usedbytes = availableToPS * structSize;
-        uint32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
-        void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
-        memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
+        if(maxParticles / numParticlesUsed > 3) { // FX uses less than 25%: move the already existing particles to the beginning of the buffer
+          uint32_t usedbytes = availableToPS * structSize;
+          uint32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
+          void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
+          memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
+        }
       }
       // kill unused particles to they do not re-appear when transitioning to next FX
       #ifndef WLED_DISABLE_PARTICLESYSTEM2D
@@ -2110,7 +2117,7 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
       if (particles[i].outofbounds)
         particles[i].ttl = 0; // kill out of bounds
       else if (particles[i].ttl > 200)
-        particles[i].ttl = 200; // reduce TTL so it will die soon
+        particles[i].ttl = 150 + hw_random16(50); // reduce TTL so it will die soon
       particles[i].sat = 255;      // full saturation
       particles[i].collide = true; // enable collisions (in case new FX uses them)
     }
@@ -2126,10 +2133,11 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
     }
     for (int32_t i = 0; i < numToTransfer; i++) {
       particles[i].perpetual = false; // particle ages
+      particles[i].fixed = false; // unfix all particles
       if (particles[i].outofbounds)
         particles[i].ttl = 0; // kill out of bounds
       else if (particles[i].ttl > 200)
-        particles[i].ttl = 200; // reduce TTL so it will die soon
+        particles[i].ttl =  150 + hw_random16(50); // reduce TTL so it will die soon
     }
     #endif
   }

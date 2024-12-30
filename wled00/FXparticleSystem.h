@@ -16,7 +16,7 @@
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 #define MAX_MEMIDLE 10 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!)
 
-#define WLED_DEBUG_PS
+//#define WLED_DEBUG_PS
 
 #ifdef WLED_DEBUG_PS
   #define PSPRINT(x) Serial.print(x)
@@ -158,6 +158,7 @@ public:
   void lineAttractor(uint16_t particleindex, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t strength);
   // set options
   void setUsedParticles(uint8_t percentage);  // set the percentage of particles used in the system, 255=100%
+  inline uint32_t getUsedParticles(void) { return usedParticles; }
   void setCollisionHardness(uint8_t hardness); // hardness for particle collisions (255 means full hard)
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set
   void setWallRoughness(uint8_t roughness); // wall roughness randomizes wall collisions
@@ -319,6 +320,7 @@ public:
   void applyFriction(int32_t coefficient); // apply friction to all used particles
   // set options
   void setUsedParticles(uint8_t percentage); // set the percentage of particles used in the system, 255=100%
+  inline uint32_t getUsedParticles(void) { return usedParticles; }
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set
   void setSize(uint16_t x); //set particle system size (= strip length)
   void setWrap(bool enable);
