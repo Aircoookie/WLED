@@ -6525,7 +6525,7 @@ uint16_t mode_wipe_in(uint16_t segPerLoop) {
       if (SEGCOLOR(1) != BLACK) {
         color = color_blend(color, SEGCOLOR(1), SEGMENT.intensity); // Blend with secondary color if set
       }
-      for (int i = 1; i < segPerLoop && SEGENV.aux1 >= 0 && SEGENV.aux1 < SEGLEN; i++) {
+      for (int i = 0; i < segPerLoop && SEGENV.aux1 >= 0 && SEGENV.aux1 < SEGLEN; i++) {
         SEGMENT.setPixelColor(SEGENV.aux1, color);
         SEGENV.aux1--;
       }
