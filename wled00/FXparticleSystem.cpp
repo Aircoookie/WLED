@@ -793,7 +793,7 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
       }
     }
     } else { // standard rendering
-    // check for out of frame pixels and wrap them if required
+    // check for out of frame pixels and wrap them if required: x,y is bottom left pixel coordinate of the particle
     if (x < 0) { // left pixels out of frame
       if (wrapX) { // wrap x to the other side if required
         pixco[0][0] = pixco[3][0] = maxXpixel;
@@ -801,7 +801,7 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
         pixelvalid[0] = pixelvalid[3] = false; // out of bounds
       }
     }
-    else if (pixco[1][0] > (int32_t)maxXpixel) { // right pixels, only has to be checkt if left pixels did not overflow
+    else if (pixco[1][0] > (int32_t)maxXpixel) { // right pixels, only has to be checked if left pixel is in frame
       if (wrapX) { // wrap y to the other side if required
         pixco[1][0] = pixco[2][0] = 0;
       } else {
@@ -1880,9 +1880,9 @@ static int32_t limitSpeed(int32_t speed) {
   //return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed); // note: this uses more code, not sure due to speed or inlining
 }
 
-// check if particle is out of bounds and wrap it around if required, returns true if out of bounds
+// check if particle is out of bounds and wrap it around if required, returns false if out of bounds
 static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, bool wrap) {
-  if (position > max) { // check if particle reached an edge
+  if ((uint32_t)position > max) { // check if particle reached an edge, cast to uint32_t to save negative checking
     if (wrap) {
       position = position % (max + 1); // note: cannot optimize modulo, particles can be far out of bounds when wrap is enabled
       if (position < 0)
@@ -1946,14 +1946,14 @@ void* allocatePSmemory(size_t size, bool overridelimit) {
   // buffer uses effect data, check if there is enough space
   if (!overridelimit && Segment::getUsedSegmentData() + size > MAX_SEGMENT_DATA) {
     // not enough memory
-    DEBUG_PRINT(F("!!! Effect RAM depleted: "));
+    PSPRINT(F("!!! Effect RAM depleted: "));
     DEBUG_PRINTF_P(PSTR("%d/%d !!!\n"), size, Segment::getUsedSegmentData());
     errorFlag = ERR_NORAM;
     return nullptr;
   }
   void* buffer = calloc(size, sizeof(byte));
   if (buffer == nullptr) {
-    DEBUG_PRINT(F("!!! Memory allocation failed !!!"));
+    PSPRINT(F("!!! Memory allocation failed !!!"));
     errorFlag = ERR_NORAM;
     return nullptr;
   }
