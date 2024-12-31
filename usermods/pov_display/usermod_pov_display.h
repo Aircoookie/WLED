@@ -2,6 +2,10 @@
 #include "wled.h"
 #include <PNGdec.h>
 
+PNG png;
+File f;
+static const char _data_FX_MODE_POV_IMAGE[] PROGMEM = "POV Image@!;;;1";
+
 void * openFile(const char *filename, int32_t *size) {
     f = WLED_FS.open(filename);
     *size = f.size();
@@ -61,16 +65,22 @@ uint16_t mode_pov_image(void) {
     return FRAMETIME;
 }
 
-class PovDisplayUsermod : public Usermod
-{
-  public:
-    static const char _data_FX_MODE_POV_IMAGE[] PROGMEM = "POV Image@!;;;1";
+class PovDisplayUsermod : public Usermod {
+  protected:
+        bool enabled = false; //WLEDMM
+        const char *_name; //WLEDMM
+        bool initDone = false; //WLEDMM
+        unsigned long lastTime = 0; //WLEDMM
 
-    PNG png;
-    File f;
+  public:
+    PovDisplayUsermod(const char *name, bool enabled) {
+	this->_name = name;
+	this->enabled = enabled;
+    } //WLEDMM
 
     void setup() {
 	strip.addEffect(255, &mode_pov_image, _data_FX_MODE_POV_IMAGE);
+	initDone = true;
     }
 
     void loop() {
