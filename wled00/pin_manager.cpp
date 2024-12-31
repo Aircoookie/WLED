@@ -215,7 +215,9 @@ bool PinManager::isPinOk(byte gpio, bool output)
     // GPIO46 is input only and pulled down
   #else
 
+    Serial.printf("GPIO TEST %d\n\r", gpio);
     if (strncmp_P(PSTR("ESP32-U4WDH"), ESP.getChipModel(), 11) == 0) {
+      Serial.println("U4WDH");
       // this chip has 4 MB of internal Flash and different packaging, so available pins are different!
       if ((gpio == 1) || (gpio == 3) || ((gpio >= 6) && (gpio <= 8)) ||
           (gpio == 11) || (gpio == 16) || (gpio == 17) || (gpio == 20) || 
