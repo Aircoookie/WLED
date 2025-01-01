@@ -9178,7 +9178,7 @@ uint16_t mode_particleDrip(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur/Overlay,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=25,c1=220,c2=30,c3=21";
+static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Splash,Blur,Gravity,Rain,PushSplash,Smooth;,!;!;1;pal=0,sx=150,ix=25,c1=220,c2=30,c3=21";
 
 
 /*
@@ -9266,7 +9266,7 @@ uint16_t mode_particleBouncingBalls(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Size,Blur/Overlay,Gravity,Collide,Rolling,Color by Position;,!;!;1;pal=0,sx=100,ix=85,c1=30,c2=0,c3=8";
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Size,Blur,Gravity,Collide,Rolling,Color by Position;,!;!;1;pal=0,sx=100,ix=85,c1=30,c2=0,c3=8";
 
 /*
 Particle Replacement for original Dancing Shadows:
@@ -9297,13 +9297,37 @@ uint16_t mode_particleDancingShadows(void) {
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setMotionBlur(SEGMENT.custom1);
+  if (SEGMENT.check1)
+    PartSys->setSmearBlur(120); // enable smear blur
+  else
+    PartSys->setSmearBlur(0); // disable smear blur
   PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
+  PartSys->setColorByPosition(SEGMENT.check2); // color fixed by position
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, 255)); // set percentage of particles to use
+
+  uint32_t deadparticles = 0;
+  //kill out of bounds and moving away plus change color
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if(((SEGMENT.call & 0x07) == 0) && PartSys->particles[i].outofbounds) { //check if out of bounds particle move away from strip, only update every 8th frame
+      if((int32_t)PartSys->particles[i].vx * PartSys->particles[i].x > 0) PartSys->particles[i].ttl = 0; //particle is moving away, kill it
+    }
+    PartSys->particles[i].perpetual = true; //particles do not age
+    if (SEGMENT.call % (32 / (1 + (SEGMENT.custom2 >> 3))) == 0)
+       PartSys->particles[i].hue += 2 + (SEGMENT.custom2 >> 5);
+    //note: updating speed on the fly is not accurately possible, since it is unknown which particles are assigned to which spot
+    if(SEGENV.aux0 != SEGMENT.speed) { //speed changed
+      //update all particle speed by setting them to current value
+       PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? SEGMENT.speed >> 3 : -SEGMENT.speed >> 3;
+    }
+    if(PartSys->particles[i].ttl == 0) deadparticles++; // count dead particles
+  }
+  SEGENV.aux0 = SEGMENT.speed;
 
   //generate a spotlight: generates particles just outside of view
-  if (SEGMENT.call % (256 - SEGMENT.intensity) == 0) {
+  if (deadparticles > 5 && (SEGMENT.call & 0x03) == 0) {
     //random color, random type
     uint32_t type = hw_random16(SPOT_TYPES_COUNT);
-    int8_t speed = 2 + hw_random16(2 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
+    int8_t speed = 2 + hw_random16(2 + (SEGMENT.speed >> 1)) + (SEGMENT.speed >> 4);
     uint32_t width = hw_random16(1, 10);
     uint32_t ttl = 300; //ttl is particle brightness (below perpetual is set so it does not age, i.e. ttl stays at this value)
     int32_t position;
@@ -9357,27 +9381,11 @@ uint16_t mode_particleDancingShadows(void) {
     }
   }
 
-  //kill out of bounds and moving away plus change color
-  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-    if(PartSys->particles[i].outofbounds) { //check if out of bounds particle move away from strip (i.e. vx < 0 && x > 0 or vx > 0 and x < 0)
-      if((int32_t)PartSys->particles[i].vx * PartSys->particles[i].x > 0) PartSys->particles[i].ttl = 0; //particle is moving away, kill it
-    }
-    PartSys->particles[i].perpetual = true; //particles do not age
-    if (SEGMENT.call % (32 / (1 + (SEGMENT.custom2 >> 3))) == 0)
-       PartSys->particles[i].hue += 2 + (SEGMENT.custom2 >> 5);
-    //note: updating speed on the fly is not accurately possible, since it is unknown which particles are assigned to which spot
-    if(SEGENV.aux0 != SEGMENT.speed) { //speed changed
-      //update all particle speed by setting them to current value
-       PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? SEGMENT.speed >> 3 : -SEGMENT.speed >> 3;
-    }
-  }
-  SEGENV.aux0 = SEGMENT.speed;
-
   PartSys->update(); // update and render
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur/Overlay,Color Cycle,,,,Smooth;,!;!;1;pal=0,sx=100,ix=180,c1=0,c2=0";
+static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,Smear,Color by position,Smooth;,!;!;1;sx=100,ix=180,c1=0,c2=0";
 
 /*
 Particle Fireworks 1D replacement
@@ -9393,7 +9401,7 @@ uint16_t mode_particleFireworks1D(void) {
     if (!initParticleSystem1D(PartSys, 4, 150, 4, true)) // init
       return mode_static(); // allocation failed or is single pixel
     PartSys->setKillOutOfBounds(true);
-    PartSys->sources[0].source.perpetual = 1; //set rocket state to standby
+    PartSys->sources[0].source.perpetual = 1; // set rocket state to standby
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9406,80 +9414,88 @@ uint16_t mode_particleFireworks1D(void) {
   PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
 
-  if(!SEGMENT.check1) //gravity enabled for sparks
+  int32_t gravity = (1 + (SEGMENT.speed >> 3));
+  if(!SEGMENT.check1) // gravity enabled for sparks
    PartSys->setGravity(0); // disable
   else
-   PartSys->setGravity(1 + (SEGMENT.speed>>4)); // set gravity
+   PartSys->setGravity(gravity); // set gravity
 
-  if(PartSys->sources[0].source.perpetual == 1) { //rocket is on standby
+  if(PartSys->sources[0].source.perpetual == 1) { // rocket is on standby
     PartSys->sources[0].source.ttl--;
-    if(PartSys->sources[0].source.ttl == 0) { //time is up, relaunch
-      if(hw_random8() < SEGMENT.custom1) //randomly choose direction according to slider, fire at start of segment if true
-        SEGENV.aux0 = 0;
+    if(PartSys->sources[0].source.ttl == 0) { // time is up, relaunch
+
+      if(hw_random8() < SEGMENT.custom1) // randomly choose direction according to slider, fire at start of segment if true
+        SEGENV.aux0 = 1;
       else
-        SEGENV.aux0 = 1; //invert direction
+        SEGENV.aux0 = 0;
 
       PartSys->sources[0].source.perpetual = 0; //flag abused for rocket state
       PartSys->sources[0].source.hue = hw_random16();
-      PartSys->sources[0].var = 5;
-      PartSys->sources[0].v = 0;
+      PartSys->sources[0].var = 10;
       PartSys->sources[0].minLife = 10;
       PartSys->sources[0].maxLife = 30;
       PartSys->sources[0].source.x = 0; // start from bottom
-      uint32_t speed = 8 + (((int)16 + (int)random16(20) + (int)hw_random16(SEGMENT.speed >> 3 , SEGMENT.speed >> 2)) * (int)PartSys->maxXpixel) / 150; //set speed such that rocket explods in frame, found by experimenting
+      uint32_t speed = sqrt((gravity * ((PartSys->maxX >> 2) + hw_random16(PartSys->maxX >> 1))) >> 4); // set speed such that rocket explods in frame
       PartSys->sources[0].source.vx = min(speed, (uint32_t)127);
-      PartSys->sources[0].source.ttl = 400;
-      PartSys->sources[0].source.collide = false; // exhaust does not collide, also used to check if direction reversed
-      PartSys->sources[0].sat = 40; // low saturation exhaust
+      PartSys->sources[0].source.ttl = 4000;
+      PartSys->sources[0].sat = 30; // low saturation exhaust
       PartSys->sources[0].size = 0; // default size
+      PartSys->sources[0].source.reversegrav = false ; // normal gravity
 
-      if(SEGENV.aux0) { //inverted rockets launch from end
+      if(SEGENV.aux0) { // inverted rockets launch from end
         PartSys->sources[0].source.reversegrav = true;
-        PartSys->sources[0].source.x = PartSys->maxX; //start from top
-        PartSys->sources[0].source.vx = -PartSys->sources[0].source.vx; //revert direction
+        PartSys->sources[0].source.x = PartSys->maxX; // start from top
+        PartSys->sources[0].source.vx = -PartSys->sources[0].source.vx; // revert direction
       }
     }
   }
-  else { //rocket is launched
-    int32_t rocketgravity = -(2 + (SEGMENT.speed>>4)); //-8
+  else { // rocket is launched
+    int32_t rocketgravity = -gravity;
     int32_t speed = PartSys->sources[0].source.vx;
-    if(SEGENV.aux0) { //negative speed rocket
+    if(SEGENV.aux0) { // negative speed rocket
       rocketgravity = -rocketgravity;
       speed = -speed;
     }
     PartSys->applyForce(&PartSys->sources[0].source, rocketgravity, &forcecounter[0]);
     PartSys->particleMoveUpdate(PartSys->sources[0].source);
+    PartSys->particleMoveUpdate(PartSys->sources[0].source); // increase speed by calling the move function twice, also ages twice
+    uint32_t rocketheight = SEGENV.aux0 ? PartSys->maxX - PartSys->sources[0].source.x : PartSys->sources[0].source.x;
 
-    if(speed < 0 && PartSys->sources[0].source.collide == false) { //speed has reversed and not in 'explosion mode'
-      PartSys->sources[0].source.ttl = 75 - (SEGMENT.speed >> 2); //alive for a few more frames
-      PartSys->sources[0].source.collide = true; //set 'explosion mode'
-    }
+    if(speed < 0 && PartSys->sources[0].source.ttl > 50) // reached apogee
+      PartSys->sources[0].source.ttl = min((uint32_t)50, rocketheight >> (PS_P_RADIUS_SHIFT_1D + 3)); // alive for a few more frames
 
-    if(PartSys->sources[0].source.ttl == 0) { //explode
+    if(PartSys->sources[0].source.ttl < 2) { // explode
       PartSys->sources[0].source.perpetual = 1; // set standby state
-      PartSys->sources[0].var = 10 + (SEGMENT.intensity >> 2);
-      PartSys->sources[0].v = 0; //TODO can make global if this never changes
+      PartSys->sources[0].var = 5 + ((((PartSys->maxX >> 1) + rocketheight) * (200 + SEGMENT.intensity)) / (PartSys->maxX << 2)); // set explosion particle speed
       PartSys->sources[0].minLife = 60;
-      PartSys->sources[0].maxLife = 150;
-      PartSys->sources[0].source.ttl = 100 + hw_random16(256 - SEGMENT.intensity); // standby time til next launch
-      PartSys->sources[0].sat = 7 + (SEGMENT.custom3 << 3); //color saturation
-      PartSys->sources[0].size = hw_random16(255); // random particle size in explosion
-      uint32_t explosionsize = 10 + hw_random16(SEGMENT.intensity >> 2, SEGMENT.intensity);
-      for(uint32_t e = 0; e < explosionsize; e++) { //emit explosion particles
+      PartSys->sources[0].maxLife = 130;
+      PartSys->sources[0].source.ttl = 100 + hw_random16(64 - (SEGMENT.speed >> 2)); // standby time til next launch
+      PartSys->sources[0].sat = 7 + (SEGMENT.custom3 << 3); //color saturation  TODO: replace saturation with something more useful?
+      PartSys->sources[0].size = hw_random16(64); // random particle size in explosion
+      uint32_t explosionsize = 8 + (PartSys->maxXpixel >> 2) + (PartSys->sources[0].source.x >> (PS_P_RADIUS_SHIFT_1D - 1));
+      explosionsize += hw_random16((explosionsize * SEGMENT.intensity) >> 8);
+      Serial.println("Explosion size: " + String(explosionsize));
+      for(uint32_t e = 0; e < explosionsize; e++) { // emit explosion particles
         if(SEGMENT.check2)
           PartSys->sources[0].source.hue = hw_random16(); //random color for each particle
-        PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
+        PartSys->sprayEmit(PartSys->sources[0]); // emit a particle
       }
-      PartSys->sources[0].source.x = -500; //set out of frame until relaunch
+      //!!! DEBUG, remove:
+      //PartSys->sources[0].source.x = -500; // set out of frame until relaunch
+     // for(unsigned i = 0; i < PartSys->usedParticles; i++) { // TODO: this can probably be removed now, was a bug patch
+     //   Serial.println("particle " + String(i) + " ttl: " + String(PartSys->particles[i].ttl) + " x: " + String(PartSys->particles[i].x >> 5) + " vx: " + String(PartSys->particles[i].vx) + " sat: " + String(PartSys->advPartProps[i].sat) + " size: " + String(PartSys->advPartProps[i].size));
+    //  } 
     }
   }
-  if(SEGMENT.call & 0x01) //every second frame
-    PartSys->sprayEmit(PartSys->sources[0]); //emit a particle
+  if((SEGMENT.call & 0x01) == 0 && PartSys->sources[0].source.perpetual == false) // every second frame and not in standby
+    PartSys->sprayEmit(PartSys->sources[0]); // emit exhaust particle
+  if((SEGMENT.call & 0x03) == 0) // every fourth frame
+    PartSys->applyFriction(1); // apply friction to all particles
 
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur/Overlay,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o2=1";
+static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o2=1";
 
 /*
 Particle based Sparkle effect
@@ -9549,7 +9565,7 @@ uint16_t mode_particleSparkler(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur/Overlay,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
 /*
 Particle based Hourglass, particles falling at defined intervals
 Uses palette for particle color
@@ -9673,7 +9689,7 @@ uint16_t mode_particleHourglass(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Color,Blur/Overlay,Gravity,Colorflip,Auto Reset,Fast Reset;,!;!;1;pal=34,sx=245,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
+static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Color,Blur,Gravity,Colorflip,Auto Reset,Fast Reset;,!;!;1;pal=34,sx=245,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
 
 /*
 Particle based Spray effect (like a volcano, possible replacement for popcorn)
@@ -9725,7 +9741,7 @@ uint16_t mode_particle1Dspray(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur/Overlay,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
+static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
 /*
 Particle based balance: particles move back and forth (1D pendent to 2D particle box)
 Uses palette for particle color
@@ -9796,7 +9812,7 @@ uint16_t mode_particleBalance(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur/Overlay,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
 
 /*
 Particle based Chase effect
@@ -9905,7 +9921,7 @@ uint16_t mode_particleChase(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur/Overlay,Pride,Color Waves,Color by Position;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0";
+static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur,Pride,Color Waves,Color by Position;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0";
 /*
 Particle Fireworks Starburst replacement (smoother rendering, more settings)
 Uses palette for particle color
@@ -9966,7 +9982,7 @@ uint16_t mode_particleStarburst(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Fragment Size,Blur/Overlay,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21";
+static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Fragment Size,Blur,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21";
 
 /*
 Particle based 1D GEQ effect, each frequency bin gets an emitter, distributed over the strip
@@ -10045,7 +10061,7 @@ uint16_t mode_particle1DGEQ(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur/Overlay,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
 /*
 Particle based Fire effect
 Uses palette for particle color
@@ -10110,7 +10126,7 @@ uint16_t mode_particleFire1D(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Blur/Overlay;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1";
+static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Blur;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1";
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 
 //////////////////////////////////////////////////////////////////////////////////////////

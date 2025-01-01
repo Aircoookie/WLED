@@ -1083,7 +1083,7 @@ uint32_t calculateNumberOfParticles2D(uint32_t pixels, bool isadvanced, bool siz
 #else
   uint32_t particlelimit = ESP32_MAXPARTICLES; // maximum number of paticles allowed (based on two segments of 32x32 and 40k effect ram)
 #endif
-  numberofParticles = max((uint32_t)4, min(numberofParticles, particlelimit));
+  numberofParticles = max((uint32_t)4, min(numberofParticles, particlelimit)); // limit to 4 - particlelimit
   if (isadvanced) // advanced property array needs ram, reduce number of particles to use the same amount
     numberofParticles = (numberofParticles * sizeof(PSparticle)) / (sizeof(PSparticle) + sizeof(PSadvancedParticle));
   if (sizecontrol) // advanced property array needs ram, reduce number of particles
@@ -1390,11 +1390,11 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
       if (options->killoutofbounds) {
         bool killthis = true;
         if (options->useGravity) { // if gravity is used, only kill below 'floor level'
-          if (part.reversegrav) { // skip at x = 0
-            if (newX < 0)
+          if (part.reversegrav) { // skip at x = 0, do not skip far out of bounds
+            if (newX < 0 || newX > maxX << 2)
               killthis = false;
-          } else { // skip at x = max
-            if (newX > 0)
+          } else { // skip at x = max, do not skip far out of bounds
+            if (newX > 0 &&  newX < maxX << 2)
               killthis = false;
           }
         }
@@ -1481,10 +1481,6 @@ void ParticleSystem1D::ParticleSys_render() {
   if (framebuffer) {
     // handle buffer blurring or clearing
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
-
-    if(pmem->inTransition == effectID) Serial.print(" new FX ");
-    else Serial.print(" old FX ");
-
     if(bufferNeedsUpdate) {
       if (globalBlur > 0 || globalSmear > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
        // Serial.println(" blurring: " + String(globalBlur));
@@ -1785,10 +1781,11 @@ uint32_t calculateNumberOfParticles1D(uint32_t fraction, bool isadvanced) {
 #else
   uint32_t particlelimit = ESP32_MAXPARTICLES_1D; // maximum number of paticles allowed
 #endif
-  numberofParticles = max((uint32_t)1, min(numberofParticles, particlelimit));
+  numberofParticles = min(numberofParticles, particlelimit); // limit to particlelimit
   if (isadvanced) // advanced property array needs ram, reduce number of particles to use the same amount
     numberofParticles = (numberofParticles * sizeof(PSparticle1D)) / (sizeof(PSparticle1D) + sizeof(PSadvancedParticle1D));
   numberofParticles = (numberofParticles * (fraction + 1)) >> 8; // calculate fraction of particles
+  numberofParticles = numberofParticles < 20 ? 20 : numberofParticles; // 20 minimum
   //make sure it is a multiple of 4 for proper memory alignment (easier than using padding bytes)
   numberofParticles = ((numberofParticles+3) >> 2) << 2; // TODO: with a separate particle buffer, this is unnecessary
   return numberofParticles;
@@ -1802,7 +1799,7 @@ uint32_t calculateNumberOfSources1D(uint32_t requestedsources) {
 #else
   int numberofSources = max(1, min((int)requestedsources, ESP32_MAXSOURCES_1D)); // limit to 1 - 32
 #endif
-  // make sure it is a multiple of 4 for proper memory alignment
+  // make sure it is a multiple of 4 for proper memory alignment (so minimum is acutally 4)
   numberofSources = ((numberofSources+3) >> 2) << 2;
   return numberofSources;
 }

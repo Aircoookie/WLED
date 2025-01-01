@@ -246,7 +246,7 @@ bool allocateParticleSystemMemory2D(uint32_t numparticles, uint32_t numsources, 
 // particle dimensions (subpixel division)
 #define PS_P_RADIUS_1D 32 // subpixel size, each pixel is divided by this for particle movement, if this value is changed, also change the shift defines (next two lines)
 #define PS_P_HALFRADIUS_1D (PS_P_RADIUS_1D >> 1)
-#define PS_P_RADIUS_SHIFT_1D 5
+#define PS_P_RADIUS_SHIFT_1D 5 // 1 << PS_P_RADIUS_SHIFT = PS_P_RADIUS
 #define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
 #define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius
 #define PS_P_MINSURFACEHARDNESS_1D 50 // minimum hardness used in collision impulse calculation
