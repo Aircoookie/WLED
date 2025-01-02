@@ -64,6 +64,8 @@ class M5Stick2Visualiser : public Usermod {
 
     const uint8_t tftcharwidth = 19;  // Number of chars that fit on screen with text size set to 2
     long lastUpdate = 0;
+    
+    uint8_t chan_width = TFT_HEIGHT / NUM_GEQ_CHANNELS;
 
     void center(String &line, uint8_t width) {
       int len = line.length();
@@ -123,20 +125,16 @@ class M5Stick2Visualiser : public Usermod {
      *    Instead, use a timer check as shown here.
      */
     void loop() {
+        // to be used in the future for sprintf stuff
         char buff[LINE_BUFFER_SIZE];
 
         tft.setTextSize(2);
-
-        // Wifi name
-        tft.setTextColor(TFT_GREEN);
-        tft.setCursor(0, 60);
 
         // Check if we time interval for redrawing passes.
         if (millis() - lastUpdate < USER_LOOP_REFRESH_RATE_MS)
         {
             return;
         }
-        //tft.fillScreen(TFT_BLACK);
         lastUpdate = millis();
   
         // Turn off display after 5 minutes with no change.
@@ -158,59 +156,19 @@ class M5Stick2Visualiser : public Usermod {
         tft.setTextColor(TFT_GREEN);
         tft.setTextFont(1);
         tft.setCursor(100, 100);
-
-        for(int i = 0; i < 16; i++) {
-            tft.fillRect(fftResult[i] / 2, i*15 + 3, 135 - (fftResult[i] / 2), 10, TFT_BLACK);
-            tft.fillRect(0, i*15 + 3, fftResult[i] / 2, 10, TFT_GOLD);
+        
+        um_data_t *um_data;
+        if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+          // add support for no audio                                                                                                                           
+          um_data = simulateSound(SEGMENT.soundSim);
         }
 
-        tft.drawString("TEST", 0, 0);
+        uint8_t *fftChannels = (uint8_t*)um_data->u_data[2];
 
-        // Wifi name
-        tft.setTextColor(TFT_GREEN);
-        tft.setCursor(0, 60);
-        // Print AP IP and password in AP mode or knownIP if AP not active.
-        if (apActive)
-        {
-            //DEBUG_PRINTLN("TFT PRINT AP INFO");
-            tft.setCursor(0, 84);
-            tft.print("AP IP: ");
-            tft.setCursor(0,108);
-            tft.print("AP Pass:");
-            tft.print(apPass);
-
-            // percent brightness
-            tft.setCursor(0, 120);
-            tft.setTextColor(TFT_WHITE);
-            tft.print("Bri: ");
-            tft.print((((int)bri*100)/255));
-            tft.print("%");
+        for(int i = 0; i < NUM_GEQ_CHANNELS; i++) {
+            tft.fillRect(fftChannels[i] / 2, chan_width * i, 135 - (fftChannels[i] / 2), chan_width - 1, TFT_BLACK);
+            tft.fillRect(0, chan_width * i, fftChannels[i] / 2, chan_width - 1, TFT_GOLD);
         }
-
-        // mode name
-        tft.setTextColor(TFT_CYAN);
-        tft.setCursor(0, 144);
-        char lineBuffer[tftcharwidth+1];
-        extractModeName(knownMode, JSON_mode_names, lineBuffer, tftcharwidth);
-        tft.drawString(lineBuffer, 0, 144);
-
-        // palette name
-        tft.setTextColor(TFT_YELLOW);
-        tft.setCursor(0, 168);
-        extractModeName(knownPalette, JSON_palette_names, lineBuffer, tftcharwidth);
-        tft.drawString(lineBuffer, 0, 168);
-
-        tft.setCursor(0, 192);
-        tft.setTextColor(TFT_SILVER);
-        sprintf_P(buff, PSTR("FX  Spd:%3d Int:%3d"), effectSpeed, effectIntensity);
-        tft.drawString(buff, 0, 192);
-
-        // Fifth row with estimated mA usage
-        tft.setTextColor(TFT_ORANGE);
-        tft.setCursor(0, 216);
-        // Print estimated milliamp usage (must specify the LED type in LED prefs for this to be a reasonable estimate).
-        sprintf_P(buff, PSTR("%3d mA"), strip.currentMilliamps);
-        tft.drawString(buff, 0, 216);
     }
 
     /*
