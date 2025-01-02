@@ -9608,9 +9608,10 @@ uint16_t mode_particleHourglass(void) {
   positionoffset = PS_P_RADIUS_1D / 2;
   uint32_t colormode = SEGMENT.custom1 >> 5; // 0-7
 
-  if(SEGMENT.intensity != SEGENV.step) { //initialize
-    *basehue = hw_random16(); //choose new random color
-    SEGENV.step = SEGMENT.intensity;
+  if((SEGMENT.intensity | (PartSys->getAvailableParticles() << 8)) != SEGENV.step) { //initialize, getAvailableParticles changes while in FX transition
+    if(PartSys->getAvailableParticles() == SEGENV.step >> 8) // only intensity slider changed or first call
+      *basehue = hw_random16(); //choose new random color
+    SEGENV.step = SEGMENT.intensity | (PartSys->getAvailableParticles() << 8);
     for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particles[i].reversegrav = true;
       *direction = 0;
@@ -9847,9 +9848,8 @@ uint16_t mode_particleChase(void) {
   //uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer
 
   //PartSys->setBounce(SEGMENT.check2);
-  uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3 + PartSys->getUsedParticles(); // note: progress is used to enforce update during transitions
+  uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3 + PartSys->getAvailableParticles(); // note: getAvailableParticles is used to enforce update during transitions
   if(SEGENV.aux0 != settingssum) { //settings changed changed, update
-    //PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->usedParticles)))); //depends on intensity and particle size (custom1)  !!! TODO: is this fine now? 
     PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 30, 255 / (1 + (SEGMENT.custom1 >> 6)))); //depends on intensity and particle size (custom1)
     SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 5)) / PartSys->usedParticles; //spacing between particles
     // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this
@@ -10383,25 +10383,23 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
-  addEffect(FX_MODE_PARTICLEVORTEX, &mode_particlevortex, _data_FX_MODE_PARTICLEVORTEX);
-  addEffect(FX_MODE_PARTICLEFIREWORKS, &mode_particlefireworks, _data_FX_MODE_PARTICLEFIREWORKS);
   addEffect(FX_MODE_PARTICLEVOLCANO, &mode_particlevolcano, _data_FX_MODE_PARTICLEVOLCANO);
   addEffect(FX_MODE_PARTICLEFIRE, &mode_particlefire, _data_FX_MODE_PARTICLEFIRE);
-  addEffect(FX_MODE_PARTICLEPIT, &mode_particlepit, _data_FX_MODE_PARTICLEPIT);
-  addEffect(FX_MODE_PARTICLEWATERFALL, &mode_particlewaterfall, _data_FX_MODE_PARTICLEWATERFALL);
-  addEffect(FX_MODE_PARTICLEBOX, &mode_particlebox, _data_FX_MODE_PARTICLEBOX);
+  addEffect(FX_MODE_PARTICLEFIREWORKS, &mode_particlefireworks, _data_FX_MODE_PARTICLEFIREWORKS);
+  addEffect(FX_MODE_PARTICLEVORTEX, &mode_particlevortex, _data_FX_MODE_PARTICLEVORTEX);
   addEffect(FX_MODE_PARTICLEPERLIN, &mode_particleperlin, _data_FX_MODE_PARTICLEPERLIN);
-  addEffect(FX_MODE_PARTICLEIMPACT, &mode_particleimpact, _data_FX_MODE_PARTICLEIMPACT);
+  addEffect(FX_MODE_PARTICLEPIT, &mode_particlepit, _data_FX_MODE_PARTICLEPIT);
+  addEffect(FX_MODE_PARTICLEBOX, &mode_particlebox, _data_FX_MODE_PARTICLEBOX);
   addEffect(FX_MODE_PARTICLEATTRACTOR, &mode_particleattractor, _data_FX_MODE_PARTICLEATTRACTOR);
+  addEffect(FX_MODE_PARTICLEIMPACT, &mode_particleimpact, _data_FX_MODE_PARTICLEIMPACT);
+  addEffect(FX_MODE_PARTICLEWATERFALL, &mode_particlewaterfall, _data_FX_MODE_PARTICLEWATERFALL);
   addEffect(FX_MODE_PARTICLESPRAY, &mode_particlespray, _data_FX_MODE_PARTICLESPRAY);
   addEffect(FX_MODE_PARTICLESGEQ, &mode_particleGEQ, _data_FX_MODE_PARTICLEGEQ);
+  addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECIRCULARGEQ);
   addEffect(FX_MODE_PARTICLEGHOSTRIDER, &mode_particleghostrider, _data_FX_MODE_PARTICLEGHOSTRIDER);
   addEffect(FX_MODE_PARTICLEBLOBS, &mode_particleblobs, _data_FX_MODE_PARTICLEBLOBS);
-  addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECIRCULARGEQ);
  // addEffect(FX_MODE_PSFRACTAL, &mode_particlefractal, _data_FX_MODE_PARTICLEFRACTAL);
-  
 #endif // WLED_DISABLE_PARTICLESYSTEM2D
-
 #endif // WLED_DISABLE_2D
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM1D
@@ -10416,8 +10414,8 @@ addEffect(FX_MODE_PSBALANCE, &mode_particleBalance, _data_FX_MODE_PS_BALANCE);
 addEffect(FX_MODE_PSCHASE, &mode_particleChase, _data_FX_MODE_PS_CHASE);
 addEffect(FX_MODE_PSSTARBURST, &mode_particleStarburst, _data_FX_MODE_PS_STARBURST);
 addEffect(FX_MODE_PS1DGEQ, &mode_particle1DGEQ, _data_FX_MODE_PS_1D_GEQ);
+Serial.println("Adding PSFIRE1D");
 addEffect(FX_MODE_PSFIRE1D, &mode_particleFire1D, _data_FX_MODE_PS_FIRE1D);
-
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 }

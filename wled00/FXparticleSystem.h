@@ -158,7 +158,7 @@ public:
   void lineAttractor(uint16_t particleindex, PSparticle *attractorcenter, uint16_t attractorangle, uint8_t strength);
   // set options
   void setUsedParticles(uint8_t percentage);  // set the percentage of particles used in the system, 255=100%
-  inline uint32_t getUsedParticles(void) { return usedParticles; }
+  inline uint32_t getAvailableParticles(void) { return availableParticles; } // available particles in the buffer, use this to check if buffer changed during FX init
   void setCollisionHardness(uint8_t hardness); // hardness for particle collisions (255 means full hard)
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set
   void setWallRoughness(uint8_t roughness); // wall roughness randomizes wall collisions
@@ -184,7 +184,7 @@ public:
   int32_t maxX, maxY; // particle system size i.e. width-1 / height-1 in subpixels, Note: all "max" variables must be signed to compare to coordinates (which are signed)
   int32_t maxXpixel, maxYpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1 / height-1
   uint32_t numSources; // number of sources
-  uint32_t usedParticles; // number of particles used in animation, is relative to 'availableParticles'
+  uint32_t usedParticles; // number of particles used in animation, is relative to 'numParticles'
   //note: some variables are 32bit for speed and code size at the cost of ram
 
 private:
@@ -320,7 +320,7 @@ public:
   void applyFriction(int32_t coefficient); // apply friction to all used particles
   // set options
   void setUsedParticles(uint8_t percentage); // set the percentage of particles used in the system, 255=100%
-  inline uint32_t getUsedParticles(void) { return usedParticles; }
+  inline uint32_t getAvailableParticles(void) { return availableParticles; } // available particles in the buffer, use this to check if buffer changed during FX init
   void setWallHardness(uint8_t hardness); // hardness for bouncing on the wall if bounceXY is set
   void setSize(uint16_t x); //set particle system size (= strip length)
   void setWrap(bool enable);
@@ -343,7 +343,7 @@ public:
   int32_t maxX; // particle system size i.e. width-1, Note: all "max" variables must be signed to compare to coordinates (which are signed)
   int32_t maxXpixel; // last physical pixel that can be drawn to (FX can read this to read segment size if required), equal to width-1
   uint32_t numSources; // number of sources
-  uint32_t usedParticles; // number of particles used in animation, is relative to 'availableParticles'
+  uint32_t usedParticles; // number of particles used in animation, is relative to 'numParticles'
 
 private:
   //rendering functions

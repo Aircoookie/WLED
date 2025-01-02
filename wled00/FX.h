@@ -350,7 +350,7 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FX_MODE_PS1DGEQ                212
 #define FX_MODE_PSFIRE1D               213
 //#define FX_MODE_PSFRACTAL              214
-#define MODE_COUNT                     215
+#define MODE_COUNT                     214
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
