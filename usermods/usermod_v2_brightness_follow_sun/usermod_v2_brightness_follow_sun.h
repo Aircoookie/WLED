@@ -19,7 +19,7 @@ private:
   unsigned long update_interval = 60;
   int min_bri = 0;
   int max_bri = 255;
-  int relax_hour = 0;
+  float relax_hour = 0;
   int relaxSec = 0;
   unsigned long lastUMRun = 0;
 public:
