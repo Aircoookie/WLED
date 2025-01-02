@@ -232,8 +232,8 @@ void ParticleSystem2D::flameEmit(PSsource &emitter) {
 // Emits a particle at given angle and speed, angle is from 0-65535 (=0-360deg), speed is also affected by emitter->var
 // angle = 0 means in positive x-direction (i.e. to the right)
 int32_t ParticleSystem2D::angleEmit(PSsource &emitter, uint16_t angle, int32_t speed, uint32_t amount) {
-  emitter.vx = ((int32_t)cos16(angle) * speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding
-  emitter.vy = ((int32_t)sin16(angle) * speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
+  emitter.vx = ((int32_t)cos16_t(angle) * speed) / (int32_t)32600; // cos16_t() and sin16_t() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding
+  emitter.vy = ((int32_t)sin16_t(angle) * speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   return sprayEmit(emitter, amount);
 }
 
@@ -473,9 +473,8 @@ void ParticleSystem2D::applyForce(int8_t xforce, int8_t yforce) {
 // angle is from 0-65535 (=0-360deg) angle = 0 means in positive x-direction (i.e. to the right)
 // force is in 3.4 fixed point notation so force=16 means apply v+1 each frame (useful force range is +/- 127)
 void ParticleSystem2D::applyAngleForce(PSparticle *part, int8_t force, uint16_t angle, uint8_t *counter) {
-  int8_t xforce = ((int32_t)force * cos16(angle)) / 32767; // force is +/- 127
-  int8_t yforce = ((int32_t)force * sin16(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
-  // note: sin16 is 10% faster than sin8() on ESP32 but on ESP8266 it is 9% slower
+  int8_t xforce = ((int32_t)force * cos16_t(angle)) / 32767; // force is +/- 127
+  int8_t yforce = ((int32_t)force * sin16_t(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   applyForce(part, xforce, yforce, counter);
 }
 
@@ -488,8 +487,8 @@ void ParticleSystem2D::applyAngleForce(uint16_t particleindex, int8_t force, uin
 // apply a force in angular direction to all particles
 // angle is from 0-65535 (=0-360deg) angle = 0 means in positive x-direction (i.e. to the right)
 void ParticleSystem2D::applyAngleForce(int8_t force, uint16_t angle) {
-  int8_t xforce = ((int32_t)force * cos16(angle)) / 32767; // force is +/- 127
-  int8_t yforce = ((int32_t)force * sin16(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
+  int8_t xforce = ((int32_t)force * cos16_t(angle)) / 32767; // force is +/- 127
+  int8_t yforce = ((int32_t)force * sin16_t(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   applyForce(xforce, yforce);
 }
 
@@ -2038,6 +2037,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     uint32_t newAvailable = 0;
     if (SEGMENT.mode == effectID) { // new effect ID -> function was called from new FX
       newAvailable = (maxParticles * progress) >> 16; // update total particles available to this PS (newAvailable is guaranteed to be smaller than maxParticles)
+      if(newAvailable < 2) newAvailable = 2; // give 2 particle minimum (some FX may crash with less as they do i+1 access)
       if(maxParticles / numParticlesUsed > 3 && newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used for FX using a small amount, do not move the pointer anymore (will be set to base in final handover)
       uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles
       if(bufferoffset < maxParticles) // safety check
@@ -2051,6 +2051,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       progress = 0xFFFFU - progress; // inverted transition progress
       newAvailable = ((maxParticles * progress) >> 16); // result is guaranteed to be smaller than maxParticles
       if(newAvailable > 0) newAvailable--; // -1 to avoid overlapping memory in 1D<->2D transitions
+      if(newAvailable < 2) newAvailable = 2; // give 2 particle minimum (some FX may crash with less as they do i+1 access)
       // note: buffer pointer stays the same, number of available particles is reduced
     }
     availableToPS = newAvailable;

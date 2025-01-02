@@ -7888,7 +7888,7 @@ uint16_t mode_particlefireworks(void) {
 
     for (i = 0; i < emitparticles; i++) {
       if (circularexplosion) {
-        int32_t sineMod = 0xEFFF + sin16((uint16_t)(((angle * frequency) >> 4) + baseangle)); // shifted to positive values
+        int32_t sineMod = 0xEFFF + sin16_t((uint16_t)(((angle * frequency) >> 4) + baseangle)); // shifted to positive values
         currentspeed = (speed/2 + ((sineMod * speed) >> 16)) >> 1; // sine modulation on speed based on emit angle
         PartSys->angleEmit(PartSys->sources[j], angle, currentspeed); // note: compiler warnings can be ignored, variables are set just above
         counter++;
@@ -8287,8 +8287,8 @@ uint16_t mode_particlebox(void) {
       ygravity = (ygravity * SEGMENT.custom1) / 128;
     }
     else { // go in a circle
-      xgravity = ((int32_t)(SEGMENT.custom1) * cos16(SEGENV.aux0 << 8)) / 0xFFFF;
-      ygravity = ((int32_t)(SEGMENT.custom1) * sin16(SEGENV.aux0 << 8)) / 0xFFFF;
+      xgravity = ((int32_t)(SEGMENT.custom1) * cos16_t(SEGENV.aux0 << 8)) / 0xFFFF;
+      ygravity = ((int32_t)(SEGMENT.custom1) * sin16_t(SEGENV.aux0 << 8)) / 0xFFFF;
     }
     if (SEGMENT.check3) { // sloshing, y force is always downwards
       if(ygravity > 0)
@@ -8892,8 +8892,8 @@ uint16_t mode_particleghostrider(void) {
   SEGENV.aux0 += (int32_t)SEGENV.step; // step is angle increment
   uint16_t emitangle = SEGENV.aux0 + 32767; // +180°
   int32_t speed = map(SEGMENT.speed, 0, 255, 12, 64);
-  PartSys->sources[0].source.vx = ((int32_t)cos16(SEGENV.aux0) * speed) / (int32_t)32767;
-  PartSys->sources[0].source.vy = ((int32_t)sin16(SEGENV.aux0) * speed) / (int32_t)32767;
+  PartSys->sources[0].source.vx = ((int32_t)cos16_t(SEGENV.aux0) * speed) / (int32_t)32767;
+  PartSys->sources[0].source.vy = ((int32_t)sin16_t(SEGENV.aux0) * speed) / (int32_t)32767;
   PartSys->sources[0].source.ttl = 500; // source never dies (note: setting 'perpetual' is not needed if replenished each frame)
   PartSys->particleMoveUpdate(PartSys->sources[0].source, &ghostsettings);
   // set head (steal one of the particles)
