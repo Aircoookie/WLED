@@ -8994,7 +8994,7 @@ static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,
 
 /*
  * Particle Fractal
- * particles move, then split to form a fractal tree EXPERIMENTAL!
+ * particles move, then split to form a fractal tree EXPERIMENTAL and non working!
  * by DedeHai (Damian Schneider)
  */
  
@@ -9328,7 +9328,7 @@ uint16_t mode_particleDancingShadows(void) {
     //random color, random type
     uint32_t type = hw_random16(SPOT_TYPES_COUNT);
     int8_t speed = 2 + hw_random16(2 + (SEGMENT.speed >> 1)) + (SEGMENT.speed >> 4);
-    uint32_t width = hw_random16(1, 10);
+    int32_t width = hw_random16(1, 10);
     uint32_t ttl = 300; //ttl is particle brightness (below perpetual is set so it does not age, i.e. ttl stays at this value)
     int32_t position;
     //choose random start position, left and right from the segment
@@ -9341,36 +9341,38 @@ uint16_t mode_particleDancingShadows(void) {
 
     PartSys->sources[0].v = speed; //emitted particle speed
     PartSys->sources[0].source.hue = hw_random8(); //random spotlight color
-    for (uint32_t i = 0; i < width; i++) {
-      switch (type) {
-        case SPOT_TYPE_SOLID:
-          //nothing to do
-          break;
+    for (int32_t i = 0; i < width; i++) {
+      if(width > 1) {
+        switch (type) {
+          case SPOT_TYPE_SOLID:
+            //nothing to do
+            break;
 
-        case SPOT_TYPE_GRADIENT:
-          ttl = cubicwave8(map(i, 0, width - 1, 0, 255));
-          ttl = ttl*ttl >> 8; //make gradient more pronounced
-          break;
+          case SPOT_TYPE_GRADIENT:
+            ttl = cubicwave8(map(i, 0, width - 1, 0, 255));
+            ttl = ttl*ttl >> 8; //make gradient more pronounced
+            break;
 
-        case SPOT_TYPE_2X_GRADIENT:
-          ttl = cubicwave8(2 * map(i, 0, width - 1, 0, 255));
-          ttl = ttl*ttl >> 8;
-          break;
+          case SPOT_TYPE_2X_GRADIENT:
+            ttl = cubicwave8(2 * map(i, 0, width - 1, 0, 255));
+            ttl = ttl*ttl >> 8;
+            break;
 
-        case SPOT_TYPE_2X_DOT:
-          if(i > 0) position++; //skip one pixel
-          i++;
-          break;
+          case SPOT_TYPE_2X_DOT:
+            if(i > 0) position++; //skip one pixel
+            i++;
+            break;
 
-        case SPOT_TYPE_3X_DOT:
-          if(i > 0) position += 2; //skip two pixels
-          i+=2;
-          break;
+          case SPOT_TYPE_3X_DOT:
+            if(i > 0) position += 2; //skip two pixels
+            i+=2;
+            break;
 
-        case SPOT_TYPE_4X_DOT:
-          if(i > 0) position += 3; //skip three pixels
-          i+=3;
-          break;
+          case SPOT_TYPE_4X_DOT:
+            if(i > 0) position += 3; //skip three pixels
+            i+=3;
+            break;
+        }
       }
       //emit particle
       //set the particle source position:
@@ -9826,8 +9828,6 @@ by DedeHai (Damian Schneider)
 
 uint16_t mode_particleChase(void) {
   ParticleSystem1D *PartSys = NULL;
-  int32_t i;
-
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1, 255, 3, true)) // init
       return mode_static(); // allocation failed or is single pixel
@@ -9850,10 +9850,10 @@ uint16_t mode_particleChase(void) {
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3 + PartSys->getUsedParticles(); // note: progress is used to enforce update during transitions
   if(SEGENV.aux0 != settingssum) { //settings changed changed, update
     //PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, min(PartSys->maxX / (32 + (SEGMENT.custom1 >> 1)), int32_t(PartSys->usedParticles)))); //depends on intensity and particle size (custom1)  !!! TODO: is this fine now? 
-    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, 255 / (1 + (SEGMENT.custom1 >> 6)))); //depends on intensity and particle size (custom1)
+    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 30, 255 / (1 + (SEGMENT.custom1 >> 6)))); //depends on intensity and particle size (custom1)
     SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 5)) / PartSys->usedParticles; //spacing between particles
     // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this
-    for(i = 0; i < PartSys->usedParticles; i++) {
+    for(int32_t i = 0; i < (int32_t)PartSys->usedParticles; i++) {
       PartSys->advPartProps[i].sat = 255;
       //PartSys->particles[i].x = (i - 1) * SEGENV.step + (((i + 1) * remainder) / PartSys->usedParticles); // distribute evenly
       PartSys->particles[i].x = (i - 1) * SEGENV.step; // distribute evenly (starts out of frame for i=0)
@@ -9893,7 +9893,7 @@ uint16_t mode_particleChase(void) {
     if(SEGMENT.call % (255 / (1 + (SEGMENT.speed >> 2))) == 0)
       sizechange = *sizedir;
 
-    for(i = 0; i < PartSys->usedParticles; i++) {
+    for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
       // PartSys->particles[i].hue = *basehue + (i * (SEGENV.aux1)) / PartSys->usedParticles; // gradient distribution
       PartSys->advPartProps[i].size += sizechange;
     }
@@ -9902,12 +9902,12 @@ uint16_t mode_particleChase(void) {
     int32_t decrement = 2;
     if(SEGMENT.check1)
       decrement = 1; //slower hue change in pride mode
-    for(i = 0; i < PartSys->usedParticles; i++) {
+    for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
          PartSys->particles[i].hue -= decrement;
     }
   }
   // wrap around (cannot use particle system wrap if distributing colors manually, it also wraps rendering which does not look good)
-  for(i = PartSys->usedParticles - 1; i >= 0; i--) { // check from the back, last particle wraps first, multiple particles can overrun per frame
+  for(int32_t i = (int32_t)PartSys->usedParticles - 1; i >= 0; i--) { // check from the back, last particle wraps first, multiple particles can overrun per frame
     if(PartSys->particles[i].x > PartSys->maxX + PS_P_RADIUS_1D + PartSys->advPartProps[i].size) { // wrap it around
       uint32_t nextindex = (i + 1) % PartSys->usedParticles;
       PartSys->particles[i].x =  PartSys->particles[nextindex].x - (int)SEGENV.step;

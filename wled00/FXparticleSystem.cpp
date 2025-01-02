@@ -686,7 +686,7 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
       SEGMENT.blur(globalSmear, true);
   }
   // transfer framebuffer to segment if available
-  if (framebuffer && pmem->inTransition != effectID) { // not in transition or is old FX
+  if (pmem->inTransition != effectID) { // not in transition or is old FX
     transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer);
   }
 }
@@ -1890,7 +1890,7 @@ static int32_t limitSpeed(int32_t speed) {
 
 // check if particle is out of bounds and wrap it around if required, returns false if out of bounds
 static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, bool wrap) {
-  if ((uint32_t)position > max) { // check if particle reached an edge, cast to uint32_t to save negative checking
+  if ((uint32_t)position > (uint32_t)max) { // check if particle reached an edge, cast to uint32_t to save negative checking (max is always positive)
     if (wrap) {
       position = position % (max + 1); // note: cannot optimize modulo, particles can be far out of bounds when wrap is enabled
       if (position < 0)
@@ -1990,7 +1990,6 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     if (requestedParticles) { // request for a new buffer, this is an init call
       PSPRINTLN("Buffer exists, request for particles: " + String(requestedParticles));
       pmem->transferParticles = true; // set flag to transfer particles
-      availableToPS = 0; // start out with zero particles, transition below will initialize and transfer them
       uint32_t requestsize = structSize * requestedParticles; // required buffer size
       if (requestsize > pmem->buffersize) { // request is larger than buffer, try to extend it
         if (Segment::getUsedSegmentData() + requestsize - pmem->buffersize <= MAX_SEGMENT_DATA) { // enough memory available to extend buffer
@@ -2000,20 +1999,19 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
             deallocatePSmemory(pmem->particleMemPointer, pmem->buffersize); // free old memory
             pmem->particleMemPointer = buffer; // set new buffer
             pmem->buffersize = requestsize; // update buffer size
-          } // if buffer was not extended, the old, smaller buffer is used
+          }
           else
             return nullptr; // no memory available
         }
       }
       if (pmem->watchdog == 1) // if a PS already exists during particle request, it kicked the watchdog in last frame, servicePSmem() adds 1 afterwards -> PS to PS transition
         pmem->inTransition = effectID; // save the ID of the new effect (required to determine blur amount in rendering function)
-      return pmem->particleMemPointer; // return the available buffer on init call  TODO: maybe split this into two functions, one for init and one for get?
+      return pmem->particleMemPointer; // return the available buffer on init call
     }
     pmem->watchdog = 0; // kick watchdog
     buffer = pmem->particleMemPointer; // buffer is already allocated
   }
   else { // if the id was not found create a buffer and add an element to the list
-    availableToPS = 0; // new PS starts with zero particles, they are transferred in the next call
     PSPRINTLN("New particle buffer request: " + String(requestedParticles));
     uint32_t requestsize = structSize * requestedParticles; // required buffer size
     buffer = allocatePSmemory(requestsize, false); // allocate new memory
@@ -2144,7 +2142,7 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
 // update number of particles to use, limit to allocated (= particles allocated by the calling system) in case more are available in the buffer
 void updateUsedParticles(const uint32_t allocated, const uint32_t available, const uint8_t percentage, uint32_t &used) {
   uint32_t wantsToUse = (allocated * ((uint32_t)percentage + 1)) >> 8;
-  used = min(available, wantsToUse); // limit to available particles
+  used = max((uint32_t)2, min(available, wantsToUse)); // limit to available particles, use a minimum of 2
 }
 
 // get the pointer to the particle memory for the segment
@@ -2213,9 +2211,8 @@ void servicePSmem() {
 
 // transfer the frame buffer to the segment and handle transitional rendering (both FX render to the same buffer so they mix)
 void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
-  PSPRINT(" xfer buf ");
   if(!framebuffer) return; // no buffer, nothing to transfer
-
+  PSPRINT(" xfer buf ");
   #ifndef WLED_DISABLE_MODE_BLEND
   bool tempBlend = SEGMENT.getmodeBlend();
   if (pmem->inTransition)
