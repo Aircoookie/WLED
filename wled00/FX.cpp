@@ -9432,8 +9432,8 @@ uint16_t mode_particleFireworks1D(void) {
       PartSys->sources[0].source.perpetual = 0; //flag abused for rocket state
       PartSys->sources[0].source.hue = hw_random16();
       PartSys->sources[0].var = 10;
-      PartSys->sources[0].minLife = 10;
-      PartSys->sources[0].maxLife = 30;
+      PartSys->sources[0].minLife = 100;
+      PartSys->sources[0].maxLife = 300;
       PartSys->sources[0].source.x = 0; // start from bottom
       uint32_t speed = sqrt((gravity * ((PartSys->maxX >> 2) + hw_random16(PartSys->maxX >> 1))) >> 4); // set speed such that rocket explods in frame
       PartSys->sources[0].source.vx = min(speed, (uint32_t)127);
@@ -9467,14 +9467,13 @@ uint16_t mode_particleFireworks1D(void) {
     if(PartSys->sources[0].source.ttl < 2) { // explode
       PartSys->sources[0].source.perpetual = 1; // set standby state
       PartSys->sources[0].var = 5 + ((((PartSys->maxX >> 1) + rocketheight) * (200 + SEGMENT.intensity)) / (PartSys->maxX << 2)); // set explosion particle speed
-      PartSys->sources[0].minLife = 60;
-      PartSys->sources[0].maxLife = 130;
+      PartSys->sources[0].minLife = 600;
+      PartSys->sources[0].maxLife = 1300;
       PartSys->sources[0].source.ttl = 100 + hw_random16(64 - (SEGMENT.speed >> 2)); // standby time til next launch
       PartSys->sources[0].sat = 7 + (SEGMENT.custom3 << 3); //color saturation  TODO: replace saturation with something more useful?
       PartSys->sources[0].size = hw_random16(64); // random particle size in explosion
       uint32_t explosionsize = 8 + (PartSys->maxXpixel >> 2) + (PartSys->sources[0].source.x >> (PS_P_RADIUS_SHIFT_1D - 1));
       explosionsize += hw_random16((explosionsize * SEGMENT.intensity) >> 8);
-      Serial.println("Explosion size: " + String(explosionsize));
       for(uint32_t e = 0; e < explosionsize; e++) { // emit explosion particles
         if(SEGMENT.check2)
           PartSys->sources[0].source.hue = hw_random16(); //random color for each particle
@@ -9493,6 +9492,12 @@ uint16_t mode_particleFireworks1D(void) {
     PartSys->applyFriction(1); // apply friction to all particles
 
   PartSys->update(); // update and render
+
+  for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if(PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
+    else PartSys->particles[i].ttl = 0;
+  }
+
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o2=1";
@@ -9737,7 +9742,6 @@ uint16_t mode_particle1Dspray(void) {
     PartSys->particles[i].reversegrav = PartSys->sources[0].source.reversegrav; // update gravity direction
   }
   PartSys->update(); // update and render
-  Serial.println("used by FX: " + String(PartSys->usedParticles));
 
   return FRAMETIME;
 }
@@ -9822,7 +9826,7 @@ by DedeHai (Damian Schneider)
 
 uint16_t mode_particleChase(void) {
   ParticleSystem1D *PartSys = NULL;
-  uint32_t i;
+  int32_t i;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1, 255, 3, true)) // init
@@ -9851,8 +9855,6 @@ uint16_t mode_particleChase(void) {
     // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this
     for(i = 0; i < PartSys->usedParticles; i++) {
       PartSys->advPartProps[i].sat = 255;
-      PartSys->particles[i].ttl = 300;
-      PartSys->particles[i].perpetual = true;
       //PartSys->particles[i].x = (i - 1) * SEGENV.step + (((i + 1) * remainder) / PartSys->usedParticles); // distribute evenly
       PartSys->particles[i].x = (i - 1) * SEGENV.step; // distribute evenly (starts out of frame for i=0)
       PartSys->particles[i].vx =  SEGMENT.speed >> 1;
@@ -9865,7 +9867,7 @@ uint16_t mode_particleChase(void) {
     SEGENV.aux0 = settingssum;
   }
 
-  uint32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
+  int32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
 
   if(SEGMENT.check1) { // pride rainbow colors
     //TODO: orignal FX also changes movement speed
@@ -9904,17 +9906,17 @@ uint16_t mode_particleChase(void) {
          PartSys->particles[i].hue -= decrement;
     }
   }
-
   // wrap around (cannot use particle system wrap if distributing colors manually, it also wraps rendering which does not look good)
-  for(i = 0; i < PartSys->usedParticles; i++) {
+  for(i = PartSys->usedParticles - 1; i >= 0; i--) { // check from the back, last particle wraps first, multiple particles can overrun per frame
     if(PartSys->particles[i].x > PartSys->maxX + PS_P_RADIUS_1D + PartSys->advPartProps[i].size) { // wrap it around
       uint32_t nextindex = (i + 1) % PartSys->usedParticles;
-      PartSys->particles[i].x =  PartSys->particles[nextindex].x - SEGENV.step;
+      PartSys->particles[i].x =  PartSys->particles[nextindex].x - (int)SEGENV.step;
       if(SEGMENT.custom2 < 255)
         PartSys->particles[i].hue = PartSys->particles[nextindex].hue - huestep;
       else
         PartSys->particles[i].hue = hw_random16();
     }
+    PartSys->particles[i].ttl = 300; // reset ttl, cannot use perpetual because memmanager can change pointer at any time
   }
 
   PartSys->setParticleSize(SEGMENT.custom1); // if custom1 == 0 this sets rendering size to one pixel
