@@ -975,7 +975,7 @@ void ParticleSystem2D::collideParticles(PSparticle *particle1, PSparticle *parti
 void ParticleSystem2D::updateSystem(void) {
   PSPRINTLN("updateSystem2D");
   setMatrixSize(SEGMENT.vWidth(), SEGMENT.vHeight());
-  updateRenderingBuffer(SEGMENT.vWidth() * SEGMENT.vHeight(), true); // update or create rendering buffer (segment size can change at any time)
+  updateRenderingBuffer(SEGMENT.vWidth() * SEGMENT.vHeight(), true, false); // update rendering buffer (segment size can change at any time)
   updatePSpointers(advPartProps != nullptr, advPartSize != nullptr); // update pointers to PS data, also updates availableParticles
   setUsedParticles(fractionOfParticlesUsed); // update used particles based on percentage (can change during transitions, execute each frame for code simplicity)
   if (partMemList.size() == 1) // if number of vector elements is one, this is the only system
@@ -1135,8 +1135,9 @@ bool initParticleSystem2D(ParticleSystem2D *&PartSys, uint32_t requestedsources,
   uint32_t cols = SEGMENT.virtualWidth();
   uint32_t rows = SEGMENT.virtualHeight();
   uint32_t pixels = cols * rows;
+  updateRenderingBuffer(SEGMENT.vWidth() * SEGMENT.vHeight(), true, true); // update or create rendering buffer
   if(advanced)
-    updateRenderingBuffer(100, false); // allocate a 10x10 buffer for rendering advanced particles
+    updateRenderingBuffer(100, false, true); // allocate a 10x10 buffer for rendering advanced particles
 
   uint32_t numparticles = calculateNumberOfParticles2D(pixels, advanced, sizecontrol);
   PSPRINT(" segmentsize:" + String(cols) + " " + String(rows));
@@ -1562,20 +1563,6 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
     x--; // shift by a full pixel here, this is skipped above to not do -1 and then +1
     pixco[0] = x;  // left pixel
 
-    // now check if any are out of frame. set values to -1 if they are so they can be easily checked after (no value calculation, no setting of pixelcolor if value < 0)
-    if (x < 0) { // left pixels out of frame
-      if (wrap) // wrap x to the other side if required
-        pixco[0] = maxXpixel;
-      else
-        pxlisinframe[0] = false; // pixel is out of matrix boundaries, do not render
-    }
-    else if (pixco[1] > (int32_t)maxXpixel) { // right pixel, only has to be checkt if left pixel did not overflow
-      if (wrap) // wrap y to the other side if required
-        pixco[1] = 0;
-      else
-        pxlisinframe[1] = false;
-    }
-
     //calculate the brightness values for both pixels using linear interpolation (note: in standard rendering out of frame pixels could be skipped but if checks add more clock cycles over all)
     pxlbrightness[0] = (((int32_t)PS_P_RADIUS_1D - dx) * brightness) >> PS_P_SURFACE_1D;
     pxlbrightness[1] = (dx * brightness) >> PS_P_SURFACE_1D;
@@ -1627,6 +1614,19 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
       }
     }
     else { // standard rendering (2 pixels per particle)
+      // check if any pixels are out of frame
+      if (x < 0) { // left pixels out of frame
+        if (wrap) // wrap x to the other side if required
+          pixco[0] = maxXpixel;
+        else
+          pxlisinframe[0] = false; // pixel is out of matrix boundaries, do not render
+      }
+      else if (pixco[1] > (int32_t)maxXpixel) { // right pixel, only has to be checkt if left pixel did not overflow
+        if (wrap) // wrap y to the other side if required
+          pixco[1] = 0;
+        else
+          pxlisinframe[1] = false;
+      }
       for(uint32_t i = 0; i < 2; i++) {
         if (pxlisinframe[i]) {
           if (framebuffer)
@@ -1732,7 +1732,7 @@ void ParticleSystem1D::collideParticles(PSparticle1D *particle1, PSparticle1D *p
 // note: do not access the PS class in FX befor running this function (or it messes up SEGENV.data)
 void ParticleSystem1D::updateSystem(void) {
   setSize(SEGMENT.vLength()); // update size
-  updateRenderingBuffer(SEGMENT.vLength(), true); // update or create rendering buffer (segment size can change at any time)
+  updateRenderingBuffer(SEGMENT.vLength(), true, false); // update rendering buffer (segment size can change at any time)
   updatePSpointers(advPartProps != NULL);
   setUsedParticles(fractionOfParticlesUsed); // update used particles based on percentage (can change during transitions, execute each frame for code simplicity)
   if (partMemList.size() == 1) // if number of vector elements is one, this is the only system
@@ -1821,8 +1821,9 @@ bool allocateParticleSystemMemory1D(uint32_t numparticles, uint32_t numsources, 
 // note: percentofparticles is in uint8_t, for example 191 means 75%, (deafaults to 255 or 100% meaning one particle per pixel), can be more than 100% (but not recommended, can cause out of memory)
 bool initParticleSystem1D(ParticleSystem1D *&PartSys, uint32_t requestedsources, uint8_t fractionofparticles, uint32_t additionalbytes, bool advanced) {
   if (SEGLEN == 1) return false; // single pixel not supported
+  updateRenderingBuffer(SEGMENT.vLength(), true, true); // update/create frame rendering buffer
   if(advanced)
-    updateRenderingBuffer(10, false); // buffer for advanced particles, fixed size
+    updateRenderingBuffer(10, false, true); // buffer for advanced particles, fixed size
   uint32_t numparticles = calculateNumberOfParticles1D(fractionofparticles, advanced);
   uint32_t numsources = calculateNumberOfSources1D(requestedsources);
   if (!allocateParticleSystemMemory1D(numparticles, numsources, advanced, additionalbytes)) {
@@ -2157,18 +2158,20 @@ partMem* getPartMem(void) { // TODO: maybe there is a better/faster way than usi
 }
 
 // function to update the framebuffer and renderbuffer
-void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer) {
+void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer, bool initialize) {
   PSPRINTLN("updateRenderingBuffer");
-  CRGB** targetBuffer = isFramebuffer ? &framebuffer : &renderbuffer; // pointer to target buffer
   uint16_t& targetBufferSize = isFramebuffer ? frameBufferSize : renderBufferSize; // corresponding buffer size
   if(targetBufferSize < requiredpixels) { // check current buffer size
-    if(*targetBuffer) // buffer exists, free it
-      deallocatePSmemory((void*)(*targetBuffer), targetBufferSize * sizeof(CRGB));
-    *targetBuffer = reinterpret_cast<CRGB *>(allocatePSmemory(requiredpixels * sizeof(CRGB), false));
-    if(*targetBuffer)
-      targetBufferSize = requiredpixels;
-    else
-      targetBufferSize = 0;
+    CRGB** targetBuffer = isFramebuffer ? &framebuffer : &renderbuffer; // pointer to target buffer
+    if(*targetBuffer || initialize) { // update only if initilizing or if buffer exists (prevents repeatet allocation attempts if initial alloc failed)
+      if(*targetBuffer) // buffer exists, free it
+        deallocatePSmemory((void*)(*targetBuffer), targetBufferSize * sizeof(CRGB));
+      *targetBuffer = reinterpret_cast<CRGB *>(allocatePSmemory(requiredpixels * sizeof(CRGB), false));
+      if(*targetBuffer)
+        targetBufferSize = requiredpixels;
+      else
+        targetBufferSize = 0;
+    }
   }
 }
 
