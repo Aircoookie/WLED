@@ -246,6 +246,11 @@
 #include "../usermods/sleep_manager/sleep_manager.h"
 #endif
 
+
+#ifdef USERMOD_DEEP_SLEEP
+  #include "../usermods/deep_sleep/usermod_deep_sleep.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -474,8 +479,8 @@ void registerUsermods()
   #ifdef USERMOD_POV_DISPLAY
   UsermodManager::add(new PovDisplayUsermod());
   #endif
-  
-  #ifdef USERMOD_SLEEP
-  UsermodManager::add(new SleepManager());
+
+  #ifdef USERMOD_DEEP_SLEEP
+   usermods.add(new DeepSleepUsermod());
   #endif
 }
