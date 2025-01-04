@@ -242,6 +242,10 @@
 #include "../usermods/LD2410_v2/usermod_ld2410.h"
 #endif
 
+#ifdef USERMOD_SLEEP
+#include "../usermods/sleep_manager/sleep_manager.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -469,5 +473,9 @@ void registerUsermods()
 
   #ifdef USERMOD_POV_DISPLAY
   UsermodManager::add(new PovDisplayUsermod());
+  #endif
+  
+  #ifdef USERMOD_SLEEP
+  UsermodManager::add(new SleepManager());
   #endif
 }
