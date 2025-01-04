@@ -3,6 +3,14 @@
 This usermod unleashes the low power capabilities of th ESP: when you power off your LEDs (using the UI power button or a macro) the ESP will be put into deep sleep mode, reducing power consumption to a minimum.
 During deep sleep the ESP is shut down completely: no WiFi, no CPU, no outputs. The only way to wake it up is to use an external signal or a button. Once it wakes from deep sleep it reboots so ***make sure to use a boot-up preset.***
 
+## Features
+
+- **Idle-based Sleep**: Automatically puts the device to sleep after a specified period of inactivity.
+- **Custom GPIO Configuration**: Allows configuration of GPIO pins for controlling power actions (e.g., pull-up or pull-down).
+- **Touchpad Wakeup**: Supports waking up the device using a touch sensor.
+- **RTC IO Wakeup**: Supports waking up the device using RTC IO.
+- **Preset Wakeup**: Optionally allows setting a timer to wake the device up after a set period.
+
 # A word of warning
 
 When you disable the WLED option 'Turn LEDs on after power up/reset' and 'DelaySleep' is set to zero the ESP will go into deep sleep directly after power-up and only start WLED after it has been woken up.
@@ -61,6 +69,14 @@ To override the default settings, place the `#define` in wled.h or add `-D DEEPS
 * `DEEPSLEEP_DISABLEPULL`    - if defined, internal pullup/pulldown is disabled in deep sleep (default is ebnabled)
 * `DEEPSLEEP_WAKEUPINTERVAL` - number of seconds after which a wake-up happens automatically, sooner if button is pressed. 0 = never. accuracy is about 2%
 * `DEEPSLEEP_DELAY`          - delay between power-off and sleep
+* `DEEPSLEEP_WAKEUP_TOUCH_PIN` - specify GPIO pin used for touch-based wakeup; 5 for ESP32S3, 15 for other models
+* `DEEPSLEEP_CONFIGPINS`                 - configure GPIO pins: NUM=start pull-up (1)/down (0), end pull-up (1)/down (0)/disable (-1),example "4,1,0" - pull io4 up at setup,down before deepsleep
+* `DEEPSLEEP_WHEN_LOW_VOLTAGE` - if true, enters deep sleep when low voltage is detected
+* `DEEPSLEEP_VOTAGE_PIN`       - specify GPIO pin used for voltage monitoring (e.g., pin 34)
+* `DEEPSLEEP_MIN_VOTAGE`       - minimum voltage threshold to trigger deep sleep (in volts)
+* `DEEPSLEEP_VOTAGE_DIV_RATIO` - voltage divider ratio used to monitor voltage on the defined pin
+* `DEEPSLEEP_WAKEWHENHIGH`     - wake up when the pin goes high (default is when the pin goes low)
+
 
 example for env build flags:
  `-D USERMOD_DEEP_SLEEP`
