@@ -243,7 +243,11 @@
 #endif
 
 #ifdef USERMOD_M5STICK2_VISUALISER
-#include "../usermods/M5Stick2_Visualiser/M5Stick2_Visualiser.h"
+  #include "../usermods/M5Stick2_Visualiser/M5Stick2_Visualiser.h"
+#endif
+
+#ifdef USERMOD_DEEP_SLEEP
+  #include "../usermods/deep_sleep/usermod_deep_sleep.h"
 #endif
 
 void registerUsermods()
@@ -476,6 +480,10 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_M5STICK2_VISUALISER
-  usermods.add(new M5Stick2Visualiser());
+  UsermodManager::add(new M5Stick2Visualiser());
+  #endif
+  
+  #ifdef USERMOD_DEEP_SLEEP
+   usermods.add(new DeepSleepUsermod());
   #endif
 }
