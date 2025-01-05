@@ -23,6 +23,8 @@ In the `platformio.ini` file, you must change the environment setup to build for
 board = esp32dev
 build_unflags = ${common.build_unflags}
 build_flags = ${common.build_flags_esp32} 
+  # enable AR mod
+  ${esp32.AR_build_flags}
   -D BTNPIN=39
   -D LEDPIN=19
   -D IRPIN=19
@@ -46,8 +48,6 @@ build_flags = ${common.build_flags_esp32}
   -D I2S_SDPIN=34 -D I2S_WSPIN=0 -D I2S_CKPIN=-1 -D MCLK_PIN=-1  ;; PDM microphone pins
   -D DMENABLED=5 -D SR_SQUELCH=5 -D SR_GAIN=75    ;; SPM1423 specific sound settings
   -D USER_SETUP_LOADED
-  # Add audio reactive mod
-  -D USERMOD_AUDIOREACTIVE -D UM_AUDIOREACTIVE_ENABLE -D UM_AUDIOREACTIVE_USE_NEW_FFT
 lib_deps = 
   ${esp32.lib_deps}
   ${esp32.AR_lib_deps} 
