@@ -3147,7 +3147,7 @@ static uint16_t rolling_balls(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
+static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collide,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
 #endif //DISABLE_1D_PS_REPLACEMENTS
 
 /*
@@ -7916,7 +7916,7 @@ uint16_t mode_particlefireworks(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,;;!;2;pal=11,sx=100,ix=50,c1=84,c2=0,c3=12,o1=0,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,;;!;2;pal=11,sx=100,ix=50,c1=84,c2=0,c3=12";
 
 /*
  * Particle Volcano
@@ -7989,7 +7989,7 @@ uint16_t mode_particlevolcano(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,Color by Age,Walls,Collisions;;!;2;pal=35,sx=100,ix=190,c1=0,c2=160,c3=6,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,AgeColor,Walls,Collide;;!;2;pal=35,sx=100,ix=190,c1=0,c2=160,c3=6,o1=1";
 
 /*
 * Particle Fire
@@ -8152,7 +8152,7 @@ uint16_t mode_particlepit(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=220,c1=120,c2=130,c3=31,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=220,c1=120,c2=130,c3=31,o3=1";
 
 /*
  * Particle Waterfall
@@ -8224,7 +8224,7 @@ uint16_t mode_particlewaterfall(void) {
   PartSys->update();   // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collisions,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,c3=17,o1=0,o2=0,o3=1";
+static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collide,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,c3=17,o3=1";
 
 /*
 Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
@@ -8367,7 +8367,7 @@ uint16_t mode_particleperlin(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,Smear,Collisions;;!;2;pal=64,sx=50,ix=200,c1=130,c2=30,c3=5,o3=1";
+static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,Smear,Collide;;!;2;pal=64,sx=50,ix=200,c1=130,c2=30,c3=5,o3=1";
 
 /*
  * Particle smashing down like meteors and exploding as they hit the ground, has many parameters to play with
@@ -8484,7 +8484,7 @@ uint16_t mode_particleimpact(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Explosion Size,Explosion Force,Hardness,Blur,Cylinder,Walls,Collisions;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Size,Force,Hardness,Blur,Cylinder,Walls,Collide;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o3=1";
 
 /*
 Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
@@ -8590,9 +8590,9 @@ uint16_t mode_particleattractor(void) {
   return FRAMETIME;
 }
 #ifdef USERMOD_AUDIOREACTIVE
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Disable AR;;!;2v;pal=9,sx=100,ix=82,c1=0,c2=0,";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Disable AR;;!;2v;pal=9,sx=100,ix=82,c1=0,c2=0,";
 #else
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Particle Size,Collisions,Friction,Color by Age,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=0,c2=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=0,c2=0";
 #endif
 
 /*
@@ -8679,7 +8679,7 @@ uint16_t mode_particlespray(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collisions;;!;2v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21";
+static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left/Right,Up/Down,Angle,Gravity,Cylinder/Square,Collide;;!;2v;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21";
 
 
 /*
@@ -8757,7 +8757,7 @@ uint16_t mode_particleGEQ(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS 2D GEQ@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0,c2=128";
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS 2D GEQ@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0";
 
 /*
  * Particle rotating GEQ (unfinished, basically works but needs more fine-tuning)
@@ -8833,7 +8833,7 @@ uint16_t mode_particlecenterGEQ(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle Size,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
+static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
 
 /*
 Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
@@ -8913,7 +8913,7 @@ uint16_t mode_particleghostrider(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,Color by age,Walls;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1";
+static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@Speed,Spiral,Blur,Color Cycle,Spread,AgeColor,Walls;;!;2;pal=1,sx=70,ix=0,c1=220,c2=30,c3=21,o1=1";
 
 /*
 PS Blobs: large particles bouncing around, changing size and form
@@ -9266,7 +9266,7 @@ uint16_t mode_particleBouncingBalls(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Size,Blur,Gravity,Collide,Rolling,Color by Position;,!;!;1;pal=0,sx=100,ix=85,c1=30,c2=0,c3=8";
+static const char _data_FX_MODE_PSBOUNCINGBALLS[] PROGMEM = "PS Bouncing Balls@Speed,!,Size,Blur,Gravity,Collide,Rolling,Position Color;,!;!;1;pal=0,sx=100,ix=85,c1=30,c2=0,c3=8";
 
 /*
 Particle Replacement for original Dancing Shadows:
@@ -9387,7 +9387,7 @@ uint16_t mode_particleDancingShadows(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,Smear,Color by position,Smooth;,!;!;1;sx=100,ix=180,c1=0,c2=0";
+static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing Shadows@Speed,!,Blur,Color Cycle,,Smear,Position Color,Smooth;,!;!;1;sx=100,ix=180,c1=0,c2=0";
 
 /*
 Particle Fireworks 1D replacement
@@ -9697,7 +9697,7 @@ uint16_t mode_particleHourglass(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Color,Blur,Gravity,Colorflip,Auto Reset,Fast Reset;,!;!;1;pal=34,sx=245,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
+static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Color,Blur,Gravity,Colorflip,Start,Fast Reset;,!;!;1;pal=34,sx=245,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
 
 /*
 Particle based Spray effect (like a volcano, possible replacement for popcorn)
@@ -9748,7 +9748,7 @@ uint16_t mode_particle1Dspray(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur,Gravity,Color by Age,Bounce,Color by Position;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
+static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur,Gravity,AgeColor,Bounce,Position Color;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
 /*
 Particle based balance: particles move back and forth (1D pendent to 2D particle box)
 Uses palette for particle color
@@ -9819,7 +9819,7 @@ uint16_t mode_particleBalance(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collisions,Blur,Tilt,Color by Position,Wrap/Bounce,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collide,Blur,Tilt,Position Color,Wrap,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
 
 /*
 Particle based Chase effect
@@ -9845,21 +9845,20 @@ uint16_t mode_particleChase(void) {
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setColorByPosition(SEGMENT.check3);
   PartSys->setMotionBlur(SEGMENT.custom3 << 3); // anable motion blur
-  //uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer
+  // uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer
 
-  //PartSys->setBounce(SEGMENT.check2);
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3 + PartSys->getAvailableParticles(); // note: getAvailableParticles is used to enforce update during transitions
-  if(SEGENV.aux0 != settingssum) { //settings changed changed, update
-    PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 30, 255 / (1 + (SEGMENT.custom1 >> 6)))); //depends on intensity and particle size (custom1)
-    SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 5)) / PartSys->usedParticles; //spacing between particles
-    // uint32_t remainder = PartSys->maxX - ((PartSys->usedParticles) * SEGENV.step); // unused spacing, distribute this
-    for(int32_t i = 0; i < (int32_t)PartSys->usedParticles; i++) {
+  if (SEGENV.aux0 != settingssum) { // settings changed changed, update
+    uint32_t numParticles = map(SEGMENT.intensity, 0, 255, 2, 255 / (1 + (SEGMENT.custom1 >> 6))); // depends on intensity and particle size (custom1)
+    if (numParticles == 0) numParticles = 1; // minimum 1 particle
+    PartSys->setUsedParticles(numParticles);
+    SEGENV.step = (PartSys->maxX + (PS_P_RADIUS_1D << 5)) / PartSys->usedParticles; // spacing between particles
+    for (int32_t i = 0; i < (int32_t)PartSys->usedParticles; i++) {
       PartSys->advPartProps[i].sat = 255;
-      //PartSys->particles[i].x = (i - 1) * SEGENV.step + (((i + 1) * remainder) / PartSys->usedParticles); // distribute evenly
       PartSys->particles[i].x = (i - 1) * SEGENV.step; // distribute evenly (starts out of frame for i=0)
       PartSys->particles[i].vx =  SEGMENT.speed >> 1;
       PartSys->advPartProps[i].size = SEGMENT.custom1;
-      if(SEGMENT.custom2 < 255)
+      if (SEGMENT.custom2 < 255)
         PartSys->particles[i].hue = (i * (SEGMENT.custom2 << 3)) / PartSys->usedParticles; // gradient distribution
       else
         PartSys->particles[i].hue = hw_random16();
@@ -9869,49 +9868,49 @@ uint16_t mode_particleChase(void) {
 
   int32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
 
-  if(SEGMENT.check1) { // pride rainbow colors
-    //TODO: orignal FX also changes movement speed
+  if (SEGMENT.check1) { // pride rainbow colors
+    // TODO: orignal FX also changes movement speed
     // also the color change is too fast
-    int8_t* huedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd);  //assign data pointer
-    int8_t* sizedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd + 1);  //assign data pointer
+    int8_t* huedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd);  // assign data pointer
+    int8_t* sizedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd + 1);
     int32_t sizechange = 0;
 
-    if(PartSys->advPartProps[0].size >= 254)
+    if (PartSys->advPartProps[0].size >= 254)
       *sizedir = -1;
-    else if(PartSys->advPartProps[0].size <= (SEGMENT.custom1 >> 2))
+    else if (PartSys->advPartProps[0].size <= (SEGMENT.custom1 >> 2))
       *sizedir = 1;
 
-    if(SEGENV.aux1 > 64)
+    if (SEGENV.aux1 > 64)
       *huedir = -1;
-    else if(SEGENV.aux1 < 1)
+    else if (SEGENV.aux1 < 1)
       *huedir = 1;
 
-    if(SEGMENT.call % (1024 / (1 + (SEGMENT.speed >> 3))) == 0)
+    if (SEGMENT.call % (1024 / (1 + (SEGMENT.speed >> 3))) == 0)
       SEGENV.aux1 += *huedir;
     huestep = SEGENV.aux1; // changes gradient spread
 
-    if(SEGMENT.call % (255 / (1 + (SEGMENT.speed >> 2))) == 0)
+    if (SEGMENT.call % (255 / (1 + (SEGMENT.speed >> 2))) == 0)
       sizechange = *sizedir;
 
-    for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
       // PartSys->particles[i].hue = *basehue + (i * (SEGENV.aux1)) / PartSys->usedParticles; // gradient distribution
       PartSys->advPartProps[i].size += sizechange;
     }
   }
-  if((SEGMENT.check2 || SEGMENT.check1) && SEGMENT.call % (160 / ((SEGMENT.speed >> 3) + 128)) == 0) { // color waves
+  if ((SEGMENT.check2 || SEGMENT.check1) && SEGMENT.call % (160 / ((SEGMENT.speed >> 3) + 128)) == 0) { // color waves
     int32_t decrement = 2;
-    if(SEGMENT.check1)
-      decrement = 1; //slower hue change in pride mode
-    for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if (SEGMENT.check1)
+      decrement = 1; // slower hue change in pride mode
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
          PartSys->particles[i].hue -= decrement;
     }
   }
   // wrap around (cannot use particle system wrap if distributing colors manually, it also wraps rendering which does not look good)
-  for(int32_t i = (int32_t)PartSys->usedParticles - 1; i >= 0; i--) { // check from the back, last particle wraps first, multiple particles can overrun per frame
-    if(PartSys->particles[i].x > PartSys->maxX + PS_P_RADIUS_1D + PartSys->advPartProps[i].size) { // wrap it around
+  for (int32_t i = (int32_t)PartSys->usedParticles - 1; i >= 0; i--) { // check from the back, last particle wraps first, multiple particles can overrun per frame
+    if (PartSys->particles[i].x > PartSys->maxX + PS_P_RADIUS_1D + PartSys->advPartProps[i].size) { // wrap it around
       uint32_t nextindex = (i + 1) % PartSys->usedParticles;
       PartSys->particles[i].x =  PartSys->particles[nextindex].x - (int)SEGENV.step;
-      if(SEGMENT.custom2 < 255)
+      if (SEGMENT.custom2 < 255)
         PartSys->particles[i].hue = PartSys->particles[nextindex].hue - huestep;
       else
         PartSys->particles[i].hue = hw_random16();
@@ -9923,7 +9922,7 @@ uint16_t mode_particleChase(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@Speed,Density,Size,Hue,Blur,Pride,Color Waves,Color by Position;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0";
+static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@!,Density,Size,Hue,Blur,Pride,Color Waves,Position Color;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0";
 /*
 Particle Fireworks Starburst replacement (smoother rendering, more settings)
 Uses palette for particle color
@@ -9984,7 +9983,7 @@ uint16_t mode_particleStarburst(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Fragment Size,Blur,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21";
+static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fragments,Size,Blur,Cooling,Gravity,Colorful,Push;,!;!;1;pal=52,sx=150,ix=150,c1=120,c2=0,c3=21";
 
 /*
 Particle based 1D GEQ effect, each frequency bin gets an emitter, distributed over the strip
@@ -10014,7 +10013,7 @@ uint16_t mode_particle1DGEQ(void) {
   uint32_t spacing = PartSys->maxX / numSources;
   for (i = 0; i < numSources; i++) {
     PartSys->sources[i].source.hue = i * 16; // hw_random16();   //TODO: make adjustable, maybe even colorcycle?
-    PartSys->sources[i].var = SEGMENT.speed >> 3;
+    PartSys->sources[i].var = SEGMENT.speed >> 2;
     PartSys->sources[i].minLife = 180 + (SEGMENT.intensity >> 1);
     PartSys->sources[i].maxLife = 240 + SEGMENT.intensity;
     PartSys->sources[i].sat = 255;
@@ -10064,6 +10063,7 @@ uint16_t mode_particle1DGEQ(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+
 /*
 Particle based Fire effect
 Uses palette for particle color
@@ -10089,11 +10089,11 @@ uint16_t mode_particleFire1D(void) {
   PartSys->setColorByAge(true);
   uint32_t emitparticles = 1;
   uint32_t j = hw_random16();
-  for (uint i = 0; i < 3; i++) {
+  for (uint i = 0; i < 3; i++) { // 3 base flames TODO: check if this is ok or needs adjustments
     if (PartSys->sources[i].source.ttl > 50)
       PartSys->sources[i].source.ttl -= 10; // TODO: in 2D making the source fade out slow results in much smoother flames, need to check if it can be done the same
     else
-      PartSys->sources[i].source.ttl = 100 + hw_random16(200); // base flame
+      PartSys->sources[i].source.ttl = 100 + hw_random16(200);
   }
   for (uint i = 0; i < PartSys->numSources; i++) {
     j = (j + 1) % PartSys->numSources;
@@ -10129,6 +10129,135 @@ uint16_t mode_particleFire1D(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Blur;,!;!;1;pal=35,sx=100,ix=50,c1=80,c2=100,c3=28,o1=1,o2=1";
+
+/*
+Particle based AR effect, swoop particles along the strip with selected frequency loudness
+Uses palette for particle color
+by DedeHai (Damian Schneider)
+*/
+
+uint16_t mode_particle1Dsonicstream(void) {
+  ParticleSystem1D *PartSys = NULL;
+
+  if (SEGMENT.call == 0) { // initialization
+    if (!initParticleSystem1D(PartSys, 1, 255, 0, true)) // init, no additional data needed
+      return mode_static(); // allocation failed or is single pixel
+    PartSys->setKillOutOfBounds(true);
+    PartSys->sources[0].source.x = 0; // at start
+    //PartSys->sources[1].source.x = PartSys->maxX; // at end
+    PartSys->sources[0].var = 0;//SEGMENT.custom1 >> 3;
+    PartSys->sources[0].sat = 255;
+  }
+  else
+    PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
+  if (PartSys == NULL)
+    return mode_static(); // something went wrong, no data!
+
+  // Particle System settings
+  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
+  PartSys->setMotionBlur(20 + SEGMENT.custom2>>1); // anable motion blur
+  PartSys->setSmearBlur(200); // smooth out the edges
+
+  PartSys->sources[0].v = 5 + SEGMENT.speed >> 2;
+
+  // FFT processing
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+    um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
+
+  uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
+  uint32_t loudness;
+  uint32_t baseBin = SEGMENT.custom3 >> 1; // 0 - 15 map(SEGMENT.custom3, 0, 31, 0, 14);
+
+  loudness = fftResult[baseBin];// + fftResult[baseBin + 1];
+  int mids = sqrt16((int)fftResult[5] + (int)fftResult[6] + (int)fftResult[7] + (int)fftResult[8] + (int)fftResult[9] + (int)fftResult[10]); // average the mids, bin 5 is ~500Hz, bin 10 is ~2kHz (see audio_reactive.h)
+  if(baseBin > 12)
+    loudness = loudness << 2; // double loudness for high frequencies (better detecion)
+
+  uint32_t threshold = 150 - (SEGMENT.intensity >> 1);
+  if(SEGMENT.check2) { // enable low pass filter for dynamic threshold
+    SEGMENT.step = (SEGMENT.step * 31500 + loudness * (32768 - 31500)) >> 15; // low pass filter for simple beat detection: add average to base threshold
+    threshold = 20 + (threshold >> 1) + SEGMENT.step; // add average to threshold
+  }
+
+  // color
+  uint32_t hueincrement = (SEGMENT.custom1 >> 3); // 0-31
+  if(SEGMENT.custom1 < 255)
+    PartSys->setColorByPosition(false);
+  else
+    PartSys->setColorByPosition(true);
+
+  // particle manipulation
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if(PartSys->sources[0].source.perpetual == false) { // age faster if not perpetual
+      if (PartSys->particles[i].ttl > 2) {
+        PartSys->particles[i].ttl -= 2; //ttl is linked to brightness, this allows to use higher brightness but still a short lifespan
+      }
+      else PartSys->particles[i].ttl = 0;
+    }
+    if(SEGMENT.check1) // modulate colors by mid frequencies
+      PartSys->particles[i].hue += (mids * inoise8(PartSys->particles[i].x << 2, SEGMENT.step << 2)) >> 9; // color by perlin noise from mid frequencies
+  }
+
+  if (loudness > threshold) {
+    SEGMENT.aux0 += hueincrement; // change color
+    PartSys->sources[0].minLife = 100 + (((unsigned)SEGMENT.intensity * loudness * loudness) >> 13);
+    PartSys->sources[0].maxLife = PartSys->sources[0].minLife;
+    PartSys->sources[0].source.hue = SEGMENT.aux0;
+    PartSys->sources[0].size = SEGMENT.speed;
+    if(PartSys->particles[SEGMENT.aux1].x > 3 * PS_P_RADIUS_1D || PartSys->particles[SEGMENT.aux1].ttl == 0) { // only emit if last particle is far enough away or dead
+      int partindex = PartSys->sprayEmit(PartSys->sources[0]); // emit a particle
+      if(partindex >= 0) SEGMENT.aux1 = partindex; // track last emitted particle
+    }
+  }
+  else loudness = 0; // required for push mode
+
+  PartSys->update(); // update and render (needs to be done before manipulation for initial particle spacing to be right)
+
+  if(SEGMENT.check3) { // push mode
+    PartSys->sources[0].source.perpetual = true; // emitted particles dont age
+    PartSys->applyFriction(1); //slow down particles
+    int32_t movestep = (((int)SEGMENT.speed + 2) * loudness) >> 10;
+    if(movestep) {
+      for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+        if (PartSys->particles[i].ttl) {
+          PartSys->particles[i].x += movestep; // push particles
+          PartSys->particles[i].vx = 10 + (SEGMENT.speed >> 4) ; // give particles some speed for smooth movement (friction will slow them down)
+        }
+      }
+    }
+  }
+  else {
+    PartSys->sources[0].source.perpetual = false; // emitted particles age
+    //move all particles (again) to allow faster speeds
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+      if (PartSys->particles[i].vx == 0)
+        PartSys->particles[i].vx = PartSys->sources[0].v; // move static particles (after disabling push mode)
+      PartSys->particleMoveUpdate(PartSys->particles[i], nullptr, &PartSys->advPartProps[i]);
+    }
+  }
+  /*
+  Serial.print(fftResult[0]); Serial.print(" ");
+  Serial.print(fftResult[1]); Serial.print(" ");
+  Serial.print(fftResult[2]); Serial.print(" ");
+  Serial.print(fftResult[3]); Serial.print(" ");
+  Serial.print(fftResult[4]); Serial.print(" ");
+  Serial.print(fftResult[5]); Serial.print(" ");
+  Serial.print(fftResult[6]); Serial.print(" ");
+  Serial.print(fftResult[7]); Serial.print(" ");
+  Serial.print(fftResult[8]); Serial.print(" ");
+  Serial.print(fftResult[9]); Serial.print(" ");
+  Serial.print(fftResult[10]); Serial.print(" ");
+  Serial.print(fftResult[11]); Serial.print(" ");
+  Serial.print(fftResult[12]); Serial.print(" ");
+  Serial.print(fftResult[13]); Serial.print(" ");
+  Serial.print(fftResult[14]); Serial.print(" ");
+  Serial.print(fftResult[15]); Serial.println(" ");
+*/
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_PS_SONICSTREAM[] PROGMEM = "PS Sonic Stream@!,!,Color,Blur,Bin,Mod,Filter,Push;,!;!;1f;c3=0,o2=1";
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -10414,8 +10543,9 @@ addEffect(FX_MODE_PSBALANCE, &mode_particleBalance, _data_FX_MODE_PS_BALANCE);
 addEffect(FX_MODE_PSCHASE, &mode_particleChase, _data_FX_MODE_PS_CHASE);
 addEffect(FX_MODE_PSSTARBURST, &mode_particleStarburst, _data_FX_MODE_PS_STARBURST);
 addEffect(FX_MODE_PS1DGEQ, &mode_particle1DGEQ, _data_FX_MODE_PS_1D_GEQ);
-Serial.println("Adding PSFIRE1D");
 addEffect(FX_MODE_PSFIRE1D, &mode_particleFire1D, _data_FX_MODE_PS_FIRE1D);
+addEffect(FX_MODE_PS1DSONICSTREAM, &mode_particle1Dsonicstream, _data_FX_MODE_PS_SONICSTREAM);
+
 
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 }

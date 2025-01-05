@@ -1328,6 +1328,7 @@ int32_t ParticleSystem1D::sprayEmit(PSsource1D &emitter) {
       particles[emitIndex].collide = emitter.source.collide;
       particles[emitIndex].reversegrav = emitter.source.reversegrav;
       particles[emitIndex].ttl = hw_random16(emitter.minLife, emitter.maxLife);
+      particles[emitIndex].perpetual = emitter.source.perpetual;
       if (advPartProps) {
         advPartProps[emitIndex].sat = emitter.sat;
         advPartProps[emitIndex].size = emitter.size;
