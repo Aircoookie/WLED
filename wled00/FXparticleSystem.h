@@ -211,7 +211,7 @@ private:
   int32_t collisionHardness;
   uint32_t wallHardness;
   uint32_t wallRoughness; // randomizes wall collisions
-  uint32_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call?
+  uint32_t collisionStartIdx; // particle array start index for collision detection
   uint32_t particleHardRadius; // hard surface radius of a particle, used for collision detection (32bit for speed)
   uint8_t forcecounter; // counter for globally applied forces
   uint8_t gforcecounter; // counter for global gravity

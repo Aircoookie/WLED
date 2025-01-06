@@ -57,6 +57,7 @@ ParticleSystem2D::ParticleSystem2D(uint32_t width, uint32_t height, uint32_t num
   motionBlur = 0; //no fading by default
   smearBlur = 0; //no smearing by default
   emitIndex = 0;
+  collisionStartIdx = 0;
 
   //initialize some default non-zero values most FX use
   for (uint32_t i = 0; i < numSources; i++) {
@@ -651,7 +652,7 @@ void ParticleSystem2D::ParticleSys_render(bool firemode, uint32_t fireintensity)
       baseRGB = ColorFromPalette(SEGPALETTE, brightness, 255);
     }
     else {
-      brightness = min(particles[i].ttl, (uint16_t)255);
+      brightness = min((particles[i].ttl << 1), (int)255);
       baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255); // TODO: use loadPalette(CRGBPalette16 &targetPalette, SEGMENT.palette), .palette should be updated immediately at palette change, only use local palette during FX transitions, not during normal transitions. -> why not always?
       if (particles[i].sat < 255) {
         CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to HSV  //!!! TODO: use new hsv to rgb function.
@@ -838,40 +839,59 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
 }
 
 // detect collisions in an array of particles and handle them
+// uses binning by dividing the frame into slices in x direction which is efficient if using gravity in y direction (but less efficient for FX that use forces in x direction)
+// for code simplicity, no y slicing is done, making very tall matrix configurations less efficient
 void ParticleSystem2D::handleCollisions() {
-  uint32_t i, j;
-  uint32_t startparticle = 0;
-  uint32_t endparticle = usedParticles >> 1; // do half the particles, significantly speeds things up
   int32_t collDistSq = particleHardRadius << 1;
   collDistSq = collDistSq * collDistSq; // square it for faster comparison (square is one operation)
-  // every second frame, do other half of particles (helps to speed things up as not all collisions are handled each frame, less accurate but good enough)
-  // if more accurate collisions are needed, just call it twice in a row
-  if (collisioncounter & 0x01) {
-    startparticle = endparticle;
-    endparticle = usedParticles;
-  }
-  collisioncounter++;
-  for (i = startparticle; i < endparticle; i++) { // go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
-    if (particles[i].ttl > 0 && particles[i].outofbounds == 0 && particles[i].collide) { // if particle is alive and is not out of view and does collide
-      int32_t dx, dy; // distance to other particles
-      for (j = i + 1; j < usedParticles; j++) { // check against higher number particles
-        if (particles[j].ttl > 0 && particles[j].collide) { // if target particle is alive
+  // note: partices are binned in x-axis, assumption is that no more than half of the particles are in the same bin
+  // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
+  constexpr uint32_t BIN_WIDTH = 6 * PS_P_RADIUS; // width of a bin in sub-pixels
+  uint32_t maxBinParticles = (usedParticles + 1) / 2; // assume no more than half of the particles are in the same bin
+  uint32_t numBins = (maxX + 1) / BIN_WIDTH; // number of bins in x direction
+  uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
+  uint32_t binParticleCount; // number of particles in the current bin
+  uint32_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
 
-          if (advPartProps) { //may be using individual particle size
-            collDistSq = PS_P_MINHARDRADIUS + particlesize + (((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size)>>1); // collision distance
-            collDistSq = collDistSq * collDistSq; // square it for faster comparison
-          }
+  // Loop through each bin
+  for (uint32_t bin = 0; bin < numBins; bin++) {
+    binParticleCount = 0; // Reset particle count for this bin
 
-          dx = particles[j].x - particles[i].x;
-          if (dx * dx < collDistSq) { // check x direction, if close, check y direction (squaring is faster than abs() or dual compare)
-            dy = particles[j].y - particles[i].y;
-            if (dy * dy < collDistSq) // particles are close
-              collideParticles(&particles[i], &particles[j], dx, dy);
+    // Compute bin bounds
+    uint32_t binStart = bin * BIN_WIDTH;
+    uint32_t binEnd = binStart + BIN_WIDTH;
+
+    // Fill the binIndices array for this bin
+    for (uint32_t i = collisionStartIdx; i < usedParticles; ++i) {
+      if (particles[i].ttl > 0 && particles[i].outofbounds == 0 && particles[i].collide) { // colliding particle
+        if (particles[i].x >= binStart && particles[i].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
+          if (binParticleCount >= maxBinParticles) { // bin is full, more particles in this bin so do the rest next frame
+            nextFrameStartIdx = i; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
+            break;
           }
+          binIndices[binParticleCount++] = i;
+        }
+      }
+    }
+
+    for (uint32_t i = 0; i < binParticleCount; i++) { // go though all 'higher number' particles in this bin and see if any of those are in close proximity and if they are, make them collide
+      uint32_t idx_i = binIndices[i];
+      for (uint32_t j = i + 1; j < binParticleCount; j++) { // check against higher number particles
+        uint32_t idx_j = binIndices[j];
+        if (advPartProps) { //may be using individual particle size
+          collDistSq = PS_P_MINHARDRADIUS + particlesize + (((uint32_t)advPartProps[idx_i].size + (uint32_t)advPartProps[idx_j].size) >> 1); // collision distance
+          collDistSq = collDistSq * collDistSq; // square it for faster comparison
+        }
+        int32_t dx = particles[idx_j].x - particles[idx_i].x;
+        if (dx * dx < collDistSq) { // check x direction, if close, check y direction (squaring is faster than abs() or dual compare)
+          int32_t dy = particles[idx_j].y - particles[idx_i].y;
+          if (dy * dy < collDistSq) // particles are close
+            collideParticles(&particles[idx_i], &particles[idx_j], dx, dy);
         }
       }
     }
   }
+  collisionStartIdx = nextFrameStartIdx; // set the start index for the next frame
 }
 
 // handle a collision if close proximity is detected, i.e. dx and/or dy smaller than 2*PS_P_RADIUS
@@ -917,6 +937,7 @@ void ParticleSystem2D::collideParticles(PSparticle *particle1, PSparticle *parti
     particle2->vx -= ximpulse;
     particle2->vy -= yimpulse;
 
+    // TODO: this makes them way too sticky. maybe apply friction only every x frames? could do (SEGMENT.call & 0x03) == 0 or even 0x07
     if (collisionHardness < surfacehardness) { // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and stop sloshing around)
       const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS);  // Note: could call applyFriction, but this is faster and speed is key here
       particle1->vx = ((int32_t)particle1->vx * coeff) / 255;
@@ -1510,7 +1531,7 @@ void ParticleSystem1D::ParticleSys_render() {
       continue;
 
     // generate RGB values for particle
-    brightness = min(particles[i].ttl, (uint16_t)255);
+    brightness = min(particles[i].ttl << 1, (int)255);
     baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255);
 
     if (advPartProps) { //saturation is advanced property in 1D system

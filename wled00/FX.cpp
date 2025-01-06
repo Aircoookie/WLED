@@ -8093,7 +8093,7 @@ uint16_t mode_particlepit(void) {
   ParticleSystem2D *PartSys = NULL;
 
   if (SEGMENT.call == 0) { // initialization
-    if (!initParticleSystem2D(PartSys, 1, 0, true)) // init, request one source (actually dont really need one TODO: test if using zero sources also works)
+    if (!initParticleSystem2D(PartSys, 1, 0, true, false)) // init, request one source (actually dont really need one TODO: test if using zero sources also works)
       return mode_static(); // allocation failed or not 2D
     PartSys->setKillOutOfBounds(true);
     PartSys->setGravity(); // enable with default gravity
