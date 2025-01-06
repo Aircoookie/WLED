@@ -841,6 +841,7 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
 // detect collisions in an array of particles and handle them
 // uses binning by dividing the frame into slices in x direction which is efficient if using gravity in y direction (but less efficient for FX that use forces in x direction)
 // for code simplicity, no y slicing is done, making very tall matrix configurations less efficient
+// note: also tested adding y slicing, it gives diminishing returns, some FX even get slower. FX not using gravity would benefit with a 10% FPS improvement
 void ParticleSystem2D::handleCollisions() {
   int32_t collDistSq = particleHardRadius << 1;
   collDistSq = collDistSq * collDistSq; // square it for faster comparison (square is one operation)
@@ -848,7 +849,7 @@ void ParticleSystem2D::handleCollisions() {
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
   constexpr uint32_t BIN_WIDTH = 6 * PS_P_RADIUS; // width of a bin in sub-pixels
   uint32_t maxBinParticles = (usedParticles + 1) / 2; // assume no more than half of the particles are in the same bin
-  uint32_t numBins = (maxX + 1) / BIN_WIDTH; // number of bins in x direction
+  uint32_t numBins = (maxX + (BIN_WIDTH -1)) / BIN_WIDTH; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
   uint32_t binParticleCount; // number of particles in the current bin
   uint32_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
@@ -937,8 +938,7 @@ void ParticleSystem2D::collideParticles(PSparticle *particle1, PSparticle *parti
     particle2->vx -= ximpulse;
     particle2->vy -= yimpulse;
 
-    // TODO: this makes them way too sticky. maybe apply friction only every x frames? could do (SEGMENT.call & 0x03) == 0 or even 0x07
-    if (collisionHardness < surfacehardness) { // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and stop sloshing around)
+    if (collisionHardness < surfacehardness && (SEGMENT.call & 0x03) == 0) { // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and stop sloshing around)
       const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS);  // Note: could call applyFriction, but this is faster and speed is key here
       particle1->vx = ((int32_t)particle1->vx * coeff) / 255;
       particle1->vy = ((int32_t)particle1->vy * coeff) / 255;

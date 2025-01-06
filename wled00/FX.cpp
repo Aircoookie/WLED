@@ -8170,8 +8170,8 @@ uint16_t mode_particlewaterfall(void) {
 
     PartSys->setGravity();  // enable with default gforce
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
-    PartSys->setMotionBlur(170); // anable motion blur
-    PartSys->setSmearBlur(45); // enable 2D blurring (smearing)
+    PartSys->setMotionBlur(180); // anable motion blur
+    PartSys->setSmearBlur(30); // enable 2D blurring (smearing)
     for (i = 0; i < PartSys->numSources; i++) {
       PartSys->sources[i].source.hue = i*90;
       PartSys->sources[i].source.collide = true; // seeded particles will collide
@@ -8207,7 +8207,7 @@ uint16_t mode_particlewaterfall(void) {
       PartSys->sources[i].source.hue += 1 + hw_random16(SEGMENT.custom1>>1); // change hue of spray source
   }
 
-  if (SEGMENT.call % (9 - (SEGMENT.intensity >> 5)) == 0 && SEGMENT.intensity > 0) { // every nth frame, emit particles, do not emit if intensity is zero
+  if (SEGMENT.call % (12 - (SEGMENT.intensity >> 5)) == 0 && SEGMENT.intensity > 0) { // every nth frame, emit particles, do not emit if intensity is zero
     for (i = 0; i < numSprays; i++) {
       PartSys->sources[i].vy = -SEGMENT.speed >> 3; // emitting speed, down
       //PartSys->sources[i].source.x = map(SEGMENT.custom3, 0, 31, 0, (PartSys->maxXpixel - numSprays * 2) * PS_P_RADIUS) + i * PS_P_RADIUS * 2; // emitter position
@@ -8224,7 +8224,7 @@ uint16_t mode_particlewaterfall(void) {
   PartSys->update();   // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collide,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,c3=17,o3=1";
+static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collide,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,o3=1";
 
 /*
 Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
