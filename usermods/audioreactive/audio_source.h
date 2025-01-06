@@ -504,10 +504,10 @@ public:
         ERRORSR_PRINTF("\nAR: invalid ES7243 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
       }
-      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
-        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
-        return;
-      }
+//      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
+//        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl);
+//        return;
+//      }
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es7243InitAdc();
@@ -635,10 +635,10 @@ class ES8388Source : public I2SSource {
         ERRORSR_PRINTF("\nAR: invalid ES8388 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
       }
-      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
-        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
-        return;
-      }
+//      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
+//        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl);
+//        return;
+//      }
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es8388InitAdc();
@@ -732,10 +732,10 @@ class ES8311Source : public I2SSource {
         ERRORSR_PRINTF("\nAR: invalid es8311 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
       }
-      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
-        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
-        return;
-      }
+//      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
+//        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl);
+//        return;
+//      }
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es8311InitAdc();
@@ -828,10 +828,10 @@ class WM8978Source : public I2SSource {
         ERRORSR_PRINTF("\nAR: invalid WM8978 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
       }
-      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
-        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
-        return;
-      }
+//      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
+//        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl);
+//        return;
+//      }
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _wm8978InitAdc();
@@ -931,10 +931,10 @@ class AC101Source : public I2SSource {
         ERRORSR_PRINTF("\nAR: invalid AC101 global I2C pins: SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
         return;
       }
-      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
-        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl); 
-        return;
-      }
+//      if (!PinManager::joinWire(i2c_sda, i2c_scl)) {    // WLEDMM specific: start I2C with globally defined pins
+//        ERRORSR_PRINTF("\nAR: failed to join I2C bus with SDA=%d, SCL=%d\n", i2c_sda, i2c_scl);
+//        return;
+//      }
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _ac101InitAdc();

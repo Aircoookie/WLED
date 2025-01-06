@@ -2946,7 +2946,7 @@ class AudioReactive : public Usermod {
       #ifdef AUDIOPIN
         oappend(SET_F("xOpt(ux+':analogmic:pin',1,' ⎌',")); oappendi(AUDIOPIN); oappend(");"); 
       #endif
-      oappend(SET_F("aOpt(ux+':analogmic:pin',1);")); //only analog options
+     // oappend(SET_F("aOpt(ux+':analogmic:pin',1);")); //only analog options
       #endif
 
       oappend(SET_F("dd=addDropdown(ux,'digitalmic:type');"));
@@ -3161,22 +3161,22 @@ class AudioReactive : public Usermod {
       #endif
 
       oappend(SET_F("addInfo(uxp,1,'<i>ws/clk/lrck</i>','I2S WS');"));
-      oappend(SET_F("dRO(uxp,1);")); // disable read only pins
+//      oappend(SET_F("dRO(uxp,1);")); // disable read only pins
       #ifdef I2S_WSPIN
         oappend(SET_F("xOpt(uxp,1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
       #endif
 
       oappend(SET_F("addInfo(uxp,2,'<i>sck/bclk</i>','I2S SCK');"));
-      oappend(SET_F("dRO(uxp,2);")); // disable read only pins
+//      oappend(SET_F("dRO(uxp,2);")); // disable read only pins
       #ifdef I2S_CKPIN
-        oappend(SET_F("xOpt(uxp,2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
+        oappend(SET_F("xOpt(uxp,2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");");
       #endif
 
       oappend(SET_F("addInfo(uxp,3,'<i>master clock</i>','I2S MCLK');"));
-      oappend(SET_F("dRO(uxp,3);")); // disable read only pins
+//      oappend(SET_F("dRO(uxp,3);")); // disable read only pins
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("dOpt(uxp,3,2,2);")); //only use -1, 0, 1 or 3
-        oappend(SET_F("dOpt(uxp,3,4,39);")); //only use -1, 0, 1 or 3
+//        oappend(SET_F("dOpt(uxp,3,2,2);")); //only use -1, 0, 1 or 3
+//        oappend(SET_F("dOpt(uxp,3,4,39);")); //only use -1, 0, 1 or 3
       #endif
       #ifdef MCLK_PIN
         oappend(SET_F("xOpt(uxp,3,' ⎌',")); oappendi(MCLK_PIN); oappend(");"); 
@@ -3193,7 +3193,7 @@ class AudioReactive : public Usermod {
       #ifdef ES7243_SCLPIN
         oappend(SET_F("xOpt(uxp,5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
       #endif
-      oappend(SET_F("dRO(uxp,5);")); // disable read only pins
+//      oappend(SET_F("dRO(uxp,5);")); // disable read only pins
 #endif
     }
 
