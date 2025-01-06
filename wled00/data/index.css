@@ -97,6 +97,7 @@ button {
 .labels {
 	margin: 0;
 	padding: 8px 0 2px 0;
+	font-size: 19px;
 }
 
 #namelabel {
@@ -144,7 +145,7 @@ button {
 }
 
 .huge {
-	font-size: 42px;
+	font-size: 60px !important;
 }
 
 .segt, .plentry TABLE {
@@ -584,6 +585,10 @@ button {
 	z-index: 3;
 }
 
+#rover .ibtn {
+	margin: 5px;
+}
+
 #ndlt {
 	margin: 12px 0;
 }
@@ -624,7 +629,7 @@ button {
   padding-bottom: 8px;
 }
 
-.infobtn {
+#info .ibtn {
 	margin: 5px;
 }
 
@@ -848,7 +853,7 @@ input[type=range]::-moz-range-thumb {
 	width: 135px;
 }
 
-#nodes .infobtn {
+#nodes .ibtn {
 	margin: 0;
 }
 
@@ -886,12 +891,12 @@ a.btn {
 	line-height: 28px;
 }
 
-/* Quick color select Black button (has white border) */
-.qcsb {
+/* Quick color select Black and White button (has white/black border, depending on the theme) */
+.qcsb, .qcsw {
 	width: 26px;
 	height: 26px;
 	line-height: 26px;
-	border: 1px solid #fff;
+	border: 1px solid var(--c-f);
 }
 
 /* Hex color input wrapper div */
@@ -1036,7 +1041,7 @@ textarea {
 
 .segname .flr, .pname .flr {
 	transform: rotate(0deg);
-	right: -6px;
+	/*right: -6px;*/
 }
 
 /* segment power wrapper */
@@ -1295,6 +1300,14 @@ TD .checkmark, TD .radiomark {
 	width: 100%;
 }
 
+#segutil {
+	margin-bottom: 12px;
+}
+
+#segcont > div:first-child, #fxFind  {
+	margin-top: 4px;
+}
+
 /* Simplify segments */
 .simplified #segcont .lstI {
 	margin-top: 4px;
@@ -1329,6 +1342,11 @@ TD .checkmark, TD .radiomark {
 .lstI.selected {
 	z-index: 1;
 	box-shadow: 0 0 10px 4px var(--c-1);
+}
+
+.lstI .flr:hover {
+    background: var(--c-6);
+    border-radius: 100%;
 }
 
 #pcont .selected:not([class*="expanded"]) {
@@ -1429,6 +1447,11 @@ dialog {
 	position: relative;
 }
 
+.presin {
+	width: 100%; 
+	box-sizing: border-box;
+}
+
 .btn-s,
 .btn-n {
 	border: 1px solid var(--c-2);
@@ -1524,7 +1547,7 @@ dialog {
 	#info table .btn, #nodes table .btn {
 		width: 200px;
 	}
-	#info .infobtn, #nodes .infobtn {
+	#info .ibtn, #nodes .ibtn {
 		width: 145px;
 	}
 	#info div, #nodes div, #nodes a.btn {
