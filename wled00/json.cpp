@@ -493,7 +493,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, bool segmentBounds)
+void serializeSegment(const JsonObject& root, const Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
   root["id"] = id;
   if (segmentBounds) {

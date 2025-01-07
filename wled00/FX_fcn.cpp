@@ -347,7 +347,7 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
   }
 }
 
-void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
+void Segment::restoreSegenv(const tmpsegd_t &tmpSeg) {
   //DEBUG_PRINTF_P(PSTR("--  Restoring temp seg: %p->(%p) [%d->%p]\n"), &tmpSeg, this, _dataLen, data);
   if (_t && &(_t->_segT) != &tmpSeg) {
     // update possibly changed variables to keep old effect running correctly
@@ -1134,8 +1134,8 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
   uint8_t seep = blur_amount >> 1;
   unsigned vlength = vLength();
   uint32_t carryover = BLACK;
-  uint32_t lastnew;
-  uint32_t last;
+  uint32_t lastnew = BLACK;
+  uint32_t last = BLACK;
   uint32_t curnew = BLACK;
   for (unsigned i = 0; i < vlength; i++) {
     uint32_t cur = getPixelColor(i);

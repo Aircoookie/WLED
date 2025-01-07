@@ -460,7 +460,7 @@ typedef struct Segment {
       {}
     } *_t;
 
-    [[gnu::hot]] void _setPixelColorXY_raw(int& x, int& y, uint32_t& col) const; // set pixel without mapping (internal use only)
+    [[gnu::hot]] void _setPixelColorXY_raw(const int& x, const int& y, uint32_t& col) const; // set pixel without mapping (internal use only)
 
   public:
 
@@ -588,7 +588,7 @@ typedef struct Segment {
     inline void handleTransition() { updateTransitionProgress(); if (progress() == 0xFFFFU) stopTransition(); }
     #ifndef WLED_DISABLE_MODE_BLEND
     void     swapSegenv(tmpsegd_t &tmpSegD);    // copies segment data into specifed buffer, if buffer is not a transition buffer, segment data is overwritten from transition buffer
-    void     restoreSegenv(tmpsegd_t &tmpSegD); // restores segment data from buffer, if buffer is not transition buffer, changed values are copied to transition buffer
+    void     restoreSegenv(const tmpsegd_t &tmpSegD); // restores segment data from buffer, if buffer is not transition buffer, changed values are copied to transition buffer
     #endif
     [[gnu::hot]] void updateTransitionProgress();            // set current progression of transition
     inline uint16_t progress() const { return _transitionprogress; };  // transition progression between 0-65535
@@ -643,11 +643,11 @@ typedef struct Segment {
     }
   #ifndef WLED_DISABLE_2D
     [[gnu::hot]] uint16_t XY(int x, int y) const;      // support function to get relative index within segment
-    [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
-    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColorXY(int(x), int(y), c); }
-    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
-    inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
-    inline void setPixelColorXY(unsigned x, unsigned y, CRGB c)                   { setPixelColorXY(int(x), int(y), RGBW32(c.r,c.g,c.b,0)); }
+    [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c) const; // set relative pixel within segment with color
+    inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c) const               { setPixelColorXY(int(x), int(y), c); }
+    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) const { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
+    inline void setPixelColorXY(int x, int y, CRGB c) const                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
+    inline void setPixelColorXY(unsigned x, unsigned y, CRGB c) const                   { setPixelColorXY(int(x), int(y), RGBW32(c.r,c.g,c.b,0)); }
     #ifdef WLED_USE_AA_PIXELS
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }

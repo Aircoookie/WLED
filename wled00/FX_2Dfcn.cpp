@@ -154,7 +154,7 @@ uint16_t IRAM_ATTR_YN Segment::XY(int x, int y) const
 }
 
 // raw setColor function without checks (checks are done in setPixelColorXY())
-void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(int& x, int& y, uint32_t& col) const
+void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(const int& x, const int& y, uint32_t& col) const
 {
   const int baseX = start + x;
   const int baseY = startY + y;
@@ -179,7 +179,7 @@ void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(int& x, int& y, uint32_t& col) c
   }
 }
 
-void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) const
 {
   if (!isActive()) return; // not active
 
@@ -276,8 +276,8 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) {
   if (!isActive()) return; // not active
   const unsigned cols = vWidth();
   const unsigned rows = vHeight();
-  uint32_t lastnew;
-  uint32_t last;
+  uint32_t lastnew = BLACK;
+  uint32_t last = BLACK;
   if (blur_x) {
     const uint8_t keepx = smear ? 255 : 255 - blur_x;
     const uint8_t seepx = blur_x >> 1;
