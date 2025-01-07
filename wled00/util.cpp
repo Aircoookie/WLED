@@ -265,16 +265,16 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
   if (mode < strip.getModeCount()) {
     String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
-      unsigned start = lineBuffer.indexOf('@');
-      unsigned stop  = lineBuffer.indexOf(';', start);
+      int start = lineBuffer.indexOf('@');   // String::indexOf() returns an int, not an unsigned; -1 means "not found"
+      int stop  = lineBuffer.indexOf(';', start);
       if (start>0 && stop>0) {
         String names = lineBuffer.substring(start, stop); // include @
-        unsigned nameBegin = 1, nameEnd, nameDefault;
+        int nameBegin = 1, nameEnd, nameDefault;
         if (slider < 10) {
           for (size_t i=0; i<=slider; i++) {
             const char *tmpstr;
             dest[0] = '\0'; //clear dest buffer
-            if (nameBegin == 0) break; // there are no more names
+            if (nameBegin <= 0) break; // there are no more names
             nameEnd = names.indexOf(',', nameBegin);
             if (i == slider) {
               nameDefault = names.indexOf('=', nameBegin); // find default value
