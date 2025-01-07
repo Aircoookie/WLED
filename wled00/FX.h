@@ -79,9 +79,9 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
     #define MAX_NUM_SEGMENTS  32
   #endif
   #if defined(ARDUINO_ARCH_ESP32S2)
-    #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*768 // 24k by default (S2 is short on free RAM)
+    #define MAX_SEGMENT_DATA  (MAX_NUM_SEGMENTS*768) // 24k by default (S2 is short on free RAM)
   #else
-    #define MAX_SEGMENT_DATA  MAX_NUM_SEGMENTS*1280 // 40k by default
+    #define MAX_SEGMENT_DATA  (MAX_NUM_SEGMENTS*1280) // 40k by default
   #endif
 #endif
 
@@ -460,7 +460,7 @@ typedef struct Segment {
       {}
     } *_t;
 
-    [[gnu::hot]] void _setPixelColorXY_raw(int& x, int& y, uint32_t& col); // set pixel without mapping (internal use only)
+    [[gnu::hot]] void _setPixelColorXY_raw(int& x, int& y, uint32_t& col) const; // set pixel without mapping (internal use only)
 
   public:
 
@@ -642,7 +642,7 @@ typedef struct Segment {
     #endif
     }
   #ifndef WLED_DISABLE_2D
-    [[gnu::hot]] uint16_t XY(int x, int y);      // support function to get relative index within segment
+    [[gnu::hot]] uint16_t XY(int x, int y) const;      // support function to get relative index within segment
     [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColorXY(int(x), int(y), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
@@ -936,7 +936,7 @@ class WS2812FX {  // 96 bytes
     };
 
     std::vector<segment> _segments;
-    friend class Segment;
+    friend struct Segment;
 
   private:
     volatile bool _suspend;

@@ -94,7 +94,7 @@ Segment::Segment(const Segment &orig) {
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
-  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+  if (orig.name) { name = new(std::nothrow) char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
 }
 
@@ -122,7 +122,7 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     // copy source data
-    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+    if (orig.name) { name = new(std::nothrow) char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   }
   return *this;
@@ -253,7 +253,7 @@ void Segment::startTransition(uint16_t dur) {
   if (isInTransition()) return; // already in transition no need to store anything
 
   // starting a transition has to occur before change so we get current values 1st
-  _t = new Transition(dur); // no previous transition running
+  _t = new(std::nothrow) Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
 
   //DEBUG_PRINTF_P(PSTR("-- Started transition: %p (%p)\n"), this, _t);
@@ -380,7 +380,7 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 
 uint8_t Segment::currentBri(bool useCct) const {
   unsigned prog = progress();
-  if (prog < 0xFFFFU) {
+  if (prog < 0xFFFFU && _t) {
     unsigned curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
     curBri += (useCct ? _t->_cctT : _t->_briT) * (0xFFFFU - prog);
     return curBri / 0xFFFFU;
@@ -391,7 +391,7 @@ uint8_t Segment::currentBri(bool useCct) const {
 uint8_t Segment::currentMode() const {
 #ifndef WLED_DISABLE_MODE_BLEND
   unsigned prog = progress();
-  if (modeBlending && prog < 0xFFFFU) return _t->_modeT;
+  if (modeBlending && prog < 0xFFFFU && _t) return _t->_modeT;
 #endif
   return mode;
 }
@@ -1809,7 +1809,7 @@ bool WS2812FX::deserializeMap(unsigned n) {
   }
 
   if (customMappingTable) delete[] customMappingTable;
-  customMappingTable = new uint16_t[getLengthTotal()];
+  customMappingTable = new(std::nothrow) uint16_t[getLengthTotal()];
 
   if (customMappingTable) {
     DEBUG_PRINT(F("Reading LED map from ")); DEBUG_PRINTLN(fileName);
