@@ -990,18 +990,18 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //set color from HEX or 32bit DEC
   pos = req.indexOf(F("CL="));
   if (pos > 0) {
-    colorFromDecOrHexString(colIn, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(colIn, (const char*)req.substring(pos + 3).c_str());
     col0Changed = true;
   }
   pos = req.indexOf(F("C2="));
   if (pos > 0) {
-    colorFromDecOrHexString(colInSec, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(colInSec, (const char*)req.substring(pos + 3).c_str());
     col1Changed = true;
   }
   pos = req.indexOf(F("C3="));
   if (pos > 0) {
     byte tmpCol[4];
-    colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(tmpCol, (const char*)req.substring(pos + 3).c_str());
     col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     selseg.setColor(2, col2); // defined above (SS= or main)
     col2Changed = true;

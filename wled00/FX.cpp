@@ -2363,7 +2363,7 @@ static const char _data_FX_MODE_LAKE[] PROGMEM = "Lake@!;Fx;!";
 // send a meteor from begining to to the end of the strip with a trail that randomly decays.
 // adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
 uint16_t mode_meteor() {
-  if (SEGLEN == 1) return mode_static();
+  if (SEGLEN <= 1) return mode_static();
   if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
   const bool meteorSmooth = SEGMENT.check3;
   byte* trail = SEGENV.data;
@@ -2531,7 +2531,7 @@ static uint16_t ripple_base(uint8_t blurAmount = 0) {
 
 
 uint16_t mode_ripple(void) {
-  if (SEGLEN == 1) return mode_static();
+  if (SEGLEN <= 1) return mode_static();
   if(SEGMENT.custom1 || SEGMENT.check2) // blur or overlay
     SEGMENT.fade_out(250);
   else
@@ -2543,7 +2543,7 @@ static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,Blur,,,,Over
 
 
 uint16_t mode_ripple_rainbow(void) {
-  if (SEGLEN == 1) return mode_static();
+  if (SEGLEN <= 1) return mode_static();
   if (SEGENV.call ==0) {
     SEGENV.aux0 = hw_random8();
     SEGENV.aux1 = hw_random8();
@@ -3984,7 +3984,7 @@ static const char _data_FX_MODE_HEARTBEAT[] PROGMEM = "Heartbeat@!,!;!,!;!;01;m1
 // Modified for WLED, based on https://github.com/FastLED/FastLED/blob/master/examples/Pacifica/Pacifica.ino
 //
 // Add one layer of waves into the led array
-static CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff)
+static CRGB pacifica_one_layer(uint16_t i, const CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff)
 {
   unsigned ci = cistart;
   unsigned waveangle = ioff;
