@@ -247,6 +247,9 @@
   #include "../usermods/deep_sleep/usermod_deep_sleep.h"
 #endif
 
+#ifdef USERMOD_SBUS_CONTROL
+#include "../usermods/sbus_control/usermod_sbus_control.h"
+#endif
 void registerUsermods()
 {
 /*
@@ -478,5 +481,9 @@ void registerUsermods()
 
   #ifdef USERMOD_DEEP_SLEEP
    usermods.add(new DeepSleepUsermod());
+  #endif
+
+  #ifdef USERMOD_SBUS_CONTROL
+  usermods.add(new SbusControl());
   #endif
 }
