@@ -216,8 +216,8 @@ void handlePresets()
 //called from handleSet(PS=) [network callback (sObj is empty), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
 void savePreset(byte index, const char* pname, JsonObject sObj)
 {
-  if (!saveName) saveName = new char[33];
-  if (!quickLoad) quickLoad = new char[9];
+  if (!saveName) saveName = new(std::nothrow) char[33];
+  if (!quickLoad) quickLoad = new(std::nothrow) char[9];
   if (!saveName || !quickLoad) return;
 
   if (index == 0 || (index > 250 && index < 255)) return;

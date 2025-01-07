@@ -51,7 +51,7 @@ void WS2812FX::setUpMatrix() {
     customMappingSize = 0; // prevent use of mapping if anything goes wrong
 
     if (customMappingTable) delete[] customMappingTable;
-    customMappingTable = new uint16_t[getLengthTotal()];
+    customMappingTable = new(std::nothrow) uint16_t[getLengthTotal()];
 
     if (customMappingTable) {
       customMappingSize = getLengthTotal();
@@ -85,7 +85,7 @@ void WS2812FX::setUpMatrix() {
           JsonArray map = pDoc->as<JsonArray>();
           gapSize = map.size();
           if (!map.isNull() && gapSize >= matrixSize) { // not an empty map
-            gapTable = new int8_t[gapSize];
+            gapTable = new(std::nothrow) int8_t[gapSize];
             if (gapTable) for (size_t i = 0; i < gapSize; i++) {
               gapTable[i] = constrain(map[i], -1, 1);
             }
@@ -146,7 +146,7 @@ void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
+uint16_t IRAM_ATTR_YN Segment::XY(int x, int y) const
 {
   const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
@@ -154,7 +154,7 @@ uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
 }
 
 // raw setColor function without checks (checks are done in setPixelColorXY())
-void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(int& x, int& y, uint32_t& col)
+void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(int& x, int& y, uint32_t& col) const
 {
   const int baseX = start + x;
   const int baseY = startY + y;
