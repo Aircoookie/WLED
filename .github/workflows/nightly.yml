@@ -27,6 +27,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }} 
           sinceTag: nightly
+          onlyLastTag: true
       - name: Update Nightly Release
         uses: andelf/nightly-release@main
         env:
