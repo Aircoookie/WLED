@@ -68,6 +68,15 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #endif
 #define FPS_CALC_SHIFT 7 // bit shift for fixed point math
 
+// FPS calculation (can be defined as compile flag for debugging)
+#ifndef FPS_CALC_AVG
+#define FPS_CALC_AVG 7 // average FPS calculation over this many frames (moving average)
+#endif
+#ifndef FPS_MULTIPLIER
+#define FPS_MULTIPLIER 1 // dev option: multiplier to get sub-frame FPS without floats
+#endif
+#define FPS_CALC_SHIFT 7 // bit shift for fixed point math
+
 /* each segment uses 82 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #ifdef ESP8266
