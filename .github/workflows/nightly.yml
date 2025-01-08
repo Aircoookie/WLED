@@ -21,12 +21,14 @@ jobs:
           merge-multiple: true
       - name: Show Files
         run: ls -la
-      - name: Deploy release
-        uses: WebFreak001/deploy-nightly@v3.2.0
+      - name: Update Nightly Release
+        uses: andelf/nightly-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: https://uploads.github.com/repos/Aircoookie/WLED/releases/193651519/assets{?name,label}
-          release_id: 193651519
-          asset_path: WLED_0.16.0-alpha_ESP32.bin
-          asset_name: WLED_$$_ESP32.bin
-          asset_content_type: application/octet-stream
-          max_releases: 7
+          tag_name: nightly
+          name: 'Nightly Release $$'
+          prerelease: true
+          body: 'Nightly build'
+          files: |
+            ./*.bin
