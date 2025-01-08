@@ -211,7 +211,7 @@ private:
   int32_t collisionHardness;
   uint32_t wallHardness;
   uint32_t wallRoughness; // randomizes wall collisions
-  uint32_t collisionStartIdx; // particle array start index for collision detection
+  uint16_t collisionStartIdx; // particle array start index for collision detection
   uint32_t particleHardRadius; // hard surface radius of a particle, used for collision detection (32bit for speed)
   uint8_t forcecounter; // counter for globally applied forces
   uint8_t gforcecounter; // counter for global gravity
@@ -269,19 +269,19 @@ typedef union {
 
 //struct for a single particle (8 bytes)
 typedef struct {
-    int16_t x;  // x position in particle system
+    int32_t x;  // x position in particle system
+    uint16_t ttl; // time to live in frames
     int8_t vx;  // horizontal velocity
     uint8_t hue;  // color hue
     // two byte bit field:
     //uint16_t ttl : 11; // time to live, 11 bit or 2047 max (which is 25s at 80FPS)
-    uint16_t ttl; // time to live in frames
     bool outofbounds : 1; // out of bounds flag, set to true if particle is outside of display area
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
     bool reversegrav : 1; // if set, gravity is reversed on this particle
     bool fixed : 1; // if set, particle does not move (and collisions make other particles revert direction),
     // note: there is on byte of padding added here, making TTL a 16bit variable saves 500bytes of flash so much faster than a bit field
-    // TODO: can this be optimized? wastes a lot of ram...
+    // TODO: can this be optimized? wastes a lot of ram... -> yes, TODO: make the flags a seperate struct array and handle it everywhere.
 } PSparticle1D;
 
 // struct for additional particle settings (optional)
@@ -371,7 +371,7 @@ private:
   uint8_t gforcecounter; // counter for global gravity
   int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)
   uint8_t forcecounter; // counter for globally applied forces
-  //uint8_t collisioncounter; // counter to handle collisions TODO: could use the SEGMENT.call? -> currently unused
+  uint16_t collisionStartIdx; // particle array start index for collision detection
   //global particle properties for basic particles
   uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, larger sizez TBD (TODO: need larger sizes?)
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations

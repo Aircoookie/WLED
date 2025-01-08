@@ -10155,10 +10155,10 @@ uint16_t mode_particle1Dsonicstream(void) {
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  PartSys->setMotionBlur(20 + SEGMENT.custom2>>1); // anable motion blur
+  PartSys->setMotionBlur(20 + (SEGMENT.custom2 >> 1)); // anable motion blur
   PartSys->setSmearBlur(200); // smooth out the edges
 
-  PartSys->sources[0].v = 5 + SEGMENT.speed >> 2;
+  PartSys->sources[0].v = 5 + (SEGMENT.speed >> 2);
 
   // FFT processing
   um_data_t *um_data;

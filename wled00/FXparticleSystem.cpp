@@ -852,18 +852,15 @@ void ParticleSystem2D::handleCollisions() {
   uint32_t numBins = (maxX + (BIN_WIDTH -1)) / BIN_WIDTH; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
   uint32_t binParticleCount; // number of particles in the current bin
-  uint32_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
+  uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
 
-  // Loop through each bin
   for (uint32_t bin = 0; bin < numBins; bin++) {
-    binParticleCount = 0; // Reset particle count for this bin
+    binParticleCount = 0; // reset for this bin
+    int32_t binStart = bin * BIN_WIDTH;
+    int32_t binEnd = binStart + BIN_WIDTH;
 
-    // Compute bin bounds
-    uint32_t binStart = bin * BIN_WIDTH;
-    uint32_t binEnd = binStart + BIN_WIDTH;
-
-    // Fill the binIndices array for this bin
-    for (uint32_t i = collisionStartIdx; i < usedParticles; ++i) {
+    // fill the binIndices array for this bin
+    for (uint32_t i = collisionStartIdx; i < usedParticles; i++) {
       if (particles[i].ttl > 0 && particles[i].outofbounds == 0 && particles[i].collide) { // colliding particle
         if (particles[i].x >= binStart && particles[i].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
           if (binParticleCount >= maxBinParticles) { // bin is full, more particles in this bin so do the rest next frame
@@ -1245,7 +1242,7 @@ void ParticleSystem1D::update(void) {
   if (particlesettings.colorByPosition) {
     uint32_t scale = (255 << 16) / maxX;  // speed improvement: multiplication is faster than division
     for (uint32_t i = 0; i < usedParticles; i++) {
-      particles[i].hue = (scale * (uint32_t)particles[i].x) >> 16;
+      particles[i].hue = (scale * particles[i].x) >> 16; // note: x is > 0 if not out of bounds
     }
   }
 
@@ -1426,7 +1423,7 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSsettings1D *opti
     }
 
     if (!part.fixed)
-      part.x = (int16_t)newX; // set new position
+      part.x = newX; // set new position
     else
       part.vx = 0; // set speed to zero. note: particle can get speed in collisions, if unfixed, it should not speed away
   }
@@ -1663,26 +1660,47 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
 
 // detect collisions in an array of particles and handle them
 void ParticleSystem1D::handleCollisions() {
-  uint32_t i, j;
   int32_t collisiondistance = PS_P_MINHARDRADIUS_1D;
 
-  for (i = 0; i < usedParticles; i++) {
-    // go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
-    if (particles[i].ttl > 0 && particles[i].outofbounds == 0 && particles[i].collide) { // if particle is alive and does collide and is not out of view
-      int32_t dx; // distance to other particles
-      for (j = i + 1; j < usedParticles; j++) { // check against higher number particles
-        if (particles[j].ttl > 0 && particles[j].collide) { // if target particle is alive and collides
-          if (advPartProps) { // use advanced size properties
-            collisiondistance = PS_P_MINHARDRADIUS_1D + (((uint32_t)advPartProps[i].size + (uint32_t)advPartProps[j].size) >> 1);
+  constexpr uint32_t BIN_WIDTH = 32 * PS_P_RADIUS_1D; // width of each bin, 32 pixels gives good results, smaller is slower, larger also gets slower, 48 is also still ok
+  uint32_t maxBinParticles = (usedParticles + 1) / 4; // assume no more than 1/4 of the particles are in the same bin
+  uint32_t numBins = (maxX + 1) / BIN_WIDTH; // calculate number of bins
+  uint16_t binIndices[maxBinParticles]; // array to store indices of particles in a bin
+  uint32_t binParticleCount; // number of particles in the current bin
+  uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
+
+  for (uint32_t bin = 0; bin < numBins; bin++) {
+    binParticleCount = 0; // reset for this bin
+    int32_t binStart = bin * BIN_WIDTH;
+    int32_t binEnd = binStart + BIN_WIDTH;
+
+    // fill the binIndices array for this bin
+    for (uint32_t i = collisionStartIdx; i < usedParticles; i++) {
+      if (particles[i].ttl > 0 && particles[i].outofbounds == 0 && particles[i].collide) { // colliding particle
+        if (particles[i].x >= binStart && particles[i].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
+          if (binParticleCount >= maxBinParticles) { // bin is full, more particles in this bin so do the rest next frame
+            nextFrameStartIdx = i; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
+            break;
           }
-          dx = particles[j].x - particles[i].x;
-          int32_t dv = (int32_t)particles[j].vx - (int32_t)particles[i].vx;
-          int32_t proximity = collisiondistance;
-          if (dv >= proximity) // particles would go past each other in next move update
-            proximity += abs(dv); // add speed difference to catch fast particles
-          if (dx < proximity && dx > -proximity) { // check if close
-            collideParticles(&particles[i], &particles[j], dx, dv, collisiondistance);
-          }
+          binIndices[binParticleCount++] = i;
+        }
+      }
+    }
+
+    for (uint32_t i = 0; i < binParticleCount; i++) { // go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
+      uint32_t idx_i = binIndices[i];
+      for (uint32_t j = i + 1; j < binParticleCount; j++) { // check against higher number particles
+        uint32_t idx_j = binIndices[j];
+        if (advPartProps) { // use advanced size properties
+          collisiondistance = PS_P_MINHARDRADIUS_1D + (((uint32_t)advPartProps[idx_i].size + (uint32_t)advPartProps[idx_j].size) >> 1);
+        }
+        int32_t dx = particles[idx_j].x - particles[idx_i].x;
+        int32_t dv = (int32_t)particles[idx_j].vx - (int32_t)particles[idx_i].vx;
+        int32_t proximity = collisiondistance;
+        if (dv >= proximity) // particles would go past each other in next move update
+          proximity += abs(dv); // add speed difference to catch fast particles
+        if (dx < proximity && dx > -proximity) { // check if close
+          collideParticles(&particles[idx_i], &particles[idx_j], dx, dv, collisiondistance);
         }
       }
     }
@@ -2084,6 +2102,9 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
         int32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
         if(totransfer < 0) totransfer = 0; // safety check
         particleHandover(buffer, structSize, totransfer);
+
+        //TODO: there is a bug here, in 1D system, this does not really work right. maybe an alignment problem??? (2D seems to work fine)
+        // -> bug seems magically fixed?
         if(maxParticles / numParticlesUsed > 3) { // FX uses less than 25%: move the already existing particles to the beginning of the buffer
           uint32_t usedbytes = availableToPS * structSize;
           uint32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
@@ -2125,12 +2146,12 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
 
 // (re)initialize particles in the particle buffer for use in the new FX
 void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
+  if (pmem->particleType != structSize) { // check if we are being handed over from a different system (1D<->2D), clear buffer if so
+    memset(buffer, 0, numToTransfer * structSize); // clear buffer
+  }
   #ifndef WLED_DISABLE_PARTICLESYSTEM2D
   if (structSize == sizeof(PSparticle)) { // 2D particle
     PSparticle *particles = (PSparticle *)buffer;
-    if (pmem->particleType != sizeof(PSparticle)) { // check if we are being handed over from a 1D system, clear buffer if so
-      memset(buffer, 0, numToTransfer * sizeof(PSparticle)); // clear buffer
-    }
     for (int32_t i = 0; i < numToTransfer; i++) {
       particles[i].perpetual = false; // particle ages
       if (particles[i].outofbounds)
@@ -2146,10 +2167,6 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
   {
     #ifndef WLED_DISABLE_PARTICLESYSTEM1D
     PSparticle1D *particles = (PSparticle1D *)buffer;
-    // check if we are being handed over from a 2D system, clear buffer if so
-    if (pmem->particleType != sizeof(PSparticle1D)) {
-      memset(buffer, 0, numToTransfer * sizeof(PSparticle1D)); // clear buffer
-    }
     for (int32_t i = 0; i < numToTransfer; i++) {
       particles[i].perpetual = false; // particle ages
       particles[i].fixed = false; // unfix all particles
