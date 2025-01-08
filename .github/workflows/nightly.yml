@@ -1,0 +1,31 @@
+
+name: Deploy Nightly
+on:
+  # This can be used to automatically publish nightlies at UTC nighttime
+  schedule:
+    - cron: '0 2 * * *' # run at 2 AM UTC
+  # This can be used to allow manually triggering nightlies from the web interface
+  workflow_dispatch:
+
+jobs:
+  wled_build:
+    uses: ./.github/workflows/build.yml
+  nightly:
+    name: Deploy nightly
+    runs-on: ubuntu-latest
+    needs: wled_build
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Deploy release
+        uses: WebFreak001/deploy-nightly@v3.2.0
+        with:
+          upload_url: https://uploads.github.com/repos/Aircoookie/WLED/releases/190052071/assets{?name,label}
+          release_id: 190052071
+          asset_path: ./WLED_*_ESP32.bin
+          asset_name: WLED_$$_ESP32.bin
+          asset_content_type: application/octet-stream
+          max_releases: 7
