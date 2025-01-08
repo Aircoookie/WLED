@@ -26,7 +26,7 @@ jobs:
         with:
           upload_url: https://uploads.github.com/repos/Aircoookie/WLED/releases/190052071/assets{?name,label}
           release_id: 190052071
-          asset_path: firmware-esp32dev.zip
-          asset_name: WLED_$$_ESP32.zip
+          asset_path: WLED_0.16.0-alpha_ESP32.bin
+          asset_name: WLED_$$_ESP32.bin
           asset_content_type: application/octet-stream
           max_releases: 7
