@@ -21,6 +21,12 @@ jobs:
           merge-multiple: true
       - name: Show Files
         run: ls -la
+      - name: "✏️ Generate release changelog"
+        id: changelog
+        uses: janheinrichmerker/action-github-changelog-generator@v2.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} 
+          sinceTag: nightly
       - name: Update Nightly Release
         uses: andelf/nightly-release@main
         env:
@@ -29,6 +35,6 @@ jobs:
           tag_name: nightly
           name: 'Nightly Release $$'
           prerelease: true
-          body: 'Nightly build'
+          body: ${{ steps.changelog.outputs.changelog }}
           files: |
             ./*.bin
