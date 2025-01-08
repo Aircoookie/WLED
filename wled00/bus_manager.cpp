@@ -383,7 +383,8 @@ void BusDigital::setColorOrder(uint8_t colorOrder) {
 // credit @willmmiles & @netmindz https://github.com/Aircoookie/WLED/pull/4056
 std::vector<LEDType> BusDigital::getLEDTypes() {
   return {
-    {TYPE_WS2812_RGB,    "D",  PSTR("WS281x")},
+    {TYPE_WS2811_RGB,    "D",  PSTR("WS2811")},
+    {TYPE_WS2812_RGB,    "D",  PSTR("WS2812x")},
     {TYPE_SK6812_RGBW,   "D",  PSTR("SK6812/WS2814 RGBW")},
     {TYPE_TM1814,        "D",  PSTR("TM1814")},
     {TYPE_WS2811_400KHZ, "D",  PSTR("400kHz")},
