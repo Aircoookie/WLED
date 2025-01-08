@@ -89,6 +89,11 @@
 #define I_8266_U1_SM16825_5 104
 #define I_8266_DM_SM16825_5 105
 #define I_8266_BB_SM16825_5 106
+//WS2811 (RGB)
+#define I_8266_U0_WS2811_3 113
+#define I_8266_U1_WS2811_3 114
+#define I_8266_DM_WS2811_3 115
+#define I_8266_BB_WS2811_3 116
 
 /*** ESP32 Neopixel methods ***/
 //RGB
@@ -230,6 +235,11 @@
 #define B_8266_U1_SM16825_5 NeoPixelBusLg<NeoRgbwcSm16825eFeature, NeoEsp8266Uart1Ws2813Method, NeoGammaNullMethod>
 #define B_8266_DM_SM16825_5 NeoPixelBusLg<NeoRgbwcSm16825eFeature, NeoEsp8266Dma800KbpsMethod, NeoGammaNullMethod>
 #define B_8266_BB_SM16825_5 NeoPixelBusLg<NeoRgbwcSm16825eFeature, NeoEsp8266BitBangWs2813Method, NeoGammaNullMethod>
+//WS2811 (RGB)
+#define B_8266_U0_WS2811_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Uart0Ws2811Method, NeoGammaNullMethod> //3 chan, esp8266, gpio1
+#define B_8266_U1_WS2811_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Uart1Ws2811Method, NeoGammaNullMethod> //3 chan, esp8266, gpio2
+#define B_8266_DM_WS2811_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Dma800KbpsMethod, NeoGammaNullMethod>  //3 chan, esp8266, gpio3
+#define B_8266_BB_WS2811_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266BitBang800KbpsMethod, NeoGammaNullMethod> //3 chan, esp8266, bb (any pin but 16)
 #endif
 
 /*** ESP32 Neopixel methods ***/
@@ -429,6 +439,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: (static_cast<B_8266_U1_SM16825_5*>(busPtr))->Begin(); break;
       case I_8266_DM_SM16825_5: (static_cast<B_8266_DM_SM16825_5*>(busPtr))->Begin(); break;
       case I_8266_BB_SM16825_5: (static_cast<B_8266_BB_SM16825_5*>(busPtr))->Begin(); break;
+      case I_8266_U0_WS2811_3: (static_cast<B_8266_U0_WS2811_3*>(busPtr))->Begin(); break;
+      case I_8266_U1_WS2811_3: (static_cast<B_8266_U1_WS2811_3*>(busPtr))->Begin(); break;
+      case I_8266_DM_WS2811_3: (static_cast<B_8266_DM_WS2811_3*>(busPtr))->Begin(); break;
+      case I_8266_BB_WS2811_3: (static_cast<B_8266_BB_WS2811_3*>(busPtr))->Begin(); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -551,6 +565,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: busPtr = new B_8266_U1_SM16825_5(len, pins[0]); break;
       case I_8266_DM_SM16825_5: busPtr = new B_8266_DM_SM16825_5(len, pins[0]); break;
       case I_8266_BB_SM16825_5: busPtr = new B_8266_BB_SM16825_5(len, pins[0]); break;
+      case I_8266_U0_WS2811_3: busPtr = new B_8266_U0_WS2811_3(len, pins[0]); break;
+      case I_8266_U1_WS2811_3: busPtr = new B_8266_U1_WS2811_3(len, pins[0]); break;
+      case I_8266_DM_WS2811_3: busPtr = new B_8266_DM_WS2811_3(len, pins[0]); break;
+      case I_8266_BB_WS2811_3: busPtr = new B_8266_BB_WS2811_3(len, pins[0]); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -668,6 +686,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: (static_cast<B_8266_U1_SM16825_5*>(busPtr))->Show(consistent); break;
       case I_8266_DM_SM16825_5: (static_cast<B_8266_DM_SM16825_5*>(busPtr))->Show(consistent); break;
       case I_8266_BB_SM16825_5: (static_cast<B_8266_BB_SM16825_5*>(busPtr))->Show(consistent); break;
+      case I_8266_U0_WS2811_3: (static_cast<B_8266_U0_WS2811_3*>(busPtr))->Show(consistent); break;
+      case I_8266_U1_WS2811_3: (static_cast<B_8266_U1_WS2811_3*>(busPtr))->Show(consistent); break;
+      case I_8266_DM_WS2811_3: (static_cast<B_8266_DM_WS2811_3*>(busPtr))->Show(consistent); break;
+      case I_8266_BB_WS2811_3: (static_cast<B_8266_BB_WS2811_3*>(busPtr))->Show(consistent); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -781,6 +803,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: return (static_cast<B_8266_U1_SM16825_5*>(busPtr))->CanShow(); break;
       case I_8266_DM_SM16825_5: return (static_cast<B_8266_DM_SM16825_5*>(busPtr))->CanShow(); break;
       case I_8266_BB_SM16825_5: return (static_cast<B_8266_BB_SM16825_5*>(busPtr))->CanShow(); break;
+      case I_8266_U0_WS2811_3: return (static_cast<B_8266_U0_WS2811_3*>(busPtr))->CanShow(); break;
+      case I_8266_U1_WS2811_3: return (static_cast<B_8266_U1_WS2811_3*>(busPtr))->CanShow(); break;
+      case I_8266_DM_WS2811_3: return (static_cast<B_8266_DM_WS2811_3*>(busPtr))->CanShow(); break;
+      case I_8266_BB_WS2811_3: return (static_cast<B_8266_BB_WS2811_3*>(busPtr))->CanShow(); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -921,6 +947,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: (static_cast<B_8266_U1_SM16825_5*>(busPtr))->SetPixelColor(pix, Rgbww80Color(col.R*257, col.G*257, col.B*257, cctWW*257, cctCW*257)); break;
       case I_8266_DM_SM16825_5: (static_cast<B_8266_DM_SM16825_5*>(busPtr))->SetPixelColor(pix, Rgbww80Color(col.R*257, col.G*257, col.B*257, cctWW*257, cctCW*257)); break;
       case I_8266_BB_SM16825_5: (static_cast<B_8266_BB_SM16825_5*>(busPtr))->SetPixelColor(pix, Rgbww80Color(col.R*257, col.G*257, col.B*257, cctWW*257, cctCW*257)); break;
+      case I_8266_U0_WS2811_3: (static_cast<B_8266_U0_WS2811_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_U1_WS2811_3: (static_cast<B_8266_U1_WS2811_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_DM_WS2811_3: (static_cast<B_8266_DM_WS2811_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_BB_WS2811_3: (static_cast<B_8266_BB_WS2811_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -1035,6 +1065,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: (static_cast<B_8266_U1_SM16825_5*>(busPtr))->SetLuminance(b); break;
       case I_8266_DM_SM16825_5: (static_cast<B_8266_DM_SM16825_5*>(busPtr))->SetLuminance(b); break;
       case I_8266_BB_SM16825_5: (static_cast<B_8266_BB_SM16825_5*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_WS2811_3: (static_cast<B_8266_U0_WS2811_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_WS2811_3: (static_cast<B_8266_U1_WS2811_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_WS2811_3: (static_cast<B_8266_DM_WS2811_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_WS2811_3: (static_cast<B_8266_BB_WS2811_3*>(busPtr))->SetLuminance(b); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -1150,6 +1184,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: { Rgbww80Color c = (static_cast<B_8266_U1_SM16825_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
       case I_8266_DM_SM16825_5: { Rgbww80Color c = (static_cast<B_8266_DM_SM16825_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
       case I_8266_BB_SM16825_5: { Rgbww80Color c = (static_cast<B_8266_BB_SM16825_5*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,max(c.WW,c.CW)); } break; // will not return original W
+      case I_8266_U0_WS2811_3: col = (static_cast<B_8266_U0_WS2811_3*>(busPtr))->GetPixelColor(pix); break;
+      case I_8266_U1_WS2811_3: col = (static_cast<B_8266_U1_WS2811_3*>(busPtr))->GetPixelColor(pix); break;
+      case I_8266_DM_WS2811_3: col = (static_cast<B_8266_DM_WS2811_3*>(busPtr))->GetPixelColor(pix); break;
+      case I_8266_BB_WS2811_3: col = (static_cast<B_8266_BB_WS2811_3*>(busPtr))->GetPixelColor(pix); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -1283,6 +1321,10 @@ class PolyBus {
       case I_8266_U1_SM16825_5: delete (static_cast<B_8266_U1_SM16825_5*>(busPtr)); break;
       case I_8266_DM_SM16825_5: delete (static_cast<B_8266_DM_SM16825_5*>(busPtr)); break;
       case I_8266_BB_SM16825_5: delete (static_cast<B_8266_BB_SM16825_5*>(busPtr)); break;
+      case I_8266_U0_WS2811_3: delete (static_cast<B_8266_U0_WS2811_3*>(busPtr)); break;
+      case I_8266_U1_WS2811_3: delete (static_cast<B_8266_U1_WS2811_3*>(busPtr)); break;
+      case I_8266_DM_WS2811_3: delete (static_cast<B_8266_DM_WS2811_3*>(busPtr)); break;
+      case I_8266_BB_WS2811_3: delete (static_cast<B_8266_BB_WS2811_3*>(busPtr)); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       // RMT buses
@@ -1400,6 +1442,8 @@ class PolyBus {
           return I_8266_U0_TM1914_3 + offset;
         case TYPE_SM16825:
           return I_8266_U0_SM16825_5 + offset;
+        case TYPE_WS2811_RGB:
+          return I_8266_U0_WS2811_3 + offset;
       }
       #else //ESP32
       uint8_t offset = 0; // 0 = RMT (num 1-8), 1 = I2S0 (used by Audioreactive), 2 = I2S1
