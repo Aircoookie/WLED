@@ -1,3 +1,5 @@
+name: WLED Build
+
 # Only included into other workflows
 on:
   workflow_call:

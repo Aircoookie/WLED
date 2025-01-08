@@ -26,8 +26,7 @@ jobs:
         uses: janheinrichmerker/action-github-changelog-generator@v2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }} 
-          sinceTag: nightly
-          onlyLastTag: true
+          sinceTag: v0.15.0
       - name: Update Nightly Release
         uses: andelf/nightly-release@main
         env:
