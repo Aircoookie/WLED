@@ -45,7 +45,7 @@
 #endif
 
 #ifdef USERMOD_BH1750
-  #include "../usermods/BH1750_v2/usermod_BH1750.h"
+  #include "../usermods/BH1750_v2/usermod_bh1750.h"
 #endif
 
 // BME280 v2 usermod. Define "USERMOD_BME280" in my_config.h
@@ -240,6 +240,11 @@
 
 #ifdef USERMOD_LD2410
 #include "../usermods/LD2410_v2/usermod_ld2410.h"
+#endif
+
+
+#ifdef USERMOD_DEEP_SLEEP
+  #include "../usermods/deep_sleep/usermod_deep_sleep.h"
 #endif
 
 void registerUsermods()
@@ -469,5 +474,9 @@ void registerUsermods()
 
   #ifdef USERMOD_POV_DISPLAY
   UsermodManager::add(new PovDisplayUsermod());
+  #endif
+
+  #ifdef USERMOD_DEEP_SLEEP
+   usermods.add(new DeepSleepUsermod());
   #endif
 }

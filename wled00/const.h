@@ -5,7 +5,7 @@
  * Readability defines and their associated numerical values + compile-time constants
  */
 
-#define GRADIENT_PALETTE_COUNT 58
+#define GRADIENT_PALETTE_COUNT 59
 
 // You can define custom product info from build flags.
 // This is useful to allow API consumer to identify what type of WLED version
@@ -203,6 +203,7 @@
 #define USERMOD_ID_LD2410                52     //Usermod "usermod_ld2410.h"
 #define USERMOD_ID_POV_DISPLAY           53     //Usermod "usermod_pov_display.h"
 #define USERMOD_ID_PIXELS_DICE_TRAY      54     //Usermod "pixels_dice_tray.h"
+#define USERMOD_ID_DEEP_SLEEP            55     //Usermod "usermod_deep_sleep.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
