@@ -73,7 +73,7 @@ bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
 }
 
 
-bool getBoolVal(JsonVariant elem, bool dflt) {
+bool getBoolVal(const JsonVariant &elem, bool dflt) {
   if (elem.is<const char*>() && elem.as<const char*>()[0] == 't') {
     return !dflt;
   } else {
@@ -538,7 +538,7 @@ void enumerateLedmaps() {
 
     #ifndef ESP8266
     if (ledmapNames[i-1]) { //clear old name
-      delete[] ledmapNames[i-1];
+      free(ledmapNames[i-1]);
       ledmapNames[i-1] = nullptr;
     }
     #endif
@@ -556,7 +556,7 @@ void enumerateLedmaps() {
             const char *name = root["n"].as<const char*>();
             if (name != nullptr) len = strlen(name);
             if (len > 0 && len < 33) {
-              ledmapNames[i-1] = new char[len+1];
+              ledmapNames[i-1] = static_cast<char*>(malloc(len+1));
               if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
             }
           }
@@ -564,7 +564,7 @@ void enumerateLedmaps() {
             char tmp[33];
             snprintf_P(tmp, 32, s_ledmap_tmpl, i);
             len = strlen(tmp);
-            ledmapNames[i-1] = new char[len+1];
+            ledmapNames[i-1] = static_cast<char*>(malloc(len+1));
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
           }
         }

@@ -161,11 +161,11 @@ class NeoGammaWLEDMethod {
 };
 #define gamma32(c) NeoGammaWLEDMethod::Correct32(c)
 #define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
-[[gnu::hot]] uint32_t color_blend(uint32_t c1, uint32_t c2 , uint8_t blend);
+[[gnu::hot, gnu::pure]] uint32_t color_blend(uint32_t c1, uint32_t c2 , uint8_t blend);
 inline uint32_t color_blend16(uint32_t c1, uint32_t c2, uint16_t b) { return color_blend(c1, c2, b >> 8); };
-[[gnu::hot]] uint32_t color_add(uint32_t, uint32_t, bool preserveCR = false);
-[[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
-[[gnu::hot]] uint32_t ColorFromPaletteWLED(const CRGBPalette16 &pal, unsigned index, uint8_t brightness = (uint8_t)255U, TBlendType blendType = LINEARBLEND);
+[[gnu::hot, gnu::pure]] uint32_t color_add(uint32_t, uint32_t, bool preserveCR = false);
+[[gnu::hot, gnu::pure]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
+[[gnu::hot, gnu::pure]] uint32_t ColorFromPaletteWLED(const CRGBPalette16 &pal, unsigned index, uint8_t brightness = (uint8_t)255U, TBlendType blendType = LINEARBLEND);
 CRGBPalette16 generateHarmonicRandomPalette(const CRGBPalette16 &basepalette);
 CRGBPalette16 generateRandomPalette();
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
@@ -176,7 +176,7 @@ inline CHSV rgb2hsv(const CRGB c) { CHSV32 hsv; rgb2hsv((uint32_t((byte(c.r) << 
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO
-void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TODO
+void colorRGBtoXY(const byte* rgb, float* xy); // only defined if huesync disabled TODO
 void colorFromDecOrHexString(byte* rgb, const char* in);
 bool colorFromHexString(byte* rgb, const char* in);
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
@@ -467,10 +467,10 @@ void userLoop();
 #include "soc/wdev_reg.h"
 #define HW_RND_REGISTER REG_READ(WDEV_RND_REG)
 #endif
-int getNumVal(const String* req, uint16_t pos);
+[[gnu::pure]] int getNumVal(const String* req, uint16_t pos);
 void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
-bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255); // getVal supports inc/decrementing and random ("X~Y(r|~[w][-][Z])" form)
-bool getBoolVal(JsonVariant elem, bool dflt);
+bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255); // getVal supports inc/decrementing and random ("X~Y(r|[w]~[-][Z])" form)
+[[gnu::pure]] bool getBoolVal(const JsonVariant &elem, bool dflt);
 bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 size_t printSetFormCheckbox(Print& settingsScript, const char* key, int val);
 size_t printSetFormValue(Print& settingsScript, const char* key, int val);
@@ -478,7 +478,7 @@ size_t printSetFormValue(Print& settingsScript, const char* key, const char* val
 size_t printSetFormIndex(Print& settingsScript, const char* key, int index);
 size_t printSetClassElementHTML(Print& settingsScript, const char* key, const int index, const char* val);
 void prepareHostname(char* hostname);
-bool isAsterisksOnly(const char* str, byte maxLen);
+[[gnu::pure]] bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t moduleID=255);
 void releaseJSONBufferLock();
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
@@ -491,8 +491,8 @@ uint16_t beatsin16_t(accum88 beats_per_minute, uint16_t lowest = 0, uint16_t hig
 uint8_t beatsin8_t(accum88 beats_per_minute, uint8_t lowest = 0, uint8_t highest = 255, uint32_t timebase = 0, uint8_t phase_offset = 0);
 um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
-uint8_t get_random_wheel_index(uint8_t pos);
-float mapf(float x, float in_min, float in_max, float out_min, float out_max);
+[[gnu::hot]] uint8_t get_random_wheel_index(uint8_t pos);
+[[gnu::hot, gnu::pure]] float mapf(float x, float in_min, float in_max, float out_min, float out_max);
 
 // fast (true) random numbers using hardware RNG, all functions return values in the range lowerlimit to upperlimit-1
 // note: for true random numbers with high entropy, do not call faster than every 200ns (5MHz)
