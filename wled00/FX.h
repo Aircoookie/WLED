@@ -598,7 +598,7 @@ typedef struct Segment {
 
     // 1D strip
     [[gnu::hot]] uint16_t virtualLength() const;
-    [[gnu::hot]] void setPixelColor(int n, uint32_t c) const; // set relative pixel within segment with color
+    [[gnu::hot]] void setPixelColor(int i, uint32_t c) const; // set relative pixel within segment with color
     inline void setPixelColor(unsigned n, uint32_t c) const                    { setPixelColor(int(n), c); }
     inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) const { setPixelColor(n, RGBW32(r,g,b,w)); }
     inline void setPixelColor(int n, CRGB c) const                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); }
@@ -805,7 +805,7 @@ class WS2812FX {  // 96 bytes
       resetSegments(),                            // marks all segments for reset
       makeAutoSegments(bool forceReset = false),  // will create segments based on configured outputs
       fixInvalidSegments(),                       // fixes incorrect segment configuration
-      setPixelColor(unsigned n, uint32_t c) const,      // paints absolute strip pixel with index n and color c
+      setPixelColor(unsigned i, uint32_t c) const,      // paints absolute strip pixel with index n and color c
       show(),                                     // initiates LED output
       setTargetFps(unsigned fps),
       setupEffectData();                          // add default effects to the list; defined in FX.cpp
@@ -870,7 +870,7 @@ class WS2812FX {  // 96 bytes
     };
 
     unsigned long now, timebase;
-    uint32_t getPixelColor(unsigned) const;
+    uint32_t getPixelColor(unsigned i) const;
 
     inline uint32_t getLastShow() const   { return _lastShow; }           // returns millis() timestamp of last strip.show() call
 
