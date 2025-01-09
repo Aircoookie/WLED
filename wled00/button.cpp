@@ -375,6 +375,7 @@ void handleIO()
       if (rlyPin>=0) {
         pinMode(rlyPin, rlyOpenDrain ? OUTPUT_OPEN_DRAIN : OUTPUT);
         digitalWrite(rlyPin, rlyMde);
+        delay(50); // wait for relay to switch and power to stabilize
       }
       offMode = false;
     }
