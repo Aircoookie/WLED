@@ -79,7 +79,7 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
     #define MAX_NUM_SEGMENTS  32
   #endif
   #if defined(ARDUINO_ARCH_ESP32S2)
-    #define MAX_SEGMENT_DATA  (MAX_NUM_SEGMENTS*768) // 24k by default (S2 is short on free RAM)
+    #define MAX_SEGMENT_DATA  (MAX_NUM_SEGMENTS*768)  // 24k by default (S2 is short on free RAM)
   #else
     #define MAX_SEGMENT_DATA  (MAX_NUM_SEGMENTS*1280) // 40k by default
   #endif
@@ -518,7 +518,7 @@ typedef struct Segment {
       //if (data) Serial.printf(" %d->(%p)", (int)_dataLen, data);
       //Serial.println();
       #endif
-      if (name) { delete[] name; name = nullptr; }
+      if (name) { free(name); name = nullptr; }
       stopTransition();
       deallocateData();
     }
@@ -534,7 +534,6 @@ typedef struct Segment {
     inline bool     isSelected()         const { return selected; }
     inline bool     isInTransition()     const { return _t != nullptr; }
     inline bool     isActive()           const { return stop > start; }
-    inline bool     is2D()               const { return (width()>1 && height()>1); }
     inline bool     hasRGB()             const { return _isRGB; }
     inline bool     hasWhite()           const { return _hasW; }
     inline bool     isCCT()              const { return _isCCT; }
@@ -599,14 +598,14 @@ typedef struct Segment {
 
     // 1D strip
     [[gnu::hot]] uint16_t virtualLength() const;
-    [[gnu::hot]] void setPixelColor(int n, uint32_t c); // set relative pixel within segment with color
-    inline void setPixelColor(unsigned n, uint32_t c)                    { setPixelColor(int(n), c); }
-    inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); }
-    inline void setPixelColor(int n, CRGB c)                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); }
+    [[gnu::hot]] void setPixelColor(int n, uint32_t c) const; // set relative pixel within segment with color
+    inline void setPixelColor(unsigned n, uint32_t c) const                    { setPixelColor(int(n), c); }
+    inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) const { setPixelColor(n, RGBW32(r,g,b,w)); }
+    inline void setPixelColor(int n, CRGB c) const                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); }
     #ifdef WLED_USE_AA_PIXELS
-    void setPixelColor(float i, uint32_t c, bool aa = true);
-    inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
-    inline void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
+    void setPixelColor(float i, uint32_t c, bool aa = true) const;
+    inline void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) const { setPixelColor(i, RGBW32(r,g,b,w), aa); }
+    inline void setPixelColor(float i, CRGB c, bool aa = true) const                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
     [[gnu::hot]] uint32_t getPixelColor(int i) const;
     // 1D support functions (some implement 2D as well)
@@ -642,16 +641,17 @@ typedef struct Segment {
     #endif
     }
   #ifndef WLED_DISABLE_2D
-    [[gnu::hot]] uint16_t XY(int x, int y) const;      // support function to get relative index within segment
+    inline bool is2D() const                                                            { return (width()>1 && height()>1); }
+    [[gnu::hot]] int  XY(int x, int y) const; // support function to get relative index within segment
     [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c) const; // set relative pixel within segment with color
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c) const               { setPixelColorXY(int(x), int(y), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) const { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
     inline void setPixelColorXY(int x, int y, CRGB c) const                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
     inline void setPixelColorXY(unsigned x, unsigned y, CRGB c) const                   { setPixelColorXY(int(x), int(y), RGBW32(c.r,c.g,c.b,0)); }
     #ifdef WLED_USE_AA_PIXELS
-    void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
-    inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
-    inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
+    void setPixelColorXY(float x, float y, uint32_t c, bool aa = true) const;
+    inline void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) const { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
+    inline void setPixelColorXY(float x, float y, CRGB c, bool aa = true) const                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
     #endif
     [[gnu::hot]] uint32_t getPixelColorXY(int x, int y) const;
     // 2D support functions
@@ -678,7 +678,8 @@ typedef struct Segment {
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
-    inline uint16_t XY(int x, int y)                                              { return x; }
+    inline constexpr bool is2D() const                                            { return false; }
+    inline int  XY(int x, int y) const                                            { return x; }
     inline void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColor(int(x), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
@@ -778,7 +779,7 @@ class WS2812FX {  // 96 bytes
     }
 
     ~WS2812FX() {
-      if (customMappingTable) delete[] customMappingTable;
+      if (customMappingTable) free(customMappingTable);
       _mode.clear();
       _modeData.clear();
       _segments.clear();
@@ -804,7 +805,7 @@ class WS2812FX {  // 96 bytes
       resetSegments(),                            // marks all segments for reset
       makeAutoSegments(bool forceReset = false),  // will create segments based on configured outputs
       fixInvalidSegments(),                       // fixes incorrect segment configuration
-      setPixelColor(unsigned n, uint32_t c),      // paints absolute strip pixel with index n and color c
+      setPixelColor(unsigned n, uint32_t c) const,      // paints absolute strip pixel with index n and color c
       show(),                                     // initiates LED output
       setTargetFps(unsigned fps),
       setupEffectData();                          // add default effects to the list; defined in FX.cpp
@@ -812,9 +813,9 @@ class WS2812FX {  // 96 bytes
     inline void resetTimebase()           { timebase = 0UL - millis(); }
     inline void restartRuntime()          { for (Segment &seg : _segments) { seg.markForReset().resetIfRequired(); } }
     inline void setTransitionMode(bool t) { for (Segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0); }
-    inline void setPixelColor(unsigned n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); }
-    inline void setPixelColor(unsigned n, CRGB c)                                         { setPixelColor(n, c.red, c.green, c.blue); }
-    inline void fill(uint32_t c)          { for (unsigned i = 0; i < getLengthTotal(); i++) setPixelColor(i, c); } // fill whole strip with color (inline)
+    inline void setPixelColor(unsigned n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) const { setPixelColor(n, RGBW32(r,g,b,w)); }
+    inline void setPixelColor(unsigned n, CRGB c) const                                         { setPixelColor(n, c.red, c.green, c.blue); }
+    inline void fill(uint32_t c) const    { for (unsigned i = 0; i < getLengthTotal(); i++) setPixelColor(i, c); } // fill whole strip with color (inline)
     inline void trigger()                                     { _triggered = true; }  // Forces the next frame to be computed on all active segments.
     inline void setShowCallback(show_callback cb)             { _callback = cb; }
     inline void setTransition(uint16_t t)                     { _transitionDur = t; } // sets transition time (in ms)
@@ -824,7 +825,7 @@ class WS2812FX {  // 96 bytes
 
     bool
       paletteFade,
-      checkSegmentAlignment(),
+      checkSegmentAlignment() const,
       hasRGBWBus() const,
       hasCCTBus() const,
       deserializeMap(unsigned n = 0);
@@ -918,11 +919,11 @@ class WS2812FX {  // 96 bytes
     void setUpMatrix();     // sets up automatic matrix ledmap from panel configuration
 
     // outsmart the compiler :) by correctly overloading
-    inline void setPixelColorXY(int x, int y, uint32_t c)   { setPixelColor((unsigned)(y * Segment::maxWidth + x), c); }
-    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
-    inline void setPixelColorXY(int x, int y, CRGB c)       { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
+    inline void setPixelColorXY(int x, int y, uint32_t c) const { setPixelColor((unsigned)(y * Segment::maxWidth + x), c); }
+    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) const { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
+    inline void setPixelColorXY(int x, int y, CRGB c) const     { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
 
-    inline uint32_t getPixelColorXY(int x, int y) const     { return getPixelColor(isMatrix ? y * Segment::maxWidth + x : x); }
+    inline uint32_t getPixelColorXY(int x, int y) const         { return getPixelColor(isMatrix ? y * Segment::maxWidth + x : x); }
 
   // end 2D support
 
