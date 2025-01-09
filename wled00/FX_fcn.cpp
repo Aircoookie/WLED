@@ -380,7 +380,7 @@ void Segment::restoreSegenv(const tmpsegd_t &tmpSeg) {
 
 uint8_t Segment::currentBri(bool useCct) const {
   unsigned prog = progress();
-  if (prog < 0xFFFFU && _t) {
+  if (prog < 0xFFFFU) { // progress() < 0xFFFF inplies that _t is a valid pointer
     unsigned curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
     curBri += (useCct ? _t->_cctT : _t->_briT) * (0xFFFFU - prog);
     return curBri / 0xFFFFU;
@@ -390,8 +390,8 @@ uint8_t Segment::currentBri(bool useCct) const {
 
 uint8_t Segment::currentMode() const {
 #ifndef WLED_DISABLE_MODE_BLEND
-  unsigned prog = progress();
-  if (modeBlending && prog < 0xFFFFU && _t) return _t->_modeT;
+  unsigned prog = progress(); // progress() < 0xFFFF inplies that _t is a valid pointer
+  if (modeBlending && prog < 0xFFFFU) return _t->_modeT;
 #endif
   return mode;
 }
