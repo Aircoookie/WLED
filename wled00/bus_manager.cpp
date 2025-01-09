@@ -1011,7 +1011,7 @@ BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWh
   }
 }
 
-void __attribute__((hot)) BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c) {
+void __attribute__((hot)) BusHub75Matrix::setPixelColor(unsigned pix, uint32_t c) {
   if (!_valid || pix >= _len) return;
   // if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
 
@@ -1045,7 +1045,7 @@ void __attribute__((hot)) BusHub75Matrix::setPixelColor(uint16_t pix, uint32_t c
   }
 }
 
-uint32_t BusHub75Matrix::getPixelColor(uint16_t pix) const {
+uint32_t BusHub75Matrix::getPixelColor(unsigned pix) const {
   if (!_valid || pix >= _len) return IS_BLACK;
   if (_ledBuffer)
     return uint32_t(_ledBuffer[pix].scale8(_bri)) & 0x00FFFFFF;  // scale8() is needed to mimic NeoPixelBus, which returns scaled-down colours

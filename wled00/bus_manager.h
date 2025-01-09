@@ -328,8 +328,8 @@ class BusNetwork : public Bus {
 class BusHub75Matrix : public Bus {
   public:
     BusHub75Matrix(BusConfig &bc);
-    void setPixelColor(uint16_t pix, uint32_t c) override;
-    uint32_t getPixelColor(uint16_t pix) const override;
+    void setPixelColor(unsigned pix, uint32_t c) override;
+    uint32_t getPixelColor(unsigned pix) const override;
     void show() override;
     void setBrightness(uint8_t b) override;
     uint8_t getPins(uint8_t* pinArray) const override;
@@ -344,7 +344,7 @@ class BusHub75Matrix : public Bus {
 
   private:
     MatrixPanel_I2S_DMA *display = nullptr;
-    VirtualMatrixPanel  *fourScanPanel = nullptr;
+    VirtualMatrixPanel  *virtualDisp = nullptr;
     HUB75_I2S_CFG mxconfig;
     unsigned _panelWidth = 0;
     CRGB *_ledBuffer = nullptr;
