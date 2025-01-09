@@ -591,7 +591,7 @@ typedef struct Segment {
     void     restoreSegenv(const tmpsegd_t &tmpSegD); // restores segment data from buffer, if buffer is not transition buffer, changed values are copied to transition buffer
     #endif
     [[gnu::hot]] void updateTransitionProgress();            // set current progression of transition
-    inline uint16_t progress() const { return _transitionprogress; };  // transition progression between 0-65535
+    inline uint16_t progress() const { return _t ? Segment::_transitionprogress : 0xFFFFU; }  // transition progression between 0-65535
     [[gnu::hot]] uint8_t  currentBri(bool useCct = false) const; // current segment brightness/CCT (blended while in transition)
     uint8_t  currentMode() const;                            // currently active effect/mode (while in transition)
     [[gnu::hot]] uint32_t currentColor(uint8_t slot) const;  // currently active segment color (blended while in transition)
