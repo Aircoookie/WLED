@@ -8,15 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  prep:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set Version
-        run: |
-          VERSION=`date +%y%m%d0`
-          sed -i -r -e "s/#define VERSION .+/#define VERSION $VERSION/" wled00/wled.h
   wled_build:
-    needs: prep
     uses: ./.github/workflows/build.yml
   nightly:
     name: Deploy nightly
