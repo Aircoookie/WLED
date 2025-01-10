@@ -22,7 +22,6 @@
 
 // local shared functions (used both in 1D and 2D system)
 static int32_t calcForce_dv(const int8_t force, uint8_t &counter);
-static int32_t limitSpeed(int32_t speed);
 static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, const bool wrap); // returns false if out of bounds by more than particleradius
 static void fast_color_add(CRGB &c1, const CRGB &c2, uint32_t scale = 255); // fast and accurate color adding with scaling (scales c2 before adding)
 static void fast_color_scale(CRGB &c, const uint32_t scale); // fast scaling function using 32bit variable and pointer. note: keep 'scale' within 0-255
@@ -252,7 +251,7 @@ void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSparticleFlags &par
     int32_t renderradius = PS_P_HALFRADIUS; // used to check out of bounds
     int32_t newX = part.x + (int32_t)part.vx;
     int32_t newY = part.y + (int32_t)part.vy;
-    partFlags.outofbounds = false; // reset out of bounds (in case particle was created outside the matrix and is now moving into view)  TODO: move this below, setting a flag is slow, only set if actually in bounds
+    partFlags.outofbounds = false; // reset out of bounds (in case particle was created outside the matrix and is now moving into view) note: moving this to checks below adds code and is not faster
 
     if (advancedproperties) { //using individual particle size?
       if (advancedproperties->size > 0) {
@@ -302,7 +301,7 @@ void ParticleSystem2D::fireParticleupdate() {
       particles[i].ttl--; // age
       int32_t newY = particles[i].y + (int32_t)particles[i].vy + (particles[i].ttl >> 2); // younger particles move faster upward as they are hotter
       int32_t newX = particles[i].x + (int32_t)particles[i].vx;
-      particleFlags[i].outofbounds = 0; // reset out of bounds flag  //TODO: can this be moved to else statements below?
+      particleFlags[i].outofbounds = 0; // reset out of bounds flag  note: moving this to checks below is not faster but adds code
       // check if particle is out of bounds, wrap x around to other side if wrapping is enabled
       // as fire particles start below the frame, lots of particles are out of bounds in y direction. to improve speed, only check x direction if y is not out of bounds
       if (newY < -PS_P_HALFRADIUS)
@@ -1063,7 +1062,8 @@ void blur2D(CRGB *colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, u
       fast_color_scale(seeppart, seep); // scale it and seep to neighbours
       if (x > 0) {
         fast_color_add(colorbuffer[indexXY - 1], seeppart);
-        fast_color_add(colorbuffer[indexXY], carryover); // TODO: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
+        if(carryover) // note: check adds overhead but is faster on average
+          fast_color_add(colorbuffer[indexXY], carryover);
       }
       carryover = seeppart;
       indexXY++; // next pixel in x direction
@@ -1084,7 +1084,8 @@ void blur2D(CRGB *colorbuffer, uint32_t xsize, uint32_t ysize, uint32_t xblur, u
       fast_color_scale(seeppart, seep); // scale it and seep to neighbours
       if (y > 0) {
         fast_color_add(colorbuffer[indexXY - width], seeppart);
-        fast_color_add(colorbuffer[indexXY], carryover); // todo: could check if carryover is > 0, takes 7 instructions, add takes ~35, with lots of same color pixels (like background), it would be faster
+        if(carryover) // note: check adds overhead but is faster on average
+          fast_color_add(colorbuffer[indexXY], carryover);
       }
       carryover = seeppart;
       indexXY += width; // next pixel in y direction
@@ -1891,7 +1892,8 @@ void blur1D(CRGB *colorbuffer, uint32_t size, uint32_t blur, uint32_t start)
     fast_color_scale(seeppart, seep); // scale it and seep to neighbours
     if (x > 0) {
       fast_color_add(colorbuffer[x-1], seeppart);
-      fast_color_add(colorbuffer[x], carryover); // is black on first pass
+      if(carryover) // note: check adds overhead but is faster on average
+        fast_color_add(colorbuffer[x], carryover); // is black on first pass
     }
     carryover = seeppart;
   }
@@ -1928,10 +1930,11 @@ static int32_t calcForce_dv(const int8_t force, uint8_t &counter) {
 
 // limit speed to prevent overflows
 //TODO: inline this function? check if that uses a lot more flash.
+/*
 static int32_t limitSpeed(int32_t speed) {
   return min((int32_t)PS_P_MAXSPEED, max((int32_t)-PS_P_MAXSPEED, speed));
   //return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed); // note: this uses more code, not sure due to speed or inlining
-}
+}*/
 
 // check if particle is out of bounds and wrap it around if required, returns false if out of bounds
 static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, const bool wrap) {

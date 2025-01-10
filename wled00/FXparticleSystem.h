@@ -16,7 +16,7 @@
 #define PS_P_MAXSPEED 120 // maximum speed a particle can have (vx/vy is int8)
 #define MAX_MEMIDLE 10 // max idle time (in frames) before memory is deallocated (if deallocated during an effect, it will crash!)
 
-#define WLED_DEBUG_PS
+//#define WLED_DEBUG_PS // note: enabling debug uses ~3k of flash
 
 #ifdef WLED_DEBUG_PS
   #define PSPRINT(x) Serial.print(x)
@@ -44,9 +44,13 @@ partMem* getPartMem(void); // returns pointer to memory struct for current segme
 void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer, bool initialize); // allocate CRGB rendering buffer, update size if needed
 void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer = false); // transfer the buffer to the segment (supports 1D and 2D)
 void servicePSmem(); // increments watchdog, frees memory if idle too long
+
+// limit speed of particles (used in 1D and 2D)
+static inline int32_t limitSpeed(int32_t speed) {
+  return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed); // note: this is slightly faster than using min/max at the cost of 50bytes of flash
+}
 #endif
 
-//TODO: maybe update PS_P_MINSURFACEHARDNESS for 2D? its a bit too sticky already at hardness 100
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 // memory allocation
 #define ESP8266_MAXPARTICLES 300 // enough up to 20x20 pixels
@@ -165,7 +169,7 @@ public:
   void applyFriction(PSparticle &part, const int32_t coefficient); // apply friction to specific particle
   void applyFriction(const int32_t coefficient); // apply friction to all used particles
   void pointAttractor(const uint32_t particleindex, PSparticle &attractor, const uint8_t strength, const bool swallow);
-  // set options
+  // set options  note: inlining the set function uses more flash so dont optimize
   void setUsedParticles(const uint8_t percentage);  // set the percentage of particles used in the system, 255=100%
   inline uint32_t getAvailableParticles(void) { return availableParticles; } // available particles in the buffer, use this to check if buffer changed during FX init
   void setCollisionHardness(const uint8_t hardness); // hardness for particle collisions (255 means full hard)
@@ -319,9 +323,6 @@ typedef struct {
   uint8_t size; // particle size (advanced property)
 } PSsource1D;
 
-//TODO: 1D function cleanup: add const where possible, replace pointers with reference where possible
-//TODO: match all functions with declarations in header file for consistency
-// TODO: make all 1-line function inline (check first if this makes code larger or smaller with one)
 class ParticleSystem1D
 {
 public:
@@ -393,7 +394,7 @@ private:
   uint8_t forcecounter; // counter for globally applied forces
   uint16_t collisionStartIdx; // particle array start index for collision detection
   //global particle properties for basic particles
-  uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, larger sizez TBD (TODO: need larger sizes?)
+  uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels
   uint8_t motionBlur; // enable motion blur, values > 100 gives smoother animations
   uint8_t smearBlur; // smeared blurring of full frame
   uint8_t effectID; // ID of the effect that is using this particle system, used for transitions
