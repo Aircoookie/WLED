@@ -11,6 +11,7 @@ jobs:
   prep:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Set Version
         run: |
           VERSION=`date +%y%m%d0`
