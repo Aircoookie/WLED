@@ -380,6 +380,9 @@ const unsigned int um_data_size = sizeof(um_data_t);  // 12 bytes
 class Usermod {
   protected:
     um_data_t *um_data; // um_data should be allocated using new in (derived) Usermod's setup() or constructor
+    bool enabled = false;
+    const char *_name;
+
   public:
     Usermod() { um_data = nullptr; }
     virtual ~Usermod() { if (um_data) delete um_data; }
@@ -393,8 +396,20 @@ class Usermod {
     virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
     virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
     virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
-    virtual void addToConfig(JsonObject& obj) {}                             // add JSON entries that go to cfg.json
-    virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
+    virtual void addToConfig(JsonObject& obj) {
+      if(_name) {
+        // add JSON entries that go to cfg.json
+        JsonObject top = obj.createNestedObject(FPSTR(_name));
+        top[FPSTR("enabled")] = enabled;
+      }
+    }
+    virtual bool readFromConfig(JsonObject& obj) {                           // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
+      if(!_name) {
+        return true;
+      }
+      JsonObject top = obj[FPSTR(_name)];
+      return !top.isNull() && getJsonValue(top[FPSTR("enabled")], enabled);
+    }
     virtual void onMqttConnect(bool sessionPresent) {}                       // fired when MQTT connection is established (so usermod can subscribe)
     virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
     virtual bool onEspNowMessage(uint8_t* sender, uint8_t* payload, uint8_t len) { return false; } // fired upon ESP-NOW message received
