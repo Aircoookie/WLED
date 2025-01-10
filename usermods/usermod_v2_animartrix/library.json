@@ -1,0 +1,6 @@
+{
+  "name": "AnimartrixUsermod",
+  "dependencies": {
+    "Animartrix": "https://github.com/netmindz/animartrix.git#b172586"
+  }
+}
