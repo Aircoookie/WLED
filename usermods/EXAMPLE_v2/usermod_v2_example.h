@@ -26,7 +26,6 @@ class MyExampleUsermod : public Usermod {
   private:
 
     // Private class members. You can declare variables and functions only accessible to your usermod here
-    bool enabled = false;
     bool initDone = false;
     unsigned long lastTime = 0;
 
@@ -53,16 +52,6 @@ class MyExampleUsermod : public Usermod {
   public:
 
     // non WLED related methods, may be used for data exchange between usermods (non-inline methods should be defined out of class)
-
-    /**
-     * Enable/Disable the usermod
-     */
-    inline void enable(bool enable) { enabled = enable; }
-
-    /**
-     * Get usermod enabled/disabled state
-     */
-    inline bool isEnabled() { return enabled; }
 
     // in such case add the following to another usermod:
     //  in private vars:

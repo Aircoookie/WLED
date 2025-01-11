@@ -416,6 +416,9 @@ class Usermod {
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
+    virtual void enable(bool enable) { enabled = enable; }
+    inline bool isEnabled() { return enabled; }
+
 
   // API shims
   private:
