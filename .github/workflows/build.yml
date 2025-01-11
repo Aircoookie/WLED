@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: ${{ fromJSON(needs.get_default_envs.outputs.environments) }}
+        environment: ${{ fromJSON(needs.get_default_envs.outputs.environments) }} usermods
     steps:
     - uses: actions/checkout@v4
     - name: Set up Node.js
@@ -57,6 +57,11 @@ jobs:
           cache: 'pip'
     - name: Install PlatformIO
       run: pip install -r requirements.txt
+    - name: Add usermods environment
+      run: |
+        cp -v usermods/platformio_override.usermods.ini platformio_override.ini
+        find usermods/ -name library.json | xargs dirname | xargs -n 1 basename | xargs echo >> platformio_override.ini
+
     - name: Build firmware
       run: pio run -e ${{ matrix.environment }}
     - uses: actions/upload-artifact@v4
