@@ -380,7 +380,7 @@ const unsigned int um_data_size = sizeof(um_data_t);  // 12 bytes
 class Usermod {
   protected:
     um_data_t *um_data; // um_data should be allocated using new in (derived) Usermod's setup() or constructor
-    bool enabled = false;
+    bool enabled = true; // maintain compatibility for usermods that don't use this
     const char *_name;
 
   public:
@@ -437,7 +437,7 @@ class Usermod {
 
 namespace UsermodManager {
   extern byte numMods;
-
+  extern byte numModsEnabled;
   void loop();
   void handleOverlayDraw();
   bool handleButton(uint8_t b);
