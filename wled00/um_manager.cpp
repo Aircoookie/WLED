@@ -6,7 +6,6 @@
 static Usermod* ums[WLED_MAX_USERMODS] = {nullptr};
 byte UsermodManager::numMods = 0;
 static Usermod* umsEnabled[WLED_MAX_USERMODS] = {nullptr};
-byte UsermodManager::numModsEnabled = 0;
 
 //Usermod Manager internals
 void UsermodManager::setup()             { for (Usermod* um : umsEnabled) if(um) if(um) { um->setup(); } }
@@ -36,6 +35,12 @@ bool UsermodManager::readFromConfig(JsonObject& obj)    {
   bool allComplete = true;
   for (unsigned i = 0; i < numMods; i++) {
     if (!ums[i]->readFromConfig(obj)) allComplete = false;
+    if(!ums[i]->isEnabled()) {
+      umsEnabled[i] = ums[i];
+    }
+    else {
+      umsEnabled[i] = nullptr;
+    }
   }
   return allComplete;
 }
@@ -71,7 +76,6 @@ bool UsermodManager::add(Usermod* um)
 {
   if (numMods >= WLED_MAX_USERMODS || um == nullptr) return false;
   ums[numMods++] = um;
-  if(um->isEnabled()) umsEnabled[numModsEnabled++] = um;
   return true;
 }
 

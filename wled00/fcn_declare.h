@@ -437,7 +437,6 @@ class Usermod {
 
 namespace UsermodManager {
   extern byte numMods;
-  extern byte numModsEnabled;
   void loop();
   void handleOverlayDraw();
   bool handleButton(uint8_t b);
