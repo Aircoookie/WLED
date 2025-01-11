@@ -276,3 +276,7 @@ public:
     }
   }
 };
+
+
+static UserMod_SensorsToMQTT sensors_to_mqtt;
+REGISTER_USERMOD(sensors_to_mqtt);

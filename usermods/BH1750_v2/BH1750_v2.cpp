@@ -250,3 +250,7 @@ const char Usermod_BH1750::_maxReadInterval[] PROGMEM = "max-read-interval-ms";
 const char Usermod_BH1750::_minReadInterval[] PROGMEM = "min-read-interval-ms";
 const char Usermod_BH1750::_HomeAssistantDiscovery[] PROGMEM = "HomeAssistantDiscoveryLux";
 const char Usermod_BH1750::_offset[] PROGMEM = "offset-lx";
+
+
+static Usermod_BH1750 bh1750_v2;
+REGISTER_USERMOD(bh1750_v2);

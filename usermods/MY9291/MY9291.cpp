@@ -43,3 +43,6 @@ class MY9291Usermod : public Usermod {
       return USERMOD_ID_MY9291;
     }
 };
+
+static MY9291Usermod my9291;
+REGISTER_USERMOD(my9291);

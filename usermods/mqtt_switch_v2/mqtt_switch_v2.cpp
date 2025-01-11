@@ -157,3 +157,7 @@ inline void UsermodMqttSwitch::updateState(uint8_t pinNr)
         mqtt->publish(buf, 0, false, "OFF");
     }
 }
+
+
+static UsermodMqttSwitc mqtt_switch_v2;
+REGISTER_USERMOD(mqtt_switch_v2);

@@ -479,3 +479,7 @@ public:
 
 const char UsermodBME280::_name[]                      PROGMEM = "BME280/BMP280";
 const char UsermodBME280::_enabled[]                   PROGMEM = "enabled";
+
+
+static UsermodBME280 bme280_v2;
+REGISTER_USERMOD(bme280_v2);

@@ -1,0 +1,9 @@
+{
+  "name:": "stairway_wipe_basic",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

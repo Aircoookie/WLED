@@ -554,3 +554,7 @@ public:
 };
 
 const char UsermodINA226::_name[] PROGMEM = "INA226";
+
+
+static UsermodINA226 ina226_v2;
+REGISTER_USERMOD(ina226_v2);

@@ -250,3 +250,7 @@ public:
     return USERMOD_ID_TETRISAI;
   }
 };
+
+
+static TetrisAIUsermod tetrisai_v2;
+REGISTER_USERMOD(tetrisai_v2);

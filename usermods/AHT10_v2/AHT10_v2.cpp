@@ -325,3 +325,6 @@ public:
 };
 
 const char UsermodAHT10::_name[] PROGMEM = "AHTxx";
+
+static UsermodAHT10 aht10_v2;
+REGISTER_USERMOD(aht10_v2);

@@ -1112,3 +1112,7 @@ void UsermodBME68X::saveState() {
 		if (WLED_MQTT_CONNECTED) mqtt->publish(charbuffer, 0, false, contbuffer);
 	}
 }
+
+
+static UsermodBME68X bme68x_v2;
+REGISTER_USERMOD(bme68x_v2);

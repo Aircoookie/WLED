@@ -1,0 +1,9 @@
+{
+  "name:": "sensors_to_mqtt",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

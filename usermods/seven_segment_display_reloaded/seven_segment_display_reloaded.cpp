@@ -571,3 +571,7 @@ const char UsermodSSDR::_str_years[]       PROGMEM = "LED-Numbers-Year";
 const char UsermodSSDR::_str_ldrEnabled[]  PROGMEM = "enable-auto-brightness";
 const char UsermodSSDR::_str_minBrightness[]  PROGMEM = "auto-brightness-min";
 const char UsermodSSDR::_str_maxBrightness[]  PROGMEM = "auto-brightness-max";
+
+
+static UsermodSSDR seven_segment_display_reloaded;
+REGISTER_USERMOD(seven_segment_display_reloaded);

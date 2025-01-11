@@ -279,3 +279,7 @@ const char Usermod_MAX17048::_enabled[] PROGMEM = "enabled";
 const char Usermod_MAX17048::_maxReadInterval[] PROGMEM = "max-read-interval-ms";
 const char Usermod_MAX17048::_minReadInterval[] PROGMEM = "min-read-interval-ms";
 const char Usermod_MAX17048::_HomeAssistantDiscovery[] PROGMEM = "HomeAssistantDiscovery";
+
+
+static Usermod_MAX17048 max17048_v2;
+REGISTER_USERMOD(max17048_v2);

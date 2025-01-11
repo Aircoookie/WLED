@@ -336,3 +336,7 @@ public:
 
 
 };
+
+
+static WordClockMatrix word-clock-matrix;
+REGISTER_USERMOD(word-clock-matrix);

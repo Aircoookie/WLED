@@ -253,3 +253,6 @@ class ADS1115Usermod : public Usermod {
         readings[activeChannel] = ads.computeVolts(results);
     }
 };
+
+static ADS1115Usermod ads1115_v2;
+REGISTER_USERMOD(ads1115_v2);

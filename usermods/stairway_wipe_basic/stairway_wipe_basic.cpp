@@ -126,3 +126,7 @@ void setup() {
    //More methods can be added in the future, this example will then be extended.
    //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
+
+
+static StairwayWipeUsermod stairway_wipe_basic;
+REGISTER_USERMOD(stairway_wipe_basic);

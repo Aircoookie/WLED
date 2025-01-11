@@ -194,3 +194,6 @@ void InternalTemperatureUsermod::publishMqtt(const char *state, bool retain)
   }
 #endif
 }
+
+static InternalTemperatureUsermod internal_temperature_v2;
+REGISTER_USERMOD(internal_temperature_v2);

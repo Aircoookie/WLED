@@ -235,3 +235,7 @@ void LD2410Usermod::publishMqtt(const char* topic, const char* state, bool retai
   }
 #endif
 }
+
+
+static LD2410Usermod ld2410_v2;
+REGISTER_USERMOD(ld2410_v2);
