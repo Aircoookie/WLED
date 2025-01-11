@@ -1,0 +1,9 @@
+{
+  "name:": "usermod_v2_klipper_percentage",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

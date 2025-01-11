@@ -1,0 +1,9 @@
+{
+  "name:": "usermod_v2_four_line_display_ALT",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

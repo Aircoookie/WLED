@@ -1,0 +1,9 @@
+{
+  "name:": "LDR_Dusk_Dawn_v2",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

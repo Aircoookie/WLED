@@ -1,0 +1,9 @@
+{
+  "name:": "Analog_Clock",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

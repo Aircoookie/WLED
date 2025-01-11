@@ -1,0 +1,9 @@
+{
+  "name:": "quinled-an-penta",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

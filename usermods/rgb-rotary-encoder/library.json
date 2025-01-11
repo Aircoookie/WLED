@@ -1,0 +1,9 @@
+{
+  "name:": "rgb-rotary-encoder",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

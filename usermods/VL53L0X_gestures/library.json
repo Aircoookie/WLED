@@ -1,0 +1,9 @@
+{
+  "name:": "VL53L0X_gestures",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name:": "sd_card",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name:": "usermod_v2_ping_pong_clock",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

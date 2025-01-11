@@ -1,0 +1,9 @@
+{
+  "name:": "SN_Photoresistor",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

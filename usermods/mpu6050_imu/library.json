@@ -1,0 +1,9 @@
+{
+  "name:": "mpu6050_imu",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

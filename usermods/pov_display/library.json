@@ -1,0 +1,9 @@
+{
+  "name:": "pov_display",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}

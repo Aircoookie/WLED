@@ -1,0 +1,9 @@
+{
+  "name:": "usermod_rotary_brightness_color",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  }
+}
