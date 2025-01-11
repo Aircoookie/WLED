@@ -1,0 +1,12 @@
+{
+  "name": "animartrix",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "../../wled00",
+    "libLDFMode": "chain+",
+    "libArchive": false
+  },
+  "dependencies": {
+    "Animartrix": "https://github.com/netmindz/animartrix.git#b172586"
+  }    
+}

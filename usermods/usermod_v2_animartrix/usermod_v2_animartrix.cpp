@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 #include <ANIMartRIX.h>
 
@@ -452,5 +450,6 @@ class AnimartrixUsermod : public Usermod {
 
 };
 
-
+static AnimartrixUsermod animartrix_module("Animartrix", false);
+REGISTER_USERMOD(animartrix_module);
 
