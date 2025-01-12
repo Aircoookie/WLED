@@ -17,12 +17,16 @@ private:
 private:
   bool enabled = false; //WLEDMM
   unsigned long update_interval = 60;
-  int min_bri = 0;
+  unsigned long update_interval_ms = 60000;
+  int min_bri = 1;
   int max_bri = 255;
   float relax_hour = 0;
   int relaxSec = 0;
   unsigned long lastUMRun = 0;
 public:
+
+  void setup() {};
+
   float mapFloat(float inputValue, float inMin, float inMax, float outMin, float outMax) {
     if (inMax == inMin) 
       return outMin;
@@ -37,19 +41,15 @@ public:
     return USERMOD_ID_BRIGHTNESS_FOLLOW_SUN;
   }
 
-  void loop() override
+  void update() 
   {
-    if (!enabled || strip.isUpdating() || sunrise == 0 || sunset == 0 || localTime == 0)
+    if (sunrise == 0 || sunset == 0 || localTime == 0)
       return;
 
-    if (millis() - lastUMRun > (update_interval*1000))
-      return;
-    lastUMRun = millis();
-
+    int curSec = elapsedSecsToday(localTime);
     int sunriseSec = elapsedSecsToday(sunrise);
     int sunsetSec = elapsedSecsToday(sunset);
     int sunMiddleSec = sunriseSec + (sunsetSec-sunriseSec)/2;
-    int curSec = elapsedSecsToday(localTime);
 
     int relaxSecH = sunriseSec-relaxSec;
     int relaxSecE = sunsetSec+relaxSec;
@@ -64,6 +64,18 @@ public:
     bri = briSet;
     stateUpdated(CALL_MODE_DIRECT_CHANGE);
 }
+
+  void loop() override
+  {
+    if (!enabled || strip.isUpdating())
+      return;
+
+    if (millis() - lastUMRun > update_interval_ms)
+      return;
+    lastUMRun = millis();
+
+    update();
+  }
 
   void addToConfig(JsonObject& root)
   {
@@ -88,18 +100,20 @@ public:
 
     configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled, false);
     configComplete &= getJsonValue(top[FPSTR(_update_interval)], update_interval, 60);
-    configComplete &= getJsonValue(top[FPSTR(_min_bri)], min_bri, 0);
+    configComplete &= getJsonValue(top[FPSTR(_min_bri)], min_bri, 1);
     configComplete &= getJsonValue(top[FPSTR(_max_bri)], max_bri, 255);
     configComplete &= getJsonValue(top[FPSTR(_relax_hour)], relax_hour, 0);
     
     update_interval = constrain(update_interval, 1, SECS_PER_HOUR);
-    _min_bri = constrain(_min_bri, 0, 255);
-    _max_bri = constrain(_max_bri, 0, 255);
-    _relax_hour = constrain(_relax_hour, 0, 3);
+    min_bri = constrain(min_bri, 1, 255);
+    max_bri = constrain(max_bri, 1, 255);
+    relax_hour = constrain(relax_hour, 0, 6);
 
-    relaxSec = SECS_PER_HOUR*_relax_hour;
+    update_interval_ms = update_interval*1000;
+    relaxSec = SECS_PER_HOUR*relax_hour;
 
-    lastUMRun = millis()-(update_interval*1000);
+    lastUMRun = 0;
+    update();
 
     return configComplete;
   }
@@ -108,7 +122,7 @@ public:
 
 const char UsermodBrightnessFollowSun::_name[]                PROGMEM = "Brightness Follow Sun";
 const char UsermodBrightnessFollowSun::_enabled[]             PROGMEM = "Enabled";
-const char UsermodBrightnessFollowSun::_update_interval[]     PROGMEM = "Update Interval(sec)";
+const char UsermodBrightnessFollowSun::_update_interval[]     PROGMEM = "Update Interval Sec";
 const char UsermodBrightnessFollowSun::_min_bri[]             PROGMEM = "Min Brightness";
 const char UsermodBrightnessFollowSun::_max_bri[]             PROGMEM = "Max Brightness";
 const char UsermodBrightnessFollowSun::_relax_hour[]          PROGMEM = "Relax Hour";

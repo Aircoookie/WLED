@@ -3,11 +3,11 @@
 
 ## Installation
 
-define `USERMOD_ID_BRIGHTNESS_FOLLOW_SUN` e.g.
+define `USERMOD_BRIGHTNESS_FOLLOW_SUN` e.g.
 
-`#define USERMOD_ID_BRIGHTNESS_FOLLOW_SUN` in my_config.h
+`#define USERMOD_BRIGHTNESS_FOLLOW_SUN` in my_config.h
 
-or add `-D USERMOD_ID_BRIGHTNESS_FOLLOW_SUN` to `build_flags` in platformio_override.ini
+or add `-D USERMOD_BRIGHTNESS_FOLLOW_SUN` to `build_flags` in platformio_override.ini
 
 ### Define Your Options
 
