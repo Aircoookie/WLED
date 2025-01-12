@@ -3,8 +3,7 @@
   "build": {
     "srcDir": ".",
     "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
+    "extraScript": "override_sqrt.py"
   },
   "dependencies": [
     {
