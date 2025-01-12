@@ -2067,7 +2067,7 @@ uint16_t mode_palette() {
 }
 static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;ix=112,c1=0,o1=1,o2=0,o3=1";
 
-#if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D)) // 1D or 2D PS enabled
+#if !(defined(DISABLE_2D_PS_REPLACEMENTS) || defined(DISABLE_1D_PS_REPLACEMENTS)) // disabled if 1D or 2D PS replacements are enabled
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
 // Fire2012 by Mark Kriegsman, July 2012
 // as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
@@ -2154,7 +2154,7 @@ uint16_t mode_fire_2012() {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,2D Blur,Boost;;!;1;pal=35,sx=64,ix=160,m12=1,c2=128"; // bars
-#endif // !defined(DISABLE_2D_PS_REPLACEMENTS) && !defined(DISABLE_1D_PS_REPLACEMENTS)
+#endif // !defined(DISABLE_2D_PS_REPLACEMENTS) || !defined(DISABLE_1D_PS_REPLACEMENTS)
 
 #ifndef DISABLE_1D_PS_REPLACEMENTS
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -10346,7 +10346,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_OSCILLATE, &mode_oscillate, _data_FX_MODE_OSCILLATE);
   addEffect(FX_MODE_JUGGLE, &mode_juggle, _data_FX_MODE_JUGGLE);
   addEffect(FX_MODE_PALETTE, &mode_palette, _data_FX_MODE_PALETTE);
-  #if !defined(DISABLE_2D_PS_REPLACEMENTS) && !defined(DISABLE_1D_PS_REPLACEMENTS)
+  #if !(defined(DISABLE_2D_PS_REPLACEMENTS) || defined(DISABLE_1D_PS_REPLACEMENTS))
   addEffect(FX_MODE_FIRE_2012, &mode_fire_2012, _data_FX_MODE_FIRE_2012);
   #endif
   addEffect(FX_MODE_BPM, &mode_bpm, _data_FX_MODE_BPM);
