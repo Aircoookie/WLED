@@ -754,5 +754,5 @@ const unsigned char QuinLEDAnPentaUsermod::quinLedLogo[] PROGMEM = {
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-static QuinLEDAnPentaUsermod quinled-an-penta;
-REGISTER_USERMOD(quinled-an-penta);
+static QuinLEDAnPentaUsermod quinled_an_penta;
+REGISTER_USERMOD(quinled_an_penta);

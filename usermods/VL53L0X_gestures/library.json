@@ -5,5 +5,8 @@
     "includeDir": "../../wled00",
     "libLDFMode": "chain+",
     "libArchive": false
+  },
+  "dependencies": {
+    "pololu/VL53L0X" : "^1.3.0"
   }
 }

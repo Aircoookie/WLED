@@ -342,5 +342,5 @@ const char RgbRotaryEncoderUsermod::_ledBrightness[]     PROGMEM = "LED-Brightne
 const char RgbRotaryEncoderUsermod::_stepsPerClick[]     PROGMEM = "Steps-per-Click";
 const char RgbRotaryEncoderUsermod::_incrementPerClick[] PROGMEM = "Increment-per-Click";
 
-static RgbRotaryEncoderUsermod rgb-rotary-encoder;
-REGISTER_USERMOD(rgb-rotary-encoder);
+static RgbRotaryEncoderUsermod rgb_rotary_encoder;
+REGISTER_USERMOD(rgb_rotary_encoder);
