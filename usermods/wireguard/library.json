@@ -5,5 +5,8 @@
     "includeDir": "../../wled00",
     "libLDFMode": "chain+",
     "libArchive": false
+  },
+  "dependencies": {
+    "WireGuard-ESP32-Arduino":"https://github.com/kienvu58/WireGuard-ESP32-Arduino.git"
   }
 }

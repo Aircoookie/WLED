@@ -5,5 +5,8 @@
     "includeDir": "../../wled00",
     "libLDFMode": "chain+",
     "libArchive": false
+  },
+  "dependencies": {
+    "boschsensortec/BSEC Software Library":"^1.8.1492"
   }
 }
