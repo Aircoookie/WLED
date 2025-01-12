@@ -338,5 +338,5 @@ public:
 };
 
 
-static WordClockMatrix word-clock-matrix;
-REGISTER_USERMOD(word-clock-matrix);
+static WordClockMatrix word_clock_matrix;
+REGISTER_USERMOD(word_clock_matrix);
