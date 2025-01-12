@@ -14,8 +14,6 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#include "colorpalettes.h"
-
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
    94,   1, 29, 18,

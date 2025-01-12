@@ -149,11 +149,10 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 bool IRAM_ATTR_YN Segment::allocateData(size_t len) {
   if (len == 0) return false; // nothing to do
   if (data && _dataLen >= len) {          // already allocated enough (reduce fragmentation)
-  if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
+    if (call == 0) memset(data, 0, len);  // erase buffer if called during effect initialisation
     return true;
   }
-  DEBUG_PRINT(F("Allocating Data"));
-  // DEBUG_PRINTF_P(PSTR("--   Allocating data (%d): %p\n", len, this);
+  //DEBUG_PRINTF_P(PSTR("--   Allocating data (%d): %p\n", len, this);
   deallocateData(); // if the old buffer was smaller release it first
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) {
     // not enough memory
@@ -1412,6 +1411,7 @@ void WS2812FX::service() {
   #endif
   _isServicing = false;
   _triggered = false;
+
   #ifdef WLED_DEBUG
   if ((_targetFps != FPS_UNLIMITED) && (millis() - nowUp > _frametime)) DEBUG_PRINTF_P(PSTR("Slow effects %u/%d.\n"), (unsigned)(millis()-nowUp), (int)_frametime);
   #endif
