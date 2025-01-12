@@ -1407,7 +1407,9 @@ void WS2812FX::service() {
     }
     _segment_index++;
   }
+  #if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D))
   servicePSmem(); // handle segment particle system memory
+  #endif
   _isServicing = false;
   _triggered = false;
   #ifdef WLED_DEBUG

@@ -14,11 +14,8 @@
   -add underscore to private variables
 */
 
-#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)
+#if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D)) // not both disabled
 #include "FXparticleSystem.h"
-#endif
-
-#ifndef WLED_DISABLE_PARTICLESYSTEM2D
 
 // local shared functions (used both in 1D and 2D system)
 static int32_t calcForce_dv(const int8_t force, uint8_t &counter);
@@ -37,7 +34,9 @@ uint16_t renderBufferSize = 0; // size in pixels, if allcoated by a 1D system it
 bool renderSolo = false; // is set to true if this is the only particle system using the so it can use the buffer continuously (faster blurring)
 int32_t globalBlur = 0; // motion blur to apply if multiple PS are using the buffer
 int32_t globalSmear = 0; // smear-blur to apply if multiple PS are using the buffer
+#endif
 
+#ifndef WLED_DISABLE_PARTICLESYSTEM2D
 ParticleSystem2D::ParticleSystem2D(uint32_t width, uint32_t height, uint32_t numberofparticles, uint32_t numberofsources, bool isadvanced, bool sizecontrol) {
   PSPRINTLN("\n ParticleSystem2D constructor");
   effectID = SEGMENT.mode; // new FX called init, save the effect ID
@@ -1916,7 +1915,7 @@ void blur1D(CRGB *colorbuffer, uint32_t size, uint32_t blur, uint32_t start)
 }
 #endif // WLED_DISABLE_PARTICLESYSTEM1D
 
-#if !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)
+#if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D)) // not both disabled
 
 //////////////////////////////
 // Shared Utility Functions //
@@ -2215,7 +2214,7 @@ partMem* getPartMem(void) { // TODO: maybe there is a better/faster way than usi
 void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer, bool initialize) {
   PSPRINTLN("updateRenderingBuffer");
   uint16_t& targetBufferSize = isFramebuffer ? frameBufferSize : renderBufferSize; // corresponding buffer size
-  
+
   //if(isFramebuffer) return; // debug only: disable frame-buffer buffer
 
   if(targetBufferSize < requiredpixels) { // check current buffer size
@@ -2316,4 +2315,4 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
   #endif
 }
 
-#endif  // !defined(WLED_DISABLE_PARTICLESYSTEM2D) || !defined(WLED_DISABLE_PARTICLESYSTEM1D)
+#endif  // !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D))
