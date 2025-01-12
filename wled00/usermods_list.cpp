@@ -242,6 +242,10 @@
 #include "../usermods/LD2410_v2/usermod_ld2410.h"
 #endif
 
+#ifdef USERMOD_DEEP_SLEEP
+  #include "../usermods/deep_sleep/usermod_deep_sleep.h"
+#endif
+
 #ifdef USERMOD_BRIGHTNESS_FOLLOW_SUN
   #include "../usermods/usermod_v2_brightness_follow_sun/usermod_v2_brightness_follow_sun.h"
 #endif
@@ -473,6 +477,10 @@ void registerUsermods()
 
   #ifdef USERMOD_POV_DISPLAY
   UsermodManager::add(new PovDisplayUsermod());
+  #endif
+
+  #ifdef USERMOD_DEEP_SLEEP
+   usermods.add(new DeepSleepUsermod());
   #endif
 
   #ifdef USERMOD_BRIGHTNESS_FOLLOW_SUN

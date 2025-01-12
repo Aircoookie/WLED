@@ -2032,7 +2032,7 @@ uint16_t mode_palette() {
       const mathType sourceX = xtSinTheta + ytCosTheta + centerX;
       // The computation was scaled just right so that the result should always be in range [0, maxXOut], but enforce this anyway
       // to account for imprecision. Then scale it so that the range is [0, 255], which we can use with the palette.
-      int colorIndex = (std::min(std::max(sourceX, mathType(0)), maxXOut * sInt16Scale) * 255) / (sInt16Scale * maxXOut);
+      int colorIndex = (std::min(std::max(sourceX, mathType(0)), maxXOut * sInt16Scale) * wideMathType(255)) / (sInt16Scale * maxXOut);
       // inputSize determines by how much we want to scale the palette:
       // values < 128 display a fraction of a palette,
       // values > 128 display multiple palettes.
