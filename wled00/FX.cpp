@@ -7802,7 +7802,7 @@ uint16_t mode_particlefireworks(void) {
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  numRockets = map(SEGMENT.speed, 0 , 255, 3, min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES));
+  numRockets = map(SEGMENT.speed, 0 , 255, 4, min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES));
 
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceY(SEGMENT.check2);
