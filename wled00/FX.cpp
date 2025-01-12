@@ -7777,7 +7777,7 @@ static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation S
  * Rockets shoot up and explode in a random color, sometimes in a defined pattern
  * by DedeHai (Damian Schneider)
  */
-#define NUMBEROFSOURCES 4
+#define NUMBEROFSOURCES 8
 
 uint16_t mode_particlefireworks(void) {
   ParticleSystem2D *PartSys = NULL;
@@ -7802,7 +7802,7 @@ uint16_t mode_particlefireworks(void) {
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  numRockets = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
+  numRockets = map(SEGMENT.speed, 0 , 255, 3, min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES));
 
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceY(SEGMENT.check2);
@@ -8564,26 +8564,18 @@ uint16_t mode_particleattractor(void) {
   else
     PartSys->angleEmit(PartSys->sources[0], SEGENV.aux0 + 0x7FFF, 12); // emit at 180° as well
   // apply force
-  #ifdef USERMOD_AUDIOREACTIVE
   uint32_t strength = SEGMENT.speed;
+  #ifdef USERMOD_AUDIOREACTIVE
   um_data_t *um_data;
-  if(!SEGMENT.check3)  { //AR enabled
-    if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-      uint8_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]);
-      uint32_t strength = volumeSmth;
-      for (uint32_t i = 0; i < PartSys->usedParticles; i++)  {// update particles
-        PartSys->pointAttractor(i, attractor, strength, false);
-      }
-    }
-  }
-  for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
-     PartSys->pointAttractor(i, attractor, strength, false);
-  }
-  #else  // no AR
-  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-    PartSys->pointAttractor(i, *attractor, SEGMENT.speed, SEGMENT.check3);
+  if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    uint32_t volumeSmth = (uint32_t)(*(float*) um_data->u_data[0]); // 0-255
+    strength = (SEGMENT.speed * volumeSmth) >> 8;
   }
   #endif
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    PartSys->pointAttractor(i, *attractor, strength, SEGMENT.check3);
+  }
+
 
   if (SEGMENT.call % (33 - SEGMENT.custom3) == 0)
     PartSys->applyFriction(2);
@@ -8591,12 +8583,7 @@ uint16_t mode_particleattractor(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-#ifdef USERMOD_AUDIOREACTIVE
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Disable AR;;!;2v;pal=9,sx=100,ix=82,c1=0,c2=0,";
-#else
 static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=0,c2=0";
-#endif
-
 
 /*
 Particle Spray, just a particle spray with many parameters
@@ -8605,7 +8592,6 @@ by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlespray(void) {
   ParticleSystem2D *PartSys = NULL;
-  //uint8_t numSprays;
   const uint8_t hardness = 200; // collision hardness is fixed
 
   if (SEGMENT.call == 0) { // initialization
@@ -8614,6 +8600,7 @@ uint16_t mode_particlespray(void) {
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->setBounceY(true);
     PartSys->setMotionBlur(200); // anable motion blur
+    PartSys->setSmearBlur(10); // anable motion blur
     PartSys->sources[0].source.hue = hw_random16();
     PartSys->sources[0].sourceFlags.collide = true; // seeded particles will collide (if enabled)
     PartSys->sources[0].var = 3;
@@ -8660,8 +8647,8 @@ uint16_t mode_particlespray(void) {
   else { //no AR data, fall back to normal mode
     // change source properties
     if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) { // every nth frame, cycle color and emit particles
-      PartSys->sources[0].maxLife = 300; // lifetime in frames
-      PartSys->sources[0].minLife = 100;
+      PartSys->sources[0].maxLife = 300 + SEGMENT.intensity; // lifetime in frames
+      PartSys->sources[0].minLife = 150 + SEGMENT.intensity;
       PartSys->sources[0].source.hue++; // = hw_random16(); //change hue of spray source
       PartSys->angleEmit(PartSys->sources[0], angle, SEGMENT.speed >> 2);
     }
@@ -9446,7 +9433,7 @@ uint16_t mode_particleFireworks1D(void) {
       rocketgravity = -rocketgravity;
       speed = -speed;
     }
-    PartSys->applyForce(PartSys->sources[0].source, PartSys->sources[0].sourceFlags, rocketgravity, forcecounter[0]);
+    PartSys->applyForce(PartSys->sources[0].source, rocketgravity, forcecounter[0]);
     PartSys->particleMoveUpdate(PartSys->sources[0].source, PartSys->sources[0].sourceFlags);
     PartSys->particleMoveUpdate(PartSys->sources[0].source, PartSys->sources[0].sourceFlags); // increase speed by calling the move function twice, also ages twice
     uint32_t rocketheight = SEGENV.aux0 ? PartSys->maxX - PartSys->sources[0].source.x : PartSys->sources[0].source.x;
