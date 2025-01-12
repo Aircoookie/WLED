@@ -1,8 +1,6 @@
 {
   "name": "audioreactive",
   "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
     "extraScript": "override_sqrt.py"
   },
   "dependencies": [
