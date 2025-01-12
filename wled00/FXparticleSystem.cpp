@@ -85,10 +85,8 @@ void ParticleSystem2D::update(void) {
     handleCollisions();
 
   //move all particles
-  //TODO: split this loop into two separate loops? avoids repeated null checking which is faster.
-
   for (uint32_t i = 0; i < usedParticles; i++) {
-    particleMoveUpdate(particles[i], particleFlags[i], &particlesettings, advPartProps ? &advPartProps[i] : nullptr);
+    particleMoveUpdate(particles[i], particleFlags[i], nullptr, advPartProps ? &advPartProps[i] : nullptr); // note: splitting this into two loops is slower and uses more flash
   }
 
   ParticleSys_render();
@@ -768,6 +766,9 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
     uint32_t yfb_orig = y - (rendersize>>1) + 1 - offset;
     uint32_t xfb, yfb; // coordinates in frame buffer to write to note: by making this uint, only overflow has to be checked (spits a warning though)
 
+    //note on y-axis flip: WLED has the y-axis defined from top to bottom, so y coordinates must be flipped. doing this in the buffer xfer clashes with 1D/2D combined rendering, which does not invert y
+    //                     transferring the 1D buffer in inverted fashion will flip the x-axis of overlaid 2D FX, so the y-axis flip is done here so the buffer is flipped in y, giving correct results
+
     // transfer particle renderbuffer to framebuffer
     for (uint32_t xrb = offset; xrb < rendersize + offset; xrb++) {
       xfb = xfb_orig + xrb;
@@ -787,7 +788,7 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
         continue;
       }
       if (framebuffer)
-        fast_color_add(framebuffer[xfb + yfb * (maxXpixel + 1)], renderbuffer[xrb + yrb * 10]);
+        fast_color_add(framebuffer[xfb + (maxYpixel - yfb) * (maxXpixel + 1)], renderbuffer[xrb + yrb * 10]);
       else
         SEGMENT.addPixelColorXY(xfb, maxYpixel - yfb, renderbuffer[xrb + yrb * 10],true);
       }
@@ -826,7 +827,7 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
     if (framebuffer) {
       for (uint32_t i = 0; i < 4; i++) {
         if (pixelvalid[i])
-          fast_color_add(framebuffer[pixco[i][0] + pixco[i][1] * (maxXpixel + 1)], color, pxlbrightness[i]); // order is: bottom left, bottom right, top right, top left
+          fast_color_add(framebuffer[pixco[i][0] + (maxYpixel - pixco[i][1]) * (maxXpixel + 1)], color, pxlbrightness[i]); // order is: bottom left, bottom right, top right, top left
       }
     }
     else {
@@ -848,28 +849,32 @@ void ParticleSystem2D::handleCollisions() {
   // note: partices are binned in x-axis, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
   constexpr uint32_t BIN_WIDTH = 6 * PS_P_RADIUS; // width of a bin in sub-pixels
-  uint32_t maxBinParticles = (usedParticles + 1) / 2; // assume no more than half of the particles are in the same bin
-  uint32_t numBins = (maxX + (BIN_WIDTH -1)) / BIN_WIDTH; // number of bins in x direction
+  uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 2); // assume no more than half of the particles are in the same bin, do not bin small amounts of particles
+  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
-
+  uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
+  
+  // fill the binIndices array for this bin
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
     int32_t binStart = bin * BIN_WIDTH;
     int32_t binEnd = binStart + BIN_WIDTH;
 
     // fill the binIndices array for this bin
-    for (uint32_t i = collisionStartIdx; i < usedParticles; i++) {
-      if (particles[i].ttl > 0 && particleFlags[i].outofbounds == 0 && particleFlags[i].collide) { // colliding particle
-        if (particles[i].x >= binStart && particles[i].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
+    for (uint32_t i = 0; i < usedParticles; i++) {
+      if (particles[pidx].ttl > 0 && particleFlags[pidx].outofbounds == 0 && particleFlags[pidx].collide) { // colliding particle
+        if (particles[pidx].x >= binStart && particles[pidx].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
           if (binParticleCount >= maxBinParticles) { // bin is full, more particles in this bin so do the rest next frame
-            nextFrameStartIdx = i; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
+            nextFrameStartIdx = pidx; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
             break;
           }
-          binIndices[binParticleCount++] = i;
+          binIndices[binParticleCount++] = pidx;
         }
       }
+      pidx++;
+      if (pidx >= usedParticles) pidx = 0; // wrap around
     }
 
     for (uint32_t i = 0; i < binParticleCount; i++) { // go though all 'higher number' particles in this bin and see if any of those are in close proximity and if they are, make them collide
@@ -961,7 +966,7 @@ void ParticleSystem2D::collideParticles(PSparticle &particle1, PSparticle &parti
         else
           particle1.x--;
       }
-      particle1.vx += push; //TODO: what happens if particle2 is also pushed? in 1D it stacks better, maybe also just reverse the comparison order so they flip roles?
+      particle1.vx += push;
       push = 0;
       if (dy < 0)
         push = pushamount;
@@ -1212,7 +1217,7 @@ ParticleSystem1D::ParticleSystem1D(uint32_t length, uint32_t numberofparticles, 
   motionBlur = 0; //no fading by default
   smearBlur = 0; //no smearing by default
   emitIndex = 0;
-
+  collisionStartIdx = 0;
   // initialize some default non-zero values most FX use
   for (uint32_t i = 0; i < numSources; i++) {
     sources[i].source.ttl = 1; //set source alive
@@ -1238,7 +1243,7 @@ void ParticleSystem1D::update(void) {
 
   //move all particles
   for (uint32_t i = 0; i < usedParticles; i++) {
-    particleMoveUpdate(particles[i], particleFlags[i], &particlesettings, advPartProps ? &advPartProps[i] : nullptr);
+    particleMoveUpdate(particles[i], particleFlags[i], nullptr, advPartProps ? &advPartProps[i] : nullptr);
   }
 
   if (particlesettings.colorByPosition) {
@@ -1457,17 +1462,19 @@ void ParticleSystem1D::applyGravity() {
     if (particleFlags[i].reversegrav) dv = -dv_raw;
     // note: not checking if particle is dead is omitted as most are usually alive and if few are alive, rendering is fast anyways
     particles[i].vx = limitSpeed((int32_t)particles[i].vx - dv);
+    particleFlags[i].forcedirection = particleFlags[i].reversegrav; // set force direction flag (for collisions)
   }
 }
 
 // apply gravity to single particle using system settings (use this for sources)
 // function does not increment gravity counter, if gravity setting is disabled, this cannot be used
-void ParticleSystem1D::applyGravity(PSparticle1D &part, bool reverse) {
+void ParticleSystem1D::applyGravity(PSparticle1D &part, PSparticleFlags1D &partFlags) {
   uint32_t counterbkp = gforcecounter;
   int32_t dv = calcForce_dv(gforce, gforcecounter);
-  if (reverse) dv = -dv;
+  if (partFlags.reversegrav) dv = -dv;
   gforcecounter = counterbkp; //save it back
   part.vx = limitSpeed((int32_t)part.vx - dv);
+  partFlags.forcedirection = partFlags.reversegrav; // set force direction flag (for collisions)
 }
 
 
@@ -1504,7 +1511,6 @@ void ParticleSystem1D::ParticleSys_render() {
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
     if(bufferNeedsUpdate) {
       if (globalBlur > 0 || globalSmear > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
-       // Serial.println(" blurring: " + String(globalBlur));
         for (int32_t x = 0; x <= maxXpixel; x++) {
           if (!renderSolo) // sharing the framebuffer with another segment: read buffer back from segment
             framebuffer[x] = SEGMENT.getPixelColor(x); // copy to local buffer
@@ -1513,7 +1519,6 @@ void ParticleSystem1D::ParticleSys_render() {
       }
       else { // no blurring: clear buffer
         memset(framebuffer, 0, frameBufferSize * sizeof(CRGB));
-        //Serial.print(" clearing ");
       }
     }
   }
@@ -1663,30 +1668,40 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
 // detect collisions in an array of particles and handle them
 void ParticleSystem1D::handleCollisions() {
   int32_t collisiondistance = PS_P_MINHARDRADIUS_1D;
-
-  constexpr uint32_t BIN_WIDTH = 32 * PS_P_RADIUS_1D; // width of each bin, 32 pixels gives good results, smaller is slower, larger also gets slower, 48 is also still ok
-  uint32_t maxBinParticles = (usedParticles + 1) / 4; // assume no more than 1/4 of the particles are in the same bin
-  uint32_t numBins = (maxX + 1) / BIN_WIDTH; // calculate number of bins
+  // note: partices are binned by position, assumption is that no more than half of the particles are in the same bin
+  // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
+  constexpr uint32_t BIN_WIDTH = 32 * PS_P_RADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 4); // do not bin small amounts, limit max to 1/2 of particles
+  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // calculate number of bins
   uint16_t binIndices[maxBinParticles]; // array to store indices of particles in a bin
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
-
+  uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
     int32_t binStart = bin * BIN_WIDTH;
     int32_t binEnd = binStart + BIN_WIDTH;
 
     // fill the binIndices array for this bin
-    for (uint32_t i = collisionStartIdx; i < usedParticles; i++) {
-      if (particles[i].ttl > 0 && particleFlags[i].outofbounds == 0 && particleFlags[i].collide) { // colliding particle
-        if (particles[i].x >= binStart && particles[i].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
+    for (uint32_t i = 0; i < usedParticles; i++) {
+      if (particles[pidx].ttl > 0 && particleFlags[pidx].outofbounds == 0 && particleFlags[pidx].collide) { // colliding particle
+        // if gravity is not used and wall bounce is enabled: particles in the first or last bin use fixed force direction (no collapsing, no push inversion)
+        if (!particlesettings.useGravity && particlesettings.bounce) {
+          if (particles[pidx].x < BIN_WIDTH)
+            particleFlags[pidx].forcedirection = false;
+          else if (particles[pidx].x > (maxX - BIN_WIDTH))
+            particleFlags[pidx].forcedirection = true;
+        }
+        if (particles[pidx].x >= binStart && particles[pidx].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
           if (binParticleCount >= maxBinParticles) { // bin is full, more particles in this bin so do the rest next frame
-            nextFrameStartIdx = i; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
+            nextFrameStartIdx = pidx; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
             break;
           }
-          binIndices[binParticleCount++] = i;
+          binIndices[binParticleCount++] = pidx;
         }
       }
+      pidx++;
+      if (pidx >= usedParticles) pidx = 0; // wrap around
     }
 
     for (uint32_t i = 0; i < binParticleCount; i++) { // go though all 'higher number' particles and see if any of those are in close proximity and if they are, make them collide
@@ -1707,15 +1722,14 @@ void ParticleSystem1D::handleCollisions() {
       }
     }
   }
+  collisionStartIdx = nextFrameStartIdx; // set the start index for the next frame
 }
-
 // handle a collision if close proximity is detected, i.e. dx and/or dy smaller than 2*PS_P_RADIUS
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
 void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticleFlags1D &particle1flags, PSparticle1D &particle2, const PSparticleFlags1D &particle2flags, int32_t dx, int32_t relativeVx, uint32_t collisiondistance) {
   int32_t dotProduct = (dx * relativeVx); // is always negative if moving towards each other
   if (dotProduct < 0) { // particles are moving towards each other
     uint32_t surfacehardness = max(collisionHardness, (int32_t)PS_P_MINSURFACEHARDNESS_1D); // if particles are soft, the impulse must stay above a limit or collisions slip through
-    // TODO: if soft collisions are not needed, the above line can be done in set hardness function and skipped here (which is what it currently looks like)
     // Calculate new velocities after collision
     int32_t impulse = relativeVx * surfacehardness / 255;
     particle1.vx += impulse;
@@ -1727,8 +1741,8 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
     else if (particle2flags.fixed)
       particle1.vx = -particle2.vx;
 
-    if (collisionHardness < PS_P_MINSURFACEHARDNESS_1D) { // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and correctly)
-      const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS_1D);
+    if (collisionHardness < PS_P_MINSURFACEHARDNESS_1D) { // if particles are soft, they become 'sticky' i.e. apply some friction
+      const uint32_t coeff = collisionHardness + (250 - PS_P_MINSURFACEHARDNESS_1D);
       particle1.vx = ((int32_t)particle1.vx * coeff) / 255;
       particle2.vx = ((int32_t)particle2.vx * coeff) / 255;
     }
@@ -1738,34 +1752,36 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
   // particles have volume, push particles apart if they are too close
   // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
   // also need to give the top particle some speed to counteract gravity or stacks just collapse
-  if (distance <  collisiondistance) { //particles are too close, push the upper particle away
+  if (distance < collisiondistance) { // particles are too close, push the upper particle away
     int32_t pushamount = 1 + ((collisiondistance - distance) >> 1); //add half the remaining distance note: this works best, if less or more is added, it gets more chaotic
-    //int32_t pushamount = collisiondistance - distance;
-    if (particlesettings.useGravity) { //using gravity, push the 'upper' particle only
-      if (dx < 0) { // particle2.x < particle1.x
-      if (particle2flags.reversegrav && !particle2flags.fixed) {
+
+  // Only force-push if particles use gravity or are not really close or are in the outer quarter of the strip
+  if (particlesettings.bounce && (particlesettings.useGravity || distance > 3 || particle1.x < (maxX >> 2) || particle1.x > (maxX - (maxX >> 2)))) {
+    // use force direction flag to push the 'upper' particle only, avoids stack-collapse
+    if (dx < 0) { // particle2.x < particle1.x, dx = p2.x - p1.x
+      if (particle2flags.forcedirection && !particle2flags.fixed) {
         particle2.x -= pushamount;
         particle2.vx--;
-      } else if (!particle1flags.reversegrav && !particle1flags.fixed) {
+      } else if (!particle1flags.forcedirection && !particle1flags.fixed) {
         particle1.x += pushamount;
         particle1.vx++;
       }
-      } else {
-      if (particle1flags.reversegrav && !particle1flags.fixed) {
+    } else { // particle1.x < particle2.x, dx = p2.x - p1.x
+      if (particle1flags.forcedirection && !particle1flags.fixed) {
         particle1.x -= pushamount;
         particle1.vx--;
-      } else if (!particle2flags.reversegrav && !particle2flags.fixed) {
+      } else if (!particle2flags.forcedirection && !particle2flags.fixed) {
         particle2.x += pushamount;
         particle2.vx++;
       }
-      }
     }
-    else { //not using gravity, push both particles by applying a little velocity (like in 2D system), results in much nicer stacking when applying forces
-      pushamount = 1;
-      if (dx < 0)  // particle2.x < particle1.x
-        pushamount = -1;
-      particle1.vx -= pushamount;
-      particle2.vx += pushamount;
+  }
+  else { // no wall bounce, not using gravity, push both particles by applying a little velocity (like in 2D system)
+    pushamount = 2;
+    if (dx < 0)  // particle2.x < particle1.x
+      pushamount = -pushamount;
+    particle1.vx -= pushamount;
+    particle2.vx += pushamount;
     }
   }
 }
@@ -2199,6 +2215,9 @@ partMem* getPartMem(void) { // TODO: maybe there is a better/faster way than usi
 void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer, bool initialize) {
   PSPRINTLN("updateRenderingBuffer");
   uint16_t& targetBufferSize = isFramebuffer ? frameBufferSize : renderBufferSize; // corresponding buffer size
+  
+  //if(isFramebuffer) return; // debug only: disable frame-buffer buffer
+
   if(targetBufferSize < requiredpixels) { // check current buffer size
     CRGB** targetBuffer = isFramebuffer ? &framebuffer : &renderbuffer; // pointer to target buffer
     if(*targetBuffer || initialize) { // update only if initilizing or if buffer exists (prevents repeatet allocation attempts if initial alloc failed)
@@ -2261,16 +2280,13 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
   #endif
 
   if(height) { // is 2D, 1D passes height = 0
-    int32_t yflipped;
-    height--; // height is number of pixels, convert to array index
-    for (uint32_t y = 0; y <= height; y++) {
-      yflipped = height - y;
+    for (uint32_t y = 0; y < height; y++) {
       int index = y * width; // current row index for 1D buffer
       for (uint32_t x = 0; x < width; x++) {
         CRGB *c = &framebuffer[index++];
         uint32_t clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color
         if(useAdditiveTransfer) {
-          uint32_t segmentcolor = SEGMENT.getPixelColorXY((int)x, (int)yflipped);
+          uint32_t segmentcolor = SEGMENT.getPixelColorXY((int)x, (int)y);
           CRGB segmentRGB = CRGB(segmentcolor);
           if(clr == 0) // frame buffer is black, just update the framebuffer
             *c = segmentRGB;
@@ -2279,12 +2295,12 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
               fast_color_add(*c, segmentRGB); // add segment color back to buffer if not black
               clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again) TODO: could convert first, then use 32bit adding function color_add() from colors.cpp
             }
-            SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr); // save back to segment after adding local buffer
+            SEGMENT.setPixelColorXY((int)x, (int)y, clr); // save back to segment after adding local buffer
           }
         }
         //if(clr > 0) // not black  TODO: not transferring black is faster and enables overlay, but requires proper handling of buffer clearing, which is quite complex and probably needs a change to SEGMENT handling.
         else
-          SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr);
+          SEGMENT.setPixelColorXY((int)x, (int)y, clr);
       }
     }
   } else { // 1D system

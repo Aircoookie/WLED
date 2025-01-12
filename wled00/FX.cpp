@@ -7782,16 +7782,15 @@ static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation S
 uint16_t mode_particlefireworks(void) {
   ParticleSystem2D *PartSys = NULL;
   uint32_t numRockets;
-  uint32_t i, j;
 
   if (SEGMENT.call == 0) { // initialization
-    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES, true))
+    if (!initParticleSystem2D(PartSys, NUMBEROFSOURCES))
       return mode_static(); // allocation failed
 
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
     PartSys->setWallHardness(120); // ground bounce is fixed
     numRockets = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
-    for (j = 0; j < numRockets; j++) {
+    for (uint32_t j = 0; j < numRockets; j++) {
       PartSys->sources[j].source.ttl = 500 * j; // first rocket starts immediately, others follow soon
       PartSys->sources[j].source.vy = -1; // at negative speed, no particles are emitted and if rocket dies, it will be relaunched
     }
@@ -7815,7 +7814,7 @@ uint16_t mode_particlefireworks(void) {
   PartSys->setSmearBlur(smearing); // enable 2D blurring (smearing)
 
   // update the rockets, set the speed state
-  for (j = 0; j < numRockets; j++) {
+  for (uint32_t j = 0; j < numRockets; j++) {
       PartSys->applyGravity(PartSys->sources[j].source);
       PartSys->particleMoveUpdate(PartSys->sources[j].source, PartSys->sources[j].sourceFlags);
       if (PartSys->sources[j].source.ttl == 0) {
@@ -7847,7 +7846,7 @@ uint16_t mode_particlefireworks(void) {
   bool circularexplosion = false;
 
   // emit particles for each rocket
-  for (j = 0; j < numRockets; j++) {
+  for (uint32_t j = 0; j < numRockets; j++) {
     // determine rocket state by its speed:
     if (PartSys->sources[j].source.vy > 0) { // moving up, emit exhaust
       emitparticles = 1;
@@ -7869,8 +7868,7 @@ uint16_t mode_particlefireworks(void) {
       emitparticles = hw_random16(SEGMENT.intensity >> 2) + (SEGMENT.intensity >> 2) + 5; // defines the size of the explosion
       #endif
 
-      if (random16() & 1)
-      { // 50% chance for circular explosion
+      if (random16() & 1) { // 50% chance for circular explosion
         circularexplosion = true;
         speed = 2 + hw_random16(3) + ((SEGMENT.intensity >> 6));
         currentspeed = speed;
@@ -7885,8 +7883,8 @@ uint16_t mode_particlefireworks(void) {
         PartSys->sources[j].var = angle & 1; // 0 or 1 variation, angle is random
       }
     }
-
-    for (i = 0; i < emitparticles; i++) {
+    uint32_t i = 0;
+    for (i; i < emitparticles; i++) {
       if (circularexplosion) {
         int32_t sineMod = 0xEFFF + sin16_t((uint16_t)(((angle * frequency) >> 4) + baseangle)); // shifted to positive values
         currentspeed = (speed/2 + ((sineMod * speed) >> 16)) >> 1; // sine modulation on speed based on emit angle
@@ -7911,12 +7909,16 @@ uint16_t mode_particlefireworks(void) {
       PartSys->sources[j].source.y = 1000; // reset position so gravity wont pull it to the ground and bounce it (vy MUST stay negative until relaunch)
     circularexplosion = false; // reset for next rocket
   }
-
+  if(SEGMENT.check3) { // fast speed, move particles twice
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+      PartSys->particleMoveUpdate(PartSys->particles[i], PartSys->particleFlags[i], nullptr, nullptr);
+    }
+  }
   PartSys->update(); // update and render
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,;;!;2;pal=11,sx=100,ix=50,c1=84,c2=0,c3=12";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,sx=100,ix=50,c1=40,c2=0,c3=12";
 
 /*
  * Particle Volcano
@@ -7992,9 +7994,9 @@ uint16_t mode_particlevolcano(void) {
 static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,Intensity,Move,Bounce,Spread,AgeColor,Walls,Collide;;!;2;pal=35,sx=100,ix=190,c1=0,c2=160,c3=6,o1=1";
 
 /*
-* Particle Fire
-* realistic fire effect using particles. heat based and using perlin-noise for wind
-* by DedeHai (Damian Schneider)
+  Particle Fire
+  realistic fire effect using particles. heat based and using perlin-noise for wind
+  by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlefire(void) {
   ParticleSystem2D *PartSys = NULL;
@@ -8083,11 +8085,11 @@ uint16_t mode_particlefire(void) {
 static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensity,Flame Height,Wind,Spread,Smooth,Cylinder,Turbulence;;!;2;pal=35,sx=110,c1=110,c2=50,c3=31,o1=1";
 
 /*
-PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
-sliders control falling speed, intensity (number of particles spawned), inter-particle collision hardness (0 means no particle collisions) and render saturation
-this is quite versatile, can be made to look like rain or snow or confetti etc.
-Uses palette for particle color
-by DedeHai (Damian Schneider)
+  PS Ballpit: particles falling down, user can enable these three options: X-wraparound, side bounce, ground bounce
+  sliders control falling speed, intensity (number of particles spawned), inter-particle collision hardness (0 means no particle collisions) and render saturation
+  this is quite versatile, can be made to look like rain or snow or confetti etc.
+  Uses palette for particle color
+  by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlepit(void) {
   ParticleSystem2D *PartSys = NULL;
@@ -8155,10 +8157,10 @@ uint16_t mode_particlepit(void) {
 static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intensity,Size,Hardness,Saturation,Cylinder,Walls,Ground;;!;2;pal=11,sx=100,ix=220,c1=120,c2=130,c3=31,o3=1";
 
 /*
- * Particle Waterfall
- * Uses palette for particle color, spray source at top emitting particles, many config options
- * by DedeHai (Damian Schneider)
- */
+  Particle Waterfall
+  Uses palette for particle color, spray source at top emitting particles, many config options
+  by DedeHai (Damian Schneider)
+*/
 uint16_t mode_particlewaterfall(void) {
   ParticleSystem2D *PartSys = NULL;
   uint8_t numSprays;
@@ -8227,9 +8229,9 @@ uint16_t mode_particlewaterfall(void) {
 static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Speed,Intensity,Variation,Collide,Position,Cylinder,Walls,Ground;;!;2;pal=9,sx=15,ix=200,c1=32,c2=160,o3=1";
 
 /*
-Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
-Uses palette for particle color
-by DedeHai (Damian Schneider)
+  Particle Box, applies gravity to particles in either a random direction or random but only downwards (sloshing)
+  Uses palette for particle color
+  by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlebox(void) {
   ParticleSystem2D *PartSys = NULL;
@@ -8308,9 +8310,9 @@ uint16_t mode_particlebox(void) {
 static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,Tilt Strength,Hardness,Friction,Random,Washing Machine,Sloshing;;!;2;pal=53,sx=120,ix=100,c1=100,c2=210,o1=1";
 
 /*
-Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
-calculates slope gradient at the particle positions and applies 'downhill' force, resulting in a fuzzy perlin noise display
-by DedeHai (Damian Schneider)
+  Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
+  calculates slope gradient at the particle positions and applies 'downhill' force, resulting in a fuzzy perlin noise display
+  by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleperlin(void) {
   ParticleSystem2D *PartSys = NULL;
@@ -8370,9 +8372,9 @@ uint16_t mode_particleperlin(void) {
 static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed,Particles,Bounce,Friction,Scale,Cylinder,Smear,Collide;;!;2;pal=64,sx=50,ix=200,c1=130,c2=30,c3=5,o3=1";
 
 /*
- * Particle smashing down like meteors and exploding as they hit the ground, has many parameters to play with
- * by DedeHai (Damian Schneider)
- */
+  Particle smashing down like meteors and exploding as they hit the ground, has many parameters to play with
+  by DedeHai (Damian Schneider)
+*/
 #define NUMBEROFSOURCES 8
 uint16_t mode_particleimpact(void) {
   ParticleSystem2D *PartSys = NULL;
@@ -8492,7 +8494,6 @@ uses inverse square law like in planetary motion
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleattractor(void) {
   ParticleSystem2D *PartSys = NULL;
   PSsettings2D sourcesettings;
@@ -8602,7 +8603,6 @@ Particle Spray, just a particle spray with many parameters
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particlespray(void) {
   ParticleSystem2D *PartSys = NULL;
   //uint8_t numSprays;
@@ -8689,7 +8689,6 @@ Particle base Graphical Equalizer
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleGEQ(void) {
   ParticleSystem2D *PartSys = NULL;
 
@@ -8759,15 +8758,14 @@ uint16_t mode_particleGEQ(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS 2D GEQ@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0";
+static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS GEQ 2D@Speed,Intensity,Diverge,Bounce,Gravity,Cylinder,Walls,Floor;;!;2f;pal=0,sx=155,ix=200,c1=0";
 
 /*
- * Particle rotating GEQ (unfinished, basically works but needs more fine-tuning)
- * Particles sprayed from center with a rotating spray
+ * Particle rotating GEQ
+ * Particles sprayed from center with rotating spray
  * Uses palette for particle color
  * by DedeHai (Damian Schneider)
  */
-
 #define NUMBEROFSOURCES 16
 uint16_t mode_particlecenterGEQ(void) {
   ParticleSystem2D *PartSys = NULL;
@@ -8815,7 +8813,7 @@ uint16_t mode_particlecenterGEQ(void) {
     if (SEGMENT.call % (32 - (SEGMENT.custom2 >> 3)) == 0 && SEGMENT.custom2 > 0)
       PartSys->sources[j].source.hue += 1 + (SEGMENT.custom2 >> 4);
 
-    PartSys->sources[j].var = SEGMENT.custom3 >> 1;
+    PartSys->sources[j].var = SEGMENT.custom3 >> 2;
     int8_t emitspeed = 5 + (((uint32_t)fftResult[j] * ((uint32_t)SEGMENT.speed + 20)) >> 10); // emit speed according to loudness of band
     uint16_t emitangle = j * angleoffset + SEGENV.aux0;
 
@@ -8835,7 +8833,7 @@ uint16_t mode_particlecenterGEQ(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS Center GEQ@Speed,Intensity,Rotation Speed,Color Change,Nozzle,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
+static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS GEQ Nova@Speed,Intensity,Rotation Speed,Color Change,Nozzle,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
 
 /*
 Particle replacement of Ghost Rider by DedeHai (Damian Schneider), original by stepko adapted by Blaz Kristan (AKA blazoncek)
@@ -8922,7 +8920,6 @@ PS Blobs: large particles bouncing around, changing size and form
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleblobs(void) {
   ParticleSystem2D *PartSys = NULL;
 
@@ -9000,7 +8997,6 @@ static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,
  * particles move, then split to form a fractal tree EXPERIMENTAL and non working!
  * by DedeHai (Damian Schneider)
  */
-
 uint16_t mode_particlefractal(void) {
   ParticleSystem2D *PartSys = NULL;
   uint32_t i;
@@ -9060,7 +9056,6 @@ uint16_t mode_particlefractal(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-
 static const char _data_FX_MODE_PARTICLEFRACTAL[] PROGMEM = "PS fractal (exp)@Speed,Intensity,Base angle,branch angle,Blur,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
 
 #endif //WLED_DISABLE_PARTICLESYSTEM2D
@@ -9078,7 +9073,6 @@ Particle Drip replacement, also replaces Rain
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleDrip(void) {
   ParticleSystem1D *PartSys = NULL;
   //uint8_t numSprays;
@@ -9184,7 +9178,6 @@ Also replaces rolling balls and juggle (and maybe popcorn)
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleBouncingBalls(void) {
   ParticleSystem1D *PartSys = NULL;
 
@@ -9274,7 +9267,6 @@ By Steve Pomeroy @xxv"
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleDancingShadows(void) {
   ParticleSystem1D *PartSys = NULL;
 
@@ -9391,7 +9383,6 @@ Particle Fireworks 1D replacement
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleFireworks1D(void) {
   ParticleSystem1D *PartSys = NULL;
   uint8_t *forcecounter;
@@ -9400,7 +9391,7 @@ uint16_t mode_particleFireworks1D(void) {
     if (!initParticleSystem1D(PartSys, 4, 150, 4, true)) // init
       return mode_static(); // allocation failed or is single pixel
     PartSys->setKillOutOfBounds(true);
-    PartSys->sources[0].sourceFlags.perpetual = 1; // set rocket state to standby
+    PartSys->sources[0].sourceFlags.custom1 = 1; // set rocket state to standby
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9455,7 +9446,7 @@ uint16_t mode_particleFireworks1D(void) {
       rocketgravity = -rocketgravity;
       speed = -speed;
     }
-    PartSys->applyForce(PartSys->sources[0].source, rocketgravity, forcecounter[0]);
+    PartSys->applyForce(PartSys->sources[0].source, PartSys->sources[0].sourceFlags, rocketgravity, forcecounter[0]);
     PartSys->particleMoveUpdate(PartSys->sources[0].source, PartSys->sources[0].sourceFlags);
     PartSys->particleMoveUpdate(PartSys->sources[0].source, PartSys->sources[0].sourceFlags); // increase speed by calling the move function twice, also ages twice
     uint32_t rocketheight = SEGENV.aux0 ? PartSys->maxX - PartSys->sources[0].source.x : PartSys->sources[0].source.x;
@@ -9480,7 +9471,7 @@ uint16_t mode_particleFireworks1D(void) {
       }
     }
   }
-  if((SEGMENT.call & 0x01) == 0 && PartSys->sources[0].sourceFlags.perpetual == false) // every second frame and not in standby
+  if((SEGMENT.call & 0x01) == 0 && PartSys->sources[0].sourceFlags.custom1 == false) // every second frame and not in standby
     PartSys->sprayEmit(PartSys->sources[0]); // emit exhaust particle
   if((SEGMENT.call & 0x03) == 0) // every fourth frame
     PartSys->applyFriction(1); // apply friction to all particles
@@ -9501,7 +9492,6 @@ Particle based Sparkle effect
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleSparkler(void) {
   ParticleSystem1D *PartSys = NULL;
   uint32_t numSparklers;
@@ -9565,12 +9555,12 @@ uint16_t mode_particleSparkler(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+
 /*
 Particle based Hourglass, particles falling at defined intervals
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleHourglass(void) {
   ParticleSystem1D *PartSys = NULL;
   int32_t positionoffset; // resting position offset
@@ -9595,41 +9585,46 @@ uint16_t mode_particleHourglass(void) {
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, 255));
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, 1, 30));
-  PartSys->enableParticleCollisions(true, 34); // fixed hardness, 34 is a value that works best in most settings (spent a long time optimizing)   SEGMENT.custom1);
+  PartSys->enableParticleCollisions(true, 34); // fixed hardness, 34 is a value that works best in most settings (spent a long time optimizing)
 
   positionoffset = PS_P_RADIUS_1D / 2;
   uint32_t colormode = SEGMENT.custom1 >> 5; // 0-7
 
-  if((SEGMENT.intensity | (PartSys->getAvailableParticles() << 8)) != SEGENV.step) { //initialize, getAvailableParticles changes while in FX transition
+  if((SEGMENT.intensity | (PartSys->getAvailableParticles() << 8)) != SEGENV.step) { // initialize, getAvailableParticles changes while in FX transition
     if(PartSys->getAvailableParticles() == SEGENV.step >> 8) // only intensity slider changed or first call
       *basehue = hw_random16(); //choose new random color
     SEGENV.step = SEGMENT.intensity | (PartSys->getAvailableParticles() << 8);
     for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particleFlags[i].reversegrav = true;
       *direction = 0;
-      SEGENV.aux1 = 1; //initialize below
+      SEGENV.aux1 = 1; // initialize below
     }
-    SEGENV.aux0 = PartSys->usedParticles - 1; //initial state, start with highest number particle
+    SEGENV.aux0 = PartSys->usedParticles - 1; // initial state, start with highest number particle
   }
 
-  for(uint32_t i = 0; i < PartSys->usedParticles; i++) { //check if particle reached target position after falling
+  for(uint32_t i = 0; i < PartSys->usedParticles; i++) { // check if particle reached target position after falling
     int32_t targetposition;
     if (PartSys->particleFlags[i].fixed == false) {
-      //calculate target position depending on direction
-      if(PartSys->particleFlags[i].reversegrav)
+      // calculate target position depending on direction
+      if(PartSys->particleFlags[i].reversegrav) {
         targetposition = PartSys->maxX - (i * PS_P_RADIUS_1D + positionoffset); // target resting position
-      else
+        if(PartSys->particles[i].x >= targetposition) // particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
+          PartSys->particleFlags[i].fixed = true;
+      }
+      else {
         targetposition = (PartSys->usedParticles - i) * PS_P_RADIUS_1D - positionoffset; // target resting position
-      if(PartSys->particles[i].x == targetposition) //particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
-        PartSys->particleFlags[i].fixed = true;
+        if(PartSys->particles[i].x <= targetposition) // particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
+          PartSys->particleFlags[i].fixed = true;
+      }
+
     }
     if(colormode == 7)
-      PartSys->setColorByPosition(true); //color fixed by position
+      PartSys->setColorByPosition(true); // color fixed by position
     else {
       PartSys->setColorByPosition(false);
       switch(colormode) {
-        case 0: PartSys->particles[i].hue = 120; break; //fixed at 120, if flip is activated, this can make red and green (use palette 34)
-        case 1: PartSys->particles[i].hue = *basehue; break; //fixed random color
+        case 0: PartSys->particles[i].hue = 120; break; // fixed at 120, if flip is activated, this can make red and green (use palette 34)
+        case 1: PartSys->particles[i].hue = *basehue; break; // fixed random color
         case 2:
         case 3: PartSys->particles[i].hue = *basehue + (i % colormode)*70; break; // interleved colors (every 2 or 3 particles)
         case 4: PartSys->particles[i].hue = *basehue + (i * 255) / PartSys->usedParticles;  break; // gradient palette colors
@@ -9642,7 +9637,7 @@ uint16_t mode_particleHourglass(void) {
       PartSys->particles[i].hue += 120;
   }
 
-  if(SEGENV.aux1 == 1) { //last countdown call before dropping starts, reset all particles
+  if(SEGENV.aux1 == 1) { // last countdown call before dropping starts, reset all particles
     for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particleFlags[i].collide = true;
       PartSys->particleFlags[i].perpetual = true;
@@ -9659,31 +9654,31 @@ uint16_t mode_particleHourglass(void) {
     }
   }
 
-  if(SEGENV.aux1 == 0) { //countdown passed, run
+  if(SEGENV.aux1 == 0) { // countdown passed, run
     uint32_t interval = 257 - SEGMENT.speed; // drop interval in frames, 1 second is 'speed = (257 - FPS)' speed = 0 is one drop every 257 frames
     if(SEGMENT.check3 && *direction) // fast reset
       interval = 3;
-    if(SEGMENT.call % interval == 0) { //drop a particle, do not drop more often than every second frame or particles tangle up quite badly
+    if(SEGMENT.call % interval == 0) { // drop a particle, do not drop more often than every second frame or particles tangle up quite badly
       if(SEGENV.aux0 < PartSys->usedParticles) {
-        PartSys->particleFlags[SEGENV.aux0].reversegrav = *direction; //let this particle fall or rise
+        PartSys->particleFlags[SEGENV.aux0].reversegrav = *direction; // let this particle fall or rise
         PartSys->particleFlags[SEGENV.aux0].fixed = false; // unpin
       }
-      else { //overflow, flip direction
+      else { // overflow, flip direction
           *direction = !(*direction);
-          SEGENV.aux1 = 300; //set countdown
+          SEGENV.aux1 = SEGMENT.virtualLength() + 100; // set countdown
       }
-      if(*direction == 0) //down
+      if(*direction == 0) // down
         SEGENV.aux0--;
       else
         SEGENV.aux0++;
     }
   }
-  else if(SEGMENT.check2) //auto reset
-    SEGENV.aux1--; //countdown
+  else if(SEGMENT.check2) // auto reset
+    SEGENV.aux1--; // countdown
 
  //if(SEGMENT.call % (SEGMENT.speed >> 5) == 0) //more friction on higher falling rate to keep particles behaved
  //if(SEGMENT.call % 6 == 0)
-   //PartSys->applyFriction(1); //keeps particles calm and stops mass collisions being handled improperly due to chaos
+   //PartSys->applyFriction(1); //keeps particles calm and stops mass collisions being handled improperly due to chaos  TODO: can this be removed? seems to work fine without.
 
   PartSys->update(); // update and render
 
@@ -9696,7 +9691,6 @@ Particle based Spray effect (like a volcano, possible replacement for popcorn)
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particle1Dspray(void) {
   ParticleSystem1D *PartSys = NULL;
 
@@ -9741,22 +9735,23 @@ uint16_t mode_particle1Dspray(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur,Gravity,AgeColor,Bounce,Position Color;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
+
 /*
 Particle based balance: particles move back and forth (1D pendent to 2D particle box)
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleBalance(void) {
   ParticleSystem1D *PartSys = NULL;
   uint32_t i;
 
   if (SEGMENT.call == 0) { // initialization
-    if (!initParticleSystem1D(PartSys, 1)) // init, no additional data needed
+    if (!initParticleSystem1D(PartSys, 1, 128)) // init, no additional data needed, use half of max particles
       return mode_static(); // allocation failed or is single pixel
     //PartSys->setKillOutOfBounds(true);
     PartSys->setParticleSize(1);
     SEGENV.aux0 = 0;
+    SEGENV.aux1 = 0; //TODO: really need to set to zero or is it calloc'd?
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9768,10 +9763,8 @@ uint16_t mode_particleBalance(void) {
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   PartSys->setBounce(!SEGMENT.check2);
   PartSys->setWrap(SEGMENT.check2);
-  uint8_t hardness = map(SEGMENT.custom1, 0, 255, 50, 250);
+  uint8_t hardness = SEGMENT.custom1 > 0 ? map(SEGMENT.custom1, 0, 255, 50, 250) : 200; // set hardness,  make the walls hard if collisions are disabled
   PartSys->enableParticleCollisions(SEGMENT.custom1, hardness); // enable collisions if custom1 > 0
-  if(SEGMENT.custom1 == 0) //collisions disabled, make the walls hard
-    hardness = 200;
   PartSys->setWallHardness(hardness);
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, 255));
   if(PartSys->usedParticles > SEGENV.aux1) { // more particles, reinitialize
@@ -9794,12 +9787,16 @@ uint16_t mode_particleBalance(void) {
     else // sinusoidal
       xgravity = (int16_t)cos8(SEGENV.aux0) - 128;//((int32_t)(SEGMENT.custom3 << 2) * cos8(SEGENV.aux0)
     // scale the force
-    xgravity = (xgravity * ((SEGMENT.custom3+1) << 2)) / 128;
+    xgravity = (xgravity * ((SEGMENT.custom3+1) << 2)) / 128; // xgravity: -127 to +127
     PartSys->applyForce(xgravity);
   }
 
   uint32_t randomindex = hw_random16(PartSys->usedParticles);
   PartSys->particles[randomindex].vx = ((int32_t)PartSys->particles[randomindex].vx * 200) / 255;  // apply friction to random particle to reduce clumping (without collisions)
+
+  //if(SEGMENT.check2 && (SEGMENT.call & 0x07) == 0) // no walls, apply friction to smooth things out
+  if((SEGMENT.call & 0x0F) == 0) // apply friction every 16th frame to smooth things out
+    PartSys->applyFriction(1); // apply friction to all particles
 
   //update colors
   PartSys->setColorByPosition(SEGMENT.check1);
@@ -9811,7 +9808,7 @@ uint16_t mode_particleBalance(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Collide,Blur,Tilt,Position Color,Wrap,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Hardness,Blur,Tilt,Position Color,Wrap,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
 
 /*
 Particle based Chase effect
@@ -10054,7 +10051,7 @@ uint16_t mode_particle1DGEQ(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS 1D GEQ@Speed,!,Size,Blur,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS GEQ 1D@Speed,!,Size,Blur,,,,;,!;!;1f;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
 
 /*
 Particle based Fire effect

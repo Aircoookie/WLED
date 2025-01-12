@@ -173,15 +173,13 @@ bool IRAM_ATTR_YN Segment::allocateData(size_t len) {
 
 void IRAM_ATTR_YN Segment::deallocateData() {
   if (!data) { _dataLen = 0; return; }
-  Serial.printf(PSTR("---  Released data (%p): %d/%d -> %p\n"), this, _dataLen, Segment::getUsedSegmentData(), data);
+  //DEBUG_PRINTF_P(PSTR("---  Released data (%p): %d/%d -> %p\n"), this, _dataLen, Segment::getUsedSegmentData(), data);
   if ((Segment::getUsedSegmentData() > 0) && (_dataLen > 0)) { // check that we don't have a dangling / inconsistent data pointer
-    Serial.println("releasing segment data");
     free(data);
   } else {
     DEBUG_PRINTF_P(PSTR("---- Released data (%p): inconsistent UsedSegmentData (%d/%d), cowardly refusing to free nothing.\n"), this, _dataLen, Segment::getUsedSegmentData());
   }
   data = nullptr;
-  Serial.println("reducing used data by" + String(_dataLen));
   Segment::addUsedSegmentData(_dataLen <= Segment::getUsedSegmentData() ? -_dataLen : -Segment::getUsedSegmentData());
   _dataLen = 0;
 }

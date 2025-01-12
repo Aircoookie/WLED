@@ -116,7 +116,7 @@ typedef struct { // 2 bytes
 } PSadvancedParticle;
 
 // struct for advanced particle size control (option)
-typedef struct { // 7 bytes
+typedef struct { // 8 bytes
   uint8_t asymmetry; // asymmetrical size (0=symmetrical, 255 fully asymmetric)
   uint8_t asymdir; // direction of asymmetry, 64 is x, 192 is y (0 and 128 is symmetrical)
   uint8_t maxsize; // target size for growing
@@ -133,7 +133,7 @@ typedef struct { // 7 bytes
 } PSsizeControl;
 
 
-//struct for a particle source (17 bytes)
+//struct for a particle source (20 bytes)
 typedef struct {
   uint16_t minLife; // minimum ttl of emittet particles
   uint16_t maxLife; // maximum ttl of emitted particles
@@ -252,9 +252,9 @@ bool allocateParticleSystemMemory2D(const uint32_t numparticles, const uint32_t 
 // memory allocation
 #define ESP8266_MAXPARTICLES_1D 450
 #define ESP8266_MAXSOURCES_1D 16
-#define ESP32S2_MAXPARTICLES_1D 1600
+#define ESP32S2_MAXPARTICLES_1D 1300
 #define ESP32S2_MAXSOURCES_1D 32
-#define ESP32_MAXPARTICLES_1D 3200
+#define ESP32_MAXPARTICLES_1D 2600
 #define ESP32_MAXSOURCES_1D 64
 
 // particle dimensions (subpixel division)
@@ -262,8 +262,8 @@ bool allocateParticleSystemMemory2D(const uint32_t numparticles, const uint32_t 
 #define PS_P_HALFRADIUS_1D (PS_P_RADIUS_1D >> 1)
 #define PS_P_RADIUS_SHIFT_1D 5 // 1 << PS_P_RADIUS_SHIFT = PS_P_RADIUS
 #define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
-#define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius
-#define PS_P_MINSURFACEHARDNESS_1D 50 // minimum hardness used in collision impulse calculation
+#define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius note: do not change or hourglass effect will be broken
+#define PS_P_MINSURFACEHARDNESS_1D 60 // minimum hardness used in collision impulse calculation
 
 // struct for PS settings (shared for 1D and 2D class)
 typedef union {
@@ -296,10 +296,10 @@ typedef union {
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
     bool reversegrav : 1; // if set, gravity is reversed on this particle
+    bool forcedirection : 1; // direction the force was applied, 1 is positive x-direction (used for collision stacking, similar to reversegrav)
     bool fixed : 1; // if set, particle does not move (and collisions make other particles revert direction),
     bool custom1 : 1; // unused custom flags, can be used by FX to track particle states
     bool custom2 : 1;
-    bool custom3 : 1;
   };
   byte asByte; // access as a byte, order is: LSB is first entry in the list above
 } PSparticleFlags1D;
@@ -311,7 +311,7 @@ typedef struct {
   uint8_t forcecounter;
 } PSadvancedParticle1D;
 
-//struct for a particle source (16 bytes)
+//struct for a particle source (20 bytes)
 typedef struct {
   uint16_t minLife; // minimum ttl of emittet particles
   uint16_t maxLife; // maximum ttl of emitted particles
@@ -321,6 +321,7 @@ typedef struct {
   int8_t v; // emitting speed
   uint8_t sat; // color saturation (advanced property)
   uint8_t size; // particle size (advanced property)
+  // note: there is 3 bytes of padding added here
 } PSsource1D;
 
 class ParticleSystem1D
@@ -334,9 +335,9 @@ public:
   int32_t sprayEmit(const PSsource1D &emitter);
   void particleMoveUpdate(PSparticle1D &part, PSparticleFlags1D &partFlags, PSsettings1D *options = NULL, PSadvancedParticle1D *advancedproperties = NULL); // move function
   //particle physics
-  void applyForce(PSparticle1D &part, const int8_t xforce, uint8_t &counter); //apply a force to a single particle
+  void applyForce(PSparticle1D &part, PSparticleFlags1D &partFlags, const int8_t xforce, uint8_t &counter); //apply a force to a single particle
   void applyForce(const int8_t xforce); // apply a force to all particles
-  void applyGravity(PSparticle1D &part,const bool reverse); // applies gravity to single particle (use this for sources)
+  void applyGravity(PSparticle1D &part, PSparticleFlags1D &partFlags); // applies gravity to single particle (use this for sources)
   void applyFriction(const int32_t coefficient); // apply friction to all used particles
   // set options
   void setUsedParticles(const uint8_t percentage); // set the percentage of particles used in the system, 255=100%
