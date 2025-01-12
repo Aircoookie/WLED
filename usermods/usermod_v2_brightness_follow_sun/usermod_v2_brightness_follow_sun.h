@@ -70,7 +70,7 @@ public:
     if (!enabled || strip.isUpdating())
       return;
 
-    if (millis() - lastUMRun > update_interval_ms)
+    if (millis() - lastUMRun < update_interval_ms)
       return;
     lastUMRun = millis();
 
