@@ -37,7 +37,7 @@
   uint8_t  *fftResult = nullptr;
   float    *fftBin = nullptr;
   um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     volumeSmth    = *(float*)   um_data->u_data[0];
     volumeRaw     = *(float*)   um_data->u_data[1];
     fftResult     =  (uint8_t*) um_data->u_data[2];
@@ -8570,7 +8570,7 @@ uint16_t mode_particleattractor(void) {
   uint32_t strength = SEGMENT.speed;
   #ifdef USERMOD_AUDIOREACTIVE
   um_data_t *um_data;
-  if(usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if(UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     uint32_t volumeSmth = (uint32_t)(*(float*) um_data->u_data[0]); // 0-255
     strength = (SEGMENT.speed * volumeSmth) >> 8;
   }
@@ -8634,7 +8634,7 @@ uint16_t mode_particlespray(void) {
 
   #ifdef USERMOD_AUDIOREACTIVE
   um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     uint32_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]); //0 to 255
     uint32_t volumeRaw    = *(int16_t*)um_data->u_data[1]; //0 to 255
     PartSys->sources[0].minLife = 30;
@@ -8704,7 +8704,7 @@ uint16_t mode_particleGEQ(void) {
   PartSys->setGravity(SEGMENT.custom3 << 2); // set gravity strength
 
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
     um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
 
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
@@ -8786,7 +8786,7 @@ uint16_t mode_particlecenterGEQ(void) {
   numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
 
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
     um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
 
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
@@ -8966,7 +8966,7 @@ uint16_t mode_particleblobs(void) {
 
   #ifdef USERMOD_AUDIOREACTIVE
   um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     uint8_t volumeSmth = (uint8_t)(*(float*)um_data->u_data[0]);
     for (uint32_t i = 0; i < PartSys->usedParticles; i++) { // update particles
       if (SEGMENT.check3) //pulsate selected
@@ -10007,7 +10007,7 @@ uint16_t mode_particle1DGEQ(void) {
   }
 
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
     um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
 
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
@@ -10141,7 +10141,7 @@ uint16_t mode_particle1Dsonicstream(void) {
 
   // FFT processing
   um_data_t *um_data;
-  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
+  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
     um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
 
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
