@@ -1259,6 +1259,7 @@ void WS2812FX::finalizeInit() {
     #endif
       mem += BusManager::memUsage(*busConfigs[i]); // includes global buffer
     if (mem <= MAX_LED_MEMORY) BusManager::add(*busConfigs[i]);
+    else DEBUG_PRINTF_P(PSTR("Out of LED memory! Bus #%u not created."), i);
     delete busConfigs[i];
     busConfigs[i] = nullptr;
   }
