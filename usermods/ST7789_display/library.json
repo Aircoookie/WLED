@@ -1,9 +1,3 @@
 {
-  "name:": "ST7789_display",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  }
+  "name:": "ST7789_display"
 }

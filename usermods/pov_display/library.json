@@ -1,11 +1,5 @@
 {
   "name:": "pov_display",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  },
   "dependencies": {
     "bitbank2/PNGdec":"^1.0.3"
   }

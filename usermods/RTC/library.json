@@ -1,9 +1,3 @@
 {
-  "name:": "RTC",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  }
+  "name:": "RTC"
 }

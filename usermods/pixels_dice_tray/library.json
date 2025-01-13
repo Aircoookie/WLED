@@ -1,11 +1,5 @@
 {
   "name:": "pixels_dice_tray",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  },
   "dependencies": {
     "arduino-pixels-dice":"https://github.com/axlan/arduino-pixels-dice.git"
   }

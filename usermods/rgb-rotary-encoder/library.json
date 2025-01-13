@@ -1,11 +1,5 @@
 {
   "name:": "rgb-rotary-encoder",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  },
   "dependencies": {
     "lennarthennigs/ESP Rotary":"^2.1.1"
   }

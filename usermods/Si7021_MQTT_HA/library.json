@@ -1,9 +1,3 @@
 {
-  "name:": "Si7021_MQTT_HA",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  }
+  "name:": "Si7021_MQTT_HA"
 }

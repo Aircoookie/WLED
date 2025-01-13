@@ -1,11 +1,5 @@
 {
   "name:": "Temperature",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  },
   "dependencies": {
     "paulstoffregen/OneWire":"~2.3.8"
   }

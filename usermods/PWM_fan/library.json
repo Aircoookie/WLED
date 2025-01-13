@@ -1,9 +1,3 @@
 {
-  "name:": "PWM_fan",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  }
+  "name:": "PWM_fan"
 }

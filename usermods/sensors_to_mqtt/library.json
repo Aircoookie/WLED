@@ -1,11 +1,5 @@
 {
   "name:": "sensors_to_mqtt",
-  "build": {
-    "srcDir": ".",
-    "includeDir": "../../wled00",
-    "libLDFMode": "chain+",
-    "libArchive": false
-  },
   "dependencies": {
     "adafruit/Adafruit BMP280 Library":"2.1.0",
     "adafruit/Adafruit CCS811 Library":"1.0.4",
