@@ -284,13 +284,6 @@ class DeepSleepUsermod : public Usermod {
 
     //void connected() {} //unused, this is called every time the WiFi is (re)connected
 
-    void addToJsonInfo(JsonObject& root) {
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
-      JsonArray boot = user.createNestedArray(F("boot type"));
-      boot.add(F(phase_wakeup_reason()));
-    }
-
 void addToConfig(JsonObject& root) override
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
