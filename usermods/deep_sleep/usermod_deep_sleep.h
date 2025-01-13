@@ -2,7 +2,9 @@
 
 #include "wled.h"
 #include "driver/rtc_io.h"
-#include "soc/touch_sensor_periph.h"
+#ifndef CONFIG_IDF_TARGET_ESP32C3
+  #include "soc/touch_sensor_periph.h"
+#endif
 
 #ifdef ESP8266
 #error The "Deep Sleep" usermod does not support ESP8266
@@ -184,7 +186,9 @@ class DeepSleepUsermod : public Usermod {
     void setup() {
       //TODO: if the de-init of RTC pins is required to do it could be done here
       //rtc_gpio_deinit(wakeupPin);
-      DEBUG_PRINTF("boot type: %s\n", phase_wakeup_reason());
+      #ifdef WLED_DEBUG
+        DEBUG_PRINTF("boot type: %s\n", phase_wakeup_reason());
+      #endif
       initDone = true;
     }
 
@@ -280,6 +284,13 @@ class DeepSleepUsermod : public Usermod {
 
     //void connected() {} //unused, this is called every time the WiFi is (re)connected
 
+    void addToJsonInfo(JsonObject& root) {
+      JsonObject user = root["u"];
+      if (user.isNull()) user = root.createNestedObject("u");
+      JsonArray boot = user.createNestedArray(F("boot type"));
+      boot.add(F(phase_wakeup_reason()));
+    }
+
 void addToConfig(JsonObject& root) override
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
@@ -288,8 +299,10 @@ void addToConfig(JsonObject& root) override
       top["gpio"] = wakeupPin;
       top["wakeWhen"] = wakeWhenHigh;
       top["pull"] = noPull;
-      top["enableTouchWakeup"] = enableTouchWakeup;
-      top["touchPin"] = touchPin;
+      #ifndef CONFIG_IDF_TARGET_ESP32C3
+        top["enableTouchWakeup"] = enableTouchWakeup;
+        top["touchPin"] = touchPin;
+      #endif
       top["presetWake"] = presetWake;
       top["wakeAfter"] = wakeupAfter;
       top["delaySleep"] = sleepDelay;
@@ -310,8 +323,10 @@ void addToConfig(JsonObject& root) override
       }
       configComplete &= getJsonValue(top["wakeWhen"], wakeWhenHigh, DEEPSLEEP_WAKEWHENHIGH); // default to wake on low
       configComplete &= getJsonValue(top["pull"], noPull, DEEPSLEEP_DISABLEPULL); // default to no pullup/pulldown
-      configComplete &= getJsonValue(top["enableTouchWakeup"], enableTouchWakeup);
-      configComplete &= getJsonValue(top["touchPin"], touchPin, DEEPSLEEP_WAKEUP_TOUCH_PIN);
+      #ifndef CONFIG_IDF_TARGET_ESP32C3
+        configComplete &= getJsonValue(top["enableTouchWakeup"], enableTouchWakeup);
+        configComplete &= getJsonValue(top["touchPin"], touchPin, DEEPSLEEP_WAKEUP_TOUCH_PIN);
+      #endif
       configComplete &= getJsonValue(top["presetWake"], presetWake);
       configComplete &= getJsonValue(top["wakeAfter"], wakeupAfter, DEEPSLEEP_WAKEUPINTERVAL);
       configComplete &= getJsonValue(top["delaySleep"], sleepDelay, DEEPSLEEP_DELAY);
@@ -337,16 +352,18 @@ void addToConfig(JsonObject& root) override
           oappend(SET_F(");"));
         }
       }
-      // dropdown for touch wakeupPin
-      touch_sensor_channel_io_map[SOC_TOUCH_SENSOR_NUM];
-      oappend(SET_F("dd=addDropdown('DeepSleep','touchPin');"));
-      for (int pin = 0; pin < SOC_TOUCH_SENSOR_NUM; pin++) {
-        oappend(SET_F("addOption(dd,'"));
-        oappend(String(touch_sensor_channel_io_map[pin]).c_str());
-        oappend(SET_F("',"));
-        oappend(String(touch_sensor_channel_io_map[pin]).c_str());
-        oappend(SET_F(");"));
-      }
+      #ifndef CONFIG_IDF_TARGET_ESP32C3
+        // dropdown for touch wakeupPin
+        touch_sensor_channel_io_map[SOC_TOUCH_SENSOR_NUM];
+        oappend(SET_F("dd=addDropdown('DeepSleep','touchPin');"));
+        for (int pin = 0; pin < SOC_TOUCH_SENSOR_NUM; pin++) {
+          oappend(SET_F("addOption(dd,'"));
+          oappend(String(touch_sensor_channel_io_map[pin]).c_str());
+          oappend(SET_F("',"));
+          oappend(String(touch_sensor_channel_io_map[pin]).c_str());
+          oappend(SET_F(");"));
+        }
+      #endif
 
       oappend(SET_F("dd=addDropdown('DeepSleep','wakeWhen');"));
       oappend(SET_F("addOption(dd,'Low',0);"));
