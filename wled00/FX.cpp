@@ -1798,7 +1798,7 @@ uint16_t mode_oscillate(void) {
     // if the counter has increased, move the oscillator by the random step
     if (it != SEGENV.step) oscillators[i].pos += oscillators[i].dir * oscillators[i].speed;
     oscillators[i].size = SEGLEN/(3+SEGMENT.intensity/8);
-    if((oscillators[i].dir == -1) && (oscillators[i].pos <= 0)) {
+    if((oscillators[i].dir == -1) && (oscillators[i].pos > SEGLEN << 1)) { // use integer overflow
       oscillators[i].pos = 0;
       oscillators[i].dir = 1;
       // make bigger steps for faster speeds
@@ -1814,7 +1814,7 @@ uint16_t mode_oscillate(void) {
   for (unsigned i = 0; i < SEGLEN; i++) {
     uint32_t color = BLACK;
     for (unsigned j = 0; j < numOscillators; j++) {
-      if(i >= (unsigned)oscillators[j].pos - oscillators[j].size && i <= oscillators[j].pos + oscillators[j].size) {
+      if((int)i >= (int)oscillators[j].pos - oscillators[j].size && i <= oscillators[j].pos + oscillators[j].size) {
         color = (color == BLACK) ? SEGCOLOR(j) : color_blend(color, SEGCOLOR(j), 128);
       }
     }
