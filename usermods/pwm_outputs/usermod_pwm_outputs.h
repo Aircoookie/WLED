@@ -29,13 +29,13 @@ class PwmOutput {
         return;
 
       DEBUG_PRINTF("pwm_output[%d]: setup to freq %d\n", pin_, freq_);
-      if (!pinManager.allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS))
+      if (!PinManager::allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS))
         return;
       
-      channel_ = pinManager.allocateLedc(1);
+      channel_ = PinManager::allocateLedc(1);
       if (channel_ == 255) {
         DEBUG_PRINTF("pwm_output[%d]: failed to quire ledc\n", pin_);
-        pinManager.deallocatePin(pin_, PinOwner::UM_PWM_OUTPUTS);
+        PinManager::deallocatePin(pin_, PinOwner::UM_PWM_OUTPUTS);
         return;
       }
 
@@ -49,9 +49,9 @@ class PwmOutput {
       DEBUG_PRINTF("pwm_output[%d]: close\n", pin_);
       if (!enabled_)
         return;
-      pinManager.deallocatePin(pin_, PinOwner::UM_PWM_OUTPUTS);
+      PinManager::deallocatePin(pin_, PinOwner::UM_PWM_OUTPUTS);
       if (channel_ != 255)
-        pinManager.deallocateLedc(channel_, 1);
+        PinManager::deallocateLedc(channel_, 1);
       channel_ = 255;
       duty_ = 0.0f;
       enabled_ = false;

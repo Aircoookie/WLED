@@ -58,7 +58,11 @@ private:
   bool sensorPinState[PIR_SENSOR_MAX_SENSORS] = {LOW}; // current PIR sensor pin state
 
   // configurable parameters
+#if PIR_SENSOR_PIN < 0
+  bool enabled              = false;          // PIR sensor disabled
+#else
   bool enabled              = true;           // PIR sensor enabled
+#endif
   int8_t PIRsensorPin[PIR_SENSOR_MAX_SENSORS] = {PIR_SENSOR_PIN}; // PIR sensor pin
   uint32_t m_switchOffDelay = PIR_SENSOR_OFF_SEC*1000;  // delay before switch off after the sensor state goes LOW (10min)
   uint8_t m_onPreset        = 0;              // on preset
@@ -371,7 +375,7 @@ void PIRsensorSwitch::setup()
     sensorPinState[i] = LOW;
     if (PIRsensorPin[i] < 0) continue;
     // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-    if (pinManager.allocatePin(PIRsensorPin[i], false, PinOwner::UM_PIR)) {
+    if (PinManager::allocatePin(PIRsensorPin[i], false, PinOwner::UM_PIR)) {
       // PIR Sensor mode INPUT_PULLDOWN
       #ifdef ESP8266
       pinMode(PIRsensorPin[i], PIRsensorPin[i]==16 ? INPUT_PULLDOWN_16 : INPUT_PULLUP); // ESP8266 has INPUT_PULLDOWN on GPIO16 only
@@ -507,8 +511,8 @@ void PIRsensorSwitch::addToConfig(JsonObject &root)
 
 void PIRsensorSwitch::appendConfigData()
 {
-  oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
-  oappend(SET_F("addInfo('PIRsensorSwitch:override',1,'Cancel timer on change');"));    // 0 is field type, 1 is actual field
+  oappend(F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
+  oappend(F("addInfo('PIRsensorSwitch:override',1,'Cancel timer on change');"));    // 0 is field type, 1 is actual field
   for (int i = 0; i < PIR_SENSOR_MAX_SENSORS; i++) {
     char str[128];
     sprintf_P(str, PSTR("addInfo('PIRsensorSwitch:pin[]',%d,'','#%d');"), i, i);
@@ -560,7 +564,7 @@ bool PIRsensorSwitch::readFromConfig(JsonObject &root)
     DEBUG_PRINTLN(F(" config loaded."));
   } else {
     for (int i = 0; i < PIR_SENSOR_MAX_SENSORS; i++)
-      if (oldPin[i] >= 0) pinManager.deallocatePin(oldPin[i], PinOwner::UM_PIR);
+      if (oldPin[i] >= 0) PinManager::deallocatePin(oldPin[i], PinOwner::UM_PIR);
     setup();
     DEBUG_PRINTLN(F(" config (re)loaded."));
   }

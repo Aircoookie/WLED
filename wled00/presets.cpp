@@ -27,7 +27,7 @@ static void doSaveState() {
 
   unsigned long start = millis();
   while (strip.isUpdating() && millis()-start < (2*FRAMETIME_FIXED)+1) yield(); // wait 2 frames
-  if (!requestJSONBufferLock(10)) return; // will set fileDoc
+  if (!requestJSONBufferLock(10)) return;
 
   initPresetsFile(); // just in case if someone deleted presets.json using /edit
   JsonObject sObj = pDoc->to<JsonObject>();
@@ -53,23 +53,21 @@ static void doSaveState() {
   #if defined(ARDUINO_ARCH_ESP32)
   if (!persist) {
     if (tmpRAMbuffer!=nullptr) free(tmpRAMbuffer);
-    size_t len = measureJson(*fileDoc) + 1;
+    size_t len = measureJson(*pDoc) + 1;
     DEBUG_PRINTLN(len);
     // if possible use SPI RAM on ESP32
-    #if defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-    if (psramFound())
+    if (psramSafe && psramFound())
       tmpRAMbuffer = (char*) ps_malloc(len);
     else
-    #endif
       tmpRAMbuffer = (char*) malloc(len);
     if (tmpRAMbuffer!=nullptr) {
-      serializeJson(*fileDoc, tmpRAMbuffer, len);
+      serializeJson(*pDoc, tmpRAMbuffer, len);
     } else {
-      writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, fileDoc);
+      writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, pDoc);
     }
   } else
   #endif
-  writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, fileDoc);
+  writeObjectToFileUsingId(getPresetsFileName(persist), presetToSave, pDoc);
 
   if (persist) presetsModifiedTime = toki.second(); //unix time
   releaseJSONBufferLock();
@@ -117,10 +115,18 @@ void initPresetsFile()
   f.close();
 }
 
+bool applyPresetFromPlaylist(byte index)
+{
+  DEBUG_PRINTF_P(PSTR("Request to apply preset: %d\n"), index);
+  presetToApply = index;
+  callModeToApply = CALL_MODE_DIRECT_CHANGE;
+  return true;
+}
+
 bool applyPreset(byte index, byte callMode)
 {
-  DEBUG_PRINT(F("Request to apply preset: "));
-  DEBUG_PRINTLN(index);
+  unloadPlaylist(); // applying a preset unloads the playlist (#3827)
+  DEBUG_PRINTF_P(PSTR("Request to apply preset: %u\n"), index);
   presetToApply = index;
   callModeToApply = callMode;
   return true;
@@ -137,6 +143,7 @@ void applyPresetWithFallback(uint8_t index, uint8_t callMode, uint8_t effectID, 
 
 void handlePresets()
 {
+  byte presetErrFlag = ERR_NONE;
   if (presetToSave) {
     strip.suspend();
     doSaveState();
@@ -144,7 +151,7 @@ void handlePresets()
     return;
   }
 
-  if (presetToApply == 0 || fileDoc) return; // no preset waiting to apply, or JSON buffer is already allocated, return to loop until free
+  if (presetToApply == 0 || !requestJSONBufferLock(9)) return; // no preset waiting to apply, or JSON buffer is already allocated, return to loop until free
 
   bool changePreset = false;
   uint8_t tmpPreset = presetToApply; // store temporary since deserializeState() may call applyPreset()
@@ -152,25 +159,28 @@ void handlePresets()
 
   JsonObject fdo;
 
-  // allocate buffer
-  if (!requestJSONBufferLock(9)) return;  // will also assign fileDoc
-
   presetToApply = 0; //clear request for preset
   callModeToApply = 0;
 
-  DEBUG_PRINT(F("Applying preset: "));
-  DEBUG_PRINTLN(tmpPreset);
+  DEBUG_PRINTF_P(PSTR("Applying preset: %u\n"), (unsigned)tmpPreset);
+
+  #if defined(ARDUINO_ARCH_ESP32S3) || defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
+  unsigned long start = millis();
+  while (strip.isUpdating() && millis() - start < FRAMETIME_FIXED) yield(); // wait for strip to finish updating, accessing FS during sendout causes glitches
+  #endif
 
   #ifdef ARDUINO_ARCH_ESP32
   if (tmpPreset==255 && tmpRAMbuffer!=nullptr) {
-    deserializeJson(*fileDoc,tmpRAMbuffer);
-    errorFlag = ERR_NONE;
+    deserializeJson(*pDoc,tmpRAMbuffer);
   } else
   #endif
   {
-  errorFlag = readObjectFromFileUsingId(getPresetsFileName(tmpPreset < 255), tmpPreset, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  presetErrFlag = readObjectFromFileUsingId(getPresetsFileName(tmpPreset < 255), tmpPreset, pDoc) ? ERR_NONE : ERR_FS_PLOAD;
   }
-  fdo = fileDoc->as<JsonObject>();
+  fdo = pDoc->as<JsonObject>();
+
+  // only reset errorflag if previous error was preset-related
+  if ((errorFlag == ERR_NONE) || (errorFlag == ERR_FS_PLOAD)) errorFlag = presetErrFlag;
 
   //HTTP API commands
   const char* httpwin = fdo["win"];
@@ -197,13 +207,13 @@ void handlePresets()
   }
   #endif
 
-  releaseJSONBufferLock(); // will also clear fileDoc
+  releaseJSONBufferLock();
   if (changePreset) notify(tmpMode); // force UDP notification
   stateUpdated(tmpMode);  // was colorUpdated() if anything breaks
   updateInterfaces(tmpMode);
 }
 
-//called from handleSet(PS=) [network callback (fileDoc==nullptr), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
+//called from handleSet(PS=) [network callback (sObj is empty), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
 void savePreset(byte index, const char* pname, JsonObject sObj)
 {
   if (!saveName) saveName = new char[33];
@@ -217,12 +227,19 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
     else                             sprintf_P(saveName, PSTR("Preset %d"), index);
   }
 
-  DEBUG_PRINT(F("Saving preset (")); DEBUG_PRINT(index); DEBUG_PRINT(F(") ")); DEBUG_PRINTLN(saveName);
+  DEBUG_PRINTF_P(PSTR("Saving preset (%d) %s\n"), index, saveName);
 
   presetToSave = index;
   playlistSave = false;
   if (sObj[F("ql")].is<const char*>()) strlcpy(quickLoad, sObj[F("ql")].as<const char*>(), 9); // client limits QL to 2 chars, buffer for 8 bytes to allow unicode
   else quickLoad[0] = 0;
+
+  const char *bootPS = PSTR("bootps");
+  if (!sObj[FPSTR(bootPS)].isNull()) {
+    bootPreset = sObj[FPSTR(bootPS)] | bootPreset;
+    sObj.remove(FPSTR(bootPS));
+    doSerializeConfig = true;
+  }
 
   if (sObj.size()==0 || sObj["o"].isNull()) { // no "o" means not a playlist or custom API call, saving of state is async (not immediately)
     includeBri   = sObj["ib"].as<bool>() || sObj.size()==0 || index==255; // temporary preset needs brightness
@@ -234,7 +251,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
     if (sObj[F("playlist")].isNull()) {
       // we will save API call immediately (often causes presets.json corruption)
       presetToSave = 0;
-      if (index <= 250 && fileDoc) { // cannot save API calls to temporary preset (255)
+      if (index <= 250) { // cannot save API calls to temporary preset (255)
         sObj.remove("o");
         sObj.remove("v");
         sObj.remove("time");
@@ -242,7 +259,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
         sObj.remove(F("psave"));
         if (sObj["n"].isNull()) sObj["n"] = saveName;
         initPresetsFile(); // just in case if someone deleted presets.json using /edit
-        writeObjectToFileUsingId(getPresetsFileName(), index, fileDoc);
+        writeObjectToFileUsingId(getPresetsFileName(), index, pDoc);
         presetsModifiedTime = toki.second(); //unix time
         updateFSInfo();
       }

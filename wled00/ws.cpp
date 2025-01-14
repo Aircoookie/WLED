@@ -55,7 +55,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         } else {
           verboseResponse = deserializeState(root);
         }
-        releaseJSONBufferLock(); // will clean fileDoc
+        releaseJSONBufferLock();
 
         if (!interfaceUpdateCallMode) { // individual client response only needed if no WS broadcast soon
           if (verboseResponse) {
@@ -96,19 +96,21 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     //pong message was received (in response to a ping request maybe)
     DEBUG_PRINTLN(F("WS pong."));
 
+  } else {
+    DEBUG_PRINTLN(F("WS unknown event."));
   }
 }
 
 void sendDataWs(AsyncWebSocketClient * client)
 {
   if (!ws.count()) return;
-  AsyncWebSocketMessageBuffer * buffer;
 
   if (!requestJSONBufferLock(12)) {
+    const char* error = PSTR("{\"error\":3}");
     if (client) {
-      client->text(F("{\"error\":3}")); // ERR_NOBUF
+      client->text(FPSTR(error)); // ERR_NOBUF
     } else {
-      ws.textAll(F("{\"error\":3}")); // ERR_NOBUF
+      ws.textAll(FPSTR(error)); // ERR_NOBUF
     }
     return;
   }
@@ -121,18 +123,19 @@ void sendDataWs(AsyncWebSocketClient * client)
   size_t len = measureJson(*pDoc);
   DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for WS request (%u).\n"), pDoc->memoryUsage(), len);
 
+  // the following may no longer be necessary as heap management has been fixed by @willmmiles in AWS
   size_t heap1 = ESP.getFreeHeap();
-  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+  DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
   #ifdef ESP8266
   if (len>heap1) {
     DEBUG_PRINTLN(F("Out of memory (WS)!"));
     return;
   }
   #endif
-  buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
+  AsyncWebSocketBuffer buffer(len);
   #ifdef ESP8266
   size_t heap2 = ESP.getFreeHeap();
-  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+  DEBUG_PRINTF_P(PSTR("heap %u\n"), ESP.getFreeHeap());
   #else
   size_t heap2 = 0; // ESP32 variants do not have the same issue and will work without checking heap allocation
   #endif
@@ -141,23 +144,18 @@ void sendDataWs(AsyncWebSocketClient * client)
     DEBUG_PRINTLN(F("WS buffer allocation failed."));
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
     ws.cleanupClients(0); //disconnect all clients to release memory
-    ws._cleanBuffers();
     return; //out of memory
   }
-
-  buffer->lock();
-  serializeJson(*pDoc, (char *)buffer->get(), len);
+  serializeJson(*pDoc, (char *)buffer.data(), len);
 
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {
-    client->text(buffer);
     DEBUG_PRINTLN(F("to a single client."));
+    client->text(std::move(buffer));
   } else {
-    ws.textAll(buffer);
     DEBUG_PRINTLN(F("to multiple clients."));
+    ws.textAll(std::move(buffer));
   }
-  buffer->unlock();
-  ws._cleanBuffers();
 
   releaseJSONBufferLock();
 }
@@ -187,11 +185,10 @@ bool sendLiveLedsWs(uint32_t wsClient)
 #endif
   size_t bufSize = pos + (used/n)*3;
 
-  AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
+  AsyncWebSocketBuffer wsBuf(bufSize);
   if (!wsBuf) return false; //out of memory
-  uint8_t* buffer = wsBuf->get();
+  uint8_t* buffer = reinterpret_cast<uint8_t*>(wsBuf.data());
   if (!buffer) return false; //out of memory
-  wsBuf->lock();  // protect buffer from being cleaned by another WS instance
   buffer[0] = 'L';
   buffer[1] = 1; //version
 
@@ -213,14 +210,12 @@ bool sendLiveLedsWs(uint32_t wsClient)
     uint8_t g = G(c);
     uint8_t b = B(c);
     uint8_t w = W(c);
-    buffer[pos++] = scale8(qadd8(w, r), strip.getBrightness()); //R, add white channel to RGB channels as a simple RGBW -> RGB map
-    buffer[pos++] = scale8(qadd8(w, g), strip.getBrightness()); //G
-    buffer[pos++] = scale8(qadd8(w, b), strip.getBrightness()); //B
+    buffer[pos++] = bri ? qadd8(w, r) : 0; //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    buffer[pos++] = bri ? qadd8(w, g) : 0; //G
+    buffer[pos++] = bri ? qadd8(w, b) : 0; //B
   }
 
-  wsc->binary(wsBuf);
-  wsBuf->unlock();     // un-protect buffer
-  ws._cleanBuffers();
+  wsc->binary(std::move(wsBuf));
   return true;
 }
 
