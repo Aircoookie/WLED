@@ -1,5 +1,6 @@
 {
   "name:": "pov_display",
+  "build": { "libArchive": false},
   "dependencies": {
     "bitbank2/PNGdec":"^1.0.3"
   }

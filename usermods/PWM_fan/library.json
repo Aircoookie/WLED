@@ -1,3 +1,4 @@
 {
-  "name:": "PWM_fan"
+  "name:": "PWM_fan",
+  "build": { "libArchive": false }
 }

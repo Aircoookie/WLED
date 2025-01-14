@@ -1,3 +1,4 @@
 {
-  "name:": "EleksTube_IPS"
+  "name:": "EleksTube_IPS",
+  "build": { "libArchive": false }
 }

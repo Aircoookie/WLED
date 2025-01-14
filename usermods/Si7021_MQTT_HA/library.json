@@ -1,3 +1,4 @@
 {
-  "name:": "Si7021_MQTT_HA"
+  "name:": "Si7021_MQTT_HA",
+  "build": { "libArchive": false }
 }

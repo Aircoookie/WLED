@@ -1,5 +1,6 @@
 {
   "name": "audioreactive",
+  "build": { "libArchive": false },  
   "dependencies": [
     {
       "owner": "kosme",      
