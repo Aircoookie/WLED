@@ -343,20 +343,21 @@ static void parseNotifyPacket(const uint8_t *udpIn) {
           selseg.check1  = (udpIn[31+ofs]>>6) & 0x1;
           selseg.check1  = (udpIn[31+ofs]>>7) & 0x1;
         }
-	
+      }
+      if (receiveSegmentName) {
 	if (selseg.name) { //clear old name
-	    delete[] selseg.name;
-	    selseg.name = nullptr;
+	  delete[] selseg.name;
+	  selseg.name = nullptr;
 	}
 
 	const char * name = (char *) &udpIn[36+ofs];
 	size_t len = 0;
 	if (name != nullptr) len = strlen(name);
 	if (len > 0) {
-	    if (len > WLED_MAX_SEGNAME_LEN) len = WLED_MAX_SEGNAME_LEN;
-	    selseg.name = new char[len+1];
-	    if (selseg.name) strcpy(selseg.name, name);
-	}
+	  if (len > WLED_MAX_SEGNAME_LEN) len = WLED_MAX_SEGNAME_LEN;
+	  selseg.name = new char[len+1];
+	  if (selseg.name) strcpy(selseg.name, name);
+        }
       }
       if (receiveSegmentBounds) {
         DEBUG_PRINTF_P(PSTR("Set segment w/ options: %d [%d,%d;%d,%d]\n"), id, (int)start, (int)stop, (int)startY, (int)stopY);
