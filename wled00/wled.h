@@ -3,12 +3,11 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.15.0-b5
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2409170
+#define VERSION 2412040
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -36,12 +35,13 @@
   #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
 #endif
 //#define WLED_ENABLE_DMX          // uses 3.5kb
-//#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
   #define WLED_ENABLE_LOXONE       // uses 1.2kb
 #endif
 #ifndef WLED_DISABLE_WEBSOCKETS
   #define WLED_ENABLE_WEBSOCKETS
+#else
+  #define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #endif
 
 //#define WLED_DISABLE_ESPNOW      // Removes dependence on esp now
@@ -263,13 +263,13 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
   #define WLED_VERSION dev
 #endif
 #ifndef WLED_RELEASE_NAME
-  #define WLED_RELEASE_NAME dev_release
+  #define WLED_RELEASE_NAME "Custom"
 #endif
 
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
-WLED_GLOBAL char releaseString[] _INIT(TOSTRING(WLED_RELEASE_NAME)); // somehow this will not work if using "const char releaseString[]
-#define WLED_CODENAME "Kōsen"
+WLED_GLOBAL char releaseString[] _INIT(WLED_RELEASE_NAME); // must include the quotes when defining, e.g -D WLED_RELEASE_NAME=\"ESP32_MULTI_USREMODS\"
+#define WLED_CODENAME "Niji"
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
@@ -315,8 +315,6 @@ WLED_GLOBAL bool rlyOpenDrain _INIT(RLYODRAIN);
   constexpr uint8_t hardwareRX = 3;
   constexpr uint8_t hardwareTX = 1;
 #endif
-
-//WLED_GLOBAL byte presetToApply _INIT(0);
 
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
@@ -484,10 +482,10 @@ WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);  // used for other 
   #endif
 WLED_GLOBAL AsyncMqttClient *mqtt _INIT(NULL);
 WLED_GLOBAL bool mqttEnabled _INIT(false);
-WLED_GLOBAL char mqttStatusTopic[40] _INIT("");            // this must be global because of async handlers
-WLED_GLOBAL char mqttDeviceTopic[MQTT_MAX_TOPIC_LEN+1] _INIT("");         // main MQTT topic (individual per device, default is wled/mac)
-WLED_GLOBAL char mqttGroupTopic[MQTT_MAX_TOPIC_LEN+1]  _INIT("wled/all"); // second MQTT topic (for example to group devices)
-WLED_GLOBAL char mqttServer[MQTT_MAX_SERVER_LEN+1]     _INIT("");         // both domains and IPs should work (no SSL)
+WLED_GLOBAL char mqttStatusTopic[MQTT_MAX_TOPIC_LEN + 8] _INIT("");         // this must be global because of async handlers
+WLED_GLOBAL char mqttDeviceTopic[MQTT_MAX_TOPIC_LEN + 1] _INIT("");         // main MQTT topic (individual per device, default is wled/mac)
+WLED_GLOBAL char mqttGroupTopic[MQTT_MAX_TOPIC_LEN + 1]  _INIT("wled/all"); // second MQTT topic (for example to group devices)
+WLED_GLOBAL char mqttServer[MQTT_MAX_SERVER_LEN + 1]     _INIT("");         // both domains and IPs should work (no SSL)
 WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username for MQTT auth
 WLED_GLOBAL char mqttPass[65] _INIT("");                   // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
@@ -583,7 +581,6 @@ WLED_GLOBAL bool          transitionActive         _INIT(false);
 WLED_GLOBAL uint16_t      transitionDelay          _INIT(750);    // global transition duration
 WLED_GLOBAL uint16_t      transitionDelayDefault   _INIT(750);    // default transition time (stored in cfg.json)
 WLED_GLOBAL unsigned long transitionStartTime;
-WLED_GLOBAL float         tperLast                 _INIT(0.0f);   // crossfade transition progress, 0.0f - 1.0f
 WLED_GLOBAL bool          jsonTransitionOnce       _INIT(false);  // flag to override transitionDelay (playlist, JSON API: "live" & "seg":{"i"} & "tt")
 WLED_GLOBAL uint8_t       randomPaletteChangeTime  _INIT(5);      // amount of time [s] between random palette changes (min: 1s, max: 255s)
 WLED_GLOBAL bool          useHarmonicRandomPalette _INIT(true);   // use *harmonic* random palette generation (nicer looking) or truly random
@@ -838,10 +835,6 @@ WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
 WLED_GLOBAL Toki toki _INIT(Toki());
 
-// Temp buffer
-WLED_GLOBAL char* obuf;
-WLED_GLOBAL uint16_t olen _INIT(0);
-
 // General filesystem
 WLED_GLOBAL size_t fsBytesUsed _INIT(0);
 WLED_GLOBAL size_t fsBytesTotal _INIT(0);
@@ -900,9 +893,6 @@ WLED_GLOBAL uint32_t ledMaps _INIT(0); // bitfield representation of available l
 #else
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 #endif
-
-// Usermod manager
-WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
 // global I2C SDA pin (used for usermods)
 #ifndef I2CSDAPIN
