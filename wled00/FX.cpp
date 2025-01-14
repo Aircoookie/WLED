@@ -9724,7 +9724,7 @@ uint16_t mode_particle1Dspray(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur,Gravity,AgeColor,Bounce,Position Color;,!;!;1;pal=35,sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
+static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@!,!,Position,Blur,Gravity,AgeColor,Bounce,Position Color;,!;!;1;sx=200,ix=220,c1=4,c2=0,c3=28,o1=1,o2=1";
 
 /*
 Particle based balance: particles move back and forth (1D pendent to 2D particle box)
@@ -9760,9 +9760,8 @@ uint16_t mode_particleBalance(void) {
   if(PartSys->usedParticles > SEGENV.aux1) { // more particles, reinitialize
     for (i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particles[i].x = i * PS_P_RADIUS_1D;
-      PartSys->particles[i].hue = (i * 1024) / PartSys->usedParticles; // multi gradient distribution
       PartSys->particles[i].ttl = 300;
-      PartSys->particleFlags[i].perpetual = true; // TODO: is this a good idea? need to check how to handle it in transitions
+      PartSys->particleFlags[i].perpetual = true;
       PartSys->particleFlags[i].collide = true;
     }
   }
@@ -9792,7 +9791,7 @@ uint16_t mode_particleBalance(void) {
   PartSys->setColorByPosition(SEGMENT.check1);
   if(!SEGMENT.check1) {
     for(i = 0; i < PartSys->usedParticles; i++) {
-        PartSys->particles[i].hue = (255 * i) / PartSys->usedParticles; //color by particle index
+        PartSys->particles[i].hue = (1024 * i) / PartSys->usedParticles; // color by particle index
     }
   }
   PartSys->update(); // update and render
