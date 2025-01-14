@@ -217,7 +217,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 #include "FX.h" // must be below colors.cpp declarations (potentially due to duplicate declarations of e.g. color_blend)
 
 //image_loader.cpp
-#ifndef WLED_DISABLE_GIF
+#ifdef WLED_ENABLE_GIF
 bool fileSeekCallback(unsigned long position);
 unsigned long filePositionCallback(void);
 int fileReadCallback(void);
