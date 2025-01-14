@@ -9411,7 +9411,8 @@ uint16_t mode_particleFireworks1D(void) {
 
       PartSys->sources[0].sourceFlags.custom1 = 0; //flag used for rocket state
       PartSys->sources[0].source.hue = hw_random16();
-      PartSys->sources[0].var = 10;
+      PartSys->sources[0].var = 10; // emit variation
+      PartSys->sources[0].v = -10; // emit speed
       PartSys->sources[0].minLife = 100;
       PartSys->sources[0].maxLife = 300;
       PartSys->sources[0].source.x = 0; // start from bottom
@@ -9426,6 +9427,7 @@ uint16_t mode_particleFireworks1D(void) {
         PartSys->sources[0].sourceFlags.reversegrav = true;
         PartSys->sources[0].source.x = PartSys->maxX; // start from top
         PartSys->sources[0].source.vx = -PartSys->sources[0].source.vx; // revert direction
+        PartSys->sources[0].v = -PartSys->sources[0].v; // invert exhaust emit speed
       }
     }
   }
@@ -9475,7 +9477,7 @@ uint16_t mode_particleFireworks1D(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Saturation,Gravity,Colorful,Smooth;,!;!;1;pal=0,sx=150,ix=150,c1=220,c2=30,c3=21,o2=1";
+static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Saturation,,Colorful,Smooth;,!;!;1;pal=0,sx=150,c2=30,c3=21,o2=1";
 
 /*
 Particle based Sparkle effect
@@ -9505,19 +9507,20 @@ uint16_t mode_particleSparkler(void) {
 
   numSparklers = PartSys->numSources;
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
+  //PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
   for(i = 0; i < numSparklers; i++) {
-    PartSys->sources[i].source.hue = hw_random16();   //TODO: make adjustable, maybe even colorcycle?
+    PartSys->sources[i].source.hue = hw_random16();
     PartSys->sources[i].var = SEGMENT.intensity >> 4 ;
     PartSys->sources[i].minLife = 150 + (SEGMENT.intensity >> 1);
     PartSys->sources[i].maxLife = 200 + SEGMENT.intensity;
     uint32_t speed = SEGMENT.speed >> 1;
-    if(SEGMENT.check1) //invert spray speed
+    if(SEGMENT.check1) // invert spray speed
       speed = -speed;
-    PartSys->sources[i].source.vx = speed; //update speed, do not change direction
-    PartSys->sources[i].source.ttl = 400; //replenish its life (setting it perpetual uses more code)
-    PartSys->sources[i].sat = SEGMENT.custom1; //color saturation
+    PartSys->sources[i].source.vx = speed; // update speed, do not change direction
+    PartSys->sources[i].source.ttl = 400; // replenish its life (setting it perpetual uses more code)
+    PartSys->sources[i].sat = SEGMENT.custom1; // color saturation
+    PartSys->sources[i].size = SEGMENT.check3 ? 120 : 0;
     PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &sparklersettings); //move sparkler
   }
 
@@ -9544,7 +9547,7 @@ uint16_t mode_particleSparkler(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur,Sparklers,Direction,Wrap/Bounce,Smooth;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur,Sparklers,Direction,Wrap/Bounce,Large;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
 
 /*
 Particle based Hourglass, particles falling at defined intervals

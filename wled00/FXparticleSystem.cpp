@@ -1315,7 +1315,7 @@ void ParticleSystem1D::setSmearBlur(const uint8_t bluramount) {
 
 // render size, 0 = 1 pixel, 1 = 2 pixel (interpolated), bigger sizes require adanced properties
 void ParticleSystem1D::setParticleSize(const uint8_t size) {
-  particlesize = size > 0 ? 1 : 0; // TODO: add support for global sizes? see not abover (motion blur)
+  particlesize = size > 0 ? 1 : 0; // TODO: add support for global sizes? see note above (motion blur)
   if (particlesize)
     particleHardRadius = PS_P_MINHARDRADIUS_1D; // 2 pixel sized particles
   else
