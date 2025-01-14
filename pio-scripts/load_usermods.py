@@ -2,6 +2,11 @@ Import('env')
 from pathlib import Path   # For OS-agnostic path manipulation
 
 usermod_dir = Path(env["PROJECT_DIR"]) / "usermods"
+all_usermods = [f for f in usermod_dir.iterdir() if f.is_dir() and f.joinpath('library.json').exists()]
+
+if env['PIOENV'] == "usermods":
+   # Add all usermods
+   env.GetProjectConfig().set(f"env:usermods", 'custom_usermods', " ".join([f.name for f in all_usermods]))
 
 def find_usermod(mod: str):
   """Locate this library in the usermods folder.

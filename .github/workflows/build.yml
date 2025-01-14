@@ -57,11 +57,6 @@ jobs:
           cache: 'pip'
     - name: Install PlatformIO
       run: pip install -r requirements.txt
-    - name: Add usermods environment
-      run: |
-        cp -v usermods/platformio_override.usermods.ini platformio_override.ini
-        echo -n "custom_usermods = " >> platformio_override.ini
-        find usermods/ -name library.json | xargs dirname | xargs -n 1 basename | xargs echo >> platformio_override.ini
 
     - name: Build firmware
       run: pio run -e ${{ matrix.environment }}
