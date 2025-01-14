@@ -1,4 +1,4 @@
 {
-  "name:": "usermod_v2_auto_save",
+  "name": "auto_save",
   "build": { "libArchive": false }
 }

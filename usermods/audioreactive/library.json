@@ -1,6 +1,9 @@
 {
   "name": "audioreactive",
-  "build": { "libArchive": false },  
+  "build": {
+    "libArchive": false,
+    "extraScript": "override_sqrt.py"
+  },
   "dependencies": [
     {
       "owner": "kosme",      
