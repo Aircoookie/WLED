@@ -33,7 +33,6 @@ if usermods:
 cpl = env.ConfigureProjectLibBuilder
 # Our new wrapper
 def cpl_wrapper(env):
-  result = cpl.clone(env)()
   # Update usermod properties
   lib_builders = env.GetLibBuilders()  
   um_deps = [dep for dep in lib_builders if usermod_dir in Path(dep.src_dir).parents]
@@ -50,7 +49,8 @@ def cpl_wrapper(env):
     build = um._manifest.get("build", {})
     build["libArchive"] = False
     um._manifest["build"] = build
-  return result
+  return cpl.clone(env)()
+
 
 # Replace the old one with ours
 env.AddMethod(cpl_wrapper, "ConfigureProjectLibBuilder")
