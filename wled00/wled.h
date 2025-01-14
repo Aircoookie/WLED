@@ -1,6 +1,3 @@
-// TODO: HACK!! - do not merge
-#define LOROL_LITTLEFS 1
-
 #ifndef WLED_H
 #define WLED_H
 /*
