@@ -97,7 +97,7 @@ static uint16_t mode_diffusionfire(void)
 }
 static const char _data_FX_MODE_DIFFUSIONFIRE[] PROGMEM = "Diffusion Fire@!,Spark rate,Diffusion Speed,Turbulence,,Use palette;;Color;;2;pal=35";
 
-class DiffusionFireUsermod : public Usermod
+class UserFxUsermod : public Usermod
 {
 
 private:
@@ -113,6 +113,6 @@ public:
 
   uint16_t getId()
   {
-    return USERMOD_ID_DIFFUSIONFIRE;
+    return USERMOD_ID_USER_FX;
   }
 };

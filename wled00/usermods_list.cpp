@@ -246,8 +246,8 @@
   #include "../usermods/deep_sleep/usermod_deep_sleep.h"
 #endif 
 
-#ifdef USERMOD_DIFFUSIONFIRE
-#include "../usermods/diffusionfire/usermod_diffusionfire.h"
+#ifdef USERMOD_USER_FX
+#include "../usermods/user_fx/usermod_user_fx.h"
 #endif
 
 void registerUsermods()
@@ -483,7 +483,7 @@ void registerUsermods()
    usermods.add(new DeepSleepUsermod());
   #endif
   
-  #ifdef USERMOD_DIFFUSIONFIRE
-  UsermodManager::add(new DiffusionFireUsermod());
+  #ifdef USERMOD_USER_FX
+  UsermodManager::add(new UserFxUsermod());
   #endif
 }
