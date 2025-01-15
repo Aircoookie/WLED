@@ -77,6 +77,7 @@ class DeepSleepUsermod : public Usermod {
       return false;
     }
 
+#ifdef WLED_DEBUG
     const char* phase_wakeup_reason() {
       static char reson[20];
       esp_sleep_wakeup_cause_t wakeup_reason;
@@ -106,6 +107,7 @@ class DeepSleepUsermod : public Usermod {
       }
       return reson;
     }
+#endif
 
     void startDeepSeelp(bool immediate) {
       if (immediate) {
