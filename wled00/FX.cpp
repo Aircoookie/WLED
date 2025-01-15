@@ -7944,7 +7944,7 @@ uint16_t mode_particlevolcano(void) {
     PartSys->setBounceY(true);
     PartSys->setGravity(); // enable with default gforce
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
-    PartSys->setMotionBlur(220); // anable motion blur
+    PartSys->setMotionBlur(230); // anable motion blur
 
     numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); // number of sprays
     for (i = 0; i < numSprays; i++) {
@@ -9826,7 +9826,7 @@ uint16_t mode_particleChase(void) {
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setColorByPosition(SEGMENT.check3);
-  PartSys->setMotionBlur(SEGMENT.custom3 << 3); // anable motion blur
+  PartSys->setMotionBlur((SEGMENT.custom3 + 1) << 3); // anable motion blur
   // uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer
 
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3 + PartSys->getAvailableParticles(); // note: getAvailableParticles is used to enforce update during transitions

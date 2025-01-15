@@ -13,6 +13,9 @@
   - change passing particle pointers to references (if possible)
   -add underscore to private variables
 */
+#ifdef WLED_DISABLE_2D
+#define WLED_DISABLE_PARTICLESYSTEM2D
+#endif
 
 #if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D)) // not both disabled
 #include "FXparticleSystem.h"

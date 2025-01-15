@@ -8,6 +8,10 @@
   Licensed under the EUPL v. 1.2 or later
 */
 
+#ifdef WLED_DISABLE_2D
+#define WLED_DISABLE_PARTICLESYSTEM2D
+#endif
+
 #if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D)) // not both disabled
 
 #include <stdint.h>
