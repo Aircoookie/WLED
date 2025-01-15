@@ -477,6 +477,6 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_DEEP_SLEEP
-   usermods.add(new DeepSleepUsermod());
+  UsermodManager::add(new DeepSleepUsermod());
   #endif
 }
