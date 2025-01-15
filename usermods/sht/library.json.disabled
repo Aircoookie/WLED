@@ -1,0 +1,4 @@
+{
+  "name:": "sht",
+  "build": { "libArchive": false }
+}
