@@ -210,12 +210,6 @@ private:
         }
     }
 
-    ~UsermodINA226()
-    {
-        delete _ina226;
-        _ina226 = nullptr;
-    }
-
 #ifndef WLED_DISABLE_MQTT
     void mqttInitialize()
     {
@@ -551,6 +545,13 @@ public:
         _initDone = true;
         return configComplete;
     }
+
+    ~UsermodINA226()
+    {
+        delete _ina226;
+        _ina226 = nullptr;
+    }
+
 };
 
 const char UsermodINA226::_name[] PROGMEM = "INA226";

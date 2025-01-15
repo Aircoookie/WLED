@@ -159,5 +159,5 @@ inline void UsermodMqttSwitch::updateState(uint8_t pinNr)
 }
 
 
-static UsermodMqttSwitc mqtt_switch_v2;
+static UsermodMqttSwitch mqtt_switch_v2;
 REGISTER_USERMOD(mqtt_switch_v2);

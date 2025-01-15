@@ -54,12 +54,6 @@ private:
     _lastTemperature = 0;
   }
 
-  ~UsermodAHT10()
-  {
-    delete _aht;
-    _aht = nullptr;
-  }
-
 #ifndef WLED_DISABLE_MQTT
   void mqttInitialize()
   {
@@ -321,6 +315,12 @@ public:
 
     _initDone = true;
     return configComplete;
+  }
+
+  ~UsermodAHT10()
+  {
+    delete _aht;
+    _aht = nullptr;
   }
 };
 
