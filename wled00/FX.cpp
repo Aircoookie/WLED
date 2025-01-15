@@ -9488,7 +9488,6 @@ by DedeHai (Damian Schneider)
 uint16_t mode_particleSparkler(void) {
   ParticleSystem1D *PartSys = NULL;
   uint32_t numSparklers;
-  uint32_t i;
   PSsettings1D sparklersettings;
   sparklersettings.asByte = 0; // PS settings for sparkler (set below)
 
@@ -9510,7 +9509,7 @@ uint16_t mode_particleSparkler(void) {
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   //PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
 
-  for(i = 0; i < numSparklers; i++) {
+  for (uint32_t i = 0; i < numSparklers; i++) {
     PartSys->sources[i].source.hue = hw_random16();
     PartSys->sources[i].var = SEGMENT.intensity >> 4 ;
     PartSys->sources[i].minLife = 150 + (SEGMENT.intensity >> 1);
@@ -9522,25 +9521,27 @@ uint16_t mode_particleSparkler(void) {
     PartSys->sources[i].source.ttl = 400; // replenish its life (setting it perpetual uses more code)
     PartSys->sources[i].sat = SEGMENT.custom1; // color saturation
     PartSys->sources[i].size = SEGMENT.check3 ? 120 : 0;
-    PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &sparklersettings); //move sparkler
+    for(uint32_t j = 0; j < 2; j++) { // move twice for higher speeds
+      PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &sparklersettings); //move sparkler 1243972-
+    }
   }
 
-  for(i = 0; i < PartSys->usedParticles; i++) {
-    if(PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if (PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
     else PartSys->particles[i].ttl = 0;
   }
 
   numSparklers = min(1 + (SEGMENT.custom3 >> 2), (int)numSparklers);  // set used sparklers, 1 to 8
 
-  if(SEGENV.aux0 != SEGMENT.custom3) { //number of used sparklers changed, redistribute
-    for(i = 1; i < numSparklers; i++) {
+  if (SEGENV.aux0 != SEGMENT.custom3) { //number of used sparklers changed, redistribute
+    for (uint32_t i = 1; i < numSparklers; i++) {
       PartSys->sources[i].source.x = (PartSys->sources[0].source.x + (PartSys->maxX / numSparklers) * i ) % PartSys->maxX; //distribute evenly
     }
   }
   SEGENV.aux0 = SEGMENT.custom3;
 
-  for(i = 0; i < numSparklers; i++) {
-    if(hw_random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0)
+  for (uint32_t i = 0; i < numSparklers; i++) {
+    if (hw_random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0)
       PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
   }
 

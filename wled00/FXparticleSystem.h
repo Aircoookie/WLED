@@ -50,7 +50,7 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer = 
 void servicePSmem(); // increments watchdog, frees memory if idle too long
 
 // limit speed of particles (used in 1D and 2D)
-static inline int32_t limitSpeed(int32_t speed) {
+static inline int32_t limitSpeed(const int32_t speed) {
   return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed); // note: this is slightly faster than using min/max at the cost of 50bytes of flash
 }
 #endif
@@ -267,7 +267,7 @@ bool allocateParticleSystemMemory2D(const uint32_t numparticles, const uint32_t 
 #define PS_P_RADIUS_SHIFT_1D 5 // 1 << PS_P_RADIUS_SHIFT = PS_P_RADIUS
 #define PS_P_SURFACE_1D 5 // shift: 2^PS_P_SURFACE = PS_P_RADIUS_1D
 #define PS_P_MINHARDRADIUS_1D 32 // minimum hard surface radius note: do not change or hourglass effect will be broken
-#define PS_P_MINSURFACEHARDNESS_1D 60 // minimum hardness used in collision impulse calculation
+#define PS_P_MINSURFACEHARDNESS_1D 120 // minimum hardness used in collision impulse calculation
 
 // struct for PS settings (shared for 1D and 2D class)
 typedef union {
