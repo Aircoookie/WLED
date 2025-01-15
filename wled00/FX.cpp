@@ -7944,7 +7944,7 @@ uint16_t mode_particlevolcano(void) {
     PartSys->setBounceY(true);
     PartSys->setGravity(); // enable with default gforce
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
-    PartSys->setMotionBlur(190); // anable motion blur
+    PartSys->setMotionBlur(220); // anable motion blur
 
     numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); // number of sprays
     for (i = 0; i < numSprays; i++) {
@@ -7962,7 +7962,23 @@ uint16_t mode_particlevolcano(void) {
   if (PartSys == NULL)
     return mode_static(); // something went wrong, no data!
 
-  numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); // number of sprays
+  numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); // number of volcanoes
+
+  // change source emitting color from time to time, emit one particle per spray
+  if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) { // every nth frame, cycle color and emit particles (and update the sources)
+    for (i = 0; i < numSprays; i++) {
+      PartSys->sources[i].source.y = PS_P_RADIUS + 5; // reset to just above the lower edge that is allowed for bouncing particles, if zero, particles already 'bounce' at start and loose speed.
+      PartSys->sources[i].source.vy = 0; //reset speed (so no extra particlesettin is required to keep the source 'afloat')
+      PartSys->sources[i].source.hue++; // = hw_random16(); //change hue of spray source (note: random does not look good)
+      PartSys->sources[i].source.vx = PartSys->sources[i].source.vx > 0 ? (SEGMENT.custom1 >> 2) : -(SEGMENT.custom1 >> 2); // set moving speed but keep the direction given by PS
+      PartSys->sources[i].vy = SEGMENT.speed >> 2; // emitting speed (upwards)
+      PartSys->sources[i].vx = 0;
+      PartSys->sources[i].var = SEGMENT.custom3 >> 1; // emiting variation = nozzle size (custom 3 goes from 0-31)
+      PartSys->sprayEmit(PartSys->sources[i]);
+      PartSys->setWallHardness(255); // full hardness for source bounce
+      PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &volcanosettings); //move the source
+    }
+  }
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -7974,21 +7990,6 @@ uint16_t mode_particlevolcano(void) {
     PartSys->enableParticleCollisions(true, SEGMENT.custom2); // enable collisions and set particle collision hardness
   else
     PartSys->enableParticleCollisions(false);
-
-  // change source emitting color from time to time, emit one particle per spray
-  if (SEGMENT.call % (11 - (SEGMENT.intensity / 25)) == 0) { // every nth frame, cycle color and emit particles (and update the sources)
-    for (i = 0; i < numSprays; i++) {
-      PartSys->sources[i].source.y = PS_P_RADIUS + 5; // reset to just above the lower edge that is allowed for bouncing particles, if zero, particles already 'bounce' at start and loose speed.
-      PartSys->sources[i].source.vy = 0; //reset speed (so no extra particlesettin is required to keep the source 'afloat')
-      PartSys->sources[i].source.hue++; // = hw_random16(); //change hue of spray source (note: random does not look good)
-      PartSys->sources[i].source.vx = PartSys->sources[i].source.vx > 0 ? SEGMENT.custom1 >> 2 : -(SEGMENT.custom1 >> 2); // set moving speed but keep the direction given by PS
-      PartSys->sources[i].vy = SEGMENT.speed >> 2; // emitting speed
-      PartSys->sources[i].vx = 0;
-      PartSys->sources[i].var = SEGMENT.custom3 >> 1; // emiting variation = nozzle size (custom 3 goes from 0-31)
-      PartSys->sprayEmit(PartSys->sources[i]);
-      PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &volcanosettings); //move the source
-    }
-  }
 
   PartSys->update(); // update and render
   return FRAMETIME;
@@ -8175,7 +8176,7 @@ uint16_t mode_particlewaterfall(void) {
 
     PartSys->setGravity();  // enable with default gforce
     PartSys->setKillOutOfBounds(true); // out of bounds particles dont return (except on top, taken care of by gravity setting)
-    PartSys->setMotionBlur(180); // anable motion blur
+    PartSys->setMotionBlur(190); // anable motion blur
     PartSys->setSmearBlur(30); // enable 2D blurring (smearing)
     for (i = 0; i < PartSys->numSources; i++) {
       PartSys->sources[i].source.hue = i*90;
