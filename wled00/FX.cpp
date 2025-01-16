@@ -9502,36 +9502,32 @@ uint16_t mode_particleSparkler(void) {
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
 
-  sparklersettings.wrap = SEGMENT.check2;
-  sparklersettings.bounce = !SEGMENT.check2;
+  sparklersettings.wrap = !SEGMENT.check2;
+  sparklersettings.bounce = SEGMENT.check2; // note: bounce always takes priority over wrap
 
   numSparklers = PartSys->numSources;
-  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  //PartSys->setParticleSize(SEGMENT.check3); // 1 or 2 pixel rendering
+  PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur/overlay
+  //PartSys->setSmearBlur(SEGMENT.custom2); // anable smearing blur
 
   for (uint32_t i = 0; i < numSparklers; i++) {
     PartSys->sources[i].source.hue = hw_random16();
-    PartSys->sources[i].var = SEGMENT.intensity >> 4 ;
-    PartSys->sources[i].minLife = 150 + (SEGMENT.intensity >> 1);
-    PartSys->sources[i].maxLife = 200 + SEGMENT.intensity;
+    PartSys->sources[i].var = 0; // sparks stationary
+    PartSys->sources[i].minLife = 150 + SEGMENT.intensity;
+    PartSys->sources[i].maxLife = 250 + (SEGMENT.intensity << 2);
     uint32_t speed = SEGMENT.speed >> 1;
-    if(SEGMENT.check1) // invert spray speed
-      speed = -speed;
+    if(SEGMENT.check1) // sparks move (slide option)
+      PartSys->sources[i].var = SEGMENT.intensity >> 3;
     PartSys->sources[i].source.vx = speed; // update speed, do not change direction
     PartSys->sources[i].source.ttl = 400; // replenish its life (setting it perpetual uses more code)
     PartSys->sources[i].sat = SEGMENT.custom1; // color saturation
     PartSys->sources[i].size = SEGMENT.check3 ? 120 : 0;
-    for(uint32_t j = 0; j < 2; j++) { // move twice for higher speeds
-      PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &sparklersettings); //move sparkler 1243972-
-    }
+    if(SEGMENT.speed == 255) // random position at highest speed setting
+      PartSys->sources[i].source.x = hw_random16(PartSys->maxX);
+    else
+      PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &sparklersettings); //move sparkler
   }
 
-  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-    if (PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
-    else PartSys->particles[i].ttl = 0;
-  }
-
-  numSparklers = min(1 + (SEGMENT.custom3 >> 2), (int)numSparklers);  // set used sparklers, 1 to 8
+  numSparklers = min(1 + (SEGMENT.custom3 >> 1), (int)numSparklers);  // set used sparklers, 1 to 16
 
   if (SEGENV.aux0 != SEGMENT.custom3) { //number of used sparklers changed, redistribute
     for (uint32_t i = 1; i < numSparklers; i++) {
@@ -9547,9 +9543,14 @@ uint16_t mode_particleSparkler(void) {
 
   PartSys->update(); // update and render
 
+  for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if(PartSys->particles[i].ttl > (64 - (SEGMENT.intensity >> 2))) PartSys->particles[i].ttl -= (64 - (SEGMENT.intensity >> 2)); //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
+    else PartSys->particles[i].ttl = 0;
+  }
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur,Sparklers,Direction,Wrap/Bounce,Large;,!;!;1;pal=0,sx=50,ix=200,c1=0,c2=0,c3=0,o1=1,o2=1";
+static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur,Sparklers,Slide,Bounce,Large;,!;!;1;pal=0,sx=255,ix=200,c1=0,c2=0,c3=6";
 
 /*
 Particle based Hourglass, particles falling at defined intervals

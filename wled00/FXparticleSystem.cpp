@@ -582,7 +582,9 @@ void ParticleSystem2D::ParticleSys_render() {
 
   // handle blurring and framebuffer update
   if (framebuffer) {
-    if(!pmem->inTransition)  useAdditiveTransfer = false; // additive rendering is only used in PS FX transitions
+    //if(!pmem->inTransition)  useAdditiveTransfer = false; // additive rendering is only used in PS FX transitions
+    if(strip.getCurrSegmentId() > 0) useAdditiveTransfer = true; //!!! test for overlay rendering
+    else useAdditiveTransfer = false;
     // handle buffer blurring or clearing
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
 
@@ -592,8 +594,7 @@ void ParticleSystem2D::ParticleSys_render() {
           int index = y * (maxXpixel + 1);
           for (int32_t x = 0; x <= maxXpixel; x++) {
             if (!renderSolo) { // sharing the framebuffer with another segment: read buffer back from segment
-              uint32_t yflipped = maxYpixel - y;
-              framebuffer[index] = SEGMENT.getPixelColorXY(x, yflipped); // read from segment
+              framebuffer[index] = SEGMENT.getPixelColorXY(x, y); // read from segment
             }
             fast_color_scale(framebuffer[index], globalBlur); // note: could skip if only globalsmear is active but usually they are both active and scaling is fast enough
             index++;
@@ -639,8 +640,6 @@ void ParticleSystem2D::ParticleSys_render() {
       SEGMENT.fill(BLACK); //clear the buffer before rendering next frame
   }
 
-  bool wrapX = particlesettings.wrapX; // use local variables for faster access
-  bool wrapY = particlesettings.wrapY;
   // go over particles and render them to the buffer
   for (uint32_t i = 0; i < usedParticles; i++) {
     if (particles[i].ttl == 0 || particleFlags[i].outofbounds)
@@ -660,7 +659,7 @@ void ParticleSystem2D::ParticleSys_render() {
         baseRGB = (CRGB)baseHSV; // convert back to RGB
       }
     }
-    renderParticle(i, brightness, baseRGB, wrapX, wrapY);
+    renderParticle(i, brightness, baseRGB, particlesettings.wrapX, particlesettings.wrapY);
   }
 
   if (particlesize > 0) {
@@ -1530,7 +1529,7 @@ void ParticleSystem1D::ParticleSys_render() {
     else
       SEGMENT.fill(BLACK); // clear the buffer before rendering to it
   }
-  bool wrap = particlesettings.wrap; // local copy for speed
+
   // go over particles and render them to the buffer
   for (uint32_t i = 0; i < usedParticles; i++) {
     if ( particles[i].ttl == 0 || particleFlags[i].outofbounds)
@@ -1547,7 +1546,7 @@ void ParticleSystem1D::ParticleSys_render() {
         baseRGB = (CRGB)baseHSV; // convert back to RGB
       }
     }
-    renderParticle(i, brightness, baseRGB, wrap);
+    renderParticle(i, brightness, baseRGB, particlesettings.wrap);
   }
   // apply smear-blur to rendered frame
   if(globalSmear > 0) {
