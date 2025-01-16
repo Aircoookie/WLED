@@ -73,8 +73,8 @@ byte scaledBri(byte in)
 
 //applies global brightness
 void applyBri() {
-  if (!realtimeMode || !arlsForceMaxBri)
-  {
+  if (!(realtimeMode && arlsForceMaxBri)) {
+    //DEBUG_PRINTF_P(PSTR("Applying strip brightness: %d (%d,%d)\n"), (int)briT, (int)bri, (int)briOld);
     strip.setBrightness(scaledBri(briT));
   }
 }
@@ -85,6 +85,7 @@ void applyFinalBri() {
   briOld = bri;
   briT = bri;
   applyBri();
+  strip.trigger();
 }
 
 
@@ -146,7 +147,6 @@ void stateUpdated(byte callMode) {
     transitionStartTime = millis();
   } else {
     applyFinalBri();
-    strip.trigger();
   }
 }
 
