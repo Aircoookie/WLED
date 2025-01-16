@@ -583,13 +583,6 @@
 #define DEFAULT_LED_COUNT 30
 
 #define INTERFACE_UPDATE_COOLDOWN 1000 // time in ms to wait between websockets, alexa, and MQTT updates
-#ifdef WLED_ENABLE_DMX_OUTPUT
-#if (LEDPIN == 2)
-  #undef LEDPIN
-  #define LEDPIN 1
-  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 1."
-#endif
-#endif
 
 #define PIN_RETRY_COOLDOWN   3000 // time in ms after an incorrect attempt PIN and OTA pass will be rejected even if correct
 #define PIN_TIMEOUT        900000 // time in ms after which the PIN will be required again, 15 minutes
