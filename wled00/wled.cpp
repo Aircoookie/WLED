@@ -84,6 +84,9 @@ void WLED::loop()
   #ifndef WLED_DISABLE_INFRARED
   handleIR();
   #endif
+  #ifndef WLED_DISABLE_ESPNOW
+  handleRemote();
+  #endif
   #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
   #endif
