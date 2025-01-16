@@ -4,11 +4,13 @@
 #include "Arduino.h"
 #include <RCSwitch.h>
 
+#define RF433_BUSWAIT_TIMEOUT 24
+
 class RF433Usermod : public Usermod
 {
 private:
   RCSwitch mySwitch = RCSwitch();
-  unsigned long lastValue = 0;
+  unsigned long lastCommand = 0;
   unsigned long lastTime = 0;
 
   bool modEnabled = true;
@@ -47,20 +49,20 @@ public:
 
     if (mySwitch.available())
     {
-      unsigned long value = mySwitch.getReceivedValue();
+      unsigned long receivedCommand = mySwitch.getReceivedValue();
       mySwitch.resetAvailable();
 
       // Discard duplicates, limit long press repeat
-      if (lastValue == value && millis() - lastTime < 800)
+      if (lastCommand == receivedCommand && millis() - lastTime < 800)
         return;
 
-      lastValue = value;
+      lastCommand = receivedCommand;
       lastTime = millis();
 
       DEBUG_PRINT(F("RF433 Receive: "));
-      DEBUG_PRINTLN(value);
+      DEBUG_PRINTLN(receivedCommand);
       
-      if(!remoteJson433(value))
+      if(!remoteJson433(receivedCommand))
         DEBUG_PRINTLN(F("RF433: unknown button"));
     }
   }
@@ -75,7 +77,7 @@ public:
       user = root.createNestedObject("u");
 
     JsonArray switchArr = user.createNestedArray("RF433 Last Received"); // name
-    switchArr.add(lastValue); // value
+    switchArr.add(lastCommand);
   }
 
   void addToConfig(JsonObject &root)
@@ -118,7 +120,7 @@ public:
     return USERMOD_ID_RF433;
   }
 
-  // this function follows the same principle as decodeIRJson()
+  // this function follows the same principle as decodeIRJson() / remoteJson()
   bool remoteJson433(int button)
   {
     char objKey[14];
@@ -127,6 +129,9 @@ public:
     if (!requestJSONBufferLock(22)) return false;
 
     sprintf_P(objKey, PSTR("\"%d\":"), button);
+
+    unsigned long start = millis();
+    while (strip.isUpdating() && millis()-start < RF433_BUSWAIT_TIMEOUT) yield(); // wait for strip to finish updating, accessing FS during sendout causes glitches
 
     // attempt to read command from remote.json
     readObjectFromFile(PSTR("/remote433.json"), objKey, pDoc);
