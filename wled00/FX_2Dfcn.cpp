@@ -276,8 +276,8 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) {
   if (!isActive()) return; // not active
   const unsigned cols = vWidth();
   const unsigned rows = vHeight();
-  uint32_t lastnew = BLACK;
-  uint32_t last = BLACK;
+  uint32_t lastnew;   // not necessary to initialize lastnew and last, as both will be initialized by the first loop iteration
+  uint32_t last;
   if (blur_x) {
     const uint8_t keepx = smear ? 255 : 255 - blur_x;
     const uint8_t seepx = blur_x >> 1;

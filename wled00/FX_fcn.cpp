@@ -296,6 +296,7 @@ void Segment::stopTransition() {
     delete _t;
     _t = nullptr;
   }
+  _transitionprogress = 0xFFFFU; // stop means stop - transition has ended
 }
 
 // transition progression between 0-65535
@@ -326,7 +327,7 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
   tmpSeg._callT      = call;
   tmpSeg._dataT      = data;
   tmpSeg._dataLenT   = _dataLen;
-  if (_t && &tmpSeg != &(_t->_segT)) {
+  if (isInTransition() && &tmpSeg != &(_t->_segT)) {
     // swap SEGENV with transitional data
     options   = _t->_segT._optionsT;
     for (size_t i=0; i<NUM_COLORS; i++) colors[i] = _t->_segT._colorT[i];
@@ -349,7 +350,7 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
 
 void Segment::restoreSegenv(const tmpsegd_t &tmpSeg) {
   //DEBUG_PRINTF_P(PSTR("--  Restoring temp seg: %p->(%p) [%d->%p]\n"), &tmpSeg, this, _dataLen, data);
-  if (_t && &(_t->_segT) != &tmpSeg) {
+  if (isInTransition() && &(_t->_segT) != &tmpSeg) {
     // update possibly changed variables to keep old effect running correctly
     _t->_segT._aux0T = aux0;
     _t->_segT._aux1T = aux1;
@@ -379,7 +380,7 @@ void Segment::restoreSegenv(const tmpsegd_t &tmpSeg) {
 #endif
 
 uint8_t Segment::currentBri(bool useCct) const {
-  unsigned prog = progress();
+  unsigned prog = isInTransition() ? progress() : 0xFFFFU;
   if (prog < 0xFFFFU) { // progress() < 0xFFFF implies that _t is a valid pointer
     unsigned curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
     curBri += (useCct ? _t->_cctT : _t->_briT) * (0xFFFFU - prog);
@@ -390,7 +391,7 @@ uint8_t Segment::currentBri(bool useCct) const {
 
 uint8_t Segment::currentMode() const {
 #ifndef WLED_DISABLE_MODE_BLEND
-  unsigned prog = progress();
+  unsigned prog = isInTransition() ? progress() : 0xFFFFU;
   if (modeBlending && prog < 0xFFFFU) return _t->_modeT;  // progress() < 0xFFFF implies that _t is a valid pointer
 #endif
   return mode;
@@ -411,18 +412,18 @@ void Segment::beginDraw() {
   _vHeight = virtualHeight();
   _vLength = virtualLength();
   _segBri  = currentBri();
+  unsigned prog = isInTransition() ? progress() : 0xFFFFU;  // transition progress; 0xFFFFU = no transition active
   // adjust gamma for effects
   for (unsigned i = 0; i < NUM_COLORS; i++) {
     #ifndef WLED_DISABLE_MODE_BLEND
-    uint32_t col = isInTransition() ? color_blend16(_t->_segT._colorT[i], colors[i], progress()) : colors[i];
+    uint32_t col = isInTransition() ? color_blend16(_t->_segT._colorT[i], colors[i], prog) : colors[i];
     #else
-    uint32_t col = isInTransition() ? color_blend16(_t->_colorT[i], colors[i], progress()) : colors[i];
+    uint32_t col = isInTransition() ? color_blend16(_t->_colorT[i], colors[i], prog) : colors[i];
     #endif
     _currentColors[i] = gamma32(col);
   }
   // load palette into _currentPalette
   loadPalette(_currentPalette, palette);
-  unsigned prog = progress();
   if (strip.paletteFade && prog < 0xFFFFU) {
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
@@ -1134,8 +1135,8 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
   uint8_t seep = blur_amount >> 1;
   unsigned vlength = vLength();
   uint32_t carryover = BLACK;
-  uint32_t lastnew = BLACK;
-  uint32_t last = BLACK;
+  uint32_t lastnew;       // not necessary to initialize lastnew and last, as both will be initialized by the first loop iteration
+  uint32_t last;
   uint32_t curnew = BLACK;
   for (unsigned i = 0; i < vlength; i++) {
     uint32_t cur = getPixelColor(i);
