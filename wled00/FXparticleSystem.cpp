@@ -582,8 +582,7 @@ void ParticleSystem2D::ParticleSys_render() {
 
   // handle blurring and framebuffer update
   if (framebuffer) {
-    //if(!pmem->inTransition)  useAdditiveTransfer = false; // additive rendering is only used in PS FX transitions
-    if(strip.getCurrSegmentId() > 0) useAdditiveTransfer = true; //!!! test for overlay rendering
+    if(strip.getCurrSegmentId() > 0) useAdditiveTransfer = true; // overlay rendering
     else useAdditiveTransfer = false;
     // handle buffer blurring or clearing
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
@@ -593,7 +592,7 @@ void ParticleSystem2D::ParticleSys_render() {
         for (int32_t y = 0; y <= maxYpixel; y++) {
           int index = y * (maxXpixel + 1);
           for (int32_t x = 0; x <= maxXpixel; x++) {
-            if (!renderSolo) { // sharing the framebuffer with another segment: read buffer back from segment
+            if (!renderSolo) { // sharing the framebuffer with another segment: update buffer by reading back from segment
               framebuffer[index] = SEGMENT.getPixelColorXY(x, y); // read from segment
             }
             fast_color_scale(framebuffer[index], globalBlur); // note: could skip if only globalsmear is active but usually they are both active and scaling is fast enough
@@ -609,25 +608,8 @@ void ParticleSystem2D::ParticleSys_render() {
       if(bufferNeedsUpdate && !globalBlur) { // transfer only if buffer was not cleared above (happens if this is the new FX and other FX does not use blurring)
         useAdditiveTransfer = false; // no blurring and big size particle FX is the new FX (rendered first after clearing), can just render normally
       }
-      else { // this is the old FX (rendering second) new FX already rendered to the buffer, transfer it to segment and clear it
-        #ifndef WLED_DISABLE_MODE_BLEND
-        bool tempBlend = SEGMENT.getmodeBlend();
-        SEGMENT.modeBlend(false); // temporarily disable FX blending in PS to PS transition (local buffer is used to do PS blending)
-        #endif
-        int yflipped;
-        for (int32_t y = 0; y <= maxYpixel; y++) {
-          yflipped = maxYpixel - y;
-          int index = y * (maxXpixel + 1); // current row index for 1D buffer
-          for (int32_t x = 0; x <= maxXpixel; x++) {
-            CRGB *c = &framebuffer[index++];
-            uint32_t clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color
-            //if(clr > 0) // not black  TODO: not transferring black is faster and enables overlay, but requries proper handling of buffer clearing, which is quite complex and probably needs a change to SEGMENT handling.
-            SEGMENT.setPixelColorXY((int)x, (int)yflipped, clr);
-          }
-        }
-        #ifndef WLED_DISABLE_MODE_BLEND
-        SEGMENT.modeBlend(tempBlend);
-        #endif
+      else { // this is the old FX (rendering second) or blurring is active: new FX already rendered to the buffer and blurring was applied above; transfer it to segment and clear it
+        transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer);
         memset(framebuffer, 0, frameBufferSize * sizeof(CRGB)); // clear the buffer after transfer
         useAdditiveTransfer = true; // additive transfer reads from segment, adds that to the frame-buffer and writes back to segment, after transfer, segment and buffer are identical
       }
@@ -654,9 +636,12 @@ void ParticleSystem2D::ParticleSys_render() {
       brightness = min((particles[i].ttl << 1), (int)255);
       baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255); // TODO: use loadPalette(CRGBPalette16 &targetPalette, SEGMENT.palette), .palette should be updated immediately at palette change, only use local palette during FX transitions, not during normal transitions. -> why not always?
       if (particles[i].sat < 255) {
-        CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to HSV  //!!! TODO: use new hsv to rgb function.
-        baseHSV.s = particles[i].sat; //set the saturation
-        baseRGB = (CRGB)baseHSV; // convert back to RGB
+        CHSV32 baseHSV; 
+        rgb2hsv((uint32_t((byte(baseRGB.r) << 16) | (byte(baseRGB.g) << 8) | (byte(baseRGB.b)))), baseHSV); // convert to HSV
+        baseHSV.s = particles[i].sat; // set the saturation
+        uint32_t tempcolor;
+        hsv2rgb(baseHSV, tempcolor); // convert back to RGB
+        baseRGB = (CRGB)tempcolor;
       }
     }
     renderParticle(i, brightness, baseRGB, particlesettings.wrapX, particlesettings.wrapY);
@@ -686,7 +671,7 @@ void ParticleSystem2D::ParticleSys_render() {
       SEGMENT.blur(globalSmear, true);
   }
   // transfer framebuffer to segment if available
-  if (pmem->inTransition != effectID) { // not in transition or is old FX
+  if (pmem->inTransition != effectID) { // not in transition or is old FX (rendered second)
     transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer);
   }
 }
@@ -1496,6 +1481,7 @@ void ParticleSystem1D::applyFriction(int32_t coefficient) {
 void ParticleSystem1D::ParticleSys_render() {
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
+  static bool useAdditiveTransfer; // use add instead of set for buffer transferring
 
   // update global blur (used for blur transitions)
   int32_t motionbluramount = motionBlur;
@@ -1508,6 +1494,8 @@ void ParticleSystem1D::ParticleSys_render() {
   globalSmear = smearamount;
 
   if (framebuffer) {
+    if(strip.getCurrSegmentId() > 0) useAdditiveTransfer = true; // overlay rendering
+    else useAdditiveTransfer = false;
     // handle buffer blurring or clearing
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
     if(bufferNeedsUpdate) {
@@ -1541,9 +1529,12 @@ void ParticleSystem1D::ParticleSys_render() {
 
     if (advPartProps) { //saturation is advanced property in 1D system
       if (advPartProps[i].sat < 255) {
-        CHSV baseHSV = rgb2hsv_approximate(baseRGB); //convert to HSV //!!!TODO: replace with new rgb2hsv
-        baseHSV.s = advPartProps[i].sat; //set the saturation
-        baseRGB = (CRGB)baseHSV; // convert back to RGB
+        CHSV32 baseHSV;
+        rgb2hsv((uint32_t((byte(baseRGB.r) << 16) | (byte(baseRGB.g) << 8) | (byte(baseRGB.b)))), baseHSV); // convert to HSV
+        baseHSV.s = advPartProps[i].sat; // set the saturation
+        uint32_t tempcolor;
+        hsv2rgb(baseHSV, tempcolor); // convert back to RGB
+        baseRGB = (CRGB)tempcolor;
       }
     }
     renderParticle(i, brightness, baseRGB, particlesettings.wrap);
@@ -1556,7 +1547,7 @@ void ParticleSystem1D::ParticleSys_render() {
       SEGMENT.blur(globalSmear, true);
   }
   // transfer local buffer back to segment (if available)
-  transferBuffer(maxXpixel + 1, 0);
+  transferBuffer(maxXpixel + 1, 0, useAdditiveTransfer);
 
 }
 
@@ -2291,7 +2282,7 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
           CRGB segmentRGB = CRGB(segmentcolor);
           if(clr == 0) // frame buffer is black, just update the framebuffer
             *c = segmentRGB;
-          else { // not black
+          else { // color to add to segment is not black
             if(segmentcolor) {
               fast_color_add(*c, segmentRGB); // add segment color back to buffer if not black
               clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again) TODO: could convert first, then use 32bit adding function color_add() from colors.cpp
@@ -2307,9 +2298,23 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
   } else { // 1D system
     for (uint32_t x = 0; x < width; x++) {
       CRGB *c = &framebuffer[x];
-      uint32_t color = RGBW32(c->r,c->g,c->b,0);
+      uint32_t clr = RGBW32(c->r,c->g,c->b,0);
+      if(useAdditiveTransfer) {
+        uint32_t segmentcolor = SEGMENT.getPixelColor((int)x);;
+        CRGB segmentRGB = CRGB(segmentcolor);
+        if(clr == 0) // frame buffer is black, just load the color (for next frame)
+          *c = segmentRGB;
+        else { // color to add to segment is not black
+          if(segmentcolor) {
+            fast_color_add(*c, segmentRGB); // add segment color back to buffer if not black
+            clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again) TODO: could convert first, then use 32bit adding function color_add() from colors.cpp
+          }
+          SEGMENT.setPixelColor((int)x, clr); // save back to segment after adding local buffer
+        }
+      }
       //if(color > 0) // not black
-      SEGMENT.setPixelColor((int)x, color);
+      else
+        SEGMENT.setPixelColor((int)x, clr);
     }
   }
   #ifndef WLED_DISABLE_MODE_BLEND

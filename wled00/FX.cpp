@@ -7783,7 +7783,7 @@ uint16_t mode_particlevortex(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation Speed,Particle Speed,Arms,Auto Flip,Nozzle,Smear,Direction,Random Flip;;!;2;pal=56,sx=200,ix=190,c1=200,c2=0,c3=0";
+static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation Speed,Particle Speed,Arms,Flip,Nozzle,Smear,Direction,Random Flip;;!;2;pal=27,c1=200,c2=0,c3=0";
 
 /*
  * Particle Fireworks
