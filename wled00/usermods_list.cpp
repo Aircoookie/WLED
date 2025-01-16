@@ -242,9 +242,12 @@
 #include "../usermods/LD2410_v2/usermod_ld2410.h"
 #endif
 
-
 #ifdef USERMOD_DEEP_SLEEP
   #include "../usermods/deep_sleep/usermod_deep_sleep.h"
+#endif 
+
+#ifdef USERMOD_USER_FX
+#include "../usermods/user_fx/usermod_user_fx.h"
 #endif
 
 void registerUsermods()
@@ -478,5 +481,9 @@ void registerUsermods()
 
   #ifdef USERMOD_DEEP_SLEEP
   UsermodManager::add(new DeepSleepUsermod());
+  #endif
+  
+  #ifdef USERMOD_USER_FX
+  UsermodManager::add(new UserFxUsermod());
   #endif
 }
