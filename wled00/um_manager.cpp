@@ -3,12 +3,15 @@
  * Registration and management utility for v2 usermods
  */
 
+static Usermod* ums[WLED_MAX_USERMODS] = {nullptr};
+byte UsermodManager::numMods = 0;
+
 //Usermod Manager internals
 void UsermodManager::setup()             { for (unsigned i = 0; i < numMods; i++) ums[i]->setup(); }
 void UsermodManager::connected()         { for (unsigned i = 0; i < numMods; i++) ums[i]->connected(); }
 void UsermodManager::loop()              { for (unsigned i = 0; i < numMods; i++) ums[i]->loop();  }
 void UsermodManager::handleOverlayDraw() { for (unsigned i = 0; i < numMods; i++) ums[i]->handleOverlayDraw(); }
-void UsermodManager::appendConfigData()  { for (unsigned i = 0; i < numMods; i++) ums[i]->appendConfigData(); }
+void UsermodManager::appendConfigData(Print& dest)  { for (unsigned i = 0; i < numMods; i++) ums[i]->appendConfigData(dest); }
 bool UsermodManager::handleButton(uint8_t b) {
   bool overrideIO = false;
   for (unsigned i = 0; i < numMods; i++) {
@@ -69,5 +72,13 @@ bool UsermodManager::add(Usermod* um)
   return true;
 }
 
-Usermod* UsermodManager::ums[WLED_MAX_USERMODS] = {nullptr};
-byte UsermodManager::numMods = 0;
+
+/* Usermod v2 interface shim for oappend */
+Print* Usermod::oappend_shim = nullptr;
+
+void Usermod::appendConfigData(Print& settingsScript) {
+  assert(!oappend_shim);
+  oappend_shim = &settingsScript;
+  this->appendConfigData();
+  oappend_shim = nullptr;
+}

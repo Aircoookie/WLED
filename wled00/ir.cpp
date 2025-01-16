@@ -435,7 +435,7 @@ static void decodeIR44(uint32_t code)
     case IR44_DIY2        : presetFallback(2, FX_MODE_BREATH,        0); break;
     case IR44_DIY3        : presetFallback(3, FX_MODE_FIRE_FLICKER,  0); break;
     case IR44_DIY4        : presetFallback(4, FX_MODE_RAINBOW,       0); break;
-    case IR44_DIY5        : presetFallback(5, FX_MODE_METEOR_SMOOTH, 0); break;
+    case IR44_DIY5        : presetFallback(5, FX_MODE_METEOR, 0);        break;
     case IR44_DIY6        : presetFallback(6, FX_MODE_RAIN,          0); break;
     case IR44_AUTO        : changeEffect(FX_MODE_STATIC);                break;
     case IR44_FLASH       : changeEffect(FX_MODE_PALETTE);               break;
@@ -593,7 +593,7 @@ static void decodeIRJson(uint32_t code)
         decBrightness();
       } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
         uint8_t p1 = fdo["PL"] | 1;
-        uint8_t p2 = fdo["FX"] | random8(strip.getModeCount() -1);
+        uint8_t p2 = fdo["FX"] | hw_random8(strip.getModeCount() -1);
         uint8_t p3 = fdo["FP"] | 0;
         presetFallback(p1, p2, p3);
       }

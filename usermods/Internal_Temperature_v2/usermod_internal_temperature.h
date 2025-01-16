@@ -50,7 +50,7 @@ public:
 #else                                    // ESP32 ESP32S3 and ESP32C3
     temperature = roundf(temperatureRead() * 10) / 10;
 #endif
-
+ if(presetToActivate != 0){
     // Check if temperature has exceeded the activation threshold
     if (temperature >= activationThreshold) {
       // Update the state flag if not already set
@@ -58,7 +58,7 @@ public:
         isAboveThreshold = true;
         }
       // Check if a 'high temperature' preset is configured and it's not already active
-      if (presetToActivate != 0 && currentPreset != presetToActivate) {
+      if (currentPreset != presetToActivate) {
         // If a playlist is active, store it for reactivation later
         if (currentPlaylist > 0) {
           previousPlaylist = currentPlaylist;
@@ -101,6 +101,7 @@ public:
           }
         }
       }
+ }
 
 #ifndef WLED_DISABLE_MQTT
     if (WLED_MQTT_CONNECTED)
@@ -149,11 +150,11 @@ public:
     void appendConfigData()
     {
     // Display 'ms' next to the 'Loop Interval' setting
-    oappend(SET_F("addInfo('Internal Temperature:Loop Interval', 1, 'ms');"));
+    oappend(F("addInfo('Internal Temperature:Loop Interval', 1, 'ms');"));
     // Display '°C' next to the 'Activation Threshold' setting
-    oappend(SET_F("addInfo('Internal Temperature:Activation Threshold', 1, '°C');"));
+    oappend(F("addInfo('Internal Temperature:Activation Threshold', 1, '°C');"));
     // Display '0 = Disabled' next to the 'Preset To Activate' setting
-    oappend(SET_F("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');"));
+    oappend(F("addInfo('Internal Temperature:Preset To Activate', 1, '0 = unused');"));
     }
 
   bool readFromConfig(JsonObject &root)

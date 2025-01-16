@@ -13,6 +13,16 @@
   #endif
 #endif
 
+// Pin management state variables
+#ifdef ESP8266
+static uint32_t pinAlloc = 0UL;     // 1 bit per pin, we use first 17bits
+#else
+static uint64_t pinAlloc = 0ULL;     // 1 bit per pin, we use 50 bits on ESP32-S3
+static uint16_t ledcAlloc = 0;    // up to 16 LEDC channels (WLED_MAX_ANALOG_CHANNELS)
+#endif
+static uint8_t i2cAllocCount = 0; // allow multiple allocation of I2C bus pins but keep track of allocations
+static uint8_t spiAllocCount = 0; // allow multiple allocation of SPI bus pins but keep track of allocations
+static PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
 
 /// Actual allocation/deallocation routines
 bool PinManager::deallocatePin(byte gpio, PinOwner tag)
@@ -201,7 +211,12 @@ bool PinManager::isPinOk(byte gpio, bool output)
     if (gpio > 18 && gpio < 21) return false;     // 19 + 20 = USB-JTAG. Not recommended for other uses.
     #endif
     if (gpio > 21 && gpio < 33) return false;     // 22 to 32: not connected + SPI FLASH
-    if (gpio > 32 && gpio < 38) return !psramFound(); // 33 to 37: not available if using _octal_ SPI Flash or _octal_ PSRAM
+    #if CONFIG_ESPTOOLPY_FLASHMODE_OPI            // 33-37: never available if using _octal_ Flash (opi_opi)
+    if (gpio > 32 && gpio < 38) return false;
+    #endif
+    #if CONFIG_SPIRAM_MODE_OCT                    // 33-37: not available if using _octal_ PSRAM (qio_opi), but free to use on _quad_ PSRAM (qio_qspi)
+    if (gpio > 32 && gpio < 38) return !psramFound();
+    #endif
     // 38 to 48 are for general use. Be careful about straping pins GPIO45 and GPIO46 - these may be pull-up or pulled-down on your board.
   #elif defined(CONFIG_IDF_TARGET_ESP32S2)
     // strapping pins: 0, 45 & 46
@@ -209,8 +224,20 @@ bool PinManager::isPinOk(byte gpio, bool output)
     // JTAG: GPIO39-42 are usually used for inline debugging
     // GPIO46 is input only and pulled down
   #else
-    if (gpio > 5 && gpio < 12) return false;      //SPI flash pins
-    if (strncmp_P(PSTR("ESP32-PICO"), ESP.getChipModel(), 10) == 0 && (gpio == 16 || gpio == 17)) return false; // PICO-D4: gpio16+17 are in use for onboard SPI FLASH
+
+    if ((strncmp_P(PSTR("ESP32-U4WDH"), ESP.getChipModel(), 11) == 0) ||    // this is the correct identifier, but....
+        (strncmp_P(PSTR("ESP32-PICO-D2"), ESP.getChipModel(), 13) == 0)) {  // https://github.com/espressif/arduino-esp32/issues/10683
+      // this chip has 4 MB of internal Flash and different packaging, so available pins are different!
+      if (((gpio > 5) && (gpio < 9)) || (gpio == 11))
+        return false;
+    } else {
+      // for classic ESP32 (non-mini) modules, these are the SPI flash pins
+      if (gpio > 5 && gpio < 12) return false;      //SPI flash pins
+    }
+
+    if (((strncmp_P(PSTR("ESP32-PICO"), ESP.getChipModel(), 10) == 0) ||
+         (strncmp_P(PSTR("ESP32-U4WDH"), ESP.getChipModel(), 11) == 0))
+        && (gpio == 16 || gpio == 17)) return false; // PICO-D4/U4WDH: gpio16+17 are in use for onboard SPI FLASH
     if (gpio == 16 || gpio == 17) return !psramFound(); //PSRAM pins on ESP32 (these are IO)
   #endif
     if (output) return digitalPinCanOutput(gpio);
@@ -273,13 +300,3 @@ void PinManager::deallocateLedc(byte pos, byte channels)
   }
 }
 #endif
-
-#ifdef ESP8266
-uint32_t PinManager::pinAlloc = 0UL;
-#else
-uint64_t PinManager::pinAlloc = 0ULL;
-uint16_t PinManager::ledcAlloc = 0;
-#endif
-uint8_t PinManager::i2cAllocCount = 0;
-uint8_t PinManager::spiAllocCount = 0;
-PinOwner PinManager::ownerTag[WLED_NUM_PINS] = { PinOwner::None };
