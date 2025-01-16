@@ -442,11 +442,11 @@ void getSettingsJS(byte subPage, Print& settingsScript)
 #ifndef WLED_ENABLE_DMX_INPUT
     settingsScript.print(SET_F("hideDMXInput();"));  // hide "dmx input" settings
 #else
-    settingsScript.print(SET_F("hideNoDMXInput();"));  //hide "not comp iled in" message
-    sappend('v',SET_F("IDMT"),dmxInputTransmitPin);
-    sappend('v',SET_F("IDMR"),dmxInputReceivePin);
-    sappend('v',SET_F("IDME"),dmxInputEnablePin);
-    sappend('v',SET_F("IDMP"),dmxInputPort);
+    settingsScript.print(SET_F("hideNoDMXInput();"));  //hide "not compiled in" message
+    printSetFormValue(settingsScript,SET_F("IDMT"),dmxInputTransmitPin);
+    printSetFormValue(settingsScript,SET_F("IDMR"),dmxInputReceivePin);
+    printSetFormValue(settingsScript,SET_F("IDME"),dmxInputEnablePin);
+    printSetFormValue(settingsScript,SET_F("IDMP"),dmxInputPort);
 #endif
     printSetFormValue(settingsScript,PSTR("DA"),DMXAddress);
     printSetFormValue(settingsScript,PSTR("XX"),DMXSegmentSpacing);
