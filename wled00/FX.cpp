@@ -9523,7 +9523,7 @@ uint16_t mode_particleSparkler(void) {
     PartSys->sources[i].source.hue = hw_random16();
     PartSys->sources[i].var = 0; // sparks stationary
     PartSys->sources[i].minLife = 150 + SEGMENT.intensity;
-    PartSys->sources[i].maxLife = 250 + (SEGMENT.intensity << 2);
+    PartSys->sources[i].maxLife = 250 + (SEGMENT.intensity << 1);
     uint32_t speed = SEGMENT.speed >> 1;
     if(SEGMENT.check1) // sparks move (slide option)
       PartSys->sources[i].var = SEGMENT.intensity >> 3;
@@ -9547,7 +9547,7 @@ uint16_t mode_particleSparkler(void) {
   SEGENV.aux0 = SEGMENT.custom3;
 
   for (uint32_t i = 0; i < numSparklers; i++) {
-    if (hw_random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0)
+    if (hw_random()  % (((271 - SEGMENT.intensity) >> 4)) == 0)
       PartSys->sprayEmit(PartSys->sources[i]); //emit a particle
   }
 
@@ -9560,7 +9560,7 @@ uint16_t mode_particleSparkler(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Speed,!,Saturation,Blur,Sparklers,Slide,Bounce,Large;,!;!;1;pal=0,sx=255,ix=200,c1=0,c2=0,c3=6";
+static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Move,!,Saturation,Blur,Sparklers,Slide,Bounce,Large;,!;!;1;pal=0,sx=255,c1=0,c2=0,c3=6";
 
 /*
 Particle based Hourglass, particles falling at defined intervals

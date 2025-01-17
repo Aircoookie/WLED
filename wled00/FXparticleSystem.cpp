@@ -2193,13 +2193,13 @@ void updateUsedParticles(const uint32_t allocated, const uint32_t available, con
 }
 
 // check if a segment is fully overlapping with an underlying segment (used to enable overlay rendering i.e. adding instead of overwriting pixels)
-bool segmentIsOverlay(void) {
+bool segmentIsOverlay(void) { // TODO: this only needs to be checked when segment is created, could move this to segment class or PS init
   unsigned segID = strip.getCurrSegmentId();
   if(segID > 0) { // lower number segments exist, check coordinates of underlying segments
       for (unsigned i = 0; i < segID; i++) {
         if(strip._segments[i].start <= strip._segments[segID].start && strip._segments[i].stop >= strip._segments[segID].stop &&
            strip._segments[i].startY <= strip._segments[segID].startY && strip._segments[i].stopY >= strip._segments[segID].stopY)
-          return true; 
+          return true;
       }
   }
   return false;
