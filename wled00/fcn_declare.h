@@ -183,12 +183,17 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
 void setRandomColor(byte* rgb);
 
-//dmx.cpp
-void initDMX();
-void handleDMX();
+//dmx_output.cpp
+void initDMXOutput();
+void handleDMXOutput();
+
+//dmx_input.cpp
+void initDMXInput();
+void handleDMXInput();
 
 //e131.cpp
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
+void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8_t mde, uint8_t previousUniverses);
 void handleArtnetPollReply(IPAddress ipAddress);
 void prepareArtnetPollReply(ArtPollReply* reply);
 void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress);
