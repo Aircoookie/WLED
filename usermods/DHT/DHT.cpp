@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 #ifndef WLED_ENABLE_MQTT
 #error "This user mod requires MQTT to be enabled."

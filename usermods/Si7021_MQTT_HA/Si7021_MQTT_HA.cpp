@@ -2,8 +2,6 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-#pragma once
-
 // this is remixed from usermod_v2_SensorsToMqtt.h (sensors_to_mqtt usermod)
 // and usermod_multi_relay.h (multi_relay usermod)
 

@@ -1,8 +1,6 @@
 // Credits to @mrVanboy, @gwaland and my dearest friend @westward
 // Also for @spiff72 for usermod TTGO-T-Display
 // 210217
-#pragma once
-
 #include "wled.h"
 #include <TFT_eSPI.h>
 #include <SPI.h>

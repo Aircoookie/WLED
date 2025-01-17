@@ -1,4 +1,3 @@
-#pragma once
 #include "TFTs.h"
 #include "wled.h"
 

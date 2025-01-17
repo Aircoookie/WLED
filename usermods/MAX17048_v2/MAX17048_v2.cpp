@@ -1,8 +1,6 @@
 // force the compiler to show a warning to confirm that this file is included
 #warning **** Included USERMOD_MAX17048 V2.0 ****
 
-#pragma once
-
 #include "wled.h"
 #include "Adafruit_MAX1704X.h"
 

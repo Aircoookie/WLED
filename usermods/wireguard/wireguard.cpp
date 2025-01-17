@@ -1,5 +1,3 @@
-#pragma once
-
 #include <WireGuard-ESP32.h>
 
 #include "wled.h"

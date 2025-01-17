@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 
 // v2 Usermod to automatically save settings 

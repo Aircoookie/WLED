@@ -1,5 +1,3 @@
-#pragma once
-
 #include "src/dependencies/time/DS1307RTC.h"
 #include "wled.h"
 

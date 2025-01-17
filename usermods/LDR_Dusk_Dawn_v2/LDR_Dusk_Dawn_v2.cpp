@@ -1,4 +1,3 @@
-#pragma once
 #include "wled.h"
 
 #ifndef ARDUINO_ARCH_ESP32

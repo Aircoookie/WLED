@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 #include <INA226_WE.h>
 

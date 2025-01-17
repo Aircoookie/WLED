@@ -5,8 +5,6 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-#pragma once
-
 #include "wled.h"
 #include <Arduino.h>
 #include <BME280I2C.h>               // BME280 sensor

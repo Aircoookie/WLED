@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 #include "battery_defaults.h"
 #include "UMBattery.h"

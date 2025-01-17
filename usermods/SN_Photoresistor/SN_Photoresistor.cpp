@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 
 //Pin defaults for QuinLed Dig-Uno (A0)

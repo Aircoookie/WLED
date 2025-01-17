@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ESPRotary.h"
 #include <math.h>
 #include "wled.h"

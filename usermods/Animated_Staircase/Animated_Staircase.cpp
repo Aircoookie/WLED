@@ -7,7 +7,6 @@
  * 
  * See the accompanying README.md file for more info.
  */
-#pragma once
 #include "wled.h"
 
 class Animated_Staircase : public Usermod {

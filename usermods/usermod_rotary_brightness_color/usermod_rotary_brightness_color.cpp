@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 
 //v2 usermod that allows to change brightness and color using a rotary encoder, 

@@ -1,4 +1,3 @@
-#pragma once
 #include "wled.h"
 
 #ifndef ESP32

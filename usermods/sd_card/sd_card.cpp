@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 
 // SD connected via MMC / SPI

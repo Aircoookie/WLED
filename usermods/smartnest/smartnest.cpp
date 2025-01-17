@@ -2,8 +2,6 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-#pragma once
-
 #include "wled.h"
 
 class Smartnest : public Usermod

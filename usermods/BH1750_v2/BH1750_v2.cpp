@@ -5,8 +5,6 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-#pragma once
-
 #include "wled.h"
 #include <BH1750.h>
 

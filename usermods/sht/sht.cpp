@@ -2,8 +2,6 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-#pragma once
-
 #include "SHT85.h"
 
 #define USERMOD_SHT_TYPE_SHT30 0

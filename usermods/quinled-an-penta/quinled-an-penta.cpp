@@ -1,5 +1,3 @@
-#pragma once
-
 #include "U8g2lib.h"
 #include "SHT85.h"
 #include "Wire.h"

@@ -4,8 +4,6 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-#pragma once
-
 #include "wled.h"
 #include <ld2410.h>
 

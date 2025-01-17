@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 
 class PingPongClockUsermod : public Usermod

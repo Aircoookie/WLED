@@ -13,8 +13,6 @@
  * lib_deps = ${env.lib_deps}
  *     pololu/VL53L0X @ ^1.3.0
  */
-#pragma once
-
 #include "wled.h"
 
 #include <Wire.h>

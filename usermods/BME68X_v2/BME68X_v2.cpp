@@ -6,7 +6,6 @@
  * @date 19 Feb 2024
  */
 
-#pragma once
 #warning ********************Included USERMOD_BME68X ********************
 
 #define UMOD_DEVICE "ESP32"                 			 // NOTE - Set your hardware here

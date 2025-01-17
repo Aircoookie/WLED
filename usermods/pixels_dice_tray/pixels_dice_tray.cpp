@@ -1,5 +1,3 @@
-#pragma once
-
 #include <pixels_dice_interface.h>  // https://github.com/axlan/arduino-pixels-dice
 #include "wled.h"
 

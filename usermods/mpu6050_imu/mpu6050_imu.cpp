@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 
 /* This driver reads quaternion data from the MPU6060 and adds it to the JSON

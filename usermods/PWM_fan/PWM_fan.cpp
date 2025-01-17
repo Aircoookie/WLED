@@ -1,5 +1,3 @@
-#pragma once
-
 #if !defined(USERMOD_DALLASTEMPERATURE) && !defined(USERMOD_SHT)
 #error The "PWM fan" usermod requires "Dallas Temeprature" or "SHT" usermod to function properly.
 #endif
