@@ -582,7 +582,7 @@ void ParticleSystem2D::ParticleSys_render() {
 
   // handle blurring and framebuffer update
   if (framebuffer) {
-    if(strip.getCurrSegmentId() > 0) useAdditiveTransfer = true; // overlay rendering
+    if(segmentIsOverlay()) useAdditiveTransfer = true; // overlay rendering
     else useAdditiveTransfer = false;
     // handle buffer blurring or clearing
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
@@ -1494,7 +1494,7 @@ void ParticleSystem1D::ParticleSys_render() {
   globalSmear = smearamount;
 
   if (framebuffer) {
-    if(strip.getCurrSegmentId() > 0) useAdditiveTransfer = true; // overlay rendering
+    if(segmentIsOverlay()) useAdditiveTransfer = true; // overlay rendering
     else useAdditiveTransfer = false;
     // handle buffer blurring or clearing
     bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
@@ -2192,6 +2192,18 @@ void updateUsedParticles(const uint32_t allocated, const uint32_t available, con
   used = max((uint32_t)2, min(available, wantsToUse)); // limit to available particles, use a minimum of 2
 }
 
+// check if a segment is fully overlapping with an underlying segment (used to enable overlay rendering i.e. adding instead of overwriting pixels)
+bool segmentIsOverlay(void) {
+  unsigned segID = strip.getCurrSegmentId();
+  if(segID > 0) { // lower number segments exist, check coordinates of underlying segments
+      for (unsigned i = 0; i < segID; i++) {
+        if(strip._segments[i].start <= strip._segments[segID].start && strip._segments[i].stop >= strip._segments[segID].stop &&
+           strip._segments[i].startY <= strip._segments[segID].startY && strip._segments[i].stopY >= strip._segments[segID].stopY)
+          return true; 
+      }
+  }
+  return false;
+}
 // get the pointer to the particle memory for the segment
 partMem* getPartMem(void) { // TODO: maybe there is a better/faster way than using vectors?
   uint8_t segID = strip.getCurrSegmentId();

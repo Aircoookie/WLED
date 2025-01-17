@@ -44,6 +44,7 @@ struct partMem {
 void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize, uint32_t &availableToPS, uint32_t numParticlesUsed, const uint8_t effectID); // update particle memory pointer, handles memory transitions
 void particleHandover(void *buffer, size_t structSize, int32_t numParticles);
 void updateUsedParticles(const uint32_t allocated, const uint32_t available, const uint8_t percentage, uint32_t &used);
+bool segmentIsOverlapping(void); // check if segment is fully overlapping with at least one underlying segment
 partMem* getPartMem(void); // returns pointer to memory struct for current segment or nullptr
 void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer, bool initialize); // allocate CRGB rendering buffer, update size if needed
 void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer = false); // transfer the buffer to the segment (supports 1D and 2D)
