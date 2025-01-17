@@ -165,8 +165,8 @@ public:
   int32_t angleEmit(PSsource& emitter, const uint16_t angle, const int32_t speed);
   //particle physics
   void applyGravity(PSparticle &part); // applies gravity to single particle (use this for sources)
-  void applyForce(PSparticle &part, const int8_t xforce, const int8_t yforce, uint8_t &counter);
-  void applyForce(const uint32_t particleindex, const int8_t xforce, const int8_t yforce); // use this for advanced property particles
+  [[gnu::hot]] void applyForce(PSparticle &part, const int8_t xforce, const int8_t yforce, uint8_t &counter);
+  [[gnu::hot]] void applyForce(const uint32_t particleindex, const int8_t xforce, const int8_t yforce); // use this for advanced property particles
   void applyForce(const int8_t xforce, const int8_t yforce); // apply a force to all particles
   void applyAngleForce(PSparticle &part, const int8_t force, const uint16_t angle, uint8_t &counter);
   void applyAngleForce(const uint32_t particleindex, const int8_t force, const uint16_t angle); // use this for advanced property particles
@@ -209,17 +209,17 @@ public:
 private:
   //rendering functions
   void ParticleSys_render();
-  void renderParticle(const uint32_t particleindex, const uint32_t brightness, const CRGB& color, const bool wrapX, const bool wrapY);
+  [[gnu::hot]] void renderParticle(const uint32_t particleindex, const uint32_t brightness, const CRGB& color, const bool wrapX, const bool wrapY);
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
   void handleCollisions();
-  void collideParticles(PSparticle &particle1, PSparticle &particle2, const int32_t dx, const int32_t dy);
+  [[gnu::hot]] void collideParticles(PSparticle &particle1, PSparticle &particle2, const int32_t dx, const int32_t dy);
   void fireParticleupdate();
   //utility functions
   void updatePSpointers(const bool isadvanced, const bool sizecontrol); // update the data pointers to current segment data space
   void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
   void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
-  void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, const uint32_t maxposition); // bounce on a wall
+  [[gnu::hot]] void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, const uint32_t maxposition); // bounce on a wall
   // note: variables that are accessed often are 32bit for speed
   PSsettings2D particlesettings; // settings used when updating particles (can also used by FX to move sources), do not edit properties directly, use functions above
   uint32_t numParticles;  // total number of particles allocated by this system note: during transitions, less are available, use availableParticles
@@ -340,7 +340,7 @@ public:
   int32_t sprayEmit(const PSsource1D &emitter);
   void particleMoveUpdate(PSparticle1D &part, PSparticleFlags1D &partFlags, PSsettings1D *options = NULL, PSadvancedParticle1D *advancedproperties = NULL); // move function
   //particle physics
-  void applyForce(PSparticle1D &part, const int8_t xforce, uint8_t &counter); //apply a force to a single particle
+  [[gnu::hot]]  void applyForce(PSparticle1D &part, const int8_t xforce, uint8_t &counter); //apply a force to a single particle
   void applyForce(const int8_t xforce); // apply a force to all particles
   void applyGravity(PSparticle1D &part, PSparticleFlags1D &partFlags); // applies gravity to single particle (use this for sources)
   void applyFriction(const int32_t coefficient); // apply friction to all used particles
@@ -380,12 +380,12 @@ private:
   //paricle physics applied by system if flags are set
   void applyGravity(); // applies gravity to all particles
   void handleCollisions();
-  void collideParticles(PSparticle1D &particle1, const PSparticleFlags1D &particle1flags, PSparticle1D &particle2, const PSparticleFlags1D &particle2flags, int32_t dx, int32_t relativeVx, uint32_t collisiondistance);
+  [[gnu::hot]] void collideParticles(PSparticle1D &particle1, const PSparticleFlags1D &particle1flags, PSparticle1D &particle2, const PSparticleFlags1D &particle2flags, int32_t dx, int32_t relativeVx, uint32_t collisiondistance);
 
   //utility functions
   void updatePSpointers(const bool isadvanced); // update the data pointers to current segment data space
   //void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
-  void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, const uint32_t maxposition); // bounce on a wall
+  [[gnu::hot]] void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, const uint32_t maxposition); // bounce on a wall
   // note: variables that are accessed often are 32bit for speed
   PSsettings1D particlesettings; // settings used when updating particles
   uint32_t numParticles;  // total number of particles allocated by this system note: never use more than this, even if more are available (only this many advanced particles are allocated)
