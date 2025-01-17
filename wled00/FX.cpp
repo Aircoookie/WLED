@@ -138,21 +138,31 @@ uint16_t mode_copy_segment(void) {
       uint32_t cl; // length to copy
       for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {
         sourcecolor = strip.getRenderedPixelXY(sourceid, i);
-        SEGMENT.setPixelColor(i, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
+        uint32_t color = adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2);
+        if(SEGMENT.check3) // overlay
+          SEGMENT.addPixelColor(i, color);
+        else
+          SEGMENT.setPixelColor(i, color);
       }
     } else { // 2D source, note: 2D to 1D just copies the first row (or first column if 'Switch axis' is checked in FX)
       for (unsigned y = 0; y <  SEGMENT.virtualHeight(); y++) {
         for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {
-          if(SEGMENT.check2) sourcecolor = strip.getRenderedPixelXY(sourceid, y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
-          else sourcecolor = strip.getRenderedPixelXY(sourceid, x, y);
-          SEGMENT.setPixelColorXY(x, y, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
+          if(SEGMENT.check2)
+            sourcecolor = strip.getRenderedPixelXY(sourceid, y, x); // flip reading axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
+          else
+            sourcecolor = strip.getRenderedPixelXY(sourceid, x, y);
+          uint32_t color = adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2);
+          if(SEGMENT.check3) // overlay
+            SEGMENT.addPixelColorXY(x, y, color);
+          else
+            SEGMENT.setPixelColorXY(x, y, color);
         }
       }
     }
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,Color shift,Lighten,Brighten,ID,,Switch axis(2D);;;1;ix=0,c1=0,c2=0,c3=0,o2=0";
+static const char _data_FX_MODE_COPY[] PROGMEM = "Copy Segment@,Color shift,Lighten,Brighten,ID,,Axis(2D),Overlay;;;12;ix=0,c1=0,c2=0,c3=0";
 
 
 /*
