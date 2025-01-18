@@ -748,24 +748,32 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
     for (uint32_t xrb = offset; xrb < rendersize + offset; xrb++) {
       xfb = xfb_orig + xrb;
       if (xfb > (uint32_t)maxXpixel) {
-      if (wrapX) // wrap x to the other side if required
-        xfb = xfb % (maxXpixel + 1); // TODO: this did not work in 1D system but appears to work in 2D (wrapped pixels were offset) under which conditions does this not work?
+      if (wrapX) { // wrap x to the other side if required
+        if (xfb > (uint32_t)maxXpixel << 1) // xfb is "negative", handle it
+          xfb = (maxXpixel + 1) + (int32_t)xfb; // this always overflows to within bounds
+        else
+          xfb = xfb % (maxXpixel + 1); // note: without the above "negative" check, this works only for powers of 2
+      }
       else
         continue;
       }
 
       for (uint32_t yrb = offset; yrb < rendersize + offset; yrb++) {
-      yfb = yfb_orig + yrb;
-      if (yfb > (uint32_t)maxYpixel) {
-        if (wrapY) // wrap y to the other side if required
-        yfb = yfb % (maxYpixel + 1);
+        yfb = yfb_orig + yrb;
+        if (yfb > (uint32_t)maxYpixel) {
+          if (wrapY) {// wrap y to the other side if required
+            if (yfb > (uint32_t)maxYpixel << 1) // yfb is "negative", handle it
+              yfb = (maxYpixel + 1) + (int32_t)yfb; // this always overflows to within bounds
+            else
+              yfb = yfb % (maxYpixel + 1); // note: without the above "negative" check, this works only for powers of 2
+          }
+          else
+          continue;
+        }
+        if (framebuffer)
+          fast_color_add(framebuffer[xfb + (maxYpixel - yfb) * (maxXpixel + 1)], renderbuffer[xrb + yrb * 10]);
         else
-        continue;
-      }
-      if (framebuffer)
-        fast_color_add(framebuffer[xfb + (maxYpixel - yfb) * (maxXpixel + 1)], renderbuffer[xrb + yrb * 10]);
-      else
-        SEGMENT.addPixelColorXY(xfb, maxYpixel - yfb, renderbuffer[xrb + yrb * 10],true);
+          SEGMENT.addPixelColorXY(xfb, maxYpixel - yfb, renderbuffer[xrb + yrb * 10],true);
       }
     }
     } else { // standard rendering
@@ -1230,13 +1238,6 @@ void ParticleSystem1D::update(void) {
   }
 
   ParticleSys_render();
-
-  uint32_t bg_color = SEGCOLOR(1); //background color, set to black to overlay
-  if (bg_color > 0) { //if not black
-    for(int32_t i = 0; i <= maxXpixel; i++) {
-      SEGMENT.addPixelColor(i, bg_color, true); // TODO: can this be done in rendering function using local buffer?
-    }
-  }
 }
 
 // set percentage of used particles as uint8_t i.e 127 means 50% for example
@@ -1358,7 +1359,7 @@ void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSparticleFlags1D 
 
     if (advancedproperties) { // using individual particle size?
       if (advancedproperties->size > 1)
-        particleHardRadius = PS_P_MINHARDRADIUS_1D + (advancedproperties->size >> 1); // TODO: this may need optimization, radius and diameter is still a mess in 1D system.
+        particleHardRadius = PS_P_MINHARDRADIUS_1D + (advancedproperties->size >> 1);
       else // single pixel particles use half the collision distance for walls
         particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1;
       renderradius = particleHardRadius; // note: for single pixel particles, it should be zero, but it does not matter as out of bounds checking is done in rendering function
@@ -1536,9 +1537,19 @@ void ParticleSystem1D::ParticleSys_render() {
     else
       SEGMENT.blur(globalSmear, true);
   }
+
+  // add background color
+  uint32_t bg_color = SEGCOLOR(1);
+  if (bg_color > 0) { //if not black
+    for(int32_t i = 0; i <= maxXpixel; i++) {
+      if (framebuffer)
+        fast_color_add(framebuffer[i], bg_color);
+      else
+        SEGMENT.addPixelColor(i, bg_color, true);
+    }
+  }
   // transfer local buffer back to segment (if available)
   transferBuffer(maxXpixel + 1, 0, useAdditiveTransfer);
-
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -1577,7 +1588,7 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
 
     // check if particle has advanced size properties and buffer is available
     if (advPartProps && advPartProps[particleindex].size > 1) {
-      if (renderbuffer && framebuffer) { // TODO: add unbuffered large size rendering like in 2D system
+      if (renderbuffer) {
         memset(renderbuffer, 0, 10 * sizeof(CRGB)); // clear the buffer, renderbuffer is 10 pixels
       }
       else
@@ -1610,15 +1621,18 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
         xfb = xfb_orig + xrb;
         if (xfb > (uint32_t)maxXpixel) {
           if (wrap) { // wrap x to the other side if required
-            if (xfb > (uint32_t)maxXpixel << 1) // xfb is "negative" (note: for some reason, this check is needed in 1D but works without in 2D...)
-              xfb = (maxXpixel +1) + (int32_t)xfb; //TODO: remove this again and see if it works now (changed maxxpixel to unsigned)
+            if (xfb > (uint32_t)maxXpixel << 1) // xfb is "negative"
+              xfb = (maxXpixel + 1) + (int32_t)xfb; // this always overflows to within bounds
             else
-              xfb = xfb % (maxXpixel + 1); //TODO: can modulo be avoided?
+              xfb = xfb % (maxXpixel + 1); // note: without the above "negative" check, this works only for powers of 2
           }
           else
             continue;
         }
-        fast_color_add(framebuffer[xfb], renderbuffer[xrb]); // TODO: add unbuffered large size rendering like in 2D system
+        if (framebuffer)
+          fast_color_add(framebuffer[xfb], renderbuffer[xrb]);
+        else
+        SEGMENT.addPixelColor(xfb, renderbuffer[xrb]);
       }
     }
     else { // standard rendering (2 pixels per particle)
@@ -1827,7 +1841,7 @@ uint32_t calculateNumberOfParticles1D(const uint32_t fraction, const bool isadva
   numberofParticles = (numberofParticles * (fraction + 1)) >> 8; // calculate fraction of particles
   numberofParticles = numberofParticles < 20 ? 20 : numberofParticles; // 20 minimum
   //make sure it is a multiple of 4 for proper memory alignment (easier than using padding bytes)
-  numberofParticles = ((numberofParticles+3) >> 2) << 2; // TODO: with a separate particle buffer, this is unnecessary
+  numberofParticles = ((numberofParticles+3) >> 2) << 2; // note: with a separate particle buffer, this is probably unnecessary
   return numberofParticles;
 }
 
@@ -1925,14 +1939,6 @@ static int32_t calcForce_dv(const int8_t force, uint8_t &counter) {
 
   return dv;
 }
-
-// limit speed to prevent overflows
-//TODO: inline this function? check if that uses a lot more flash.
-/*
-static int32_t limitSpeed(int32_t speed) {
-  return min((int32_t)PS_P_MAXSPEED, max((int32_t)-PS_P_MAXSPEED, speed));
-  //return speed > PS_P_MAXSPEED ? PS_P_MAXSPEED : (speed < -PS_P_MAXSPEED ? -PS_P_MAXSPEED : speed); // note: this uses more code, not sure due to speed or inlining
-}*/
 
 // check if particle is out of bounds and wrap it around if required, returns false if out of bounds
 static bool checkBoundsAndWrap(int32_t &position, const int32_t max, const int32_t particleradius, const bool wrap) {
@@ -2064,7 +2070,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     if (buffer)
       partMemList.push_back({buffer, requestsize, 0, strip.getCurrSegmentId(),  0, 0, true});  // add buffer to list, set flag to transfer/init the particles note: if pushback fails, it may crash
     else
-      return nullptr; // there is no memory available !!! TODO: if localbuffer is allocated, free it and try again, its no use having a buffer but no particles
+      return nullptr; // there is no memory available TODO: if localbuffer is allocated, free it and try again, its no use having a buffer but no particles
     pmem = getPartMem(); // get the pointer to the new element (check that it was added)
     if (!pmem) { // something went wrong
       free(buffer);
@@ -2083,7 +2089,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       newAvailable = (maxParticles * progress) >> 16; // update total particles available to this PS (newAvailable is guaranteed to be smaller than maxParticles)
       if(newAvailable < 2) newAvailable = 2; // give 2 particle minimum (some FX may crash with less as they do i+1 access)
       if(maxParticles / numParticlesUsed > 3 && newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used for FX using a small amount, do not move the pointer anymore (will be set to base in final handover)
-      uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles
+      uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles (in particle structs, not bytes)
       if(bufferoffset < maxParticles) // safety check
         buffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // new effect gets the end of the buffer
       int32_t totransfer = newAvailable - availableToPS; // number of particles to transfer in this transition update
@@ -2108,13 +2114,13 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
         if(totransfer < 0) totransfer = 0; // safety check
         particleHandover(buffer, structSize, totransfer);
 
-        //TODO: there is a bug here, in 1D system, this does not really work right. maybe an alignment problem??? (2D seems to work fine)
-        // -> bug seems magically fixed?
         if(maxParticles / numParticlesUsed > 3) { // FX uses less than 25%: move the already existing particles to the beginning of the buffer
           uint32_t usedbytes = availableToPS * structSize;
-          uint32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
-          void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
-          memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
+          int32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
+          if(bufferoffset < maxParticles) { // safety check
+            void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
+            memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
+          }
         }
       }
       // kill unused particles to they do not re-appear when transitioning to next FX
@@ -2194,8 +2200,9 @@ bool segmentIsOverlay(void) { // TODO: this only needs to be checked when segmen
   }
   return false;
 }
+
 // get the pointer to the particle memory for the segment
-partMem* getPartMem(void) { // TODO: maybe there is a better/faster way than using vectors?
+partMem* getPartMem(void) {
   uint8_t segID = strip.getCurrSegmentId();
   for (partMem &pmem : partMemList) {
     if (pmem.id == segID) {
@@ -2210,7 +2217,7 @@ void updateRenderingBuffer(uint32_t requiredpixels, bool isFramebuffer, bool ini
   PSPRINTLN("updateRenderingBuffer");
   uint16_t& targetBufferSize = isFramebuffer ? frameBufferSize : renderBufferSize; // corresponding buffer size
 
-  //if(isFramebuffer) return; // debug only: disable frame-buffer buffer
+  // if(isFramebuffer) return; // debug/testing only: disable frame-buffer
 
   if(targetBufferSize < requiredpixels) { // check current buffer size
     CRGB** targetBuffer = isFramebuffer ? &framebuffer : &renderbuffer; // pointer to target buffer
@@ -2287,7 +2294,7 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
           else { // color to add to segment is not black
             if(segmentcolor) {
               fast_color_add(*c, segmentRGB); // add segment color back to buffer if not black
-              clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again) TODO: could convert first, then use 32bit adding function color_add() from colors.cpp
+              clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again) and set the segment
             }
             SEGMENT.setPixelColorXY((int)x, (int)y, clr); // save back to segment after adding local buffer
           }
@@ -2309,7 +2316,7 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
         else { // color to add to segment is not black
           if(segmentcolor) {
             fast_color_add(*c, segmentRGB); // add segment color back to buffer if not black
-            clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again) TODO: could convert first, then use 32bit adding function color_add() from colors.cpp
+            clr = RGBW32(c->r,c->g,c->b,0); // convert to 32bit color (again)
           }
           SEGMENT.setPixelColor((int)x, clr); // save back to segment after adding local buffer
         }

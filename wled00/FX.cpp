@@ -9716,7 +9716,7 @@ uint16_t mode_particle1Dspray(void) {
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setBounce(SEGMENT.check2);
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  int32_t gravity = (int32_t)SEGMENT.custom3 - 15;  // gravity setting, 0-14 is negative, 16 - 31 is positive
+  int32_t gravity = -((int32_t)SEGMENT.custom3 - 16);  // gravity setting, 0-15 is positive (down), 17 - 31 is negative (up)
   PartSys->setGravity(abs(gravity)); // use reversgrav setting to invert gravity (for proper 'floor' and out of bounce handling)
 
   PartSys->sources[0].source.hue = SEGMENT.aux0; // hw_random16();
@@ -9742,7 +9742,7 @@ uint16_t mode_particle1Dspray(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS 1D Spray@Speed(+/-),!,Position,Blur,Gravity(+/-),AgeColor,Bounce,Position Color;,!;!;1;sx=200,ix=220,c1=4,c2=0,o1=1,o2=1";
+static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS Spray 1D@Speed(+/-),!,Position,Blur,Gravity(+/-),AgeColor,Bounce,Position Color;,!;!;1;sx=200,ix=220,c1=0,c2=0,o1=1";
 
 /*
 Particle based balance: particles move back and forth (1D pendent to 2D particle box)
