@@ -322,8 +322,8 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
-
-#define MODE_COUNT                     187
+#define FX_MODE_COPY                   187
+#define MODE_COUNT                     188
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -870,6 +870,7 @@ class WS2812FX {  // 96 bytes
 
     unsigned long now, timebase;
     uint32_t getPixelColor(unsigned) const;
+    uint32_t getRenderedPixelXY(uint8_t segid, unsigned x, unsigned y = 0) const;
 
     inline uint32_t getLastShow() const   { return _lastShow; }           // returns millis() timestamp of last strip.show() call
 
