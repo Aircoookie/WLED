@@ -217,7 +217,7 @@ private:
   void fireParticleupdate();
   //utility functions
   void updatePSpointers(const bool isadvanced, const bool sizecontrol); // update the data pointers to current segment data space
-  void updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
+  bool updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize); // advanced size control
   void getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize);
   [[gnu::hot]] void bounce(int8_t &incomingspeed, int8_t &parallelspeed, int32_t &position, const uint32_t maxposition); // bounce on a wall
   // note: variables that are accessed often are 32bit for speed

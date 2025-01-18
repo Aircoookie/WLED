@@ -73,7 +73,9 @@ void ParticleSystem2D::update(void) {
   //update size settings before handling collisions
   if (advPartSize) {
     for (uint32_t i = 0; i < usedParticles; i++) {
-      updateSize(&advPartProps[i], &advPartSize[i]);
+      if(updateSize(&advPartProps[i], &advPartSize[i]) == false) { // if particle shrinks to 0 size
+        particles[i].ttl = 0; // kill particle
+      }
     }
   }
 
@@ -111,7 +113,6 @@ void ParticleSystem2D::setUsedParticles(uint8_t percentage) {
   PSPRINTLN(usedParticles);
 }
 
-//TODO: inline these functions
 void ParticleSystem2D::setWallHardness(uint8_t hardness) {
   wallHardness = hardness;
 }
@@ -276,7 +277,7 @@ void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSparticleFlags &par
         if ((newX < (int32_t)particleHardRadius) || (newX > (int32_t)(maxX - particleHardRadius))) // reached a wall
           bounce(part.vx, part.vy, newX, maxX);
       }
-      else if(!checkBoundsAndWrap(newX, maxX, renderradius, options->wrapX)) { // check out of bounds  TODO: not checking out of bounds when bounce is enabled used to lead to crashes, seems fixed now. test more.
+      else if(!checkBoundsAndWrap(newX, maxX, renderradius, options->wrapX)) { // check out of bounds
         partFlags.outofbounds = true;
         if (options->killoutofbounds)
           part.ttl = 0;
@@ -320,21 +321,12 @@ void ParticleSystem2D::fireParticleupdate() {
       particles[i].y = newY;
     }
   }
-/*
-  // this loop saves 150 bytes of flash but is 5% slower
-  for (uint32_t i = 0; i < usedParticles; i++) {
-    if (particles[i].ttl > 0) {
-       particles[i].y += (particles[i].ttl >> 2); // younger particles move faster upward as they are hotter
-       particleMoveUpdate(particles[i]);
-    }
-  }
-*/
 }
 
-// update advanced particle size control
-void ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize) {
+// update advanced particle size control, returns false if particle shrinks to 0 size
+bool ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize) {
   if (advsize == NULL) // safety check
-    return;
+    return false;
   // grow/shrink particle
   int32_t newsize = advprops->size;
   uint32_t counter = advsize->sizecounter;
@@ -367,7 +359,8 @@ void ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *a
     if (newsize > advsize->minsize) {
       newsize -= increment;
       if (newsize <= advsize->minsize) {
-        //if (advsize->minsize == 0) part.ttl = 0; //TODO: need to pass particle or return kill instruction
+        if (advsize->minsize == 0) 
+          return false; // particle shrunk to zero
         advsize->shrink = false; // disable shrinking
         newsize = advsize->minsize; // limit
         if (advsize->pulsate) advsize->grow = true;
@@ -377,8 +370,9 @@ void ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *a
   advprops->size = newsize;
   // handle wobbling
   if (advsize->wobble) {
-    advsize->asymdir += advsize->wobblespeed; // todo: need better wobblespeed control? counter is already in the struct...
+    advsize->asymdir += advsize->wobblespeed; // note: if need better wobblespeed control a counter is already in the struct
   }
+  return true;
 }
 
 // calculate x and y size for asymmetrical particles (advanced size control)
@@ -629,7 +623,7 @@ void ParticleSystem2D::ParticleSys_render() {
     }
     else {
       brightness = min((particles[i].ttl << 1), (int)255);
-      baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255); // TODO: use loadPalette(CRGBPalette16 &targetPalette, SEGMENT.palette), .palette should be updated immediately at palette change, only use local palette during FX transitions, not during normal transitions. -> why not always?
+      baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255);
       if (particles[i].sat < 255) {
         CHSV32 baseHSV; 
         rgb2hsv((uint32_t((byte(baseRGB.r) << 16) | (byte(baseRGB.g) << 8) | (byte(baseRGB.b)))), baseHSV); // convert to HSV
@@ -1096,7 +1090,7 @@ uint32_t calculateNumberOfParticles2D(uint32_t const pixels, const bool isadvanc
     numberofParticles /= 8; // if advanced size control is used, much fewer particles are needed note: if changing this number, adjust FX using this accordingly
 
   //make sure it is a multiple of 4 for proper memory alignment (easier than using padding bytes)
-  numberofParticles = ((numberofParticles+3) >> 2) << 2; // TODO: with a separate particle buffer, this is unnecessary
+  numberofParticles = ((numberofParticles+3) >> 2) << 2; // note: with a separate particle buffer, this is probably unnecessary
   return numberofParticles;
 }
 
@@ -1214,13 +1208,14 @@ ParticleSystem1D::ParticleSystem1D(uint32_t length, uint32_t numberofparticles, 
 // update function applies gravity, moves the particles, handles collisions and renders the particles
 void ParticleSystem1D::update(void) {
   PSadvancedParticle1D *advprop = NULL;
+
+  //apply gravity globally if enabled
+  if (particlesettings.useGravity) //note: in 1D system, applying gravity after collisions also works but may be worse
+    applyGravity();
+
   // handle collisions (can push particles, must be done before updating particles or they can render out of bounds, causing a crash if using local buffer for speed)
   if (particlesettings.useCollisions)
     handleCollisions();
-
-  //apply gravity globally if enabled
-  if (particlesettings.useGravity) //note: in 1D system, applying gravity after collisions also works TODO: which one is really better for stacking / oscillations?
-    applyGravity();
 
   //move all particles
   for (uint32_t i = 0; i < usedParticles; i++) {
@@ -2183,7 +2178,7 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
 
 // update number of particles to use, limit to allocated (= particles allocated by the calling system) in case more are available in the buffer
 void updateUsedParticles(const uint32_t allocated, const uint32_t available, const uint8_t percentage, uint32_t &used) {
-  uint32_t wantsToUse = (allocated * ((uint32_t)percentage + 1)) >> 8;
+  uint32_t wantsToUse = 1 + ((allocated * ((uint32_t)percentage + 1)) >> 8); // always give 1 particle minimum
   used = max((uint32_t)2, min(available, wantsToUse)); // limit to available particles, use a minimum of 2
 }
 
