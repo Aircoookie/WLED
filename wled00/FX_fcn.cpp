@@ -427,18 +427,18 @@ void Segment::beginDraw() {
 }
 
 void Segment::setCurrentPalette(bool loadOldPalette) {
-  if(loadOldPalette) { // load palette of old effect, used in particle system
-    loadPalette(_currentPalette, _t->_palette);
+  if(loadOldPalette && isInTransition()) {
+    loadPalette(_currentPalette, _t->_palette); // load palette of old effect, used in particle system
     return;
   }
-  else
-    loadPalette(_currentPalette, palette);
-  if(strip.paletteFade && progress() < 0xFFFFU) {
+  loadPalette(_currentPalette, palette);
+
+  if(strip.paletteFade && isInTransition() && progress() < 0xFFFFU) {
     // blend palettes
     // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
     // minimum blend time is 100ms maximum is 65535ms
-    unsigned noOfBlends = ((255U * progress()) / 0xFFFFU) - _t->_prevPaletteBlends;
-    for (unsigned i = 0; i < noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, _currentPalette, 48);
+    int noOfBlends = ((255U * progress()) / 0xFFFFU) - _t->_prevPaletteBlends;
+    for (int i = 0; i < noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, _currentPalette, 48);
     _currentPalette = _t->_palT; // copy transitioning/temporary palette
   }
 }

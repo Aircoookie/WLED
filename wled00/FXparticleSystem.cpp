@@ -1979,10 +1979,10 @@ static void fast_color_add(CRGB &c1, const CRGB &c2, const uint32_t scale) {
     c1.g = g;
     c1.b = b;
   } else {
-    uint32_t scale = (255U << 16) / max;
-    c1.r = (r * scale) >> 16;
-    c1.g = (g * scale) >> 16;
-    c1.b = (b * scale) >> 16;
+    uint32_t newscale = (255U << 16) / max;
+    c1.r = (r * newscale) >> 16;
+    c1.g = (g * newscale) >> 16;
+    c1.b = (b * newscale) >> 16;
   }
 }
 
