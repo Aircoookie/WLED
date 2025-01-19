@@ -1,12 +1,12 @@
 // force the compiler to show a warning to confirm that this file is included
 #warning **** Included USERMOD_BH1750 ****
 
-#ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
-#endif
-
 #include "wled.h"
 #include <BH1750.h>
+
+#ifdef WLED_DISABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
 
 // the max frequency to check photoresistor, 10 seconds
 #ifndef USERMOD_BH1750_MAX_MEASUREMENT_INTERVAL

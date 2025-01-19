@@ -1,11 +1,9 @@
-#warning **** Included USERMOD_LD2410 ****
-
-#ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
-#endif
-
 #include "wled.h"
 #include <ld2410.h>
+
+#ifdef WLED_DISABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
 
 class LD2410Usermod : public Usermod {
 

@@ -1,8 +1,8 @@
-#ifndef WLED_ENABLE_MQTT
+#include "wled.h"
+
+#ifdef WLED_DISABLE_MQTT
 #error "This user mod requires MQTT to be enabled."
 #endif
-
-#include "wled.h"
 
 class Smartnest : public Usermod
 {

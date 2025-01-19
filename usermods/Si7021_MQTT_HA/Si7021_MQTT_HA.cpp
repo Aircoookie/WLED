@@ -1,13 +1,13 @@
-#ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
-#endif
-
 // this is remixed from usermod_v2_SensorsToMqtt.h (sensors_to_mqtt usermod)
 // and usermod_multi_relay.h (multi_relay usermod)
 
 #include "wled.h"
 #include <Adafruit_Si7021.h>
 #include <EnvironmentCalculations.h> // EnvironmentCalculations::HeatIndex(), ::DewPoint(), ::AbsoluteHumidity()
+
+#ifdef WLED_DISABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
 
 Adafruit_Si7021 si7021;
 

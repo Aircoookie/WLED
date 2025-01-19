@@ -1,5 +1,5 @@
 #include "wled.h"
-#ifndef WLED_ENABLE_MQTT
+#ifdef WLED_DISABLE_MQTT
 #error "This user mod requires MQTT to be enabled."
 #endif
 

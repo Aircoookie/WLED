@@ -1,13 +1,13 @@
-#ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
-#endif
-
 #include "wled.h"
 #include <Arduino.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_CCS811.h>
 #include <Adafruit_Si7021.h>
+
+#ifdef WLED_DISABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
 
 Adafruit_BMP280 bmp;
 Adafruit_Si7021 si7021;

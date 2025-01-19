@@ -1,14 +1,14 @@
 // force the compiler to show a warning to confirm that this file is included
 #warning **** Included USERMOD_BME280 version 2.0 ****
 
-#ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
-#endif
-
 #include "wled.h"
 #include <Arduino.h>
 #include <BME280I2C.h>               // BME280 sensor
 #include <EnvironmentCalculations.h> // BME280 extended measurements
+
+#ifdef WLED_DISABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
 
 class UsermodBME280 : public Usermod
 {
