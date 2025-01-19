@@ -65,7 +65,6 @@ ParticleSystem2D::ParticleSystem2D(uint32_t width, uint32_t height, uint32_t num
 
 // update function applies gravity, moves the particles, handles collisions and renders the particles
 void ParticleSystem2D::update(void) {
-  PSadvancedParticle *advprop = NULL;
   //apply gravity globally if enabled
   if (particlesettings.useGravity)
     applyGravity();
@@ -831,7 +830,7 @@ void ParticleSystem2D::handleCollisions() {
   collDistSq = collDistSq * collDistSq; // square it for faster comparison (square is one operation)
   // note: partices are binned in x-axis, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  constexpr uint32_t BIN_WIDTH = 6 * PS_P_RADIUS; // width of a bin in sub-pixels
+  constexpr int32_t BIN_WIDTH = 6 * PS_P_RADIUS; // width of a bin in sub-pixels
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 2); // assume no more than half of the particles are in the same bin, do not bin small amounts of particles
   uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
@@ -1145,10 +1144,9 @@ bool initParticleSystem2D(ParticleSystem2D *&PartSys, uint32_t requestedsources,
   uint32_t cols = SEGMENT.virtualWidth();
   uint32_t rows = SEGMENT.virtualHeight();
   uint32_t pixels = cols * rows;
-  updateRenderingBuffer(SEGMENT.vWidth() * SEGMENT.vHeight(), true, true); // update or create rendering buffer
+
   if(advanced)
     updateRenderingBuffer(100, false, true); // allocate a 10x10 buffer for rendering advanced particles
-
   uint32_t numparticles = calculateNumberOfParticles2D(pixels, advanced, sizecontrol);
   PSPRINT(" segmentsize:" + String(cols) + " " + String(rows));
   PSPRINT(" request numparticles:" + String(numparticles));
@@ -1160,14 +1158,14 @@ bool initParticleSystem2D(ParticleSystem2D *&PartSys, uint32_t requestedsources,
   }
 
   PartSys = new (SEGENV.data) ParticleSystem2D(cols, rows, numparticles, numsources, advanced, sizecontrol); // particle system constructor
-
+  updateRenderingBuffer(SEGMENT.vWidth() * SEGMENT.vHeight(), true, true); // update or create rendering buffer note: for fragmentation it might be better to allocate this first, but if memory is scarce, system has a buffer but no particles and will return false
+  
   PSPRINTLN("******init done, pointers:");
   #ifdef WLED_DEBUG_PS
   PSPRINT("framebfr size:");
   PSPRINT(frameBufferSize);
   PSPRINT(" @ addr: 0x");
   Serial.println((uintptr_t)framebuffer, HEX);
-
   PSPRINT("renderbfr size:");
   PSPRINT(renderBufferSize);
   PSPRINT(" @ addr: 0x");
@@ -1215,8 +1213,6 @@ ParticleSystem1D::ParticleSystem1D(uint32_t length, uint32_t numberofparticles, 
 
 // update function applies gravity, moves the particles, handles collisions and renders the particles
 void ParticleSystem1D::update(void) {
-  PSadvancedParticle1D *advprop = NULL;
-
   //apply gravity globally if enabled
   if (particlesettings.useGravity) //note: in 1D system, applying gravity after collisions also works but may be worse
     applyGravity();
@@ -1666,7 +1662,7 @@ void ParticleSystem1D::handleCollisions() {
   int32_t collisiondistance = PS_P_MINHARDRADIUS_1D;
   // note: partices are binned by position, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  constexpr uint32_t BIN_WIDTH = 32 * PS_P_RADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  constexpr int32_t BIN_WIDTH = 32 * PS_P_RADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 4); // do not bin small amounts, limit max to 1/2 of particles
   uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // calculate number of bins
   uint16_t binIndices[maxBinParticles]; // array to store indices of particles in a bin
@@ -1876,8 +1872,7 @@ bool allocateParticleSystemMemory1D(const uint32_t numparticles, const uint32_t 
 // initialize Particle System, allocate additional bytes if needed (pointer to those bytes can be read from particle system class: PSdataEnd)
 // note: percentofparticles is in uint8_t, for example 191 means 75%, (deafaults to 255 or 100% meaning one particle per pixel), can be more than 100% (but not recommended, can cause out of memory)
 bool initParticleSystem1D(ParticleSystem1D *&PartSys, const uint32_t requestedsources, const uint8_t fractionofparticles, const uint32_t additionalbytes, const bool advanced) {
-  if (SEGLEN == 1) return false; // single pixel not supported
-  updateRenderingBuffer(SEGMENT.vLength(), true, true); // update/create frame rendering buffer
+  if (SEGLEN == 1) return false; // single pixel not supported  
   if(advanced)
     updateRenderingBuffer(10, false, true); // buffer for advanced particles, fixed size
   uint32_t numparticles = calculateNumberOfParticles1D(fractionofparticles, advanced);
@@ -1886,8 +1881,8 @@ bool initParticleSystem1D(ParticleSystem1D *&PartSys, const uint32_t requestedso
     DEBUG_PRINT(F("PS init failed: memory depleted"));
     return false;
   }
-
   PartSys = new (SEGENV.data) ParticleSystem1D(SEGMENT.virtualLength(), numparticles, numsources, advanced); // particle system constructor
+  updateRenderingBuffer(SEGMENT.vLength(), true, true); // update/create frame rendering buffer note: for fragmentation it might be better to allocate this first, but if memory is scarce, system has a buffer but no particles and will return false
   return true;
 }
 
@@ -2117,7 +2112,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
         if(maxParticles / numParticlesUsed > 3) { // FX uses less than 25%: move the already existing particles to the beginning of the buffer
           uint32_t usedbytes = availableToPS * structSize;
           int32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
-          if(bufferoffset < maxParticles) { // safety check
+          if(bufferoffset < (int)maxParticles) { // safety check
             void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
             memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
           }
