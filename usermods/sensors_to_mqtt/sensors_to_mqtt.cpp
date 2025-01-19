@@ -21,7 +21,7 @@ private:
   float SensorPressure = 0;
   float SensorTemperature = 0;
   float SensorHumidity = 0;
-  char *SensorIaq = "Unknown";
+  const char *SensorIaq = "Unknown";
   String mqttTemperatureTopic = "";
   String mqttHumidityTopic = "";
   String mqttPressureTopic = "";
@@ -115,7 +115,7 @@ private:
   /**
    * Credits: Bouke_Regnerus @ https://community.home-assistant.io/t/example-indoor-air-quality-text-sensor-using-ccs811-sensor/125854 
    */
-  char *_getIaqIndex(float humidity, int tvoc, int eco2)
+  const char *_getIaqIndex(float humidity, int tvoc, int eco2)
   {
     int iaq_index = 0;
 
@@ -214,6 +214,7 @@ private:
     {
       return "Excellent";
     }
+    return "Unknown";
   }
 
 public:
