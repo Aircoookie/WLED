@@ -9864,43 +9864,6 @@ uint16_t mode_particleChase(void) {
 
   int32_t huestep = (((uint32_t)SEGMENT.custom2 << 19) / PartSys->usedParticles) >> 16; // hue increment
 
-  if (SEGMENT.check1) { // pride rainbow colors
-    // TODO: orignal FX also changes movement speed
-    // also the color change is too fast
-    int8_t* huedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd);  // assign data pointer
-    int8_t* sizedir = reinterpret_cast<int8_t *>(PartSys->PSdataEnd + 1);
-    int32_t sizechange = 0;
-
-    if (PartSys->advPartProps[0].size >= 254)
-      *sizedir = -1;
-    else if (PartSys->advPartProps[0].size <= (SEGMENT.custom1 >> 2))
-      *sizedir = 1;
-
-    if (SEGENV.aux1 > 64)
-      *huedir = -1;
-    else if (SEGENV.aux1 < 1)
-      *huedir = 1;
-
-    if (SEGMENT.call % (1024 / (1 + (SEGMENT.speed >> 3))) == 0)
-      SEGENV.aux1 += *huedir;
-    huestep = SEGENV.aux1; // changes gradient spread
-
-    if (SEGMENT.call % (255 / (1 + (SEGMENT.speed >> 2))) == 0)
-      sizechange = *sizedir;
-
-    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-      // PartSys->particles[i].hue = *basehue + (i * (SEGENV.aux1)) / PartSys->usedParticles; // gradient distribution
-      PartSys->advPartProps[i].size += sizechange;
-    }
-  }
-  if ((SEGMENT.check2 || SEGMENT.check1) && SEGMENT.call % (160 / ((SEGMENT.speed >> 3) + 128)) == 0) { // color waves
-    int32_t decrement = 2;
-    if (SEGMENT.check1)
-      decrement = 1; // slower hue change in pride mode
-    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-         PartSys->particles[i].hue -= decrement;
-    }
-  }
   // wrap around (cannot use particle system wrap if distributing colors manually, it also wraps rendering which does not look good)
   for (int32_t i = (int32_t)PartSys->usedParticles - 1; i >= 0; i--) { // check from the back, last particle wraps first, multiple particles can overrun per frame
     if (PartSys->particles[i].x > PartSys->maxX + PS_P_RADIUS_1D + PartSys->advPartProps[i].size) { // wrap it around
@@ -9918,7 +9881,8 @@ uint16_t mode_particleChase(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@!,Density,Size,Hue,Blur,Pride,Color Waves,Position Color;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0";
+static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@!,Density,Size,Hue,Blur,,,Position Color;,!;!;1;pal=11,sx=50,ix=100,c2=5,c3=0";
+
 /*
 Particle Fireworks Starburst replacement (smoother rendering, more settings)
 Uses palette for particle color
