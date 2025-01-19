@@ -37,7 +37,7 @@
 #endif
 
 #ifndef WLED_MAX_USERMODS
-  #ifdef ESP8266
+  #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32S2)
     #define WLED_MAX_USERMODS 4
   #else
     #define WLED_MAX_USERMODS 6
@@ -59,8 +59,8 @@
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
       // the 5th bus (I2S) will prevent Audioreactive usermod from functioning (it is last used though)
-      #define WLED_MAX_BUSSES 7               // will allow 5 digital & 2 analog RGB
-      #define WLED_MAX_DIGITAL_CHANNELS 5
+      #define WLED_MAX_BUSSES 14              // will allow 12 digital & 2 analog RGB
+      #define WLED_MAX_DIGITAL_CHANNELS 12    // x4 RMT + x1/x8 I2S0
       //#define WLED_MAX_ANALOG_CHANNELS 8
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB supports parallel x8 LCD on I2S1
@@ -115,7 +115,7 @@
   #endif
 #endif
 
-#ifdef ESP8266
+#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32S2)
 #define WLED_MAX_COLOR_ORDER_MAPPINGS 5
 #else
 #define WLED_MAX_COLOR_ORDER_MAPPINGS 10
@@ -125,7 +125,7 @@
   #undef WLED_MAX_LEDMAPS
 #endif
 #ifndef WLED_MAX_LEDMAPS
-  #ifdef ESP8266
+  #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32S2)
     #define WLED_MAX_LEDMAPS 10
   #else
     #define WLED_MAX_LEDMAPS 16
@@ -476,6 +476,8 @@
 #ifndef MAX_LEDS
 #ifdef ESP8266
 #define MAX_LEDS 1664 //can't rely on memory limit to limit this to 1600 LEDs
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
+#define MAX_LEDS 2048 //due to memory constraints
 #else
 #define MAX_LEDS 8192
 #endif
@@ -485,7 +487,9 @@
   #ifdef ESP8266
     #define MAX_LED_MEMORY 4000
   #else
-    #if defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
+    #if defined(ARDUINO_ARCH_ESP32S2)
+      #define MAX_LED_MEMORY 16000
+    #elif defined(ARDUINO_ARCH_ESP32C3)
       #define MAX_LED_MEMORY 32000
     #else
       #define MAX_LED_MEMORY 64000

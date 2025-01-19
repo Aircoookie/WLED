@@ -4,7 +4,6 @@
 
 //#define NPB_CONF_4STEP_CADENCE
 #include "NeoPixelBusLg.h"
-#include "bus_manager.h"
 
 //Hardware SPI Pins
 #define P_8266_HS_MOSI 13
@@ -332,11 +331,11 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   private:
-    static bool useParallelI2S;
+    static bool _useParallelI2S;
 
   public:
-    static inline void setParallelI2S1Output(bool b = true) { useParallelI2S = b; }
-    static inline bool isParallelI2S1Output(void) { return useParallelI2S; }
+    static inline void setParallelI2S1Output(bool b = true) { _useParallelI2S = b; }
+    static inline bool isParallelI2S1Output(void) { return _useParallelI2S; }
 
   // initialize SPI bus speed for DotStar methods
   template <class T>
@@ -768,7 +767,7 @@ class PolyBus {
     return true;
   }
 
-  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c, uint8_t co, uint16_t wwcw = 0) {
+  [[gnu::hot]] static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c, uint8_t co, uint16_t wwcw = 0) {
     uint8_t r = c >> 16;
     uint8_t g = c >> 8;
     uint8_t b = c >> 0;
@@ -985,7 +984,7 @@ class PolyBus {
     }
   }
 
-  static uint32_t getPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint8_t co) {
+  [[gnu::hot]] static uint32_t getPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint8_t co) {
     RgbwColor col(0,0,0,0);
     switch (busType) {
       case I_NONE: break;

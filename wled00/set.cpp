@@ -134,8 +134,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.correctWB = request->hasArg(F("CCT"));
     strip.cctFromRgb = request->hasArg(F("CR"));
     cctICused = request->hasArg(F("IC"));
-    strip.cctBlending = request->arg(F("CB")).toInt();
-    Bus::setCCTBlend(strip.cctBlending);
+    Bus::setCCTBlend(request->arg(F("CB")).toInt());
     Bus::setGlobalAWMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
     useGlobalLedBuffer = request->hasArg(F("LD"));

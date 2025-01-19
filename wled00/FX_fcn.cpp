@@ -613,6 +613,19 @@ Segment &Segment::setPalette(uint8_t pal) {
   return *this;
 }
 
+Segment &Segment::setName(const char *newName) {
+  if (newName) {
+    const int newLen = min(strlen(newName), (size_t)WLED_MAX_SEGNAME_LEN);
+    if (newLen) {
+      if (name) name = static_cast<char*>(realloc(name, newLen+1));
+      else      name = static_cast<char*>(malloc(newLen+1));
+      if (name) strlcpy(name, newName, newLen);
+      return *this;
+    }
+  }
+  return clearName();
+}
+
 // 2D matrix
 unsigned Segment::virtualWidth() const {
   unsigned groupLen = groupLength();
