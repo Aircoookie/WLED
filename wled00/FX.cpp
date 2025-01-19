@@ -1220,7 +1220,6 @@ uint16_t mode_dual_larson_scanner(void){
 }
 static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Trail,Delay,,,Dual,Bi-delay;!,!,!;!;;m12=0,c1=0";
 
-#ifdef WLED_PS_DONT_REPLACE_FX
 /*
  * Firing comets from one end. "Lighthouse"
  */
@@ -1247,7 +1246,6 @@ uint16_t mode_comet(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!,!;!";
-#endif // WLED_PS_DONT_REPLACE_FX
 
 /*
  * Fireworks function.
@@ -1716,7 +1714,7 @@ uint16_t mode_tricolor_fade(void) {
 }
 static const char _data_FX_MODE_TRICOLOR_FADE[] PROGMEM = "Tri Fade@!;1,2,3;!";
 
-
+#ifdef WLED_PS_DONT_REPLACE_FX
 /*
  * Creates random comets
  * Custom mode by Keith Lord: https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/MultiComet.h
@@ -1755,6 +1753,7 @@ uint16_t mode_multi_comet(void) {
 }
 static const char _data_FX_MODE_MULTI_COMET[] PROGMEM = "Multi Comet@!,Fade;!,!;!;1";
 #undef MAX_COMETS
+#endif // WLED_PS_DONT_REPLACE_FX
 
 /*
  * Running random pixels ("Stream 2")
@@ -10195,7 +10194,6 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_TRICOLOR_FADE, &mode_tricolor_fade, _data_FX_MODE_TRICOLOR_FADE);
   addEffect(FX_MODE_LIGHTNING, &mode_lightning, _data_FX_MODE_LIGHTNING);
   addEffect(FX_MODE_ICU, &mode_icu, _data_FX_MODE_ICU);
-  addEffect(FX_MODE_MULTI_COMET, &mode_multi_comet, _data_FX_MODE_MULTI_COMET);
   addEffect(FX_MODE_DUAL_LARSON_SCANNER, &mode_dual_larson_scanner, _data_FX_MODE_DUAL_LARSON_SCANNER);
   addEffect(FX_MODE_RANDOM_CHASE, &mode_random_chase, _data_FX_MODE_RANDOM_CHASE);
   addEffect(FX_MODE_OSCILLATE, &mode_oscillate, _data_FX_MODE_OSCILLATE);
@@ -10220,8 +10218,9 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_TRI_STATIC_PATTERN, &mode_tri_static_pattern, _data_FX_MODE_TRI_STATIC_PATTERN);
   addEffect(FX_MODE_SPOTS, &mode_spots, _data_FX_MODE_SPOTS);
   addEffect(FX_MODE_SPOTS_FADE, &mode_spots_fade, _data_FX_MODE_SPOTS_FADE);
-  #ifdef WLED_PS_DONT_REPLACE_FX
   addEffect(FX_MODE_COMET, &mode_comet, _data_FX_MODE_COMET);
+  #ifdef WLED_PS_DONT_REPLACE_FX
+  addEffect(FX_MODE_MULTI_COMET, &mode_multi_comet, _data_FX_MODE_MULTI_COMET);  
   addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
   addEffect(FX_MODE_SPARKLE, &mode_sparkle, _data_FX_MODE_SPARKLE);
   addEffect(FX_MODE_GLITTER, &mode_glitter, _data_FX_MODE_GLITTER);

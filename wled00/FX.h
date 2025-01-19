@@ -479,13 +479,13 @@ typedef struct Segment {
       CRGBPalette16 _palT;        // temporary palette
       uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 blends possible)
       unsigned long _start;       // must accommodate millis()
-      uint16_t      _dur;      
+      uint16_t      _dur;
       // -> here is one byte of padding
       Transition(uint16_t dur=750)
         : _palT(CRGBPalette16(CRGB::Black))
         , _prevPaletteBlends(0)
         , _start(millis())
-        , _dur(dur)        
+        , _dur(dur)
       {}
     } *_t;
 
