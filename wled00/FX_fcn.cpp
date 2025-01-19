@@ -95,7 +95,7 @@ Segment::Segment(const Segment &orig) {
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
-  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+  if (orig.name) { name = static_cast<char*>(malloc(strlen(orig.name)+1)); if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
 }
 
@@ -114,7 +114,7 @@ Segment& Segment::operator= (const Segment &orig) {
   //DEBUG_PRINTF_P(PSTR("-- Copying segment: %p -> %p\n"), &orig, this);
   if (this != &orig) {
     // clean destination
-    if (name) { delete[] name; name = nullptr; }
+    if (name) { free(name); name = nullptr; }
     stopTransition();
     deallocateData();
     // copy source
@@ -123,7 +123,7 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     // copy source data
-    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+    if (orig.name) { name = static_cast<char*>(malloc(strlen(orig.name)+1)); if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   }
   return *this;
@@ -133,7 +133,7 @@ Segment& Segment::operator= (const Segment &orig) {
 Segment& Segment::operator= (Segment &&orig) noexcept {
   //DEBUG_PRINTF_P(PSTR("-- Moving segment: %p -> %p\n"), &orig, this);
   if (this != &orig) {
-    if (name) { delete[] name; name = nullptr; } // free old name
+    if (name) { free(name); name = nullptr; } // free old name
     stopTransition();
     deallocateData(); // free old runtime data
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -254,7 +254,7 @@ void Segment::startTransition(uint16_t dur) {
   if (isInTransition()) return; // already in transition no need to store anything
 
   // starting a transition has to occur before change so we get current values 1st
-  _t = new Transition(dur); // no previous transition running
+  _t = new(std::nothrow) Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
 
   //DEBUG_PRINTF_P(PSTR("-- Started transition: %p (%p)\n"), this, _t);
@@ -298,6 +298,7 @@ void Segment::stopTransition() {
     delete _t;
     _t = nullptr;
   }
+  _transitionprogress = 0xFFFFU; // stop means stop - transition has ended
 }
 
 // transition progression between 0-65535
@@ -328,7 +329,7 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
   tmpSeg._callT      = call;
   tmpSeg._dataT      = data;
   tmpSeg._dataLenT   = _dataLen;
-  if (_t && &tmpSeg != &(_t->_segT)) {
+  if (isInTransition() && &tmpSeg != &(_t->_segT)) {
     // swap SEGENV with transitional data
     options   = _t->_segT._optionsT;
     for (size_t i=0; i<NUM_COLORS; i++) colors[i] = _t->_segT._colorT[i];
@@ -349,9 +350,9 @@ void Segment::swapSegenv(tmpsegd_t &tmpSeg) {
   }
 }
 
-void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
+void Segment::restoreSegenv(const tmpsegd_t &tmpSeg) {
   //DEBUG_PRINTF_P(PSTR("--  Restoring temp seg: %p->(%p) [%d->%p]\n"), &tmpSeg, this, _dataLen, data);
-  if (_t && &(_t->_segT) != &tmpSeg) {
+  if (isInTransition() && &(_t->_segT) != &tmpSeg) {
     // update possibly changed variables to keep old effect running correctly
     _t->_segT._aux0T = aux0;
     _t->_segT._aux1T = aux1;
@@ -381,8 +382,8 @@ void Segment::restoreSegenv(tmpsegd_t &tmpSeg) {
 #endif
 
 uint8_t Segment::currentBri(bool useCct) const {
-  unsigned prog = progress();
-  if (prog < 0xFFFFU) {
+  unsigned prog = isInTransition() ? progress() : 0xFFFFU;
+  if (prog < 0xFFFFU) { // progress() < 0xFFFF implies that _t is a valid pointer
     unsigned curBri = (useCct ? cct : (on ? opacity : 0)) * prog;
     curBri += (useCct ? _t->_cctT : _t->_briT) * (0xFFFFU - prog);
     return curBri / 0xFFFFU;
@@ -392,8 +393,8 @@ uint8_t Segment::currentBri(bool useCct) const {
 
 uint8_t Segment::currentMode() const {
 #ifndef WLED_DISABLE_MODE_BLEND
-  unsigned prog = progress();
-  if (modeBlending && prog < 0xFFFFU) return _t->_modeT;
+  unsigned prog = isInTransition() ? progress() : 0xFFFFU;
+  if (modeBlending && prog < 0xFFFFU) return _t->_modeT;  // progress() < 0xFFFF implies that _t is a valid pointer
 #endif
   return mode;
 }
@@ -413,12 +414,13 @@ void Segment::beginDraw() {
   _vHeight = virtualHeight();
   _vLength = virtualLength();
   _segBri  = currentBri();
+  unsigned prog = isInTransition() ? progress() : 0xFFFFU;  // transition progress; 0xFFFFU = no transition active
   // adjust gamma for effects
   for (unsigned i = 0; i < NUM_COLORS; i++) {
     #ifndef WLED_DISABLE_MODE_BLEND
-    uint32_t col = isInTransition() ? color_blend16(_t->_segT._colorT[i], colors[i], progress()) : colors[i];
+    uint32_t col = isInTransition() ? color_blend16(_t->_segT._colorT[i], colors[i], prog) : colors[i];
     #else
-    uint32_t col = isInTransition() ? color_blend16(_t->_colorT[i], colors[i], progress()) : colors[i];
+    uint32_t col = isInTransition() ? color_blend16(_t->_colorT[i], colors[i], prog) : colors[i];
     #endif
     _currentColors[i] = gamma32(col);
   }
@@ -706,7 +708,7 @@ uint16_t Segment::virtualLength() const {
   return vLength;
 }
 
-void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) const
 {
   if (!isActive() || i < 0) return; // not active or invalid index
 #ifndef WLED_DISABLE_2D
@@ -879,7 +881,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col)
 
 #ifdef WLED_USE_AA_PIXELS
 // anti-aliased normalized version of setPixelColor()
-void Segment::setPixelColor(float i, uint32_t col, bool aa)
+void Segment::setPixelColor(float i, uint32_t col, bool aa) const
 {
   if (!isActive()) return; // not active
   int vStrip = int(i/10.0f); // hack to allow running on virtual strips (2D segment columns/rows)
@@ -1144,7 +1146,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
   uint8_t seep = blur_amount >> 1;
   unsigned vlength = vLength();
   uint32_t carryover = BLACK;
-  uint32_t lastnew;
+  uint32_t lastnew;       // not necessary to initialize lastnew and last, as both will be initialized by the first loop iteration
   uint32_t last;
   uint32_t curnew = BLACK;
   for (unsigned i = 0; i < vlength; i++) {
@@ -1426,7 +1428,7 @@ void WS2812FX::service() {
   #endif
 }
 
-void IRAM_ATTR WS2812FX::setPixelColor(unsigned i, uint32_t col) {
+void IRAM_ATTR WS2812FX::setPixelColor(unsigned i, uint32_t col) const {
   i = getMappedPixelIndex(i);
   if (i >= _length) return;
   BusManager::setPixelColor(i, col);
@@ -1707,9 +1709,9 @@ void WS2812FX::fixInvalidSegments() {
 
 //true if all segments align with a bus, or if a segment covers the total length
 //irrelevant in 2D set-up
-bool WS2812FX::checkSegmentAlignment() {
+bool WS2812FX::checkSegmentAlignment() const {
   bool aligned = false;
-  for (segment &seg : _segments) {
+  for (const segment &seg : _segments) {
     for (unsigned b = 0; b<BusManager::getNumBusses(); b++) {
       Bus *bus = BusManager::getBus(b);
       if (seg.start == bus->getStart() && seg.stop == bus->getStart() + bus->getLength()) aligned = true;
@@ -1821,8 +1823,8 @@ bool WS2812FX::deserializeMap(unsigned n) {
     Segment::maxHeight = min(max(root[F("height")].as<int>(), 1), 128);
   }
 
-  if (customMappingTable) delete[] customMappingTable;
-  customMappingTable = new uint16_t[getLengthTotal()];
+  if (customMappingTable) free(customMappingTable);
+  customMappingTable = static_cast<uint16_t*>(malloc(sizeof(uint16_t)*getLengthTotal()));
 
   if (customMappingTable) {
     DEBUG_PRINT(F("Reading LED map from ")); DEBUG_PRINTLN(fileName);

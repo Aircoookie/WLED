@@ -209,7 +209,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freq, useGlobalLedBuffer, maPerLed, maMax);
+      busConfigs[s] = new(std::nothrow) BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freq, useGlobalLedBuffer, maPerLed, maMax);
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
@@ -419,6 +419,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     arlsDisableGammaCorrection = request->hasArg(F("RG"));
     t = request->arg(F("WO")).toInt();
     if (t >= -255  && t <= 255) arlsOffset = t;
+
+#ifdef WLED_ENABLE_DMX_INPUT
+    dmxInputTransmitPin = request->arg(F("IDMT")).toInt();
+    dmxInputReceivePin = request->arg(F("IDMR")).toInt();
+    dmxInputEnablePin = request->arg(F("IDME")).toInt();
+    dmxInputPort = request->arg(F("IDMP")).toInt();
+    if(dmxInputPort <= 0 || dmxInputPort > 2) dmxInputPort = 2;
+#endif
 
     #ifndef WLED_DISABLE_ALEXA
     alexaEnabled = request->hasArg(F("AL"));
@@ -982,18 +990,18 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //set color from HEX or 32bit DEC
   pos = req.indexOf(F("CL="));
   if (pos > 0) {
-    colorFromDecOrHexString(colIn, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(colIn, req.substring(pos + 3).c_str());
     col0Changed = true;
   }
   pos = req.indexOf(F("C2="));
   if (pos > 0) {
-    colorFromDecOrHexString(colInSec, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(colInSec, req.substring(pos + 3).c_str());
     col1Changed = true;
   }
   pos = req.indexOf(F("C3="));
   if (pos > 0) {
     byte tmpCol[4];
-    colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(tmpCol, req.substring(pos + 3).c_str());
     col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     selseg.setColor(2, col2); // defined above (SS= or main)
     col2Changed = true;

@@ -68,7 +68,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem["n"]) {
     // name field exists
     if (seg.name) { //clear old name
-      delete[] seg.name;
+      free(seg.name);
       seg.name = nullptr;
     }
 
@@ -77,7 +77,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
     if (name != nullptr) len = strlen(name);
     if (len > 0) {
       if (len > WLED_MAX_SEGNAME_LEN) len = WLED_MAX_SEGNAME_LEN;
-      seg.name = new char[len+1];
+      seg.name = static_cast<char*>(malloc(len+1));
       if (seg.name) strlcpy(seg.name, name, WLED_MAX_SEGNAME_LEN+1);
     } else {
       // but is empty (already deleted above)
@@ -86,7 +86,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   } else if (start != seg.start || stop != seg.stop) {
     // clearing or setting segment without name field
     if (seg.name) {
-      delete[] seg.name;
+      free(seg.name);
       seg.name = nullptr;
     }
   }
@@ -493,7 +493,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, bool segmentBounds)
+void serializeSegment(const JsonObject& root, const Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
   root["id"] = id;
   if (segmentBounds) {
