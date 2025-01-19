@@ -10,8 +10,6 @@
   Modified heavily for WLED
 */
 
-// information for custom FX metadata strings: https://kno.wled.ge/interfaces/json-api/#effect-metadata
-
 #include "wled.h"
 #include "FX.h"
 #include "fcn_declare.h"
@@ -2943,7 +2941,6 @@ typedef struct Ball {
 /*
 *  Bouncing Balls Effect
 */
-
 uint16_t mode_bouncing_balls(void) {
   if (SEGLEN <= 1) return mode_static();
   //allocate segment data
@@ -3023,7 +3020,6 @@ static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravit
  *  Courtesy of pjhatch (https://github.com/pjhatch)
  *  https://github.com/Aircoookie/WLED/pull/1039
  */
-
 // modified for balltrack mode
 typedef struct RollingBall {
   unsigned long lastBounceUpdate;
@@ -3227,7 +3223,6 @@ typedef struct Spark {
 *  POPCORN
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
-
 uint16_t mode_popcorn(void) {
   if (SEGLEN <= 1) return mode_static();
   //allocate segment data
@@ -4319,7 +4314,6 @@ typedef struct Spotlight {
  *
  * By Steve Pomeroy @xxv
  */
- 
 uint16_t mode_dancing_shadows(void)
 {
   if (SEGLEN <= 1) return mode_static();
@@ -5870,7 +5864,6 @@ static const char _data_FX_MODE_2DCRAZYBEES[] PROGMEM = "Crazy Bees@!,Blur,,,,Sm
 //     2D Ghost Rider  //
 /////////////////////////
 //// Ghost Rider by stepko (c)2021 [https://editor.soulmatelights.com/gallery/716-ghost-rider], adapted by Blaz Kristan (AKA blazoncek)
-
 #define LIGHTERS_AM 64  // max lighters (adequate for 32x32 matrix)
 uint16_t mode_2Dghostrider(void) {
   if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
@@ -5956,12 +5949,10 @@ uint16_t mode_2Dghostrider(void) {
 static const char _data_FX_MODE_2DGHOSTRIDER[] PROGMEM = "Ghost Rider@Fade rate,Blur;;!;2";
 #undef LIGHTERS_AM
 
-
 ////////////////////////////
 //     2D Floating Blobs  //
 ////////////////////////////
 //// Floating Blobs by stepko (c)2021 [https://editor.soulmatelights.com/gallery/573-blobs], adapted by Blaz Kristan (AKA blazoncek)
-
 #define MAX_BLOBS 8
 uint16_t mode_2Dfloatingblobs(void) {
   if (!strip.isMatrix || !SEGMENT.is2D()) return mode_static(); // not a 2D set-up
@@ -7486,9 +7477,9 @@ uint16_t mode_2Dsoap() {
     }
   }
   // init also if dimensions changed
-  if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
-    SEGENV.aux0 = cols;
-    SEGENV.aux1 = rows;
+  if (SEGENV.call == 0 || SEGMENT.aux0 != cols || SEGMENT.aux1 != rows) {
+    SEGMENT.aux0 = cols;
+    SEGMENT.aux1 = rows;
     for (int i = 0; i < cols; i++) {
       for (int j = 0; j < rows; j++) {
         SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[XY(i,j)]*3));
