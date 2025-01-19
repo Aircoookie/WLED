@@ -9,6 +9,7 @@
 #include "const.h"
 #include "pin_manager.h"
 #include <vector>
+#include <memory>
 
 // enable additional debug output
 #if defined(WLED_DEBUG_HOST)
@@ -455,6 +456,7 @@ class BusManager {
     static inline ColorOrderMap& getColorOrderMap() { return colorOrderMap; }
 
   private:
+    //static std::vector<std::unique_ptr<Bus>> busses; // we'd need C++ >11
     static std::vector<Bus*> busses;
     static ColorOrderMap colorOrderMap;
     static uint16_t _milliAmpsUsed;
