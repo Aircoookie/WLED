@@ -255,6 +255,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
+  CJSON(touchThreshold, btn_obj[F("tt")]);
   bool pull = btn_obj[F("pull")] | (!disablePullUp); // if true, pullup is enabled
   disablePullUp = !pull;
   JsonArray hw_btn_ins = btn_obj["ins"];
@@ -351,7 +352,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
     }
   }
-  CJSON(touchThreshold,btn_obj[F("tt")]);
+
   CJSON(buttonPublishMqtt,btn_obj["mqtt"]);
 
   #ifndef WLED_DISABLE_INFRARED
