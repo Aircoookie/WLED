@@ -19,8 +19,7 @@
 #if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D))
 #include "FXparticleSystem.h"
 #else
-#define ENABLE_1D_PS_REPLACEMENTS
-#define ENABLE_2D_PS_REPLACEMENTS
+#define WLED_PS_DONT_REPLACE_FX
 #endif
 
  //////////////
@@ -1223,7 +1222,7 @@ uint16_t mode_dual_larson_scanner(void){
 }
 static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Trail,Delay,,,Dual,Bi-delay;!,!,!;!;;m12=0,c1=0";
 
-#ifdef ENABLE_1D_PS_REPLACEMENTS
+#ifdef WLED_PS_DONT_REPLACE_FX
 /*
  * Firing comets from one end. "Lighthouse"
  */
@@ -1250,7 +1249,7 @@ uint16_t mode_comet(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!,!;!";
-#endif // ENABLE_1D_PS_REPLACEMENTS
+#endif // WLED_PS_DONT_REPLACE_FX
 
 /*
  * Fireworks function.
@@ -2083,7 +2082,7 @@ uint16_t mode_palette() {
 }
 static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;ix=112,c1=0,o1=1,o2=0,o3=1";
 
-#if (defined(ENABLE_2D_PS_REPLACEMENTS) || defined(ENABLE_1D_PS_REPLACEMENTS))
+#ifdef WLED_PS_DONT_REPLACE_FX
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
 // Fire2012 by Mark Kriegsman, July 2012
 // as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
@@ -2170,7 +2169,7 @@ uint16_t mode_fire_2012() {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,2D Blur,Boost;;!;1;pal=35,sx=64,ix=160,m12=1,c2=128"; // bars
-#endif // ENABLE_2D_PS_REPLACEMENTS || ENABLE_1D_PS_REPLACEMENTS
+#endif // WLED_PS_DONT_REPLACE_FX
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
 uint16_t mode_bpm() {
@@ -3018,7 +3017,7 @@ uint16_t mode_bouncing_balls(void) {
 }
 static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls,,,,,Overlay;!,!,!;!;1;m12=1"; //bar
 
-#ifdef ENABLE_1D_PS_REPLACEMENTS
+#ifdef WLED_PS_DONT_REPLACE_FX
 /*
  *  bouncing balls on a track track Effect modified from Aircoookie's bouncing balls
  *  Courtesy of pjhatch (https://github.com/pjhatch)
@@ -3119,7 +3118,7 @@ static uint16_t rolling_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collide,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
-#endif // ENABLE_1D_PS_REPLACEMENTS
+#endif // WLED_PS_DONT_REPLACE_FX
 
 /*
 * Sinelon stolen from FASTLED examples
@@ -3382,7 +3381,7 @@ uint16_t mode_candle_multi()
 }
 static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@!,!;!,!;!;;sx=96,ix=224,pal=0";
 
-#ifdef ENABLE_1D_PS_REPLACEMENTS
+#ifdef WLED_PS_DONT_REPLACE_FX
 /*
 / Fireworks in starburst effect
 / based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
@@ -3514,9 +3513,9 @@ uint16_t mode_starburst(void) {
 }
 #undef STARBURST_MAX_FRAG
 static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments,,,,,Overlay;,!;!;;pal=11,m12=0";
-#endif // ENABLE_1D_PS_REPLACEMENTS
+#endif // WLED_PS_DONT_REPLACE_FX
 
- #if (defined(ENABLE_1D_PS_REPLACEMENTS) || defined(ENABLE_2D_PS_REPLACEMENTS))
+ #ifdef WLED_PS_DONT_REPLACE_FX
 /*
  * Exploding fireworks effect
  * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
@@ -3654,7 +3653,7 @@ uint16_t mode_exploding_fireworks(void)
 }
 #undef MAX_SPARKS
 static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side;!,!;!;12;pal=11,ix=128";
-#endif // ENABLE_1D_PS_REPLACEMENTS || ENABLE_2D_PS_REPLACEMENTS
+#endif // WLED_PS_DONT_REPLACE_FX
 
 /*
  * Drip Effect
@@ -4302,7 +4301,7 @@ static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!,!;!"
   #define SPOT_MAX_COUNT 49          //Number of simultaneous waves
 #endif
 
-#ifdef ENABLE_1D_PS_REPLACEMENTS
+#ifdef WLED_PS_DONT_REPLACE_FX
 //13 bytes
 typedef struct Spotlight {
   float speed;
@@ -4437,7 +4436,7 @@ uint16_t mode_dancing_shadows(void)
   return FRAMETIME;
 }
 static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!;!";
-#endif // ENABLE_1D_PS_REPLACEMENTS
+#endif // WLED_PS_DONT_REPLACE_FX
 
 /*
   Imitates a washing machine, rotating same waves forward, then pause, then backward.
@@ -5866,7 +5865,7 @@ uint16_t mode_2Dcrazybees(void) {
 static const char _data_FX_MODE_2DCRAZYBEES[] PROGMEM = "Crazy Bees@!,Blur,,,,Smear;;!;2;pal=11,ix=0";
 #undef MAX_BEES
 
-#ifdef ENABLE_2D_PS_REPLACEMENTS
+#ifdef WLED_PS_DONT_REPLACE_FX
 /////////////////////////
 //     2D Ghost Rider  //
 /////////////////////////
@@ -6057,7 +6056,7 @@ uint16_t mode_2Dfloatingblobs(void) {
 }
 static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur,Trail;!;!;2;c1=8";
 #undef MAX_BLOBS
-#endif // ENABLE_2D_PS_REPLACEMENTS
+#endif // WLED_PS_DONT_REPLACE_FX
 
 ////////////////////////////
 //     2D Scrolling text  //
@@ -8964,73 +8963,6 @@ uint16_t mode_particleblobs(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,Size,Life,Blur,Wobble,Collide,Pulsate;;!;2v;sx=30,ix=64,c1=200,c2=130,c3=0,o3=1";
-
-/*
- * Particle Fractal
- * particles move, then split to form a fractal tree EXPERIMENTAL and non working!
- * by DedeHai (Damian Schneider)
- */
-uint16_t mode_particlefractal(void) {
-  ParticleSystem2D *PartSys = NULL;
-  uint32_t i;
-
-  if (SEGMENT.call == 0) { // initialization
-    if (!initParticleSystem2D(PartSys, 1, 0, true, false)) // init, use advanced particles
-      return mode_static(); // allocation failed or not 2D
-    PartSys->setKillOutOfBounds(true);
-  }
-  else
-    PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-
-  if (PartSys == NULL)
-    return mode_static(); // something went wrong, no data!
-
-  PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-
-  if (SEGMENT.check2)
-    SEGENV.aux0 += SEGMENT.custom1 << 2;
-  else
-    SEGENV.aux0 -= SEGMENT.custom1 << 2;
-
-  int16_t angleoffset = SEGMENT.custom2 << 6;
-  int8_t emitspeed = SEGMENT.speed >> 2;
-
-  //check particle age, emit 2 particles at the end of the branch
-  for (i = 0; i < PartSys->usedParticles; i++) {
-    if(PartSys->particles[i].ttl > 0 && PartSys->particles[i].ttl < 260) { //alive and ripe
-      PartSys->particles[i].ttl = 0;
-      uint16_t currentangle =  ((uint32_t)PartSys->advPartProps[i].forcecounter) << 7; // abuse forcecounter to track the angle
-      PartSys->sources[0].source.x = PartSys->particles[i].x;
-      PartSys->sources[0].source.y = PartSys->particles[i].y;;
-      PartSys->sources[0].source.hue = PartSys->particles[i].hue + 50; // todo: make color schemes
-      uint16_t angle = currentangle - angleoffset;
-      int32_t index = PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);     //upward TODO: make angle adjustable
-      //TODO: check if index >=0!!!
-      PartSys->advPartProps[index].forcecounter = angle >> 7;
-      angle = currentangle + angleoffset;
-      index = PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);
-      PartSys->advPartProps[index].forcecounter = angle >> 7;
-    }
-  }
-
-  if(SEGENV.call % (256-SEGMENT.intensity) == 0) {
-    PartSys->sources[0].source.x = (PartSys->maxX + 1) >> 1;
-    PartSys->sources[0].source.y = 5;
-    PartSys->sources[0].source.hue = 0; // todo: make color schemes
-    PartSys->sources[0].maxLife = 275;
-    PartSys->sources[0].minLife = 270;
-    uint32_t angle = ((uint32_t)SEGMENT.custom1) << 7; //16 bit angle, 0° to 180°
-    int32_t index = PartSys->angleEmit(PartSys->sources[0], angle, emitspeed);     //upward TODO: make angle adjustable
-    //set the forcecounter to track the angle (only 8 bit precision...)
-    PartSys->advPartProps[index].forcecounter = angle >> 7;
-  }
-
-  PartSys->setMotionBlur(((SEGMENT.custom3) << 3) + 7);
-  PartSys->update(); // update and render
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_PARTICLEFRACTAL[] PROGMEM = "PS fractal (exp)@Speed,Intensity,Base angle,branch angle,Blur,,Direction;;!;2f;pal=13,ix=180,c1=0,c2=0,c3=8";
-
 #endif //WLED_DISABLE_PARTICLESYSTEM2D
 
 #endif // WLED_DISABLE_2D
@@ -9042,7 +8974,7 @@ static const char _data_FX_MODE_PARTICLEFRACTAL[] PROGMEM = "PS fractal (exp)@Sp
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM1D
 /*
-Particle Drip replacement, also replaces Rain
+Particle version of Drip and Rain
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
@@ -9663,10 +9595,6 @@ uint16_t mode_particleHourglass(void) {
   else if(SEGMENT.check2) // auto reset
     SEGENV.aux1--; // countdown
 
- //if(SEGMENT.call % (SEGMENT.speed >> 5) == 0) //more friction on higher falling rate to keep particles behaved
- //if(SEGMENT.call % 6 == 0)
-   //PartSys->applyFriction(1); //keeps particles calm and stops mass collisions being handled improperly due to chaos  TODO: can this be removed? seems to work fine without.
-
   PartSys->update(); // update and render
 
   return FRAMETIME;
@@ -9803,7 +9731,6 @@ Particle based Chase effect
 Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
-
 uint16_t mode_particleChase(void) {
   ParticleSystem1D *PartSys = NULL;
   if (SEGMENT.call == 0) { // initialization
@@ -10302,7 +10229,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_TRI_STATIC_PATTERN, &mode_tri_static_pattern, _data_FX_MODE_TRI_STATIC_PATTERN);
   addEffect(FX_MODE_SPOTS, &mode_spots, _data_FX_MODE_SPOTS);
   addEffect(FX_MODE_SPOTS_FADE, &mode_spots_fade, _data_FX_MODE_SPOTS_FADE);
-  #ifdef ENABLE_1D_PS_REPLACEMENTS
+  #ifdef WLED_PS_DONT_REPLACE_FX
   addEffect(FX_MODE_COMET, &mode_comet, _data_FX_MODE_COMET);
   addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
   addEffect(FX_MODE_SPARKLE, &mode_sparkle, _data_FX_MODE_SPARKLE);
@@ -10310,8 +10237,6 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SOLID_GLITTER, &mode_solid_glitter, _data_FX_MODE_SOLID_GLITTER);
   addEffect(FX_MODE_STARBURST, &mode_starburst, _data_FX_MODE_STARBURST);
   addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
-  #endif
-  #if (defined(ENABLE_1D_PS_REPLACEMENTS) || defined(ENABLE_2D_PS_REPLACEMENTS))
   addEffect(FX_MODE_FIRE_2012, &mode_fire_2012, _data_FX_MODE_FIRE_2012);
   addEffect(FX_MODE_EXPLODING_FIREWORKS, &mode_exploding_fireworks, _data_FX_MODE_EXPLODING_FIREWORKS);
   #endif
@@ -10376,7 +10301,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DSPACESHIPS, &mode_2Dspaceships, _data_FX_MODE_2DSPACESHIPS);
   addEffect(FX_MODE_2DCRAZYBEES, &mode_2Dcrazybees, _data_FX_MODE_2DCRAZYBEES);
 
-  #ifdef ENABLE_2D_PS_REPLACEMENTS
+  #ifdef WLED_PS_DONT_REPLACE_FX
   addEffect(FX_MODE_2DGHOSTRIDER, &mode_2Dghostrider, _data_FX_MODE_2DGHOSTRIDER);
   addEffect(FX_MODE_2DBLOBS, &mode_2Dfloatingblobs, _data_FX_MODE_2DBLOBS);
   #endif
@@ -10432,7 +10357,6 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PARTICLECENTERGEQ, &mode_particlecenterGEQ, _data_FX_MODE_PARTICLECIRCULARGEQ);
   addEffect(FX_MODE_PARTICLEGHOSTRIDER, &mode_particleghostrider, _data_FX_MODE_PARTICLEGHOSTRIDER);
   addEffect(FX_MODE_PARTICLEBLOBS, &mode_particleblobs, _data_FX_MODE_PARTICLEBLOBS);
- // addEffect(FX_MODE_PSFRACTAL, &mode_particlefractal, _data_FX_MODE_PARTICLEFRACTAL);
 #endif // WLED_DISABLE_PARTICLESYSTEM2D
 #endif // WLED_DISABLE_2D
 
