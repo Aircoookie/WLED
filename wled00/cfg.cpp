@@ -114,8 +114,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.correctWB, hw_led["cct"]);
   CJSON(strip.cctFromRgb, hw_led[F("cr")]);
   CJSON(cctICused, hw_led[F("ic")]);
-  CJSON(strip.cctBlending, hw_led[F("cb")]);
-  Bus::setCCTBlend(strip.cctBlending);
+  int cctBlending = 0;
+  CJSON(cctBlending, hw_led[F("cb")]);
+  Bus::setCCTBlend(cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
   CJSON(useGlobalLedBuffer, hw_led[F("ld")]);
   #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
@@ -196,8 +197,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
 
-      if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax);
+      busConfigs.push_back(std::move(BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, useGlobalLedBuffer, maPerLed, maMax)));
       doInitBusses = true;  // finalization done in beginStrip()
       s++;
     }
@@ -485,6 +485,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   tdd = if_live[F("timeout")] | -1;
   if (tdd >= 0) realtimeTimeoutMs = tdd * 100;
+
+  #ifdef WLED_ENABLE_DMX_INPUT
+    CJSON(dmxInputTransmitPin, if_live_dmx[F("inputRxPin")]);
+    CJSON(dmxInputReceivePin, if_live_dmx[F("inputTxPin")]);
+    CJSON(dmxInputEnablePin, if_live_dmx[F("inputEnablePin")]);
+    CJSON(dmxInputPort, if_live_dmx[F("dmxInputPort")]);
+  #endif
+
   CJSON(arlsForceMaxBri, if_live[F("maxbri")]);
   CJSON(arlsDisableGammaCorrection, if_live[F("no-gc")]); // false
   CJSON(arlsOffset, if_live[F("offset")]); // 0
@@ -782,7 +790,7 @@ void serializeConfig() {
   hw_led["cct"] = strip.correctWB;
   hw_led[F("cr")] = strip.cctFromRgb;
   hw_led[F("ic")] = cctICused;
-  hw_led[F("cb")] = strip.cctBlending;
+  hw_led[F("cb")] = Bus::getCCTBlend();
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override
   hw_led[F("ld")] = useGlobalLedBuffer;
@@ -978,6 +986,12 @@ void serializeConfig() {
   if_live_dmx[F("addr")] = DMXAddress;
   if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
+  #ifdef WLED_ENABLE_DMX_INPUT
+    if_live_dmx[F("inputRxPin")] = dmxInputTransmitPin;
+    if_live_dmx[F("inputTxPin")] = dmxInputReceivePin;
+    if_live_dmx[F("inputEnablePin")] = dmxInputEnablePin;
+    if_live_dmx[F("dmxInputPort")] = dmxInputPort;
+  #endif
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;
   if_live[F("maxbri")] = arlsForceMaxBri;

@@ -50,8 +50,8 @@ void WS2812FX::setUpMatrix() {
 
     customMappingSize = 0; // prevent use of mapping if anything goes wrong
 
-    if (customMappingTable) delete[] customMappingTable;
-    customMappingTable = new uint16_t[getLengthTotal()];
+    if (customMappingTable) free(customMappingTable);
+    customMappingTable = static_cast<uint16_t*>(malloc(sizeof(uint16_t)*getLengthTotal()));
 
     if (customMappingTable) {
       customMappingSize = getLengthTotal();
@@ -68,7 +68,7 @@ void WS2812FX::setUpMatrix() {
       // content of the file is just raw JSON array in the form of [val1,val2,val3,...]
       // there are no other "key":"value" pairs in it
       // allowed values are: -1 (missing pixel/no LED attached), 0 (inactive/unused pixel), 1 (active/used pixel)
-      char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json")); // reduce flash footprint
+      char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json"));
       bool    isFile = WLED_FS.exists(fileName);
       size_t  gapSize = 0;
       int8_t *gapTable = nullptr;
@@ -85,7 +85,7 @@ void WS2812FX::setUpMatrix() {
           JsonArray map = pDoc->as<JsonArray>();
           gapSize = map.size();
           if (!map.isNull() && gapSize >= matrixSize) { // not an empty map
-            gapTable = new int8_t[gapSize];
+            gapTable = static_cast<int8_t*>(malloc(gapSize));
             if (gapTable) for (size_t i = 0; i < gapSize; i++) {
               gapTable[i] = constrain(map[i], -1, 1);
             }
@@ -113,7 +113,7 @@ void WS2812FX::setUpMatrix() {
       }
 
       // delete gap array as we no longer need it
-      if (gapTable) delete[] gapTable;
+      if (gapTable) free(gapTable);
 
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
@@ -146,7 +146,7 @@ void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
+int IRAM_ATTR_YN Segment::XY(int x, int y) const
 {
   const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
   const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
@@ -154,7 +154,7 @@ uint16_t IRAM_ATTR_YN Segment::XY(int x, int y)
 }
 
 // raw setColor function without checks (checks are done in setPixelColorXY())
-void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(int& x, int& y, uint32_t& col)
+void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(const int& x, const int& y, uint32_t& col) const
 {
   const int baseX = start + x;
   const int baseY = startY + y;
@@ -179,7 +179,7 @@ void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(int& x, int& y, uint32_t& col)
   }
 }
 
-void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) const
 {
   if (!isActive()) return; // not active
 
@@ -215,7 +215,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col)
 
 #ifdef WLED_USE_AA_PIXELS
 // anti-aliased version of setPixelColorXY()
-void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
+void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa) const
 {
   if (!isActive()) return; // not active
   if (x<0.0f || x>1.0f || y<0.0f || y>1.0f) return; // not normalized
@@ -276,7 +276,7 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) {
   if (!isActive()) return; // not active
   const unsigned cols = vWidth();
   const unsigned rows = vHeight();
-  uint32_t lastnew;
+  uint32_t lastnew;   // not necessary to initialize lastnew and last, as both will be initialized by the first loop iteration
   uint32_t last;
   if (blur_x) {
     const uint8_t keepx = smear ? 255 : 255 - blur_x;
