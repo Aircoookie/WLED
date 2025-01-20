@@ -5446,15 +5446,15 @@ uint16_t mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have 
       // and add them together with weightening
       unsigned dx = abs(x - x1);
       unsigned dy = abs(y - y1);
-      unsigned dist = 2 * sqrt16((dx * dx) + (dy * dy));
+      unsigned dist = 2 * sqrt32_bw((dx * dx) + (dy * dy));
 
       dx = abs(x - x2);
       dy = abs(y - y2);
-      dist += sqrt16((dx * dx) + (dy * dy));
+      dist += sqrt32_bw((dx * dx) + (dy * dy));
 
       dx = abs(x - x3);
       dy = abs(y - y3);
-      dist += sqrt16((dx * dx) + (dy * dy));
+      dist += sqrt32_bw((dx * dx) + (dy * dy));
 
       // inverse result
       int color = dist ? 1000 / dist : 255;
@@ -6094,13 +6094,23 @@ uint16_t mode_2Dscrollingtext(void) {
   if (!strlen(text)) { // fallback if empty segment name: display date and time
     sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   } else {
+    if (text[0] == '#') for (auto &c : text) c = std::toupper(c);
     if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"),   day(localTime),   month(localTime),  year(localTime));
     else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d")     :PSTR("%d.%d"),      day(localTime),   month(localTime));
     else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d")     :PSTR("%d/%d"),      month(localTime), day(localTime));
     else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s")   :PSTR("%2d:%02d%s"), AmPmHour,         minute(localTime), sec);
     else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
-    else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         AmPmHour);
-    else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         minute(localTime));
+    else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         AmPmHour);
+    else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         minute(localTime));
+    else if (!strncmp_P(text,PSTR("#SS"),3))   sprintf  (text,          ("%02d")                     ,         second(localTime));
+    else if (!strncmp_P(text,PSTR("#DD"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         day(localTime));
+    else if (!strncmp_P(text,PSTR("#DAY"),4))  sprintf  (text,          ("%s")                       ,         dayShortStr(day(localTime)));
+    else if (!strncmp_P(text,PSTR("#DDDD"),5)) sprintf  (text,          ("%s")                       ,         dayStr(day(localTime)));
+    else if (!strncmp_P(text,PSTR("#MO"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         month(localTime));
+    else if (!strncmp_P(text,PSTR("#MON"),4))  sprintf  (text,          ("%s")                       ,         monthShortStr(month(localTime)));
+    else if (!strncmp_P(text,PSTR("#MMMM"),5)) sprintf  (text,          ("%s")                       ,         monthStr(month(localTime)));
+    else if (!strncmp_P(text,PSTR("#YY"),3))   sprintf  (text,          ("%02d")                     ,         year(localTime)%100);
+    else if (!strncmp_P(text,PSTR("#YYYY"),5)) sprintf_P(text, zero?PSTR("%04d")          :    ("%d"),         year(localTime));
   }
 
   const int  numberOfLetters = strlen(text);

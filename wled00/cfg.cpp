@@ -114,8 +114,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.correctWB, hw_led["cct"]);
   CJSON(strip.cctFromRgb, hw_led[F("cr")]);
   CJSON(cctICused, hw_led[F("ic")]);
-  int cctBlending = 0;
-  CJSON(cctBlending, hw_led[F("cb")]);
+  uint8_t cctBlending = hw_led[F("cb")] | Bus::getCCTBlend();
   Bus::setCCTBlend(cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
   CJSON(useGlobalLedBuffer, hw_led[F("ld")]);
@@ -407,12 +406,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal); // fill look-up table
 
   JsonObject light_tr = light["tr"];
-  CJSON(fadeTransition, light_tr["mode"]);
-  CJSON(modeBlending, light_tr["fx"]);
   int tdd = light_tr["dur"] | -1;
   if (tdd >= 0) transitionDelay = transitionDelayDefault = tdd * 100;
-  strip.setTransition(fadeTransition ? transitionDelayDefault : 0);
-  CJSON(strip.paletteFade, light_tr["pal"]);
+  strip.setTransition(transitionDelayDefault);
   CJSON(randomPaletteChangeTime, light_tr[F("rpc")]);
   CJSON(useHarmonicRandomPalette, light_tr[F("hrp")]);
 
@@ -922,10 +918,7 @@ void serializeConfig() {
   light_gc["val"] = gammaCorrectVal;
 
   JsonObject light_tr = light.createNestedObject("tr");
-  light_tr["mode"] = fadeTransition;
-  light_tr["fx"] = modeBlending;
   light_tr["dur"] = transitionDelayDefault / 100;
-  light_tr["pal"] = strip.paletteFade;
   light_tr[F("rpc")] = randomPaletteChangeTime;
   light_tr[F("hrp")] = useHarmonicRandomPalette;
 
