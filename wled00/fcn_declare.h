@@ -552,6 +552,7 @@ float asin_t(float x);
 template <typename T> T atan_t(T x);
 float floor_t(float x);
 float fmod_t(float num, float denom);
+uint32_t sqrt32_bw(uint32_t x);
 #define sin_t sin_approx
 #define cos_t cos_approx
 #define tan_t tan_approx

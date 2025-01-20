@@ -679,7 +679,7 @@ uint16_t Segment::virtualLength() const {
         vLen = max(vW,vH); // get the longest dimension
         break;
       case M12_pArc:
-        vLen = sqrt16(vH*vH + vW*vW); // use diagonal
+        vLen = sqrt32_bw(vH*vH + vW*vW); // use diagonal
         break;
       case M12_sPinwheel:
         vLen = getPinwheelLength(vW, vH);
@@ -922,7 +922,7 @@ uint32_t IRAM_ATTR_YN Segment::getPixelColor(int i) const
         break; }
       case M12_pArc:
         if (i >= vW && i >= vH) {
-          unsigned vI = sqrt16(i*i/2);
+          unsigned vI = sqrt32_bw(i*i/2);
           return getPixelColorXY(vI,vI); // use diagonal
         }
       case M12_pCorner:
