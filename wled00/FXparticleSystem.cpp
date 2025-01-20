@@ -830,19 +830,21 @@ void ParticleSystem2D::handleCollisions() {
   collDistSq = collDistSq * collDistSq; // square it for faster comparison (square is one operation)
   // note: partices are binned in x-axis, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  constexpr int32_t BIN_WIDTH = 6 * PS_P_RADIUS; // width of a bin in sub-pixels
+  int32_t binWidth = 6 * (PS_P_MINHARDRADIUS + particlesize); // width of a bin in sub-pixels
+  if (advPartProps) //may be using individual particle size
+    binWidth += 128; // add half of max radius
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 2); // assume no more than half of the particles are in the same bin, do not bin small amounts of particles
-  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // number of bins in x direction
+  uint32_t numBins = (maxX + (binWidth - 1)) / binWidth; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
   uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
-  
+
   // fill the binIndices array for this bin
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
-    int32_t binStart = bin * BIN_WIDTH;
-    int32_t binEnd = binStart + BIN_WIDTH;
+    int32_t binStart = bin * binWidth;
+    int32_t binEnd = binStart + binWidth;
 
     // fill the binIndices array for this bin
     for (uint32_t i = 0; i < usedParticles; i++) {
@@ -1662,26 +1664,26 @@ void ParticleSystem1D::handleCollisions() {
   int32_t collisiondistance = PS_P_MINHARDRADIUS_1D;
   // note: partices are binned by position, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  constexpr int32_t BIN_WIDTH = 32 * PS_P_RADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  int32_t binWidth = 32 * (PS_P_MINHARDRADIUS_1D + particlesize); // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 4); // do not bin small amounts, limit max to 1/2 of particles
-  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // calculate number of bins
+  uint32_t numBins = (maxX + (binWidth - 1)) / binWidth; // calculate number of bins
   uint16_t binIndices[maxBinParticles]; // array to store indices of particles in a bin
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
   uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
-    int32_t binStart = bin * BIN_WIDTH;
-    int32_t binEnd = binStart + BIN_WIDTH;
+    int32_t binStart = bin * binWidth;
+    int32_t binEnd = binStart + binWidth;
 
     // fill the binIndices array for this bin
     for (uint32_t i = 0; i < usedParticles; i++) {
       if (particles[pidx].ttl > 0 && particleFlags[pidx].outofbounds == 0 && particleFlags[pidx].collide) { // colliding particle
         // if gravity is not used and wall bounce is enabled: particles in the first or last bin use fixed force direction (no collapsing, no push inversion)
         if (!particlesettings.useGravity && particlesettings.bounce) {
-          if (particles[pidx].x < BIN_WIDTH)
+          if (particles[pidx].x < binWidth)
             particleFlags[pidx].forcedirection = false;
-          else if (particles[pidx].x > (maxX - BIN_WIDTH))
+          else if (particles[pidx].x > (maxX - binWidth))
             particleFlags[pidx].forcedirection = true;
         }
         if (particles[pidx].x >= binStart && particles[pidx].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
