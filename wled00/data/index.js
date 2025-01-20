@@ -3110,7 +3110,9 @@ function mergeDeep(target, ...sources)
 	return mergeDeep(target, ...sources);
 }
 
-function showTooltip(element) {
+function tooltip(cont=null) {
+	d.querySelectorAll((cont?cont+" ":"")+"[title]").forEach((element)=>{
+		element.addEventListener("pointerover", ()=>{
 			// save title
 			element.setAttribute("data-title", element.getAttribute("title"));
 			const tooltip = d.createElement("span");
@@ -3133,27 +3135,16 @@ function showTooltip(element) {
 			tooltip.style.top = top + "px";
 			tooltip.style.left = left + "px";
 			tooltip.classList.add("visible");
-}
+		});
 
-function hideTooltip(element) {
+		element.addEventListener("pointerout", ()=>{
 			d.querySelectorAll('.tooltip').forEach((tooltip)=>{
 				tooltip.classList.remove("visible");
 				d.body.removeChild(tooltip);
 			});
 			// restore title
 			element.setAttribute("title", element.getAttribute("data-title"));
-}
-
-function tooltip(cont = null) {
-	const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-	d.querySelectorAll((cont ? cont + " " : "") + "[title]").forEach((element) => {
-		if (isTouchDevice) {
-			element.addEventListener("touchstart", () => { showTooltip(element); });
-			element.addEventListener("touchend", () => { hideTooltip(element); });
-		} else {
-			element.addEventListener("mouseover", () => { showTooltip(element); });
-			element.addEventListener("mouseout", () => { hideTooltip(element); });
-		}
+		});
 	});
 };
 
