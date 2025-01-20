@@ -144,6 +144,10 @@
  #endif
 #endif
 
+#ifdef WLED_ENABLE_DMX_INPUT
+  #include "dmx_input.h"
+#endif
+
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #ifndef WLED_DISABLE_MQTT
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
@@ -269,7 +273,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
 WLED_GLOBAL char releaseString[] _INIT(WLED_RELEASE_NAME); // must include the quotes when defining, e.g -D WLED_RELEASE_NAME=\"ESP32_MULTI_USREMODS\"
-#define WLED_CODENAME "Kōsen"
+#define WLED_CODENAME "Niji"
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
@@ -459,7 +463,15 @@ WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to f
   WLED_GLOBAL uint16_t DMXStart _INIT(10);        // start address of the first fixture
   WLED_GLOBAL uint16_t DMXStartLED _INIT(0);      // LED from which DMX fixtures start
 #endif
-WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consecutive universes)
+#ifdef WLED_ENABLE_DMX_INPUT
+  WLED_GLOBAL int dmxInputTransmitPin _INIT(0);
+  WLED_GLOBAL int dmxInputReceivePin _INIT(0);
+  WLED_GLOBAL int dmxInputEnablePin _INIT(0);
+  WLED_GLOBAL int dmxInputPort _INIT(2);
+  WLED_GLOBAL DMXInput dmxInput;
+#endif
+
+WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte e131Priority _INIT(0);                           // E1.31 port priority (if != 0 priority handling is active)
 WLED_GLOBAL E131Priority highPriority _INIT(3);                   // E1.31 highest priority tracking, init = timeout in seconds
@@ -482,10 +494,10 @@ WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);  // used for other 
   #endif
 WLED_GLOBAL AsyncMqttClient *mqtt _INIT(NULL);
 WLED_GLOBAL bool mqttEnabled _INIT(false);
-WLED_GLOBAL char mqttStatusTopic[40] _INIT("");            // this must be global because of async handlers
-WLED_GLOBAL char mqttDeviceTopic[MQTT_MAX_TOPIC_LEN+1] _INIT("");         // main MQTT topic (individual per device, default is wled/mac)
-WLED_GLOBAL char mqttGroupTopic[MQTT_MAX_TOPIC_LEN+1]  _INIT("wled/all"); // second MQTT topic (for example to group devices)
-WLED_GLOBAL char mqttServer[MQTT_MAX_SERVER_LEN+1]     _INIT("");         // both domains and IPs should work (no SSL)
+WLED_GLOBAL char mqttStatusTopic[MQTT_MAX_TOPIC_LEN + 8] _INIT("");         // this must be global because of async handlers
+WLED_GLOBAL char mqttDeviceTopic[MQTT_MAX_TOPIC_LEN + 1] _INIT("");         // main MQTT topic (individual per device, default is wled/mac)
+WLED_GLOBAL char mqttGroupTopic[MQTT_MAX_TOPIC_LEN + 1]  _INIT("wled/all"); // second MQTT topic (for example to group devices)
+WLED_GLOBAL char mqttServer[MQTT_MAX_SERVER_LEN + 1]     _INIT("");         // both domains and IPs should work (no SSL)
 WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username for MQTT auth
 WLED_GLOBAL char mqttPass[65] _INIT("");                   // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
@@ -577,8 +589,7 @@ WLED_GLOBAL bool wasConnected _INIT(false);
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same
 
 // transitions
-WLED_GLOBAL bool          fadeTransition           _INIT(true);   // enable crossfading brightness/color
-WLED_GLOBAL bool          modeBlending             _INIT(true);   // enable effect blending
+WLED_GLOBAL uint8_t       blendingStyle            _INIT(0);      // effect blending/transitionig style
 WLED_GLOBAL bool          transitionActive         _INIT(false);
 WLED_GLOBAL uint16_t      transitionDelay          _INIT(750);    // global transition duration
 WLED_GLOBAL uint16_t      transitionDelayDefault   _INIT(750);    // default transition time (stored in cfg.json)
@@ -895,9 +906,6 @@ WLED_GLOBAL uint32_t ledMaps _INIT(0); // bitfield representation of available l
 #else
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 #endif
-
-// Usermod manager
-WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
 // global I2C SDA pin (used for usermods)
 #ifndef I2CSDAPIN
