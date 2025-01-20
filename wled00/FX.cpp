@@ -9078,10 +9078,11 @@ uint16_t mode_particlePinball(void) {
     if (!initParticleSystem1D(PartSys, 1, 128, 0, true)) // init
       return mode_static(); // allocation failed or is single pixel
     PartSys->sources[0].sourceFlags.collide = true; // seeded particles will collide (if enabled)
-    PartSys->setKillOutOfBounds(true); // out of bounds particles dont return
     PartSys->sources[0].source.x = PS_P_RADIUS_1D; //emit at bottom
+    PartSys->setKillOutOfBounds(true); // out of bounds particles dont return
+    PartSys->setUsedParticles(255); // use all available particles for init
     SEGENV.aux0 = 1;
-    SEGENV.aux1 = 500; //set out of speed range to ensure uptate on first call
+    SEGENV.aux1 = 5000; //set out of range to ensure uptate on first call
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9095,34 +9096,41 @@ uint16_t mode_particlePinball(void) {
   PartSys->setGravity(map(SEGMENT.custom3, 0 , 31, 0 , 16)); // set gravity (8 is default strength)
   PartSys->setBounce(SEGMENT.custom3); // disables bounce if no gravity is used
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  PartSys->enableParticleCollisions(SEGMENT.check1, 254); // enable collisions and set particle collision hardness (do not use full hardness or particles speed up due to pushing, can not be made perfectly balanced)
+  PartSys->enableParticleCollisions(SEGMENT.check1, 254); // enable collisions and set particle collision to high hardness
   PartSys->setUsedParticles(SEGMENT.intensity);
   PartSys->setColorByPosition(SEGMENT.check3);
 
   bool updateballs = false;
-  if (SEGENV.aux1 != SEGMENT.speed + SEGMENT.intensity + SEGMENT.check2 + SEGMENT.custom1) { // user settings change
+  if (SEGENV.aux1 != SEGMENT.speed + SEGMENT.intensity + SEGMENT.check2 + SEGMENT.custom1 + PartSys->usedParticles) { // user settings change or more particles are available
     SEGENV.step = SEGMENT.call; // reset delay
     updateballs = true;
-    PartSys->sources[0].maxLife = SEGMENT.custom3 ? 1000 : 0xFFFF; // maximum lifetime in frames (very long if not using gravity, this is enough to travel 4000 pixels at min speed)
+    PartSys->sources[0].maxLife = SEGMENT.custom3 ? 5000 : 0xFFFF; // maximum lifetime in frames/2 (very long if not using gravity, this is enough to travel 4000 pixels at min speed)
     PartSys->sources[0].minLife = PartSys->sources[0].maxLife >> 1;
   }
 
   if (SEGMENT.check2) { //rolling balls
     PartSys->setGravity(0);
     PartSys->setWallHardness(255);
-
+    int speedsum = 0;
     for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-      if ((PartSys->particles[i].vx > 8 || PartSys->particles[i].vx < -8) && PartSys->particles[i].ttl > 200) //let only slow particles die (ensures no stopped particles)
-        PartSys->particles[i].ttl = 260; //set alive at full intensity
-      if (updateballs || PartSys->particles[i].ttl == 0) { //speed changed or particle died, set particle properties
-        PartSys->particles[i].ttl = 260;
+        PartSys->particles[i].ttl = 260; // keep particles alive
+      if (updateballs) { //speed changed or particle is dead, set particle properties
         PartSys->particleFlags[i].collide = true;
-        int32_t newspeed = hw_random16(20 + (SEGMENT.speed >> 2)) + (SEGMENT.speed >> 3);
+        if(PartSys->particles[i].x == 0) { // still at initial position (when not switching from a PS)
+          PartSys->particles[i].x = hw_random16(PartSys->maxX); // random initial position for all particles
+          PartSys->particles[i].vx = (hw_random16() & 0x01) ? 1 : -1; // random initial direction
+        }
+        int8_t newspeed =  2 + hw_random16(SEGMENT.speed >> 2);
         PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? newspeed : -newspeed; //keep the direction
         PartSys->particles[i].hue = hw_random8(); //set ball colors to random
         PartSys->advPartProps[i].sat = 255;
         PartSys->advPartProps[i].size = SEGMENT.custom1;
       }
+      speedsum += abs(PartSys->particles[i].vx);
+    }
+    if(speedsum / PartSys->usedParticles < 3 + (SEGMENT.speed >> 2)) { // if balls are slow, speed up one of them at random to keep the animation going
+      int idx = hw_random16(PartSys->usedParticles);
+      PartSys->particles[idx].vx += PartSys->particles[idx].vx > 0 ? 2 : -2; // keep direction
     }
   }
   else { //bouncing balls
@@ -9151,7 +9159,7 @@ uint16_t mode_particlePinball(void) {
       PartSys->sprayEmit(PartSys->sources[0]);
     }
   }
-  SEGENV.aux1 = SEGMENT.speed + SEGMENT.intensity + SEGMENT.check2 + SEGMENT.custom1;
+  SEGENV.aux1 = SEGMENT.speed + SEGMENT.intensity + SEGMENT.check2 + SEGMENT.custom1 + PartSys->usedParticles;
   for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
     PartSys->particleMoveUpdate(PartSys->particles[i], PartSys->particleFlags[i]); // double the speed
   }
@@ -9390,7 +9398,7 @@ uint16_t mode_particleFireworks1D(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Saturation,,Colorful,Smooth;,!;!;1;pal=0,sx=150,c2=30,c3=21,o2=1";
+static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Gravity,Explosion,Firing side,Blur,Saturation,,Colorful,Smooth;,!;!;1;sx=150,c2=30,c3=31,o2=1";
 
 /*
   Particle based Sparkle effect
@@ -9737,7 +9745,7 @@ uint16_t mode_particleChase(void) {
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   PartSys->setColorByPosition(SEGMENT.check3);
-  PartSys->setMotionBlur((SEGMENT.custom3 + 1) << 3); // anable motion blur
+  PartSys->setMotionBlur(8 + ((SEGMENT.custom3) << 3)); // anable motion blur
   // uint8_t* basehue = (PartSys->PSdataEnd + 2);  //assign data pointer
 
   uint32_t settingssum = SEGMENT.speed + SEGMENT.intensity + SEGMENT.custom1 + SEGMENT.custom2 + SEGMENT.check1 + SEGMENT.check2 + SEGMENT.check3 + PartSys->getAvailableParticles(); // note: getAvailableParticles is used to enforce update during transitions
