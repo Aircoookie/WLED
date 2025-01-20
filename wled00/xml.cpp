@@ -285,7 +285,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     printSetFormCheckbox(settingsScript,PSTR("CCT"),strip.correctWB);
     printSetFormCheckbox(settingsScript,PSTR("IC"),cctICused);
     printSetFormCheckbox(settingsScript,PSTR("CR"),strip.cctFromRgb);
-    printSetFormValue(settingsScript,PSTR("CB"),strip.cctBlending);
+    printSetFormValue(settingsScript,PSTR("CB"),Bus::getCCTBlend());
     printSetFormValue(settingsScript,PSTR("FR"),strip.getTargetFps());
     printSetFormValue(settingsScript,PSTR("AW"),Bus::getGlobalAWMode());
     printSetFormCheckbox(settingsScript,PSTR("LD"),useGlobalLedBuffer);
@@ -369,10 +369,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     printSetFormCheckbox(settingsScript,PSTR("GB"),gammaCorrectBri);
     printSetFormCheckbox(settingsScript,PSTR("GC"),gammaCorrectCol);
     dtostrf(gammaCorrectVal,3,1,nS); printSetFormValue(settingsScript,PSTR("GV"),nS);
-    printSetFormCheckbox(settingsScript,PSTR("TF"),fadeTransition);
-    printSetFormCheckbox(settingsScript,PSTR("EB"),modeBlending);
     printSetFormValue(settingsScript,PSTR("TD"),transitionDelayDefault);
-    printSetFormCheckbox(settingsScript,PSTR("PF"),strip.paletteFade);
     printSetFormValue(settingsScript,PSTR("TP"),randomPaletteChangeTime);
     printSetFormCheckbox(settingsScript,PSTR("TH"),useHarmonicRandomPalette);
     printSetFormValue(settingsScript,PSTR("BF"),briMultiplier);
