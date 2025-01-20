@@ -528,7 +528,7 @@ Segment &Segment::setCCT(uint16_t k) {
     k = (k - 1900) >> 5;
   }
   if (cct != k) {
-    //DEBUGFX_PRINTF_P(PSTR("- Starting CCT transition: %d\n"), k);
+    //DEBUG_PRINTF_P(PSTR("- Starting CCT transition: %d\n"), k);
     startTransition(strip.getTransition()); // start transition prior to change
     cct = k;
     stateChanged = true; // send UDP/WS broadcast
@@ -538,7 +538,7 @@ Segment &Segment::setCCT(uint16_t k) {
 
 Segment &Segment::setOpacity(uint8_t o) {
   if (opacity != o) {
-    //DEBUGFX_PRINTF_P(PSTR("- Starting opacity transition: %d\n"), o);
+    //DEBUG_PRINTF_P(PSTR("- Starting opacity transition: %d\n"), o);
     startTransition(strip.getTransition()); // start transition prior to change
     opacity = o;
     stateChanged = true; // send UDP/WS broadcast
@@ -1870,7 +1870,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     #ifdef WLED_DEBUG
     DEBUG_PRINT(F("Loaded ledmap:"));
     for (unsigned i=0; i<customMappingSize; i++) {
-      if (!(i%Segment::maxWidth)) DEBUGFX_PRINTLN();
+      if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
       DEBUG_PRINTF_P(PSTR("%4d,"), customMappingTable[i]);
     }
     DEBUG_PRINTLN();
