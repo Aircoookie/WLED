@@ -56,9 +56,11 @@ public:
 
     int briSet = 0;
     if (curSec >= relaxSecH && curSec <= relaxSecE) {
-      briSet = curSec < sunMiddleSec ?
-                    mapFloat(curSec, sunriseSec, sunMiddleSec, min_bri, max_bri) :
-                    mapFloat(curSec, sunMiddleSec, sunsetSec, max_bri, min_bri) ;
+      float timeMapToAngle = curSec < sunMiddleSec ?
+                    mapFloat(curSec, sunriseSec, sunMiddleSec, 0, M_PI/2.0) :
+                    mapFloat(curSec, sunMiddleSec, sunsetSec, M_PI/2.0, M_PI);
+      float sinValue = sin(timeMapToAngle);
+      briSet = min_bri + (max_bri-min_bri)*sinValue;
     }
 
     bri = briSet;
