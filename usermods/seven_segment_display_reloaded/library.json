@@ -1,4 +1,3 @@
 {
-  "name:": "seven_segment_display_reloaded",
-  "build": { "libArchive": false }
+  "name:": "seven_segment_display_reloaded"
 }

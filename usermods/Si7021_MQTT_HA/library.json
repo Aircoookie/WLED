@@ -1,6 +1,5 @@
 {
   "name:": "Si7021_MQTT_HA",
-  "build": { "libArchive": false },
   "dependencies": {
     "finitespace/BME280":"3.0.0"
   }

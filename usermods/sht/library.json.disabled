@@ -1,4 +1,3 @@
 {
-  "name:": "sht",
-  "build": { "libArchive": false }
+  "name:": "sht"
 }

@@ -1,4 +1,3 @@
 {
-  "name:": "SN_Photoresistor",
-  "build": { "libArchive": false }
+  "name:": "SN_Photoresistor"
 }

@@ -1,4 +1,3 @@
 {
-  "name:": "multi_relay",
-  "build": { "libArchive": false }
+  "name:": "multi_relay"
 }
