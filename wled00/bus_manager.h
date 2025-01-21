@@ -8,6 +8,20 @@
 #include "const.h"
 #include "pin_manager.h"
 #include <vector>
+#include <memory>
+#include <bits/unique_ptr.h>
+
+#if __cplusplus >= 201402L
+using std::make_unique;
+#else
+// Really simple C++11 shim for non-array case; implementation from cppreference.com
+template<class T, class... Args>
+std::unique_ptr<T>
+make_unique(Args&&... args)
+{
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+#endif
 
 //colors.cpp
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
@@ -198,7 +212,7 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-    BusDigital(const BusConfig &bc, uint8_t nr, const ColorOrderMap &com);
+    BusDigital(const BusConfig &bc, uint8_t nr);
     ~BusDigital() { cleanup(); }
 
     void show() override;
@@ -229,7 +243,6 @@ class BusDigital : public Bus {
     uint8_t _milliAmpsPerLed;
     uint16_t _milliAmpsMax;
     void * _busPtr;
-    const ColorOrderMap &_colorOrderMap;
 
     static uint16_t _milliAmpsTotal; // is overwitten/recalculated on each show()
 
@@ -374,61 +387,58 @@ struct BusConfig {
   #endif
 #endif
 
-class BusManager {
-  public:
-    BusManager() {};
+namespace BusManager {
 
-    //utility to get the approx. memory usage of a given BusConfig
-    static uint32_t memUsage(const BusConfig &bc);
-    static uint32_t memUsage(unsigned channels, unsigned count, unsigned buses = 1);
-    static uint16_t currentMilliamps() { return _milliAmpsUsed + MA_FOR_ESP; }
-    static uint16_t ablMilliampsMax()  { return _milliAmpsMax; }
+  extern std::vector<std::unique_ptr<Bus>> busses;
+  //extern std::vector<Bus*> busses;
+  extern uint16_t _gMilliAmpsUsed;
+  extern uint16_t _gMilliAmpsMax;
 
-    static int add(const BusConfig &bc);
-    static void useParallelOutput(); // workaround for inaccessible PolyBus
+  #ifdef ESP32_DATA_IDLE_HIGH
+  void    esp32RMTInvertIdle() ;
+  #endif
+  inline uint8_t getNumVirtualBusses() {
+    int j = 0;
+    for (const auto &bus : busses) j += bus->isVirtual();
+    return j;
+  }
 
-    //do not call this method from system context (network callback)
-    static void removeAll();
+  unsigned memUsage();
+  inline uint16_t currentMilliamps()            { return _gMilliAmpsUsed + MA_FOR_ESP; }
+  //inline uint16_t ablMilliampsMax()             { unsigned sum = 0; for (auto &bus : busses) sum += bus->getMaxCurrent(); return sum; }
+  inline uint16_t ablMilliampsMax()             { return _gMilliAmpsMax; }  // used for compatibility reasons (and enabling virtual global ABL)
+  inline void     setMilliampsMax(uint16_t max) { _gMilliAmpsMax = max;}
 
-    static void on();
-    static void off();
+  void useParallelOutput(); // workaround for inaccessible PolyBus
+  bool hasParallelOutput(); // workaround for inaccessible PolyBus
 
-    static void show();
-    static bool canAllShow();
-    static void setStatusPixel(uint32_t c);
-    [[gnu::hot]] static void setPixelColor(unsigned pix, uint32_t c);
-    static void setBrightness(uint8_t b);
-    // for setSegmentCCT(), cct can only be in [-1,255] range; allowWBCorrection will convert it to K
-    // WARNING: setSegmentCCT() is a misleading name!!! much better would be setGlobalCCT() or just setCCT()
-    static void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
-    static inline void setMilliampsMax(uint16_t max) { _milliAmpsMax = max;}
-    [[gnu::hot]] static uint32_t getPixelColor(unsigned pix);
-    static inline int16_t getSegmentCCT() { return Bus::getCCT(); }
+  //do not call this method from system context (network callback)
+  void removeAll();
+  int  add(const BusConfig &bc);
 
-    static Bus* getBus(uint8_t busNr);
+  void on();
+  void off();
 
-    //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
-    static uint16_t getTotalLength();
-    static inline uint8_t getNumBusses() { return numBusses; }
-    static String getLEDTypesJSONString();
+  [[gnu::hot]] void     setPixelColor(unsigned pix, uint32_t c);
+  [[gnu::hot]] uint32_t getPixelColor(unsigned pix);
+  void        show();
+  bool        canAllShow();
+  inline void setStatusPixel(uint32_t c) { for (auto &bus : busses) bus->setStatusPixel(c);}
+  inline void setBrightness(uint8_t b)   { for (auto &bus : busses) bus->setBrightness(b); }
+  // for setSegmentCCT(), cct can only be in [-1,255] range; allowWBCorrection will convert it to K
+  // WARNING: setSegmentCCT() is a misleading name!!! much better would be setGlobalCCT() or just setCCT()
+  void           setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
+  inline int16_t getSegmentCCT()         { return Bus::getCCT(); }
+  inline Bus&    getBus(uint8_t busNr)   { return *busses[std::min((size_t)busNr, busses.size()-1)]; }
+  inline uint8_t getNumBusses()          { return busses.size(); }
 
-    static inline ColorOrderMap& getColorOrderMap() { return colorOrderMap; }
-
-  private:
-    static uint8_t numBusses;
-    static Bus* busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
-    static ColorOrderMap colorOrderMap;
-    static uint16_t _milliAmpsUsed;
-    static uint16_t _milliAmpsMax;
-    static uint8_t _parallelOutputs;
-
-    #ifdef ESP32_DATA_IDLE_HIGH
-    static void    esp32RMTInvertIdle() ;
-    #endif
-    static uint8_t getNumVirtualBusses() {
-      int j = 0;
-      for (int i=0; i<numBusses; i++) if (busses[i]->isVirtual()) j++;
-      return j;
-    }
+  //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
+  inline uint16_t getTotalLength(bool onlyPhysical = false) {
+    unsigned len = 0;
+    for (const auto &bus : busses) if (!(bus->isVirtual() && onlyPhysical)) len += bus->getLength();
+    return len;
+  }
+  String         getLEDTypesJSONString();
+  ColorOrderMap& getColorOrderMap();
 };
 #endif

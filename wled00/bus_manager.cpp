@@ -63,6 +63,8 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
 #define W(c) (byte((c) >> 24))
 
 
+static ColorOrderMap _colorOrderMap = {};
+
 bool ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
   if (count() >= WLED_MAX_COLOR_ORDER_MAPPINGS || len == 0 || (colorOrder & 0x0F) > COL_ORDER_MAX) return false; // upper nibble contains W swap information
   _mappings.push_back({start,len,colorOrder});
@@ -72,10 +74,8 @@ bool ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
 uint8_t IRAM_ATTR ColorOrderMap::getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
   // upper nibble contains W swap information
   // when ColorOrderMap's upper nibble contains value >0 then swap information is used from it, otherwise global swap is used
-  for (unsigned i = 0; i < count(); i++) {
-    if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
-      return _mappings[i].colorOrder | ((_mappings[i].colorOrder >> 4) ? 0 : (defaultColorOrder & 0xF0));
-    }
+  for (const auto& map : _mappings) {
+    if (pix >= map.start && pix < (map.start + map.len)) return map.colorOrder | ((map.colorOrder >> 4) ? 0 : (defaultColorOrder & 0xF0));
   }
   return defaultColorOrder;
 }
@@ -124,13 +124,12 @@ uint8_t *Bus::allocateData(size_t size) {
 }
 
 
-BusDigital::BusDigital(const BusConfig &bc, uint8_t nr, const ColorOrderMap &com)
+BusDigital::BusDigital(const BusConfig &bc, uint8_t nr)
 : Bus(bc.type, bc.start, bc.autoWhite, bc.count, bc.reversed, (bc.refreshReq || bc.type == TYPE_TM1814))
 , _skip(bc.skipAmount) //sacrificial pixels
 , _colorOrder(bc.colorOrder)
 , _milliAmpsPerLed(bc.milliAmpsPerLed)
 , _milliAmpsMax(bc.milliAmpsMax)
-, _colorOrderMap(com)
 {
   if (!isDigital(bc.type) || !bc.count) return;
   if (!PinManager::allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
@@ -819,13 +818,17 @@ uint32_t BusManager::memUsage(unsigned maxChannels, unsigned maxCount, unsigned 
 int BusManager::add(const BusConfig &bc) {
   if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
   if (Bus::isVirtual(bc.type)) {
-    busses[numBusses] = new BusNetwork(bc);
+    busses.push_back(make_unique<BusNetwork>(bc));
+    //busses.push_back(new BusNetwork(bc));
   } else if (Bus::isDigital(bc.type)) {
-    busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
+    busses.push_back(make_unique<BusDigital>(bc, numDigital));
+    //busses.push_back(new BusDigital(bc, numDigital));
   } else if (Bus::isOnOff(bc.type)) {
-    busses[numBusses] = new BusOnOff(bc);
+    busses.push_back(make_unique<BusOnOff>(bc));
+    //busses.push_back(new BusOnOff(bc));
   } else {
-    busses[numBusses] = new BusPwm(bc);
+    busses.push_back(make_unique<BusPwm>(bc));
+    //busses.push_back(new BusPwm(bc));
   }
   return numBusses++;
 }
@@ -865,9 +868,8 @@ void BusManager::removeAll() {
   DEBUG_PRINTLN(F("Removing all."));
   //prevents crashes due to deleting busses while in use.
   while (!canAllShow()) yield();
-  for (unsigned i = 0; i < numBusses; i++) delete busses[i];
-  numBusses = 0;
-  _parallelOutputs = 1;
+  //for (auto &bus : busses) delete bus; // needed when not using std::unique_ptr C++ >11
+  busses.clear();
   PolyBus::setParallelI2S1Output(false);
 }
 
@@ -914,8 +916,8 @@ void BusManager::on() {
       uint8_t pins[2] = {255,255};
       if (busses[i]->isDigital() && busses[i]->getPins(pins)) {
         if (pins[0] == LED_BUILTIN || pins[1] == LED_BUILTIN) {
-          BusDigital *bus = static_cast<BusDigital*>(busses[i]);
-          bus->begin();
+          BusDigital &b = static_cast<BusDigital&>(*bus);
+          b.begin();
           break;
         }
       }
@@ -943,16 +945,10 @@ void BusManager::off() {
 }
 
 void BusManager::show() {
-  _milliAmpsUsed = 0;
-  for (unsigned i = 0; i < numBusses; i++) {
-    busses[i]->show();
-    _milliAmpsUsed += busses[i]->getUsedCurrent();
-  }
-}
-
-void BusManager::setStatusPixel(uint32_t c) {
-  for (unsigned i = 0; i < numBusses; i++) {
-    busses[i]->setStatusPixel(c);
+  _gMilliAmpsUsed = 0;
+  for (auto &bus : busses) {
+    bus->show();
+    _gMilliAmpsUsed += bus->getUsedCurrent();
   }
 }
 
@@ -995,17 +991,8 @@ bool BusManager::canAllShow() {
   return true;
 }
 
-Bus* BusManager::getBus(uint8_t busNr) {
-  if (busNr >= numBusses) return nullptr;
-  return busses[busNr];
-}
+ColorOrderMap& BusManager::getColorOrderMap() { return _colorOrderMap; }
 
-//semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
-uint16_t BusManager::getTotalLength() {
-  unsigned len = 0;
-  for (unsigned i=0; i<numBusses; i++) len += busses[i]->getLength();
-  return len;
-}
 
 bool PolyBus::useParallelI2S = false;
 
@@ -1016,9 +1003,7 @@ uint8_t Bus::_gAWM = 255;
 
 uint16_t BusDigital::_milliAmpsTotal = 0;
 
-uint8_t       BusManager::numBusses = 0;
-Bus*          BusManager::busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
-ColorOrderMap BusManager::colorOrderMap = {};
-uint16_t      BusManager::_milliAmpsUsed = 0;
-uint16_t      BusManager::_milliAmpsMax = ABL_MILLIAMPS_DEFAULT;
-uint8_t       BusManager::_parallelOutputs = 1;
+std::vector<std::unique_ptr<Bus>> BusManager::busses;
+//std::vector<Bus*> BusManager::busses;
+uint16_t BusManager::_gMilliAmpsUsed = 0;
+uint16_t BusManager::_gMilliAmpsMax = ABL_MILLIAMPS_DEFAULT;
