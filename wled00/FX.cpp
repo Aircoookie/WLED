@@ -9120,18 +9120,22 @@ uint16_t mode_particlePinball(void) {
           PartSys->particles[i].x = hw_random16(PartSys->maxX); // random initial position for all particles
           PartSys->particles[i].vx = (hw_random16() & 0x01) ? 1 : -1; // random initial direction
         }
-        int8_t newspeed =  2 + hw_random16(SEGMENT.speed >> 2);
-        PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? newspeed : -newspeed; //keep the direction
         PartSys->particles[i].hue = hw_random8(); //set ball colors to random
         PartSys->advPartProps[i].sat = 255;
         PartSys->advPartProps[i].size = SEGMENT.custom1;
       }
       speedsum += abs(PartSys->particles[i].vx);
     }
-    if(speedsum / PartSys->usedParticles < 3 + (SEGMENT.speed >> 2)) { // if balls are slow, speed up one of them at random to keep the animation going
-      int idx = hw_random16(PartSys->usedParticles);
-      PartSys->particles[idx].vx += PartSys->particles[idx].vx > 0 ? 2 : -2; // keep direction
+    int32_t avgSpeed = speedsum / PartSys->usedParticles;
+    int32_t setSpeed = 3 + (SEGMENT.speed >> 2);
+    if (avgSpeed < setSpeed) { // if balls are slow, speed up some of them at random to keep the animation going
+      for (int i = 0; i < setSpeed - avgSpeed; i++) {
+        int idx = hw_random16(PartSys->usedParticles);
+        PartSys->particles[idx].vx += PartSys->particles[idx].vx > 0 ? 1 : -1; // keep direction
+      }
     }
+    else if (avgSpeed > setSpeed + 2) // if avg speed is too high, apply friction to slow them down
+      PartSys->applyFriction(1);
   }
   else { //bouncing balls
     PartSys->setWallHardness(220);
