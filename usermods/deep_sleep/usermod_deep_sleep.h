@@ -27,11 +27,7 @@
 #endif
 
 #ifndef DEEPSLEEP_WAKEUP_TOUCH_PIN
-#ifdef CONFIG_IDF_TARGET_ESP32S3 // ESP32S3
-#define DEEPSLEEP_WAKEUP_TOUCH_PIN 5
-#else
-#define DEEPSLEEP_WAKEUP_TOUCH_PIN 15
-#endif
+#define DEEPSLEEP_WAKEUP_TOUCH_PIN -1
 #endif // DEEPSLEEP_WAKEUP_TOUCH_PIN
 RTC_DATA_ATTR bool powerup = true; // variable in RTC data persists on a reboot
 
@@ -108,28 +104,6 @@ class DeepSleepUsermod : public Usermod {
       return reson;
     }
 #endif
-
-    void startDeepSeelp(bool immediate) {
-      if (immediate) {
-        esp_err_t halerror = ESP_OK;
-        WiFi.disconnect();
-        WiFi.mode(WIFI_OFF);  // Completely shut down the Wi-Fi module
-        if (enableTouchWakeup) {
-          touchSleepWakeUpEnable(touchPin, touchThreshold);
-        }
-        delay(2000); // wati gpio level and wifi module restore ...
-        if (halerror == ESP_OK)
-          esp_deep_sleep_start(); // go into deep sleep
-        else
-          DEBUG_PRINTLN(F("sleep failed"));
-      } else {
-        // Not to be used for now
-        sleepNextLoop = true;
-        briLast = bri;
-        bri = 0;
-        stateUpdated(CALL_MODE_DIRECT_CHANGE);
-      }
-    }
 
     int calculateTimeDifference(int hour1, int minute1, int hour2,
                                 int minute2) {
@@ -278,9 +252,15 @@ class DeepSleepUsermod : public Usermod {
       halerror = esp_sleep_enable_ext1_wakeup(1ULL << wakeupPin,
                                                   ESP_EXT1_WAKEUP_ALL_LOW);
   #endif
-
+      WiFi.disconnect();
+      WiFi.mode(WIFI_OFF);  // Completely shut down the Wi-Fi module
+      #ifndef CONFIG_IDF_TARGET_ESP32C3
+        if (enableTouchWakeup && touchPin) {
+          touchSleepWakeUpEnable(touchPin, touchThreshold);
+        }
+      #endif
       delay(1); // wait for pin to be ready
-      if(halerror == ESP_OK) startDeepSeelp(true); // go into deep sleep
+      if(halerror == ESP_OK) esp_deep_sleep_start(); // go into deep sleep
       else DEBUG_PRINTLN(F("sleep failed"));
     }
 
@@ -351,6 +331,7 @@ void addToConfig(JsonObject& root) override
         // dropdown for touch wakeupPin
         touch_sensor_channel_io_map[SOC_TOUCH_SENSOR_NUM];
         oappend(SET_F("dd=addDropdown('DeepSleep','touchPin');"));
+        oappend(SET_F("addOption(dd,'Unused',-1);"));
         for (int pin = 0; pin < SOC_TOUCH_SENSOR_NUM; pin++) {
           oappend(SET_F("addOption(dd,'"));
           oappend(String(touch_sensor_channel_io_map[pin]).c_str());
