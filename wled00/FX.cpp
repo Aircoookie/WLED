@@ -33,23 +33,17 @@
   float     FFT_MajorPeak = 1.0;
   uint8_t  *fftResult = nullptr;
   float    *fftBin = nullptr;
-  um_data_t *um_data;
-  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    volumeSmth    = *(float*)   um_data->u_data[0];
-    volumeRaw     = *(float*)   um_data->u_data[1];
-    fftResult     =  (uint8_t*) um_data->u_data[2];
-    samplePeak    = *(uint8_t*) um_data->u_data[3];
-    FFT_MajorPeak = *(float*)   um_data->u_data[4];
-    my_magnitude  = *(float*)   um_data->u_data[5];
-    maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
-    binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
-    fftBin        =  (float*)   um_data->u_data[8];
-  } else {
-    // add support for no audio data
-    um_data = simulateSound(SEGMENT.soundSim);
-  }
+  um_data_t *um_data = getAudioData();
+  volumeSmth    = *(float*)   um_data->u_data[0];
+  volumeRaw     = *(float*)   um_data->u_data[1];
+  fftResult     =  (uint8_t*) um_data->u_data[2];
+  samplePeak    = *(uint8_t*) um_data->u_data[3];
+  FFT_MajorPeak = *(float*)   um_data->u_data[4];
+  my_magnitude  = *(float*)   um_data->u_data[5];
+  maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
+  binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
+  fftBin        =  (float*)   um_data->u_data[8];
 */
-
 
 #define IBN 5100
 // paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
@@ -711,7 +705,7 @@ static const char _data_FX_MODE_DISSOLVE_RANDOM[] PROGMEM = "Dissolve Rnd@Repeat
  * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
  */
 uint16_t mode_sparkle(void) {
-  if (!SEGMENT.check2) for(unsigned i = 0; i < SEGLEN; i++) {
+  if (!SEGMENT.check2) for (unsigned i = 0; i < SEGLEN; i++) {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 1));
   }
   uint32_t cycleTime = 10 + (255 - SEGMENT.speed)*2;
@@ -3244,7 +3238,7 @@ uint16_t mode_popcorn(void) {
       unsigned numPopcorn = SEGMENT.intensity * usablePopcorns / 255;
       if (numPopcorn == 0) numPopcorn = 1;
 
-      for(unsigned i = 0; i < numPopcorn; i++) {
+      for (unsigned i = 0; i < numPopcorn; i++) {
         if (popcorn[i].pos >= 0.0f) { // if kernel is active, update its position
           popcorn[i].pos += popcorn[i].vel;
           popcorn[i].vel += gravity;
@@ -7671,7 +7665,7 @@ uint16_t mode_particlevortex(void) {
   #ifdef ESP8266
   for (i = 1; i < 4; i++) { // need static particles in the center to reduce blinking (would be black every other frame without this hack), just set them there fixed
     int partindex = (int)PartSys->usedParticles - (int)i;
-    if(partindex >= 0) {
+    if (partindex >= 0) {
       PartSys->particles[partindex].x = (PartSys->maxX + 1) >> 1; // center
       PartSys->particles[partindex].y = (PartSys->maxY + 1) >> 1; // center
       PartSys->particles[partindex].sat = 230;
@@ -7717,7 +7711,7 @@ uint16_t mode_particlevortex(void) {
   int32_t speedincrement = speeddiff / 50;
 
   if (speedincrement == 0) { //if speeddiff is not zero, make the increment at least 1 so it reaches target speed
-    if(speeddiff < 0)
+    if (speeddiff < 0)
       speedincrement = -1;
     else if (speeddiff > 0)
       speedincrement = 1;
@@ -7783,7 +7777,7 @@ uint16_t mode_particlefireworks(void) {
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, SEGMENT.check2 ? 1 : 0, 10)); // if bounded, set gravity to minimum of 1 or they will bounce at top
   PartSys->setMotionBlur(map(SEGMENT.custom2, 0, 255, 0, 170)); // anable motion blur
   uint8_t smearing = 0;
-  if(SEGMENT.custom2 > 200)
+  if (SEGMENT.custom2 > 200)
     smearing = SEGMENT.custom2 - 200;
   PartSys->setSmearBlur(smearing); // enable 2D blurring (smearing)
 
@@ -7883,7 +7877,7 @@ uint16_t mode_particlefireworks(void) {
       PartSys->sources[j].source.y = 1000; // reset position so gravity wont pull it to the ground and bounce it (vy MUST stay negative until relaunch)
     circularexplosion = false; // reset for next rocket
   }
-  if(SEGMENT.check3) { // fast speed, move particles twice
+  if (SEGMENT.check3) { // fast speed, move particles twice
     for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particleMoveUpdate(PartSys->particles[i], PartSys->particleFlags[i], nullptr, nullptr);
     }
@@ -8232,7 +8226,7 @@ uint16_t mode_particlebox(void) {
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 5, 153)); // 2% - 60%
   // add in new particles if amount has changed
   for (i = 0; i < PartSys->usedParticles; i++) {
-    if(PartSys->particles[i].ttl < 260) { // initialize handed over particles and dead particles
+    if (PartSys->particles[i].ttl < 260) { // initialize handed over particles and dead particles
       PartSys->particles[i].ttl = 260; // full brigthness
       PartSys->particles[i].x = hw_random16(PartSys->maxX);
       PartSys->particles[i].y = hw_random16(PartSys->maxY);
@@ -8251,7 +8245,7 @@ uint16_t mode_particlebox(void) {
     if (SEGMENT.check2) { // washing machine
       int speed = tristate_square8(strip.now >> 7, 90, 15) / ((400 - SEGMENT.speed) >> 3);
       SEGENV.aux0 += speed;
-      if(speed == 0) SEGENV.aux0 = 190; //down (= 270°)
+      if (speed == 0) SEGENV.aux0 = 190; //down (= 270°)
     }
     else
       SEGENV.aux0 -= increment;
@@ -8268,7 +8262,7 @@ uint16_t mode_particlebox(void) {
       ygravity = ((int32_t)(SEGMENT.custom1) * sin16_t(SEGENV.aux0 << 8)) / 0xFFFF;
     }
     if (SEGMENT.check3) { // sloshing, y force is always downwards
-      if(ygravity > 0)
+      if (ygravity > 0)
         ygravity = -ygravity;
     }
 
@@ -8542,7 +8536,7 @@ uint16_t mode_particleattractor(void) {
   uint32_t strength = SEGMENT.speed;
   #ifdef USERMOD_AUDIOREACTIVE
   um_data_t *um_data;
-  if(UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) { // AR active, do not use simulated data
     uint32_t volumeSmth = (uint32_t)(*(float*) um_data->u_data[0]); // 0-255
     strength = (SEGMENT.speed * volumeSmth) >> 8;
   }
@@ -8606,7 +8600,7 @@ uint16_t mode_particlespray(void) {
 
   #ifdef USERMOD_AUDIOREACTIVE
   um_data_t *um_data;
-  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) { // get AR data, do not use simulated data
     uint32_t volumeSmth  = (uint8_t)(*(float*)   um_data->u_data[0]); //0 to 255
     uint32_t volumeRaw    = *(int16_t*)um_data->u_data[1]; //0 to 255
     PartSys->sources[0].minLife = 30;
@@ -8675,10 +8669,7 @@ uint16_t mode_particleGEQ(void) {
   PartSys->setWallHardness(SEGMENT.custom2);
   PartSys->setGravity(SEGMENT.custom3 << 2); // set gravity strength
 
-  um_data_t *um_data;
-  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
-    um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
-
+  um_data_t *um_data = getAudioData();
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
 
   //map the bands into 16 positions on x axis, emit some particles according to frequency loudness
@@ -8695,7 +8686,7 @@ uint16_t mode_particleGEQ(void) {
     if (fftResult[bin] > threshold) {
       emitparticles = 1;// + (fftResult[bin]>>6);
     }
-    else if(fftResult[bin] > 0) { // band has low volue
+    else if (fftResult[bin] > 0) { // band has low volue
       uint32_t restvolume = ((threshold - fftResult[bin])>>2) + 2;
       if (hw_random16() % restvolume == 0)
         emitparticles = 1;
@@ -8757,10 +8748,7 @@ uint16_t mode_particlecenterGEQ(void) {
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
   numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
 
-  um_data_t *um_data;
-  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
-    um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
-
+  um_data_t *um_data = getAudioData();
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
   uint32_t threshold = 300 - SEGMENT.intensity;
 
@@ -8823,15 +8811,15 @@ uint16_t mode_particleghostrider(void) {
   if (PartSys == NULL)
     return mode_static(); // something went wrong, no data!
 
-  if(SEGMENT.intensity > 0) { // spiraling
-    if(SEGENV.aux1) {
+  if (SEGMENT.intensity > 0) { // spiraling
+    if (SEGENV.aux1) {
       SEGENV.step += SEGMENT.intensity>>3;
-      if((int32_t)SEGENV.step > MAXANGLESTEP)
+      if ((int32_t)SEGENV.step > MAXANGLESTEP)
         SEGENV.aux1 = 0;
     }
     else {
       SEGENV.step -= SEGMENT.intensity>>3;
-      if((int32_t)SEGENV.step < -MAXANGLESTEP)
+      if ((int32_t)SEGENV.step < -MAXANGLESTEP)
         SEGENV.aux1 = 1;
     }
   }
@@ -8841,8 +8829,8 @@ uint16_t mode_particleghostrider(void) {
   PartSys->sources[0].var = SEGMENT.custom3 >> 1;
 
   // color by age (PS 'color by age' always starts with hue = 255, don't want that here)
-  if(SEGMENT.check1) {
-    for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+  if (SEGMENT.check1) {
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particles[i].hue = PartSys->sources[0].source.hue + (PartSys->particles[i].ttl<<2);
     }
   }
@@ -8938,7 +8926,7 @@ uint16_t mode_particleblobs(void) {
 
   #ifdef USERMOD_AUDIOREACTIVE
   um_data_t *um_data;
-  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+  if (UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) { // get AR data, do not use simulated data
     uint8_t volumeSmth = (uint8_t)(*(float*)um_data->u_data[0]);
     for (uint32_t i = 0; i < PartSys->usedParticles; i++) { // update particles
       if (SEGMENT.check3) //pulsate selected
@@ -9026,7 +9014,7 @@ uint16_t mode_particleDrip(void) {
   if (SEGMENT.call % SEGENV.aux0 == 0) {
     int32_t interval = 300 / ((SEGMENT.intensity) + 1);
     SEGENV.aux0 = interval + hw_random(interval + 5);
-    // if(SEGMENT.check1) // rain mode
+    // if (SEGMENT.check1) // rain mode
     //   PartSys->sources[0].source.hue = 0;
     // else
     PartSys->sources[0].source.hue = hw_random8(); //set random color  TODO: maybe also not random but color cycling? need another slider or checkmark for this.
@@ -9096,7 +9084,7 @@ uint16_t mode_particlePinball(void) {
   PartSys->setGravity(map(SEGMENT.custom3, 0 , 31, 0 , 16)); // set gravity (8 is default strength)
   PartSys->setBounce(SEGMENT.custom3); // disables bounce if no gravity is used
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
-  PartSys->enableParticleCollisions(SEGMENT.check1, 254); // enable collisions and set particle collision to high hardness
+  PartSys->enableParticleCollisions(SEGMENT.check1, 255); // enable collisions and set particle collision to high hardness
   PartSys->setUsedParticles(SEGMENT.intensity);
   PartSys->setColorByPosition(SEGMENT.check3);
 
@@ -9116,7 +9104,7 @@ uint16_t mode_particlePinball(void) {
         PartSys->particles[i].ttl = 260; // keep particles alive
       if (updateballs) { //speed changed or particle is dead, set particle properties
         PartSys->particleFlags[i].collide = true;
-        if(PartSys->particles[i].x == 0) { // still at initial position (when not switching from a PS)
+        if (PartSys->particles[i].x == 0) { // still at initial position (when not switching from a PS)
           PartSys->particles[i].x = hw_random16(PartSys->maxX); // random initial position for all particles
           PartSys->particles[i].vx = (hw_random16() & 0x01) ? 1 : -1; // random initial direction
         }
@@ -9127,14 +9115,14 @@ uint16_t mode_particlePinball(void) {
       speedsum += abs(PartSys->particles[i].vx);
     }
     int32_t avgSpeed = speedsum / PartSys->usedParticles;
-    int32_t setSpeed = 3 + (SEGMENT.speed >> 2);
+    int32_t setSpeed = 2 + (SEGMENT.speed >> 3);
     if (avgSpeed < setSpeed) { // if balls are slow, speed up some of them at random to keep the animation going
       for (int i = 0; i < setSpeed - avgSpeed; i++) {
         int idx = hw_random16(PartSys->usedParticles);
-        PartSys->particles[idx].vx += PartSys->particles[idx].vx > 0 ? 1 : -1; // keep direction
+        PartSys->particles[idx].vx += PartSys->particles[idx].vx >= 0 ? 1 : -1; // add 1, keep direction
       }
     }
-    else if (avgSpeed > setSpeed + 2) // if avg speed is too high, apply friction to slow them down
+    else if (avgSpeed > setSpeed + 8) // if avg speed is too high, apply friction to slow them down
       PartSys->applyFriction(1);
   }
   else { //bouncing balls
@@ -9148,7 +9136,7 @@ uint16_t mode_particlePinball(void) {
         PartSys->particles[i].ttl = 0;
       if (updateballs) {
         PartSys->advPartProps[i].size = SEGMENT.custom1;
-        if(SEGMENT.custom3 == 0) //gravity off, update speed
+        if (SEGMENT.custom3 == 0) //gravity off, update speed
           PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? newspeed : -newspeed; //keep the direction
       }
     }
@@ -9212,18 +9200,18 @@ uint16_t mode_particleDancingShadows(void) {
   uint32_t deadparticles = 0;
   //kill out of bounds and moving away plus change color
   for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-    if(((SEGMENT.call & 0x07) == 0) && PartSys->particleFlags[i].outofbounds) { //check if out of bounds particle move away from strip, only update every 8th frame
-      if((int32_t)PartSys->particles[i].vx * PartSys->particles[i].x > 0) PartSys->particles[i].ttl = 0; //particle is moving away, kill it
+    if (((SEGMENT.call & 0x07) == 0) && PartSys->particleFlags[i].outofbounds) { //check if out of bounds particle move away from strip, only update every 8th frame
+      if ((int32_t)PartSys->particles[i].vx * PartSys->particles[i].x > 0) PartSys->particles[i].ttl = 0; //particle is moving away, kill it
     }
     PartSys->particleFlags[i].perpetual = true; //particles do not age
     if (SEGMENT.call % (32 / (1 + (SEGMENT.custom2 >> 3))) == 0)
        PartSys->particles[i].hue += 2 + (SEGMENT.custom2 >> 5);
     //note: updating speed on the fly is not accurately possible, since it is unknown which particles are assigned to which spot
-    if(SEGENV.aux0 != SEGMENT.speed) { //speed changed
+    if (SEGENV.aux0 != SEGMENT.speed) { //speed changed
       //update all particle speed by setting them to current value
        PartSys->particles[i].vx = PartSys->particles[i].vx > 0 ? SEGMENT.speed >> 3 : -SEGMENT.speed >> 3;
     }
-    if(PartSys->particles[i].ttl == 0) deadparticles++; // count dead particles
+    if (PartSys->particles[i].ttl == 0) deadparticles++; // count dead particles
   }
   SEGENV.aux0 = SEGMENT.speed;
 
@@ -9246,7 +9234,7 @@ uint16_t mode_particleDancingShadows(void) {
     PartSys->sources[0].v = speed; //emitted particle speed
     PartSys->sources[0].source.hue = hw_random8(); //random spotlight color
     for (int32_t i = 0; i < width; i++) {
-      if(width > 1) {
+      if (width > 1) {
         switch (type) {
           case SPOT_TYPE_SOLID:
             //nothing to do
@@ -9263,17 +9251,17 @@ uint16_t mode_particleDancingShadows(void) {
             break;
 
           case SPOT_TYPE_2X_DOT:
-            if(i > 0) position++; //skip one pixel
+            if (i > 0) position++; //skip one pixel
             i++;
             break;
 
           case SPOT_TYPE_3X_DOT:
-            if(i > 0) position += 2; //skip two pixels
+            if (i > 0) position += 2; //skip two pixels
             i+=2;
             break;
 
           case SPOT_TYPE_4X_DOT:
-            if(i > 0) position += 3; //skip three pixels
+            if (i > 0) position += 3; //skip three pixels
             i+=3;
             break;
         }
@@ -9320,16 +9308,16 @@ uint16_t mode_particleFireworks1D(void) {
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
 
   int32_t gravity = (1 + (SEGMENT.speed >> 3));
-  if(!SEGMENT.check1) // gravity enabled for sparks
+  if (!SEGMENT.check1) // gravity enabled for sparks
    PartSys->setGravity(0); // disable
   else
    PartSys->setGravity(gravity); // set gravity
 
-  if(PartSys->sources[0].sourceFlags.custom1 == 1) { // rocket is on standby
+  if (PartSys->sources[0].sourceFlags.custom1 == 1) { // rocket is on standby
     PartSys->sources[0].source.ttl--;
-    if(PartSys->sources[0].source.ttl == 0) { // time is up, relaunch
+    if (PartSys->sources[0].source.ttl == 0) { // time is up, relaunch
 
-      if(hw_random8() < SEGMENT.custom1) // randomly choose direction according to slider, fire at start of segment if true
+      if (hw_random8() < SEGMENT.custom1) // randomly choose direction according to slider, fire at start of segment if true
         SEGENV.aux0 = 1;
       else
         SEGENV.aux0 = 0;
@@ -9348,7 +9336,7 @@ uint16_t mode_particleFireworks1D(void) {
       PartSys->sources[0].size = 0; // default size
       PartSys->sources[0].sourceFlags.reversegrav = false ; // normal gravity
 
-      if(SEGENV.aux0) { // inverted rockets launch from end
+      if (SEGENV.aux0) { // inverted rockets launch from end
         PartSys->sources[0].sourceFlags.reversegrav = true;
         PartSys->sources[0].source.x = PartSys->maxX; // start from top
         PartSys->sources[0].source.vx = -PartSys->sources[0].source.vx; // revert direction
@@ -9359,7 +9347,7 @@ uint16_t mode_particleFireworks1D(void) {
   else { // rocket is launched
     int32_t rocketgravity = -gravity;
     int32_t speed = PartSys->sources[0].source.vx;
-    if(SEGENV.aux0) { // negative speed rocket
+    if (SEGENV.aux0) { // negative speed rocket
       rocketgravity = -rocketgravity;
       speed = -speed;
     }
@@ -9368,10 +9356,10 @@ uint16_t mode_particleFireworks1D(void) {
     PartSys->particleMoveUpdate(PartSys->sources[0].source, PartSys->sources[0].sourceFlags); // increase speed by calling the move function twice, also ages twice
     uint32_t rocketheight = SEGENV.aux0 ? PartSys->maxX - PartSys->sources[0].source.x : PartSys->sources[0].source.x;
 
-    if(speed < 0 && PartSys->sources[0].source.ttl > 50) // reached apogee
+    if (speed < 0 && PartSys->sources[0].source.ttl > 50) // reached apogee
       PartSys->sources[0].source.ttl = min((uint32_t)50, rocketheight >> (PS_P_RADIUS_SHIFT_1D + 3)); // alive for a few more frames
 
-    if(PartSys->sources[0].source.ttl < 2) { // explode
+    if (PartSys->sources[0].source.ttl < 2) { // explode
       PartSys->sources[0].sourceFlags.custom1 = 1; // set standby state
       PartSys->sources[0].var = 5 + ((((PartSys->maxX >> 1) + rocketheight) * (200 + SEGMENT.intensity)) / (PartSys->maxX << 2)); // set explosion particle speed
       PartSys->sources[0].minLife = 600;
@@ -9381,22 +9369,22 @@ uint16_t mode_particleFireworks1D(void) {
       PartSys->sources[0].size = hw_random16(64); // random particle size in explosion
       uint32_t explosionsize = 8 + (PartSys->maxXpixel >> 2) + (PartSys->sources[0].source.x >> (PS_P_RADIUS_SHIFT_1D - 1));
       explosionsize += hw_random16((explosionsize * SEGMENT.intensity) >> 8);
-      for(uint32_t e = 0; e < explosionsize; e++) { // emit explosion particles
-        if(SEGMENT.check2)
+      for (uint32_t e = 0; e < explosionsize; e++) { // emit explosion particles
+        if (SEGMENT.check2)
           PartSys->sources[0].source.hue = hw_random16(); //random color for each particle
         PartSys->sprayEmit(PartSys->sources[0]); // emit a particle
       }
     }
   }
-  if((SEGMENT.call & 0x01) == 0 && PartSys->sources[0].sourceFlags.custom1 == false) // every second frame and not in standby
+  if ((SEGMENT.call & 0x01) == 0 && PartSys->sources[0].sourceFlags.custom1 == false) // every second frame and not in standby
     PartSys->sprayEmit(PartSys->sources[0]); // emit exhaust particle
-  if((SEGMENT.call & 0x03) == 0) // every fourth frame
+  if ((SEGMENT.call & 0x03) == 0) // every fourth frame
     PartSys->applyFriction(1); // apply friction to all particles
 
   PartSys->update(); // update and render
 
-  for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
-    if(PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if (PartSys->particles[i].ttl > 10) PartSys->particles[i].ttl -= 10; //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
     else PartSys->particles[i].ttl = 0;
   }
 
@@ -9439,13 +9427,13 @@ uint16_t mode_particleSparkler(void) {
     PartSys->sources[i].minLife = 150 + SEGMENT.intensity;
     PartSys->sources[i].maxLife = 250 + (SEGMENT.intensity << 1);
     uint32_t speed = SEGMENT.speed >> 1;
-    if(SEGMENT.check1) // sparks move (slide option)
+    if (SEGMENT.check1) // sparks move (slide option)
       PartSys->sources[i].var = SEGMENT.intensity >> 3;
     PartSys->sources[i].source.vx = speed; // update speed, do not change direction
     PartSys->sources[i].source.ttl = 400; // replenish its life (setting it perpetual uses more code)
     PartSys->sources[i].sat = SEGMENT.custom1; // color saturation
     PartSys->sources[i].size = SEGMENT.check3 ? 120 : 0;
-    if(SEGMENT.speed == 255) // random position at highest speed setting
+    if (SEGMENT.speed == 255) // random position at highest speed setting
       PartSys->sources[i].source.x = hw_random16(PartSys->maxX);
     else
       PartSys->particleMoveUpdate(PartSys->sources[i].source, PartSys->sources[i].sourceFlags, &sparklersettings); //move sparkler
@@ -9467,8 +9455,8 @@ uint16_t mode_particleSparkler(void) {
 
   PartSys->update(); // update and render
 
-  for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
-    if(PartSys->particles[i].ttl > (64 - (SEGMENT.intensity >> 2))) PartSys->particles[i].ttl -= (64 - (SEGMENT.intensity >> 2)); //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
+    if (PartSys->particles[i].ttl > (64 - (SEGMENT.intensity >> 2))) PartSys->particles[i].ttl -= (64 - (SEGMENT.intensity >> 2)); //ttl is linked to brightness, this allows to use higher brightness but still a short spark lifespan
     else PartSys->particles[i].ttl = 0;
   }
 
@@ -9483,15 +9471,14 @@ static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Move,!,Satu
 */
 uint16_t mode_particleHourglass(void) {
   ParticleSystem1D *PartSys = NULL;
-  int32_t positionoffset; // resting position offset
+  constexpr int positionOffset = PS_P_RADIUS_1D / 2;; // resting position offset
   bool* direction;
-  uint8_t* basehue;
+  uint32_t* settingTracker;
   if (SEGMENT.call == 0) { // initialization
-    if (!initParticleSystem1D(PartSys, 0, 255, 2, false)) // init
+    if (!initParticleSystem1D(PartSys, 0, 255, 8, false)) // init
       return mode_static(); // allocation failed or is single pixel
     PartSys->setBounce(true);
-    PartSys->setWallHardness(80);
-    SEGENV.step = 0xFFFF;
+    PartSys->setWallHardness(100);
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9500,107 +9487,116 @@ uint16_t mode_particleHourglass(void) {
 
   // Particle System settings
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-  basehue = PartSys->PSdataEnd;  //assign data pointer
-  direction = reinterpret_cast<bool *>(PartSys->PSdataEnd + 1);  //assign data pointer
+  settingTracker = reinterpret_cast<uint32_t *>(PartSys->PSdataEnd);  //assign data pointer
+  direction = reinterpret_cast<bool *>(PartSys->PSdataEnd + 4);  //assign data pointer
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, 255));
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, 1, 30));
-  PartSys->enableParticleCollisions(true, 34); // fixed hardness, 34 is a value that works best in most settings (spent a long time optimizing)
+  PartSys->enableParticleCollisions(true, 16); // hardness value found by experimentation on different settings
 
-  positionoffset = PS_P_RADIUS_1D / 2;
   uint32_t colormode = SEGMENT.custom1 >> 5; // 0-7
 
-  if((SEGMENT.intensity | (PartSys->getAvailableParticles() << 8)) != SEGENV.step) { // initialize, getAvailableParticles changes while in FX transition
-    if(PartSys->getAvailableParticles() == SEGENV.step >> 8) // only intensity slider changed or first call
-      *basehue = hw_random16(); //choose new random color
-    SEGENV.step = SEGMENT.intensity | (PartSys->getAvailableParticles() << 8);
-    for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+  if ((SEGMENT.intensity | (PartSys->getAvailableParticles() << 8)) != *settingTracker) { // initialize, getAvailableParticles changes while in FX transition
+    *settingTracker = SEGMENT.intensity | (PartSys->getAvailableParticles() << 8);
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particleFlags[i].reversegrav = true;
-      *direction = 0;
+      *direction = 0; // down
       SEGENV.aux1 = 1; // initialize below
     }
     SEGENV.aux0 = PartSys->usedParticles - 1; // initial state, start with highest number particle
   }
 
-  for(uint32_t i = 0; i < PartSys->usedParticles; i++) { // check if particle reached target position after falling
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) { // check if particle reached target position after falling
     int32_t targetposition;
-    if (PartSys->particleFlags[i].fixed == false) {
+    if (PartSys->particleFlags[i].fixed == false) { // && abs(PartSys->particles[i].vx) < 8) {
       // calculate target position depending on direction
-      if(PartSys->particleFlags[i].reversegrav) {
-        targetposition = PartSys->maxX - (i * PS_P_RADIUS_1D + positionoffset); // target resting position
-        if(PartSys->particles[i].x >= targetposition) // particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
-          PartSys->particleFlags[i].fixed = true;
+      bool closeToTarget = false;
+      bool reachedTarget = false;
+      if (PartSys->particleFlags[i].reversegrav) { // up
+        targetposition = PartSys->maxX - (i * PS_P_RADIUS_1D) - positionOffset; // target resting position
+        if (targetposition - PartSys->particles[i].x <= 5 * PS_P_RADIUS_1D)
+          closeToTarget = true;
+        if (PartSys->particles[i].x >= targetposition) // particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
+          reachedTarget = true;
       }
-      else {
-        targetposition = (PartSys->usedParticles - i) * PS_P_RADIUS_1D - positionoffset; // target resting position
-        if(PartSys->particles[i].x <= targetposition) // particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
-          PartSys->particleFlags[i].fixed = true;
+      else { // down, highest index particle drops first
+        targetposition = (PartSys->usedParticles - i) * PS_P_RADIUS_1D - positionOffset; // target resting position note: using -offset instead of -1 + offset
+        if (PartSys->particles[i].x - targetposition <= 5 * PS_P_RADIUS_1D)
+          closeToTarget = true;
+        if (PartSys->particles[i].x <= targetposition) // particle has reached target position, pin it. if not pinned, they do not stack well on larger piles
+          reachedTarget = true;
       }
-
+      if (reachedTarget || (closeToTarget && abs(PartSys->particles[i].vx) < 10)) { // reached target or close to target and slow speed
+        PartSys->particles[i].x = targetposition; // set exact position
+        PartSys->particleFlags[i].fixed = true;   // pin particle
+      }
     }
-    if(colormode == 7)
+    if (colormode == 7)
       PartSys->setColorByPosition(true); // color fixed by position
     else {
       PartSys->setColorByPosition(false);
+      uint8_t basehue = ((SEGMENT.custom1 & 0x1F) << 3); // use 5 LSBs to select color
       switch(colormode) {
         case 0: PartSys->particles[i].hue = 120; break; // fixed at 120, if flip is activated, this can make red and green (use palette 34)
-        case 1: PartSys->particles[i].hue = *basehue; break; // fixed random color
-        case 2:
-        case 3: PartSys->particles[i].hue = *basehue + (i % colormode)*70; break; // interleved colors (every 2 or 3 particles)
-        case 4: PartSys->particles[i].hue = *basehue + (i * 255) / PartSys->usedParticles;  break; // gradient palette colors
-        case 5: PartSys->particles[i].hue = *basehue + (i * 1024) / PartSys->usedParticles;  break; // multi gradient palette colors
+        case 1: PartSys->particles[i].hue = basehue; break; // fixed selectable color
+        case 2: // 2 colors inverleaved (same code as 3)
+        case 3: PartSys->particles[i].hue = ((SEGMENT.custom1 & 0x1F) << 1) + (i % colormode)*74; break; // interleved colors (every 2 or 3 particles)
+        case 4: PartSys->particles[i].hue = basehue + (i * 255) / PartSys->usedParticles;  break; // gradient palette colors
+        case 5: PartSys->particles[i].hue = basehue + (i * 1024) / PartSys->usedParticles;  break; // multi gradient palette colors
         case 6: PartSys->particles[i].hue = i + (strip.now >> 3);  break; // disco! moving color gradient
         default: break;
       }
     }
-    if(SEGMENT.check1 && !PartSys->particleFlags[i].reversegrav) // flip color when fallen
+    if (SEGMENT.check1 && !PartSys->particleFlags[i].reversegrav) // flip color when fallen
       PartSys->particles[i].hue += 120;
   }
 
-  if(SEGENV.aux1 == 1) { // last countdown call before dropping starts, reset all particles
-    for(uint32_t i = 0; i < PartSys->usedParticles; i++) {
+  if (SEGENV.aux1 == 1) { // last countdown call before dropping starts, reset all particles
+    for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particleFlags[i].collide = true;
       PartSys->particleFlags[i].perpetual = true;
       PartSys->particles[i].ttl = 260;
       uint32_t targetposition;
       //calculate target position depending on direction
-      if(PartSys->particleFlags[i].reversegrav)
-         targetposition = PartSys->maxX - (i * PS_P_RADIUS_1D + positionoffset); // target resting position
+      if (PartSys->particleFlags[i].reversegrav)
+         targetposition = PartSys->maxX - (i * PS_P_RADIUS_1D + positionOffset); // target resting position
       else
-        targetposition = (PartSys->usedParticles - i) * PS_P_RADIUS_1D - positionoffset; // target resting position  -5 - PS_P_RADIUS_1D/2
+        targetposition = (PartSys->usedParticles - i) * PS_P_RADIUS_1D - positionOffset; // target resting position  -5 - PS_P_RADIUS_1D/2
 
       PartSys->particles[i].x = targetposition;
       PartSys->particleFlags[i].fixed = true;
     }
   }
 
-  if(SEGENV.aux1 == 0) { // countdown passed, run
-    uint32_t interval = 257 - SEGMENT.speed; // drop interval in frames, 1 second is 'speed = (257 - FPS)' speed = 0 is one drop every 257 frames
-    if(SEGMENT.check3 && *direction) // fast reset
-      interval = 3;
-    if(SEGMENT.call % interval == 0) { // drop a particle, do not drop more often than every second frame or particles tangle up quite badly
-      if(SEGENV.aux0 < PartSys->usedParticles) {
+  if (SEGENV.aux1 == 0) { // countdown passed, run
+    if (strip.now >= SEGENV.step) { // drop a particle, do not drop more often than every second frame or particles tangle up quite badly
+      // set next drop time
+      if (SEGMENT.check3 && *direction) // fast reset
+        SEGENV.step = strip.now + 100; // drop one particle every 100ms
+      else // normal interval
+        SEGENV.step = strip.now + max(20, SEGMENT.speed * 20); // map speed slider from 0.1s to 5s
+      if (SEGENV.aux0 < PartSys->usedParticles) {
         PartSys->particleFlags[SEGENV.aux0].reversegrav = *direction; // let this particle fall or rise
         PartSys->particleFlags[SEGENV.aux0].fixed = false; // unpin
       }
-      else { // overflow, flip direction
-          *direction = !(*direction);
-          SEGENV.aux1 = SEGMENT.virtualLength() + 100; // set countdown
+      else { // overflow
+        *direction = !(*direction); // flip direction
+        SEGENV.aux1 = SEGMENT.virtualLength() + 100; // set countdown
       }
-      if(*direction == 0) // down
-        SEGENV.aux0--;
+      if (*direction == 0) // down, start dropping the highest number particle
+        SEGENV.aux0--; // next particle
       else
         SEGENV.aux0++;
     }
   }
-  else if(SEGMENT.check2) // auto reset
+  else if (SEGMENT.check2) // auto reset
     SEGENV.aux1--; // countdown
 
   PartSys->update(); // update and render
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Speed,!,Color,Blur,Gravity,Colorflip,Start,Fast Reset;,!;!;1;pal=34,sx=245,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
+static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Interval,!,Color,Blur,Gravity,Colorflip,Start,Fast Reset;,!;!;1;pal=34,sx=50,ix=200,c1=140,c2=80,c3=4,o1=1,o2=1,o3=1";
 
 /*
   Particle based Spray effect (like a volcano, possible replacement for popcorn)
@@ -9637,7 +9633,7 @@ uint16_t mode_particle1Dspray(void) {
   PartSys->sources[0].v = map(SEGMENT.speed, 0 , 255, -127 + PartSys->sources[0].var, 127 - PartSys->sources[0].var); // particle emit speed
   PartSys->sources[0].sourceFlags.reversegrav = gravity < 0 ? true : false;
 
-  if(hw_random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) {
+  if (hw_random()  % (1 + ((255 - SEGMENT.intensity) >> 3)) == 0) {
     PartSys->sprayEmit(PartSys->sources[0]); // emit a particle
     SEGMENT.aux0++; // increment hue
   }
@@ -9645,7 +9641,7 @@ uint16_t mode_particle1Dspray(void) {
   //update color settings
   PartSys->setColorByAge(SEGMENT.check1); // overruled by 'color by position'
   PartSys->setColorByPosition(SEGMENT.check3);
-  for(uint i = 0; i < PartSys->usedParticles; i++) {
+  for (uint i = 0; i < PartSys->usedParticles; i++) {
     PartSys->particleFlags[i].reversegrav = PartSys->sources[0].sourceFlags.reversegrav; // update gravity direction
   }
   PartSys->update(); // update and render
@@ -9683,9 +9679,9 @@ uint16_t mode_particleBalance(void) {
   PartSys->setWrap(SEGMENT.check2);
   uint8_t hardness = SEGMENT.custom1 > 0 ? map(SEGMENT.custom1, 0, 255, 50, 250) : 200; // set hardness,  make the walls hard if collisions are disabled
   PartSys->enableParticleCollisions(SEGMENT.custom1, hardness); // enable collisions if custom1 > 0
-  PartSys->setWallHardness(hardness);
+  PartSys->setWallHardness(200);
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 10, 255));
-  if(PartSys->usedParticles > SEGENV.aux1) { // more particles, reinitialize
+  if (PartSys->usedParticles > SEGENV.aux1) { // more particles, reinitialize
     for (i = 0; i < PartSys->usedParticles; i++) {
       PartSys->particles[i].x = i * PS_P_RADIUS_1D;
       PartSys->particles[i].ttl = 300;
@@ -9699,7 +9695,7 @@ uint16_t mode_particleBalance(void) {
     int32_t xgravity;
     int32_t increment = (SEGMENT.speed >> 6) + 1;
     SEGENV.aux0 += increment;
-    if(SEGMENT.check3) // random, use perlin noise
+    if (SEGMENT.check3) // random, use perlin noise
       xgravity = ((int16_t)inoise8(SEGENV.aux0) - 128);
     else // sinusoidal
       xgravity = (int16_t)cos8(SEGENV.aux0) - 128;//((int32_t)(SEGMENT.custom3 << 2) * cos8(SEGENV.aux0)
@@ -9711,14 +9707,14 @@ uint16_t mode_particleBalance(void) {
   uint32_t randomindex = hw_random16(PartSys->usedParticles);
   PartSys->particles[randomindex].vx = ((int32_t)PartSys->particles[randomindex].vx * 200) / 255;  // apply friction to random particle to reduce clumping (without collisions)
 
-  //if(SEGMENT.check2 && (SEGMENT.call & 0x07) == 0) // no walls, apply friction to smooth things out
-  if((SEGMENT.call & 0x0F) == 0) // apply friction every 16th frame to smooth things out
+  //if (SEGMENT.check2 && (SEGMENT.call & 0x07) == 0) // no walls, apply friction to smooth things out
+  if ((SEGMENT.call & 0x0F) == 0 && SEGMENT.custom3 > 2) // apply friction every 16th frame to smooth things out (except for low tilt)
     PartSys->applyFriction(1); // apply friction to all particles
 
   //update colors
   PartSys->setColorByPosition(SEGMENT.check1);
-  if(!SEGMENT.check1) {
-    for(i = 0; i < PartSys->usedParticles; i++) {
+  if (!SEGMENT.check1) {
+    for (i = 0; i < PartSys->usedParticles; i++) {
         PartSys->particles[i].hue = (1024 * i) / PartSys->usedParticles; // color by particle index
     }
   }
@@ -9894,10 +9890,7 @@ uint16_t mode_particle1DGEQ(void) {
     else PartSys->particles[i].ttl = 0;
   }
 
-  um_data_t *um_data;
-  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
-    um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
-
+  um_data_t *um_data = getAudioData();
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
 
   //map the bands into 16 positions on x axis, emit some particles according to frequency loudness
@@ -10027,41 +10020,38 @@ uint16_t mode_particle1Dsonicstream(void) {
   PartSys->sources[0].v = 5 + (SEGMENT.speed >> 2);
 
   // FFT processing
-  um_data_t *um_data;
-  if (!UsermodManager::getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE))
-    um_data = simulateSound(SEGMENT.soundSim); // add support for no audio
-
+  um_data_t *um_data = getAudioData();
   uint8_t *fftResult = (uint8_t *)um_data->u_data[2]; // 16 bins with FFT data, log mapped already, each band contains frequency amplitude 0-255
   uint32_t loudness;
   uint32_t baseBin = SEGMENT.custom3 >> 1; // 0 - 15 map(SEGMENT.custom3, 0, 31, 0, 14);
 
   loudness = fftResult[baseBin];// + fftResult[baseBin + 1];
   int mids = sqrt16((int)fftResult[5] + (int)fftResult[6] + (int)fftResult[7] + (int)fftResult[8] + (int)fftResult[9] + (int)fftResult[10]); // average the mids, bin 5 is ~500Hz, bin 10 is ~2kHz (see audio_reactive.h)
-  if(baseBin > 12)
+  if (baseBin > 12)
     loudness = loudness << 2; // double loudness for high frequencies (better detecion)
 
   uint32_t threshold = 150 - (SEGMENT.intensity >> 1);
-  if(SEGMENT.check2) { // enable low pass filter for dynamic threshold
+  if (SEGMENT.check2) { // enable low pass filter for dynamic threshold
     SEGMENT.step = (SEGMENT.step * 31500 + loudness * (32768 - 31500)) >> 15; // low pass filter for simple beat detection: add average to base threshold
     threshold = 20 + (threshold >> 1) + SEGMENT.step; // add average to threshold
   }
 
   // color
   uint32_t hueincrement = (SEGMENT.custom1 >> 3); // 0-31
-  if(SEGMENT.custom1 < 255)
+  if (SEGMENT.custom1 < 255)
     PartSys->setColorByPosition(false);
   else
     PartSys->setColorByPosition(true);
 
   // particle manipulation
   for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
-    if(PartSys->sources[0].sourceFlags.perpetual == false) { // age faster if not perpetual
+    if (PartSys->sources[0].sourceFlags.perpetual == false) { // age faster if not perpetual
       if (PartSys->particles[i].ttl > 2) {
         PartSys->particles[i].ttl -= 2; //ttl is linked to brightness, this allows to use higher brightness but still a short lifespan
       }
       else PartSys->particles[i].ttl = 0;
     }
-    if(SEGMENT.check1) // modulate colors by mid frequencies
+    if (SEGMENT.check1) // modulate colors by mid frequencies
       PartSys->particles[i].hue += (mids * inoise8(PartSys->particles[i].x << 2, SEGMENT.step << 2)) >> 9; // color by perlin noise from mid frequencies
   }
 
@@ -10071,20 +10061,20 @@ uint16_t mode_particle1Dsonicstream(void) {
     PartSys->sources[0].maxLife = PartSys->sources[0].minLife;
     PartSys->sources[0].source.hue = SEGMENT.aux0;
     PartSys->sources[0].size = SEGMENT.speed;
-    if(PartSys->particles[SEGMENT.aux1].x > 3 * PS_P_RADIUS_1D || PartSys->particles[SEGMENT.aux1].ttl == 0) { // only emit if last particle is far enough away or dead
+    if (PartSys->particles[SEGMENT.aux1].x > 3 * PS_P_RADIUS_1D || PartSys->particles[SEGMENT.aux1].ttl == 0) { // only emit if last particle is far enough away or dead
       int partindex = PartSys->sprayEmit(PartSys->sources[0]); // emit a particle
-      if(partindex >= 0) SEGMENT.aux1 = partindex; // track last emitted particle
+      if (partindex >= 0) SEGMENT.aux1 = partindex; // track last emitted particle
     }
   }
   else loudness = 0; // required for push mode
 
   PartSys->update(); // update and render (needs to be done before manipulation for initial particle spacing to be right)
 
-  if(SEGMENT.check3) { // push mode
+  if (SEGMENT.check3) { // push mode
     PartSys->sources[0].sourceFlags.perpetual = true; // emitted particles dont age
     PartSys->applyFriction(1); //slow down particles
     int32_t movestep = (((int)SEGMENT.speed + 2) * loudness) >> 10;
-    if(movestep) {
+    if (movestep) {
       for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
         if (PartSys->particles[i].ttl) {
           PartSys->particles[i].x += movestep; // push particles
@@ -10125,7 +10115,7 @@ uint8_t WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name)
     _mode[id]     = mode_fn;
     _modeData[id] = mode_name;
     return id;
-  } else if(_mode.size() < 255) { // 255 is reserved for indicating the effect wasn't added
+  } else if (_mode.size() < 255) { // 255 is reserved for indicating the effect wasn't added
     _mode.push_back(mode_fn);
     _modeData.push_back(mode_name);
     if (_modeCount < _mode.size()) _modeCount++;
