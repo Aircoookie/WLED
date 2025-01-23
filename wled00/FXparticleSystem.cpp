@@ -830,11 +830,12 @@ void ParticleSystem2D::handleCollisions() {
   collDistSq = collDistSq * collDistSq; // square it for faster comparison (square is one operation)
   // note: partices are binned in x-axis, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  int32_t binWidth = 6 * (PS_P_MINHARDRADIUS + particlesize); // width of a bin in sub-pixels
+  constexpr int BIN_WIDTH = 6 * PS_P_MINHARDRADIUS; // width of a bin in sub-pixels
+  int32_t overlap = PS_P_MINHARDRADIUS + particlesize; // overlap bins to include edge particles to neighbouring bins
   if (advPartProps) //may be using individual particle size
-    binWidth += 128; // add half of max radius
+    overlap += 128; // add max radius
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 2); // assume no more than half of the particles are in the same bin, do not bin small amounts of particles
-  uint32_t numBins = (maxX + (binWidth - 1)) / binWidth; // number of bins in x direction
+  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
@@ -843,8 +844,8 @@ void ParticleSystem2D::handleCollisions() {
   // fill the binIndices array for this bin
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
-    int32_t binStart = bin * binWidth;
-    int32_t binEnd = binStart + binWidth;
+    int32_t binStart = bin * BIN_WIDTH - overlap; // note: first bin will extend to negative, but that is ok as out of bounds particles are ignored
+    int32_t binEnd = binStart + BIN_WIDTH + overlap; // note: last bin can be out of bounds, see above;
 
     // fill the binIndices array for this bin
     for (uint32_t i = 0; i < usedParticles; i++) {
@@ -1437,7 +1438,6 @@ void ParticleSystem1D::applyGravity() {
     if (particleFlags[i].reversegrav) dv = -dv_raw;
     // note: not checking if particle is dead is omitted as most are usually alive and if few are alive, rendering is fast anyways
     particles[i].vx = limitSpeed((int32_t)particles[i].vx - dv);
-    particleFlags[i].forcedirection = particleFlags[i].reversegrav; // set force direction flag (for collisions)
   }
 }
 
@@ -1449,7 +1449,6 @@ void ParticleSystem1D::applyGravity(PSparticle1D &part, PSparticleFlags1D &partF
   if (partFlags.reversegrav) dv = -dv;
   gforcecounter = counterbkp; //save it back
   part.vx = limitSpeed((int32_t)part.vx - dv);
-  partFlags.forcedirection = partFlags.reversegrav; // set force direction flag (for collisions)
 }
 
 
@@ -1664,28 +1663,24 @@ void ParticleSystem1D::handleCollisions() {
   int32_t collisiondistance = PS_P_MINHARDRADIUS_1D;
   // note: partices are binned by position, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  int32_t binWidth = 32 * (PS_P_MINHARDRADIUS_1D + particlesize); // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  constexpr int BIN_WIDTH = 32 * PS_P_MINHARDRADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  int32_t overlap = PS_P_MINHARDRADIUS_1D; // overlap bins to include edge particles to neighbouring bins
+  if (advPartProps) //may be using individual particle size
+    overlap += 128; // add max radius
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 4); // do not bin small amounts, limit max to 1/2 of particles
-  uint32_t numBins = (maxX + (binWidth - 1)) / binWidth; // calculate number of bins
+  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // calculate number of bins
   uint16_t binIndices[maxBinParticles]; // array to store indices of particles in a bin
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
   uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
-    int32_t binStart = bin * binWidth;
-    int32_t binEnd = binStart + binWidth;
+    int32_t binStart = bin * BIN_WIDTH - overlap; // note: first bin will extend to negative, but that is ok as out of bounds particles are ignored
+    int32_t binEnd = binStart + BIN_WIDTH + overlap; // note: last bin can be out of bounds, see above
 
     // fill the binIndices array for this bin
     for (uint32_t i = 0; i < usedParticles; i++) {
       if (particles[pidx].ttl > 0 && particleFlags[pidx].outofbounds == 0 && particleFlags[pidx].collide) { // colliding particle
-        // if gravity is not used and wall bounce is enabled: particles in the first or last bin use fixed force direction (no collapsing, no push inversion)
-        if (!particlesettings.useGravity && particlesettings.bounce) {
-          if (particles[pidx].x < binWidth)
-            particleFlags[pidx].forcedirection = false;
-          else if (particles[pidx].x > (maxX - binWidth))
-            particleFlags[pidx].forcedirection = true;
-        }
         if (particles[pidx].x >= binStart && particles[pidx].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
           if (binParticleCount >= maxBinParticles) { // bin is full, more particles in this bin so do the rest next frame
             nextFrameStartIdx = pidx; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
@@ -1710,7 +1705,7 @@ void ParticleSystem1D::handleCollisions() {
         int32_t proximity = collisiondistance;
         if (dv >= proximity) // particles would go past each other in next move update
           proximity += abs(dv); // add speed difference to catch fast particles
-        if (dx < proximity && dx > -proximity) { // check if close
+        if (dx <= proximity && dx >= -proximity) { // collide if close
           collideParticles(particles[idx_i], particleFlags[idx_i], particles[idx_j], particleFlags[idx_j], dx, dv, collisiondistance);
         }
       }
@@ -1722,6 +1717,7 @@ void ParticleSystem1D::handleCollisions() {
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
 void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticleFlags1D &particle1flags, PSparticle1D &particle2, const PSparticleFlags1D &particle2flags, int32_t dx, int32_t relativeVx, uint32_t collisiondistance) {
   int32_t dotProduct = (dx * relativeVx); // is always negative if moving towards each other
+  uint32_t distance = abs(dx);
   if (dotProduct < 0) { // particles are moving towards each other
     uint32_t surfacehardness = max(collisionHardness, (int32_t)PS_P_MINSURFACEHARDNESS_1D); // if particles are soft, the impulse must stay above a limit or collisions slip through
     // Calculate new velocities after collision
@@ -1741,41 +1737,30 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
       particle2.vx = ((int32_t)particle2.vx * coeff) / 255;
     }
   }
-
-  uint32_t distance = abs(dx);
-  // particles have volume, push particles apart if they are too close
-  // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
-  // also need to give the top particle some speed to counteract gravity or stacks just collapse
-  if (distance < collisiondistance) { // particles are too close, push the upper particle away
-    int32_t pushamount = 1 + ((collisiondistance - distance) >> 1); //add half the remaining distance note: this works best, if less or more is added, it gets more chaotic
-
-  // Only force-push if particles use gravity or are not really close or are in the outer quarter of the strip
-  if (particlesettings.bounce && (particlesettings.useGravity || distance > 3 || particle1.x < (maxX >> 2) || particle1.x > (maxX - (maxX >> 2)))) {
-    // use force direction flag to push the 'upper' particle only, avoids stack-collapse
-    if (dx < 0) { // particle2.x < particle1.x, dx = p2.x - p1.x
-      if (particle2flags.forcedirection && !particle2flags.fixed) {
-        particle2.x -= pushamount;
-        particle2.vx--;
-      } else if (!particle1flags.forcedirection && !particle1flags.fixed) {
-        particle1.x += pushamount;
-        particle1.vx++;
-      }
-    } else { // particle1.x < particle2.x, dx = p2.x - p1.x
-      if (particle1flags.forcedirection && !particle1flags.fixed) {
-        particle1.x -= pushamount;
-        particle1.vx--;
-      } else if (!particle2flags.forcedirection && !particle2flags.fixed) {
-        particle2.x += pushamount;
-        particle2.vx++;
-      }
-    }
-  }
-  else { // no wall bounce, not using gravity, push both particles by applying a little velocity (like in 2D system)
-    pushamount = 2;
+  else if (distance < collisiondistance || relativeVx == 0) // moving apart or moving along and/or distance too close, push particles apart
+  {
+    // particles have volume, push particles apart if they are too close
+    // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
+    int32_t pushamount = 1;
     if (dx < 0)  // particle2.x < particle1.x
       pushamount = -pushamount;
     particle1.vx -= pushamount;
     particle2.vx += pushamount;
+
+    if(distance < collisiondistance >> 1 ) { // too close, force push particles
+      pushamount = (collisiondistance - distance);
+      if(particle1.x < (maxX >> 1)) { // lower half, push particle with larger x in positive direction
+        if (dx < 0 && !particle1flags.fixed)  // particle2.x < particle1.x  -> push particle 1
+          particle1.x += pushamount;
+        else if (!particle2flags.fixed) // particle1.x < particle2.x  -> push particle 2
+          particle2.x += pushamount;
+      }
+      else { // upper half, push particle with smaller x
+        if (dx < 0 && !particle2flags.fixed)  // particle2.x < particle1.x  -> push particle 2
+          particle2.x -= pushamount;
+        else if (!particle2flags.fixed)  // particle1.x < particle2.x  -> push particle 1
+          particle1.x -= pushamount;
+      }
     }
   }
 }

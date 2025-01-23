@@ -301,7 +301,7 @@ typedef union {
     bool collide : 1; // if set, particle takes part in collisions
     bool perpetual : 1; // if set, particle does not age (TTL is not decremented in move function, it still dies from killoutofbounds)
     bool reversegrav : 1; // if set, gravity is reversed on this particle
-    bool forcedirection : 1; // direction the force was applied, 1 is positive x-direction (used for collision stacking, similar to reversegrav)
+    bool forcedirection : 1; // direction the force was applied, 1 is positive x-direction (used for collision stacking, similar to reversegrav) TODO: not used anymore, can be removed
     bool fixed : 1; // if set, particle does not move (and collisions make other particles revert direction),
     bool custom1 : 1; // unused custom flags, can be used by FX to track particle states
     bool custom2 : 1;
