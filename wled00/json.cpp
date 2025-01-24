@@ -823,7 +823,7 @@ void serializeInfo(JsonObject root)
   root[F("otaLocked")] = otaLock;
   #endif
   root[F("opt")] = os;
-  
+
   root[F("brand")] = F(WLED_BRAND);
   root[F("product")] = F(WLED_PRODUCT_NAME);
   root["mac"] = escapedMac;
