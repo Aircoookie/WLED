@@ -134,8 +134,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.correctWB = request->hasArg(F("CCT"));
     strip.cctFromRgb = request->hasArg(F("CR"));
     cctICused = request->hasArg(F("IC"));
-    strip.cctBlending = request->arg(F("CB")).toInt();
-    Bus::setCCTBlend(strip.cctBlending);
+    uint8_t cctBlending = request->arg(F("CB")).toInt();
+    Bus::setCCTBlend(cctBlending);
     Bus::setGlobalAWMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
     useGlobalLedBuffer = request->hasArg(F("LD"));
@@ -326,11 +326,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     NeoGammaWLEDMethod::calcGammaTable(gammaCorrectVal); // fill look-up table
 
-    fadeTransition = request->hasArg(F("TF"));
-    modeBlending = request->hasArg(F("EB"));
     t = request->arg(F("TD")).toInt();
     if (t >= 0) transitionDelayDefault = t;
-    strip.paletteFade = request->hasArg(F("PF"));
     t = request->arg(F("TP")).toInt();
     randomPaletteChangeTime = MIN(255,MAX(1,t));
     useHarmonicRandomPalette = request->hasArg(F("TH"));
@@ -1148,7 +1145,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
-  if (fadeTransition) strip.setTransition(transitionDelay);
+  strip.setTransition(transitionDelay);
 
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));

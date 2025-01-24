@@ -493,6 +493,7 @@ um_data_t* simulateSound(uint8_t simulationId);
 void enumerateLedmaps();
 [[gnu::hot]] uint8_t get_random_wheel_index(uint8_t pos);
 [[gnu::hot, gnu::pure]] float mapf(float x, float in_min, float in_max, float out_min, float out_max);
+uint32_t hashInt(uint32_t s);
 
 // fast (true) random numbers using hardware RNG, all functions return values in the range lowerlimit to upperlimit-1
 // note: for true random numbers with high entropy, do not call faster than every 200ns (5MHz)
@@ -552,6 +553,7 @@ float asin_t(float x);
 template <typename T> T atan_t(T x);
 float floor_t(float x);
 float fmod_t(float num, float denom);
+uint32_t sqrt32_bw(uint32_t x);
 #define sin_t sin_approx
 #define cos_t cos_approx
 #define tan_t tan_approx

@@ -595,6 +595,13 @@ float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+uint32_t hashInt(uint32_t s) {
+  // borrowed from https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
+  s = ((s >> 16) ^ s) * 0x45d9f3b;
+  s = ((s >> 16) ^ s) * 0x45d9f3b;
+  return (s >> 16) ^ s;
+}
+
 // 32 bit random number generator, inlining uses more code, use hw_random16() if speed is critical (see fcn_declare.h)
 uint32_t hw_random(uint32_t upperlimit) {
   uint32_t rnd = hw_random();
