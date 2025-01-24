@@ -449,14 +449,6 @@ void Segment::beginDraw() {
     _currentColors[i] = gamma32(col);
   }
   // load palette into _currentPalette
-  setCurrentPalette();
-}
-
-void Segment::setCurrentPalette(bool loadOldPalette) {
-  if(loadOldPalette && isInTransition()) {
-    loadPalette(_currentPalette, _t->_palette); // load palette of old effect, used in particle system
-    return;
-  }
   loadPalette(_currentPalette, palette);
   if (prog < 0xFFFFU) {
 #ifndef WLED_DISABLE_MODE_BLEND
@@ -474,6 +466,12 @@ void Segment::setCurrentPalette(bool loadOldPalette) {
       _currentPalette = _t->_palT; // copy transitioning/temporary palette
     }
   }
+}
+
+// loads palette of the old FX during transitions (used by particle system)
+void Segment::loadOldPalette(void) {
+  if(isInTransition())
+    loadPalette(_currentPalette, _t->_palTid);
 }
 
 // relies on WS2812FX::service() to call it for each frame

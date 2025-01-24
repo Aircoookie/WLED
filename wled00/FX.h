@@ -497,7 +497,6 @@ typedef struct Segment {
       #ifndef WLED_DISABLE_MODE_BLEND
       tmpsegd_t     _segT;        // previous segment environment
       uint8_t       _modeT;       // previous mode/effect
-      uint8_t       _palette;     // previous palette
       #else
       uint32_t      _colorT[NUM_COLORS];
       #endif
@@ -653,7 +652,7 @@ typedef struct Segment {
     uint8_t  currentMode() const;                            // currently active effect/mode (while in transition)
     [[gnu::hot]] uint32_t currentColor(uint8_t slot) const;  // currently active segment color (blended while in transition)
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
-    void     setCurrentPalette(bool loadOldPalette = false);
+    void     loadOldPalette(); // loads old FX palette into _currentPalette
 
     // 1D strip
     [[gnu::hot]] uint16_t virtualLength() const;

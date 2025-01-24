@@ -38,6 +38,7 @@ struct partMem {
   uint8_t id;                 // ID of segment this memory belongs to
   uint8_t watchdog;           // counter to handle deallocation
   uint8_t inTransition;       // to track PS to PS FX transitions (is set to new FX ID during transitions), not set if not both FX are PS FX
+  uint8_t currentFX;          // current FX ID, is set when transition is complete, used to detect back and forth transitions
   bool transferParticles;     // if set, particles in buffer are transferred to new FX
 };
 
