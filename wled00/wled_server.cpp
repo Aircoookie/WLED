@@ -324,7 +324,7 @@ void initServer()
 
     if (verboseResponse) {
       if (!isConfig) {
-        lastInterfaceUpdate = millis(); // prevent WS update until cooldown        
+        lastInterfaceUpdate = millis(); // prevent WS update until cooldown
         interfaceUpdateCallMode = CALL_MODE_WS_SEND; // schedule WS update
         serveJson(request); return; //if JSON contains "v"
       } else {
