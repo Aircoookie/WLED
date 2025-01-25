@@ -323,9 +323,9 @@ void initServer()
     releaseJSONBufferLock();
 
     if (verboseResponse) {
-      interfaceUpdateCallMode = CALL_MODE_WS_SEND; // schedule WS update
       if (!isConfig) {
         lastInterfaceUpdate = millis(); // prevent WS update until cooldown        
+        interfaceUpdateCallMode = CALL_MODE_WS_SEND; // schedule WS update
         serveJson(request); return; //if JSON contains "v"
       } else {
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
