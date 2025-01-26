@@ -327,7 +327,7 @@ class BusNetwork : public Bus {
 #ifdef WLED_ENABLE_HUB75MATRIX
 class BusHub75Matrix : public Bus {
   public:
-    BusHub75Matrix(BusConfig &bc);
+    BusHub75Matrix(const BusConfig &bc);
     void setPixelColor(unsigned pix, uint32_t c) override;
     uint32_t getPixelColor(unsigned pix) const override;
     void show() override;

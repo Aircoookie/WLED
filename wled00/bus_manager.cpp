@@ -813,7 +813,7 @@ void BusNetwork::cleanup() {
 #error ESP8266 does not support HUB75
 #endif 
 
-BusHub75Matrix::BusHub75Matrix(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
 
   _valid = false;
   _hasRgb = true;
