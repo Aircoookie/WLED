@@ -20,11 +20,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   //long vid = doc[F("vid")]; // 2010020
 
-#ifdef WLED_USE_ETHERNET
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   JsonObject ethernet = doc[F("eth")];
   CJSON(ethernetType, ethernet["type"]);
   // NOTE: Ethernet configuration takes priority over other use of pins
-  WLED::instance().initEthernet();
+  initEthernet();
 #endif
 
   JsonObject id = doc["id"];
@@ -53,9 +53,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       JsonArray sn = wifi["sn"];
       char ssid[33] = "";
       char pass[65] = "";
+      char bssid[13] = "";
       IPAddress nIP = (uint32_t)0U, nGW = (uint32_t)0U, nSN = (uint32_t)0x00FFFFFF; // little endian
       getStringFromJson(ssid, wifi[F("ssid")], 33);
       getStringFromJson(pass, wifi["psk"], 65); // password is not normally present but if it is, use it
+      getStringFromJson(bssid, wifi[F("bssid")], 13);
       for (size_t i = 0; i < 4; i++) {
         CJSON(nIP[i], ip[i]);
         CJSON(nGW[i], gw[i]);
@@ -63,6 +65,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
       if (strlen(ssid) > 0) strlcpy(multiWiFi[n].clientSSID, ssid, 33); // this will keep old SSID intact if not present in JSON
       if (strlen(pass) > 0) strlcpy(multiWiFi[n].clientPass, pass, 65); // this will keep old password intact if not present in JSON
+      if (strlen(bssid) > 0) fillStr2MAC(multiWiFi[n].bssid, bssid);
       multiWiFi[n].staticIP = nIP;
       multiWiFi[n].staticGW = nGW;
       multiWiFi[n].staticSN = nSN;
@@ -707,8 +710,8 @@ void deserializeConfigFromFS() {
     UsermodManager::readFromConfig(empty);
     serializeConfig();
     // init Ethernet (in case default type is set at compile time)
-    #ifdef WLED_USE_ETHERNET
-    WLED::instance().initEthernet();
+    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+    initEthernet();
     #endif
     return;
   }
@@ -756,6 +759,9 @@ void serializeConfig() {
     JsonObject wifi = nw_ins.createNestedObject();
     wifi[F("ssid")] = multiWiFi[n].clientSSID;
     wifi[F("pskl")] = strlen(multiWiFi[n].clientPass);
+    char bssid[13];
+    fillMAC2Str(bssid, multiWiFi[n].bssid);
+    wifi[F("bssid")] = bssid;
     JsonArray wifi_ip = wifi.createNestedArray("ip");
     JsonArray wifi_gw = wifi.createNestedArray("gw");
     JsonArray wifi_sn = wifi.createNestedArray("sn");
@@ -791,7 +797,7 @@ void serializeConfig() {
   wifi[F("txpwr")] = txPower;
 #endif
 
-#ifdef WLED_USE_ETHERNET
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   JsonObject ethernet = root.createNestedObject("eth");
   ethernet["type"] = ethernetType;
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
