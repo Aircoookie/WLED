@@ -42,8 +42,8 @@ ParticleSystem2D::ParticleSystem2D(uint32_t width, uint32_t height, uint32_t num
   numParticles = numberofparticles; // number of particles allocated in init
   availableParticles = 0; // let the memory manager assign
   fractionOfParticlesUsed = 255; // use all particles by default, usedParticles is updated in updatePSpointers()
-  advPartProps = NULL; //make sure we start out with null pointers (just in case memory was not cleared)
-  advPartSize = NULL;
+  advPartProps = nullptr; //make sure we start out with null pointers (just in case memory was not cleared)
+  advPartSize = nullptr;
   updatePSpointers(isadvanced, sizecontrol); // set the particle and sources pointer (call this before accessing sprays or particles)
   setMatrixSize(width, height);
   setWallHardness(255); // set default wall hardness to max
@@ -234,7 +234,7 @@ int32_t ParticleSystem2D::angleEmit(PSsource &emitter, const uint16_t angle, con
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
 // uses passed settings to set bounce or wrap, if useGravity is enabled, it will never bounce at the top and killoutofbounds is not applied over the top
 void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSparticleFlags &partFlags, PSsettings2D *options, PSadvancedParticle *advancedproperties) {
-  if (options == NULL)
+  if (options == nullptr)
     options = &particlesettings; //use PS system settings by default
 
   if (part.ttl > 0) {
@@ -324,7 +324,7 @@ void ParticleSystem2D::fireParticleupdate() {
 
 // update advanced particle size control, returns false if particle shrinks to 0 size
 bool ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize) {
-  if (advsize == NULL) // safety check
+  if (advsize == nullptr) // safety check
     return false;
   // grow/shrink particle
   int32_t newsize = advprops->size;
@@ -376,7 +376,7 @@ bool ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *a
 
 // calculate x and y size for asymmetrical particles (advanced size control)
 void ParticleSystem2D::getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize) {
-  if (advsize == NULL) // if advsize is valid, also advanced properties pointer is valid (handled by updatePSpointers())
+  if (advsize == nullptr) // if advsize is valid, also advanced properties pointer is valid (handled by updatePSpointers())
     return;
   int32_t size = advprops->size;
   int32_t asymdir = advsize->asymdir;
@@ -437,7 +437,7 @@ void ParticleSystem2D::applyForce(PSparticle &part, const int8_t xforce, const i
 
 // apply a force in x,y direction to individual particle using advanced particle properties
 void ParticleSystem2D::applyForce(const uint32_t particleindex, const int8_t xforce, const int8_t yforce) {
-  if (advPartProps == NULL)
+  if (advPartProps == nullptr)
     return; // no advanced properties available
   applyForce(particles[particleindex], xforce, yforce, advPartProps[particleindex].forcecounter);
 }
@@ -466,7 +466,7 @@ void ParticleSystem2D::applyAngleForce(PSparticle &part, const int8_t force, con
 }
 
 void ParticleSystem2D::applyAngleForce(const uint32_t particleindex, const int8_t force, const uint16_t angle) {
-  if (advPartProps == NULL)
+  if (advPartProps == nullptr)
     return; // no advanced properties available
   applyAngleForce(particles[particleindex], force, angle, advPartProps[particleindex].forcecounter);
 }
@@ -522,7 +522,7 @@ void ParticleSystem2D::applyFriction(const int32_t coefficient) {
 
 // attracts a particle to an attractor particle using the inverse square-law
 void ParticleSystem2D::pointAttractor(const uint32_t particleindex, PSparticle &attractor, const uint8_t strength, const bool swallow) {
-  if (advPartProps == NULL)
+  if (advPartProps == nullptr)
     return; // no advanced properties available
 
   // Calculate the distance between the particle and the attractor
@@ -556,31 +556,37 @@ void ParticleSystem2D::pointAttractor(const uint32_t particleindex, PSparticle &
 void ParticleSystem2D::ParticleSys_render() {
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
-  static bool useAdditiveTransfer = false; // use add instead of set for buffer transferring
+  static bool useAdditiveTransfer = false; // use add instead of set for buffer transferring (must persist between calls)
+  bool isNonFadeTransition = (pmem->inTransition || pmem->finalTransfer) && blendingStyle != BLEND_STYLE_FADE;
+  bool isOverlay = segmentIsOverlay();
 
   // update global blur (used for blur transitions)
   int32_t motionbluramount = motionBlur;
   int32_t smearamount = smearBlur;
-  if(pmem->inTransition == effectID) { // FX transition and this is the new FX: fade blur amount
+  if(pmem->inTransition == effectID && blendingStyle == BLEND_STYLE_FADE) { // FX transition and this is the new FX: fade blur amount but only if using fade style
     motionbluramount = globalBlur + (((motionbluramount - globalBlur) * (int)SEGMENT.progress()) >> 16); // fade from old blur to new blur during transitions
-    smearamount = globalSmear + (((smearamount - globalSmear) * (int)SEGMENT.progress()) >> 16);
+    smearamount = globalSmear + (((smearamount - globalSmear) * (int)SEGMENT.progress()) >> 16);  
   }
   globalBlur = motionbluramount;
   globalSmear = smearamount;
 
+  if(isOverlay) {
+    globalSmear = 0; // do not apply smear or blur in overlay or it turns everything into a blurry mess
+    globalBlur = 0;
+  }
   // handle blurring and framebuffer update
   if (framebuffer) {
-    if(segmentIsOverlay()) useAdditiveTransfer = true; // overlay rendering
-    else useAdditiveTransfer = false;
+    if(!pmem->inTransition)
+      useAdditiveTransfer = false; // additive transfer is only usd in transitions (or in overlay)
     // handle buffer blurring or clearing
-    bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
-
+    bool bufferNeedsUpdate = !pmem->inTransition || pmem->inTransition == effectID || isNonFadeTransition; // not a transition; or new FX or not fading style: update buffer (blur, or clear)
     if(bufferNeedsUpdate) {
+      bool loadfromSegment = !renderSolo || isNonFadeTransition;
       if (globalBlur > 0 || globalSmear > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
         for (int32_t y = 0; y <= maxYpixel; y++) {
           int index = y * (maxXpixel + 1);
           for (int32_t x = 0; x <= maxXpixel; x++) {
-            if (!renderSolo) { // sharing the framebuffer with another segment: update buffer by reading back from segment
+            if (loadfromSegment) { // sharing the framebuffer with another segment or not using fade style blending: update buffer by reading back from segment
               framebuffer[index] = SEGMENT.getPixelColorXY(x, y); // read from segment
             }
             fast_color_scale(framebuffer[index], globalBlur); // note: could skip if only globalsmear is active but usually they are both active and scaling is fast enough
@@ -592,12 +598,13 @@ void ParticleSystem2D::ParticleSys_render() {
         memset(framebuffer, 0, frameBufferSize * sizeof(CRGB));
       }
     }
+    // handle buffer for global large particle size rendering
     if(particlesize > 0 && pmem->inTransition) { // if particle size is used by FX we need a clean buffer
-      if(bufferNeedsUpdate && !globalBlur) { // transfer only if buffer was not cleared above (happens if this is the new FX and other FX does not use blurring)
+      if(bufferNeedsUpdate && !globalBlur) { // transfer without adding if buffer was not cleared above (happens if this is the new FX and other FX does not use blurring)
         useAdditiveTransfer = false; // no blurring and big size particle FX is the new FX (rendered first after clearing), can just render normally
       }
       else { // this is the old FX (rendering second) or blurring is active: new FX already rendered to the buffer and blurring was applied above; transfer it to segment and clear it
-        transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer);
+        transferBuffer(maxXpixel + 1, maxYpixel + 1, isOverlay);
         memset(framebuffer, 0, frameBufferSize * sizeof(CRGB)); // clear the buffer after transfer
         useAdditiveTransfer = true; // additive transfer reads from segment, adds that to the frame-buffer and writes back to segment, after transfer, segment and buffer are identical
       }
@@ -615,16 +622,16 @@ void ParticleSystem2D::ParticleSys_render() {
     if (particles[i].ttl == 0 || particleFlags[i].outofbounds)
       continue;
     // generate RGB values for particle
-    if (fireIntesity) {
+    if (fireIntesity) { // fire mode
       brightness = (uint32_t)particles[i].ttl * (3 + (fireIntesity >> 5)) + 20;
       brightness = min(brightness, (uint32_t)255);
-      baseRGB = ColorFromPalette(SEGPALETTE, brightness, 255);
+      baseRGB = ColorFromPaletteWLED(SEGPALETTE, brightness, 255);
     }
     else {
       brightness = min((particles[i].ttl << 1), (int)255);
-      baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255);
+      baseRGB = ColorFromPaletteWLED(SEGPALETTE, particles[i].hue, 255);
       if (particles[i].sat < 255) {
-        CHSV32 baseHSV; 
+        CHSV32 baseHSV;
         rgb2hsv((uint32_t((byte(baseRGB.r) << 16) | (byte(baseRGB.g) << 8) | (byte(baseRGB.b)))), baseHSV); // convert to HSV
         baseHSV.s = particles[i].sat; // set the saturation
         uint32_t tempcolor;
@@ -659,9 +666,8 @@ void ParticleSystem2D::ParticleSys_render() {
       SEGMENT.blur(globalSmear, true);
   }
   // transfer framebuffer to segment if available
-  if (pmem->inTransition != effectID) { // not in transition or is old FX (rendered second)
-    transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer);
-  }
+  if (pmem->inTransition != effectID || isNonFadeTransition) // not in transition or is old FX (rendered second) or not fade style
+    transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer | isOverlay);
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -830,11 +836,12 @@ void ParticleSystem2D::handleCollisions() {
   collDistSq = collDistSq * collDistSq; // square it for faster comparison (square is one operation)
   // note: partices are binned in x-axis, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  int32_t binWidth = 6 * (PS_P_MINHARDRADIUS + particlesize); // width of a bin in sub-pixels
+  constexpr int BIN_WIDTH = 6 * PS_P_MINHARDRADIUS; // width of a bin in sub-pixels
+  int32_t overlap = PS_P_MINHARDRADIUS + particlesize; // overlap bins to include edge particles to neighbouring bins
   if (advPartProps) //may be using individual particle size
-    binWidth += 128; // add half of max radius
+    overlap += 128; // add max radius
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 2); // assume no more than half of the particles are in the same bin, do not bin small amounts of particles
-  uint32_t numBins = (maxX + (binWidth - 1)) / binWidth; // number of bins in x direction
+  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
@@ -843,8 +850,8 @@ void ParticleSystem2D::handleCollisions() {
   // fill the binIndices array for this bin
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
-    int32_t binStart = bin * binWidth;
-    int32_t binEnd = binStart + binWidth;
+    int32_t binStart = bin * BIN_WIDTH - overlap; // note: first bin will extend to negative, but that is ok as out of bounds particles are ignored
+    int32_t binEnd = binStart + BIN_WIDTH + overlap; // note: last bin can be out of bounds, see above;
 
     // fill the binIndices array for this bin
     for (uint32_t i = 0; i < usedParticles; i++) {
@@ -1190,8 +1197,8 @@ ParticleSystem1D::ParticleSystem1D(uint32_t length, uint32_t numberofparticles, 
   numParticles = numberofparticles; // number of particles allocated in init
   availableParticles = 0; // let the memory manager assign
   fractionOfParticlesUsed = 255; // use all particles by default
-  advPartProps = NULL; //make sure we start out with null pointers (just in case memory was not cleared)
-  //advPartSize = NULL;
+  advPartProps = nullptr; //make sure we start out with null pointers (just in case memory was not cleared)
+  //advPartSize = nullptr;
   updatePSpointers(isadvanced); // set the particle and sources pointer (call this before accessing sprays or particles)  
   setSize(length);
   setWallHardness(255); // set default wall hardness to max
@@ -1342,7 +1349,7 @@ int32_t ParticleSystem1D::sprayEmit(const PSsource1D &emitter) {
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
 // uses passed settings to set bounce or wrap, if useGravity is set, it will never bounce at the top and killoutofbounds is not applied over the top
 void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSparticleFlags1D &partFlags, PSsettings1D *options, PSadvancedParticle1D *advancedproperties) {
-  if (options == NULL)
+  if (options == nullptr)
     options = &particlesettings; // use PS system settings by default
 
   if (part.ttl > 0) {
@@ -1437,7 +1444,6 @@ void ParticleSystem1D::applyGravity() {
     if (particleFlags[i].reversegrav) dv = -dv_raw;
     // note: not checking if particle is dead is omitted as most are usually alive and if few are alive, rendering is fast anyways
     particles[i].vx = limitSpeed((int32_t)particles[i].vx - dv);
-    particleFlags[i].forcedirection = particleFlags[i].reversegrav; // set force direction flag (for collisions)
   }
 }
 
@@ -1449,7 +1455,6 @@ void ParticleSystem1D::applyGravity(PSparticle1D &part, PSparticleFlags1D &partF
   if (partFlags.reversegrav) dv = -dv;
   gforcecounter = counterbkp; //save it back
   part.vx = limitSpeed((int32_t)part.vx - dv);
-  partFlags.forcedirection = partFlags.reversegrav; // set force direction flag (for collisions)
 }
 
 
@@ -1470,7 +1475,9 @@ void ParticleSystem1D::applyFriction(int32_t coefficient) {
 void ParticleSystem1D::ParticleSys_render() {
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
-  static bool useAdditiveTransfer; // use add instead of set for buffer transferring
+ // bool useAdditiveTransfer; // use add instead of set for buffer transferring
+  bool isNonFadeTransition = (pmem->inTransition || pmem->finalTransfer) && blendingStyle != BLEND_STYLE_FADE;
+  bool isOverlay = segmentIsOverlay();
 
   // update global blur (used for blur transitions)
   int32_t motionbluramount = motionBlur;
@@ -1483,14 +1490,13 @@ void ParticleSystem1D::ParticleSys_render() {
   globalSmear = smearamount;
 
   if (framebuffer) {
-    if(segmentIsOverlay()) useAdditiveTransfer = true; // overlay rendering
-    else useAdditiveTransfer = false;
     // handle buffer blurring or clearing
-    bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
+    bool bufferNeedsUpdate = !pmem->inTransition || pmem->inTransition == effectID || isNonFadeTransition; // not a transition; or new FX: update buffer (blur, or clear)
     if(bufferNeedsUpdate) {
+      bool loadfromSegment = !renderSolo || isNonFadeTransition;
       if (globalBlur > 0 || globalSmear > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
         for (int32_t x = 0; x <= maxXpixel; x++) {
-          if (!renderSolo) // sharing the framebuffer with another segment: read buffer back from segment
+          if (loadfromSegment) // sharing the framebuffer with another segment: read buffer back from segment
             framebuffer[x] = SEGMENT.getPixelColor(x); // copy to local buffer
           fast_color_scale(framebuffer[x], motionBlur);
         }
@@ -1514,7 +1520,7 @@ void ParticleSystem1D::ParticleSys_render() {
 
     // generate RGB values for particle
     brightness = min(particles[i].ttl << 1, (int)255);
-    baseRGB = ColorFromPalette(SEGPALETTE, particles[i].hue, 255);
+    baseRGB = ColorFromPaletteWLED(SEGPALETTE, particles[i].hue, 255);
 
     if (advPartProps) { //saturation is advanced property in 1D system
       if (advPartProps[i].sat < 255) {
@@ -1547,7 +1553,8 @@ void ParticleSystem1D::ParticleSys_render() {
     }
   }
   // transfer local buffer back to segment (if available)
-  transferBuffer(maxXpixel + 1, 0, useAdditiveTransfer);
+  if (pmem->inTransition != effectID || isNonFadeTransition)
+    transferBuffer(maxXpixel + 1, 0, isOverlay);
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -1664,28 +1671,24 @@ void ParticleSystem1D::handleCollisions() {
   int32_t collisiondistance = PS_P_MINHARDRADIUS_1D;
   // note: partices are binned by position, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  int32_t binWidth = 32 * (PS_P_MINHARDRADIUS_1D + particlesize); // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  constexpr int BIN_WIDTH = 32 * PS_P_MINHARDRADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  int32_t overlap = PS_P_MINHARDRADIUS_1D; // overlap bins to include edge particles to neighbouring bins
+  if (advPartProps) //may be using individual particle size
+    overlap += 128; // add max radius
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 4); // do not bin small amounts, limit max to 1/2 of particles
-  uint32_t numBins = (maxX + (binWidth - 1)) / binWidth; // calculate number of bins
+  uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // calculate number of bins
   uint16_t binIndices[maxBinParticles]; // array to store indices of particles in a bin
   uint32_t binParticleCount; // number of particles in the current bin
   uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
   uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
-    int32_t binStart = bin * binWidth;
-    int32_t binEnd = binStart + binWidth;
+    int32_t binStart = bin * BIN_WIDTH - overlap; // note: first bin will extend to negative, but that is ok as out of bounds particles are ignored
+    int32_t binEnd = binStart + BIN_WIDTH + overlap; // note: last bin can be out of bounds, see above
 
     // fill the binIndices array for this bin
     for (uint32_t i = 0; i < usedParticles; i++) {
       if (particles[pidx].ttl > 0 && particleFlags[pidx].outofbounds == 0 && particleFlags[pidx].collide) { // colliding particle
-        // if gravity is not used and wall bounce is enabled: particles in the first or last bin use fixed force direction (no collapsing, no push inversion)
-        if (!particlesettings.useGravity && particlesettings.bounce) {
-          if (particles[pidx].x < binWidth)
-            particleFlags[pidx].forcedirection = false;
-          else if (particles[pidx].x > (maxX - binWidth))
-            particleFlags[pidx].forcedirection = true;
-        }
         if (particles[pidx].x >= binStart && particles[pidx].x <= binEnd) { // >= and <= to include particles on the edge of the bin (overlap to ensure boarder particles collide with adjacent bins)
           if (binParticleCount >= maxBinParticles) { // bin is full, more particles in this bin so do the rest next frame
             nextFrameStartIdx = pidx; // bin overflow can only happen once as bin size is at least half of the particles (or half +1)
@@ -1710,7 +1713,7 @@ void ParticleSystem1D::handleCollisions() {
         int32_t proximity = collisiondistance;
         if (dv >= proximity) // particles would go past each other in next move update
           proximity += abs(dv); // add speed difference to catch fast particles
-        if (dx < proximity && dx > -proximity) { // check if close
+        if (dx <= proximity && dx >= -proximity) { // collide if close
           collideParticles(particles[idx_i], particleFlags[idx_i], particles[idx_j], particleFlags[idx_j], dx, dv, collisiondistance);
         }
       }
@@ -1722,6 +1725,7 @@ void ParticleSystem1D::handleCollisions() {
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
 void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticleFlags1D &particle1flags, PSparticle1D &particle2, const PSparticleFlags1D &particle2flags, int32_t dx, int32_t relativeVx, uint32_t collisiondistance) {
   int32_t dotProduct = (dx * relativeVx); // is always negative if moving towards each other
+  uint32_t distance = abs(dx);
   if (dotProduct < 0) { // particles are moving towards each other
     uint32_t surfacehardness = max(collisionHardness, (int32_t)PS_P_MINSURFACEHARDNESS_1D); // if particles are soft, the impulse must stay above a limit or collisions slip through
     // Calculate new velocities after collision
@@ -1741,41 +1745,30 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
       particle2.vx = ((int32_t)particle2.vx * coeff) / 255;
     }
   }
-
-  uint32_t distance = abs(dx);
-  // particles have volume, push particles apart if they are too close
-  // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
-  // also need to give the top particle some speed to counteract gravity or stacks just collapse
-  if (distance < collisiondistance) { // particles are too close, push the upper particle away
-    int32_t pushamount = 1 + ((collisiondistance - distance) >> 1); //add half the remaining distance note: this works best, if less or more is added, it gets more chaotic
-
-  // Only force-push if particles use gravity or are not really close or are in the outer quarter of the strip
-  if (particlesettings.bounce && (particlesettings.useGravity || distance > 3 || particle1.x < (maxX >> 2) || particle1.x > (maxX - (maxX >> 2)))) {
-    // use force direction flag to push the 'upper' particle only, avoids stack-collapse
-    if (dx < 0) { // particle2.x < particle1.x, dx = p2.x - p1.x
-      if (particle2flags.forcedirection && !particle2flags.fixed) {
-        particle2.x -= pushamount;
-        particle2.vx--;
-      } else if (!particle1flags.forcedirection && !particle1flags.fixed) {
-        particle1.x += pushamount;
-        particle1.vx++;
-      }
-    } else { // particle1.x < particle2.x, dx = p2.x - p1.x
-      if (particle1flags.forcedirection && !particle1flags.fixed) {
-        particle1.x -= pushamount;
-        particle1.vx--;
-      } else if (!particle2flags.forcedirection && !particle2flags.fixed) {
-        particle2.x += pushamount;
-        particle2.vx++;
-      }
-    }
-  }
-  else { // no wall bounce, not using gravity, push both particles by applying a little velocity (like in 2D system)
-    pushamount = 2;
+  else if (distance < collisiondistance || relativeVx == 0) // moving apart or moving along and/or distance too close, push particles apart
+  {
+    // particles have volume, push particles apart if they are too close
+    // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
+    int32_t pushamount = 1;
     if (dx < 0)  // particle2.x < particle1.x
       pushamount = -pushamount;
     particle1.vx -= pushamount;
     particle2.vx += pushamount;
+
+    if(distance < collisiondistance >> 1 ) { // too close, force push particles
+      pushamount = (collisiondistance - distance);
+      if(particle1.x < (maxX >> 1)) { // lower half, push particle with larger x in positive direction
+        if (dx < 0 && !particle1flags.fixed)  // particle2.x < particle1.x  -> push particle 1
+          particle1.x += pushamount;
+        else if (!particle2flags.fixed) // particle1.x < particle2.x  -> push particle 2
+          particle2.x += pushamount;
+      }
+      else { // upper half, push particle with smaller x
+        if (dx < 0 && !particle2flags.fixed)  // particle2.x < particle1.x  -> push particle 2
+          particle2.x -= pushamount;
+        else if (!particle2flags.fixed)  // particle1.x < particle2.x  -> push particle 1
+          particle1.x -= pushamount;
+      }
     }
   }
 }
@@ -1785,7 +1778,7 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
 void ParticleSystem1D::updateSystem(void) {
   setSize(SEGMENT.vLength()); // update size
   updateRenderingBuffer(SEGMENT.vLength(), true, false); // update rendering buffer (segment size can change at any time)
-  updatePSpointers(advPartProps != NULL);
+  updatePSpointers(advPartProps != nullptr);
   setUsedParticles(fractionOfParticlesUsed); // update used particles based on percentage (can change during transitions, execute each frame for code simplicity)
   if (partMemList.size() == 1) // if number of vector elements is one, this is the only system
     renderSolo = true;
@@ -1864,10 +1857,10 @@ bool allocateParticleSystemMemory1D(const uint32_t numparticles, const uint32_t 
     return false; // not enough memory, function ensures a minimum of numparticles are avialable
   // functions above make sure these are a multiple of 4 bytes (to avoid alignment issues)
   requiredmemory += sizeof(PSparticleFlags1D) * numparticles;
-  if (isadvanced)
-    requiredmemory += sizeof(PSadvancedParticle1D) * numparticles;
   requiredmemory += sizeof(PSsource1D) * numsources;
   requiredmemory += additionalbytes;
+  if (isadvanced)
+    requiredmemory += sizeof(PSadvancedParticle1D) * numparticles;
   return(SEGMENT.allocateData(requiredmemory));
 }
 
@@ -2042,6 +2035,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       uint32_t requestsize = structSize * requestedParticles; // required buffer size
       if (requestsize > pmem->buffersize) { // request is larger than buffer, try to extend it
         if (Segment::getUsedSegmentData() + requestsize - pmem->buffersize <= MAX_SEGMENT_DATA) { // enough memory available to extend buffer
+          PSPRINTLN("Extending buffer");
           buffer = allocatePSmemory(requestsize, true); // calloc new memory in FX data, override limit (temporary buffer)
           if (buffer) { // allocaction successful, copy old particles to new buffer
             memcpy(buffer,  pmem->particleMemPointer, pmem->buffersize); // copy old particle buffer note: only required if transition but copy is fast and rarely happens
@@ -2053,8 +2047,13 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
             return nullptr; // no memory available
         }
       }
-      if (pmem->watchdog == 1) // if a PS already exists during particle request, it kicked the watchdog in last frame, servicePSmem() adds 1 afterwards -> PS to PS transition
-        pmem->inTransition = effectID; // save the ID of the new effect (required to determine blur amount in rendering function)
+      if (pmem->watchdog == 1) { // if a PS already exists during particle request, it kicked the watchdog in last frame, servicePSmem() adds 1 afterwards -> PS to PS transition
+        if(pmem->currentFX == effectID) // if the new effect is the same as the current one, do not transition: transferParticles is set above, so this will transfer all particles back if called during transition
+          pmem->inTransition = false; // reset transition flag
+        else
+          pmem->inTransition = effectID; // save the ID of the new effect (required to determine blur amount in rendering function)
+        PSPRINTLN("PS to PS transition");
+      }
       return pmem->particleMemPointer; // return the available buffer on init call
     }
     pmem->watchdog = 0; // kick watchdog
@@ -2065,7 +2064,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     uint32_t requestsize = structSize * requestedParticles; // required buffer size
     buffer = allocatePSmemory(requestsize, false); // allocate new memory
     if (buffer)
-      partMemList.push_back({buffer, requestsize, 0, strip.getCurrSegmentId(),  0, 0, true});  // add buffer to list, set flag to transfer/init the particles note: if pushback fails, it may crash
+      partMemList.push_back({buffer, requestsize, 0, strip.getCurrSegmentId(), 0, 0, 0, false, true});  // add buffer to list, set flag to transfer/init the particles note: if pushback fails, it may crash
     else
       return nullptr; // there is no memory available TODO: if localbuffer is allocated, free it and try again, its no use having a buffer but no particles
     pmem = getPartMem(); // get the pointer to the new element (check that it was added)
@@ -2077,24 +2076,26 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
   }
 
   // now we have a valid buffer, if this is a PS to PS FX transition: transfer particles slowly to new FX
-  bool effectchanged = (SEGMENT.currentMode() != SEGMENT.mode); // FX changed, transition the particle buffer
-  if (effectchanged && pmem->inTransition) {
+  if(!SEGMENT.isInTransition()) pmem->inTransition = false; // transition has ended, invoke final transfer
+  if (pmem->inTransition) {
     uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
     uint16_t progress = SEGMENT.progress(); // transition progress
     uint32_t newAvailable = 0;
     if (SEGMENT.mode == effectID) { // new effect ID -> function was called from new FX
+      PSPRINTLN("new effect");
       newAvailable = (maxParticles * progress) >> 16; // update total particles available to this PS (newAvailable is guaranteed to be smaller than maxParticles)
       if(newAvailable < 2) newAvailable = 2; // give 2 particle minimum (some FX may crash with less as they do i+1 access)
-      if(maxParticles / numParticlesUsed > 3 && newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used for FX using a small amount, do not move the pointer anymore (will be set to base in final handover)
+      if(newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used, do not move the pointer anymore (will be set to base in final handover)
       uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles (in particle structs, not bytes)
       if(bufferoffset < maxParticles) // safety check
         buffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // new effect gets the end of the buffer
       int32_t totransfer = newAvailable - availableToPS; // number of particles to transfer in this transition update
-      if(totransfer < 0) totransfer = 0; // safety check
-      particleHandover(buffer, structSize, totransfer);
+      if(totransfer > 0) // safety check
+        particleHandover(buffer, structSize, totransfer);
     }
     else { // this was called from the old FX
-      SEGMENT.setCurrentPalette(true); // load the old palette into segment
+      PSPRINTLN("old effect");
+      SEGMENT.loadOldPalette(); // load the old palette into segment palette
       progress = 0xFFFFU - progress; // inverted transition progress
       newAvailable = ((maxParticles * progress) >> 16); // result is guaranteed to be smaller than maxParticles
       if(newAvailable > 0) newAvailable--; // -1 to avoid overlapping memory in 1D<->2D transitions
@@ -2102,49 +2103,54 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       // note: buffer pointer stays the same, number of available particles is reduced
     }
     availableToPS = newAvailable;
-  } else { // no PS transition, full buffer available
-    if(pmem->transferParticles) { // transition ended (or blending is disabled) -> transfer all remaining particles
-      PSPRINTLN("PS transition ended, final particle handover");
-      uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
-      if (maxParticles > availableToPS) { // not all particles transferred yet
-        int32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
-        if(totransfer < 0) totransfer = 0; // safety check
+  } else if(pmem->transferParticles) { // no PS transition, full buffer available
+    // transition ended (or blending is disabled) -> transfer all remaining particles
+    PSPRINTLN("PS transition ended, final particle handover");
+    uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
+    if (maxParticles > availableToPS) { // not all particles transferred yet
+      int32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
+      if(totransfer > 0) // safety check
         particleHandover(buffer, structSize, totransfer);
-
-        if(maxParticles / numParticlesUsed > 3) { // FX uses less than 25%: move the already existing particles to the beginning of the buffer
-          uint32_t usedbytes = availableToPS * structSize;
-          int32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
-          if(bufferoffset < (int)maxParticles) { // safety check
-            void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
-            memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
-          }
+      if(maxParticles > numParticlesUsed) { // FX uses less than max: move the already existing particles to the beginning of the buffer
+        uint32_t usedbytes = availableToPS * structSize;
+        int32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
+        if(bufferoffset < (int)maxParticles) { // safety check
+          void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
+          memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
         }
       }
-      // kill unused particles to they do not re-appear when transitioning to next FX
-      #ifndef WLED_DISABLE_PARTICLESYSTEM2D
-      if (structSize == sizeof(PSparticle)) { // 2D particle
-        PSparticle *particles = (PSparticle *)buffer;
-        for (uint32_t i = availableToPS; i < maxParticles; i++) {
-          particles[i].ttl = 0; // kill unused particles
-        }
-      }
-      else // 1D particle system
-      #endif
-      {
-        #ifndef WLED_DISABLE_PARTICLESYSTEM1D
-        PSparticle1D *particles = (PSparticle1D *)buffer;
-        for (uint32_t i = availableToPS; i < maxParticles; i++) {
-          particles[i].ttl = 0; // kill unused particles
-        }
-        #endif
-      }
-      availableToPS = maxParticles; // now all particles are available to new FX
-      PSPRINTLN("final available particles: " + String(availableToPS));
-      pmem->particleType = structSize; // update particle type
-      pmem->transferParticles = false;
     }
-    pmem->inTransition = false;
+    // kill unused particles so they do not re-appear when transitioning to next FX
+    //TODO: should this be done in the handover function? maybe with a "cleanup" parameter?
+    //TODO2: the memmove above should be done here (or in handover function): it should copy all alive particles to the beginning of the buffer (to TTL=0 particles maybe?)
+    // -> currently when moving form blobs to ballpit particles disappear
+    #ifndef WLED_DISABLE_PARTICLESYSTEM2D
+    if (structSize == sizeof(PSparticle)) { // 2D particle
+      PSparticle *particles = (PSparticle*)buffer;
+      for (uint32_t i = availableToPS; i < maxParticles; i++) {
+        particles[i].ttl = 0; // kill unused particles
+      }
+    }
+    else // 1D particle system
+    #endif
+    {
+      #ifndef WLED_DISABLE_PARTICLESYSTEM1D
+      PSparticle1D *particles = (PSparticle1D*)buffer;
+      for (uint32_t i = availableToPS; i < maxParticles; i++) {
+        particles[i].ttl = 0; // kill unused particles
+      }
+      #endif
+    }
+    availableToPS = maxParticles; // now all particles are available to new FX
+    PSPRINTLN("final available particles: " + String(availableToPS));
+    pmem->particleType = structSize; // update particle type
+    pmem->transferParticles = false;
+    pmem->finalTransfer = true; // let rendering function update its buffer if required
+    pmem->currentFX = effectID; // FX has now settled in, update the FX ID to track future transitions
   }
+  else // no transition
+    pmem->finalTransfer = false;
+
   #ifdef WLED_DEBUG_PS
   PSPRINT(" Particle memory Pointer address: 0x");
   Serial.println((uintptr_t)buffer, HEX);
@@ -2157,13 +2163,20 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
   if (pmem->particleType != structSize) { // check if we are being handed over from a different system (1D<->2D), clear buffer if so
     memset(buffer, 0, numToTransfer * structSize); // clear buffer
   }
+  uint16_t maxTTL = 0;
+  uint32_t TTLrandom = 0;
+   maxTTL = ((unsigned)strip.getTransition() << 1) / FRAMETIME_FIXED; // tie TTL to transition time: limit to double the transition time + some randomness
   #ifndef WLED_DISABLE_PARTICLESYSTEM2D
   if (structSize == sizeof(PSparticle)) { // 2D particle
     PSparticle *particles = (PSparticle *)buffer;
     for (int32_t i = 0; i < numToTransfer; i++) {
-      if (particles[i].ttl > 200)
-        particles[i].ttl = 150 + hw_random16(50); // reduce TTL so it will die soon
-      particles[i].sat = 255;      // full saturation
+      if (blendingStyle == BLEND_STYLE_FADE) {
+        if(particles[i].ttl > maxTTL)
+          particles[i].ttl = maxTTL + hw_random16(150); // reduce TTL so it will die soon
+      }
+      else
+        particles[i].ttl = 0; // kill transferred particles if not using fade blending style
+      particles[i].sat = 255; // full saturation
     }
   }
   else // 1D particle system
@@ -2172,8 +2185,12 @@ void particleHandover(void *buffer, size_t structSize, int32_t numToTransfer) {
     #ifndef WLED_DISABLE_PARTICLESYSTEM1D
     PSparticle1D *particles = (PSparticle1D *)buffer;
     for (int32_t i = 0; i < numToTransfer; i++) {
-    if (particles[i].ttl > 200)
-        particles[i].ttl =  150 + hw_random16(50); // reduce TTL so it will die soon
+      if (blendingStyle == BLEND_STYLE_FADE) {
+        if(particles[i].ttl > maxTTL)
+          particles[i].ttl = maxTTL + hw_random16(150); // reduce TTL so it will die soon
+      }
+      else
+        particles[i].ttl = 0; // kill transferred particles if not using fade blending style
     }
     #endif
   }
@@ -2189,11 +2206,17 @@ void updateUsedParticles(const uint32_t allocated, const uint32_t available, con
 bool segmentIsOverlay(void) { // TODO: this only needs to be checked when segment is created, could move this to segment class or PS init
   unsigned segID = strip.getCurrSegmentId();
   if(segID > 0) { // lower number segments exist, check coordinates of underlying segments
-      for (unsigned i = 0; i < segID; i++) {
-        if(strip._segments[i].start <= strip._segments[segID].start && strip._segments[i].stop >= strip._segments[segID].stop &&
-           strip._segments[i].startY <= strip._segments[segID].startY && strip._segments[i].stopY >= strip._segments[segID].stopY)
-          return true;
-      }
+    unsigned xMin, yMin = 0xFFFF; // note: overlay is activated even if there is gaps in underlying segments, this is an intentional choice
+    unsigned xMax, yMax = 0;
+    for (unsigned i = 0; i < segID; i++) {
+      xMin = strip._segments[i].start < xMin ? strip._segments[i].start : xMin;
+      yMin = strip._segments[i].startY < yMin ? strip._segments[i].startY : yMin;
+      xMax = strip._segments[i].stop > xMax ? strip._segments[i].stop : xMax;
+      yMax = strip._segments[i].stopY > yMax ? strip._segments[i].stopY : yMax;
+      if(xMin <= strip._segments[segID].start && xMax >= strip._segments[segID].stop &&
+          yMin <= strip._segments[segID].startY && yMax >= strip._segments[segID].stopY)
+        return true;
+    }
   }
   return false;
 }
@@ -2273,10 +2296,10 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
   PSPRINT(" xfer buf ");
   #ifndef WLED_DISABLE_MODE_BLEND
   bool tempBlend = SEGMENT.getmodeBlend();
-  if (pmem->inTransition)
-    SEGMENT.modeBlend(false); // temporarily disable FX blending in PS to PS transition (using local buffer to do PS blending)
+  if(pmem->inTransition && blendingStyle == BLEND_STYLE_FADE) {
+      SEGMENT.modeBlend(false); // temporarily disable FX blending in PS to PS transition (using local buffer to do PS blending)
+  }
   #endif
-
   if(height) { // is 2D, 1D passes height = 0
     for (uint32_t y = 0; y < height; y++) {
       int index = y * width; // current row index for 1D buffer

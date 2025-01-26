@@ -5136,7 +5136,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         neighbors++;
         bool colorFound = false;
         int k;
-        for (k=0; k<9 && colorsCount[i].count != 0; k++)
+        for (k=0; k<9 && colorsCount[k].count != 0; k++)
           if (colorsCount[k].color == prevLeds[xy]) {
             colorsCount[k].count++;
             colorFound = true;
@@ -5445,15 +5445,15 @@ uint16_t mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have 
       // and add them together with weightening
       unsigned dx = abs(x - x1);
       unsigned dy = abs(y - y1);
-      unsigned dist = 2 * sqrt16((dx * dx) + (dy * dy));
+      unsigned dist = 2 * sqrt32_bw((dx * dx) + (dy * dy));
 
       dx = abs(x - x2);
       dy = abs(y - y2);
-      dist += sqrt16((dx * dx) + (dy * dy));
+      dist += sqrt32_bw((dx * dx) + (dy * dy));
 
       dx = abs(x - x3);
       dy = abs(y - y3);
-      dist += sqrt16((dx * dx) + (dy * dy));
+      dist += sqrt32_bw((dx * dx) + (dy * dy));
 
       // inverse result
       int color = dist ? 1000 / dist : 255;
@@ -6093,13 +6093,23 @@ uint16_t mode_2Dscrollingtext(void) {
   if (!strlen(text)) { // fallback if empty segment name: display date and time
     sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   } else {
+    if (text[0] == '#') for (auto &c : text) c = std::toupper(c);
     if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"),   day(localTime),   month(localTime),  year(localTime));
     else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d")     :PSTR("%d.%d"),      day(localTime),   month(localTime));
     else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d")     :PSTR("%d/%d"),      month(localTime), day(localTime));
     else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s")   :PSTR("%2d:%02d%s"), AmPmHour,         minute(localTime), sec);
     else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
-    else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         AmPmHour);
-    else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         minute(localTime));
+    else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         AmPmHour);
+    else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         minute(localTime));
+    else if (!strncmp_P(text,PSTR("#SS"),3))   sprintf  (text,          ("%02d")                     ,         second(localTime));
+    else if (!strncmp_P(text,PSTR("#DD"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         day(localTime));
+    else if (!strncmp_P(text,PSTR("#DAY"),4))  sprintf  (text,          ("%s")                       ,         dayShortStr(day(localTime)));
+    else if (!strncmp_P(text,PSTR("#DDDD"),5)) sprintf  (text,          ("%s")                       ,         dayStr(day(localTime)));
+    else if (!strncmp_P(text,PSTR("#MO"),3))   sprintf  (text, zero?    ("%02d")          :    ("%d"),         month(localTime));
+    else if (!strncmp_P(text,PSTR("#MON"),4))  sprintf  (text,          ("%s")                       ,         monthShortStr(month(localTime)));
+    else if (!strncmp_P(text,PSTR("#MMMM"),5)) sprintf  (text,          ("%s")                       ,         monthStr(month(localTime)));
+    else if (!strncmp_P(text,PSTR("#YY"),3))   sprintf  (text,          ("%02d")                     ,         year(localTime)%100);
+    else if (!strncmp_P(text,PSTR("#YYYY"),5)) sprintf_P(text, zero?PSTR("%04d")          :    ("%d"),         year(localTime));
   }
 
   const int  numberOfLetters = strlen(text);
@@ -7640,7 +7650,7 @@ static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,Blur,Amp
 uint16_t mode_particlevortex(void) {
   if (SEGLEN == 1)
     return mode_static();
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint32_t i, j;
 
   if (SEGMENT.call == 0) { // initialization
@@ -7662,7 +7672,7 @@ uint16_t mode_particlevortex(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -7753,7 +7763,7 @@ static const char _data_FX_MODE_PARTICLEVORTEX[] PROGMEM = "PS Vortex@Rotation S
 #define NUMBEROFSOURCES 8
 
 uint16_t mode_particlefireworks(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint32_t numRockets;
 
   if (SEGMENT.call == 0) { // initialization
@@ -7771,7 +7781,7 @@ uint16_t mode_particlefireworks(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -7891,7 +7901,7 @@ uint16_t mode_particlefireworks(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,sx=100,ix=50,c1=40,c2=0,c3=12";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,ix=50,c1=40,c2=0,c3=12";
 
 /*
   Particle Volcano
@@ -7901,7 +7911,7 @@ static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Laun
 */
 #define NUMBEROFSOURCES 1
 uint16_t mode_particlevolcano(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   PSsettings2D volcanosettings;
   volcanosettings.asByte = 0b00000100; // PS settings for volcano movement: bounceX is enabled
   uint8_t numSprays; // note: so far only one tested but more is possible
@@ -7929,7 +7939,7 @@ uint16_t mode_particlevolcano(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   numSprays = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES); // number of volcanoes
@@ -7973,7 +7983,7 @@ static const char _data_FX_MODE_PARTICLEVOLCANO[] PROGMEM = "PS Volcano@Speed,In
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlefire(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint32_t i; // index variable
   uint32_t numFlames; // number of flames: depends on fire width. for a fire width of 16 pixels, about 25-30 flames give good results
 
@@ -7985,7 +7995,7 @@ uint16_t mode_particlefire(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -8066,7 +8076,7 @@ static const char _data_FX_MODE_PARTICLEFIRE[] PROGMEM = "PS Fire@Speed,Intensit
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlepit(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem2D(PartSys, 1, 0, true, false)) // init, request one source (actually dont really need one TODO: test if using zero sources also works)
@@ -8077,7 +8087,7 @@ uint16_t mode_particlepit(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -8136,7 +8146,7 @@ static const char _data_FX_MODE_PARTICLEPIT[] PROGMEM = "PS Ballpit@Speed,Intens
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlewaterfall(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint8_t numSprays;
   uint32_t i = 0;
 
@@ -8162,7 +8172,7 @@ uint16_t mode_particlewaterfall(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
 
   // Particle System settings
@@ -8208,7 +8218,7 @@ static const char _data_FX_MODE_PARTICLEWATERFALL[] PROGMEM = "PS Waterfall@Spee
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlebox(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint32_t i;
 
   if (SEGMENT.call == 0) { // initialization
@@ -8221,7 +8231,7 @@ uint16_t mode_particlebox(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -8281,7 +8291,7 @@ uint16_t mode_particlebox(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,Tilt Strength,Hardness,Friction,Random,Washing Machine,Sloshing;;!;2;pal=53,sx=120,ix=100,c1=100,c2=210,o1=1";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@!,Particles,Force,Hardness,Friction,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,o1=1";
 
 /*
   Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
@@ -8289,7 +8299,7 @@ static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleperlin(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint32_t i;
 
   if (SEGMENT.call == 0) { // initialization TODO: make this a PSinit function, this is needed in every particle FX but first, get this working.
@@ -8304,7 +8314,7 @@ uint16_t mode_particleperlin(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -8351,7 +8361,7 @@ static const char _data_FX_MODE_PARTICLEPERLIN[] PROGMEM = "PS Fuzzy Noise@Speed
 */
 #define NUMBEROFSOURCES 8
 uint16_t mode_particleimpact(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint32_t i = 0;
   uint8_t MaxNumMeteors;
   PSsettings2D meteorsettings;
@@ -8374,7 +8384,7 @@ uint16_t mode_particleimpact(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data! (TODO: ask how to handle this so it always works)
 
   // Particle System settings
@@ -8469,7 +8479,7 @@ static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,S
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleattractor(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   PSsettings2D sourcesettings;
   sourcesettings.asByte = 0b00001100; // PS settings for bounceY, bounceY used for source movement (it always bounces whereas particles do not)
   PSparticleFlags attractorFlags;
@@ -8497,7 +8507,7 @@ uint16_t mode_particleattractor(void) {
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
   }
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -8565,7 +8575,7 @@ static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlespray(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   const uint8_t hardness = 200; // collision hardness is fixed
 
   if (SEGMENT.call == 0) { // initialization
@@ -8582,7 +8592,7 @@ uint16_t mode_particlespray(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -8651,7 +8661,7 @@ static const char _data_FX_MODE_PARTICLESPRAY[] PROGMEM = "PS Spray@Speed,!,Left
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleGEQ(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem2D(PartSys, 1))
@@ -8661,7 +8671,7 @@ uint16_t mode_particleGEQ(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   uint32_t i;
@@ -8726,7 +8736,7 @@ static const char _data_FX_MODE_PARTICLEGEQ[] PROGMEM = "PS GEQ 2D@Speed,Intensi
 */
 #define NUMBEROFSOURCES 16
 uint16_t mode_particlecenterGEQ(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   uint8_t numSprays;
   uint32_t i;
 
@@ -8747,7 +8757,7 @@ uint16_t mode_particlecenterGEQ(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -8795,7 +8805,7 @@ static const char _data_FX_MODE_PARTICLECIRCULARGEQ[] PROGMEM = "PS GEQ Nova@Spe
 */
 #define MAXANGLESTEP 2200 //32767 means 180°
 uint16_t mode_particleghostrider(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
   PSsettings2D ghostsettings;
   ghostsettings.asByte = 0b0000011; //enable wrapX and wrapY
 
@@ -8813,7 +8823,7 @@ uint16_t mode_particleghostrider(void) {
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
   }
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   if (SEGMENT.intensity > 0) { // spiraling
@@ -8876,7 +8886,7 @@ static const char _data_FX_MODE_PARTICLEGHOSTRIDER[] PROGMEM = "PS Ghost Rider@S
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleblobs(void) {
-  ParticleSystem2D *PartSys = NULL;
+  ParticleSystem2D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) {
     if (!initParticleSystem2D(PartSys, 1, 0, true, true)) //init, request one source, no additional bytes, advanced size & size control (actually dont really need one TODO: test if using zero sources also works)
@@ -8891,7 +8901,7 @@ uint16_t mode_particleblobs(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
@@ -8960,7 +8970,7 @@ static const char _data_FX_MODE_PARTICLEBLOBS[] PROGMEM = "PS Blobs@Speed,Blobs,
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleDrip(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
   //uint8_t numSprays;
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 4)) // init
@@ -8972,7 +8982,7 @@ uint16_t mode_particleDrip(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9065,7 +9075,7 @@ static const char _data_FX_MODE_PARTICLEDRIP[] PROGMEM = "PS DripDrop@Speed,!,Sp
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particlePinball(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1, 128, 0, true)) // init
@@ -9080,7 +9090,7 @@ uint16_t mode_particlePinball(void) {
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9176,7 +9186,7 @@ static const char _data_FX_MODE_PSPINBALL[] PROGMEM = "PS Pinball@Speed,!,Size,B
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleDancingShadows(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1)) // init, one source
@@ -9188,7 +9198,7 @@ uint16_t mode_particleDancingShadows(void) {
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
   }
 
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9292,7 +9302,7 @@ static const char _data_FX_MODE_PARTICLEDANCINGSHADOWS[] PROGMEM = "PS Dancing S
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleFireworks1D(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
   uint8_t *forcecounter;
 
   if (SEGMENT.call == 0) { // initialization
@@ -9303,7 +9313,7 @@ uint16_t mode_particleFireworks1D(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9403,7 +9413,7 @@ static const char _data_FX_MODE_PS_FIREWORKS1D[] PROGMEM = "PS Fireworks 1D@Grav
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleSparkler(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
   uint32_t numSparklers;
   PSsettings1D sparklersettings;
   sparklersettings.asByte = 0; // PS settings for sparkler (set below)
@@ -9413,7 +9423,7 @@ uint16_t mode_particleSparkler(void) {
       return mode_static(); // allocation failed or is single pixel
   } else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9475,7 +9485,7 @@ static const char _data_FX_MODE_PS_SPARKLER[] PROGMEM = "PS Sparkler@Move,!,Satu
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleHourglass(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
   constexpr int positionOffset = PS_P_RADIUS_1D / 2;; // resting position offset
   bool* direction;
   uint32_t* settingTracker;
@@ -9487,7 +9497,7 @@ uint16_t mode_particleHourglass(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9609,7 +9619,7 @@ static const char _data_FX_MODE_PS_HOURGLASS[] PROGMEM = "PS Hourglass@Interval,
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particle1Dspray(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1))
@@ -9620,7 +9630,7 @@ uint16_t mode_particle1Dspray(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9661,7 +9671,7 @@ static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS Spray 1D@Speed(+/-),!
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleBalance(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
   uint32_t i;
 
   if (SEGMENT.call == 0) { // initialization
@@ -9674,7 +9684,7 @@ uint16_t mode_particleBalance(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9734,7 +9744,7 @@ Uses palette for particle color
 by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleChase(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1, 255, 3, true)) // init
       return mode_static(); // allocation failed or is single pixel
@@ -9744,7 +9754,7 @@ uint16_t mode_particleChase(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9799,8 +9809,7 @@ static const char _data_FX_MODE_PS_CHASE[] PROGMEM = "PS Chase@!,Density,Size,Hu
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleStarburst(void) {
-  ParticleSystem1D *PartSys = NULL;
-  uint32_t i;
+  ParticleSystem1D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1, 200, 0, true)) // init
@@ -9812,7 +9821,7 @@ uint16_t mode_particleStarburst(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9860,7 +9869,7 @@ static const char _data_FX_MODE_PS_STARBURST[] PROGMEM = "PS Starburst@Chance,Fr
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particle1DGEQ(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
   uint32_t numSources;
   uint32_t i;
 
@@ -9870,7 +9879,7 @@ uint16_t mode_particle1DGEQ(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -9935,7 +9944,7 @@ static const char _data_FX_MODE_PS_1D_GEQ[] PROGMEM = "PS GEQ 1D@Speed,!,Size,Bl
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particleFire1D(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 5)) // init
@@ -9945,7 +9954,7 @@ uint16_t mode_particleFire1D(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
@@ -10001,7 +10010,7 @@ static const char _data_FX_MODE_PS_FIRE1D[] PROGMEM = "PS Fire 1D@!,!,Cooling,Bl
   by DedeHai (Damian Schneider)
 */
 uint16_t mode_particle1Dsonicstream(void) {
-  ParticleSystem1D *PartSys = NULL;
+  ParticleSystem1D *PartSys = nullptr;
 
   if (SEGMENT.call == 0) { // initialization
     if (!initParticleSystem1D(PartSys, 1, 255, 0, true)) // init, no additional data needed
@@ -10014,7 +10023,7 @@ uint16_t mode_particle1Dsonicstream(void) {
   }
   else
     PartSys = reinterpret_cast<ParticleSystem1D *>(SEGENV.data); // if not first call, just set the pointer to the PS
-  if (PartSys == NULL)
+  if (PartSys == nullptr)
     return mode_static(); // something went wrong, no data!
 
   // Particle System settings
