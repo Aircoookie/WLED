@@ -26,7 +26,7 @@ void XML_response(Print& dest)
   );
 }
 
-static void extractPin(Print& settingsScript, JsonObject &obj, const char *key) {
+static void extractPin(Print& settingsScript, const JsonObject &obj, const char *key) {
   if (obj[key].is<JsonArray>()) {
     JsonArray pins = obj[key].as<JsonArray>();
     for (JsonVariant pv : pins) {
@@ -38,7 +38,7 @@ static void extractPin(Print& settingsScript, JsonObject &obj, const char *key) 
 }
 
 // print used pins by scanning JsonObject (1 level deep)
-static void fillUMPins(Print& settingsScript, JsonObject &mods)
+static void fillUMPins(Print& settingsScript, const JsonObject &mods)
 {
   for (JsonPair kv : mods) {
     // kv.key() is usermod name or subobject key
@@ -285,7 +285,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     printSetFormCheckbox(settingsScript,PSTR("CCT"),strip.correctWB);
     printSetFormCheckbox(settingsScript,PSTR("IC"),cctICused);
     printSetFormCheckbox(settingsScript,PSTR("CR"),strip.cctFromRgb);
-    printSetFormValue(settingsScript,PSTR("CB"),strip.cctBlending);
+    printSetFormValue(settingsScript,PSTR("CB"),Bus::getCCTBlend());
     printSetFormValue(settingsScript,PSTR("FR"),strip.getTargetFps());
     printSetFormValue(settingsScript,PSTR("AW"),Bus::getGlobalAWMode());
     printSetFormCheckbox(settingsScript,PSTR("LD"),useGlobalLedBuffer);
@@ -369,10 +369,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     printSetFormCheckbox(settingsScript,PSTR("GB"),gammaCorrectBri);
     printSetFormCheckbox(settingsScript,PSTR("GC"),gammaCorrectCol);
     dtostrf(gammaCorrectVal,3,1,nS); printSetFormValue(settingsScript,PSTR("GV"),nS);
-    printSetFormCheckbox(settingsScript,PSTR("TF"),fadeTransition);
-    printSetFormCheckbox(settingsScript,PSTR("EB"),modeBlending);
     printSetFormValue(settingsScript,PSTR("TD"),transitionDelayDefault);
-    printSetFormCheckbox(settingsScript,PSTR("PF"),strip.paletteFade);
     printSetFormValue(settingsScript,PSTR("TP"),randomPaletteChangeTime);
     printSetFormCheckbox(settingsScript,PSTR("TH"),useHarmonicRandomPalette);
     printSetFormValue(settingsScript,PSTR("BF"),briMultiplier);
@@ -436,6 +433,18 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     printSetFormCheckbox(settingsScript,PSTR("ES"),e131SkipOutOfSequence);
     printSetFormCheckbox(settingsScript,PSTR("EM"),e131Multicast);
     printSetFormValue(settingsScript,PSTR("EU"),e131Universe);
+#ifdef WLED_ENABLE_DMX
+    settingsScript.print(SET_F("hideNoDMX();"));  // hide "not compiled in" message    
+#endif    
+#ifndef WLED_ENABLE_DMX_INPUT
+    settingsScript.print(SET_F("hideDMXInput();"));  // hide "dmx input" settings
+#else
+    settingsScript.print(SET_F("hideNoDMXInput();"));  //hide "not compiled in" message
+    printSetFormValue(settingsScript,SET_F("IDMT"),dmxInputTransmitPin);
+    printSetFormValue(settingsScript,SET_F("IDMR"),dmxInputReceivePin);
+    printSetFormValue(settingsScript,SET_F("IDME"),dmxInputEnablePin);
+    printSetFormValue(settingsScript,SET_F("IDMP"),dmxInputPort);
+#endif
     printSetFormValue(settingsScript,PSTR("DA"),DMXAddress);
     printSetFormValue(settingsScript,PSTR("XX"),DMXSegmentSpacing);
     printSetFormValue(settingsScript,PSTR("PY"),e131Priority);

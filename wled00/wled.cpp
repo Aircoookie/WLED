@@ -65,7 +65,10 @@ void WLED::loop()
   handleNotifications();
   handleTransitions();
   #ifdef WLED_ENABLE_DMX
-  handleDMX();
+  handleDMXOutput();
+  #endif
+  #ifdef WLED_ENABLE_DMX_INPUT
+  dmxInput.update();
   #endif
 
   #ifdef WLED_DEBUG
@@ -83,6 +86,9 @@ void WLED::loop()
   handleIO();
   #ifndef WLED_DISABLE_INFRARED
   handleIR();
+  #endif
+  #ifndef WLED_DISABLE_ESPNOW
+  handleRemote();
   #endif
   #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
@@ -524,7 +530,10 @@ void WLED::setup()
   }
 #endif
 #ifdef WLED_ENABLE_DMX
-  initDMX();
+  initDMXOutput();
+#endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  dmxInput.init(dmxInputReceivePin, dmxInputTransmitPin, dmxInputEnablePin, dmxInputPort);
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
@@ -775,7 +784,6 @@ int8_t WLED::findWiFi(bool doScan) {
 void WLED::initConnection()
 {
   DEBUG_PRINTF_P(PSTR("initConnection() called @ %lus.\n"), millis()/1000);
-
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
@@ -804,6 +812,7 @@ void WLED::initConnection()
   if (!WLED_WIFI_CONFIGURED) {
     DEBUG_PRINTLN(F("No connection configured."));
     if (!apActive) initAP();        // instantly go to ap mode
+    return;
   } else if (!apActive) {
     if (apBehavior == AP_BEHAVIOR_ALWAYS) {
       DEBUG_PRINTLN(F("Access point ALWAYS enabled."));
