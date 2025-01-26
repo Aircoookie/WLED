@@ -474,12 +474,6 @@ void Segment::loadOldPalette(void) {
     loadPalette(_currentPalette, _t->_palTid);
 }
 
-// loads palette of the old FX during transitions (used by particle system)
-void Segment::loadOldPalette(void) {
-  if(isInTransition())
-    loadPalette(_currentPalette, _t->_palTid);
-}
-
 // relies on WS2812FX::service() to call it for each frame
 void Segment::handleRandomPalette() {
   // is it time to generate a new palette?

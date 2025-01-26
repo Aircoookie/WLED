@@ -9847,7 +9847,7 @@ uint16_t mode_particleStarburst(void) {
     }
   }
   //shrink all particles
-  for (i = 0; i < PartSys->usedParticles; i++) {
+  for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
     if (PartSys->advPartProps[i].size)
       PartSys->advPartProps[i].size--;
     if (PartSys->advPartProps[i].sat < 251)

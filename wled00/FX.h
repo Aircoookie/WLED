@@ -497,7 +497,6 @@ typedef struct Segment {
       #ifndef WLED_DISABLE_MODE_BLEND
       tmpsegd_t     _segT;        // previous segment environment
       uint8_t       _modeT;       // previous mode/effect
-      uint8_t       _palette;     // previous palette
       #else
       uint32_t      _colorT[NUM_COLORS];
       #endif
