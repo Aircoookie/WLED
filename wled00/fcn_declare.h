@@ -219,6 +219,19 @@ void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
+#include "FX.h" // must be below colors.cpp declarations (potentially due to duplicate declarations of e.g. color_blend)
+
+//image_loader.cpp
+#ifdef WLED_ENABLE_GIF
+bool fileSeekCallback(unsigned long position);
+unsigned long filePositionCallback(void);
+int fileReadCallback(void);
+int fileReadBlockCallback(void * buffer, int numberOfBytes);
+int fileSizeCallback(void);
+byte renderImageToSegment(Segment &seg);
+void endImagePlayback(Segment* seg);
+#endif
+
 //improv.cpp
 enum ImprovRPCType {
   Command_Wifi = 0x01,
