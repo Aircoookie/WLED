@@ -42,8 +42,8 @@ ParticleSystem2D::ParticleSystem2D(uint32_t width, uint32_t height, uint32_t num
   numParticles = numberofparticles; // number of particles allocated in init
   availableParticles = 0; // let the memory manager assign
   fractionOfParticlesUsed = 255; // use all particles by default, usedParticles is updated in updatePSpointers()
-  advPartProps = NULL; //make sure we start out with null pointers (just in case memory was not cleared)
-  advPartSize = NULL;
+  advPartProps = nullptr; //make sure we start out with null pointers (just in case memory was not cleared)
+  advPartSize = nullptr;
   updatePSpointers(isadvanced, sizecontrol); // set the particle and sources pointer (call this before accessing sprays or particles)
   setMatrixSize(width, height);
   setWallHardness(255); // set default wall hardness to max
@@ -234,7 +234,7 @@ int32_t ParticleSystem2D::angleEmit(PSsource &emitter, const uint16_t angle, con
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
 // uses passed settings to set bounce or wrap, if useGravity is enabled, it will never bounce at the top and killoutofbounds is not applied over the top
 void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSparticleFlags &partFlags, PSsettings2D *options, PSadvancedParticle *advancedproperties) {
-  if (options == NULL)
+  if (options == nullptr)
     options = &particlesettings; //use PS system settings by default
 
   if (part.ttl > 0) {
@@ -324,7 +324,7 @@ void ParticleSystem2D::fireParticleupdate() {
 
 // update advanced particle size control, returns false if particle shrinks to 0 size
 bool ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *advsize) {
-  if (advsize == NULL) // safety check
+  if (advsize == nullptr) // safety check
     return false;
   // grow/shrink particle
   int32_t newsize = advprops->size;
@@ -376,7 +376,7 @@ bool ParticleSystem2D::updateSize(PSadvancedParticle *advprops, PSsizeControl *a
 
 // calculate x and y size for asymmetrical particles (advanced size control)
 void ParticleSystem2D::getParticleXYsize(PSadvancedParticle *advprops, PSsizeControl *advsize, uint32_t &xsize, uint32_t &ysize) {
-  if (advsize == NULL) // if advsize is valid, also advanced properties pointer is valid (handled by updatePSpointers())
+  if (advsize == nullptr) // if advsize is valid, also advanced properties pointer is valid (handled by updatePSpointers())
     return;
   int32_t size = advprops->size;
   int32_t asymdir = advsize->asymdir;
@@ -437,7 +437,7 @@ void ParticleSystem2D::applyForce(PSparticle &part, const int8_t xforce, const i
 
 // apply a force in x,y direction to individual particle using advanced particle properties
 void ParticleSystem2D::applyForce(const uint32_t particleindex, const int8_t xforce, const int8_t yforce) {
-  if (advPartProps == NULL)
+  if (advPartProps == nullptr)
     return; // no advanced properties available
   applyForce(particles[particleindex], xforce, yforce, advPartProps[particleindex].forcecounter);
 }
@@ -466,7 +466,7 @@ void ParticleSystem2D::applyAngleForce(PSparticle &part, const int8_t force, con
 }
 
 void ParticleSystem2D::applyAngleForce(const uint32_t particleindex, const int8_t force, const uint16_t angle) {
-  if (advPartProps == NULL)
+  if (advPartProps == nullptr)
     return; // no advanced properties available
   applyAngleForce(particles[particleindex], force, angle, advPartProps[particleindex].forcecounter);
 }
@@ -522,7 +522,7 @@ void ParticleSystem2D::applyFriction(const int32_t coefficient) {
 
 // attracts a particle to an attractor particle using the inverse square-law
 void ParticleSystem2D::pointAttractor(const uint32_t particleindex, PSparticle &attractor, const uint8_t strength, const bool swallow) {
-  if (advPartProps == NULL)
+  if (advPartProps == nullptr)
     return; // no advanced properties available
 
   // Calculate the distance between the particle and the attractor
@@ -557,7 +557,6 @@ void ParticleSystem2D::ParticleSys_render() {
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
   static bool useAdditiveTransfer = false; // use add instead of set for buffer transferring (must persist between calls)
-  //bool isNonFadeTransition = (SEGMENT.isInTransition() && blendingStyle != BLEND_STYLE_FADE);
   bool isNonFadeTransition = (pmem->inTransition || pmem->finalTransfer) && blendingStyle != BLEND_STYLE_FADE;
   bool isOverlay = segmentIsOverlay();
 
@@ -566,17 +565,21 @@ void ParticleSystem2D::ParticleSys_render() {
   int32_t smearamount = smearBlur;
   if(pmem->inTransition == effectID && blendingStyle == BLEND_STYLE_FADE) { // FX transition and this is the new FX: fade blur amount but only if using fade style
     motionbluramount = globalBlur + (((motionbluramount - globalBlur) * (int)SEGMENT.progress()) >> 16); // fade from old blur to new blur during transitions
-    smearamount = globalSmear + (((smearamount - globalSmear) * (int)SEGMENT.progress()) >> 16);
+    smearamount = globalSmear + (((smearamount - globalSmear) * (int)SEGMENT.progress()) >> 16);  
   }
   globalBlur = motionbluramount;
   globalSmear = smearamount;
 
+  if(isOverlay) {
+    globalSmear = 0; // do not apply smear or blur in overlay or it turns everything into a blurry mess
+    globalBlur = 0;
+  }
   // handle blurring and framebuffer update
   if (framebuffer) {
     if(!pmem->inTransition)
       useAdditiveTransfer = false; // additive transfer is only usd in transitions (or in overlay)
     // handle buffer blurring or clearing
-    bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID || isNonFadeTransition); // not a transition; or new FX or not fading style: update buffer (blur, or clear)
+    bool bufferNeedsUpdate = !pmem->inTransition || pmem->inTransition == effectID || isNonFadeTransition; // not a transition; or new FX or not fading style: update buffer (blur, or clear)
     if(bufferNeedsUpdate) {
       bool loadfromSegment = !renderSolo || isNonFadeTransition;
       if (globalBlur > 0 || globalSmear > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
@@ -1194,8 +1197,8 @@ ParticleSystem1D::ParticleSystem1D(uint32_t length, uint32_t numberofparticles, 
   numParticles = numberofparticles; // number of particles allocated in init
   availableParticles = 0; // let the memory manager assign
   fractionOfParticlesUsed = 255; // use all particles by default
-  advPartProps = NULL; //make sure we start out with null pointers (just in case memory was not cleared)
-  //advPartSize = NULL;
+  advPartProps = nullptr; //make sure we start out with null pointers (just in case memory was not cleared)
+  //advPartSize = nullptr;
   updatePSpointers(isadvanced); // set the particle and sources pointer (call this before accessing sprays or particles)  
   setSize(length);
   setWallHardness(255); // set default wall hardness to max
@@ -1346,7 +1349,7 @@ int32_t ParticleSystem1D::sprayEmit(const PSsource1D &emitter) {
 // particle moves, decays and dies, if killoutofbounds is set, out of bounds particles are set to ttl=0
 // uses passed settings to set bounce or wrap, if useGravity is set, it will never bounce at the top and killoutofbounds is not applied over the top
 void ParticleSystem1D::particleMoveUpdate(PSparticle1D &part, PSparticleFlags1D &partFlags, PSsettings1D *options, PSadvancedParticle1D *advancedproperties) {
-  if (options == NULL)
+  if (options == nullptr)
     options = &particlesettings; // use PS system settings by default
 
   if (part.ttl > 0) {
@@ -1472,7 +1475,9 @@ void ParticleSystem1D::applyFriction(int32_t coefficient) {
 void ParticleSystem1D::ParticleSys_render() {
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
-  static bool useAdditiveTransfer; // use add instead of set for buffer transferring
+ // bool useAdditiveTransfer; // use add instead of set for buffer transferring
+  bool isNonFadeTransition = (pmem->inTransition || pmem->finalTransfer) && blendingStyle != BLEND_STYLE_FADE;
+  bool isOverlay = segmentIsOverlay();
 
   // update global blur (used for blur transitions)
   int32_t motionbluramount = motionBlur;
@@ -1485,14 +1490,13 @@ void ParticleSystem1D::ParticleSys_render() {
   globalSmear = smearamount;
 
   if (framebuffer) {
-    if(segmentIsOverlay()) useAdditiveTransfer = true; // overlay rendering
-    else useAdditiveTransfer = false;
     // handle buffer blurring or clearing
-    bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID); // not a transition; or new FX: update buffer (blur, or clear)
+    bool bufferNeedsUpdate = !pmem->inTransition || pmem->inTransition == effectID || isNonFadeTransition; // not a transition; or new FX: update buffer (blur, or clear)
     if(bufferNeedsUpdate) {
+      bool loadfromSegment = !renderSolo || isNonFadeTransition;
       if (globalBlur > 0 || globalSmear > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
         for (int32_t x = 0; x <= maxXpixel; x++) {
-          if (!renderSolo) // sharing the framebuffer with another segment: read buffer back from segment
+          if (loadfromSegment) // sharing the framebuffer with another segment: read buffer back from segment
             framebuffer[x] = SEGMENT.getPixelColor(x); // copy to local buffer
           fast_color_scale(framebuffer[x], motionBlur);
         }
@@ -1549,7 +1553,8 @@ void ParticleSystem1D::ParticleSys_render() {
     }
   }
   // transfer local buffer back to segment (if available)
-  transferBuffer(maxXpixel + 1, 0, useAdditiveTransfer);
+  if (pmem->inTransition != effectID || isNonFadeTransition)
+    transferBuffer(maxXpixel + 1, 0, isOverlay);
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -1773,7 +1778,7 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
 void ParticleSystem1D::updateSystem(void) {
   setSize(SEGMENT.vLength()); // update size
   updateRenderingBuffer(SEGMENT.vLength(), true, false); // update rendering buffer (segment size can change at any time)
-  updatePSpointers(advPartProps != NULL);
+  updatePSpointers(advPartProps != nullptr);
   setUsedParticles(fractionOfParticlesUsed); // update used particles based on percentage (can change during transitions, execute each frame for code simplicity)
   if (partMemList.size() == 1) // if number of vector elements is one, this is the only system
     renderSolo = true;
@@ -1852,10 +1857,10 @@ bool allocateParticleSystemMemory1D(const uint32_t numparticles, const uint32_t 
     return false; // not enough memory, function ensures a minimum of numparticles are avialable
   // functions above make sure these are a multiple of 4 bytes (to avoid alignment issues)
   requiredmemory += sizeof(PSparticleFlags1D) * numparticles;
-  if (isadvanced)
-    requiredmemory += sizeof(PSadvancedParticle1D) * numparticles;
   requiredmemory += sizeof(PSsource1D) * numsources;
   requiredmemory += additionalbytes;
+  if (isadvanced)
+    requiredmemory += sizeof(PSadvancedParticle1D) * numparticles;
   return(SEGMENT.allocateData(requiredmemory));
 }
 
@@ -2080,7 +2085,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       PSPRINTLN("new effect");
       newAvailable = (maxParticles * progress) >> 16; // update total particles available to this PS (newAvailable is guaranteed to be smaller than maxParticles)
       if(newAvailable < 2) newAvailable = 2; // give 2 particle minimum (some FX may crash with less as they do i+1 access)
-      if(newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used for FX using a small amount, do not move the pointer anymore (will be set to base in final handover)
+      if(newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used, do not move the pointer anymore (will be set to base in final handover)
       uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles (in particle structs, not bytes)
       if(bufferoffset < maxParticles) // safety check
         buffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // new effect gets the end of the buffer
@@ -2116,7 +2121,9 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       }
     }
     // kill unused particles so they do not re-appear when transitioning to next FX
-    //TODO: can this be done in the handover function?
+    //TODO: should this be done in the handover function? maybe with a "cleanup" parameter?
+    //TODO2: the memmove above should be done here (or in handover function): it should copy all alive particles to the beginning of the buffer (to TTL=0 particles maybe?)
+    // -> currently when moving form blobs to ballpit particles disappear
     #ifndef WLED_DISABLE_PARTICLESYSTEM2D
     if (structSize == sizeof(PSparticle)) { // 2D particle
       PSparticle *particles = (PSparticle*)buffer;
