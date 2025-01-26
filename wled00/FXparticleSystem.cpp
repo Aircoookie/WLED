@@ -556,7 +556,10 @@ void ParticleSystem2D::pointAttractor(const uint32_t particleindex, PSparticle &
 void ParticleSystem2D::ParticleSys_render() {
   CRGB baseRGB;
   uint32_t brightness; // particle brightness, fades if dying
-  static bool useAdditiveTransfer = false; // use add instead of set for buffer transferring TODO: why static?
+  static bool useAdditiveTransfer = false; // use add instead of set for buffer transferring (must persist between calls)
+  //bool isNonFadeTransition = (SEGMENT.isInTransition() && blendingStyle != BLEND_STYLE_FADE);
+  bool isNonFadeTransition = (pmem->inTransition || pmem->finalTransfer) && blendingStyle != BLEND_STYLE_FADE;
+  bool isOverlay = segmentIsOverlay();
 
   // update global blur (used for blur transitions)
   int32_t motionbluramount = motionBlur;
@@ -570,12 +573,12 @@ void ParticleSystem2D::ParticleSys_render() {
 
   // handle blurring and framebuffer update
   if (framebuffer) {
-    if(segmentIsOverlay()) useAdditiveTransfer = true; // overlay rendering
-    else useAdditiveTransfer = false;
+    if(!pmem->inTransition)
+      useAdditiveTransfer = false; // additive transfer is only usd in transitions (or in overlay)
     // handle buffer blurring or clearing
-    bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID || blendingStyle != BLEND_STYLE_FADE); // not a transition; or new FX or not fading style: update buffer (blur, or clear)
+    bool bufferNeedsUpdate = (!pmem->inTransition || pmem->inTransition == effectID || isNonFadeTransition); // not a transition; or new FX or not fading style: update buffer (blur, or clear)
     if(bufferNeedsUpdate) {
-      bool loadfromSegment = !renderSolo || blendingStyle != BLEND_STYLE_FADE;
+      bool loadfromSegment = !renderSolo || isNonFadeTransition;
       if (globalBlur > 0 || globalSmear > 0) { // blurring active: if not a transition or is newFX, read data from segment before blurring (old FX can render to it afterwards)
         for (int32_t y = 0; y <= maxYpixel; y++) {
           int index = y * (maxXpixel + 1);
@@ -592,12 +595,13 @@ void ParticleSystem2D::ParticleSys_render() {
         memset(framebuffer, 0, frameBufferSize * sizeof(CRGB));
       }
     }
+    // handle buffer for global large particle size rendering
     if(particlesize > 0 && pmem->inTransition) { // if particle size is used by FX we need a clean buffer
-      if(bufferNeedsUpdate && !globalBlur) { // transfer only if buffer was not cleared above (happens if this is the new FX and other FX does not use blurring)
+      if(bufferNeedsUpdate && !globalBlur) { // transfer without adding if buffer was not cleared above (happens if this is the new FX and other FX does not use blurring)
         useAdditiveTransfer = false; // no blurring and big size particle FX is the new FX (rendered first after clearing), can just render normally
       }
       else { // this is the old FX (rendering second) or blurring is active: new FX already rendered to the buffer and blurring was applied above; transfer it to segment and clear it
-        transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer);
+        transferBuffer(maxXpixel + 1, maxYpixel + 1, isOverlay);
         memset(framebuffer, 0, frameBufferSize * sizeof(CRGB)); // clear the buffer after transfer
         useAdditiveTransfer = true; // additive transfer reads from segment, adds that to the frame-buffer and writes back to segment, after transfer, segment and buffer are identical
       }
@@ -659,8 +663,8 @@ void ParticleSystem2D::ParticleSys_render() {
       SEGMENT.blur(globalSmear, true);
   }
   // transfer framebuffer to segment if available
-  if (pmem->inTransition != effectID || blendingStyle != BLEND_STYLE_FADE) // not in transition or is old FX (rendered second) or not fade style
-    transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer);
+  if (pmem->inTransition != effectID || isNonFadeTransition) // not in transition or is old FX (rendered second) or not fade style
+    transferBuffer(maxXpixel + 1, maxYpixel + 1, useAdditiveTransfer | isOverlay);
 }
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
@@ -2055,7 +2059,7 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     uint32_t requestsize = structSize * requestedParticles; // required buffer size
     buffer = allocatePSmemory(requestsize, false); // allocate new memory
     if (buffer)
-      partMemList.push_back({buffer, requestsize, 0, strip.getCurrSegmentId(), 0, 0, 0, true});  // add buffer to list, set flag to transfer/init the particles note: if pushback fails, it may crash
+      partMemList.push_back({buffer, requestsize, 0, strip.getCurrSegmentId(), 0, 0, 0, false, true});  // add buffer to list, set flag to transfer/init the particles note: if pushback fails, it may crash
     else
       return nullptr; // there is no memory available TODO: if localbuffer is allocated, free it and try again, its no use having a buffer but no particles
     pmem = getPartMem(); // get the pointer to the new element (check that it was added)
@@ -2066,11 +2070,8 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
     return buffer; // directly return the buffer on init call
   }
 
-
-
   // now we have a valid buffer, if this is a PS to PS FX transition: transfer particles slowly to new FX
-  if(!SEGMENT.isInTransition()) pmem->inTransition = false; // transition has ended, update pmem
-  //TODO: if going back to old FX during a transition, there is not init call. need to detect that somehow or rendering does not work
+  if(!SEGMENT.isInTransition()) pmem->inTransition = false; // transition has ended, invoke final transfer
   if (pmem->inTransition) {
     uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
     uint16_t progress = SEGMENT.progress(); // transition progress
@@ -2079,13 +2080,13 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       PSPRINTLN("new effect");
       newAvailable = (maxParticles * progress) >> 16; // update total particles available to this PS (newAvailable is guaranteed to be smaller than maxParticles)
       if(newAvailable < 2) newAvailable = 2; // give 2 particle minimum (some FX may crash with less as they do i+1 access)
-      if(maxParticles / numParticlesUsed > 3 && newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used for FX using a small amount, do not move the pointer anymore (will be set to base in final handover)
+      if(newAvailable > numParticlesUsed) newAvailable = numParticlesUsed; // limit to number of particles used for FX using a small amount, do not move the pointer anymore (will be set to base in final handover)
       uint32_t bufferoffset = (maxParticles - 1) - newAvailable; // offset to new effect particles (in particle structs, not bytes)
       if(bufferoffset < maxParticles) // safety check
         buffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // new effect gets the end of the buffer
       int32_t totransfer = newAvailable - availableToPS; // number of particles to transfer in this transition update
-      if(totransfer < 0) totransfer = 0; // safety check
-      particleHandover(buffer, structSize, totransfer);
+      if(totransfer > 0) // safety check
+        particleHandover(buffer, structSize, totransfer);
     }
     else { // this was called from the old FX
       PSPRINTLN("old effect");
@@ -2097,49 +2098,52 @@ void* particleMemoryManager(const uint32_t requestedParticles, size_t structSize
       // note: buffer pointer stays the same, number of available particles is reduced
     }
     availableToPS = newAvailable;
-  } else { // no PS transition, full buffer available
-    if(pmem->transferParticles) { // transition ended (or blending is disabled) -> transfer all remaining particles
-      PSPRINTLN("PS transition ended, final particle handover");
-      uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
-      if (maxParticles > availableToPS) { // not all particles transferred yet
-        int32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
-        if(totransfer < 0) totransfer = 0; // safety check
+  } else if(pmem->transferParticles) { // no PS transition, full buffer available
+    // transition ended (or blending is disabled) -> transfer all remaining particles
+    PSPRINTLN("PS transition ended, final particle handover");
+    uint32_t maxParticles = pmem->buffersize / structSize; // maximum number of particles that fit in the buffer
+    if (maxParticles > availableToPS) { // not all particles transferred yet
+      int32_t totransfer = maxParticles - availableToPS; // transfer all remaining particles
+      if(totransfer > 0) // safety check
         particleHandover(buffer, structSize, totransfer);
-
-        if(maxParticles / numParticlesUsed > 3) { // FX uses less than 25%: move the already existing particles to the beginning of the buffer
-          uint32_t usedbytes = availableToPS * structSize;
-          int32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
-          if(bufferoffset < (int)maxParticles) { // safety check
-            void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
-            memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
-          }
+      if(maxParticles > numParticlesUsed) { // FX uses less than max: move the already existing particles to the beginning of the buffer
+        uint32_t usedbytes = availableToPS * structSize;
+        int32_t bufferoffset = (maxParticles - 1) - availableToPS; // offset to existing particles (see above)
+        if(bufferoffset < (int)maxParticles) { // safety check
+          void* currentBuffer = (void*)((uint8_t*)buffer + bufferoffset * structSize); // pointer to current buffer start
+          memmove(buffer, currentBuffer, usedbytes); // move the existing particles to the beginning of the buffer
         }
       }
-      // kill unused particles to they do not re-appear when transitioning to next FX
-      #ifndef WLED_DISABLE_PARTICLESYSTEM2D
-      if (structSize == sizeof(PSparticle)) { // 2D particle
-        PSparticle *particles = (PSparticle *)buffer;
-        for (uint32_t i = availableToPS; i < maxParticles; i++) {
-          particles[i].ttl = 0; // kill unused particles
-        }
-      }
-      else // 1D particle system
-      #endif
-      {
-        #ifndef WLED_DISABLE_PARTICLESYSTEM1D
-        PSparticle1D *particles = (PSparticle1D *)buffer;
-        for (uint32_t i = availableToPS; i < maxParticles; i++) {
-          particles[i].ttl = 0; // kill unused particles
-        }
-        #endif
-      }
-      availableToPS = maxParticles; // now all particles are available to new FX
-      PSPRINTLN("final available particles: " + String(availableToPS));
-      pmem->particleType = structSize; // update particle type
-      pmem->transferParticles = false;
-      pmem->currentFX = effectID; // FX has now settled in, update the FX ID to track future transitions
     }
+    // kill unused particles so they do not re-appear when transitioning to next FX
+    //TODO: can this be done in the handover function?
+    #ifndef WLED_DISABLE_PARTICLESYSTEM2D
+    if (structSize == sizeof(PSparticle)) { // 2D particle
+      PSparticle *particles = (PSparticle*)buffer;
+      for (uint32_t i = availableToPS; i < maxParticles; i++) {
+        particles[i].ttl = 0; // kill unused particles
+      }
+    }
+    else // 1D particle system
+    #endif
+    {
+      #ifndef WLED_DISABLE_PARTICLESYSTEM1D
+      PSparticle1D *particles = (PSparticle1D*)buffer;
+      for (uint32_t i = availableToPS; i < maxParticles; i++) {
+        particles[i].ttl = 0; // kill unused particles
+      }
+      #endif
+    }
+    availableToPS = maxParticles; // now all particles are available to new FX
+    PSPRINTLN("final available particles: " + String(availableToPS));
+    pmem->particleType = structSize; // update particle type
+    pmem->transferParticles = false;
+    pmem->finalTransfer = true; // let rendering function update its buffer if required
+    pmem->currentFX = effectID; // FX has now settled in, update the FX ID to track future transitions
   }
+  else // no transition
+    pmem->finalTransfer = false;
+
   #ifdef WLED_DEBUG_PS
   PSPRINT(" Particle memory Pointer address: 0x");
   Serial.println((uintptr_t)buffer, HEX);
@@ -2195,11 +2199,17 @@ void updateUsedParticles(const uint32_t allocated, const uint32_t available, con
 bool segmentIsOverlay(void) { // TODO: this only needs to be checked when segment is created, could move this to segment class or PS init
   unsigned segID = strip.getCurrSegmentId();
   if(segID > 0) { // lower number segments exist, check coordinates of underlying segments
-      for (unsigned i = 0; i < segID; i++) {
-        if(strip._segments[i].start <= strip._segments[segID].start && strip._segments[i].stop >= strip._segments[segID].stop &&
-           strip._segments[i].startY <= strip._segments[segID].startY && strip._segments[i].stopY >= strip._segments[segID].stopY)
-          return true;
-      }
+    unsigned xMin, yMin = 0xFFFF; // note: overlay is activated even if there is gaps in underlying segments, this is an intentional choice
+    unsigned xMax, yMax = 0;
+    for (unsigned i = 0; i < segID; i++) {
+      xMin = strip._segments[i].start < xMin ? strip._segments[i].start : xMin;
+      yMin = strip._segments[i].startY < yMin ? strip._segments[i].startY : yMin;
+      xMax = strip._segments[i].stop > xMax ? strip._segments[i].stop : xMax;
+      yMax = strip._segments[i].stopY > yMax ? strip._segments[i].stopY : yMax;
+      if(xMin <= strip._segments[segID].start && xMax >= strip._segments[segID].stop &&
+          yMin <= strip._segments[segID].startY && yMax >= strip._segments[segID].stopY)
+        return true;
+    }
   }
   return false;
 }
@@ -2283,7 +2293,6 @@ void transferBuffer(uint32_t width, uint32_t height, bool useAdditiveTransfer) {
       SEGMENT.modeBlend(false); // temporarily disable FX blending in PS to PS transition (using local buffer to do PS blending)
   }
   #endif
-
   if(height) { // is 2D, 1D passes height = 0
     for (uint32_t y = 0; y < height; y++) {
       int index = y * width; // current row index for 1D buffer

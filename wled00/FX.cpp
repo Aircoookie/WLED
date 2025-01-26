@@ -7901,7 +7901,7 @@ uint16_t mode_particlefireworks(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,sx=100,ix=50,c1=40,c2=0,c3=12";
+static const char _data_FX_MODE_PARTICLEFIREWORKS[] PROGMEM = "PS Fireworks@Launches,Explosion Size,Fuse,Blur,Gravity,Cylinder,Ground,Fast;;!;2;pal=11,ix=50,c1=40,c2=0,c3=12";
 
 /*
   Particle Volcano
@@ -8291,7 +8291,7 @@ uint16_t mode_particlebox(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@Speed,Particles,Tilt Strength,Hardness,Friction,Random,Washing Machine,Sloshing;;!;2;pal=53,sx=120,ix=100,c1=100,c2=210,o1=1";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@!,Particles,Force,Hardness,Friction,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,o1=1";
 
 /*
   Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
