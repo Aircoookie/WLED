@@ -25,6 +25,7 @@ private:
 public:
     uint8_t nPieces;
     uint8_t nBagLength;
+    uint8_t queueLength;
     uint8_t bagIdx;
     std::vector<uint8_t> bag;
     std::vector<Piece> piecesQueue;
@@ -32,6 +33,7 @@ public:
     TetrisBag(uint8_t nPieces, uint8_t nBagLength, uint8_t queueLength):
         nPieces(nPieces),
         nBagLength(nBagLength),
+        queueLength(queueLength),
         bag(nPieces * nBagLength),
         piecesQueue(queueLength)
     {
@@ -94,6 +96,15 @@ public:
         //move vector to left
         std::rotate(piecesQueue.begin(), piecesQueue.begin() + 1, piecesQueue.end());
         piecesQueue[piecesQueue.size() - 1] = Piece(idx % nPieces);
+    }
+
+    void reset()
+    {
+        bag.clear();
+        bag.resize(nPieces * nBagLength);
+        piecesQueue.clear();
+        piecesQueue.resize(queueLength);
+        init();
     }
 };
 

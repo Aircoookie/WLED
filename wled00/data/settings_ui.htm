@@ -4,9 +4,8 @@
 	<meta charset="utf-8">
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 	<title>UI Settings</title>
+	<script src="common.js" async type="text/javascript"></script>
 	<script>
-	var d = document;
-	var loc = false, locip, locproto = "http:";
 	var initial_ds, initial_st, initial_su, oldUrl;
 	var sett = null;
 	var l = {
@@ -47,11 +46,6 @@
 			}
 		}
 	};
-	function gId(s) { return d.getElementById(s); }
-	function toggle(el) { gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide"); }
-	function isObject(item) {
-		return (item && typeof item === 'object' && !Array.isArray(item));
-	}
 	function set(path, obj, val) {
 		var tar = obj;
 		var pList = path.split('_');
@@ -63,23 +57,13 @@
 		}
 		tar[pList[len-1]] = val;
 	}
-	var timeout;
-	function showToast(text, error = false)
-	{
-		var x = gId("toast");
-		x.innerHTML = text;
-		x.classList.add(error ? "error":"show");
-		clearTimeout(timeout);
-		x.style.animation = 'none';
-		timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
-	}
 	function addRec(s, path = "", label = null)
 	{
 		var str = "";
 		for (let i in s)
 		{
 			var fk = path + (path?'_':'') + i;
-			if (isObject(s[i])) {
+			if (isO(s[i])) {
 				if (label && label[i] && label[i]["LABEL"]) str += `<h3>${label[i]["LABEL"]}</h3>`;
 				str += addRec(s[i], fk, label? label[i] : null);
 			} else {
@@ -174,57 +158,16 @@
 		if (d.Sf.DS.value != initial_ds || /*d.Sf.ST.checked != initial_st ||*/ d.Sf.SU.checked != initial_su) d.Sf.submit();
 	}
 	
-	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
-	function loadJS(FILE_URL, async = true) {
-		let scE = d.createElement("script");
-		scE.setAttribute("src", FILE_URL);
-		scE.setAttribute("type", "text/javascript");
-		scE.setAttribute("async", async);
-		d.body.appendChild(scE);
-		// success event 
-		scE.addEventListener("load", () => {
-			//console.log("File loaded");
-			GetV(); 
+	function S() {
+		getLoc();
+		loadJS(getURL('/settings/s.js?p=3'), false, undefined, ()=>{
 			initial_ds = d.Sf.DS.value;
 			//initial_st = d.Sf.ST.checked;
 			initial_su = d.Sf.SU.checked;
 			GetLS();
-		});
-		// error event
-		scE.addEventListener("error", (ev) => {
-			console.log("Error on loading file", ev);
-			alert("Loading of configuration script failed.\nIncomplete page data!");
-		});
-	}
-	function S() {
-		let l = window.location;
-		if (l.protocol == "file:") {
-			loc = true;
-			locip = localStorage.getItem('locIp');
-			if (!locip) {
-				locip = prompt("File Mode. Please enter WLED IP!");
-				localStorage.setItem('locIp', locip);
-			}
-		} else {
-			// detect reverse proxy
-			let path = l.pathname;
-			let paths = path.slice(1,path.endsWith('/')?-1:undefined).split("/");
-			if (paths.length > 2) {
-				paths.pop(); // remove "ui"
-				paths.pop(); // remove "settings"
-				locproto = l.protocol;
-				loc = true;
-				locip = l.hostname + (l.port ? ":" + l.port : "") + "/" + paths.join('/');
-			}
-		}
-		loadJS(getURL('/settings/s.js?p=3'), false);	// If we set async false, file is loaded and executed, then next statement is processed
+		});	// If we set async false, file is loaded and executed, then next statement is processed
 		if (loc) d.Sf.action = getURL('/settings/ui');
 	}
-	function getURL(path) {
-		return (loc ? locproto + "//" + locip : "") + path;
-	}
-	function H() { window.open("https://kno.wled.ge/features/settings/#user-interface-settings"); }
-	function B() { window.open(getURL("/settings"),"_self"); }
 	function UI()
 	{
 		gId('idonthateyou').style.display = (gId('dm').checked) ? 'inline':'none';
@@ -264,25 +207,13 @@
 		if (gId("theme_bg_rnd").checked) toggle("Image");
 		gId("theme_bg_rnd").checked = false;
 	}
-
-	function uploadFile(fO,name) {
-		var req = new XMLHttpRequest();
-		req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
-		req.addEventListener('error', function(e){showToast(e.stack,true);});
-		req.open("POST", "/upload");
-		var formData = new FormData();
-		formData.append("data", fO.files[0], name);
-		req.send(formData);
-		fO.value = '';
-		return false;
-	}
 	</script>
 	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
 		<div class="toprow">
-		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<div class="helpB"><button type="button" onclick="H('features/settings/#user-interface-settings')">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button><br>
 		<span id="lssuc" style="color:green; display:none">&#10004; Local UI settings saved!</span>
 		<span id="lserr" style="color:red; display:none">&#9888; Could not access local storage. Make sure it is enabled in your browser.</span><hr>

@@ -1,6 +1,6 @@
 #include "wled.h"
 
-#ifndef WLED_DISABLE_GIF
+#ifdef WLED_ENABLE_GIF
 
 #include "GifDecoder.h"
 

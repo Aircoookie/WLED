@@ -19,8 +19,9 @@ def _create_dirs(dirs=["map", "release", "firmware"]):
         os.makedirs(os.path.join(OUTPUT_DIR, d), exist_ok=True)
 
 def create_release(source):
-    release_name = _get_cpp_define_value(env, "WLED_RELEASE_NAME")
-    if release_name:
+    release_name_def = _get_cpp_define_value(env, "WLED_RELEASE_NAME")
+    if release_name_def:
+        release_name = release_name_def.replace("\\\"", "")
         version = _get_cpp_define_value(env, "WLED_VERSION")
         release_file = os.path.join(OUTPUT_DIR, "release", f"WLED_{version}_{release_name}.bin")
         release_gz_file = release_file + ".gz"
@@ -36,6 +37,8 @@ def create_release(source):
 def bin_rename_copy(source, target, env):
     _create_dirs()
     variant = env["PIOENV"]
+    builddir = os.path.join(env["PROJECT_BUILD_DIR"],  variant)
+    source_map = os.path.join(builddir, env["PROGNAME"] + ".map")
 
     # create string with location and file names based on variant
     map_file = "{}map{}{}.map".format(OUTPUT_DIR, os.path.sep, variant)
@@ -44,7 +47,11 @@ def bin_rename_copy(source, target, env):
 
     # copy firmware.map to map/<variant>.map
     if os.path.isfile("firmware.map"):
-        shutil.move("firmware.map", map_file)
+        print("Found linker mapfile firmware.map")
+        shutil.copy("firmware.map", map_file)
+    if os.path.isfile(source_map):
+        print(f"Found linker mapfile {source_map}")
+        shutil.copy(source_map, map_file)
 
 def bin_gzip(source, target):
     # only create gzip for esp8266

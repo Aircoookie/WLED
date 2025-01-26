@@ -445,8 +445,8 @@ void FourLineDisplayUsermod::setPowerSave(uint8_t save) {
 
 void FourLineDisplayUsermod::center(String &line, uint8_t width) {
   int len = line.length();
-  if (len<width) for (byte i=(width-len)/2; i>0; i--) line = ' ' + line;
-  for (byte i=line.length(); i<width; i++) line += ' ';
+  if (len<width) for (unsigned i=(width-len)/2; i>0; i--) line = ' ' + line;
+  for (unsigned i=line.length(); i<width; i++) line += ' ';
 }
 
 void FourLineDisplayUsermod::draw2x2GlyphIcons() {
@@ -543,7 +543,7 @@ void FourLineDisplayUsermod::setup() {
       type = NONE;
     } else {
       PinManagerPinType cspins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
-      if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type = NONE; }
+      if (!PinManager::allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type = NONE; }
     }
   } else {
     if (i2c_scl<0 || i2c_sda<0) { type=NONE; }
@@ -569,7 +569,7 @@ void FourLineDisplayUsermod::setup() {
   if (nullptr == u8x8) {
     DEBUG_PRINTLN(F("Display init failed."));
     if (isSPI) {
-      pinManager.deallocateMultiplePins((const uint8_t*)ioPin, 3, PinOwner::UM_FourLineDisplay);
+      PinManager::deallocateMultiplePins((const uint8_t*)ioPin, 3, PinOwner::UM_FourLineDisplay);
     }
     type = NONE;
     return;
@@ -819,28 +819,28 @@ void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const c
   if (overlayUntil == 0) {
     lockRedraw = true;
     // Find the mode name in JSON
-    uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
+    unsigned printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
     if (lineBuffer[0]=='*' && lineBuffer[1]==' ') {
       // remove "* " from dynamic palettes
-      for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
+      for (unsigned i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
       printedChars -= 2;
     } else if ((lineBuffer[0]==' ' && lineBuffer[1]>127)) {
       // remove note symbol from effect names
-      for (byte i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
+      for (unsigned i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
       printedChars -= 5;
     }
     if (lineHeight == 2) {                                 // use this code for 8 line display
       char smallBuffer1[MAX_MODE_LINE_SPACE];
       char smallBuffer2[MAX_MODE_LINE_SPACE];
-      uint8_t smallChars1 = 0;
-      uint8_t smallChars2 = 0;
+      unsigned smallChars1 = 0;
+      unsigned smallChars2 = 0;
       if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
         while (printedChars < (MAX_MODE_LINE_SPACE-1)) lineBuffer[printedChars++]=' ';
         lineBuffer[printedChars] = 0;
         drawString(1, row*lineHeight, lineBuffer);
       } else {                                             // for long names divide the text into 2 lines and print them small
         bool spaceHit = false;
-        for (uint8_t i = 0; i < printedChars; i++) {
+        for (unsigned i = 0; i < printedChars; i++) {
           switch (lineBuffer[i]) {
             case ' ':
               if (i > 4 && !spaceHit) {
@@ -865,8 +865,8 @@ void FourLineDisplayUsermod::showCurrentEffectOrPalette(int inputEffPal, const c
       }
     } else {                                             // use this code for 4 ling displays
       char smallBuffer3[MAX_MODE_LINE_SPACE+1];          // uses 1x1 icon for mode/palette
-      uint8_t smallChars3 = 0;
-      for (uint8_t i = 0; i < MAX_MODE_LINE_SPACE; i++) smallBuffer3[smallChars3++] = (i >= printedChars) ? ' ' : lineBuffer[i];
+      unsigned smallChars3 = 0;
+      for (unsigned i = 0; i < MAX_MODE_LINE_SPACE; i++) smallBuffer3[smallChars3++] = (i >= printedChars) ? ' ' : lineBuffer[i];
       smallBuffer3[smallChars3] = 0;
       drawString(1, row*lineHeight, smallBuffer3, true);
     }
@@ -1135,10 +1135,12 @@ bool FourLineDisplayUsermod::handleButton(uint8_t b) {
   return handled;
 }
 
-#if CONFIG_FREERTOS_UNICORE
-#define ARDUINO_RUNNING_CORE 0
-#else
-#define ARDUINO_RUNNING_CORE 1
+#ifndef ARDUINO_RUNNING_CORE
+  #if CONFIG_FREERTOS_UNICORE
+    #define ARDUINO_RUNNING_CORE 0
+  #else
+    #define ARDUINO_RUNNING_CORE 1
+  #endif
 #endif
 void FourLineDisplayUsermod::onUpdateBegin(bool init) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
@@ -1200,21 +1202,21 @@ void FourLineDisplayUsermod::onUpdateBegin(bool init) {
 //}
 
 void FourLineDisplayUsermod::appendConfigData() {
-  oappend(SET_F("dd=addDropdown('4LineDisplay','type');"));
-  oappend(SET_F("addOption(dd,'None',0);"));
-  oappend(SET_F("addOption(dd,'SSD1306',1);"));
-  oappend(SET_F("addOption(dd,'SH1106',2);"));
-  oappend(SET_F("addOption(dd,'SSD1306 128x64',3);"));
-  oappend(SET_F("addOption(dd,'SSD1305',4);"));
-  oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
-  oappend(SET_F("addOption(dd,'SSD1309 128x64',9);"));
-  oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
-  oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
-  oappend(SET_F("addOption(dd,'SSD1309 SPI 128x64',8);"));
-  oappend(SET_F("addInfo('4LineDisplay:type',1,'<br><i class=\"warn\">Change may require reboot</i>','');"));
-  oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','SPI CS');"));
-  oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'','SPI DC');"));
-  oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'','SPI RST');"));
+  oappend(F("dd=addDropdown('4LineDisplay','type');"));
+  oappend(F("addOption(dd,'None',0);"));
+  oappend(F("addOption(dd,'SSD1306',1);"));
+  oappend(F("addOption(dd,'SH1106',2);"));
+  oappend(F("addOption(dd,'SSD1306 128x64',3);"));
+  oappend(F("addOption(dd,'SSD1305',4);"));
+  oappend(F("addOption(dd,'SSD1305 128x64',5);"));
+  oappend(F("addOption(dd,'SSD1309 128x64',9);"));
+  oappend(F("addOption(dd,'SSD1306 SPI',6);"));
+  oappend(F("addOption(dd,'SSD1306 SPI 128x64',7);"));
+  oappend(F("addOption(dd,'SSD1309 SPI 128x64',8);"));
+  oappend(F("addInfo('4LineDisplay:type',1,'<br><i class=\"warn\">Change may require reboot</i>','');"));
+  oappend(F("addInfo('4LineDisplay:pin[]',0,'','SPI CS');"));
+  oappend(F("addInfo('4LineDisplay:pin[]',1,'','SPI DC');"));
+  oappend(F("addInfo('4LineDisplay:pin[]',2,'','SPI RST');"));
 }
 
 /*
@@ -1263,7 +1265,7 @@ void FourLineDisplayUsermod::addToConfig(JsonObject& root) {
 bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
   bool needsRedraw    = false;
   DisplayType newType = type;
-  int8_t oldPin[3]; for (byte i=0; i<3; i++) oldPin[i] = ioPin[i];
+  int8_t oldPin[3]; for (unsigned i=0; i<3; i++) oldPin[i] = ioPin[i];
 
   JsonObject top = root[FPSTR(_name)];
   if (top.isNull()) {
@@ -1274,7 +1276,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
 
   enabled       = top[FPSTR(_enabled)] | enabled;
   newType       = top["type"] | newType;
-  for (byte i=0; i<3; i++) ioPin[i] = top["pin"][i] | ioPin[i];
+  for (unsigned i=0; i<3; i++) ioPin[i] = top["pin"][i] | ioPin[i];
   flip          = top[FPSTR(_flip)] | flip;
   contrast      = top[FPSTR(_contrast)] | contrast;
   #ifndef ARDUINO_ARCH_ESP32
@@ -1300,12 +1302,12 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
     DEBUG_PRINTLN(F(" config (re)loaded."));
     // changing parameters from settings page
     bool pinsChanged = false;
-    for (byte i=0; i<3; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
+    for (unsigned i=0; i<3; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
     if (pinsChanged || type!=newType) {
       bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type == SSD1309_SPI64);
       bool newSPI = (newType == SSD1306_SPI || newType == SSD1306_SPI64 || newType == SSD1309_SPI64);
       if (isSPI) {
-        if (pinsChanged || !newSPI) pinManager.deallocateMultiplePins((const uint8_t*)oldPin, 3, PinOwner::UM_FourLineDisplay);
+        if (pinsChanged || !newSPI) PinManager::deallocateMultiplePins((const uint8_t*)oldPin, 3, PinOwner::UM_FourLineDisplay);
         if (!newSPI) {
           // was SPI but is no longer SPI
           if (i2c_scl<0 || i2c_sda<0) { newType=NONE; }
@@ -1313,7 +1315,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
           // still SPI but pins changed
           PinManagerPinType cspins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
           if (ioPin[0]<0 || ioPin[1]<0 || ioPin[1]<0) { newType=NONE; }
-          else if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
+          else if (!PinManager::allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
         }
       } else if (newSPI) {
         // was I2C but is now SPI
@@ -1322,7 +1324,7 @@ bool FourLineDisplayUsermod::readFromConfig(JsonObject& root) {
         } else {
           PinManagerPinType pins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
           if (ioPin[0]<0 || ioPin[1]<0 || ioPin[1]<0) { newType=NONE; }
-          else if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
+          else if (!PinManager::allocateMultiplePins(pins, 3, PinOwner::UM_FourLineDisplay)) { newType=NONE; }
         }
       } else {
         // just I2C type changed

@@ -21,9 +21,10 @@ static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security setti
 static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
 static const char s_notimplemented[] PROGMEM = "Not implemented";
 static const char s_accessdenied[]   PROGMEM = "Access Denied";
+static const char _common_js[]       PROGMEM = "/common.js";
 
 //Is this an IP?
-static bool isIp(String str) {
+static bool isIp(const String &str) {
   for (size_t i = 0; i < str.length(); i++) {
     int c = str.charAt(i);
     if (c != '.' && (c < '0' || c > '9')) {
@@ -154,9 +155,9 @@ static String msgProcessor(const String& var)
   return String();
 }
 
-static void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
+static void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool isFinal) {
   if (!correctPIN) {
-    if (final) request->send(401, FPSTR(CONTENT_TYPE_PLAIN), FPSTR(s_unlock_cfg));
+    if (isFinal) request->send(401, FPSTR(CONTENT_TYPE_PLAIN), FPSTR(s_unlock_cfg));
     return;
   }
   if (!index) {
@@ -166,14 +167,13 @@ static void handleUpload(AsyncWebServerRequest *request, const String& filename,
     }
 
     request->_tempFile = WLED_FS.open(finalname, "w");
-    DEBUG_PRINT(F("Uploading "));
-    DEBUG_PRINTLN(finalname);
+    DEBUG_PRINTF_P(PSTR("Uploading %s\n"), finalname.c_str());
     if (finalname.equals(FPSTR(getPresetsFileName()))) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
   }
-  if (final) {
+  if (isFinal) {
     request->_tempFile.close();
     if (filename.indexOf(F("cfg.json")) >= 0) { // check for filename with or without slash
       doReboot = true;
@@ -196,12 +196,12 @@ void createEditHandler(bool enable) {
       editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
       #endif
     #else
-      editHandler = &server.on(SET_F("/edit"), HTTP_GET, [](AsyncWebServerRequest *request){
+      editHandler = &server.on(F("/edit"), HTTP_GET, [](AsyncWebServerRequest *request){
         serveMessage(request, 501, FPSTR(s_notimplemented), F("The FS editor is disabled in this build."), 254);
       });
     #endif
   } else {
-    editHandler = &server.on(SET_F("/edit"), HTTP_ANY, [](AsyncWebServerRequest *request){
+    editHandler = &server.on(F("/edit"), HTTP_ANY, [](AsyncWebServerRequest *request){
       serveMessage(request, 401, FPSTR(s_accessdenied), FPSTR(s_unlock_cfg), 254);
     });
   }
@@ -239,6 +239,10 @@ void initServer()
 #endif
   server.on(F("/liveview"), HTTP_GET, [](AsyncWebServerRequest *request) {
     handleStaticContent(request, "", 200, FPSTR(CONTENT_TYPE_HTML), PAGE_liveview, PAGE_liveview_length);
+  });
+
+  server.on(_common_js, HTTP_GET, [](AsyncWebServerRequest *request) {
+    handleStaticContent(request, FPSTR(_common_js), 200, FPSTR(CONTENT_TYPE_JAVASCRIPT), JS_common, JS_common_length);
   });
 
   //settings page
@@ -358,7 +362,7 @@ void initServer()
 
   server.on(F("/upload"), HTTP_POST, [](AsyncWebServerRequest *request) {},
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
-                      size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
+                      size_t len, bool isFinal) {handleUpload(request, filename, index, data, len, isFinal);}
   );
 
   createEditHandler(correctPIN);
@@ -388,14 +392,14 @@ void initServer()
       serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131);
       doReboot = true;
     }
-  },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+  },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool isFinal){
     if (!correctPIN || otaLock) return;
     if(!index){
       DEBUG_PRINTLN(F("OTA Update Start"));
       #if WLED_WATCHDOG_TIMEOUT > 0
       WLED::instance().disableWatchdog();
       #endif
-      usermods.onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
+      UsermodManager::onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
       lastEditTime = millis(); // make sure PIN does not lock during update
       strip.suspend();
       #ifdef ESP8266
@@ -405,13 +409,13 @@ void initServer()
       Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
     }
     if(!Update.hasError()) Update.write(data, len);
-    if(final){
+    if(isFinal){
       if(Update.end(true)){
         DEBUG_PRINTLN(F("Update Success"));
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
         strip.resume();
-        usermods.onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
+        UsermodManager::onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
         #if WLED_WATCHDOG_TIMEOUT > 0
         WLED::instance().enableWatchdog();
         #endif
@@ -426,11 +430,11 @@ void initServer()
 
 
 #ifdef WLED_ENABLE_DMX
-  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, FPSTR(CONTENT_TYPE_HTML), PAGE_dmxmap     , dmxProcessor);
   });
 #else
-  server.on(SET_F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on(F("/dmxmap"), HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, FPSTR(s_notimplemented), F("DMX support is not enabled in this build."), 254);
   });
 #endif
@@ -476,7 +480,7 @@ void initServer()
 
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
-    DEBUG_PRINT(F("Not-Found HTTP call: ")); DEBUG_PRINTLN(request->url());
+    DEBUG_PRINTF_P(PSTR("Not-Found HTTP call: %s\n"), request->url().c_str());
     if (captivePortal(request)) return;
 
     //make API CORS compatible
@@ -522,27 +526,27 @@ void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t erro
 
 void serveSettingsJS(AsyncWebServerRequest* request)
 {
-  char buf[SETTINGS_STACK_BUF_SIZE+37];
-  buf[0] = 0;
+  if (request->url().indexOf(FPSTR(_common_js)) > 0) {
+    handleStaticContent(request, FPSTR(_common_js), 200, FPSTR(CONTENT_TYPE_JAVASCRIPT), JS_common, JS_common_length);
+    return;
+  }
   byte subPage = request->arg(F("p")).toInt();
   if (subPage > 10) {
-    strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
-    request->send(501, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
+    request->send_P(501, FPSTR(CONTENT_TYPE_JAVASCRIPT), PSTR("alert('Settings for this request are not implemented.');"));
     return;
   }
   if (subPage > 0 && !correctPIN && strlen(settingsPIN)>0) {
-    strcpy_P(buf, PSTR("alert('PIN incorrect.');"));
-    request->send(401, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
+    request->send_P(401, FPSTR(CONTENT_TYPE_JAVASCRIPT), PSTR("alert('PIN incorrect.');"));
     return;
   }
-  strcat_P(buf,PSTR("function GetV(){var d=document;"));
-  getSettingsJS(subPage, buf+strlen(buf));  // this may overflow by 35bytes!!!
-  strcat_P(buf,PSTR("}"));
   
-  AsyncWebServerResponse *response;
-  response = request->beginResponse(200, FPSTR(CONTENT_TYPE_JAVASCRIPT), buf);
+  AsyncResponseStream *response = request->beginResponseStream(FPSTR(CONTENT_TYPE_JAVASCRIPT));
   response->addHeader(F("Cache-Control"), F("no-store"));
   response->addHeader(F("Expires"), F("0"));
+
+  response->print(F("function GetV(){var d=document;"));
+  getSettingsJS(subPage, *response);
+  response->print(F("}"));
   request->send(response);
 }
 

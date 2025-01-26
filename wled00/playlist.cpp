@@ -61,7 +61,7 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
   if (playlistLen == 0) return -1;
   if (playlistLen > 100) playlistLen = 100;
 
-  playlistEntries = new PlaylistEntry[playlistLen];
+  playlistEntries = new(std::nothrow) PlaylistEntry[playlistLen];
   if (playlistEntries == nullptr) return -1;
 
   byte it = 0;
@@ -127,7 +127,7 @@ void handlePlaylist() {
   static unsigned long presetCycledTime = 0;
   if (currentPlaylist < 0 || playlistEntries == nullptr) return;
 
-  if (millis() - presetCycledTime > (100*playlistEntryDur)) {
+if (millis() - presetCycledTime > (100 * playlistEntryDur) || doAdvancePlaylist) {
     presetCycledTime = millis();
     if (bri == 0 || nightlightActive) return;
 
@@ -146,9 +146,10 @@ void handlePlaylist() {
     }
 
     jsonTransitionOnce = true;
-    strip.setTransition(fadeTransition ? playlistEntries[playlistIndex].tr * 100 : 0);
+    strip.setTransition(playlistEntries[playlistIndex].tr * 100);
     playlistEntryDur = playlistEntries[playlistIndex].dur;
     applyPresetFromPlaylist(playlistEntries[playlistIndex].preset);
+    doAdvancePlaylist = false;
   }
 }
 

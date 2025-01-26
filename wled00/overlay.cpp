@@ -25,25 +25,25 @@ void _overlayAnalogClock()
   {
     if (secondPixel < analogClock12pixel)
     {
-      strip.setRange(analogClock12pixel, overlayMax, 0xFF0000);
-      strip.setRange(overlayMin, secondPixel, 0xFF0000);
+      strip.setRange(analogClock12pixel, overlayMax, color_fade(0xFF0000, bri));
+      strip.setRange(overlayMin, secondPixel, color_fade(0xFF0000, bri));
     } else
     {
-      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
+      strip.setRange(analogClock12pixel, secondPixel, color_fade(0xFF0000, bri));
     }
   }
   if (analogClock5MinuteMarks)
   {
-    for (byte i = 0; i <= 12; i++)
+    for (unsigned i = 0; i <= 12; i++)
     {
       unsigned pix = analogClock12pixel + roundf((overlaySize / 12.0f) *i);
       if (pix > overlayMax) pix -= overlaySize;
-      strip.setPixelColor(pix, 0x00FFAA);
+      strip.setPixelColor(pix, color_fade(0x00FFAA, bri));
     }
   }
-  if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, 0xFF0000);
-  strip.setPixelColor(minutePixel, 0x00FF00);
-  strip.setPixelColor(hourPixel, 0x0000FF);
+  if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, color_fade(0xFF0000, bri));
+  strip.setPixelColor(minutePixel, color_fade(0x00FF00, bri));
+  strip.setPixelColor(hourPixel, color_fade(0x0000FF, bri));
 }
 
 
@@ -88,10 +88,10 @@ void _overlayAnalogCountdown()
 }
 
 void handleOverlayDraw() {
-  usermods.handleOverlayDraw();
+  UsermodManager::handleOverlayDraw();
   if (analogClockSolidBlack) {
     const Segment* segments = strip.getSegments();
-    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+    for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
       const Segment& segment = segments[i];
       if (!segment.isActive()) continue;
       if (segment.mode > 0 || segment.colors[0] > 0) {
