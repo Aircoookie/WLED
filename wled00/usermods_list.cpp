@@ -493,5 +493,5 @@ void registerUsermods()
   
   #ifdef USERMOD_INA219
   UsermodManager::add(new UsermodINA219());
-  endif
+  #endif
 }
