@@ -193,7 +193,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
     for (JsonObject elm : ins) {
       if (s >= WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES) break;
-      uint8_t pins[5] = {255, 255, 255, 255, 255};
+      uint8_t pins[OUTPUT_MAX_PINS] = {255, 255, 255, 255, 255};
       JsonArray pinArr = elm["pin"];
       if (pinArr.size() == 0) continue;
       //pins[0] = pinArr[0];

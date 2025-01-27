@@ -309,11 +309,11 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED current
       char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max per-port PSU current
       settingsScript.print(F("addLEDs(1);"));
-      uint8_t pins[5];
+      uint8_t pins[OUTPUT_MAX_PINS];
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
         lp[1] = offset+i;
-        if (PinManager::isPinOk(pins[i]) || bus->isVirtual()) printSetFormValue(settingsScript,lp,pins[i]);
+        if (PinManager::isPinOk(pins[i]) || bus->isVirtual() || bus->isHub75()) printSetFormValue(settingsScript,lp,pins[i]);
       }
       printSetFormValue(settingsScript,lc,bus->getLength());
       printSetFormValue(settingsScript,lt,bus->getType());
