@@ -39,7 +39,7 @@ private:
 	#ifdef INA219_CONVERSION_TIME
 		INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(INA219_CONVERSION_TIME); // Cast from int if defined
 	#else
-		INA219_ADC_MODE conversionTime = BIT_MODE_12; // Default 12-bit resolution
+		INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(BIT_MODE_12); // Default 12-bit resolution
 	#endif
 
 	// Decimal factor for current/power readings
@@ -175,21 +175,6 @@ public:
 		delete _ina219;
 		_ina219 = nullptr;
 	}
-
-	// ADC mode enumeration
-	enum class ADCMode {
-		BIT_MODE_9 = 0,
-		BIT_MODE_10 = 1,
-		BIT_MODE_11 = 2,
-		BIT_MODE_12 = 3,
-		SAMPLE_MODE_2 = 9,
-		SAMPLE_MODE_4 = 10,
-		SAMPLE_MODE_8 = 11,
-		SAMPLE_MODE_16 = 12,
-		SAMPLE_MODE_32 = 13,
-		SAMPLE_MODE_64 = 14,
-		SAMPLE_MODE_128 = 15
-	};
 
 	// Setup function called once on boot or restart
 	void setup() override {		
