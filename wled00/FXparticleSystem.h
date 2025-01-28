@@ -72,7 +72,7 @@ static inline int32_t limitSpeed(const int32_t speed) {
 #define PS_P_HALFRADIUS (PS_P_RADIUS >> 1)
 #define PS_P_RADIUS_SHIFT 6 // shift for RADIUS
 #define PS_P_SURFACE 12 // shift: 2^PS_P_SURFACE = (PS_P_RADIUS)^2
-#define PS_P_MINHARDRADIUS 70 // minimum hard surface radius for collisions
+#define PS_P_MINHARDRADIUS 64 // minimum hard surface radius for collisions
 #define PS_P_MINSURFACEHARDNESS 128 // minimum hardness used in collision impulse calculation, below this hardness, particles become sticky
 
 // struct for PS settings (shared for 1D and 2D class)
@@ -238,7 +238,7 @@ private:
   uint8_t gforcecounter; // counter for global gravity
   int8_t gforce; // gravity strength, default is 8 (negative is allowed, positive is downwards)
   // global particle properties for basic particles
-  uint8_t particlesize; // global particle size, 0 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
+  uint8_t particlesize; // global particle size, 0 = 1 pixel, 1 = 2 pixels, 255 = 10 pixels (note: this is also added to individual sized particles)
   uint8_t motionBlur; // motion blur, values > 100 gives smoother animations. Note: motion blurring does not work if particlesize is > 0
   uint8_t smearBlur; // 2D smeared blurring of full frame
   uint8_t effectID; // ID of the effect that is using this particle system, used for transitions

@@ -8235,10 +8235,10 @@ uint16_t mode_particlebox(void) {
     return mode_static(); // something went wrong, no data!
 
   PartSys->updateSystem(); // update system properties (dimensions and data pointers)
-
+  PartSys->setParticleSize(SEGMENT.custom3<<3);
   PartSys->setWallHardness(min(SEGMENT.custom2, (uint8_t)200)); // wall hardness is 200 or more
   PartSys->enableParticleCollisions(true, max(2, (int)SEGMENT.custom2)); // enable collisions and set particle collision hardness
-  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 5, 153)); // 2% - 60%
+  PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 2, 153)); // 1% - 60%
   // add in new particles if amount has changed
   for (i = 0; i < PartSys->usedParticles; i++) {
     if (PartSys->particles[i].ttl < 260) { // initialize handed over particles and dead particles
@@ -8284,14 +8284,14 @@ uint16_t mode_particlebox(void) {
     PartSys->applyForce(xgravity, ygravity);
   }
 
-  if (SEGMENT.call % (32 - SEGMENT.custom3) == 0)
-    PartSys->applyFriction(2);
+  if ((SEGMENT.call & 0x0F) == 0) // every 16th frame
+    PartSys->applyFriction(1);
 
   PartSys->update();   // update and render
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@!,Particles,Force,Hardness,Friction,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,o1=1";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@!,Particles,Force,Hardness,Size,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,c3=1,o1=1";
 
 /*
   Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
@@ -8392,7 +8392,7 @@ uint16_t mode_particleimpact(void) {
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceX(SEGMENT.check2);
   PartSys->setMotionBlur(SEGMENT.custom3<<3);
-  uint8_t hardness = map(SEGMENT.custom2, 0, 255, 127, 255);
+  uint8_t hardness = map(SEGMENT.custom2, 0, 255, PS_P_MINSURFACEHARDNESS - 2, 255);
   PartSys->setWallHardness(hardness);
   PartSys->enableParticleCollisions(SEGMENT.check3, hardness); // enable collisions and set particle collision hardness
   MaxNumMeteors = min(PartSys->numSources, (uint32_t)NUMBEROFSOURCES);
@@ -8470,7 +8470,7 @@ uint16_t mode_particleimpact(void) {
   return FRAMETIME;
 }
 #undef NUMBEROFSOURCES
-static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,Size,Force,Hardness,Blur,Cylinder,Walls,Collide;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o3=1";
+static const char _data_FX_MODE_PARTICLEIMPACT[] PROGMEM = "PS Impact@Launches,!,Force,Hardness,Blur,Cylinder,Walls,Collide;;!;2;pal=0,sx=32,ix=85,c1=70,c2=130,c3=0,o3=1";
 
 /*
   Particle Attractor, a particle attractor sits in the matrix center, a spray bounces around and seeds particles
