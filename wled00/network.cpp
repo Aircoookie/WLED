@@ -216,7 +216,7 @@ const String ARDUINO_EVENT_LIST[41] = {
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event) {
 
-  #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0) && defined(ESP32)
+  #if defined(ESP32) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
 
   DEBUG_PRINT(F("Network Event: "));
   DEBUG_PRINT(ARDUINO_EVENT_LIST[event]);
