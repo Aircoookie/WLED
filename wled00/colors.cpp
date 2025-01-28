@@ -86,11 +86,9 @@ uint32_t color_fade(uint32_t c1, uint8_t amount, bool video)
 // 1:1 replacement of fastled function optimized for ESP, slightly faster, more accurate and uses less flash (~ -200bytes)
 uint32_t ColorFromPaletteWLED(const CRGBPalette16& pal, unsigned index, uint8_t brightness, TBlendType blendType)
 {
-
   if (blendType == LINEARBLEND_NOWRAP) {
     index = (index * 0xF0) >> 8; // Blend range is affected by lo4 blend of values, remap to avoid wrapping
   }
-  uint32_t clr32;
   unsigned hi4 = byte(index) >> 4;
   unsigned lo4 = (index & 0x0F);
   const CRGB* entry = (CRGB*)&(pal[0]) + hi4;
