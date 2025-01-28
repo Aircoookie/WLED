@@ -6,224 +6,224 @@
 
 class UsermodINA219 : public Usermod {
 private:
-    static const char _name[];  // Name of the usermod
+	static const char _name[];  // Name of the usermod
 
-    bool initDone = false;  // Flag to check if initialization is complete
-    unsigned long lastCheck = 0;  // Timestamp for the last check
+	bool initDone = false;  // Flag to check if initialization is complete
+	unsigned long lastCheck = 0;  // Timestamp for the last check
 
-    // Configurable settings for the INA219 Usermod
+	// Configurable settings for the INA219 Usermod
 	// Enabled setting
-    #ifdef INA219_ENABLED
-    	bool enabled = INA219_ENABLED;
-    #else
-    	bool enabled = false; // Default disabled value
-    #endif
+	#ifdef INA219_ENABLED
+		bool enabled = INA219_ENABLED;
+	#else
+		bool enabled = false; // Default disabled value
+	#endif
 
-    // I2C Address (default is 0x40 if not defined)
-    #ifdef INA219_I2C_ADDRESS
-    	uint8_t _i2cAddress = INA219_I2C_ADDRESS;
-    #else
-    	uint8_t _i2cAddress = 0x40; // Default I2C address
-    #endif
+	// I2C Address (default is 0x40 if not defined)
+	#ifdef INA219_I2C_ADDRESS
+		uint8_t _i2cAddress = INA219_I2C_ADDRESS;
+	#else
+		uint8_t _i2cAddress = 0x40; // Default I2C address
+	#endif
 
-    // Check Interval (in seconds)
-    #ifdef INA219_CHECK_INTERVAL
-    	uint16_t _checkInterval = INA219_CHECK_INTERVAL;
-    	uint16_t checkInterval = _checkInterval * 1000; // Convert to milliseconds
-    #else
-    	uint16_t _checkInterval = 5; // Default 5 seconds
-    	uint16_t checkInterval = _checkInterval * 1000; // Default 5 seconds
-    #endif
+	// Check Interval (in seconds)
+	#ifdef INA219_CHECK_INTERVAL
+		uint16_t _checkInterval = INA219_CHECK_INTERVAL;
+		uint16_t checkInterval = _checkInterval * 1000; // Convert to milliseconds
+	#else
+		uint16_t _checkInterval = 5; // Default 5 seconds
+		uint16_t checkInterval = _checkInterval * 1000; // Default 5 seconds
+	#endif
 
-    // Conversion Time
-    #ifdef INA219_CONVERSION_TIME
-    	INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(INA219_CONVERSION_TIME); // Cast from int if defined
-    #else
-    	INA219_ADC_MODE conversionTime = BIT_MODE_12; // Default 12-bit resolution
-    #endif
+	// Conversion Time
+	#ifdef INA219_CONVERSION_TIME
+		INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(INA219_CONVERSION_TIME); // Cast from int if defined
+	#else
+		INA219_ADC_MODE conversionTime = BIT_MODE_12; // Default 12-bit resolution
+	#endif
 
-    // Decimal factor for current/power readings
-    #ifdef INA219_DECIMAL_FACTOR
-    	uint8_t _decimalFactor = INA219_DECIMAL_FACTOR;
-    #else
-    	uint8_t _decimalFactor = 3; // Default 3 decimal places
-    #endif
+	// Decimal factor for current/power readings
+	#ifdef INA219_DECIMAL_FACTOR
+		uint8_t _decimalFactor = INA219_DECIMAL_FACTOR;
+	#else
+		uint8_t _decimalFactor = 3; // Default 3 decimal places
+	#endif
 
-    // Shunt Resistor value
-    #ifdef INA219_SHUNT_RESISTOR
-    	float shuntResistor = INA219_SHUNT_RESISTOR;
-    #else
-    	float shuntResistor = 0.1; // Default 0.1 ohms
-    #endif
+	// Shunt Resistor value
+	#ifdef INA219_SHUNT_RESISTOR
+		float shuntResistor = INA219_SHUNT_RESISTOR;
+	#else
+		float shuntResistor = 0.1; // Default 0.1 ohms
+	#endif
 
-    // Correction factor
-    #ifdef INA219_CORRECTION_FACTOR
-    	float correctionFactor = INA219_CORRECTION_FACTOR;
-    #else
-    	float correctionFactor = 1.0; // Default correction factor
-    #endif
+	// Correction factor
+	#ifdef INA219_CORRECTION_FACTOR
+		float correctionFactor = INA219_CORRECTION_FACTOR;
+	#else
+		float correctionFactor = 1.0; // Default correction factor
+	#endif
 
-    // MQTT Publish Settings
-    #ifdef INA219_MQTT_PUBLISH
-    	bool mqttPublish = INA219_MQTT_PUBLISH;
-	bool mqttPublishSent = !INA219_MQTT_PUBLISH;
-    #else
-    	bool mqttPublish = false; // Default: false (do not publish to MQTT)
-	bool mqttPublishSent = true;
-    #endif
+	// MQTT Publish Settings
+	#ifdef INA219_MQTT_PUBLISH
+		bool mqttPublish = INA219_MQTT_PUBLISH;
+		bool mqttPublishSent = !INA219_MQTT_PUBLISH;
+	#else
+		bool mqttPublish = false; // Default: false (do not publish to MQTT)
+		bool mqttPublishSent = true;
+	#endif
 
-    #ifdef INA219_MQTT_PUBLISH_ALWAYS
-    	bool mqttPublishAlways = INA219_MQTT_PUBLISH_ALWAYS;
-    #else
-    	bool mqttPublishAlways = false; // Default: false (only publish changes)
-    #endif
+	#ifdef INA219_MQTT_PUBLISH_ALWAYS
+		bool mqttPublishAlways = INA219_MQTT_PUBLISH_ALWAYS;
+	#else
+		bool mqttPublishAlways = false; // Default: false (only publish changes)
+	#endif
 
-    #ifdef INA219_HA_DISCOVERY
-    	bool haDiscovery = INA219_HA_DISCOVERY;
-	bool haDiscoverySent = !INA219_HA_DISCOVERY;
-    #else
-    	bool haDiscovery = false; // Default: false (Home Assistant discovery disabled)
-	bool haDiscoverySent = true;
-    #endif
+	#ifdef INA219_HA_DISCOVERY
+		bool haDiscovery = INA219_HA_DISCOVERY;
+		bool haDiscoverySent = !INA219_HA_DISCOVERY;
+	#else
+		bool haDiscovery = false; // Default: false (Home Assistant discovery disabled)
+		bool haDiscoverySent = true;
+	#endif
 
-    // I2C SDA and SCL pins (default SDA = 8, SCL = 9 if not defined)
-    #ifdef INA219_SDA_PIN
-    	int8_t _sdaPin = INA219_SDA_PIN;
-    #else
-    	int8_t _sdaPin = 8; // Default SDA pin
-    #endif
+	// I2C SDA and SCL pins (default SDA = 8, SCL = 9 if not defined)
+	#ifdef INA219_SDA_PIN
+		int8_t _sdaPin = INA219_SDA_PIN;
+	#else
+		int8_t _sdaPin = 8; // Default SDA pin
+	#endif
 
-    #ifdef INA219_SCL_PIN
-    	int8_t _sclPin = INA219_SCL_PIN;
-    #else
-    	int8_t _sclPin = 9; // Default SCL pin
-    #endif
-	
-    // Variables to store sensor readings
-    float busVoltage = 0;
-    float current = 0;
-    float current_mA = 0;
-    float power = 0;
-    float power_mW = 0;
-    float shuntVoltage = 0;
-    float loadVoltage = 0;
-    bool overflow = false;
-	
+	#ifdef INA219_SCL_PIN
+		int8_t _sclPin = INA219_SCL_PIN;
+	#else
+		int8_t _sclPin = 9; // Default SCL pin
+	#endif
+
+	// Variables to store sensor readings
+	float busVoltage = 0;
+	float current = 0;
+	float current_mA = 0;
+	float power = 0;
+	float power_mW = 0;
+	float shuntVoltage = 0;
+	float loadVoltage = 0;
+	bool overflow = false;
+
 	//Last sent variables
-    float last_sent_shuntVoltage = 0;
-    float last_sent_busVoltage = 0;
-    float last_sent_loadVoltage = 0;
-    float last_sent_current = 0;
-    float last_sent_current_mA = 0;
-    float last_sent_power = 0;
-    float last_sent_power_mW = 0;
-    bool last_sent_overflow = false;
+	float last_sent_shuntVoltage = 0;
+	float last_sent_busVoltage = 0;
+	float last_sent_loadVoltage = 0;
+	float last_sent_current = 0;
+	float last_sent_current_mA = 0;
+	float last_sent_power = 0;
+	float last_sent_power_mW = 0;
+	bool last_sent_overflow = false;
 
-    float dailyEnergy_kWh = 0.0; // Daily energy in kWh
-    float monthlyEnergy_kWh = 0.0; // Monthly energy in kWh
-    float totalEnergy_kWh = 0.0; // Total energy in kWh
-    unsigned long lastPublishTime = 0; // Track the last publish time
+	float dailyEnergy_kWh = 0.0; // Daily energy in kWh
+	float monthlyEnergy_kWh = 0.0; // Monthly energy in kWh
+	float totalEnergy_kWh = 0.0; // Total energy in kWh
+	unsigned long lastPublishTime = 0; // Track the last publish time
 
-    // Variables to store last reset timestamps
-    unsigned long dailyResetTime = 0; // Reset time in seconds
-    unsigned long monthlyResetTime = 0; // Reset time in seconds
+	// Variables to store last reset timestamps
+	unsigned long dailyResetTime = 0; // Reset time in seconds
+	unsigned long monthlyResetTime = 0; // Reset time in seconds
 
-    // Variables to track last sent readings
-    float _lastCurrentSent = 0;
-    float _lastVoltageSent = 0;
-    float _lastPowerSent = 0;
-    float _lastShuntVoltageSent = 0;
+	// Variables to track last sent readings
+	float _lastCurrentSent = 0;
+	float _lastVoltageSent = 0;
+	float _lastPowerSent = 0;
+	float _lastShuntVoltageSent = 0;
 
-    INA219_WE *_ina219 = nullptr; // INA219 sensor object
+	INA219_WE *_ina219 = nullptr; // INA219 sensor object
 
-    // Function to truncate decimals based on the configured decimal factor
-    float truncateDecimals(float val) {
-        // If _decimalFactor is 0, round to the nearest whole number
-        if (_decimalFactor == 0) {
-            return roundf(val); 
-        }
-        // For decimal factors 1 and above, round to the appropriate number of decimal places
-        float factor = pow(10, _decimalFactor); 
-        return roundf(val * factor) / factor;
-    }
+	// Function to truncate decimals based on the configured decimal factor
+	float truncateDecimals(float val) {
+		// If _decimalFactor is 0, round to the nearest whole number
+		if (_decimalFactor == 0) {
+			return roundf(val); 
+		}
+		// For decimal factors 1 and above, round to the appropriate number of decimal places
+		float factor = pow(10, _decimalFactor); 
+		return roundf(val * factor) / factor;
+	}
 
-    // Function to update INA219 settings
-    void updateINA219Settings() {
+	// Function to update INA219 settings
+	void updateINA219Settings() {
 		// End current I2C if already initialized
 		Wire.end();
-		
+
 		// Reinitialize I2C with the potentially updated SDA and SCL pins
 		Wire.begin(_sdaPin, _sclPin);
-		
+
 		// Reinitialize the INA219 instance with updated settings
-        if (_ina219 != nullptr) {
-            delete _ina219;
-        }
-        _ina219 = new INA219_WE(_i2cAddress);
-        if (!_ina219->init()) {
-            DEBUG_PRINTLN(F("INA219 initialization failed!"));
-            return;
-        }
-        _ina219->setShuntSizeInOhms(shuntResistor);
-        _ina219->setADCMode(conversionTime);
-        _ina219->setCorrectionFactor(correctionFactor);
-    }
+		if (_ina219 != nullptr) {
+			delete _ina219;
+		}
+		_ina219 = new INA219_WE(_i2cAddress);
+		if (!_ina219->init()) {
+			DEBUG_PRINTLN(F("INA219 initialization failed!"));
+			return;
+		}
+		_ina219->setShuntSizeInOhms(shuntResistor);
+		_ina219->setADCMode(conversionTime);
+		_ina219->setCorrectionFactor(correctionFactor);
+	}
 
 public:
-    // Destructor to clean up the INA219 object
-    ~UsermodINA219() {
-        delete _ina219;
-        _ina219 = nullptr;
-    }
+	// Destructor to clean up the INA219 object
+	~UsermodINA219() {
+		delete _ina219;
+		_ina219 = nullptr;
+	}
 
-    // ADC mode enumeration
-    enum class ADCMode {
-        BIT_MODE_9 = 0,
-        BIT_MODE_10 = 1,
-        BIT_MODE_11 = 2,
-        BIT_MODE_12 = 3,
-        SAMPLE_MODE_2 = 9,
-        SAMPLE_MODE_4 = 10,
-        SAMPLE_MODE_8 = 11,
-        SAMPLE_MODE_16 = 12,
-        SAMPLE_MODE_32 = 13,
-        SAMPLE_MODE_64 = 14,
-        SAMPLE_MODE_128 = 15
-    };
+	// ADC mode enumeration
+	enum class ADCMode {
+		BIT_MODE_9 = 0,
+		BIT_MODE_10 = 1,
+		BIT_MODE_11 = 2,
+		BIT_MODE_12 = 3,
+		SAMPLE_MODE_2 = 9,
+		SAMPLE_MODE_4 = 10,
+		SAMPLE_MODE_8 = 11,
+		SAMPLE_MODE_16 = 12,
+		SAMPLE_MODE_32 = 13,
+		SAMPLE_MODE_64 = 14,
+		SAMPLE_MODE_128 = 15
+	};
 
-    // Setup function called once on boot or restart
-    void setup() override {		
-        updateINA219Settings();  // Configure INA219 settings
-        initDone = true;  // Mark initialization as complete
-    }
+	// Setup function called once on boot or restart
+	void setup() override {		
+		updateINA219Settings();  // Configure INA219 settings
+		initDone = true;  // Mark initialization as complete
+	}
 
-    // Loop function called continuously
-    void loop() override {
-        // Check if the usermod is enabled and the check interval has elapsed
-        if (enabled && millis() - lastCheck > checkInterval) {
-            lastCheck = millis();  // Update last check timestamp
+	// Loop function called continuously
+	void loop() override {
+		// Check if the usermod is enabled and the check interval has elapsed
+		if (enabled && millis() - lastCheck > checkInterval) {
+			lastCheck = millis();  // Update last check timestamp
 
-            // Read sensor values
-            shuntVoltage = truncateDecimals(_ina219->getShuntVoltage_mV());
-            busVoltage = truncateDecimals(_ina219->getBusVoltage_V());
-            current_mA = truncateDecimals(_ina219->getCurrent_mA());
-            current = truncateDecimals(_ina219->getCurrent_mA() / 1000.0);  // Convert from mA to A
-            power_mW = truncateDecimals(_ina219->getBusPower());
-            power = truncateDecimals(_ina219->getBusPower() / 1000.0);      // Convert from mW to W
-            loadVoltage = truncateDecimals(busVoltage + (shuntVoltage / 1000));
-            overflow = truncateDecimals(_ina219->getOverflow());
+			// Read sensor values
+			shuntVoltage = truncateDecimals(_ina219->getShuntVoltage_mV());
+			busVoltage = truncateDecimals(_ina219->getBusVoltage_V());
+			current_mA = truncateDecimals(_ina219->getCurrent_mA());
+			current = truncateDecimals(_ina219->getCurrent_mA() / 1000.0);  // Convert from mA to A
+			power_mW = truncateDecimals(_ina219->getBusPower());
+			power = truncateDecimals(_ina219->getBusPower() / 1000.0);      // Convert from mW to W
+			loadVoltage = truncateDecimals(busVoltage + (shuntVoltage / 1000));
+			overflow = truncateDecimals(_ina219->getOverflow());
 
-            // Update energy values based on power for this duration
-            updateEnergy(power, lastCheck - lastPublishTime);
-            lastPublishTime = lastCheck;  // Update last publish time
+			// Update energy values based on power for this duration
+			updateEnergy(power, lastCheck - lastPublishTime);
+			lastPublishTime = lastCheck;  // Update last publish time
 
-        #ifndef WLED_DISABLE_MQTT     
-            // Publish to MQTT if enabled
+		#ifndef WLED_DISABLE_MQTT     
+			// Publish to MQTT if enabled
 			if (WLED_MQTT_CONNECTED) {
 				if (mqttPublish) {
 					if (mqttPublishAlways || hasValueChanged()) {
 						publishMqtt(shuntVoltage, busVoltage, loadVoltage, current, current_mA, power, power_mW, overflow);
-						
+
 						last_sent_shuntVoltage = shuntVoltage;
 						last_sent_busVoltage = busVoltage;
 						last_sent_loadVoltage = loadVoltage;
@@ -232,7 +232,7 @@ public:
 						last_sent_power = power;
 						last_sent_power_mW = power_mW;
 						last_sent_overflow = overflow;
-						
+
 						mqttPublishSent = true;
 					}
 				} else if (!mqttPublish && mqttPublishSent) {
@@ -241,13 +241,13 @@ public:
 
 					// Publish an empty message with retain to delete the sensor from Home Assistant
 					mqtt->publish(sensorTopic, 0, true, "");
-					
+
 					mqttPublishSent = false;
 				}
 			}
 
-            // Optionally publish to Home Assistant via MQTT discovery
-            if (haDiscovery && !haDiscoverySent) {
+			// Optionally publish to Home Assistant via MQTT discovery
+			if (haDiscovery && !haDiscoverySent) {
 				if (WLED_MQTT_CONNECTED) {
 					char topic[128];
 					snprintf_P(topic, 127, "%s/sensor/ina219", mqttDeviceTopic);  // Common topic for all INA219 data
@@ -262,7 +262,7 @@ public:
 					mqttCreateHassSensor(F("Daily Energy"), topic, F("energy"), F("kWh"), F("daily_energy_kWh"), F("sensor"));
 					mqttCreateHassSensor(F("Monthly Energy"), topic, F("energy"), F("kWh"), F("monthly_energy_kWh"), F("sensor"));
 					mqttCreateHassSensor(F("Total Energy"), topic, F("energy"), F("kWh"), F("total_energy_kWh"), F("sensor"));
-			
+
 					// Mark as sent to avoid repeating
 					haDiscoverySent = true;
 				}
@@ -279,14 +279,14 @@ public:
 					mqttRemoveHassSensor(F("Shunt-Resistor"), F("sensor"));
 					//mqttRemoveHassSensor(F("Overflow"), F("binary_sensor"));
 					mqttRemoveHassSensor(F("Overflow"), F("sensor"));
-					
+
 					// Mark as sent to avoid repeating
 					haDiscoverySent = false;
 				}
 			}
-        #endif
-        }
-    }
+		#endif
+		}
+	}
 	
 	bool hasSignificantChange(float oldValue, float newValue, float threshold = 0.01f) {
 		return fabsf(oldValue - newValue) > threshold;
