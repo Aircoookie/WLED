@@ -503,7 +503,7 @@ public:
 					(c >= 'A' && c <= 'Z') || 
 					(c >= '0' && c <= '9') || 
 					c == '-' || c == '_') {
-s				anitizedID += c; // Directly append valid characters
+				sanitizedID += c; // Directly append valid characters
 			}
 			// Replace any other invalid character with an underscore
 			else {
