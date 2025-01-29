@@ -169,61 +169,22 @@ int getSignalQuality(int rssi)
     return quality;
 }
 
-const String ARDUINO_EVENT_LIST[41] = {
-  "WIFI_READY",
-  "WIFI_SCAN_DONE",
-  "WIFI_STA_START",
-  "WIFI_STA_STOP",
-  "WIFI_STA_CONNECTED",
-  "WIFI_STA_DISCONNECTED",
-  "WIFI_STA_AUTHMODE_CHANGE",
-  "WIFI_STA_GOT_IP",
-  "WIFI_STA_GOT_IP6",
-  "WIFI_STA_LOST_IP",
-  "WIFI_AP_START",
-  "WIFI_AP_STOP",
-  "WIFI_AP_STACONNECTED",
-  "WIFI_AP_STADISCONNECTED",
-  "WIFI_AP_STAIPASSIGNED",
-  "WIFI_AP_PROBEREQRECVED",
-  "WIFI_AP_GOT_IP6",
-  "WIFI_FTM_REPORT",
-  "ETH_START",
-  "ETH_STOP",
-  "ETH_CONNECTED",
-  "ETH_DISCONNECTED",
-  "ETH_GOT_IP",
-  "ETH_GOT_IP6",
-  "WPS_ER_SUCCESS",
-  "WPS_ER_FAILED",
-  "WPS_ER_TIMEOUT",
-  "WPS_ER_PIN",
-  "WPS_ER_PBC_OVERLAP",
-  "SC_SCAN_DONE",
-  "SC_FOUND_CHANNEL",
-  "SC_GOT_SSID_PSWD",
-  "SC_SEND_ACK_DONE",
-  "PROV_INIT",
-  "PROV_DEINIT",
-  "PROV_START",
-  "PROV_END",
-  "PROV_CRED_RECV",
-  "PROV_CRED_FAIL",
-  "PROV_CRED_SUCCESS",
-  "ARDUINO_NETWORK_EVENT_MAX"
-};
+#if ESP_IDF_VERSION_MAJOR >= 4
+  #define SYSTEM_EVENT_ETH_CONNECTED ARDUINO_EVENT_ETH_CONNECTED
+  #define SYSTEM_EVENT_ETH_DISCONNECTED ARDUINO_EVENT_ETH_DISCONNECTED
+  #define SYSTEM_EVENT_ETH_START ARDUINO_EVENT_ETH_START
+  #define SYSTEM_EVENT_ETH_GOT_IP ARDUINO_EVENT_ETH_GOT_IP
+#endif
 
 //handle Ethernet connection event
-void WiFiEvent(WiFiEvent_t event) {
-
-  #if ESP32 && ESP_IDF_VERSION_MAJOR >= 4
-
-  DEBUG_PRINT(F("Network Event: "));
-  DEBUG_PRINT(ARDUINO_EVENT_LIST[event]);
-  DEBUG_PRINT(F(" = "));
-
+void WiFiEvent(WiFiEvent_t event)
+{
   switch (event) {
-    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+    case SYSTEM_EVENT_ETH_START:
+      DEBUG_PRINTLN(F("ETH Started"));
+      break;
+    case SYSTEM_EVENT_ETH_GOT_IP:
       if (Network.isEthernet()) {
         if (!apActive) {
           DEBUG_PRINTLN(F("WiFi Connected *and* ETH Connected. Disabling WIFi"));
@@ -235,67 +196,9 @@ void WiFiEvent(WiFiEvent_t event) {
         DEBUG_PRINTLN(F("WiFi Connected. No ETH"));
       }
       break;
-
-    #ifdef WLED_USE_ETHERNET
-    case ARDUINO_EVENT_ETH_GOT_IP: {
-        IPAddress localIP = ETH.localIP();
-        DEBUG_PRINTF("Ethernet has IP %d.%d.%d.%d. ", localIP[0], localIP[1], localIP[2], localIP[3]);
-        if (!apActive) {
-          DEBUG_PRINTLN(F("Disabling WIFi."));
-          WiFi.disconnect(true);
-        } else {
-          DEBUG_PRINTLN(F("Leaving AP WiFi Active."));
-        }
-      }
-      break;
-
-    case ARDUINO_EVENT_ETH_CONNECTED: {// was SYSTEM_EVENT_ETH_CONNECTED:
-      DEBUG_PRINTLN(F("ETH connected. Setting up ETH"));
-      if (multiWiFi[0].staticIP != (uint32_t)0x00000000 && multiWiFi[0].staticGW != (uint32_t)0x00000000) {
-        ETH.config(multiWiFi[0].staticIP, multiWiFi[0].staticGW, multiWiFi[0].staticSN, dnsAddress);
-      } else {
-        ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
-      }
-      // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
-      char hostname[64];
-      prepareHostname(hostname);
-      ETH.setHostname(hostname);
-      showWelcomePage = false;
-      DEBUG_PRINTF("Ethernet link is up. Speed is %u mbit and link is %sfull duplex! (MAC: ", ETH.linkSpeed(), ETH.fullDuplex()?"":"not ");
-      DEBUG_PRINT(ETH.macAddress());
-      DEBUG_PRINTLN(")");
-      }
-      break;
-
-    case ARDUINO_EVENT_ETH_DISCONNECTED: // was SYSTEM_EVENT_ETH_DISCONNECTED:
-      DEBUG_PRINTLN(F("ETH Disconnected. Forcing reconnect"));
-      // This doesn't really affect ethernet per se,
-      // as it's only configured once.  Rather, it
-      // may be necessary to reconnect the WiFi when
-      // ethernet disconnects, as a way to provide
-      // alternative access to the device.
-      forceReconnect = true;
-      break;
-    #endif
-
-    default:
-      DEBUG_PRINTLN(F("No action"));
-      break;
-
-  }
-  #else
-
-  switch (event) {
-#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-    case SYSTEM_EVENT_ETH_START:
-      DEBUG_PRINTLN(F("ETH Started"));
-      break;
     case SYSTEM_EVENT_ETH_CONNECTED:
       {
       DEBUG_PRINTLN(F("ETH Connected"));
-      if (!apActive) {
-        WiFi.disconnect(true);
-      }
       if (multiWiFi[0].staticIP != (uint32_t)0x00000000 && multiWiFi[0].staticGW != (uint32_t)0x00000000) {
         ETH.config(multiWiFi[0].staticIP, multiWiFi[0].staticGW, multiWiFi[0].staticSN, dnsAddress);
       } else {
@@ -319,9 +222,6 @@ void WiFiEvent(WiFiEvent_t event) {
       break;
 #endif
     default:
-      DEBUG_PRINTF_P(PSTR("Network event: %d\n"), (int)event);
       break;
   }
-  #endif
 }
-
