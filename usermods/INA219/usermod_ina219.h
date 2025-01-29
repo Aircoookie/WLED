@@ -149,6 +149,29 @@ private:
 
 	// Function to update INA219 settings
 	void updateINA219Settings() {
+		// Deallocate I2C pins
+		if (PinManager::isPinAllocated(_sdaPin, PinOwner::UM_INA219)) {
+			DEBUG_PRINTF_P(PSTR("INA219: Releasing SDA pin %d.\n"), _sdaPin);
+			PinManager::deallocatePin(_sdaPin, PinOwner::UM_INA219);
+		} else {
+			DEBUG_PRINTF_P(PSTR("INA219: SDA pin %d was not allocated.\n"), _sdaPin);
+		}
+		if (PinManager::isPinAllocated(_sclPin, PinOwner::UM_INA219)) {
+			DEBUG_PRINTF_P(PSTR("INA219: Releasing SCL pin %d.\n"), _sclPin);
+			PinManager::deallocatePin(_sclPin, PinOwner::UM_INA219);
+		} else {
+			DEBUG_PRINTF_P(PSTR("INA219: SCL pin %d was not allocated.\n"), _sclPin);
+		}
+
+		// Allocate I2C pins using PinManager
+		if (!PinManager::allocatePin(_sdaPin, true, PinOwner::UM_INA219) ||
+			!PinManager::allocatePin(_sclPin, true, PinOwner::UM_INA219)) {
+
+			DEBUG_PRINTLN(F("INA219 pin allocation failed!"));
+			enabled = false; // Disable the usermod if pin allocation fails
+			return;
+		}
+
 		// End current I2C if already initialized
 		Wire.end();
 
@@ -174,6 +197,12 @@ public:
 	~UsermodINA219() {
 		delete _ina219;
 		_ina219 = nullptr;
+
+		// Deallocate I2C pins
+		PinManager::deallocatePin(_sdaPin, PinOwner::UM_INA219);
+		PinManager::deallocatePin(_sclPin, PinOwner::UM_INA219);
+
+		DEBUG_PRINTLN(F("INA219 pins deallocated and usermod cleaned up."));
 	}
 
 	// Setup function called once on boot or restart
