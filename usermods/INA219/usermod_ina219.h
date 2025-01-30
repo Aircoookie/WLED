@@ -1,5 +1,64 @@
 #pragma once
 
+// Configurable settings for the INA219 Usermod
+
+// Enabled setting
+#ifndef INA219_ENABLED
+	#define INA219_ENABLED false  // Default disabled value
+#endif
+
+// I2C Address (default is 0x40 if not defined)
+#ifndef INA219_I2C_ADDRESS
+	#define INA219_I2C_ADDRESS 0x40  // Default I2C address
+#endif
+
+// Check Interval (in seconds, default 5 seconds if not defined)
+#ifndef INA219_CHECK_INTERVAL
+	#define INA219_CHECK_INTERVAL 5  // Default 5 seconds
+#endif
+
+// Conversion Time (default to 12-bit resolution)
+#ifndef INA219_CONVERSION_TIME
+	#define INA219_CONVERSION_TIME BIT_MODE_12  // Default 12-bit resolution
+#endif
+
+// Decimal factor for current/power readings (default to 3 decimal places)
+#ifndef INA219_DECIMAL_FACTOR
+	#define INA219_DECIMAL_FACTOR 3  // Default 3 decimal places
+#endif
+
+// Shunt Resistor value (default to 0.1 ohms)
+#ifndef INA219_SHUNT_RESISTOR
+	#define INA219_SHUNT_RESISTOR 0.1  // Default 0.1 ohms
+#endif
+
+// Correction factor (default to 1.0)
+#ifndef INA219_CORRECTION_FACTOR
+	#define INA219_CORRECTION_FACTOR 1.0  // Default correction factor
+#endif
+
+// MQTT Publish Settings
+#ifndef INA219_MQTT_PUBLISH
+	#define INA219_MQTT_PUBLISH false  // Default: false (do not publish to MQTT)
+#endif
+
+#ifndef INA219_MQTT_PUBLISH_ALWAYS
+	#define INA219_MQTT_PUBLISH_ALWAYS false  // Default: false (only publish changes)
+#endif
+
+#ifndef INA219_HA_DISCOVERY
+	#define INA219_HA_DISCOVERY false  // Default: false (Home Assistant discovery disabled)
+#endif
+
+// I2C SDA and SCL pins (default SDA = 21, SCL = 22 for ESP32, if not defined)
+#ifndef INA219_SDA_PIN
+	#define INA219_SDA_PIN 21  // Default SDA pin for ESP32
+#endif
+
+#ifndef INA219_SCL_PIN
+	#define INA219_SCL_PIN 22  // Default SCL pin for ESP32
+#endif
+
 #include "wled.h"
 #include <Wire.h>
 #include <INA219_WE.h>
@@ -11,93 +70,22 @@ private:
 	bool initDone = false;  // Flag to check if initialization is complete
 	unsigned long lastCheck = 0;  // Timestamp for the last check
 
-	// Configurable settings for the INA219 Usermod
-	// Enabled setting
-	#ifdef INA219_ENABLED
-		bool enabled = INA219_ENABLED;
-	#else
-		bool enabled = false; // Default disabled value
-	#endif
-
-	// I2C Address (default is 0x40 if not defined)
-	#ifdef INA219_I2C_ADDRESS
-		uint8_t _i2cAddress = INA219_I2C_ADDRESS;
-	#else
-		uint8_t _i2cAddress = 0x40; // Default I2C address
-	#endif
-
-	// Check Interval (in seconds)
-	#ifdef INA219_CHECK_INTERVAL
-		uint16_t _checkInterval = INA219_CHECK_INTERVAL;
-		uint16_t checkInterval = _checkInterval * 1000; // Convert to milliseconds
-	#else
-		uint16_t _checkInterval = 5; // Default 5 seconds
-		uint16_t checkInterval = _checkInterval * 1000; // Default 5 seconds
-	#endif
-
-	// Conversion Time
-	#ifdef INA219_CONVERSION_TIME
-		INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(INA219_CONVERSION_TIME); // Cast from int if defined
-	#else
-		INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(BIT_MODE_12); // Default 12-bit resolution
-	#endif
-
-	// Decimal factor for current/power readings
-	#ifdef INA219_DECIMAL_FACTOR
-		uint8_t _decimalFactor = INA219_DECIMAL_FACTOR;
-	#else
-		uint8_t _decimalFactor = 3; // Default 3 decimal places
-	#endif
-
-	// Shunt Resistor value
-	#ifdef INA219_SHUNT_RESISTOR
-		float shuntResistor = INA219_SHUNT_RESISTOR;
-	#else
-		float shuntResistor = 0.1; // Default 0.1 ohms
-	#endif
-
-	// Correction factor
-	#ifdef INA219_CORRECTION_FACTOR
-		float correctionFactor = INA219_CORRECTION_FACTOR;
-	#else
-		float correctionFactor = 1.0; // Default correction factor
-	#endif
-
-	// MQTT Publish Settings
-	#ifdef INA219_MQTT_PUBLISH
-		bool mqttPublish = INA219_MQTT_PUBLISH;
-		bool mqttPublishSent = !INA219_MQTT_PUBLISH;
-	#else
-		bool mqttPublish = false; // Default: false (do not publish to MQTT)
-		bool mqttPublishSent = true;
-	#endif
-
-	#ifdef INA219_MQTT_PUBLISH_ALWAYS
-		bool mqttPublishAlways = INA219_MQTT_PUBLISH_ALWAYS;
-	#else
-		bool mqttPublishAlways = false; // Default: false (only publish changes)
-	#endif
-
-	#ifdef INA219_HA_DISCOVERY
-		bool haDiscovery = INA219_HA_DISCOVERY;
-		bool haDiscoverySent = !INA219_HA_DISCOVERY;
-	#else
-		bool haDiscovery = false; // Default: false (Home Assistant discovery disabled)
-		bool haDiscoverySent = true;
-	#endif
-
-	// I2C SDA and SCL pins (default SDA = 8, SCL = 9 if not defined)
-	#ifdef INA219_SDA_PIN
-		int8_t _sdaPin = INA219_SDA_PIN;
-	#else
-		int8_t _sdaPin = 8; // Default SDA pin
-	#endif
-
-	#ifdef INA219_SCL_PIN
-		int8_t _sclPin = INA219_SCL_PIN;
-	#else
-		int8_t _sclPin = 9; // Default SCL pin
-	#endif
+	// Define the variables using the pre-defined or default values
+	bool enabled = INA219_ENABLED;
+	uint8_t _i2cAddress = INA219_I2C_ADDRESS;
+	uint16_t _checkInterval = INA219_CHECK_INTERVAL;
+	uint16_t checkInterval = _checkInterval * 1000; // Convert to milliseconds
+	INA219_ADC_MODE conversionTime = static_cast<INA219_ADC_MODE>(INA219_CONVERSION_TIME); // Cast from int
+	uint8_t _decimalFactor = INA219_DECIMAL_FACTOR;
+	float shuntResistor = INA219_SHUNT_RESISTOR;
+	float correctionFactor = INA219_CORRECTION_FACTOR;
+	bool mqttPublish = INA219_MQTT_PUBLISH;
+	bool mqttPublishSent = !INA219_MQTT_PUBLISH;
+	bool mqttPublishAlways = INA219_MQTT_PUBLISH_ALWAYS;
+	bool haDiscovery = INA219_HA_DISCOVERY;
+	bool haDiscoverySent = !INA219_HA_DISCOVERY;
+	int8_t _sdaPin = INA219_SDA_PIN;
+	int8_t _sclPin = INA219_SCL_PIN;
 
 	// Variables to store sensor readings
 	float busVoltage = 0;
