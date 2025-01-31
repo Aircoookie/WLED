@@ -2358,12 +2358,14 @@ uint16_t mode_meteor() {
   for (unsigned i = 0; i < SEGLEN; i++) {
     uint32_t col;
     if (hw_random8() <= 255 - SEGMENT.intensity) {
-      if(meteorSmooth) { 
-        int change = trail[i] + 4 - hw_random8(24); //change each time between -20 and +4
-        trail[i] = constrain(change, 0, max);
-        col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0,  trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
+      if(meteorSmooth) {
+        if (trail[i] > 0) {
+          int change = trail[i] + 4 - hw_random8(24); //change each time between -20 and +4
+          trail[i] = constrain(change, 0, max);
         }
-        else {
+        col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0, trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
+      }
+      else {
         trail[i] = scale8(trail[i], 128 + hw_random8(127));
         int index = trail[i];
         int idx = 255;
