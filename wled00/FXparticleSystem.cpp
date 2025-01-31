@@ -168,13 +168,13 @@ void ParticleSystem2D::setSmearBlur(uint8_t bluramount) {
 // render size using smearing (see blur function)
 void ParticleSystem2D::setParticleSize(uint8_t size) {
   particlesize = size;
-  particleHardRadius = PS_P_MINHARDRADIUS;
+  particleHardRadius = PS_P_MINHARDRADIUS; // ~1 pixel
   if(particlesize > 1) {
-    particleHardRadius += particlesize >> 1; // radius used for wall collisions & particle collisions
+    particleHardRadius = max(particleHardRadius, (uint32_t)particlesize); // radius used for wall collisions & particle collisions
     motionBlur = 0; // disable motion blur if particle size is set
   }
   else if (particlesize == 0)
-    particleHardRadius = particleHardRadius >> 1; // single pixel particles have half the radius
+    particleHardRadius = particleHardRadius >> 1; // single pixel particles have half the radius (i.e. 1/2 pixel)
 }
 
 // enable/disable gravity, optionally, set the force (force=8 is default) can be -127 to +127, 0 is disable
@@ -254,8 +254,9 @@ void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSparticleFlags &par
     partFlags.outofbounds = false; // reset out of bounds (in case particle was created outside the matrix and is now moving into view) note: moving this to checks below adds code and is not faster
 
     if (advancedproperties) { //using individual particle size?
-      if (advancedproperties->size > 0) {
-        particleHardRadius = max(PS_P_MINHARDRADIUS, (int)particlesize + (advancedproperties->size)); // update radius
+      setParticleSize(particlesize); // updates default particleHardRadius
+      if (advancedproperties->size > PS_P_MINHARDRADIUS) {
+        particleHardRadius += (advancedproperties->size - PS_P_MINHARDRADIUS); // update radius
         renderradius = particleHardRadius;
       }
     }
@@ -266,7 +267,7 @@ void ParticleSystem2D::particleMoveUpdate(PSparticle &part, PSparticleFlags &par
       }
     }
 
-    if(!checkBoundsAndWrap(newY, maxY, renderradius, options->wrapY)) { // check out of bounds  note: this must not be skipped, if gravity is enabled, particles will never bounce at the top
+    if(!checkBoundsAndWrap(newY, maxY, renderradius, options->wrapY)) { // check out of bounds  note: this must not be skipped. if gravity is enabled, particles will never bounce at the top
       partFlags.outofbounds = true;
       if (options->killoutofbounds) {
         if (newY < 0) // if gravity is enabled, only kill particles below ground
@@ -677,7 +678,7 @@ void ParticleSystem2D::ParticleSys_render() {
 
 // calculate pixel positions and brightness distribution and render the particle to local buffer or global buffer
 void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32_t brightness, const CRGB& color, const bool wrapX, const bool wrapY) {
-  if(particlesize == 0 && !advPartProps) { // single pixel rendering
+  if(particlesize == 0) { // single pixel rendering
     uint32_t x = particles[particleindex].x >> PS_P_RADIUS_SHIFT;
     uint32_t y = particles[particleindex].y >> PS_P_RADIUS_SHIFT;
     if (x <= (uint32_t)maxXpixel && y <= (uint32_t)maxYpixel) {
@@ -848,19 +849,19 @@ void ParticleSystem2D::renderParticle(const uint32_t particleindex, const uint32
 // for code simplicity, no y slicing is done, making very tall matrix configurations less efficient
 // note: also tested adding y slicing, it gives diminishing returns, some FX even get slower. FX not using gravity would benefit with a 10% FPS improvement
 void ParticleSystem2D::handleCollisions() {
-  int32_t collDistSq = particleHardRadius << 1;
+  int32_t collDistSq = particleHardRadius << 1; // distance is double the radius note: particleHardRadius is updated when setting global particle size
   collDistSq = collDistSq * collDistSq; // square it for faster comparison (square is one operation)
   // note: partices are binned in x-axis, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  constexpr int BIN_WIDTH = 6 * PS_P_MINHARDRADIUS; // width of a bin in sub-pixels
-  int32_t overlap = PS_P_MINHARDRADIUS + particlesize; // overlap bins to include edge particles to neighbouring bins
+  constexpr int BIN_WIDTH = 6 * PS_P_RADIUS; // width of a bin in sub-pixels
+  int32_t overlap = particleHardRadius << 1; // overlap bins to include edge particles to neighbouring bins
   if (advPartProps) //may be using individual particle size
-    overlap += 128; // add max radius
+    overlap += 512; // add 2 * max radius (approximately)
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 2); // assume no more than half of the particles are in the same bin, do not bin small amounts of particles
   uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // number of bins in x direction
   uint16_t binIndices[maxBinParticles]; // creat array on stack for indices, 2kB max for 1024 particles (ESP32_MAXPARTICLES/2)
   uint32_t binParticleCount; // number of particles in the current bin
-  uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
+  uint16_t nextFrameStartIdx = hw_random16(usedParticles); // index of the first particle in the next frame (set to fixed value if bin overflow)
   uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
 
   // fill the binIndices array for this bin
@@ -889,14 +890,15 @@ void ParticleSystem2D::handleCollisions() {
       for (uint32_t j = i + 1; j < binParticleCount; j++) { // check against higher number particles
         uint32_t idx_j = binIndices[j];
         if (advPartProps) { //may be using individual particle size
-          collDistSq = PS_P_MINHARDRADIUS + particlesize + (((uint32_t)advPartProps[idx_i].size + (uint32_t)advPartProps[idx_j].size) >> 1); // collision distance
+          setParticleSize(particlesize); // updates base particleHardRadius
+          collDistSq = (particleHardRadius << 1) + (((uint32_t)advPartProps[idx_i].size + (uint32_t)advPartProps[idx_j].size) >> 1); // collision distance note: not 100% clear why the >> 1 is needed, but it is.
           collDistSq = collDistSq * collDistSq; // square it for faster comparison
         }
         int32_t dx = particles[idx_j].x - particles[idx_i].x;
         if (dx * dx < collDistSq) { // check x direction, if close, check y direction (squaring is faster than abs() or dual compare)
           int32_t dy = particles[idx_j].y - particles[idx_i].y;
           if (dy * dy < collDistSq) // particles are close
-            collideParticles(particles[idx_i], particles[idx_j], dx, dy);
+            collideParticles(particles[idx_i], particles[idx_j], dx, dy, collDistSq);
         }
       }
     }
@@ -906,7 +908,7 @@ void ParticleSystem2D::handleCollisions() {
 
 // handle a collision if close proximity is detected, i.e. dx and/or dy smaller than 2*PS_P_RADIUS
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
-void ParticleSystem2D::collideParticles(PSparticle &particle1, PSparticle &particle2, int32_t dx, int32_t dy) {
+void ParticleSystem2D::collideParticles(PSparticle &particle1, PSparticle &particle2, int32_t dx, int32_t dy, const int32_t collDistSq) {
   int32_t distanceSquared = dx * dx + dy * dy;
   // Calculate relative velocity (if it is zero, could exit but extra check does not overall speed but deminish it)
   int32_t relativeVx = (int32_t)particle2.vx - (int32_t)particle1.vx;
@@ -947,9 +949,9 @@ void ParticleSystem2D::collideParticles(PSparticle &particle1, PSparticle &parti
     particle2.vx -= ximpulse;
     particle2.vy -= yimpulse;
 
-    if (collisionHardness < surfacehardness && (SEGMENT.call & 0x03) == 0) { // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and stop sloshing around)
-      const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS);  // Note: could call applyFriction, but this is faster and speed is key here
-      particle1.vx = ((int32_t)particle1.vx * coeff) / 255;
+    if (collisionHardness < PS_P_MINSURFACEHARDNESS && (SEGMENT.call & 0x07) == 0) { // if particles are soft, they become 'sticky' i.e. apply some friction (they do pile more nicely and stop sloshing around)
+      const uint32_t coeff = collisionHardness + (255 - PS_P_MINSURFACEHARDNESS);
+      particle1.vx = ((int32_t)particle1.vx * coeff) / 255; // Note: could call applyFriction, but this is faster and speed is key here
       particle1.vy = ((int32_t)particle1.vy * coeff) / 255;
 
       particle2.vx = ((int32_t)particle2.vx * coeff) / 255;
@@ -958,8 +960,9 @@ void ParticleSystem2D::collideParticles(PSparticle &particle1, PSparticle &parti
 
     // particles have volume, push particles apart if they are too close
     // tried lots of configurations, it works best if not moved but given a little velocity, it tends to oscillate less this way
+    // when hard pushing by offsetting position, they sink into each other under gravity
     // a problem with giving velocity is, that on harder collisions, this adds up as it is not dampened enough, so add friction in the FX if required
-    if (dotProduct > -250) { //this means particles are slow (or really really close) so push them apart.
+    if(distanceSquared < collDistSq && dotProduct > -250) { // too close and also slow, push them apart
       int32_t notsorandom = dotProduct & 0x01; //dotprouct LSB should be somewhat random, so no need to calculate a random number
       int32_t pushamount = 1 + ((250 + dotProduct) >> 6); // the closer dotproduct is to zero, the closer the particles are
       int32_t push = 0;
@@ -986,8 +989,9 @@ void ParticleSystem2D::collideParticles(PSparticle &particle1, PSparticle &parti
           particle1.y--;
       }
       particle1.vy += push;
+
       // note: pushing may push particles out of frame, if bounce is active, it will move it back as position will be limited to within frame, if bounce is disabled: bye bye
-      if (collisionHardness < 16) { // if they are very soft, stop slow particles completely to make them stick to each other
+      if (collisionHardness < 5) { // if they are very soft, stop slow particles completely to make them stick to each other
         particle1.vx = 0;
         particle1.vy = 0;
         particle2.vx = 0;
@@ -1315,10 +1319,7 @@ void ParticleSystem1D::setSmearBlur(const uint8_t bluramount) {
 // render size, 0 = 1 pixel, 1 = 2 pixel (interpolated), bigger sizes require adanced properties
 void ParticleSystem1D::setParticleSize(const uint8_t size) {
   particlesize = size > 0 ? 1 : 0; // TODO: add support for global sizes? see note above (motion blur)
-  if (particlesize)
-    particleHardRadius = PS_P_MINHARDRADIUS_1D; // 2 pixel sized particles
-  else
-    particleHardRadius = PS_P_MINHARDRADIUS_1D >> 1; // 1 pixel sized particles have half the radius (for bounce, not for collisions)
+  particleHardRadius = PS_P_MINHARDRADIUS_1D >> (!particlesize); // 2 pixel sized particles or single pixel sized particles
 }
 
 // enable/disable gravity, optionally, set the force (force=8 is default) can be -127 to +127, 0 is disable
@@ -1685,18 +1686,18 @@ void ParticleSystem1D::renderParticle(const uint32_t particleindex, const uint32
 
 // detect collisions in an array of particles and handle them
 void ParticleSystem1D::handleCollisions() {
-  int32_t collisiondistance = PS_P_MINHARDRADIUS_1D;
+  int32_t collisiondistance = particleHardRadius << 1;
   // note: partices are binned by position, assumption is that no more than half of the particles are in the same bin
   // if they are, collisionStartIdx is increased so each particle collides at least every second frame (which still gives decent collisions)
-  constexpr int BIN_WIDTH = 32 * PS_P_MINHARDRADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
-  int32_t overlap = PS_P_MINHARDRADIUS_1D; // overlap bins to include edge particles to neighbouring bins
+  constexpr int BIN_WIDTH = 32 * PS_P_RADIUS_1D; // width of each bin, a compromise between speed and accuracy (lareger bins are faster but collapse more)
+  int32_t overlap = particleHardRadius << 1; // overlap bins to include edge particles to neighbouring bins
   if (advPartProps) //may be using individual particle size
-    overlap += 128; // add max radius
+    overlap += 256; // add 2 * max radius (approximately)
   uint32_t maxBinParticles = max((uint32_t)50, (usedParticles + 1) / 4); // do not bin small amounts, limit max to 1/2 of particles
   uint32_t numBins = (maxX + (BIN_WIDTH - 1)) / BIN_WIDTH; // calculate number of bins
   uint16_t binIndices[maxBinParticles]; // array to store indices of particles in a bin
   uint32_t binParticleCount; // number of particles in the current bin
-  uint16_t nextFrameStartIdx = 0; // index of the first particle in the next frame (set if bin overflow)
+  uint16_t nextFrameStartIdx = hw_random16(usedParticles); // index of the first particle in the next frame (set to fixed value if bin overflow)
   uint32_t pidx = collisionStartIdx; //start index in case a bin is full, process remaining particles next frame
   for (uint32_t bin = 0; bin < numBins; bin++) {
     binParticleCount = 0; // reset for this bin
@@ -1723,7 +1724,7 @@ void ParticleSystem1D::handleCollisions() {
       for (uint32_t j = i + 1; j < binParticleCount; j++) { // check against higher number particles
         uint32_t idx_j = binIndices[j];
         if (advPartProps) { // use advanced size properties
-          collisiondistance = PS_P_MINHARDRADIUS_1D + (((uint32_t)advPartProps[idx_i].size + (uint32_t)advPartProps[idx_j].size) >> 1);
+          collisiondistance = (PS_P_MINHARDRADIUS_1D << particlesize) + (((uint32_t)advPartProps[idx_i].size + (uint32_t)advPartProps[idx_j].size) >> 1);
         }
         int32_t dx = particles[idx_j].x - particles[idx_i].x;
         int32_t dv = (int32_t)particles[idx_j].vx - (int32_t)particles[idx_i].vx;
@@ -1740,7 +1741,7 @@ void ParticleSystem1D::handleCollisions() {
 }
 // handle a collision if close proximity is detected, i.e. dx and/or dy smaller than 2*PS_P_RADIUS
 // takes two pointers to the particles to collide and the particle hardness (softer means more energy lost in collision, 255 means full hard)
-void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticleFlags1D &particle1flags, PSparticle1D &particle2, const PSparticleFlags1D &particle2flags, int32_t dx, int32_t relativeVx, uint32_t collisiondistance) {
+void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticleFlags1D &particle1flags, PSparticle1D &particle2, const PSparticleFlags1D &particle2flags, int32_t dx, int32_t relativeVx, const int32_t collisiondistance) {
   int32_t dotProduct = (dx * relativeVx); // is always negative if moving towards each other
   uint32_t distance = abs(dx);
   if (dotProduct < 0) { // particles are moving towards each other
@@ -1756,7 +1757,7 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
     else if (particle2flags.fixed)
       particle1.vx = -particle2.vx;
 
-    if (collisionHardness < PS_P_MINSURFACEHARDNESS_1D) { // if particles are soft, they become 'sticky' i.e. apply some friction
+    if (collisionHardness < PS_P_MINSURFACEHARDNESS_1D && (SEGMENT.call & 0x07) == 0) { // if particles are soft, they become 'sticky' i.e. apply some friction
       const uint32_t coeff = collisionHardness + (250 - PS_P_MINSURFACEHARDNESS_1D);
       particle1.vx = ((int32_t)particle1.vx * coeff) / 255;
       particle2.vx = ((int32_t)particle2.vx * coeff) / 255;
@@ -1765,7 +1766,8 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
   else if (distance < collisiondistance || relativeVx == 0) // moving apart or moving along and/or distance too close, push particles apart
   {
     // particles have volume, push particles apart if they are too close
-    // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle to full radius (direction is well defined in 1D)
+    // behaviour is different than in 2D, we need pixel accurate stacking here, push the top particle
+    // note: like in 2D, pushing by a distance makes softer piles collapse, giving particles speed prevents that and looks nicer
     int32_t pushamount = 1;
     if (dx < 0)  // particle2.x < particle1.x
       pushamount = -pushamount;
@@ -1773,18 +1775,18 @@ void ParticleSystem1D::collideParticles(PSparticle1D &particle1, const PSparticl
     particle2.vx += pushamount;
 
     if(distance < collisiondistance >> 1 ) { // too close, force push particles
-      pushamount = (collisiondistance - distance);
+      pushamount = (collisiondistance - distance) >> 3; // note: push amount found by experimentation
       if(particle1.x < (maxX >> 1)) { // lower half, push particle with larger x in positive direction
         if (dx < 0 && !particle1flags.fixed)  // particle2.x < particle1.x  -> push particle 1
-          particle1.x += pushamount;
+          particle1.vx += pushamount;
         else if (!particle2flags.fixed) // particle1.x < particle2.x  -> push particle 2
-          particle2.x += pushamount;
+          particle2.vx += pushamount;
       }
       else { // upper half, push particle with smaller x
         if (dx < 0 && !particle2flags.fixed)  // particle2.x < particle1.x  -> push particle 2
-          particle2.x -= pushamount;
+          particle2.vx -= pushamount;
         else if (!particle2flags.fixed)  // particle1.x < particle2.x  -> push particle 1
-          particle1.x -= pushamount;
+          particle1.vx -= pushamount;
       }
     }
   }

@@ -7790,11 +7790,11 @@ uint16_t mode_particlefireworks(void) {
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceY(SEGMENT.check2);
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, SEGMENT.check2 ? 1 : 0, 10)); // if bounded, set gravity to minimum of 1 or they will bounce at top
-  PartSys->setMotionBlur(map(SEGMENT.custom2, 0, 255, 0, 170)); // anable motion blur
+  PartSys->setMotionBlur(SEGMENT.custom2);//map(SEGMENT.custom2, 0, 255, 0, 170)); // anable motion blur
   uint8_t smearing = 0;
   if (SEGMENT.custom2 > 200)
     smearing = SEGMENT.custom2 - 200;
-  PartSys->setSmearBlur(smearing); // enable 2D blurring (smearing)
+  //PartSys->setSmearBlur(smearing); // enable 2D blurring (smearing)
 
   // update the rockets, set the speed state
   for (uint32_t j = 0; j < numRockets; j++) {
@@ -8116,8 +8116,8 @@ uint16_t mode_particlepit(void) {
         PartSys->particles[i].sat = ((SEGMENT.custom3) << 3) + 7;
         // set particle size
         if (SEGMENT.custom1 == 255) {
-          PartSys->setParticleSize(0); // set global size to zero
-          PartSys->advPartProps[i].size =hw_random16(SEGMENT.custom1); // set each particle to random size
+          PartSys->setParticleSize(1); // set global size to 1 for advanced rendering
+          PartSys->advPartProps[i].size = hw_random16(SEGMENT.custom1); // set each particle to random size
         } else {
           PartSys->setParticleSize(SEGMENT.custom1); // set global size
           PartSys->advPartProps[i].size = 0; // use global size
@@ -8291,7 +8291,7 @@ uint16_t mode_particlebox(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@!,Particles,Force,Hardness,Size,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,c3=1,o1=1";
+static const char _data_FX_MODE_PARTICLEBOX[] PROGMEM = "PS Box@!,Particles,Tilt,Hardness,Size,Random,Washing Machine,Sloshing;;!;2;pal=53,ix=50,c3=1,o1=1";
 
 /*
   Fuzzy Noise: Perlin noise 'gravity' mapping as in particles on 'noise hills' viewed from above
@@ -8567,7 +8567,7 @@ uint16_t mode_particleattractor(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=0,c2=0";
+static const char _data_FX_MODE_PARTICLEATTRACTOR[] PROGMEM = "PS Attractor@Mass,Particles,Size,Collide,Friction,AgeColor,Move,Swallow;;!;2;pal=9,sx=100,ix=82,c1=2,c2=0";
 
 /*
   Particle Spray, just a particle spray with many parameters
@@ -8896,7 +8896,6 @@ uint16_t mode_particleblobs(void) {
     PartSys->setWallHardness(255);
     PartSys->setWallRoughness(255);
     PartSys->setCollisionHardness(255);
-    //PartSys->setParticleSize(0); //set global size to zero or motion blur cannot be used (is zero by default)
   }
   else
     PartSys = reinterpret_cast<ParticleSystem2D *>(SEGENV.data); // if not first call, just set the pointer to the PS
@@ -9507,7 +9506,7 @@ uint16_t mode_particleHourglass(void) {
   PartSys->setUsedParticles(map(SEGMENT.intensity, 0, 255, 1, 255));
   PartSys->setMotionBlur(SEGMENT.custom2); // anable motion blur
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, 1, 30));
-  PartSys->enableParticleCollisions(true, 16); // hardness value found by experimentation on different settings
+  PartSys->enableParticleCollisions(true, 34); // hardness value found by experimentation on different settings
 
   uint32_t colormode = SEGMENT.custom1 >> 5; // 0-7
 
@@ -9663,7 +9662,7 @@ uint16_t mode_particle1Dspray(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS Spray 1D@Speed(+/-),!,Position,Blur,Gravity(+/-),AgeColor,Bounce,Position Color;,!;!;1;sx=200,ix=220,c1=0,c2=0,o1=1";
+static const char _data_FX_MODE_PS_1DSPRAY[] PROGMEM = "PS Spray 1D@Speed(+/-),!,Position,Blur,Gravity(+/-),AgeColor,Bounce,Position Color;,!;!;1;sx=200,ix=220,c1=0,c2=0";
 
 /*
   Particle based balance: particles move back and forth (1D pendent to 2D particle box)
@@ -9736,7 +9735,7 @@ uint16_t mode_particleBalance(void) {
   PartSys->update(); // update and render
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Hardness,Blur,Tilt,Position Color,Wrap,Random;,!;!;1;pal=18,sx=100,ix=40,c1=200,c2=0,c3=5,o1=1";
+static const char _data_FX_MODE_PS_BALANCE[] PROGMEM = "PS 1D Balance@!,!,Hardness,Blur,Tilt,Position Color,Wrap,Random;,!;!;1;pal=18,sx=64,c1=200,c2=0,c3=5,o1=1";
 
 /*
 Particle based Chase effect
