@@ -1,5 +1,6 @@
 Import('env')
 import os.path
+from collections import deque
 from pathlib import Path   # For OS-agnostic path manipulation
 from platformio.package.manager.library import LibraryPackageManager
 
@@ -59,6 +60,17 @@ if usermods:
         lm.install(spec)
 
 
+# Utility function for assembling usermod include paths
+def cached_add_includes(dep, dep_cache: set, includes: deque):
+  """ Add dep's include paths to includes if it's not in the cache """
+  if dep not in dep_cache:   
+    dep_cache.add(dep)
+    for include in dep.get_include_dirs():
+      if include not in includes:
+        includes.appendleft(include)
+      for subdep in dep.depbuilders:
+        cached_add_includes(subdep, dep_cache, includes)
+
 # Monkey-patch ConfigureProjectLibBuilder to mark up the dependencies
 # Save the old value
 old_ConfigureProjectLibBuilder = env.ConfigureProjectLibBuilder
@@ -78,16 +90,19 @@ def wrapped_ConfigureProjectLibBuilder(xenv):
   # Fix up include paths
   # In PlatformIO >=6.1.17, this could be done prior to ConfigureProjectLibBuilder
   wled_dir = xenv["PROJECT_SRC_DIR"]
-  lib_builders = xenv.GetLibBuilders()
-  um_deps = [dep for dep in lib_builders if usermod_dir in Path(dep.src_dir).parents]
-  other_deps = [dep for dep in lib_builders if usermod_dir not in Path(dep.src_dir).parents]
-  for um in um_deps:
+  # Build a list of dependency include dirs
+  # TODO: Find out if this is the order that PlatformIO/SCons puts them in??
+  processed_deps = set()
+  extra_include_dirs = deque()  # Deque used for fast prepend
+  for dep in result.depbuilders:
+     cached_add_includes(dep, processed_deps, extra_include_dirs)
+
+  for um in [dep for dep in result.depbuilders if usermod_dir in Path(dep.src_dir).parents]:
     # Add the wled folder to the include path
     um.env.PrependUnique(CPPPATH=wled_dir)
     # Add WLED's own dependencies
-    for dep in other_deps:
-        for dir in dep.get_include_dirs():
-            um.env.PrependUnique(CPPPATH=dir)
+    for dir in extra_include_dirs:
+      um.env.PrependUnique(CPPPATH=dir)
 
   return result
 
