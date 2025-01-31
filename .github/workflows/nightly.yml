@@ -37,4 +37,5 @@ jobs:
           prerelease: true
           body: ${{ steps.changelog.outputs.changelog }}
           files: |
-            ./*.bin
+            *.bin
+            *.bin.gz

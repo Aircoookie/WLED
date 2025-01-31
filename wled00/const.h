@@ -204,6 +204,7 @@
 #define USERMOD_ID_POV_DISPLAY           53     //Usermod "usermod_pov_display.h"
 #define USERMOD_ID_PIXELS_DICE_TRAY      54     //Usermod "pixels_dice_tray.h"
 #define USERMOD_ID_DEEP_SLEEP            55     //Usermod "usermod_deep_sleep.h"
+#define USERMOD_ID_RF433                 56     //Usermod "usermod_v2_RF433.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -249,6 +250,7 @@
 #define REALTIME_MODE_ARTNET      6
 #define REALTIME_MODE_TPM2NET     7
 #define REALTIME_MODE_DDP         8
+#define REALTIME_MODE_DMX         9
 
 //realtime override modes
 #define REALTIME_OVERRIDE_NONE    0
@@ -558,8 +560,25 @@
   #endif
 #endif
 
-//#define MIN_HEAP_SIZE (8k for AsyncWebServer)
-#define MIN_HEAP_SIZE 8192
+//#define MIN_HEAP_SIZE
+#define MIN_HEAP_SIZE 2048
+
+// Web server limits
+#ifdef ESP8266
+// Minimum heap to consider handling a request
+#define WLED_REQUEST_MIN_HEAP (8*1024)
+// Estimated maximum heap required by any one request
+#define WLED_REQUEST_HEAP_USAGE (6*1024)
+#else
+// ESP32 TCP stack needs much more RAM than ESP8266
+// Minimum heap remaining before queuing a request
+#define WLED_REQUEST_MIN_HEAP (12*1024)
+// Estimated maximum heap required by any one request
+#define WLED_REQUEST_HEAP_USAGE (12*1024)
+#endif
+// Maximum number of requests in queue; absolute cap on web server resource usage.
+// Websockets do not count against this limit.
+#define WLED_REQUEST_MAX_QUEUE 6
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
