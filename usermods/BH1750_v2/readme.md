@@ -10,7 +10,7 @@ The luminance is displayed in both the Info section of the web UI, as well as pu
 
 ## Compilation
 
-To enable, compile with `USERMOD_BH1750` defined  (e.g. in `platformio_override.ini`)
+To enable, compile with `BH1750` in `custom_usermods` (e.g. in `platformio_override.ini`)
 
 ### Configuration Options
 The following settings can be set at compile-time but are configurable on the usermod menu (except First Measurement time):

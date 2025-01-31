@@ -1,12 +1,4 @@
-#pragma once
-
 #include "wled.h"
-#if defined(ESP32)
-#warning "Usermod FixUnreachableNetServices works only with ESP8266 builds"
-class FixUnreachableNetServices : public Usermod
-{
-};
-#endif
 
 #if defined(ESP8266)
 #include <ping.h>
@@ -168,4 +160,11 @@ Delay <input type=\"number\" min=\"5\" max=\"300\" value=\"";
     return USERMOD_ID_FIXNETSERVICES;
   }
 };
+
+static FixUnreachableNetServices fix_unreachable_net_services;
+REGISTER_USERMOD(fix_unreachable_net_services);
+
+#else /* !ESP8266 */
+#warning "Usermod FixUnreachableNetServices works only with ESP8266 builds"
 #endif
+
