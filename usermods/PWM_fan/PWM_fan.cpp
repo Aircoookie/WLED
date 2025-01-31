@@ -1,8 +1,14 @@
-#if !defined(USERMOD_DALLASTEMPERATURE) && !defined(USERMOD_SHT)
+#include "wled.h"
+
+#if defined(USERMOD_DALLASTEMPERATURE) 
+#include "UsermodTemperature.h"
+#elif defined(USERMOD_SHT)
+#include "ShtUsermod.h"
+#else
 #error The "PWM fan" usermod requires "Dallas Temeprature" or "SHT" usermod to function properly.
 #endif
 
-#include "wled.h"
+
 
 // PWM & tacho code curtesy of @KlausMu
 // https://github.com/KlausMu/esp32-fan-controller/tree/main/src
