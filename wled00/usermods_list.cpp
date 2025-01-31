@@ -250,6 +250,10 @@
   #include "../usermods/usermod_v2_RF433/usermod_v2_RF433.h"
 #endif
 
+#ifdef USERMOD_SBUS_CONTROL
+#include "../usermods/sbus_control/usermod_sbus_control.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -485,5 +489,9 @@ void registerUsermods()
 
   #ifdef USERMOD_RF433
   UsermodManager::add(new RF433Usermod());
+  #endif
+
+  #ifdef USERMOD_SBUS_CONTROL
+  usermods.add(new SbusControl());
   #endif
 }
