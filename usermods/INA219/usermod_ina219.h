@@ -50,17 +50,7 @@
 	#define INA219_HA_DISCOVERY false  // Default: false (Home Assistant discovery disabled)
 #endif
 
-// I2C SDA and SCL pins (default SDA = 21, SCL = 22 for ESP32, if not defined)
-#ifndef INA219_SDA_PIN
-	#define INA219_SDA_PIN 21  // Default SDA pin for ESP32
-#endif
-
-#ifndef INA219_SCL_PIN
-	#define INA219_SCL_PIN 22  // Default SCL pin for ESP32
-#endif
-
 #include "wled.h"
-#include <Wire.h>
 #include <INA219_WE.h>
 
 class UsermodINA219 : public Usermod {
@@ -84,8 +74,6 @@ private:
 	bool mqttPublishAlways = INA219_MQTT_PUBLISH_ALWAYS;
 	bool haDiscovery = INA219_HA_DISCOVERY;
 	bool haDiscoverySent = !INA219_HA_DISCOVERY;
-	int8_t _sdaPin = INA219_SDA_PIN;
-	int8_t _sclPin = INA219_SCL_PIN;
 
 	// Variables to store sensor readings
 	float busVoltage = 0;
@@ -137,34 +125,11 @@ private:
 
 	// Function to update INA219 settings
 	void updateINA219Settings() {
-		// Deallocate I2C pins
-		if (PinManager::isPinAllocated(_sdaPin, PinOwner::UM_INA219)) {
-			DEBUG_PRINTF_P(PSTR("INA219: Releasing SDA pin %d.\n"), _sdaPin);
-			PinManager::deallocatePin(_sdaPin, PinOwner::UM_INA219);
-		} else {
-			DEBUG_PRINTF_P(PSTR("INA219: SDA pin %d was not allocated.\n"), _sdaPin);
-		}
-		if (PinManager::isPinAllocated(_sclPin, PinOwner::UM_INA219)) {
-			DEBUG_PRINTF_P(PSTR("INA219: Releasing SCL pin %d.\n"), _sclPin);
-			PinManager::deallocatePin(_sclPin, PinOwner::UM_INA219);
-		} else {
-			DEBUG_PRINTF_P(PSTR("INA219: SCL pin %d was not allocated.\n"), _sclPin);
-		}
-
-		// Allocate I2C pins using PinManager
-		if (!PinManager::allocatePin(_sdaPin, true, PinOwner::UM_INA219) ||
-			!PinManager::allocatePin(_sclPin, true, PinOwner::UM_INA219)) {
-
-			DEBUG_PRINTLN(F("INA219 pin allocation failed!"));
-			enabled = false; // Disable the usermod if pin allocation fails
-			return;
-		}
-
-		// End current I2C if already initialized
-		Wire.end();
-
-		// Reinitialize I2C with the potentially updated SDA and SCL pins
-		Wire.begin(_sdaPin, _sclPin);
+		if (i2c_scl<0 || i2c_sda<0) { enabled = false;  return; }
+		DEBUG_PRINT(F("Using I2C SDA: "));
+		DEBUG_PRINTLN(i2c_sda);
+		DEBUG_PRINT(F("Using I2C SCL: "));
+		DEBUG_PRINTLN(i2c_scl);
 
 		// Reinitialize the INA219 instance with updated settings
 		if (_ina219 != nullptr) {
@@ -185,12 +150,6 @@ public:
 	~UsermodINA219() {
 		delete _ina219;
 		_ina219 = nullptr;
-
-		// Deallocate I2C pins
-		PinManager::deallocatePin(_sdaPin, PinOwner::UM_INA219);
-		PinManager::deallocatePin(_sclPin, PinOwner::UM_INA219);
-
-		DEBUG_PRINTLN(F("INA219 pins deallocated and usermod cleaned up."));
 	}
 
 	// Setup function called once on boot or restart
@@ -621,8 +580,6 @@ public:
 	void addToConfig(JsonObject& root) override {
 		JsonObject top = root.createNestedObject(F("INA219")); // Create nested object for INA219 settings
 		top["Enabled"] = enabled;                             // Store enabled status
-		top["sda_pin"] = _sdaPin;                           // Store selected SDA pin
-		top["scl_pin"] = _sclPin;                           // Store selected SCL pin
 		top["i2c_address"] = static_cast<uint8_t>(_i2cAddress); // Store I2C address
 		top["check_interval"] = checkInterval / 1000;       // Store check interval in seconds
 		top["conversion_time"] = conversionTime;             // Store conversion time
@@ -679,8 +636,6 @@ public:
 
 		// Read configuration values and update local variables
 		configComplete &= getJsonValue(top["Enabled"], enabled);
-		configComplete &= getJsonValue(top["sda_pin"], _sdaPin);   // Read selected SDA pin
-		configComplete &= getJsonValue(top["scl_pin"], _sclPin);   // Read selected SCL pin
 		configComplete &= getJsonValue(top[F("i2c_address")], _i2cAddress);
 
 		// Read check interval and convert to milliseconds if necessary
