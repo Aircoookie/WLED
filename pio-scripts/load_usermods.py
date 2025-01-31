@@ -20,6 +20,9 @@ def find_usermod(mod: str):
   mp = usermod_dir / mod
   if mp.exists():
     return mp
+  mp = usermod_dir / f"{mod}_v2"
+  if mp.exists():
+    return mp  
   mp = usermod_dir / f"usermod_v2_{mod}"
   if mp.exists():
     return mp
