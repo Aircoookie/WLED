@@ -68,8 +68,10 @@ def cached_add_includes(dep, dep_cache: set, includes: deque):
     for include in dep.get_include_dirs():
       if include not in includes:
         includes.appendleft(include)
-      for subdep in dep.depbuilders:
-        cached_add_includes(subdep, dep_cache, includes)
+      if usermod_dir not in Path(dep.src_dir).parents:
+        # Recurse, but only for NON-usermods
+        for subdep in dep.depbuilders:
+          cached_add_includes(subdep, dep_cache, includes)
 
 # Monkey-patch ConfigureProjectLibBuilder to mark up the dependencies
 # Save the old value
