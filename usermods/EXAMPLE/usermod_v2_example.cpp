@@ -1,5 +1,3 @@
-#pragma once
-
 #include "wled.h"
 
 /*
@@ -404,3 +402,6 @@ void MyExampleUsermod::publishMqtt(const char* state, bool retain)
   }
 #endif
 }
+
+static MyExampleUsermod example_usermod;
+REGISTER_USERMOD(example_usermod);
