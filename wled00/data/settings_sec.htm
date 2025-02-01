@@ -29,6 +29,45 @@
 			});	// If we set async false, file is loaded and executed, then next statement is processed
 			if (loc) d.Sf.action = getURL('/settings/sec');
 		}
+		function getURL(path) {
+			return (loc ? locproto + "//" + locip : "") + path;
+		}
+		async function getFormattedDebugInformation() {
+			const [cfg, info] = await Promise.all([fetch(getURL('/cfg.json')), fetch(getURL('/json/info'))]);
+			const [cfgJson, infoJson] = await Promise.all([cfg.json(), info.json()]);
+			let debugInfo = "WLED version: " + infoJson.ver + " (build " + infoJson.vid + ")\n";
+			debugInfo += "Architecture: " + infoJson.arch + "\n";
+			debugInfo += "Core: " + infoJson.core + "\n";
+			debugInfo += "Free heap: " + infoJson.freeheap + "\n";
+			debugInfo += "\n\n\ncfg.json:\n" + JSON.stringify(cfgJson);
+			return debugInfo;
+		}
+		async function submitBugReport() {
+			const debugInfo = await getFormattedDebugInformation();
+			const githubNewIssue = "https://github.com/Aircoookie/WLED/issues/new?assignees=&labels=bug&projects=&template=bug.yml";
+			const version = "&version=" + encodeURIComponent("WLED " + debugInfo.split("\n")[0].replace("WLED version: ", ""));
+			const logs = "&logs=" + encodeURIComponent(debugInfo);
+			const url = githubNewIssue + version + logs;
+			window.open(url);
+		}
+		// Using this function instead of navigator.clipboard.writeText() because it is not supported on insecure origins
+		function copyToClipboard(text) {
+			const textArea = document.createElement("textarea");
+			textArea.value = text;
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+			try {
+				document.execCommand('copy');
+			} catch (err) {
+				console.error('Unable to copy to clipboard', err);
+			}
+			document.body.removeChild(textArea);
+		}
+		async function copyDebugInformation() {
+			copyToClipboard(await getFormattedDebugInformation());
+			showToast("Debug information copied to clipboard!");
+		}
 	</script>
 	<style>
 		@import url("style.css");
@@ -73,7 +112,10 @@
 		A huge thank you to everyone who helped me create WLED!<br><br>
 		(c) 2016-2024 Christian Schwinne <br>
 		<i>Licensed under the <a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">EUPL v1.2 license</a></i><br><br>
-		Server message: <span class="sip"> Response error! </span><hr>
+		Server message: <span class="sip"> Response error! </span><br>
+		<button type="button" onclick="submitBugReport()">Submit bug report</button>
+		<button type="button" onclick="copyDebugInformation()">Copy debug information</button>
+		<hr>
 		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
