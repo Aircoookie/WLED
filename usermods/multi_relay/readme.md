@@ -2,7 +2,7 @@
 
 This usermod-v2 modification allows the connection of multiple relays, each with individual delay and on/off mode.
 Usermod supports PCF8574 I2C port expander to reduce GPIO use.
-PCF8574 supports 8 outputs and each output corresponds to a relay in WLED (relay 0 = port 0, etc). I you are using more than 8 relays with multiple PCF8574 make sure their addresses are set conscutively (e.g. 0x20 and 0x21). You can set address of first expander in settings.
+PCF8574 supports 8 outputs and each output corresponds to a relay in WLED (relay 0 = port 0, etc). I you are using more than 8 relays with multiple PCF8574 make sure their addresses are set in sequence (e.g. 0x20 and 0x21). You can set address of first expander in settings.
 (**NOTE:** Will require Wire library and global I2C pins defined.)
 
 ## HTTP API
@@ -41,7 +41,7 @@ When a relay is switched, a message is published:
 
 ## Usermod installation
 
-1. Register the usermod by adding `#include "../usermods/multi_relay/usermod_multi_relay.h"` at the top and `usermods.add(new MultiRelay());` at the bottom of `usermods_list.cpp`.
+1. Register the usermod by adding `#include "../usermods/multi_relay/usermod_multi_relay.h"` at the top and `UsermodManager::add(new MultiRelay());` at the bottom of `usermods_list.cpp`.
 or
 2. Use `#define USERMOD_MULTI_RELAY` in wled.h or `-D USERMOD_MULTI_RELAY` in your platformio.ini
 
@@ -90,9 +90,9 @@ void registerUsermods()
    * || || ||
    * \/ \/ \/
    */
-  //usermods.add(new MyExampleUsermod());
-  //usermods.add(new UsermodTemperature());
-  usermods.add(new MultiRelay());
+  //UsermodManager::add(new MyExampleUsermod());
+  //UsermodManager::add(new UsermodTemperature());
+  UsermodManager::add(new MultiRelay());
 
 }
 ```

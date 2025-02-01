@@ -2,6 +2,10 @@
 #include <EEPROM.h>
 #include "wled.h"
 
+#if defined(WLED_ENABLE_MQTT) && MQTT_MAX_TOPIC_LEN < 32
+#error "MQTT topics length < 32 is not supported by the EEPROM module!"
+#endif
+
 /*
  * DEPRECATED, do not use for new settings
  * Only used to restore config from pre-0.11 installations using the deEEP() methods
@@ -74,11 +78,11 @@ void loadSettingsFromEEPROM()
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
 
 
-  readStringFromEEPROM(  0, clientSSID, 32);
-  readStringFromEEPROM( 32, clientPass, 64);
-  readStringFromEEPROM( 96,      cmDNS, 32);
-  readStringFromEEPROM(128,     apSSID, 32);
-  readStringFromEEPROM(160,     apPass, 64);
+  readStringFromEEPROM(  0, multiWiFi[0].clientSSID, 32);
+  readStringFromEEPROM( 32, multiWiFi[0].clientPass, 64);
+  readStringFromEEPROM( 96, cmDNS, 32);
+  readStringFromEEPROM(128, apSSID, 32);
+  readStringFromEEPROM(160, apPass, 64);
 
   nightlightDelayMinsDefault = EEPROM.read(224);
   nightlightDelayMins = nightlightDelayMinsDefault;
@@ -220,7 +224,7 @@ void loadSettingsFromEEPROM()
 
   if (lastEEPROMversion > 7)
   {
-    strip.paletteFade  = EEPROM.read(374);
+    //strip.paletteFade  = EEPROM.read(374);
     strip.paletteBlend = EEPROM.read(382);
 
     for (int i = 0; i < 8; ++i)
@@ -365,7 +369,7 @@ void applyMacro(byte index) {
 
 // De-EEPROM routine, upgrade from previous versions to v0.11
 void deEEP() {
-  if (WLED_FS.exists("/presets.json")) return;
+  if (WLED_FS.exists(FPSTR(getPresetsFileName()))) return;
 
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
@@ -442,7 +446,7 @@ void deEEP() {
 
   EEPROM.end();
 
-  File f = WLED_FS.open("/presets.json", "w");
+  File f = WLED_FS.open(FPSTR(getPresetsFileName()), "w");
   if (!f) {
     errorFlag = ERR_FS_GENERAL;
     releaseJSONBufferLock();

@@ -133,7 +133,7 @@ class Animated_Staircase : public Usermod {
     *            received within this time, an object is detected
     *            and the function will return true.
     *
-    * The speed of sound is 343 meters per second at 20 degress Celcius.
+    * The speed of sound is 343 meters per second at 20 degrees Celsius.
     * Since the sound has to travel back and forth, the detection
     * distance for the sensor in cm is (0.0343 * maxTimeUs) / 2.
     *
@@ -259,7 +259,7 @@ class Animated_Staircase : public Usermod {
       }
     }
 
-    // send sesnor values to JSON API
+    // send sensor values to JSON API
     void writeSensorsToJson(JsonObject& staircase) {
       staircase[F("top-sensor")]    = topSensorRead;
       staircase[F("bottom-sensor")] = bottomSensorRead;
@@ -309,7 +309,7 @@ class Animated_Staircase : public Usermod {
           seg.setOption(SEG_OPTION_ON, true);
         }
         strip.trigger();  // force strip update
-        stateChanged = true;  // inform external dvices/UI of change
+        stateChanged = true;  // inform external devices/UI of change
         colorUpdated(CALL_MODE_DIRECT_CHANGE);
         DEBUG_PRINTLN(F("Animated Staircase disabled."));
       }
@@ -332,7 +332,7 @@ class Animated_Staircase : public Usermod {
       };
       // NOTE: this *WILL* return TRUE if all the pins are set to -1.
       //       this is *BY DESIGN*.
-      if (!pinManager.allocateMultiplePins(pins, 4, PinOwner::UM_AnimatedStaircase)) {
+      if (!PinManager::allocateMultiplePins(pins, 4, PinOwner::UM_AnimatedStaircase)) {
         topPIRorTriggerPin = -1;
         topEchoPin = -1;
         bottomPIRorTriggerPin = -1;
@@ -425,10 +425,10 @@ class Animated_Staircase : public Usermod {
     }
 
     void appendConfigData() {
-      //oappend(SET_F("dd=addDropdown('staircase','selectfield');"));
-      //oappend(SET_F("addOption(dd,'1st value',0);"));
-      //oappend(SET_F("addOption(dd,'2nd value',1);"));
-      //oappend(SET_F("addInfo('staircase:selectfield',1,'additional info');"));  // 0 is field type, 1 is actual field
+      //oappend(F("dd=addDropdown('staircase','selectfield');"));
+      //oappend(F("addOption(dd,'1st value',0);"));
+      //oappend(F("addOption(dd,'2nd value',1);"));
+      //oappend(F("addInfo('staircase:selectfield',1,'additional info');"));  // 0 is field type, 1 is actual field
     }
 
 
@@ -492,7 +492,7 @@ class Animated_Staircase : public Usermod {
       bottomEchoPin         = top[FPSTR(_bottomEcho_pin)] | bottomEchoPin;
 
       topMaxDist    = top[FPSTR(_topEchoCm)] | topMaxDist;
-      topMaxDist    = min(150,max(30,(int)topMaxDist));     // max distnace ~1.5m (a lag of 9ms may be expected)
+      topMaxDist    = min(150,max(30,(int)topMaxDist));     // max distance ~1.5m (a lag of 9ms may be expected)
       bottomMaxDist = top[FPSTR(_bottomEchoCm)] | bottomMaxDist;
       bottomMaxDist = min(150,max(30,(int)bottomMaxDist));  // max distance ~1.5m (a lag of 9ms may be expected)
 
@@ -513,10 +513,10 @@ class Animated_Staircase : public Usermod {
             (oldBottomAPin != bottomPIRorTriggerPin) ||
             (oldBottomBPin != bottomEchoPin)) {
           changed = true;
-          pinManager.deallocatePin(oldTopAPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldTopBPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldBottomAPin, PinOwner::UM_AnimatedStaircase);
-          pinManager.deallocatePin(oldBottomBPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldTopAPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldTopBPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldBottomAPin, PinOwner::UM_AnimatedStaircase);
+          PinManager::deallocatePin(oldBottomBPin, PinOwner::UM_AnimatedStaircase);
         }
         if (changed) setup();
       }

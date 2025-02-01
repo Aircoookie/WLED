@@ -3,7 +3,9 @@
 #include "wled.h"
 
 //Pin defaults for QuinLed Dig-Uno (A0)
+#ifndef PHOTORESISTOR_PIN
 #define PHOTORESISTOR_PIN A0
+#endif
 
 // the frequency to check photoresistor, 10 seconds
 #ifndef USERMOD_SN_PHOTORESISTOR_MEASUREMENT_INTERVAL
@@ -30,7 +32,7 @@
 #define USERMOD_SN_PHOTORESISTOR_RESISTOR_VALUE 10000.0f
 #endif
 
-// only report if differance grater than offset value
+// only report if difference grater than offset value
 #ifndef USERMOD_SN_PHOTORESISTOR_OFFSET_VALUE
 #define USERMOD_SN_PHOTORESISTOR_OFFSET_VALUE 5
 #endif
@@ -119,7 +121,7 @@ public:
       }
       else
       {
-        DEBUG_PRINTLN("Missing MQTT connection. Not publishing data");
+        DEBUG_PRINTLN(F("Missing MQTT connection. Not publishing data"));
       }
     }
 #endif

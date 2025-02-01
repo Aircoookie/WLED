@@ -19,7 +19,7 @@ Example `usermods_list.cpp`:
 
 void registerUsermods()
 {
-  usermods.add(new UsermodMqttSwitch());
+  UsermodManager::add(new UsermodMqttSwitch());
 }
 ```
 
@@ -33,7 +33,7 @@ board = esp12e
 platform = ${common.platform_wled_default}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266} 
-   -D LEDPIN=3
+   -D DATA_PINS=3
    -D BTNPIN=4
    -D RLYPIN=12
    -D RLYMDE=1
@@ -50,5 +50,5 @@ This usermod listens on `[mqttDeviceTopic]/switch/0/set` (where 0 is replaced wi
 Feedback about the current state is provided at `[mqttDeviceTopic]/switch/0/state`.
 
 ### Home Assistant auto-discovery
-Auto-discovery information is automatically published and you shoudn't have to do anything to register the switches in Home Assistant.
+Auto-discovery information is automatically published and you shouldn't have to do anything to register the switches in Home Assistant.
  

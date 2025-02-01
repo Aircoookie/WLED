@@ -9,6 +9,6 @@
 void registerUsermods()
 {
 #ifdef USERMOD_SN_PHOTORESISTOR
-  usermods.add(new Usermod_SN_Photoresistor());
+  UsermodManager::add(new Usermod_SN_Photoresistor());
 #endif
 }

@@ -7,8 +7,8 @@
  * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
  * 
  * This usermod can be used to drive a wordclock with a 11x10 pixel matrix with WLED. There are also 4 additional dots for the minutes. 
- * The visualisation is desribed in 4 mask with LED numbers (single dots for minutes, minutes, hours and "clock/Uhr").
- * There are 2 parameters to chnage the behaviour:
+ * The visualisation is described in 4 mask with LED numbers (single dots for minutes, minutes, hours and "clock/Uhr").
+ * There are 2 parameters to change the behaviour:
  * 
  * active: enable/disable usermod
  * diplayItIs: enable/disable display of "Es ist" on the clock.
@@ -433,8 +433,8 @@ class WordClockUsermod : public Usermod
 
     void appendConfigData()
     {
-      oappend(SET_F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
-      oappend(SET_F("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');"));
+      oappend(F("addInfo('WordClockUsermod:ledOffset', 1, 'Number of LEDs before the letters');"));
+      oappend(F("addInfo('WordClockUsermod:Norddeutsch', 1, 'Viertel vor instead of Dreiviertel');"));
     }
 
     /*
