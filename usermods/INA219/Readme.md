@@ -13,17 +13,24 @@ This Usermod integrates the INA219 sensor with WLED to monitor energy consumptio
 
 ## Screenshots
 
-| Info screen                                    | Settings page												   | Home Assistant 											|
-|------------------------------------------------|-----------------------------------------------------------------|------------------------------------------------------------|
-| ![Info screen](./img/info.png "Info screen")   | ![Settings page](./img/usermod_settings.png "Settings page")    | ![Settings page](./img/homeassistant.png "Home Assistant") |
+
+### Info and Home Assistant
+
+| Info screen                                    | Home Assistant                                                 |
+|------------------------------------------------|----------------------------------------------------------------|
+| ![Info screen](./img/info.png "Info screen")   | ![Home Assistant](./img/homeassistant.png "Home Assistant")    |
+
+### Settings - Pin Selection and Usermod
+
+| Settings page - Pin Selection                                               |  Settings page - Usermod                                     |
+|-----------------------------------------------------------------------------|--------------------------------------------------------------|
+| ![Pin Selection](./img/usermod_settings_pins_selection.png "Pin Selection") | ![Settings page](./img/usermod_settings.png "Settings page") |
 
 ## Configuration Parameters
 
 | Parameter                     | Description                                                | Default Value  | Possible Values                                        |
 |-------------------------------|------------------------------------------------------------|----------------|--------------------------------------------------------|
 | `INA219_ENABLED`              | Enable or disable the INA219 Usermod                       | `false`        | `true`, `false`                                        |
-| `INA219_SDA_PIN`              | I2C data pin (SDA)                                         | `8`            | See options below for available GPIO pins.             |
-| `INA219_SCL_PIN`              | I2C clock pin (SCL)                                        | `9`            | See options below for available GPIO pins.             |
 | `INA219_I2C_ADDRESS`          | I2C address of the INA219 sensor                           | `0x40`         | See options below for available addresses.             |
 | `INA219_CHECK_INTERVAL`       | Interval for checking sensor values (seconds)              | `5`            | Any positive integer                                   |
 | `INA219_CONVERSION_TIME`      | ADC conversion time (12-bit, 16-bit, etc.)                 | `BIT_MODE_12`  | See options below for available modes.                 |
@@ -74,21 +81,6 @@ This Usermod integrates the INA219 sensor with WLED to monitor energy consumptio
 		| `0x44`              | 0x44 - A1 soldered                 | 0x44    |
 		| `0x45`              | 0x45 - A0 and A1 soldered          | 0x45    |
 
-		### Options for `INA219_SDA_PIN` and `INA219_SCL_PIN`
-
-		The `SDA` and `SCL` pins can be set to any valid and unused GPIO pin, with defaults as follows:
-
-		- **Default SDA Pin**: `8`
-		- **Default SCL Pin**: `9`
-
-		Example GPIO pin values for configuration:
-
-		| GPIO Pin | Description  |
-		|----------|--------------|
-		| `8`      | Default SDA  |
-		| `9`      | Default SCL  |
-		| Other GPIO pins are available, depending on hardware.
-
 ## Usage
 
 1. Include this usermod in your WLED project by adding `#define USERMOD_INA219` to the `my_config.h` file.
@@ -96,7 +88,6 @@ This Usermod integrates the INA219 sensor with WLED to monitor energy consumptio
 2. **Dependencies**  
    These libraries must be added under `lib_deps` in your `platformio.ini` (or `platform_override.ini`):
    - `wollewald/INA219_WE@~1.3.8` (by [wollewald](https://github.com/wollewald/INA219_WE))
-   - `Wire`
 
 3. Configure the parameters in the web interface or via the JSON config file.
 
@@ -105,8 +96,6 @@ This Usermod integrates the INA219 sensor with WLED to monitor energy consumptio
 5. Optional to predefine options:
 
 		#define INA219_ENABLED             false
-		#define INA219_SDA_PIN             8
-		#define INA219_SCL_PIN             9
 		#define INA219_I2C_ADDRESS         0x40
 		#define INA219_CHECK_INTERVAL      5
 		#define INA219_CONVERSION_TIME     BIT_MODE_12 
@@ -127,6 +116,17 @@ To reset daily or monthly energy calculations, you can implement corresponding f
 
 ## Dependencies
 
-Ensure you have the required libraries installed:
+Before enabling the INA219 usermod, ensure the following requirements are met:
 
-- [INA219_WE](https://github.com/wollewald/INA219_WE)
+### Required Library  
+- [INA219_WE](https://github.com/wollewald/INA219_WE) (Must be installed for INA219 support)
+
+### I2C Configuration (Mandatory)  
+The INA219 sensor communicates via I2C, so the SDA and SCL pins must be correctly set before enabling the usermod.
+
+1. Open the **WLED Web Interface**.
+2. Go to **Settings → Usermod → Global I2C GPIOs (HW)**.
+3. Select the appropriate **SDA** and **SCL** pins for your hardware.
+4. Save the settings and **reboot WLED**.
+
+🚀 **After rebooting, you can enable the INA219 usermod in the settings.**
