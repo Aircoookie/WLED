@@ -89,11 +89,13 @@ This Usermod integrates the INA219 sensor with WLED to monitor energy consumptio
    These libraries must be added under `lib_deps` in your `platformio.ini` (or `platform_override.ini`):
    - `wollewald/INA219_WE@~1.3.8` (by [wollewald](https://github.com/wollewald/INA219_WE))
 
-3. Configure the parameters in the web interface or via the JSON config file.
+3. Setup SDA/SCL Pin - see at the readme bottom → ### I2C Configuration (Mandatory) 
 
-4. Monitor your energy consumption through the WLED interface or via MQTT.
+4. Configure the parameters in the web interface or via the `my_config.h` file (see step 6).
 
-5. Optional to predefine options:
+5. Monitor your energy consumption through the WLED interface or via MQTT.
+
+6. Optional to predefine options:
 
 		#define INA219_ENABLED             false
 		#define INA219_I2C_ADDRESS         0x40
