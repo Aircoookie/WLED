@@ -14,7 +14,7 @@ A good description helps us to review and understand your proposed changes. For 
 
 ### Target branch for pull requests
 
-Please make all PRs against the `0_15` branch.
+Please make all PRs against the `main` branch.
 
 ### Updating your code
 While the PR is open - and under review by maintainers - you may be asked to modify your PR source code.
