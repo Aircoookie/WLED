@@ -2360,12 +2360,14 @@ uint16_t mode_meteor() {
   for (unsigned i = 0; i < SEGLEN; i++) {
     uint32_t col;
     if (hw_random8() <= 255 - SEGMENT.intensity) {
-      if(meteorSmooth) { 
-        int change = trail[i] + 4 - hw_random8(24); //change each time between -20 and +4
-        trail[i] = constrain(change, 0, max);
-        col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0,  trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
+      if(meteorSmooth) {
+        if (trail[i] > 0) {
+          int change = trail[i] + 4 - hw_random8(24); //change each time between -20 and +4
+          trail[i] = constrain(change, 0, max);
         }
-        else {
+        col = SEGMENT.check1 ? SEGMENT.color_from_palette(i, true, false, 0, trail[i]) : SEGMENT.color_from_palette(trail[i], false, true, 255);
+      }
+      else {
         trail[i] = scale8(trail[i], 128 + hw_random8(127));
         int index = trail[i];
         int idx = 255;
@@ -4448,6 +4450,24 @@ uint16_t mode_washing_machine(void) {
 }
 static const char _data_FX_MODE_WASHING_MACHINE[] PROGMEM = "Washing Machine@!,!;;!";
 
+
+/*
+  Image effect
+  Draws a .gif image from filesystem on the matrix/strip
+*/
+uint16_t mode_image(void) {
+  #ifndef WLED_ENABLE_GIF
+  return mode_static();
+  #else
+  renderImageToSegment(SEGMENT);
+  return FRAMETIME;
+  #endif
+  // if (status != 0 && status != 254 && status != 255) {
+  //   Serial.print("GIF renderer return: ");
+  //   Serial.println(status);
+  // }
+}
+static const char _data_FX_MODE_IMAGE[] PROGMEM = "Image@!,;;;12;sx=128";
 
 /*
   Blends random colors across palette
@@ -10200,6 +10220,9 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
   addEffect(FX_MODE_FAIRYTWINKLE, &mode_fairytwinkle, _data_FX_MODE_FAIRYTWINKLE);
   addEffect(FX_MODE_RUNNING_DUAL, &mode_running_dual, _data_FX_MODE_RUNNING_DUAL);
+  #ifdef WLED_ENABLE_GIF
+  addEffect(FX_MODE_IMAGE, &mode_image, _data_FX_MODE_IMAGE);
+  #endif
   addEffect(FX_MODE_TRICOLOR_CHASE, &mode_tricolor_chase, _data_FX_MODE_TRICOLOR_CHASE);
   addEffect(FX_MODE_TRICOLOR_WIPE, &mode_tricolor_wipe, _data_FX_MODE_TRICOLOR_WIPE);
   addEffect(FX_MODE_TRICOLOR_FADE, &mode_tricolor_fade, _data_FX_MODE_TRICOLOR_FADE);
