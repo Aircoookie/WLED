@@ -3020,9 +3020,9 @@ static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravit
  *  https://github.com/Aircoookie/WLED/pull/1039
  */
 // modified for balltrack mode
-typedef struct RollingBall {
+typedef struct RollingBall {                                          // used for rolling_balls and Ants modes
   unsigned long lastBounceUpdate;
-  float mass; // could fix this to be = 1. if memory is an issue
+  float mass; // could fix this to be = 1. if memory is an issue      // mass not used in ants mode
   float velocity;
   float height;
 } rball_t;
@@ -3113,6 +3113,280 @@ static uint16_t rolling_balls(void) {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_ROLLINGBALLS[] PROGMEM = "Rolling Balls@!,# of balls,,,,Collisions,Overlay,Trails;!,!,!;!;1;m12=1"; //bar
+
+
+/*
+/  Ants (created by making modifications to the Rolling Balls code) - Bob Loeffler - January 2025
+*   bouncing balls on a track track Effect modified from Aircoookie's bouncing balls
+*   Courtesy of pjhatch (https://github.com/pjhatch)
+*   https://github.com/Aircoookie/WLED/pull/1039
+* 
+*   First slider is for the ants' speed.
+*   Second slider is for the # of ants (1 to 16).
+*   Third slider is for the Ants' size (1 to x leds)
+*   Fourth slider is for the background color (black, green, yellow, brown, cyan or white)
+*   Checkbox2 is for Overlay mode (enabled is Overlay, disabled is no overlay)
+*   Checkbox3 is for whether the ants will bump into each other (disabled) or just pass by each other (enabled)
+*/
+static uint16_t mode_ants(void) {
+  //allocate segment data
+  uint32_t bgcolor = BLACK;
+  uint8_t antSize = 1;
+  const uint16_t maxNumAnts = 32;                                 // 255/16 + 1 ( * 2 ?????)
+  uint16_t dataSize = sizeof(rball_t) * maxNumAnts;
+  if (!SEGENV.allocateData(dataSize)) return mode_static();                    //allocation failed
+
+  int confusedAnt;                                                             // the first random ant to go backwards
+  rball_t *ants = reinterpret_cast<rball_t *>(SEGENV.data);
+
+  // number of ants based on intensity setting to max of 16 (32?)
+  uint8_t numAnts = SEGMENT.intensity/16 + 1;
+  if (SEGLEN > 127)
+    numAnts *= 2;                                                              // double the number of ants for longer strips/segments
+  
+  antSize = map(SEGMENT.custom1, 0, 255, 1, 5);                                // the size/length of each ant is user selectable (1 to 5 pixels) with a slider
+
+  uint8_t bgColorIdx = map(SEGMENT.custom2, 0, 255, 0, 5);                     // background color based on the what the user selects from the Background Color slider
+  switch (bgColorIdx) {
+    case 0:  bgcolor = BLACK;     break;  // black
+    case 1:  bgcolor = 0x007700;  break;  // med-dark green
+    case 2:  bgcolor = 0x9c7a00;  break;  // dark yellow
+    case 3:  bgcolor = 0x845000;  break;  // brown
+    case 4:  bgcolor = 0x00aaaa;  break;  // cyan-ish
+    case 5:  bgcolor = 0x999999;  break;  // light gray (whitish)
+  }
+  
+  if (SEGENV.call == 0) {
+    confusedAnt = random(0,numAnts-1);
+    for (int i = 0; i < maxNumAnts; i++) {
+      ants[i].lastBounceUpdate = strip.now;
+      ants[i].velocity = 10.0f * float(random16(1000, 5000))/5000.0f;          // Random number from 1 to 5
+      if (i == confusedAnt)                                                    // make ant[i] go in the opposite direction
+        ants[i].velocity = -ants[i].velocity;
+      ants[i].height = (float(random16(0, 10000)) / 10000.0f);                 // Random number from 0 to 1  (used for the position of the ant on the strip)
+    }
+  }
+
+  float cfac = float(scale8(8, 255-SEGMENT.speed) +1)*20000.0f;                // this uses the Aircoookie conversion factor for scaling time using speed slider
+
+ 	if (!SEGMENT.check2) SEGMENT.fill(bgcolor);                                  // fill all LEDs with background color
+ 
+  for (int i = 0; i < numAnts; i++) {  // for each Ant, do this...
+    float timeSinceLastUpdate = float((strip.now - ants[i].lastBounceUpdate))/cfac;
+    float thisHeight = ants[i].height + ants[i].velocity * timeSinceLastUpdate; // this method keeps higher resolution
+    // test if intensity level was increased and some ants are way off the track then put them back
+    if (thisHeight < -0.5f || thisHeight > 1.5f) {
+      thisHeight = ants[i].height = (float(random16(0, 10000)) / 10000.0f); // from 0.0 to 1.0
+      ants[i].lastBounceUpdate = strip.now;
+    }
+    // check if reached past the beginning of the strip. If so, wrap around.
+    if (thisHeight <= 0.0f && ants[i].velocity < 0.0f) {
+      thisHeight = 1.0f;
+      ants[i].lastBounceUpdate = strip.now;
+      ants[i].height = thisHeight;
+    }
+    // check if reached past the end of the strip. If so, wrap around.
+    if (thisHeight >= 1.0f && ants[i].velocity > 0.0f) {
+      thisHeight = 0.0f;
+      ants[i].lastBounceUpdate = strip.now;
+      ants[i].height = thisHeight;
+    }
+    // check for "passing by" or "bumping into"
+    if (!SEGMENT.check3) {                                 // Ants bump into each other and reverse direction if checkbox #3 is not "checked"; they pass each other if "checked"
+      for (int j = i+1; j < numAnts; j++) {
+        if (ants[j].velocity != ants[i].velocity) {
+          //  tcollided + ants[j].lastBounceUpdate is acutal time of collision (this keeps precision with long to float conversions)
+          float tcollided = (cfac*(ants[i].height - ants[j].height) +
+                ants[i].velocity*float(ants[j].lastBounceUpdate - ants[i].lastBounceUpdate))/(ants[j].velocity - ants[i].velocity);
+
+          if ((tcollided > 2.0f) && (tcollided < float(strip.now - ants[j].lastBounceUpdate))) { // 2ms minimum to avoid duplicate bounces
+            ants[i].height = ants[i].height + ants[i].velocity*(tcollided + float(ants[j].lastBounceUpdate - ants[i].lastBounceUpdate))/cfac;
+            ants[j].height = ants[i].height;
+            ants[i].lastBounceUpdate = (unsigned long)(tcollided + 0.5f) + ants[j].lastBounceUpdate;
+            ants[j].lastBounceUpdate = ants[i].lastBounceUpdate;
+
+            if (ants[i].velocity > ants[j].velocity)
+              ants[i].velocity = -ants[i].velocity;
+            else
+              ants[j].velocity = -ants[j].velocity;
+            thisHeight = ants[i].height + ants[i].velocity*(strip.now - ants[i].lastBounceUpdate)/cfac;
+          }
+        }
+      }
+    }
+
+    uint32_t color = SEGCOLOR(0);
+    if (SEGMENT.palette) {
+      color = SEGMENT.color_from_palette(i*255/numAnts, false, PALETTE_SOLID_WRAP, 0);
+    } else {
+      color = SEGCOLOR(i % NUM_COLORS);
+    }
+
+    if (thisHeight < 0.0f) thisHeight = 0.0f;
+    if (thisHeight > 1.0f) thisHeight = 1.0f;
+    uint16_t pos = round(thisHeight * (SEGLEN - 1));
+
+    for (int z = 0; z < antSize; z++) {                                           // make each ant the selected size (between 1 and 5 pixels)
+      SEGMENT.setPixelColor(pos, color);
+      pos = pos + 1;
+    }
+
+    ants[i].lastBounceUpdate = strip.now;
+    ants[i].height = thisHeight;
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_ANTS[] PROGMEM = "Ants@Ant speed,# of ants,Ant size,Background color,,,Overlay,Pass by;1,2,3;!;1;sx=192,ix=255,c1=80,c2=0,pal=0,m12=1";
+
+
+typedef struct PacManChars {
+  uint16_t  pos;
+  uint8_t   size;
+  uint32_t  color;
+} pacmancharacters_t;
+
+#define ORANGEYELLOW  (uint32_t)0xFF8800
+#define WHITEISH      (uint32_t)0x999999
+
+/*
+/  Pac-Man (created by making modifications to the Ants effect which was a
+*    modification of the Rolling Balls effect) - Bob Loeffler - January 2025
+*
+*   The first slider is for speed.
+*   Checkbox1 is for displaying white dots that PacMan eats.  Enabled will show white dots.  Disabled will not show any white dots (all leds will be black).
+*   Checkbox2 not used.
+*   Checkbox3 not implemented yet.  Will be for switching the direction of travel.  Enabled will start them going from LED 0 to SEGLEN; disabled will start them going from SEGLEN to 0. 
+*
+*/
+static uint16_t mode_pacman(void) {
+  //allocate segment data
+  const uint16_t numGhosts = 4;
+  uint16_t dataSize = sizeof(pacmancharacters_t) * (numGhosts + 1 + 1);               // 4 ghosts + 1 Pac-Man + 1 Power dot 
+  if (!SEGENV.allocateData(dataSize)) return mode_static();                     // allocation failed
+  pacmancharacters_t *character = reinterpret_cast<pacmancharacters_t *>(SEGENV.data);
+
+  unsigned long blinkingPowerdotTimer = strip.now - SEGENV.step;                // timer for the blinking power dot
+  uint8_t startBlinkingGhostsLED;                                               // the first LED when the blue ghosts will start blinking 
+
+  if (SEGLEN > 150)
+    startBlinkingGhostsLED = SEGLEN/4;                                          // For longer strips, start blinking the ghosts when there is only 1/4th of the LEDs left
+  else
+    startBlinkingGhostsLED = SEGLEN/3;                                          // for short strips, start blinking the ghosts when there is 1/3rd of the LEDs left
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = 1;                                                            // direction of movement for all characters.  0=ghosts chasing pacman; 1=pacman chasing ghosts
+    SEGENV.aux1 = 0;                                                            // are the ghosts blue?  0=No; 1=Yes
+
+    SEGMENT.fill(WHITEISH);                                                     // fill all LEDs with white "dots" (but not bright WHITE dots)
+
+    for (int i = 0; i < 6; i++) {                                               // make all 6 characters (4 ghosts + 1 Pac-Man + 1 Power dot) the same size
+      character[i].size = 1;                                                    //   Not used now, but maybe a different size (2 pixels?) in the future?
+    }
+
+    character[0].color = YELLOW;                                                // Pac-man character
+    character[0].pos   = 10;
+
+    character[1].color = RED;                                                   // Ghost character (turns blue when the power dot is eaten; blinks just before it turns back to normal color)
+    character[1].pos =   6;
+
+    character[2].color = PURPLE;                                                // Ghost character (turns blue when the power dot is eaten; blinks just before it turns back to normal color)
+    character[2].pos =   4;
+
+    character[3].color = CYAN;                                                  // Ghost character (turns blue when the power dot is eaten; blinks just before it turns back to normal color)
+    character[3].pos =   2;
+
+    character[4].color = ORANGE;                                                // Ghost character (turns blue when the power dot is eaten; blinks just before it turns back to normal color)
+    character[4].pos =   0;
+
+    character[5].color = ORANGEYELLOW;                                          // orange-ish powerdot (always blinks until it is eaten)
+    character[5].pos =   SEGLEN-1;
+    SEGMENT.setPixelColor(character[5].pos, character[5].color);                // draw the power dot in the last pixel/led
+   
+    SEGENV.aux1 = 0;                                                            // ghosts are initially not blue
+  }
+
+  // blink the orange-ish powerdot pixel
+  if (blinkingPowerdotTimer > 250) {                                            // every 250 milliseconds (1/4th of a sec)
+    if (character[5].color == ORANGEYELLOW)
+      character[5].color = BLACK;
+    else
+       character[5].color = ORANGEYELLOW;
+    SEGENV.step = strip.now;
+  }
+
+  // PacMan is eating the power dot!
+  if (character[0].pos >= SEGLEN) {
+    SEGENV.aux0 = 0;                                                            // reverse direction for all characters
+    for (int i=1; i<5; i++) {                                                   // For all 4 ghosts...
+      character[i].color = BLUE;                                                // change their color to blue
+    }
+    for (int i = 0; i < 5; i++) {                                               // move each character back one pixel, but not the orange-ish powerdot
+      character[i].pos = character[i].pos - 1;
+    }
+    SEGENV.aux1 = 1;                                                            // ghosts need to be blue now = true/yes
+  }
+
+  // When the ghosts are blue, and the last ghost is within the first 25% (or 33%) of LEDs in the segment...
+  if (SEGENV.aux1 == 1 && character[0].pos <= startBlinkingGhostsLED) {  
+    for (int i=1; i<5; i++) {                                                   // For all 4 ghosts...
+      if (character[i].color == BLUE)
+          character[i].color = BLACK;
+      else
+          character[i].color = BLUE;
+    }
+    SEGENV.aux1 = 1;                                                            // ghosts still blue = true/yes
+  }
+
+  // when the ghosts are blue and PacMan gets to the beginning of the segment...
+  if (SEGENV.aux1 == 1 && character[0].pos <= 0) {
+    for (int i = character[0].pos; i < SEGLEN-1; i++) {                         // set up the white dots (or not) so PacMan can start eating them again; start at the dot just ahead of PacMan
+      if (SEGMENT.check1)
+        SEGMENT.setPixelColor(i, WHITEISH);                                     // dim white color dots
+      else
+        SEGMENT.setPixelColor(i, BLACK);                                        // black (no dots)
+    }
+    SEGMENT.setPixelColor(SEGLEN-1, ORANGEYELLOW);                                  // draw the orange-ish powerdot in the last led
+
+    SEGENV.aux0 = 1;                                                            // reverse direction for all characters (back to normal direction)
+    character[1].color = RED;                                                   // change ghost 1 color back to red
+    character[2].color = PURPLE;                                                // change ghost 2 color back to purple
+    character[3].color = CYAN;                                                  // change ghost 3 color back to cyan
+    character[4].color = ORANGE;                                                // change ghost 4 color back to orange
+    SEGENV.aux1 = 0;                                                            // ghosts should not be blue anymore, so set to false
+  }
+
+  // display everything
+  if (SEGENV.aux0 == 1) {                                                       // going forward from the beginning
+    SEGMENT.setPixelColor(character[0].pos, character[0].color);                // draw PacMan
+    SEGMENT.setPixelColor(character[0].pos-1, BLACK);
+    character[0].pos = character[0].pos+1;
+
+    for (int i = 1; i < 5; i++) {                                               // draw the 4 ghosts (and black dots surrounding each ghost)
+      SEGMENT.setPixelColor(character[i].pos, character[i].color);
+      SEGMENT.setPixelColor(character[i].pos-1, BLACK);
+      character[i].pos = character[i].pos+1;
+    }
+
+    SEGMENT.setPixelColor(character[5].pos, character[5].color);                // draw the orange-ish powerdot
+  }
+  else {                                                                        // going backward (after PacMan ate the power dot)
+    SEGMENT.setPixelColor(character[0].pos+1, BLACK);
+    SEGMENT.setPixelColor(character[0].pos, character[0].color);
+    SEGMENT.setPixelColor(character[0].pos-1, BLACK);
+    character[0].pos = character[0].pos-1;
+
+    for (int i = 1; i < 5; i++) {                                               // draw the 4 ghosts (and black dots surrounding each ghost)
+      SEGMENT.setPixelColor(character[i].pos+1, BLACK);
+      SEGMENT.setPixelColor(character[i].pos, character[i].color);
+      SEGMENT.setPixelColor(character[i].pos-1, BLACK);
+      character[i].pos = character[i].pos-1;
+    }                                                                           // do not draw the power dot since PacMan ate it
+  }
+
+  return 20 + ((22 * (uint32_t)(255 - SEGMENT.speed)) / SEGLEN);                // FRAMETIME and FRAMETIME_FIXED were too fast
+}
+static const char _data_FX_MODE_PACMAN[] PROGMEM = "PacMan@Speed,,,,,White Dots,,Reverse;,,;!;1;m12=1,o1=1";
 
 
 /*
@@ -7821,6 +8095,11 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
   addEffect(FX_MODE_TV_SIMULATOR, &mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);
   addEffect(FX_MODE_DYNAMIC_SMOOTH, &mode_dynamic_smooth, _data_FX_MODE_DYNAMIC_SMOOTH);
+
+  // --- Bob L's 1D effects ---
+  addEffect(FX_MODE_ANTS, &mode_ants, _data_FX_MODE_ANTS);
+  addEffect(FX_MODE_PACMAN, &mode_pacman, _data_FX_MODE_PACMAN);
+  //addEffect(FX_MODE_RACERS, &mode_racers, _data_FX_MODE_RACERS);
 
   // --- 1D audio effects ---
   addEffect(FX_MODE_PIXELS, &mode_pixels, _data_FX_MODE_PIXELS);
