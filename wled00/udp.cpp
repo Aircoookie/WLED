@@ -14,7 +14,7 @@ typedef struct PartialEspNowPacket {
   uint8_t magic;
   uint8_t packet;
   uint8_t noOfPackets;
-  uint8_t data[277+WLED_MAX_SEGNAME_LEN];
+  uint8_t data[247];
 } partial_packet_t;
 
 void notify(byte callMode, bool followUp)
@@ -161,14 +161,10 @@ void notify(byte callMode, bool followUp)
     DEBUG_PRINTLN(F("ESP-NOW sending first packet."));
     const size_t bufferSize = sizeof(buffer.data)/sizeof(uint8_t);
     size_t packetSize = SEG_OFFSET;
-    size_t s0 = 0;
     memcpy(buffer.data, udpOut, packetSize);
-    // stuff as many segments in first packet as possible (normally up to 5)
-    for (size_t i = 0; packetSize < bufferSize && i < s; i++) {
-      memcpy(buffer.data + packetSize, &udpOut[41+i*UDP_SEG_SIZE], UDP_SEG_SIZE);
-      packetSize += UDP_SEG_SIZE;
-      s0++;
-    }
+    // since we sync the name, only one segment can fit in the first packet
+    memcpy(buffer.data + packetSize, &udpOut[41+UDP_SEG_SIZE], UDP_SEG_SIZE);
+    size_t s0 = 1;
     if (s > s0) buffer.noOfPackets += 1 + ((s - s0) * UDP_SEG_SIZE) / bufferSize; // set number of packets
     auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
     if (!err && s0 < s) {
@@ -345,19 +341,9 @@ static void parseNotifyPacket(const uint8_t *udpIn) {
         }
       }
       if (receiveSegmentName) {
-	if (selseg.name) { //clear old name
-	  delete[] selseg.name;
-	  selseg.name = nullptr;
-	}
-
-	const char * name = (char *) &udpIn[36+ofs];
-	size_t len = 0;
-	if (name != nullptr) len = strlen(name);
-	if (len > 0) {
-	  if (len > WLED_MAX_SEGNAME_LEN) len = WLED_MAX_SEGNAME_LEN;
-	  selseg.name = new char[len+1];
-	  if (selseg.name) strcpy(selseg.name, name);
-        }
+	const char* name = (char *) &udpIn[36+ofs];
+	selseg.clearName();
+	selseg.setName(name);
       }
       if (receiveSegmentBounds) {
         DEBUG_PRINTF_P(PSTR("Set segment w/ options: %d [%d,%d;%d,%d]\n"), id, (int)start, (int)stop, (int)startY, (int)stopY);
