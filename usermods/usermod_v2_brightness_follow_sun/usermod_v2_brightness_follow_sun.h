@@ -36,6 +36,27 @@ public:
     return ((inputValue - inMin) * (outMax - outMin) / (inMax - inMin)) + outMin;
   }
 
+  // Taylor series expansion implementation of sin_t
+  float sin_t(float angle) {
+      // Normalize the angle to the range of [-π, π] 
+      // while (angle > M_PI) angle -= 2 * PI;
+      // while (angle < -M_PI) angle += 2 * PI;
+  
+      // Taylor series expansion for calculating sine values
+      float angle2 = angle * angle;
+      float angle3 = angle2 * angle;
+      float angle5 = angle3 * angle2;
+      float angle7 = angle5 * angle2;
+  
+      // Taylor series formula:sin(x) ≈ x - x^3/3! + x^5/5! - x^7/7!
+      float result = angle
+                   - angle3 / 6.0f
+                   + angle5 / 120.0f
+                   - angle7 / 5040.0f;
+  
+      return result;
+  }
+
   uint16_t getId() override
   {
     return USERMOD_ID_BRIGHTNESS_FOLLOW_SUN;
@@ -59,7 +80,7 @@ public:
       float timeMapToAngle = curSec < sunMiddleSec ?
                     mapFloat(curSec, sunriseSec, sunMiddleSec, 0, M_PI/2.0) :
                     mapFloat(curSec, sunMiddleSec, sunsetSec, M_PI/2.0, M_PI);
-      float sinValue = sin(timeMapToAngle);
+      float sinValue = sin_t(timeMapToAngle);
       briSet = min_bri + (max_bri-min_bri)*sinValue;
     }
 
