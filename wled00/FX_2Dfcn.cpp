@@ -166,16 +166,11 @@ void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(const int& x, const int& y, uint
 
   // Apply mirroring
   if (mirror || mirror_y) {
-    auto setMirroredPixel = [&](int mx, int my) {
-      strip.setPixelColorXY(mx, my, col);
-    };
-
     const int mirrorX = start + width() - x - 1;
     const int mirrorY = startY + height() - y - 1;
-
-    if (mirror) setMirroredPixel(transpose ? baseX : mirrorX, transpose ? mirrorY : baseY);
-    if (mirror_y) setMirroredPixel(transpose ? mirrorX : baseX, transpose ? baseY : mirrorY);
-    if (mirror && mirror_y) setMirroredPixel(mirrorX, mirrorY);
+    if (mirror) strip.setPixelColorXY(transpose ? baseX : mirrorX, transpose ? mirrorY : baseY, col);
+    if (mirror_y) strip.setPixelColorXY(transpose ? mirrorX : baseX, transpose ? baseY : mirrorY, col);
+    if (mirror && mirror_y) strip.setPixelColorXY(mirrorX, mirrorY, col);
   }
 }
 
