@@ -674,7 +674,6 @@ typedef struct Segment {
     }
   #ifndef WLED_DISABLE_2D
     inline bool is2D() const                                                            { return (width()>1 && height()>1); }
-    [[gnu::hot]] int  XY(int x, int y) const; // support function to get relative index within segment
     [[gnu::hot]] void setPixelColorXY(int x, int y, uint32_t c) const; // set relative pixel within segment with color
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c) const               { setPixelColorXY(int(x), int(y), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) const { setPixelColorXY(x, y, RGBW32(r,g,b,w)); }
@@ -712,7 +711,6 @@ typedef struct Segment {
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
     inline constexpr bool is2D() const                                            { return false; }
-    inline int  XY(int x, int y) const                                            { return x; }
     inline void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColor(int(x), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }

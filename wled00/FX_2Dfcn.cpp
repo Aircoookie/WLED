@@ -145,14 +145,6 @@ void WS2812FX::setUpMatrix() {
 
 #ifndef WLED_DISABLE_2D
 
-// XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-int IRAM_ATTR_YN Segment::XY(int x, int y) const
-{
-  const int vW = vWidth();   // segment width in logical pixels (can be 0 if segment is inactive)
-  const int vH = vHeight();  // segment height in logical pixels (is always >= 1)
-  return isActive() ? (x%vW) + (y%vH) * vW : 0;
-}
-
 // raw setColor function without checks (checks are done in setPixelColorXY())
 void IRAM_ATTR_YN Segment::_setPixelColorXY_raw(const int& x, const int& y, uint32_t& col) const
 {
