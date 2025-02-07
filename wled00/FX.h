@@ -711,7 +711,6 @@ typedef struct Segment {
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
     inline bool is2D() const                                                      { return false; }
-    inline int  XY(int x, int y) const                                            { return x; }
     inline void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColor(int(x), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
