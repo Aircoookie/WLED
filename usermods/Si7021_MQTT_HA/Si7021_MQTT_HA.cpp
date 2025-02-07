@@ -9,7 +9,7 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-Adafruit_Si7021 si7021;
+static Adafruit_Si7021 si7021;
 
 class Si7021_MQTT_HA : public Usermod
 {

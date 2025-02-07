@@ -9,9 +9,9 @@
 #error "This user mod requires MQTT to be enabled."
 #endif
 
-Adafruit_BMP280 bmp;
-Adafruit_Si7021 si7021;
-Adafruit_CCS811 ccs811;
+static Adafruit_BMP280 bmp;
+static Adafruit_Si7021 si7021;
+static Adafruit_CCS811 ccs811;
 
 class UserMod_SensorsToMQTT : public Usermod
 {
