@@ -7810,11 +7810,7 @@ uint16_t mode_particlefireworks(void) {
   PartSys->setWrapX(SEGMENT.check1);
   PartSys->setBounceY(SEGMENT.check2);
   PartSys->setGravity(map(SEGMENT.custom3, 0, 31, SEGMENT.check2 ? 1 : 0, 10)); // if bounded, set gravity to minimum of 1 or they will bounce at top
-  PartSys->setMotionBlur(SEGMENT.custom2);//map(SEGMENT.custom2, 0, 255, 0, 170)); // anable motion blur
-  uint8_t smearing = 0;
-  if (SEGMENT.custom2 > 200)
-    smearing = SEGMENT.custom2 - 200;
-  //PartSys->setSmearBlur(smearing); // enable 2D blurring (smearing)
+  PartSys->setMotionBlur(map(SEGMENT.custom2, 0, 255, 0, 245)); // anable motion blur
 
   // update the rockets, set the speed state
   for (uint32_t j = 0; j < numRockets; j++) {
