@@ -7472,6 +7472,7 @@ static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@
 void soapProcessPixels(bool isRow, uint8_t* noise3d, int amplitude, int shift, CRGB* ledsbuff) { //1153477-1152873
   const int cols = SEG_W;
   const int rows = SEG_H;
+  const auto XY = [&](int x, int y) { return (x%cols) + (y%rows) * cols; };
   int rowcol, colrow;
   rowcol = isRow ? rows : cols;
   colrow = isRow ? cols : rows;
@@ -7491,10 +7492,10 @@ void soapProcessPixels(bool isRow, uint8_t* noise3d, int amplitude, int shift, C
       }
       CRGB PixelA = CRGB::Black;
       if ((zD >= 0) && (zD < colrow)) PixelA = isRow ? SEGMENT.getPixelColorXY(zD, i) : SEGMENT.getPixelColorXY(i, zD);
-      else                            PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? (abs(zD)%cols) + i*cols : i + (abs(zD)%rows)*cols] * 3);
+      else                            PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? XY(abs(zD), i) : XY(i, abs(zD))] * 3);
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < colrow)) PixelB = isRow ? SEGMENT.getPixelColorXY(zF, i) : SEGMENT.getPixelColorXY(i, zF);
-      else                            PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? (abs(zF)%cols) + i*cols : i + (abs(zF)%rows)*cols] * 3);
+      else                            PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? XY(abs(zF), i) : XY(i, abs(zF))] * 3);
       ledsbuff[j] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
     }
     for (int j = 0; j < colrow; j++) {
