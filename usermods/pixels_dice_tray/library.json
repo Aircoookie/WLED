@@ -3,6 +3,6 @@
   "build": { "libArchive": false},
   "dependencies": {
     "arduino-pixels-dice":"https://github.com/axlan/arduino-pixels-dice.git",
-    "ESP32 BLE Arduino":"*"
+    "BLE":"*"
   }
 }
