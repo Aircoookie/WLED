@@ -398,6 +398,7 @@ std::vector<LEDType> BusDigital::getLEDTypes() {
     {TYPE_UCS8904,       "D",  PSTR("UCS8904 RGBW")},
     {TYPE_WS2805,        "D",  PSTR("WS2805 RGBCW")},
     {TYPE_SM16825,       "D",  PSTR("SM16825 RGBCW")},
+    {TYPE_SM16714,       "D",  PSTR("SM16714P or Inverted WS2814 RGBW")},
     {TYPE_WS2812_1CH_X3, "D",  PSTR("WS2811 White")},
     //{TYPE_WS2812_2CH_X3, "D",  PSTR("WS2811 CCT")}, // not implemented
     //{TYPE_WS2812_WWA,    "D",  PSTR("WS2811 WWA")}, // not implemented
