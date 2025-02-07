@@ -652,7 +652,8 @@ Segment &Segment::setName(const char *newName) {
     if (newLen) {
       if (name) name = static_cast<char*>(realloc(name, newLen+1));
       else      name = static_cast<char*>(malloc(newLen+1));
-      if (name) strlcpy(name, newName, newLen);
+      if (name) strlcpy(name, newName, newLen+1);
+      name[newLen] = 0;
       return *this;
     }
   }
