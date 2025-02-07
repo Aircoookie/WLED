@@ -7469,33 +7469,39 @@ static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@
 //@Stepko
 //Idea from https://www.youtube.com/watch?v=DiHBgITrZck&ab_channel=StefanPetrick
 // adapted for WLED by @blazoncek, optimization by @dedehai
-void soapProcessPixels(bool isRow, int size1, int size2, uint8_t* noise3d, int amplitude, int shift, CRGB* ledsbuff) {
-    for (int i = 0; i < size1; i++) {
-        int amount = ((int)noise3d[isRow ? XY(0, i) : XY(i, 0)] - 128) * 2 * amplitude + 256 * shift;
-        int delta = abs(amount) >> 8;
-        int fraction = abs(amount) & 255;
-        for (int j = 0; j < size2; j++) {
-            int zD, zF;
-            if (amount < 0) {
-                zD = j - delta;
-                zF = zD - 1;
-            } else {
-                zD = j + delta;
-                zF = zD + 1;
-            }
-            CRGB PixelA = CRGB::Black;
-            if ((zD >= 0) && (zD < size2)) PixelA = isRow ? SEGMENT.getPixelColorXY(zD, i) : SEGMENT.getPixelColorXY(i, zD);
-            else                           PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? XY(abs(zD), i) : XY(i, abs(zD))] * 3);
-            CRGB PixelB = CRGB::Black;
-            if ((zF >= 0) && (zF < size2)) PixelB = isRow ? SEGMENT.getPixelColorXY(zF, i) : SEGMENT.getPixelColorXY(i, zF);
-            else                           PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? XY(abs(zF), i) : XY(i, abs(zF))] * 3);
-            ledsbuff[j] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
-        }
-        for (int j = 0; j < size2; j++) {
-            if (isRow) SEGMENT.setPixelColorXY(j, i, ledsbuff[j]);
-            else SEGMENT.setPixelColorXY(i, j, ledsbuff[j]);
-        }
+void soapProcessPixels(bool isRow, uint8_t* noise3d, int amplitude, int shift, CRGB* ledsbuff) { //1153477-1152873
+  const int cols = SEG_W;
+  const int rows = SEG_H;
+  int rowcol, colrow;
+  rowcol = isRow ? rows : cols;
+  colrow = isRow ? cols : rows;
+
+  for (int i = 0; i < rowcol; i++) {
+    int amount = ((int)noise3d[isRow ? i * cols : i] - 128) * 2 * amplitude + 256 * shift;
+    int delta = abs(amount) >> 8;
+    int fraction = abs(amount) & 255;
+    for (int j = 0; j < colrow; j++) {
+      int zD, zF;
+      if (amount < 0) {
+          zD = j - delta;
+          zF = zD - 1;
+      } else {
+          zD = j + delta;
+          zF = zD + 1;
+      }
+      CRGB PixelA = CRGB::Black;
+      if ((zD >= 0) && (zD < colrow)) PixelA = isRow ? SEGMENT.getPixelColorXY(zD, i) : SEGMENT.getPixelColorXY(i, zD);
+      else                            PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? (abs(zD)%cols) + i*cols : i + (abs(zD)%rows)*cols] * 3);
+      CRGB PixelB = CRGB::Black;
+      if ((zF >= 0) && (zF < colrow)) PixelB = isRow ? SEGMENT.getPixelColorXY(zF, i) : SEGMENT.getPixelColorXY(i, zF);
+      else                            PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[isRow ? (abs(zF)%cols) + i*cols : i + (abs(zF)%rows)*cols] * 3);
+      ledsbuff[j] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
     }
+    for (int j = 0; j < colrow; j++) {
+      if (isRow) SEGMENT.setPixelColorXY(j, i, ledsbuff[j]);
+      else SEGMENT.setPixelColorXY(i, j, ledsbuff[j]);
+    }
+  }
 }
 
 uint16_t mode_2Dsoap() {
@@ -7555,9 +7561,9 @@ uint16_t mode_2Dsoap() {
   CRGB ledsbuff[MAX(cols,rows)];
 
   amplitude = (cols >= 16) ? (cols-8)/8 : 1;
-  soapProcessPixels(true, rows, cols, noise3d, amplitude, shiftX, ledsbuff); // rows 1166192 vs 1165634
+  soapProcessPixels(true, noise3d, amplitude, shiftX, ledsbuff);  // rows
   amplitude = (rows >= 16) ? (rows-8)/8 : 1;
-  soapProcessPixels(false, cols, rows, noise3d, amplitude, shiftY, ledsbuff); // cols
+  soapProcessPixels(false, noise3d, amplitude, shiftY, ledsbuff); // cols
 
   return FRAMETIME;
 }
