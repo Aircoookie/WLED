@@ -2221,23 +2221,30 @@ void updateUsedParticles(const uint32_t allocated, const uint32_t available, con
   used = max((uint32_t)2, min(available, wantsToUse)); // limit to available particles, use a minimum of 2
 }
 
-// check if a segment is fully overlapping with an underlying segment (used to enable overlay rendering i.e. adding instead of overwriting pixels)
+// check if a segment is partially overlapping with an underlying segment (used to enable overlay rendering i.e. adding instead of overwriting pixels)
 bool segmentIsOverlay(void) { // TODO: this only needs to be checked when segment is created, could move this to segment class or PS init
   unsigned segID = strip.getCurrSegmentId();
-  if(segID > 0) { // lower number segments exist, check coordinates of underlying segments
-    unsigned xMin, yMin = 0xFFFF; // note: overlay is activated even if there is gaps in underlying segments, this is an intentional choice
-    unsigned xMax, yMax = 0;
-    for (unsigned i = 0; i < segID; i++) {
-      xMin = strip._segments[i].start < xMin ? strip._segments[i].start : xMin;
-      yMin = strip._segments[i].startY < yMin ? strip._segments[i].startY : yMin;
-      xMax = strip._segments[i].stop > xMax ? strip._segments[i].stop : xMax;
-      yMax = strip._segments[i].stopY > yMax ? strip._segments[i].stopY : yMax;
-      if(xMin <= strip._segments[segID].start && xMax >= strip._segments[segID].stop &&
-          yMin <= strip._segments[segID].startY && yMax >= strip._segments[segID].stopY)
-        return true;
+  if (segID == 0) return false; // is base segment, no overlay
+  unsigned newStartX = strip._segments[segID].start;
+  unsigned newEndX   = strip._segments[segID].stop;
+  unsigned newStartY = strip._segments[segID].startY;
+  unsigned newEndY   = strip._segments[segID].stopY;
+
+  // Check for overlap with all previous segments
+  for (unsigned i = 0; i < segID; i++) {
+    if(strip._segments[i].freeze) continue; // skip inactive segments
+    unsigned startX = strip._segments[i].start;
+    unsigned endX   = strip._segments[i].stop;
+    unsigned startY = strip._segments[i].startY;
+    unsigned endY   = strip._segments[i].stopY;
+
+    if (newStartX < endX && newEndX > startX &&  // x-range overlap
+        newStartY < endY && newEndY > startY) {  // y-range overlap
+      return true;
     }
   }
-  return false;
+
+  return false; // No overlap detected
 }
 
 // get the pointer to the particle memory for the segment
