@@ -1,7 +1,7 @@
 Import('env')
 
 
-usermods = env.GetProjectOption("custom_usermods","").split(" ")
+usermods = env.GetProjectOption("custom_usermods","").split()
 # Check for dependencies
 if "Temperature" in usermods:
     env.Append(CPPDEFINES=[("USERMOD_DALLASTEMPERATURE")])

@@ -35,7 +35,7 @@ if usermods:
   deps = env.GetProjectOption('lib_deps')
   src_dir = proj.get("platformio", "src_dir")
   src_dir = src_dir.replace('\\','/')
-  mod_paths = {mod: find_usermod(mod) for mod in usermods.split(" ")}
+  mod_paths = {mod: find_usermod(mod) for mod in usermods.split()}
   usermods = [f"{mod} = symlink://{path}" for mod, path in mod_paths.items()]
   proj.set("env:" + env['PIOENV'], 'lib_deps', deps + usermods)
   # Force usermods to be installed in to the environment build state before the LDF runs
