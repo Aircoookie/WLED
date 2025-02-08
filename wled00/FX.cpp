@@ -7469,16 +7469,18 @@ static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@
 //@Stepko
 //Idea from https://www.youtube.com/watch?v=DiHBgITrZck&ab_channel=StefanPetrick
 // adapted for WLED by @blazoncek, optimization by @dedehai
-void soapProcessPixels(bool isRow, uint8_t* noise3d, int amplitude, int shift, CRGB* ledsbuff) { //1153477-1152873
+void soapProcessPixels(bool isRow, uint8_t* noise3d) {
   const int cols = SEG_W;
   const int rows = SEG_H;
   const auto XY = [&](int x, int y) { return (x%cols) + (y%rows) * cols; };
-  int rowcol, colrow;
-  rowcol = isRow ? rows : cols;
-  colrow = isRow ? cols : rows;
+  CRGB ledsbuff[MAX(cols,rows)];
+  const int rowcol = isRow ? rows : cols;
+  const int colrow = isRow ? cols : rows;
+  int amplitude = isRow ? (cols-8) >> 3 : (rows-8) >> 3;
+  amplitude = 2 * max(1, amplitude * (1 + SEGMENT.custom1) >> 6);
 
   for (int i = 0; i < rowcol; i++) {
-    int amount = ((int)noise3d[isRow ? i * cols : i] - 128) * 2 * amplitude + 256 * shift;
+    int amount = ((int)noise3d[isRow ? i * cols : i] - 128) * amplitude;
     int delta = abs(amount) >> 8;
     int fraction = abs(amount) & 255;
     for (int j = 0; j < colrow; j++) {
@@ -7515,31 +7517,25 @@ uint16_t mode_2Dsoap() {
   const size_t dataSize = SEGMENT.width() * SEGMENT.height() * sizeof(uint8_t); // prevent reallocation if mirrored or grouped
   if (!SEGENV.allocateData(dataSize + sizeof(uint32_t)*3)) return mode_static(); //allocation failed
 
-  uint8_t  *noise3d   = reinterpret_cast<uint8_t*>(SEGENV.data);
-  uint32_t *noise32_x = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize);
-  uint32_t *noise32_y = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t));
-  uint32_t *noise32_z = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*2);
+  uint8_t  *noise3d    = reinterpret_cast<uint8_t*>(SEGENV.data);
+  uint32_t *noisecoord = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize); // x, y, z coordinates
   const uint32_t scale32_x = 160000U/cols;
   const uint32_t scale32_y = 160000U/rows;
   const uint32_t mov = MIN(cols,rows)*(SEGMENT.speed+2)/2;
   const uint8_t  smoothness = MIN(250,SEGMENT.intensity); // limit as >250 produces very little changes
 
-  // init
-  if (SEGENV.call == 0) {
-    *noise32_x = hw_random();
-    *noise32_y = hw_random();
-    *noise32_z = hw_random();
-  } else {
-    *noise32_x += mov;
-    *noise32_y += mov;
-    *noise32_z += mov;
+  for (int i = 0; i < 3; i++) {
+    if (SEGENV.call == 0)
+      noisecoord[i] = hw_random(); // init
+    else
+      noisecoord[i] += mov;
   }
 
   for (int i = 0; i < cols; i++) {
     int32_t ioffset = scale32_x * (i - cols / 2);
     for (int j = 0; j < rows; j++) {
       int32_t joffset = scale32_y * (j - rows / 2);
-      uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
+      uint8_t data = inoise16(noisecoord[0] + ioffset, noisecoord[1] + joffset, noisecoord[2]) >> 8;
       noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], smoothness) + scale8(data, 255 - smoothness);
     }
   }
@@ -7554,21 +7550,12 @@ uint16_t mode_2Dsoap() {
     }
   }
 
-  int zD;
-  int zF;
-  int amplitude;
-  int shiftX = 0; //(SEGMENT.custom1 - 128) / 4;
-  int shiftY = 0; //(SEGMENT.custom2 - 128) / 4;
-  CRGB ledsbuff[MAX(cols,rows)];
-
-  amplitude = (cols >= 16) ? (cols-8)/8 : 1;
-  soapProcessPixels(true, noise3d, amplitude, shiftX, ledsbuff);  // rows
-  amplitude = (rows >= 16) ? (rows-8)/8 : 1;
-  soapProcessPixels(false, noise3d, amplitude, shiftY, ledsbuff); // cols
+  soapProcessPixels(true,  noise3d); // rows
+  soapProcessPixels(false, noise3d); // cols
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2;pal=11";
+static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness,Density;;!;2;pal=11";
 
 
 //Idea from https://www.youtube.com/watch?v=HsA-6KIbgto&ab_channel=GreatScott%21
