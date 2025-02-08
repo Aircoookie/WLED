@@ -18,7 +18,7 @@ Before compiling, you have to make the following modifications:
 Edit `usermods_list.cpp`:
 1. Open `wled00/usermods_list.cpp`
 2. add `#include "../usermods/Animated_Staircase/Animated_Staircase.h"` to the top of the file
-3. add `usermods.add(new Animated_Staircase());` to the end of the `void registerUsermods()` function.
+3. add `UsermodManager::add(new Animated_Staircase());` to the end of the `void registerUsermods()` function.
 
 You can configure usermod using the Usermods settings page.
 Please enter GPIO pins for PIR or ultrasonic sensors (trigger and echo).

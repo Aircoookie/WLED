@@ -37,14 +37,14 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   Segment prev = seg; //make a backup so we can tell if something changed (calling copy constructor)
   //DEBUG_PRINTF_P(PSTR("--  Duplicate segment: %p (%p)\n"), &prev, prev.data);
 
-  unsigned start = elem["start"] | seg.start;
+  int start = elem["start"] | seg.start;
   if (stop < 0) {
     int len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
   }
   // 2D segments
-  unsigned startY = elem["startY"] | seg.startY;
-  unsigned stopY = elem["stopY"] | seg.stopY;
+  int startY = elem["startY"] | seg.startY;
+  int stopY = elem["stopY"] | seg.stopY;
 
   //repeat, multiplies segment until all LEDs are used, or max segments reached
   bool repeat = elem["rpt"] | false;
@@ -105,7 +105,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t set = elem[F("set")] | seg.set;
   seg.set = constrain(set, 0, 3);
 
-  unsigned len = 1;
+  int len = 1;
   if (stop > start) len = stop - start;
   int offset = elem[F("of")] | INT32_MAX;
   if (offset != INT32_MAX) {
@@ -197,11 +197,11 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   // lx parser
   #ifdef WLED_ENABLE_LOXONE
   int lx = elem[F("lx")] | -1;
-  if (lx > 0) {
+  if (lx >= 0) {
     parseLxJson(lx, id, false);
   }
   int ly = elem[F("ly")] | -1;
-  if (ly > 0) {
+  if (ly >= 0) {
     parseLxJson(ly, id, true);
   }
   #endif
@@ -346,7 +346,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
-  int tr = -1;
+  long tr = -1;
   if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
     tr = root[F("transition")] | -1;
     if (tr >= 0) {
@@ -363,7 +363,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   tr = root[F("tb")] | -1;
-  if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
+  if (tr >= 0) strip.timebase = (unsigned long)tr - millis();
 
   JsonObject nl       = root["nl"];
   nightlightActive    = getBoolVal(nl["on"], nightlightActive);
@@ -436,7 +436,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
   strip.resume();
 
-  usermods.readFromJsonState(root);
+  UsermodManager::readFromJsonState(root);
 
   loadLedmap = root[F("ledmap")] | loadLedmap;
 
@@ -454,21 +454,25 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     handleSet(nullptr, apireq, false);    // may set stateChanged
   }
 
-  // applying preset (2 cases: a) API call includes all preset values ("pd"), b) API only specifies preset ID ("ps"))
+  // Applying preset from JSON API has 2 cases: a) "pd" AKA "preset direct" and b) "ps" AKA "preset select"
+  // a) "preset direct" can only be an integer value representing preset ID. "preset direct" assumes JSON API contains the rest of preset content (i.e. from UI call)
+  //    "preset direct" JSON can contain "ps" API (i.e. call from UI to cycle presets) in such case stateChanged has to be false (i.e. no "win" or "seg" API)
+  // b) "preset select" can be cycling ("1~5~""), random ("r" or "1~5r"), ID, etc. value allowed from JSON API. This type of call assumes no state changing content in API call
   byte presetToRestore = 0;
-  // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
   if (!root[F("pd")].isNull() && stateChanged) {
+    // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
     currentPreset = root[F("pd")] | currentPreset;
-    if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise it was set in handleSet() [set.cpp]
+    if (root["win"].isNull()) presetCycCurr = currentPreset; // otherwise presetCycCurr was set in handleSet() [set.cpp]
     presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
+    DEBUG_PRINTF_P(PSTR("Preset direct: %d\n"), currentPreset);
   } else if (!root["ps"].isNull()) {
-    ps = presetCycCurr;
-    if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
+    // we have "ps" call (i.e. from button or external API call) or "pd" that includes "ps" (i.e. from UI call)
+    if (root["win"].isNull() && getVal(root["ps"], &presetCycCurr, 0, 0) && presetCycCurr > 0 && presetCycCurr < 251 && presetCycCurr != currentPreset) {
+      DEBUG_PRINTF_P(PSTR("Preset select: %d\n"), presetCycCurr);
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
-      presetCycCurr = ps;
-      applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
+      applyPreset(presetCycCurr, callMode); // async load from file system (only preset ID was specified)
       return stateResponse;
-    }
+    } else presetCycCurr = currentPreset; // restore presetCycCurr
   }
 
   JsonObject playlist = root[F("playlist")];
@@ -592,7 +596,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root[F("pl")] = currentPlaylist;
     root[F("ledmap")] = currentLedmap;
 
-    usermods.addToJsonState(root);
+    UsermodManager::addToJsonState(root);
 
     JsonObject nl = root.createNestedObject("nl");
     nl["on"] = nightlightActive;
@@ -784,7 +788,7 @@ void serializeInfo(JsonObject root)
   getTimeString(time);
   root[F("time")] = time;
 
-  usermods.addToJsonInfo(root);
+  UsermodManager::addToJsonInfo(root);
 
   uint16_t os = 0;
   #ifdef WLED_DEBUG
@@ -1144,11 +1148,8 @@ void serveJson(AsyncWebServerRequest* request)
 
   DEBUG_PRINTF_P(PSTR("JSON buffer size: %u for request: %d\n"), lDoc.memoryUsage(), subJson);
 
-  #ifdef WLED_DEBUG
-  size_t len =
-  #endif
-  response->setLength();
-  DEBUG_PRINT(F("JSON content length: ")); DEBUG_PRINTLN(len);
+  [[maybe_unused]] size_t len = response->setLength();
+  DEBUG_PRINTF_P(PSTR("JSON content length: %u\n"), len);
 
   request->send(response);
 }

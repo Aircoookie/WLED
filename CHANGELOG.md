@@ -1,8 +1,86 @@
 ## WLED changelog
 
+#### Build 2412100
+-   WLED 0.15.0 release
+-   Usermod BME280: Fix "Unit of Measurement" for temperature
+-   WiFi reconnect bugfix (@blazoncek)
+
+#### Build 2411250
+-   WLED 0.15.0-rc1 release
+-   Add support for esp32S3_wroom2 (#4243 by @softhack007)
+-   Fix mixed LED SK6812 and ws2812b booloop (#4301 by @willmmiles)
+-   Improved FPS calculation (by DedeHai)
+-   Fix crashes when using HTTP API within MQTT (#4269 by @willmmiles)
+-   Fix array overflow in exploding_fireworks (#4120 by @willmmiles)
+-   Fix MQTT topic buffer length (#4293 by @WouterGritter)
+-   Fix SparkFunDMX fix for possible array bounds violation in DMX.write (by @softhack007)
+-   Allow TV Simulator on single LED segments (by @softhack007)
+-   Fix WLED_RELEASE_NAME (by @netmindz)
+
+
+#### Build 2410270
+-   WLED 0.15.0-b7 release
+-   Re-license the WLED project from MIT to EUPL (#4194 by @Aircoookie)
+-   Fix alexa devices invisible/uncontrollable (#4214 by @Svennte)
+-   Add visual expand button on hover (#4172)
+-   Usermod: Audioreactive tuning and performance enhancements (by @softhack007)
+-   `/json/live` (JSON live data/peek) only enabled when WebSockets are disabled
+-   Various bugfixes and optimisations: #4179, #4215, #4219, #4222, #4223, #4224, #4228, #4230
+
+#### Build 2410140
+-   WLED 0.15.0-b6 release
+-   Added BRT timezone (#4188 by @LuisFadini)
+-   Fixed the positioning of the "Download the latest binary" button (#4184 by @maxi4329)
+-   Add WLED_AUTOSEGMENTS compile flag (#4183 by @PaoloTK)
+-   New 512kB FS parition map for 4MB devices
+-   Internal API change: Static PinManager & UsermodManager
+-   Change in Improv chip ID and version generation
+-   Various optimisations, bugfixes and enhancements (#4005, #4174 & #4175 by @Xevel, #4180, #4168, #4154, #4189 by @dosipod)
+
+#### Build 2409170
+-   UI: Introduce common.js in settings pages (size optimisation)
+-   Add the ability to toggle the reception of palette synchronizations (#4137 by @felddy)
+-   Usermod/FX: Temperature usermod added Temperature effect (example usermod effect by @blazoncek)
+-   Fix AsyncWebServer version pin
+
+#### Build 2409140
+-   Configure different kinds of busses at compile (#4107 by @PaoloTK)
+    - BREAKING: removes LEDPIN and DEFAULT_LED_TYPE compile overrides
+-   Fetch LED types from Bus classes (dynamic UI) (#4129 by @netmindz, @blazoncek, @dedehai)
+-   Temperature usermod: update OneWire to 2.3.8 (#4131 by @iammattcoleman)
+
+#### Build 2409100
+-   WLED 0.15.0-b5 release
+-   Audioreactive usermod included by default in all compatible builds (including ESP8266)
+-   Demystified some byte definitions of WiZmote ESP-NOW message (#4114 by @ChuckMash)
+-   Update usermod "Battery" improved MQTT support (#4110 by @itCarl)
+-   Added a usermod for interacting with BLE Pixels Dice (#4093 by @axlan)
+-   Allow lower values for touch threshold (#4081 by @RobinMeis)
+-   Added POV image effect usermod (#3539 by @Liliputech)
+-   Remove repeating code to fetch audio data (#4103 by @netmindz)
+-   Loxone JSON parser doesn't handle lx=0 correctly (#4104 by @FreakyJ, fixes #3809)
+-   Rename wled00.ino to wled_main.cpp (#4090 by @willmmiles)
+-   SM16825 chip support including WW & CW channel swap (#4092)
+-   Add stress testing scripts (#4088 by @willmmiles)
+-   Improve jsonBufferLock management (#4089 by @willmmiles)
+-   Fix incorrect PWM bit depth on Esp32 with XTAL clock (#4082 by @PaoloTK)
+-   Devcontainer args (#4073 by @axlan)
+-   Effect: Fire2012 optional blur amount (#4078 by @apanteleev)
+-   Effect: GEQ fix bands (#4077 by @adrianschroeter)
+-   Boot delay option (#4060 by @DedeHai)
+-   ESP8266 Audioreactive sync (#3962 by @gaaat98, @netmindz, @softhack007)
+-   ESP8266 PWM crash fix (#4035 by @willmmiles)
+-   Usermod: Battery fix (#4051 by @Nickbert7)
+-   Usermod: Mpu6050 usermod crash fix (#4048 by @willmmiles)
+-   Usermod: Internal Temperature V2 (#4033 by @adamsthws)
+-   Various fixes and improvements (including build environments to emulate 0.14.0 for ESP8266)
+
+#### Build 2407070
+-   Various fixes and improvements (mainly LED settings fix)
+
 #### Build 2406290
 -   WLED 0.15.0-b4 release
--   LED settings bus management update (WARNING only allow available outputs)
+-   LED settings bus management update (WARNING: only allows available outputs)
 -   Add ETH support for LILYGO-POE-Pro (#4030 by @rorosaurus)
 -   Update usermod_sn_photoresistor (#4017 by @xkvmoto)
 -   Several internal fixes and optimisations

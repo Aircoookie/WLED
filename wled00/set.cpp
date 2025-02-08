@@ -104,18 +104,18 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     int t = 0;
 
-    if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin, PinOwner::Relay)) {
-       pinManager.deallocatePin(rlyPin, PinOwner::Relay);
+    if (rlyPin>=0 && PinManager::isPinAllocated(rlyPin, PinOwner::Relay)) {
+       PinManager::deallocatePin(rlyPin, PinOwner::Relay);
     }
     #ifndef WLED_DISABLE_INFRARED
-    if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
+    if (irPin>=0 && PinManager::isPinAllocated(irPin, PinOwner::IR)) {
       deInitIR();
-      pinManager.deallocatePin(irPin, PinOwner::IR);
+      PinManager::deallocatePin(irPin, PinOwner::IR);
     }
     #endif
     for (unsigned s=0; s<WLED_MAX_BUTTONS; s++) {
-      if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
-        pinManager.deallocatePin(btnPin[s], PinOwner::Button);
+      if (btnPin[s]>=0 && PinManager::isPinAllocated(btnPin[s], PinOwner::Button)) {
+        PinManager::deallocatePin(btnPin[s], PinOwner::Button);
         #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a function to check touch state, detach interrupt
         if (digitalPinToTouchChannel(btnPin[s]) >= 0) // if touch capable pin
           touchDetachInterrupt(btnPin[s]);            // if not assigned previously, this will do nothing
@@ -130,9 +130,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     unsigned ablMilliampsMax = request->arg(F("MA")).toInt();
     BusManager::setMilliampsMax(ablMilliampsMax);
 
-    autoSegments = request->hasArg(F("MS"));
-    correctWB = request->hasArg(F("CCT"));
-    cctFromRgb = request->hasArg(F("CR"));
+    strip.autoSegments = request->hasArg(F("MS"));
+    strip.correctWB = request->hasArg(F("CCT"));
+    strip.cctFromRgb = request->hasArg(F("CR"));
     cctICused = request->hasArg(F("IC"));
     strip.cctBlending = request->arg(F("CB")).toInt();
     Bus::setCCTBlend(strip.cctBlending);
@@ -157,8 +157,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char la[4] = "LA"; la[2] = offset+s; la[3] = 0; //LED mA
       char ma[4] = "MA"; ma[2] = offset+s; ma[3] = 0; //max mA
       if (!request->hasArg(lp)) {
-        DEBUG_PRINT(F("No data for "));
-        DEBUG_PRINTLN(s);
+        DEBUG_PRINTF_P(PSTR("No data for %d\n"), s);
         break;
       }
       for (int i = 0; i < 5; i++) {
@@ -177,7 +176,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       awmode = request->arg(aw).toInt();
       uint16_t freq = request->arg(sp).toInt();
-      if (IS_PWM(type)) {
+      if (Bus::isPWM(type)) {
         switch (freq) {
           case 0 : freq = WLED_PWM_FREQ/2;    break;
           case 1 : freq = WLED_PWM_FREQ*2/3;  break;
@@ -186,7 +185,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           case 3 : freq = WLED_PWM_FREQ*2;    break;
           case 4 : freq = WLED_PWM_FREQ*10/3; break; // uint16_t max (19531 * 3.333)
         }
-      } else if (IS_DIGITAL(type) && IS_2PIN(type)) {
+      } else if (Bus::is2Pin(type)) {
         switch (freq) {
           default:
           case 0 : freq =  1000; break;
@@ -199,7 +198,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         freq = 0;
       }
       channelSwap = Bus::hasWhite(type) ? request->arg(wo).toInt() : 0;
-      if (type == TYPE_ONOFF || IS_PWM(type) || IS_VIRTUAL(type)) { // analog and virtual
+      if (Bus::isOnOff(type) || Bus::isPWM(type) || Bus::isVirtual(type)) { // analog and virtual
         maPerLed = 0;
         maMax = 0;
       } else {
@@ -215,7 +214,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
-    ColorOrderMap com = {};
+    // we will not bother with pre-allocating ColorOrderMappings vector
+    BusManager::getColorOrderMap().reset();
     for (int s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
       int offset = s < 10 ? 48 : 55;
       char xs[4] = "XS"; xs[2] = offset+s; xs[3] = 0; //start LED
@@ -227,15 +227,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         length = request->arg(xc).toInt();
         colorOrder = request->arg(xo).toInt() & 0x0F;
         colorOrder |= (request->arg(xw).toInt() & 0x0F) << 4; // add W swap information
-        com.add(start, length, colorOrder);
+        if (!BusManager::getColorOrderMap().add(start, length, colorOrder)) break;
       }
     }
-    BusManager::updateColorOrderMap(com);
 
     // update other pins
     #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
-    if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
+    if (PinManager::allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
@@ -246,7 +245,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     irApplyToAllSelected = !request->hasArg(F("MSO"));
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
-    if (pinManager.allocatePin(hw_rly_pin,true, PinOwner::Relay)) {
+    if (PinManager::allocatePin(hw_rly_pin,true, PinOwner::Relay)) {
       rlyPin = hw_rly_pin;
     } else {
       rlyPin = -1;
@@ -261,7 +260,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char bt[4] = "BT"; bt[2] = offset+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
       char be[4] = "BE"; be[2] = offset+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
       int hw_btn_pin = request->arg(bt).toInt();
-      if (hw_btn_pin >= 0 && pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
+      if (hw_btn_pin >= 0 && PinManager::allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
         buttonType[i] = request->arg(be).toInt();
       #ifdef ARDUINO_ARCH_ESP32
@@ -272,7 +271,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
             // not an ADC analog pin
             DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n"), btnPin[i], i);
             btnPin[i] = -1;
-            pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+            PinManager::deallocatePin(hw_btn_pin,PinOwner::Button);
           } else {
             analogReadResolution(12); // see #4040
           }
@@ -284,12 +283,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
             // not a touch pin
             DEBUG_PRINTF_P(PSTR("PIN ALLOC error: GPIO%d for touch button #%d is not an touch pin!\n"), btnPin[i], i);
             btnPin[i] = -1;
-            pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+            PinManager::deallocatePin(hw_btn_pin,PinOwner::Button);
           }          
           #ifdef SOC_TOUCH_VERSION_2 // ESP32 S2 and S3 have a fucntion to check touch state but need to attach an interrupt to do so
           else                    
           {
-            touchAttachInterrupt(btnPin[i], touchButtonISR, 256 + (touchThreshold << 4)); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
+            touchAttachInterrupt(btnPin[i], touchButtonISR, touchThreshold << 4); // threshold on Touch V2 is much higher (1500 is a value given by Espressif example, I measured changes of over 5000)
           }
           #endif          
         }
@@ -381,6 +380,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));
+    receiveNotificationPalette = request->hasArg(F("RP"));
     receiveSegmentOptions = request->hasArg(F("SO"));
     receiveSegmentBounds = request->hasArg(F("SG"));
     sendNotifications = request->hasArg(F("SS"));
@@ -421,12 +421,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("WO")).toInt();
     if (t >= -255  && t <= 255) arlsOffset = t;
 
+    #ifndef WLED_DISABLE_ALEXA
     alexaEnabled = request->hasArg(F("AL"));
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
     t = request->arg(F("AP")).toInt();
     if (t >= 0 && t <= 9) alexaNumPresets = t;
+    #endif
 
-    #ifdef WLED_ENABLE_MQTT
+    #ifndef WLED_DISABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
     strlcpy(mqttServer, request->arg(F("MS")).c_str(), MQTT_MAX_SERVER_LEN+1);
     t = request->arg(F("MQPORT")).toInt();
@@ -630,10 +632,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (i2c_sda != hw_sda_pin || i2c_scl != hw_scl_pin) {
       // only if pins changed
       uint8_t old_i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
-      pinManager.deallocateMultiplePins(old_i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
+      PinManager::deallocateMultiplePins(old_i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
 
       PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
-      if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+      if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && PinManager::allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
         i2c_sda = hw_sda_pin;
         i2c_scl = hw_scl_pin;
         // no bus re-initialisation as usermods do not get any notification
@@ -657,9 +659,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (spi_mosi != hw_mosi_pin || spi_miso != hw_miso_pin || spi_sclk != hw_sclk_pin) {
       // only if pins changed
       uint8_t old_spi[3] = { static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso), static_cast<uint8_t>(spi_sclk) };
-      pinManager.deallocateMultiplePins(old_spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
+      PinManager::deallocateMultiplePins(old_spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
       PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_miso_pin, true }, { hw_sclk_pin, true } };
-      if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+      if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && PinManager::allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
         spi_mosi = hw_mosi_pin;
         spi_miso = hw_miso_pin;
         spi_sclk = hw_sclk_pin;
@@ -727,7 +729,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                         subObj[name].add(value.toInt());    // we may have an int
           j++;
         }
-        DEBUG_PRINT(F("[")); DEBUG_PRINT(j); DEBUG_PRINT(F("] = ")); DEBUG_PRINTLN(value);
+        DEBUG_PRINTF_P(PSTR("[%d] = %s\n"), j, value.c_str());
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
         // to describe the type of parameter (text,float,int), for boolean parameters the first field contains "off"
@@ -746,11 +748,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           } else if (type == "int")      subObj[name] = value.toInt();
           else                           subObj[name] = value;  // text fields
         }
-        DEBUG_PRINT(F(" = ")); DEBUG_PRINTLN(value);
+        DEBUG_PRINTF_P(PSTR(" = %s\n"), value.c_str());
       }
     }
-    usermods.readFromConfig(um);  // force change of usermod parameters
-    DEBUG_PRINTLN(F("Done re-init usermods."));
+    UsermodManager::readFromConfig(um);  // force change of usermod parameters
+    DEBUG_PRINTLN(F("Done re-init UsermodManager::"));
     releaseJSONBufferLock();
   }
 
@@ -807,8 +809,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (!(req.indexOf("win") >= 0)) return false;
 
   int pos = 0;
-  DEBUG_PRINT(F("API req: "));
-  DEBUG_PRINTLN(req);
+  DEBUG_PRINTF_P(PSTR("API req: %s\n"), req.c_str());
 
   //segment select (sets main segment)
   pos = req.indexOf(F("SM="));
@@ -860,20 +861,19 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   uint16_t spcI    = selseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
   if (pos > 0) {
-    startI = getNumVal(&req, pos);
+    startI = std::abs(getNumVal(&req, pos));
   }
   pos = req.indexOf(F("S2=")); //segment stop
   if (pos > 0) {
-    stopI = getNumVal(&req, pos);
+    stopI = std::abs(getNumVal(&req, pos));
   }
   pos = req.indexOf(F("GP=")); //segment grouping
   if (pos > 0) {
-    grpI = getNumVal(&req, pos);
-    if (grpI == 0) grpI = 1;
+    grpI = std::max(1,getNumVal(&req, pos));
   }
   pos = req.indexOf(F("SP=")); //segment spacing
   if (pos > 0) {
-    spcI = getNumVal(&req, pos);
+    spcI = std::max(0,getNumVal(&req, pos));
   }
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
@@ -1192,7 +1192,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // internal call, does not send XML response
   pos = req.indexOf(F("IN"));
-  if (pos < 1) XML_response(request);
+  if ((request != nullptr) && (pos < 1)) {
+    auto response = request->beginResponseStream("text/xml");
+    XML_response(*response);
+    request->send(response);
+  }
 
   return true;
 }
