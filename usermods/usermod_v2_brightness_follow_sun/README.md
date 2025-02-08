@@ -14,6 +14,8 @@ or add `-D USERMOD_BRIGHTNESS_FOLLOW_SUN` to `build_flags` in platformio_overrid
 ### Options
 Open Usermod Settings in WLED to change settings:
 
+`Enable` - When checked `Enable`, turn on the `Brightness Follow Sun` Usermod, which will automatically turn on the lights, adjust the brightness, and turn off the lights. If you need to completely turn off the lights, please unchecked `Enable`.
+
 `Update Interval Sec` - The unit is seconds, and the brightness will be automatically refreshed according to the set parameters.
 
 `Min Brightness` - set brightness by map of min-max-min : sunrise-suntop-sunset
