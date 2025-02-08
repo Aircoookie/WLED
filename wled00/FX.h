@@ -710,7 +710,7 @@ typedef struct Segment {
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     inline void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
   #else
-    inline constexpr bool is2D() const                                            { return false; }
+    inline bool is2D() const                                                      { return false; }
     inline void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
     inline void setPixelColorXY(unsigned x, unsigned y, uint32_t c)               { setPixelColor(int(x), c); }
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
