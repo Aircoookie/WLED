@@ -125,6 +125,7 @@ BusDigital::BusDigital(const BusConfig &bc, uint8_t nr)
 , _colorOrder(bc.colorOrder)
 , _milliAmpsPerLed(bc.milliAmpsPerLed)
 , _milliAmpsMax(bc.milliAmpsMax)
+, _data(nullptr)
 {
   if (!isDigital(bc.type) || !bc.count) return;
   if (!PinManager::allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
