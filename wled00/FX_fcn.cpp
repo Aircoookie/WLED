@@ -1117,12 +1117,9 @@ void Segment::refreshLightCapabilities() {
   }
 
   for (unsigned b = 0; b < BusManager::getNumBusses(); b++) {
-    Bus *bus = BusManager::getBus(b);
-    if (bus == nullptr || bus->getLength()==0) break;
-    if (!bus->isOk()) continue;
-    if (bus->getStart() >= segStopIdx) continue;
-    if (bus->getStart() + bus->getLength() <= segStartIdx) continue;
-
+    const Bus *bus = BusManager::getBus(b);
+    if (!bus || !bus->isOk()) break;
+    if (bus->getStart() >= segStopIdx || bus->getStart() + bus->getLength() <= segStartIdx) continue;
     if (bus->hasRGB() || (strip.cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
     if (!strip.cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
     if (strip.correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
@@ -1397,8 +1394,7 @@ void WS2812FX::finalizeInit() {
   _length = 0;
   for (int i=0; i<BusManager::getNumBusses(); i++) {
     Bus *bus = BusManager::getBus(i);
-    if (bus == nullptr) continue;
-    if (bus->getStart() + bus->getLength() > MAX_LEDS) break;
+    if (!bus || !bus->isOk() || bus->getStart() + bus->getLength() > MAX_LEDS) break;
     //RGBW mode is enabled if at least one of the strips is RGBW
     _hasWhiteChannel |= bus->hasWhite();
     //refresh is required to remain off if at least one of the strips requires the refresh.
@@ -1408,6 +1404,7 @@ void WS2812FX::finalizeInit() {
 
     // This must be done after all buses have been created, as some kinds (parallel I2S) interact
     bus->begin();
+    bus->setBrightness(bri);
   }
 
   Segment::maxWidth  = _length;
@@ -1691,8 +1688,8 @@ uint16_t WS2812FX::getLengthPhysical() const {
 //not influenced by auto-white mode, also true if white slider does not affect output white channel
 bool WS2812FX::hasRGBWBus() const {
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
-    Bus *bus = BusManager::getBus(b);
-    if (bus == nullptr || bus->getLength()==0) break;
+    const Bus *bus = BusManager::getBus(b);
+    if (!bus || !bus->isOk()) break;
     if (bus->hasRGB() && bus->hasWhite()) return true;
   }
   return false;
@@ -1701,8 +1698,8 @@ bool WS2812FX::hasRGBWBus() const {
 bool WS2812FX::hasCCTBus() const {
   if (cctFromRgb && !correctWB) return false;
   for (size_t b = 0; b < BusManager::getNumBusses(); b++) {
-    Bus *bus = BusManager::getBus(b);
-    if (bus == nullptr || bus->getLength()==0) break;
+    const Bus *bus = BusManager::getBus(b);
+    if (!bus || !bus->isOk()) break;
     if (bus->hasCCT()) return true;
   }
   return false;
@@ -1755,10 +1752,11 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
     #endif
 
     for (size_t i = s; i < BusManager::getNumBusses(); i++) {
-      Bus* b = BusManager::getBus(i);
+      const Bus *bus = BusManager::getBus(i);
+      if (!bus || !bus->isOk()) break;
 
-      segStarts[s] = b->getStart();
-      segStops[s]  = segStarts[s] + b->getLength();
+      segStarts[s] = bus->getStart();
+      segStops[s]  = segStarts[s] + bus->getLength();
 
       #ifndef WLED_DISABLE_2D
       if (isMatrix && segStops[s] <= Segment::maxWidth*Segment::maxHeight) continue; // ignore buses comprising matrix
@@ -1848,7 +1846,8 @@ bool WS2812FX::checkSegmentAlignment() const {
   bool aligned = false;
   for (const segment &seg : _segments) {
     for (unsigned b = 0; b<BusManager::getNumBusses(); b++) {
-      Bus *bus = BusManager::getBus(b);
+      const Bus *bus = BusManager::getBus(b);
+      if (!bus || !bus->isOk()) break;
       if (seg.start == bus->getStart() && seg.stop == bus->getStart() + bus->getLength()) aligned = true;
     }
     if (seg.start == 0 && seg.stop == _length) aligned = true;

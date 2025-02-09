@@ -272,7 +272,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     // set limits
     settingsScript.printf_P(PSTR("bLimits(%d,%d,%d,%d,%d,%d,%d,%d);"),
       WLED_MAX_BUSSES,
-      WLED_MIN_VIRTUAL_BUSSES,
+      WLED_MIN_VIRTUAL_BUSSES, // irrelevant, but kept to distinguish S2/S3 in UI
       MAX_LEDS_PER_BUS,
       MAX_LED_MEMORY,
       MAX_LEDS,
@@ -292,8 +292,8 @@ void getSettingsJS(byte subPage, Print& settingsScript)
 
     unsigned sumMa = 0;
     for (int s = 0; s < BusManager::getNumBusses(); s++) {
-      Bus* bus = BusManager::getBus(s);
-      if (bus == nullptr) continue;
+      const Bus *bus = BusManager::getBus(s);
+      if (!bus || !bus->isOk()) break; // should not happen but for safety
       int offset = s < 10 ? 48 : 55;
       char lp[4] = "L0"; lp[2] = offset+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = offset+s; lc[3] = 0; //strip length
@@ -312,7 +312,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       uint8_t pins[5];
       int nPins = bus->getPins(pins);
       for (int i = 0; i < nPins; i++) {
-        lp[1] = offset+i;
+        lp[1] = '0'+i;
         if (PinManager::isPinOk(pins[i]) || bus->isVirtual()) printSetFormValue(settingsScript,lp,pins[i]);
       }
       printSetFormValue(settingsScript,lc,bus->getLength());
@@ -357,7 +357,7 @@ void getSettingsJS(byte subPage, Print& settingsScript)
     const ColorOrderMap& com = BusManager::getColorOrderMap();
     for (int s = 0; s < com.count(); s++) {
       const ColorOrderMapEntry* entry = com.get(s);
-      if (entry == nullptr) break;
+      if (!entry || !entry->len) break;
       settingsScript.printf_P(PSTR("addCOM(%d,%d,%d);"), entry->start, entry->len, entry->colorOrder);
     }
 
