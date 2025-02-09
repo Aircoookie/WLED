@@ -1945,11 +1945,16 @@ bool WS2812FX::deserializeMap(unsigned n) {
 
   if (!isFile || !requestJSONBufferLock(7)) return false;
 
-  if (!readObjectFromFile(fileName, nullptr, pDoc)) {
+  StaticJsonDocument<64> filter;
+  filter[F("width")]  = true;
+  filter[F("height")] = true;
+  if (!readObjectFromFile(fileName, nullptr, pDoc, &filter)) {
     DEBUG_PRINT(F("ERROR Invalid ledmap in ")); DEBUG_PRINTLN(fileName);
     releaseJSONBufferLock();
     return false; // if file does not load properly then exit
   }
+
+  suspend();
 
   JsonObject root = pDoc->as<JsonObject>();
   // if we are loading default ledmap (at boot) set matrix width and height from the ledmap (compatible with WLED MM ledmaps)
@@ -1963,15 +1968,51 @@ bool WS2812FX::deserializeMap(unsigned n) {
 
   if (customMappingTable) {
     DEBUG_PRINT(F("Reading LED map from ")); DEBUG_PRINTLN(fileName);
+    File f = WLED_FS.open(fileName, "r");
+    f.find("\"map\":[");
+    while (f.available()) { // f.position() < f.size() - 1
+      char number[32];
+      size_t numRead = f.readBytesUntil(',', number, sizeof(number)-1); // read a single number (may include array terminating "]" but not number separator ',')
+      number[numRead] = 0;
+      if (numRead > 0) {
+        char *end = strchr(number,']'); // we encountered end of array so stop processing if no digit found
+        bool foundDigit = (end == nullptr);
+        int i = 0;
+        if (end != nullptr) do {
+          if (number[i] >= '0' && number[i] <= '9') foundDigit = true;
+          if (foundDigit || &number[i++] == end) break;
+        } while (i < 32);
+        if (!foundDigit) break;
+        int index = atoi(number);
+        if (index < 0 || index > 16384) index = 0xFFFF;
+        customMappingTable[customMappingSize++] = index;
+        if (customMappingSize > getLengthTotal()) break;
+      } else break; // there was nothing to read, stop
+    }
+    currentLedmap = n;
+    f.close();
+
+    #ifdef WLED_DEBUG
+    DEBUG_PRINT(F("Loaded ledmap:"));
+    for (unsigned i=0; i<customMappingSize; i++) {
+      if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
+      DEBUG_PRINTF_P(PSTR("%4d,"), customMappingTable[i]);
+    }
+    DEBUG_PRINTLN();
+    #endif
+/*
     JsonArray map = root[F("map")];
     if (!map.isNull() && map.size()) {  // not an empty map
       customMappingSize = min((unsigned)map.size(), (unsigned)getLengthTotal());
       for (unsigned i=0; i<customMappingSize; i++) customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
       currentLedmap = n;
     }
+*/
   } else {
     DEBUG_PRINTLN(F("ERROR LED map allocation error."));
   }
+
+  resume();
 
   releaseJSONBufferLock();
   return (customMappingSize > 0);
