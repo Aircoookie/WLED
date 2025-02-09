@@ -145,7 +145,7 @@ BusDigital::BusDigital(const BusConfig &bc, uint8_t nr)
   _hasWhite = hasWhite(bc.type);
   _hasCCT = hasCCT(bc.type);
   if (bc.doubleBuffer) {
-    _data = (uint8_t*)d_calloc(_len, Bus::getNumberOfChannels(_type));
+    _data = (uint8_t*)calloc(_len, Bus::getNumberOfChannels(_type));
     if (!_data) DEBUG_PRINTLN(F("Bus: Buffer allocation failed!"));
   }
   uint16_t lenToCreate = bc.count;
@@ -744,7 +744,7 @@ BusNetwork::BusNetwork(const BusConfig &bc)
   _hasCCT = false;
   _UDPchannels = _hasWhite + 3;
   _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
-  _data = (uint8_t*)d_calloc(_len, _UDPchannels);
+  _data = (uint8_t*)calloc(_len, _UDPchannels);
   _valid = (_data != nullptr);
   DEBUG_PRINTF_P(PSTR("%successfully inited virtual strip with type %u and IP %u.%u.%u.%u\n"), _valid?"S":"Uns", bc.type, bc.pins[0], bc.pins[1], bc.pins[2], bc.pins[3]);
 }
