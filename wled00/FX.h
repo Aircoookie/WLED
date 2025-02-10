@@ -322,8 +322,11 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
+#define FX_MODE_ANTS                   187
+#define FX_MODE_PACMAN                 188
+//#define FX_MODE_RACERS                 189
 
-#define MODE_COUNT                     187
+#define MODE_COUNT                     189
 
 
 #define BLEND_STYLE_FADE            0x00  // universal
