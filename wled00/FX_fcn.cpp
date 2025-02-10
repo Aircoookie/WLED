@@ -11,6 +11,7 @@
 */
 #include "wled.h"
 #include "FX.h"
+#include "FXparticleSystem.h"  // TODO: better define the required function (mem service) in FX.h?
 #include "palettes.h"
 
 /*
@@ -468,6 +469,12 @@ void Segment::beginDraw() {
       _currentPalette = _t->_palT; // copy transitioning/temporary palette
     }
   }
+}
+
+// loads palette of the old FX during transitions (used by particle system)
+void Segment::loadOldPalette(void) {
+  if(isInTransition())
+    loadPalette(_currentPalette, _t->_palTid);
 }
 
 // relies on WS2812FX::service() to call it for each frame
@@ -1546,6 +1553,9 @@ void WS2812FX::service() {
     _segment_index++;
   }
   Segment::setClippingRect(0, 0);             // disable clipping for overlays
+  #if !(defined(WLED_DISABLE_PARTICLESYSTEM2D) && defined(WLED_DISABLE_PARTICLESYSTEM1D))
+  servicePSmem(); // handle segment particle system memory
+  #endif
   _isServicing = false;
   _triggered = false;
 
