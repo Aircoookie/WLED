@@ -7472,11 +7472,11 @@ static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@
 static void soapPixels(bool isRow, uint8_t *noise3d, CRGB *pixels) {
   const int  cols = SEG_W;
   const int  rows = SEG_H;
-  const auto XY   = [&](int x, int y) { return x + y * cols; };
+  const auto XY   = [&](int x, int y) { return (x%cols) + (y%rows) * cols; };
   const auto abs  = [](int x) { return x<0 ? -x : x; };
   const int  tRC  = isRow ? rows : cols; // transpose if isRow
   const int  tCR  = isRow ? cols : rows; // transpose if isRow
-  const int  amplitude = 2 * ((tCR >= 16) ? (tCR-8) : 8) / (1 + ((255 - SEGMENT.custom1) >> 5));
+  const int  amplitude = max(1, (tCR - 8) >> 3) * (1 + (SEGMENT.custom1 >> 5));
   const int  shift = 0; //(128 - SEGMENT.custom2)*2;
 
   CRGB ledsbuff[tCR];
