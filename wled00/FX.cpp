@@ -6603,6 +6603,94 @@ static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix@!,Brightness;!,!;
 
 
 //////////////////////
+// *    WIPE OUT    //
+//////////////////////
+uint16_t mode_wipe_out(void) {
+  if (SEGLEN == 1) return mode_static();
+
+  uint16_t duration  = 4100 - (SEGMENT.speed * 16); // Adjust speed (1-255) to duration (1000ms to 20ms)
+  uint16_t stepDuration = duration / SEGLEN;
+  uint32_t currentTime = millis();
+  uint16_t segPerLoop = floor(SEGMENT.intensity / 64);
+
+  if(segPerLoop < 1){
+    segPerLoop = 1;
+  }
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = currentTime; // Start time
+    SEGENV.aux1 = 0; // Current LED
+  }
+
+  if (currentTime - SEGENV.aux0 > stepDuration) {
+    SEGENV.aux0 = currentTime;
+    if (SEGENV.aux1 < SEGLEN) {
+      for (int i = 0; i < segPerLoop && SEGENV.aux1 >= 0 && SEGENV.aux1 < SEGLEN; i++) {
+        SEGMENT.setPixelColor(SEGENV.aux1, BLACK);
+        SEGENV.aux1++;
+      }
+    } else {
+      // All LEDs are off, reset
+      SEGENV.aux1 = 0;
+      strip.setBrightness(0);
+      return 65535;
+    }
+  }
+
+  return FRAMETIME;
+}
+
+// Add the effect details to the list
+static const char _data_FX_MODE_WIPE_OUT[] PROGMEM = 
+  "Wipe Out@!,Boost speed;!,!;!;ix=64";
+
+
+//////////////////////
+// *    WIPE IN     //
+//////////////////////
+uint16_t mode_wipe_in(void) {
+  if (SEGLEN == 1) return mode_static();
+
+  uint16_t duration  = 4100 - (SEGMENT.speed * 16); // Adjust speed (1-255) to duration (1000ms to 20ms)
+  uint16_t stepDuration = duration / SEGLEN;
+  uint32_t currentTime = millis();
+  uint16_t segPerLoop = floor(SEGMENT.intensity / 64);
+
+  if(segPerLoop < 1){
+    segPerLoop = 1;
+  }
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = currentTime; // Start time
+    SEGENV.aux1 = SEGLEN - 1; // Current LED
+    SEGMENT.fill(BLACK); // Start with all LEDs off
+  }
+
+  uint16_t timediff = currentTime - SEGENV.aux0;
+  if (timediff > stepDuration) {
+    SEGENV.aux0 = currentTime;
+    if (SEGENV.aux1 >= 0 && SEGENV.aux1 < SEGLEN) {
+      uint32_t color = SEGCOLOR(0); // Use primary color
+      if (SEGCOLOR(1) != BLACK) {
+        color = color_blend(color, SEGCOLOR(1), SEGMENT.intensity); // Blend with secondary color if set
+      }
+      for (int i = 0; i < segPerLoop && SEGENV.aux1 >= 0 && SEGENV.aux1 < SEGLEN; i++) {
+        SEGMENT.setPixelColor(SEGENV.aux1, color);
+        SEGENV.aux1--;
+      }
+    } else {
+      // All LEDs are on, reset
+      SEGENV.aux1 = SEGLEN - 1;
+      return 65535;
+    }
+  }
+  return FRAMETIME;
+}
+
+static const char _data_FX_MODE_WIPE_IN[] PROGMEM = 
+  "Wipe In@!,Boost speed;!,!;!";
+
+//////////////////////
 //   * MIDNOISE     //
 //////////////////////
 uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
@@ -7830,6 +7918,8 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
   addEffect(FX_MODE_JUGGLES, &mode_juggles, _data_FX_MODE_JUGGLES);
   addEffect(FX_MODE_MATRIPIX, &mode_matripix, _data_FX_MODE_MATRIPIX);
+  addEffect(FX_MODE_WIPE_OUT, &mode_wipe_out, _data_FX_MODE_WIPE_OUT);
+  addEffect(FX_MODE_WIPE_IN, &mode_wipe_in, _data_FX_MODE_WIPE_IN);
   addEffect(FX_MODE_GRAVIMETER, &mode_gravimeter, _data_FX_MODE_GRAVIMETER);
   addEffect(FX_MODE_PLASMOID, &mode_plasmoid, _data_FX_MODE_PLASMOID);
   addEffect(FX_MODE_PUDDLES, &mode_puddles, _data_FX_MODE_PUDDLES);
