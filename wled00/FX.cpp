@@ -10067,10 +10067,7 @@ uint16_t mode_particle1Dsonicstream(void) {
 
   // color
   uint32_t hueincrement = (SEGMENT.custom1 >> 3); // 0-31
-  if (SEGMENT.custom1 < 255)
-    PartSys->setColorByPosition(false);
-  else
-    PartSys->setColorByPosition(true);
+  PartSys->setColorByPosition(SEGMENT.custom1 == 255);
 
   // particle manipulation
   for (uint32_t i = 0; i < PartSys->usedParticles; i++) {
