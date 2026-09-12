@@ -842,7 +842,16 @@ void WLED::initConnection()
   } else {
     if (selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // guard: ensure valid index
 	if (uint32_t(multiWiFi[selectedWiFi].staticIP) != 0U && uint32_t(multiWiFi[selectedWiFi].staticGW) != 0U) {  // explicit cast to uint32_t ensures we check the IPv4 adress, not IPv6
+      #ifdef ARDUINO_ARCH_RP2040
+      // arduino-pico's 4-arg WiFiClass::config() overload takes (local_ip, dns_server,
+      // gateway, subnet) - a different parameter order than the ESP8266/ESP32 convention
+      // (local_ip, gateway, subnet, dns1) that the call below uses. Passing WLED's args
+      // positionally into the ESP-style call silently misroutes gateway/subnet/dns
+      // internally, so the static IP never actually applies. Reorder for RP2040 only.
+      WiFi.config(multiWiFi[selectedWiFi].staticIP, dnsAddress, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN);
+      #else
       WiFi.config(multiWiFi[selectedWiFi].staticIP, multiWiFi[selectedWiFi].staticGW, multiWiFi[selectedWiFi].staticSN, dnsAddress);
+      #endif
     } else {
       WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
     }
