@@ -1519,7 +1519,7 @@ void BusPimoroniUnicornMatrix::cleanup() {
 
 std::vector<LEDType> BusPimoroniUnicornMatrix::getLEDTypes() {
   return {
-    {TYPE_PIMORONI_UNICORN_COSMIC, "H", PSTR("Pimoroni Cosmic Unicorn (32x32)")},
+    {TYPE_PIMORONI_UNICORN_COSMIC, "U", PSTR("Pimoroni Cosmic Unicorn (32x32)")},
   };
 }
 #endif

@@ -19,12 +19,13 @@
 		function isNet(t)  { return gT(t).t === "N"; }              // is network type
 		function isVir(t)  { return gT(t).t === "V" || isNet(t); }  // is virtual type
 		function isHub75(t){ return gT(t).t === "H"; }              // is HUB75 type
+		function isPimoroni(t){ return gT(t).t === "U"; }           // is Pimoroni Unicorn matrix (fixed onboard wiring, no user pins)
 		function hasRGB(t) { return !!(gT(t).c & 0x01); }           // has RGB
 		function hasW(t)   { return !!(gT(t).c & 0x02); }           // has white channel
 		function hasCCT(t) { return !!(gT(t).c & 0x04); }           // is white CCT enabled
 		function is16b(t)  { return !!(gT(t).c & 0x10); }           // is digital 16 bit type
 		function mustR(t)  { return !!(gT(t).c & 0x20); }           // Off refresh is mandatory
-		function numPins(t){ return Math.max(gT(t).t.length, 1); }  // type length determines number of GPIO pins
+		function numPins(t){ return isPimoroni(t) ? 0 : Math.max(gT(t).t.length, 1); }  // type length determines number of GPIO pins
 		function chrID(x)  { return String.fromCharCode((x<10?48:55)+x); }
 		function toNum(c)  { let n=c.charCodeAt(0); return (n>=48 && n<=57)?n-48:(n>=65 && n<=90)?n-55:0; } // convert char (0-9A-Z) to number (0-35)
 		// load common.js with retry on error
@@ -85,7 +86,7 @@
 				if (nm.search(/^L[0-4]/) < 0) return; // not pin fields
 				let n = LC.name.substring(2,3);   // bus number (0-Z)
 				let t = parseInt(d.Sf["LT"+n].value, 10); // LED type SELECT
-				if(isHub75(t)) {
+				if(isHub75(t) || isPimoroni(t)) {
 					return;
 				}
 				// ignore IP address
@@ -312,6 +313,9 @@
 						gId("p2d"+n).innerHTML = "<br>No. of Panels:";
 						gId("p3d"+n).innerText = "rows x cols:";
 						break;
+					case 'U': // Pimoroni Unicorn matrix - fixed onboard wiring, no user-configurable pins
+						p0d = "";
+						break;
 				}
 				gId("p0d"+n).innerText = p0d;
 				gId("p1d"+n).innerText = p1d;
@@ -321,7 +325,7 @@
 					let nm2 = "L"+p+n;
 					let el = d.Sf[nm2];
 					if (!el) continue;
-					if (isVir(t) || isHub75(t)) {
+					if (isVir(t) || isHub75(t) || isPimoroni(t)) {
 						if (el.tagName === "SELECT") unmakePinSelect(nm2); // see common.js
 					} else {
 						if (el.tagName === "INPUT" && el.type === "number") {
@@ -331,13 +335,20 @@
 					}
 				}
 				// show/hide secondary pins on whatever element type now exists
-				let pins = Math.max(gT(t).t.length,1) + 3*isNet(t) + 4*isHub75(t);
+				let pins = isPimoroni(t) ? 0 : (Math.max(gT(t).t.length,1) + 3*isNet(t) + 4*isHub75(t));
 				for (let p=1; p<5; p++) {
 					var LK = d.Sf["L"+p+n];
 					if (!LK) continue;
 					LK.style.display = (p < pins) ? "inline" : "none";
 					LK.required = (p < pins);
 					if (p >= pins) LK.value = (LK.tagName === "SELECT") ? "-1" : "";
+				}
+				// Pimoroni Unicorn boards have zero configurable pins at all - also hide/free the primary (L0) field
+				let L0 = d.Sf["L0"+n];
+				if (L0) {
+					L0.style.display = isPimoroni(t) ? "none" : "inline";
+					L0.required = !isPimoroni(t);
+					if (isPimoroni(t)) L0.value = "";
 				}
 			}
 
