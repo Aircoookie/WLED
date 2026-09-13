@@ -48,7 +48,7 @@ make_unique(Args&&... args)
 #endif
 
 #ifdef WLED_DEBUG_BUS
-  #ifndef ESP8266
+  #if !defined(ESP8266) && !defined(ARDUINO_ARCH_RP2040)
   #include <rom/rtc.h>
   #endif
   #define DEBUGBUS_PRINT(x) DEBUGOUT.print(x)
@@ -492,6 +492,7 @@ class BusPimoroniUnicornMatrix : public Bus {
     uint32_t *_colors = nullptr;   // shadow buffer so getPixelColor() can return what was last written
     uint8_t  *_bitstream = nullptr; // BCD (binary coded dimming) PWM bitstream fed to the PIO program via DMA
     size_t    _bitstreamLength = 0;
+    uint32_t  _bitstreamAddr = 0; // must outlive the constructor - the ctrl DMA channel re-reads this address forever to re-arm the data channel
 
     PIO _pio = nullptr;
     uint _sm = 0;

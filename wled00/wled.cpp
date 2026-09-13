@@ -23,6 +23,10 @@
 #include "WiFi.h"           // WiFi library for network connectivity
 #include "ESP_HostedOTA.h"  // ESP-Hosted OTA update functionality
 #endif
+
+#ifdef ARDUINO_ARCH_RP2040
+#include "cyw43.h" // ground-truth radio link state - WiFi.status() alone is not trustworthy on this platform, see debug print below
+#endif
 extern "C" void usePWMFixedNMI();
 
 // millis()-rollover counter (millis() wraps every ~50 days) - previously
@@ -325,6 +329,11 @@ void WLED::loop()
     DEBUG_PRINTF_P(PSTR("Free heap/contiguous: %u/%u\n"), getFreeHeapSize(), getContiguousFreeHeap());
     #endif
     DEBUG_PRINTF_P(PSTR("Wifi state: %d\n"), WiFi.status());
+    #ifdef ARDUINO_ARCH_RP2040
+    // WiFi.status() can report WL_CONNECTED here even after the radio has actually
+    // dropped the join - cyw43_wifi_link_status() is the real link-layer state.
+    DEBUG_PRINTF_P(PSTR("cyw43 link state: %d\n"), cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA));
+    #endif
     #ifndef WLED_DISABLE_ESPNOW
     DEBUG_PRINTF_P(PSTR("ESP-NOW state: %u\n"), statusESPNow);
     #endif

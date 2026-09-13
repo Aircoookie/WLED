@@ -1293,26 +1293,28 @@ namespace {
   constexpr uint32_t COSMIC_ROW_BYTES = BusPimoroniUnicornMatrix::BCD_FRAME_COUNT * COSMIC_BCD_FRAME_BYTES;
   constexpr uint32_t COSMIC_BITSTREAM_LENGTH = COSMIC_ROW_COUNT * COSMIC_ROW_BYTES;
 
-  // 14-bit gamma-correction / dimming-curve lookup, vendored unmodified from
-  // pimoroni-pico's common/pimoroni_common.hpp (same license as above).
-  // v = (uint16_t)(powf((float)(n) / 255.0f, 2.2) * 16383.0f + 0.5f)
-  constexpr uint16_t UNICORN_GAMMA_14BIT[256] = {
-    0, 0, 0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 23, 28, 32,
-    37, 42, 48, 54, 61, 67, 75, 82, 90, 99, 108, 117, 127, 137, 148, 159,
-    170, 182, 195, 207, 221, 234, 249, 263, 278, 294, 310, 326, 343, 361, 379, 397,
-    416, 435, 455, 475, 496, 517, 539, 561, 583, 607, 630, 654, 679, 704, 730, 756,
-    783, 810, 838, 866, 894, 924, 953, 983, 1014, 1045, 1077, 1110, 1142, 1176, 1210, 1244,
-    1279, 1314, 1350, 1387, 1424, 1461, 1499, 1538, 1577, 1617, 1657, 1698, 1739, 1781, 1823, 1866,
-    1910, 1954, 1998, 2044, 2089, 2136, 2182, 2230, 2278, 2326, 2375, 2425, 2475, 2525, 2577, 2629,
-    2681, 2734, 2787, 2841, 2896, 2951, 3007, 3063, 3120, 3178, 3236, 3295, 3354, 3414, 3474, 3535,
-    3596, 3658, 3721, 3784, 3848, 3913, 3978, 4043, 4110, 4176, 4244, 4312, 4380, 4449, 4519, 4589,
-    4660, 4732, 4804, 4876, 4950, 5024, 5098, 5173, 5249, 5325, 5402, 5479, 5557, 5636, 5715, 5795,
-    5876, 5957, 6039, 6121, 6204, 6287, 6372, 6456, 6542, 6628, 6714, 6801, 6889, 6978, 7067, 7156,
-    7247, 7337, 7429, 7521, 7614, 7707, 7801, 7896, 7991, 8087, 8183, 8281, 8378, 8477, 8576, 8675,
-    8775, 8876, 8978, 9080, 9183, 9286, 9390, 9495, 9600, 9706, 9812, 9920, 10027, 10136, 10245, 10355,
-    10465, 10576, 10688, 10800, 10913, 11027, 11141, 11256, 11371, 11487, 11604, 11721, 11840, 11958, 12078, 12198,
-    12318, 12440, 12562, 12684, 12807, 12931, 13056, 13181, 13307, 13433, 13561, 13688, 13817, 13946, 14076, 14206,
-    14337, 14469, 14602, 14735, 14868, 15003, 15138, 15273, 15410, 15547, 15685, 15823, 15962, 16102, 16242, 16383};
+  // 8-bit -> 14-bit *linear* bit-depth expansion (not a gamma/dimming curve).
+  //
+  // pimoroni-pico's own CosmicUnicorn::set_pixel() applies a gamma-2.2 14-bit
+  // lookup here (common/pimoroni_common.hpp) because in their world nothing
+  // upstream has gamma-corrected the pixel yet. WLED is different: every bus
+  // type is fed through one shared perceptual-gamma pass already, in
+  // FX_fcn.cpp's show() (`if (useGammaCorrection) c = gamma32(c);`, gated on
+  // the user's "gamma correction" setting) immediately before
+  // BusManager::setPixelColor() - see BusHub75Matrix::setPixelColor() for the
+  // existing precedent, which does zero additional correction of its own for
+  // exactly this reason. Reapplying Pimoroni's own gamma-2.2 table on top of
+  // that compounds two gamma curves into one very dark, very wrong one -
+  // most visible on effects that pre-compensate via gamma8inv() expecting
+  // exactly one forward gamma pass to follow (e.g. FXparticleSystem.cpp's
+  // fire/firework rendering), since a second unexpected curve on top wrecks
+  // their brightness distribution. This bus still needs *some* 8->14 bit
+  // widening so the BCD PWM has enough levels for smooth low-brightness
+  // dimming - just linear, matching the correction (or lack of it) every
+  // other bus type gets.
+  constexpr uint16_t unicornExpand14Bit(uint8_t v8) {
+    return (uint16_t(v8) << 6) | (v8 >> 2); // exact 0->0, 255->16383, bit-replication expansion
+  }
 } // namespace
 
 BusPimoroniUnicornMatrix::BusPimoroniUnicornMatrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
@@ -1373,6 +1375,38 @@ BusPimoroniUnicornMatrix::BusPimoroniUnicornMatrix(const BusConfig &bc) : Bus(bc
 
   for (uint8_t pin : matrixPins) { gpio_init(pin); gpio_set_dir(pin, GPIO_OUT); }
   gpio_put(UNICORN_COLUMN_BLANK, true); // keep output disabled until the PIO program takes over
+  // non-visible row while we bring the driver chips up, to avoid a startup flash
+  for (uint8_t i = 0; i < 4; i++) gpio_put(UNICORN_ROW_BIT_0 + i, true);
+
+  // The columns are driven by cascaded constant-current LED driver chips whose
+  // output-current register defaults to effectively zero on power-up - without
+  // this bring-up sequence the PIO streams pixel data correctly but the panel
+  // stays dark. Bit-bangs "full output current" into all 12 cascaded chips over
+  // the same clock/data/latch lines the PIO takes over afterwards. Ported
+  // verbatim from pimoroni-pico's CosmicUnicorn::init() (see file header credit).
+  delay(100);
+  constexpr uint16_t UNICORN_DRIVER_FULL_CURRENT_REG = 0b1111111111001110; // register 2
+  for (int chip = 0; chip < 11; chip++) {
+    for (int bit = 0; bit < 16; bit++) {
+      gpio_put(UNICORN_COLUMN_DATA, (UNICORN_DRIVER_FULL_CURRENT_REG & (1U << (15 - bit))) != 0);
+      delayMicroseconds(10);
+      gpio_put(UNICORN_COLUMN_CLOCK, true);
+      delayMicroseconds(10);
+      gpio_put(UNICORN_COLUMN_CLOCK, false);
+    }
+  }
+  for (int bit = 0; bit < 16; bit++) {
+    gpio_put(UNICORN_COLUMN_DATA, (UNICORN_DRIVER_FULL_CURRENT_REG & (1U << (15 - bit))) != 0);
+    delayMicroseconds(10);
+    gpio_put(UNICORN_COLUMN_CLOCK, true);
+    delayMicroseconds(10);
+    gpio_put(UNICORN_COLUMN_CLOCK, false);
+    if (bit == 4) gpio_put(UNICORN_COLUMN_LATCH, true);
+  }
+  gpio_put(UNICORN_COLUMN_LATCH, false);
+  gpio_put(UNICORN_COLUMN_BLANK, false); // blank pulse clears a slight glow the latch above tends to leave behind
+  delayMicroseconds(10);
+  gpio_put(UNICORN_COLUMN_BLANK, true);
 
   _pio = pio0;
   int sm = pio_claim_unused_sm(_pio, false);
@@ -1414,15 +1448,17 @@ BusPimoroniUnicornMatrix::BusPimoroniUnicornMatrix(const BusConfig &bc) : Bus(bc
   }
 
   // ctrl channel re-arms the data channel's read address every time it finishes,
-  // making the whole transfer loop forever without CPU intervention
-  const uint32_t bitstreamAddr = reinterpret_cast<uint32_t>(_bitstream);
+  // making the whole transfer loop forever without CPU intervention. _bitstreamAddr
+  // must be a member, not a local - the ctrl channel keeps re-reading this address
+  // for the lifetime of the bus, long after the constructor returns.
+  _bitstreamAddr = reinterpret_cast<uint32_t>(_bitstream);
   dma_channel_config ctrlCfg = dma_channel_get_default_config(_dmaCtrlChannel);
   channel_config_set_transfer_data_size(&ctrlCfg, DMA_SIZE_32);
   channel_config_set_read_increment(&ctrlCfg, false);
   channel_config_set_write_increment(&ctrlCfg, false);
   channel_config_set_chain_to(&ctrlCfg, _dmaChannel);
   dma_channel_configure(_dmaCtrlChannel, &ctrlCfg,
-    &dma_hw->ch[_dmaChannel].read_addr, &bitstreamAddr, 1, false);
+    &dma_hw->ch[_dmaChannel].read_addr, &_bitstreamAddr, 1, false);
 
   dma_channel_config dataCfg = dma_channel_get_default_config(_dmaChannel);
   channel_config_set_transfer_data_size(&dataCfg, DMA_SIZE_32);
@@ -1456,14 +1492,14 @@ BusPimoroniUnicornMatrix::BusPimoroniUnicornMatrix(const BusConfig &bc) : Bus(bc
   if (y < 16) x += 32;
   else        y -= 16;
 
-  uint16_t gammaR = UNICORN_GAMMA_14BIT[R(c)];
-  uint16_t gammaG = UNICORN_GAMMA_14BIT[G(c)];
-  uint16_t gammaB = UNICORN_GAMMA_14BIT[B(c)];
+  uint16_t wideR = unicornExpand14Bit(R(c));
+  uint16_t wideG = unicornExpand14Bit(G(c));
+  uint16_t wideB = unicornExpand14Bit(B(c));
 
   for (uint32_t frame = 0; frame < BCD_FRAME_COUNT; frame++) {
     uint8_t *p = &_bitstream[uint32_t(y) * COSMIC_ROW_BYTES + (COSMIC_BCD_FRAME_BYTES * frame) + 2 + uint32_t(x)];
-    *p = uint8_t((gammaB & 1) << 0) | uint8_t((gammaG & 1) << 1) | uint8_t((gammaR & 1) << 2);
-    gammaR >>= 1; gammaG >>= 1; gammaB >>= 1;
+    *p = uint8_t((wideB & 1) << 0) | uint8_t((wideG & 1) << 1) | uint8_t((wideR & 1) << 2);
+    wideR >>= 1; wideG >>= 1; wideB >>= 1;
   }
 }
 

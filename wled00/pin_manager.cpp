@@ -301,6 +301,14 @@ bool PinManager::isPinOk(byte gpio, bool output)
     if (output) return digitalPinCanOutput(gpio);
     else        return true;
   }
+#elif defined(ARDUINO_ARCH_RP2040)
+  // Pico W / Pico 2 W form factor: GPIO 0-29 are exposed (WLED_NUM_PINS==30, see
+  // pin_manager.h), but GPIO 23-25 and 29 are wired to the onboard CYW43 wireless
+  // module (power enable / SPI data / SPI CS / SPI clock) on the "W" board variants
+  // this port targets, so they are not available for general-purpose I/O. The SPI
+  // flash is on dedicated QSPI pins, not part of this GPIO numbering, unlike ESP8266.
+  if (gpio == 23 || gpio == 24 || gpio == 25 || gpio == 29) return false;
+  return true;
 #else
   if (gpio <  6) return true;
   if (gpio < 12) return false; //SPI flash pins
