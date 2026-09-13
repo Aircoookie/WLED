@@ -3336,6 +3336,16 @@ function simplifyUI() {
 // Version reporting feature
 var versionCheckDone = false;
 
+// Preference/version-tracking storage key for checkVersionUpgrade()/updateVersionInfo().
+// This used to round-trip through a version-info.json file on the device (written via
+// /upload, read via /edit?func=edit) - on at least one platform that upload silently
+// doesn't persist (reports success, but the file is never actually there on the next
+// load), which made the "skip reporting, save my choice" checkbox never actually stick.
+// localStorage is per-browser rather than per-device, but for this one small
+// nag-suppression preference that's a reasonable trade for something guaranteed to work
+// everywhere, and it avoids an extra fetch round-trip on every page load either way.
+const LS_VERSION_INFO_KEY = 'wledVersionInfo';
+
 function checkVersionUpgrade(info) {
 	// Only check once per page load
 	if (versionCheckDone) return;
@@ -3344,52 +3354,41 @@ function checkVersionUpgrade(info) {
 	// Suppress feature if in AP mode (no internet connection available)
 	if (info.wifi && info.wifi.ap) return;
 
-	// Fetch version-info.json using existing /edit endpoint
-	fetch(getURL('/edit?func=edit&path=/version-info.json'), {
-		method: 'get'
-	})
-		.then(res => {
-			if (res.status === 404) {
-				// File doesn't exist - first install, show install prompt
-				showVersionUpgradePrompt(info, null, info.ver);
-				return null;
-			}
-			if (!res.ok) {
-				throw new Error('Failed to fetch version-info.json');
-			}
-			return res.json();
-		})
-		.then(versionInfo => {
-			if (!versionInfo) return; // 404 case already handled
+	let versionInfo = null;
+	try {
+		const raw = localStorage.getItem(LS_VERSION_INFO_KEY);
+		if (raw) versionInfo = JSON.parse(raw);
+	} catch (e) {
+		console.log('Failed to read stored version info', e);
+		return; // can't reliably suppress the prompt if storage is unavailable - stay quiet rather than nag every load
+	}
 
-			// Check if user opted out
-			if (versionInfo.neverAsk) return;
+	if (!versionInfo) {
+		// No stored info - first install, show install prompt
+		showVersionUpgradePrompt(info, null, info.ver);
+		return;
+	}
 
-			// Check if version has changed
-			const currentVersion = info.ver;
-			const storedVersion = versionInfo.version || '';
+	// Check if user opted out
+	if (versionInfo.neverAsk) return;
 
-			if (storedVersion && storedVersion !== currentVersion) {
-				// Version has changed
-				if (versionInfo.alwaysReport) {
-					// Automatically report if user opted in for always reporting
-					reportUpgradeEvent(info, storedVersion, true);
-				} else {
-					// Show upgrade prompt
-					showVersionUpgradePrompt(info, storedVersion, currentVersion);
-				}
-			} else if (!storedVersion) {
-				// Empty version in file, show install prompt
-				showVersionUpgradePrompt(info, null, currentVersion);
-			}
-		})
-		.catch(e => {
-			console.log('Failed to load version-info.json', e);
-			// On error, save current version for next time
-			if (info && info.ver) {
-				updateVersionInfo(info.ver, false, false);
-			}
-		});
+	// Check if version has changed
+	const currentVersion = info.ver;
+	const storedVersion = versionInfo.version || '';
+
+	if (storedVersion && storedVersion !== currentVersion) {
+		// Version has changed
+		if (versionInfo.alwaysReport) {
+			// Automatically report if user opted in for always reporting
+			reportUpgradeEvent(info, storedVersion, true);
+		} else {
+			// Show upgrade prompt
+			showVersionUpgradePrompt(info, storedVersion, currentVersion);
+		}
+	} else if (!storedVersion) {
+		// Empty version in stored info, show install prompt
+		showVersionUpgradePrompt(info, null, currentVersion);
+	}
 }
 
 function showVersionUpgradePrompt(info, oldVersion, newVersion) {
@@ -3592,22 +3591,11 @@ function updateVersionInfo(version, neverAsk, alwaysReport) {
 		alwaysReport: !!alwaysReport
 	};
 
-	// Create a Blob with JSON content and use /upload endpoint
-	const blob = new Blob([JSON.stringify(versionInfo)], {type: 'application/json'});
-	const formData = new FormData();
-	formData.append('data', blob, 'version-info.json');
-
-	fetch(getURL('/upload'), {
-		method: 'POST',
-		body: formData
-	})
-		.then(res => res.text())
-		.then(data => {
-			console.log('Version info updated', data);
-		})
-		.catch(e => {
-			console.log('Failed to update version-info.json', e);
-		});
+	try {
+		localStorage.setItem(LS_VERSION_INFO_KEY, JSON.stringify(versionInfo));
+	} catch (e) {
+		console.log('Failed to store version info', e);
+	}
 }
 
 size();
