@@ -301,13 +301,14 @@ class BusDigital : public Bus {
 
   private:
     uint8_t  _skip;
-    uint8_t  _colorOrder; // TODO: is this still used? color order is now done in bus
+    uint8_t  _colorOrder; // used for color order override, actual default color order is handled by WLEDpixelBus
+    bool     _hasColorOrderMap = false;
     uint8_t  _pins[2] = {255, 255};
     uint8_t  _driverType; // BusDriverType: BUSDRV_RMT / BUSDRV_PARHW / BUSDRV_BITBANG
-    uint16_t _frequencykHz;
-    uint16_t _milliAmpsMax;
     uint8_t  _milliAmpsPerLed;
+    uint16_t _milliAmpsMax;
     uint16_t _milliAmpsLimit;
+    uint16_t _frequencykHz;
     uint32_t _colorSum = 0;           // sum of brightness-scaled channel bytes; updated in setPixelColor() when ABL active
     WLEDpixelBus::PixelBus* _busPtr = nullptr;
     CustomBusConfig* _pCustomConfig = nullptr; // allocated only when custom.active() == true

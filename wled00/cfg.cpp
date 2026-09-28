@@ -385,6 +385,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (hw_led["rev"] && BusManager::getNumBusses()) BusManager::getBus(0)->setReversed(true); //set 0.11 global reversed setting for first bus
 
   // read color order map configuration
+  BusManager::getColorOrderMap().reset(); // clear stale entries in case config is re-loaded without reboot
   JsonArray hw_com = hw[F("com")];
   if (!hw_com.isNull()) {
     BusManager::getColorOrderMap().reserve(std::min(hw_com.size(), (size_t)WLED_MAX_COLOR_ORDER_MAPPINGS));

@@ -50,6 +50,60 @@ static inline void setBitArray(uint8_t* byteArray, size_t numBits, bool value) {
 
 static ColorOrderMap _colorOrderMap = {};
 
+static void getColorOrderPositions(uint8_t colorOrder, uint8_t numChannels, uint8_t ledType, uint8_t positions[5]) {
+  switch (colorOrder & 0x0F) {
+    case COL_ORDER_RGB: positions[0] = 0; positions[1] = 1; positions[2] = 2; break;
+    case COL_ORDER_BRG: positions[0] = 1; positions[1] = 2; positions[2] = 0; break;
+    case COL_ORDER_RBG: positions[0] = 0; positions[1] = 2; positions[2] = 1; break;
+    case COL_ORDER_BGR: positions[0] = 2; positions[1] = 1; positions[2] = 0; break;
+    case COL_ORDER_GBR: positions[0] = 2; positions[1] = 0; positions[2] = 1; break;
+    default:            positions[0] = 1; positions[1] = 0; positions[2] = 2; break;
+  }
+  if (numChannels == 4) {
+    positions[3] = 3;
+    if (ledType == TYPE_TM1814 || ledType == TYPE_TM1815) {
+      positions[0]++; positions[1]++; positions[2]++;
+      positions[3] = 0;
+    }
+    switch (colorOrder >> 4) {
+      case 1: std::swap(positions[3], positions[2]); break;
+      case 2: std::swap(positions[3], positions[1]); break;
+      case 3: std::swap(positions[3], positions[0]); break;
+    }
+  } else if (numChannels == 5) {
+    positions[3] = 3;
+    positions[4] = 4;
+    if ((colorOrder >> 4) == 4) std::swap(positions[3], positions[4]);
+  }
+}
+
+// Convert canonical channels between two color orders so the base encoder produces the override's wire bytes.
+static void translateColorOrder(uint32_t &c, uint16_t &wwcw, uint8_t sourceOrder, uint8_t targetOrder, uint8_t numChannels, uint8_t ledType) {
+  if (sourceOrder == targetOrder) return;
+
+  uint8_t sourcePositions[5], targetPositions[5];
+  getColorOrderPositions(sourceOrder, numChannels, ledType, sourcePositions);
+  getColorOrderPositions(targetOrder, numChannels, ledType, targetPositions);
+  uint8_t sourceChannels[5] = {R(c), G(c), B(c), W(c), 0};
+  if (numChannels == 5) {
+    sourceChannels[3] = wwcw & 0xFF;
+    sourceChannels[4] = wwcw >> 8;
+  }
+  uint8_t targetChannels[5] = {0};
+  for (uint8_t target = 0; target < numChannels; target++) {
+    for (uint8_t source = 0; source < numChannels; source++) {
+      if (targetPositions[target] == sourcePositions[source]) {
+        targetChannels[target] = sourceChannels[source];
+        break;
+      }
+    }
+  }
+  // for 5ch (CCT) also write WW into W(c): the encoder ignores W(c) and uses wwcw, but
+  // getPixelColor() can only recover the WW channel through W(c) (CW stays lost, decode is lossy)
+  c = RGBW32(targetChannels[0], targetChannels[1], targetChannels[2], numChannels >= 4 ? targetChannels[3] : W(c));
+  if (numChannels == 5) wwcw = targetChannels[3] | ((uint16_t)targetChannels[4] << 8);
+}
+
 bool ColorOrderMap::add(uint16_t start, uint16_t len, uint8_t colorOrder) {
   if (count() >= WLED_MAX_COLOR_ORDER_MAPPINGS || len == 0 || (colorOrder & 0x0F) > COL_ORDER_MAX) return false; // upper nibble contains W swap information
   _mappings.push_back({start,len,colorOrder});
@@ -192,6 +246,19 @@ BusDigital::BusDigital(const BusConfig &bc)
     _busPtr = PixelBusAllocator::create(bc.type, _pins, lenToCreate + _skip, bc.colorOrder, _driverType, bc.busSpeedFactor, _frequencykHz);
   }
   _valid = (_busPtr != nullptr) && bc.count > 0;
+
+  // Custom channel-map buses (incl. legacy 1CH_X3/WWA types) use a ColorEncoder that ignores
+  // _colorOrder, so the override cannot be applied by pre-permuting canonical channels.
+  if (!bc.custom.active()) {
+    const ColorOrderMap& colorOrderMap = BusManager::getColorOrderMap();
+    for (uint8_t i = 0; i < colorOrderMap.count(); i++) {
+      const ColorOrderMapEntry* map = colorOrderMap.get(i);
+      if ((map->start < (_start + _len)) && ((map->start + map->len) > _start)) {
+        _hasColorOrderMap = true;
+        break;
+      }
+    }
+  }
 
   // fix for wled#4759
   if (_valid) {
@@ -337,6 +404,7 @@ void BusDigital::setStatusPixel(uint32_t c) {
 // Note: there is no benefit of putting this in IRAM: IRAM: 34.2fps, no IRAM: 34.3fps
 void BusDigital::setPixelColor(unsigned pix, uint32_t c) {
   if (!_valid) return;
+  const unsigned globalPix = pix + _start;
   if (_reversed) pix = _len - pix -1;
   pix += _skip;
   uint8_t cctWW = 0, cctCW = 0;
@@ -367,17 +435,31 @@ void BusDigital::setPixelColor(unsigned pix, uint32_t c) {
     }
   }
 
+  if (__builtin_expect(_hasColorOrderMap, 0)) {
+    const uint8_t colorOrder = _colorOrderMap.getPixelColorOrder(globalPix, _colorOrder);
+    const uint8_t numChannels = hasCCT() ? 5 : (hasWhite() ? 4 : 3);
+    translateColorOrder(c, wwcw, colorOrder, _colorOrder, numChannels, _type);
+  }
+
   _busPtr->setPixelColor(pix, c, wwcw);
 }
 
 // returns lossly restored color from bus
 uint32_t IRAM_ATTR BusDigital::getPixelColor(unsigned pix) const {
   if (!_valid) return 0;
+  const unsigned globalPix = pix + _start;
   if (_reversed) pix = _len - pix -1;
   pix += _skip;
-  //const uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder); // TODO: do we need the color order? where is getpixelcolor used?
   uint32_t rawC = _busPtr->getPixelColor(pix);
   uint32_t c = restoreColorLossy(rawC, _totalBusBri);
+  if (__builtin_expect(_hasColorOrderMap, 0)) {
+    const uint8_t colorOrder = _colorOrderMap.getPixelColorOrder(globalPix, _colorOrder);
+    // for CCT buses the bus decode returns WW in W(c) (CW is dropped, lossy); pass it via wwcw
+    // so translateColorOrder() can move it to the canonical WW position
+    uint16_t wwcw = W(c);
+    const uint8_t numChannels = hasCCT() ? 5 : (hasWhite() ? 4 : 3);
+    translateColorOrder(c, wwcw, _colorOrder, colorOrder, numChannels, _type);
+  }
   return c;
 }
 
