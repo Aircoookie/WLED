@@ -102,11 +102,7 @@ typedef struct {
   const char *name;
 } LEDType;
 
-// Optional persisted override for a one-wire bus. numChannels == 0 means
-// "not set": the runtime BusProperties are generated from the legacy LED type.
-// Timing is stored flat because that is the existing cfg.json / settings form.
-// Prefix, suffix and brightness mode are not persisted; the type shim owns those
-// until the UI sends a complete property set.
+// Optional persisted override for a one-wire bus. numChannels == 0 means use native channel count
 struct CustomBusConfig {
   // channelColors[i]: 0=Unused, 1=R, 2=G, 3=B, 4=W, 5=WW, 6=CW TODO: add a 7th channel for amber? Also WW/CW are not treated differently if not both are set (see #5654 for reference)
   uint8_t  numChannels  = 0;   // 0 = not set (use native channel count/layout for the bus's LED type)
