@@ -102,11 +102,15 @@ typedef struct {
   const char *name;
 } LEDType;
 
-// Optional bus channel/timing override, attachable to ANY single-wire digital numChannels == 0 means not used
+// Optional persisted override for a one-wire bus. numChannels == 0 means
+// "not set": the runtime BusProperties are generated from the legacy LED type.
+// Timing is stored flat because that is the existing cfg.json / settings form.
+// Prefix, suffix and brightness mode are not persisted; the type shim owns those
+// until the UI sends a complete property set.
 struct CustomBusConfig {
   // channelColors[i]: 0=Unused, 1=R, 2=G, 3=B, 4=W, 5=WW, 6=CW TODO: add a 7th channel for amber? Also WW/CW are not treated differently if not both are set (see #5654 for reference)
   uint8_t  numChannels  = 0;   // 0 = not set (use native channel count/layout for the bus's LED type)
-  uint8_t  channelColors[6] = {2, 1, 3, 0, 0, 0}; // default GRB (matches UI default), only used when numChannels != 0
+  uint8_t  channelColors[WLEDpixelBus::MAX_CUSTOM_CHANNELS] = {2, 1, 3, 0, 0, 0}; // default GRB, only used when numChannels != 0
   uint8_t  invertMask   = 0;     // bitmask: bit i = invert channel i output level
   bool     is16bit      = false; // true = 2 wire bytes per channel (like SM16825)
   bool     invertOutput = false; // invert the hardware output signal polarity
@@ -301,7 +305,8 @@ class BusDigital : public Bus {
 
   private:
     uint8_t  _skip;
-    uint8_t  _colorOrder; // used for color order override, actual default color order is handled by WLEDpixelBus
+    uint8_t  _colorOrder; // saved color-order byte. Encoder indices are built from it once, at creation.
+    uint8_t  _protocolType; // LED type whose wire layout the encoder was built from (may differ when a shared clock locks the type)
     bool     _hasColorOrderMap = false;
     uint8_t  _pins[2] = {255, 255};
     uint8_t  _driverType; // BusDriverType: BUSDRV_RMT / BUSDRV_PARHW / BUSDRV_BITBANG
@@ -310,6 +315,7 @@ class BusDigital : public Bus {
     uint16_t _milliAmpsLimit;
     uint16_t _frequencykHz;
     uint32_t _colorSum = 0;           // sum of brightness-scaled channel bytes; updated in setPixelColor() when ABL active
+    WLEDpixelBus::BusProperties _busProperties;
     WLEDpixelBus::PixelBus* _busPtr = nullptr;
     CustomBusConfig* _pCustomConfig = nullptr; // allocated only when custom.active() == true
 

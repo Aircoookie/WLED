@@ -585,7 +585,7 @@ ParallelSpiBus::ParallelSpiBus(int8_t pin, const LedTiming& timing, uint8_t colo
   , _channelIdx(-1)
   , _ctx(nullptr)
 {
-  _encoder = ColorEncoder(colorOrder, numChannels, ledType);
+  (void)colorOrder; (void)numChannels; // encoder is installed by createBus() from BusProperties
   _ledType = ledType;
 }
 

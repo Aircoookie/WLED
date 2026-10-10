@@ -76,7 +76,7 @@ BitBangBus::BitBangBus(int8_t pin, const LedTiming& timing, uint8_t colorOrder, 
   , _timing(timing)
   , _initialized(false)
 {
-  _encoder = ColorEncoder(colorOrder, numChannels, ledType);
+  (void)colorOrder; (void)numChannels; // encoder is installed by createBus() from BusProperties
   _ledType = ledType;
 }
 

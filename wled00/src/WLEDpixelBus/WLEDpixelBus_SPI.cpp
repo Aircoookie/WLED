@@ -205,8 +205,8 @@ bool SpiBus::show() {
 
   if (_ledType == TYPE_APA102 || _ledType == TYPE_P9813) {
     // These chips need a per-pixel header byte (brightness/flag) in front of the RGB data
-    // Expand the compact encoded buffer in-place, starting from the last pixel (no data is overwritten)
-    // APA102 wire format: [0xE0|bri, B, G, R], P9813 wire format:  [flag, B, G, R]
+    // Expand the compact encoded buffer in-place, starting from the last pixel so no data is overwritten
+    // Native wire formats: APA102: [0xE0|bri, B, G, R], P9813: [flag, B, G, R]
     // note: this "extension" is intentionally not done when encoding the buffer so we can keep the encoding branch-free and fast for all types.
     const uint8_t wireBytes = pixelBytes + 1;
     for (uint32_t i = _numPixels; i > 0; i--) {
@@ -217,7 +217,7 @@ bool SpiBus::show() {
         dst[0] = 0xE0 | _apa102HwBri;
       } else { // TYPE_P9813
         const uint8_t b = dst[1], g = dst[2], r = dst[3];
-        dst[0] = 0xC0 | ((~b & 0xC0) >> 2) | ((~g & 0xC0) >> 4) | ((~r & 0xC0) >> 6);
+        dst[0] = 0xC0 | ((~b & 0xC0) >> 2) | ((~g & 0xC0) >> 4) | ((~r & 0xC0) >> 6); // flag byte is [11 B' G' R'], where B', G', R' are the inverted top 2 bits of each color channel
       }
     }
     sendStartFrame(_numPixels);

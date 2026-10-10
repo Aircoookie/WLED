@@ -856,7 +856,7 @@ I2sBus::I2sBus(int8_t pin, const LedTiming& timing, uint8_t colorOrder, uint8_t 
   , _channelIdx(-1)
   , _ctx(nullptr)
 {
-  _encoder = ColorEncoder(colorOrder, numChannels, ledType);
+  (void)colorOrder; (void)numChannels; // encoder is installed by createBus() from BusProperties
   _ledType = ledType;
   _numPixels = numPixels; // stored so begin() can report srcBytes to the shared I2sBusContext for DMA sizing
 }

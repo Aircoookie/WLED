@@ -52,46 +52,15 @@ written by Damian Schneider @dedehai 2026
 
 #include "WLEDpixelBus_Timings.h"
 #include "WLEDpixelBus_Features.h"
+#include "../../colors.h"
 
 namespace WLEDpixelBus {
 
-
-//==============================================================================
-// WLED Pixel Format - uint32_t RGBW
-//==============================================================================
-
-/**
- * Extract color components from WLED's uint32_t format
- * Format: 0xWWRRGGBB (W in high byte, B in low byte)
- */
-inline uint8_t getR(uint32_t color) { return (color >> 16) & 0xFF; }
-inline uint8_t getG(uint32_t color) { return (color >> 8) & 0xFF; }
-inline uint8_t getB(uint32_t color) { return color & 0xFF; }
-inline uint8_t getW(uint32_t color) { return (color >> 24) & 0xFF; }
-
-/**
- * Create uint32_t color from components
- */
-inline uint32_t makeColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) {
-  return ((uint32_t)w << 24) | ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
-}
+using ::CctPixel;
 
 //==============================================================================
 // CCT (Warm White / Cool White) Support
 //==============================================================================
-
-/**
- * CCT data for a single pixel
- */
-struct CctPixel {
-  union {
-      uint16_t wwcw; // Access as a 16-bit value (0xWWCW), default when setting 16-bit CCT types
-      struct {
-        uint8_t ww;  // Warm white
-        uint8_t cw;  // Cool white
-      };
-  };
-};
 
 //==============================================================================
 // Driver State
@@ -169,6 +138,25 @@ enum WSwap : uint8_t {
   WSWAP_WWCW = 4, // swap WW & CW
 };
 
+static constexpr uint8_t MAX_PREFIX_BYTES = 8;
+static constexpr uint8_t MAX_SUFFIX_BYTES = 8;
+
+// Wire description of a one-wire digital bus. User color order is not a field:
+// BusDigital bakes it into channelColors once, before the encoder is built.
+// Clocked 2-pin chips are not described by this struct.
+struct BusProperties {
+  uint8_t  numChannels = 3; // logical channels; is16bit doubles wire bytes
+  uint8_t  channelColors[MAX_CUSTOM_CHANNELS] = {2, 1, 3, 0, 0, 0};
+  uint8_t  invertMask = 0;
+  bool     is16bit = false;
+  bool     invertOutput = false;
+  LedTiming timing = LedTiming(300, 900, 700, 500, 300);
+  uint8_t  prefixLen = 0;
+  uint8_t  prefixData[MAX_PREFIX_BYTES] = {};
+  uint8_t  suffixLen = 0;
+  uint8_t  suffixData[MAX_SUFFIX_BYTES] = {};
+};
+
 /**
  * Custom channel map color source, used by ColorEncoder::_channelMap[] and the
  * custom-channel-map ColorEncoder constructor. Selects which color source feeds a given wire byte.
@@ -223,13 +211,13 @@ public:
   // -------------------------------------------------------------------------
 
   inline void encodeRGB(uint32_t c, uint8_t* out) const {
-    out[_idxR] = getR(c); out[_idxG] = getG(c); out[_idxB] = getB(c);
+    out[_idxR] = R(c); out[_idxG] = G(c); out[_idxB] = B(c);
   }
   inline void encodeRGBW(uint32_t c, uint8_t* out) const {
-    out[_idxR] = getR(c); out[_idxG] = getG(c); out[_idxB] = getB(c); out[_idxW] = getW(c);
+    out[_idxR] = R(c); out[_idxG] = G(c); out[_idxB] = B(c); out[_idxW] = W(c);
   }
   inline void encodeCCT(uint32_t c, const CctPixel& cct, uint8_t* out) const {
-    out[_idxR] = getR(c); out[_idxG] = getG(c); out[_idxB] = getB(c);
+    out[_idxR] = R(c); out[_idxG] = G(c); out[_idxB] = B(c);
     out[_idxW] = cct.ww; out[_idxCW] = cct.cw;
   }
 
@@ -238,20 +226,20 @@ public:
   // -------------------------------------------------------------------------
 
   inline void encodeRGB16(uint32_t c, uint8_t* out, uint8_t bri) const {
-    writeU16(out, _idxR, getR(c), bri);
-    writeU16(out, _idxG, getG(c), bri);
-    writeU16(out, _idxB, getB(c), bri);
+    writeU16(out, _idxR, R(c), bri);
+    writeU16(out, _idxG, G(c), bri);
+    writeU16(out, _idxB, B(c), bri);
   }
   inline void encodeRGBW16(uint32_t c, uint8_t* out, uint8_t bri) const {
-    writeU16(out, _idxR, getR(c), bri);
-    writeU16(out, _idxG, getG(c), bri);
-    writeU16(out, _idxB, getB(c), bri);
-    writeU16(out, _idxW, getW(c), bri);
+    writeU16(out, _idxR, R(c), bri);
+    writeU16(out, _idxG, G(c), bri);
+    writeU16(out, _idxB, B(c), bri);
+    writeU16(out, _idxW, W(c), bri);
   }
   inline void encodeCCT16(uint32_t c, const CctPixel& cct, uint8_t* out, uint8_t bri) const {
-    writeU16(out, _idxR,  getR(c), bri);
-    writeU16(out, _idxG,  getG(c), bri);
-    writeU16(out, _idxB,  getB(c), bri);
+    writeU16(out, _idxR,  R(c), bri);
+    writeU16(out, _idxG,  G(c), bri);
+    writeU16(out, _idxB,  B(c), bri);
     writeU16(out, _idxW,  cct.ww,  bri);
     writeU16(out, _idxCW, cct.cw,  bri);
   }
@@ -261,13 +249,13 @@ public:
   // -------------------------------------------------------------------------
 
   inline uint32_t decodeRGB(const uint8_t* in) const {
-    return makeColor(in[_idxR], in[_idxG], in[_idxB]);
+    return RGBW32(in[_idxR], in[_idxG], in[_idxB], 0);
   }
   inline uint32_t decodeRGBW(const uint8_t* in) const {
-    return makeColor(in[_idxR], in[_idxG], in[_idxB], in[_idxW]);
+    return RGBW32(in[_idxR], in[_idxG], in[_idxB], in[_idxW]);
   }
   inline uint32_t decodeCCT(const uint8_t* in) const {
-    return makeColor(in[_idxR], in[_idxG], in[_idxB], in[_idxW]); // WW→W, CW dropped (lossy)
+    return RGBW32(in[_idxR], in[_idxG], in[_idxB], in[_idxW]); // WW→W, CW dropped (lossy)
   }
 
   // -------------------------------------------------------------------------
@@ -275,13 +263,13 @@ public:
   // -------------------------------------------------------------------------
 
   inline uint32_t decodeRGB16(const uint8_t* in) const {
-    return makeColor(readU16Hi(in, _idxR), readU16Hi(in, _idxG), readU16Hi(in, _idxB));
+    return RGBW32(readU16Hi(in, _idxR), readU16Hi(in, _idxG), readU16Hi(in, _idxB), 0);
   }
   inline uint32_t decodeRGBW16(const uint8_t* in) const {
-    return makeColor(readU16Hi(in, _idxR), readU16Hi(in, _idxG), readU16Hi(in, _idxB), readU16Hi(in, _idxW));
+    return RGBW32(readU16Hi(in, _idxR), readU16Hi(in, _idxG), readU16Hi(in, _idxB), readU16Hi(in, _idxW));
   }
   inline uint32_t decodeCCT16(const uint8_t* in) const {
-    return makeColor(readU16Hi(in, _idxR), readU16Hi(in, _idxG), readU16Hi(in, _idxB), readU16Hi(in, _idxW));
+    return RGBW32(readU16Hi(in, _idxR), readU16Hi(in, _idxG), readU16Hi(in, _idxB), readU16Hi(in, _idxW));
   }
 
   // -------------------------------------------------------------------------
@@ -293,10 +281,11 @@ public:
   uint32_t decodeGeneric(const uint8_t* in) const;
 
   // Accessors
-  uint8_t getPixelFormat()     const { return _pixelFormat; }   // packed dispatch key: lower nibble=wire bytes, upper=NCHF_*
+  uint8_t getPixelFormat()     const { return _pixelFormat; }   // lower nibble=wire bytes, upper=NCHF_* flags
   uint8_t getColorChannels()   const { return (_pixelFormat & NCHF_16BIT) ? (_pixelFormat & 0x0F) / 2 : (_pixelFormat & 0x0F); } // logical color channels
-  uint8_t getPixelBytes()      const { return _pixelFormat & 0x0F; } // wire bytes per pixel (branch-free)
+  uint8_t getPixelBytes()      const { return _pixelFormat & 0x0F; } // wire bytes per pixel
   bool    is16bit()            const { return (_pixelFormat & NCHF_16BIT) != 0; } // true for UCS8903/8904/SM16825
+  bool    isCustom()           const { return (_pixelFormat & NCHF_CUSTOM) != 0; } // true for non-permutation custom channel maps
 
 private:
   uint8_t _pixelFormat; // lower nibble = bytes per pixel, upper nibble = NCHF_ flags (invert, 16-bit, custom)
@@ -324,15 +313,15 @@ protected:
   size_t   _encodeBufferSize = 0;     // allocated size in bytes
   uint16_t _numPixels = 0;
   uint8_t  _prefixLen = 0;            // byte length of chip prefix at start of _encodeBuffer
+  uint8_t  _prefixData[MAX_PREFIX_BYTES] = {};
   ColorEncoder _encoder;              // color encoder, set by derived class constructors
   uint8_t  _ledType   = 0;            // LED chip type (e.g. 31=TM1814); 0 = generic
   uint8_t* _pixelData = nullptr;      // _encodeBuffer + _prefixLen, cached to avoid per-call addition
   uint8_t  _suffixLen = 0;            // byte length of chip suffix appended after pixel data
+  uint8_t  _suffixData[MAX_SUFFIX_BYTES] = {};
   bool     _inverted  = false;        // physical output signal inversion (polarity)
-  uint8_t  _busBri = 255;  // brightness for color_fade() in setPixelColor(): _bri for 8-bit types,
-                           // fine residual for TM1814/TM1815, 255 (no-op) for 16-bit types
+  uint8_t  _busBri = 255;  // brightness for color_fade() in setPixelColor() (software scaling, can be on top of hardware scaling)
   uint8_t  _encBri = 255;  // encoder brightness for 16-bit types (SM16825/UCS8903/UCS8904):
-                           // applied as channel*_encBri for full 16-bit wire precision; 255 for 8-bit
 
 public:
   virtual ~PixelBus() {
@@ -341,20 +330,26 @@ public:
 
   /**
    * Reserve prefix bytes before pixel data. Must be called BEFORE begin().
-   * allocateEncodeBuffer() will zero the prefix region; updatePrefix() fills it per-frame.
+   * allocateEncodeBuffer() reserves the prefix region; updatePrefix() fills or updates it.
    * @param len  Number of prefix bytes to reserve
    */
   void setPrefixLen(uint8_t len) {
-    _prefixLen = len;
+    _prefixLen = len > MAX_PREFIX_BYTES ? MAX_PREFIX_BYTES : len;
+  }
+
+  void setPrefixData(const uint8_t* data, uint8_t len) {
+    if (!data) return;
+    if (len > MAX_PREFIX_BYTES) len = MAX_PREFIX_BYTES;
+    memcpy(_prefixData, data, len);
   }
 
   /**
-   * Overwrite the prefix bytes in _encodeBuffer at runtime (e.g. per-frame for current control).
+   * Update the prefix data in the transmit buffer (e.g. per-frame for current control).
    * Must be called AFTER begin() (i.e. after allocateEncodeBuffer()). No-op if buffer not ready.
    * @param data  New prefix bytes
    * @param len   Must be <= _prefixLen (will be clamped)
    */
-  void updatePrefix(const uint8_t* data, uint8_t len) {
+  virtual void updatePrefix(const uint8_t* data, uint8_t len) {
     if (!_encodeBuffer || len == 0) return;
     if (len > _prefixLen) len = _prefixLen;
     memcpy(_encodeBuffer, data, len);
@@ -362,7 +357,7 @@ public:
 
   /**
    * Set bus-level brightness applied during pixel encoding for all LED types.
-   * For 8-bit types: applied as video-scale fade on the full uint32_t pixel (hue-preserving).
+   * For 8-bit types: applied using color_fade() on pixel color
    * For 16-bit types (SM16825, UCS8903, UCS8904): applied as `channel * bri` → full 16-bit value.
    * For TM1814/TM1815: set to the fine residual scale after hardware current-step selection.
    * @param b  brightness 0–255
@@ -408,7 +403,13 @@ public:
    * @param len  Number of suffix bytes to reserve
    */
   void setSuffixLen(uint8_t len) {
-    _suffixLen = len;
+    _suffixLen = len > MAX_SUFFIX_BYTES ? MAX_SUFFIX_BYTES : len;
+  }
+
+  void setSuffixData(const uint8_t* data, uint8_t len) {
+    if (!data) return;
+    if (len > MAX_SUFFIX_BYTES) len = MAX_SUFFIX_BYTES;
+    memcpy(_suffixData, data, len);
   }
 
   /**
@@ -460,7 +461,7 @@ public:
       case (3*2) | NCHF_16BIT:   _encoder.encodeRGB16(c, out, _encBri);        break; // 16-bit RGB (6 bytes per pixel)
       case (4*2) | NCHF_16BIT:   _encoder.encodeRGBW16(c, out, _encBri);       break; // 16-bit RGBW (8bytes per pixel)
       case (5*2) | NCHF_16BIT:   _encoder.encodeCCT16(c, cct, out, _encBri);   break; // 16-bit CCT (10 bytes per pixel)
-      default:                   _encoder.encodeGeneric(c, cct, out, _encBri); break; // inverted / special cases
+      default:                   _encoder.encodeGeneric(c, cct, out, _encBri); break; // inverted / special cases up to 6 channels per physical pixel
     }
     return true;
   }
@@ -515,7 +516,8 @@ public:
    * @param numChannels bytes per pixel in the encoded stream
    */
   virtual bool allocateEncodeBuffer(uint16_t numPixels, uint8_t numChannels) {
-    const size_t pixelBytes = padPixelBytesForSuffix((size_t)numPixels * numChannels, _ledType);
+    const size_t pixelBytes = (size_t)numPixels * numChannels;
+    // note: if suffix is used, pixelBytes must align with physical bus requirements, we assume pixels*channels matches a physically possible layout
     size_t needed = _prefixLen + pixelBytes + _suffixLen;
     if (_encodeBuffer && _encodeBufferSize >= needed) return true;
     if (_encodeBuffer) { free(_encodeBuffer); _encodeBuffer = nullptr; }
@@ -529,8 +531,8 @@ public:
     memset(_encodeBuffer, 0, needed);
     _encodeBufferSize = needed;
     _pixelData = _encodeBuffer + _prefixLen;
-    if (_suffixLen == sizeof(SM16825_SUFFIX) && _ledType == TYPE_SM16825)
-      memcpy(_pixelData + pixelBytes, SM16825_SUFFIX, sizeof(SM16825_SUFFIX));
+    if (_prefixLen > 0) memcpy(_encodeBuffer, _prefixData, _prefixLen);
+    if (_suffixLen > 0) memcpy(_pixelData + pixelBytes, _suffixData, _suffixLen);
     return true;
   }
 
@@ -586,18 +588,15 @@ constexpr uint8_t getRmtMaxChannels() {
 
 /**
  * Create a bus instance
- * @param type    Bus driver type
- * @param pin     GPIO pin
- * @param timing  LED timing
- * @param colorOrder Color order byte
- * @param numChannels Bytes per pixel in the encoded stream
- * @param channel RMT channel to use (-1 for auto-allocate)
- * @param ledType WLED LED type constant (TYPE_*), used for chip-specific init
- * @param bufferSize  DMA buffer size (for I2S/LCD)
+ * @param driver Bus driver type
+ * @param pin GPIO pin
+ * @param properties Complete one-wire protocol, channel, and framing properties
+ * @param ledType Legacy type hint retained by low-level driver implementations
+ * @param bufferSize DMA buffer size (for I2S/LCD)
  * @return Bus instance (caller owns, delete when done)
  */
-PixelBus* createBus(BusDriver driver, int8_t pin, const LedTiming& timing,
-  uint8_t colorOrder, uint8_t numChannels, uint8_t ledType = 0, size_t bufferSize = DEFAULT_DMA_BUFFER_SIZE);
+PixelBus* createBus(BusDriver driver, int8_t pin, const BusProperties& properties,
+  uint8_t ledType = 0, size_t bufferSize = DEFAULT_DMA_BUFFER_SIZE);
 
 } // namespace WLEDpixelBus
 
@@ -613,4 +612,3 @@ PixelBus* createBus(BusDriver driver, int8_t pin, const LedTiming& timing,
 #include "WLEDpixelBus_ESP8266.h"
 #include "WLEDpixelBus_BitBang.h"
 #endif
-

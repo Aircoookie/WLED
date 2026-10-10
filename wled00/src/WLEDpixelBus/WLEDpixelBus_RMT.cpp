@@ -42,7 +42,7 @@ RmtBus::RmtBus(int8_t pin, const LedTiming& timing, uint8_t colorOrder, uint8_t 
   , _rmtChannel(RMT_CHANNEL_0)
 #endif
 {
-  _encoder = ColorEncoder(colorOrder, numChannels, ledType);
+  (void)colorOrder; (void)numChannels; // encoder is installed by createBus() from BusProperties
   _ledType = ledType;
 }
 

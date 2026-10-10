@@ -302,7 +302,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         char cbt1h[7] = "CBt1h"; cbt1h[5] = offset+s; cbt1h[6] = 0;
         char cbt1l[7] = "CBt1l"; cbt1l[5] = offset+s; cbt1l[6] = 0;
         char cbrst[7] = "CBrst"; cbrst[5] = offset+s; cbrst[6] = 0;
-        bc_back.custom.numChannels  = request->arg(cbch).toInt();
+        bc_back.custom.numChannels  = (uint8_t)constrain(request->arg(cbch).toInt(), 0, WLEDpixelBus::MAX_CUSTOM_CHANNELS);
         bc_back.custom.invertOutput = request->hasArg(cbio);
         bc_back.custom.is16bit      = request->hasArg(cbb);
         bc_back.custom.t0h  = request->arg(cbt0h).toInt();

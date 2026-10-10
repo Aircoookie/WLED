@@ -76,6 +76,7 @@ public:
   IRAM_ATTR bool setPixelColor(uint16_t pos, uint32_t c, uint16_t wwcw) override;
   IRAM_ATTR uint32_t getPixelColor(uint16_t pix) const override;
   bool allocateEncodeBuffer(uint16_t numPixels, uint8_t numChannels) override;
+  void updatePrefix(const uint8_t* data, uint8_t len) override;
   void updateSuffix(const uint8_t* data, uint8_t len) override;
   void scaleAll(uint8_t scale) override;
 

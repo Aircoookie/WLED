@@ -40,7 +40,7 @@ Esp8266UartBus::Esp8266UartBus(int8_t pin, const LedTiming& timing, uint8_t colo
   , _asyncBuf(nullptr)
   , _asyncBufEnd(nullptr)
 {
-  _encoder = ColorEncoder(colorOrder, numChannels, ledType);
+  (void)colorOrder; (void)numChannels; // encoder is installed by createBus() from BusProperties
   _ledType = ledType;
 }
 
@@ -210,7 +210,7 @@ Esp8266DmaBus::Esp8266DmaBus(int8_t pin, const LedTiming& timing, uint8_t colorO
   , _idleBuf(nullptr)
   , _idleBufSize(0)
 {
-  _encoder = ColorEncoder(colorOrder, numChannels, ledType);
+  (void)colorOrder; (void)numChannels; // encoder is installed by createBus() from BusProperties
   _ledType = ledType;
 }
 
@@ -224,9 +224,11 @@ Esp8266DmaBus::~Esp8266DmaBus() {
 //   Idle/reset are handled by _idleBuf + descriptor chain.
 // ---------------------------------------------------------------------------
 bool Esp8266DmaBus::allocateEncodeBuffer(uint16_t numPixels, uint8_t numChannels) {
-  // 4-step I2S encoding: each source byte → 4 encoded bytes; pad in logical bytes before expansion
-  const size_t pixelBytes = padPixelBytesForSuffix((size_t)numPixels * numChannels, _ledType) * 4;
-  size_t needed = _prefixLen + pixelBytes + _suffixLen * 4;
+  // 4-step I2S encoding: each source byte → 4 encoded bytes
+  const size_t sourcePixelBytes = (size_t)numPixels * numChannels;
+  const size_t prefixBytes = (size_t)_prefixLen * 4;
+  const size_t pixelBytes = sourcePixelBytes * 4;
+  const size_t needed = prefixBytes + pixelBytes + (size_t)_suffixLen * 4;
   if (_encodeBuffer && _encodeBufferSize >= needed) return true;
   if (_encodeBuffer) { free(_encodeBuffer); _encodeBuffer = nullptr; }
   if (needed == 0) return true;
@@ -234,12 +236,13 @@ bool Esp8266DmaBus::allocateEncodeBuffer(uint16_t numPixels, uint8_t numChannels
   if (!_encodeBuffer) { _encodeBufferSize = 0; return false; }
   memset(_encodeBuffer, 0, needed);
   _encodeBufferSize = needed;
-  _pixelData = _encodeBuffer + _prefixLen;
-  if (_suffixLen == sizeof(SM16825_SUFFIX) && _ledType == TYPE_SM16825) {
+  _pixelData = _encodeBuffer + prefixBytes;
+  updatePrefix(_prefixData, _prefixLen);
+  if (_suffixLen > 0) {
     uint32_t* dst = (uint32_t*)(_pixelData + pixelBytes);
-    for (uint8_t i = 0; i < (uint8_t)sizeof(SM16825_SUFFIX); i++) {
+    for (uint8_t i = 0; i < _suffixLen; i++) {
       uint32_t word = 0;
-      uint8_t v = SM16825_SUFFIX[i];
+      uint8_t v = _suffixData[i];
       for (int bit = 7; bit >= 0; bit--) {
         word <<= 4;
         if (_inverted) word |= (v & (1 << bit)) ? 0x1u : 0x7u;
@@ -573,11 +576,27 @@ void Esp8266DmaBus::scaleAll(uint8_t scale) {
   }
 }
 
+void Esp8266DmaBus::updatePrefix(const uint8_t* data, uint8_t len) {
+  if (!_encodeBuffer || !data || _prefixLen == 0 || len == 0) return;
+  if (len > _prefixLen) len = _prefixLen;
+  uint32_t* dst = (uint32_t*)_encodeBuffer;
+  for (uint8_t i = 0; i < len; i++) {
+    uint32_t word = 0;
+    uint8_t v = data[i];
+    for (int bit = 7; bit >= 0; bit--) {
+      word <<= 4;
+      if (_inverted) word |= (v & (1 << bit)) ? 0x1u : 0x7u;
+      else           word |= (v & (1 << bit)) ? 0xEu : 0x8u;
+    }
+    dst[i] = word;
+  }
+}
+
 void Esp8266DmaBus::updateSuffix(const uint8_t* data, uint8_t len) {
-  if (!_pixelData || _suffixLen == 0 || len == 0) return;
+  if (!_pixelData || !data || _suffixLen == 0 || len == 0) return;
   if (len > _suffixLen) len = _suffixLen;
-  const size_t pixelWords = (size_t)_numPixels * _encoder.getPixelBytes();
-  uint32_t* dst = (uint32_t*)(_pixelData + pixelWords * 4);
+  const size_t pixelBytes = (size_t)_numPixels * _encoder.getPixelBytes();
+  uint32_t* dst = (uint32_t*)(_pixelData + pixelBytes * 4);
   for (uint8_t i = 0; i < len; i++) {
     uint32_t word = 0;
     uint8_t v = data[i];
