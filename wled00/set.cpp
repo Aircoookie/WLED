@@ -1,4 +1,5 @@
 #include "wled.h"
+#include "bus_wrapper.h" // resolveBusConfigLayout()
 
 /*
  * Receives client input
@@ -282,18 +283,28 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         maPerLed = request->arg(la).toInt();
         maMax = request->arg(ma).toInt() * request->hasArg(F("PPL")); // if PP-ABL is disabled maMax (per bus) must be 0
       }
-      type |= request->hasArg(rf) << 7; // off refresh override
       driverType = request->arg(ld).toInt(); // 0=RMT (default), 1=I2S
       text = request->arg(hs).substring(0,31);
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       uint8_t bsf = request->hasArg(sf) ? (uint8_t)request->arg(sf).toInt() : 100;
-      busConfigs.emplace_back(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, freq, maPerLed, maMax, driverType, text, (uint8_t)bsf);
-      // Customized channel map/timing override: parsed for any digital LED type when the
-      // "customize" checkbox (CBen) is submitted; numChannels != 0 marks CustomBusConfig active.
+      busConfigs.emplace_back(type, pins, start, length);
+      BusConfig& bc = busConfigs.back();
+      bc.colorOrder = colorOrder | (channelSwap<<4);
+      bc.reversed = request->hasArg(cv);
+      bc.skipAmount = skip;
+      bc.refreshReq = request->hasArg(rf); // off refresh override
+      bc.autoWhite = awmode;
+      bc.frequency = freq;
+      bc.milliAmpsPerLed = maPerLed;
+      bc.milliAmpsMax = maMax;
+      bc.driverType = driverType;
+      bc.text = text;
+      bc.busSpeedFactor = bsf;
+      // Customized channel map/timing override: parsed for any digital LED type when the "customize" checkbox (CBen) is submitted.
       char cben[7] = "CBen"; cben[4] = offset+s; cben[5] = 0;
-      if (request->hasArg(cben)) {
-        BusConfig& bc_back = busConfigs.back();
+      bc.channels.custom = request->hasArg(cben);
+      if (bc.channels.custom) {
         char cbch[7]  = "CBch";  cbch[4]  = offset+s; cbch[5]  = 0;
         char cbio[7]  = "CBio";  cbio[4]  = offset+s; cbio[5]  = 0;
         char cbb[6]   = "CBb";   cbb[3]   = offset+s; cbb[4]   = 0;
@@ -302,22 +313,24 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         char cbt1h[7] = "CBt1h"; cbt1h[5] = offset+s; cbt1h[6] = 0;
         char cbt1l[7] = "CBt1l"; cbt1l[5] = offset+s; cbt1l[6] = 0;
         char cbrst[7] = "CBrst"; cbrst[5] = offset+s; cbrst[6] = 0;
-        bc_back.custom.numChannels  = (uint8_t)constrain(request->arg(cbch).toInt(), 0, WLEDpixelBus::MAX_CUSTOM_CHANNELS);
-        bc_back.custom.invertOutput = request->hasArg(cbio);
-        bc_back.custom.is16bit      = request->hasArg(cbb);
-        bc_back.custom.t0h  = request->arg(cbt0h).toInt();
-        bc_back.custom.t0l  = request->arg(cbt0l).toInt();
-        bc_back.custom.t1h  = request->arg(cbt1h).toInt();
-        bc_back.custom.t1l  = request->arg(cbt1l).toInt();
-        bc_back.custom.trst = request->arg(cbrst).toInt();
-        bc_back.custom.invertMask   = 0;
+        bc.channels.numChannels  = (uint8_t)constrain(request->arg(cbch).toInt(), 0, WLEDpixelBus::MAX_CUSTOM_CHANNELS);
+        bc.channels.invertOutput = request->hasArg(cbio);
+        bc.channels.is16bit      = request->hasArg(cbb);
+        bc.channels.t0h  = request->arg(cbt0h).toInt();
+        bc.channels.t0l  = request->arg(cbt0l).toInt();
+        bc.channels.t1h  = request->arg(cbt1h).toInt();
+        bc.channels.t1l  = request->arg(cbt1l).toInt();
+        bc.channels.trst = request->arg(cbrst).toInt();
+        bc.channels.invertMask   = 0;
         for (uint8_t ci = 0; ci < 6; ci++) {
           char cbc[7] = "CBc"; cbc[3] = '0'+ci; cbc[4] = offset+s; cbc[5] = 0;
           char cbi[7] = "CBi"; cbi[3] = '0'+ci; cbi[4] = offset+s; cbi[5] = 0;
-          bc_back.custom.channelColors[ci] = (uint8_t)constrain(request->arg(cbc).toInt(), 0, 6);
-          if (request->hasArg(cbi)) bc_back.custom.invertMask |= (1u << ci);
+          bc.channels.channelColors[ci] = (uint8_t)constrain(request->arg(cbc).toInt(), 0, 6);
+          if (request->hasArg(cbi)) bc.channels.invertMask |= (1u << ci);
         }
       }
+      if (bc.channels.numChannels == 0) bc.channels.custom = false; // no channels entered: fall back to type defaults
+      resolveBusConfigLayout(bc); // fill the wire layout from type + color order unless custom
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed

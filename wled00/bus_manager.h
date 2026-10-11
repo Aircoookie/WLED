@@ -14,7 +14,7 @@
  */
 
 #include "const.h"
-#include "src/WLEDpixelBus/WLEDpixelBus.h"
+#include "bus_config.h"
 #include "pin_manager.h"
 #include <vector>
 #include <memory>
@@ -64,8 +64,6 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb);
 #define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
 #define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
 
-struct BusConfig; // forward declaration
-
 // Defines an LED Strip and its color ordering.
 typedef struct {
   uint16_t start;
@@ -102,29 +100,6 @@ typedef struct {
   const char *name;
 } LEDType;
 
-// Optional persisted override for a one-wire bus. numChannels == 0 means use native channel count
-struct CustomBusConfig {
-  // channelColors[i]: 0=Unused, 1=R, 2=G, 3=B, 4=W, 5=WW, 6=CW TODO: add a 7th channel for amber? Also WW/CW are not treated differently if not both are set (see #5654 for reference)
-  uint8_t  numChannels  = 0;   // 0 = not set (use native channel count/layout for the bus's LED type)
-  uint8_t  channelColors[WLEDpixelBus::MAX_CUSTOM_CHANNELS] = {2, 1, 3, 0, 0, 0}; // default GRB, only used when numChannels != 0
-  uint8_t  invertMask   = 0;     // bitmask: bit i = invert channel i output level
-  bool     is16bit      = false; // true = 2 wire bytes per channel (like SM16825)
-  bool     invertOutput = false; // invert the hardware output signal polarity
-  uint16_t t0h = 300;  // '0' bit high time, ns
-  uint16_t t0l = 900;  // '0' bit low  time, ns
-  uint16_t t1h = 700;  // '1' bit high time, ns
-  uint16_t t1l = 500;  // '1' bit low  time, ns
-  uint16_t trst = 300; // reset/latch time, µs
-  inline bool active() const { return numChannels != 0; } // true when this override should be applied instead of the native layout
-};
-
-
-// Driver preference for digital LED buses: stored in BusConfig::driverType and BusDigital::_driverType
-enum BusDriverType : uint8_t {
-  BUSDRV_RMT     = 0, // RMT peripheral (default on most ESP32 variants)
-  BUSDRV_PARHW   = 1, // parallel output (chip-dependent): ESP32/S2/S3 use I2S-LCD, C3 uses parallel SPI, C6/H2/C5/P4 use PARLIO
-  BUSDRV_BITBANG = 2, // parallel bit-bang GPIO (ESP32 only)
-};
 
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
@@ -188,36 +163,25 @@ class Bus {
     inline  bool     isOffRefreshRequired() const               { return _needsRefresh; }
     inline  bool     containsPixel(uint16_t pix) const          { return pix >= _start && pix < _start + _len; }
     inline  uint8_t  getBusSpeedFactor() const                  { return _busSpeedFactor; }
-    virtual const CustomBusConfig& getCustomBusConfig() const;  // valid whenever result.active() == true; returns a static default (numChannels=0) otherwise
+    virtual const BusChannelLayout& getChannelLayout() const; // returns default layout for non-digital buses (placeholder stores it too)
 
     static inline std::vector<LEDType> getLEDTypes()            { return {{TYPE_NONE, "", PSTR("None")}}; } // not used. just for reference for derived classes
-    static constexpr size_t   getNumberOfPins(uint8_t type)     { return isVirtual(type) ? 4 : isPWM(type) ? numPWMPins(type) : isHub75(type) ? 5 : is2Pin(type) + 1; } // credit @PaoloTK; for HUB75 the 5 slots store config params (panelW, panelH, chain, rows, cols), not GPIO pins
-    static constexpr size_t   getNumberOfChannels(uint8_t type) { return (hasWhite(type) + 3*hasRGB(type) + hasCCT(type)); }
-    static constexpr bool hasRGB(uint8_t type) {
-      return !((type >= TYPE_WS2812_1CH_X3 && type <= TYPE_WS2812_WWA) || type == TYPE_ANALOG_1CH || type == TYPE_ANALOG_2CH || type == TYPE_ONOFF);
-    }
-    static constexpr bool hasWhite(uint8_t type) {
-      return  (type >= TYPE_WS2812_1CH_X3 && type <= TYPE_WS2812_WWA) ||
-              type == TYPE_SK6812_RGBW || type == TYPE_TM1814 || type == TYPE_TM1815 || type == TYPE_UCS8904 ||
-              type == TYPE_FW1906 || type == TYPE_WS2805 || type == TYPE_SM16825 ||        // digital types with white channel
-              (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) || // analog types with white channel
-              type == TYPE_NET_DDP_RGBW || type == TYPE_NET_ARTNET_RGBW;                   // network types with white channel
-    }
-    static constexpr bool hasCCT(uint8_t type) {
-      return  type == TYPE_WS2812_WWA    || type == TYPE_SM16825 ||
-              type == TYPE_ANALOG_2CH    || type == TYPE_ANALOG_5CH ||
-              type == TYPE_FW1906        || type == TYPE_WS2805;
-    }
-    static constexpr bool  isTypeValid(uint8_t type)  { return (type > 15 && type < 128); }
-    static constexpr bool  isDigital(uint8_t type)    { return (type >= TYPE_DIGITAL_MIN && type <= TYPE_DIGITAL_MAX) || is2Pin(type); }
-    static constexpr bool  is2Pin(uint8_t type)       { return (type >= TYPE_2PIN_MIN && type <= TYPE_2PIN_MAX); }
-    static constexpr bool  isOnOff(uint8_t type)      { return (type == TYPE_ONOFF); }
-    static constexpr bool  isPWM(uint8_t type)        { return (type >= TYPE_ANALOG_MIN && type <= TYPE_ANALOG_MAX); }
-    static constexpr bool  isVirtual(uint8_t type)    { return (type >= TYPE_VIRTUAL_MIN && type <= TYPE_VIRTUAL_MAX); }
-    static constexpr bool  isHub75(uint8_t type)      { return (type >= TYPE_HUB75MATRIX_MIN && type <= TYPE_HUB75MATRIX_MAX); }
-    static constexpr bool  is16bit(uint8_t type)      { return type == TYPE_UCS8903 || type == TYPE_UCS8904 || type == TYPE_SM16825; }
-    static constexpr bool  mustRefresh(uint8_t type)  { return type == TYPE_TM1814 || type == TYPE_TM1815; }
-    static constexpr int   numPWMPins(uint8_t type)   { return (type - 40); }
+    // Type traits delegate to the free functions in bus_config.h (single source of truth).
+    static constexpr size_t getNumberOfPins(uint8_t type)       { return busTypeGetNumberOfPins(type); }
+    static constexpr size_t getNumberOfChannels(uint8_t type)   { return busTypeGetNumberOfChannels(type); }
+    static constexpr bool  hasRGB(uint8_t type)       { return busTypeHasRGB(type); }
+    static constexpr bool  hasWhite(uint8_t type)     { return busTypeHasWhite(type); }
+    static constexpr bool  hasCCT(uint8_t type)       { return busTypeHasCCT(type); }
+    static constexpr bool  isTypeValid(uint8_t type)  { return busTypeIsValid(type); }
+    static constexpr bool  isDigital(uint8_t type)    { return busTypeIsDigital(type); }
+    static constexpr bool  is2Pin(uint8_t type)       { return busTypeIs2Pin(type); }
+    static constexpr bool  isOnOff(uint8_t type)      { return busTypeIsOnOff(type); }
+    static constexpr bool  isPWM(uint8_t type)        { return busTypeIsPWM(type); }
+    static constexpr bool  isVirtual(uint8_t type)    { return busTypeIsVirtual(type); }
+    static constexpr bool  isHub75(uint8_t type)      { return busTypeIsHub75(type); }
+    static constexpr bool  is16bit(uint8_t type)      { return busTypeIs16bit(type); }
+    static constexpr bool  mustRefresh(uint8_t type)  { return busTypeMustRefresh(type); }
+    static constexpr int   numPWMPins(uint8_t type)   { return busTypeNumPWMPins(type); }
 
     static inline int16_t  getCCT()                   { return _cct; }
     static inline void     setGlobalAWMode(uint8_t m) { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
@@ -295,7 +259,7 @@ class BusDigital : public Bus {
     bool isParHw(); // true if this bus uses a parallel hardware driver (I2S/LCD/SPI/PARLIO)
     void begin() override;
     void cleanup();
-    const CustomBusConfig& getCustomBusConfig() const override { return _pCustomConfig ? *_pCustomConfig : Bus::getCustomBusConfig(); } // valid whenever result.active() == true
+    const BusChannelLayout& getChannelLayout() const override { return _channels; }
 
     static std::vector<LEDType> getLEDTypes();
 
@@ -311,9 +275,9 @@ class BusDigital : public Bus {
     uint16_t _milliAmpsLimit;
     uint16_t _frequencykHz;
     uint32_t _colorSum = 0;           // sum of brightness-scaled channel bytes; updated in setPixelColor() when ABL active
-    WLEDpixelBus::BusProperties _busProperties;
+    WLEDpixelBus::BusProperties _busProperties; // assembled wire descriptor (from BusConfig), also used by begin() for the prefix upload
     WLEDpixelBus::PixelBus* _busPtr = nullptr;
-    CustomBusConfig* _pCustomConfig = nullptr; // allocated only when custom.active() == true
+    BusChannelLayout _channels; // configured channel layout as passed in BusConfig (user-entered when custom)
 
     static uint16_t _milliAmpsTotal; // is overwitten/recalculated on each show()
 
@@ -431,7 +395,7 @@ class BusPlaceholder : public Bus {
     uint8_t  getDriverType() const override  { return _driverType; }
     const String getCustomText() const override { return _text; }
     bool     isPlaceholder() const override  { return true; }
-    const CustomBusConfig& getCustomBusConfig() const override { return _pCustomConfig ? *_pCustomConfig : Bus::getCustomBusConfig(); }
+    const BusChannelLayout& getChannelLayout() const override { return _channels; }
 
     size_t   getBusSize() const override   { return sizeof(BusPlaceholder); }
 
@@ -444,7 +408,7 @@ class BusPlaceholder : public Bus {
     uint8_t _milliAmpsPerLed;
     uint16_t _milliAmpsMax;
     String _text;
-    CustomBusConfig* _pCustomConfig = nullptr; // allocated only when custom.active() == true
+    BusChannelLayout _channels; // configured channel layout as passed in BusConfig (user-entered when custom)
 };
 
 #ifdef WLED_ENABLE_HUB75MATRIX
@@ -482,70 +446,6 @@ class BusHub75Matrix : public Bus {
     static constexpr int PIN_COUNT = 14;
 };
 #endif
-
-//temporary struct for passing bus configuration to bus
-struct BusConfig {
-  uint8_t type;
-  uint16_t count;
-  uint16_t start;
-  uint8_t colorOrder;
-  bool reversed;
-  uint8_t skipAmount;
-  bool refreshReq;
-  uint8_t autoWhite;
-  uint8_t pins[OUTPUT_MAX_PINS] = {255, 255, 255, 255, 255};
-  uint16_t frequency;
-  uint8_t milliAmpsPerLed;
-  uint16_t milliAmpsMax;
-  uint8_t driverType; // BusDriverType: BUSDRV_RMT / BUSDRV_PARHW / BUSDRV_BITBANG
-  String text;
-  uint8_t busSpeedFactor; // percent (100 = default)
-  CustomBusConfig custom; // optional override, active when custom.active() == true (1P digital LED types only)
-
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t clock_kHz=0U, uint8_t maPerLed=LED_MILLIAMPS_DEFAULT, uint16_t maMax=ABL_MILLIAMPS_DEFAULT, uint8_t driver=BUSDRV_RMT, String sometext = "", uint8_t bsf = 100)
-  : count(std::max(len,(uint16_t)1))
-  , start(pstart)
-  , colorOrder(pcolorOrder)
-  , reversed(rev)
-  , skipAmount(skip)
-  , autoWhite(aw)
-  , frequency(clock_kHz)
-  , milliAmpsPerLed(maPerLed)
-  , milliAmpsMax(maMax)
-  , driverType(driver)
-  , text(sometext)
-  , busSpeedFactor(bsf)
-  {
-    refreshReq = (bool) GET_BIT(busType,7);
-    type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    size_t nPins = Bus::getNumberOfPins(type);
-    for (size_t i = 0; i < nPins; i++) pins[i] = ppins[i];
-    DEBUGBUS_PRINTF_P(PSTR("Bus: Config (%d-%d, type:%d, CO:%d, rev:%d, skip:%d, AW:%d kHz:%d, mA:%d/%d, driver:%s)\n"),
-      (int)start, (int)(start+len),
-      (int)type,
-      (int)colorOrder,
-      (int)reversed,
-      (int)skipAmount,
-      (int)autoWhite,
-      (int)frequency,
-      (int)milliAmpsPerLed, (int)milliAmpsMax,
-      driverType == BUSDRV_RMT ? "RMT" : driverType == BUSDRV_PARHW ? "PAR" : "BitBang"
-    );
-  }
-
-  //validates start and length and extends total if needed
-  bool adjustBounds(uint16_t& total) {
-    if (!count) count = 1;
-    if (!Bus::isVirtual(type) && count > MAX_LEDS_PER_BUS) count = MAX_LEDS_PER_BUS;
-    if (start >= MAX_LEDS) return false;
-    //limit length of strip if it would exceed total permissible LEDs
-    if (start + count > MAX_LEDS) count = MAX_LEDS - start;
-    //extend total count accordingly
-    if (start + count > total) total = start + count;
-    return true;
-  }
-};
-
 
 // milliamps used by ESP (for power estimation)
 // you can set it to 0 if the ESP is powered by USB and the LEDs by external

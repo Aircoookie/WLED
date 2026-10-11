@@ -24,7 +24,7 @@ Tested working on IDF V4 and V5 API functions and low-level HAL
 /*
 TODO List
 - size DMA buffers such that the buffer completes one LED
-- need to verify custom bus start indices and color-order overrides on hardware
+- need to verify custom bus start indices and color-order overrides on hardware (both should now work)
 - ESP32 C61 has no RMT and no PARLIO, either bit bang or check if parallel SPI can be used
 - I2S/LCD requires more stress-testing to ensure glitch-free outputs, for 16-parallel maybe even 4 buffers are needed under heavy load
 - the DMA buffer count and size need to be checked agains memory usage formulas, they may be incorrect (we could do "worst case" in the UI as it wont matter much for a small amount of LEDs)
@@ -42,6 +42,8 @@ TODO List
 - use chip capabilities instead of individual target ifdefs in buswrapper
 - ESP8266 UART and I2S buses show() return false instead of waiting which is inconsistent
 - SM16825_SUFFIX should be made dynamic to increase color range at lower brightness (scale with global brightness)
+- The config rework is unfinished: with the updated workflow the goal is to fully drop "custom" bus handling and tread every bus the same (UI needs rework to do that)
+- RMT driver uses stock encoders (could maybe made faster using custom ones) and high priority interrupts currently disabled
 */
 
 

@@ -427,8 +427,8 @@ void getSettingsJS(byte subPage, Print& settingsScript)
       printSetFormValue(settingsScript,ma,bus->getMaxCurrent());
       printSetFormValue(settingsScript,hs,bus->getCustomText().c_str());
       // Custom bus: send per-channel config fields (active for any digital type when customized)
-      if (bus->getCustomBusConfig().active()) {
-        const CustomBusConfig& cb = bus->getCustomBusConfig();
+      if (bus->getChannelLayout().custom) {
+        const BusChannelLayout& cb = bus->getChannelLayout();
         char cben[7]  = "CBen";  cben[4]  = offset+s; cben[5]  = 0; // customize enabled
         char cbch[7] = "CBch"; cbch[4] = offset+s; cbch[5] = 0; // channel count
         char cbio[7] = "CBio"; cbio[4] = offset+s; cbio[5] = 0; // invert output

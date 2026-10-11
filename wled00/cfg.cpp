@@ -1,5 +1,6 @@
 #include "wled.h"
 #include "wled_ethernet.h"
+#include "bus_wrapper.h"
 
 /*
  * Serializes and parses the cfg.json and wsec.json settings files, stored in internal FS.
@@ -253,30 +254,42 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         maPerLed = 0;
         maMax = 0;
       }
-      ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       uint8_t driverType = elm[F("drv")] | 0; // 0=RMT (default), 1=parallel HW (I2S/LCD/SPI/PARLIO, chip-dependent) note: polybus may override this if driver is not available
 
       String host = elm[F("text")] | String();
       uint8_t bsf = (uint8_t)(elm[F("bsf")] | 100);
-      busConfigs.emplace_back(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode, freqkHz, maPerLed, maMax, driverType, host, (uint8_t)bsf);
-      // Explicit channel-map/timing override. Absent or cch==0 means the type shim builds the bus.
-      BusConfig& bc_back = busConfigs.back();
-      bc_back.custom.numChannels = (uint8_t)constrain((int)(elm["cch"] | 0), 0, WLEDpixelBus::MAX_CUSTOM_CHANNELS);
-      if (bc_back.custom.active()) {
+      busConfigs.emplace_back(ledType, pins, start, length);
+      BusConfig& bc = busConfigs.back();
+      bc.colorOrder = colorOrder;
+      bc.reversed = reversed;
+      bc.skipAmount = skipFirst;
+      bc.refreshReq = refresh;
+      bc.autoWhite = AWmode;
+      bc.frequency = freqkHz;
+      bc.milliAmpsPerLed = maPerLed;
+      bc.milliAmpsMax = maMax;
+      bc.driverType = driverType;
+      bc.text = host;
+      bc.busSpeedFactor = bsf;
+      // Explicit channel-map/timing override. Absent or cch==0 means the type defaults build the bus.
+      bc.channels.numChannels = (uint8_t)constrain((int)(elm["cch"] | 0), 0, WLEDpixelBus::MAX_CUSTOM_CHANNELS);
+      bc.channels.custom = bc.channels.numChannels != 0;
+      if (bc.channels.custom) {
         JsonArrayConst cmap = elm["cmap"];
         if (!cmap.isNull()) {
           for (uint8_t ci = 0; ci < WLEDpixelBus::MAX_CUSTOM_CHANNELS && ci < cmap.size(); ci++)
-            bc_back.custom.channelColors[ci] = (uint8_t)constrain((int)cmap[ci], 0, 6);
+            bc.channels.channelColors[ci] = (uint8_t)constrain((int)cmap[ci], 0, 6);
         }
-        bc_back.custom.invertMask   = elm["cinv"] | 0;
-        bc_back.custom.is16bit      = elm["c16"] | false;
-        bc_back.custom.invertOutput = elm["cio"] | false;
-        bc_back.custom.t0h  = elm["ct0h"] | 300;
-        bc_back.custom.t0l  = elm["ct0l"] | 900;
-        bc_back.custom.t1h  = elm["ct1h"] | 700;
-        bc_back.custom.t1l  = elm["ct1l"] | 500;
-        bc_back.custom.trst = elm["crst"]  | 300;
+        bc.channels.invertMask   = elm["cinv"] | 0;
+        bc.channels.is16bit      = elm["c16"] | false;
+        bc.channels.invertOutput = elm["cio"] | false;
+        bc.channels.t0h  = elm["ct0h"] | 300;
+        bc.channels.t0l  = elm["ct0l"] | 900;
+        bc.channels.t1h  = elm["ct1h"] | 700;
+        bc.channels.t1l  = elm["ct1l"] | 500;
+        bc.channels.trst = elm["crst"] | 300;
       }
+      resolveBusConfigLayout(bc); // fill the wire layout from type + color order unless custom
       doInitBusses = true;  // finalization done in beginStrip()
       if (!Bus::isVirtual(ledType)) s++; // have as many virtual buses as you want
     }
@@ -359,7 +372,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       unsigned start = 0;
       // analog always has length 1
       if (Bus::isPWM(dataType) || Bus::isOnOff(dataType)) count = 1;
-      busConfigs.emplace_back(dataType, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, LED_MILLIAMPS_DEFAULT, ABL_MILLIAMPS_DEFAULT, 0); // driver=0 (RMT default)
+      busConfigs.emplace_back(dataType, defPin, start, count);
+      busConfigs.back().colorOrder = DEFAULT_LED_COLOR_ORDER;
+      resolveBusConfigLayout(busConfigs.back());
       doInitBusses = true;  // finalization done in beginStrip()
     }
   }
@@ -1038,8 +1053,8 @@ void serializeConfig(JsonObject root) {
     ins[F("text")]   = bus->getCustomText();
     ins[F("bsf")]    = bus->getBusSpeedFactor();
     // Custom bus extra config
-    if (bus->getCustomBusConfig().active()) {
-      const CustomBusConfig& cb = bus->getCustomBusConfig();
+    if (bus->getChannelLayout().custom) {
+      const BusChannelLayout& cb = bus->getChannelLayout();
       ins["cch"]  = cb.numChannels;
       JsonArray cmap = ins.createNestedArray("cmap");
       for (uint8_t i = 0; i < cb.numChannels; i++) cmap.add(cb.channelColors[i]); // emit only active channels; deserializer guards with cmap.size()
