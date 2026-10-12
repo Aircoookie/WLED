@@ -855,7 +855,7 @@ class AdcContinuousSource : public AudioSource {
         uint16_t samplesRead = WLEDAdcManager::instance().readSamples(rawBuf, num_samples, 5);
         if (samplesRead != num_samples) {
           memset(buffer, 0, num_samples * sizeof(FFTsampleType)); // clear the buffer, it contains FFT data from last round
-          DEBUGSR_PRINTF("AR partial ADC read: %d (requested %d, got %d)\n", num_samples, samplesRead);
+          DEBUGSR_PRINTF("AR partial ADC read (requested %d, got %d)\n", num_samples, samplesRead);
         }
 
         for (int i = 0; i < samplesRead; i++) {
