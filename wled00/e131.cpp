@@ -20,11 +20,6 @@ static uint16_t pollReplyCount = 0;                                // count numb
  * E1.31 handler
  */
 
-// Forget the last stream's sequence numbers, called when realtime mode ends
-void resetE131SequenceNumbers() {
-  memset(e131LastSequenceNumber, 0, sizeof(e131LastSequenceNumber));
-}
-
 //DDP protocol support, called by handleE131Packet
 //handles RGB data only
 static void handleDDPPacket(e131_packet_t* p, size_t packetLen) {
@@ -104,6 +99,8 @@ static void handleDDPPacket(e131_packet_t* p, size_t packetLen) {
 
 //E1.31 and Art-Net protocol support
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol, size_t packetLen){
+  // a new stream after realtime mode ended must not be filtered against the previous stream's sequence numbers
+  if (realtimeMode == REALTIME_MODE_INACTIVE) memset(e131LastSequenceNumber, 0, sizeof(e131LastSequenceNumber));
 
   int uni = 0, dmxChannels = 0;
   uint8_t* e131_data = nullptr;

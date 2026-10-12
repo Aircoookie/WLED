@@ -443,7 +443,6 @@ void exitRealtime() {
   realtimeTimeout = 0; // cancel realtime mode immediately
   realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediately
   realtimeIP[0] = 0;
-  resetE131SequenceNumbers(); // the next stream must not be filtered against this one's sequence numbers
   if (useMainSegmentOnly) { // unfreeze live segment again
     strip.getMainSegment().freeze = false;
     strip.trigger();
