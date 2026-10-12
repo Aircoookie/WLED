@@ -854,11 +854,11 @@ class AdcContinuousSource : public AudioSource {
         int16_t rawBuf[num_samples];
         uint16_t samplesRead = WLEDAdcManager::instance().readSamples(rawBuf, num_samples, 5);
         if (samplesRead != num_samples) {
-          Serial.printf("Error only %d were read from ADC\n", samplesRead);
-          return;
+          memset(buffer, 0, num_samples * sizeof(FFTsampleType)); // clear the buffer, it contains FFT data from last round
+          DEBUGSR_PRINTF("AR partial ADC read: %d (requested %d, got %d)\n", num_samples, samplesRead);
         }
 
-        for (int i = 0; i < num_samples; i++) {
+        for (int i = 0; i < samplesRead; i++) {
           int16_t finalSample = _postProcessAdcSample(rawBuf[i]);
 
 #if !defined(UM_AUDIOREACTIVE_USE_INTEGER_FFT)
