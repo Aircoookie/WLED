@@ -1358,8 +1358,10 @@ uint8_t BusManager::getI(uint8_t busType, const uint8_t* pins, uint8_t driverPre
 //do not call this method from system context (network callback)
 void BusManager::removeAll() {
   DEBUGBUS_PRINTLN(F("Removing all."));
-  //prevents crashes due to deleting busses while in use.
-  while (!canAllShow()) yield();
+  // prevents crashes due to deleting busses while in use; bounded, because an output whose driver
+  // failed to initialise never reports ready and would otherwise stall the main loop forever
+  const unsigned long start = millis();
+  while (!canAllShow() && millis() - start < 100) yield();
   busses.clear();
   #ifndef ESP8266
   // Reset channel tracking for fresh allocation

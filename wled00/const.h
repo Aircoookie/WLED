@@ -112,6 +112,23 @@ constexpr size_t  WLED_MAX_USERMOD_PALETTES     = WLED_USERMOD_PALETTE_ID_BASE -
       #define WLED_PLATFORM_ID 1       // used in UI to distinguish ESP types - falls back to "C3" until we have a proper fix!
     #endif      
   #endif
+  #include <esp_idf_version.h>
+  #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    // NeoPixelBus' IDF 5 RMT method reserves WLED_NPB_RMT_SYMBOLS symbols per output. An RMT TX channel needs
+    // that many contiguous memory blocks, starting at a TX-capable channel, so fewer outputs fit than the chip
+    // has RMT channels (ESP32: 2, S2/S3/C3: 1). Further channels fail to initialise: those outputs stay dark and
+    // never report ready. Limit RMT outputs accordingly; extra digital outputs use I2S where available.
+    #include <soc/soc_caps.h>
+    #define WLED_NPB_RMT_SYMBOLS 192
+    #define WLED_RMT_BLOCKS_PER_OUTPUT ((WLED_NPB_RMT_SYMBOLS + SOC_RMT_MEM_WORDS_PER_CHANNEL - 1) / SOC_RMT_MEM_WORDS_PER_CHANNEL)
+    #define WLED_RMT_OUTPUTS_BY_START ((SOC_RMT_TX_CANDIDATES_PER_GROUP + WLED_RMT_BLOCKS_PER_OUTPUT - 1) / WLED_RMT_BLOCKS_PER_OUTPUT)
+    #define WLED_RMT_OUTPUTS_BY_MEMORY (SOC_RMT_CHANNELS_PER_GROUP / WLED_RMT_BLOCKS_PER_OUTPUT)
+    #define WLED_RMT_OUTPUTS_FIT (WLED_RMT_OUTPUTS_BY_START < WLED_RMT_OUTPUTS_BY_MEMORY ? WLED_RMT_OUTPUTS_BY_START : WLED_RMT_OUTPUTS_BY_MEMORY)
+    #if WLED_MAX_RMT_CHANNELS > WLED_RMT_OUTPUTS_FIT
+      #undef WLED_MAX_RMT_CHANNELS
+      #define WLED_MAX_RMT_CHANNELS WLED_RMT_OUTPUTS_FIT
+    #endif
+  #endif
   #define WLED_MAX_TIMERS 64                // maximum number of timers
   #ifndef WLED_MAX_DIGITAL_CHANNELS
     #define WLED_MAX_DIGITAL_CHANNELS (WLED_MAX_RMT_CHANNELS + WLED_MAX_I2S_CHANNELS)
