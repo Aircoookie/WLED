@@ -564,8 +564,8 @@ void FFTcode(void * parameter)
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
-    
-    #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
+
+    #if !defined(I2S_GRAB_ADC1_COMPLETELY) && (ESP_IDF_VERSION_MAJOR < 5)
     if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
     #endif
       vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
@@ -1453,7 +1453,7 @@ class AudioReactive : public Usermod {
         #if defined(AR_ANALOG_MIC_I2S_ADC)
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
         #else
-          audioSource = new AdcContinuousSource(SAMPLE_RATE, BLOCK_SIZE); // note: ADC driver uses 5 DMA buffers: INTERNAL_BUF_NUM in adc_continuous.c, those are set to BLOCK_SIZE bytes
+          audioSource = new AdcContinuousSource(SAMPLE_RATE, samplesFFT); // note: ADCmanager uses 128byte blocks internally, we need to pass the number of samples we want per readSamples()
         #endif
           delay(100);
           useBandPassFilter = true;  // PDM bandpass filter seems to help for bad quality analog

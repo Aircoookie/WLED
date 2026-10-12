@@ -5,11 +5,8 @@
 #if ESP_IDF_VERSION_MAJOR >= 5
 #include <driver/i2s_std.h>
 #include <driver/i2s_pdm.h>
-#if defined(SOC_ADC_SUPPORTED)
-#include <esp_adc/adc_continuous.h>   // analog mic via ADC continuous mode (replaces legacy ADC-over-I2S)
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #include <soc/i2s_reg.h>  // needed for SPH0645 timing workaround (classic ESP32 only)
-#endif
 #endif
 
 #else
@@ -48,8 +45,8 @@
 #if defined(CONFIG_IDF_TARGET_ESP32) && (ESP_IDF_VERSION_MAJOR < 5)
 #define AR_ANALOG_MIC_I2S_ADC          // legacy ADC-over-I2S (classic ESP32, IDF v4 only)
 #endif
-#if (ESP_IDF_VERSION_MAJOR >= 5) && defined(SOC_ADC_SUPPORTED)
-#define AR_ANALOG_MIC_ADC_CONTINUOUS   // ADC continuous driver (esp_adc) - IDF v5.x and v6.x
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 0)) && defined(SOC_ADC_SUPPORTED)
+#define AR_ANALOG_MIC_ADC_CONTINUOUS   // ADC manager is used to take care of continuous DMA ADC sampling, compatible with analogRead()
 #endif
 #if defined(AR_ANALOG_MIC_I2S_ADC) || defined(AR_ANALOG_MIC_ADC_CONTINUOUS)
 #define AR_ANALOG_MIC_SUPPORTED
@@ -75,11 +72,12 @@
 // if you have problems to get your microphone work on the left channel, uncomment the following line
 //#define I2S_USE_RIGHT_CHANNEL    // (experimental) define this to use right channel (digital mics only)
 
-// Uncomment the line below to utilize ADC1 _exclusively_ for I2S sound input.
+// IDF v4.x only: Uncomment the line below to utilize ADC1 _exclusively_ for I2S sound input.
 // benefit: analog mic inputs will be sampled contiously -> better response times and less "glitches"
 // WARNING: this option WILL lock-up your device in case that any other analogRead() operation is performed; 
 //          for example if you want to read "analog buttons"
 //#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continuously sample analog ADC microphone. WARNING will cause analogRead() lock-up
+// note: IDF V5 has the ADC manager that allows to "grab ADC1 completely" without loosing the ability for single shot analogRead()
 
 // data type requested from the I2S driver - currently we always use 32bit
 //#define I2S_USE_16BIT_SAMPLES   // (experimental) define this to request 16bit - more efficient but possibly less compatible
@@ -826,14 +824,6 @@ class ES8388Source : public I2SSource {
      so the "rogue sample" filtering from the original driver can be kept (TODO: should it? or was that a workaround for a bug? Or is it to support analogRead() between samples?)
 */
 #if defined(AR_ANALOG_MIC_ADC_CONTINUOUS)
-#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2)
-  #define AR_ADC_DIGI_FORMAT ADC_DIGI_OUTPUT_FORMAT_TYPE1   // ESP32 and S2 use output format TYPE1
-  #define AR_ADC_OUT_TYPE    type1
-#else
-  #define AR_ADC_DIGI_FORMAT ADC_DIGI_OUTPUT_FORMAT_TYPE2   // S3, C3, ... use output format TYPE2
-  #define AR_ADC_OUT_TYPE    type2
-#endif
-
 class AdcContinuousSource : public AudioSource {
   public:
     AdcContinuousSource(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f) :
@@ -844,123 +834,30 @@ class AdcContinuousSource : public AudioSource {
 
     void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       DEBUGSR_PRINTLN(F("AdcContinuousSource:: initialize()."));
-      _myADCchannel = 0x0F;
       if(!PinManager::allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
         DEBUGSR_PRINTF("failed to allocate GPIO for audio analog input: %d\n", audioPin);
         return;
       }
       _audioPin = audioPin;
 
-      // check if this is a valid analog input pin (only ADC1 supported as ADC2 is normally used for wifi)
-      int adc_channel = digitalPinToAnalogChannel(_audioPin);
-      if (adc_channel >= SOC_ADC_CHANNEL_NUM(0)) {
-        DEBUGSR_PRINTF("Incompatible GPIO used for analog audio input: %d\n", _audioPin);
+      if (!WLEDAdcManager::instance().begin((uint8_t)_audioPin, (uint32_t)_sampleRate, (uint16_t)_blockSize)) {
+        DEBUGSR_PRINTF("Failed to initialize ADC manager for analog audio input: %d\n", _audioPin);
+        PinManager::deallocatePin(_audioPin, PinOwner::UM_Audioreactive);
+        _audioPin = -1;
         return;
       }
-      _myADCchannel = adc_channel;
-
-      const size_t frameSize = (size_t)_blockSize * 4 * SOC_ADC_DIGI_DATA_BYTES_PER_CONV;  // one DMA frame = one FFT block (assumes block = 128, FFT frame = 512) TODO: this should respect the actual numbers set in the cpp file
-      adc_continuous_handle_cfg_t handle_cfg = {
-        .max_store_buf_size = frameSize,        // buffer size the driver writes data to from the DMA buffers (and what we read back from when), since we stop / start the acquisition, one FFT frame is enough, its not continuous anyway
-        .conv_frame_size = (size_t)_blockSize,  // use BLOCK_SIZE buffer size, driver uses 5 DMA buffers with chained descriptors in a loop
-        .flags = { .flush_pool = false },       // false=drop samples if full, true=flush buffer if full
-      };
-      esp_err_t err = adc_continuous_new_handle(&handle_cfg, &_adcHandle);
-      if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to create adc continuous handle: %d\n", err);
-        return;
-      }
-
-      adc_digi_pattern_config_t adc_pattern = {
-        .atten = ADC_ATTEN_DB_12,               // same input amplification as the legacy driver
-        .channel = (uint8_t)_myADCchannel,
-        .unit = ADC_UNIT_1,
-        .bit_width = ADC_BITWIDTH_12,           // 12bit resolution, like legacy adc1_config_width(ADC_WIDTH_BIT_12)
-      };
-      adc_continuous_config_t adc_cfg = {
-        .pattern_num = 1, // single channel
-        .adc_pattern = &adc_pattern,
-        .sample_freq_hz = (uint32_t)_sampleRate,
-        .conv_mode = ADC_CONV_SINGLE_UNIT_1,    // only ADC1 can be used (ADC2 is used by wifi)
-        .format = AR_ADC_DIGI_FORMAT,
-      };
-      err = adc_continuous_config(_adcHandle, &adc_cfg);
-      if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to configure adc continuous driver: %d\n", err);
-        adc_continuous_deinit(_adcHandle);
-        _adcHandle = nullptr;
-        return;
-      }
-
-      #if defined(I2S_GRAB_ADC1_COMPLETELY)
-      // according to docs from espressif, the ADC needs to be started explicitly
-      // fingers crossed
-      err = adc_continuous_start(_adcHandle);
-      if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to start adc continuous driver: %d\n", err);
-        adc_continuous_deinit(_adcHandle);
-        _adcHandle = nullptr;
-        return;
-      }
-      #endif
       _initialized = true;
     }
 
     void getSamples(FFTsampleType *buffer, uint16_t num_samples) {
-      /* Enable ADC. This has to be enabled and disabled directly before and
-       * after sampling, otherwise Wifi dies (legacy behaviour, kept for WiFi coexistence)
-       */
-      if (_initialized) {
-      esp_err_t err = ESP_OK;
-      #if !defined(I2S_GRAB_ADC1_COMPLETELY)
-        adc_continuous_flush_pool(_adcHandle);  // drop any old conversions
-        err = adc_continuous_start(_adcHandle);
-        if (err != ESP_OK) {
-          DEBUGSR_PRINTF("Failed to start adc continuous driver: %d\n", err);
-          return;
-        }
-      #endif
-        adc_digi_output_data_t rawBuf[num_samples];  // intermediary sample storage (stack, like the legacy version)
-        uint32_t bytes_got = 0;
-        const uint32_t bytes_wanted = sizeof(rawBuf);
-        // adc_continuous_read() returns as soon as *some* data is available - loop until the frame is complete
-        while (bytes_got < bytes_wanted) {
-          uint32_t bytes_read = 0;
-          esp_err_t read_err = adc_continuous_read(_adcHandle, reinterpret_cast<uint8_t *>(rawBuf) + bytes_got, bytes_wanted - bytes_got, &bytes_read, 50 /*ms timeout*/);
-          if ((read_err == ESP_ERR_TIMEOUT) || (read_err == ESP_ERR_INVALID_STATE)) {
-            DEBUGSR_PRINTF("Failed to get enough ADC samples: wanted: %d read: %d\n", bytes_wanted, bytes_got);
-            break;
-          }
-          if (bytes_read == 0) {
-            DEBUGSR_PRINTLN("ADC read returned 0 bytes, aborting");
-            break;
-          }
-          bytes_got += bytes_read;
-        }
-
-        err = adc_continuous_stop(_adcHandle); // stop sampling even when using I2S_GRAB_ADC1_COMPLETELY, letting it run leads a stall for some reason and adc_continuous_read() above takes ~200ms and still returns ESP_OK.
-        if (err != ESP_OK) {
-          DEBUGSR_PRINTF("Failed to stop adc continuous driver: %d\n", err);
+      if (_initialized && num_samples > 0) {
+        int16_t rawBuf[num_samples];
+        uint16_t samplesRead = WLEDAdcManager::instance().readSamples(rawBuf, num_samples, 5);
+        if (samplesRead != num_samples) {
+          Serial.printf("Error only %d were read from ADC\n", samplesRead);
           return;
         }
 
-        // TODO: in order to let other tasks use analogRead() we can not just stop the DMA transfer using adc_continuous_stop(), we need to fully tear down the driver and reinitialize it.
-        //       so currently any ADC reading outside is broken, even if not using I2S_GRAB_ADC1_COMPLETELY
-        //       for best analog mic performance I would suggest to add an "ADC manager" that handles it all, i.e. request continuous samples or single shot and it manages the teardown and restart decently
-
-        #if defined(I2S_GRAB_ADC1_COMPLETELY)
-        err = adc_continuous_start(_adcHandle); // start sampling in the background
-        if (err != ESP_OK) {
-          DEBUGSR_PRINTF("Failed to start adc continuous driver: %d\n", err);
-          return;
-        }
-        #endif
-
-        if (bytes_got < bytes_wanted) {
-        return;   // incomplete frame - keep old samples
-        }
-
-        // Store samples in sample buffer
         for (int i = 0; i < num_samples; i++) {
           int16_t finalSample = _postProcessAdcSample(rawBuf[i]);
 
@@ -978,49 +875,25 @@ class AdcContinuousSource : public AudioSource {
     void deinitialize() {
       PinManager::deallocatePin(_audioPin, PinOwner::UM_Audioreactive);
       _initialized = false;
-      _myADCchannel = 0x0F;
-      if (_adcHandle != nullptr) {
-#if defined(I2S_GRAB_ADC1_COMPLETELY)
-        // according to docs from espressif, the ADC needs to be stopped explicitly
-        // fingers crossed
-        esp_err_t err = adc_continuous_stop(_adcHandle);
-        if (err != ESP_OK) {
-          DEBUGSR_PRINTF("Failed to stop adc continuous driver: %d\n", err);
-        }
-#endif
-        adc_continuous_deinit(_adcHandle);
-        _adcHandle = nullptr;
-      }
+      WLEDAdcManager::instance().end();
     }
 
   private:
     /* decode one ADC conversion frame, filter rogue samples, apply low-pass filter.
        Mimics the scaling of the legacy I2S-ADC driver: 12bit unsigned -> signed 10bit range */
-    int16_t _postProcessAdcSample(adc_digi_output_data_t frame) {
-      uint16_t the_channel = frame.AR_ADC_OUT_TYPE.channel;
-      uint16_t the_sample  = frame.AR_ADC_OUT_TYPE.data;       // 12bit unsigned ADC sample
-      int finalSample = (int(the_sample) - 2048);  // center at 0 TODO: the original ESP32 adc driver scales down to 10bits but that makes MAX9814 mic very insensitive, I see no noise using all bits (we got squelch if its an issue)
-
-      if ((the_channel != _myADCchannel) && (_myADCchannel != 0x0F)) { // 0x0F means "don't know what my channel is"
-        // fix bad sample
-        finalSample = _lastADCsample;                              // replace with last good ADC sample
-        _broken_samples_counter++;
-        if (_broken_samples_counter > 256) _myADCchannel = 0x0F;   // too many bad samples in a row -> disable sample corrections
-      } else _broken_samples_counter = 0;                          // good sample - reset counter
+    int16_t _postProcessAdcSample(int16_t rawSample) {
+      int finalSample = (int(rawSample) - 2048);  // center at 0 TODO: the original ESP32 adc driver scales down to 10bits but that makes MAX9814 mic very insensitive, I see no noise using all bits (we got squelch if its an issue)
 
       finalSample = (3 * finalSample + _lastADCsample) >> 2;  // apply low-pass filter (2-tap FIR) gets rid of high freqency noise and aliasing
       //finalSample = (finalSample + _lastADCsample) >> 1;      // apply stronger low-pass filter (2-tap FIR)
-      // TODO: IDF V5 ADC sampling supports doing on-the-fly IIR filtering while sampling, not sure how that works though i.e. if its done when reading samples or if it has to be called explicitly with the samples.
+      // TODO: IDF V5 ADC sampling supports doing on-the-fly IIR filtering while sampling, the minimum filter may already be too strong though
 
       _lastADCsample = finalSample;                            // update ADC last sample
       return (int16_t)finalSample;
     }
 
-    adc_continuous_handle_t _adcHandle = nullptr;
     int8_t _audioPin = -1;
-    int8_t _myADCchannel = 0x0F;       // current ADC channel for analog input. 0x0F means "undefined"
-    int _lastADCsample = 0;            // last good sample (for filtering and rogue sample replacement)
-    unsigned int _broken_samples_counter = 0; // number of consecutive broken (and fixed) ADC samples
+    int _lastADCsample = 0; // for filtering
 };
 #endif // AR_ANALOG_MIC_ADC_CONTINUOUS
 
