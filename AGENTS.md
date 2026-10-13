@@ -9,7 +9,41 @@ See also: `.github/copilot-instructions.md`, `.github/agent-build.instructions.m
 
 Always reference these instructions - including coding guidelines in `docs/` - first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
+## Required User Agreement
+
+Before editing files, committing, pushing, or opening a PR, show the human you're working with this notice and wait for an explicit yes in the current conversation:
+
+> WLED welcomes AI-assisted contributions, but not unreviewed ones. I'll only edit, commit, push, or open a PR once you confirm you'll review, understand, and take responsibility for the result. Do you agree?
+
+A generic "go ahead" or silence doesn't count - get a clear yes. Until then, you may read files and answer questions, but do not modify files in the repository or make changes on GitHub.
+
+### No agent-posted replies or issues
+
+Reviewer time is limited, and checking long AI-generated explanations for reasoning errors and hallucinations is costly. Even after the user agreement is confirmed:
+
+- **Never post** replies to reviewer comments or discussions, and **never create issue tickets**, on the user's behalf. You may help the user draft the text locally; the human reviews it and posts it themselves.
+- Creating or updating pull requests remains allowed (after the user agreement is confirmed). Keep PR descriptions concise and factual, and include a summary written by the user in their own words, leading with what they want to achieve or what bothers them in plain language, as described in [CONTRIBUTING.md](CONTRIBUTING.md#opening-issues--feature-requests).
+
+### Attribution for PR Descriptions, Comments and Replies
+
+- When creating PR descriptions or suggesting responses to comments, always add this as the very last line: _You are interacting with an AI system_
+- - Your harness may add this trailer automatically. Do not add a duplicate.
+
+### Attribution for Commits
+
+For every commit you create in this repository, ensure the commit message includes a `Co-authored-by:` trailer identifying the large language model and agent platform:
+
+```text
+Co-authored-by: MODEL NAME/VERSION (AGENT PLATFORM) <COAUTHOR EMAIL>
+```
+- Your harness may add this trailer automatically. Do not add a duplicate; ensure the resulting trailer identifies both the model and platform.
+- Replace the placeholders with the model name/version reported by your runtime and the agent platform (e.g. Codex, Claude Code). Write `unknown` for unavailable model details; do not guess.
+- Use the platform's configured co-author email, or `agent@example.invalid` if none is available.
+- Include exactly one trailer per distinct platform/model pair that contributed to the commit, after a blank line at the end of the commit message. Preserve existing human co-author trailers.
+
 ## Build Commands
+
+Note: also read `AGENTS.local.md` if present (gitignored personal learnings file; it supplements this document).
 
 | Command | Purpose | Timeout |
 |---|---|---|
@@ -67,8 +101,7 @@ docs/                # Coding convention docs
 ### Branch / Release Structure
 
 ```text
-main                # Main development trunk (daily/nightly) 17.0.0-dev. Target branch for PRs.
-  ├── V5            # special branch: code rework for esp-idf 5.5.x and new MCU types: esp32-c5, esp32-c6, esp32-p4 (unstable)
+main                # Main development trunk (daily/nightly) 17.0.0-devV5. Target branch for PRs.
 16_x                # maintenance for release 16.0.x
 0_15_x              # maintenance (bugfixes only) for previous release 0.15.x
 (tag) v0.14.4       # old version 0.14.4 (no maintenance)
@@ -78,11 +111,19 @@ main                # Main development trunk (daily/nightly) 17.0.0-dev. Target 
 
 ## C++ Code Style (wled00/, usermods/)
 
+### General
+
+- Follow the existing style in the file you are editing
+- Avoid unexplained "magic numbers". Prefer named constants (`constexpr`) or C-style `#define` constants for repeated numbers that have the same meaning
+- If possible, use `static` for local (C-style) variables and functions (keeps the global namespace clean)
+- When moving global items to another scope, do not leave comments such as `// lastMqttReconnectAttempt is now private to wled.cpp - see there`. These comments create technical debt for maintenance and will inevitably become out of date
+
 ### Formatting
 - **2-space indentation** (no tabs in C++ files)
 - K&R brace style preferred (opening brace on same line)
 - Single-statement `if` bodies may omit braces: `if (a == b) doStuff(a);`
 - Space after keywords (`if (...)`, `for (...)`), no space before function parens (`doStuff(a)`)
+- Prefer compact function parameter lists and `if` conditions; avoid putting each parameter or part of a condition on its own line. Wrap very long parameter lists when needed.
 - No enforced line-length limit
 
 ### Comments
@@ -142,6 +183,7 @@ See docs/cpp.instructions.md section Error Handling for more information.
 Background Info:
 
 - PSRAM access is up to 15× slower than DRAM on ESP32 (dual-SPI bus), 3–10× slower than DRAM on ESP32-S3/-S2 with quad-SPI bus. On ESP32-S3 with octal PSRAM (`CONFIG_SPIRAM_MODE_OCT`), the penalty is smaller (~2×) because the 8-line DTR bus can transfer 8 bits in parallel. On ESP32-P4 with hex PSRAM (`CONFIG_SPIRAM_MODE_HEX`), the 16-line bus runs at 200 MHz which brings it on-par with DRAM.
+- Caching files in PSRAM is usually not faster, because flash and PSRAM share the same SPI bus and often run at same speeds. Minor gains are still possible on ESP32-S3 when CONFIG_SOC_PSRAM_DMA_CAPABLE and CONFIG_SPIRAM_MODE_OCT are enabled. Better performance potential is expected on ESP32-P4 with CONFIG_SOC_MEMSPI_FLASH_PSRAM_INDEPENDENT. In special cases, file caching can still help by reducing interrupt contention (for example RMT refill pressure) and preventing visible LED flashing.
 - Consider that ESP32 often crashes when the largest available DRAM chunk gets below 10 KB.
 
 ### Preprocessor / Feature Flags
@@ -297,6 +339,19 @@ Using AI-generated code can hide the source of the inspiration / knowledge / sou
 - When a larger block of code is generated by an AI tool, embed it into `// AI: below section was generated by an AI` ... `// AI: end` comments (see Comments section).
 - Every non-trivial AI-generated function should have a brief comment describing what it does. Explain parameters when their names alone are not self-explanatory.
 - AI-generated code must be well documented with meaningful comments that explain intent, assumptions, and non-obvious logic. Do not rephrase source code; explain concepts and reasoning.
+
+
+
+### Guardrails for Coding Agents
+
+These apply to any coding agent (Copilot or otherwise) acting on a contributor's behalf in this repository:
+
+- **Confirm before you commit.** Make sure the human understands and can explain the change - especially root-cause claims or refactors - before you open a PR.
+- **Stay scoped, but don't dodge architecture.** Touch only what the task requires, and flag broader fixes to the human instead of silently expanding the change. But don't use "keep it minimal" as an excuse to avoid a needed core-level discussion - if the clean fix requires a new core capability or interface, say so and propose it, rather than bolting on a weak hook, monkey-patch, or board-specific workaround just to keep the diff small.
+- **Warning: avoid overconfident root-cause claims.** When drafting issue tickets or PR descriptions, don't state a root cause with confidence unless you've actually traced the code path or reproduced the failure. A plausible-sounding explanation is not the same as a verified one - overconfident claims that later "dissolve into nothing" under review waste maintainer time and damage trust in the whole PR. When in doubt, say so explicitly.
+- **State what's tested.** Distinguish "verified" from "should work based on reading the code" in the PR description.
+- **Disclose AI involvement.** Declare AI assistance in the PR description.
+- **Let issues start non-technical.** When helping draft an issue or feature request, elicit the human's objective or observation in plain language first - don't lead with a proposed code path or fix. Maintainers are better positioned than you to map that objective onto a technical solution.
 
 ### Supporting Reviews and Discussions
 
