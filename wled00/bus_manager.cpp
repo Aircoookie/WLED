@@ -1067,7 +1067,9 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
     _valid = true;
     display->clearScreen();   // initially clear the screen buffer
     DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA clear ok");
-
+    #ifdef WLED_HUB75_EXTRA_BUFFER
+    if (_ledBuffer) d_free(_ledBuffer);                 // should not happen
+    #endif
     if (_ledsDirty) d_free(_ledsDirty);                 // should not happen
     DEBUGBUS_PRINTLN("MatrixPanel_I2S_DMA allocate memory");
     _ledsDirty = (byte*) d_malloc(getBitArrayBytes(_len));  // create LEDs dirty bits
@@ -1082,6 +1084,10 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
       return;  //  fail is we cannot get memory for the buffer
     }
     setBitArray(_ledsDirty, _len, false);             // reset dirty bits
+    #ifdef WLED_HUB75_EXTRA_BUFFER
+    // create LEDs buffer (initialized to BLACK), prefer DRAM if enough heap is available (faster in case global _pixels buffer is in PSRAM as not both will fit the cache)
+    _ledBuffer = static_cast<CRGB*>(allocate_buffer(_len * sizeof(CRGB), BFRALLOC_PREFER_DRAM | BFRALLOC_CLEAR));
+    #endif
   }
 
   PANEL_CHAIN_TYPE chainType = CHAIN_NONE; // default for quarter-scan panels that do not use chaining
@@ -1128,39 +1134,64 @@ BusHub75Matrix::BusHub75Matrix(const BusConfig &bc) : Bus(bc.type, bc.start, bc.
 
   DEBUGBUS_PRINT(F("MatrixPanel_I2S_DMA "));
   DEBUGBUS_PRINTF_P(PSTR("%sstarted, width=%u, %u pixels.\n"), _valid? "":"not ", _panelWidth, _len);
-
+  #ifdef WLED_HUB75_EXTRA_BUFFER
+  if (_ledBuffer != nullptr) {
+    DEBUGBUS_PRINTLN(F("MatrixPanel_I2S_DMA extra buffer enabled."));
+    DEBUGBUS_PRINT(F("Extra buffer uses "));
+    DEBUGBUS_PRINT(_len*sizeof(CRGB));
+  }
+  #endif
   if (_ledsDirty != nullptr) {
     DEBUGBUS_PRINTLN(F("MatrixPanel_I2S_DMA LEDS dirty bit optimization enabled."));
-    DEBUGBUS_PRINT(F("MatrixPanel_I2S_DMA LEDS dirty buffer uses "));
-    DEBUGBUS_PRINT((_ledsDirty? getBitArrayBytes(_len) :0));
-    DEBUGBUS_PRINTLN(F(" bytes."));
+    DEBUGBUS_PRINT(F("Dirty buffer uses "));
+    DEBUGBUS_PRINT((getBitArrayBytes(_len)));
   }
 }
 
 void IRAM_ATTR BusHub75Matrix::setPixelColor(unsigned pix, uint32_t c) {
   if (!_valid) return; // note: no need to check pix >= _len as that is checked in containsPixel()
   // if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-  if ((c == IS_BLACK) && (getBitFromArray(_ledsDirty, pix) == false)) return; // ignore black if pixel is already black
-  setBitInArray(_ledsDirty, pix, c != IS_BLACK);                              // dirty = true means "color is not BLACK"
+  #ifdef WLED_HUB75_EXTRA_BUFFER
+  if (_ledBuffer) {
+    CRGB fastled_col = CRGB(c);
+    if (_ledBuffer[pix] != fastled_col) {
+      _ledBuffer[pix] = fastled_col;
+      setBitInArray(_ledsDirty, pix, true);  // flag pixel as "dirty"
+    }
+  }
+  #else
+  if (false) {} // placeholder
+  #endif
+  else {
+    if ((c == IS_BLACK) && (getBitFromArray(_ledsDirty, pix) == false)) return; // ignore black if pixel is already black
+    setBitInArray(_ledsDirty, pix, c != IS_BLACK);                              // dirty = true means "color is not BLACK"
 
-  uint8_t r = R(c);
-  uint8_t g = G(c);
-  uint8_t b = B(c);
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
 
-  if (virtualDisp != nullptr) {
-    int x = pix % _panelWidth; // TODO: check if using & and shift would be faster here, it limits to power-of-2 widths though
-    int y = pix / _panelWidth;
-    virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
-  } else {
-    int x = pix % _panelWidth;
-    int y = pix / _panelWidth;
-    display->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
+    if (virtualDisp != nullptr) {
+      int x = pix % _panelWidth; // TODO: check if using & and shift would be faster here, it limits to power-of-2 widths though
+      int y = pix / _panelWidth;
+      virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
+    } else {
+      int x = pix % _panelWidth;
+      int y = pix / _panelWidth;
+      display->drawPixelRGB888(int16_t(x), int16_t(y), r, g, b);
+    }
   }
 }
 
 uint32_t BusHub75Matrix::getPixelColor(unsigned pix) const {
   if (!_valid) return IS_BLACK; // note: no need to check pix >= _len as that is checked in containsPixel()
+  #ifdef WLED_HUB75_EXTRA_BUFFER
+  if (_ledBuffer)
+    return uint32_t(_ledBuffer[pix]);  // fastled-slim already returns RGB, no need to mask out the upper byte
+  else
+    return getBitFromArray(_ledsDirty, pix) ? IS_DARKGREY: IS_BLACK;   // just a hack - we only know if the pixel is black or not
+  #else
   return getBitFromArray(_ledsDirty, pix) ? IS_DARKGREY: IS_BLACK;   // just a hack - we only know if the pixel is black or not
+  #endif
 }
 
 void BusHub75Matrix::setBrightness(uint8_t b) {
@@ -1170,7 +1201,28 @@ void BusHub75Matrix::setBrightness(uint8_t b) {
 }
 
 void BusHub75Matrix::show(void) {
-  // show() is a no-op: pixels were already written directly in setPixelColor(),
+  #ifdef WLED_HUB75_EXTRA_BUFFER
+  if (!_valid) return;
+  if (_ledBuffer) {
+    // write out buffered LEDs
+    unsigned height = _isVirtual ? virtualDisp->height() : display->height();
+    unsigned width = _panelWidth;
+
+    //while(!previousBufferFree) delay(1);   // experimental - Wait before we allow any writing to the buffer. Stop flicker.
+    size_t pix = 0; // running pixel index
+    for (int y=0; y<height; y++) for (int x=0; x<width; x++) {
+      if (getBitFromArray(_ledsDirty, pix) == true) {        // only repaint the "dirty"  pixels
+        CRGB c = _ledBuffer[pix];
+        //c.nscale8_video(_bri); // apply brightness
+        if (_isVirtual) virtualDisp->drawPixelRGB888(int16_t(x), int16_t(y), c.r, c.g, c.b);
+        else                display->drawPixelRGB888(int16_t(x), int16_t(y), c.r, c.g, c.b);
+      }
+      pix++;
+    }
+    setBitArray(_ledsDirty, _len, false);  // buffer shown - reset all dirty bits
+  }
+  #endif
+  // show() is a no-op if WLED_HUB75_EXTRA_BUFFER is not defined: pixels were already written directly in setPixelColor(),
   // the DMA driver handles continuous refresh asynchronously
 }
 
@@ -1188,6 +1240,9 @@ void BusHub75Matrix::cleanup() {
   virtualDisp = nullptr; // note: when not using "NO_GFX" this causes a memory leak
   #else  // runtime reconfiguration is not working on -S3, request reboot from user instead
     errorFlag = ERR_REBOOT_NEEDED;
+  #endif
+  #ifdef WLED_HUB75_EXTRA_BUFFER
+  if (_ledBuffer != nullptr) d_free(_ledBuffer); _ledBuffer = nullptr;
   #endif
   if (_ledsDirty != nullptr) d_free(_ledsDirty); _ledsDirty = nullptr;
 }
