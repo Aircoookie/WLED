@@ -267,8 +267,12 @@ refer to detailed examples in `usermods/EXAMPLE/`, `usermods/user_fx/` and [in t
 - `PinManager::allocatePin()` will return an error code in case that a pin is already assigned to another WLED function.
 - You can use `-1` = `255` for unconfigured / unassigned pin functions.
 - Check for valid pin numbers with `PinManager::isPinOk(byte gpio, bool output)`; this function knows which GPI(O) pins are possible on your specific MCU.
+
+#### I2C (Wire) and SPI busses
+
 - PIN numbers for I2C and SPI busses are configured globally in the generic part of the usermod settings page.
 - Usually, a usermod will not start the I2C or SPI units explicitly, since they are already initialised when WLED starts.
+- Don't call `Wire.begin()` in your `Usermod::setup()`, as this may break other usermods that need the I2C bus.
 - Use this pattern to check for an incomplete I2C setup: `if (i2c_scl<0 || i2c_sda<0) {enabled = false; return;}`.
 
 ### Usermod IDs
