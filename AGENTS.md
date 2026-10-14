@@ -264,6 +264,7 @@ refer to detailed examples in `usermods/EXAMPLE/`, `usermods/user_fx/` and [in t
 ### Pin ownership via `pinManager`
 - Before performing any operation on I/O pins, the usermod must allocate its pins from the `pinManager`.
 - I/O pins are allocated via `PinManager::allocatePin(byte gpio, bool output, PinOwner tag)` (or `PinManager::allocateMultiplePins()`), and returned via `PinManager::deallocatePin()` when re-configuring pin numbers.
+- If the usermod does not register a unique usermod ID, use `PinOwner::UM_Unspecified` as PinOwner tag for generic pin use.
 - `PinManager::allocatePin()` will return an error code in case that a pin is already assigned to another WLED function.
 - You can use `-1` = `255` for unconfigured / unassigned pin functions.
 - Check for valid pin numbers with `PinManager::isPinOk(byte gpio, bool output)`; this function knows which GPI(O) pins are possible on your specific MCU.
