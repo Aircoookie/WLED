@@ -271,7 +271,7 @@ refer to detailed examples in `usermods/EXAMPLE/`, `usermods/user_fx/` and [in t
 
 #### I2C (Wire) and SPI busses
 
-- PIN numbers for I2C and SPI busses are configured globally in the generic part of the usermod settings page.
+- PIN numbers for I2C and SPI busses are configured globally in the 'Global I2C & SPI' part of the usermod settings page.
 - Usually, a usermod will not start the I2C or SPI units explicitly, since they are already initialised when WLED starts.
 - Don't call `Wire.begin()` in your `Usermod::setup()`, as this may break other usermods that need the I2C bus.
 - Don't allocate `Wire` I2C pins to the usermod - it would cause a pin conflict, as global I2C pins are already allocated to `PinOwner::HW_I2C`.
