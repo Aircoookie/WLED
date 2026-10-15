@@ -5912,7 +5912,7 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
   // scale noise interval down for larger dimensions, so the look stays similar to 28x28
   const unsigned minDim = min(cols,rows);
   if (minDim > 28) {
-    noiseInterval = (30 * 28 + 15) / minDim;         // scale interval so that 30 * 28 = noiseInterval * maxDim
+    noiseInterval = (30 * 28 + 15) / minDim;         // scale interval so that 30 * 28 = noiseInterval * minDim
     noiseInterval = constrain(noiseInterval, 5, 32); // keep the result in a useful range
   }
 
