@@ -2,7 +2,7 @@
 
 [日本語](readme_jp.md)
 
-This project runs the WLED v17 series natively on M5Stack CoreS3 and combines<br>
+WLED v17 firmware runs directly on the M5Stack CoreS3, combining<br>
 **local touch control / built-in microphone Audio Reactive / battery status / physical Power Key handling / LED control** in a single device.
 
 > **Status:** Hardware-validated CoreS3 implementation<br>
@@ -15,9 +15,9 @@ This project runs the WLED v17 series natively on M5Stack CoreS3 and combines<br
 
 ## Features
 
-- Native WLED runtime on M5Stack CoreS3
+- WLED firmware runs directly on the M5Stack CoreS3
 - Local control with the 320 × 240 touch display
-- Bidirectional synchronization between the WLED Web UI and CoreS3 UI
+- Lighting changes made in the Web UI are shown on the touch display, and touch controls update the same WLED state
 - LED Brightness / Effect / Speed / Intensity / Palette control
 - Independent C1 / C2 / C3 multi-color editing
 - Preset Call / SAVE / OVERWRITE / DELETE / BOOT PRESET
@@ -120,10 +120,9 @@ In addition to recalling Presets, CoreS3 can perform SAVE NEW / OVERWRITE / DELE
 
 ### LED
 
-Hardware validation used the M5Stack DIGITAL RGB LED STRIP.
+Hardware validation used the M5Stack DIGITAL RGB LED STRIP. M5Stack documents this strip as [SK6812 RGB](https://docs.m5stack.com/en/unit/Unit_RGB_LED_Strip), without a dedicated white channel.
 
-- SK6812
-- RGB type
+- SK6812 RGB
 - 60 LEDs / m
 - Two strips connected, for 120 physical LEDs
 - WLED Bus Type: `WS281x`
@@ -131,39 +130,20 @@ Hardware validation used the M5Stack DIGITAL RGB LED STRIP.
 - CoreS3 Port.C
 - GPIO17
 
-> **Important:** This project does not guarantee the safety of directly powering 120 LEDs at high brightness from the CoreS3.<br>
-> For larger LED counts or higher brightness, use an appropriately sized external 5V LED power supply with a common GND.
-
----
-
-## Recommended Brightness
-
-The standard WLED default Brightness is not modified.
-
-When powering an LED Strip directly from CoreS3, hardware testing showed that the battery level can decrease even while USB-C power is connected at Brightness 128.
-
-For this reason, **a starting Brightness around 64** is recommended for the CoreS3 test configuration.
-
-```text
-WLED default:           128
-CoreS3 recommendation:  64
-```
-
-This does not modify the WLED core default.<br>
-Actual power consumption depends heavily on LED count, colors, Effect, and the external power architecture.
+For LED power-supply sizing, wiring, and common-ground connections, follow the [WLED wiring guide](https://kno.wled.ge/basics/getting-started/). Choose a supply and brightness setting appropriate for the connected LEDs; a brightness value alone does not define the current drawn.
 
 ---
 
 ## Build Environment
 
-Validated build environment:
+Validated build environment for the public sample:
 
 ```text
 WLED                  17.0.0-devV5
 PlatformIO env        m5stack_cores3
-Platform              pioarduino / platform-espressif32 55.03.39
-Arduino Core           3.3.9
-ESP-IDF libraries      5.5.4
+Platform              Tasmota 2026.05.50
+Arduino Core          3.3.8.260506
+ESP-IDF libraries     5.5.4.260407
 NeoPixelBus            2.9.0+sha.76afe83
 ```
 
@@ -270,7 +250,7 @@ The CoreS3 Power usermod uses DCDC3 Always-PWM as a stabilization measure.
 ```text
 DCDC1: AUTO
 DCDC3: ALWAYS_PWM
-OVP protection: unchanged / enabled
+OVP protection: kept active
 ```
 
 Long-duration hardware testing and regression checks showed strong stabilization with this setting.
@@ -306,8 +286,6 @@ If WLED is turned back on from the Web UI while the power-off transition is stil
 
 The built-in ES7210 and CoreS3 microphones are used.
 
-Audio Reactive initializes ES7210 and uses the standard WLED I2S0 / PCM / FFT processing path.
-
 Main settings:
 
 ```text
@@ -319,8 +297,6 @@ I2S Input      Mono / WLED 32-bit container
 MCLK           GPIO0
 DIN            GPIO14
 ```
-
-Audio status can be checked from WLED Info.
 
 ---
 
@@ -336,10 +312,9 @@ PRESET
 PRESET MANAGE
 ```
 
-CoreS3 and the WLED Web UI synchronize in both directions.
+The touch display and Web UI control the same WLED instance. Lighting changes made through either interface are reflected in the other.
 
-- Change on CoreS3 → reflected in Web UI
-- Change in Web UI → reflected on CoreS3
+Use the WLED Web UI for segment configuration.
 
 Short press / long press / drag touch operations are supported.
 
@@ -347,7 +322,7 @@ Short press / long press / drag touch operations are supported.
 
 ## Preset Management
 
-The following operations are available from CoreS3:
+The following operations are available from the CoreS3 touch display:
 
 ```text
 Preset Call
@@ -357,29 +332,25 @@ DELETE
 BOOT PRESET
 ```
 
-A Preset cache is used to synchronize with Presets stored by WLED.
-
 ---
 
 ## Network Recovery
 
-If Wi-Fi connectivity is lost, Recovery AP can be started from the CoreS3 Display.
+When neither a Wi-Fi connection nor an access point is available, the MAIN screen shows `Offline - Hold Recovery AP`. Hold that network-status area for 1.5 seconds to start a temporary Recovery AP.
 
-When Recovery AP is active, access:
+Connect to the access point whose name is shown on the display, then open:
 
 ```text
 http://4.3.2.1
 ```
 
-The normal WLED Web UI and CoreS3 local controls can be used together.
+Starting Recovery AP does not change the saved AP credentials or AP behavior setting.
 
 ---
 
 ## Battery Status
 
-Battery level is read from the CoreS3 AXP2101 fuel gauge and displayed on the MAIN screen.
-
-Battery status is updated periodically instead of continuously polling I2C.
+The MAIN screen displays the battery percentage reported by the CoreS3's AXP2101 power-management IC.
 
 ---
 
@@ -407,7 +378,7 @@ Responsibilities:
 - DCDC3 Always-PWM
 - Power Key
 - WLED Power Transition
-- Power Health
+- Power initialization and external 5V status
 
 ### CoreS3_Display
 
@@ -422,18 +393,7 @@ Responsibilities:
 
 ### audioreactive
 
-The generic WLED Audio Reactive usermod includes ES7210 support used by the CoreS3 built-in microphones through the standard WLED Audio Reactive I2S path.
-
----
-
-## Current Limitations / Notes
-
-- Segment management is intentionally not implemented in the local UI.<br>
-  Use the WLED Web UI for Segment configuration.
-- Directly powering 120 LEDs from CoreS3 at high brightness is not recommended.
-- The standard WLED Brightness default of 128 is not modified.
-- A starting Brightness around 64 is recommended for CoreS3.
-- DCDC OVP protection is not disabled.
+The audioreactive usermod supports the CoreS3 built-in microphones with a new ES7210 digital-microphone type.
 
 ---
 
