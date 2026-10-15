@@ -5251,33 +5251,33 @@ void mode_2DColoredBursts() {              // By: ldirko   https://editor.soulma
   bool dot = SEGMENT.check3;
   bool grad = SEGMENT.check1;
 
-  byte numLines = SEGMENT.intensity/16 + 1;
+  unsigned numLines = SEGMENT.intensity/16 + 1;
 
   SEGENV.aux0++;  // hue
   SEGMENT.fadeToBlackBy(40 - SEGMENT.check2 * 8);
   for (size_t i = 0; i < numLines; i++) {
-    byte x1 = beatsin8_t(2 + SEGMENT.speed/16, 0, (cols - 1));
-    byte x2 = beatsin8_t(1 + SEGMENT.speed/16, 0, (rows - 1));
-    byte y1 = beatsin8_t(5 + SEGMENT.speed/16, 0, (cols - 1), 0, i * 24);
-    byte y2 = beatsin8_t(3 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 48 + 64);
+    unsigned x1 = beatsin8_t(2 + SEGMENT.speed/16, 0, (cols - 1));
+    unsigned x2 = beatsin8_t(1 + SEGMENT.speed/16, 0, (rows - 1));
+    unsigned y1 = beatsin8_t(5 + SEGMENT.speed/16, 0, (cols - 1), 0, i * 24);
+    unsigned y2 = beatsin8_t(3 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 48 + 64);
     uint32_t color = ColorFromPalette(SEGPALETTE, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
 
-    byte xsteps = abs8(x1 - y1) + 1;
-    byte ysteps = abs8(x2 - y2) + 1;
-    byte steps = xsteps >= ysteps ? xsteps : ysteps;
+    unsigned xsteps = abs(int(x1) - int(y1)) + 1;
+    unsigned ysteps = abs(int(x2) - int(y2)) + 1;
+    unsigned steps = xsteps >= ysteps ? xsteps : ysteps;
     //Draw gradient line
     for (size_t j = 1; j <= steps; j++) {
-      uint8_t rate = j * 255 / steps;
-      byte dx = lerp8by8(x1, y1, rate);
-      byte dy = lerp8by8(x2, y2, rate);
+      uint32_t rate = j * 255 / steps;
+      int dx = lerp16by8(x1, y1, rate);
+      int dy = lerp16by8(x2, y2, rate);
       //SEGMENT.setPixelColorXY(dx, dy, grad ? color_fade(color, (255-rate), true) : color); // use addPixelColorXY for different look
       SEGMENT.addPixelColorXY(dx, dy, color); // use setPixelColorXY for different look
       if (grad) SEGMENT.fadePixelColorXY(dx, dy, rate);
     }
 
     if (dot) { //add white point at the ends of line
-      SEGMENT.setPixelColorXY(x1, x2, WHITE);
-      SEGMENT.setPixelColorXY(y1, y2, DARKSLATEGRAY);
+      SEGMENT.setPixelColorXY(int(x1), int(x2), WHITE);
+      SEGMENT.setPixelColorXY(int(y1), int(y2), DARKSLATEGRAY);
     }
   }
   SEGMENT.blur(SEGMENT.custom3>>1, SEGMENT.check2);
@@ -5330,7 +5330,7 @@ void mode_2DDNASpiral() {               // By: ldirko  https://editor.soulmateli
     if ((i + ms / 8) & 3) {
       // draw a gradient line between x and x1
       x = x / 2; x1 = x1 / 2;
-      unsigned steps = abs8(x - x1) + 1;
+      unsigned steps = abs(x - x1) + 1;
       bool positive = (x1 >= x);                         // direction of drawing
       for (size_t k = 1; k <= steps; k++) {
         unsigned rate = k * 255 / steps;
@@ -6171,7 +6171,7 @@ static const char _data_FX_MODE_2DSPACESHIPS[] PROGMEM = "Spaceships@!,Blur,,,,S
 //     2D Crazy Bees   //
 /////////////////////////
 //// Crazy bees by stepko (c)12.02.21 [https://editor.soulmatelights.com/gallery/651-crazy-bees], adapted by Blaz Kristan (AKA blazoncek), improved by @dedehai
-#define MAX_BEES 5
+#define MAX_BEES 8
 void mode_2Dcrazybees(void) {
   if (!strip.isMatrix || !SEGMENT.is2D()) FX_FALLBACK_STATIC; // not a 2D set-up
 
@@ -6181,8 +6181,8 @@ void mode_2Dcrazybees(void) {
   byte n = MIN(MAX_BEES, (rows * cols) / 256 + 1);
 
   typedef struct Bee {
-    uint8_t posX, posY, aimX, aimY, hue;
-    int8_t deltaX, deltaY, signX, signY, error;
+    uint16_t posX, posY, aimX, aimY, hue;
+    int16_t deltaX, deltaY, signX, signY, error;
     void aimed(uint16_t w, uint16_t h) {
       //prng.setSeed(millis());
       aimX   = prng.random8(0, w);
@@ -6675,8 +6675,8 @@ void mode_2Dplasmarotozoom() {
     float u1 = i * kosinus;
     float v1 = i * sinus;
     for (int j = 0; j < rows; j++) {
-        byte u = abs8(u1 - j * sinus) % cols;
-        byte v = abs8(v1 + j * kosinus) % rows;
+        size_t u = unsigned(fabsf(u1 - j * sinus)) % cols;
+        size_t v = unsigned(fabsf(v1 + j * kosinus)) % rows;
         SEGMENT.setPixelColorXY(i, j, SEGMENT.color_from_palette(plasma[v*cols+u], false, PALETTE_SOLID_WRAP, 255));
     }
   }
