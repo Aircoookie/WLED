@@ -5947,15 +5947,19 @@ void mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://e
     SEGENV.step = 0;
   }
 
-  float adjustHeight = (float)map(rows, 8, 32, 28, 12); // maybe use mapf() ???
-  unsigned adjScale = map(cols, 8, 64, 310, 63);
+  // clamp the size-based mappings (map() extrapolates); scale inversely for larger matrices
+  float adjustHeight = (rows > 32) ? 12.0f * 32.0f / rows : (float)map(max(rows, 8), 8, 32, 28, 12);
+  unsigned adjScale = (cols > 64) ? (63 * 64) / cols : map(max(cols, 8), 8, 64, 310, 63);
   unsigned _scale = map(SEGMENT.intensity, 0, 255, 30, adjScale);
   int _speed = map(SEGMENT.speed, 0, 255, 128, 16);
 
+  // time advances at a fixed rate per frame (equivalent to a 32x24 matrix), independent of matrix size
+  SEGENV.step += 768;
+  unsigned pixelCount = SEGENV.step;
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
-      SEGENV.step++;
-      uint8_t palindex = qsub8(perlin8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
+      pixelCount++;
+      uint8_t palindex = qsub8(perlin8((pixelCount%2) + x * _scale, y * 16 + pixelCount % 16, SEGENV.step / _speed), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
       uint8_t palbrightness = palindex;
       if(SEGMENT.check1) palindex = 255 - palindex; //flip palette
       SEGMENT.setPixelColorXY(x, y, SEGMENT.color_from_palette(palindex, false, false, 255, palbrightness));
