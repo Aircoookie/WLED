@@ -5910,27 +5910,20 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
   uint_fast32_t t = (strip.now * 8) / (256 - SEGMENT.speed);  // optimized to avoid float
   const int maxDim = max(cols, rows);
   const int noiseInterval = (30 * 28 + 15) / maxDim;           // 30 up to 28x28, scaled down for larger panels
-  const int diagWidth = 2 * maxDim;                            // diagonal line thickness in aspect-scaled units
   for (int i = 0; i < cols; i++) {
     unsigned colNoise = perlin8(i * noiseInterval, t, t);
     unsigned yShift = map(colNoise, 0, 255, 0, rows-1);        // column-driven wobble moves lines vertically
     for (int j = 0; j < rows; j++) {
       unsigned rowNoise = perlin8(t, j * noiseInterval, t);
       unsigned xShift = map(rowNoise, 0, 255, 0, cols-1);      // row-driven wobble moves lines horizontally
-      int x = (i + xShift - cols / 2);
-      int y = (j + yShift - rows / 2);
-      int cx = (i + xShift);
-      int cy = (j + yShift);
-      // diagonals are scaled by the aspect ratio so they run corner to corner
-      int diag1 = x * rows - y * cols;
-      int diag2 = (cols - 1 - x) * rows - y * cols;
+      // position relative to the panel center (plus wobble): lines cross at the center, diagonals stay at 45 degrees
+      int dx = i + (int)xShift - cols;
+      int dy = j + (int)yShift - rows;
 
-      SEGMENT.addPixelColorXY(i, j, ((diag1 > -diagWidth) && (diag1 < diagWidth)) ||
-                                    ((diag2 > -diagWidth) && (diag2 < diagWidth)) ||
-                                    (cols - cx == 0) ||
-                                    (cols - 1 - cx == 0) ||
-                                    (rows - cy == 0) ||
-                                    (rows - 1 - cy == 0) ? ColorFromPalette(SEGPALETTE, beat8(5), colNoise, LINEARBLEND) : CRGB::Black);
+      SEGMENT.addPixelColorXY(i, j, ((dx - dy > -2) && (dx - dy < 2)) ||
+                                    ((dx + dy + 1 > -2) && (dx + dy + 1 < 2)) ||
+                                    (dx == 0) || (dx == -1) ||
+                                    (dy == 0) || (dy == -1) ? ColorFromPalette(SEGPALETTE, beat8(5), colNoise, LINEARBLEND) : CRGB::Black);
     }
   }
   SEGMENT.blur(SEGMENT.custom2>>5);
