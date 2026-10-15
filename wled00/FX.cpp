@@ -5916,11 +5916,17 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
 
   SEGMENT.fadeToBlackBy(SEGMENT.custom1>>2);
   uint_fast32_t t = (strip.now * 8) / (256 - SEGMENT.speed);  // optimized to avoid float
+
+  // cache for inner loop noise, so we avoid calculating the same values for each row
+  uint8_t *noisebuf = (uint8_t *) d_calloc(rows, 1);
+  if (!noisebuf) FX_FALLBACK_STATIC; // panic
+  for (int j = 0; j < rows; j++) noisebuf[j] = perlin8(t, j * noiseInterval, t);
+
   for (int i = 0; i < cols; i++) {
     unsigned colNoise = perlin8(i * noiseInterval, t, t);
     int yShift = map(colNoise, 0, 255, 0, rows-1);        // column-driven wobble moves lines vertically
     for (int j = 0; j < rows; j++) {
-      unsigned rowNoise = perlin8(t, j * noiseInterval, t);
+      unsigned rowNoise = noisebuf[j];                    // use cached noise - 50% speedup
       int xShift = map(rowNoise, 0, 255, 0, cols-1);      // row-driven wobble moves lines horizontally
       // position relative to the panel center (plus wobble)
       int dx = i + xShift - cols;
@@ -5933,6 +5939,7 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
       if (isLit) SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, beat8(5), colNoise, LINEARBLEND)); // optimization: only add non-black pixels 
     }
   }
+  d_free(noisebuf);
   SEGMENT.blur(SEGMENT.custom2>>5);
 } // mode_2DPlasmaball()
 static const char _data_FX_MODE_2DPLASMABALL[] PROGMEM = "Plasma Ball@Speed,,Fade,Blur;;!;2";
