@@ -5905,6 +5905,8 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
 
   const int cols = SEG_W;
   const int rows = SEG_H;
+  if (rows > 256) FX_FALLBACK_STATIC; // effect does not support more than 256 pixel rows
+  uint8_t noisebuf[256];
 
   unsigned noiseInterval=30;
   // scale noise interval down for larger dimensions, so the look stays similar to 28x28
@@ -5918,8 +5920,6 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
   uint_fast32_t t = (strip.now * 8) / (256 - SEGMENT.speed);  // optimized to avoid float
 
   // cache for inner loop noise, so we avoid calculating the same values for each row
-  uint8_t *noisebuf = (uint8_t *) d_calloc(rows, 1);
-  if (!noisebuf) FX_FALLBACK_STATIC; // panic
   for (int j = 0; j < rows; j++) noisebuf[j] = perlin8(t, j * noiseInterval, t);
 
   for (int i = 0; i < cols; i++) {
@@ -5939,7 +5939,6 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
       if (isLit) SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, beat8(5), colNoise, LINEARBLEND)); // optimization: only add non-black pixels 
     }
   }
-  d_free(noisebuf);
   SEGMENT.blur(SEGMENT.custom2>>5);
 } // mode_2DPlasmaball()
 static const char _data_FX_MODE_2DPLASMABALL[] PROGMEM = "Plasma Ball@Speed,,Fade,Blur;;!;2";
