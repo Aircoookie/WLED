@@ -5916,9 +5916,9 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
     for (int j = 0; j < rows; j++) {
       unsigned rowNoise = perlin8(t, j * noiseInterval, t);
       unsigned xShift = map(rowNoise, 0, 255, 0, cols-1);      // row-driven wobble moves lines horizontally
-      // position relative to the panel center (plus wobble): lines cross at the center, diagonals stay at 45 degrees
-      int dx = i + (int)xShift - cols;
-      int dy = j + (int)yShift - rows;
+      // crossing point wanders symmetrically around the panel center; all four lines share it, diagonals stay at 45 degrees
+      int dx = i - (int)xShift;
+      int dy = j - (int)yShift;
 
       SEGMENT.addPixelColorXY(i, j, ((dx - dy > -2) && (dx - dy < 2)) ||
                                     ((dx + dy + 1 > -2) && (dx + dy + 1 < 2)) ||
