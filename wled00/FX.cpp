@@ -5908,23 +5908,29 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
 
   SEGMENT.fadeToBlackBy(SEGMENT.custom1>>2);
   uint_fast32_t t = (strip.now * 8) / (256 - SEGMENT.speed);  // optimized to avoid float
+  const int maxDim = max(cols, rows);
+  const int noiseInterval = (30 * 28 + 15) / maxDim;           // 30 up to 28x28, scaled down for larger panels
+  const int diagWidth = 2 * maxDim;                            // diagonal line thickness in aspect-scaled units
   for (int i = 0; i < cols; i++) {
-    unsigned thisVal = perlin8(i * 30, t, t);
-    unsigned thisMax = map(thisVal, 0, 255, 0, cols-1);
+    unsigned colNoise = perlin8(i * noiseInterval, t, t);
+    unsigned yShift = map(colNoise, 0, 255, 0, rows-1);        // column-driven wobble moves lines vertically
     for (int j = 0; j < rows; j++) {
-      unsigned thisVal_ = perlin8(t, j * 30, t);
-      unsigned thisMax_ = map(thisVal_, 0, 255, 0, rows-1);
-      int x = (i + thisMax_ - cols / 2);
-      int y = (j + thisMax - cols / 2);
-      int cx = (i + thisMax_);
-      int cy = (j + thisMax);
+      unsigned rowNoise = perlin8(t, j * noiseInterval, t);
+      unsigned xShift = map(rowNoise, 0, 255, 0, cols-1);      // row-driven wobble moves lines horizontally
+      int x = (i + xShift - cols / 2);
+      int y = (j + yShift - rows / 2);
+      int cx = (i + xShift);
+      int cy = (j + yShift);
+      // diagonals are scaled by the aspect ratio so they run corner to corner
+      int diag1 = x * rows - y * cols;
+      int diag2 = (cols - 1 - x) * rows - y * cols;
 
-      SEGMENT.addPixelColorXY(i, j, ((x - y > -2) && (x - y < 2)) ||
-                                    ((cols - 1 - x - y) > -2 && (cols - 1 - x - y < 2)) ||
+      SEGMENT.addPixelColorXY(i, j, ((diag1 > -diagWidth) && (diag1 < diagWidth)) ||
+                                    ((diag2 > -diagWidth) && (diag2 < diagWidth)) ||
                                     (cols - cx == 0) ||
                                     (cols - 1 - cx == 0) ||
-                                    ((rows - cy == 0) ||
-                                    (rows - 1 - cy == 0)) ? ColorFromPalette(SEGPALETTE, beat8(5), thisVal, LINEARBLEND) : CRGB::Black);
+                                    (rows - cy == 0) ||
+                                    (rows - 1 - cy == 0) ? ColorFromPalette(SEGPALETTE, beat8(5), colNoise, LINEARBLEND) : CRGB::Black);
     }
   }
   SEGMENT.blur(SEGMENT.custom2>>5);
