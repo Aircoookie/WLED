@@ -5947,20 +5947,24 @@ void mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://e
     SEGENV.step = 0;
   }
 
-  float adjustHeight = (float)map(rows, 8, 32, 28, 12); // maybe use mapf() ???
-  unsigned adjScale = map(cols, 8, 64, 310, 63);
-  unsigned _scale = map(SEGMENT.intensity, 0, 255, 30, adjScale);
-  int _speed = map(SEGMENT.speed, 0, 255, 128, 16);
+  // size-based mappings
+  float adjustHeight = (rows > 32) ? 12.0f * 32.0f / rows : mapf(max(rows, 8), 8, 32, 28, 12); // scale height inversely for larger matrices
+  unsigned adjScale = (cols > 64) ? (112 * 64) / cols : map(max(cols, 8), 8, 64, 310, 63);     // reduced scaling on larger matrices
+  adjScale = constrain(adjScale, 31, 310);                                                     // keep scale in a meaningful range
+  unsigned rowScale = map(SEGMENT.intensity, 0, 255, (rows <= 48) ? 30 : 18, adjScale);        // extended range on larger matrices
+  int speedScale = map(SEGMENT.speed, 0, 255, (cols <= 48) ? 128 : 192, 16);                   // slightly slow down on larger matrices
 
+  unsigned pixelCount = SEGENV.step;
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
-      SEGENV.step++;
-      uint8_t palindex = qsub8(perlin8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
+      pixelCount++;
+      uint8_t palindex = qsub8(perlin8((pixelCount%2) + x * rowScale, y * 16 + pixelCount % 16, SEGENV.step / speedScale), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
       uint8_t palbrightness = palindex;
       if(SEGMENT.check1) palindex = 255 - palindex; //flip palette
       SEGMENT.setPixelColorXY(x, y, SEGMENT.color_from_palette(palindex, false, false, 255, palbrightness));
     }
   }
+  SEGENV.step += min(768, cols*rows); // limit speed to match original effect at 32x24
 } // mode_2DPolarLights()
 static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@!,Scale,,,,Flip Palette;;!;2;pal=71";
 
