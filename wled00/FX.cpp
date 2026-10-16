@@ -5904,8 +5904,7 @@ void mode_2DPlasmaball(void) {                   // By: Stepko https://editor.so
   if (!strip.isMatrix || !SEGMENT.is2D()) FX_FALLBACK_STATIC; // not a 2D set-up
 
   const int cols = SEG_W;
-  const int rows = SEG_H;
-  if (rows > 256) FX_FALLBACK_STATIC; // effect does not support more than 256 pixel rows
+  const int rows = min(SEG_H, 256U); // effect does not support more than 256 pixel rows
   uint8_t noisebuf[256];
 
   unsigned noiseInterval=30;
