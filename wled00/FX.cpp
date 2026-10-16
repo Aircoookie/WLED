@@ -6056,8 +6056,12 @@ void mode_2DSunradiation(void) {                   // By: ldirko https://editor.
   const int cols = SEG_W;
   const int rows = SEG_H;
 
-  if (!SEGENV.allocateData(sizeof(byte)*(cols+2)*(rows+2))) FX_FALLBACK_STATIC; //allocation failed
-  byte *bump = reinterpret_cast<byte*>(SEGENV.data);
+  if (!SEGENV.allocateData(sizeof(int8_t)*(cols+2)*(rows+2))) FX_FALLBACK_STATIC; //allocation failed
+  int8_t *bump = reinterpret_cast<int8_t*>(SEGENV.data);
+
+  const int minSize = min(cols, rows);
+  const int magnify = (minSize <= 32) ? 8 : (minSize < 64) ? 46 : 56; // original effect used 8
+  int downscale = (minSize > 42) ? (minSize > 63) ? 2 : 3 : 4; // more detailed bumpmap for larger fixtures
 
   if (SEGENV.call == 0) {
     SEGMENT.fill(BLACK);
@@ -6068,7 +6072,7 @@ void mode_2DSunradiation(void) {                   // By: ldirko https://editor.
   uint8_t someVal = SEGMENT.speed/4;             // Was 25.
   for (int j = 0; j < (rows + 2); j++) {
     for (int i = 0; i < (cols + 2); i++) {
-      byte col = ((int16_t)perlin8(i * someVal, j * someVal, t) - 127) >> 2; // about +/- 32
+      int8_t col = ((int16_t)perlin8(i * someVal, j * someVal, t) - 127) / downscale; // about +/- 32 // can't use ">>2" to divide by 4, as signed right shift is undefined behaviour
       bump[index++] = col;
     }
   }
@@ -6080,12 +6084,12 @@ void mode_2DSunradiation(void) {                   // By: ldirko https://editor.
     int vlx = -(cols / 2 + 1);
     for (int x = 0; x < cols; x++) {
       ++vlx;
-      int nx = bump[x + yindex + 1] - bump[x + yindex - 1];
-      int ny = bump[x + yindex + (cols + 2)] - bump[x + yindex - (cols + 2)];
-      unsigned difx = abs8(vlx * 7 - nx);
-      unsigned dify = abs8(vly * 7 - ny);
+      int nx = int(bump[x + yindex + 1]) - int(bump[x + yindex - 1]);
+      int ny = int(bump[x + yindex + (cols + 2)]) - int(bump[x + yindex - (cols + 2)]);
+      unsigned difx = min(abs(vlx * 7 - nx), 255);  // abs8 does not work for numbers >127
+      unsigned dify = min(abs(vly * 7 - ny), 255);
       int temp = difx * difx + dify * dify;
-      int col = 255 - temp / 8; //8 its a size of effect
+      int col = 255 - temp / magnify; // size adjusts to matrix dimensions
       if (col < 0) col = 0;
       SEGMENT.setPixelColorXY(x, y, HeatColor(col / (3.0f-(float)(SEGMENT.intensity)/128.f)));
     }
