@@ -6061,7 +6061,7 @@ void mode_2DSunradiation(void) {                   // By: ldirko https://editor.
 
   const int minSize = min(cols, rows);
   const int magnify = (minSize <= 32) ? 8 : (minSize < 64) ? 46 : 56; // original effect used 8
-  int downscale = (minSize > 42) ? (minSize > 63) ? 2 : 3 : 4; // more detailed bumpmap for larger fixtures
+  int downscale = (minSize > 42) ? (minSize > 63) ? 2 : 3 : 4;        // more detailed bumpmap for larger fixtures  - original effect used 4
 
   if (SEGENV.call == 0) {
     SEGMENT.fill(BLACK);
@@ -6072,7 +6072,7 @@ void mode_2DSunradiation(void) {                   // By: ldirko https://editor.
   uint8_t someVal = SEGMENT.speed/4;             // Was 25.
   for (int j = 0; j < (rows + 2); j++) {
     for (int i = 0; i < (cols + 2); i++) {
-      int8_t col = ((int16_t)perlin8(i * someVal, j * someVal, t) - 127) / downscale; // about +/- 32 // can't use ">>2" to divide by 4, as signed right shift is undefined behaviour
+      int8_t col = ((int16_t)perlin8(i * someVal, j * someVal, t) - 127) / downscale;
       bump[index++] = col;
     }
   }
