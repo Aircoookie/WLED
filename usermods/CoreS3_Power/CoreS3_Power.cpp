@@ -49,6 +49,8 @@ bool coreS3PowerKeyMonitorReady()
 class CoreS3PowerUsermod : public Usermod
 {
 private:
+  static constexpr uint8_t CORE_S3_I2C_SDA = 12;
+  static constexpr uint8_t CORE_S3_I2C_SCL = 11;
   static constexpr uint8_t AW9523B_ADDR = 0x58;
   static constexpr uint8_t AXP2101_ADDR = 0x34;
 
@@ -106,6 +108,8 @@ private:
   static constexpr uint8_t CORE_S3_LEDMODE_P0 = 0xFF;
   static constexpr uint8_t CORE_S3_LEDMODE_P1 = 0xFF;
 
+  // Runtime hardware access is allowed only after setup validates pins and devices.
+  bool hardwareUsable = false;
   bool aw9523Found = false;
   bool axp2101Found = false;
   // CoreS3 external 5V state.
@@ -637,6 +641,7 @@ private:
 public:
   void setup() override
   {
+    hardwareUsable = false;
     coreS3PowerInitializationCompleteState = false;
     coreS3PowerExternal5VReadyState = false;
     coreS3PowerKeyMonitorReadyState = false;
@@ -653,7 +658,7 @@ public:
       (int)bootResetReason
     );
 
-    if (i2c_sda != 12 || i2c_scl != 11) {
+    if (i2c_sda != CORE_S3_I2C_SDA || i2c_scl != CORE_S3_I2C_SCL) {
       DEBUG_PRINTLN(F("[CoreS3_Power] ERROR: Invalid CoreS3 I2C pins"));
       coreS3PowerInitializationCompleteState = true;
       return;
@@ -671,6 +676,7 @@ public:
       return;
     }
 
+    hardwareUsable = true;
     captureBootAxpDiagnostics();
 
     external5VEnableSuccess = enableExternal5VAtStartup();
@@ -692,6 +698,8 @@ public:
 
   void loop() override
   {
+    if (!hardwareUsable) return;
+
     servicePhysicalPowerKey();
     serviceRuntimeExternal5VEnable();
     serviceDcdc3StabilityMode();
@@ -704,7 +712,7 @@ public:
     if (user.isNull()) user = root.createNestedObject("u");
 
     JsonArray i2cInfo = user.createNestedArray("CoreS3 I2C");
-    i2cInfo.add((i2c_sda == 12 && i2c_scl == 11) ? "GPIO12 / GPIO11 OK" : "I2C PIN ERROR");
+    i2cInfo.add((i2c_sda == CORE_S3_I2C_SDA && i2c_scl == CORE_S3_I2C_SCL) ? "GPIO12 / GPIO11 OK" : "I2C PIN ERROR");
 
     JsonArray awInfo = user.createNestedArray("CoreS3 AW9523B");
     awInfo.add(aw9523Found ? "Found (0x58)" : "Not found");
