@@ -47,9 +47,11 @@ static const char CORES3_DISPLAY_CONFIG_NAME[] PROGMEM = "CoreS3_Display";
 // Display consumes these signals only for user-facing warning UX; it does
 // not own or modify the power-control implementation.
 #if defined(WLED_M5STACK_CORES3) && defined(CONFIG_IDF_TARGET_ESP32S3)
-bool coreS3PowerInitializationComplete();
-bool coreS3PowerExternal5VReady();
-bool coreS3PowerKeyMonitorReady();
+// Optional weak references: CoreS3_Display can also be built without CoreS3_Power.
+// Check availability before calling; no fallback definition replaces the real provider.
+bool coreS3PowerInitializationComplete() __attribute__((weak));
+bool coreS3PowerExternal5VReady() __attribute__((weak));
+bool coreS3PowerKeyMonitorReady() __attribute__((weak));
 #endif
 
 
@@ -1857,14 +1859,20 @@ class CoreS3DisplayUsermod : public Usermod {
 
   RuntimeHealthWarning getNextRuntimeHealthWarning( unsigned long now ) {
 #if defined(WLED_M5STACK_CORES3) && defined(CONFIG_IDF_TARGET_ESP32S3)
+    // Missing power telemetry must not be treated as a healthy power subsystem.
+    const bool powerStateAvailable =
+      coreS3PowerInitializationComplete && coreS3PowerExternal5VReady && coreS3PowerKeyMonitorReady;
+    const bool powerInitializationComplete = powerStateAvailable && coreS3PowerInitializationComplete();
+    const bool external5VReady = powerStateAvailable && coreS3PowerExternal5VReady();
+    const bool powerKeyReady = powerStateAvailable && coreS3PowerKeyMonitorReady();
     const bool graceExpired =
       now - runtimeHealthStartMs >= POWER_KEY_WARNING_GRACE_MS;
 
     if (
       !( runtimeHealthWarningsShownMask & RUNTIME_HEALTH_SHOWN_LED_POWER ) &&
       (
-        ( coreS3PowerInitializationComplete() && !coreS3PowerExternal5VReady() ) ||
-        ( graceExpired && !coreS3PowerInitializationComplete() )
+        ( powerInitializationComplete && !external5VReady ) ||
+        ( graceExpired && !powerInitializationComplete )
       )
     ) {
       return RUNTIME_HEALTH_WARNING_LED_POWER;
@@ -1873,7 +1881,7 @@ class CoreS3DisplayUsermod : public Usermod {
     if (
       !( runtimeHealthWarningsShownMask & RUNTIME_HEALTH_SHOWN_POWER_KEY ) &&
       graceExpired &&
-      !coreS3PowerKeyMonitorReady()
+      !powerKeyReady
     ) {
       return RUNTIME_HEALTH_WARNING_POWER_KEY;
     }
