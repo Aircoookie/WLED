@@ -5953,13 +5953,13 @@ void mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://e
   unsigned adjScale = (cols > 64) ? (112 * 64) / cols : map(max(cols, 8), 8, 64, 310, 63);     // reduced scaling on larger matrices
   adjScale = constrain(adjScale, 31, 310);                                                     // keep scale in a meaningful range
   unsigned rowScale = map(SEGMENT.intensity, 0, 255, (rows <= 48) ? 30 : 18, adjScale);        // extended range on larger matrices
-  int speedScale = map(SEGMENT.speed, 0, 255, (cols <= 48) ? 128 : 192, 16);                   // slightly slow down on larger matrices
+  int speedScale = map(SEGMENT.speed, 0, 255, (cols <= 48) ? 128 : 196, 16);                   // slightly slow down on larger matrices
 
   unsigned pixelCount = SEGENV.step;
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
       pixelCount++;
-      uint8_t palindex = qsub8(perlin8((pixelCount%2) + x * rowScale, y * 16 + pixelCount % 16, SEGENV.step / speedScale), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
+      uint8_t palindex = qsub8(perlin8((pixelCount%2) + x * rowScale, y * 16 + pixelCount % 16, pixelCount / speedScale), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
       uint8_t palbrightness = palindex;
       if(SEGMENT.check1) palindex = 255 - palindex; //flip palette
       SEGMENT.setPixelColorXY(x, y, SEGMENT.color_from_palette(palindex, false, false, 255, palbrightness));
