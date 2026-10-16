@@ -1,5 +1,8 @@
 #include "wled.h"
 
+// True while a name packet was sent and its retries are not yet exhausted
+#define NAME_SYNC_PENDING() (_nameSendCount < udpNumRetries)
+
 class UdpNameSync : public Usermod {
 
   private:
@@ -12,8 +15,9 @@ class UdpNameSync : public Usermod {
     
     // Retry mechanism variables (similar to core UDP sync)
     unsigned long _lastNameSentTime = 0;
-    uint8_t _nameSendCount = 0;
-    bool _nameNeedsSync = false;
+    // Starts "exhausted" so no retry is pending before the first name is sent;
+    // sendNamePacket() resets it to 0 on the initial send and increments it per retry
+    uint8_t _nameSendCount = UINT8_MAX;
 
   public:
     /**
@@ -38,8 +42,8 @@ class UdpNameSync : public Usermod {
       
       Segment& mainseg = strip.getMainSegment();
       // Early return only if name was never set and no retry is pending
-      // This allows empty-name packets to reach the retry branch when _nameNeedsSync is set
-      if (segmentName[0] == '\0' && !mainseg.name && !_nameNeedsSync) return; //name was never set, do nothing
+      // This allows empty-name packets to reach the retry branch while retries are pending
+      if (segmentName[0] == '\0' && !mainseg.name && !NAME_SYNC_PENDING()) return; //name was never set, do nothing
 
       const char* curName = mainseg.name ? mainseg.name : "";
       
@@ -51,14 +55,9 @@ class UdpNameSync : public Usermod {
       }
       
       // Name hasn't changed - check if we need to retry
-      if (_nameNeedsSync && udpConnected && (_nameSendCount < udpNumRetries) && ((millis() - _lastNameSentTime) > 250)) {
+      if (NAME_SYNC_PENDING() && ((millis() - _lastNameSentTime) > 250)) {
         sendNamePacket(true); // retry
         return;
-      }
-      
-      // If we were waiting for retries but they're now complete, clear the flag
-      if (_nameNeedsSync && (_nameSendCount >= udpNumRetries || !udpConnected)) {
-        _nameNeedsSync = false;
       }
       
       // Name is in sync, no action needed
@@ -96,7 +95,6 @@ class UdpNameSync : public Usermod {
       // Update retry tracking (match core behavior)
       _lastNameSentTime = millis();
       _nameSendCount = isRetry ? _nameSendCount + 1 : 0;
-      _nameNeedsSync = true;
     }
 
     bool onUdpPacket(uint8_t * payload, size_t len) override {
