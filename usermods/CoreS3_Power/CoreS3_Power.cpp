@@ -609,6 +609,15 @@ private:
       writeRuntimeRegister(AXP2101_ADDR, AXP2101_REG_IRQ_STATUS_1, powerKeyStatus);
     }
 
+    // Handle a latched release before either long-press path so this poll
+    // cannot request WLED off and immediately cancel it.
+    if (powerKeyStatus & AXP2101_PKEY_POSITIVE_MASK) {
+      powerKeyPressed = false;
+      powerKeyPressedAt = 0;
+      cancelPowerKeyWledOff();
+      return;
+    }
+
     if (powerKeyStatus & AXP2101_PKEY_NEGATIVE_MASK) {
       powerKeyPressed = true;
       powerKeyPressedAt = now;
@@ -628,13 +637,6 @@ private:
     ) {
       DEBUG_PRINTLN(F("[CoreS3_Power] Power key: PRESS timer fallback"));
       beginPowerKeyWledOff(AXP2101_PKEY_NEGATIVE_MASK);
-    }
-
-    if (powerKeyStatus & AXP2101_PKEY_POSITIVE_MASK) {
-      powerKeyPressed = false;
-      powerKeyPressedAt = 0;
-      cancelPowerKeyWledOff();
-      return;
     }
   }
 
