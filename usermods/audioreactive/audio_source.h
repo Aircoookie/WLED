@@ -794,6 +794,11 @@ class ES7210Source : public I2SSource {
     void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) override {
       DEBUGSR_PRINTLN(F("ES7210Source:: initialize();"));
 
+      if ((i2c_sda < 0) || (i2c_scl < 0)) {
+        DEBUGSR_PRINTLN(F("AR: ES7210 requires global I2C pins."));
+        return;
+      }
+
       if ((i2sckPin < 0) || (mclkPin < 0)) {
         DEBUGSR_PRINTF("\nAR: invalid ES7210 I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin);
         return;
