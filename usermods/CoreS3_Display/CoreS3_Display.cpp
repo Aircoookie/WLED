@@ -998,10 +998,30 @@ class CoreS3DisplayUsermod : public Usermod {
     }
 
     String presetName;
+    bool presetExists = false;
 
     uint8_t scanId = (uint8_t)presetCacheScanId;
 
-    if ( getPresetName( scanId, presetName ) ) {
+    {
+      // Mirror getPresetName() so lock failure can be retried separately
+      // from a missing name, without changing the WLED core API.
+      JSONBufferGuard jsonGuard(JSON_LOCK_PRESET_NAME);
+
+      if ( !jsonGuard ) {
+        return;
+      }
+
+      if ( readObjectFromFileUsingId( getPresetsFileName(), scanId, pDoc ) ) {
+        JsonObject fdo = pDoc->as<JsonObject>();
+
+        if ( fdo["n"] ) {
+          presetName = (const char*)(fdo["n"]);
+          presetExists = true;
+        }
+      }
+    }
+
+    if ( presetExists ) {
       if ( presetCacheCount < 250 ) {
         presetCache[ presetCacheCount ].id = scanId;
 
