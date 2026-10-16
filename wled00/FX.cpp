@@ -6190,8 +6190,9 @@ void mode_2Dcrazybees(void) {
   byte n = MIN(MAX_BEES, (rows * cols) / 256 + 1);
 
   typedef struct Bee {
-    uint16_t posX, posY, aimX, aimY, hue;
+    uint16_t posX, posY, aimX, aimY;
     int16_t deltaX, deltaY, signX, signY, error;
+    uint8_t hue;
     void aimed(uint16_t w, uint16_t h) {
       //prng.setSeed(millis());
       aimX   = prng.random8(0, w);
