@@ -34,8 +34,10 @@ void mode_pov_image(void) {
     const char* current = s_pov.getFilename();
     BMPimage* img = s_pov.currentImage();
     
-    // If image is already loaded and matches, show next column
-    if (current && strcmp(segName, current) == 0) {
+    // If image is already loaded and matches, show next column.
+    // An unloaded matching image falls through to the rate-limited load below,
+    // so failed loads are retried.
+    if (current && strcmp(segName, current) == 0 && img->isLoaded() && img->width() > 0) {
       s_pov.showColumn(seg.aux0);
       seg.aux0 = (seg.aux0 + 1) % img->width();
       return;
