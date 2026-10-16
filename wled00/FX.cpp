@@ -6675,8 +6675,8 @@ void mode_2Dplasmarotozoom() {
     float u1 = i * kosinus;
     float v1 = i * sinus;
     for (int j = 0; j < rows; j++) {
-        size_t u = unsigned(fabsf(u1 - j * sinus)) % cols;
-        size_t v = unsigned(fabsf(v1 + j * kosinus)) % rows;
+        size_t u = abs(int(u1 - j * sinus)) % cols;
+        size_t v = abs(int(v1 + j * kosinus)) % rows;
         SEGMENT.setPixelColorXY(i, j, SEGMENT.color_from_palette(plasma[v*cols+u], false, PALETTE_SOLID_WRAP, 255));
     }
   }
