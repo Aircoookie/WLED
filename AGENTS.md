@@ -27,6 +27,7 @@ Reviewer time is limited, and checking long AI-generated explanations for reason
 ### Attribution for PR Descriptions, Comments and Replies
 
 - When creating PR descriptions or suggesting responses to comments, always add this as the very last line: _You are interacting with an AI system_
+- - Your harness may add this trailer automatically. Do not add a duplicate.
 
 ### Attribution for Commits
 
@@ -263,11 +264,17 @@ refer to detailed examples in `usermods/EXAMPLE/`, `usermods/user_fx/` and [in t
 ### Pin ownership via `pinManager`
 - Before performing any operation on I/O pins, the usermod must allocate its pins from the `pinManager`.
 - I/O pins are allocated via `PinManager::allocatePin(byte gpio, bool output, PinOwner tag)` (or `PinManager::allocateMultiplePins()`), and returned via `PinManager::deallocatePin()` when re-configuring pin numbers.
+- If the usermod does not register a unique usermod ID, use `PinOwner::UM_Unspecified` as PinOwner tag for generic pin use.
 - `PinManager::allocatePin()` will return an error code in case that a pin is already assigned to another WLED function.
 - You can use `-1` = `255` for unconfigured / unassigned pin functions.
 - Check for valid pin numbers with `PinManager::isPinOk(byte gpio, bool output)`; this function knows which GPI(O) pins are possible on your specific MCU.
-- PIN numbers for I2C and SPI busses are configured globally in the generic part of the usermod settings page.
+
+#### I2C (Wire) and SPI busses
+
+- PIN numbers for I2C and SPI busses are configured globally in the 'Global I2C & SPI' part of the usermod settings page.
 - Usually, a usermod will not start the I2C or SPI units explicitly, since they are already initialised when WLED starts.
+- Don't call `Wire.begin()` in your `Usermod::setup()`, as this may break other usermods that need the I2C bus.
+- Don't allocate `Wire` I2C pins to the usermod - it would cause a pin conflict, as global I2C pins are already allocated to `PinOwner::HW_I2C`.
 - Use this pattern to check for an incomplete I2C setup: `if (i2c_scl<0 || i2c_sda<0) {enabled = false; return;}`.
 
 ### Usermod IDs
@@ -283,7 +290,8 @@ If none of the above apply, the usermod may omit `getId()` (or return the defaul
 ### Usermod `loop()`
 
 - Called once per main loop iteration. Usermods should simply `return` when `!enabled`.
-- Frequency of calls varies with system load:
+- Avoid blocking calls or `delay()` in the usermod `loop()` - delays block the WLED main loop and lead to effect stuttering.
+- Frequency of Usermod `loop()` calls varies with system load:
     * up to 2000 times/sec with few LEDs and little background activity,
     * between 20 and 300 times/second during high workload from effects and other usermods,
     * (worst case) down to 1-3 times/sec during FS activity or when serving lots of network API requests.
