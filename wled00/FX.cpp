@@ -6195,8 +6195,8 @@ void mode_2Dcrazybees(void) {
     uint8_t hue;
     void aimed(uint16_t w, uint16_t h) {
       //prng.setSeed(millis());
-      aimX   = prng.random8(0, w);
-      aimY   = prng.random8(0, h);
+      aimX   = prng.random16(0, w);
+      aimY   = prng.random16(0, h);
       hue    = prng.random8();
       deltaX = abs(aimX - posX);
       deltaY = abs(aimY - posY);
@@ -6212,8 +6212,8 @@ void mode_2Dcrazybees(void) {
   if (SEGENV.call == 0) {
     prng.setSeed(strip.now);
     for (size_t i = 0; i < n; i++) {
-      bee[i].posX = prng.random8(0, cols);
-      bee[i].posY = prng.random8(0, rows);
+      bee[i].posX = prng.random16(0, cols);
+      bee[i].posY = prng.random16(0, rows);
       bee[i].aimed(cols, rows);
     }
   }
