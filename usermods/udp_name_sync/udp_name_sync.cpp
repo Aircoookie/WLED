@@ -73,16 +73,15 @@ class UdpNameSync : public Usermod {
       const char* curName = mainseg.name ? mainseg.name : "";
       
       if (segmentName[0] != '\0' && !mainseg.name) { // name cleared
-        strlcpy(segmentName, "", sizeof(segmentName));
+        segmentName[0] = '\0';
         if (!isRetry) DEBUG_PRINTLN(F("UdpNameSync: sending empty name"));
         udpOut[1] = 0; // explicit empty string
         notifierUdp.beginPacket(broadcastIp, udpPort);
         notifierUdp.write(udpOut, 2);
         notifierUdp.endPacket();
       } else {
-        strlcpy(segmentName, curName, sizeof(segmentName));
-        strlcpy((char *)&udpOut[1], segmentName, sizeof(udpOut) - 1); // leave room for header byte
-        size_t nameLen = strnlen((char *)&udpOut[1], sizeof(udpOut) - 1);
+        size_t nameLen = strlcpy(segmentName, curName, sizeof(segmentName));
+        memcpy((char *)&udpOut[1], segmentName, nameLen + 1); // leave room for header byte
         notifierUdp.beginPacket(broadcastIp, udpPort);
         notifierUdp.write(udpOut, 2 + nameLen);
         notifierUdp.endPacket();
