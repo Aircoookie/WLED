@@ -5840,6 +5840,7 @@ void mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have one 
   // and one Lissajou function
   int x1 = beatsin8_t(23 * speed, 0, cols-1);
   int y1 = beatsin8_t(28 * speed, 0, rows-1);
+  int baseDist = (max(cols, rows) <= 32) ? 1000 : (max(cols, rows) <= 48) ? 1800: 4800; // use larger distance calibration for big panels
 
   for (int y = 0; y < rows; y++) {
     for (int x = 0; x < cols; x++) {
@@ -5858,7 +5859,7 @@ void mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have one 
       dist += sqrt32_bw((dx * dx) + (dy * dy));
 
       // inverse result
-      int color = dist ? 1000 / dist : 255;
+      int color = dist ? baseDist / dist : 255;
 
       // map color between thresholds
       if (color > 0 and color < 60) {
