@@ -341,7 +341,7 @@ consult `docs/hardening.instructions.md` (concise checklist) and `docs/securecod
 These files define WLED's threat model, trust boundary model, and WLED-specific constraints (no TLS baseline, no UDP authentication for protocol-defined
 multicast/broadcast, firewall-isolated deployment assumed).
 
-### Attribution foor AI-generated code
+### Attribution for AI-generated code
 
 Using AI-generated code can obscure the original source or logic of a solution. It may even create hidden licensing risks if sources cannot be verified independently.
 
