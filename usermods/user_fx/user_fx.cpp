@@ -1330,8 +1330,8 @@ static void mode_2D_perlinscape(void) {
   offY += (stepY * dt * speedMult) >> 14;
   prevT = strip.now;
 
-  int32_t tX = offX << 1;
-  int32_t tY = offY << 1;
+  int32_t tX = static_cast<int32_t>(static_cast<uint16_t>(offX) << 1U);
+  int32_t tY = static_cast<int32_t>(static_cast<uint16_t>(offY) << 1U);
 
   // Rotation — cos16/sin16 return Q15 (-32768..32767 = -1.0..1.0)
   int32_t cosA = 1024;  // Q10: 1.0 = 1024
@@ -1392,7 +1392,7 @@ static void mode_2D_perlinscape(void) {
     }
   }
 }
-static const char _data_FX_MODE_2D_PERLINSCAPE[] PROGMEM = "Perlinscape@!,Zoom (In/Out),X multiplier,Y multiplier,Rotation speed,Random direction;;!;2;c3=0,o1=1";
+static const char _data_FX_MODE_2D_PERLINSCAPE[] PROGMEM = "Perlinscape@!,Zoom (In/Out),X multiplier,Y multiplier,Rotation speed,Random direction;;!;2;c3=0,o1=1,pal=0";
 
 
 /////////////////////
