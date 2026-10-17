@@ -180,7 +180,7 @@ See docs/cpp.instructions.md section Error Handling for more information.
 - **DMA**: Not possible on ESP32 classic. S3 can do it in hardware (see next bullet), but descriptors must stay in DRAM and bandwidth is poor while the CPU also uses PSRAM. Keeping DMA buffers in DRAM is usually better for performance.
    - On ESP32-S3 with octal PSRAM (`CONFIG_SPIRAM_MODE_OCT`), PSRAM buffers *can* be used with DMA when `CONFIG_SOC_PSRAM_DMA_CAPABLE` is defined.
 - **Cache**: PSRAM shares the CPU cache with flash (~32 KB data cache by default). Hot working sets below that run near DRAM speed. Large or random-access buffers run at raw PSRAM speed, and big sweeps can evict cached code and slow down everything.
-- **Flash writes**: PSRAM is inaccessible while the flash cache is off. Code and ISRs that run during flash writes must use only DRAM or IRAM data.  
+- **Flash writes**: PSRAM is inaccessible while the flash cache is off. ISRs that run during flash writes must use only DRAM or IRAM data, and they must be declared with `IRAM_ATTR` so instructions don't  need to be fetched from flash while writing.
 - **Performance**: Prefer DRAM (or IRAM) for hot-path data that is *frequently* used. Prefer PSRAM for capacity-oriented buffers where slightly slower access times can be tolerated. Small hot working sets (<~32 KB) in PSRAM can run near DRAM speed, especially when accessed sequentially.
 
 #### Background Info:
