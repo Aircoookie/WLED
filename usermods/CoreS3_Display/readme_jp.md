@@ -2,8 +2,8 @@
 
 [English](readme.md)
 
-M5Stack CoreS3 上で WLED v17 系をネイティブ動作させ、<br>
-**タッチディスプレイ / 内蔵マイク Audio Reactive / バッテリー表示 / 物理 Power Key 連携 / LED制御** を1台にまとめるプロジェクトです。
+M5Stack CoreS3 上で WLED v17 ファームウェアを直接動作させ、<br>
+**タッチによるローカル操作 / 内蔵マイク Audio Reactive / バッテリー表示 / 物理 Power Key 連携 / LED制御** を1台にまとめるプロジェクトです。
 
 > **Status:** CoreS3 実機検証済み実装<br>
 > **Base:** WLED 17.0.0-devV5<br>
@@ -15,11 +15,11 @@ M5Stack CoreS3 上で WLED v17 系をネイティブ動作させ、<br>
 
 ## Features
 
-- WLED を M5Stack CoreS3 上でネイティブ実行
+- WLED ファームウェアを M5Stack CoreS3 上で直接動作
 - 320 × 240 タッチディスプレイによるローカル操作
-- WLED Web UI と CoreS3 UI の双方向同期
+- Web UI で変更した照明の状態をタッチ画面に表示し、タッチ操作でも同じ WLED の状態を更新
 - LED Brightness / Effect / Speed / Intensity / Palette 操作
-- C1 / C2 / C3 のマルチカラー編集
+- C1 / C2 / C3 の個別カラー編集
 - Preset 呼び出し / SAVE / OVERWRITE / DELETE / BOOT PRESET
 - 内蔵 ES7210 デュアルマイクを利用した Audio Reactive
 - バッテリー残量表示
@@ -120,10 +120,9 @@ Preset の呼び出しだけでなく、SAVE NEW / OVERWRITE / DELETE / BOOT PRE
 
 ### LED
 
-実機確認では M5Stack の DIGITAL RGB LED STRIP を使用しています。
+実機確認では M5Stack の DIGITAL RGB LED STRIP を使用しています。M5Stack の[公式資料](https://docs.m5stack.com/en/unit/Unit_RGB_LED_Strip)では、白色専用チャンネルを持たない SK6812 RGB として紹介されています。
 
-- SK6812
-- RGB type
+- SK6812 RGB
 - 60 LEDs / m
 - 2本連結で物理的には 120 LEDs
 - WLED Bus Type: `WS281x`
@@ -131,39 +130,20 @@ Preset の呼び出しだけでなく、SAVE NEW / OVERWRITE / DELETE / BOOT PRE
 - CoreS3 Port.C
 - GPIO17
 
-> **Important:** 120 LEDs を CoreS3 から直接高輝度で駆動する電源構成は、本プロジェクトでは安全性を保証していません。<br>
-> LED 数や輝度が大きい場合は、LED 用の適切な外部 5V 電源と共通 GND を使用してください。
-
----
-
-## Recommended Brightness
-
-WLED 標準の初期 Brightness は変更していません。
-
-CoreS3 から LED Strip を直接使用する場合、実機では Brightness 128 でも USB-C 給電中にバッテリー残量が低下する状況を確認しています。
-
-そのため、CoreS3 での開始値としては **Brightness 64 前後**を推奨します。
-
-```text
-WLED default:           128
-CoreS3 recommendation:  64
-```
-
-これは WLED 本体のデフォルト値を変更するものではありません。<br>
-使用 LED 数、色、Effect、外部電源構成によって消費電力は大きく変化します。
+LED 用電源の容量、配線、共通 GND の接続については、[WLED の配線ガイド](https://kno.wled.ge/basics/getting-started/)を参照してください。接続する LED に合わせて電源と輝度を選んでください。輝度の値だけでは消費電流は決まりません。
 
 ---
 
 ## Build Environment
 
-検証済みのビルド環境:
+公開サンプルが継承するビルド環境:
 
 ```text
 WLED                  17.0.0-devV5
 PlatformIO env        m5stack_cores3
-Platform              pioarduino / platform-espressif32 55.03.39
-Arduino Core           3.3.9
-ESP-IDF libraries      5.5.4
+Platform              Tasmota 2026.05.50
+Arduino Core          3.3.8.260506
+ESP-IDF libraries     5.5.4.260407
 NeoPixelBus            2.9.0+sha.76afe83
 ```
 
@@ -270,7 +250,7 @@ CoreS3 Power Usermod では、DCDC3 を Always-PWM に設定する安定化策�
 ```text
 DCDC1: AUTO
 DCDC3: ALWAYS_PWM
-OVP protection: unchanged / enabled
+OVP protection: kept active
 ```
 
 この設定は長時間実機試験と回帰確認で安定化効果を確認しています。
@@ -306,8 +286,6 @@ Power OFF transition の途中で Web UI から WLED を再度 ON にした場�
 
 CoreS3 内蔵 ES7210 と内蔵マイクを使用します。
 
-Audio Reactive が ES7210 を初期化し、WLED 標準の I2S0 / PCM / FFT 処理経路を使用します。
-
 主な仕様:
 
 ```text
@@ -319,8 +297,6 @@ I2S Input      Mono / WLED 32-bit container
 MCLK           GPIO0
 DIN            GPIO14
 ```
-
-WLED Info から Audio の状態を確認できます。
 
 ---
 
@@ -336,10 +312,9 @@ PRESET
 PRESET MANAGE
 ```
 
-CoreS3 と WLED Web UI は双方向に同期します。
+タッチ画面と Web UI は同じ WLED を操作します。どちらで変更した照明の状態も、もう一方の画面に反映されます。
 
-- CoreS3 で変更 → Web UI に反映
-- Web UI で変更 → CoreS3 に反映
+Segment の設定には WLED Web UI を使用してください。
 
 Touch の短押し / 長押し / ドラッグ操作もサポートしています。
 
@@ -357,29 +332,25 @@ DELETE
 BOOT PRESET
 ```
 
-Preset cache を使用し、WLED 側で保存された Preset と同期します。
-
 ---
 
 ## Network Recovery
 
-Wi-Fi 接続が失われた場合、CoreS3 Display から Recovery AP を起動できる構成です。
+Wi-Fi 接続とアクセスポイントのどちらも利用できない場合、MAIN 画面に `Offline - Hold Recovery AP` と表示されます。このネットワーク状態の表示領域を1.5秒間長押しすると、一時的な Recovery AP が起動します。
 
-Recovery AP 使用時は次へアクセスします。
+画面に表示された名前のアクセスポイントへ接続し、次のアドレスを開いてください。
 
 ```text
 http://4.3.2.1
 ```
 
-通常の WLED Web UI と CoreS3 のローカル操作を併用できます。
+Recovery AP を起動しても、保存済みの AP 接続情報や AP 動作設定は変更されません。
 
 ---
 
 ## Battery Status
 
-CoreS3 の AXP2101 fuel gauge からバッテリー残量を取得し、MAIN 画面に表示します。
-
-Battery status は定期更新され、常時 I2C polling し続けないよう間隔を設けています。
+MAIN 画面には、CoreS3 の電源管理 IC である AXP2101 が報告するバッテリー残量をパーセントで表示します。
 
 ---
 
@@ -407,7 +378,7 @@ WLED/
 - DCDC3 Always-PWM
 - Power Key
 - WLED Power Transition
-- Power Health
+- 電源初期化と外部 5V の状態
 
 ### CoreS3_Display
 
@@ -422,18 +393,7 @@ WLED/
 
 ### audioreactive
 
-WLED 標準の汎用 Audio Reactive Usermod に含まれる ES7210 対応を、CoreS3 内蔵マイクで使用します。
-
----
-
-## Current Limitations / Notes
-
-- Local UI では Segment 管理を行いません<br>
-  Segment 設定は WLED Web UI を使用します。
-- 120 LED を CoreS3 から直接高輝度で給電する構成は推奨しません。
-- WLED 標準 Brightness 128 は変更していません。
-- CoreS3 では Brightness 64 前後からの使用を推奨します。
-- DCDC OVP 保護は無効化していません。
+audioreactive Usermod は、新しい ES7210 デジタルマイク種別により CoreS3 内蔵マイクに対応しています。
 
 ---
 
