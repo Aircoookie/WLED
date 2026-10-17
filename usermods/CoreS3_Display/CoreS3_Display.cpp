@@ -6081,6 +6081,7 @@ class CoreS3DisplayUsermod : public Usermod {
     }
 
     mainSegment.speed = (uint8_t)newValue;
+    stateChanged = true;
 
     stateUpdated( CALL_MODE_BUTTON );
 
@@ -6131,6 +6132,7 @@ class CoreS3DisplayUsermod : public Usermod {
     }
 
     mainSegment.intensity = (uint8_t)newValue;
+    stateChanged = true;
 
     stateUpdated( CALL_MODE_BUTTON );
 
