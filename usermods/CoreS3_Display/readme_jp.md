@@ -338,6 +338,8 @@ BOOT PRESET
 
 Wi-Fi 接続とアクセスポイントのどちらも利用できない場合、MAIN 画面に `Offline - Hold Recovery AP` と表示されます。このネットワーク状態の表示領域を1.5秒間長押しすると、一時的な Recovery AP が起動します。
 
+Recovery AP のパスワードは `wled1234` です（ビルド時に `WLED_AP_PASS` を変更していない場合）。
+
 画面に表示された名前のアクセスポイントへ接続し、次のアドレスを開いてください。
 
 ```text

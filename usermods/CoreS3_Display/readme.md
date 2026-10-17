@@ -338,6 +338,8 @@ BOOT PRESET
 
 When neither a Wi-Fi connection nor an access point is available, the MAIN screen shows `Offline - Hold Recovery AP`. Hold that network-status area for 1.5 seconds to start a temporary Recovery AP.
 
+The Recovery AP password is `wled1234` unless `WLED_AP_PASS` was overridden at build time.
+
 Connect to the access point whose name is shown on the display, then open:
 
 ```text
