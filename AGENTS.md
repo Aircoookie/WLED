@@ -27,6 +27,7 @@ Reviewer time is limited, and checking long AI-generated explanations for reason
 ### Attribution for PR Descriptions, Comments and Replies
 
 - When creating PR descriptions or suggesting responses to comments, always add this as the very last line: _You are interacting with an AI system_
+- - Your harness may add this trailer automatically. Do not add a duplicate.
 
 ### Attribution for Commits
 
@@ -113,9 +114,10 @@ main                # Main development trunk (daily/nightly) 17.0.0-devV5. Targe
 ### General
 
 - Follow the existing style in the file you are editing
-- Avoid unexplained "magic numbers". Prefer named constants (`constexpr`) or C-style `#define` constants for repeated numbers that have the same meaning
-- If possible, use `static` for local (C-style) variables and functions (keeps the global namespace clean)
-- When moving global items to another scope, do not leave comments such as `// lastMqttReconnectAttempt is now private to wled.cpp - see there`. These comments create technical debt for maintenance and will inevitably become out of date
+- Avoid unexplained "magic numbers". For repeated numbers that have the same meaning, prefer named constants (`constexpr`) or C-style `#define` constants.
+- If possible, **use `static` for local (C-style) variables and functions** to keep the global namespace clean
+- When moving global items to another scope, do not leave comments such as `// lastMqttReconnectAttempt is now private to wled.cpp - see there`. These comments create technical debt for maintenance and will inevitably become out of date. As a rule of thumb: **describe the code as it is, not the code as it was**.
+- Describe logic/reasoning behind non-standard patterns and complex solutions.
 
 ### Formatting
 - **2-space indentation** (no tabs in C++ files)
@@ -263,11 +265,17 @@ refer to detailed examples in `usermods/EXAMPLE/`, `usermods/user_fx/` and [in t
 ### Pin ownership via `pinManager`
 - Before performing any operation on I/O pins, the usermod must allocate its pins from the `pinManager`.
 - I/O pins are allocated via `PinManager::allocatePin(byte gpio, bool output, PinOwner tag)` (or `PinManager::allocateMultiplePins()`), and returned via `PinManager::deallocatePin()` when re-configuring pin numbers.
+- If the usermod does not register a unique usermod ID, use `PinOwner::UM_Unspecified` as PinOwner tag for generic pin use.
 - `PinManager::allocatePin()` will return an error code in case that a pin is already assigned to another WLED function.
 - You can use `-1` = `255` for unconfigured / unassigned pin functions.
 - Check for valid pin numbers with `PinManager::isPinOk(byte gpio, bool output)`; this function knows which GPI(O) pins are possible on your specific MCU.
-- PIN numbers for I2C and SPI busses are configured globally in the generic part of the usermod settings page.
+
+#### I2C (Wire) and SPI busses
+
+- PIN numbers for I2C and SPI busses are configured globally in the 'Global I2C & SPI' part of the usermod settings page.
 - Usually, a usermod will not start the I2C or SPI units explicitly, since they are already initialised when WLED starts.
+- Don't call `Wire.begin()` in your `Usermod::setup()`, as this may break other usermods that need the I2C bus.
+- Don't allocate `Wire` I2C pins to the usermod - it would cause a pin conflict, as global I2C pins are already allocated to `PinOwner::HW_I2C`.
 - Use this pattern to check for an incomplete I2C setup: `if (i2c_scl<0 || i2c_sda<0) {enabled = false; return;}`.
 
 ### Usermod IDs
@@ -283,7 +291,8 @@ If none of the above apply, the usermod may omit `getId()` (or return the defaul
 ### Usermod `loop()`
 
 - Called once per main loop iteration. Usermods should simply `return` when `!enabled`.
-- Frequency of calls varies with system load:
+- Avoid blocking calls or `delay()` in the usermod `loop()` - delays block the WLED main loop and lead to effect stuttering.
+- Frequency of Usermod `loop()` calls varies with system load:
     * up to 2000 times/sec with few LEDs and little background activity,
     * between 20 and 300 times/second during high workload from effects and other usermods,
     * (worst case) down to 1-3 times/sec during FS activity or when serving lots of network API requests.
@@ -313,7 +322,6 @@ No automated linting is configured. Match existing code style in files you edit.
 - Verify feature-flag spelling exactly (misspellings are silently ignored by preprocessor).
 - Important: **Changes to `platformio.ini` require maintainer approval**!
 - PRs should respect `.gitignore` and not upload files like  `platformio_override.ini`. PR authors may add buildenv examples for custom boards into `platformio_override.ini.sample`.
-- **Highlight user-visible breaking changes and ripple effects** during reviews.
 - When updating an existing PR, retain the original description. Only modify it to ensure technical accuracy. Add change logs after the existing description.
 
 ### Pull Request Expectations
@@ -330,16 +338,14 @@ consult `docs/hardening.instructions.md` (concise checklist) and `docs/securecod
 These files define WLED's threat model, trust boundary model, and WLED-specific constraints (no TLS baseline, no UDP authentication for protocol-defined
 multicast/broadcast, firewall-isolated deployment assumed).
 
-### Attribution for AI-generated code
+### Attribution foor AI-generated code
 
-Using AI-generated code can hide the source of the inspiration / knowledge / sources it used.
+Using AI-generated code can obscure the original source or logic of a solution. It may even create hidden licensing risks if sources cannot be verified independently.
 
-- Document attribution of inspiration / knowledge / sources used in the code, e.g. link to GitHub repositories or other websites describing the principles / algorithms used.
-- When a larger block of code is generated by an AI tool, embed it into `// AI: below section was generated by an AI` ... `// AI: end` comments (see Comments section).
-- Every non-trivial AI-generated function should have a brief comment describing what it does. Explain parameters when their names alone are not self-explanatory.
-- AI-generated code must be well documented with meaningful comments that explain intent, assumptions, and non-obvious logic. Do not rephrase source code; explain concepts and reasoning.
-
-
+- If your agent activity has referenced specific external sources (e.g., science papers, Wikipedia, or documentation) to derive the solution, include these references to allow for independent verification.
+- While standard coding patterns require no further explanation, please describe the logic or architectural reasoning behind any unconventional or complex solutions.
+- Use the required source code comment markers for non-trivial AI generated code blocks (see Comments section).
+- Every non-trivial AI-generated function should have a *brief* comment summarizing what it does. Explain parameters when their names alone are not self-explanatory. Do not rephrase source code; explain non-standard concepts and reasoning.
 
 ### Guardrails for Coding Agents
 
