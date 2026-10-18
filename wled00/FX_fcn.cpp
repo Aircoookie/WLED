@@ -2069,7 +2069,6 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       #endif
     }
   }
-  if (getActiveSegmentsNum() == 0) resetSegments(); // fallback if auto segment creation failed
   _mainSegment = 0;
 
   fixInvalidSegments();
@@ -2098,6 +2097,7 @@ void WS2812FX::fixInvalidSegments() {
   }
   // if any segments were deleted free memory
   purgeSegments();
+  if (getActiveSegmentsNum() == 0) resetSegments(); // fallback: create default segment in case all segments were invalidated
   // this is always called as the last step after finalizeInit(), update covered bus types
   for (const Segment &seg : _segments)
     seg.refreshLightCapabilities();
