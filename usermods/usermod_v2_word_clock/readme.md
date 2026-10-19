@@ -2,11 +2,13 @@
 
 This usermod drives an 11x10 pixel matrix wordclock with WLED. There are 4 additional dots for the minutes.
 The visualisation is described by 4 masks with LED numbers (single dots for minutes, minutes, hours and "clock"). The index of the LEDs in the masks always starts at 0, even if the ledOffset is not 0.
-There are 3 parameters that control behavior:
+These parameters control the behavior (Usermod Settings page):
 
-active: enable/disable usermod
-diplayItIs: enable/disable display of "Es ist" on the clock
-ledOffset: number of LEDs before the wordclock LEDs
+* `active`: enable/disable usermod
+* `displayItIs`: enable/disable display of "Es ist" on the clock
+* `ledOffset`: number of LEDs before the wordclock LEDs (default 0)
+* `Meander wiring?`: enable for meander (serpentine) wiring, see below
+* `Norddeutsch`: show "viertel nach" / "viertel vor" instead of "viertel" / "dreiviertel"
 
 ## Update for alternative wiring pattern
 
@@ -20,17 +22,13 @@ I added a switch in usermod called "meander wiring?" to enable/disable the alter
 
 ## Installation
 
-Copy and update the example `platformio_override.ini.sample`
-from the Rotary Encoder UI usermod folder to the root directory of your particular build.
-This file should be placed in the same directory as `platformio.ini`.
+Add the usermod to `custom_usermods` of your build environment, for example in `platformio_override.ini`:
 
-### Define Your Options
-
-* `USERMOD_WORDCLOCK`   - define this to have this usermod included wled00\usermods_list.cpp
-
-### PlatformIO requirements
-
-No special requirements.
+```ini
+[env:wordclock_esp32]
+extends = env:esp32dev
+custom_usermods = usermod_v2_word_clock
+```
 
 ## Change Log
 
