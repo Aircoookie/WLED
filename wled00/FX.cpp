@@ -8060,6 +8060,202 @@ void mode_2Dwavingcell() {
 }
 static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,Blur,Amplitude 1,Amplitude 2,Amplitude 3,,Flow;;!;2;ix=0";
 
+
+//Snakes
+// By @HampusAdolfsson
+struct SnakePos {
+  SnakePos(uint16_t x, uint16_t y) : x(x), y(y) {}
+  uint16_t x, y;
+};
+
+enum class SnakeDir : uint8_t {
+  Up,
+  Down,
+  Left,
+  Right,
+};
+
+struct SnakeHead {
+  SnakePos pos;
+  uint8_t paletteIndex;
+  SnakeDir dir : 7;
+  bool moved : 1;
+};
+
+struct SnakeCell {
+  uint8_t colorIndex;
+  uint8_t lifetime;
+};
+
+void mode_2DSnakes() {
+  const unsigned segW = SEG_W;
+  const unsigned segH = SEG_H;
+
+  const uint16_t moveInterval = 512 - (2 * SEGMENT.speed);
+  const unsigned maxSnakeCount = max(segW / 2, 1u);
+  const unsigned snakeCount = (maxSnakeCount - 1) * SEGMENT.intensity / 255 + 1;
+  const uint8_t snakeLength = max(SEGMENT.custom1 / 4, 1);
+  // The max and current number of distinct colors we need. Note that
+  // palettes are indexed by uint8_t, so we can't have more than 256 distinct colors.
+  const unsigned maxColorCount = min(256u, maxSnakeCount);
+  const unsigned colorCount = min(256u, snakeCount);
+
+  // Allocate based on the maximum possible size, to avoid constant reallocation
+  // while dragging the sliders.
+  size_t dataLen = sizeof(uint32_t) * maxColorCount +
+                   sizeof(SnakeHead) * maxSnakeCount +
+                   segW * segH * sizeof(SnakeCell);
+  if (!SEGENV.allocateData(dataLen)) {
+    FX_FALLBACK_STATIC
+  }
+
+  // Base color for each snake. Recalculated for each frame and memoized here.
+  uint32_t *colors = reinterpret_cast<uint32_t *>(SEGENV.data);
+  // The head of each snake, which moves around the grid.
+  SnakeHead *heads = reinterpret_cast<SnakeHead *>(colors + maxColorCount);
+  // The cells of the grid, SEG_W*SEG_H in size; lifetime > 0 means a snake is there.
+  SnakeCell *cells = reinterpret_cast<SnakeCell *>(heads + maxSnakeCount);
+
+  if (SEGENV.call == 0 || snakeCount != SEGENV.aux0) {
+    SEGENV.aux0 = snakeCount;
+    SEGMENT.fill(0);
+    memset(SEGENV.data, 0, SEGENV.dataSize());
+    for (size_t i = 0; i < snakeCount; i++) {
+      heads[i] = SnakeHead{
+          .pos =
+              {
+                  hw_random16(segW),
+                  hw_random16(segH),
+              },
+          .paletteIndex = static_cast<uint8_t>(i * 255 / snakeCount),
+          .dir = static_cast<SnakeDir>(hw_random8(4)),
+          .moved = false,
+      };
+    }
+  } /* initialization */
+
+  const bool smooth = SEGMENT.check1;
+
+  for (unsigned i = 0; i < colorCount; i++) {
+    colors[i] =
+        SEGMENT.color_from_palette(heads[i].paletteIndex, false, false, 255);
+  }
+
+  uint32_t elapsed = strip.now - SEGENV.step;
+  if (elapsed >= moveInterval) {
+    SEGENV.step = strip.now;
+    elapsed = 0;
+
+    for (unsigned i = 0; i < snakeCount; i++) {
+      SnakeHead &head = heads[i];
+      SnakeDir candidates[3];
+      candidates[0] = head.dir;
+      switch (head.dir) {
+      case SnakeDir::Up:
+      case SnakeDir::Down:
+        candidates[1] = SnakeDir::Left;
+        candidates[2] = SnakeDir::Right;
+        break;
+      case SnakeDir::Left:
+      case SnakeDir::Right:
+        candidates[1] = SnakeDir::Up;
+        candidates[2] = SnakeDir::Down;
+        break;
+      }
+      uint8_t rand = hw_random8();
+      if ((rand & 1)) {
+        std::swap(candidates[1], candidates[2]);
+      }
+      // 12.5% chance
+      bool doTurn = rand >> 5 == 0;
+      if (doTurn) {
+        std::swap(candidates[0], candidates[2]);
+      }
+      head.moved = false;
+
+      // Find a valid destination among the candidates.
+      for (int j = 0; j < 3; j++) {
+        SnakePos candidatePos = head.pos;
+        switch (candidates[j]) {
+        case SnakeDir::Up:
+          candidatePos.y = head.pos.y == 0 ? (segH - 1) : (head.pos.y - 1);
+          break;
+        case SnakeDir::Down:
+          candidatePos.y = head.pos.y == (segH - 1) ? 0 : (head.pos.y + 1);
+          break;
+        case SnakeDir::Left:
+          candidatePos.x = head.pos.x == 0 ? (segW - 1) : (head.pos.x - 1);
+          break;
+        case SnakeDir::Right:
+          candidatePos.x = head.pos.x == (segW - 1) ? 0 : (head.pos.x + 1);
+          break;
+        }
+        if (cells[candidatePos.y * segW + candidatePos.x].lifetime == 0) {
+          head.dir = candidates[j];
+          head.pos = candidatePos;
+          head.moved = true;
+          break;
+        }
+      }
+
+      cells[head.pos.y * segW + head.pos.x] =
+          // Deliberately wrap into a uint8_t, which is what we use to index
+          // into the palette
+          SnakeCell{.colorIndex = static_cast<uint8_t>(i),
+                     // Will decrement immediately
+                     .lifetime = static_cast<uint8_t>(snakeLength + 1u)};
+    } /* for head */
+
+    // Update lifetimes
+    for (uint16_t y = 0, rowStart = 0; y < segH; y++, rowStart += segW) {
+      for (uint16_t x = 0; x < segW; x++) {
+        SnakeCell &cell = cells[rowStart + x];
+        if (cell.lifetime != 0) {
+          cell.lifetime--;
+          if (cell.lifetime == 0) SEGMENT.setPixelColorXY(x, y, 0);
+          else if (!smooth) {
+            uint8_t brightness = cell.lifetime * 255 / snakeLength;
+            uint32_t color = color_fade(colors[cell.colorIndex], brightness);
+            SEGMENT.setPixelColorXY(x, y, color);
+          }
+        }
+      }
+    }
+  } /* move */
+
+  if (!smooth) {
+    return;
+  }
+
+  // Now we can actually draw (on *every* call)
+  uint16_t lerpAmount = (elapsed << 8) / moveInterval; // 0-255
+  uint16_t scale = (255u << 8) / snakeLength;
+  for (uint16_t y = 0, rowStart = 0; y < segH; y++, rowStart += segW) {
+    for (uint16_t x = 0; x < segW; x++) {
+      SnakeCell &cell = cells[rowStart + x];
+      if (cell.lifetime == 0) {
+        continue;
+      }
+      if (cell.lifetime == snakeLength) {
+        continue; // Heads are rendered separately below
+      }
+      // Lerp between lifetime/snakeLength and (lifetime-1)/snakeLength, scaled
+      // to 0-255
+      uint8_t brightness = (((cell.lifetime << 8) - lerpAmount) * scale) >> 16;
+      uint32_t color = color_fade(colors[cell.colorIndex], brightness);
+      SEGMENT.setPixelColorXY(x, y, color);
+    }
+  }
+  for (unsigned i = 0; i < snakeCount; i++) {
+    const auto &snk = heads[i];
+    // The head should fade *in* rather than out, 0-255 over the move duration
+    uint8_t brightness = snk.moved ? lerpAmount : 255;
+    uint32_t color = color_fade(colors[i & 0xFF], brightness);
+    SEGMENT.setPixelColorXY(snk.pos.x, snk.pos.y, color);
+  }
+}
+static const char _data_FX_MODE_2DSNAKES[] PROGMEM = "Snakes@!,!,Tail Length,,,Smooth;;!;2;sx=200,ix=128,o1=1";
+
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
 
 /*
@@ -11234,6 +11430,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DOCTOPUS, &mode_2Doctopus, _data_FX_MODE_2DOCTOPUS);
   addEffect(FX_MODE_2DWAVINGCELL, &mode_2Dwavingcell, _data_FX_MODE_2DWAVINGCELL);
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
+  addEffect(FX_MODE_SNAKES, &mode_2DSnakes, _data_FX_MODE_2DSNAKES);
 
 #ifndef WLED_DISABLE_PARTICLESYSTEM2D
   addEffect(FX_MODE_PARTICLEVOLCANO, &mode_particlevolcano, _data_FX_MODE_PARTICLEVOLCANO);
