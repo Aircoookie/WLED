@@ -145,7 +145,8 @@ struct WordClockConfig {
 class WordClockUsermod : public Usermod {
   private:
     unsigned long lastTime = 0;
-    int lastShownMinute = -1; // minute of the day shown (hour * 60 + minute), -1 = redraw
+    int lastShownMinute = -1; // minute of the day shown (hour * 60 + minute)
+    bool redraw = true;       // check the time now instead of after UPDATE_INTERVAL
 
     // Active settings. readFromConfig() builds new ones on the side and swaps the pointer under configLock;
     // loop() and handleOverlayDraw() hold configLock while they use them. The other callbacks run under WLED's
@@ -160,13 +161,14 @@ class WordClockUsermod : public Usermod {
     // Updates the LED mask when the minute changed. Called with configLock held.
     void updateDisplay() {
       if (!cfg->active || !cfg->ledMask) return;
-      if (lastShownMinute >= 0 && millis() - lastTime < UPDATE_INTERVAL) return;
+      if (!redraw && millis() - lastTime < UPDATE_INTERVAL) return;
+      redraw = false;
       lastTime = millis();
 
       int hours24 = cfg->testHour;
       int minutes = cfg->testMinute;
       if (cfg->testHour < 0) {
-        if (toki.getTimeSource() == TOKI_TS_NONE) return; // the time is not known yet; stay dark until it is
+        if (toki.getTimeSource() == TOKI_TS_NONE) return; // the time is not known yet; show no time until it is
         hours24 = hour(localTime);
         minutes = minute(localTime);
       }
@@ -305,6 +307,7 @@ class WordClockUsermod : public Usermod {
       }
       std::swap(cfg, next);
       lastShownMinute = -1; // redraw with the new settings
+      redraw = true;
       shownHour = -1;
       unlockConfig();
       delete next; // the previous settings
