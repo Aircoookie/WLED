@@ -117,6 +117,7 @@ class WordClockUsermod : public Usermod {
       if (lastTimeMinutes >= 0 && millis() - lastTime < UPDATE_INTERVAL) return;
       lastTime = millis();
 
+      if (toki.getTimeSource() == TOKI_TS_NONE) return; // the time is not known yet; stay dark until it is
       const int minutes = minute(localTime);
       if (minutes == lastTimeMinutes) return;
       lastTimeMinutes = minutes;
