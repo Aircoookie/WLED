@@ -257,15 +257,21 @@ class WordClockUsermod : public Usermod {
     }
 
     void appendConfigData() override {
+      // left-align the fields of this usermod's section, keep its title centered; the title is the config key, so it is only renamed on the page
+      oappend(F("s=d.getElementsByName('WordClockUsermod:active')[1].closest('.sec');s.style.textAlign='left';h=s.querySelector('h3');h.style.textAlign='center';h.textContent='Word Clock';"));
       oappend(F("addInfo('WordClockUsermod:displayItIs',1,'show the prefix');"));
       oappend(F("addInfo('WordClockUsermod:ledOffset',1,'LEDs before the first letter');"));
       oappend(F("addInfo('WordClockUsermod:brightnessActive',1,'lit letters (0-255)');"));
       oappend(F("addInfo('WordClockUsermod:brightnessInactive',1,'other letters (0-255, 0 = off)');"));
-      oappend(F("addInfo('WordClockUsermod:testHour',1,'0-23 shows a fixed time, -1 = real time');"));
-      oappend(F("addInfo('WordClockUsermod:layout',1,'rows separated by |, 1-4 = minute dots');"));
-      oappend(F("addInfo('WordClockUsermod:hours',1,'1 to 12, comma separated; WORD#2 = 2nd on panel');"));
-      oappend(F("addInfo('WordClockUsermod:fullHours',1,'at the full hour, empty = hours');"));
-      oappend(F("addInfo('WordClockUsermod:phrase00',1,'{h} hour, {n} next hour, {H} full hour');"));
+      oappend(F("dd=addDropdown('WordClockUsermod','testHour');addOption(dd,'real time',-1);for(i=0;i<24;i++)addOption(dd,i,i);"));
+      oappend(F("addInfo('WordClockUsermod:testHour',1,'fixed time for testing');"));
+      oappend(F("dd=addDropdown('WordClockUsermod','testMinute');for(i=0;i<60;i++)addOption(dd,i,i);"));
+      // wider fields for the long texts, long help texts on their own line below the field
+      oappend(F("for(n of['layout','hours'])d.getElementsByName('WordClockUsermod:'+n)[1].style.width='min(400px,80%)';"));
+      oappend(F("addInfo('WordClockUsermod:layout',1,'<br><i>rows separated by |, 1-4 = minute dots</i>');"));
+      oappend(F("addInfo('WordClockUsermod:hours',1,'<br><i>1 to 12, comma separated; WORD#2 = 2nd on panel</i>');"));
+      oappend(F("addInfo('WordClockUsermod:fullHours',1,'<br><i>at the full hour, empty = hours</i>');"));
+      oappend(F("addInfo('WordClockUsermod:phrase00',1,'<br><i>{h} hour, {n} next hour, {H} full hour</i>');"));
     }
 
     bool readFromConfig(JsonObject& root) override {
