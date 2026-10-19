@@ -145,7 +145,7 @@ struct WordClockConfig {
 class WordClockUsermod : public Usermod {
   private:
     unsigned long lastTime = 0;
-    int lastTimeMinutes = -1;
+    int lastShownMinute = -1; // minute of the day shown (hour * 60 + minute), -1 = redraw
 
     // Active settings. readFromConfig() builds new ones on the side and swaps the pointer under configLock;
     // loop() and handleOverlayDraw() hold configLock while they use them. The other callbacks run under WLED's
@@ -160,7 +160,7 @@ class WordClockUsermod : public Usermod {
     // Updates the LED mask when the minute changed. Called with configLock held.
     void updateDisplay() {
       if (!cfg->active || !cfg->ledMask) return;
-      if (lastTimeMinutes >= 0 && millis() - lastTime < UPDATE_INTERVAL) return;
+      if (lastShownMinute >= 0 && millis() - lastTime < UPDATE_INTERVAL) return;
       lastTime = millis();
 
       int hours24 = cfg->testHour;
@@ -170,8 +170,10 @@ class WordClockUsermod : public Usermod {
         hours24 = hour(localTime);
         minutes = minute(localTime);
       }
-      if (minutes == lastTimeMinutes) return;
-      lastTimeMinutes = minutes;
+      // compare hour and minute, so a jump by whole hours (e.g. a time zone change) is shown too
+      const int minuteOfDay = hours24 * 60 + minutes;
+      if (minuteOfDay == lastShownMinute) return;
+      lastShownMinute = minuteOfDay;
 
       const WordClock::Settings s = cfg->settings();
       const int hours12 = hours24 % 12 ? hours24 % 12 : 12;
@@ -302,7 +304,7 @@ class WordClockUsermod : public Usermod {
         return configComplete;
       }
       std::swap(cfg, next);
-      lastTimeMinutes = -1; // redraw with the new settings
+      lastShownMinute = -1; // redraw with the new settings
       shownHour = -1;
       unlockConfig();
       delete next; // the previous settings
