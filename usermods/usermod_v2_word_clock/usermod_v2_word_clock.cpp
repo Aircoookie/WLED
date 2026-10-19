@@ -1,5 +1,6 @@
 #include "wled.h"
 #include "word_clock.h"
+#include <new>
 
 /*
  * Usermods allow you to add own functionality to WLED more easily
@@ -41,92 +42,130 @@ static constexpr uint8_t SLOT_QUARTER_TO = 9;
 static constexpr unsigned long UPDATE_INTERVAL = 5000; // ms between time checks
 static constexpr size_t TEXT_SIZE = 96;                // bytes for the lit words shown on the info page
 
+static constexpr uint32_t CONFIG_LOCK_WAIT = 250;      // ms readFromConfig() waits to swap in new settings
+static constexpr uint32_t OVERLAY_LOCK_WAIT = 5;      // ms handleOverlayDraw() waits for the settings
+
+#ifdef ARDUINO_ARCH_ESP32
+// Settings are saved from the web server task, while loop() and handleOverlayDraw() run in the main loop task.
+static SemaphoreHandle_t configLock = xSemaphoreCreateMutex();
+static bool lockConfig(uint32_t waitMs) { return xSemaphoreTake(configLock, pdMS_TO_TICKS(waitMs)) == pdTRUE; }
+static void unlockConfig() { xSemaphoreGive(configLock); }
+#else
+// ESP8266: web server callbacks do not interrupt loop(), so no lock is needed
+static bool lockConfig(uint32_t) { return true; }
+static void unlockConfig() {}
+#endif
+
+// The settings and the data derived from them
+struct WordClockConfig {
+  bool active = false;
+  bool displayItIs = false;
+  int ledOffset = 100;
+  bool meander = false;
+  int brightnessActive = 255;  // scales the effect color of the lit letters
+  int brightnessInactive = 0;  // scales the effect color of all other letters, 0 = off
+  int testHour = -1;           // 0-23 shows this time instead of the real time, -1 = off
+  int testMinute = 0;
+  String layout = FPSTR(defaultLayout);
+  String prefix = FPSTR(defaultPrefix);
+  String hours = FPSTR(defaultHours);
+  String fullHours = FPSTR(defaultFullHours);
+  String phrases[WordClock::SLOTS];
+
+  WordClock::Rows rows;
+  uint8_t* ledMask = nullptr; // one byte per LED of the layout, 1 = on
+  String error;               // first problem found in the settings, shown on the info page
+
+  WordClockConfig() {
+    for (uint8_t i = 0; i < WordClock::SLOTS; i++) phrases[i] = FPSTR(defaultPhrases[i]);
+  }
+  ~WordClockConfig() {
+    if (ledMask) d_free(ledMask);
+  }
+  WordClockConfig(const WordClockConfig&) = delete;
+  WordClockConfig& operator=(const WordClockConfig&) = delete;
+
+  // Copies the settings, not the derived data.
+  void copySettings(const WordClockConfig& other) {
+    active = other.active;
+    displayItIs = other.displayItIs;
+    ledOffset = other.ledOffset;
+    meander = other.meander;
+    brightnessActive = other.brightnessActive;
+    brightnessInactive = other.brightnessInactive;
+    testHour = other.testHour;
+    testMinute = other.testMinute;
+    layout = other.layout;
+    prefix = other.prefix;
+    hours = other.hours;
+    fullHours = other.fullHours;
+    for (uint8_t i = 0; i < WordClock::SLOTS; i++) phrases[i] = other.phrases[i];
+  }
+
+  WordClock::Settings settings() const {
+    WordClock::Settings s;
+    s.layout = layout.c_str();
+    s.prefix = prefix.c_str();
+    s.hours = hours.c_str();
+    s.fullHours = fullHours.c_str();
+    for (uint8_t i = 0; i < WordClock::SLOTS; i++) s.phrases[i] = phrases[i].c_str();
+    s.showPrefix = displayItIs;
+    s.meander = meander;
+    return s;
+  }
+
+  // Parses the layout, allocates the LED mask and checks every phrase with every hour.
+  void prepare() {
+    error = "";
+    if (!WordClock::parseRows(layout.c_str(), rows)) {
+      error = F("invalid layout");
+      return;
+    }
+    const size_t maskSize = rows.start[rows.count];
+    ledMask = static_cast<uint8_t*>(d_malloc(maskSize));
+    if (!ledMask) {
+      error = F("out of memory");
+      return;
+    }
+    memset(ledMask, 0, maskSize);
+    const WordClock::Settings s = settings();
+    WordClock::Composer check(s, rows, nullptr);
+    for (uint8_t slot = 0; slot < WordClock::SLOTS; slot++) {
+      for (uint8_t hour = 1; hour <= 12; hour++) {
+        if (check.compose(hour, slot * 5)) continue;
+        char msg[64];
+        snprintf_P(msg, sizeof(msg), PSTR("%d:%02d: '%s' not found"), hour, slot * 5, check.missing);
+        error = msg;
+        return;
+      }
+    }
+  }
+};
+
 class WordClockUsermod : public Usermod {
   private:
     unsigned long lastTime = 0;
     int lastTimeMinutes = -1;
 
-    bool usermodActive = false;
-    bool displayItIs = false;
-    int ledOffset = 100;
-    bool meander = false;
-    int brightnessActive = 255;  // scales the effect color of the lit letters
-    int brightnessInactive = 0;  // scales the effect color of all other letters, 0 = off
-    int testHour = -1;           // 0-23 shows this time instead of the real time, -1 = off
-    int testMinute = 0;
-    String layout = FPSTR(defaultLayout);
-    String prefix = FPSTR(defaultPrefix);
-    String hours = FPSTR(defaultHours);
-    String fullHours = FPSTR(defaultFullHours);
-    String phrases[WordClock::SLOTS];
-
-    WordClock::Rows rows;
-    uint8_t* ledMask = nullptr; // one byte per LED of the layout, 1 = on
-    String configError;         // first problem found in the settings, shown on the info page
+    // Active settings. readFromConfig() builds new ones on the side and swaps the pointer under configLock;
+    // loop() and handleOverlayDraw() hold configLock while they use them. The other callbacks run under WLED's
+    // JSON buffer lock, like readFromConfig(), so the settings are not replaced while they read them.
+    WordClockConfig* cfg = new WordClockConfig();
     int shownHour = -1;         // time and words currently shown, for the info page
     int shownMinute = 0;
     char shownText[TEXT_SIZE] = "";
 
     static const char _name[];
 
-    WordClock::Settings settings() const {
-      WordClock::Settings s;
-      s.layout = layout.c_str();
-      s.prefix = prefix.c_str();
-      s.hours = hours.c_str();
-      s.fullHours = fullHours.c_str();
-      for (uint8_t i = 0; i < WordClock::SLOTS; i++) s.phrases[i] = phrases[i].c_str();
-      s.showPrefix = displayItIs;
-      s.meander = meander;
-      return s;
-    }
-
-    // Parses the layout, allocates the LED mask and checks every phrase with every hour.
-    void applyConfig() {
-      configError = "";
-      lastTimeMinutes = -1; // redraw with the new settings
-      shownHour = -1;
-      if (ledMask) d_free(ledMask);
-      ledMask = nullptr;
-      if (!WordClock::parseRows(layout.c_str(), rows)) {
-        configError = F("invalid layout");
-        return;
-      }
-      const size_t maskSize = rows.start[rows.count];
-      ledMask = static_cast<uint8_t*>(d_malloc(maskSize));
-      if (!ledMask) {
-        configError = F("out of memory");
-        return;
-      }
-      memset(ledMask, 0, maskSize);
-      const WordClock::Settings s = settings();
-      WordClock::Composer check(s, rows, nullptr);
-      for (uint8_t slot = 0; slot < WordClock::SLOTS; slot++) {
-        for (uint8_t hour = 1; hour <= 12; hour++) {
-          if (check.compose(hour, slot * 5)) continue;
-          char msg[64];
-          snprintf_P(msg, sizeof(msg), PSTR("%d:%02d: '%s' not found"), hour, slot * 5, check.missing);
-          configError = msg;
-          return;
-        }
-      }
-    }
-
-  public:
-    WordClockUsermod() {
-      for (uint8_t i = 0; i < WordClock::SLOTS; i++) phrases[i] = FPSTR(defaultPhrases[i]);
-    }
-
-    void setup() override {}
-
-    void loop() override {
-      if (!usermodActive || !ledMask) return;
+    // Updates the LED mask when the minute changed. Called with configLock held.
+    void updateDisplay() {
+      if (!cfg->active || !cfg->ledMask) return;
       if (lastTimeMinutes >= 0 && millis() - lastTime < UPDATE_INTERVAL) return;
       lastTime = millis();
 
-      int hours24 = testHour;
-      int minutes = testMinute;
-      if (testHour < 0) {
+      int hours24 = cfg->testHour;
+      int minutes = cfg->testMinute;
+      if (cfg->testHour < 0) {
         if (toki.getTimeSource() == TOKI_TS_NONE) return; // the time is not known yet; stay dark until it is
         hours24 = hour(localTime);
         minutes = minute(localTime);
@@ -134,30 +173,43 @@ class WordClockUsermod : public Usermod {
       if (minutes == lastTimeMinutes) return;
       lastTimeMinutes = minutes;
 
-      const WordClock::Settings s = settings();
+      const WordClock::Settings s = cfg->settings();
       const int hours12 = hours24 % 12 ? hours24 % 12 : 12;
-      WordClock::Composer(s, rows, ledMask, shownText, sizeof(shownText)).compose(hours12, minutes);
+      WordClock::Composer(s, cfg->rows, cfg->ledMask, shownText, sizeof(shownText)).compose(hours12, minutes);
       shownHour = hours24;
       shownMinute = minutes;
+    }
+
+  public:
+    ~WordClockUsermod() {
+      delete cfg;
+    }
+
+    void setup() override {}
+
+    void loop() override {
+      if (!lockConfig(0)) return; // new settings are being swapped in, try again in the next loop
+      updateDisplay();
+      unlockConfig();
     }
 
     void addToJsonInfo(JsonObject& root) override {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
       JsonArray info = user.createNestedArray(F("Word clock"));
-      if (!configError.isEmpty()) info.add(configError);
-      else if (!usermodActive) info.add(F("inactive"));
+      if (!cfg->error.isEmpty()) info.add(cfg->error);
+      else if (!cfg->active) info.add(F("inactive"));
       else if (shownHour < 0) info.add(F("waiting for time sync"));
       else info.add(F("settings OK"));
-      if (shownHour < 0 || !ledMask) return;
+      if (shownHour < 0 || !cfg->ledMask) return;
 
       char buf[24];
-      if (testHour >= 0) snprintf_P(buf, sizeof(buf), PSTR("%02d:%02d (test)"), shownHour, shownMinute);
+      if (cfg->testHour >= 0) snprintf_P(buf, sizeof(buf), PSTR("%02d:%02d (test)"), shownHour, shownMinute);
       else snprintf_P(buf, sizeof(buf), PSTR("%02d:%02d"), shownHour, shownMinute);
       JsonArray timeInfo = user.createNestedArray(F("Word clock time"));
       timeInfo.add(buf);
       unsigned lit = 0;
-      for (uint16_t x = 0; x < rows.start[rows.count]; x++) lit += ledMask[x];
+      for (uint16_t x = 0; x < cfg->rows.start[cfg->rows.count]; x++) lit += cfg->ledMask[x];
       // the minutes past the 5-minute step, shown by the minute dots
       const int dots = shownMinute % 5;
       if (dots) snprintf_P(buf, sizeof(buf), PSTR(" + %d min (%u LEDs)"), dots, lit);
@@ -169,22 +221,22 @@ class WordClockUsermod : public Usermod {
 
     void addToConfig(JsonObject& root) override {
       JsonObject top = root.createNestedObject(FPSTR(_name));
-      top[F("active")] = usermodActive;
-      top[F("displayItIs")] = displayItIs;
-      top[F("ledOffset")] = ledOffset;
-      top[F("Meander wiring?")] = meander;
-      top[F("brightnessActive")] = brightnessActive;
-      top[F("brightnessInactive")] = brightnessInactive;
-      top[F("testHour")] = testHour;
-      top[F("testMinute")] = testMinute;
-      top[F("layout")] = layout;
-      top[F("prefix")] = prefix;
-      top[F("hours")] = hours;
-      top[F("fullHours")] = fullHours;
+      top[F("active")] = cfg->active;
+      top[F("displayItIs")] = cfg->displayItIs;
+      top[F("ledOffset")] = cfg->ledOffset;
+      top[F("Meander wiring?")] = cfg->meander;
+      top[F("brightnessActive")] = cfg->brightnessActive;
+      top[F("brightnessInactive")] = cfg->brightnessInactive;
+      top[F("testHour")] = cfg->testHour;
+      top[F("testMinute")] = cfg->testMinute;
+      top[F("layout")] = cfg->layout;
+      top[F("prefix")] = cfg->prefix;
+      top[F("hours")] = cfg->hours;
+      top[F("fullHours")] = cfg->fullHours;
       for (uint8_t i = 0; i < WordClock::SLOTS; i++) {
         char key[10];
         snprintf_P(key, sizeof(key), PSTR("phrase%02d"), i * 5);
-        top[key] = phrases[i];
+        top[key] = cfg->phrases[i];
       }
     }
 
@@ -201,26 +253,34 @@ class WordClockUsermod : public Usermod {
     }
 
     bool readFromConfig(JsonObject& root) override {
+      // start from the current settings: a config sent via the JSON API may contain only some of them
+      WordClockConfig* next = new (std::nothrow) WordClockConfig();
+      if (!next) {
+        DEBUG_PRINTLN(F("Word clock: out of memory, settings not applied"));
+        return true;
+      }
+      next->copySettings(*cfg);
+
       JsonObject top = root[FPSTR(_name)];
 
       bool configComplete = !top.isNull();
 
-      configComplete &= getJsonValue(top[F("active")], usermodActive);
-      configComplete &= getJsonValue(top[F("displayItIs")], displayItIs);
-      configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
-      configComplete &= getJsonValue(top[F("Meander wiring?")], meander);
-      configComplete &= getJsonValue(top[F("brightnessActive")], brightnessActive);
-      configComplete &= getJsonValue(top[F("brightnessInactive")], brightnessInactive);
-      configComplete &= getJsonValue(top[F("testHour")], testHour);
-      configComplete &= getJsonValue(top[F("testMinute")], testMinute);
-      configComplete &= getJsonValue(top[F("layout")], layout);
-      configComplete &= getJsonValue(top[F("prefix")], prefix);
-      configComplete &= getJsonValue(top[F("hours")], hours);
-      configComplete &= getJsonValue(top[F("fullHours")], fullHours);
-      brightnessActive = constrain(brightnessActive, 0, 255);
-      brightnessInactive = constrain(brightnessInactive, 0, 255);
-      testHour = constrain(testHour, -1, 23);
-      testMinute = constrain(testMinute, 0, 59);
+      configComplete &= getJsonValue(top[F("active")], next->active);
+      configComplete &= getJsonValue(top[F("displayItIs")], next->displayItIs);
+      configComplete &= getJsonValue(top[F("ledOffset")], next->ledOffset);
+      configComplete &= getJsonValue(top[F("Meander wiring?")], next->meander);
+      configComplete &= getJsonValue(top[F("brightnessActive")], next->brightnessActive);
+      configComplete &= getJsonValue(top[F("brightnessInactive")], next->brightnessInactive);
+      configComplete &= getJsonValue(top[F("testHour")], next->testHour);
+      configComplete &= getJsonValue(top[F("testMinute")], next->testMinute);
+      configComplete &= getJsonValue(top[F("layout")], next->layout);
+      configComplete &= getJsonValue(top[F("prefix")], next->prefix);
+      configComplete &= getJsonValue(top[F("hours")], next->hours);
+      configComplete &= getJsonValue(top[F("fullHours")], next->fullHours);
+      next->brightnessActive = constrain(next->brightnessActive, 0, 255);
+      next->brightnessInactive = constrain(next->brightnessInactive, 0, 255);
+      next->testHour = constrain(next->testHour, -1, 23);
+      next->testMinute = constrain(next->testMinute, 0, 59);
 
       // configs from before the phrases were settings may still contain "Norddeutsch"
       bool nord = false;
@@ -229,24 +289,38 @@ class WordClockUsermod : public Usermod {
       for (uint8_t i = 0; i < WordClock::SLOTS; i++) {
         char key[10];
         snprintf_P(key, sizeof(key), PSTR("phrase%02d"), i * 5);
-        if (getJsonValue(top[key], phrases[i])) continue;
+        if (getJsonValue(top[key], next->phrases[i])) continue;
         configComplete = false;
-        if (nord && i == SLOT_QUARTER_PAST) phrases[i] = FPSTR(phrase15Nord);
-        if (nord && i == SLOT_QUARTER_TO) phrases[i] = FPSTR(phrase45Nord);
+        if (nord && i == SLOT_QUARTER_PAST) next->phrases[i] = FPSTR(phrase15Nord);
+        if (nord && i == SLOT_QUARTER_TO) next->phrases[i] = FPSTR(phrase45Nord);
       }
 
-      applyConfig();
+      next->prepare();
+      if (!lockConfig(CONFIG_LOCK_WAIT)) {
+        DEBUG_PRINTLN(F("Word clock: settings busy, new settings not applied"));
+        delete next;
+        return configComplete;
+      }
+      std::swap(cfg, next);
+      lastTimeMinutes = -1; // redraw with the new settings
+      shownHour = -1;
+      unlockConfig();
+      delete next; // the previous settings
       return configComplete;
     }
 
     void handleOverlayDraw() override {
-      if (!usermodActive || !ledMask) return;
-      for (uint16_t x = 0; x < rows.start[rows.count]; x++) {
-        const uint8_t amount = ledMask[x] ? brightnessActive : brightnessInactive;
-        if (amount == 255) continue;
-        const unsigned led = x + ledOffset;
-        strip.setPixelColor(led, amount ? color_fade(strip.getPixelColor(led), amount) : RGBW32(0, 0, 0, 0));
+      if (!lockConfig(OVERLAY_LOCK_WAIT)) return;
+      const WordClockConfig& c = *cfg;
+      if (c.active && c.ledMask) {
+        for (uint16_t x = 0; x < c.rows.start[c.rows.count]; x++) {
+          const uint8_t amount = c.ledMask[x] ? c.brightnessActive : c.brightnessInactive;
+          if (amount == 255) continue;
+          const unsigned led = x + c.ledOffset;
+          strip.setPixelColor(led, amount ? color_fade(strip.getPixelColor(led), amount) : RGBW32(0, 0, 0, 0));
+        }
       }
+      unlockConfig();
     }
 
     uint16_t getId() override {
