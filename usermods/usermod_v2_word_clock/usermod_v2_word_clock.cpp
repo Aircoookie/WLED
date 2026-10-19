@@ -41,6 +41,12 @@ static constexpr uint8_t SLOT_QUARTER_PAST = 3;
 static constexpr uint8_t SLOT_QUARTER_TO = 9;
 static constexpr unsigned long UPDATE_INTERVAL = 5000; // ms between time checks
 static constexpr size_t TEXT_SIZE = 96;                // bytes for the lit words shown on the info page
+static constexpr size_t PHRASE_KEY_SIZE = 10;          // bytes for a phrase key, "phrase00" ... "phrase55"
+
+// Writes the config key of the phrase for slot (0 = :00, 1 = :05, ... 11 = :55).
+static void phraseKey(uint8_t slot, char (&key)[PHRASE_KEY_SIZE]) {
+  snprintf_P(key, PHRASE_KEY_SIZE, PSTR("phrase%02d"), (slot % WordClock::SLOTS) * 5);
+}
 
 static constexpr uint32_t CONFIG_LOCK_WAIT = 250;      // ms readFromConfig() waits to swap in new settings
 static constexpr uint32_t OVERLAY_LOCK_WAIT = 5;      // ms handleOverlayDraw() waits for the settings
@@ -238,8 +244,8 @@ class WordClockUsermod : public Usermod {
       top[F("hours")] = cfg->hours;
       top[F("fullHours")] = cfg->fullHours;
       for (uint8_t i = 0; i < WordClock::SLOTS; i++) {
-        char key[10];
-        snprintf_P(key, sizeof(key), PSTR("phrase%02d"), i * 5);
+        char key[PHRASE_KEY_SIZE];
+        phraseKey(i, key);
         top[key] = cfg->phrases[i];
       }
     }
@@ -291,8 +297,8 @@ class WordClockUsermod : public Usermod {
       getJsonValue(top[F("Norddeutsch")], nord);
 
       for (uint8_t i = 0; i < WordClock::SLOTS; i++) {
-        char key[10];
-        snprintf_P(key, sizeof(key), PSTR("phrase%02d"), i * 5);
+        char key[PHRASE_KEY_SIZE];
+        phraseKey(i, key);
         if (getJsonValue(top[key], next->phrases[i])) continue;
         configComplete = false;
         if (nord && i == SLOT_QUARTER_PAST) next->phrases[i] = FPSTR(phrase15Nord);
