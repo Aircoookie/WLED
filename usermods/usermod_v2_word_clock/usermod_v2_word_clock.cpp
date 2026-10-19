@@ -51,6 +51,8 @@ class WordClockUsermod : public Usermod {
     bool meander = false;
     int brightnessActive = 255;  // scales the effect color of the lit letters
     int brightnessInactive = 0;  // scales the effect color of all other letters, 0 = off
+    int testHour = -1;           // 0-23 shows this time instead of the real time, -1 = off
+    int testMinute = 0;
     String layout = FPSTR(defaultLayout);
     String prefix = FPSTR(defaultPrefix);
     String hours = FPSTR(defaultHours);
@@ -117,13 +119,19 @@ class WordClockUsermod : public Usermod {
       if (lastTimeMinutes >= 0 && millis() - lastTime < UPDATE_INTERVAL) return;
       lastTime = millis();
 
-      if (toki.getTimeSource() == TOKI_TS_NONE) return; // the time is not known yet; stay dark until it is
-      const int minutes = minute(localTime);
+      int hours24 = testHour;
+      int minutes = testMinute;
+      if (testHour < 0) {
+        if (toki.getTimeSource() == TOKI_TS_NONE) return; // the time is not known yet; stay dark until it is
+        hours24 = hour(localTime);
+        minutes = minute(localTime);
+      }
       if (minutes == lastTimeMinutes) return;
       lastTimeMinutes = minutes;
 
       const WordClock::Settings s = settings();
-      WordClock::Composer(s, rows, ledMask).compose(hourFormat12(localTime), minutes);
+      const int hours12 = hours24 % 12 ? hours24 % 12 : 12;
+      WordClock::Composer(s, rows, ledMask).compose(hours12, minutes);
     }
 
     void addToJsonInfo(JsonObject& root) override {
@@ -142,6 +150,8 @@ class WordClockUsermod : public Usermod {
       top[F("Meander wiring?")] = meander;
       top[F("brightnessActive")] = brightnessActive;
       top[F("brightnessInactive")] = brightnessInactive;
+      top[F("testHour")] = testHour;
+      top[F("testMinute")] = testMinute;
       top[F("layout")] = layout;
       top[F("prefix")] = prefix;
       top[F("hours")] = hours;
@@ -158,6 +168,7 @@ class WordClockUsermod : public Usermod {
       oappend(F("addInfo('WordClockUsermod:ledOffset',1,'LEDs before the first letter');"));
       oappend(F("addInfo('WordClockUsermod:brightnessActive',1,'lit letters (0-255)');"));
       oappend(F("addInfo('WordClockUsermod:brightnessInactive',1,'other letters (0-255, 0 = off)');"));
+      oappend(F("addInfo('WordClockUsermod:testHour',1,'0-23 shows a fixed time, -1 = real time');"));
       oappend(F("addInfo('WordClockUsermod:layout',1,'rows separated by |, 1-4 = minute dots');"));
       oappend(F("addInfo('WordClockUsermod:hours',1,'1 to 12, comma separated; WORD#2 = 2nd on panel');"));
       oappend(F("addInfo('WordClockUsermod:fullHours',1,'at the full hour, empty = hours');"));
@@ -175,12 +186,16 @@ class WordClockUsermod : public Usermod {
       configComplete &= getJsonValue(top[F("Meander wiring?")], meander);
       configComplete &= getJsonValue(top[F("brightnessActive")], brightnessActive);
       configComplete &= getJsonValue(top[F("brightnessInactive")], brightnessInactive);
+      configComplete &= getJsonValue(top[F("testHour")], testHour);
+      configComplete &= getJsonValue(top[F("testMinute")], testMinute);
       configComplete &= getJsonValue(top[F("layout")], layout);
       configComplete &= getJsonValue(top[F("prefix")], prefix);
       configComplete &= getJsonValue(top[F("hours")], hours);
       configComplete &= getJsonValue(top[F("fullHours")], fullHours);
       brightnessActive = constrain(brightnessActive, 0, 255);
       brightnessInactive = constrain(brightnessInactive, 0, 255);
+      testHour = constrain(testHour, -1, 23);
+      testMinute = constrain(testMinute, 0, 59);
 
       // configs from before the phrases were settings may still contain "Norddeutsch"
       bool nord = false;
