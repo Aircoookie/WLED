@@ -245,10 +245,10 @@ If another serial monitor or program is holding the COM port open, close it befo
 
 During investigation of unexpected complete CoreS3 power-offs, DCDC OVP was observed multiple times in the AXP2101 `PWROFF_STATUS`.
 
-The CoreS3 Power usermod uses DCDC3 Always-PWM as a stabilization measure.
+The CoreS3 Power usermod uses DCDC3 Always-PWM as a stabilization measure. DCDC1's existing mode is preserved.
 
 ```text
-DCDC1: AUTO
+DCDC1: existing mode preserved (e.g. AUTO)
 DCDC3: ALWAYS_PWM
 OVP protection: kept active
 ```
@@ -264,7 +264,7 @@ Holding the physical CoreS3 Power Key requests the normal WLED power-off path be
 
 The CoreS3 usermod does not force LED output directly. It uses WLED's standard power transition handling so brightness state, transition reversal, and other WLED power behavior remain under core control.
 
-Processing sequence:
+Observed sequence with the tested CoreS3 settings:
 
 ```text
 Power Key long press
@@ -275,6 +275,8 @@ LED output reaches OFF
         ↓
 AXP2101 hard power-off
 ```
+
+AXP2101 hardware power-off is independent of WLED's transition and does not wait for the LEDs to finish fading. The sequence above was observed with the tested settings; a longer transition may still be in progress when the hardware powers off.
 
 If the Power Key is released before the final PMIC hard power-off, the usermod requests the normal WLED power-on path when appropriate.
 
@@ -314,7 +316,11 @@ PRESET MANAGE
 
 The touch display and Web UI control the same WLED instance. Lighting changes made through either interface are reflected in the other.
 
+The local color, effect, Speed, Intensity, and palette controls edit the main segment only. Power and brightness affect the whole WLED instance.
+
 Use the WLED Web UI for segment configuration.
+
+When WLED button notifications are enabled, touch controls and physical Power Key actions can synchronize changes to other WLED devices through the standard WLED notifier.
 
 Short press / long press / drag touch operations are supported.
 
@@ -332,6 +338,10 @@ DELETE
 BOOT PRESET
 ```
 
+`SAVE NEW` and `OVERWRITE` save the current lighting state, including global power/brightness, transition settings, the main-segment selection, and all segments with their bounds.
+
+`OVERWRITE` replaces the destination with this state snapshot. It does not retain an existing playlist, API-command preset, or the destination's original save options. Use the Web UI when a preset requires a custom save scope.
+
 ---
 
 ## Network Recovery
@@ -347,6 +357,8 @@ http://4.3.2.1
 ```
 
 Starting Recovery AP does not change the saved AP credentials or AP behavior setting.
+
+While this recovery session is active and Wi-Fi is disconnected, the usermod reopens the Recovery AP if it stops. A successful Wi-Fi connection ends this automatic reopening; subsequent AP operation is left to normal WLED handling.
 
 ---
 

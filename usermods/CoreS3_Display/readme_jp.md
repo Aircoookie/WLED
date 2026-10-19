@@ -245,10 +245,10 @@ PlatformIO から `m5stack_cores3` を Upload します。
 
 CoreS3 の予期しない完全電源OFF調査では、AXP2101 の `PWROFF_STATUS` で DCDC OVP を複数回確認しました。
 
-CoreS3 Power Usermod では、DCDC3 を Always-PWM に設定する安定化策を使用しています。
+CoreS3 Power Usermod では、DCDC3 を Always-PWM に設定する安定化策を使用しています。DCDC1 の動作モードは変更せず、既存の設定を維持します。
 
 ```text
-DCDC1: AUTO
+DCDC1: existing mode preserved (e.g. AUTO)
 DCDC3: ALWAYS_PWM
 OVP protection: kept active
 ```
@@ -264,7 +264,7 @@ CoreS3 の物理 Power Key を長押しすると、AXP2101 が最終的な PMIC 
 
 CoreS3 usermod 側では LED 出力を直接強制せず、WLED 標準の Power transition を使用します。これにより Brightness 状態、transition の反転、その他の WLED Power 処理は WLED Core 側で管理されます。
 
-処理の概要:
+実機で確認した CoreS3 の設定での動作例:
 
 ```text
 Power Key long press
@@ -275,6 +275,8 @@ LED output reaches OFF
         ↓
 AXP2101 hard power-off
 ```
+
+AXP2101 の本体電源OFFは WLED の消灯処理とは独立して進み、LED の消灯完了を待ってから実行される仕組みではありません。上図は実機で確認した設定での動作例であり、フェード時間を長くした場合は、フェード中に本体の電源が切れることがあります。
 
 最終的な PMIC hard-off の前に Power Key を離した場合は、必要に応じて WLED 標準の Power ON 処理を要求します。
 
@@ -314,7 +316,11 @@ PRESET MANAGE
 
 タッチ画面と Web UI は同じ WLED を操作します。どちらで変更した照明の状態も、もう一方の画面に反映されます。
 
+タッチ画面の色・エフェクト・Speed・Intensity・パレット操作は、メイン Segment のみを変更します。電源と Brightness は WLED 全体に反映されます。
+
 Segment の設定には WLED Web UI を使用してください。
+
+WLED のボタン操作の同期通知を有効にしている場合、タッチ操作や物理 Power Key の操作が、WLED 標準の同期通知を通じて他の WLED にも反映されることがあります。
 
 Touch の短押し / 長押し / ドラッグ操作もサポートしています。
 
@@ -332,6 +338,10 @@ DELETE
 BOOT PRESET
 ```
 
+`SAVE NEW` と `OVERWRITE` は、電源・Brightness・transition 設定、メイン Segment の選択、および範囲設定を含むすべての Segment を、現在の照明状態として保存します。
+
+`OVERWRITE` は保存先をこの状態で置き換えるため、既存のプレイリストや API コマンド型プリセット、保存先で以前指定していた保存対象の設定は引き継ぎません。保存対象を個別に指定する場合は Web UI を使用してください。
+
 ---
 
 ## Network Recovery
@@ -347,6 +357,8 @@ http://4.3.2.1
 ```
 
 Recovery AP を起動しても、保存済みの AP 接続情報や AP 動作設定は変更されません。
+
+この Recovery セッション中は、Wi-Fi が未接続のまま Recovery AP が停止すると自動で再開します。Wi-Fi への接続が完了すると自動再開を終了し、その後の AP 動作は WLED 標準の処理に委ねます。
 
 ---
 
