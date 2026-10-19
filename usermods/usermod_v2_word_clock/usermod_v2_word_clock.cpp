@@ -49,6 +49,8 @@ class WordClockUsermod : public Usermod {
     bool displayItIs = false;
     int ledOffset = 100;
     bool meander = false;
+    int brightnessActive = 255;  // scales the effect color of the lit letters
+    int brightnessInactive = 0;  // scales the effect color of all other letters, 0 = off
     String layout = FPSTR(defaultLayout);
     String prefix = FPSTR(defaultPrefix);
     String hours = FPSTR(defaultHours);
@@ -137,6 +139,8 @@ class WordClockUsermod : public Usermod {
       top[F("displayItIs")] = displayItIs;
       top[F("ledOffset")] = ledOffset;
       top[F("Meander wiring?")] = meander;
+      top[F("brightnessActive")] = brightnessActive;
+      top[F("brightnessInactive")] = brightnessInactive;
       top[F("layout")] = layout;
       top[F("prefix")] = prefix;
       top[F("hours")] = hours;
@@ -151,6 +155,8 @@ class WordClockUsermod : public Usermod {
     void appendConfigData() override {
       oappend(F("addInfo('WordClockUsermod:displayItIs',1,'show the prefix');"));
       oappend(F("addInfo('WordClockUsermod:ledOffset',1,'LEDs before the first letter');"));
+      oappend(F("addInfo('WordClockUsermod:brightnessActive',1,'lit letters (0-255)');"));
+      oappend(F("addInfo('WordClockUsermod:brightnessInactive',1,'other letters (0-255, 0 = off)');"));
       oappend(F("addInfo('WordClockUsermod:layout',1,'rows separated by |, 1-4 = minute dots');"));
       oappend(F("addInfo('WordClockUsermod:hours',1,'1 to 12, comma separated; WORD#2 = 2nd on panel');"));
       oappend(F("addInfo('WordClockUsermod:fullHours',1,'at the full hour, empty = hours');"));
@@ -166,10 +172,14 @@ class WordClockUsermod : public Usermod {
       configComplete &= getJsonValue(top[F("displayItIs")], displayItIs);
       configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
       configComplete &= getJsonValue(top[F("Meander wiring?")], meander);
+      configComplete &= getJsonValue(top[F("brightnessActive")], brightnessActive);
+      configComplete &= getJsonValue(top[F("brightnessInactive")], brightnessInactive);
       configComplete &= getJsonValue(top[F("layout")], layout);
       configComplete &= getJsonValue(top[F("prefix")], prefix);
       configComplete &= getJsonValue(top[F("hours")], hours);
       configComplete &= getJsonValue(top[F("fullHours")], fullHours);
+      brightnessActive = constrain(brightnessActive, 0, 255);
+      brightnessInactive = constrain(brightnessInactive, 0, 255);
 
       // configs from before the phrases were settings may still contain "Norddeutsch"
       bool nord = false;
@@ -191,7 +201,10 @@ class WordClockUsermod : public Usermod {
     void handleOverlayDraw() override {
       if (!usermodActive || !ledMask) return;
       for (uint16_t x = 0; x < rows.start[rows.count]; x++) {
-        if (!ledMask[x]) strip.setPixelColor(x + ledOffset, RGBW32(0, 0, 0, 0));
+        const uint8_t amount = ledMask[x] ? brightnessActive : brightnessInactive;
+        if (amount == 255) continue;
+        const unsigned led = x + ledOffset;
+        strip.setPixelColor(led, amount ? color_fade(strip.getPixelColor(led), amount) : RGBW32(0, 0, 0, 0));
       }
     }
 
