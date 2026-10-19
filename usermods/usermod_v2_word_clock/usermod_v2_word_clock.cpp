@@ -39,6 +39,7 @@ static const char phrase45Nord[] PROGMEM = "VIERTEL VOR {n}";
 static constexpr uint8_t SLOT_QUARTER_PAST = 3;
 static constexpr uint8_t SLOT_QUARTER_TO = 9;
 static constexpr unsigned long UPDATE_INTERVAL = 5000; // ms between time checks
+static constexpr size_t TEXT_SIZE = 96;                // bytes for the lit words shown on the info page
 
 class WordClockUsermod : public Usermod {
   private:
@@ -62,6 +63,9 @@ class WordClockUsermod : public Usermod {
     WordClock::Rows rows;
     uint8_t* ledMask = nullptr; // one byte per LED of the layout, 1 = on
     String configError;         // first problem found in the settings, shown on the info page
+    int shownHour = -1;         // time and words currently shown, for the info page
+    int shownMinute = 0;
+    char shownText[TEXT_SIZE] = "";
 
     static const char _name[];
 
@@ -81,6 +85,7 @@ class WordClockUsermod : public Usermod {
     void applyConfig() {
       configError = "";
       lastTimeMinutes = -1; // redraw with the new settings
+      shownHour = -1;
       if (ledMask) d_free(ledMask);
       ledMask = nullptr;
       if (!WordClock::parseRows(layout.c_str(), rows)) {
@@ -131,15 +136,35 @@ class WordClockUsermod : public Usermod {
 
       const WordClock::Settings s = settings();
       const int hours12 = hours24 % 12 ? hours24 % 12 : 12;
-      WordClock::Composer(s, rows, ledMask).compose(hours12, minutes);
+      WordClock::Composer(s, rows, ledMask, shownText, sizeof(shownText)).compose(hours12, minutes);
+      shownHour = hours24;
+      shownMinute = minutes;
     }
 
     void addToJsonInfo(JsonObject& root) override {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
       JsonArray info = user.createNestedArray(F("Word clock"));
-      if (configError.isEmpty()) info.add(F("settings OK"));
-      else info.add(configError);
+      if (!configError.isEmpty()) info.add(configError);
+      else if (!usermodActive) info.add(F("inactive"));
+      else if (shownHour < 0) info.add(F("waiting for time sync"));
+      else info.add(F("settings OK"));
+      if (shownHour < 0 || !ledMask) return;
+
+      char buf[24];
+      if (testHour >= 0) snprintf_P(buf, sizeof(buf), PSTR("%02d:%02d (test)"), shownHour, shownMinute);
+      else snprintf_P(buf, sizeof(buf), PSTR("%02d:%02d"), shownHour, shownMinute);
+      JsonArray timeInfo = user.createNestedArray(F("Word clock time"));
+      timeInfo.add(buf);
+      unsigned lit = 0;
+      for (uint16_t x = 0; x < rows.start[rows.count]; x++) lit += ledMask[x];
+      // the minutes past the 5-minute step, shown by the minute dots
+      const int dots = shownMinute % 5;
+      if (dots) snprintf_P(buf, sizeof(buf), PSTR(" + %d min (%u LEDs)"), dots, lit);
+      else snprintf_P(buf, sizeof(buf), PSTR(" (%u LEDs)"), lit);
+      JsonArray textInfo = user.createNestedArray(F("Word clock text"));
+      textInfo.add(shownText);
+      textInfo.add(buf);
     }
 
     void addToConfig(JsonObject& root) override {

@@ -123,12 +123,15 @@ inline bool listEntry(const char* list, uint8_t index, const char*& start, size_
  */
 class Composer {
   public:
-    // mask needs one byte per LED of the layout, nullptr only checks that all words are found
-    Composer(const Settings& settings, const Rows& rows, uint8_t* mask) : _s(settings), _rows(rows), _mask(mask) {}
+    // mask needs one byte per LED of the layout, nullptr only checks that all words are found.
+    // text (optional) receives the lit words separated by spaces.
+    Composer(const Settings& settings, const Rows& rows, uint8_t* mask, char* text = nullptr, size_t textSize = 0)
+      : _s(settings), _rows(rows), _mask(mask), _text(textSize ? text : nullptr), _textSize(textSize) {}
 
     // Lights the words for hour12 (1..12) and minute (0..59). Returns false if a word was not found (see missing).
     bool compose(uint8_t hour12, uint8_t minute) {
       if (_mask) memset(_mask, 0, _rows.start[_rows.count]);
+      if (_text) _text[0] = '\0';
       _from = 0;
       missing[0] = '\0';
       bool ok = true;
@@ -145,6 +148,8 @@ class Composer {
     const Settings& _s;
     const Rows& _rows;
     uint8_t* _mask;
+    char* _text;
+    size_t _textSize;
     int _from = 0; // byte offset where the next word is searched
 
     // Lights the minute dots of the layout: dot '1' for dots >= 1, dot '2' for dots >= 2, and so on.
@@ -155,6 +160,19 @@ class Composer {
         if (*p >= FIRST_DOT && *p <= LAST_DOT && *p - FIRST_DOT < dots) _mask[physicalLed(led, _rows, _s.meander)] = 1;
         led++;
       }
+    }
+
+    // Appends a lit word to the optional text, cut at a character boundary if the buffer is full.
+    void appendText(const char* word, size_t n) {
+      if (!_text) return;
+      size_t used = strlen(_text);
+      if (used > 0 && used + 1 < _textSize) _text[used++] = ' ';
+      if (n > _textSize - 1 - used) {
+        n = _textSize - 1 - used;
+        while (n > 0 && isContinuation(word[n])) n--;
+      }
+      memcpy(_text + used, word, n);
+      _text[used + n] = '\0';
     }
 
     // Lights the space-separated words of text. With expand, {h}, {n} and {H} are replaced by the current hour,
@@ -208,6 +226,7 @@ class Composer {
         return false;
       }
       _from = pos + len;
+      appendText(word, len);
       if (_mask) {
         const uint16_t first = ledAt(_s.layout, pos);
         const uint16_t count = charCount(word, len);
