@@ -12,16 +12,19 @@
  * Nothing in here knows a language: the front panel layout, the hour words and
  * the phrase for every 5 minutes all come from the settings. All texts are
  * UTF-8, every character of the layout except the row separator is one LED.
+ * The characters '1' to '4' in the layout are minute dots: dot n is lit when
+ * minute % 5 >= n.
  */
 namespace WordClock {
 
 constexpr uint8_t SLOTS = 12;          // one phrase per 5 minutes
-constexpr uint8_t MAX_MINUTE_DOTS = 4; // LEDs after the letters, lit for minute % 5
 constexpr uint8_t MAX_ROWS = 32;
 constexpr uint8_t MAX_WORD_REPORT = 24; // bytes kept of a word that was not found
 constexpr char ROW_SEPARATOR = '|';
 constexpr char LIST_SEPARATOR = ',';
 constexpr char OCCURRENCE_MARK = '#';
+constexpr char FIRST_DOT = '1';
+constexpr char LAST_DOT = '4';
 
 struct Settings {
   const char* layout;          // rows separated by ROW_SEPARATOR
@@ -31,10 +34,9 @@ struct Settings {
   const char* phrases[SLOTS];  // phrase for :00, :05, ... :55 with {h}, {n}, {H} placeholders
   bool showPrefix;
   bool meander;
-  uint8_t minuteDots;
 };
 
-// start[r] is the first LED of row r, start[count] is the number of letters
+// start[r] is the first LED of row r, start[count] is the number of LEDs (letters and minute dots)
 struct Rows {
   uint16_t start[MAX_ROWS + 1];
   uint8_t count;
@@ -121,22 +123,19 @@ inline bool listEntry(const char* list, uint8_t index, const char*& start, size_
  */
 class Composer {
   public:
-    // mask needs room for all letters plus MAX_MINUTE_DOTS; nullptr only checks that all words are found
+    // mask needs one byte per LED of the layout, nullptr only checks that all words are found
     Composer(const Settings& settings, const Rows& rows, uint8_t* mask) : _s(settings), _rows(rows), _mask(mask) {}
 
     // Lights the words for hour12 (1..12) and minute (0..59). Returns false if a word was not found (see missing).
     bool compose(uint8_t hour12, uint8_t minute) {
-      const uint16_t letters = _rows.start[_rows.count];
-      if (_mask) memset(_mask, 0, letters + MAX_MINUTE_DOTS);
+      if (_mask) memset(_mask, 0, _rows.start[_rows.count]);
       _from = 0;
       missing[0] = '\0';
       bool ok = true;
       if (_s.showPrefix) ok &= placeText(_s.prefix, strlen(_s.prefix), hour12, false);
       const char* phrase = _s.phrases[(minute / 5) % SLOTS];
       ok &= placeText(phrase, strlen(phrase), hour12, true);
-      if (_mask) {
-        for (uint8_t i = 0; i < minute % 5 && i < _s.minuteDots; i++) _mask[letters + i] = 1;
-      }
+      if (_mask) placeDots(minute % 5);
       return ok;
     }
 
@@ -147,6 +146,16 @@ class Composer {
     const Rows& _rows;
     uint8_t* _mask;
     int _from = 0; // byte offset where the next word is searched
+
+    // Lights the minute dots of the layout: dot '1' for dots >= 1, dot '2' for dots >= 2, and so on.
+    void placeDots(uint8_t dots) {
+      uint16_t led = 0;
+      for (const char* p = _s.layout; *p; p++) {
+        if (*p == ROW_SEPARATOR || isContinuation(*p)) continue;
+        if (*p >= FIRST_DOT && *p <= LAST_DOT && *p - FIRST_DOT < dots) _mask[physicalLed(led, _rows, _s.meander)] = 1;
+        led++;
+      }
+    }
 
     // Lights the space-separated words of text. With expand, {h}, {n} and {H} are replaced by the current hour,
     // the next hour and the current hour's full-hour word.
