@@ -124,7 +124,13 @@ struct WordClockConfig {
   void prepare() {
     error = "";
     if (!WordClock::parseRows(layout.c_str(), rows)) {
-      error = F("invalid layout");
+      if (strspn(layout.c_str(), "|") == layout.length()) {
+        error = F("layout is empty");
+      } else {
+        char msg[40];
+        snprintf_P(msg, sizeof(msg), PSTR("layout has more than %u rows"), WordClock::MAX_ROWS);
+        error = msg;
+      }
       return;
     }
     const size_t maskSize = rows.start[rows.count];
