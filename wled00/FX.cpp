@@ -8083,7 +8083,7 @@ struct SnakeHead {
 };
 
 struct SnakeCell {
-  uint8_t colorIndex;
+  uint8_t paletteIndex;
   uint8_t lifetime;
 };
 
@@ -8095,24 +8095,17 @@ void mode_2DSnakes() {
   const unsigned maxSnakeCount = max(segW / 2, 1u);
   const unsigned snakeCount = (maxSnakeCount - 1) * SEGMENT.intensity / 255 + 1;
   const uint8_t snakeLength = max(SEGMENT.custom1 / 4, 1);
-  // The max and current number of distinct colors we need. Note that
-  // palettes are indexed by uint8_t, so we can't have more than 256 distinct colors.
-  const unsigned maxColorCount = min(256u, maxSnakeCount);
-  const unsigned colorCount = min(256u, snakeCount);
 
   // Allocate based on the maximum possible size, to avoid constant reallocation
   // while dragging the sliders.
-  size_t dataLen = sizeof(uint32_t) * maxColorCount +
-                   sizeof(SnakeHead) * maxSnakeCount +
+  size_t dataLen = sizeof(SnakeHead) * maxSnakeCount +
                    segW * segH * sizeof(SnakeCell);
   if (!SEGENV.allocateData(dataLen)) {
     FX_FALLBACK_STATIC
   }
 
-  // Base color for each snake. Recalculated for each frame and memoized here.
-  uint32_t *colors = reinterpret_cast<uint32_t *>(SEGENV.data);
   // The head of each snake, which moves around the grid.
-  SnakeHead *heads = reinterpret_cast<SnakeHead *>(colors + maxColorCount);
+  SnakeHead *heads = reinterpret_cast<SnakeHead *>(SEGENV.data);
   // The cells of the grid, SEG_W*SEG_H in size; lifetime > 0 means a snake is there.
   SnakeCell *cells = reinterpret_cast<SnakeCell *>(heads + maxSnakeCount);
 
@@ -8135,11 +8128,6 @@ void mode_2DSnakes() {
   } /* initialization */
 
   const bool smooth = SEGMENT.check1;
-
-  for (unsigned i = 0; i < colorCount; i++) {
-    colors[i] =
-        SEGMENT.color_from_palette(heads[i].paletteIndex, false, false, 255);
-  }
 
   uint32_t elapsed = strip.now - SEGENV.step;
   if (elapsed >= moveInterval) {
@@ -8199,9 +8187,7 @@ void mode_2DSnakes() {
       }
 
       cells[head.pos.y * segW + head.pos.x] =
-          // Deliberately wrap into a uint8_t, which is what we use to index
-          // into the palette
-          SnakeCell{.colorIndex = static_cast<uint8_t>(i),
+          SnakeCell{.paletteIndex = head.paletteIndex,
                      // Will decrement immediately
                      .lifetime = static_cast<uint8_t>(snakeLength + 1u)};
     } /* for head */
@@ -8215,7 +8201,8 @@ void mode_2DSnakes() {
           if (cell.lifetime == 0) SEGMENT.setPixelColorXY(x, y, 0);
           else if (!smooth) {
             uint8_t brightness = cell.lifetime * 255 / snakeLength;
-            uint32_t color = color_fade(colors[cell.colorIndex], brightness);
+            uint32_t base_color = SEGMENT.color_from_palette(cell.paletteIndex, false, false, 255);
+            uint32_t color = color_fade(base_color, brightness);
             SEGMENT.setPixelColorXY(x, y, color);
           }
         }
@@ -8242,7 +8229,8 @@ void mode_2DSnakes() {
       // Lerp between lifetime/snakeLength and (lifetime-1)/snakeLength, scaled
       // to 0-255
       uint8_t brightness = (((cell.lifetime << 8) - lerpAmount) * scale) >> 16;
-      uint32_t color = color_fade(colors[cell.colorIndex], brightness);
+      uint32_t base_color = SEGMENT.color_from_palette(cell.paletteIndex, false, false, 255);
+      uint32_t color = color_fade(base_color, brightness);
       SEGMENT.setPixelColorXY(x, y, color);
     }
   }
@@ -8250,7 +8238,8 @@ void mode_2DSnakes() {
     const auto &snk = heads[i];
     // The head should fade *in* rather than out, 0-255 over the move duration
     uint8_t brightness = snk.moved ? lerpAmount : 255;
-    uint32_t color = color_fade(colors[i & 0xFF], brightness);
+    uint32_t base_color = SEGMENT.color_from_palette(snk.paletteIndex, false, false, 255);
+    uint32_t color = color_fade(base_color, brightness);
     SEGMENT.setPixelColorXY(snk.pos.x, snk.pos.y, color);
   }
 }
