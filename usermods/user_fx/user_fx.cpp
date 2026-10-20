@@ -1657,6 +1657,7 @@ constexpr uint8_t  JACK_CHOMP_REST        = 48;   // part of the chomp cycle whe
 constexpr uint8_t  JACK_TALK_PAUSE        = 100;  // talking pauses while the slow "sentence" noise is below this value
 constexpr uint8_t  JACK_TALK_REST         = 100;  // syllable noise below this value keeps the mouth shut
 constexpr uint8_t  JACK_FLARE_GAIN        = 160;  // candle flare from sound volume
+constexpr uint32_t JACK_FLARE_DECAY       = 128;  // candle flare fade per ms (Q8), a full flare fades out in about 0.5s
 // audio
 constexpr float    JACK_SILENCE_LEVEL      = 2.0f; // volume (0-255) below this value is silence
 constexpr uint32_t JACK_SILENCE_TIMEOUT_MS = 3000; // switch to the mouth animation after this much silence
@@ -1668,7 +1669,7 @@ struct JackState {
   uint32_t lastSound; // strip.now when sound was last heard
   uint32_t phase;     // phase of the mouth animation (Q8)
   uint16_t mouthOpen; // smoothed mouth opening (0-65535)
-  uint8_t  flare;     // extra candle brightness from loud sounds
+  uint16_t flare;     // extra candle brightness from loud sounds (Q8, keeps fractional fading for any frame time)
 };
 
 /*
@@ -1760,12 +1761,13 @@ static void mode_2D_jackolantern(void) {
   const uint8_t fastNoise = perlin8(uint16_t(now << 1));
   const uint8_t slowNoise = perlin8(uint16_t((now >> 1) + 0x8000));
   uint8_t level = 255 - scale8(255 - ((fastNoise * 3 + slowNoise) >> 2), SEGMENT.intensity);
-  state->flare = qsub8(state->flare, dt >> 1); // fades out in about 0.5s
+  const uint32_t flareFade = dt * JACK_FLARE_DECAY;
+  state->flare = (state->flare > flareFade) ? state->flare - flareFade : 0;
   if (hearing) {
-    state->flare = max(state->flare, scale8(volume, JACK_FLARE_GAIN));
-    if (peak) state->flare = 255;
+    state->flare = max(state->flare, uint16_t(scale8(volume, JACK_FLARE_GAIN) << 8));
+    if (peak) state->flare = 255 << 8;
   }
-  level += scale8(255 - level, state->flare);
+  level += scale8(255 - level, state->flare >> 8);
   const int32_t flameU = (int32_t(slowNoise) - 128) * SEGMENT.intensity / 512; // the flame sways sideways
   const uint8_t skinBri = JACK_SKIN_AMBIENT + scale8(255 - JACK_SKIN_AMBIENT, scale8(level, SEGMENT.custom1));
 
