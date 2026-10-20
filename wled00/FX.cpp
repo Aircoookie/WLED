@@ -5241,8 +5241,8 @@ static const char _data_FX_MODE_2DBLACKHOLE[] PROGMEM = "Black Hole@Fade rate,Ou
 void mode_2DColoredBursts() {              // By: ldirko   https://editor.soulmatelights.com/gallery/819-colored-bursts , modified by: Andrew Tuline
   if (!strip.isMatrix || !SEGMENT.is2D()) FX_FALLBACK_STATIC; // not a 2D set-up
 
-  const int cols = SEG_W;
-  const int rows = SEG_H;
+  const int cols = min(SEG_W, 256U);  // prevents beatsin8_t parameter rollover when cols or rows > 256
+  const int rows = min(SEG_H, 256U);
 
   if (SEGENV.call == 0) {
     SEGENV.aux0 = 0; // start with red hue
