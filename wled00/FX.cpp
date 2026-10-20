@@ -6211,6 +6211,7 @@ void mode_2Dcrazybees(void) {
 
   if (SEGENV.call == 0) {
     prng.setSeed(strip.now);
+    SEGENV.step = unsigned(strip.now - 1024);  // triggers immediate redraw without waiting
     for (size_t i = 0; i < n; i++) {
       bee[i].posX = prng.random16(0, cols);
       bee[i].posY = prng.random16(0, rows);
@@ -6282,6 +6283,7 @@ void mode_2Dghostrider(void) {
   if (SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
+    SEGENV.step = unsigned(strip.now - 1024);  // triggers immediate redraw without waiting
     lighter->angleSpeed = hw_random8(0,20) - 10;
     lighter->gAngle = hw_random16();
     lighter->Vspeed = 5;
