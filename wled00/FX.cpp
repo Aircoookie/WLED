@@ -8088,6 +8088,7 @@ struct SnakeCell {
 };
 
 void mode_2DSnakes() {
+  if (!strip.isMatrix || !SEGMENT.is2D()) FX_FALLBACK_STATIC;
   const unsigned segW = SEG_W;
   const unsigned segH = SEG_H;
 
