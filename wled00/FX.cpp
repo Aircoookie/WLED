@@ -8131,7 +8131,8 @@ void mode_2DSnakes() {
   const bool smooth = SEGMENT.check1;
 
   uint32_t elapsed = strip.now - SEGENV.step;
-  if (elapsed >= moveInterval) {
+  bool doMove = elapsed >= moveInterval;
+  if (doMove) {
     SEGENV.step = strip.now;
     elapsed = 0;
 
@@ -8197,26 +8198,14 @@ void mode_2DSnakes() {
     for (uint16_t y = 0, rowStart = 0; y < segH; y++, rowStart += segW) {
       for (uint16_t x = 0; x < segW; x++) {
         SnakeCell &cell = cells[rowStart + x];
-        if (cell.lifetime != 0) {
-          cell.lifetime--;
-          if (cell.lifetime == 0) SEGMENT.setPixelColorXY(x, y, 0);
-          else if (!smooth) {
-            uint8_t brightness = cell.lifetime * 255 / snakeLength;
-            uint32_t base_color = SEGMENT.color_from_palette(cell.paletteIndex, false, false, 255);
-            uint32_t color = color_fade(base_color, brightness);
-            SEGMENT.setPixelColorXY(x, y, color);
-          }
-        }
+        if (cell.lifetime != 0 && --cell.lifetime == 0) SEGMENT.setPixelColorXY(x, y, 0);
       }
     }
   } /* move */
 
-  if (!smooth) {
-    return;
-  }
+  if (!smooth && !doMove) return;
 
-  // Now we can actually draw (on *every* call)
-  uint16_t lerpAmount = (elapsed << 8) / moveInterval; // 0-255
+  uint16_t lerpAmount = smooth ? (elapsed << 8) / moveInterval : 0; // 0-255
   uint16_t scale = (255u << 8) / snakeLength;
   for (uint16_t y = 0, rowStart = 0; y < segH; y++, rowStart += segW) {
     for (uint16_t x = 0; x < segW; x++) {
@@ -8238,7 +8227,7 @@ void mode_2DSnakes() {
   for (unsigned i = 0; i < snakeCount; i++) {
     const auto &snk = heads[i];
     // The head should fade *in* rather than out, 0-255 over the move duration
-    uint8_t brightness = snk.moved ? lerpAmount : 255;
+    uint8_t brightness = (smooth && snk.moved) ? lerpAmount : 255;
     uint32_t base_color = SEGMENT.color_from_palette(snk.paletteIndex, false, false, 255);
     uint32_t color = color_fade(base_color, brightness);
     SEGMENT.setPixelColorXY(snk.pos.x, snk.pos.y, color);
