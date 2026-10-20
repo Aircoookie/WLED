@@ -8100,7 +8100,8 @@ void mode_2DSnakes() {
   // Allocate based on the maximum possible size, to avoid constant reallocation
   // while dragging the sliders.
   size_t dataLen = sizeof(SnakeHead) * maxSnakeCount +
-                   segW * segH * sizeof(SnakeCell);
+                   segW * segH * sizeof(SnakeCell)
+                   + sizeof(uint16_t);
   if (!SEGENV.allocateData(dataLen)) {
     FX_FALLBACK_STATIC
   }
@@ -8109,11 +8110,14 @@ void mode_2DSnakes() {
   SnakeHead *heads = reinterpret_cast<SnakeHead *>(SEGENV.data);
   // The cells of the grid, SEG_W*SEG_H in size; lifetime > 0 means a snake is there.
   SnakeCell *cells = reinterpret_cast<SnakeCell *>(heads + maxSnakeCount);
+  uint16_t *storedSnakeCount = reinterpret_cast<uint16_t *>(cells + segW * segH);
 
-  if (SEGENV.call == 0 || snakeCount != SEGENV.aux0) {
-    SEGENV.aux0 = snakeCount;
-    SEGMENT.fill(0);
+  if (SEGENV.call == 0 || SEGENV.aux0 != segW || SEGENV.aux1 != segH || *storedSnakeCount != snakeCount) {
     memset(SEGENV.data, 0, SEGENV.dataSize());
+    SEGMENT.fill(0);
+    SEGENV.aux0 = segW;
+    SEGENV.aux1 = segH;
+    *storedSnakeCount = snakeCount;
     for (size_t i = 0; i < snakeCount; i++) {
       heads[i] = SnakeHead{
           .pos =
