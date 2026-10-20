@@ -8093,7 +8093,7 @@ void mode_2DSnakes() {
   const unsigned segH = SEG_H;
 
   const uint16_t moveInterval = 512 - (2 * SEGMENT.speed);
-  const unsigned maxSnakeCount = max(segW / 2, 1u);
+  const unsigned maxSnakeCount = max((segW + segH) / 4, 1u);
   const unsigned snakeCount = (maxSnakeCount - 1) * SEGMENT.intensity / 255 + 1;
   const uint8_t snakeLength = max(SEGMENT.custom1 / 4, 1);
 
