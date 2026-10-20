@@ -6295,8 +6295,9 @@ void mode_2Dghostrider(void) {
     }
   }
 
-  if (strip.now > SEGENV.step) {
-    SEGENV.step = strip.now + 1024 / (cols+rows);
+  unsigned waitTime = max(2, 1024 / (cols+rows));        // use time difference to prevent freeze when time jumps
+  if (unsigned(strip.now - SEGENV.step) >= waitTime) {   // also catches strip.now < SEGENV.step (timebase jump or rollover)
+    SEGENV.step = strip.now;
 
     SEGMENT.fadeToBlackBy((SEGMENT.speed>>2)+64);
 
