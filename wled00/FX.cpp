@@ -6218,8 +6218,9 @@ void mode_2Dcrazybees(void) {
     }
   }
 
-  if (strip.now > SEGENV.step) {
-    SEGENV.step = strip.now + (FRAMETIME * 16 / ((SEGMENT.speed>>4)+1));
+  unsigned waitTime = (FRAMETIME * 16 / ((SEGMENT.speed>>4)+1));  // use time difference to prevent freeze when time jumps
+  if (unsigned(strip.now - SEGENV.step) >= waitTime) {            // also catches strip.now < SEGENV.step (timebase jump or rollover)
+    SEGENV.step = strip.now;
     SEGMENT.fadeToBlackBy(32 + ((SEGMENT.check1*SEGMENT.intensity) / 25));
     SEGMENT.blur(SEGMENT.intensity / (2 + SEGMENT.check1 * 9), SEGMENT.check1);
     for (size_t i = 0; i < n; i++) {
