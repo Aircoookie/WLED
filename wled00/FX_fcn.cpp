@@ -1965,7 +1965,7 @@ bool WS2812FX::hasCCTBus() const {
 }
 
 void WS2812FX::purgeSegments() {
-  // remove all inactive segments (from the back)
+  // remove all inactive segments (from the back), keep segment[0]
   int deleted = 0;
   if (_segments.size() <= 1) return;
   for (size_t i = _segments.size()-1; i > 0; i--)
@@ -2077,7 +2077,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 void WS2812FX::fixInvalidSegments() {
   if (isServicing()) return;
   //make sure no segment is longer than total (sanity check)
-  for (size_t i = getSegmentsNum()-1; i > 0; i--) {
+  for (int i = (int)getSegmentsNum() - 1; i >= 0; i--) {
     if (isMatrix) {
     #ifndef WLED_DISABLE_2D
       if (_segments[i].start >= Segment::maxWidth * Segment::maxHeight) {
@@ -2098,6 +2098,7 @@ void WS2812FX::fixInvalidSegments() {
   // if any segments were deleted free memory
   purgeSegments();
   if (getActiveSegmentsNum() == 0) resetSegments(); // fallback: create default segment in case all segments were invalidated
+  if (getMainSegmentId() >= getSegmentsNum()) setMainSegmentId(0); // reset main segment if it is now out of bounds
   // this is always called as the last step after finalizeInit(), update covered bus types
   for (const Segment &seg : _segments)
     seg.refreshLightCapabilities();
