@@ -8211,6 +8211,9 @@ void mode_2DSnakes() {
       if (cell.lifetime == 0) {
         continue;
       }
+      if (cell.lifetime > snakeLength) {
+        cell.lifetime = snakeLength; // if the snakeLength slider is moved down, clamp the lifetime of existing cells
+      }
       SnakeHead &head = heads[cell.snakeIndex];
       uint8_t brightness;
       if (head.pos.x == x && head.pos.y == y) {
