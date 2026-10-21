@@ -235,6 +235,7 @@ class Composer {
       return true;
     }
 
+    // Keeps the first word that was not found (shortened to MAX_WORD_REPORT bytes) for the error message.
     void report(const char* word, size_t n) {
       if (missing[0]) return;
       if (n > MAX_WORD_REPORT) n = MAX_WORD_REPORT;

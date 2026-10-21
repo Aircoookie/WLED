@@ -108,6 +108,7 @@ struct WordClockConfig {
     for (uint8_t i = 0; i < WordClock::SLOTS; i++) phrases[i] = other.phrases[i];
   }
 
+  // Settings for the language-independent logic. The pointers refer to the strings of this config.
   WordClock::Settings settings() const {
     WordClock::Settings s;
     s.layout = layout.c_str();
@@ -203,12 +204,14 @@ class WordClockUsermod : public Usermod {
 
     void setup() override {}
 
+    // Updates the LED mask; skipped in this loop if new settings are just being swapped in.
     void loop() override {
       if (!lockConfig(0)) return; // new settings are being swapped in, try again in the next loop
       updateDisplay();
       unlockConfig();
     }
 
+    // Info page: state of the settings, the time shown and the lit words.
     void addToJsonInfo(JsonObject& root) override {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
@@ -274,6 +277,8 @@ class WordClockUsermod : public Usermod {
       oappend(F("addInfo('WordClockUsermod:phrase00',1,'<br><i>{h} hour, {n} next hour, {H} full hour</i>');"));
     }
 
+    // Builds and checks the new settings on the side, then swaps them in under configLock.
+    // An old config without phrases gets the "Norddeutsch" variants for :15 and :45 if that setting was on.
     bool readFromConfig(JsonObject& root) override {
       // start from the current settings: a config sent via the JSON API may contain only some of them
       WordClockConfig* next = new (std::nothrow) WordClockConfig();
@@ -332,6 +337,8 @@ class WordClockUsermod : public Usermod {
       return configComplete;
     }
 
+    // Scales the effect color: lit letters by brightnessActive, all other letters by brightnessInactive.
+    // Skips the frame if the settings are locked for longer than OVERLAY_LOCK_WAIT.
     void handleOverlayDraw() override {
       if (!lockConfig(OVERLAY_LOCK_WAIT)) return;
       const WordClockConfig& c = *cfg;
