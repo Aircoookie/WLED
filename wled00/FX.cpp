@@ -8083,7 +8083,7 @@ struct SnakeHead {
 };
 
 struct SnakeCell {
-  uint8_t paletteIndex;
+  uint8_t snakeIndex;
   uint8_t lifetime;
 };
 
@@ -8093,15 +8093,15 @@ void mode_2DSnakes() {
   const unsigned segH = SEG_H;
 
   const uint16_t moveInterval = 512 - (2 * SEGMENT.speed);
-  const unsigned maxSnakeCount = max((segW + segH) / 4, 1u);
-  const unsigned snakeCount = (maxSnakeCount - 1) * SEGMENT.intensity / 255 + 1;
+  const uint8_t maxSnakeCount = min(max((segW + segH) / 4, 1u), 255u);
+  const uint8_t snakeCount = (maxSnakeCount - 1) * SEGMENT.intensity / 255 + 1;
   const uint8_t snakeLength = max(SEGMENT.custom1 / 4, 1);
 
   // Allocate based on the maximum possible size, to avoid constant reallocation
   // while dragging the sliders.
   size_t dataLen = sizeof(SnakeHead) * maxSnakeCount +
                    segW * segH * sizeof(SnakeCell)
-                   + sizeof(uint16_t);
+                   + sizeof(uint8_t);
   if (!SEGENV.allocateData(dataLen)) {
     FX_FALLBACK_STATIC
   }
@@ -8110,7 +8110,7 @@ void mode_2DSnakes() {
   SnakeHead *heads = reinterpret_cast<SnakeHead *>(SEGENV.data);
   // The cells of the grid, SEG_W*SEG_H in size; lifetime > 0 means a snake is there.
   SnakeCell *cells = reinterpret_cast<SnakeCell *>(heads + maxSnakeCount);
-  uint16_t *storedSnakeCount = reinterpret_cast<uint16_t *>(cells + segW * segH);
+  uint8_t *storedSnakeCount = reinterpret_cast<uint8_t *>(cells + segW * segH);
 
   if (SEGENV.call == 0 || SEGENV.aux0 != segW || SEGENV.aux1 != segH || *storedSnakeCount != snakeCount) {
     memset(SEGENV.data, 0, SEGENV.dataSize());
@@ -8140,7 +8140,7 @@ void mode_2DSnakes() {
     SEGENV.step = strip.now;
     elapsed = 0;
 
-    for (unsigned i = 0; i < snakeCount; i++) {
+    for (uint8_t i = 0; i < snakeCount; i++) {
       SnakeHead &head = heads[i];
       SnakeDir candidates[3];
       candidates[0] = head.dir;
@@ -8193,7 +8193,7 @@ void mode_2DSnakes() {
       }
 
       cells[head.pos.y * segW + head.pos.x] =
-          SnakeCell{.paletteIndex = head.paletteIndex,
+          SnakeCell{.snakeIndex = i,
                      // Will decrement immediately
                      .lifetime = static_cast<uint8_t>(snakeLength + 1u)};
     } /* for head */
@@ -8217,24 +8217,19 @@ void mode_2DSnakes() {
       if (cell.lifetime == 0) {
         continue;
       }
-      if (cell.lifetime == snakeLength) {
-        continue; // Heads are rendered separately below
+      SnakeHead &head = heads[cell.snakeIndex];
+      uint8_t brightness;
+      if (head.pos.x == x && head.pos.y == y) {
+        // The head should fade *in* rather than out, 0-255 over the move duration
+        brightness = (smooth && head.moved) ? lerpAmount : 255;
+      } else {
+        // Lerp between lifetime/snakeLength and (lifetime-1)/snakeLength, scaled
+        // to 0-255
+        brightness = (((cell.lifetime << 8) - lerpAmount) * scale) >> 16;
       }
-      // Lerp between lifetime/snakeLength and (lifetime-1)/snakeLength, scaled
-      // to 0-255
-      uint8_t brightness = (((cell.lifetime << 8) - lerpAmount) * scale) >> 16;
-      uint32_t base_color = SEGMENT.color_from_palette(cell.paletteIndex, false, false, 255);
-      uint32_t color = color_fade(base_color, brightness);
+      uint32_t color = color_fade(SEGMENT.color_from_palette(head.paletteIndex, false, false, 255), brightness);
       SEGMENT.setPixelColorXY(x, y, color);
     }
-  }
-  for (unsigned i = 0; i < snakeCount; i++) {
-    const auto &snk = heads[i];
-    // The head should fade *in* rather than out, 0-255 over the move duration
-    uint8_t brightness = (smooth && snk.moved) ? lerpAmount : 255;
-    uint32_t base_color = SEGMENT.color_from_palette(snk.paletteIndex, false, false, 255);
-    uint32_t color = color_fade(base_color, brightness);
-    SEGMENT.setPixelColorXY(snk.pos.x, snk.pos.y, color);
   }
 }
 static const char _data_FX_MODE_2DSNAKES[] PROGMEM = "Snakes@!,!,Tail Length,,,Smooth;;!;2;sx=200,ix=128,o1=1";
