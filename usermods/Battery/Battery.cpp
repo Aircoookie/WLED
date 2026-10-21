@@ -68,6 +68,7 @@ class UsermodBattery : public Usermod {
     bool coulombTimebaseValid = false;  // false after a gap without valid current
     unsigned long restStartTime = 0;
     bool atRest = false;
+    bool wasCharging = false;
     static constexpr float REST_CURRENT_THRESHOLD = 0.01f;
     static const unsigned long REST_RECALIBRATE_MS = 60000;
 
@@ -134,23 +135,24 @@ class UsermodBattery : public Usermod {
     void lowPowerIndicator() {
       if (!lowPowerIndicatorEnabled) return;
       if (batteryPin < 0) return;
+      // finish an active indication even if the level recovered or became invalid
+      if (lowPowerIndicatorActive) {
+        if (millis() - lowPowerActivationTime >= (unsigned long)lowPowerIndicatorDuration * 1000) {
+          lowPowerIndicationDone = true;
+          lowPowerIndicatorActive = false;
+          applyPreset(lastPreset);
+        }
+        return;
+      }
       const int8_t level = bat->getLevel();
       if (level < 0) return; // wait for first valid reading
       if (lowPowerIndicationDone && lowPowerIndicatorReactivationThreshold <= level) lowPowerIndicationDone = false;
       if (lowPowerIndicatorThreshold <= level) return;
       if (lowPowerIndicationDone) return;
-      if (!lowPowerIndicatorActive) {
-        lowPowerIndicatorActive = true;
-        lowPowerActivationTime = millis();
-        lastPreset = currentPreset;
-        applyPreset(lowPowerIndicatorPreset);
-      }
-
-      if (millis() - lowPowerActivationTime >= (unsigned long)lowPowerIndicatorDuration * 1000) {
-        lowPowerIndicationDone = true;
-        lowPowerIndicatorActive = false;
-        applyPreset(lastPreset);
-      }
+      lowPowerIndicatorActive = true;
+      lowPowerActivationTime = millis();
+      lastPreset = currentPreset;
+      applyPreset(lowPowerIndicatorPreset);
     }
 
     float readVoltage() {
@@ -377,6 +379,12 @@ class UsermodBattery : public Usermod {
           }
           coulombSoC = constrain(coulombSoC, 0.0f, 1.0f);
         }
+
+        // re-seed after charging ends: the Coulomb counter only integrates discharge
+        if (coulombInitialized && wasCharging && !charging && bat->getLevel() >= 0) {
+          coulombSoC = bat->getLevel() / 100.0f;
+        }
+        wasCharging = charging;
 
         // recalibrate from voltage-based SoC when battery is at rest (OCV is accurate)
         if (current_A < REST_CURRENT_THRESHOLD) {
@@ -672,8 +680,7 @@ class UsermodBattery : public Usermod {
       // subscribe to battery config updates
       if (mqttDeviceTopic[0] != 0) {
         char subuf[64];
-        strcpy(subuf, mqttDeviceTopic);
-        strcat_P(subuf, PSTR("/battery/set"));
+        snprintf_P(subuf, sizeof(subuf), PSTR("%s/battery/set"), mqttDeviceTopic);
         mqtt->subscribe(subuf, 0);
       }
 #endif

@@ -135,16 +135,16 @@ typedef enum : uint8_t
   lifepo4=3
 } batteryType;
 
-// used for initial configuration after boot 
-typedef struct bconfig_t 
+// used for initial configuration after boot
+typedef struct bconfig_t
 {
-  batteryType type;
-  float minVoltage;
-  float maxVoltage;
-  float voltage;          // current voltage
-  int8_t level;           // current level
-  float calibration;      // offset or calibration value to fine tune the calculated voltage
-  float voltageMultiplier;
+  batteryType type = (batteryType)USERMOD_BATTERY_DEFAULT_TYPE;
+  float minVoltage = 0.0f;  // 0 = keep battery-type default
+  float maxVoltage = 0.0f;
+  float voltage = 0.0f;     // current voltage
+  int8_t level = -1;        // current level
+  float calibration = USERMOD_BATTERY_CALIBRATION;
+  float voltageMultiplier = USERMOD_BATTERY_VOLTAGE_MULTIPLIER;
 } batteryConfig;
 
 #endif

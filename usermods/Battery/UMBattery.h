@@ -39,6 +39,11 @@ class UMBattery
             memcpy_P(&first, &lut[0], sizeof(LutEntry));
             memcpy_P(&last, &lut[size-1], sizeof(LutEntry));
 
+            // scale configured [minVoltage, maxVoltage] onto the table's single-cell range (supports multi-cell packs)
+            if (maxVoltage > minVoltage) {
+                v = last.voltage + (v - minVoltage) * (first.voltage - last.voltage) / (maxVoltage - minVoltage);
+            }
+
             if (v >= first.voltage) return first.percent;
             if (v <= last.voltage) return last.percent;
 
@@ -106,9 +111,9 @@ class UMBattery
          * Set lowest battery voltage
          * can't be below 0 volt
          */
-        virtual void setMinVoltage(float voltage)
+        virtual void setMinVoltage(float newVoltage)
         {
-            this->minVoltage = max(0.0f, voltage);
+            this->minVoltage = max(0.0f, newVoltage);
         }
 
         /*
@@ -123,9 +128,9 @@ class UMBattery
          * Set highest battery voltage
          * can't be below minVoltage
          */
-        virtual void setMaxVoltage(float voltage)
+        virtual void setMaxVoltage(float newVoltage)
         {
-            this->maxVoltage = max(getMinVoltage()+.5f, voltage);
+            this->maxVoltage = max(getMinVoltage()+.5f, newVoltage);
         }
 
         float getVoltage()
@@ -136,14 +141,14 @@ class UMBattery
         /**
          * check if voltage is within specified voltage range, allow 10% over/under voltage
          */
-        bool isValidVoltage(float voltage)
+        bool isValidVoltage(float newVoltage)
         {
-            return voltage >= this->getMinVoltage() * 0.85f && voltage <= this->getMaxVoltage() * 1.1f;
+            return newVoltage >= this->getMinVoltage() * 0.85f && newVoltage <= this->getMaxVoltage() * 1.1f;
         }
 
-        void setVoltage(float voltage)
+        void setVoltage(float newVoltage)
         {
-            this->voltage = this->isValidVoltage(voltage) ? voltage : -1.0f;
+            this->voltage = this->isValidVoltage(newVoltage) ? newVoltage : -1.0f;
         }
 
         int8_t getLevel()
@@ -156,9 +161,9 @@ class UMBattery
          * the discharge curve's 100% point. Values above 100 are a voltage-derived
          * indication, not physical state of charge. The lookup tables cap at 100.
          */
-        void setLevel(float level)
+        void setLevel(float newLevel)
         {
-            this->level = (int8_t)constrain(level, 0.0f, 110.0f);
+            this->level = (int8_t)constrain(newLevel, 0.0f, 110.0f);
         }
 
         // mark level as unknown (-1), e.g. after an out-of-range voltage reading

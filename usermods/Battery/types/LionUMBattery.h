@@ -27,9 +27,9 @@ class LionUMBattery : public UMBattery
             return this->lutInterpolate(v, dischargeLut, dischargeLutSize);
         };
 
-        void setMaxVoltage(float voltage) override
+        void setMaxVoltage(float newVoltage) override
         {
-            this->maxVoltage = max(getMinVoltage()+1.0f, voltage);
+            this->maxVoltage = max(getMinVoltage()+1.0f, newVoltage);
         }
 };
 

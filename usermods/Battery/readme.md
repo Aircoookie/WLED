@@ -52,6 +52,30 @@ In `platformio_override.ini` (or `platformio.ini`)<br>Under: `custom_usermods =`
 </tr>
 </table>
 
+### Multi-cell packs (2S, 3S, ...)
+
+Packs with cells in series work too. Set `min-voltage` / `max-voltage` to the **whole-pack** values (per-cell voltage × cell count) — the usermod maps the pack range onto the battery type's discharge curve. Pick the voltage divider (R1 from battery + to the tap, R2 from the tap to GND, tap to the ADC pin) so the tapped voltage stays below 3.3 V at full charge:
+
+```text
+1. voltage-multiplier ≥ max-voltage / 3.3 V     (round up for safety margin)
+2. pick R2                                      (100 kΩ is a good default)
+3. R1 = R2 × (voltage-multiplier − 1)
+4. check: max-voltage / voltage-multiplier < 3.3 V
+
+where: voltage-multiplier = (R1 + R2) / R2
+```
+
+Example — 3S Li-Ion (18650), 7.8 – 12.6 V:
+
+1. 12.6 V / 3.3 V = 3.8 → round up: `voltage-multiplier` = **4.0**
+2. R2 = 100 kΩ
+3. R1 = 100 kΩ × (4.0 − 1) = **300 kΩ**
+4. tap at full charge: 12.6 V / 4.0 = 3.15 V ✔
+
+Settings: type `Li-Ion`, `min-voltage` = **7.8**, `max-voltage` = **12.6**, `voltage-multiplier` = **4.0**
+
+Use 1 % resistors and fine-tune with the `calibration` offset against a multimeter reading. Power the ESP through a buck converter; the divider is for measurement only.
+
 <br><br>
 
 ## Define Your Options
@@ -97,96 +121,13 @@ If none of the built-in battery types match your cell chemistry, you can add you
 
 ### Step-by-step
 
-1. **Create a new header** in `usermods/Battery/types/`, e.g. `MyBattery.h`.
-   Use an existing type as a template (e.g. `LipoUMBattery.h`):
+1. **Create a new header** in [`types/`](types/), e.g. `MyBattery.h`, using an existing type as a template — [`Lifepo4UMBattery.h`](types/Lifepo4UMBattery.h) is the simplest. Your class inherits from [`UMBattery`](UMBattery.h), sets its voltage limits in the constructor and implements `mapVoltage()` via `lutInterpolate()` with its own discharge lookup table (voltage descending → percentage, data from your cell's datasheet). Keep the table definitions in the header like the built-in types do — `Battery.cpp` is the only translation unit that includes battery-type headers; do not include the header from other `.cpp` files.
 
-   ```cpp
-   #ifndef UMBMyBattery_h
-   #define UMBMyBattery_h
+2. **Add a new enum value** to `batteryType` in [`battery_defaults.h`](battery_defaults.h) (e.g. `mybattery=4`). Keep the `uint8_t` base — `UMT_BYTE` relies on it.
 
-   #include "../battery_defaults.h"
-   #include "../UMBattery.h"
+3. **Register defaults** (optional) in [`battery_defaults.h`](battery_defaults.h): `USERMOD_BATTERY_MYBATTERY_MIN_VOLTAGE` / `_MAX_VOLTAGE` guarded with `#ifndef`, following the existing types.
 
-   class MyBattery : public UMBattery
-   {
-       private:
-           static const LutEntry dischargeLut[] PROGMEM;
-           static const uint8_t dischargeLutSize;
-
-       public:
-           MyBattery() : UMBattery()
-           {
-               // Set your cell's voltage limits
-               this->setMinVoltage(3.0f);
-               this->setMaxVoltage(4.2f);
-           }
-
-           float mapVoltage(float v) override
-           {
-               return this->lutInterpolate(v, dischargeLut, dischargeLutSize);
-           };
-
-           // Optional: override setMaxVoltage to enforce a minimum gap
-           // void setMaxVoltage(float voltage) override
-           // {
-           //     this->maxVoltage = max(getMinVoltage()+0.5f, voltage);
-           // }
-   };
-
-   // Discharge lookup table – voltage (descending) → percentage
-   // Obtain this data from your cell's datasheet
-   // Note: these definitions live in the header because Battery.cpp is the only
-   // translation unit that includes battery-type headers (same pattern as the
-   // built-in types). Do not include this header from other .cpp files.
-   const UMBattery::LutEntry MyBattery::dischargeLut[] PROGMEM = {
-       {4.20f, 100.0f},
-       {3.90f,  75.0f},
-       {3.60f,  25.0f},
-       {3.00f,   0.0f},
-   };
-   const uint8_t MyBattery::dischargeLutSize =
-       sizeof(MyBattery::dischargeLut) / sizeof(MyBattery::dischargeLut[0]);
-
-   #endif
-   ```
-
-2. **Add a new enum value** in `battery_defaults.h`:
-
-   ```cpp
-   typedef enum : uint8_t   // keep the uint8_t base, UMT_BYTE relies on it
-   {
-     lipo=1,
-     lion=2,
-     lifepo4=3,
-     mybattery=4    // <-- new
-   } batteryType;
-   ```
-
-3. **Register defaults** (optional) in `battery_defaults.h`:
-
-   ```cpp
-   #ifndef USERMOD_BATTERY_MYBATTERY_MIN_VOLTAGE
-     #define USERMOD_BATTERY_MYBATTERY_MIN_VOLTAGE 3.0f
-   #endif
-   #ifndef USERMOD_BATTERY_MYBATTERY_MAX_VOLTAGE
-     #define USERMOD_BATTERY_MYBATTERY_MAX_VOLTAGE 4.2f
-   #endif
-   ```
-
-4. **Wire it up** in `Battery.cpp`:
-
-   - Add the include at the top:
-     ```cpp
-     #include "types/MyBattery.h"
-     ```
-   - Add a case in `createBattery()`:
-     ```cpp
-     case mybattery: return new MyBattery();
-     ```
-   - Add a dropdown option in `appendConfigData()`:
-     ```cpp
-     oappend(F("addOption(td,'My Battery','4');"));
-     ```
+4. **Wire it up** in [`Battery.cpp`](Battery.cpp): add the `#include "types/MyBattery.h"`, a `case mybattery:` in `createBattery()`, and a dropdown option in `appendConfigData()` (`addOption(td,'My Battery','4')`).
 
 5. **Compile and flash** — select your new type from the Battery settings page.
 
@@ -208,7 +149,7 @@ The battery usermod can estimate the remaining runtime of your project. This fea
 Add both usermods to your `platformio_override.ini`:
 
 ```ini
-custom_usermods = Battery INA226
+custom_usermods = Battery INA226_v2
 ```
 
 Set your battery capacity in the WLED Usermods settings page or at compile time:
