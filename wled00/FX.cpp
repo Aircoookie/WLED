@@ -8197,23 +8197,17 @@ void mode_2DSnakes() {
                      // Will decrement immediately
                      .lifetime = static_cast<uint8_t>(snakeLength + 1u)};
     } /* for head */
-
-    // Update lifetimes
-    for (uint16_t y = 0, rowStart = 0; y < segH; y++, rowStart += segW) {
-      for (uint16_t x = 0; x < segW; x++) {
-        SnakeCell &cell = cells[rowStart + x];
-        if (cell.lifetime != 0 && --cell.lifetime == 0) SEGMENT.setPixelColorXY(x, y, 0);
-      }
-    }
   } /* move */
 
   if (!smooth && !doMove) return;
 
+  // Update lifetimes + render
   uint16_t lerpAmount = smooth ? (elapsed << 8) / moveInterval : 0; // 0-255
   uint16_t scale = (255u << 8) / snakeLength;
   for (uint16_t y = 0, rowStart = 0; y < segH; y++, rowStart += segW) {
     for (uint16_t x = 0; x < segW; x++) {
       SnakeCell &cell = cells[rowStart + x];
+      if (doMove && cell.lifetime != 0 && --cell.lifetime == 0) SEGMENT.setPixelColorXY(x, y, 0);
       if (cell.lifetime == 0) {
         continue;
       }
