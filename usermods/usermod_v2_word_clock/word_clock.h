@@ -90,7 +90,7 @@ inline uint16_t ledAt(const char* layout, int pos) {
  * A match never spans two rows, because a word cannot contain the row separator.
  */
 inline int findWord(const char* layout, const char* word, size_t len, int from, uint8_t occurrence) {
-  if (len == 0) return -1;
+  if (len == 0 || memchr(word, ROW_SEPARATOR, len)) return -1; // a word must stay within one row
   uint8_t seen = 0;
   for (int p = occurrence ? 0 : from; layout[p]; p++) {
     if (isContinuation(layout[p]) || strncmp(layout + p, word, len) != 0) continue;
