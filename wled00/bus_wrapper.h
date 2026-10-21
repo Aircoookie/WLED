@@ -1406,6 +1406,10 @@ class PolyBus {
         #endif
       }
       else if (offset == 1) { // not first I2S channel, use locked type and enable parallel flag
+        if (busType == TYPE_G1151 && _parallelBusItype != I_32_I2_NEO_3) { // G1151 stream needs 3 byte RGB carrier pixels
+          _i2sChannelsAssigned--;
+          return I_NONE;
+        }
         _useParallelI2S = true;
         t = _parallelBusItype;
       }
