@@ -11063,7 +11063,7 @@ void mode_XmasTwinkle(void) {
       uint16_t delay = hw_random16(l.isOn ? 100 : 500, twMaxCycle(l));   // on: 100.., off: 500..
       if (l.isOn && SEGMENT.check1) l.colorIdx = hw_random8();
       t += delay;
-      if (hw_random(20000) < d) l.cycleQ = twRollCycle(SEGMENT.speed);  // new "character" every ~20 s on average
+      if (hw_random(20000) < delay) l.cycleQ = twRollCycle(SEGMENT.speed);  // new "character" every ~20 s on average
     }
     l.nextEvent = t;
 
