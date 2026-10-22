@@ -7626,10 +7626,14 @@ void mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   um_data_t *um_data = getAudioData();
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
-  if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
+  if (SEGENV.call == 0) {
+    for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
+    SEGMENT.fill(BLACK);
+    SEGENV.step = 0;
+  }
 
   bool rippleTime = false;
-  if (strip.now - SEGENV.step >= (256U - SEGMENT.intensity)) {
+  if (unsigned(strip.now - SEGENV.step) >= (256U - SEGMENT.intensity)) {
     SEGENV.step = strip.now;
     rippleTime = true;
   }
@@ -7648,7 +7652,8 @@ void mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     }
     band = constrain(band, 0, 15);
     unsigned colorIndex = band * 17;
-    int barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
+    unsigned barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
+    if (barHeight > rows) barHeight = rows;                      // map() can overshoot
     if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
 
     uint32_t ledColor = BLACK;
@@ -7659,7 +7664,7 @@ void mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
       ledColor = SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
       SEGMENT.setPixelColorXY(x, rows-1 - y, ledColor);
     }
-    if (previousBarHeight[x] > 0)
+    if ((SEGMENT.intensity < 255) && (previousBarHeight[x] > 0) && (previousBarHeight[x] < rows))  // avoid flickering, hide ripple when decay=255
       SEGMENT.setPixelColorXY(x, rows - previousBarHeight[x], (SEGCOLOR(2) != BLACK) ? SEGCOLOR(2) : ledColor);
 
     if (rippleTime && previousBarHeight[x]>0) previousBarHeight[x]--;    //delay/ripple effect
