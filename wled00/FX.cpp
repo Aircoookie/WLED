@@ -11042,7 +11042,7 @@ void mode_XmasTwinkle(void) {
   bool init = SEGMENT.call == 0 || SEGMENT.aux0 != numLights;      // first run or light count changed
   bool speedChanged = SEGMENT.aux1 != SEGMENT.speed;
   uint32_t interval = strip.now - SEGMENT.step;                    // unsigned math survives rollover
-  if (init || interval > 500) interval = 0;                        // ignores long gaps (time jumps)
+  if (init || interval > 1500) interval = 0;                       // ignore long gaps (time jumps)
 
   bool storedColor = SEGMENT.check1 || SEGMENT.custom2 == 255;     // use per-twinkler stored random index
   uint32_t colorspread = 256 + (numLights >> 2) * SEGMENT.custom2; // spread palette (0 = spread palette across the strip, higher = repeat)
@@ -11060,7 +11060,8 @@ void mode_XmasTwinkle(void) {
     int32_t t = l.nextEvent - (int32_t)interval;
     if (t <= 0) {
       l.isOn = !l.isOn; // toggle on/off state
-      uint16_t delay = hw_random16(l.isOn ? 100 : 500, twMaxCycle(l));   // on: 100.., off: 500..
+      uint16_t minCycle = l.isOn ? 100 : 500;
+      uint16_t delay = hw_random16(minCycle, max(minCycle, twMaxCycle(l)));
       if (l.isOn && SEGMENT.check1) l.colorIdx = hw_random8();
       t += delay;
       if (hw_random(20000) < delay) l.cycleQ = twRollCycle(SEGMENT.speed);  // new "character" every ~20 s on average
