@@ -2,6 +2,8 @@
 
 Synchronizes image files (`.gif`, `.bmp`) on the WLED file system (LittleFS) between all instances that share a sync group. Upload an image to one instance and every instance in the same sync group picks it up automatically.
 
+**ESP32 only** — packet authentication uses mbedtls, which is not available on ESP8266.
+
 ### How does it work?
 
 - Each instance periodically scans its file system and builds a manifest (path, size, modification time and CRC32 of every file).
@@ -26,21 +28,30 @@ On the Usermod Settings page:
 | enabled | on | Master switch for the usermod. |
 | port | 21325 | UDP port. Must not be 21324 or 65506 (used by WLED itself). |
 | scan | 60 | File system scan interval in seconds. |
-| pass | (empty) | Optional shared passphrase. When set, packets carry a CRC32 based tag and instances only sync when the passphrase matches. |
+| pass | (empty) | Shared passphrase. **Required for file transfers** — without it, instances only discover each other. When set, every packet carries a unix timestamp and a truncated HMAC-SHA256 tag keyed by the passphrase, so instances only sync when the passphrase matches. |
+
+#### Compile-time passphrase
+
+The passphrase can also be baked into the firmware as a default (used when none is configured at runtime), e.g. by adding `-D USERMOD_FS_SYNC_PASSPHRASE='"my-secret"'` to the build flags of the environment (e.g. via `platformio_override.ini`). Note that a compile-time passphrase is embedded in the firmware binary and can be extracted from it — it is a fleet-deployment convenience, not protection against someone who has the binary. A passphrase configured at runtime always takes precedence.
 
 Status (peers, files, sent/received counters, errors) is shown on the Info page (`/json/info` under `u` → `FS Sync`). A manual rescan can be triggered via the JSON API: `{"FS Sync":{"syncNow":true}}`.
 
 ### Requirements
 
-- All instances must run firmware with this usermod enabled, be on the same LAN subnet, and share a sync group (Sync settings → send/receive groups), exactly like the built-in state sync.
-- NTP time is recommended: modification times drive conflict resolution. Without it, ties are broken deterministically by unit ID, so sync still converges.
+- All instances must run firmware with this usermod enabled (ESP32 only), be on the same LAN subnet, share a sync group (Sync settings → send/receive groups) and run the same protocol version, exactly like the built-in state sync.
+- A shared passphrase is required for file transfers (see Configuration).
+- NTP time is recommended: modification times drive conflict resolution, and the packet timestamp replay protection only applies when both sides have a synced clock. Without NTP, ties are broken deterministically by unit ID, so sync still converges.
 
 ### Limitations
 
 - LittleFS has no change notifications; changes are detected by the periodic scan (or the `syncNow` API call).
+- Without NTP, the timestamp replay protection is skipped (HMAC authentication still applies).
+- While the OTA lock is enabled, the instance does not accept (or request) file transfers; it can still serve files to peers.
 - Concurrent edits of the same file on two instances converge to the newest modification time; a file being written while it is transferred may fail the CRC check and is retried on the next cycle.
 - Flash wear: files are only written when their content actually differs.
 
 ### Security note
 
-Like WLED's own UDP sync, this protocol is unauthenticated on the LAN (see `docs/hardening.instructions.md` — protocol-defined UDP broadcast channels are accepted in WLED's firewall-isolated LAN threat model). The optional passphrase adds a CRC32 based packet tag so unrelated instances (e.g. on a shared network) do not sync by accident; it is not strong authentication. Sync groups already scope traffic to instances you chose to sync with.
+File transfers require a shared passphrase. When set, every packet is authenticated with a truncated HMAC-SHA256 tag (keyed by the passphrase) over the header, payload and a unix timestamp; the timestamp bounds replay when both sides have a synced clock (NTP). Without a passphrase, no files are transferred in either direction, and while the OTA lock is enabled, incoming file writes are rejected. Sync groups already scope traffic to instances you chose to sync with.
+
+This is still a LAN protocol without TLS (see `docs/hardening.instructions.md` — WLED assumes a firewall-isolated deployment). The passphrase is a shared secret: it keeps out peers that do not know it, but it is not strong authentication — an attacker who captures traffic can attempt dictionary attacks against it, and the passphrase is stored in `cfg.json` on the device itself (like other usermod settings). Prefer a long random passphrase.
