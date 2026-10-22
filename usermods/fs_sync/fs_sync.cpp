@@ -610,20 +610,25 @@ class FsSyncUsermod : public Usermod {
       inActive = false;
     }
 
+    // re-request the current incoming file; gives up with an error once the retry limit is reached
+    void retryIncoming() {
+      if (inRetries < FS_SYNC_MAX_RETRIES) {
+        inRetries++;
+        inPending = true;
+        inLastMs = millis();
+        sendFileReq(inSrc, inPath);
+      } else {
+        inPending = false;
+        setError("transfer stalled");
+      }
+    }
+
     void serviceIncoming() {
       unsigned long now = millis();
       if (inPending || inActive) {
         if ((long)(now - inLastMs) > (long)FS_SYNC_STALL_MS) {
           abortIncoming();
-          if (inRetries < FS_SYNC_MAX_RETRIES) {
-            inRetries++;
-            inPending = true;
-            inLastMs = now;
-            sendFileReq(inSrc, inPath);
-          } else {
-            inPending = false;
-            setError("transfer stalled");
-          }
+          retryIncoming();
         }
         return;
       }
@@ -828,7 +833,11 @@ class FsSyncUsermod : public Usermod {
       inLastMs = millis();
       inTotal = total;
       inCrc = fcrc; // running crc, final value arrives with the last chunk
-      if (seq != inSeq) { abortIncoming(); return; } // out of order, retry via stall timeout
+      if (seq != inSeq) { // out of order (lost or reordered packet): re-request immediately
+        abortIncoming();
+        retryIncoming();
+        return;
+      }
       if (dLen) {
         if (inFile.write(p + 15, dLen) != (size_t)dLen) { abortIncoming(); return; }
         inRunCrc = fsSyncCrc32Update(inRunCrc, p + 15, dLen);
