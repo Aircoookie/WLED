@@ -1,6 +1,6 @@
 ## FS Sync usermod
 
-Synchronizes the content of the WLED file system (LittleFS) between all instances that share a sync group. Upload a file (preset, palette, GIF, ...) to one instance and every instance in the same sync group picks it up automatically.
+Synchronizes image files (`.gif`, `.bmp`) on the WLED file system (LittleFS) between all instances that share a sync group. Upload an image to one instance and every instance in the same sync group picks it up automatically.
 
 ### How does it work?
 
@@ -11,14 +11,9 @@ Synchronizes the content of the WLED file system (LittleFS) between all instance
 
 ### What is synced
 
-The whole file system, recursively — with a small exception list of files that are never synced:
+Only image files — `.gif` and `.bmp`, the formats the "Image" effect can display (see `image_loader.cpp`). The extension match is case-insensitive and applies to files in subdirectories as well.
 
-- `net.cfg` (WiFi credentials)
-- `sec.json` / `wsec.json` (security settings: passwords, tokens)
-- `/bkp.*` (WLED backup files)
-- `*.part` / `*.bak` (temporary files, including this usermod's own `.part` files)
-
-The device configuration `cfg.json` (pins, LED count, hostname, sync groups, ...) **is** synced when the `cfg` option is enabled (default on). Keep in mind that a received configuration only takes effect after the receiving instance reboots, and that it also carries device-specific values such as the device name and static IP settings — syncing it makes sense between instances with identical hardware.
+Everything else on the file system is never sent or received: the device configuration (`cfg.json`), security settings (`wsec.json`, which holds the WiFi passwords), presets, WLED backup files (`/bkp.*`) and temporary files (including this usermod's own `.part` files).
 
 File **deletions** are not propagated: deleting a file on one instance does not delete it on the others.
 
@@ -29,7 +24,6 @@ On the Usermod Settings page:
 | Setting | Default | Description |
 |---|---|---|
 | enabled | on | Master switch for the usermod. |
-| cfg | on | Also sync the device configuration (`cfg.json`). The received configuration is applied after the receiving instance reboots. |
 | port | 21325 | UDP port. Must not be 21324 or 65506 (used by WLED itself). |
 | scan | 60 | File system scan interval in seconds. |
 | pass | (empty) | Optional shared passphrase. When set, packets carry a CRC32 based tag and instances only sync when the passphrase matches. |
@@ -44,8 +38,6 @@ Status (peers, files, sent/received counters, errors) is shown on the Info page 
 ### Limitations
 
 - LittleFS has no change notifications; changes are detected by the periodic scan (or the `syncNow` API call).
-- A synced `cfg.json` is written to the file system but only applied after a reboot of the receiving instance (reboot it via the Info page or the JSON API). It contains device-specific values (device name, pin configuration, static IPs), so only sync it between identical instances.
-- `presets.json` is synced like any other file; the in-RAM/PSRAM preset cache is invalidated automatically when it arrives.
 - Concurrent edits of the same file on two instances converge to the newest modification time; a file being written while it is transferred may fail the CRC check and is retried on the next cycle.
 - Flash wear: files are only written when their content actually differs.
 
