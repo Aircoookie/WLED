@@ -8097,8 +8097,7 @@ void mode_2DSnakes() {
   const uint8_t snakeCount = (maxSnakeCount - 1) * SEGMENT.intensity / 255 + 1;
   const uint8_t snakeLength = max(SEGMENT.custom1 / 4, 1);
 
-  // Allocate based on the maximum possible size, to avoid constant reallocation
-  // while dragging the sliders.
+  // Allocate based on the maximum possible size, to avoid constant reallocation while dragging the sliders.
   size_t dataLen = sizeof(SnakeHead) * maxSnakeCount +
                    segW * segH * sizeof(SnakeCell)
                    + sizeof(uint8_t);
@@ -8130,12 +8129,13 @@ void mode_2DSnakes() {
           .moved = false,
       };
     }
-  } /* initialization */
+  }
 
   const bool smooth = SEGMENT.check1;
 
   uint32_t elapsed = strip.now - SEGENV.step;
   bool doMove = elapsed >= moveInterval;
+  // Update the position of each snake head.
   if (doMove) {
     SEGENV.step = strip.now;
     elapsed = 0;
@@ -8196,8 +8196,8 @@ void mode_2DSnakes() {
           SnakeCell{.snakeIndex = i,
                      // Will decrement immediately
                      .lifetime = static_cast<uint8_t>(snakeLength + 1u)};
-    } /* for head */
-  } /* move */
+    }
+  }
 
   if (!smooth && !doMove) return;
 
@@ -8220,8 +8220,7 @@ void mode_2DSnakes() {
         // The head should fade *in* rather than out, 0-255 over the move duration
         brightness = (smooth && head.moved) ? lerpAmount : 255;
       } else {
-        // Lerp between lifetime/snakeLength and (lifetime-1)/snakeLength, scaled
-        // to 0-255
+        // Lerp between lifetime/snakeLength and (lifetime-1)/snakeLength, scaled to 0-255
         brightness = (((cell.lifetime << 8) - lerpAmount) * scale) >> 16;
       }
       uint32_t color = color_fade(SEGMENT.color_from_palette(head.paletteIndex, false, false, 255), brightness);
