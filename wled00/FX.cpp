@@ -9854,7 +9854,7 @@ void mode_particleFireworks1D(void) {
       PartSys->sources[0].minLife = 180;
       PartSys->sources[0].maxLife = SEGMENT.check2 ? 700 : 240; // exhaust particle life
       PartSys->sources[0].source.x = SEGENV.aux0 * PartSys->maxX; // start from bottom or top
-      uint32_t speed = sqrt((gravity * ((PartSys->maxX >> 2) + hw_random16(PartSys->maxX >> 1))) >> 4); // set speed such that rocket explods in frame
+      uint32_t speed = sqrtf((gravity * ((PartSys->maxX >> 2) + hw_random16(PartSys->maxX >> 1))) >> 4); // set speed such that rocket explods in frame
       PartSys->sources[0].source.vx = min(speed, (uint32_t)127);
       PartSys->sources[0].source.ttl = 4000;
       PartSys->sources[0].sat = 30; // low saturation exhaust
