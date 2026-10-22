@@ -34,7 +34,7 @@ On the Usermod Settings page:
 
 The passphrase can also be baked into the firmware as a default (used when none is configured at runtime), e.g. by adding `-D USERMOD_FS_SYNC_PASSPHRASE='"my-secret"'` to the build flags of the environment (e.g. via `platformio_override.ini`). Note that a compile-time passphrase is embedded in the firmware binary and can be extracted from it — it is a fleet-deployment convenience, not protection against someone who has the binary. A passphrase configured at runtime always takes precedence.
 
-Status (peers, files, sent/received counters, errors) is shown on the Info page (`/json/info` under `u` → `FS Sync`). A manual rescan can be triggered via the JSON API: `{"FS Sync":{"syncNow":true}}`.
+Status (peers, files, sent/received counters, errors) is shown on the Info page as `FS Sync`-prefixed rows in `/json/info` under `u`. A manual rescan can be triggered via the JSON API: `{"FS Sync":{"syncNow":true}}`.
 
 ### Requirements
 

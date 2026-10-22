@@ -976,6 +976,22 @@ class FsSyncUsermod : public Usermod {
       o["sent"] = filesSent;
     }
 
+    void addToJsonInfo(JsonObject& root) override {
+      if (!initDone || !enabled) return;
+      // the Info page renders "u" as flat label/value rows; a string value must be
+      // wrapped in a single-element array or only its first two chars would show
+      // (same pattern as AHT10_v2)
+      JsonObject user = root[F("u")];
+      if (user.isNull()) user = root.createNestedObject(F("u"));
+      user[F("FS Sync peers")] = peerCount;
+      user[F("FS Sync files")] = manifestCnt;
+      user[F("FS Sync sent")] = filesSent;
+      user[F("FS Sync received")] = filesRecv;
+      user[F("FS Sync errors")] = errCount;
+      JsonArray err = user.createNestedArray(F("FS Sync last error"));
+      err.add(lastError);
+    }
+
     void readFromJsonState(JsonObject& root) override {
       if (!initDone || !enabled) return;
       JsonObject o = root[FPSTR(_name)];
