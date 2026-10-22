@@ -19,8 +19,9 @@
  * - Files are transferred in ~1300 byte UDP chunks, written to "<path>.part"
  *   and renamed over the target once size and CRC32 are verified.
  *
- * Only image files (.gif, .bmp) are synced - the formats the "Image" effect
- * can display (see image_loader.cpp). Everything else on the file system is
+ * Only image files (.gif, .bmp) are synced. The "Image" effect can display
+ * lowercase .gif files only (see image_loader.cpp); .bmp files are synced as
+ * plain file distribution. Everything else on the file system is
  * left alone: the device configuration (cfg.json), security settings
  * (wsec.json, which holds the WiFi passwords), presets, WLED backup files
  * (/bkp.*) and temporary files are never sent or received.

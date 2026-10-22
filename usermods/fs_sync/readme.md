@@ -13,7 +13,7 @@ Synchronizes image files (`.gif`, `.bmp`) on the WLED file system (LittleFS) bet
 
 ### What is synced
 
-Only image files — `.gif` and `.bmp`, the formats the "Image" effect can display (see `image_loader.cpp`). The extension match is case-insensitive and applies to files in subdirectories as well.
+Only image files — `.gif` and `.bmp`. The "Image" effect can display lowercase `.gif` files only (see `image_loader.cpp`); `.bmp` files are synced as plain file distribution. The extension match is case-insensitive and applies to files in subdirectories as well.
 
 Everything else on the file system is never sent or received: the device configuration (`cfg.json`), security settings (`wsec.json`, which holds the WiFi passwords), presets, WLED backup files (`/bkp.*`) and temporary files (including this usermod's own `.part` files).
 
@@ -40,7 +40,7 @@ Status (peers, files, sent/received counters, errors) is shown on the Info page 
 
 - All instances must run firmware with this usermod enabled (ESP32 only), be on the same LAN subnet, share a sync group (Sync settings → send/receive groups) and run the same protocol version, exactly like the built-in state sync.
 - A shared passphrase is required for file transfers (see Configuration).
-- NTP time is recommended: modification times drive conflict resolution, and the packet timestamp replay protection only applies when both sides have a synced clock. Without NTP, ties are broken deterministically by unit ID, so sync still converges.
+- NTP time is recommended: modification times drive conflict resolution, and the packet timestamp replay protection only applies when both sides have a synced clock. The later modification time wins even if a device clock is ahead, so the winning file may be the older edit; the unit ID breaks only exact modification-time ties.
 
 ### Limitations
 
