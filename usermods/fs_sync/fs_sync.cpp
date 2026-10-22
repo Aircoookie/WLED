@@ -983,6 +983,10 @@ class FsSyncUsermod : public Usermod {
       // (same pattern as AHT10_v2)
       JsonObject user = root[F("u")];
       if (user.isNull()) user = root.createNestedObject(F("u"));
+      // "Sync now" button: requestJson() sends {"FS Sync":{"syncNow":true}} to the
+      // state API; readFromJsonState() picks it up and triggers a rescan + announce
+      JsonArray btn = user.createNestedArray(F("FS Sync action"));
+      btn.add(F("<button class=\"btn btn-xs\" onclick=\"requestJson({'FS Sync':{'syncNow':true}});\">Sync now</button>"));
       user[F("FS Sync peers")] = peerCount;
       user[F("FS Sync files")] = manifestCnt;
       user[F("FS Sync sent")] = filesSent;
