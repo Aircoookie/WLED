@@ -561,7 +561,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (!apActive && apMode) WLED::instance().initAP();  // start AP mode immediately
     else if (apActive && !apMode) { // stop AP mode immediately
       dnsServer.stop();
-      WiFi.softAPdisconnect(true);
+      WLED_SOFTAP_STOP();
       apActive = false;
     }
     //bool restart = wifi[F("restart")] | false;

@@ -834,14 +834,15 @@ void WLED::initConnection()
   // (root cause: LwipIntfDev::begin() - the underlying network interface start routine -
   // silently refuses to (re)start while its internal "_started" bookkeeping is left set
   // from AP_STA setup, with no error surfaced up through WiFiClass). Cleanly exit AP mode
-  // first so the STA interface gets a genuine fresh start.
+  // first so the STA interface gets a genuine fresh start. disconnectAP() is called even
+  // when apActive is false: it is a no-op if no AP is running, and guarantees the radio is
+  // never left serving an AP (on its own channel) while the STA tries to join the router.
   if (apActive) {
     DEBUG_PRINTLN(F("WiFi mode reset: leaving AP mode before STA join."));
     dnsServer.stop();
-    WiFi.softAPdisconnect(true);
     apActive = false;
-    delay(5);
   }
+  if (WLED_SOFTAP_STOP()) delay(5);
   WiFi.mode(WIFI_STA);
   delay(5);
 #endif
@@ -877,7 +878,7 @@ void WLED::initConnection()
       initAP();
     } else {
       DEBUG_PRINTLN(F("Access point disabled (init)."));
-      WiFi.softAPdisconnect(true);
+      WLED_SOFTAP_STOP();
       WiFi.mode(WIFI_STA);
       #if defined(SOC_WIFI_SUPPORT_5G) && (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 2))
       if (!WiFi.setBandMode((wifi_band_mode_t)wifiBandMode)) {
@@ -940,6 +941,12 @@ void WLED::initConnection()
     }
     #ifdef ARDUINO_ARCH_RP2040
     WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass, bssid); // no channel argument on this platform
+    // The 802.11 join inside WiFi.begin() is synchronous on arduino-pico (CYW43::begin()
+    // polls for up to WiFi's 15s timeout); only DHCP runs in the background afterwards.
+    // Restart the reconnect/AP-fallback timers from here, otherwise a slow join eats
+    // most of the 12s window and initAP() fires mid-DHCP - and on this platform softAP()
+    // in WIFI_AP mode calls WiFi.end(), tearing down the STA link that just came up.
+    lastReconnectAttempt = millis();
     #else
     WiFi.begin(multiWiFi[selectedWiFi].clientSSID, multiWiFi[selectedWiFi].clientPass, 0, bssid); // no harm if called multiple times
     #endif
@@ -1063,7 +1070,7 @@ void WLED::handleConnection()
 #ifdef ESP8266
     stac = wifi_softap_get_station_num();
 #elif defined(ARDUINO_ARCH_RP2040)
-    // no AP-client-count query wired up on this platform yet
+    stac = WiFi.softAPgetStationNum();
 #else
     wifi_sta_list_t stationList;
     esp_wifi_ap_get_sta_list(&stationList);
@@ -1075,8 +1082,12 @@ void WLED::handleConnection()
       if (!WLEDNetwork.isConnected() && wifiConfigured) {        // trying to connect, but not connected
         if (stac)
           WiFi.disconnect();        // disable search so that AP can work
-        else
+        else {
           initConnection();         // restart search
+          #ifdef ARDUINO_ARCH_RP2040
+          return;                   // same stale-`now` underflow as below - see the comment there
+          #endif
+        }
       }
     }
   }
@@ -1106,6 +1117,13 @@ void WLED::handleConnection()
       DEBUG_PRINTF_P(PSTR("Last reconnect (%lus) too old (@ %lus).\n"), lastReconnectAttempt/1000, nowS);
       if (++selectedWiFi >= multiWiFi.size()) selectedWiFi = 0; // we couldn't connect, try with another network from the list
       initConnection();
+      #ifdef ARDUINO_ARCH_RP2040
+      // initConnection() just set lastReconnectAttempt *after* `now` was sampled, so
+      // `now - lastReconnectAttempt` below would underflow to a huge value and open the
+      // AP in this very call. On arduino-pico that softAP() tears down the STA join that
+      // was just started. Defer the remaining checks to the next loop iteration.
+      return;
+      #endif
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
       if (!(apBehavior == AP_BEHAVIOR_TEMPORARY && now > WLED_AP_TIMEOUT)) {
@@ -1117,7 +1135,7 @@ void WLED::handleConnection()
       // if AP was enabled more than 10min after boot or if client was connected more than 10min after boot do not disconnect AP mode
       if (now < 2*WLED_AP_TIMEOUT) {
         dnsServer.stop();
-        WiFi.softAPdisconnect(true);
+        WLED_SOFTAP_STOP();
         apActive = false;
         DEBUG_PRINTF_P(PSTR("Temporary AP disabled (@ %lus).\n"), nowS);
       }
@@ -1169,7 +1187,7 @@ void WLED::handleConnection()
     // shut down AP
     if (apBehavior != AP_BEHAVIOR_ALWAYS && apActive) {
       dnsServer.stop();
-      WiFi.softAPdisconnect(true);
+      WLED_SOFTAP_STOP();
       apActive = false;
       DEBUG_PRINTLN(F("Access point disabled (connected)."));
     }

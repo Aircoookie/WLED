@@ -631,6 +631,17 @@ void serveJsonError(AsyncWebServerRequest* request, uint16_t code, uint16_t erro
 #else
   #define WLED_DEFER_OR_BUSY(request) (request)->deferResponse()
 #endif
+
+// arduino-pico's WiFi.softAPdisconnect() only stops the AP when the mode is WIFI_AP_STA.
+// In plain WIFI_AP mode (what initAP() leaves behind on RP2040) it calls disconnect()
+// instead, which stops the STA side only - the AP radio and its DHCP server keep running
+// while WLED believes apActive == false. disconnectAP() always stops the AP (and is a
+// harmless no-op when no AP is running), leaving any STA connection untouched.
+#ifdef ARDUINO_ARCH_RP2040
+  #define WLED_SOFTAP_STOP() WiFi.disconnectAP()
+#else
+  #define WLED_SOFTAP_STOP() WiFi.softAPdisconnect(true)
+#endif
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
 void serveSettingsJS(AsyncWebServerRequest* request);
 
