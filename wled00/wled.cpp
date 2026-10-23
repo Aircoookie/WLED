@@ -83,16 +83,23 @@ void WLED::loop()
   unsigned long        stripMillis;
 #endif
 
+  #ifdef ARDUINO_ARCH_RP2040
+  wledWatchdogLoopBeat();
+  #endif
+  WLED_CRUMB(CRUMB_TIME);
   handleTime();
   #ifndef WLED_DISABLE_INFRARED
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   #endif
+  WLED_CRUMB(CRUMB_CONNECTION);
   handleConnection();
   #ifdef WLED_ENABLE_ADALIGHT
   handleSerial();
   #endif
   handleImprovWifiScan();
+  WLED_CRUMB(CRUMB_NOTIFICATIONS);
   handleNotifications();
+  WLED_CRUMB(CRUMB_TRANSITIONS);
   handleTransitions();
   #ifdef WLED_ENABLE_DMX
   handleDMXOutput();
@@ -104,6 +111,7 @@ void WLED::loop()
   #ifdef WLED_DEBUG
   unsigned long usermodMillis = millis();
   #endif
+  WLED_CRUMB(CRUMB_USERMODS);
   userLoop();
   UsermodManager::loop();
   #ifdef WLED_DEBUG
@@ -113,6 +121,7 @@ void WLED::loop()
   #endif
 
   yield();
+  WLED_CRUMB(CRUMB_IO);
   handleIO();
   #ifndef WLED_DISABLE_INFRARED
   handleIR();
@@ -134,10 +143,12 @@ void WLED::loop()
   #endif
   if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly))  // block stuff if WARLS/Adalight is enabled
   {
+    WLED_CRUMB(CRUMB_DNS);
     if (apActive) dnsServer.processNextRequest();
     #ifdef WLED_ENABLE_AOTA
     if (WLEDNetwork.isConnected() && aOtaEnabled && !otaLock && correctPIN) ArduinoOTA.handle();
     #endif
+    WLED_CRUMB(CRUMB_PRESETS);
     handleNightlight();
     yield();
 
@@ -153,6 +164,7 @@ void WLED::loop()
     handlePresets();
     yield();
 
+    WLED_CRUMB(CRUMB_STRIP);
     if (!offMode || strip.isOffRefreshRequired() || strip.needsUpdate())
       strip.service();
     #ifdef ESP8266
@@ -167,6 +179,7 @@ void WLED::loop()
   #endif
 
   yield();
+  WLED_CRUMB(CRUMB_HOUSEKEEPING);
 #ifdef ESP8266
   MDNS.update();
 #endif
@@ -255,15 +268,18 @@ void WLED::loop()
     loadLedmap = -1;
   }
   yield();
+  WLED_CRUMB(CRUMB_CFGWRITE);
   if (configNeedsWrite) serializeConfigToFS();
 
   yield();
+  WLED_CRUMB(CRUMB_WS);
   handleWs();
 #if defined(STATUSLED)
   handleStatusLED();
 #endif
 
   toki.resetTick();
+  WLED_CRUMB(CRUMB_LOOPEND);
 
 #if WLED_WATCHDOG_TIMEOUT > 0
   // we finished our mainloop, reset the watchdog timer
@@ -333,6 +349,7 @@ void WLED::loop()
     // WiFi.status() can report WL_CONNECTED here even after the radio has actually
     // dropped the join - cyw43_wifi_link_status() is the real link-layer state.
     DEBUG_PRINTF_P(PSTR("cyw43 link state: %d\n"), cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA));
+    DEBUG_PRINTF_P(PSTR("Last reset: %s\n"), wledResetReason());
     #endif
     #ifndef WLED_DISABLE_ESPNOW
     DEBUG_PRINTF_P(PSTR("ESP-NOW state: %u\n"), statusESPNow);
@@ -672,6 +689,10 @@ void WLED::setup()
 
   #if WLED_WATCHDOG_TIMEOUT > 0
   enableWatchdog();
+  #endif
+  #ifdef ARDUINO_ARCH_RP2040
+  wledWatchdogBegin(); // always on here: without it a lockup needs a power-cycle (see compat_rp2040.h)
+  DEBUG_PRINTF_P(PSTR("Last reset: %s\n"), wledResetReason());
   #endif
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)

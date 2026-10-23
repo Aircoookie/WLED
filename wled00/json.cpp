@@ -901,6 +901,9 @@ void serializeInfo(JsonObject root)
   root[F("psrSz")] = (ESP.getPsramSize() + (1024U * 1024U - 1)) / (1024U * 1024U); 
   #endif
   root[F("uptime")] = millis()/1000 + getRolloverMillis()*4294967;
+  #ifdef ARDUINO_ARCH_RP2040
+  root[F("resetReason")] = wledResetReason(); // post-mortem for hangs/crashes, see compat_rp2040.h
+  #endif
 
   char time[32];
   getTimeString(time);

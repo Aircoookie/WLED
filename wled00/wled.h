@@ -117,6 +117,7 @@
   #include <Hash.h> // arduino-pico bundles the same Hash.h as ESP8266 (sha1() etc.)
   #include "compat_content_types_rp2040.h"
   #include "compat_rp2040.h"
+  #define WLED_CRUMB(c) wledCrumb(c)
   #ifndef OUTPUT_OPEN_DRAIN
     #define OUTPUT_OPEN_DRAIN OUTPUT_OPENDRAIN // arduino-pico spells this without the underscore
   #endif
@@ -234,6 +235,10 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #define USE_GET_MILLISECOND_TIMER
+
+#ifndef WLED_CRUMB
+  #define WLED_CRUMB(c) // loop()-phase breadcrumbs for post-mortem hang diagnostics, RP2040 only (compat_rp2040.h)
+#endif
 
 #include "const.h"
 #ifndef WLED_DISABLE_ESPNOW
