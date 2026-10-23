@@ -9,13 +9,13 @@ Synchronizes image files (`.gif`, `.bmp`) on the WLED file system (LittleFS) bet
 - Each instance periodically scans its file system and builds a manifest (path, size, modification time and CRC32 of every file).
 - The manifest checksum is announced to the subnet broadcast address on a dedicated UDP port (default 21325). Announcements carry the sender's sync groups and are only accepted by instances whose receive groups intersect — the same semantics as the built-in WLED state sync.
 - An instance seeing a different manifest requests the full manifest, diffs it against its local file system and pulls every file that is missing locally or older than the remote copy. The newest modification time wins; ties are broken by the higher unit ID (last IP octet), so both sides always agree on the winner.
-- Files are transferred in ~1300 byte UDP chunks, written to `<path>.part` and renamed over the target once size and CRC32 are verified.
+- Files are transferred in ~1300 byte UDP chunks, written to `<path>.part` and renamed over the target once size and CRC32 are verified. The file system API cannot set a file's modification time, so the winning modification time of a received file is recorded in a small local sidecar file (`/fssync.meta`) and reused while the file is unchanged — this keeps the manifests of instances that synced the same file identical.
 
 ### What is synced
 
 Only image files — `.gif` and `.bmp`. The "Image" effect can display lowercase `.gif` files only (see `image_loader.cpp`); `.bmp` files are synced as plain file distribution. The extension match is case-insensitive and applies to files in subdirectories as well.
 
-Everything else on the file system is never sent or received: the device configuration (`cfg.json`), security settings (`wsec.json`, which holds the WiFi passwords), presets, WLED backup files (`/bkp.*`) and temporary files (including this usermod's own `.part` files).
+Everything else on the file system is never sent or received: the device configuration (`cfg.json`), security settings (`wsec.json`, which holds the WiFi passwords), presets, WLED backup files (`/bkp.*`), this usermod's metadata sidecar (`/fssync.meta`) and temporary files (including its own `.part` files).
 
 File **deletions** are not propagated: deleting a file on one instance does not delete it on the others.
 

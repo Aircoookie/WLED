@@ -17,7 +17,11 @@
  *   time wins; ties are broken by the higher unit ID (last IP octet), so both
  *   sides always agree on the winner.
  * - Files are transferred in ~1300 byte UDP chunks, written to "<path>.part"
- *   and renamed over the target once size and CRC32 are verified.
+ *   and renamed over the target once size and CRC32 are verified. The FS API
+ *   cannot set a file's modification time, so the winning mtime of a received
+ *   file is recorded in a small local sidecar file (/fssync.meta) and reused
+ *   while the file is unchanged; this keeps manifests identical across
+ *   instances that synced the same file.
  *
  * Only image files (.gif, .bmp) are synced. The "Image" effect can display
  * lowercase .gif files only (see image_loader.cpp); .bmp files are synced as
@@ -68,6 +72,8 @@ static const unsigned long FS_SYNC_STALL_MS        = 10000; // incoming transfer
 static const unsigned long FS_SYNC_REQ_COOLDOWN_MS = 5000;  // min. time between manifest requests per peer
 static const unsigned long FS_SYNC_MIN_ANNOUNCE_MS = 5000;  // min. time between announcements
 static const uint8_t  FS_SYNC_MAX_RETRIES = 2;
+static const char     FS_SYNC_META_FILE[] = "/fssync.meta";     // persistent sidecar: canonical mtimes of synced files
+static const char     FS_SYNC_META_TMP[]  = "/fssync.meta.tmp"; // written first, then renamed over the sidecar
 
 enum FsSyncMsgType : uint8_t {
   FS_SYNC_MSG_ANNOUNCE     = 1, // broadcast: u32 manifestCrc, u16 fileCount
@@ -140,6 +146,17 @@ struct FsSyncEntry {
   bool     seen  = false; // set during scans, used to drop vanished files
 };
 
+// persistent sidecar entry: the FS API has no mtime setter, so the winning
+// (remote) manifest mtime of a received file is recorded here and reused while
+// the file's size and FS mtime are unchanged
+struct FsSyncMeta {
+  char     path[FS_SYNC_MAX_PATH + 1];
+  uint32_t size    = 0; // file size when the entry was recorded
+  uint32_t fsMtime = 0; // FS modification time when recorded (detects local rewrites)
+  uint32_t mtime   = 0; // canonical (winning) manifest mtime
+  uint32_t crc     = 0;
+};
+
 struct FsSyncPeer {
   IPAddress ip;
   uint8_t   unitId        = 0;
@@ -165,6 +182,8 @@ class FsSyncUsermod : public Usermod {
 
     // local manifest (cached CRC32 per file, recomputed only when size/mtime changed)
     std::vector<FsSyncEntry> entries;
+    std::vector<FsSyncMeta>  meta; // persistent sidecar (/fssync.meta): canonical mtimes of synced files
+    bool     metaLoaded = false;
     uint32_t manifestCrc = 0;
     uint16_t manifestCnt = 0;
     bool     scanActive  = false;
@@ -214,6 +233,7 @@ class FsSyncUsermod : public Usermod {
     uint16_t  inSeq     = 0;
     uint32_t  inTotal   = 0;
     uint32_t  inCrc     = 0;
+    uint32_t  inMtime   = 0; // winning (remote) mtime of the file being received
     uint32_t  inGot     = 0;
     uint32_t  inRunCrc  = 0;
     File      inFile;
@@ -230,6 +250,7 @@ class FsSyncUsermod : public Usermod {
     // incoming request queue
     char      wantList[FS_SYNC_WANT_MAX][FS_SYNC_MAX_PATH + 1];
     IPAddress wantPeer[FS_SYNC_WANT_MAX];
+    uint32_t  wantMtime[FS_SYNC_WANT_MAX]; // winning (remote) mtime per queued pull
     uint8_t   wantCount = 0;
 
     // stats
@@ -253,10 +274,10 @@ class FsSyncUsermod : public Usermod {
       errCount++;
     }
 
-    // only image files are synced (the formats the "Image" effect can display,
-    // see image_loader.cpp); everything else - device configuration, wsec.json
-    // with the WiFi passwords, presets, backups, temporary files - is never
-    // sent or received
+    // only image files are synced; the "Image" effect can display lowercase
+    // .gif only (see image_loader.cpp), .bmp files are distributed as plain
+    // files; everything else - device configuration, wsec.json with the WiFi
+    // passwords, presets, backups, temporary files - is never sent or received
     bool fsSyncPathOk(const char *path) {
       if (!path || path[0] != '/') return false;
       size_t len = strlen(path);
@@ -449,6 +470,12 @@ class FsSyncUsermod : public Usermod {
       uint32_t mt = f.getLastWrite();
       f.close();
       if (!fsSyncPathOk(path)) return;
+      FsSyncMeta *m = findMeta(path);
+      if (m && m->size == sz && m->fsMtime == mt) {
+        upsertEntry(path, sz, m->mtime, m->crc); // untouched since install: reuse canonical mtime + CRC32
+        return;
+      }
+      if (m) dropMeta(path); // changed locally since install: canonical mtime no longer applies
       FsSyncEntry *e = findEntry(path);
       if (e) {
         e->seen = true;
@@ -467,6 +494,11 @@ class FsSyncUsermod : public Usermod {
       for (size_t i = 0; i < entries.size();) {
         if (!entries[i].seen) entries.erase(entries.begin() + i); else i++; // file vanished
       }
+      bool metaChanged = false;
+      for (size_t i = 0; i < meta.size();) {
+        if (!findEntry(meta[i].path)) { meta.erase(meta.begin() + i); metaChanged = true; } else i++; // synced file vanished
+      }
+      if (metaChanged) saveMeta();
       recomputeManifestCrc();
       scanActive = false;
       announcePending = true;
@@ -637,9 +669,11 @@ class FsSyncUsermod : public Usermod {
         strncpy(inPath, wantList[0], FS_SYNC_MAX_PATH);
         inPath[FS_SYNC_MAX_PATH] = 0;
         inSrc = wantPeer[0];
+        inMtime = wantMtime[0];
         for (uint8_t i = 0; i + 1 < wantCount; i++) {
           strcpy(wantList[i], wantList[i + 1]);
           wantPeer[i] = wantPeer[i + 1];
+          wantMtime[i] = wantMtime[i + 1];
         }
         wantCount--;
         inRetries = 0;
@@ -649,12 +683,80 @@ class FsSyncUsermod : public Usermod {
       }
     }
 
-    // update the local manifest cache after a file was received
-    void touchLocal(const char *path, uint32_t size, uint32_t crc) {
+    // ---- persistent sidecar with the canonical (winning) mtimes of synced files ----
+    // The FS API cannot set a file's modification time, so the mtime that won
+    // conflict resolution is recorded in /fssync.meta and reused while the file's
+    // size and FS mtime are unchanged; this keeps manifests identical across
+    // instances that synced the same file.
+
+    FsSyncMeta *findMeta(const char *path) {
+      for (auto &m : meta) if (!strcmp(m.path, path)) return &m;
+      return nullptr;
+    }
+
+    void loadMeta() {
+      meta.clear();
+      if (!WLED_FS.exists(FS_SYNC_META_FILE)) return;
+      File f = WLED_FS.open(FS_SYNC_META_FILE, "r");
+      if (!f) return;
+      DynamicJsonDocument doc(FS_SYNC_MAX_FILES * 256 + 512); // node memory scales with entry count, not text length
+      bool ok = !deserializeJson(doc, f);
+      f.close();
+      if (!ok) return;
+      for (JsonPair kv : doc.as<JsonObject>()) {
+        JsonArray a = kv.value().as<JsonArray>();
+        if (a.size() != 4 || !fsSyncPathOk(kv.key().c_str())) continue;
+        if (meta.size() >= FS_SYNC_MAX_FILES) break;
+        FsSyncMeta m;
+        strncpy(m.path, kv.key().c_str(), FS_SYNC_MAX_PATH);
+        m.path[FS_SYNC_MAX_PATH] = 0;
+        m.size = a[0].as<uint32_t>(); m.fsMtime = a[1].as<uint32_t>();
+        m.mtime = a[2].as<uint32_t>(); m.crc = a[3].as<uint32_t>();
+        meta.push_back(m);
+      }
+    }
+
+    void saveMeta() {
+      File f = WLED_FS.open(FS_SYNC_META_TMP, "w");
+      if (!f) return;
+      DynamicJsonDocument doc(meta.size() * 256 + 512);
+      JsonObject root = doc.to<JsonObject>();
+      for (auto &m : meta) {
+        JsonArray a = root.createNestedArray(m.path);
+        a.add(m.size); a.add(m.fsMtime); a.add(m.mtime); a.add(m.crc);
+      }
+      serializeJson(doc, f);
+      f.close();
+      WLED_FS.rename(FS_SYNC_META_TMP, FS_SYNC_META_FILE); // rename replaces an existing file
+    }
+
+    void setMeta(const char *path, uint32_t size, uint32_t fsMtime, uint32_t mtime, uint32_t crc) {
+      FsSyncMeta *m = findMeta(path);
+      if (!m) {
+        if (meta.size() >= FS_SYNC_MAX_FILES) return;
+        meta.push_back(FsSyncMeta());
+        m = &meta.back();
+        strncpy(m->path, path, FS_SYNC_MAX_PATH);
+        m->path[FS_SYNC_MAX_PATH] = 0;
+      }
+      m->size = size; m->fsMtime = fsMtime; m->mtime = mtime; m->crc = crc;
+      saveMeta();
+    }
+
+    void dropMeta(const char *path) {
+      for (size_t i = 0; i < meta.size(); i++) {
+        if (!strcmp(meta[i].path, path)) { meta.erase(meta.begin() + i); saveMeta(); return; }
+      }
+    }
+
+    // update the local manifest cache after a file was received; mtime is the
+    // winning (remote) manifest mtime, recorded in the sidecar (see above)
+    void touchLocal(const char *path, uint32_t size, uint32_t mtime, uint32_t crc) {
       File f = WLED_FS.open(path, "r");
-      uint32_t mtime = f ? (uint32_t)f.getLastWrite() : 0;
+      uint32_t fsMtime = f ? (uint32_t)f.getLastWrite() : 0;
       if (f) f.close();
       upsertEntry(path, size, mtime, crc);
+      setMeta(path, size, fsMtime, mtime, crc);
       recomputeManifestCrc();
       announcePending = true;
       announceAtMs = millis() + 2000;
@@ -737,8 +839,13 @@ class FsSyncUsermod : public Usermod {
         if (f) f.close();
         bool haveCrc = false;
         uint32_t lCrc = 0;
-        FsSyncEntry *e = findEntry(path);
-        if (e && e->size == lSize && e->mtime == lMtime) { lCrc = e->crc; haveCrc = true; } // fresh cache entry
+        FsSyncMeta *m = findMeta(path);
+        if (m && m->size == lSize && m->fsMtime == lMtime) {
+          lMtime = m->mtime; lCrc = m->crc; haveCrc = true; // canonical values of a synced file
+        } else {
+          FsSyncEntry *e = findEntry(path);
+          if (e && e->size == lSize && e->mtime == lMtime) { lCrc = e->crc; haveCrc = true; } // fresh cache entry
+        }
         if (lSize != size) {
           want = remoteWins(mtime, lMtime, senderId);
         } else if (haveCrc && lCrc == crc) {
@@ -751,6 +858,7 @@ class FsSyncUsermod : public Usermod {
       strncpy(wantList[wantCount], path, FS_SYNC_MAX_PATH);
       wantList[wantCount][FS_SYNC_MAX_PATH] = 0;
       wantPeer[wantCount] = src;
+      wantMtime[wantCount] = mtime; // winning mtime, becomes canonical once installed
       wantCount++;
     }
 
@@ -850,13 +958,12 @@ class FsSyncUsermod : public Usermod {
         inOpened = false;
         bool ok = (inGot == inTotal) && (inRunCrc == inCrc);
         if (ok) {
-          if (WLED_FS.exists(inPath)) WLED_FS.remove(inPath);
-          ok = WLED_FS.rename(inPart, inPath);
+          ok = WLED_FS.rename(inPart, inPath); // LittleFS rename replaces an existing target
         }
         if (ok) {
           filesRecv++;
           DEBUG_PRINTF("FS Sync: received %s (%u bytes)\n", inPath, (unsigned)inTotal);
-          touchLocal(inPath, inTotal, inCrc);
+          touchLocal(inPath, inTotal, inMtime, inCrc);
         } else {
           WLED_FS.remove(inPart);
           setError("crc/size mismatch");
@@ -917,6 +1024,7 @@ class FsSyncUsermod : public Usermod {
 
     void connected() override {
       if (!enabled) return;
+      if (!metaLoaded) { loadMeta(); metaLoaded = true; }
       udpStarted = udp.begin(port);
       if (udpStarted) {
         // first scan (and announcement) shortly after connecting
