@@ -740,6 +740,25 @@ class FsSyncUsermod : public Usermod {
         setError("metadata save failed");
         return;
       }
+      // validate the persisted contents before replacing the sidecar
+      String expected;
+      expected.reserve(measureJson(doc));
+      serializeJson(doc, expected);
+      File v = WLED_FS.open(FS_SYNC_META_TMP, "r");
+      if (!v) {
+        WLED_FS.remove(FS_SYNC_META_TMP);
+        setError("metadata save failed");
+        return;
+      }
+      String persisted;
+      persisted.reserve(v.size());
+      while (v.available()) persisted += (char)v.read();
+      v.close();
+      if (persisted != expected) {
+        WLED_FS.remove(FS_SYNC_META_TMP);
+        setError("metadata save failed");
+        return;
+      }
       if (!WLED_FS.rename(FS_SYNC_META_TMP, FS_SYNC_META_FILE)) { // rename replaces an existing file
         WLED_FS.remove(FS_SYNC_META_TMP);
         setError("metadata save failed");
