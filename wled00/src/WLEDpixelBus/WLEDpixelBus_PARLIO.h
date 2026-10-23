@@ -90,6 +90,7 @@ If a future target names it differently, adjust the PARLIO_HW macro below.
 #endif
 
 #ifdef SOC_PARLIO_SUPPORTED
+#define WLEDPB_PARLIO_SUPPORT
 
 #include "driver/parlio_tx.h"
 #include "driver/gpio.h"

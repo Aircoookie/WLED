@@ -42,8 +42,9 @@ TODO List
 - use chip capabilities instead of individual target ifdefs in buswrapper
 - ESP8266 UART and I2S buses show() return false instead of waiting which is inconsistent
 - SM16825_SUFFIX should be made dynamic to increase color range at lower brightness (scale with global brightness)
-- The config rework is unfinished: with the updated workflow the goal is to fully drop "custom" bus handling and tread every bus the same (UI needs rework to do that)
-- RMT driver uses stock encoders (could maybe made faster using custom ones) and high priority interrupts currently disabled
+- The config rework is unfinished: with the updated workflow the goal is to fully drop "custom" bus handling and tread every bus the same (UI needs rework to do that) -> done now, needs testing and refinement
+- RMT driver uses stock encoders (could maybe made faster using custom ones) and high priority interrupts currently disabled -> WIP, needs more testing
+- the bus capability definitions in const.h should probably be moved to driver level or use driver level constants instead of "overriding" low level hardware capabilities
 */
 
 
