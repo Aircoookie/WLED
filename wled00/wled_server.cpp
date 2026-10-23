@@ -519,7 +519,7 @@ void initServer()
     if (request->_tempObject) {
       auto ota_result = getOTAResult(request);
       if (ota_result.first == OTAResultStatus::TryAgain) {
-        request->deferResponse();
+        WLED_DEFER_OR_BUSY(request); // TryAgain currently only happens via SUPPORT_GZIPPED_OTA, not enabled on RP2040
       } else if (ota_result.first == OTAResultStatus::Ready) {
         if (ota_result.second.length() > 0) {
           serveMessage(request, 500, F("Update failed!"), ota_result.second, 254);

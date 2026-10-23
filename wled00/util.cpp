@@ -1170,6 +1170,9 @@ void handleBootLoop() {
 // but wiring it up correctly needs real hardware to verify against - not done here rather
 // than guess at unverified behavior. Bootloop recovery is simply not available yet.
 void handleBootLoop() {}
+// OTA does call in to let the (not-yet-implemented) bootloop checker know an update
+// happened, so it needs a real (no-op) definition here rather than none at all.
+void bootloopCheckOTA() {}
 #endif
 
 /*

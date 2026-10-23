@@ -20,6 +20,18 @@ String wledBSSIDstr(int16_t networkItem) {
 
 void     WledESPCompat::restart()      { rp2040.restart(); }
 uint32_t WledESPCompat::getFreeHeap()  { return rp2040.getFreeHeap(); }
+
+// ESP32/ESP8266's ESP.getFreeSketchSpace(): remaining room for a new firmware image.
+// arduino-pico has no equivalent call, but the linker already gives us both ends of
+// that region as symbols - __flash_binary_end (where this build's own image actually
+// ends) and _FS_start (where the LittleFS partition begins, see platformio.ini's
+// board_build.filesystem_size) - so this is a real measurement, not a guess.
+extern "C" uint8_t _FS_start;
+extern "C" uint8_t __flash_binary_end;
+uint32_t WledESPCompat::getFreeSketchSpace() {
+  return (uint32_t)&_FS_start - (uint32_t)&__flash_binary_end;
+}
+
 WledESPCompat ESP;
 
 #endif

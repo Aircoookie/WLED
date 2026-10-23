@@ -1,8 +1,6 @@
 #include "ota_update.h"
 #include "wled.h"
 
-#ifndef ARDUINO_ARCH_RP2040
-
 #ifdef ESP32
 #include <esp_app_format.h>
 #include <esp_ota_ops.h>
@@ -11,7 +9,7 @@
 
 // Platform-specific metadata locations
 constexpr size_t METADATA_OFFSET = 256;          // ESP32: metadata appears after Espressif metadata
-#define UPDATE_ERROR errorString
+#define UPDATE_ERROR_STR(u) (u).errorString()
 
 // Bootloader is at fixed offset 0x1000 (4KB), 0x0000 (0KB), or 0x2000 (8KB), and is typically 32KB
 // Bootloader offsets for different MCUs => see https://github.com/wled/WLED/issues/5064
@@ -30,8 +28,38 @@ constexpr size_t BOOTLOADER_SIZE   = 0x8000; // 32KB, typical bootloader size
 
 #elif defined(ESP8266)
 constexpr size_t METADATA_OFFSET = 0x1000;     // ESP8266: metadata appears at 4KB offset
-#define UPDATE_ERROR getErrorString
+#define UPDATE_ERROR_STR(u) (u).getErrorString()
 #define SUPPORT_GZIPPED_OTA
+
+#elif defined(ARDUINO_ARCH_RP2040)
+// Same assumption as ESP8266: BUILD_METADATA_SECTION (see ota_update.h) places
+// WLED_BUILD_DESCRIPTION near the front of the image, so look for it in the same
+// window. Unlike ESP32/ESP8266, arduino-pico's linker doesn't guarantee a *fixed*
+// section placement here (we use plain .rodata, see ota_update.h) - if the linker
+// ever puts it further out, validateOTA() will report "missing compatibility
+// metadata" and the update needs "Ignore firmware validation" ticked. Not yet hit
+// in practice, but a real, documented gap versus ESP32/ESP8266's guarantee.
+constexpr size_t METADATA_OFFSET = 0x1000;
+// arduino-pico's Updater (Updater.h) has no errorString()/getErrorString() - only
+// getError() (a UPDATE_ERROR_* code) and printError(Print&). Map codes to the same
+// strings ESP8266's getErrorString() would produce for the ones WLED can hit here.
+static String rp2040UpdateErrorString(UpdaterClass& u) {
+  switch (u.getError()) {
+    case UPDATE_ERROR_OK:               return F("No Error");
+    case UPDATE_ERROR_WRITE:            return F("Flash Write Failed");
+    case UPDATE_ERROR_ERASE:            return F("Flash Erase Failed");
+    case UPDATE_ERROR_READ:             return F("Flash Read Failed");
+    case UPDATE_ERROR_SPACE:            return F("Not Enough Space");
+    case UPDATE_ERROR_SIZE:             return F("Bad Size Given");
+    case UPDATE_ERROR_STREAM:           return F("Stream Read Timeout");
+    case UPDATE_ERROR_MD5:              return F("MD5 Check Failed");
+    case UPDATE_ERROR_FLASH_CONFIG:     return F("Flash Config Wrong");
+    case UPDATE_ERROR_NEW_FLASH_CONFIG: return F("New Flash Config Wrong");
+    case UPDATE_ERROR_MAGIC_BYTE:       return F("Magic Byte is Wrong");
+    default:                            return F("Update Error");
+  }
+}
+#define UPDATE_ERROR_STR(u) rp2040UpdateErrorString(u)
 #endif
 
 #ifdef SUPPORT_GZIPPED_OTA
@@ -184,7 +212,7 @@ static void validateGzippedOTA(UpdateContext* context) {
   if (!Update.hasError()) {
     const auto& buf = context->releaseMetadataBuffer;
     if (Update.write(const_cast<uint8_t*>(buf.data()), buf.size()) != buf.size()) {
-      DEBUG_PRINTF_P(PSTR("OTA write failed on final chunk: %s\n"), Update.UPDATE_ERROR());
+      DEBUG_PRINTF_P(PSTR("OTA write failed on final chunk: %s\n"), UPDATE_ERROR_STR(Update));
     }
   }
 
@@ -225,8 +253,8 @@ static void endOTA(AsyncWebServerRequest *request) {
 
 static bool beginOTA(AsyncWebServerRequest *request, UpdateContext* context)
 {
-  #ifdef ESP8266
-  Update.runAsync(true);
+  #if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+  Update.runAsync(true); // arduino-pico's Updater has this too - our multipart handler is async here too
   #endif
 
   if (Update.isRunning()) {
@@ -256,7 +284,7 @@ static bool beginOTA(AsyncWebServerRequest *request, UpdateContext* context)
   // Begin update with the firmware size from content length
   size_t updateSize = request->contentLength() > 0 ? request->contentLength() : ((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
   if (!Update.begin(updateSize)) {
-    context->errorMessage = Update.UPDATE_ERROR();
+    context->errorMessage = UPDATE_ERROR_STR(Update);
     DEBUG_PRINTF_P(PSTR("OTA Failed to begin: %s\n"), context->errorMessage.c_str());
     return false;
   }
@@ -309,7 +337,7 @@ std::pair<OTAResultStatus, String> getOTAResult(AsyncWebServerRequest* request) 
     // Release the OTA context now.
     endOTA(request);
     if (Update.hasError()) {
-      return { OTAResultStatus::Ready, Update.UPDATE_ERROR() };
+      return { OTAResultStatus::Ready, UPDATE_ERROR_STR(Update) };
     } else {
       return { OTAResultStatus::Ready, {} };
     }
@@ -410,7 +438,7 @@ void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, 
 
   if (!Update.hasError()) {
     if (Update.write(data, len) != len) {
-      DEBUG_PRINTF_P(PSTR("OTA write failed on chunk %zu: %s\n"), index, Update.UPDATE_ERROR());
+      DEBUG_PRINTF_P(PSTR("OTA write failed on chunk %zu: %s\n"), index, UPDATE_ERROR_STR(Update));
     }
   }
 
@@ -421,7 +449,12 @@ void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, 
 }
 
 void markOTAvalid() {
-  #ifndef ESP8266
+  // esp_ota_* rollback-validation APIs are ESP-IDF/ESP32-specific; ESP8266 and RP2040
+  // have no equivalent bootloader-rollback mechanism wired up here, so this is a no-op
+  // for them - same as it always was for ESP8266 (guard used to be `#ifndef ESP8266`,
+  // which happened to also read as "not RP2040" only because RP2040 never reached this
+  // function body at all before; tightened to `#ifdef ESP32` so it says what it means).
+  #ifdef ESP32
   const esp_partition_t* running = esp_ota_get_running_partition();
   esp_ota_img_states_t ota_state;
   if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
@@ -432,21 +465,6 @@ void markOTAvalid() {
   }
   #endif
 }
-
-#else // ARDUINO_ARCH_RP2040: OTA is not implemented yet - arduino-pico has no Update.h/esp_ota_*
-      // equivalent wired up. All callers of these functions are already gated behind
-      // WLED_DISABLE_OTA (set for this platform in platformio.ini) except markOTAvalid(),
-      // which is called unconditionally at boot and just needs to safely no-op here.
-
-bool initOTA(AsyncWebServerRequest *request) { return false; }
-void setOTAReplied(AsyncWebServerRequest *request) {}
-std::pair<OTAResultStatus, String> getOTAResult(AsyncWebServerRequest* request) {
-  return { OTAResultStatus::Ready, F("OTA is not supported on this platform yet") };
-}
-void handleOTAData(AsyncWebServerRequest *request, size_t index, uint8_t *data, size_t len, bool isFinal) {}
-void markOTAvalid() {}
-
-#endif // ARDUINO_ARCH_RP2040
 
 #if defined(ARDUINO_ARCH_ESP32) && !defined(WLED_DISABLE_OTA)
 

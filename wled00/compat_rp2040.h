@@ -18,6 +18,7 @@ class WledESPCompat {
 public:
   void     restart();
   uint32_t getFreeHeap();
+  uint32_t getFreeSketchSpace();
 };
 extern WledESPCompat ESP;
 

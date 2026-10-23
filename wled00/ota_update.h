@@ -5,8 +5,11 @@
 #ifdef ESP8266
   #include <Updater.h>
 #elif defined(ARDUINO_ARCH_RP2040)
-  // arduino-pico has no Update.h/Updater.h equivalent yet; OTA is not implemented on this
-  // platform (see ota_update.cpp, whose body is entirely skipped here).
+  // arduino-pico's Updater.h is explicitly "adapted from the ESP8266 Updater class" and
+  // exposes the same begin()/write()/end()/hasError()/isRunning() surface WLED calls -
+  // real OTA, not a stub. See ota_update.cpp for the (small) API differences that needed
+  // a shim: no errorString()/getErrorString(), so UPDATE_ERROR_STR() below covers that.
+  #include <Updater.h>
 #else
    #include <Update.h>
 #endif
