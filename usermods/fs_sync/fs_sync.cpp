@@ -725,16 +725,25 @@ class FsSyncUsermod : public Usermod {
 
     void saveMeta() {
       File f = WLED_FS.open(FS_SYNC_META_TMP, "w");
-      if (!f) return;
+      if (!f) { setError("metadata save failed"); return; }
       DynamicJsonDocument doc(meta.size() * 256 + 512);
       JsonObject root = doc.to<JsonObject>();
       for (auto &m : meta) {
         JsonArray a = root.createNestedArray(m.path);
         a.add(m.size); a.add(m.fsMtime); a.add(m.mtime); a.add(m.crc);
       }
-      serializeJson(doc, f);
+      size_t written = serializeJson(doc, f);
       f.close();
-      WLED_FS.rename(FS_SYNC_META_TMP, FS_SYNC_META_FILE); // rename replaces an existing file
+      // only replace the sidecar with a complete, valid document
+      if (root.isNull() || root.size() != meta.size() || written != measureJson(doc)) {
+        WLED_FS.remove(FS_SYNC_META_TMP);
+        setError("metadata save failed");
+        return;
+      }
+      if (!WLED_FS.rename(FS_SYNC_META_TMP, FS_SYNC_META_FILE)) { // rename replaces an existing file
+        WLED_FS.remove(FS_SYNC_META_TMP);
+        setError("metadata save failed");
+      }
     }
 
     void setMeta(const char *path, uint32_t size, uint32_t fsMtime, uint32_t mtime, uint32_t crc) {
