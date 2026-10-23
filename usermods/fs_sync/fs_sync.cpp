@@ -244,8 +244,11 @@ class FsSyncUsermod : public Usermod {
 
     // manifest reassembly state (entries are processed per chunk, crc verified at the end)
     uint32_t  manRunCrc   = 0;
-    uint16_t  manGotChunks = 0;
     uint16_t  manChunks   = 0;
+    uint16_t  manRxNext   = 0; // expected next chunk index of the active reassembly
+    IPAddress manRxSrc;         // peer whose manifest is being reassembled
+    bool      manRxActive = false;
+    unsigned long manRxLastMs = 0; // last received chunk, for the stall timeout
 
     // incoming request queue
     char      wantList[FS_SYNC_WANT_MAX][FS_SYNC_MAX_PATH + 1];
@@ -463,6 +466,7 @@ class FsSyncUsermod : public Usermod {
       strncpy(path, f.name(), FS_SYNC_MAX_PATH);
       path[FS_SYNC_MAX_PATH] = 0;
       if (path[0] != '/') { // normalize to an absolute path on cores returning relative names
+        if (strlen(path) >= FS_SYNC_MAX_PATH) return; // would not fit with the leading slash
         memmove(path + 1, path, strlen(path) + 1);
         path[0] = '/';
       }
@@ -528,6 +532,9 @@ class FsSyncUsermod : public Usermod {
       if (announcePending && (long)(now - announceAtMs) >= 0 && (long)(now - lastAnnounceMs) >= (long)FS_SYNC_MIN_ANNOUNCE_MS) {
         announcePending = false;
         sendAnnounce();
+      }
+      if (manRxActive && (long)(now - manRxLastMs) > (long)FS_SYNC_STALL_MS) {
+        manRxActive = false; // stalled reassembly (lost chunk): the next announce re-requests the manifest
       }
     }
 
@@ -793,13 +800,23 @@ class FsSyncUsermod : public Usermod {
       uint16_t idx  = p[4] | (p[5] << 8);
       uint16_t cnt  = p[6] | (p[7] << 8);
       if (!cnt || idx >= cnt) return;
-      if (idx == 0) {
+      if (!manRxActive) {
+        if (idx != 0) return; // reassembly starts with the first chunk
+        manRxActive = true;
+        manRxSrc = src;
+        manRxNext = 0;
         manRunCrc = 0;
-        manGotChunks = 0;
         manChunks = cnt;
-      } else if (cnt != manChunks) {
-        return;
+      } else if (src != manRxSrc) {
+        return; // interleaved response from another peer
+      } else if (idx == 0) {
+        manRxNext = 0; // same peer restarted its manifest stream
+        manRunCrc = 0;
+        manChunks = cnt;
+      } else if (idx != manRxNext || cnt != manChunks) {
+        return; // duplicate, reordered or lost chunk
       }
+      manRxLastMs = millis();
       const uint8_t *ep = p + 8;
       size_t remaining = len - 8;
       while (remaining >= 1) {
@@ -817,10 +834,13 @@ class FsSyncUsermod : public Usermod {
         if (!fsSyncPathOk(path)) continue;
         considerRemoteFile(src, senderId, path, size, mtime, crc);
       }
-      manGotChunks++;
-      if (manGotChunks == manChunks && manRunCrc != mcrc) {
-        wantCount = 0; // corrupted manifest, drop queued requests
-        setError("manifest crc mismatch");
+      manRxNext++;
+      if (manRxNext == manChunks) {
+        manRxActive = false;
+        if (manRunCrc != mcrc) {
+          wantCount = 0; // corrupted manifest, drop queued requests
+          setError("manifest crc mismatch");
+        }
       }
     }
 
@@ -917,7 +937,8 @@ class FsSyncUsermod : public Usermod {
         }
         if (!fsSyncPathOk(inPath)) { inPending = false; return; }
         updateFSInfo();
-        if ((size_t)total + 8192 > getFsBytesTotal() - getFsBytesUsed()) {
+        uint64_t freeBytes = (uint64_t)getFsBytesTotal() - (uint64_t)getFsBytesUsed();
+        if ((uint64_t)total + 8192 > freeBytes) { // 64-bit: total + margin must not overflow
           setError("no space for file");
           inPending = false;
           return;
@@ -940,7 +961,12 @@ class FsSyncUsermod : public Usermod {
         return;
       }
       inLastMs = millis();
-      inTotal = total;
+      if (first) {
+        inTotal = total; // declared once, with the first chunk
+      } else if (total != inTotal) {
+        abortIncoming(); // declared size changed mid-transfer
+        return;
+      }
       inCrc = fcrc; // running crc, final value arrives with the last chunk
       if (seq != inSeq) { // out of order (lost or reordered packet): re-request immediately
         abortIncoming();
@@ -948,6 +974,7 @@ class FsSyncUsermod : public Usermod {
         return;
       }
       if (dLen) {
+        if (inGot + dLen > inTotal) { abortIncoming(); return; } // more data than declared
         if (inFile.write(p + 15, dLen) != (size_t)dLen) { abortIncoming(); return; }
         inRunCrc = fsSyncCrc32Update(inRunCrc, p + 15, dLen);
         inGot += dLen;
