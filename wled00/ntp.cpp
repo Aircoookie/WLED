@@ -204,9 +204,9 @@ void handleNetworkTime()
     {
       #ifdef ARDUINO_ARCH_ESP32   // I had problems using udp.flush() on 8266
       #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-        while (ntpUdp.parsePacket() > 0) ntpUdp.clear();  // flush() is deprecated in arduino-esp32 3.x.y
+        ntpUdp.clear(); while (ntpUdp.parsePacket() > 0) ntpUdp.clear();  // flush() is deprecated in arduino-esp32 3.x.y
       #else
-        while (ntpUdp.parsePacket() > 0) ntpUdp.flush(); // flush any existing packets
+        ntpUdp.flush(); while (ntpUdp.parsePacket() > 0) ntpUdp.flush(); // flush any existing packets
       #endif
       #endif
       if (!ntpServerIP.fromString(ntpServerName)) // check if server is IP or domain
@@ -309,6 +309,13 @@ static bool checkNTPResponse()
   DEBUG_PRINTF_P(PSTR("NTP recv, l=%d\n"), cb);
   byte pbuf[NTP_PACKET_SIZE];
   ntpUdp.read(pbuf, NTP_PACKET_SIZE); // read the packet into the buffer
+  #ifdef ARDUINO_ARCH_ESP32 // ESP32 only: incomplete read() leaves a stale rx buffer that needs to be cleared explicitly
+    #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+      if (cb > NTP_PACKET_SIZE) ntpUdp.clear();  // flush() is deprecated in arduino-esp32 3.x.y
+    #else
+      if (cb > NTP_PACKET_SIZE) ntpUdp.flush();  
+    #endif
+  #endif
   if (!isValidNtpResponse(pbuf)) return false;  // verify we have a valid response to client
 
   Toki::Time arrived  = toki.fromNTP(pbuf + 32);

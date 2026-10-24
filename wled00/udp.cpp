@@ -487,8 +487,10 @@ void handleNotifications()
 
   bool isSupp = false;
   size_t packetSize = notifierUdp.parsePacket();
+  if (packetSize > UDP_IN_MAXSIZE) udpDropRXBuffer(notifierUdp); // too big
   if (!packetSize && udp2Connected) {
     packetSize = notifier2Udp.parsePacket();
+    if (packetSize > UDP_IN_MAXSIZE) udpDropRXBuffer(notifier2Udp);  // discard oversized message
     isSupp = true;
   }
 
@@ -496,8 +498,8 @@ void handleNotifications()
   if (!packetSize && udpRgbConnected) {
     packetSize = rgbUdp.parsePacket();
     if (packetSize) {
-      if (!receiveDirect) return;
-      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;  // packetSize must not exceed buffersize (UDP_IN_MAXSIZE)
+      if (!receiveDirect) { udpDropRXBuffer(rgbUdp); return; }
+      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3)  { udpDropRXBuffer(rgbUdp); return; } // packetSize must not exceed buffersize (UDP_IN_MAXSIZE)
       realtimeIP = rgbUdp.remoteIP();
       DEBUG_PRINTLN(rgbUdp.remoteIP());
       uint8_t lbuf[packetSize];
@@ -517,7 +519,7 @@ void handleNotifications()
   localIP = WLEDNetwork.localIP();
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
-  if (!isSupp && notifierUdp.remoteIP() == localIP) return; //don't process broadcasts we send ourselves
+  if (!isSupp && notifierUdp.remoteIP() == localIP) { udpDropRXBuffer(notifierUdp); return; } //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
   unsigned len;
@@ -526,7 +528,7 @@ void handleNotifications()
 
   // WLED nodes info notifications
   if (isSupp && udpIn[0] == 255 && udpIn[1] == 1 && len >= 40) {
-    if (!nodeListEnabled || notifier2Udp.remoteIP() == localIP) return;
+    if (!nodeListEnabled || notifier2Udp.remoteIP() == localIP) { udpDropRXBuffer(notifier2Udp); return; }
 
     unsigned unit = udpIn[39];
     NodesMap::iterator it = Nodes.find(unit);
