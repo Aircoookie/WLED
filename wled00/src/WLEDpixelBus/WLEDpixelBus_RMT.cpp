@@ -89,9 +89,9 @@ bool RmtBus::begin() {
     _channel = currentChannelIndex;
     blocksToUse = k;
   }
-  //#ifdef RMT_USE_SINGLE_MEM_BLOCK
+  #ifdef RMT_USE_SINGLE_MEM_BLOCK
   blocksToUse = 1;
-  //#endif
+  #endif
 
   currentChannelIndex += blocksToUse;
   usedBlocks += blocksToUse;

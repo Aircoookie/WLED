@@ -86,8 +86,7 @@ constexpr size_t  WLED_MAX_USERMOD_PALETTES     = WLED_USERMOD_PALETTE_ID_BASE -
   //       see https://github.com/wled/WLED/pull/5048#issuecomment-3868678248
 
   #if defined(CONFIG_IDF_TARGET_ESP32C3)
-    //#define WLED_MAX_RMT_CHANNELS 1         // ESP32-C3 has 2 RMT output channels, using both causes flickering (ISR latency) so we only allow one
-    #define WLED_MAX_RMT_CHANNELS 2         // ESP32-C3 has 2 RMT output channels, using both causes flickering (ISR latency, hiprio ISR has issues)
+    #define WLED_MAX_RMT_CHANNELS 1         // hardware has 2 RMT output channels, using both causes flickering (ISR latency) so we only allow one
     #define WLED_MAX_PARHW_CHANNELS 4       // uses SPI hardware in 4x parallel output
     #define WLED_MAX_BB_CHANNELS 8          // max parallel BitBang channels
     #define WLED_PLATFORM_ID 1              // used in UI to distinguish ESP types, needs a proper fix!
@@ -110,12 +109,12 @@ constexpr size_t  WLED_MAX_USERMOD_PALETTES     = WLED_USERMOD_PALETTE_ID_BASE -
     #define WLED_MAX_BB_CHANNELS 0          // max parallel BitBang channels, 0 means unused (saves some flash and RAM)
     #define WLED_PLATFORM_ID 3              // used in UI to distinguish ESP type in UI, needs a proper fix!
   #elif defined(CONFIG_IDF_TARGET_ESP32C6)
-    #define WLED_MAX_RMT_CHANNELS 2         // ESP32-C6 has 2 RMT output channels
+    #define WLED_MAX_RMT_CHANNELS 1         // hardware has 2 RMT output channels, using both causes flickering (ISR latency) so we only allow one
     #define WLED_MAX_PARHW_CHANNELS 8       // ESP32-C6 uses PARLIO peripheral for 8 parallel LED channels (IDF >= 5.3)
     #define WLED_MAX_BB_CHANNELS 8          // max parallel BitBang channels (fallback if PARLIO unavailable)
     #define WLED_PLATFORM_ID 5              // used in UI to distinguish ESP types, needs a proper fix!
   #elif defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C61) || defined(CONFIG_IDF_TARGET_ESP32P4)
-    #define WLED_MAX_RMT_CHANNELS 2         // ESP32-C5 has 2 RMT output channels
+    #define WLED_MAX_RMT_CHANNELS 1         // hardware has 2 RMT output channels, using both causes flickering (ISR latency) so we only allow one
     #define WLED_MAX_PARHW_CHANNELS 8       // PARLIO peripheral provides 8 parallel LED output channels on these targets (IDF >= 5.3)
     #define WLED_MAX_BB_CHANNELS 8          // BitBang fallback when PARLIO is unavailable
     #define WLED_PLATFORM_ID 6              // used in UI to distinguish ESP type in UI, needs a proper fix!

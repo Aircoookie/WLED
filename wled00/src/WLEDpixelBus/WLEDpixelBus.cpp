@@ -45,6 +45,7 @@ TODO List
 - The config rework is unfinished: with the updated workflow the goal is to fully drop "custom" bus handling and tread every bus the same (UI needs rework to do that) -> done now, needs testing and refinement
 - RMT driver uses stock encoders (could maybe made faster using custom ones) and high priority interrupts currently disabled -> WIP, needs more testing
 - the bus capability definitions in const.h should probably be moved to driver level or use driver level constants instead of "overriding" low level hardware capabilities
+- finding: LPD6803 and LPD8806 encoding is probably wrong, need to check
 */
 
 
