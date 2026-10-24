@@ -1,6 +1,7 @@
 /*-------------------------------------------------------------------------
 WLEDpixelBus - high priority RMT interrupts for ESP32
 by @willmmiles, 2026
+IDF V5 support: rmt_ll compatibility layer, no legacy driver dependency
 -------------------------------------------------------------------------*/
 
 #include <Arduino.h>
@@ -17,12 +18,71 @@ by @willmmiles, 2026
 #include "riscv/interrupt.h"
 #endif
 
-
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+// ---- IDF V5 compatibility layer ----
+// The legacy RMT driver (driver/rmt.h) is deprecated on IDF5; the few legacy types, constants and rmt_ll helpers this driver relies on are re-declared here
+#include "soc/rmt_struct.h"
 #include "hal/rmt_ll.h"
+#include "hal/rmt_types.h"
+#include "esp_intr_alloc.h"
+
+#define RMT_CHANNEL_MAX  SOC_RMT_CHANNELS_PER_GROUP
+#define RMT_MEM_ITEM_NUM SOC_RMT_MEM_WORDS_PER_CHANNEL
+
+typedef rmt_symbol_word_t rmt_item32_t; // same 32-bit layout as the legacy rmt_item32_t
+
+// RMTMEM: the channel memory view struct moved to the private RMT driver headers in IDF5, but the symbol is still provided by the linker (<target>.peripherals.ld).
+extern "C" volatile rmt_item32_t RMTMEM[RMT_CHANNEL_MAX * RMT_MEM_ITEM_NUM];
+
+#define RMTMEM_WORD(chan, idx) RMTMEM[(chan) * RMT_MEM_ITEM_NUM + (idx)]
+
+// the per-event interrupt helpers were removed in IDF5, map them to the generic mask-based functions
+static inline void rmt_ll_enable_tx_end_interrupt(rmt_dev_t *dev, uint32_t channel, bool enable)   { rmt_ll_enable_interrupt(dev, RMT_LL_EVENT_TX_DONE(channel), enable); }
+static inline void rmt_ll_enable_tx_err_interrupt(rmt_dev_t *dev, uint32_t channel, bool enable)   { rmt_ll_enable_interrupt(dev, RMT_LL_EVENT_TX_ERROR(channel), enable); }
+static inline void rmt_ll_enable_tx_thres_interrupt(rmt_dev_t *dev, uint32_t channel, bool enable) { rmt_ll_enable_interrupt(dev, RMT_LL_EVENT_TX_THRES(channel), enable); }
+static inline void rmt_ll_clear_tx_end_interrupt(rmt_dev_t *dev, uint32_t channel)   { rmt_ll_clear_interrupt_status(dev, RMT_LL_EVENT_TX_DONE(channel)); }
+static inline void rmt_ll_clear_tx_err_interrupt(rmt_dev_t *dev, uint32_t channel)   { rmt_ll_clear_interrupt_status(dev, RMT_LL_EVENT_TX_ERROR(channel)); }
+static inline void rmt_ll_clear_tx_thres_interrupt(rmt_dev_t *dev, uint32_t channel) { rmt_ll_clear_interrupt_status(dev, RMT_LL_EVENT_TX_THRES(channel)); }
+
+// renamed in IDF5
+static inline void rmt_ll_tx_enable_pingpong(rmt_dev_t *dev, uint32_t channel, bool enable) { rmt_ll_tx_enable_wrap(dev, channel, enable); }
+
+// rmt_ll_tx_stop() is missing in the esp32 (classic) IDF5 hal
+#if defined(CONFIG_IDF_TARGET_ESP32)
+static inline void rmt_ll_tx_stop(rmt_dev_t *dev, uint32_t channel)
+{
+  RMTMEM_WORD(channel, 0).val = 0; // append end marker, stops the transmitter
+  dev->conf_ch[channel].conf1.tx_start = 0;
+  dev->conf_ch[channel].conf1.mem_rd_rst = 1;
+  dev->conf_ch[channel].conf1.mem_rd_rst = 0;
+}
+#endif
+
+// channel status word: holds the RMT_STATE_CHx transmitter state field (see soc/rmt_reg.h)
+__attribute__((always_inline))
+static inline uint32_t rmt_ll_tx_get_channel_status(rmt_dev_t *dev, uint32_t channel) {
+#if defined(CONFIG_IDF_TARGET_ESP32)
+  return dev->status_ch[channel];
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  return dev->tx_status[channel].state;
+#elif defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
+  // C5, C6 and H2 share the same RMT register layout; only the state field may be returned here
+  // (the RISC-V _RmtStatusIsTransmitting() tests status != 0, and chnstatus.val also contains
+  // the memory address counters, which stay non-zero when idle)
+  return dev->chnstatus[channel].state_chn;
+#else // S2/S3: the state field lives in the chnstatus register
+  return dev->chnstatus[channel].val;
+#endif
+}
+
+#elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+#include "hal/rmt_ll.h"
+#define RMTMEM_WORD(chan, idx) RMTMEM.chan[chan].data32[idx]
 #else
 /* Shims for older ESP-IDF v3; we can safely assume original ESP32 */
 #include "soc/rmt_struct.h"
+
+#define RMTMEM_WORD(chan, idx) RMTMEM.chan[chan].data32[idx]
 
 // Selected RMT API functions borrowed from ESP-IDF v4.4.8
 // components/hal/esp32/include/hal/rmt_ll.h
@@ -139,7 +199,7 @@ __attribute__((always_inline))
 static inline uint32_t rmt_ll_get_tx_thres_interrupt_status(rmt_dev_t *dev)
 {
   uint32_t status =  dev->int_st.val;
-  return (status & 0xFF000000) >> 24;
+  return (status & 0xFF000000) >> 24; // TODO: this is probably wrong for C5 and C6, needs investigation
 }
 
 __attribute__((always_inline))
@@ -159,9 +219,14 @@ static inline void rmt_ll_tx_set_mem_blocks(rmt_dev_t *dev, uint32_t channel, ui
 // - Otherwise use the low-level hardware API to manually bind the interrupt
 
 
-#if defined(CONFIG_BTDM_CTRL_HLI)
+#if defined(CONFIG_BTDM_CTRL_HLI) && !defined(__riscv)
 // Espressif's bluetooth driver offers a helpful sharing layer; bring in the interrupt management calls
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "esp_cpu.h"      // esp_cpu_get_core_id()
+#include "rom/ets_sys.h"  // intr_matrix_set()
+#else
 #include "hal/interrupt_controller_hal.h"
+#endif
 extern "C" esp_err_t hli_intr_register(intr_handler_t handler, void* arg, uint32_t intr_reg, uint32_t intr_mask);
 
 #else /* !CONFIG_BTDM_CTRL_HLI*/
@@ -169,14 +234,14 @@ extern "C" esp_err_t hli_intr_register(intr_handler_t handler, void* arg, uint32
 // Declare the our high-priority ISR handler
 extern "C" void ld_include_hli_vectors_rmt();   // an object with an address, but no space
 
-#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
 #include "soc/periph_defs.h"
 #endif
 
 // Select level flag
 #if defined(__riscv)
 // RISCV chips don't block interrupts while scheduling; all we need to do is be higher than the WiFi ISR
-#define INT_LEVEL_FLAG ESP_INTR_FLAG_LEVEL3
+#define INT_LEVEL_FLAG ESP_INTR_FLAG_LEVEL3 // on RISC-V, higher-level interrupts are not RTOS-safe  TODO: may need revisiting
 #elif defined(CONFIG_ESP_SYSTEM_CHECK_INT_LEVEL_5)
 #define INT_LEVEL_FLAG ESP_INTR_FLAG_LEVEL4
 #else
@@ -231,7 +296,7 @@ static NeoEsp32RmtHIChannelState** driverState = nullptr;
 static void IRAM_ATTR RmtFillBuffer(uint8_t channel, const byte** src_ptr, const byte* end, uint32_t bit0, uint32_t bit1, size_t* offset_ptr, size_t reserve, size_t batchSize) {
   // We assume that (rmtToWrite % 8) == 0
   size_t rmtToWrite = batchSize - reserve;
-  rmt_item32_t* dest =(rmt_item32_t*)  &RMTMEM.chan[channel].data32[*offset_ptr + reserve]; // write directly in to RMT memory
+  rmt_item32_t* dest = (rmt_item32_t*) &RMTMEM_WORD(channel, *offset_ptr + reserve); // write directly in to RMT memory
   const byte* psrc = *src_ptr;
 
   *offset_ptr ^= batchSize;
@@ -239,12 +304,16 @@ static void IRAM_ATTR RmtFillBuffer(uint8_t channel, const byte** src_ptr, const
   if (psrc != end) {
     while (rmtToWrite > 0) {
       uint8_t data = *psrc;
-      for (uint8_t bit = 0; bit < 8; bit++)
-      {
-        dest->val = (data & 0x80) ? bit1 : bit0;
-        dest++;
-        data <<= 1;
-      }
+      // unrolled loop for speed: do not depend on compiler to do it for us
+      dest[0].val = (data & 0x80) ? bit1 : bit0;
+      dest[1].val = (data & 0x40) ? bit1 : bit0;
+      dest[2].val = (data & 0x20) ? bit1 : bit0;
+      dest[3].val = (data & 0x10) ? bit1 : bit0;
+      dest[4].val = (data & 0x08) ? bit1 : bit0;
+      dest[5].val = (data & 0x04) ? bit1 : bit0;
+      dest[6].val = (data & 0x02) ? bit1 : bit0;
+      dest[7].val = (data & 0x01) ? bit1 : bit0;
+      dest += 8; // Advance destination pointer by 8 items at once
       rmtToWrite -= 8;
       psrc++;
       if (psrc == end) {
@@ -256,22 +325,78 @@ static void IRAM_ATTR RmtFillBuffer(uint8_t channel, const byte** src_ptr, const
   }
 
   if (rmtToWrite > 0) {
-    // Add end event
-    rmt_item32_t bit0_val = {{.val = bit0 }};
-    *dest = rmt_item32_t {{{ .duration0 = 0, .level0 = bit0_val.level1, .duration1 = 0, .level1 = bit0_val.level1 }}};
+    // Add end event (zero durations = EOF marker); the output keeps the level of bit0's second phase (low)
+    // note: the bitfield types differ between IDF4 (uint32_t) and IDF5 (uint16_t)
+    rmt_item32_t bit0Word;
+    bit0Word.val = bit0;
+    rmt_item32_t endMark = {};
+    endMark.duration0 = 0;
+    endMark.level0 = bit0Word.level1;
+    endMark.duration1 = 0;
+    endMark.level1 = bit0Word.level1;
+    *dest = endMark;
   }
 }
 
 static void IRAM_ATTR RmtStartWrite(uint8_t channel, NeoEsp32RmtHIChannelState& state) {
+#if WPB_RMT_DIAG_PULSE
+  // AI: below section was generated by an AI (temporary diagnostic, controlled by WPB_RMT_DIAG_PULSE in RmtHiDriver.h)
+  // Diagnostic transmission: a single fixed 500us high + 500us low symbol at 40MHz (20000 ticks each),
+  // sent once per Write(). Bypasses the source buffer and byte encoding, the in-band reset gap,
+  // multi-block memory, wrap mode and the threshold ISR - only clocks, memory, TX start and the
+  // GPIO output path are exercised. Pure register writes only: no Serial.printf in this IRAM function.
+  (void)state;
+
+  rmt_ll_tx_stop(&RMT, channel);
+
+  rmt_ll_enable_tx_thres_interrupt(&RMT, channel, false);
+  rmt_ll_enable_tx_end_interrupt(&RMT, channel, false);
+  rmt_ll_enable_tx_err_interrupt(&RMT, channel, false);
+
+  rmt_ll_tx_set_mem_blocks(&RMT, channel, 1);
+  rmt_ll_tx_enable_pingpong(&RMT, channel, false); // no wrap: single pass over the memory block
+  rmt_ll_tx_enable_loop(&RMT, channel, false);
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+  rmt_ll_tx_fix_idle_level(&RMT, channel, 0, true); // idle low
+#endif
+
+  rmt_item32_t pulse = {};
+  pulse.level0 = 1;
+  pulse.duration0 = 20000; // 500us high at 25ns per tick
+  pulse.level1 = 0;
+  pulse.duration1 = 20000; // 500us low
+
+  RMTMEM_WORD(channel, 0).val = pulse.val; // .val assignment: struct copy discards the volatile qualifier
+  RMTMEM_WORD(channel, 1).val = 0; // EOF marker (zero durations)
+
+  rmt_ll_clear_tx_thres_interrupt(&RMT, channel);
+  rmt_ll_clear_tx_end_interrupt(&RMT, channel);
+  rmt_ll_clear_tx_err_interrupt(&RMT, channel);
+
+  #if defined(CONFIG_IDF_TARGET_ESP32C5)
+  RMT.chnconf0[channel].tx_stop_chn = 0; // C5: tx_stop_chn has been observed to remain asserted after  rmt_ll_tx_stop(), preventing subsequent transmissions.
+  #endif
+
+  rmt_ll_tx_reset_pointer(&RMT, channel);
+  rmt_ll_tx_start(&RMT, channel);
+  // AI: end
+#else
   // Reset context state
   state.rmtOffset = 0;
 
   // Fill the first part of the buffer with a reset event
   // FUTURE: we could do timing analysis with the last interrupt on this channel
   // Use 8 words to stay aligned with the buffer fill logic
-  rmt_item32_t bit0_val = {{.val = state.rmtBit0 }};
-  rmt_item32_t fill = {{{ .duration0 = 100, .level0 = bit0_val.level1, .duration1 = 100, .level1 = bit0_val.level1 }}};
-  rmt_item32_t* dest = (rmt_item32_t*) &RMTMEM.chan[channel].data32[0];
+  // note: the bitfield types differ between IDF4 (uint32_t) and IDF5 (uint16_t)
+
+  rmt_item32_t bit0Word;
+  bit0Word.val = state.rmtBit0;
+  rmt_item32_t fill = {};
+  fill.duration0 = 100;
+  fill.level0 = bit0Word.level1;
+  fill.duration1 = 100;
+  fill.level1 = bit0Word.level1;
+  rmt_item32_t* dest = (rmt_item32_t*) &RMTMEM_WORD(channel, 0);
   for (auto i = 0; i < 7; ++i) dest[i] = fill;
   fill.duration1 = state.resetDuration > 1400 ? (state.resetDuration - 1400) : 100;
   dest[7] = fill;
@@ -282,8 +407,12 @@ static void IRAM_ATTR RmtStartWrite(uint8_t channel, NeoEsp32RmtHIChannelState& 
 
   // Start operation
   rmt_ll_clear_tx_thres_interrupt(&RMT, channel);
+  #if defined(CONFIG_IDF_TARGET_ESP32C5)
+  RMT.chnconf0[channel].tx_stop_chn = 0; // C5: tx_stop_chn has been observed to remain asserted after  rmt_ll_tx_stop(), preventing subsequent transmissions.
+  #endif
   rmt_ll_tx_reset_pointer(&RMT, channel);
   rmt_ll_tx_start(&RMT, channel);
+#endif // WPB_RMT_DIAG_PULSE
 }
 
 extern "C" void IRAM_ATTR NeoEsp32RmtMethodIsr(void *arg) {
@@ -306,7 +435,10 @@ extern "C" void IRAM_ATTR NeoEsp32RmtMethodIsr(void *arg) {
 
 // Wrapper around the register analysis defines
 // For all currently supported chips, this is constant for all channels; but this is not true of *all* ESP32
-static inline bool _RmtStatusIsTransmitting(rmt_channel_t channel, uint32_t status) {
+static inline bool _RmtStatusIsTransmitting(uint8_t channel, uint32_t status) {
+#if defined(__riscv)
+  return status != 0;
+#else
   uint32_t v;
   switch(channel) {
 #ifdef RMT_STATE_CH0
@@ -337,10 +469,11 @@ static inline bool _RmtStatusIsTransmitting(rmt_channel_t channel, uint32_t stat
   }
 
   return v != 0;
+#endif
 }
 
 
-esp_err_t RmtHiDriver::Install(rmt_channel_t channel, uint32_t rmtBit0, uint32_t rmtBit1, uint32_t reset, uint8_t blocksToUse) {
+esp_err_t RmtHiDriver::Install(uint8_t channel, uint32_t rmtBit0, uint32_t rmtBit1, uint32_t reset, uint8_t blocksToUse) {
   // Validate channel number
   if (channel >= RMT_CHANNEL_MAX) {
   return ESP_ERR_INVALID_ARG;
@@ -361,12 +494,24 @@ esp_err_t RmtHiDriver::Install(rmt_channel_t channel, uint32_t rmtBit0, uint32_t
   // hook up another handler.
   err = hli_intr_register(NeoEsp32RmtMethodIsr, nullptr, (uintptr_t) &RMT.int_st, 0xFF000000);
   // 25 is the magic number of the bluetooth ISR on ESP32 - see soc/soc.h.
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+  intr_matrix_set(esp_cpu_get_core_id(), ETS_RMT_INTR_SOURCE, 25);
+  ESP_INTR_ENABLE(25);
+#else
   intr_matrix_set(cpu_hal_get_core_id(), ETS_RMT_INTR_SOURCE, 25);
   intr_cntrl_ll_enable_interrupts(1<<25);
+#endif
 #elif defined(NEOESP32_RMT_CAN_USE_INTR_ALLOC)
   // Use the platform code to allocate the interrupt
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) && defined(__XTENSA__)
+  // IDF5 requires handler and arg to be NULL for high level (assembly vectored) interrupts;
+  // reference the bridge's guard symbol so the linker keeps the .S file
+  static volatile const void*  __attribute__((used)) pleaseLinkAssembly = (void*) ld_include_hli_vectors_rmt;
+  err = esp_intr_alloc(ETS_RMT_INTR_SOURCE, INT_LEVEL_FLAG | ESP_INTR_FLAG_IRAM, nullptr, nullptr, &isrHandle);
+#else
   // If we need the additional assembly bridge, we pass it as the "arg" to the IDF so it gets linked in
   err = esp_intr_alloc(ETS_RMT_INTR_SOURCE, INT_LEVEL_FLAG | ESP_INTR_FLAG_IRAM, HI_IRQ_HANDLER, (void*) HI_IRQ_HANDLER_ARG, &isrHandle);
+#endif
   //err = ESP_ERR_NOT_FINISHED;
 #else
   // Broken IDF API does not allow us to reserve the interrupt; do it manually
@@ -401,6 +546,11 @@ esp_err_t RmtHiDriver::Install(rmt_channel_t channel, uint32_t rmtBit0, uint32_t
 
   // Initialize hardware
   rmt_ll_tx_stop(&RMT, channel);
+  #if defined(CONFIG_IDF_TARGET_ESP32C5)
+  RMT.chnconf0[channel].tx_stop_chn = 0; // The peripheral/channel reset has already made TX idle. Avoid leaving tx_stop_chn asserted on C5.
+  #else
+  //rmt_ll_tx_stop(&RMT, channel);
+  #endif
   rmt_ll_tx_reset_pointer(&RMT, channel);
   rmt_ll_tx_set_mem_blocks(&RMT, channel, blocksToUse);
   rmt_ll_enable_tx_err_interrupt(&RMT, channel, false);
@@ -412,6 +562,10 @@ esp_err_t RmtHiDriver::Install(rmt_channel_t channel, uint32_t rmtBit0, uint32_t
   rmt_ll_tx_enable_loop(&RMT, channel, false);
   rmt_ll_tx_enable_pingpong(&RMT, channel, true);
   rmt_ll_tx_set_limit(&RMT, channel, state->batchSize);
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+  rmt_ll_tx_enable_carrier_modulation(&RMT, channel, false); // disable carrier modulation, its enabled by default in V5
+  rmt_ll_tx_fix_idle_level(&RMT, channel, 0, true);          // just in case, set idle low (TODO: need to invert if inverted output)
+#endif
 
   driverState[channel] = state;
 
@@ -420,7 +574,7 @@ esp_err_t RmtHiDriver::Install(rmt_channel_t channel, uint32_t rmtBit0, uint32_t
   return err;
 }
 
-esp_err_t  RmtHiDriver::Uninstall(rmt_channel_t channel) {
+esp_err_t  RmtHiDriver::Uninstall(uint8_t channel) {
   if ((channel >= RMT_CHANNEL_MAX) || !driverState || !driverState[channel]) return ESP_ERR_INVALID_ARG;
 
   NeoEsp32RmtHIChannelState* state = driverState[channel];
@@ -452,7 +606,7 @@ esp_err_t  RmtHiDriver::Uninstall(rmt_channel_t channel) {
   return ESP_OK;
 }
 
-esp_err_t  RmtHiDriver::Write(rmt_channel_t channel, const uint8_t *src, size_t src_size) {
+esp_err_t  RmtHiDriver::Write(uint8_t channel, const uint8_t *src, size_t src_size) {
   if ((channel >= RMT_CHANNEL_MAX) || !driverState || !driverState[channel]) return ESP_ERR_INVALID_ARG;
 
   NeoEsp32RmtHIChannelState& state = *driverState[channel];
@@ -467,7 +621,7 @@ esp_err_t  RmtHiDriver::Write(rmt_channel_t channel, const uint8_t *src, size_t 
   return result;
 }
 
-esp_err_t RmtHiDriver::WaitForTxDone(rmt_channel_t channel, TickType_t wait_time) {
+esp_err_t RmtHiDriver::WaitForTxDone(uint8_t channel, TickType_t wait_time) {
   if ((channel >= RMT_CHANNEL_MAX) || !driverState || !driverState[channel]) return ESP_ERR_INVALID_ARG;
 
   NeoEsp32RmtHIChannelState& state = *driverState[channel];
